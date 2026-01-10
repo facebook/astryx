@@ -1,3 +1,12 @@
+/**
+ * @file Button.test.tsx
+ * @input Uses vitest, @testing-library/react, Button component
+ * @output Unit tests for Button component behavior
+ * @position Testing; validates Button.tsx implementation
+ *
+ * SYNC: When modified, update this header and /packages/core/src/Button/README.md
+ */
+
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';

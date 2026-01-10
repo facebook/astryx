@@ -1,3 +1,5 @@
+<!-- SYNC CONTRACT: Architecture changes require documentation updates. -->
+
 # XDS
 
 A design system for building internal tools and products, enabling the creation of high-quality product experiences.
@@ -32,6 +34,15 @@ A library of 300+ reusable UI building blocks with full TypeScript support.
 ### Patterns
 
 33+ battle-tested design solutions for common interactions and workflows: table pages, detail page layouts, form wizards, navigation patterns, data entry flows.
+
+## Project Structure
+
+| Directory | Purpose |
+|-----------|---------|
+| `apps/` | Application packages: documentation site, sandbox, and Storybook |
+| `packages/` | Published packages: core components and utilities |
+| `internal/` | Internal tooling: test utilities and build helpers |
+| `e2e/` | End-to-end tests using Playwright |
 
 ## Contributing
 

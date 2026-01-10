@@ -1,3 +1,12 @@
+/**
+ * @file playwright.config.ts
+ * @input Uses @playwright/test
+ * @output Playwright configuration for e2e tests against Storybook
+ * @position Test config; defines browser matrix and web server setup
+ *
+ * SYNC: When modified, update this header and /e2e/README.md
+ */
+
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({

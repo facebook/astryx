@@ -1,3 +1,12 @@
+/**
+ * @file vitest.config.ts
+ * @input Uses vitest/config, @vitejs/plugin-react
+ * @output Vitest configuration with jsdom, coverage, and test setup
+ * @position Root test config; applies to all packages in monorepo
+ *
+ * SYNC: When modified, update this header and root README.md
+ */
+
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 

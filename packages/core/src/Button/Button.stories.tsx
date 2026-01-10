@@ -1,3 +1,12 @@
+/**
+ * @file Button.stories.tsx
+ * @input Uses @storybook/react, Button component
+ * @output Storybook stories for Button variants and states
+ * @position Documentation; visual testing and component showcase in Storybook
+ *
+ * SYNC: When modified, update this header and /packages/core/src/Button/README.md
+ */
+
 import type { Meta, StoryObj } from '@storybook/react';
 import { Button } from './Button';
 
