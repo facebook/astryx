@@ -1,0 +1,23 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type { RawStyles, StyleXOptions } from '../common-types';
+
+import { type AnyPreRule, type IPreRule } from './PreRule';
+
+declare export function flattenRawStyleObject(
+  style: RawStyles,
+  options: StyleXOptions,
+): $ReadOnlyArray<$ReadOnly<[string, IPreRule]>>;
+
+declare export function _flattenRawStyleObject(
+  style: RawStyles,
+  keyPath: $ReadOnlyArray<string>,
+  options: StyleXOptions,
+): Array<$ReadOnly<[string, AnyPreRule]>>;

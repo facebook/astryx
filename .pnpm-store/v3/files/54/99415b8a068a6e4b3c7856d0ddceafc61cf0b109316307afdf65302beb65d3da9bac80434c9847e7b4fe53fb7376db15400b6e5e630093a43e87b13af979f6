@@ -1,0 +1,25 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type { NodePath } from '../../flow_modules/@babel/traverse';
+
+import * as t from '../../flow_modules/@babel/types';
+import StateManager from '../utils/state-manager';
+declare export function skipStylexMergeChildren(
+  path: NodePath<t.CallExpression>,
+  state: StateManager,
+): void;
+
+// If a `stylex()` call uses styles that are all locally defined,
+// This function is able to pre-compute that into a single string or
+// a single expression of strings and ternary expressions.
+declare export default function transformStyleXMerge(
+  path: NodePath<t.CallExpression>,
+  state: StateManager,
+): void;

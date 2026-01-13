@@ -1,0 +1,150 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type {
+  CompiledStyles,
+  InlineStyles,
+  Keyframes,
+  StaticStyles,
+  StaticStylesWithout,
+  StyleX$Create,
+  StyleX$CreateTheme,
+  StyleX$DefineVars,
+  StyleXArray,
+  StyleXStyles,
+  StyleXStylesWithout,
+  Theme,
+  VarGroup,
+} from './StyleXTypes';
+import type { ValueWithDefault } from './util-types';
+import * as Types from './VarTypes';
+
+export type {
+  StaticStyles,
+  StaticStylesWithout,
+  StyleXStyles,
+  StyleXStylesWithout,
+  Theme,
+  Types,
+  VarGroup,
+};
+
+declare export function attrs(
+  ...styles: $ReadOnlyArray<
+    StyleXArray<
+      ?CompiledStyles | boolean | $ReadOnly<[CompiledStyles, InlineStyles]>,
+    >,
+  >
+): $ReadOnly<{
+  class?: string,
+  'data-style-src'?: string,
+  style?: string,
+}>;
+
+declare export const create: StyleX$Create;
+
+declare export const createTheme: StyleX$CreateTheme;
+
+declare export const defineVars: StyleX$DefineVars;
+
+declare export const firstThatWorks: <T: string | number>(
+  ..._styles: $ReadOnlyArray<T>
+) => $ReadOnlyArray<T>;
+
+declare export const keyframes: (_keyframes: Keyframes) => string;
+
+declare export function props(
+  this: ?mixed,
+  ...styles: $ReadOnlyArray<
+    StyleXArray<
+      ?CompiledStyles | boolean | $ReadOnly<[CompiledStyles, InlineStyles]>,
+    >,
+  >
+): $ReadOnly<{
+  className?: string,
+  'data-style-src'?: string,
+  style?: $ReadOnly<{ [string]: string | number }>,
+}>;
+
+declare export const types: {
+  angle: <T: string | 0 = string | 0>(
+    _v: ValueWithDefault<T>,
+  ) => Types.Angle<T>,
+  color: <T: string = string>(_v: ValueWithDefault<T>) => Types.Color<T>,
+  url: <T: string = string>(_v: ValueWithDefault<T>) => Types.Url<T>,
+  image: <T: string = string>(_v: ValueWithDefault<T>) => Types.Image<T>,
+  integer: <T: number | string = number | string>(
+    _v: ValueWithDefault<T>,
+  ) => Types.Integer<T>,
+  lengthPercentage: <T: number | string = number | string>(
+    _v: ValueWithDefault<T>,
+  ) => Types.LengthPercentage<T>,
+  length: <T: number | string = number | string>(
+    _v: ValueWithDefault<T>,
+  ) => Types.Length<T>,
+  percentage: <T: number | string = number | string>(
+    _v: ValueWithDefault<T>,
+  ) => Types.Percentage<T>,
+  number: <T: number | string = number | string>(
+    _v: ValueWithDefault<T>,
+  ) => Types.Num<T>,
+  resolution: <T: string = string>(
+    _v: ValueWithDefault<T>,
+  ) => Types.Resolution<T>,
+  time: <T: string | 0 = string | 0>(_v: ValueWithDefault<T>) => Types.Time<T>,
+  transformFunction: <T: string = string>(
+    _v: ValueWithDefault<T>,
+  ) => Types.TransformFunction<T>,
+  transformList: <T: string = string>(
+    _v: ValueWithDefault<T>,
+  ) => Types.TransformList<T>,
+};
+
+/**
+ * DO NOT USE. Legacy export for Meta
+ */
+
+type IStyleX = {
+  (...styles: $ReadOnlyArray<StyleXArray<?CompiledStyles | boolean>>): string,
+  attrs: (
+    ...styles: $ReadOnlyArray<
+      StyleXArray<
+        ?CompiledStyles | boolean | $ReadOnly<[CompiledStyles, InlineStyles]>,
+      >,
+    >
+  ) => $ReadOnly<{
+    class?: string,
+    'data-style-src'?: string,
+    style?: string,
+  }>,
+  create: StyleX$Create,
+  createTheme: StyleX$CreateTheme,
+  defineVars: StyleX$DefineVars,
+  firstThatWorks: <T: string | number>(
+    ...v: $ReadOnlyArray<T>
+  ) => $ReadOnlyArray<T>,
+  keyframes: (keyframes: Keyframes) => string,
+  props: (
+    this: ?mixed,
+    ...styles: $ReadOnlyArray<
+      StyleXArray<
+        ?CompiledStyles | boolean | $ReadOnly<[CompiledStyles, InlineStyles]>,
+      >,
+    >
+  ) => $ReadOnly<{
+    className?: string,
+    'data-style-src'?: string,
+    style?: $ReadOnly<{ [string]: string | number }>,
+  }>,
+  types: typeof types,
+  __customProperties?: { [string]: mixed },
+  ...
+};
+
+declare export const legacyMerge: IStyleX;

@@ -1,0 +1,24 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import * as t from '../../flow_modules/@babel/types';
+import type { NodePath } from '../../flow_modules/@babel/traverse';
+import StateManager from '../utils/state-manager';
+
+// Read imports of react and remember the name of the local variables for later
+declare export function readImportDeclarations(
+  path: NodePath<t.ImportDeclaration>,
+  state: StateManager,
+): void;
+
+// Read require calls and remember the names of the variables for later
+declare export function readRequires(
+  path: NodePath<t.VariableDeclarator>,
+  state: StateManager,
+): void;

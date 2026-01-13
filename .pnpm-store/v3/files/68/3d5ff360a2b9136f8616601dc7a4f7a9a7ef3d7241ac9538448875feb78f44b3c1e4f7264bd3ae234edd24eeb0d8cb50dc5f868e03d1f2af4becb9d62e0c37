@@ -1,0 +1,168 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ *
+ */
+
+import type { TStyleValue } from '../common-types';
+export declare const LOGICAL_FLOAT_START_VAR: '--stylex-logical-start';
+export declare type LOGICAL_FLOAT_START_VAR = typeof LOGICAL_FLOAT_START_VAR;
+export declare const LOGICAL_FLOAT_END_VAR: '--stylex-logical-end';
+export declare type LOGICAL_FLOAT_END_VAR = typeof LOGICAL_FLOAT_END_VAR;
+/**
+ * Shorthand properties:
+ * - [x] all - Should be banned
+ * - [ ] animation
+ * - [ ] background
+ * - [-] border
+ * - [x] border-block-end
+ * - [x] border-block-start
+ * - [ ] border-bottom
+ * - [x] border-color
+ * - [x] border-image
+ * - [x] border-inline-end
+ * - [x] border-inline-start
+ * - [ ] border-left
+ * - [x] border-radius
+ * - [ ] border-right
+ * - [x] border-style
+ * - [ ] border-top
+ * - [x] border-width
+ * - [ ] column-rule
+ * - [ ] columns
+ * - [ ] flex
+ * - [ ] flex-flow
+ * - [ ] font
+ * - [ ] gap
+ * - [ ] grid
+ * - [ ] grid-area
+ * - [ ] grid-column
+ * - [ ] grid-row
+ * - [ ] grid-template
+ * - [ ] list-style
+ * - [x] margin
+ * - [ ] mask
+ * - [ ] offset
+ * - [ ] outline
+ * - [x] overflow
+ * - [x] padding
+ * - [ ] place-content
+ * - [ ] place-items
+ * - [ ] place-self
+ * - [ ] scroll-margin
+ * - [ ] scroll-padding
+ * - [ ] text-decoration
+ * - [ ] text-emphasis
+ * - [ ] transition
+ */
+
+/**
+ * Shorthand properties:
+ * - [x] all - Should be banned
+ * - [ ] animation
+ * - [ ] background
+ * - [-] border
+ * - [x] border-block-end
+ * - [x] border-block-start
+ * - [ ] border-bottom
+ * - [x] border-color
+ * - [x] border-image
+ * - [x] border-inline-end
+ * - [x] border-inline-start
+ * - [ ] border-left
+ * - [x] border-radius
+ * - [ ] border-right
+ * - [x] border-style
+ * - [ ] border-top
+ * - [x] border-width
+ * - [ ] column-rule
+ * - [ ] columns
+ * - [ ] flex
+ * - [ ] flex-flow
+ * - [ ] font
+ * - [ ] gap
+ * - [ ] grid
+ * - [ ] grid-area
+ * - [ ] grid-column
+ * - [ ] grid-row
+ * - [ ] grid-template
+ * - [ ] list-style
+ * - [x] margin
+ * - [ ] mask
+ * - [ ] offset
+ * - [ ] outline
+ * - [x] overflow
+ * - [x] padding
+ * - [ ] place-content
+ * - [ ] place-items
+ * - [ ] place-self
+ * - [ ] scroll-margin
+ * - [ ] scroll-padding
+ * - [ ] text-decoration
+ * - [ ] text-emphasis
+ * - [ ] transition
+ */
+
+type TReturn = ReadonlyArray<[string, TStyleValue]>;
+declare const shorthands: Readonly<{
+  [key: string]: ($$PARAM_0$$: TStyleValue) => TReturn;
+}>;
+declare const aliases: {
+  insetBlockStart: (val: TStyleValue) => TReturn;
+  insetBlockEnd: (val: TStyleValue) => TReturn;
+  insetInlineStart: typeof shorthands.start;
+  insetInlineEnd: typeof shorthands.end;
+  blockSize: (val: TStyleValue) => TReturn;
+  inlineSize: (val: TStyleValue) => TReturn;
+  minBlockSize: (val: TStyleValue) => TReturn;
+  minInlineSize: (val: TStyleValue) => TReturn;
+  maxBlockSize: (val: TStyleValue) => TReturn;
+  maxInlineSize: (val: TStyleValue) => TReturn;
+  borderStart: (val: TStyleValue) => TReturn;
+  borderEnd: (val: TStyleValue) => TReturn;
+  borderBlockWidth: typeof shorthands.borderVerticalWidth;
+  borderBlockStyle: typeof shorthands.borderVerticalStyle;
+  borderBlockColor: typeof shorthands.borderVerticalColor;
+  borderBlockStartWidth: (val: TStyleValue) => TReturn;
+  borderBlockStartStyle: (val: TStyleValue) => TReturn;
+  borderBlockStartColor: (val: TStyleValue) => TReturn;
+  borderBlockEndWidth: (val: TStyleValue) => TReturn;
+  borderBlockEndStyle: (val: TStyleValue) => TReturn;
+  borderBlockEndColor: (val: TStyleValue) => TReturn;
+  borderInlineWidth: typeof shorthands.borderHorizontalWidth;
+  borderInlineStyle: typeof shorthands.borderHorizontalStyle;
+  borderInlineColor: typeof shorthands.borderHorizontalColor;
+  borderTopStartRadius: (val: TStyleValue) => TReturn;
+  borderTopEndRadius: (val: TStyleValue) => TReturn;
+  borderBottomStartRadius: (val: TStyleValue) => TReturn;
+  borderBottomEndRadius: (val: TStyleValue) => TReturn;
+  gridGap: typeof shorthands.gap;
+  gridRowGap: (value: TStyleValue) => TReturn;
+  gridColumnGap: (value: TStyleValue) => TReturn;
+  marginBlock: typeof shorthands.marginVertical;
+  marginBlockStart: (val: TStyleValue) => TReturn;
+  marginBlockEnd: (val: TStyleValue) => TReturn;
+  marginInline: typeof shorthands.marginHorizontal;
+  overflowBlock: (value: TStyleValue) => TReturn;
+  overflowInline: (value: TStyleValue) => TReturn;
+  paddingBlock: typeof shorthands.paddingVertical;
+  paddingBlockStart: (val: TStyleValue) => TReturn;
+  paddingBlockEnd: (val: TStyleValue) => TReturn;
+  paddingInline: typeof shorthands.paddingHorizontal;
+  scrollMarginBlockStart: (value: TStyleValue) => TReturn;
+  scrollMarginBlockEnd: (value: TStyleValue) => TReturn;
+  float: (value: TStyleValue) => TReturn;
+  clear: (value: TStyleValue) => TReturn;
+};
+declare const expansions: Omit<
+  typeof shorthands,
+  keyof typeof aliases | keyof {}
+> &
+  Omit<typeof aliases, keyof {}> & {};
+declare const $$EXPORT_DEFAULT_DECLARATION$$: typeof expansions;
+declare type $$EXPORT_DEFAULT_DECLARATION$$ =
+  typeof $$EXPORT_DEFAULT_DECLARATION$$;
+export default $$EXPORT_DEFAULT_DECLARATION$$;

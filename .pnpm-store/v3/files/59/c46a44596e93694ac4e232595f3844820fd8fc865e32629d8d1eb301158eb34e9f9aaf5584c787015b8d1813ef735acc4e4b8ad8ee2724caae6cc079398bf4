@@ -1,0 +1,31 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type { CompiledNamespaces } from '@stylexjs/shared';
+import StateManager from './state-manager';
+
+// TODO: We will need to maintain the full path to the file eventually
+// Perhaps this can be an option that is passed in.
+declare export function namespaceToDevClassName(
+  namespace: string,
+  varName: null | string,
+  filename: string,
+): string;
+
+declare export function injectDevClassNames(
+  obj: CompiledNamespaces,
+  varName: null | string,
+  state: StateManager,
+): CompiledNamespaces;
+
+declare export function convertToTestStyles(
+  obj: CompiledNamespaces,
+  varName: null | string,
+  state: StateManager,
+): CompiledNamespaces;

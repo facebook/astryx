@@ -1,0 +1,22 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type { NodePath } from '@babel/traverse';
+import * as t from '@babel/types';
+import StateManager from '../utils/state-manager';
+/// This function looks for `stylex.positionTry` calls within variable declarations and transforms them.
+/// 1. It finds the first argument to `stylex.positionTry` and validates it.
+/// 2. It evaluates the style object to get a JS object. This also handles local constants automatically.
+/// 3. The actual transformation is done by `stylexPositionTry` from `../shared`
+/// 4. The results are replaced, and generated CSS rules are injected as needed.
+
+declare export default function transformStyleXPositionTry(
+  path: NodePath<t.VariableDeclarator>,
+  state: StateManager,
+): void;

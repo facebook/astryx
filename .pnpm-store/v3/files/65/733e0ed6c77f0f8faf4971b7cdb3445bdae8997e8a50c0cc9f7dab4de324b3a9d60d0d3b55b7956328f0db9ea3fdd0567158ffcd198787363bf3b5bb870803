@@ -1,0 +1,78 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+// A bunch of object utils with better Flow types
+
+import type { CompiledStyles } from '../common-types';
+
+// eslint-disable-next-line no-unused-vars
+type AnyObject = { +[string]: mixed };
+
+declare export function isPlainObject(obj: mixed): implies obj is AnyObject;
+
+declare export function flattenObject(obj: CompiledStyles): {
+  +[string]: null | string,
+};
+
+type _ObjectEntries<Obj: { +[string]: mixed }> = {
+  [Key in keyof Obj]: [Key, Obj[Key]],
+};
+type ObjectEntries<Obj: { +[string]: mixed }> = $Values<_ObjectEntries<Obj>>;
+
+declare export function objEntries<Obj: { +[string]: mixed }>(
+  obj: Obj,
+): $ReadOnlyArray<ObjectEntries<Obj>>;
+
+declare export function objValues<Obj: { +[string]: mixed }>(
+  obj: Obj,
+): $ReadOnlyArray<Obj[$Keys<Obj>]>;
+
+declare export function objFromEntries<K: string | number, V>(
+  entries: $ReadOnlyArray<$ReadOnly<[K, V]>>,
+): { [K]: V };
+
+declare export function objMapKeys<V, K1: string = string, K2: string = string>(
+  obj: { +[K1]: V },
+  mapper: (K1) => K2,
+): { +[K2]: V };
+
+declare export function objMapEntry<
+  V,
+  V2,
+  K1: string = string,
+  K2: string = string,
+>(
+  obj: { +[K1]: V },
+  mapper: ($ReadOnly<[K1, V]>) => $ReadOnly<[K2, V2]>,
+): { +[K2]: V2 };
+
+declare export function objMap<V, V2, K: string = string>(
+  obj: { +[K]: V },
+  mapper: (V, K) => V2,
+): { +[K]: V2 };
+
+declare export class Pipe<T> {
+  value: T;
+  constructor(val: T): void;
+  pipe<T2>(mapper: (T) => T2): Pipe<T2>;
+  done(): T;
+  static create(val: T): Pipe<T>;
+}
+
+// Function that sorts an array without mutating it and returns a new array
+declare export const arraySort: <T>(
+  arr: $ReadOnlyArray<T>,
+  fn?: (T, T) => number,
+) => $ReadOnlyArray<T>;
+
+declare export const arrayEquals: <T>(
+  arr1: $ReadOnlyArray<T>,
+  arr2: $ReadOnlyArray<T>,
+  equals: (T, T) => boolean,
+) => boolean;

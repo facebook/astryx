@@ -1,0 +1,42 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+/* eslint-disable no-unused-vars */
+import type { NodePath } from '@babel/traverse';
+import type { FunctionConfig } from '../utils/evaluate-path';
+
+import * as t from '@babel/types';
+import StateManager from '../utils/state-manager';
+type TInlineStyles = {
+  [string]: {
+    +path: $ReadOnlyArray<string>,
+    +originalExpression: t.Expression,
+    +expression: t.Expression | t.PatternLike,
+  },
+};
+
+type DynamicFns = {
+  [string]: [
+    +params: Array<t.Identifier>,
+    +inlineStyles: $ReadOnly<TInlineStyles>,
+  ],
+};
+
+// This
+declare export function evaluateStyleXCreateArg(
+  path: NodePath<>,
+  traversalState: StateManager,
+  functions?: FunctionConfig,
+): $ReadOnly<{
+  confident: boolean,
+  value: any,
+  deopt?: null | NodePath<>,
+  reason?: string,
+  fns?: DynamicFns,
+}>;

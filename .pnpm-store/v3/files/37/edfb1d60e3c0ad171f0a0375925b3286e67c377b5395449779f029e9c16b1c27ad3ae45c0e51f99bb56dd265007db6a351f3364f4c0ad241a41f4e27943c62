@@ -1,0 +1,168 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type {
+  CompiledStyles,
+  InlineStyles,
+  Keyframes,
+  MapNamespaces,
+  StaticStyles,
+  StaticStylesWithout,
+  StyleX$Create,
+  StyleX$CreateTheme,
+  StyleX$DefineVars,
+  StyleX$DefineConsts,
+  StyleXArray,
+  StyleXClassNameFor,
+  StyleXStyles,
+  StyleXStylesWithout,
+  StyleXVar,
+  Theme,
+  VarGroup,
+  PositionTry,
+  ViewTransitionClass,
+  StyleX$When,
+  MapNamespace,
+  StyleX$DefineMarker,
+} from './types/StyleXTypes';
+import type { ValueWithDefault } from './types/StyleXUtils';
+import * as Types from './types/VarTypes';
+
+export type {
+  CompiledStyles,
+  InlineStyles,
+  Keyframes,
+  MapNamespaces,
+  StaticStyles,
+  StaticStylesWithout,
+  StyleXArray,
+  StyleXClassNameFor,
+  StyleXStyles,
+  StyleXStylesWithout,
+  StyleXVar,
+  Theme,
+  Types,
+  VarGroup,
+  PositionTry,
+};
+
+declare export const create: StyleX$Create;
+
+declare export const createTheme: StyleX$CreateTheme;
+
+declare export const defineConsts: StyleX$DefineConsts;
+
+declare export const defineVars: StyleX$DefineVars;
+
+declare export const defineMarker: StyleX$DefineMarker;
+
+declare export const firstThatWorks: <T: string | number>(
+  ..._styles: $ReadOnlyArray<T>
+) => $ReadOnlyArray<T>;
+
+declare export const keyframes: (_keyframes: Keyframes) => string;
+
+declare export const positionTry: (_positionTry: PositionTry) => string;
+
+declare export function props(
+  this: ?mixed,
+  ...styles: $ReadOnlyArray<
+    StyleXArray<
+      ?CompiledStyles | boolean | $ReadOnly<[CompiledStyles, InlineStyles]>,
+    >,
+  >
+): $ReadOnly<{
+  className?: string,
+  'data-style-src'?: string,
+  style?: $ReadOnly<{ [string]: string | number }>,
+}>;
+
+declare export const viewTransitionClass: (
+  _viewTransitionClass: ViewTransitionClass,
+) => string;
+
+declare export const defaultMarker: () => MapNamespace<
+  $ReadOnly<{
+    marker: 'default-marker',
+  }>,
+>;
+
+declare export const when: StyleX$When;
+
+declare export const types: {
+  angle: <T: string | 0 = string | 0>(
+    _v: ValueWithDefault<T>,
+  ) => Types.Angle<T>,
+  color: <T: string = string>(_v: ValueWithDefault<T>) => Types.Color<T>,
+  url: <T: string = string>(_v: ValueWithDefault<T>) => Types.Url<T>,
+  image: <T: string = string>(_v: ValueWithDefault<T>) => Types.Image<T>,
+  integer: <T: number = number>(_v: ValueWithDefault<T>) => Types.Integer<T>,
+  lengthPercentage: <T: number | string = number | string>(
+    _v: ValueWithDefault<T>,
+  ) => Types.LengthPercentage<T>,
+  length: <T: number | string = number | string>(
+    _v: ValueWithDefault<T>,
+  ) => Types.Length<T>,
+  percentage: <T: number | string = number | string>(
+    _v: ValueWithDefault<T>,
+  ) => Types.Percentage<T>,
+  number: <T: number = number>(_v: ValueWithDefault<T>) => Types.Num<T>,
+  resolution: <T: string = string>(
+    _v: ValueWithDefault<T>,
+  ) => Types.Resolution<T>,
+  time: <T: string | 0 = string | 0>(_v: ValueWithDefault<T>) => Types.Time<T>,
+  transformFunction: <T: string = string>(
+    _v: ValueWithDefault<T>,
+  ) => Types.TransformFunction<T>,
+  transformList: <T: string = string>(
+    _v: ValueWithDefault<T>,
+  ) => Types.TransformList<T>,
+};
+
+/**
+ * DO NOT USE. Legacy export for Meta
+ */
+
+type IStyleX = {
+  (...styles: $ReadOnlyArray<StyleXArray<?CompiledStyles | boolean>>): string,
+  create: StyleX$Create,
+  createTheme: StyleX$CreateTheme,
+  defineConsts: StyleX$DefineConsts,
+  defineVars: StyleX$DefineVars,
+  defaultMarker: () => MapNamespace<
+    $ReadOnly<{
+      marker: 'default-marker',
+    }>,
+  >,
+  defineMarker: StyleX$DefineMarker,
+  firstThatWorks: <T: string | number>(
+    ...v: $ReadOnlyArray<T>
+  ) => $ReadOnlyArray<T>,
+  keyframes: (keyframes: Keyframes) => string,
+  positionTry: (positionTry: PositionTry) => string,
+  props: (
+    this: ?mixed,
+    ...styles: $ReadOnlyArray<
+      StyleXArray<
+        ?CompiledStyles | boolean | $ReadOnly<[CompiledStyles, InlineStyles]>,
+      >,
+    >
+  ) => $ReadOnly<{
+    className?: string,
+    'data-style-src'?: string,
+    style?: $ReadOnly<{ [string]: string | number }>,
+  }>,
+  viewTransitionClass: (viewTransitionClass: ViewTransitionClass) => string,
+  types: typeof types,
+  when: typeof when,
+  __customProperties?: { [string]: mixed },
+  ...
+};
+
+declare export const legacyMerge: IStyleX;

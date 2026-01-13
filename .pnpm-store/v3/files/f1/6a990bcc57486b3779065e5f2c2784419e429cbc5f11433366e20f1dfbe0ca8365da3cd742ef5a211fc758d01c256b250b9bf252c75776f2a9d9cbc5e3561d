@@ -1,0 +1,22 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type { NodePath } from '@babel/traverse';
+
+import * as t from '@babel/types';
+import StateManager from '../utils/state-manager';
+/**
+ * Transforms calls to `stylex.defineMarker()` (or imported `defineMarker()`)
+ * into an object: { $$css: true, [hash]: hash } where `hash` is generated from
+ * the file path and the export name.
+ */
+declare export default function transformStyleXDefineMarker(
+  path: NodePath<t.CallExpression>,
+  state: StateManager,
+): void;

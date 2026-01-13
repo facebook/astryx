@@ -1,0 +1,1002 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ * @flow strict
+ */
+
+import * as t from '../types';
+
+export type Node = t.Node;
+
+declare var traverse: {
+  <S>(
+    parent: ?Node | $ReadOnlyArray<Node>,
+    opts: TraverseOptions<S>,
+    scope: Scope | void,
+    state: S,
+    parentPath?: NodePath<>,
+  ): void,
+  (
+    parent: ?Node | $ReadOnlyArray<Node>,
+    opts?: TraverseOptions<>,
+    scope?: Scope,
+    state?: mixed,
+    parentPath?: NodePath<>,
+  ): void,
+
+  visitors: typeof visitors,
+  verify: typeof visitors.verify,
+  explode: typeof visitors.explode,
+};
+
+export default traverse;
+
+declare export var visitors: {
+  /**
+   * `explode()` will take a `Visitor` object with all of the various shorthands
+   * that we support, and validates & normalizes it into a common format, ready
+   * to be used in traversal.
+   *
+   * The various shorthands are:
+   * - `Identifier() { ... }` -> `Identifier: { enter() { ... } }`
+   * - `"Identifier|NumericLiteral": { ... }` -> `Identifier: { ... }, NumericLiteral: { ... }`
+   * - Aliases in `@babel/types`: e.g. `Property: { ... }` -> `ObjectProperty: { ... }, ClassProperty: { ... }`
+   *
+   * Other normalizations are:
+   * - Visitors of virtual types are wrapped, so that they are only visited when their dynamic check passes
+   * - `enter` and `exit` functions are wrapped in arrays, to ease merging of visitors
+   */
+  +explode: <S: { +[string]: mixed } = { +[string]: mixed }>(
+    visitor: Visitor<S>,
+  ) => { [key: $Keys<t._NodeMap>]: ?VisitNodeObject<S, Node> },
+  +verify: (visitor: Visitor<>) => void,
+  +merge: <S = {}>(visitors: Array<Visitor<S>>, states?: S[]) => Visitor<mixed>,
+};
+
+// TODO: Change to object type
+export type TraverseOptions<S: Node = Node> = $ReadOnly<{
+  ...Visitor<S>,
+  scope?: Scope | void,
+  noScope?: boolean | void,
+}>;
+
+// TODO: Is this possible??
+// export type ArrayKeys<T> = keyof { [P in keyof T as T[P] extends any[] ? P : never]: P };
+
+declare export class Scope {
+  constructor(path: NodePath<>, parentScope?: Scope): Scope;
+  path: NodePath<>;
+  block: Node;
+  parentBlock: Node;
+  parent: Scope;
+  hub: HubInterface;
+  bindings: { [name: string]: Binding };
+
+  /** Traverse node with current scope and path. */
+  traverse<S>(node: Node | Node[], opts: TraverseOptions<S>, state: S): void;
+  traverse(node: Node | Node[], opts?: TraverseOptions<>, state?: any): void;
+
+  /** Generate a unique identifier and add it to the current scope. */
+  generateDeclaredUidIdentifier(name?: string): t.Identifier;
+
+  /** Generate a unique identifier. */
+  generateUidIdentifier(name?: string): t.Identifier;
+
+  /** Generate a unique `_id1` binding. */
+  generateUid(name?: string): string;
+
+  /** Generate a unique identifier based on a node. */
+  generateUidIdentifierBasedOnNode(
+    parent: Node,
+    defaultName?: string,
+  ): t.Identifier;
+
+  /**
+   * Determine whether evaluating the specific input `node` is a consequenceless reference. ie.
+   * evaluating it wont result in potentially arbitrary code from being ran. The following are
+   * whitelisted and determined not to cause side effects:
+   *
+   *  - `this` expressions
+   *  - `super` expressions
+   *  - Bound identifiers
+   */
+  isStatic(node: Node): boolean;
+
+  /** Possibly generate a memoised identifier if it is not static and has consequences. */
+  maybeGenerateMemoised(node: Node, dontPush?: boolean): t.Identifier;
+
+  checkBlockScopedCollisions(
+    local: Binding,
+    kind: BindingKind,
+    name: string,
+    id: object,
+  ): void;
+
+  rename(oldName: string, newName?: string, block?: Node): void;
+
+  dump(): void;
+
+  toArray(node: Node, i?: number): Node;
+
+  registerDeclaration(path: NodePath<>): void;
+
+  buildUndefinedNode(): Node;
+
+  registerConstantViolation(path: NodePath<>): void;
+
+  registerBinding(
+    kind: string,
+    path: NodePath<>,
+    bindingPath?: NodePath<>,
+  ): void;
+
+  addGlobal(node: Node): void;
+
+  hasUid(name: string): boolean;
+
+  hasGlobal(name: string): boolean;
+
+  hasReference(name: string): boolean;
+
+  isPure(node: Node, constantsOnly?: boolean): boolean;
+
+  setData(key: string, val: any): any;
+
+  getData(key: string): any;
+
+  removeData(key: string): void;
+
+  crawl(): void;
+
+  push(opts: {
+    id: t.LVal,
+    init?: t.Expression | void,
+    unique?: boolean | void,
+    kind?: 'var' | 'let' | 'const' | void,
+  }): void;
+
+  getProgramParent(): Scope;
+
+  getFunctionParent(): Scope | null;
+
+  getBlockParent(): Scope;
+
+  /** Walks the scope tree and gathers **all** bindings. */
+  getAllBindings<T: string>(...kinds: $ReadOnlyArray<T>): {
+    +[key: T]: Binding,
+  };
+
+  bindingIdentifierEquals(name: string, node: Node): boolean;
+
+  getBinding(name: string): Binding | void;
+
+  getOwnBinding(name: string): Binding | void;
+
+  getBindingIdentifier(name: string): t.Identifier;
+
+  getOwnBindingIdentifier(name: string): t.Identifier;
+
+  hasOwnBinding(name: string): boolean;
+
+  hasBinding(name: string, noGlobals?: boolean): boolean;
+
+  parentHasBinding(name: string, noGlobals?: boolean): boolean;
+
+  /** Move a binding of `name` to another `scope`. */
+  moveBindingTo(name: string, scope: Scope): void;
+
+  removeOwnBinding(name: string): void;
+
+  removeBinding(name: string): void;
+}
+
+export type BindingKind =
+  | 'var'
+  | 'let'
+  | 'const'
+  | 'module'
+  | 'hoisted'
+  | 'param'
+  | 'local'
+  | 'unknown';
+
+declare export class Binding {
+  constructor(opts: {
+    identifier: t.Identifier,
+    scope: Scope,
+    path: NodePath<>,
+    kind: BindingKind,
+  }): Binding;
+  identifier: t.Identifier;
+  scope: Scope;
+  path: NodePath<>;
+  kind: BindingKind;
+  referenced: boolean;
+  references: number;
+  referencePaths: $ReadOnlyArray<NodePath<>>;
+  constant: boolean;
+  constantViolations: $ReadOnlyArray<NodePath<>>;
+  hasDeoptedValue?: boolean;
+  hasValue: ?boolean;
+  value?: any;
+
+  deopValue(): void;
+  setValue(value: any): void;
+  clearValue(): void;
+
+  reassign(path: NodePath<>): void;
+  reference(path: NodePath<>): void;
+  dereference(): void;
+}
+
+// TODO: Change to object type
+type _VisitorNodeKeys<S: object> = {
+  +[K in keyof t._NodeMap]: ?VisitNode<S, t._NodeMap[K]>,
+};
+type _VisitorAliases<S: object> = {
+  +[K in keyof t.Aliases]: ?VisitNode<S, t.Aliases[K]>,
+};
+
+export type Visitor<S: object = object> = $ReadOnly<
+  Partial<{
+    ...VisitNodeObject<S, Node>,
+    ..._VisitorNodeKeys<S>,
+    ..._VisitorAliases<S>,
+  }>,
+>;
+
+export type VisitNode<S, P: Node> =
+  | VisitNodeFunction<S, P>
+  | VisitNodeObject<S, P>;
+
+export type VisitNodeFunction<S, P: Node> = (
+  this: S,
+  path: NodePath<P>,
+  state: S,
+) => void;
+
+type NodeType = Node['type'] | $Keys<t.Aliases>;
+
+// TODO: Change to object type??
+export type VisitNodeObject<S, P: Node> = {
+  enter?: VisitNodeFunction<S, P> | void,
+  exit?: VisitNodeFunction<S, P> | void,
+  denylist?: NodeType[] | void,
+  /**
+   * @deprecated will be removed in Babel 8
+   */
+  // blacklist?: NodeType[] | void,
+};
+
+type _NodeToTuple<T: Node | $ReadOnlyArray<Node>> =
+  T extends $ReadOnlyArray<Node> ? T : [T];
+
+export type NodePaths<T: Node | $ReadOnlyArray<Node>> = $TupleMap<
+  _NodeToTuple<T>,
+  <TNode: Node>(TNode) => NodePath<TNode>,
+>;
+
+type TParentPath<T: Node> = T extends t.Program ? null : NodePath<>;
+
+interface object {}
+
+declare export class NodePath<+T: Node = Node> {
+  constructor(hub: Hub, parent: Node): NodePath<T>;
+  parent: Node;
+  hub: Hub;
+  contexts: $ReadOnlyArray<TraversalContext>;
+  data: object;
+  shouldSkip: boolean;
+  shouldStop: boolean;
+  removed: boolean;
+  state: any;
+  opts: object;
+  skipKeys: object;
+  parentPath: TParentPath<T>;
+  context: TraversalContext;
+  container: object | $ReadOnlyArray<object>;
+  listKey: string;
+  inList: boolean;
+  parentKey: string;
+  key: string | number;
+  node: T;
+  scope: Scope;
+
+  type: T extends null | void
+    ? void
+    : T extends Node
+      ? T['type']
+      : string | void;
+
+  typeAnnotation: { ... };
+
+  getScope(scope: Scope): Scope;
+
+  setData(key: string, val: any): any;
+
+  getData(key: string, def?: any): any;
+
+  hasNode(this: NodePath<>): boolean; // this is NodePath<$NonMaybeType<this['node']>>;
+
+  buildCodeFrameError<TError: Error>(
+    msg: string,
+    Error?: Class<TError>,
+  ): TError;
+
+  traverse<T: object>(visitor: Visitor<T>, state?: T): void;
+  // traverse(visitor: Visitor<>): void;
+
+  set(key: string, node: Node): void;
+
+  getPathLocation(): string;
+
+  // Example: https://github.com/babel/babel/blob/63204ae51e020d84a5b246312f5eeb4d981ab952/packages/babel-traverse/src/path/modification.js#L83
+  debug(buildMessage: () => string): void;
+
+  static get<C: Node, K: $Keys<C>>(opts: {
+    hub: HubInterface,
+    parentPath: NodePath<> | null,
+    parent: Node,
+    container: C,
+    listKey?: string | void,
+    key: K,
+  }): NodePath<C[K]>;
+
+  //#region ------------------------- ancestry -------------------------
+  /**
+   * Starting at the parent path of the current `NodePath` and going up the
+   * tree, return the first `NodePath` that causes the provided `callback`
+   * to return a truthy value, or `null` if the `callback` never returns a
+   * truthy value.
+   */
+  findParent(callback: (path: NodePath<>) => boolean): NodePath<> | null;
+
+  /**
+   * Starting at current `NodePath` and going up the tree, return the first
+   * `NodePath` that causes the provided `callback` to return a truthy value,
+   * or `null` if the `callback` never returns a truthy value.
+   */
+  find(callback: (path: NodePath<>) => boolean): NodePath<> | null;
+
+  /** Get the parent function of the current path. */
+  getFunctionParent(): NodePath<t.Function> | null;
+
+  /** Walk up the tree until we hit a parent node path in a list. */
+  getStatementParent(): NodePath<t.Statement> | null;
+
+  /**
+   * Get the deepest common ancestor and then from it, get the earliest relationship path
+   * to that ancestor.
+   *
+   * Earliest is defined as being "before" all the other nodes in terms of list container
+   * position and visiting key.
+   */
+  getEarliestCommonAncestorFrom(paths: $ReadOnlyArray<NodePath<>>): NodePath<>;
+
+  /** Get the earliest path in the tree where the provided `paths` intersect. */
+  getDeepestCommonAncestorFrom(
+    paths: $ReadOnlyArray<NodePath<>>,
+    filter?: (
+      deepest: Node,
+      i: number,
+      ancestries: $ReadOnlyArray<NodePath<>>,
+    ) => NodePath<>,
+  ): NodePath<>;
+
+  /**
+   * Build an array of node paths containing the entire ancestry of the current node path.
+   *
+   * NOTE: The current node path is included in this.
+   */
+  getAncestry(): $ReadOnlyArray<NodePath<>>;
+
+  /**
+   * A helper to find if `this` path is an ancestor of `maybeDescendant`
+   */
+  isAncestor(maybeDescendant: NodePath<>): boolean;
+
+  /**
+   * A helper to find if `this` path is a descendant of `maybeAncestor`
+   */
+  isDescendant(maybeAncestor: NodePath<>): boolean;
+
+  inType(...candidateTypes: Array<string>): boolean;
+  //#endregion
+
+  //#region ------------------------- inference -------------------------
+  /** Infer the type of the current `NodePath`. */
+  getTypeAnnotation(): t.FlowType;
+
+  isBaseType(baseName: string, soft?: boolean): boolean;
+
+  couldBeBaseType(name: string): boolean;
+
+  baseTypeStrictlyMatches(right: NodePath<>): boolean;
+
+  isGenericType(genericName: string): boolean;
+  //#endregion
+
+  //#region ------------------------- replacement -------------------------
+  /**
+   * Replace a node with an array of multiple. This method performs the following steps:
+   *
+   *  - Inherit the comments of first provided node with that of the current node.
+   *  - Insert the provided nodes after the current node.
+   *  - Remove the current node.
+   */
+  replaceWithMultiple<Nodes: $ReadOnlyArray<Node>>(
+    nodes: Nodes,
+  ): NodePaths<Nodes>;
+
+  /**
+   * Parse a string as an expression and replace the current node with the result.
+   *
+   * NOTE: This is typically not a good idea to use. Building source strings when
+   * transforming ASTs is an antipattern and SHOULD NOT be encouraged. Even if it's
+   * easier to use, your transforms will be extremely brittle.
+   */
+  replaceWithSourceString(replacement: any): [NodePath<>];
+
+  /** Replace the current node with another. */
+  replaceWith<T: Node>(replacement: T | NodePath<T>): [NodePath<T>];
+
+  /**
+   * This method takes an array of statements nodes and then explodes it
+   * into expressions. This method retains completion records which is
+   * extremely important to retain original semantics.
+   */
+  replaceExpressionWithStatements<Nodes: $ReadOnlyArray<Node>>(
+    nodes: Nodes,
+  ): NodePaths<Nodes>;
+
+  replaceInline<Nodes: Node | $ReadOnlyArray<Node>>(
+    nodes: Nodes,
+  ): NodePaths<Nodes>;
+  //#endregion
+
+  //#region ------------------------- evaluation -------------------------
+  /**
+   * Walk the input `node` and statically evaluate if it's truthy.
+   *
+   * Returning `true` when we're sure that the expression will evaluate to a
+   * truthy value, `false` if we're sure that it will evaluate to a falsy
+   * value and `undefined` if we aren't sure. Because of this please do not
+   * rely on coercion when using this method and check with === if it's false.
+   */
+  evaluateTruthy(): boolean;
+
+  /**
+   * Walk the input `node` and statically evaluate it.
+   *
+   * Returns an object in the form `{ confident, value }`. `confident` indicates
+   * whether or not we had to drop out of evaluating the expression because of
+   * hitting an unknown node that we couldn't confidently find the value of.
+   *
+   * Example:
+   *
+   *   t.evaluate(parse("5 + 5")) // { confident: true, value: 10 }
+   *   t.evaluate(parse("!true")) // { confident: true, value: false }
+   *   t.evaluate(parse("foo + foo")) // { confident: false, value: undefined }
+   */
+  evaluate(): { confident: boolean, value: any };
+  //#endregion
+
+  //#region ------------------------- introspection -------------------------
+  /**
+   * Match the current node if it matches the provided `pattern`.
+   *
+   * For example, given the match `React.createClass` it would match the
+   * parsed nodes of `React.createClass` and `React["createClass"]`.
+   */
+  matchesPattern(pattern: string, allowPartial?: boolean): boolean;
+
+  /**
+   * Check whether we have the input `key`. If the `key` references an array then we check
+   * if the array has any items, otherwise we just check if it's falsy.
+   */
+  has(key: string): boolean;
+
+  isStatic(): boolean;
+
+  /** Alias of `has`. */
+  is(key: string): boolean;
+
+  /** Opposite of `has`. */
+  isnt(key: string): boolean;
+
+  /** Check whether the path node `key` strict equals `value`. */
+  equals(key: string, value: any): boolean;
+
+  /**
+   * Check the type against our stored internal type of the node. This is handy when a node has
+   * been removed yet we still internally know the type and need it to calculate node replacement.
+   */
+  isNodeType(type: string): boolean;
+
+  /**
+   * This checks whether or not we're in one of the following positions:
+   *
+   *   for (KEY in right);
+   *   for (KEY;;);
+   *
+   * This is because these spots allow VariableDeclarations AND normal expressions so we need
+   * to tell the path replacement that it's ok to replace this with an expression.
+   */
+  canHaveVariableDeclarationOrExpression(): boolean;
+
+  /**
+   * This checks whether we are swapping an arrow function's body between an
+   * expression and a block statement (or vice versa).
+   *
+   * This is because arrow functions may implicitly return an expression, which
+   * is the same as containing a block statement.
+   */
+  canSwapBetweenExpressionAndStatement(replacement: Node): boolean;
+
+  /** Check whether the current path references a completion record */
+  isCompletionRecord(allowInsideFunction?: boolean): boolean;
+
+  /**
+   * Check whether or not the current `key` allows either a single statement or block statement
+   * so we can explode it if necessary.
+   */
+  isStatementOrBlock(): boolean;
+
+  /** Check if the currently assigned path references the `importName` of `moduleSource`. */
+  referencesImport(moduleSource: string, importName: string): boolean;
+
+  /** Get the source code associated with this node. */
+  getSource(): string;
+
+  /** Check if the current path will maybe execute before another path */
+  willIMaybeExecuteBefore(path: NodePath<>): boolean;
+  //#endregion
+
+  //#region ------------------------- context -------------------------
+  call(key: string): boolean;
+
+  isBlacklisted(): boolean;
+
+  visit(): boolean;
+
+  skip(): void;
+
+  skipKey(key: string): void;
+
+  stop(): void;
+
+  setScope(): void;
+
+  setContext(context?: TraversalContext): this;
+
+  popContext(): void;
+
+  pushContext(context: TraversalContext): void;
+  //#endregion
+
+  //#region ------------------------- removal -------------------------
+  remove(): void;
+  //#endregion
+
+  //#region ------------------------- modification -------------------------
+  /** Insert the provided nodes before the current one. */
+  insertBefore<Nodes: Node | $ReadOnlyArray<Node>>(
+    nodes: Nodes,
+  ): NodePaths<Nodes>;
+
+  /**
+   * Insert the provided nodes after the current one. When inserting nodes after an
+   * expression, ensure that the completion record is correct by pushing the current node.
+   */
+  insertAfter<Nodes: Node | $ReadOnlyArray<Node>>(
+    nodes: Nodes,
+  ): NodePaths<Nodes>;
+
+  /** Update all sibling node paths after `fromIndex` by `incrementBy`. */
+  updateSiblingKeys(fromIndex: number, incrementBy: number): void;
+
+  /**
+   * Insert child nodes at the start of the current node.
+   * @param listKey - The key at which the child nodes are stored (usually body).
+   * @param nodes - the nodes to insert.
+   */
+  unshiftContainer<Nodes: Node | $ReadOnlyArray<Node>>(
+    listKey: $Keys<T>,
+    nodes: Nodes,
+  ): NodePaths<Nodes>;
+
+  /**
+   * Insert child nodes at the end of the current node.
+   * @param listKey - The key at which the child nodes are stored (usually body).
+   * @param nodes - the nodes to insert.
+   */
+  pushContainer<Nodes: Node | $ReadOnlyArray<Node>>(
+    listKey: $Keys<T>,
+    nodes: Nodes,
+  ): NodePaths<Nodes>;
+
+  /** Hoist the current node to the highest scope possible and return a UID referencing it. */
+  hoist(scope: Scope): void;
+  //#endregion
+
+  //#region ------------------------- family -------------------------
+  getOpposite(): NodePath<>;
+
+  getCompletionRecords(): Array<NodePath<>>;
+
+  getSibling(key: string | number): NodePath<>;
+  getPrevSibling(): NodePath<>;
+  getNextSibling(): NodePath<>;
+  getAllPrevSiblings(): Array<NodePath<>>;
+  getAllNextSiblings(): Array<NodePath<>>;
+
+  get<K: $Keys<T>>(
+    key: K,
+    context?: boolean | TraversalContext,
+  ): NodePathResult<$NonMaybeType<T[K]>> | T[K] extends null | void
+    ? null
+    : empty;
+  // get(key: string, context?: boolean | TraversalContext): NodePath | NodePath[];
+
+  getBindingIdentifiers(duplicates: true): Record<string, t.Identifier[]>;
+  getBindingIdentifiers(duplicates?: false): Record<string, t.Identifier>;
+  getBindingIdentifiers(
+    duplicates?: boolean,
+  ): Record<string, t.Identifier | t.Identifier[]>;
+
+  getOuterBindingIdentifiers(duplicates: true): Record<string, t.Identifier[]>;
+  getOuterBindingIdentifiers(duplicates?: false): Record<string, t.Identifier>;
+  getOuterBindingIdentifiers(
+    duplicates?: boolean,
+  ): Record<string, t.Identifier | t.Identifier[]>;
+
+  getBindingIdentifierPaths(
+    duplicates: true,
+    outerOnly?: boolean,
+  ): Record<string, Array<NodePath<t.Identifier>>>;
+  getBindingIdentifierPaths(
+    duplicates?: false,
+    outerOnly?: boolean,
+  ): Record<string, NodePath<t.Identifier>>;
+  getBindingIdentifierPaths(
+    duplicates?: boolean,
+    outerOnly?: boolean,
+  ): Record<string, NodePath<t.Identifier> | Array<NodePath<t.Identifier>>>;
+
+  getOuterBindingIdentifierPaths(
+    duplicates: true,
+  ): Record<string, Array<NodePath<t.Identifier>>>;
+  getOuterBindingIdentifierPaths(
+    duplicates?: false,
+  ): Record<string, NodePath<t.Identifier>>;
+  getOuterBindingIdentifierPaths(
+    duplicates?: boolean,
+    outerOnly?: boolean,
+  ): Record<string, NodePath<t.Identifier> | Array<NodePath<t.Identifier>>>;
+  //#endregion
+
+  //#region ------------------------- comments -------------------------
+  /** Share comments amongst siblings. */
+  shareCommentsWithSiblings(): void;
+
+  addComment(type: string, content: string, line?: boolean): void;
+
+  /** Give node `comments` of the specified `type`. */
+  addComments(type: string, comments: any[]): void;
+  //#endregion
+
+  //#region ------------------------- isXXX -------------------------
+  // isAnyTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.AnyTypeAnnotation>;
+  // isArrayExpression(props?: object | null): boolean; // this is NodePath<t.ArrayExpression>;
+  // isArrayPattern(props?: object | null): boolean; // this is NodePath<t.ArrayPattern>;
+  // isArrayTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.ArrayTypeAnnotation>;
+  // isArrowFunctionExpression(props?: object | null): boolean; // this is NodePath<t.ArrowFunctionExpression>;
+  // isAssignmentExpression(props?: object | null): boolean; // this is NodePath<t.AssignmentExpression>;
+  // isAssignmentPattern(props?: object | null): boolean; // this is NodePath<t.AssignmentPattern>;
+  // isAwaitExpression(props?: object | null): boolean; // this is NodePath<t.AwaitExpression>;
+  // isBigIntLiteral(props?: object | null): boolean; // this is NodePath<t.BigIntLiteral>;
+  // isBinary(props?: object | null): boolean; // this is NodePath<t.Binary>;
+  // isBinaryExpression(props?: object | null): boolean; // this is NodePath<t.BinaryExpression>;
+  // isBindExpression(props?: object | null): boolean; // this is NodePath<t.BindExpression>;
+  // isBlock(props?: object | null): boolean; // this is NodePath<t.Block>;
+  // isBlockParent(props?: object | null): boolean; // this is NodePath<t.BlockParent>;
+  // isBlockStatement(props?: object | null): boolean; // this is NodePath<t.BlockStatement>;
+  // isBooleanLiteral(props?: object | null): boolean; // this is NodePath<t.BooleanLiteral>;
+  // isBooleanLiteralTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.BooleanLiteralTypeAnnotation>;
+  // isBooleanTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.BooleanTypeAnnotation>;
+  // isBreakStatement(props?: object | null): boolean; // this is NodePath<t.BreakStatement>;
+  // isCallExpression(props?: object | null): boolean; // this is NodePath<t.CallExpression>;
+  // isCatchClause(props?: object | null): boolean; // this is NodePath<t.CatchClause>;
+  // isClass(props?: object | null): boolean; // this is NodePath<t.Class>;
+  // isClassBody(props?: object | null): boolean; // this is NodePath<t.ClassBody>;
+  // isClassDeclaration(props?: object | null): boolean; // this is NodePath<t.ClassDeclaration>;
+  // isClassExpression(props?: object | null): boolean; // this is NodePath<t.ClassExpression>;
+  // isClassImplements(props?: object | null): boolean; // this is NodePath<t.ClassImplements>;
+  // isClassMethod(props?: object | null): boolean; // this is NodePath<t.ClassMethod>;
+  // isClassPrivateMethod(props?: object | null): boolean; // this is NodePath<t.ClassPrivateMethod>;
+  // isClassPrivateProperty(props?: object | null): boolean; // this is NodePath<t.ClassPrivateProperty>;
+  // isClassProperty(props?: object | null): boolean; // this is NodePath<t.ClassProperty>;
+  // isCompletionStatement(props?: object | null): boolean; // this is NodePath<t.CompletionStatement>;
+  // isConditional(props?: object | null): boolean; // this is NodePath<t.Conditional>;
+  // isConditionalExpression(props?: object | null): boolean; // this is NodePath<t.ConditionalExpression>;
+  // isContinueStatement(props?: object | null): boolean; // this is NodePath<t.ContinueStatement>;
+  // isDebuggerStatement(props?: object | null): boolean; // this is NodePath<t.DebuggerStatement>;
+  // isDeclaration(props?: object | null): boolean; // this is NodePath<t.Declaration>;
+  // isDeclareClass(props?: object | null): boolean; // this is NodePath<t.DeclareClass>;
+  // isDeclareExportAllDeclaration(props?: object | null): boolean; // this is NodePath<t.DeclareExportAllDeclaration>;
+  // isDeclareExportDeclaration(props?: object | null): boolean; // this is NodePath<t.DeclareExportDeclaration>;
+  // isDeclareFunction(props?: object | null): boolean; // this is NodePath<t.DeclareFunction>;
+  // isDeclareInterface(props?: object | null): boolean; // this is NodePath<t.DeclareInterface>;
+  // isDeclareModule(props?: object | null): boolean; // this is NodePath<t.DeclareModule>;
+  // isDeclareModuleExports(props?: object | null): boolean; // this is NodePath<t.DeclareModuleExports>;
+  // isDeclareOpaqueType(props?: object | null): boolean; // this is NodePath<t.DeclareOpaqueType>;
+  // isDeclareTypeAlias(props?: object | null): boolean; // this is NodePath<t.DeclareTypeAlias>;
+  // isDeclareVariable(props?: object | null): boolean; // this is NodePath<t.DeclareVariable>;
+  // isDeclaredPredicate(props?: object | null): boolean; // this is NodePath<t.DeclaredPredicate>;
+  // isDecorator(props?: object | null): boolean; // this is NodePath<t.Decorator>;
+  // isDirective(props?: object | null): boolean; // this is NodePath<t.Directive>;
+  // isDirectiveLiteral(props?: object | null): boolean; // this is NodePath<t.DirectiveLiteral>;
+  // isDoExpression(props?: object | null): boolean; // this is NodePath<t.DoExpression>;
+  // isDoWhileStatement(props?: object | null): boolean; // this is NodePath<t.DoWhileStatement>;
+  // isEmptyStatement(props?: object | null): boolean; // this is NodePath<t.EmptyStatement>;
+  // isEmptyTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.EmptyTypeAnnotation>;
+  // isExistsTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.ExistsTypeAnnotation>;
+  // isExportAllDeclaration(props?: object | null): boolean; // this is NodePath<t.ExportAllDeclaration>;
+  // isExportDeclaration(props?: object | null): boolean; // this is NodePath<t.ExportDeclaration>;
+  // isExportDefaultDeclaration(props?: object | null): boolean; // this is NodePath<t.ExportDefaultDeclaration>;
+  // isExportDefaultSpecifier(props?: object | null): boolean; // this is NodePath<t.ExportDefaultSpecifier>;
+  // isExportNamedDeclaration(props?: object | null): boolean; // this is NodePath<t.ExportNamedDeclaration>;
+  // isExportNamespaceSpecifier(props?: object | null): boolean; // this is NodePath<t.ExportNamespaceSpecifier>;
+  // isExportSpecifier(props?: object | null): boolean; // this is NodePath<t.ExportSpecifier>;
+  // isExpression(props?: object | null): boolean; // this is NodePath<t.Expression>;
+  // isExpressionStatement(props?: object | null): boolean; // this is NodePath<t.ExpressionStatement>;
+  // isExpressionWrapper(props?: object | null): boolean; // this is NodePath<t.ExpressionWrapper>;
+  // isFile(props?: object | null): boolean; // this is NodePath<t.File>;
+  // isFlow(props?: object | null): boolean; // this is NodePath<t.Flow>;
+  // isFlowBaseAnnotation(props?: object | null): boolean; // this is NodePath<t.FlowBaseAnnotation>;
+  // isFlowDeclaration(props?: object | null): boolean; // this is NodePath<t.FlowDeclaration>;
+  // isFlowPredicate(props?: object | null): boolean; // this is NodePath<t.FlowPredicate>;
+  // isFlowType(props?: object | null): boolean; // this is NodePath<t.FlowType>;
+  // isFor(props?: object | null): boolean; // this is NodePath<t.For>;
+  // isForInStatement(props?: object | null): boolean; // this is NodePath<t.ForInStatement>;
+  // isForOfStatement(props?: object | null): boolean; // this is NodePath<t.ForOfStatement>;
+  // isForStatement(props?: object | null): boolean; // this is NodePath<t.ForStatement>;
+  // isForXStatement(props?: object | null): boolean; // this is NodePath<t.ForXStatement>;
+  // isFunction(props?: object | null): boolean; // this is NodePath<t.Function>;
+  // isFunctionDeclaration(props?: object | null): boolean; // this is NodePath<t.FunctionDeclaration>;
+  // isFunctionExpression(props?: object | null): boolean; // this is NodePath<t.FunctionExpression>;
+  // isFunctionParent(props?: object | null): boolean; // this is NodePath<t.FunctionParent>;
+  // isFunctionTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.FunctionTypeAnnotation>;
+  // isFunctionTypeParam(props?: object | null): boolean; // this is NodePath<t.FunctionTypeParam>;
+  // isGenericTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.GenericTypeAnnotation>;
+  // isIdentifier(props?: object | null): boolean; // this is NodePath<t.Identifier>;
+  // isIfStatement(props?: object | null): boolean; // this is NodePath<t.IfStatement>;
+  // isImmutable(props?: object | null): boolean; // this is NodePath<t.Immutable>;
+  // isImport(props?: object | null): boolean; // this is NodePath<t.Import>;
+  // isImportDeclaration(props?: object | null): boolean; // this is NodePath<t.ImportDeclaration>;
+  // isImportDefaultSpecifier(props?: object | null): boolean; // this is NodePath<t.ImportDefaultSpecifier>;
+  // isImportNamespaceSpecifier(props?: object | null): boolean; // this is NodePath<t.ImportNamespaceSpecifier>;
+  // isImportSpecifier(props?: object | null): boolean; // this is NodePath<t.ImportSpecifier>;
+  // isInferredPredicate(props?: object | null): boolean; // this is NodePath<t.InferredPredicate>;
+  // isInterfaceDeclaration(props?: object | null): boolean; // this is NodePath<t.InterfaceDeclaration>;
+  // isInterfaceExtends(props?: object | null): boolean; // this is NodePath<t.InterfaceExtends>;
+  // isInterfaceTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.InterfaceTypeAnnotation>;
+  // isInterpreterDirective(props?: object | null): boolean; // this is NodePath<t.InterpreterDirective>;
+  // isIntersectionTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.IntersectionTypeAnnotation>;
+  // isJSX(props?: object | null): boolean; // this is NodePath<t.JSX>;
+  // isJSXAttribute(props?: object | null): boolean; // this is NodePath<t.JSXAttribute>;
+  // isJSXClosingElement(props?: object | null): boolean; // this is NodePath<t.JSXClosingElement>;
+  // isJSXClosingFragment(props?: object | null): boolean; // this is NodePath<t.JSXClosingFragment>;
+  // isJSXElement(props?: object | null): boolean; // this is NodePath<t.JSXElement>;
+  // isJSXEmptyExpression(props?: object | null): boolean; // this is NodePath<t.JSXEmptyExpression>;
+  // isJSXExpressionContainer(props?: object | null): boolean; // this is NodePath<t.JSXExpressionContainer>;
+  // isJSXFragment(props?: object | null): boolean; // this is NodePath<t.JSXFragment>;
+  // isJSXIdentifier(props?: object | null): boolean; // this is NodePath<t.JSXIdentifier>;
+  // isJSXMemberExpression(props?: object | null): boolean; // this is NodePath<t.JSXMemberExpression>;
+  // isJSXNamespacedName(props?: object | null): boolean; // this is NodePath<t.JSXNamespacedName>;
+  // isJSXOpeningElement(props?: object | null): boolean; // this is NodePath<t.JSXOpeningElement>;
+  // isJSXOpeningFragment(props?: object | null): boolean; // this is NodePath<t.JSXOpeningFragment>;
+  // isJSXSpreadAttribute(props?: object | null): boolean; // this is NodePath<t.JSXSpreadAttribute>;
+  // isJSXSpreadChild(props?: object | null): boolean; // this is NodePath<t.JSXSpreadChild>;
+  // isJSXText(props?: object | null): boolean; // this is NodePath<t.JSXText>;
+  // isLVal(props?: object | null): boolean; // this is NodePath<t.LVal>;
+  // isLabeledStatement(props?: object | null): boolean; // this is NodePath<t.LabeledStatement>;
+  // isLiteral(props?: object | null): boolean; // this is NodePath<t.Literal>;
+  // isLogicalExpression(props?: object | null): boolean; // this is NodePath<t.LogicalExpression>;
+  // isLoop(props?: object | null): boolean; // this is NodePath<t.Loop>;
+  // isMemberExpression(props?: object | null): boolean; // this is NodePath<t.MemberExpression>;
+  // isMetaProperty(props?: object | null): boolean; // this is NodePath<t.MetaProperty>;
+  // isMethod(props?: object | null): boolean; // this is NodePath<t.Method>;
+  // isMixedTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.MixedTypeAnnotation>;
+  // isModuleDeclaration(props?: object | null): boolean; // this is NodePath<t.ModuleDeclaration>;
+  // isModuleSpecifier(props?: object | null): boolean; // this is NodePath<t.ModuleSpecifier>;
+  // isNewExpression(props?: object | null): boolean; // this is NodePath<t.NewExpression>;
+  // isNoop(props?: object | null): boolean; // this is NodePath<t.Noop>;
+  // isNullLiteral(props?: object | null): boolean; // this is NodePath<t.NullLiteral>;
+  // isNullLiteralTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.NullLiteralTypeAnnotation>;
+  // isNullableTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.NullableTypeAnnotation>;
+  // isNumberLiteralTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.NumberLiteralTypeAnnotation>;
+  // isNumberTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.NumberTypeAnnotation>;
+  // isNumericLiteral(props?: object | null): boolean; // this is NodePath<t.NumericLiteral>;
+  // isObjectExpression(props?: object | null): boolean; // this is NodePath<t.ObjectExpression>;
+  // isObjectMember(props?: object | null): boolean; // this is NodePath<t.ObjectMember>;
+  // isObjectMethod(props?: object | null): boolean; // this is NodePath<t.ObjectMethod>;
+  // isObjectPattern(props?: object | null): boolean; // this is NodePath<t.ObjectPattern>;
+  // isObjectProperty(props?: object | null): boolean; // this is NodePath<t.ObjectProperty>;
+  // isObjectTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.ObjectTypeAnnotation>;
+  // isObjectTypeCallProperty(props?: object | null): boolean; // this is NodePath<t.ObjectTypeCallProperty>;
+  // isObjectTypeIndexer(props?: object | null): boolean; // this is NodePath<t.ObjectTypeIndexer>;
+  // isObjectTypeInternalSlot(props?: object | null): boolean; // this is NodePath<t.ObjectTypeInternalSlot>;
+  // isObjectTypeProperty(props?: object | null): boolean; // this is NodePath<t.ObjectTypeProperty>;
+  // isObjectTypeSpreadProperty(props?: object | null): boolean; // this is NodePath<t.ObjectTypeSpreadProperty>;
+  // isOpaqueType(props?: object | null): boolean; // this is NodePath<t.OpaqueType>;
+  // isOptionalCallExpression(props?: object | null): boolean; // this is NodePath<t.OptionalCallExpression>;
+  // isOptionalMemberExpression(props?: object | null): boolean; // this is NodePath<t.OptionalMemberExpression>;
+  // isParenthesizedExpression(props?: object | null): boolean; // this is NodePath<t.ParenthesizedExpression>;
+  // isPattern(props?: object | null): boolean; // this is NodePath<t.Pattern>;
+  // isPatternLike(props?: object | null): boolean; // this is NodePath<t.PatternLike>;
+  // isPipelineBareFunction(props?: object | null): boolean; // this is NodePath<t.PipelineBareFunction>;
+  // isPipelinePrimaryTopicReference(props?: object | null): boolean; // this is NodePath<t.PipelinePrimaryTopicReference>;
+  // isPipelineTopicExpression(props?: object | null): boolean; // this is NodePath<t.PipelineTopicExpression>;
+  // isPrivate(props?: object | null): boolean; // this is NodePath<t.Private>;
+  // isPrivateName(props?: object | null): boolean; // this is NodePath<t.PrivateName>;
+  // isProgram(props?: object | null): boolean; // this is NodePath<t.Program>;
+  // isProperty(props?: object | null): boolean; // this is NodePath<t.Property>;
+  // isPureish(props?: object | null): boolean; // this is NodePath<t.Pureish>;
+  // isQualifiedTypeIdentifier(props?: object | null): boolean; // this is NodePath<t.QualifiedTypeIdentifier>;
+  // isRegExpLiteral(props?: object | null): boolean; // this is NodePath<t.RegExpLiteral>;
+  // isRestElement(props?: object | null): boolean; // this is NodePath<t.RestElement>;
+  // isReturnStatement(props?: object | null): boolean; // this is NodePath<t.ReturnStatement>;
+  // isScopable(props?: object | null): boolean; // this is NodePath<t.Scopable>;
+  // isSequenceExpression(props?: object | null): boolean; // this is NodePath<t.SequenceExpression>;
+  // isSpreadElement(props?: object | null): boolean; // this is NodePath<t.SpreadElement>;
+  // isStatement(props?: object | null): boolean; // this is NodePath<t.Statement>;
+  // isStringLiteral(props?: object | null): boolean; // this is NodePath<t.StringLiteral>;
+  // isStringLiteralTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.StringLiteralTypeAnnotation>;
+  // isStringTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.StringTypeAnnotation>;
+  // isSuper(props?: object | null): boolean; // this is NodePath<t.Super>;
+  // isSwitchCase(props?: object | null): boolean; // this is NodePath<t.SwitchCase>;
+  // isSwitchStatement(props?: object | null): boolean; // this is NodePath<t.SwitchStatement>;
+  // isTSAnyKeyword(props?: object | null): boolean; // this is NodePath<t.TSAnyKeyword>;
+  // isTSArrayType(props?: object | null): boolean; // this is NodePath<t.TSArrayType>;
+  // isTSAsExpression(props?: object | null): boolean; // this is NodePath<t.TSAsExpression>;
+  // isTSBooleanKeyword(props?: object | null): boolean; // this is NodePath<t.TSBooleanKeyword>;
+  // isTSCallSignatureDeclaration(props?: object | null): boolean; // this is NodePath<t.TSCallSignatureDeclaration>;
+  // isTSConditionalType(props?: object | null): boolean; // this is NodePath<t.TSConditionalType>;
+  // isTSConstructSignatureDeclaration(props?: object | null): boolean; // this is NodePath<t.TSConstructSignatureDeclaration>;
+  // isTSConstructorType(props?: object | null): boolean; // this is NodePath<t.TSConstructorType>;
+  // isTSDeclareFunction(props?: object | null): boolean; // this is NodePath<t.TSDeclareFunction>;
+  // isTSDeclareMethod(props?: object | null): boolean; // this is NodePath<t.TSDeclareMethod>;
+  // isTSEntityName(props?: object | null): boolean; // this is NodePath<t.TSEntityName>;
+  // isTSEnumDeclaration(props?: object | null): boolean; // this is NodePath<t.TSEnumDeclaration>;
+  // isTSEnumMember(props?: object | null): boolean; // this is NodePath<t.TSEnumMember>;
+  // isTSExportAssignment(props?: object | null): boolean; // this is NodePath<t.TSExportAssignment>;
+  // isTSExpressionWithTypeArguments(props?: object | null): boolean; // this is NodePath<t.TSExpressionWithTypeArguments>;
+  // isTSExternalModuleReference(props?: object | null): boolean; // this is NodePath<t.TSExternalModuleReference>;
+  // isTSFunctionType(props?: object | null): boolean; // this is NodePath<t.TSFunctionType>;
+  // isTSImportEqualsDeclaration(props?: object | null): boolean; // this is NodePath<t.TSImportEqualsDeclaration>;
+  // isTSImportType(props?: object | null): boolean; // this is NodePath<t.TSImportType>;
+  // isTSIndexSignature(props?: object | null): boolean; // this is NodePath<t.TSIndexSignature>;
+  // isTSIndexedAccessType(props?: object | null): boolean; // this is NodePath<t.TSIndexedAccessType>;
+  // isTSInferType(props?: object | null): boolean; // this is NodePath<t.TSInferType>;
+  // isTSInterfaceBody(props?: object | null): boolean; // this is NodePath<t.TSInterfaceBody>;
+  // isTSInterfaceDeclaration(props?: object | null): boolean; // this is NodePath<t.TSInterfaceDeclaration>;
+  // isTSIntersectionType(props?: object | null): boolean; // this is NodePath<t.TSIntersectionType>;
+  // isTSLiteralType(props?: object | null): boolean; // this is NodePath<t.TSLiteralType>;
+  // isTSMappedType(props?: object | null): boolean; // this is NodePath<t.TSMappedType>;
+  // isTSMethodSignature(props?: object | null): boolean; // this is NodePath<t.TSMethodSignature>;
+  // isTSModuleBlock(props?: object | null): boolean; // this is NodePath<t.TSModuleBlock>;
+  // isTSModuleDeclaration(props?: object | null): boolean; // this is NodePath<t.TSModuleDeclaration>;
+  // isTSNamespaceExportDeclaration(props?: object | null): boolean; // this is NodePath<t.TSNamespaceExportDeclaration>;
+  // isTSNeverKeyword(props?: object | null): boolean; // this is NodePath<t.TSNeverKeyword>;
+  // isTSNonNullExpression(props?: object | null): boolean; // this is NodePath<t.TSNonNullExpression>;
+  // isTSNullKeyword(props?: object | null): boolean; // this is NodePath<t.TSNullKeyword>;
+  // isTSNumberKeyword(props?: object | null): boolean; // this is NodePath<t.TSNumberKeyword>;
+  // isTSObjectKeyword(props?: object | null): boolean; // this is NodePath<t.TSObjectKeyword>;
+  // isTSOptionalType(props?: object | null): boolean; // this is NodePath<t.TSOptionalType>;
+  // isTSParameterProperty(props?: object | null): boolean; // this is NodePath<t.TSParameterProperty>;
+  // isTSParenthesizedType(props?: object | null): boolean; // this is NodePath<t.TSParenthesizedType>;
+  // isTSPropertySignature(props?: object | null): boolean; // this is NodePath<t.TSPropertySignature>;
+  // isTSQualifiedName(props?: object | null): boolean; // this is NodePath<t.TSQualifiedName>;
+  // isTSRestType(props?: object | null): boolean; // this is NodePath<t.TSRestType>;
+  // isTSStringKeyword(props?: object | null): boolean; // this is NodePath<t.TSStringKeyword>;
+  // isTSSymbolKeyword(props?: object | null): boolean; // this is NodePath<t.TSSymbolKeyword>;
+  // isTSThisType(props?: object | null): boolean; // this is NodePath<t.TSThisType>;
+  // isTSTupleType(props?: object | null): boolean; // this is NodePath<t.TSTupleType>;
+  // isTSType(props?: object | null): boolean; // this is NodePath<t.TSType>;
+  // isTSTypeAliasDeclaration(props?: object | null): boolean; // this is NodePath<t.TSTypeAliasDeclaration>;
+  // isTSTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.TSTypeAnnotation>;
+  // isTSTypeAssertion(props?: object | null): boolean; // this is NodePath<t.TSTypeAssertion>;
+  // isTSTypeElement(props?: object | null): boolean; // this is NodePath<t.TSTypeElement>;
+  // isTSTypeLiteral(props?: object | null): boolean; // this is NodePath<t.TSTypeLiteral>;
+  // isTSTypeOperator(props?: object | null): boolean; // this is NodePath<t.TSTypeOperator>;
+  // isTSTypeParameter(props?: object | null): boolean; // this is NodePath<t.TSTypeParameter>;
+  // isTSTypeParameterDeclaration(props?: object | null): boolean; // this is NodePath<t.TSTypeParameterDeclaration>;
+  // isTSTypeParameterInstantiation(props?: object | null): boolean; // this is NodePath<t.TSTypeParameterInstantiation>;
+  // isTSTypePredicate(props?: object | null): boolean; // this is NodePath<t.TSTypePredicate>;
+  // isTSTypeQuery(props?: object | null): boolean; // this is NodePath<t.TSTypeQuery>;
+  // isTSTypeReference(props?: object | null): boolean; // this is NodePath<t.TSTypeReference>;
+  // isTSUndefinedKeyword(props?: object | null): boolean; // this is NodePath<t.TSUndefinedKeyword>;
+  // isTSUnionType(props?: object | null): boolean; // this is NodePath<t.TSUnionType>;
+  // isTSUnknownKeyword(props?: object | null): boolean; // this is NodePath<t.TSUnknownKeyword>;
+  // isTSVoidKeyword(props?: object | null): boolean; // this is NodePath<t.TSVoidKeyword>;
+  // isTaggedTemplateExpression(props?: object | null): boolean; // this is NodePath<t.TaggedTemplateExpression>;
+  // isTemplateElement(props?: object | null): boolean; // this is NodePath<t.TemplateElement>;
+  // isTemplateLiteral(props?: object | null): boolean; // this is NodePath<t.TemplateLiteral>;
+  // isTerminatorless(props?: object | null): boolean; // this is NodePath<t.Terminatorless>;
+  // isThisExpression(props?: object | null): boolean; // this is NodePath<t.ThisExpression>;
+  // isThisTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.ThisTypeAnnotation>;
+  // isThrowStatement(props?: object | null): boolean; // this is NodePath<t.ThrowStatement>;
+  // isTryStatement(props?: object | null): boolean; // this is NodePath<t.TryStatement>;
+  // isTupleTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.TupleTypeAnnotation>;
+  // isTypeAlias(props?: object | null): boolean; // this is NodePath<t.TypeAlias>;
+  // isTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.TypeAnnotation>;
+  // isTypeCastExpression(props?: object | null): boolean; // this is NodePath<t.TypeCastExpression>;
+  // isTypeParameter(props?: object | null): boolean; // this is NodePath<t.TypeParameter>;
+  // isTypeParameterDeclaration(props?: object | null): boolean; // this is NodePath<t.TypeParameterDeclaration>;
+  // isTypeParameterInstantiation(props?: object | null): boolean; // this is NodePath<t.TypeParameterInstantiation>;
+  // isTypeofTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.TypeofTypeAnnotation>;
+  // isUnaryExpression(props?: object | null): boolean; // this is NodePath<t.UnaryExpression>;
+  // isUnaryLike(props?: object | null): boolean; // this is NodePath<t.UnaryLike>;
+  // isUnionTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.UnionTypeAnnotation>;
+  // isUpdateExpression(props?: object | null): boolean; // this is NodePath<t.UpdateExpression>;
+  // isUserWhitespacable(props?: object | null): boolean; // this is NodePath<t.UserWhitespacable>;
+  // isVariableDeclaration(props?: object | null): boolean; // this is NodePath<t.VariableDeclaration>;
+  // isVariableDeclarator(props?: object | null): boolean; // this is NodePath<t.VariableDeclarator>;
+  // isVariance(props?: object | null): boolean; // this is NodePath<t.Variance>;
+  // isVoidTypeAnnotation(props?: object | null): boolean; // this is NodePath<t.VoidTypeAnnotation>;
+  // isWhile(props?: object | null): boolean; // this is NodePath<t.While>;
+  // isWhileStatement(props?: object | null): boolean; // this is NodePath<t.WhileStatement>;
+  // isWithStatement(props?: object | null): boolean; // this is NodePath<t.WithStatement>;
+  // isYieldExpression(props?: object | null): boolean; // this is NodePath<t.YieldExpression>;
+  // isBindingIdentifier(props?: object | null): boolean; // this is NodePath<t.Identifier>;
+  // isBlockScoped(
+  //     props?: object | null,
+  // ): boolean; // this is NodePath<t.FunctionDeclaration | t.ClassDeclaration | t.VariableDeclaration>;
+  // isGenerated(props?: object | null): boolean;
+  // isPure(props?: object | null): boolean;
+  // isReferenced(props?: object | null): boolean;
+  // isReferencedIdentifier(props?: object | null): boolean; // this is NodePath<t.Identifier | t.JSXIdentifier>;
+  // isReferencedMemberExpression(props?: object | null): boolean; // this is NodePath<t.MemberExpression>;
+  // isScope(props?: object | null): boolean; // this is NodePath<t.Scopable>;
+  // isUser(props?: object | null): boolean;
+  // isVar(props?: object | null): boolean; // this is NodePath<t.VariableDeclaration>;
+  //#endregion
+
+  //#region ------------------------- assertXXX -------------------------
+  // Purposely skipping all `assert` functions as Flow can't handle them.
+  //#endregion
+}
+
+export interface HubInterface {
+  getCode(): string | void;
+  getScope(): Scope | void;
+  addHelper(name: string): any;
+  buildError<E: Error>(node: Node, msg: string, Error: Class<E>): E;
+}
+
+declare export class Hub implements HubInterface {
+  constructor(): Hub;
+  getCode(): string | void;
+  getScope(): Scope | void;
+  addHelper(name: string): any;
+  buildError<E: Error>(node: Node, msg: string, Constructor: Class<E>): E;
+}
+
+export interface TraversalContext {
+  parentPath: NodePath<>;
+  scope: Scope;
+  state: any;
+  opts: any;
+}
+
+export type NodePathResult<T: Node | $ReadOnlyArray<Node>> =
+  T extends $ReadOnlyArray<infer TNode>
+    ? $ReadOnlyArray<NodePath<TNode>>
+    : T extends null | void
+      ? void
+      : T extends Node
+        ? NodePath<T>
+        : T;

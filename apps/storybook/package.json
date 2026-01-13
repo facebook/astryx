@@ -12,6 +12,9 @@
     "react-dom": "^18.3.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "@babel/preset-react": "^7.28.5",
+    "@babel/preset-typescript": "^7.28.5",
     "@storybook/addon-essentials": "^8.4.0",
     "@storybook/addon-interactions": "^8.4.0",
     "@storybook/addon-links": "^8.4.0",
@@ -19,6 +22,7 @@
     "@storybook/react": "^8.4.0",
     "@storybook/react-vite": "^8.4.0",
     "@storybook/test": "^8.4.0",
+    "@stylexjs/babel-plugin": "^0.17.4",
     "storybook": "^8.4.0"
   }
 }

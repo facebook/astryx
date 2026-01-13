@@ -1,0 +1,72 @@
+{
+  "name": "@stylexjs/stylex",
+  "version": "0.11.1",
+  "description": "A library for defining styles for optimized user interfaces.",
+  "main": "./lib/stylex.js",
+  "module": "./lib/es/stylex.mjs",
+  "types": "./lib/stylex.d.ts",
+  "exports": {
+    ".": {
+      "import": "./lib/es/stylex.mjs",
+      "require": "./lib/stylex.js",
+      "types": "./lib/stylex.d.ts"
+    },
+    "./lib/StyleXTypes": {
+      "import": "./lib/StyleXTypes.js",
+      "require": "./lib/StyleXTypes.js",
+      "types": "./lib/StyleXTypes.d.ts"
+    },
+    "./lib/StyleXSheet": {
+      "import": "./lib/es/StyleXSheet.mjs",
+      "require": "./lib/StyleXSheet.js",
+      "types": "./lib/StyleXSheet.d.ts"
+    },
+    "./lib/stylex-inject": {
+      "import": "./lib/es/stylex-inject.mjs",
+      "require": "./lib/stylex-inject.js",
+      "types": "./lib/stylex-inject.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "repository": "https://www.github.com/facebook/stylex",
+  "license": "MIT",
+  "scripts": {
+    "prebuild": "gen-types -i src/ -o lib/",
+    "build:cjs": "cross-env BABEL_ENV=cjs babel src/ --out-dir lib/ --copy-files",
+    "build:esm": "cross-env BABEL_ENV=esm babel src/ --out-dir lib/es --out-file-extension .mjs",
+    "postbuild:esm": "rollup -c ./rollup.config.mjs",
+    "build": "npm run build:cjs && npm run build:esm",
+    "build-haste": "rewrite-imports -i src/ -o lib/",
+    "test": "jest"
+  },
+  "dependencies": {
+    "css-mediaquery": "^0.1.2",
+    "invariant": "^2.2.4",
+    "styleq": "0.2.1"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.26.4",
+    "@babel/core": "^7.26.8",
+    "@babel/eslint-parser": "^7.26.8",
+    "@babel/plugin-syntax-flow": "^7.26.0",
+    "@babel/preset-env": "^7.26.8",
+    "@babel/preset-flow": "^7.25.9",
+    "@babel/preset-react": "^7.26.3",
+    "@babel/preset-typescript": "^7.26.0",
+    "@babel/types": "^7.26.8",
+    "@rollup/plugin-alias": "^5.1.1",
+    "@rollup/plugin-babel": "^6.0.4",
+    "@rollup/plugin-commonjs": "^28.0.1",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^15.3.0",
+    "@rollup/plugin-replace": "^6.0.1",
+    "@stylexjs/scripts": "0.11.1",
+    "babel-plugin-syntax-hermes-parser": "^0.26.0",
+    "cross-env": "^7.0.3",
+    "rollup": "^4.24.0"
+  },
+  "jest": {},
+  "files": [
+    "lib/*"
+  ]
+}

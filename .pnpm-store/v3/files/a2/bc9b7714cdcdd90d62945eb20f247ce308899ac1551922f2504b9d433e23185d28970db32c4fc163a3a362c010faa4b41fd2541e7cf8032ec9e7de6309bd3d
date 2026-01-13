@@ -1,0 +1,280 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+// import type { Color as ColorType } from './stylex-types-color';
+
+// We want all in one file?
+// option 1, create interface an implement it in the class
+// why? All the types have a single base definition of props
+// We want on type that defines CSS Types
+// Option 2: Do a union type and make
+
+// interface CSSType {
+//   toString(): string;
+// }
+
+type NestedWithNumbers =
+  | number
+  | string
+  | $ReadOnly<{
+      default: NestedWithNumbers,
+      [string]: NestedWithNumbers,
+    }>;
+
+type ValueWithDefault =
+  | string
+  | $ReadOnly<{
+      default: ValueWithDefault,
+      [string]: ValueWithDefault,
+    }>;
+
+type CSSSyntax =
+  | '*'
+  | '<length>'
+  | '<number>'
+  | '<percentage>'
+  | '<length-percentage>'
+  | '<color>'
+  | '<image>'
+  | '<url>'
+  | '<integer>'
+  | '<angle>'
+  | '<time>'
+  | '<resolution>'
+  | '<transform-function>'
+  | '<custom-ident>'
+  | '<transform-list>';
+
+type CSSSyntaxType = CSSSyntax;
+
+declare class BaseCSSType {
+  +value: ValueWithDefault;
+  +syntax: CSSSyntaxType;
+  constructor(value: ValueWithDefault): void;
+}
+export interface CSSType<+_T: string | number = string | number> {
+  +value: ValueWithDefault;
+  +syntax: CSSSyntaxType;
+}
+
+declare export const isCSSType: (
+  value: mixed,
+) => implies value is CSSType<string | number>;
+
+type AngleValue = string;
+declare export class Angle<+T: AngleValue>
+  extends BaseCSSType
+  implements CSSType<T>
+{
+  +value: ValueWithDefault;
+  +syntax: CSSSyntaxType;
+  static +syntax: CSSSyntaxType;
+  static create<T: AngleValue = AngleValue>(value: ValueWithDefault): Angle<T>;
+}
+declare export const angle: <T: AngleValue = AngleValue>(
+  value: ValueWithDefault,
+  // $FlowIgnore[method-unbinding]
+) => Angle<T>;
+
+type ColorValue = string;
+declare export class Color<+T: ColorValue>
+  extends BaseCSSType
+  implements CSSType<T>
+{
+  +value: ValueWithDefault;
+  +syntax: CSSSyntaxType;
+  static create<T: ColorValue = ColorValue>(value: ValueWithDefault): Color<T>;
+}
+declare export const color: <T: ColorValue = ColorValue>(
+  value: ValueWithDefault,
+  // $FlowIgnore[method-unbinding]
+) => Color<T>;
+
+type URLValue = string;
+
+declare export class Url<+T: URLValue>
+  extends BaseCSSType
+  implements CSSType<T>
+{
+  +value: ValueWithDefault;
+  +syntax: CSSSyntaxType;
+  static create<T: URLValue = URLValue>(value: ValueWithDefault): Url<T>;
+}
+declare export const url: <T: URLValue = URLValue>(
+  value: ValueWithDefault,
+) => Url<T>;
+
+type ImageValue = string;
+
+declare export class Image<+T: ImageValue>
+  extends Url<T>
+  implements CSSType<T>
+{
+  +value: ValueWithDefault;
+  +syntax: CSSSyntaxType;
+  constructor(value: ValueWithDefault): void;
+  static create<T: ImageValue = ImageValue>(value: ValueWithDefault): Image<T>;
+}
+declare export const image: <T: ImageValue = ImageValue>(
+  value: ValueWithDefault,
+  // $FlowIgnore[method-unbinding]
+) => Image<T>;
+
+type IntegerValue = number;
+
+declare export class Integer<+T: IntegerValue>
+  extends BaseCSSType
+  implements CSSType<T>
+{
+  +value: ValueWithDefault;
+  +syntax: CSSSyntaxType;
+  static create<T: IntegerValue = IntegerValue>(value: T): Integer<T>;
+}
+declare export const integer: <T: IntegerValue = IntegerValue>(
+  value: T,
+) => Integer<T>;
+
+type LengthPercentageValue = string;
+
+declare export class LengthPercentage<+_T: LengthPercentageValue>
+  extends BaseCSSType
+  implements CSSType<string>
+{
+  +value: ValueWithDefault;
+  +syntax: CSSSyntaxType;
+  static createLength<_T: LengthPercentageValue | number>(
+    value: ValueWithDefault,
+  ): LengthPercentage<string>;
+  static createPercentage<_T: LengthPercentageValue | number>(
+    value: ValueWithDefault,
+  ): LengthPercentage<string>;
+}
+declare export const lengthPercentage: <_T: LengthPercentageValue | number>(
+  value: ValueWithDefault,
+  // $FlowIgnore[method-unbinding]
+) => LengthPercentage<string>;
+
+type LengthValue = number | string;
+
+declare export class Length<+_T: LengthValue>
+  extends LengthPercentage<string>
+  implements CSSType<string>
+{
+  +value: ValueWithDefault;
+  +syntax: CSSSyntaxType;
+  static create<T: LengthValue = LengthValue>(
+    value: NestedWithNumbers,
+  ): Length<T>;
+}
+declare export const length: <T: LengthValue = LengthValue>(
+  value: NestedWithNumbers,
+  // $FlowIgnore[method-unbinding]
+) => Length<T>;
+
+type PercentageValue = string | number;
+
+declare export class Percentage<+_T: PercentageValue>
+  extends LengthPercentage<string>
+  implements CSSType<string>
+{
+  +value: ValueWithDefault;
+  +syntax: CSSSyntaxType;
+  static create<T: PercentageValue = PercentageValue>(
+    value: NestedWithNumbers,
+  ): Percentage<T>;
+}
+declare export const percentage: <T: PercentageValue = PercentageValue>(
+  value: NestedWithNumbers,
+  // $FlowIgnore[method-unbinding]
+) => Percentage<T>;
+
+type NumberValue = number;
+
+declare export class Num<+T: NumberValue>
+  extends BaseCSSType
+  implements CSSType<T>
+{
+  +value: ValueWithDefault;
+  +syntax: CSSSyntaxType;
+  static create<T: NumberValue = NumberValue>(value: NestedWithNumbers): Num<T>;
+}
+declare export const number: <T: NumberValue = NumberValue>(
+  value: NestedWithNumbers,
+  // $FlowIgnore[method-unbinding]
+) => Num<T>;
+
+type ResolutionValue = string | 0;
+
+declare export class Resolution<+T: ResolutionValue>
+  extends BaseCSSType
+  implements CSSType<T>
+{
+  +value: ValueWithDefault;
+  +syntax: CSSSyntaxType;
+  static create<T: ResolutionValue = ResolutionValue>(
+    value: ValueWithDefault,
+  ): Resolution<T>;
+}
+declare export const resolution: <T: ResolutionValue = ResolutionValue>(
+  value: ValueWithDefault,
+  // $FlowIgnore[method-unbinding]
+) => Resolution<T>;
+
+type TimeValue = string | 0;
+
+declare export class Time<+T: TimeValue>
+  extends BaseCSSType
+  implements CSSType<T>
+{
+  +value: ValueWithDefault;
+  +syntax: CSSSyntaxType;
+  static create<T: TimeValue = TimeValue>(value: ValueWithDefault): Time<T>;
+}
+declare export const time: <T: TimeValue = TimeValue>(
+  value: ValueWithDefault,
+  // $FlowIgnore[method-unbinding]
+) => Time<T>;
+
+type TransformFunctionValue = string;
+
+declare export class TransformFunction<+T: TransformFunctionValue>
+  extends BaseCSSType
+  implements CSSType<T>
+{
+  +value: ValueWithDefault;
+  +syntax: CSSSyntaxType;
+  static create<T: TransformFunctionValue = TransformFunctionValue>(
+    value: ValueWithDefault,
+  ): TransformFunction<T>;
+}
+declare export const transformFunction: <
+  T: TransformFunctionValue = TransformFunctionValue,
+>(
+  value: ValueWithDefault,
+  // $FlowIgnore[method-unbinding]
+) => TransformFunction<T>;
+
+type TransformListValue = string;
+
+declare export class TransformList<T: TransformListValue>
+  extends BaseCSSType
+  implements CSSType<T>
+{
+  +value: ValueWithDefault;
+  +syntax: CSSSyntaxType;
+  static create<T: TransformListValue = TransformListValue>(
+    value: ValueWithDefault,
+  ): TransformList<T>;
+}
+declare export const transformList: <
+  T: TransformListValue = TransformListValue,
+>(
+  value: ValueWithDefault,
+  // $FlowIgnore[method-unbinding]
+) => TransformList<T>;

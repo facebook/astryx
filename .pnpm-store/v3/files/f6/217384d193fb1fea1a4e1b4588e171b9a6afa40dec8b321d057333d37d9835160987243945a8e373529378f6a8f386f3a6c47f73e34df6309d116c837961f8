@@ -1,0 +1,87 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type { TStyleValue } from '../common-types';
+
+/// # Handle CSS shorthands in a React Native compatible way.
+///
+/// This means:
+/// - disallowing certain properties altogether by throwing errors
+/// - disallowing multiple values within many shorthands
+/// - Treating certain non-standard properties as aliases for real CSS properties
+
+type TReturn = $ReadOnlyArray<[string, TStyleValue]>;
+
+declare const shorthands: $ReadOnly<{
+  [key: string]: (TStyleValue) => TReturn,
+}>;
+
+declare const aliases: {
+  borderHorizontal: $FlowFixMe,
+  borderVertical: $FlowFixMe,
+  borderBlockStart: $FlowFixMe,
+  borderEnd: $FlowFixMe,
+  borderBlockEnd: $FlowFixMe,
+  borderStart: $FlowFixMe,
+  blockSize: (val: TStyleValue) => TReturn,
+  inlineSize: (val: TStyleValue) => TReturn,
+  minBlockSize: (val: TStyleValue) => TReturn,
+  minInlineSize: (val: TStyleValue) => TReturn,
+  maxBlockSize: (val: TStyleValue) => TReturn,
+  maxInlineSize: (val: TStyleValue) => TReturn,
+  borderHorizontalWidth: (val: TStyleValue) => TReturn,
+  borderHorizontalStyle: (val: TStyleValue) => TReturn,
+  borderHorizontalColor: (val: TStyleValue) => TReturn,
+  borderVerticalWidth: (val: TStyleValue) => TReturn,
+  borderVerticalStyle: (val: TStyleValue) => TReturn,
+  borderVerticalColor: (val: TStyleValue) => TReturn,
+  borderBlockStartColor: (value: TStyleValue) => TReturn,
+  borderBlockEndColor: (value: TStyleValue) => TReturn,
+  borderBlockStartStyle: (value: TStyleValue) => TReturn,
+  borderBlockEndStyle: (value: TStyleValue) => TReturn,
+  borderBlockStartWidth: (value: TStyleValue) => TReturn,
+  borderBlockEndWidth: (value: TStyleValue) => TReturn,
+  borderStartColor: (val: TStyleValue) => TReturn,
+  borderEndColor: (val: TStyleValue) => TReturn,
+  borderStartStyle: (val: TStyleValue) => TReturn,
+  borderEndStyle: (val: TStyleValue) => TReturn,
+  borderStartWidth: (val: TStyleValue) => TReturn,
+  borderEndWidth: (val: TStyleValue) => TReturn,
+  borderTopStartRadius: (value: TStyleValue) => TReturn,
+  borderTopEndRadius: (value: TStyleValue) => TReturn,
+  borderBottomStartRadius: (value: TStyleValue) => TReturn,
+  borderBottomEndRadius: (value: TStyleValue) => TReturn,
+  containIntrinsicBlockSize: (value: TStyleValue) => TReturn,
+  containIntrinsicInlineSize: (value: TStyleValue) => TReturn,
+  marginBlockStart: (value: TStyleValue) => TReturn,
+  marginBlockEnd: (value: TStyleValue) => TReturn,
+  marginStart: (val: TStyleValue) => TReturn,
+  marginEnd: (val: TStyleValue) => TReturn,
+  marginHorizontal: (val: TStyleValue) => TReturn,
+  marginVertical: (val: TStyleValue) => TReturn,
+  overflowBlock: (value: TStyleValue) => TReturn,
+  overflowInline: (value: TStyleValue) => TReturn,
+  paddingBlockStart: (rawValue: TStyleValue) => TReturn,
+  paddingBlockEnd: (rawValue: TStyleValue) => TReturn,
+  paddingStart: (val: TStyleValue) => TReturn,
+  paddingEnd: (val: TStyleValue) => TReturn,
+  paddingHorizontal: (val: TStyleValue) => TReturn,
+  paddingVertical: (val: TStyleValue) => TReturn,
+  scrollMarginBlockStart: (value: TStyleValue) => TReturn,
+  scrollMarginBlockEnd: (value: TStyleValue) => TReturn,
+  insetBlockStart: (value: TStyleValue) => TReturn,
+  insetBlockEnd: (value: TStyleValue) => TReturn,
+  start: (val: TStyleValue) => TReturn,
+  end: (val: TStyleValue) => TReturn,
+};
+
+declare export default $ReadOnly<{
+  ...typeof shorthands,
+  ...typeof aliases,
+}>;

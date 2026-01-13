@@ -1,0 +1,54 @@
+import { c as createExpect, a as globalExpect, v as vi, b as vitest } from './vi.DgezovHB.js';
+import { g as getWorkerState } from './utils.C8RiOc4B.js';
+import { i as isFirstRun, a as runOnce } from './run-once.2ogXb3JV.js';
+import { b as bench } from './benchmark.Cdu9hjj4.js';
+import { expectTypeOf } from 'expect-type';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, it, onTestFailed, onTestFinished, suite, test } from '@vitest/runner';
+import * as chai from 'chai';
+import { assert, should } from 'chai';
+
+function inject(key) {
+  const workerState = getWorkerState();
+  return workerState.providedContext[key];
+}
+
+function getRunningMode() {
+  return process.env.VITEST_MODE === "WATCH" ? "watch" : "run";
+}
+function isWatchMode() {
+  return getRunningMode() === "watch";
+}
+
+const assertType = function assertType2() {
+};
+
+var VitestIndex = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  afterAll: afterAll,
+  afterEach: afterEach,
+  assert: assert,
+  assertType: assertType,
+  beforeAll: beforeAll,
+  beforeEach: beforeEach,
+  bench: bench,
+  chai: chai,
+  createExpect: createExpect,
+  describe: describe,
+  expect: globalExpect,
+  expectTypeOf: expectTypeOf,
+  getRunningMode: getRunningMode,
+  inject: inject,
+  isFirstRun: isFirstRun,
+  isWatchMode: isWatchMode,
+  it: it,
+  onTestFailed: onTestFailed,
+  onTestFinished: onTestFinished,
+  runOnce: runOnce,
+  should: should,
+  suite: suite,
+  test: test,
+  vi: vi,
+  vitest: vitest
+});
+
+export { VitestIndex as V, isWatchMode as a, assertType as b, getRunningMode as g, inject as i };

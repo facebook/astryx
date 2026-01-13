@@ -1,0 +1,24 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import * as t from '../../../flow_modules/@babel/types';
+import type { NodePath } from '../../../flow_modules/@babel/traverse';
+import StateManager from '../../utils/state-manager';
+/// This function looks for `stylex.create` calls and transforms them.
+/// 1. It finds the first argument to `stylex.create` and validates it.
+/// 2. It pre-processes valid-dynamic parts of style object such as custom presets (spreads)
+/// 3. It evaluates the style object to get a JS object. This also handles local constants automatically.
+/// 4. It uses the `stylexCreate` from `@stylexjs/shared` to transform the JS
+///    object and to get a list of injected styles.
+/// 5. It converts the resulting Object back into an AST and replaces the call with it.
+/// 6. It also inserts `stylex.inject` calls above the current statement as needed.
+declare export default function transformStyleXCreate(
+  path: NodePath<t.CallExpression>,
+  state: StateManager,
+): void;

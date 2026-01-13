@@ -1,0 +1,181 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type { PluginPass } from '@babel/core';
+import type { NodePath } from '@babel/traverse';
+import type {
+  CompiledNamespaces,
+  StyleXOptions as RuntimeOptions,
+} from '../shared';
+import * as t from '@babel/types';
+export type ImportPathResolution =
+  | false
+  | ['themeNameRef' | 'filePath', string];
+
+type ModuleResolution =
+  | $ReadOnly<{
+      type: 'commonJS',
+      rootDir?: ?string,
+      themeFileExtension?: ?string,
+    }>
+  | $ReadOnly<{
+      type: 'haste',
+      themeFileExtension?: ?string,
+    }>
+  | $ReadOnly<{
+      type: 'experimental_crossFileParsing',
+      rootDir?: string,
+      themeFileExtension?: ?string,
+    }>
+  | $ReadOnly<{
+      type: 'custom',
+      themeFileExtension?: ?string,
+      filePathResolver: (
+        importPath: string,
+        sourceFilePath: string,
+        aliases: ?$ReadOnly<{ [string]: $ReadOnlyArray<string> }>,
+      ) => string | void,
+      getCanonicalFilePath: (filePath: string) => string,
+    }>;
+
+export type StyleXOptions = $ReadOnly<{
+  ...RuntimeOptions,
+  aliases?: ?$ReadOnly<{ [string]: string | $ReadOnlyArray<string> }>,
+  enableDebugClassNames?: boolean,
+  enableDebugDataProp?: boolean,
+  enableDevClassNames?: boolean,
+  enableInlinedConditionalMerge?: boolean,
+  enableMediaQueryOrder?: boolean,
+  enableLegacyValueFlipping?: boolean,
+  enableLogicalStylesPolyfill?: boolean,
+  enableLTRRTLComments?: boolean,
+  enableMinifiedKeys?: boolean,
+  importSources: $ReadOnlyArray<
+    string | $ReadOnly<{ from: string, as: string }>,
+  >,
+  rewriteAliases?: boolean,
+  runtimeInjection: boolean | ?string | $ReadOnly<{ from: string, as: string }>,
+  treeshakeCompensation?: boolean,
+  unstable_moduleResolution?: ?ModuleResolution,
+  debugFilePath?: (filePath: string) => string,
+  ...
+}>;
+
+type StyleXStateOptions = $ReadOnly<{
+  ...StyleXOptions,
+  runtimeInjection: ?string | $ReadOnly<{ from: string, as: ?string }>,
+  aliases?: ?$ReadOnly<{ [string]: $ReadOnlyArray<string> }>,
+  rewriteAliases: boolean,
+  ...
+}>;
+
+declare export default class StateManager {
+  +_state: PluginPass;
+  // Imports
+  +importPaths: Set<string>;
+  +stylexImport: Set<string>;
+  +stylexPropsImport: Set<string>;
+  +stylexAttrsImport: Set<string>;
+  +stylexCreateImport: Set<string>;
+  +stylexIncludeImport: Set<string>;
+  +stylexFirstThatWorksImport: Set<string>;
+  +stylexKeyframesImport: Set<string>;
+  +stylexPositionTryImport: Set<string>;
+  +stylexDefineVarsImport: Set<string>;
+  +stylexDefineMarkerImport: Set<string>;
+  +stylexDefineConstsImport: Set<string>;
+  +stylexCreateThemeImport: Set<string>;
+  +stylexTypesImport: Set<string>;
+  +stylexViewTransitionClassImport: Set<string>;
+  +stylexDefaultMarkerImport: Set<string>;
+  +stylexWhenImport: Set<string>;
+  injectImportInserted: ?t.Identifier;
+  // `stylex.create` calls
+  +styleMap: Map<string, CompiledNamespaces>;
+  +styleVars: Map<string, NodePath<>>;
+  // results of `stylex.create` calls that should be kept
+  +styleVarsToKeep: Set<[string, true | string, true | Array<string>]>;
+  inStyleXCreate: boolean;
+  +options: StyleXStateOptions;
+  constructor(state: PluginPass): void;
+  setOptions(options: { +[string]: mixed }): StyleXStateOptions;
+  get importPathString(): string;
+  get importSources(): $ReadOnlyArray<string>;
+  importAs(source: string): null | string;
+  get canReferenceTheme(): boolean;
+  get metadata(): { [key: string]: any };
+  get runtimeInjection(): ?$ReadOnly<{ from: string, as?: ?string }>;
+  get opts(): StyleXStateOptions;
+  get isDebug(): boolean;
+  get isDev(): boolean;
+  get isTest(): boolean;
+  get filename(): string | void;
+  get cssVars(): any;
+  get treeshakeCompensation(): boolean;
+  get fileNameForHashing(): null | string;
+  getPackageNameAndPath(
+    filepath: string,
+  ): null | [+packageName: string, +packageDir: string];
+  getCanonicalFilePath(filePath: string): string;
+  importPathResolver(importPath: string): ImportPathResolution;
+  addStyle(
+    style: $ReadOnly<
+      [
+        string,
+        (
+          | $ReadOnly<{ ltr: string, rtl?: string | null }>
+          | $ReadOnly<{
+              constKey: string,
+              constVal: string | number,
+              rtl?: string | null,
+              ltr: string,
+            }>
+        ),
+        number,
+      ],
+    >,
+  ): void;
+  registerStyles(
+    styles: $ReadOnlyArray<
+      $ReadOnly<
+        [
+          string,
+          (
+            | $ReadOnly<{ ltr: string, rtl?: string | null }>
+            | $ReadOnly<{
+                constKey: string,
+                constVal: string | number,
+                rtl?: string | null,
+                ltr: string,
+              }>
+          ),
+          number,
+        ],
+      >,
+    >,
+    path?: ?NodePath<>,
+  ): void;
+  markComposedNamespace(
+    memberExpression: [string, true | string, true | Array<string>],
+  ): void;
+}
+
+// a function that resolves the absolute path of a file when given the
+// relative path of the file from the source file
+declare export const filePathResolver: (
+  relativeFilePath: string,
+  sourceFilePath: string,
+  aliases: StyleXStateOptions['aliases'],
+) => ?string;
+
+declare export const EXTENSIONS: $FlowFixMe;
+
+declare export const matchesFileSuffix: (string) => (string) => boolean;
+
+declare export function getRelativePath(from: string, to: string): string;

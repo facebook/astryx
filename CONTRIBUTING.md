@@ -45,8 +45,46 @@ cd xds
 # Install dependencies
 pnpm install
 
+# Build core package first (required for Storybook)
+pnpm --filter @xds/core build
+
 # Start Storybook for component development
-pnpm storybook
+cd apps/storybook
+pnpm dev
+```
+
+### Running Storybook
+
+Storybook loads pre-built packages from `dist/` folders, so you need to build packages before running Storybook.
+
+**First time setup:**
+```bash
+# Build all packages
+pnpm build
+
+# Or build just core
+pnpm --filter @xds/core build
+```
+
+**Start Storybook:**
+```bash
+cd apps/storybook
+pnpm dev
+```
+
+Storybook will open at http://localhost:6006 with:
+- **Theme switcher** - Toggle between Default and Shadcn themes
+- **Mode switcher** - Toggle between Light and Dark modes
+- **Component stories** - Interactive component examples
+
+**If you make changes to `@xds/core`:**
+```bash
+# Rebuild core package
+pnpm --filter @xds/core build
+
+# Restart Storybook to see changes
+cd apps/storybook
+pnpm dev
 ```
 
 ## Project Structure
@@ -286,3 +324,24 @@ This creates a file in `.changeset/` — commit it with your PR.
 - Functional components with `forwardRef`
 - JSDoc comments for AI-assisted development
 - Export types alongside components
+
+## Troubleshooting
+
+### Storybook Issues
+
+**"Failed to fetch dynamically imported module"**
+- Cause: Core package not built or out of date
+- Fix: `pnpm --filter @xds/core build` then restart Storybook
+
+**"React is not defined"**
+- Cause: Missing React import in preview.tsx
+- Fix: Ensure `import * as React from 'react';` at top of preview.tsx
+
+**"Unexpected 'stylex.defineVars' call at runtime"**
+- Cause: StyleX code trying to run without compilation
+- Fix: Storybook should load from `dist/` not `src/`. Check vite.config.ts aliases.
+
+**Changes not appearing in Storybook**
+- Rebuild the package: `pnpm --filter @xds/core build`
+- Hard refresh browser: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows)
+- Clear Storybook cache: Remove `apps/storybook/node_modules/.cache`

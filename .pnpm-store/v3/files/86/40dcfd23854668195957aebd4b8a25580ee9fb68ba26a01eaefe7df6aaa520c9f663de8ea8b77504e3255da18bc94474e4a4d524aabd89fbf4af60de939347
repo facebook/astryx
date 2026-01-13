@@ -1,0 +1,27 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type { TRawValue, StyleRule, StyleXOptions } from './common-types';
+// This function takes a single style rule and transforms it into a CSS rule.
+// [color: 'red'] => ['color', 'classname-for-color-red', CSSRULE{ltr, rtl, priority}]
+//
+// It converts the camelCased style key to a dash-separated key.
+// Handles RTL-flipping
+// Hashes to get a className
+// Returns the final key, className a CSS Rule
+declare export function convertStyleToClassName(
+  objEntry: $ReadOnly<[string, TRawValue]>,
+  pseudos: $ReadOnlyArray<string>,
+  atRules: $ReadOnlyArray<string>,
+  options: StyleXOptions,
+): StyleRule;
+
+declare export default function variableFallbacks(
+  values: $ReadOnlyArray<string>,
+): $ReadOnlyArray<string>;

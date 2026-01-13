@@ -1,0 +1,71 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type { StyleXOptions } from '../common-types';
+
+/**
+ * Creates selector that observes if the given pseudo-class is
+ * active on an ancestor with the "defaultMarker"
+ *
+ *
+ * @param pseudo - The pseudo selector (e.g., ':hover', ':focus')
+ * @returns A :where() clause for the ancestor observer
+ */
+declare export function ancestor(
+  pseudo: StringPrefix<':'>,
+  options?: string | StyleXOptions,
+): string;
+
+/**
+ * Creates selector that observes if the given pseudo-class is
+ * active on a descendant with the "defaultMarker"
+ *
+ * @param pseudo - The pseudo selector (e.g., ':hover', ':focus')
+ * @returns A :has() clause for the descendant observer
+ */
+declare export function descendant(
+  pseudo: StringPrefix<':'>,
+  options?: string | StyleXOptions,
+): string;
+
+/**
+ * Creates selector that observes if the given pseudo-class is
+ * active on a previous sibling with the "defaultMarker"
+ *
+ * @param pseudo - The pseudo selector (e.g., ':hover', ':focus')
+ * @returns A :where() clause for the previous sibling observer
+ */
+declare export function siblingBefore(
+  pseudo: StringPrefix<':'>,
+  options?: string | StyleXOptions,
+): string;
+
+/**
+ * Creates selector that observes if the given pseudo-class is
+ * active on a next sibling with the "defaultMarker"
+ *
+ * @param pseudo - The pseudo selector (e.g., ':hover', ':focus')
+ * @returns A :has() clause for the next sibling observer
+ */
+declare export function siblingAfter(
+  pseudo: StringPrefix<':'>,
+  options?: string | StyleXOptions,
+): string;
+
+/**
+ * Creates selector that observes if the given pseudo-class is
+ * active on any sibling with the "defaultMarker"
+ *
+ * @param pseudo - The pseudo selector (e.g., ':hover', ':focus')
+ * @returns A :where() clause for the any sibling observer
+ */
+declare export function anySibling(
+  pseudo: StringPrefix<':'>,
+  options?: string | StyleXOptions,
+): string;

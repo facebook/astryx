@@ -1,0 +1,74 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+export type Check<+T> = (val: mixed, name?: string) => Error | T;
+export type InferCheckType<T> = T extends Check<infer U> ? U : empty;
+
+type Msg = (value: mixed, name?: string) => string;
+type PrimitiveChecker<+T> = (message?: Msg) => Check<T>;
+
+declare export const string: PrimitiveChecker<string>;
+
+declare export const nullish: PrimitiveChecker<null | void>;
+
+declare export const boolean: PrimitiveChecker<boolean>;
+
+declare export const number: PrimitiveChecker<number>;
+
+declare export const literal: <T: string | number | boolean>(
+  T,
+  msg?: Msg,
+) => Check<T>;
+
+declare export const array: <T>(
+  Check<T>,
+  msg?: Msg,
+) => Check<$ReadOnlyArray<T>>;
+
+type ObjOfChecks<T: { +[string]: Check<mixed> }> = $ReadOnly<{
+  [K in keyof T]: InferCheckType<T[K]>,
+}>;
+
+declare export const object: <T: { +[string]: Check<mixed> }>(
+  T,
+  msg?: Msg,
+) => Check<ObjOfChecks<T>>;
+
+declare export const objectOf: <T>(
+  Check<T>,
+  message?: Msg,
+) => Check<{ +[string]: T }>;
+
+declare export const unionOf: <A, B>(
+  a: Check<A>,
+  b: Check<B>,
+  message: Msg,
+) => Check<A | B>;
+
+declare export const unionOf3: <A, B, C>(
+  a: Check<A>,
+  b: Check<B>,
+  c: Check<C>,
+  message: Msg,
+) => Check<A | B | C>;
+
+declare export const unionOf4: <A, B, C, D>(
+  a: Check<A>,
+  b: Check<B>,
+  c: Check<C>,
+  d: Check<D>,
+  message: Msg,
+) => Check<A | B | C | D>;
+
+declare export const logAndDefault: <T>(
+  check: Check<T>,
+  value: mixed,
+  def: T,
+  name?: string,
+) => T;

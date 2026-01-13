@@ -1,0 +1,70 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ *
+ */
+
+export declare const illegalArgumentLength: (
+  fn: string,
+  argLength: number,
+) => string;
+export declare type illegalArgumentLength = typeof illegalArgumentLength;
+export declare const nonStaticValue: (fn: string) => string;
+export declare type nonStaticValue = typeof nonStaticValue;
+export declare const nonStyleObject: (fn: string) => string;
+export declare type nonStyleObject = typeof nonStyleObject;
+export declare const nonExportNamedDeclaration: (fn: string) => string;
+export declare type nonExportNamedDeclaration =
+  typeof nonExportNamedDeclaration;
+export declare const unboundCallValue: (fn: string) => string;
+export declare type unboundCallValue = typeof unboundCallValue;
+export declare const cannotGenerateHash: (fn: string) => string;
+export declare type cannotGenerateHash = typeof cannotGenerateHash;
+export declare const DUPLICATE_CONDITIONAL: 'The same pseudo selector or at-rule cannot be used more than once.';
+export declare type DUPLICATE_CONDITIONAL = typeof DUPLICATE_CONDITIONAL;
+export declare const ESCAPED_STYLEX_VALUE: 'Escaping a create() value is not allowed.';
+export declare type ESCAPED_STYLEX_VALUE = typeof ESCAPED_STYLEX_VALUE;
+export declare const ILLEGAL_NESTED_PSEUDO: "Pseudo objects can't be nested more than one level deep.";
+export declare type ILLEGAL_NESTED_PSEUDO = typeof ILLEGAL_NESTED_PSEUDO;
+export declare const ILLEGAL_PROP_VALUE: 'A style value can only contain an array, string or number.';
+export declare type ILLEGAL_PROP_VALUE = typeof ILLEGAL_PROP_VALUE;
+export declare const ILLEGAL_PROP_ARRAY_VALUE: 'A style array value can only contain strings or numbers.';
+export declare type ILLEGAL_PROP_ARRAY_VALUE = typeof ILLEGAL_PROP_ARRAY_VALUE;
+export declare const ILLEGAL_NAMESPACE_VALUE: 'A StyleX namespace must be an object.';
+export declare type ILLEGAL_NAMESPACE_VALUE = typeof ILLEGAL_NAMESPACE_VALUE;
+export declare const INVALID_CONST_KEY: 'Keys in defineConsts() cannot start with "--".';
+export declare type INVALID_CONST_KEY = typeof INVALID_CONST_KEY;
+export declare const INVALID_PSEUDO: 'Invalid pseudo selector, not on the whitelist.';
+export declare type INVALID_PSEUDO = typeof INVALID_PSEUDO;
+export declare const INVALID_PSEUDO_OR_AT_RULE: 'Invalid pseudo or at-rule.';
+export declare type INVALID_PSEUDO_OR_AT_RULE =
+  typeof INVALID_PSEUDO_OR_AT_RULE;
+export declare const INVALID_MEDIA_QUERY_SYNTAX: 'Invalid media query syntax.';
+export declare type INVALID_MEDIA_QUERY_SYNTAX =
+  typeof INVALID_MEDIA_QUERY_SYNTAX;
+export declare const LINT_UNCLOSED_FUNCTION: 'Rule contains an unclosed function';
+export declare type LINT_UNCLOSED_FUNCTION = typeof LINT_UNCLOSED_FUNCTION;
+export declare const LOCAL_ONLY: 'The return value of create() should not be exported.';
+export declare type LOCAL_ONLY = typeof LOCAL_ONLY;
+export declare const NON_OBJECT_KEYFRAME: 'Every frame within a keyframes() call must be an object.';
+export declare type NON_OBJECT_KEYFRAME = typeof NON_OBJECT_KEYFRAME;
+export declare const NON_CONTIGUOUS_VARS: 'All variables passed to firstThatWorks() must be contiguous.';
+export declare type NON_CONTIGUOUS_VARS = typeof NON_CONTIGUOUS_VARS;
+export declare const NO_OBJECT_SPREADS: 'Object spreads are not allowed in create() calls.';
+export declare type NO_OBJECT_SPREADS = typeof NO_OBJECT_SPREADS;
+export declare const ONLY_NAMED_PARAMETERS_IN_DYNAMIC_STYLE_FUNCTIONS: 'Only named parameters are allowed in Dynamic Style functions. Destructuring, spreading or default values are not allowed.';
+export declare type ONLY_NAMED_PARAMETERS_IN_DYNAMIC_STYLE_FUNCTIONS =
+  typeof ONLY_NAMED_PARAMETERS_IN_DYNAMIC_STYLE_FUNCTIONS;
+export declare const ONLY_TOP_LEVEL: 'create() is only allowed at the root of a program.';
+export declare type ONLY_TOP_LEVEL = typeof ONLY_TOP_LEVEL;
+export declare const UNKNOWN_PROP_KEY: 'Unknown property key';
+export declare type UNKNOWN_PROP_KEY = typeof UNKNOWN_PROP_KEY;
+export declare const POSITION_TRY_INVALID_PROPERTY: 'Invalid property in `positionTry()` call. It may only contain, positionAnchor, positionArea, inset properties (top, left, insetInline etc.), margin properties, size properties (height, inlineSize, etc.), and self-alignment properties (alignSelf, justifySelf, placeSelf)';
+export declare type POSITION_TRY_INVALID_PROPERTY =
+  typeof POSITION_TRY_INVALID_PROPERTY;
+export declare const VIEW_TRANSITION_CLASS_INVALID_PROPERTY: 'Invalid property in `viewTransitionClass()` call. It may only contain group, imagePair, old, and new properties';
+export declare type VIEW_TRANSITION_CLASS_INVALID_PROPERTY =
+  typeof VIEW_TRANSITION_CLASS_INVALID_PROPERTY;

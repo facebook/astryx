@@ -1,0 +1,38 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type {
+  RawStyles,
+  InjectableStyle,
+  StyleXOptions,
+  FlatCompiledStyles,
+} from './common-types';
+
+type ClassPathsInNamespace = {
+  +[className: string]: $ReadOnlyArray<string>,
+};
+
+// This takes the object of styles passed to `stylex.create` and transforms it.
+//   The transformation replaces style values with classNames.
+//
+// It also collects all injected styles along the way.
+// It then returns a tuple of the transformed style Object and an object of injected styles.
+//
+// This function does some basic validation, and then uses `styleXCreateNamespace` to transform
+// each namespace within,
+//
+// Before returning, it ensures that there are no duplicate styles being injected.
+declare export default function styleXCreateSet(
+  namespaces: { +[string]: RawStyles },
+  options?: StyleXOptions,
+): [
+  { [string]: FlatCompiledStyles },
+  { [string]: InjectableStyle },
+  { +[string]: ClassPathsInNamespace },
+];

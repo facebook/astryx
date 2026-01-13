@@ -1,0 +1,19 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type { InjectableConstStyle, StyleXOptions } from './common-types';
+import type { ConstsConfig } from './stylex-consts-utils';
+
+declare export default function styleXDefineConsts<Vars: ConstsConfig>(
+  constants: Vars,
+  options: $ReadOnly<{ ...Partial<StyleXOptions>, exportId: string, ... }>,
+): [
+  { [string]: string | number }, // jsOutput JS output
+  { [string]: InjectableConstStyle }, // metadata for registerinjectableStyles
+];

@@ -1,0 +1,17 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ * @format
+ */
+
+declare export var NODE_CHILD: 'Node';
+declare export var NODE_LIST_CHILD: 'NodeList';
+declare export var HERMES_AST_VISITOR_KEYS: $ReadOnly<{
+  [string]: $ReadOnly<{
+    [string]: 'Node' | 'NodeList',
+  }>,
+}>;

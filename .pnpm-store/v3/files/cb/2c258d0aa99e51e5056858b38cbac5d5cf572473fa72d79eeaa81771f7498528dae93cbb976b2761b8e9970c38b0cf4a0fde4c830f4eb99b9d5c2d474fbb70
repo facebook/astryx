@@ -1,0 +1,27 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type { InjectableStyle, StyleXOptions } from './common-types';
+import type { VarsConfig } from './stylex-vars-utils';
+
+type VarsKeysWithStringValues<Vars: VarsConfig> = $ReadOnly<{
+  [$Keys<Vars>]: string,
+}>;
+
+type VarsObject<Vars: VarsConfig> = $ReadOnly<{
+  ...VarsKeysWithStringValues<Vars>,
+  __themeName__: string,
+}>;
+
+// Similar to `stylex.create` it takes an object of variables with their values
+// and returns a string after hashing it.
+declare export default function styleXDefineVars<Vars: VarsConfig>(
+  variables: Vars,
+  options: $ReadOnly<{ ...Partial<StyleXOptions>, themeName: string, ... }>,
+): [VarsObject<Vars>, { [string]: InjectableStyle }];

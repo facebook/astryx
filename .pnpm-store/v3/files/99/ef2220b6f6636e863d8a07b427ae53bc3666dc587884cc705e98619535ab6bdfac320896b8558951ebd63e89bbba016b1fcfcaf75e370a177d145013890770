@@ -1,0 +1,19 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type { InjectableStyle, StyleXOptions } from './common-types';
+
+// It takes an object of variables with their values and the original set of variables to override
+// and returns a hashed className with variables overrides.
+//
+declare export default function styleXCreateTheme(
+  themeVars: { +__themeName__: string, +[string]: string },
+  variables: { +[string]: string | { default: string, +[string]: string } },
+  options?: StyleXOptions,
+): [{ $$css: true, +[string]: string }, { [string]: InjectableStyle }];

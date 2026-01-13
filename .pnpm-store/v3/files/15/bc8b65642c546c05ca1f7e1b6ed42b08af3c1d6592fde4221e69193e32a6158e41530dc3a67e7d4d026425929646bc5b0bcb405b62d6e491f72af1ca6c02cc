@@ -1,0 +1,29 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import {
+  default as _getPriority,
+  getAtRulePriority as _getAtRulePriority,
+  getPseudoElementPriority as _getPseudoElementPriority,
+  getPseudoClassPriority as _getPseudoClassPriority,
+  getDefaultPriority as _getDefaultPriority,
+  PSEUDO_CLASS_PRIORITIES as _PSEUDO_CLASS_PRIORITIES,
+  AT_RULE_PRIORITIES as _AT_RULE_PRIORITIES,
+  PSEUDO_ELEMENT_PRIORITY as _PSEUDO_ELEMENT_PRIORITY,
+} from './utils/property-priorities';
+
+declare export const getAtRulePriority: typeof _getAtRulePriority;
+declare export const getPseudoElementPriority: typeof _getPseudoElementPriority;
+declare export const getPseudoClassPriority: typeof _getPseudoClassPriority;
+declare export const getDefaultPriority: typeof _getDefaultPriority;
+declare export const getPriority: typeof _getPriority;
+
+declare export const PSEUDO_CLASS_PRIORITIES: typeof _PSEUDO_CLASS_PRIORITIES;
+declare export const AT_RULE_PRIORITIES: typeof _AT_RULE_PRIORITIES;
+declare export const PSEUDO_ELEMENT_PRIORITY: typeof _PSEUDO_ELEMENT_PRIORITY;

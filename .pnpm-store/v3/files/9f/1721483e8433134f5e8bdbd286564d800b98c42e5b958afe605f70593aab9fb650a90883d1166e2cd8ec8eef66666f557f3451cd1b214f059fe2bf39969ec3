@@ -1,0 +1,62 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+/**
+ * This is a extended version of the path evaluation code from Babel.
+ *
+ * The original can be found at:
+ * https://github.com/babel/babel/blob/main/packages/babel-traverse/src/path/evaluation.ts
+ *
+ * The following extensions were made:
+ * - It can accept a mapping from variable names to functions
+ *   which when encountered will be evaluated instead of deopting.
+ *   - The functions can be configured to accept the raw path instead of
+ *     static values to handle dynamic values.
+ * - It can handle object spreads when the spread value itself is statically evaluated.
+ */
+
+import type { NodePath } from '@babel/traverse';
+
+import * as t from '@babel/types';
+import StateManager from './state-manager';
+export type FunctionConfig = {
+  identifiers: {
+    [fnName: string]: $FlowFixMe,
+  },
+  memberExpressions: {
+    [key: string]: {
+      [memberName: string]: {
+        fn: (...args: $FlowFixMe[]) => $FlowFixMe,
+        takesPath?: boolean,
+      },
+    },
+  },
+  disableImports?: boolean,
+};
+
+type Result =
+  | {
+      resolved: true,
+      value: any,
+    }
+  | {
+      resolved: false,
+      reason: string,
+    };
+declare export function evaluate(
+  path: NodePath<>,
+  traversalState: StateManager,
+  functions?: FunctionConfig,
+  seen?: Map<t.Node, Result>,
+): $ReadOnly<{
+  confident: boolean,
+  value: any,
+  deopt?: null | NodePath<>,
+  reason?: string,
+}>;

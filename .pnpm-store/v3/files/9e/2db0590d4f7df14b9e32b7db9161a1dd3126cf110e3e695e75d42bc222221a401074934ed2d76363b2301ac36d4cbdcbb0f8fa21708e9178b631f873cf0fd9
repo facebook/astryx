@@ -1,0 +1,16 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ *
+ */
+
+import type { StyleXOptions } from '../common-types';
+declare function normalizeValue(
+  value: string,
+  key: string,
+  $$PARAM_2$$: StyleXOptions,
+): string;
+export default normalizeValue;

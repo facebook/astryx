@@ -1,0 +1,22 @@
+{
+  "name": "@stylexjs/shared",
+  "version": "0.17.4",
+  "main": "lib/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/facebook/stylex.git"
+  },
+  "license": "MIT",
+  "scripts": {
+    "prebuild": "gen-types -i src/ -o lib/",
+    "build": "babel src/ --out-dir lib/",
+    "test": "jest --coverage --passWithNoTests"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.23.9",
+    "@babel/core": "^7.23.9"
+  },
+  "files": [
+    "lib/*"
+  ]
+}

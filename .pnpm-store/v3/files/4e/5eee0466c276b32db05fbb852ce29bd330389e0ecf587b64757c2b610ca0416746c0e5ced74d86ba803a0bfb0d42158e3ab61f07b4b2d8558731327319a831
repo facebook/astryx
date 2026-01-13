@@ -1,0 +1,134 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type { TStyleValue } from '../common-types';
+
+/**
+ * Shorthand properties:
+ * - [x] all - Should be banned
+ * - [x] animation
+ * - [x] background
+ * - [x] border
+ * - [x] border-block-end
+ * - [x] border-block-start
+ * - [x] border-bottom
+ * - [x] border-color
+ * - [x] border-image
+ * - [x] border-inline-end
+ * - [x] border-inline-start
+ * - [x] border-left
+ * - [x] border-radius
+ * - [x] border-right
+ * - [x] border-style
+ * - [x] border-top
+ * - [x] border-width
+ * - [x] column-rule
+ * - [x] columns
+ * - [x] container
+ * - [x] flex
+ * - [x] flex-flow
+ * - [x] font
+ * - [x] gap
+ * - [x] grid
+ * - [x] grid-area
+ * - [x] grid-column
+ * - [x] grid-row
+ * - [x] grid-template
+ * - [x] inset
+ * - [x] inset-block
+ * - [x] inset-inline
+ * - [x] list-style
+ * - [x] margin
+ * - [x] mask
+ * - [x] offset
+ * - [x] outline
+ * - [x] overflow
+ * - [x] padding
+ * - [x] place-content
+ * - [x] place-items
+ * - [x] place-self
+ * - [x] scroll-margin
+ * - [x] scroll-padding
+ * - [x] text-decoration
+ * - [x] text-emphasis
+ * - [x] transition
+ */
+
+type TReturn = $ReadOnlyArray<[string, TStyleValue]>;
+
+declare const shorthands: $ReadOnly<{
+  [key: string]: (TStyleValue) => TReturn,
+}>;
+
+declare const aliases: {
+  borderHorizontal: $FlowFixMe,
+  borderVertical: $FlowFixMe,
+  borderBlockStart: $FlowFixMe,
+  borderEnd: $FlowFixMe,
+  borderBlockEnd: $FlowFixMe,
+  borderStart: $FlowFixMe,
+  blockSize: (val: TStyleValue) => TReturn,
+  inlineSize: (val: TStyleValue) => TReturn,
+  minBlockSize: (val: TStyleValue) => TReturn,
+  minInlineSize: (val: TStyleValue) => TReturn,
+  maxBlockSize: (val: TStyleValue) => TReturn,
+  maxInlineSize: (val: TStyleValue) => TReturn,
+  borderHorizontalWidth: $FlowFixMe,
+  borderHorizontalStyle: $FlowFixMe,
+  borderHorizontalColor: $FlowFixMe,
+  borderVerticalWidth: $FlowFixMe,
+  borderVerticalStyle: $FlowFixMe,
+  borderVerticalColor: $FlowFixMe,
+  borderBlockStartColor: (value: TStyleValue) => TReturn,
+  borderBlockEndColor: (value: TStyleValue) => TReturn,
+  borderBlockStartStyle: (value: TStyleValue) => TReturn,
+  borderBlockEndStyle: (value: TStyleValue) => TReturn,
+  borderBlockStartWidth: (value: TStyleValue) => TReturn,
+  borderBlockEndWidth: (value: TStyleValue) => TReturn,
+  borderStartColor: $FlowFixMe,
+  borderEndColor: $FlowFixMe,
+  borderStartStyle: $FlowFixMe,
+  borderEndStyle: $FlowFixMe,
+  borderStartWidth: $FlowFixMe,
+  borderEndWidth: $FlowFixMe,
+  borderTopStartRadius: (value: TStyleValue) => TReturn,
+  borderTopEndRadius: (value: TStyleValue) => TReturn,
+  borderBottomStartRadius: (value: TStyleValue) => TReturn,
+  borderBottomEndRadius: (value: TStyleValue) => TReturn,
+  containIntrinsicBlockSize: (value: TStyleValue) => TReturn,
+  containIntrinsicInlineSize: (value: TStyleValue) => TReturn,
+  gridGap: $FlowFixMe,
+  gridRowGap: (value: TStyleValue) => TReturn,
+  gridColumnGap: (value: TStyleValue) => TReturn,
+  marginBlockStart: (value: TStyleValue) => TReturn,
+  marginBlockEnd: (value: TStyleValue) => TReturn,
+  marginStart: $FlowFixMe,
+  marginEnd: $FlowFixMe,
+  marginHorizontal: $FlowFixMe,
+  marginVertical: $FlowFixMe,
+  overflowBlock: (value: TStyleValue) => TReturn,
+  overflowInline: (value: TStyleValue) => TReturn,
+  paddingBlockStart: (rawValue: TStyleValue) => TReturn,
+  paddingBlockEnd: (rawValue: TStyleValue) => TReturn,
+  paddingStart: $FlowFixMe,
+  paddingEnd: $FlowFixMe,
+  paddingHorizontal: $FlowFixMe,
+  paddingVertical: $FlowFixMe,
+  scrollMarginBlockStart: (value: TStyleValue) => TReturn,
+  scrollMarginBlockEnd: (value: TStyleValue) => TReturn,
+  insetBlockStart: (value: TStyleValue) => TReturn,
+  insetBlockEnd: (value: TStyleValue) => TReturn,
+  start: $FlowFixMe,
+  end: $FlowFixMe,
+};
+
+declare export default $ReadOnly<{
+  ...typeof shorthands,
+  ...typeof aliases,
+}>;

@@ -5,17 +5,21 @@
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.stylex.ts",
+    "**/*.stylex.js",
+    "**/*.stylex.mjs"
+  ],
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.js"
     },
     "./Button": {
+      "types": "./dist/Button/index.d.ts",
       "import": "./dist/Button/index.mjs",
-      "require": "./dist/Button/index.js",
-      "types": "./dist/Button/index.d.ts"
+      "require": "./dist/Button/index.js"
     }
   },
   "scripts": {
@@ -30,7 +34,16 @@
     "react-dom": ">=18.0.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "@babel/preset-react": "^7.28.5",
+    "@babel/preset-typescript": "^7.28.5",
+    "@stylexjs/babel-plugin": "^0.17.4",
+    "@stylexjs/esbuild-plugin": "^0.11.1",
+    "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",
-    "@testing-library/jest-dom": "^6.6.0"
+    "esbuild-plugin-babel": "^0.2.3"
+  },
+  "dependencies": {
+    "@stylexjs/stylex": "^0.17.4"
   }
 }

@@ -1,0 +1,18 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type { InjectableStyle, StyleXOptions } from './common-types';
+
+// Similar to `stylex.keyframes` but for position-try-fallbacks
+// Takes an object of positioning properties and returns a string after hashing it
+// The generated string must be prefixed with -- for anchor positioning
+declare export default function styleXPositionTry(
+  styles: { +[string]: string | number },
+  options?: StyleXOptions,
+): [string, InjectableStyle];

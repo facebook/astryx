@@ -1,0 +1,18 @@
+{
+  "presets": ["@babel/preset-react", "@babel/preset-typescript"],
+  "plugins": [
+    [
+      "@stylexjs/babel-plugin",
+      {
+        "dev": false,
+        "runtimeInjection": false,
+        "genConditionalClasses": true,
+        "treeshakeCompensation": true,
+        "unstable_moduleResolution": {
+          "type": "commonJS",
+          "rootDir": "."
+        }
+      }
+    ]
+  ]
+}

@@ -1,0 +1,35 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+declare export const IMPORT_FILE_PARSING_ERROR: $FlowFixMe;
+
+// export const
+declare export const IMPORT_FILE_EVAL_ERROR: $FlowFixMe;
+
+declare export const DEFAULT_IMPORT: $FlowFixMe;
+
+declare export const PATH_WITHOUT_NODE: $FlowFixMe;
+
+declare export const UNEXPECTED_MEMBER_LOOKUP: $FlowFixMe;
+
+declare export const IMPORT_PATH_RESOLUTION_ERROR: $FlowFixMe;
+
+declare export const NON_CONSTANT: 'Referenced value is not a constant.\n\n';
+
+declare export const USED_BEFORE_DECLARATION: 'Referenced value is used before declaration.\n\n';
+
+declare export const UNINITIALIZED_CONST: 'Referenced constant is not initialized.\n\n';
+
+declare export const UNDEFINED_CONST: 'Referenced constant is not defined.';
+
+declare export const UNSUPPORTED_OPERATOR: (op: string) => string;
+
+declare export const OBJECT_METHOD: 'Unsupported object method.\n\n';
+
+declare export const UNSUPPORTED_EXPRESSION: (type: string) => string;

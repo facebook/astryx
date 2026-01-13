@@ -1,0 +1,46 @@
+{
+  "name": "@stylexjs/babel-plugin",
+  "version": "0.17.4",
+  "description": "StyleX babel plugin.",
+  "main": "lib/index.js",
+  "browser": "lib/index.browser.js",
+  "types": "./lib/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/facebook/stylex.git"
+  },
+  "license": "MIT",
+  "scripts": {
+    "prebuild": "gen-types -i src/ -o lib/",
+    "build": "rollup --config ./rollup.config.mjs",
+    "build-haste": "HASTE=true rollup --config ./rollup.config.mjs",
+    "build-watch": "rollup --config ./rollup.config.mjs --watch",
+    "test": "jest --coverage"
+  },
+  "dependencies": {
+    "@babel/helper-module-imports": "^7.25.9",
+    "@babel/core": "^7.26.8",
+    "@babel/traverse": "^7.26.8",
+    "@babel/types": "^7.26.8",
+    "@dual-bundle/import-meta-resolve": "^4.1.0",
+    "@stylexjs/shared": "0.17.4",
+    "@stylexjs/stylex": "0.17.4",
+    "postcss-value-parser": "^4.1.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-alias": "^5.1.1",
+    "@rollup/plugin-babel": "^6.0.4",
+    "@rollup/plugin-commonjs": "^28.0.1",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^15.3.0",
+    "@rollup/plugin-replace": "^6.0.1",
+    "babel-plugin-syntax-hermes-parser": "^0.32.1",
+    "path-browserify": "^1.0.1",
+    "rollup": "^4.24.0",
+    "scripts": "0.17.4"
+  },
+  "files": [
+    "flow_modules/*",
+    "lib/*"
+  ]
+}

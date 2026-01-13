@@ -1,0 +1,7 @@
+import { PARAM_KEY, actions } from './chunk-4XZ63LWV.mjs';
+import { makeDecorator, useEffect } from 'storybook/internal/preview-api';
+import { global } from '@storybook/global';
+
+var {document,Element}=global,delegateEventSplitter=/^(\S+)\s*(.*)$/,isIE=Element!=null&&!Element.prototype.matches,matchesMethod=isIE?"msMatchesSelector":"matches",hasMatchInAncestry=(element,selector)=>{if(element[matchesMethod](selector))return !0;let parent=element.parentElement;return parent?hasMatchInAncestry(parent,selector):!1},createHandlers=(actionsFn,...handles)=>{let actionsObject=actionsFn(...handles);return Object.entries(actionsObject).map(([key,action])=>{let[_,eventName,selector]=key.match(delegateEventSplitter)||[];return {eventName,handler:e=>{(!selector||hasMatchInAncestry(e.target,selector))&&action(e);}}})},applyEventHandlers=(actionsFn,...handles)=>{let root=document&&document.getElementById("storybook-root");useEffect(()=>{if(root!=null){let handlers=createHandlers(actionsFn,...handles);return handlers.forEach(({eventName,handler})=>root.addEventListener(eventName,handler)),()=>handlers.forEach(({eventName,handler})=>root.removeEventListener(eventName,handler))}},[root,actionsFn,handles]);},withActions=makeDecorator({name:"withActions",parameterName:PARAM_KEY,skipIfNoParametersOrOptions:!0,wrapper:(getStory,context,{parameters})=>(parameters?.handles&&applyEventHandlers(actions,...parameters.handles),getStory(context))});
+
+export { withActions };

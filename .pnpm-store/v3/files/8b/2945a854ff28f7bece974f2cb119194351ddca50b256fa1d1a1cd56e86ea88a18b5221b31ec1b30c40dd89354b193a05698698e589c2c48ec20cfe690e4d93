@@ -1,0 +1,39 @@
+{
+  "name": "@stylexjs/esbuild-plugin",
+  "version": "0.11.1",
+  "description": "StyleX esbuild plugin",
+  "main": "lib/index.js",
+  "type": "module",
+  "repository": "https://github.com/facebook/stylex.git",
+  "license": "MIT",
+  "scripts": {
+    "prebuild": "gen-types -i src/ -o /lib",
+    "build": "babel src/ --out-dir lib/ --copy-files",
+    "test": "jest"
+  },
+  "jest": {
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/__fixtures__/"
+    ],
+    "testEnvironment": "node"
+  },
+  "dependencies": {
+    "@babel/core": "^7.26.8",
+    "@babel/plugin-syntax-flow": "^7.26.0",
+    "@babel/plugin-syntax-jsx": "^7.25.9",
+    "@babel/plugin-syntax-typescript": "^7.25.9",
+    "@stylexjs/babel-plugin": "0.11.1",
+    "@stylexjs/shared": "0.11.1",
+    "babel-plugin-syntax-hermes-parser": "^0.26.0",
+    "esbuild": "^0.24.0"
+  },
+  "devDependencies": {
+    "@stylexjs/stylex": "0.11.1",
+    "eslint": "^8.57.1"
+  },
+  "files": [
+    "flow_modules/*",
+    "lib/*"
+  ]
+}

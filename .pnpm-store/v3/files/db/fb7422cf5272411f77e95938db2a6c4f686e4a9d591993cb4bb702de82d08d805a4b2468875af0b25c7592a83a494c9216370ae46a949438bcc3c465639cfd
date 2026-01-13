@@ -1,0 +1,20 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type { InjectableStyle, StyleXOptions } from './common-types';
+
+// Similar to `stylex.create` it takes an object of keyframes
+// and returns a string after hashing it.
+//
+// It also expands shorthand properties to maintain parity with
+// `stylex.create`.
+declare export default function styleXKeyframes(
+  frames: { +[string]: { +[string]: string | number } },
+  options: StyleXOptions,
+): [string, InjectableStyle];

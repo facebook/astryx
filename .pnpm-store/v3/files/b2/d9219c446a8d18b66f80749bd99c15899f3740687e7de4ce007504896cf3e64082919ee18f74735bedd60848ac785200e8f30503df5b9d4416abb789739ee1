@@ -1,0 +1,22 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type { StyleXOptions, TStyleValue } from '../common-types';
+
+declare export function getExpandedKeys(
+  options: StyleXOptions,
+): $ReadOnlyArray<string>;
+
+declare export default function flatMapExpandedShorthands(
+  objEntry: $ReadOnly<[string, TStyleValue]>,
+  options: $ReadOnly<{
+    styleResolution: StyleXOptions['styleResolution'],
+    ...
+  }>,
+): $ReadOnlyArray<[string, TStyleValue]>;

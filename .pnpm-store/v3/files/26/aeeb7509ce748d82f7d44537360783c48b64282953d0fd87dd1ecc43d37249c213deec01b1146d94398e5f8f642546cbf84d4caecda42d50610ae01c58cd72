@@ -1,0 +1,56 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type { ImportOptions } from '@babel/helper-module-imports';
+import type { NodePath } from '@babel/traverse';
+type ImportAdditionOptions = Omit<
+  Partial<ImportOptions>,
+  'ensureLiveReference' | 'ensureNoContext',
+>;
+
+import * as t from '@babel/types';
+
+declare export function hoistExpression(
+  path: NodePath<>,
+  astExpression: t.Expression,
+): t.Expression;
+
+declare export function pathReplaceHoisted(
+  path: NodePath<>,
+  astExpression: t.Expression,
+): void;
+
+declare export function addNamedImport(
+  statementPath: NodePath<>,
+  as: string,
+  from: string,
+  options: ImportAdditionOptions,
+): t.Identifier;
+
+declare export function addDefaultImport(
+  statementPath: NodePath<>,
+  from: string,
+  options: ImportAdditionOptions,
+): t.Identifier;
+
+declare export function isProgramLevel(path: NodePath<>): boolean;
+
+declare export function getProgramStatement(path: NodePath<>): NodePath<>;
+
+/**
+ * Checks if a variable with the given name is named exported in the program.
+ * This handles both:
+ * - Direct named exports: `export const x = ...`
+ * - Locally declared named exports: `const x = ...; export { x }`
+ *
+ * Default exports, aliasing and re-exports from other files (e.g., `export { x } from './other'`) are NOT allowed.
+ */
+declare export function isVariableNamedExported(
+  path: NodePath<t.VariableDeclarator>,
+): boolean;

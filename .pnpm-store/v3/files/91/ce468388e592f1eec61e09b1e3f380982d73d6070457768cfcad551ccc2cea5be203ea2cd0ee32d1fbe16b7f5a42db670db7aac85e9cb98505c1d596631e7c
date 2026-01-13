@@ -1,0 +1,19 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ *
+ */
+
+/**
+ * Use single spaces and remove spaces when not needed: around functions,
+ * commas. But preserve space around + and - as they are required in calc()
+ */
+
+declare function normalizeWhitespace(
+  ast: PostCSSValueAST,
+  _: unknown,
+): PostCSSValueAST;
+export default normalizeWhitespace;

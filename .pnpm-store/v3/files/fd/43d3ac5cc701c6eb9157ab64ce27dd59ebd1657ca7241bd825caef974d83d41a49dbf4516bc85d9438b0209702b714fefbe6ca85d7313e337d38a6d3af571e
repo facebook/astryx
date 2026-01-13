@@ -1,0 +1,144 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type { TStyleValue } from '../common-types';
+
+// TODO: to be added later.
+// const aliases = {
+//   marginInlineStart: (rawValue) => [['marginStart', rawValue]],
+//   marginInlineEnd: (rawValue) => [['marginEnd', rawValue]],
+//   marginInline: (rawValue) => [
+//     ['marginStart', rawValue],
+//     ['marginEnd', rawValue],
+//   ],
+//   paddingInlineStart: (rawValue) => [['paddingStart', rawValue]],
+//   paddingInlineEnd: (rawValue) => [['paddingEnd', rawValue]],
+//   paddingInline: (rawValue) => [
+//     ['paddingStart', rawValue],
+//     ['paddingEnd', rawValue],
+//   ],
+//   // 'borderInlineStart': (rawValue) => [['borderStart', rawValue]],
+//   // 'borderInlineEnd': (rawValue) => [['borderEnd', rawValue]],
+//   // // This will need to change.
+//   // 'borderInline': (rawValue) => [
+//   //   ['borderStart', rawValue],
+//   //   ['borderEnd', rawValue],
+//   // ],
+// };
+
+/**
+ * Shorthand properties:
+ * - [x] all - Should be banned
+ * - [ ] animation
+ * - [ ] background
+ * - [-] border
+ * - [x] border-block-end
+ * - [x] border-block-start
+ * - [ ] border-bottom
+ * - [x] border-color
+ * - [x] border-image
+ * - [x] border-inline-end
+ * - [x] border-inline-start
+ * - [ ] border-left
+ * - [x] border-radius
+ * - [ ] border-right
+ * - [x] border-style
+ * - [ ] border-top
+ * - [x] border-width
+ * - [ ] column-rule
+ * - [ ] columns
+ * - [ ] flex
+ * - [ ] flex-flow
+ * - [ ] font
+ * - [ ] gap
+ * - [ ] grid
+ * - [ ] grid-area
+ * - [ ] grid-column
+ * - [ ] grid-row
+ * - [ ] grid-template
+ * - [ ] list-style
+ * - [x] margin
+ * - [ ] mask
+ * - [ ] offset
+ * - [ ] outline
+ * - [x] overflow
+ * - [x] padding
+ * - [ ] place-content
+ * - [ ] place-items
+ * - [ ] place-self
+ * - [ ] scroll-margin
+ * - [ ] scroll-padding
+ * - [ ] text-decoration
+ * - [ ] text-emphasis
+ * - [ ] transition
+ */
+
+type TReturn = $ReadOnlyArray<[string, TStyleValue]>;
+
+declare const shorthands: $ReadOnly<{
+  [key: string]: (TStyleValue) => TReturn,
+}>;
+
+declare const aliases: {
+  insetBlockStart: (val: TStyleValue) => TReturn,
+  insetBlockEnd: (val: TStyleValue) => TReturn,
+  insetInlineStart: $FlowFixMe,
+  insetInlineEnd: $FlowFixMe,
+  blockSize: (val: TStyleValue) => TReturn,
+  inlineSize: (val: TStyleValue) => TReturn,
+  minBlockSize: (val: TStyleValue) => TReturn,
+  minInlineSize: (val: TStyleValue) => TReturn,
+  maxBlockSize: (val: TStyleValue) => TReturn,
+  maxInlineSize: (val: TStyleValue) => TReturn,
+  borderBlockWidth: $FlowFixMe,
+  borderBlockStyle: $FlowFixMe,
+  borderBlockColor: $FlowFixMe,
+  borderBlockStartWidth: (val: TStyleValue) => TReturn,
+  borderBlockStartStyle: (val: TStyleValue) => TReturn,
+  borderBlockStartColor: (val: TStyleValue) => TReturn,
+  borderBlockEndWidth: (val: TStyleValue) => TReturn,
+  borderBlockEndStyle: (val: TStyleValue) => TReturn,
+  borderBlockEndColor: (val: TStyleValue) => TReturn,
+  borderInlineWidth: $FlowFixMe,
+  borderInlineStyle: $FlowFixMe,
+  borderInlineColor: $FlowFixMe,
+  borderInlineStartWidth: (val: TStyleValue) => TReturn,
+  borderInlineStartStyle: (val: TStyleValue) => TReturn,
+  borderInlineStartColor: (val: TStyleValue) => TReturn,
+  borderInlineEndWidth: (val: TStyleValue) => TReturn,
+  borderInlineEndStyle: (val: TStyleValue) => TReturn,
+  borderInlineEndColor: (val: TStyleValue) => TReturn,
+  borderStartStartRadius: (val: TStyleValue) => TReturn,
+  borderStartEndRadius: (val: TStyleValue) => TReturn,
+  borderEndStartRadius: (val: TStyleValue) => TReturn,
+  borderEndEndRadius: (val: TStyleValue) => TReturn,
+  gridGap: $FlowFixMe,
+  gridRowGap: (value: TStyleValue) => TReturn,
+  gridColumnGap: (value: TStyleValue) => TReturn,
+  marginBlock: $FlowFixMe,
+  marginBlockStart: (val: TStyleValue) => TReturn,
+  marginBlockEnd: (val: TStyleValue) => TReturn,
+  marginInline: $FlowFixMe,
+  marginInlineStart: (val: TStyleValue) => TReturn,
+  marginInlineEnd: (val: TStyleValue) => TReturn,
+  overflowBlock: (value: TStyleValue) => TReturn,
+  overflowInline: (value: TStyleValue) => TReturn,
+  paddingBlock: $FlowFixMe,
+  paddingBlockStart: (val: TStyleValue) => TReturn,
+  paddingBlockEnd: (val: TStyleValue) => TReturn,
+  paddingInline: $FlowFixMe,
+  paddingInlineStart: (val: TStyleValue) => TReturn,
+  paddingInlineEnd: (val: TStyleValue) => TReturn,
+  scrollMarginBlockStart: (value: TStyleValue) => TReturn,
+  scrollMarginBlockEnd: (value: TStyleValue) => TReturn,
+};
+
+declare const expansions: { ...shorthands, ...aliases };
+
+declare export default typeof expansions;

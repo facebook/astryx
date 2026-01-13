@@ -1,0 +1,31 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict
+ */
+
+import type { CSSType } from './types';
+
+export type VarsConfigValue =
+  | string
+  | $ReadOnly<{ default: VarsConfigValue, [string]: VarsConfigValue }>;
+
+export type VarsConfig = $ReadOnly<{
+  [string]: VarsConfigValue | CSSType<>,
+}>;
+
+declare export function collectVarsByAtRule(
+  key: string,
+  { +nameHash: string, +value: VarsConfigValue },
+  collection: { [string]: Array<string> },
+  atRules: Array<string>,
+): void;
+
+declare export function wrapWithAtRules(ltr: string, atRule: string): string;
+
+declare export function priorityForAtRule(atRule: string): number;
+
+declare export function getDefaultValue(value: VarsConfigValue): ?string;
