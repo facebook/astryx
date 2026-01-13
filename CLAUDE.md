@@ -26,7 +26,7 @@ Look for `<!-- SYNC: ... -->` comments and `SYNC:` in file headers as reminders.
 
 ## Quick Reference
 
-- **Package manager**: pnpm
+- **Package manager**: Yarn 1 (Classic)
 - **Monorepo tool**: Turborepo
 - **Testing**: Vitest (colocated tests)
 - **Components**: `packages/core/`

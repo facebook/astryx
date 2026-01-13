@@ -232,6 +232,6 @@ See existing themes for examples:
 
 ## After Creation
 
-1. Run `pnpm --filter @xds/core build` to verify the build
+1. Run `yarn workspace @xds/core build` to verify the build
 2. Add theme to Storybook preview for testing: `/apps/storybook/.storybook/preview.tsx`
 3. Test in both light and dark modes

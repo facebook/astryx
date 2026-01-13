@@ -2,7 +2,12 @@
   "name": "xds",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "pnpm@9.15.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "internal/*",
+    "e2e"
+  ],
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
@@ -11,8 +16,8 @@
     "test:coverage": "vitest --coverage",
     "test:e2e": "playwright test",
     "lint": "turbo lint",
-    "storybook": "pnpm --filter @xds/storybook dev",
-    "docs": "pnpm --filter @xds/docs dev",
+    "storybook": "yarn workspace @xds/storybook dev",
+    "docs": "yarn workspace @xds/docs dev",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "turbo build && changeset publish"
@@ -35,5 +40,6 @@
     "turbo": "^2.3.0",
     "typescript": "^5.7.0",
     "vitest": "^2.1.0"
-  }
+  },
+  "packageManager": "yarn@1.22.22"
 }

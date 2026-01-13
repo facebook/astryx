@@ -7,7 +7,7 @@
     "build": "storybook build -o dist"
   },
   "dependencies": {
-    "@xds/core": "workspace:*",
+    "@xds/core": "*",
     "react": "^18.3.0",
     "react-dom": "^18.3.0"
   },

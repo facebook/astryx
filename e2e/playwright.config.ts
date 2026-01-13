@@ -27,7 +27,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'pnpm storybook',
+    command: 'yarn storybook',
     url: 'http://localhost:6006',
     reuseExistingServer: !process.env.CI,
   },

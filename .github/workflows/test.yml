@@ -12,15 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
+          cache: 'yarn'
 
-      - run: pnpm install
+      - run: yarn install --frozen-lockfile
 
-      - run: pnpm --filter '!@xds/e2e' test
+      - run: yarn turbo test --filter='!@xds/e2e'
 
-      - run: pnpm build
+      - run: yarn build

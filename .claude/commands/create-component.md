@@ -184,6 +184,6 @@ See `.context/explorations/component-reference.md` for the complete Button imple
 
 ## After Creation
 
-1. Run `pnpm --filter @xds/core build` to verify the build
+1. Run `yarn workspace @xds/core build` to verify the build
 2. Create stories in `/apps/storybook/stories/{ComponentName}.stories.tsx` (import from `@xds/core/{ComponentName}`)
 3. Add tests in `/packages/core/src/{ComponentName}/{ComponentName}.test.tsx`

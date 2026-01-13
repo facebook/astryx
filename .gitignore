@@ -1,6 +1,5 @@
 # Dependencies
 node_modules/
-.pnpm-store/
 
 # Build outputs
 dist/
@@ -35,9 +34,8 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
 
 # Playwright
-/test-results/
-/playwright-report/
-/playwright/.cache/
+e2e/test-results/
+e2e/playwright-report/
+e2e/playwright/.cache/

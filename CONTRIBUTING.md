@@ -16,23 +16,18 @@ nvm install 22
 **Via nodejs.org:**
 Download and install from https://nodejs.org
 
-### pnpm
+### Yarn
 
-Install pnpm after Node.js is set up:
+Install Yarn 1 (Classic) after Node.js is set up:
 
 ```bash
-npm install -g pnpm
-```
-
-Or standalone:
-```bash
-curl -fsSL https://get.pnpm.io/install.sh | sh -
+npm install -g yarn
 ```
 
 Verify installation:
 ```bash
 node --version   # v22.x.x
-pnpm --version   # 9.x.x
+yarn --version   # 1.22.x
 ```
 
 ## Getting Started
@@ -43,14 +38,14 @@ git clone https://github.com/facebookexperimental/xds.git
 cd xds
 
 # Install dependencies
-pnpm install
+yarn install
 
 # Build core package first (required for Storybook)
-pnpm --filter @xds/core build
+yarn workspace @xds/core build
 
 # Start Storybook for component development
 cd apps/storybook
-pnpm dev
+yarn dev
 ```
 
 ### Running Storybook
@@ -60,16 +55,16 @@ Storybook loads pre-built packages from `dist/` folders, so you need to build pa
 **First time setup:**
 ```bash
 # Build all packages
-pnpm build
+yarn build
 
 # Or build just core
-pnpm --filter @xds/core build
+yarn workspace @xds/core build
 ```
 
 **Start Storybook:**
 ```bash
 cd apps/storybook
-pnpm dev
+yarn dev
 ```
 
 Storybook will open at http://localhost:6006 with:
@@ -80,11 +75,11 @@ Storybook will open at http://localhost:6006 with:
 **If you make changes to `@xds/core`:**
 ```bash
 # Rebuild core package
-pnpm --filter @xds/core build
+yarn workspace @xds/core build
 
 # Restart Storybook to see changes
 cd apps/storybook
-pnpm dev
+yarn dev
 ```
 
 ## Project Structure
@@ -116,13 +111,13 @@ xds/
 
 | Command | Description |
 |---------|-------------|
-| `pnpm install` | Install all dependencies |
-| `pnpm dev` | Start all dev servers |
-| `pnpm build` | Build all packages |
-| `pnpm test` | Run all tests |
-| `pnpm test:watch` | Run tests in watch mode |
-| `pnpm storybook` | Start Storybook at localhost:6006 |
-| `pnpm lint` | Lint all packages |
+| `yarn install` | Install all dependencies |
+| `yarn dev` | Start all dev servers |
+| `yarn build` | Build all packages |
+| `yarn test` | Run all tests |
+| `yarn test:watch` | Run tests in watch mode |
+| `yarn storybook` | Start Storybook at localhost:6006 |
+| `yarn lint` | Lint all packages |
 
 ### Using Turborepo
 
@@ -130,20 +125,20 @@ Turbo runs tasks across the monorepo with caching for speed.
 
 ```bash
 # Run tasks for all packages
-pnpm turbo build
-pnpm turbo test
+yarn turbo build
+yarn turbo test
 
 # Filter to specific package
-pnpm turbo build --filter=@xds/core
+yarn turbo build --filter=@xds/core
 
 # Include dependencies
-pnpm turbo build --filter=@xds/core...
+yarn turbo build --filter=@xds/core...
 
 # Force fresh run (skip cache)
-pnpm turbo build --force
+yarn turbo build --force
 
 # See what would run
-pnpm turbo build --dry-run
+yarn turbo build --dry-run
 ```
 
 ## Adding a New Component
@@ -264,16 +259,16 @@ export default defineConfig({
 
 ```bash
 # All tests
-pnpm test
+yarn test
 
 # Watch mode
-pnpm test:watch
+yarn test:watch
 
 # Specific package
-pnpm turbo test --filter=@xds/core
+yarn turbo test --filter=@xds/core
 
 # With coverage
-pnpm test:coverage
+yarn test:coverage
 ```
 
 ### Test Structure
@@ -294,7 +289,7 @@ We use [Changesets](https://github.com/changesets/changesets) for versioning.
 When you make a change that should be released:
 
 ```bash
-pnpm changeset
+yarn changeset
 ```
 
 Follow the prompts to:
@@ -314,8 +309,8 @@ This creates a file in `.changeset/` — commit it with your PR.
 
 1. Create a feature branch from `main`
 2. Make your changes with tests
-3. Run `pnpm test` and `pnpm lint`
-4. Add a changeset if needed: `pnpm changeset`
+3. Run `yarn test` and `yarn lint`
+4. Add a changeset if needed: `yarn changeset`
 5. Open a PR with a clear description
 
 ## Code Style
@@ -331,7 +326,7 @@ This creates a file in `.changeset/` — commit it with your PR.
 
 **"Failed to fetch dynamically imported module"**
 - Cause: Core package not built or out of date
-- Fix: `pnpm --filter @xds/core build` then restart Storybook
+- Fix: `yarn workspace @xds/core build` then restart Storybook
 
 **"React is not defined"**
 - Cause: Missing React import in preview.tsx
@@ -342,6 +337,6 @@ This creates a file in `.changeset/` — commit it with your PR.
 - Fix: Storybook should load from `dist/` not `src/`. Check vite.config.ts aliases.
 
 **Changes not appearing in Storybook**
-- Rebuild the package: `pnpm --filter @xds/core build`
+- Rebuild the package: `yarn workspace @xds/core build`
 - Hard refresh browser: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows)
 - Clear Storybook cache: Remove `apps/storybook/node_modules/.cache`
