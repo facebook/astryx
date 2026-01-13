@@ -23,4 +23,4 @@ export {
   typographyTokens,
 } from './tokens.stylex';
 
-export type { Theme as ThemeType, ThemeMode } from './types';
+export type { Theme as ThemeType, ThemeMode, ComponentStyles } from './types';

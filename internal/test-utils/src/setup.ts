@@ -7,4 +7,5 @@
  * SYNC: When modified, update this header and /internal/test-utils/src/README.md
  */
 
+/// <reference types="@testing-library/jest-dom" />
 import '@testing-library/jest-dom/vitest';

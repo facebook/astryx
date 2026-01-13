@@ -6,12 +6,12 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Button/README.md (props table, features, implementation notes)
- * - /packages/core/src/Button/Button.stories.tsx (argTypes, stories for new variants)
+ * - /packages/core/src/Button/Button.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Button/index.ts (exports if types change)
- * - /apps/storybook/stories/Button.stories.tsx (storybook app stories)
+ * - /apps/storybook/stories/Button.stories.tsx (storybook stories)
  */
 
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { forwardRef, useContext, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorTokens,
@@ -20,6 +20,8 @@ import {
   transitionTokens,
   typographyTokens,
 } from '../theme/tokens.stylex';
+import { ThemeContext } from '../theme/ThemeContext';
+import type { StyleXStyles } from '../theme/types';
 
 /**
  * Base button styles
@@ -41,12 +43,18 @@ const styles = stylex.create({
     lineHeight: 1.429,
     fontWeight: 500,
     cursor: 'pointer',
-    transitionProperty: 'background-image',
+    transitionProperty: 'background-image, transform',
     transitionDuration: transitionTokens.fast,
+    ':active': {
+      transform: 'scale(0.98)',
+    },
   },
   disabled: {
     cursor: 'not-allowed',
     opacity: 0.5,
+    ':active': {
+      transform: 'none',
+    },
   },
 });
 
@@ -119,6 +127,20 @@ const variants = stylex.create({
  */
 export type ButtonVariant = keyof typeof variants;
 
+// =============================================================================
+// Module Augmentation - Register Button's variant type with ComponentStyles
+// =============================================================================
+// This allows themes to provide type-safe variant overrides for Button
+// without requiring theme/types.ts to import from Button (avoiding circular deps)
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    button?: {
+      variants?: Partial<Record<ButtonVariant, StyleXStyles>>;
+    };
+  }
+}
+
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /**
    * The visual style variant of the button.
@@ -179,6 +201,7 @@ const loadingStyles = stylex.create({
  *
  * Styles use XDS theme tokens via StyleX.
  * Wrap your app in <Theme> to apply a theme.
+ * Themes can provide component-level variant overrides via theme.components.button.variants
  *
  * @example
  * ```tsx
@@ -192,6 +215,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const isDisabled = disabled || loading;
     const useLightSpinner = variant === 'primary' || variant === 'destructive';
 
+    // Get theme context for component-level overrides (optional)
+    const themeContext = useContext(ThemeContext);
+    const themeVariantOverride = themeContext?.theme.components?.button?.variants?.[variant];
+
     return (
       <button
         ref={ref}
@@ -199,6 +226,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...stylex.props(
           styles.base,
           variants[variant],
+          themeVariantOverride,
           isDisabled && styles.disabled,
           loading && loadingStyles.loading
         )}

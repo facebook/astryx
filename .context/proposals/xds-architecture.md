@@ -469,120 +469,120 @@ const button = createVariants({
 
 ## Theme Definition API
 
-### Light/Dark Mode Enforcement
+> **Implementation Status**: ✅ Implemented in `/packages/core/src/theme/`
 
-All color tokens are **required** to be `[light, dark]` pairs — TypeScript enforces this:
+### Actual Implementation
 
-```typescript
-type LightDarkPair = [light: string, dark: string];
-
-// ❌ Type error: expected [string, string]
-primary: '#0066cc',
-
-// ✅ Valid: both light and dark values
-primary: ['#0066cc', '#66b3ff'],
-```
-
-### The "on*" Pattern
-
-Every background color has a corresponding foreground color for accessible contrast:
-
-```
-primary     → onPrimary      (text color when on primary background)
-surface     → onSurface      (general text color)
-danger      → onDanger       (text on danger background)
-```
-
-### createTheme Function
+XDS uses StyleX for theming, with pre-compiled theme objects:
 
 ```typescript
-import { createTheme } from '@xds/core';
+// /packages/core/src/theme/tokens.stylex.ts
+import * as stylex from '@stylexjs/stylex';
 
-export const myTheme = createTheme({
-  tokens: {
-    color: {
-      // Surfaces — [light, dark]
-      background: ['#ffffff', '#121212'],
-      onBackground: ['#1a1a1a', '#e0e0e0'],
-      surface: ['#f5f5f5', '#1e1e1e'],
-      onSurface: ['#1a1a1a', '#e0e0e0'],
+// Define CSS variables with stylex.defineVars
+export const colorTokens = stylex.defineVars({
+  accent: 'light-dark(#0064E0, #2694FE)',
+  accentText: 'light-dark(#0064E0, #2694FE)',
+  surface: 'light-dark(#FFFFFF, #1C1C1C)',
+  textPrimary: 'light-dark(#171717, #FAFAFA)',
+  hoverOverlay: 'light-dark(#0000000C, #FFFFFF0C)',
+  pressedOverlay: 'light-dark(#00000019, #FFFFFF19)',
+  // ... more tokens
+});
 
-      // Brand — [light, dark]
-      primary: ['#0066cc', '#66b3ff'],
-      onPrimary: ['#ffffff', '#000000'],
-      secondary: ['#6b7280', '#9ca3af'],
-      onSecondary: ['#ffffff', '#000000'],
+export const spacingTokens = stylex.defineVars({
+  space0: '0px',
+  space1: '4px',
+  space2: '8px',
+  space3: '12px',
+  space4: '16px',
+  // ...
+});
+```
 
-      // Semantic — [light, dark]
-      danger: ['#dc2626', '#f87171'],
-      onDanger: ['#ffffff', '#000000'],
-      success: ['#16a34a', '#4ade80'],
-      onSuccess: ['#ffffff', '#000000'],
+### Theme Creation
 
-      // Borders
-      border: ['#e5e7eb', '#374151'],
-      borderFocus: ['#0066cc', '#66b3ff'],
-    },
+Themes override token values using `stylex.createTheme`:
 
-    spacing: {
-      xs: '0.25rem',
-      sm: '0.5rem',
-      md: '1rem',
-      lg: '1.5rem',
-      xl: '2rem',
-    },
+```typescript
+// /packages/core/src/theme/neutralTheme.stylex.ts
+import * as stylex from '@stylexjs/stylex';
+import { colorTokens } from './tokens.stylex';
+import type { Theme } from './types';
 
-    radius: {
-      sm: '0.25rem',
-      md: '0.5rem',
-      lg: '1rem',
-      full: '9999px',
-    },
+const colorTheme = stylex.createTheme(colorTokens, {
+  accent: 'light-dark(oklch(0.205 0 0), oklch(0.922 0 0))',
+  surface: 'light-dark(oklch(1 0 0), oklch(0.145 0 0))',
+  // ... override values
+});
 
-    typography: {
-      fontFamily: {
-        sans: 'Inter, system-ui, sans-serif',
-        mono: 'JetBrains Mono, monospace',
-      },
-      fontSize: {
-        sm: '0.875rem',
-        md: '1rem',
-        lg: '1.125rem',
-      }
-    },
+// Component-specific variant overrides
+const buttonVariants = stylex.create({
+  primary: {
+    color: 'light-dark(white, oklch(0.145 0 0))',
+  },
+  secondary: {
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: colorTokens.divider,
   },
 });
 
-type MyTheme = typeof myTheme;
+export const neutralTheme: Theme = {
+  name: 'neutral',
+  colorTheme,
+  elevationTheme,
+  spacingTheme,
+  radiusTheme,
+  transitionTheme,
+  typographyTheme,
+  components: {
+    button: { variants: buttonVariants },
+  },
+};
 ```
 
-**Note**: Theme contains only tokens. Component variants are defined in component files.
+### Theme Type Structure
 
-### Generated CSS Output
+```typescript
+// /packages/core/src/theme/types.ts
+export interface ComponentStyles {
+  // Components register via module augmentation
+  // See Button.tsx for example
+}
 
-Themes generate CSS using the `light-dark()` function:
-
-```css
-:root {
-  color-scheme: light dark;
-
-  /* Colors with automatic light/dark support */
-  --xds-color-primary: light-dark(#0066cc, #66b3ff);
-  --xds-color-on-primary: light-dark(#ffffff, #000000);
-  --xds-color-background: light-dark(#ffffff, #121212);
-  --xds-color-on-background: light-dark(#1a1a1a, #e0e0e0);
-
-  /* Spacing (no light/dark needed) */
-  --xds-spacing-sm: 0.5rem;
-  --xds-spacing-md: 1rem;
+export interface Theme {
+  name: string;
+  colorTheme: StyleXTheme;
+  elevationTheme: StyleXTheme;
+  spacingTheme?: StyleXTheme;
+  radiusTheme?: StyleXTheme;
+  transitionTheme?: StyleXTheme;
+  typographyTheme?: StyleXTheme;
+  components?: ComponentStyles;  // Component-level variant overrides
 }
 ```
 
-Components reference these variables and automatically adapt to light/dark mode.
+### Light/Dark Mode
+
+All color values use CSS `light-dark()` function for automatic mode switching:
+
+```css
+/* Generated CSS */
+--xds-color-accent: light-dark(#0064E0, #2694FE);
+--xds-color-surface: light-dark(#FFFFFF, #1C1C1C);
+```
+
+The Theme provider sets `color-scheme` to control which value is used:
+
+```tsx
+// Theme.tsx applies color-scheme based on mode prop
+<div style={{ colorScheme: mode === 'dark' ? 'dark' : mode === 'light' ? 'light' : 'light dark' }}>
+  {children}
+</div>
+```
 
 ### Manual Mode Override
-
-For apps that want manual light/dark toggle:
 
 ```tsx
 // Follow system preference (default)
@@ -595,44 +595,113 @@ For apps that want manual light/dark toggle:
 <Theme theme={myTheme} mode="light">
 ```
 
-### Using the Theme
+---
+
+## Component Implementation
+
+> **Implementation Status**: ✅ Button implemented as reference component
+
+### Actual Button Implementation
+
+Components use StyleX with theme tokens and support theme-level variant overrides:
 
 ```typescript
-import { Theme } from '@xds/core';
-import { myTheme } from './theme';
+// /packages/core/src/Button/Button.tsx
+import * as stylex from '@stylexjs/stylex';
+import { colorTokens, spacingTokens, radiusTokens } from '../theme/tokens.stylex';
+import { ThemeContext } from '../theme/ThemeContext';
+import type { StyleXStyles } from '../theme/types';
 
-function App() {
-  return (
-    <Theme theme={myTheme}>
-      <Button variant="primary" size="md">
-        Click me
-      </Button>
-    </Theme>
-  );
-}
-```
-
-### Theme Composition
-
-Themes can extend other themes:
-
-```typescript
-import { baseTheme } from '@xds/themes/base';
-
-const myTheme = createTheme({
-  extends: baseTheme,
-
-  // Override specific tokens
-  tokens: {
-    color: {
-      primary: ['#custom-brand', '#custom-brand-dark'],
-      secondary: ['#custom-secondary', '#custom-secondary-dark'],
-    }
+// Variant styles using tokens
+const variants = stylex.create({
+  primary: {
+    backgroundColor: colorTokens.accent,
+    color: 'white',
+    ':hover': {
+      backgroundImage: `linear-gradient(${colorTokens.hoverOverlay}, ${colorTokens.hoverOverlay})`,
+    },
+    ':active': {
+      backgroundImage: `linear-gradient(${colorTokens.pressedOverlay}, ${colorTokens.pressedOverlay})`,
+    },
+    ':focus-visible': {
+      outline: `2px solid ${colorTokens.focusOutline}`,
+      outlineOffset: '3px',
+    },
   },
+  secondary: { /* ... */ },
+  ghost: { /* ... */ },
+  destructive: { /* ... */ },
 });
+
+// Derive variant type from StyleX object
+export type ButtonVariant = keyof typeof variants;
+
+// Module augmentation - register with theme types
+declare module '../theme/types' {
+  interface ComponentStyles {
+    button?: {
+      variants?: Partial<Record<ButtonVariant, StyleXStyles>>;
+    };
+  }
+}
+
+// Component consumes theme variant overrides
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ variant = 'primary', children, ...props }, ref) => {
+    const themeContext = useContext(ThemeContext);
+    const themeVariantOverride = themeContext?.theme.components?.button?.variants?.[variant];
+
+    return (
+      <button
+        ref={ref}
+        {...stylex.props(
+          styles.base,
+          variants[variant],
+          themeVariantOverride  // Theme override applied on top
+        )}
+        {...props}
+      >
+        {children}
+      </button>
+    );
+  }
+);
 ```
 
-To add new button variants, swizzle the Button component instead of modifying the theme.
+### Key Patterns
+
+| Pattern | Purpose |
+|---------|---------|
+| `keyof typeof variants` | Derive variant type from StyleX object |
+| `backgroundImage` for overlays | Layer hover/active colors on top of background |
+| Module augmentation | Register component variants with theme types without circular imports |
+| `ThemeContext` consumption | Apply theme-level variant overrides |
+
+### Overlay Hover/Active States
+
+StyleX doesn't support combined pseudo-selectors like `:hover::after`. Use `backgroundImage` instead:
+
+```typescript
+':hover': {
+  // backgroundImage layers on TOP of backgroundColor
+  backgroundImage: `linear-gradient(${colorTokens.hoverOverlay}, ${colorTokens.hoverOverlay})`,
+},
+```
+
+---
+
+## Token Categories
+
+> **Implementation Status**: ✅ Implemented in `/packages/core/src/theme/tokens.stylex.ts`
+
+| Category | Purpose | Examples |
+|----------|---------|----------|
+| `colorTokens` | All colors (semantic, text, icon, status, dividers) | `accent`, `textPrimary`, `hoverOverlay`, `negative` |
+| `spacingTokens` | Consistent spacing scale | `space1` (4px), `space2` (8px), `space4` (16px) |
+| `radiusTokens` | Border radius for different contexts | `rounded`, `container`, `element`, `content` |
+| `elevationTokens` | Box shadows | `base`, `thumb`, `dialog`, `hover`, `menu` |
+| `transitionTokens` | Animation durations | `fast` (0.15s), `normal` (0.2s) |
+| `typographyTokens` | Font families | `fontFamilyBody`, `fontFamilyCode`, `fontFamilyHeading` |
 
 ---
 
@@ -1004,15 +1073,21 @@ Components have their own types based on their variant definitions — no cross-
 
 ## Open Questions
 
-### Resolved
+### Resolved (with actual implementation)
 
-1. ~~**Light/dark mode support?**~~ → **Resolved**: Color tokens are always `[light, dark]` pairs. CSS uses `light-dark()` function. TypeScript enforces pairs.
+1. ~~**Light/dark mode support?**~~ → **Resolved**: CSS `light-dark()` function. Theme provider sets `color-scheme` property. Mode prop (`system`/`light`/`dark`) controls behavior.
 
-2. ~~**Swizzle layer ergonomics?**~~ → **Resolved**: Swizzle with Tailwind Variants as default format. StyleX available for advanced users.
+2. ~~**Component themes in theme vs component file?**~~ → **Resolved**: Hybrid approach - component variants defined in component files, themes can provide variant overrides via `components.button.variants`.
 
-3. ~~**Component themes in theme vs component file?**~~ → **Resolved**: Token-only themes. Component variants are defined in component files, customized via swizzle.
+3. ~~**Prop naming (intent vs variant)?**~~ → **Resolved**: Use `variant` — more corpus representation for AI.
 
-4. ~~**Prop naming (intent vs variant)?**~~ → **Resolved**: Use `variant` — more corpus representation for AI.
+4. ~~**Type inference from StyleX objects?**~~ → **Resolved**: `keyof typeof variants` derives variant type from StyleX object. Types stay in sync automatically.
+
+5. ~~**Theme-to-component type coupling?**~~ → **Resolved**: Module augmentation - each component declares its own entry in `ComponentStyles` interface, avoiding circular imports.
+
+6. ~~**Default theme?**~~ → **Resolved**: XDS ships `defaultTheme` and `neutralTheme`. Themes are required to wrap components.
+
+7. ~~**Compile-time vs runtime themes?**~~ → **Resolved**: Compile-time via StyleX. Themes are pre-compiled `stylex.createTheme()` objects.
 
 ### Unresolved Design Decisions
 
@@ -1020,42 +1095,33 @@ Components have their own types based on their variant definitions — no cross-
    - `button.slots.icon.hover` or just `button.slots.icon`?
    - Risk of over-specification vs. flexibility
 
-2. **Should themes be runtime or compile-time?**
-   - Compile-time: Better performance, type safety
-   - Runtime: Dynamic theming, user preferences
-   - Hybrid: Base at compile-time, overrides at runtime?
-
-3. **How to handle responsive tokens?**
+2. **How to handle responsive tokens?**
    - `spacing: { md: { default: '1rem', '@md': '1.5rem' } }`
    - Or separate responsive layer?
 
-4. **Theme validation/linting?**
+3. **Theme validation/linting?**
    - Warn if theme is missing required tokens?
    - Provide a `validateTheme()` function?
 
-5. **Default theme?**
-   - Should XDS ship a default theme?
-   - Or require users to always define one?
+### Swizzle Layer (Not Yet Implemented)
 
-### Swizzle Layer
+4. **Swizzle CLI?**
+   - `npx xds swizzle Button` to eject component?
+   - Currently, component variant overrides are theme-based, not file-based
 
-6. **Swizzle sync command?**
+5. **Swizzle sync command?**
    - `npx xds sync Button` to see upstream changes?
    - How do we help users stay up-to-date?
 
-7. **Component versioning in swizzled files?**
-   - Should swizzled files track which XDS version they came from?
-   - Warnings when upstream has breaking changes?
+### Future Considerations
 
-### `@xds/variants` Implementation
-
-8. **Type inference complexity?**
-   - How do we infer variant props from nested StyleX objects?
-   - Tailwind Variants handles this well — can we match it?
-
-9. **Responsive variants?**
+6. **Responsive variants?**
    - Should responsive breakpoints be part of variant API?
-   - Or handled via Tailwind/StyleX media queries?
+   - Or handled via StyleX media queries?
+
+7. **Tailwind preset?**
+   - XDS tokens available as Tailwind utilities for hybrid projects
+   - Not yet implemented
 
 ---
 
@@ -1134,31 +1200,48 @@ This provides tw-classed ergonomics without exposed CSS classes.
 
 ---
 
-## Proposed Implementation Phases
+## Implementation Phases
 
-### Phase 1: Core Infrastructure
-- `@xds/variants` wrapper around StyleX — tw-classed-like ergonomics with compile-time enforcement
-- `createTheme()` function with TypeScript inference
-- `Theme` context
-- Basic token system (colors, spacing, typography)
-- 3-5 pilot components (Button, Input, Text, Box, Stack)
+### Phase 1: Core Infrastructure ✅ Complete
+
+**Token System**
+- `stylex.defineVars` for tokens (colors, spacing, typography, radius, transitions, elevation)
+- `light-dark()` CSS function for automatic light/dark mode switching
+- Token categories: color, spacing, radius, transition, typography, elevation
+
+**Theme System**
+- `ThemeContext` for providing theme to component tree
+- `Theme` provider component with mode prop ('light' | 'dark' | 'system')
+- `stylex.createTheme` for theme-level token overrides
+- Component-level variant overrides via `theme.components.{component}.variants`
+- Module augmentation pattern for type-safe component styles (avoids circular imports)
+
+**Pilot Components**
+- Button with variants (primary, secondary, ghost, destructive)
+- Loading state with spinner animation
+- Press effect (scale 98%)
+- Theme variant consumption pattern
+
+**Infrastructure**
+- Storybook integration with theme switching
+- Vitest with StyleX babel plugin for testing
+- Component template (`/create-component` slash command)
 
 ### Phase 2: Component Library
-- Full component set with variant/size/part slots
-- Swizzle CLI
-- Storybook integration
+- Additional components (Input, Text, Box, Stack, Card, etc.)
+- Slot-level styling (icon, label, prefix, suffix)
+- Full variant/size matrix across components
 
 ### Phase 3: Ecosystem
-- Tailwind preset
-- CSS variable export
-- Lint rules for arbitrary value prevention
 - Theme gallery / community themes
+- Documentation site
+- Migration guides from other design systems
 
 ### Phase 4: Advanced Features
-- Runtime theme switching
-- Responsive tokens
+- Swizzle CLI for component customization
 - Animation tokens
 - Multi-theme composition
+- Responsive tokens
 
 ---
 

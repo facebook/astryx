@@ -23,12 +23,12 @@ Use this structure based on Button.tsx:
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/{ComponentName}/README.md
- * - /packages/core/src/{ComponentName}/{ComponentName}.stories.tsx
+ * - /packages/core/src/{ComponentName}/{ComponentName}.test.tsx
  * - /packages/core/src/{ComponentName}/index.ts
  * - /apps/storybook/stories/{ComponentName}.stories.tsx
  */
 
-import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
+import { forwardRef, useContext, type HTMLAttributes, type ReactNode } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorTokens,
@@ -37,6 +37,8 @@ import {
   transitionTokens,
   typographyTokens,
 } from '../theme/tokens.stylex';
+import { ThemeContext } from '../theme/ThemeContext';
+import type { StyleXStyles } from '../theme/types';
 
 // Define styles first
 const styles = stylex.create({
@@ -59,6 +61,19 @@ const variants = stylex.create({
 // Derive variant type from the variants object
 export type {ComponentName}Variant = keyof typeof variants;
 
+// =============================================================================
+// Module Augmentation - Register variant type with ComponentStyles
+// =============================================================================
+// This allows themes to provide type-safe variant overrides for this component
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    {componentName}?: {
+      variants?: Partial<Record<{ComponentName}Variant, StyleXStyles>>;
+    };
+  }
+}
+
 export interface {ComponentName}Props extends HTMLAttributes<HTMLElement> {
   variant?: {ComponentName}Variant;
   children: ReactNode;
@@ -66,10 +81,18 @@ export interface {ComponentName}Props extends HTMLAttributes<HTMLElement> {
 
 export const {ComponentName} = forwardRef<HTMLElement, {ComponentName}Props>(
   ({ variant = 'default', children, ...props }, ref) => {
+    // Get theme context for component-level variant overrides (optional)
+    const themeContext = useContext(ThemeContext);
+    const themeVariantOverride = themeContext?.theme.components?.{componentName}?.variants?.[variant];
+
     return (
       <div
         ref={ref}
-        {...stylex.props(styles.base, variants[variant])}
+        {...stylex.props(
+          styles.base,
+          variants[variant],
+          themeVariantOverride
+        )}
         {...props}
       >
         {children}
@@ -124,50 +147,13 @@ import { {ComponentName} } from '@xds/core/{ComponentName}';
 | `index.ts` | Entry | Exports component and types |
 | `{ComponentName}.tsx` | Core | Component implementation |
 | `{ComponentName}.test.tsx` | Test | Unit tests |
-| `{ComponentName}.stories.tsx` | Docs | Storybook stories |
 
 ## Implementation Notes
 
 - Variant type derived from `keyof typeof variants`
 ```
 
-### 4. {ComponentName}.stories.tsx
-
-```tsx
-/**
- * @file {ComponentName}.stories.tsx
- */
-
-import type { Meta, StoryObj } from '@storybook/react';
-import { {ComponentName} } from './{ComponentName}';
-
-const meta = {
-  title: 'Components/{ComponentName}',
-  component: {ComponentName},
-  parameters: {
-    layout: 'centered',
-  },
-  tags: ['autodocs'],
-  argTypes: {
-    variant: {
-      control: 'select',
-      options: ['default'], // Add variants here
-    },
-  },
-} satisfies Meta<typeof {ComponentName}>;
-
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Default: Story = {
-  args: {
-    children: '{ComponentName} content',
-    variant: 'default',
-  },
-};
-```
-
-### 5. Update /packages/core/src/index.ts
+### 4. Update /packages/core/src/index.ts
 
 Add export for the new component:
 
@@ -180,6 +166,8 @@ export * from './{ComponentName}';
 1. **Derive types from StyleX objects**: Use `keyof typeof variants` for variant types
 2. **Use tokens**: Import from `../theme/tokens.stylex` - never use hardcoded values
 3. **SYNC comments**: List all files that need updating when the component changes
+4. **Theme variant ingestion**: Use `ThemeContext` to apply theme-level variant overrides on top of defaults
+5. **Module augmentation**: Use `declare module` to register the component's variant type with `ComponentStyles` - this keeps theme types decoupled from component imports
 
 ## Token Reference
 
@@ -197,5 +185,5 @@ See `.context/explorations/component-reference.md` for the complete Button imple
 ## After Creation
 
 1. Run `pnpm --filter @xds/core build` to verify the build
-2. Create stories in `/apps/storybook/stories/{ComponentName}.stories.tsx`
-3. Add tests in `{ComponentName}.test.tsx`
+2. Create stories in `/apps/storybook/stories/{ComponentName}.stories.tsx` (import from `@xds/core/{ComponentName}`)
+3. Add tests in `/packages/core/src/{ComponentName}/{ComponentName}.test.tsx`

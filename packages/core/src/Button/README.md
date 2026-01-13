@@ -42,7 +42,6 @@ import { Button } from '@xds/core/Button';
 | `index.ts` | Entry | Exports Button component and types |
 | `Button.tsx` | Core | Button component implementation |
 | `Button.test.tsx` | Test | Unit tests for Button component |
-| `Button.stories.tsx` | Docs | Storybook stories for visual documentation |
 
 ## Implementation Notes
 

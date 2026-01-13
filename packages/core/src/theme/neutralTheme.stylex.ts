@@ -223,6 +223,26 @@ const typographyTheme = stylex.createTheme(typographyTokens, {
 });
 
 // =============================================================================
+// Component Style Overrides
+// =============================================================================
+// Theme-specific component customizations using stylex.create()
+// These styles are applied on top of default component variants
+
+const buttonVariants = stylex.create({
+  // Primary button text needs to contrast with accent color
+  // In dark mode, accent is light so text should be dark
+  primary: {
+    color: 'light-dark(white, oklch(0.145 0 0))',
+  },
+  // Add border to secondary button for shadcn-style appearance
+  secondary: {
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: colorTokens.divider,
+  },
+});
+
+// =============================================================================
 // Theme Export
 // =============================================================================
 
@@ -234,4 +254,9 @@ export const neutralTheme: Theme = {
   radiusTheme,
   transitionTheme,
   typographyTheme,
+  components: {
+    button: {
+      variants: buttonVariants,
+    },
+  },
 };

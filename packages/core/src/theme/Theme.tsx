@@ -16,20 +16,14 @@
  * ```
  */
 
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { useContext, useMemo } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type { Theme as ThemeType, ThemeMode } from './types';
 import { publicVariables } from './publicVariables.stylex';
+import { ThemeContext, type ThemeContextValue } from './ThemeContext';
 
-/**
- * Theme context value
- */
-interface ThemeContextValue {
-  theme: ThemeType;
-  mode: ThemeMode;
-}
-
-const ThemeContext = createContext<ThemeContextValue | null>(null);
+// Re-export for backwards compatibility
+export { ThemeContext } from './ThemeContext';
 
 /**
  * Hook to access current theme
