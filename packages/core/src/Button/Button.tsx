@@ -21,7 +21,6 @@ import {
   typographyTokens,
 } from '../theme/tokens.stylex';
 import { ThemeContext } from '../theme/ThemeContext';
-import type { StyleXStyles } from '../theme/types';
 
 /**
  * Base button styles
@@ -56,8 +55,8 @@ const styles = stylex.create({
     cursor: 'not-allowed',
     opacity: 0.5,
     transform: {
-      default: 'none',
-      ':active': 'none',
+      default: null,
+      ':active': null,
     },
   },
 });
