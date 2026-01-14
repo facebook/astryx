@@ -19,6 +19,6 @@ jobs:
 
       - run: yarn install --frozen-lockfile
 
-      - run: yarn turbo test --filter='!@xds/e2e'
+      - run: yarn test
 
       - run: yarn build

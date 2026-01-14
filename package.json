@@ -9,18 +9,19 @@
     "e2e"
   ],
   "scripts": {
-    "dev": "turbo dev",
-    "build": "turbo build",
-    "test": "turbo test",
+    "build": "yarn workspace @xds/core build",
+    "dev": "yarn workspace @xds/storybook dev",
+    "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest --coverage",
     "test:e2e": "playwright test",
-    "lint": "turbo lint",
+    "lint": "eslint .",
     "storybook": "yarn workspace @xds/storybook dev",
+    "storybook:build": "yarn workspace @xds/storybook build",
     "docs": "yarn workspace @xds/docs dev",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "turbo build && changeset publish"
+    "release": "yarn build && changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.0",
@@ -37,7 +38,6 @@
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "tsup": "^8.3.0",
-    "turbo": "^2.3.0",
     "typescript": "^5.7.0",
     "vitest": "^2.1.0"
   },

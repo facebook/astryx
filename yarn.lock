@@ -4496,48 +4496,6 @@ tsup@^8.3.0:
     tinyglobby "^0.2.11"
     tree-kill "^1.2.2"
 
-turbo-darwin-64@2.7.4:
-  version "2.7.4"
-  resolved "https://registry.yarnpkg.com/turbo-darwin-64/-/turbo-darwin-64-2.7.4.tgz#ea3f00f7f02474c253e59275d26078053c3eec99"
-  integrity sha512-xDR30ltfkSsRfGzABBckvl1nz1cZ3ssTujvdj+TPwOweeDRvZ0e06t5DS0rmRBvyKpgGs42K/EK6Mn2qLlFY9A==
-
-turbo-darwin-arm64@2.7.4:
-  version "2.7.4"
-  resolved "https://registry.yarnpkg.com/turbo-darwin-arm64/-/turbo-darwin-arm64-2.7.4.tgz#b35acee0f009648e1205efb4c37b6f97e38a78cb"
-  integrity sha512-P7sjqXtOL/+nYWPvcDGWhi8wf8M8mZHHB8XEzw2VX7VJrS8IGHyJHGD1AYfDvhAEcr7pnk3gGifz3/xyhI655w==
-
-turbo-linux-64@2.7.4:
-  version "2.7.4"
-  resolved "https://registry.yarnpkg.com/turbo-linux-64/-/turbo-linux-64-2.7.4.tgz#e649cbd50b5c7e5fd0a303a2c6fb9686bd0e44d0"
-  integrity sha512-GofFOxRO/IhG8BcPyMSSB3Y2+oKQotsaYbHxL9yD6JPb20/o35eo+zUSyazOtilAwDHnak5dorAJFoFU8MIg2A==
-
-turbo-linux-arm64@2.7.4:
-  version "2.7.4"
-  resolved "https://registry.yarnpkg.com/turbo-linux-arm64/-/turbo-linux-arm64-2.7.4.tgz#3a72cfb73c09cc417ff8cfb30103334d3597568e"
-  integrity sha512-+RQKgNjksVPxYAyAgmDV7w/1qj++qca+nSNTAOKGOfJiDtSvRKoci89oftJ6anGs00uamLKVEQ712TI/tfNAIw==
-
-turbo-windows-64@2.7.4:
-  version "2.7.4"
-  resolved "https://registry.yarnpkg.com/turbo-windows-64/-/turbo-windows-64-2.7.4.tgz#da0957806407567501bbf48ee707bccff42e3af4"
-  integrity sha512-rfak1+g+ON3czs1mDYsCS4X74ZmK6gOgRQTXjDICtzvR4o61paqtgAYtNPofcVsMWeF4wvCajSeoAkkeAnQ1kg==
-
-turbo-windows-arm64@2.7.4:
-  version "2.7.4"
-  resolved "https://registry.yarnpkg.com/turbo-windows-arm64/-/turbo-windows-arm64-2.7.4.tgz#6bad15321282af636fb5a81eb22e17a777e882dc"
-  integrity sha512-1ZgBNjNRbDu/fPeqXuX9i26x3CJ/Y1gcwUpQ+Vp7kN9Un6RZ9kzs164f/knrjcu5E+szCRexVjRSJay1k5jApA==
-
-turbo@^2.3.0:
-  version "2.7.4"
-  resolved "https://registry.yarnpkg.com/turbo/-/turbo-2.7.4.tgz#9088187ff36bc212cea8cb68e2b48a0691a042c4"
-  integrity sha512-bkO4AddmDishzJB2ze7aYYPaejMoJVfS0XnaR6RCdXFOY8JGJfQE+l9fKiV7uDPa5Ut44gmOWJL3894CIMeH9g==
-  optionalDependencies:
-    turbo-darwin-64 "2.7.4"
-    turbo-darwin-arm64 "2.7.4"
-    turbo-linux-64 "2.7.4"
-    turbo-linux-arm64 "2.7.4"
-    turbo-windows-64 "2.7.4"
-    turbo-windows-arm64 "2.7.4"
-
 type-check@^0.4.0, type-check@~0.4.0:
   version "0.4.0"
   resolved "https://registry.yarnpkg.com/type-check/-/type-check-0.4.0.tgz#07b8203bfa7056c0657050e3ccd2c37730bab8f1"
