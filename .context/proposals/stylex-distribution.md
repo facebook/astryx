@@ -37,8 +37,12 @@ https://github.com/facebook/stylex/tree/main/examples/example-nextjs
 
 ### Consuming App (Next.js, Vite, Storybook, etc.)
 
+For Next.js:
 - Runs `@stylexjs/babel-plugin` to transform StyleX calls
 - Runs `@stylexjs/postcss-plugin` to extract CSS
+
+For Vite, Webpack/Rspack, and Esbuild:
+- Use `@stylexjs/unplugin` to generate and bundle CSS
 - Processes both its own code AND `@xds/core` imports
 - Handles all CSS extraction at build time
 
