@@ -80,16 +80,16 @@ More important than required-vs-optional is error quality:
 
 ```
 // Bad: silent wrong behavior
-<Button>Click</Button>  // defaults to type="button", looks like submit
+<XDSButton>Click</XDSButton>  // defaults to type="button", looks like submit
 
 // Better: required prop
-<Button>Click</Button>  // Error: missing required prop 'type'
+<XDSButton>Click</XDSButton>  // Error: missing required prop 'type'
 
 // Best: actionable error with guidance
-<Button>Click</Button>
-// Error: Button requires 'type' prop.
+<XDSButton>Click</XDSButton>
+// Error: XDSButton requires 'type' prop.
 // Options: "button" | "submit" | "reset"
-// Example: <Button type="button">Click</Button>
+// Example: <XDSButton type="button">Click</XDSButton>
 ```
 
 ---

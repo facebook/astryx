@@ -1,6 +1,6 @@
 # /packages/core/src/Button
 
-Button component with multiple variants and loading state support.
+XDSButton component with multiple variants and loading state support.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
@@ -14,16 +14,16 @@ Button component with multiple variants and loading state support.
 ## Usage
 
 ```tsx
-import { Button } from '@xds/core/Button';
+import { XDSButton } from '@xds/core/Button';
 
 // Basic usage
-<Button variant="primary">Click me</Button>
+<XDSButton variant="primary">Click me</XDSButton>
 
 // With loading state
-<Button variant="primary" loading>Saving...</Button>
+<XDSButton variant="primary" loading>Saving...</XDSButton>
 
 // Destructive action
-<Button variant="destructive">Delete</Button>
+<XDSButton variant="destructive">Delete</XDSButton>
 ```
 
 ## Props
@@ -39,12 +39,12 @@ import { Button } from '@xds/core/Button';
 
 | File | Role | Purpose |
 |------|------|---------|
-| `index.ts` | Entry | Exports Button component and types |
-| `Button.tsx` | Core | Button component implementation |
-| `Button.test.tsx` | Test | Unit tests for Button component |
+| `index.ts` | Entry | Exports XDSButton component and types |
+| `XDSButton.tsx` | Core | XDSButton component implementation |
+| `XDSButton.test.tsx` | Test | Unit tests for XDSButton component |
 
 ## Implementation Notes
 
-- `ButtonVariant` type is derived from the `variants` StyleX object using `keyof typeof variants`
+- `XDSButtonVariant` type is derived from the `variants` StyleX object using `keyof typeof variants`
 - Hover/active states use `backgroundImage` with `linear-gradient` to layer overlay colors on top of the base background
 - Destructive variant uses `colorTokens.negative` for its focus outline color

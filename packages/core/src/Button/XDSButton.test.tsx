@@ -1,39 +1,39 @@
 /**
- * @file Button.test.tsx
- * @input Uses vitest, @testing-library/react, Button component
- * @output Unit tests for Button component behavior
- * @position Testing; validates Button.tsx implementation
+ * @file XDSButton.test.tsx
+ * @input Uses vitest, @testing-library/react, XDSButton component
+ * @output Unit tests for XDSButton component behavior
+ * @position Testing; validates XDSButton.tsx implementation
  *
- * SYNC: When Button.tsx changes, update tests to match new behavior
+ * SYNC: When XDSButton.tsx changes, update tests to match new behavior
  */
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Button } from './Button';
+import { XDSButton } from './XDSButton';
 
-describe('Button', () => {
+describe('XDSButton', () => {
   it('renders children correctly', () => {
-    render(<Button>Click me</Button>);
+    render(<XDSButton>Click me</XDSButton>);
     expect(screen.getByRole('button', { name: 'Click me' })).toBeInTheDocument();
   });
 
   it('renders with different variants', () => {
-    const { rerender } = render(<Button variant="primary">Primary</Button>);
+    const { rerender } = render(<XDSButton variant="primary">Primary</XDSButton>);
     expect(screen.getByRole('button')).toBeInTheDocument();
 
-    rerender(<Button variant="secondary">Secondary</Button>);
+    rerender(<XDSButton variant="secondary">Secondary</XDSButton>);
     expect(screen.getByRole('button')).toBeInTheDocument();
 
-    rerender(<Button variant="ghost">Ghost</Button>);
+    rerender(<XDSButton variant="ghost">Ghost</XDSButton>);
     expect(screen.getByRole('button')).toBeInTheDocument();
 
-    rerender(<Button variant="destructive">Destructive</Button>);
+    rerender(<XDSButton variant="destructive">Destructive</XDSButton>);
     expect(screen.getByRole('button')).toBeInTheDocument();
   });
 
   it('shows loading state with spinner', () => {
-    render(<Button loading>Submit</Button>);
+    render(<XDSButton loading>Submit</XDSButton>);
     const button = screen.getByRole('button');
     // Button should be disabled when loading
     expect(button).toBeDisabled();
@@ -44,7 +44,7 @@ describe('Button', () => {
   it('handles click events', async () => {
     const user = userEvent.setup();
     const handleClick = vi.fn();
-    render(<Button onClick={handleClick}>Click me</Button>);
+    render(<XDSButton onClick={handleClick}>Click me</XDSButton>);
 
     await user.click(screen.getByRole('button'));
     expect(handleClick).toHaveBeenCalledTimes(1);
@@ -53,7 +53,7 @@ describe('Button', () => {
   it('does not fire click when disabled', async () => {
     const user = userEvent.setup();
     const handleClick = vi.fn();
-    render(<Button disabled onClick={handleClick}>Click me</Button>);
+    render(<XDSButton disabled onClick={handleClick}>Click me</XDSButton>);
 
     await user.click(screen.getByRole('button'));
     expect(handleClick).not.toHaveBeenCalled();
@@ -62,7 +62,7 @@ describe('Button', () => {
   it('does not fire click when loading', async () => {
     const user = userEvent.setup();
     const handleClick = vi.fn();
-    render(<Button loading onClick={handleClick}>Click me</Button>);
+    render(<XDSButton loading onClick={handleClick}>Click me</XDSButton>);
 
     await user.click(screen.getByRole('button'));
     expect(handleClick).not.toHaveBeenCalled();
@@ -70,7 +70,7 @@ describe('Button', () => {
 
   it('forwards ref correctly', () => {
     const ref = vi.fn();
-    render(<Button ref={ref}>Test</Button>);
+    render(<XDSButton ref={ref}>Test</XDSButton>);
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLButtonElement));
   });
 });

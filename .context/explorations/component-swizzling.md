@@ -30,8 +30,8 @@ Themes are self-contained files that can be copied and modified. Could component
 ### 1. Component Recipes (like shadcn)
 Provide component source files that consumers copy into their project:
 ```
-npx xds add button
-→ copies Button.tsx into your project
+npx xds add XDSButton
+→ copies XDSButton.tsx into your project
 ```
 
 Pros: Full control, no abstraction leak
@@ -43,7 +43,7 @@ Extend the theme object to include component-specific overrides:
 const myTheme = {
   ...defaultTheme,
   components: {
-    Button: {
+    XDSButton: {
       variants: {
         primary: { /* custom styles */ },
       },
@@ -58,7 +58,7 @@ Cons: Limited to style overrides, can't change structure
 ### 3. Component Slots/Composition
 Design components with explicit customization points:
 ```tsx
-<Button
+<XDSButton
   renderIcon={(props) => <CustomIcon {...props} />}
   styles={{ hover: customHoverStyles }}
 />
@@ -71,9 +71,9 @@ Cons: API complexity, can't anticipate all needs
 Allow registering custom component implementations:
 ```tsx
 import { registerComponent } from '@xds/core';
-import { MyButton } from './MyButton';
+import { MyXDSButton } from './MyXDSButton';
 
-registerComponent('Button', MyButton);
+registerComponent('XDSButton', MyXDSButton);
 ```
 
 Pros: Clean swap mechanism

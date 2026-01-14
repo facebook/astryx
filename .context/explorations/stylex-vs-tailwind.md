@@ -343,7 +343,7 @@ Research recommends a three-tier structure where only the outermost layer is pub
 │  --spacing-component-gap: var(--spacing-16)        │
 ├─────────────────────────────────────────────────────┤
 │  COMPONENT API (the public contract)               │
-│  <Button variant="primary" />                       │
+│  <XDSButton variant="primary" />                       │
 │  NOT: style={{ color: 'var(--xds-color-primary)' }}│
 └─────────────────────────────────────────────────────┘
 ```
@@ -388,7 +388,7 @@ This creates a tiered access model:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  PUBLIC API (versioned, stable)                            │
-│  - Component props: <Button variant="primary" />            │
+│  - Component props: <XDSButton variant="primary" />            │
 │  - Theme customization: <Theme theme={myTheme} />    │
 │  - Zero styling — no CSS exposure                          │
 ├─────────────────────────────────────────────────────────────┤
@@ -559,7 +559,7 @@ const Button = classed('button', {
 });
 
 // Usage
-<Button variant="secondary" size="lg">Click me</Button>
+<XDSButton variant="secondary" size="lg">Click me</XDSButton>
 ```
 
 **Strengths**:
@@ -698,8 +698,8 @@ All Tailwind-based tools (tw-classed, Tailwind Variants, CVA with Tailwind) **st
 
 ```typescript
 // All of these would work even with variant tools
-<Button className="mt-[13px]" />
-<Button className="bg-[#ff0000]" />
+<XDSButton className="mt-[13px]" />
+<XDSButton className="bg-[#ff0000]" />
 ```
 
 Only StyleX prevents this at compile time through TypeScript.
@@ -1103,7 +1103,7 @@ The "AI gap" with StyleX is primarily for **component authors**, not **component
 
 | Role | API Surface | AI Difficulty |
 |------|-------------|---------------|
-| **Consumer** | `<Button variant="primary" size="md">` | Trivial — typed props, autocomplete |
+| **Consumer** | `<XDSButton variant="primary" size="md">` | Trivial — typed props, autocomplete |
 | **Author** | `createVariants({ ... stylex.create() ... })` | Higher — unfamiliar StyleX patterns |
 | **Swizzler** | Semantic CSS variables + custom StyleX | Medium — documented patterns |
 
@@ -1280,7 +1280,7 @@ Sources: [Netguru: Design System Adoption Pitfalls](https://www.netguru.com/blog
 | Testable individually | Side effects hard to trace |
 | AI can learn discrete patterns | AI generates arbitrary styling |
 
-Creating a `<ButtonWithIcon>` variant costs minutes. Debugging why `<Button className="custom-override">` broke in a refactor costs hours.
+Creating a `<XDSButtonWithIcon>` variant costs minutes. Debugging why `<XDSButton className="custom-override">` broke in a refactor costs hours.
 
 ### When Over-Componentization IS a Problem
 
