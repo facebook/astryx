@@ -73,12 +73,12 @@ const variants = stylex.create({
     backgroundColor: colorTokens.accent,
     color: 'white',
     backgroundImage: {
-      default: 'none',
+      default: null,
       ':hover': `linear-gradient(${colorTokens.hoverOverlay}, ${colorTokens.hoverOverlay})`,
       ':active': `linear-gradient(${colorTokens.pressedOverlay}, ${colorTokens.pressedOverlay})`,
     },
     outline: {
-      default: 'none',
+      default: null,
       ':focus-visible': `2px solid ${colorTokens.focusOutline}`,
     },
     outlineOffset: {
@@ -90,12 +90,12 @@ const variants = stylex.create({
     backgroundColor: colorTokens.deemphasized,
     color: colorTokens.textPrimary,
     backgroundImage: {
-      default: 'none',
+      default: null,
       ':hover': `linear-gradient(${colorTokens.hoverOverlay}, ${colorTokens.hoverOverlay})`,
       ':active': `linear-gradient(${colorTokens.pressedOverlay}, ${colorTokens.pressedOverlay})`,
     },
     outline: {
-      default: 'none',
+      default: null,
       ':focus-visible': `2px solid ${colorTokens.focusOutline}`,
     },
     outlineOffset: {
@@ -107,12 +107,12 @@ const variants = stylex.create({
     backgroundColor: 'transparent',
     color: colorTokens.textPrimary,
     backgroundImage: {
-      default: 'none',
+      default: null,
       ':hover': `linear-gradient(${colorTokens.hoverOverlay}, ${colorTokens.hoverOverlay})`,
       ':active': `linear-gradient(${colorTokens.pressedOverlay}, ${colorTokens.pressedOverlay})`,
     },
     outline: {
-      default: 'none',
+      default: null,
       ':focus-visible': `2px solid ${colorTokens.focusOutline}`,
     },
     outlineOffset: {
@@ -124,12 +124,12 @@ const variants = stylex.create({
     backgroundColor: colorTokens.negative,
     color: 'white',
     backgroundImage: {
-      default: 'none',
+      default: null,
       ':hover': `linear-gradient(${colorTokens.hoverOverlay}, ${colorTokens.hoverOverlay})`,
       ':active': `linear-gradient(${colorTokens.pressedOverlay}, ${colorTokens.pressedOverlay})`,
     },
     outline: {
-      default: 'none',
+      default: null,
       ':focus-visible': `2px solid ${colorTokens.negative}`,
     },
     outlineOffset: {
