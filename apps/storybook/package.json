@@ -23,6 +23,8 @@
     "@storybook/react-vite": "^8.4.0",
     "@storybook/test": "^8.4.0",
     "@stylexjs/babel-plugin": "^0.17.4",
+    "@stylexjs/postcss-plugin": "^0.17.5",
+    "autoprefixer": "^10.4.23",
     "storybook": "^8.4.0"
   }
 }
