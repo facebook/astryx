@@ -2,76 +2,71 @@
 
 ## Context
 
-XDS uses the `XDS` prefix for all design system components (e.g., `XDSButton`, `XDSCard`). This document explores how file naming affects LLM discoverability and future flexibility.
+XDS uses the `XDS` prefix for all design system components (e.g., `XDSButton`, `XDSVStack`). This document explores how file naming affects LLM discoverability and contribution patterns.
 
-## Options Considered
+## Empirical Observation
 
-### Option A: Internal files match export name
+When asked to create a new component `XDSVStack`, an LLM (Claude) naturally created files with the prefix included:
+- `XDSVStack.tsx`
+- `XDSVStack.test.tsx`
+
+This happened despite an earlier discussion about keeping files unprefixed. This suggests:
+
+1. **Prefixed filenames are the natural LLM default** — When the component name includes a prefix, LLMs instinctively name files to match
+2. **Re-export pattern requires extra context** — The pattern `Button.tsx → export as XDSButton` is a learned convention, not intuitive
+3. **Consistency reduces cognitive load** — Matching file names to export names eliminates a layer of indirection
+
+## Options
+
+### Option A: Files match export names (prefixed)
 
 ```
 Button/
 ├── XDSButton.tsx       → exports XDSButton
 ├── XDSButton.test.tsx
-├── XDSButton.stories.tsx
 └── index.ts
 ```
 
-**Pros:**
-- Maximum clarity for LLMs contributing to codebase
-- Editor tabs show full component name
-- No mental translation needed between file name and component name
+**Evidence for:**
+- LLMs naturally default to this pattern
+- No mental translation between file name and component name
+- Editor tabs show the exact component name
+- Grep/search for "XDSButton" finds both file and component
 
-**Cons:**
+**Evidence against:**
 - Redundancy with directory name (`Button/XDSButton.tsx`)
-- Harder to change prefix in the future
+- Harder to change prefix in the future (affects all file names)
 
-### Option B: Internal files use unprefixed names
+### Option B: Files unprefixed, re-export with prefix
 
 ```
 Button/
-├── Button.tsx          → exports XDSButton
+├── Button.tsx          → exports Button internally
 ├── Button.test.tsx
-├── Button.stories.tsx
-└── index.ts            → re-exports with prefix
+└── index.ts            → export { Button as XDSButton }
 ```
 
-**Pros:**
+**Evidence for:**
 - Simpler file names
-- Easier to support prefix customization (forks can re-export with different prefix)
-- Follows common library patterns (MUI, Radix)
+- Easier to support prefix customization for forks
+- Follows some existing library patterns
 
-**Cons:**
-- `import { XDSButton } from './Button'` may briefly confuse LLM contributors
-- Requires understanding re-export pattern
+**Evidence against:**
+- LLMs don't naturally follow this pattern without explicit instruction
+- Requires learning and maintaining a convention
+- `import { XDSButton } from './Button'` may cause confusion
 
-## LLM Discoverability Analysis
+## Decision
 
-**For LLMs helping users consume the library:**
-- File names are invisible - they use public imports: `import { XDSButton } from '@xds/core'`
-- What matters: JSDoc, type exports, example code
+Given the empirical evidence that LLMs naturally default to prefixed file names:
 
-**For LLMs contributing to the codebase:**
-- File names are visible when editing/creating components
-- Consistency between file name and export name reduces cognitive load
-- The re-export pattern is learnable but adds a layer of indirection
+**Use prefixed file names (`XDSButton.tsx`)** for maximum LLM-friendliness.
 
-## Recommendation
+The slight redundancy with directory names is a minor cost compared to:
+- More intuitive LLM contributions
+- No need for explicit re-export conventions
+- Direct match between file names and what developers see in code
 
-For XDS's goal of being LLM-friendly for both consumers and contributors:
+## Key Insight
 
-1. **Use prefixed file names** (`XDSButton.tsx`) for maximum clarity
-2. **Keep directory names unprefixed** (`Button/`) for organization
-3. **Ensure JSDoc examples always use the full prefixed name**
-4. **Set displayName to the prefixed name** for React DevTools
-
-If prefix customization becomes a priority, this can be revisited with a re-export layer.
-
-## Key Factors for LLM Discoverability
-
-| Factor | Impact |
-|--------|--------|
-| Public API exports | High - this is what LLMs see in docs/examples |
-| JSDoc examples | High - training data includes these |
-| Type definitions | High - autocomplete and inference |
-| File names | Medium - affects LLM contributors |
-| Directory structure | Low - mostly organizational |
+> When LLMs are given a component name with a prefix, they naturally create files with that prefix. Fighting this instinct requires explicit conventions that must be re-learned in each context. It's simpler to align file naming with LLM intuition.
