@@ -53,7 +53,7 @@ The swizzle layer has competing tensions:
 │  SWIZZLE PATH A: STYLING CUSTOMIZATION                         │
 │  Target: DS teams, styling-focused                             │
 │                                                                 │
-│  npx xds customize Button --theme=myTheme                      │
+│  npx xds customize XDSButton --theme=myTheme                      │
 │  → Generates theme extension (AI-friendly)                     │
 │                                                                 │
 │  Format: Theme config (JSON-like)                              │
@@ -63,7 +63,7 @@ The swizzle layer has competing tensions:
 │  SWIZZLE PATH B: FUNCTIONAL OVERRIDE                           │
 │  Target: Regular builders, functionality-focused               │
 │                                                                 │
-│  npx xds swizzle Button                                        │
+│  npx xds swizzle XDSButton                                        │
 │  → Copies component source with AI-friendly annotations        │
 │                                                                 │
 │  Format: Full source (StyleX + detailed comments)              │
@@ -78,7 +78,7 @@ For DS teams that want to customize appearance without changing structure.
 
 **Command**:
 ```bash
-npx xds customize Button --theme=corporate
+npx xds customize XDSButton --theme=corporate
 ```
 
 **Generated file** (`themes/corporate/button.ts`):
@@ -133,7 +133,7 @@ import { Theme } from '@xds/core';
 import { corporateButtonTheme } from './themes/corporate/button';
 
 <Theme theme={corporateButtonTheme}>
-  <Button variant="brand-primary">Corporate CTA</Button>
+  <XDSButton variant="brand-primary">Corporate CTA</XDSButton>
 </Theme>
 ```
 
@@ -143,13 +143,13 @@ For builders who need to change behavior or structure.
 
 **Command**:
 ```bash
-npx xds swizzle Button
+npx xds swizzle XDSButton
 ```
 
 **Generated file** (`components/xds/Button/Button.tsx`):
 ```typescript
 /**
- * 🎨 SWIZZLED COMPONENT: Button
+ * 🎨 SWIZZLED COMPONENT: XDSButton
  *
  * Source: @xds/core@2.1.0
  * Swizzled: 2026-01-09
@@ -266,7 +266,7 @@ export function Button({ variant = 'primary', children, onClick }: ButtonProps) 
 - Type-safe with theme validation
 
 **DX improvements**:
-- `npx xds customize Button --interactive` — CLI prompts
+- `npx xds customize XDSButton --interactive` — CLI prompts
 - Auto-generates TypeScript types from config
 - Preview in Storybook
 
@@ -286,7 +286,7 @@ export function Button({ variant = 'primary', children, onClick }: ButtonProps) 
 ### Phase 3: AI Tooling
 
 **Build**: AI-specific helpers
-- `npx xds customize Button --with-ai-context` — generates extra context file
+- `npx xds customize XDSButton --with-ai-context` — generates extra context file
 - `.xds/ai-context.md` — component customization guide for AI
 - Cursor/Claude rules for XDS patterns
 
@@ -300,7 +300,7 @@ For builders who prefer Tailwind patterns, we can offer a Tailwind-flavored swiz
 
 **Command**:
 ```bash
-npx xds customize Button --theme=corporate --format=tailwind
+npx xds customize XDSButton --theme=corporate --format=tailwind
 ```
 
 **Generated file** (`themes/corporate/button.config.ts`):
@@ -342,13 +342,13 @@ export const corporateButton = defineButtonTheme({
 
 **Command**:
 ```bash
-npx xds swizzle Button --format=tailwind
+npx xds swizzle XDSButton --format=tailwind
 ```
 
 **Generated file** (`components/xds/Button.tsx`):
 ```tsx
 /**
- * 🎨 SWIZZLED COMPONENT: Button
+ * 🎨 SWIZZLED COMPONENT: XDSButton
  *
  * Format: Tailwind Variants (familiar to most builders)
  * Tokens: XDS theme tokens (via Tailwind preset)
@@ -434,10 +434,10 @@ export function Button({ variant, size, children, onClick }: ButtonProps) {
 **Command with format**:
 ```bash
 # Default (StyleX)
-npx xds swizzle Button
+npx xds swizzle XDSButton
 
 # Tailwind format
-npx xds swizzle Button --format=tailwind
+npx xds swizzle XDSButton --format=tailwind
 ```
 
 ### Constraints Still Apply

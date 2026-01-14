@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Button } from '@xds/core/Button';
+import { XDSButton } from '@xds/core/Button';
 
-const meta: Meta<typeof Button> = {
-  title: 'Core/Button',
-  component: Button,
+const meta: Meta<typeof XDSButton> = {
+  title: 'Core/XDSButton',
+  component: XDSButton,
   tags: ['autodocs'],
   argTypes: {
     variant: {
@@ -23,7 +23,7 @@ const meta: Meta<typeof Button> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof Button>;
+type Story = StoryObj<typeof XDSButton>;
 
 export const Primary: Story = {
   args: {
@@ -73,22 +73,22 @@ export const AllVariants: Story = {
   render: () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '600px' }}>
       <div style={{ display: 'flex', gap: '12px' }}>
-        <Button variant="primary">Primary</Button>
-        <Button variant="secondary">Secondary</Button>
-        <Button variant="ghost">Ghost</Button>
-        <Button variant="destructive">Destructive</Button>
+        <XDSButton variant="primary">Primary</XDSButton>
+        <XDSButton variant="secondary">Secondary</XDSButton>
+        <XDSButton variant="ghost">Ghost</XDSButton>
+        <XDSButton variant="destructive">Destructive</XDSButton>
       </div>
       <div style={{ display: 'flex', gap: '12px' }}>
-        <Button variant="primary" loading>Loading...</Button>
-        <Button variant="secondary" loading>Loading...</Button>
-        <Button variant="ghost" loading>Loading...</Button>
-        <Button variant="destructive" loading>Loading...</Button>
+        <XDSButton variant="primary" loading>Loading...</XDSButton>
+        <XDSButton variant="secondary" loading>Loading...</XDSButton>
+        <XDSButton variant="ghost" loading>Loading...</XDSButton>
+        <XDSButton variant="destructive" loading>Loading...</XDSButton>
       </div>
       <div style={{ display: 'flex', gap: '12px' }}>
-        <Button variant="primary" disabled>Disabled</Button>
-        <Button variant="secondary" disabled>Disabled</Button>
-        <Button variant="ghost" disabled>Disabled</Button>
-        <Button variant="destructive" disabled>Disabled</Button>
+        <XDSButton variant="primary" disabled>Disabled</XDSButton>
+        <XDSButton variant="secondary" disabled>Disabled</XDSButton>
+        <XDSButton variant="ghost" disabled>Disabled</XDSButton>
+        <XDSButton variant="destructive" disabled>Disabled</XDSButton>
       </div>
     </div>
   ),

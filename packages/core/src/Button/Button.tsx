@@ -1,7 +1,7 @@
 /**
  * @file Button.tsx
  * @input Uses React forwardRef, ButtonHTMLAttributes, ReactNode
- * @output Exports Button component, ButtonProps, ButtonVariant types
+ * @output Exports XDSButton component, XDSButtonProps, XDSButtonVariant types
  * @position Core implementation; consumed by index.ts, tested by Button.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -141,7 +141,7 @@ const variants = stylex.create({
 /**
  * Button variant type derived from the variants StyleX object
  */
-export type ButtonVariant = keyof typeof variants;
+export type XDSButtonVariant = keyof typeof variants;
 
 // =============================================================================
 // Module Augmentation - Register Button's variant type with ComponentStyles
@@ -152,17 +152,17 @@ export type ButtonVariant = keyof typeof variants;
 declare module '../theme/types' {
   interface ComponentStyles {
     button?: {
-      variants?: Partial<Record<ButtonVariant, StyleXStyles>>;
+      variants?: Partial<Record<XDSButtonVariant, StyleXStyles>>;
     };
   }
 }
 
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface XDSButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /**
    * The visual style variant of the button.
    * @default 'primary'
    */
-  variant?: ButtonVariant;
+  variant?: XDSButtonVariant;
   /**
    * Whether the button is in a loading state.
    * @default false
@@ -221,12 +221,12 @@ const loadingStyles = stylex.create({
  *
  * @example
  * ```tsx
- * <Button variant="primary">Click me</Button>
- * <Button variant="secondary" loading>Saving...</Button>
- * <Button variant="destructive">Delete</Button>
+ * <XDSButton variant="primary">Click me</XDSButton>
+ * <XDSButton variant="secondary" loading>Saving...</XDSButton>
+ * <XDSButton variant="destructive">Delete</XDSButton>
  * ```
  */
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
   ({ variant = 'primary', loading = false, disabled, children, ...props }, ref) => {
     const isDisabled = disabled || loading;
     const useLightSpinner = variant === 'primary' || variant === 'destructive';
@@ -262,4 +262,4 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   }
 );
 
-Button.displayName = 'Button';
+XDSButton.displayName = 'XDSButton';
