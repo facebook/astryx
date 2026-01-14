@@ -124,7 +124,7 @@ const variants = stylex.create({
     backgroundColor: colorTokens.negative,
     color: 'white',
     backgroundImage: {
-      default: 'none',
+      default: null,
       ':hover': `linear-gradient(${colorTokens.hoverOverlay}, ${colorTokens.hoverOverlay})`,
       ':active': `linear-gradient(${colorTokens.pressedOverlay}, ${colorTokens.pressedOverlay})`,
     },
