@@ -1,12 +1,12 @@
 /**
- * @file Button.tsx
+ * @file XDSButton.tsx
  * @input Uses React forwardRef, ButtonHTMLAttributes, ReactNode
  * @output Exports XDSButton component, XDSButtonProps, XDSButtonVariant types
- * @position Core implementation; consumed by index.ts, tested by Button.test.tsx
+ * @position Core implementation; consumed by index.ts, tested by XDSButton.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Button/README.md (props table, features, implementation notes)
- * - /packages/core/src/Button/Button.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/Button/XDSButton.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Button/index.ts (exports if types change)
  * - /apps/storybook/stories/Button.stories.tsx (storybook stories)
  */

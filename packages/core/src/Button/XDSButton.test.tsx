@@ -1,16 +1,16 @@
 /**
- * @file Button.test.tsx
+ * @file XDSButton.test.tsx
  * @input Uses vitest, @testing-library/react, XDSButton component
  * @output Unit tests for XDSButton component behavior
- * @position Testing; validates Button.tsx implementation
+ * @position Testing; validates XDSButton.tsx implementation
  *
- * SYNC: When Button.tsx changes, update tests to match new behavior
+ * SYNC: When XDSButton.tsx changes, update tests to match new behavior
  */
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { XDSButton } from './Button';
+import { XDSButton } from './XDSButton';
 
 describe('XDSButton', () => {
   it('renders children correctly', () => {

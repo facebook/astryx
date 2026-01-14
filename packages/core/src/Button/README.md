@@ -40,8 +40,8 @@ import { XDSButton } from '@xds/core/Button';
 | File | Role | Purpose |
 |------|------|---------|
 | `index.ts` | Entry | Exports XDSButton component and types |
-| `Button.tsx` | Core | XDSButton component implementation |
-| `Button.test.tsx` | Test | Unit tests for XDSButton component |
+| `XDSButton.tsx` | Core | XDSButton component implementation |
+| `XDSButton.test.tsx` | Test | Unit tests for XDSButton component |
 
 ## Implementation Notes
 
