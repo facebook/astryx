@@ -39,8 +39,8 @@ XDS serves developers across their workflow phases. Based on research in `fronte
 ┌─────────────────────────────────────────────────────────────────────┐
 │  JOB 3: CONSTRUCT PAGES (Component API)                            │
 │                                                                     │
-│  <Button variant="primary" size="md" />                             │
-│  <Stack gap="md"><Card>...</Card></Stack>                          │
+│  <XDSButton variant="primary" size="md" />                          │
+│  <XDSStack gap="md"><XDSCard>...</XDSCard></XDSStack>              │
 │                                                                     │
 │  Builder experience:                                                │
 │  - Typed props, autocomplete-driven                                │
@@ -49,7 +49,7 @@ XDS serves developers across their workflow phases. Based on research in `fronte
 ├─────────────────────────────────────────────────────────────────────┤
 │  JOB 2: OVERRIDE/CREATE COMPONENTS (Swizzle Layer)                 │
 │                                                                     │
-│  npx xds swizzle Button                                            │
+│  npx xds swizzle XDSButton                                            │
 │  → src/components/xds/Button/Button.tsx                            │
 │                                                                     │
 │  Builder experience:                                                │
@@ -115,8 +115,8 @@ Designing the architecture for XDS based on explorations in:
 ┌─────────────────────────────────────────────────────────────────┐
 │  LAYER 3: COMPONENT API (Public)                               │
 │                                                                 │
-│  <Button variant="primary" size="md" />                         │
-│  <ListItem variant="default" iconSlot={<Icon />} />             │
+│  <XDSButton variant="primary" size="md" />                      │
+│  <XDSListItem variant="default" iconSlot={<Icon />} />          │
 │                                                                 │
 │  - Props define intent, not style                              │
 │  - Components define their own variants                        │
@@ -222,10 +222,10 @@ type ButtonProps = {
 };
 
 // ✅ Valid
-<Button variant="tertiary">Click</Button>
+<XDSButton variant="tertiary">Click</XDSButton>
 
 // ❌ TypeScript error - 'ghost' not in this component's variants
-<Button variant="ghost">Click</Button>
+<XDSButton variant="ghost">Click</XDSButton>
 ```
 
 ### How This Simplifies Things
@@ -366,24 +366,24 @@ export function Button({
 // App.tsx
 import { Theme } from '@xds/core';
 import { theme } from './theme';
-import { Button } from './components/Button';
+import { XDSButton } from './components/Button';
 import { PlusIcon } from './icons';
 
 function App() {
   return (
     <Theme theme={theme}>
       {/* Tokens flow through CSS variables */}
-      <Button variant="primary" size="md" icon={<PlusIcon />}>
+      <XDSButton variant="primary" size="md" icon={<PlusIcon />}>
         Add Item
-      </Button>
+      </XDSButton>
 
-      <Button variant="ghost" size="sm">
+      <XDSButton variant="ghost" size="sm">
         Cancel
-      </Button>
+      </XDSButton>
 
-      <Button variant="secondary" size="lg" isLoading>
+      <XDSButton variant="secondary" size="lg" isLoading>
         Saving...
-      </Button>
+      </XDSButton>
     </Theme>
   );
 }
@@ -412,7 +412,7 @@ function App() {
                            ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │  USAGE                                                          │
-│  <Button variant="primary" icon={<Plus />}>Add</Button>        │
+│  <XDSButton variant="primary" icon={<Plus />}>Add</XDSButton>        │
 │  Props are typed, tokens flow through, slots render correctly  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -732,7 +732,7 @@ The "AI gap" is primarily for **component authors**, not **component consumers**
 
 | Role | API Surface | AI Difficulty |
 |------|-------------|---------------|
-| **Consumer** (Job 3) | `<Button variant="primary" size="md">` | Trivial — typed props, autocomplete |
+| **Consumer** (Job 3) | `<XDSButton variant="primary" size="md">` | Trivial — typed props, autocomplete |
 | **Theme author** (Job 1) | `createTheme({ ... })` | Medium — structured, learnable |
 | **Swizzler** (Job 2) | StyleX + semantic CSS variables | Medium — documented patterns |
 | **Component author** | `createVariants({ ... stylex.create() ... })` | Higher — unfamiliar patterns |
@@ -833,10 +833,10 @@ With token-only themes, swizzle is the path for **any component-level customizat
 
 ```bash
 # Default: Tailwind Variants format (recommended)
-npx xds swizzle Button
+npx xds swizzle XDSButton
 
 # StyleX format (for advanced users)
-npx xds swizzle Button --format=stylex
+npx xds swizzle XDSButton --format=stylex
 ```
 
 ### Generated Code: Tailwind Variants (Default)
@@ -937,7 +937,7 @@ export function Button({ variant, size, icon, children, onClick }: ButtonProps) 
 For advanced users who want maximum encapsulation:
 
 ```bash
-npx xds swizzle Button --format=stylex
+npx xds swizzle XDSButton --format=stylex
 ```
 
 ```typescript
@@ -1047,12 +1047,12 @@ export type DarkTheme = typeof darkTheme;
 // src/App.tsx
 import { Theme } from '@xds/core';
 import { darkTheme } from '@company/dark-theme';
-import { Button } from '@xds/core';
+import { XDSButton } from '@xds/core';
 
 function App() {
   return (
     <Theme theme={darkTheme}>
-      <Button variant="primary">Click me</Button>
+      <XDSButton variant="primary">Click me</XDSButton>
     </Theme>
   );
 }
@@ -1106,11 +1106,11 @@ Components have their own types based on their variant definitions — no cross-
 ### Swizzle Layer (Not Yet Implemented)
 
 4. **Swizzle CLI?**
-   - `npx xds swizzle Button` to eject component?
+   - `npx xds swizzle XDSButton` to eject component?
    - Currently, component variant overrides are theme-based, not file-based
 
 5. **Swizzle sync command?**
-   - `npx xds sync Button` to see upstream changes?
+   - `npx xds sync XDSButton` to see upstream changes?
    - How do we help users stay up-to-date?
 
 ### Future Considerations
@@ -1228,7 +1228,7 @@ This provides tw-classed ergonomics without exposed CSS classes.
 - Component template (`/create-component` slash command)
 
 ### Phase 2: Component Library
-- Additional components (Input, Text, Box, Stack, Card, etc.)
+- Additional components (XDSInput, XDSText, XDSBox, XDSStack, XDSCard, etc.)
 - Slot-level styling (icon, label, prefix, suffix)
 - Full variant/size matrix across components
 
