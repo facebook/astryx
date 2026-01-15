@@ -20,6 +20,11 @@
       "types": "./dist/Button/index.d.ts",
       "import": "./dist/Button/index.mjs",
       "require": "./dist/Button/index.js"
+    },
+    "./Layout": {
+      "types": "./dist/Layout/index.d.ts",
+      "import": "./dist/Layout/index.mjs",
+      "require": "./dist/Layout/index.js"
     }
   },
   "scripts": {

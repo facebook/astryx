@@ -1,6 +1,6 @@
 /**
  * @file index.ts
- * @input Imports from component directories (Button/, VStack/, Layout/)
+ * @input Imports from component directories (Button/, Layout/)
  * @output Exports all public components and types for @xds/core
  * @position Package entry point; consumed by external applications
  *
@@ -9,9 +9,8 @@
 
 // Components
 export * from './Button';
-export * from './VStack';
 
-// Layout utilities
+// Layout utilities and components (includes XDSHStack, XDSVStack)
 export * from './Layout';
 
 // Theme

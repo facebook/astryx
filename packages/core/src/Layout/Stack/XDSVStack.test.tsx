@@ -23,9 +23,25 @@ describe('XDSVStack', () => {
     expect(screen.getByText('Item 2')).toBeInTheDocument();
   });
 
+  it('renders as div by default', () => {
+    render(<XDSVStack data-testid="vstack">Content</XDSVStack>);
+    const element = screen.getByTestId('vstack');
+    expect(element.tagName).toBe('DIV');
+  });
+
+  it('renders with polymorphic element prop', () => {
+    render(
+      <XDSVStack element="main" data-testid="vstack">
+        Content
+      </XDSVStack>
+    );
+    const element = screen.getByTestId('vstack');
+    expect(element.tagName).toBe('MAIN');
+  });
+
   it('renders with gap prop', () => {
     render(
-      <XDSVStack gap={16}>
+      <XDSVStack gap="space4">
         <div>Item 1</div>
         <div>Item 2</div>
       </XDSVStack>
@@ -59,7 +75,17 @@ describe('XDSVStack', () => {
         <div>Test</div>
       </XDSVStack>
     );
-    expect(ref).toHaveBeenCalledWith(expect.any(HTMLDivElement));
+    expect(ref).toHaveBeenCalledWith(expect.any(HTMLElement));
+  });
+
+  it('forwards ref with polymorphic element', () => {
+    const ref = vi.fn();
+    render(
+      <XDSVStack element="section" ref={ref}>
+        <div>Test</div>
+      </XDSVStack>
+    );
+    expect(ref).toHaveBeenCalledWith(expect.any(HTMLElement));
   });
 
   it('passes through additional props', () => {

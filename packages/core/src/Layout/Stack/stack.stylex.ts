@@ -1,6 +1,6 @@
 /**
  * @file stack.stylex.ts
- * @input Uses @stylexjs/stylex
+ * @input Uses @stylexjs/stylex, spacingTokens from theme
  * @output StyleX utility for stack (flex container) styling
  * @position Layout utility; used by XDSHStack, XDSVStack components
  *
@@ -8,6 +8,7 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
+import { spacingTokens } from '../../theme/tokens.stylex';
 
 const alignItemsStyles = stylex.create({
   center: {
@@ -74,15 +75,53 @@ const baseStyles = stylex.create({
 });
 
 /**
- * Dynamic gap styles using StyleX's support for dynamic values.
- * Gap is passed as a number (pixels) and converted to a style.
+ * Gap styles using spacing tokens from the theme.
+ * Keys match spacing token names for clarity.
  */
 const gapStyles = stylex.create({
-  gap: (value: number) => ({
-    columnGap: value,
-    rowGap: value,
-  }),
+  space0: {
+    columnGap: spacingTokens.space0,
+    rowGap: spacingTokens.space0,
+  },
+  'space0.5': {
+    columnGap: spacingTokens.space0_5,
+    rowGap: spacingTokens.space0_5,
+  },
+  space1: {
+    columnGap: spacingTokens.space1,
+    rowGap: spacingTokens.space1,
+  },
+  space2: {
+    columnGap: spacingTokens.space2,
+    rowGap: spacingTokens.space2,
+  },
+  space3: {
+    columnGap: spacingTokens.space3,
+    rowGap: spacingTokens.space3,
+  },
+  space4: {
+    columnGap: spacingTokens.space4,
+    rowGap: spacingTokens.space4,
+  },
+  space5: {
+    columnGap: spacingTokens.space5,
+    rowGap: spacingTokens.space5,
+  },
+  space6: {
+    columnGap: spacingTokens.space6,
+    rowGap: spacingTokens.space6,
+  },
+  space7: {
+    columnGap: spacingTokens.space7,
+    rowGap: spacingTokens.space7,
+  },
 });
+
+/**
+ * Spacing token names for gap values.
+ * These match the theme's spacing token names.
+ */
+export type SpacingScale = keyof typeof gapStyles;
 
 export interface StackOptions {
   /**
@@ -98,11 +137,10 @@ export interface StackOptions {
   direction: StackDirection;
 
   /**
-   * Spacing between items in pixels.
-   * Accepts any number value.
-   * @default 0
+   * Spacing between items using theme spacing tokens.
+   * Use token names: 'space0', 'space1', 'space2', etc.
    */
-  gap?: number;
+  gap?: SpacingScale;
 
   /**
    * Whether items should wrap to the next line.
@@ -123,7 +161,7 @@ export interface StackOptions {
  * import * as stylex from '@stylexjs/stylex';
  *
  * // Horizontal stack with gap
- * <div {...stylex.props(...stack({ direction: 'horizontal', gap: 8 }))}>
+ * <div {...stylex.props(...stack({ direction: 'horizontal', gap: 'space2' }))}>
  *   <Child />
  *   <Child />
  * </div>
@@ -134,8 +172,8 @@ export interface StackOptions {
  *   <Child />
  * </div>
  *
- * // Wrapping horizontal stack
- * <div {...stylex.props(...stack({ direction: 'horizontal', gap: 8, wrap: 'wrap' }))}>
+ * // Wrapping horizontal stack with larger gap
+ * <div {...stylex.props(...stack({ direction: 'horizontal', gap: 'space4', wrap: 'wrap' }))}>
  *   <Child />
  *   <Child />
  *   <Child />
@@ -151,7 +189,7 @@ export function stack({
   return [
     baseStyles.stack,
     directionStyles[direction],
-    gap != null && gapStyles.gap(gap),
+    gap != null && gapStyles[gap],
     crossAlign != null && alignItemsStyles[crossAlign],
     wrap != null && wrapStyles[wrap],
   ] as const;

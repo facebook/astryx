@@ -11,7 +11,7 @@ import * as stylex from '@stylexjs/stylex';
 
 /**
  * "Resets" the min-width and min-height of the flex item to behave predictably.
- * 
+ *
  * Flex items have an implicit min size of auto, meaning they will never shrink
  * smaller than their contents. This reset allows items to be constrained by
  * their flex parent and become scrollable if necessary.
@@ -53,6 +53,18 @@ const sizeStyles = stylex.create({
     flexGrow: 1,
   },
   /**
+   * Fill with 2x the proportion of other fill items.
+   */
+  fill2x: {
+    flexGrow: 2,
+  },
+  /**
+   * Fill with 3x the proportion of other fill items.
+   */
+  fill3x: {
+    flexGrow: 3,
+  },
+  /**
    * Do not grow or shrink within the stack.
    * Use the intrinsic size of the item.
    */
@@ -65,7 +77,9 @@ const sizeStyles = stylex.create({
 /**
  * Size options for stack items.
  * - `static`: Item uses its intrinsic size, won't grow or shrink
- * - `fill`: Item grows to fill remaining space
+ * - `fill`: Item grows to fill remaining space (flexGrow: 1)
+ * - `fill2x`: Item grows with 2x proportion (flexGrow: 2)
+ * - `fill3x`: Item grows with 3x proportion (flexGrow: 3)
  */
 export type StackItemSize = keyof typeof sizeStyles;
 
@@ -73,7 +87,7 @@ export interface StackItemOptions {
   /**
    * Overrides the default cross-alignment for this item.
    * (hAlign for VStack, vAlign for HStack)
-   * 
+   *
    * Set cross-alignment on the stack itself and override individual
    * children as needed with this option.
    */
@@ -82,8 +96,10 @@ export interface StackItemOptions {
   /**
    * Size behavior of the item within the stack.
    * - `static`: Uses intrinsic size, won't grow or shrink (default)
-   * - `fill`: Grows to fill remaining space
-   * 
+   * - `fill`: Grows to fill remaining space (1x proportion)
+   * - `fill2x`: Grows with 2x proportion
+   * - `fill3x`: Grows with 3x proportion
+   *
    * @default "static"
    */
   size?: StackItemSize;
@@ -91,14 +107,14 @@ export interface StackItemOptions {
 
 /**
  * StyleX utility to add stack item styles to any component.
- * 
+ *
  * Use this to avoid wrapping components in XDSStackItem when you need
  * direct control over flex behavior.
  *
  * @example
  * ```tsx
  * import { stackItem } from '@xds/core/Layout';
- * 
+ *
  * <div {...stylex.props(...stackItem({ size: 'fill' }))}>
  *   Content that fills remaining space
  * </div>
