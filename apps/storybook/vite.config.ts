@@ -9,7 +9,12 @@
 
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import babelrc from './.babelrc.cjs';
+import path from 'path';
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const babelrc = require('./.babelrc.cjs');
+
+const coreRoot = path.resolve(__dirname, '../../packages/core/src');
 
 export default defineConfig({
   plugins: [
@@ -17,6 +22,12 @@ export default defineConfig({
       babel: babelrc,
     }),
   ],
+  resolve: {
+    alias: {
+      // Map @xds/core to source for StyleX compilation
+      '@xds/core': coreRoot,
+    },
+  },
   optimizeDeps: {
     include: ['react', 'react-dom'],
   },

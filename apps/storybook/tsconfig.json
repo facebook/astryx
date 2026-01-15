@@ -3,8 +3,8 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@xds/core": ["../../packages/core/dist"],
-      "@xds/core/*": ["../../packages/core/dist/*"]
+      "@xds/core": ["../../packages/core/src"],
+      "@xds/core/*": ["../../packages/core/src/*"]
     }
   },
   "include": [".storybook/**/*", "stories/**/*"]

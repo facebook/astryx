@@ -2,6 +2,72 @@
 
 Notes on StyleX usage patterns discovered while building XDS components.
 
+## The `xstyle` Prop Pattern
+
+When components need configurable styles, use the `xstyle` prop with `StyleXStyles` type. This ensures consumers use StyleX instead of inline styles, maintaining compile-time optimization and consistency.
+
+### Implementation
+
+```tsx
+import type { StyleXStyles } from '@stylexjs/stylex';
+
+export interface MyComponentProps extends Omit<HTMLAttributes<HTMLElement>, 'style' | 'className'> {
+  // Component-specific props...
+
+  /** StyleX styles to apply to the component. */
+  xstyle?: StyleXStyles;
+
+  children?: ReactNode;
+}
+
+export const MyComponent = forwardRef<HTMLElement, MyComponentProps>(
+  function MyComponent({ xstyle, children, ...props }, ref) {
+    const stylexProps = stylex.props(styles.base, xstyle);
+
+    return (
+      <div ref={ref} {...stylexProps} {...props}>
+        {children}
+      </div>
+    );
+  }
+);
+```
+
+### Key Points
+
+1. **Omit `style` and `className`**: Use `Omit<HTMLAttributes<HTMLElement>, 'style' | 'className'>` to prevent inline styles and ensure StyleX usage.
+
+2. **Merge styles correctly**: Pass `xstyle` as the last argument to `stylex.props()` so consumer styles can override component defaults.
+
+3. **Constrained vs. freeform styles**:
+   - **Higher-level components** (e.g., Button, Card): Prefer constrained APIs with specific props (`variant`, `size`) over open `xstyle`. This enforces design consistency.
+   - **Primitive/layout components** (e.g., Stack, Box): It's acceptable to allow freeform `xstyle` since these are building blocks that need flexibility.
+
+### Usage Example
+
+```tsx
+import * as stylex from '@stylexjs/stylex';
+import { colorTokens } from '@xds/core';
+
+const customStyles = stylex.create({
+  highlight: {
+    backgroundColor: colorTokens.wash,
+    borderRadius: radiusTokens.element,
+  },
+});
+
+// Consumer usage
+<XDSHStack gap="space2" xstyle={customStyles.highlight}>
+  <Item />
+  <Item />
+</XDSHStack>
+
+// Multiple styles via array
+<XDSVStack xstyle={[styles.container, styles.padded]}>
+  <Content />
+</XDSVStack>
+```
+
 ## Compile-Time Requirement
 
 StyleX requires all styles to be compiled at build time via the Babel plugin. You cannot use `stylex.create()` at runtime (e.g., in Storybook's preview.tsx).

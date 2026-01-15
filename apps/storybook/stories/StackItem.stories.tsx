@@ -1,19 +1,88 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import * as stylex from '@stylexjs/stylex';
 import { XDSHStack, XDSVStack, XDSStackItem } from '@xds/core/Layout';
+import {
+  colorTokens,
+  spacingTokens,
+  radiusTokens,
+  typographyTokens,
+} from '@xds/core/theme/tokens.stylex';
+
+const styles = stylex.create({
+  box: {
+    backgroundColor: colorTokens.blueBackground,
+    color: colorTokens.blueText,
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: colorTokens.blueBorder,
+    paddingBlock: spacingTokens.space4,
+    paddingInline: spacingTokens.space6,
+    borderRadius: radiusTokens.element,
+    fontWeight: 500,
+    height: '100%',
+    boxSizing: 'border-box',
+  },
+  boxAlt: {
+    backgroundColor: colorTokens.grayBackground,
+    color: colorTokens.grayText,
+    borderColor: colorTokens.grayBorder,
+  },
+  boxGreen: {
+    backgroundColor: colorTokens.greenBackground,
+    color: colorTokens.greenText,
+    borderColor: colorTokens.greenBorder,
+  },
+  boxPurple: {
+    backgroundColor: colorTokens.purpleBackground,
+    color: colorTokens.purpleText,
+    borderColor: colorTokens.purpleBorder,
+  },
+  boxOrange: {
+    backgroundColor: colorTokens.orangeBackground,
+    color: colorTokens.orangeText,
+    borderColor: colorTokens.orangeBorder,
+  },
+  container: {
+    backgroundColor: colorTokens.wash,
+  },
+  containerWidth: {
+    width: 500,
+  },
+  containerWidthLarge: {
+    width: 600,
+  },
+  containerHeight: {
+    height: 150,
+  },
+  containerHeightLarge: {
+    height: 200,
+  },
+  containerPadding: {
+    padding: spacingTokens.space2,
+  },
+  sidebarWidth: {
+    width: 150,
+  },
+  storyWrapper: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingTokens.space6,
+  },
+  heading: {
+    margin: `0 0 ${spacingTokens.space2} 0`,
+    fontFamily: typographyTokens.fontFamilyBody,
+  },
+});
 
 // Demo box component for visibility
-const Box = ({ children, color = '#3b82f6' }: { children: React.ReactNode; color?: string }) => (
-  <div
-    style={{
-      backgroundColor: color,
-      color: 'white',
-      padding: '16px 24px',
-      borderRadius: '8px',
-      fontWeight: 500,
-      height: '100%',
-      boxSizing: 'border-box',
-    }}
-  >
+const Box = ({ children, alt = false, green = false, purple = false, orange = false }: {
+  children: React.ReactNode;
+  alt?: boolean;
+  green?: boolean;
+  purple?: boolean;
+  orange?: boolean;
+}) => (
+  <div {...stylex.props(styles.box, alt && styles.boxAlt, green && styles.boxGreen, purple && styles.boxPurple, orange && styles.boxOrange)}>
     {children}
   </div>
 );
@@ -50,26 +119,26 @@ export const Default: Story = {
     children: null,
   },
   render: (args) => (
-    <XDSHStack gap="space2" style={{ width: 500, backgroundColor: '#f1f5f9', padding: 8 }}>
+    <XDSHStack gap="space2" xstyle={[styles.container, styles.containerWidth, styles.containerPadding]}>
       <XDSStackItem {...args}>
         <Box>Stack Item</Box>
       </XDSStackItem>
-      <Box color="#64748b">Other Item</Box>
+      <Box alt>Other Item</Box>
     </XDSHStack>
   ),
 };
 
 export const FillSize: Story = {
   render: () => (
-    <XDSHStack gap="space2" style={{ width: 500, backgroundColor: '#f1f5f9', padding: 8 }}>
+    <XDSHStack gap="space2" xstyle={[styles.container, styles.containerWidth, styles.containerPadding]}>
       <XDSStackItem size="static">
-        <Box color="#64748b">Static</Box>
+        <Box alt>Static</Box>
       </XDSStackItem>
       <XDSStackItem size="fill">
         <Box>Fill (grows to fill remaining space)</Box>
       </XDSStackItem>
       <XDSStackItem size="static">
-        <Box color="#64748b">Static</Box>
+        <Box alt>Static</Box>
       </XDSStackItem>
     </XDSHStack>
   ),
@@ -79,8 +148,8 @@ export const ProportionalFill: Story = {
   render: () => (
     <XDSVStack gap="space4">
       <div>
-        <h4 style={{ margin: '0 0 8px 0', fontFamily: 'system-ui' }}>Equal Fill (1:1:1)</h4>
-        <XDSHStack gap="space2" style={{ width: 500, backgroundColor: '#f1f5f9', padding: 8 }}>
+        <h4 {...stylex.props(styles.heading)}>Equal Fill (1:1:1)</h4>
+        <XDSHStack gap="space2" xstyle={[styles.container, styles.containerWidth, styles.containerPadding]}>
           <XDSStackItem size="fill">
             <Box>fill</Box>
           </XDSStackItem>
@@ -93,27 +162,27 @@ export const ProportionalFill: Story = {
         </XDSHStack>
       </div>
       <div>
-        <h4 style={{ margin: '0 0 8px 0', fontFamily: 'system-ui' }}>Proportional (1:2)</h4>
-        <XDSHStack gap="space2" style={{ width: 500, backgroundColor: '#f1f5f9', padding: 8 }}>
+        <h4 {...stylex.props(styles.heading)}>Proportional (1:2)</h4>
+        <XDSHStack gap="space2" xstyle={[styles.container, styles.containerWidth, styles.containerPadding]}>
           <XDSStackItem size="fill">
             <Box>fill (1 part)</Box>
           </XDSStackItem>
           <XDSStackItem size="fill2x">
-            <Box color="#10b981">fill2x (2 parts)</Box>
+            <Box green>fill2x (2 parts)</Box>
           </XDSStackItem>
         </XDSHStack>
       </div>
       <div>
-        <h4 style={{ margin: '0 0 8px 0', fontFamily: 'system-ui' }}>Proportional (1:2:3)</h4>
-        <XDSHStack gap="space2" style={{ width: 500, backgroundColor: '#f1f5f9', padding: 8 }}>
+        <h4 {...stylex.props(styles.heading)}>Proportional (1:2:3)</h4>
+        <XDSHStack gap="space2" xstyle={[styles.container, styles.containerWidth, styles.containerPadding]}>
           <XDSStackItem size="fill">
             <Box>fill</Box>
           </XDSStackItem>
           <XDSStackItem size="fill2x">
-            <Box color="#10b981">fill2x</Box>
+            <Box green>fill2x</Box>
           </XDSStackItem>
           <XDSStackItem size="fill3x">
-            <Box color="#8b5cf6">fill3x</Box>
+            <Box purple>fill3x</Box>
           </XDSStackItem>
         </XDSHStack>
       </div>
@@ -123,18 +192,18 @@ export const ProportionalFill: Story = {
 
 export const CrossAlignSelf: Story = {
   render: () => (
-    <XDSHStack gap="space2" style={{ height: 150, backgroundColor: '#f1f5f9', padding: 8 }}>
+    <XDSHStack gap="space2" xstyle={[styles.container, styles.containerHeight, styles.containerPadding]}>
       <XDSStackItem crossAlignSelf="start">
         <Box>start</Box>
       </XDSStackItem>
       <XDSStackItem crossAlignSelf="center">
-        <Box color="#10b981">center</Box>
+        <Box green>center</Box>
       </XDSStackItem>
       <XDSStackItem crossAlignSelf="end">
-        <Box color="#8b5cf6">end</Box>
+        <Box purple>end</Box>
       </XDSStackItem>
       <XDSStackItem crossAlignSelf="stretch">
-        <Box color="#f59e0b">stretch</Box>
+        <Box orange>stretch</Box>
       </XDSStackItem>
     </XDSHStack>
   ),
@@ -142,15 +211,15 @@ export const CrossAlignSelf: Story = {
 
 export const PolymorphicElement: Story = {
   render: () => (
-    <XDSHStack gap="space2" style={{ width: 500, backgroundColor: '#f1f5f9', padding: 8 }}>
+    <XDSHStack gap="space2" xstyle={[styles.container, styles.containerWidth, styles.containerPadding]}>
       <XDSStackItem element="section" size="fill">
         <Box>section element</Box>
       </XDSStackItem>
       <XDSStackItem element="article" size="fill">
-        <Box color="#10b981">article element</Box>
+        <Box green>article element</Box>
       </XDSStackItem>
       <XDSStackItem element="aside" size="static">
-        <Box color="#8b5cf6">aside element</Box>
+        <Box purple>aside element</Box>
       </XDSStackItem>
     </XDSHStack>
   ),
@@ -160,24 +229,24 @@ export const CommonLayoutPattern: Story = {
   render: () => (
     <XDSVStack gap="space4">
       <div>
-        <h4 style={{ margin: '0 0 8px 0', fontFamily: 'system-ui' }}>Header Layout</h4>
-        <XDSHStack gap="space2" style={{ width: 600, backgroundColor: '#f1f5f9', padding: 8 }}>
+        <h4 {...stylex.props(styles.heading)}>Header Layout</h4>
+        <XDSHStack gap="space2" xstyle={[styles.container, styles.containerWidthLarge, styles.containerPadding]}>
           <XDSStackItem size="static">
-            <Box color="#64748b">Logo</Box>
+            <Box alt>Logo</Box>
           </XDSStackItem>
           <XDSStackItem size="fill">
             <Box>Navigation</Box>
           </XDSStackItem>
           <XDSStackItem size="static">
-            <Box color="#64748b">Actions</Box>
+            <Box alt>Actions</Box>
           </XDSStackItem>
         </XDSHStack>
       </div>
       <div>
-        <h4 style={{ margin: '0 0 8px 0', fontFamily: 'system-ui' }}>Sidebar Layout</h4>
-        <XDSHStack gap="space2" style={{ width: 600, height: 200, backgroundColor: '#f1f5f9', padding: 8 }}>
-          <XDSStackItem size="static" style={{ width: 150 }}>
-            <Box color="#64748b">Sidebar</Box>
+        <h4 {...stylex.props(styles.heading)}>Sidebar Layout</h4>
+        <XDSHStack gap="space2" xstyle={[styles.container, styles.containerWidthLarge, styles.containerHeightLarge, styles.containerPadding]}>
+          <XDSStackItem size="static" xstyle={styles.sidebarWidth}>
+            <Box alt>Sidebar</Box>
           </XDSStackItem>
           <XDSStackItem size="fill">
             <Box>Main Content</Box>

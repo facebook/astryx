@@ -109,7 +109,7 @@ Stack item for controlling individual item behavior within a stack. Supports pol
 </XDSHStack>
 
 // Override alignment
-<XDSHStack vAlign="start" style={{ height: 100 }}>
+<XDSHStack vAlign="start">
   <XDSStackItem crossAlignSelf="center">Centered</XDSStackItem>
   <XDSStackItem>Top-aligned</XDSStackItem>
 </XDSHStack>
@@ -207,8 +207,8 @@ The `gap` prop uses spacing tokens from the theme:
 ### Sidebar Layout
 
 ```tsx
-<XDSHStack gap="space4" style={{ height: '100vh' }}>
-  <XDSStackItem size="static" style={{ width: 250 }}>
+<XDSHStack gap="space4">
+  <XDSStackItem size="static">
     <Sidebar />
   </XDSStackItem>
   <XDSStackItem size="fill">

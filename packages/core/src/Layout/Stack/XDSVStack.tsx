@@ -19,9 +19,10 @@ import {
   type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type { StyleXStyles } from '@stylexjs/stylex';
 import { stack, type StackCrossAlignment, type StackWrap, type SpacingScale } from './stack.stylex';
 
-export interface XDSVStackProps extends HTMLAttributes<HTMLElement> {
+export interface XDSVStackProps extends Omit<HTMLAttributes<HTMLElement>, 'style' | 'className'> {
   /**
    * Horizontal alignment of items (cross-axis for vertical stack).
    * @default 'stretch'
@@ -50,6 +51,11 @@ export interface XDSVStackProps extends HTMLAttributes<HTMLElement> {
   element?: ElementType;
 
   /**
+   * StyleX styles to apply to the stack.
+   */
+  xstyle?: StyleXStyles;
+
+  /**
    * Content to render inside the stack.
    */
   children?: ReactNode;
@@ -64,30 +70,19 @@ export interface XDSVStackProps extends HTMLAttributes<HTMLElement> {
  *
  * @example
  * ```tsx
- * import { XDSVStack } from '@xds/core/Layout';
- *
- * // Basic vertical stack
  * <XDSVStack gap="space2">
  *   <Item />
  *   <Item />
  * </XDSVStack>
- *
- * // Centered items
  * <XDSVStack gap="space4" hAlign="center">
  *   <Item />
  *   <Item />
- * </XDSVStack>
- *
- * // Polymorphic rendering
- * <XDSVStack element="main" gap="space4">
- *   <Header />
- *   <Content />
  * </XDSVStack>
  * ```
  */
 export const XDSVStack = forwardRef<HTMLElement, XDSVStackProps>(
   function XDSVStack(
-    { hAlign, gap, wrap, element = 'div', children, ...props },
+    { hAlign, gap, wrap, element = 'div', xstyle, children, ...props },
     ref
   ) {
     const stylexProps = stylex.props(
@@ -96,7 +91,8 @@ export const XDSVStack = forwardRef<HTMLElement, XDSVStackProps>(
         crossAlign: hAlign,
         gap,
         wrap,
-      })
+      }),
+      xstyle
     );
 
     return createElement(

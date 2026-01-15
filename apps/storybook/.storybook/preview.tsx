@@ -1,6 +1,8 @@
 import type { Preview, Decorator } from '@storybook/react';
 import * as React from 'react';
-import { Theme, defaultTheme, neutralTheme } from '@xds/core';
+import { Theme } from '@xds/core/theme/Theme';
+import { defaultTheme } from '@xds/core/theme/defaultTheme.stylex';
+import { neutralTheme } from '@xds/core/theme/neutralTheme.stylex';
 
 /**
  * Map of available themes

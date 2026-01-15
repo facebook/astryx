@@ -5,6 +5,10 @@
  * @position Build config; used by Vite and PostCSS for transpilation
  */
 
+const path = require('path');
+
+const rootDir = path.join(__dirname, '../..');
+
 module.exports = {
   presets: [
     ['@babel/preset-react', { runtime: 'automatic' }],
@@ -14,13 +18,17 @@ module.exports = {
     [
       '@stylexjs/babel-plugin',
       {
-        dev: process.env.NODE_ENV === 'development',
-        runtimeInjection: false,
+        dev: true,
+        runtimeInjection: true,
         genConditionalClasses: true,
         treeshakeCompensation: true,
+        aliases: {
+          '@xds/core/*': [path.join(rootDir, 'packages/core/src/*')],
+          '@xds/core': [path.join(rootDir, 'packages/core/src')],
+        },
         unstable_moduleResolution: {
           type: 'commonJS',
-          rootDir: __dirname,
+          rootDir: rootDir,
         },
       },
     ],
