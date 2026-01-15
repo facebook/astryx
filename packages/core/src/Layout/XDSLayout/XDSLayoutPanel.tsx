@@ -152,6 +152,9 @@ export const XDSLayoutPanel = forwardRef<HTMLElement, XDSLayoutPanelProps>(
     // When no divider, collapse spacing for seamless visual flow
     const shouldCollapseSpacing = !hasDivider && !isFullBleed;
 
+    // Don't apply any outer padding styles when component is full bleed
+    const applyOuterPadding = !isFullBleed && !isLayoutFullBleed;
+
     // Select divider style based on position
     const dividerStyle = isStartPanel ? styles.dividerEnd
       : isEndPanel ? styles.dividerStart
@@ -169,11 +172,11 @@ export const XDSLayoutPanel = forwardRef<HTMLElement, XDSLayoutPanelProps>(
         aria-label={label}
         {...stylex.props(
           styles.panel,
-          // Outer padding on container edges (unless layout is full bleed)
-          isStartPanel && !isLayoutFullBleed && styles.startPanel,
-          isEndPanel && !isLayoutFullBleed && styles.endPanel,
-          !hasHeader && !isLayoutFullBleed && styles.noHeader,
-          !hasFooter && !isLayoutFullBleed && styles.noFooter,
+          // Outer padding on container edges (unless component or layout is full bleed)
+          isStartPanel && applyOuterPadding && styles.startPanel,
+          isEndPanel && applyOuterPadding && styles.endPanel,
+          !hasHeader && applyOuterPadding && styles.noHeader,
+          !hasFooter && applyOuterPadding && styles.noFooter,
           // Full bleed overrides
           isFullBleed && styles.fullBleed,
           hasDivider && dividerStyle,

@@ -100,6 +100,9 @@ export const XDSLayoutFooter = forwardRef<HTMLElement, XDSLayoutFooterProps>(
     // When no divider, collapse spacing for seamless visual flow
     const shouldCollapseSpacing = !hasDivider && !isFullBleed;
 
+    // Don't apply layout full bleed styles when component is full bleed
+    const applyLayoutFullBleed = isLayoutFullBleed && !isFullBleed;
+
     return (
       <div
         ref={ref as React.Ref<HTMLDivElement>}
@@ -107,7 +110,7 @@ export const XDSLayoutFooter = forwardRef<HTMLElement, XDSLayoutFooterProps>(
         aria-label={label}
         {...stylex.props(
           styles.footer,
-          isLayoutFullBleed && styles.layoutFullBleed,
+          applyLayoutFullBleed && styles.layoutFullBleed,
           isFullBleed && styles.fullBleed,
           hasDivider && styles.divider,
           shouldCollapseSpacing && styles.collapseTop

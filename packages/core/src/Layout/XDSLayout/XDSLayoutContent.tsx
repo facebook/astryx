@@ -126,6 +126,9 @@ export const XDSLayoutContent = forwardRef<HTMLElement, XDSLayoutContentProps>(
   ) {
     const { hasHeader, hasFooter, hasStart, hasEnd, isFullBleed: isLayoutFullBleed } = useContext(XDSLayoutSlotsContext);
 
+    // Don't apply any padding styles when content is full bleed
+    const applyOuterPadding = !isFullBleed && !isLayoutFullBleed;
+
     return (
       <div
         ref={ref as React.Ref<HTMLDivElement>}
@@ -133,11 +136,11 @@ export const XDSLayoutContent = forwardRef<HTMLElement, XDSLayoutContentProps>(
         aria-label={label}
         {...stylex.props(
           styles.content,
-          // Outer padding on container edges (unless layout is full bleed)
-          !hasStart && !isLayoutFullBleed && styles.noStart,
-          !hasEnd && !isLayoutFullBleed && styles.noEnd,
-          !hasHeader && !isLayoutFullBleed && styles.noHeader,
-          !hasFooter && !isLayoutFullBleed && styles.noFooter,
+          // Outer padding on container edges (unless content or layout is full bleed)
+          !hasStart && applyOuterPadding && styles.noStart,
+          !hasEnd && applyOuterPadding && styles.noEnd,
+          !hasHeader && applyOuterPadding && styles.noHeader,
+          !hasFooter && applyOuterPadding && styles.noFooter,
           isScrollable && styles.scrollable,
           isFullBleed && styles.fullBleed
         )}

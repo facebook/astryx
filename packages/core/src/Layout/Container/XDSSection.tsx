@@ -46,10 +46,10 @@ const variantStyles = stylex.create({
 // Dynamic styles for sizing props
 const dynamicStyles = stylex.create({
   sizing: (
-    width: string | null,
-    height: string | null,
-    maxWidth: string | null,
-    minHeight: string | null
+    width: SizeValue | null,
+    height: SizeValue | null,
+    maxWidth: SizeValue | null,
+    minHeight: SizeValue | null
   ) => ({
     width,
     height,
@@ -100,14 +100,6 @@ export interface XDSSectionProps {
 }
 
 /**
- * Converts a size value to a CSS-compatible string or null.
- */
-function formatSize(value: SizeValue | undefined): string | null {
-  if (value === undefined) return null;
-  return typeof value === 'number' ? `${value}px` : value;
-}
-
-/**
  * A section container with background variants.
  *
  * Uses XDSLayoutContainer internally and applies section-specific
@@ -138,10 +130,10 @@ export const XDSSection = forwardRef<HTMLDivElement, XDSSectionProps>(
           variantStyles[variant],
           themeVariantOverride,
           dynamicStyles.sizing(
-            formatSize(width),
-            formatSize(height),
-            formatSize(maxWidth),
-            formatSize(minHeight)
+            width ?? null,
+            height ?? null,
+            maxWidth ?? null,
+            minHeight ?? null
           ),
         ]}
         paddingInnerX="space4"
