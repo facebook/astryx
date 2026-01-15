@@ -43,19 +43,6 @@ const styles = stylex.create({
   noFooter: {
     paddingBlockEnd: `var(--layout-padding-outer-y, ${spacingTokens.space4})`,
   },
-  // When layout is full bleed, use inner padding on outer edges
-  layoutFullBleedStart: {
-    paddingInlineStart: `var(--layout-padding-inner-x, ${spacingTokens.space4})`,
-  },
-  layoutFullBleedEnd: {
-    paddingInlineEnd: `var(--layout-padding-inner-x, ${spacingTokens.space4})`,
-  },
-  layoutFullBleedTop: {
-    paddingBlockStart: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
-  },
-  layoutFullBleedBottom: {
-    paddingBlockEnd: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
-  },
   fullBleed: {
     paddingInlineStart: 0,
     paddingInlineEnd: 0,
@@ -77,7 +64,9 @@ const styles = stylex.create({
     borderInlineStartStyle: 'solid',
     borderInlineStartColor: colorTokens.divider,
   },
-  // When no divider, collapse spacing to avoid double-padding
+  // When no divider, collapse spacing on the side facing content
+  // Start panel: collapse end (right in LTR) to merge with content
+  // End panel: collapse start (left in LTR) to merge with content
   collapseStart: {
     marginInlineStart: `calc(-1 * var(--layout-padding-inner-x, ${spacingTokens.space4}))`,
   },
@@ -171,7 +160,7 @@ export const XDSLayoutPanel = forwardRef<HTMLElement, XDSLayoutPanelProps>(
     ref
   ) {
     const area = useContext(XDSLayoutAreaContext);
-    const { hasHeader, hasFooter, isFullBleed: isLayoutFullBleed } = useContext(XDSLayoutSlotsContext);
+    const { hasHeader, hasFooter } = useContext(XDSLayoutSlotsContext);
 
     // Determine panel position
     const isStartPanel = area === 'start';
@@ -180,17 +169,14 @@ export const XDSLayoutPanel = forwardRef<HTMLElement, XDSLayoutPanelProps>(
     // When no divider, collapse spacing for seamless visual flow
     const shouldCollapseSpacing = !hasDivider && !isFullBleed;
 
-    // Don't apply any outer padding styles when component is full bleed
-    const applyOuterPadding = !isFullBleed && !isLayoutFullBleed;
-
     // Select divider style based on position
     const dividerStyle = isStartPanel ? styles.dividerEnd
       : isEndPanel ? styles.dividerStart
       : null;
 
-    // Select collapse style based on position
-    const collapseStyle = isStartPanel ? styles.collapseStart
-      : isEndPanel ? styles.collapseEnd
+    // Select collapse style based on position (collapse the side where divider would be)
+    const collapseStyle = isStartPanel ? styles.collapseEnd
+      : isEndPanel ? styles.collapseStart
       : null;
 
     return (
@@ -201,13 +187,12 @@ export const XDSLayoutPanel = forwardRef<HTMLElement, XDSLayoutPanelProps>(
         {...stylex.props(
           styles.panel,
           dynamicStyles.sizing(width ?? null),
-          // Outer padding on container edges (unless component or layout is full bleed)
-          isStartPanel && applyOuterPadding && styles.startPanel,
-          isEndPanel && applyOuterPadding && styles.endPanel,
-          !hasHeader && applyOuterPadding && styles.noHeader,
-          !hasFooter && applyOuterPadding && styles.noFooter,
+          // Outer padding on container edges (unless component is full bleed)
+          isStartPanel && !isFullBleed && styles.startPanel,
+          isEndPanel && !isFullBleed && styles.endPanel,
+          !hasHeader && !isFullBleed && styles.noHeader,
+          !hasFooter && !isFullBleed && styles.noFooter,
           isScrollable && styles.scrollable,
-          // Full bleed overrides
           isFullBleed && styles.fullBleed,
           hasDivider && dividerStyle,
           shouldCollapseSpacing && collapseStyle

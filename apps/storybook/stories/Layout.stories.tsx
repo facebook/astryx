@@ -125,6 +125,9 @@ const meta: Meta<typeof XDSLayout> = {
   component: XDSLayout,
   tags: ['autodocs'],
   parameters: {
+    controls: {
+      expanded: false,
+    },
     docs: {
       description: {
         component: `
@@ -142,10 +145,277 @@ The XDS Layout System provides a structured way to build page and component layo
       },
     },
   },
+  // Hide auto-generated controls from XDSLayout component
+  argTypes: {
+    content: { table: { disable: true } },
+    end: { table: { disable: true } },
+    footer: { table: { disable: true } },
+    header: { table: { disable: true } },
+    height: { table: { disable: true } },
+    isFullBleed: { table: { disable: true } },
+    start: { table: { disable: true } },
+  },
 };
 
 export default meta;
 type Story = StoryObj<typeof XDSLayout>;
+
+// =============================================================================
+// Interactive Playground
+// =============================================================================
+
+interface PlaygroundArgs {
+  // Card props
+  cardWidth: number;
+  cardHeight: number;
+  // Layout props
+  layoutIsFullBleed: boolean;
+  // Header props
+  showHeader: boolean;
+  headerHasDivider: boolean;
+  headerIsFullBleed: boolean;
+  // Content props
+  contentIsFullBleed: boolean;
+  contentIsScrollable: boolean;
+  // Footer props
+  showFooter: boolean;
+  footerHasDivider: boolean;
+  footerIsFullBleed: boolean;
+  // Start panel props
+  showStartPanel: boolean;
+  startPanelWidth: number;
+  startPanelHasDivider: boolean;
+  startPanelIsScrollable: boolean;
+  // End panel props
+  showEndPanel: boolean;
+  endPanelWidth: number;
+  endPanelHasDivider: boolean;
+  endPanelIsScrollable: boolean;
+}
+
+export const Playground = {
+  name: 'Playground',
+  args: {
+    // Card defaults
+    cardWidth: 700,
+    cardHeight: 400,
+    // Layout defaults
+    layoutIsFullBleed: false,
+    // Header defaults
+    showHeader: true,
+    headerHasDivider: true,
+    headerIsFullBleed: false,
+    // Content defaults
+    contentIsFullBleed: false,
+    contentIsScrollable: true,
+    // Footer defaults
+    showFooter: true,
+    footerHasDivider: true,
+    footerIsFullBleed: false,
+    // Start panel defaults
+    showStartPanel: true,
+    startPanelWidth: 160,
+    startPanelHasDivider: true,
+    startPanelIsScrollable: true,
+    // End panel defaults
+    showEndPanel: false,
+    endPanelWidth: 200,
+    endPanelHasDivider: true,
+    endPanelIsScrollable: true,
+  },
+  argTypes: {
+    // Card controls
+    cardWidth: {
+      control: { type: 'range', min: 300, max: 1000, step: 50 },
+      description: 'Width of the card container',
+      table: { category: 'Card' },
+    },
+    cardHeight: {
+      control: { type: 'range', min: 200, max: 600, step: 50 },
+      description: 'Height of the card container',
+      table: { category: 'Card' },
+    },
+    // Layout controls
+    layoutIsFullBleed: {
+      control: 'boolean',
+      description: 'Remove padding at layout outer edges (affects all slots)',
+      table: { category: 'Layout' },
+    },
+    // Header controls
+    showHeader: {
+      control: 'boolean',
+      description: 'Show or hide the header',
+      table: { category: 'Header' },
+    },
+    headerHasDivider: {
+      control: 'boolean',
+      description: 'Add a border below the header',
+      table: { category: 'Header' },
+    },
+    headerIsFullBleed: {
+      control: 'boolean',
+      description: 'Remove header padding',
+      table: { category: 'Header' },
+    },
+    // Content controls
+    contentIsFullBleed: {
+      control: 'boolean',
+      description: 'Remove content padding for edge-to-edge content',
+      table: { category: 'Content' },
+    },
+    contentIsScrollable: {
+      control: 'boolean',
+      description: 'Enable scrollable overflow',
+      table: { category: 'Content' },
+    },
+    // Footer controls
+    showFooter: {
+      control: 'boolean',
+      description: 'Show or hide the footer',
+      table: { category: 'Footer' },
+    },
+    footerHasDivider: {
+      control: 'boolean',
+      description: 'Add a border above the footer',
+      table: { category: 'Footer' },
+    },
+    footerIsFullBleed: {
+      control: 'boolean',
+      description: 'Remove footer padding',
+      table: { category: 'Footer' },
+    },
+    // Start panel controls
+    showStartPanel: {
+      control: 'boolean',
+      description: 'Show or hide the start (left) panel',
+      table: { category: 'Start Panel' },
+    },
+    startPanelWidth: {
+      control: { type: 'range', min: 100, max: 300, step: 20 },
+      description: 'Width of the start panel',
+      table: { category: 'Start Panel' },
+    },
+    startPanelHasDivider: {
+      control: 'boolean',
+      description: 'Add a border to the start panel',
+      table: { category: 'Start Panel' },
+    },
+    startPanelIsScrollable: {
+      control: 'boolean',
+      description: 'Enable scrollable overflow for start panel',
+      table: { category: 'Start Panel' },
+    },
+    // End panel controls
+    showEndPanel: {
+      control: 'boolean',
+      description: 'Show or hide the end (right) panel',
+      table: { category: 'End Panel' },
+    },
+    endPanelWidth: {
+      control: { type: 'range', min: 100, max: 300, step: 20 },
+      description: 'Width of the end panel',
+      table: { category: 'End Panel' },
+    },
+    endPanelHasDivider: {
+      control: 'boolean',
+      description: 'Add a border to the end panel',
+      table: { category: 'End Panel' },
+    },
+    endPanelIsScrollable: {
+      control: 'boolean',
+      description: 'Enable scrollable overflow for end panel',
+      table: { category: 'End Panel' },
+    },
+  },
+  render: (args: PlaygroundArgs) => (
+    <div {...stylex.props(styles.pageWrapper)}>
+      <XDSCard width={args.cardWidth} height={args.cardHeight}>
+        <XDSLayout
+          isFullBleed={args.layoutIsFullBleed}
+          header={
+            args.showHeader ? (
+              <XDSLayoutHeader
+                hasDivider={args.headerHasDivider}
+                isFullBleed={args.headerIsFullBleed}
+              >
+                <h3 {...stylex.props(styles.heading)}>Layout Header</h3>
+              </XDSLayoutHeader>
+            ) : undefined
+          }
+          start={
+            args.showStartPanel ? (
+              <XDSLayoutPanel
+                width={args.startPanelWidth}
+                hasDivider={args.startPanelHasDivider}
+                isScrollable={args.startPanelIsScrollable}
+                role="navigation"
+              >
+                <NavItem active>Dashboard</NavItem>
+                <NavItem>Settings</NavItem>
+                <NavItem>Profile</NavItem>
+                <NavItem>Help</NavItem>
+              </XDSLayoutPanel>
+            ) : undefined
+          }
+          content={
+            <XDSLayoutContent
+              isFullBleed={args.contentIsFullBleed}
+              isScrollable={args.contentIsScrollable}
+            >
+              <h4 {...stylex.props(styles.subheading)}>Main Content Area</h4>
+              <br />
+              <p {...stylex.props(styles.bodyText)}>
+                This is the main content area. Use the controls panel to toggle
+                headers, footers, side panels, and adjust their properties.
+              </p>
+              <br />
+              <p {...stylex.props(styles.bodyText)}>
+                Try enabling &quot;isFullBleed&quot; to see how content can extend
+                to the edges, or toggle &quot;isScrollable&quot; to change overflow behavior.
+              </p>
+              <br />
+              <div {...stylex.props(styles.placeholder)}>
+                Placeholder content block
+              </div>
+            </XDSLayoutContent>
+          }
+          end={
+            args.showEndPanel ? (
+              <XDSLayoutPanel
+                width={args.endPanelWidth}
+                hasDivider={args.endPanelHasDivider}
+                isScrollable={args.endPanelIsScrollable}
+                role="complementary"
+              >
+                <p {...stylex.props(styles.sectionLabel)}>Details</p>
+                <p {...stylex.props(styles.bodyText)}>
+                  Additional information or actions can go in the end panel.
+                </p>
+              </XDSLayoutPanel>
+            ) : undefined
+          }
+          footer={
+            args.showFooter ? (
+              <XDSLayoutFooter
+                hasDivider={args.footerHasDivider}
+                isFullBleed={args.footerIsFullBleed}
+              >
+                <XDSHStack gap="space2" hAlign="end">
+                  <XDSButton variant="secondary">Cancel</XDSButton>
+                  <XDSButton variant="primary">Save</XDSButton>
+                </XDSHStack>
+              </XDSLayoutFooter>
+            ) : undefined
+          }
+        />
+      </XDSCard>
+    </div>
+  ),
+};
+
+// =============================================================================
+// Example Stories
+// =============================================================================
 
 export const BasicCard: Story = {
   name: 'Basic Card Layout',

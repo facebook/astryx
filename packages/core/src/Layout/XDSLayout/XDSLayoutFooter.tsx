@@ -1,6 +1,6 @@
 /**
  * @file XDSLayoutFooter.tsx
- * @input Uses React forwardRef, StyleX, XDSLayoutSlotsContext
+ * @input Uses React forwardRef, StyleX
  * @output Exports XDSLayoutFooter component and XDSLayoutFooterProps
  * @position Layout content area component
  *
@@ -10,10 +10,9 @@
  */
 
 import type { AriaRole, HTMLAttributes, ReactNode } from 'react';
-import { forwardRef, useContext } from 'react';
+import { forwardRef } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import { colorTokens, spacingTokens } from '../../theme/tokens.stylex';
-import { XDSLayoutSlotsContext } from './XDSLayoutSlotsContext';
 
 const styles = stylex.create({
   footer: {
@@ -24,12 +23,6 @@ const styles = stylex.create({
     paddingInlineEnd: `var(--layout-padding-outer-x, ${spacingTokens.space4})`,
     paddingBlockStart: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
     paddingBlockEnd: `var(--layout-padding-outer-y, ${spacingTokens.space4})`,
-  },
-  // When layout is full bleed, use inner padding instead of outer
-  layoutFullBleed: {
-    paddingInlineStart: `var(--layout-padding-inner-x, ${spacingTokens.space4})`,
-    paddingInlineEnd: `var(--layout-padding-inner-x, ${spacingTokens.space4})`,
-    paddingBlockEnd: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
   },
   fullBleed: {
     paddingInlineStart: 0,
@@ -112,13 +105,8 @@ export const XDSLayoutFooter = forwardRef<HTMLElement, XDSLayoutFooterProps>(
     { children, hasDivider = false, height, isFullBleed = false, label, role, ...props },
     ref
   ) {
-    const { isFullBleed: isLayoutFullBleed } = useContext(XDSLayoutSlotsContext);
-
     // When no divider, collapse spacing for seamless visual flow
     const shouldCollapseSpacing = !hasDivider && !isFullBleed;
-
-    // Don't apply layout full bleed styles when component is full bleed
-    const applyLayoutFullBleed = isLayoutFullBleed && !isFullBleed;
 
     return (
       <div
@@ -128,7 +116,6 @@ export const XDSLayoutFooter = forwardRef<HTMLElement, XDSLayoutFooterProps>(
         {...stylex.props(
           styles.footer,
           dynamicStyles.sizing(height ?? null),
-          applyLayoutFullBleed && styles.layoutFullBleed,
           isFullBleed && styles.fullBleed,
           hasDivider && styles.divider,
           shouldCollapseSpacing && styles.collapseTop

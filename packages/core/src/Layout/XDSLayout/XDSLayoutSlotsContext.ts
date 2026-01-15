@@ -25,25 +25,21 @@ export interface LayoutSlots {
   hasStart: boolean;
   /** Whether an end panel is rendered */
   hasEnd: boolean;
-  /** Whether outer padding should be removed (full bleed mode) */
-  isFullBleed: boolean;
 }
 
 /**
- * Default slot state - no slots filled, not full bleed.
+ * Default slot state - no slots filled.
  */
 const defaultSlots: LayoutSlots = {
   hasHeader: false,
   hasFooter: false,
   hasStart: false,
   hasEnd: false,
-  isFullBleed: false,
 };
 
 /**
  * Context for layout slot information.
- * Content area components use this to:
- * - Determine if they are at an edge (for outer padding)
- * - Check if full bleed mode is enabled
+ * Content area components use this to determine if they are at an edge
+ * (for applying outer padding).
  */
 export const XDSLayoutSlotsContext = createContext<LayoutSlots>(defaultSlots);

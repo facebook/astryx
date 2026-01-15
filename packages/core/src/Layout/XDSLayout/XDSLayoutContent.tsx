@@ -18,6 +18,7 @@ import { XDSLayoutSlotsContext } from './XDSLayoutSlotsContext';
 const styles = stylex.create({
   content: {
     boxSizing: 'border-box',
+    height: '100%',
     flex: 1,
     minHeight: 0,
     overflow: 'clip',
@@ -129,10 +130,7 @@ export const XDSLayoutContent = forwardRef<HTMLElement, XDSLayoutContentProps>(
     { children, isFullBleed = false, isScrollable = true, label, role, ...props },
     ref
   ) {
-    const { hasHeader, hasFooter, hasStart, hasEnd, isFullBleed: isLayoutFullBleed } = useContext(XDSLayoutSlotsContext);
-
-    // Don't apply any padding styles when content is full bleed
-    const applyOuterPadding = !isFullBleed && !isLayoutFullBleed;
+    const { hasHeader, hasFooter, hasStart, hasEnd } = useContext(XDSLayoutSlotsContext);
 
     return (
       <div
@@ -141,11 +139,11 @@ export const XDSLayoutContent = forwardRef<HTMLElement, XDSLayoutContentProps>(
         aria-label={label}
         {...stylex.props(
           styles.content,
-          // Outer padding on container edges (unless content or layout is full bleed)
-          !hasStart && applyOuterPadding && styles.noStart,
-          !hasEnd && applyOuterPadding && styles.noEnd,
-          !hasHeader && applyOuterPadding && styles.noHeader,
-          !hasFooter && applyOuterPadding && styles.noFooter,
+          // Outer padding on container edges (unless content is full bleed)
+          !hasStart && !isFullBleed && styles.noStart,
+          !hasEnd && !isFullBleed && styles.noEnd,
+          !hasHeader && !isFullBleed && styles.noHeader,
+          !hasFooter && !isFullBleed && styles.noFooter,
           isScrollable && styles.scrollable,
           isFullBleed && styles.fullBleed
         )}

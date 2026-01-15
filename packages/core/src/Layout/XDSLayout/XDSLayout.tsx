@@ -1,6 +1,6 @@
 /**
  * @file XDSLayout.tsx
- * @input Uses React, XDSHStack, XDSVStack, XDSLayoutAreaContext, XDSLayoutSlotsContext
+ * @input Uses React, stack/stackItem utilities, XDSLayoutAreaContext, XDSLayoutSlotsContext
  * @output Exports XDSLayout component and XDSLayoutProps, XDSLayoutHeight types
  * @position Core layout component with named slots
  *
@@ -14,9 +14,8 @@ import { type ReactNode, useMemo } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import { XDSLayoutAreaContext, type LayoutArea } from './XDSLayoutAreaContext';
 import { XDSLayoutSlotsContext, type LayoutSlots } from './XDSLayoutSlotsContext';
-import { XDSHStack } from '../Stack/XDSHStack';
-import { XDSVStack } from '../Stack/XDSVStack';
-import { XDSStackItem } from '../Stack/XDSStackItem';
+import { stack } from '../Stack/stack.stylex';
+import { stackItem } from '../Stack/stackItem.stylex';
 
 /**
  * Height behavior for the layout.
@@ -35,6 +34,11 @@ const styles = stylex.create({
   middle: {
     flex: 1,
     minHeight: 0,
+  },
+  // When full bleed, set outer padding variables to 0 so child components touch container edges
+  fullBleed: {
+    '--layout-padding-outer-x': '0px',
+    '--layout-padding-outer-y': '0px',
   },
 });
 
@@ -143,24 +147,29 @@ export function XDSLayout({
       hasFooter: footer != null,
       hasStart: start != null,
       hasEnd: end != null,
-      isFullBleed,
     }),
-    [header != null, footer != null, start != null, end != null, isFullBleed]
+    [header != null, footer != null, start != null, end != null]
   );
 
   return (
     <XDSLayoutSlotsContext.Provider value={slotsValue}>
-      <XDSVStack xstyle={isFill ? styles.fill : styles.auto}>
+      <div
+        {...stylex.props(
+          ...stack({ direction: 'vertical' }),
+          isFill ? styles.fill : styles.auto,
+          isFullBleed && styles.fullBleed
+        )}
+      >
         <AreaProvider area="header">{header}</AreaProvider>
-        <XDSHStack xstyle={styles.middle}>
+        <div {...stylex.props(...stack({ direction: 'horizontal' }), styles.middle)}>
           <AreaProvider area="start">{start}</AreaProvider>
-          <XDSStackItem size="fill">
+          <div {...stylex.props(...stackItem({ size: 'fill' }))}>
             <AreaProvider area="content">{content}</AreaProvider>
-          </XDSStackItem>
+          </div>
           <AreaProvider area="end">{end}</AreaProvider>
-        </XDSHStack>
+        </div>
         <AreaProvider area="footer">{footer}</AreaProvider>
-      </XDSVStack>
+      </div>
     </XDSLayoutSlotsContext.Provider>
   );
 }
