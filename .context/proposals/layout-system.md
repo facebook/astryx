@@ -84,6 +84,7 @@ Arranges sections using named slots. Does not handle visual appearance — that'
 | `children` | `React.Node` | Area content |
 | `hasDivider` | `boolean` | Adds themed border (position auto-detected) |
 | `isFullBleed` | `boolean` | Removes this area's internal padding |
+| `role` | `string` | ARIA landmark role (e.g., `'banner'`, `'main'`, `'navigation'`, `'contentinfo'`) |
 
 ---
 
@@ -397,6 +398,41 @@ This repetition builds strong pattern recognition.
 
 1. **Nested layouts** — How do contexts compose when layouts are nested?
 2. **SplitPane/Grid** — Detailed API design
+3. **Animation** — Transition support for panels (collapse/expand)?
+
+---
+
+## RTL Support
+
+The `start`/`end` naming (rather than `left`/`right`) enables automatic RTL handling via CSS logical properties:
+
+| Direction | `start` panel | `end` panel |
+|-----------|---------------|-------------|
+| LTR | Left side | Right side |
+| RTL | Right side | Left side |
+
+Implementation uses logical CSS properties (`inset-inline-start`, `padding-inline-end`, etc.) so no additional props or configuration are needed. RTL layouts work automatically when `dir="rtl"` is set on a parent element.
+
+---
+
+## Accessibility
+
+Content areas support ARIA landmark roles via the `role` prop:
+
+| Component | Suggested Role | Renders As |
+|-----------|----------------|------------|
+| `XDSLayoutHeader` | `"banner"` | `<header>` or `<div role="banner">` |
+| `XDSLayoutFooter` | `"contentinfo"` | `<footer>` or `<div role="contentinfo">` |
+| `XDSLayoutContent` | `"main"` | `<main>` or `<div role="main">` |
+| `XDSLayoutPanel` | `"navigation"` / `"complementary"` | `<aside>` or `<nav>` |
+
+**Design decision:** Should content areas render semantic HTML elements by default, or require explicit `role` prop?
+
+- **Option A:** Default to semantic elements (`<header>`, `<main>`, etc.) based on component type
+- **Option B:** Default to `<div>`, require `role` prop for landmarks
+- **Option C:** Default to semantic elements, allow `as` prop to override
+
+Semantic defaults (Option A/C) provide better accessibility out-of-the-box but may cause issues with nested layouts (multiple `<main>` elements).
 
 ---
 
