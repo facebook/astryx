@@ -20,7 +20,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type { StyleXStyles } from '@stylexjs/stylex';
-import { stack, type StackCrossAlignment, type StackWrap, type SpacingScale } from './stack.stylex';
+import { stack, type StackCrossAlignment, type StackMainAlignment, type StackWrap, type SpacingScale } from './stack.stylex';
 
 export interface XDSVStackProps extends Omit<HTMLAttributes<HTMLElement>, 'style' | 'className'> {
   /**
@@ -28,6 +28,17 @@ export interface XDSVStackProps extends Omit<HTMLAttributes<HTMLElement>, 'style
    * @default 'stretch'
    */
   hAlign?: StackCrossAlignment;
+
+  /**
+   * Vertical alignment of items (main-axis for vertical stack).
+   * - `start`: Align to top
+   * - `center`: Center items
+   * - `end`: Align to bottom
+   * - `between`: Space between items
+   * - `around`: Space around items
+   * - `evenly`: Even space distribution
+   */
+  vAlign?: StackMainAlignment;
 
   /**
    * Spacing between items using theme spacing tokens.
@@ -82,13 +93,14 @@ export interface XDSVStackProps extends Omit<HTMLAttributes<HTMLElement>, 'style
  */
 export const XDSVStack = forwardRef<HTMLElement, XDSVStackProps>(
   function XDSVStack(
-    { hAlign, gap, wrap, element = 'div', xstyle, children, ...props },
+    { hAlign, vAlign, gap, wrap, element = 'div', xstyle, children, ...props },
     ref
   ) {
     const stylexProps = stylex.props(
       ...stack({
         direction: 'vertical',
         crossAlign: hAlign,
+        mainAlign: vAlign,
         gap,
         wrap,
       }),

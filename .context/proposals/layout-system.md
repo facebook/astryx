@@ -396,9 +396,168 @@ This repetition builds strong pattern recognition.
 
 ## Open Questions
 
-1. **Nested layouts** — How do contexts compose when layouts are nested?
-2. **SplitPane/Grid** — Detailed API design
-3. **Animation** — Transition support for panels (collapse/expand)?
+### 1. Should XDSLayoutContainer have variants?
+
+**Current approach:** XDSLayoutContainer has variants (`card`, `modal`, `popover`, etc.) that set appearance and padding.
+
+**Alternative approach:** Remove variants from XDSLayoutContainer. Instead:
+- Higher-order components (XDSCard, XDSModal, XDSPopover) handle their own appearance
+- Each component is individually themable without XDSLayoutContainer growing arbitrarily
+- New containers with unique constraints (e.g., page content with max-width) don't need to be added as variants
+
+**Arguments for removing variants:**
+1. Higher-order components will exist anyway as the primary API
+2. Each container type may have unique requirements (e.g., page content needs max-width constraints for forms)
+3. Prevents XDSLayoutContainer from growing arbitrarily as new use cases emerge
+4. Theming becomes per-component rather than per-variant, giving more control
+5. Components can have domain-specific props (e.g., XDSPageContent with `maxWidth` prop)
+
+**Arguments for keeping variants:**
+1. Unified low-level API for custom use cases not covered by higher-order components
+2. Guarantees consistent styling across similar containers
+3. Enables layout reuse across contexts (same layout, different containers)
+
+**Recommendation:** Treat XDSLayoutContainer as a **primitive**:
+- Accepts `xstyle` for customization
+- No variants — visual styling moves to higher-order components
+- Only handles CSS variable propagation and flex container setup
+
+Higher-order components (XDSCard, XDSModal, etc.) configure the primitive:
+
+```jsx
+// XDSCard internally uses XDSLayoutContainer as a primitive
+function XDSCard({ children, xstyle, ...props }) {
+  return (
+    <XDSLayoutContainer
+      xstyle={[cardStyles.base, xstyle]}
+      {...props}
+    >
+      {children}
+    </XDSLayoutContainer>
+  );
+}
+
+// Usage - XDSCard handles appearance
+<XDSCard>
+  <XDSLayout
+    header={<XDSLayoutHeader>...</XDSLayoutHeader>}
+    content={<XDSLayoutContent>...</XDSLayoutContent>}
+  />
+</XDSCard>
+```
+
+**XDSLayoutContainer as primitive:**
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `xstyle` | `StyleXStyles` | Custom styles (background, shadow, radius, etc.) |
+| `paddingOuterX` | `SpacingToken` | Outer horizontal padding (left/right) |
+| `paddingOuterY` | `SpacingToken` | Outer vertical padding (top/bottom) |
+| `paddingInnerX` | `SpacingToken` | Inner horizontal padding for content areas |
+| `paddingInnerY` | `SpacingToken` | Inner vertical padding for content areas |
+| `children` | `ReactNode` | Must be an `XDSLayout` component |
+
+**What it provides:**
+- Sets CSS variables based on padding props:
+  - `--layout-padding-outer-x`, `--layout-padding-outer-y`
+  - `--layout-padding-inner-x`, `--layout-padding-inner-y`
+- Flex container setup for XDSLayout
+- `height: 100%` default (overridable via xstyle)
+
+**What it does NOT provide:**
+- No backgroundColor, boxShadow, borderRadius — these come from higher-order components via `xstyle`
+- No variants — each higher-order component is individually themable
+
+### 2. Page Content Layout
+
+A specific use case: page content that constrains central space to a max-width (for forms, articles, etc.).
+
+**Requirements:**
+- Content width constrained to a value like 800px
+- On smaller screens, content fills available width with minimum padding
+- Side panels (if present) remain at container edges
+
+**Challenge:** With panels, you can't simply use `max-width` on the container since panels need to be at the edges.
+
+**Solution:** Calculate padding dynamically to center content within the constraint:
+
+```css
+/* Centers content at 800px max, with minimum 16px padding */
+padding-inline: max(16px, calc((100% - 800px) / 2));
+```
+
+This approach:
+- Wide screens → padding grows to center the constrained content
+- Narrow screens → minimum padding prevents content touching edges
+- Panels stay at container edges, unaffected by content centering
+
+**Architecture: Internal StyleX utility**
+
+Content width constraints apply to a limited set of containers (page content, form modals). Rather than adding complexity to XDSLayoutContainer, create an **internal StyleX utility** that these specific components use:
+
+```tsx
+// Internal utility - not exported
+const contentWidthStyles = stylex.create({
+  form: {
+    '--layout-padding-inner-x': `max(${spacingTokens.space4}, calc((100% - 800px) / 2))`,
+  },
+  capped: {
+    '--layout-padding-inner-x': `max(${spacingTokens.space4}, calc((100% - 1200px) / 2))`,
+  },
+  full: {
+    // No override - uses standard padding
+  },
+});
+```
+
+**Components that use content width:**
+
+1. **XDSPageContent** - Exposes `contentWidth` prop for page layouts
+2. **XDSModal** - May have `variant="form"` that applies the form constraint
+
+```tsx
+// XDSPageContent exposes contentWidth prop
+<XDSPageContent contentWidth="form">
+  <XDSLayout ... />
+</XDSPageContent>
+
+// XDSModal might have a variant for form modals
+<XDSModal variant="form">
+  <XDSLayout ... />
+</XDSModal>
+```
+
+**Why this approach:**
+
+1. **XDSLayoutContainer stays simple:** Pure primitive with token-based padding.
+
+2. **Limited scope:** Only components that need content width get the prop.
+
+3. **Internal utility:** The calc-based styles are implementation details, not public API.
+
+4. **Explicit semantics:** `XDSPageContent contentWidth="form"` clearly communicates intent.
+
+**Content width variants:**
+
+| Variant | Use Case | Width |
+|---------|----------|-------|
+| `form` | Forms, focused content | 800px |
+| `capped` | Articles, content-heavy pages | 1200px |
+| `full` | Dashboards, data tables, no constraint (default) | 100% |
+
+**LLM-friendliness:** Use-case-based naming (`form`) is more discoverable than descriptive naming (`narrow`). An LLM building a form knows immediately to use `contentWidth="form"` without having to decide if content is "narrow enough."
+
+### 3. Nested layouts
+
+How do contexts compose when layouts are nested?
+
+### 4. SplitPane/Grid
+
+Detailed API design.
+
+### 5. Animation
+
+Transition support for panels (collapse/expand)?
 
 ---
 

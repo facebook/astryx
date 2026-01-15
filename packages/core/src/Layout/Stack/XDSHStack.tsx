@@ -20,9 +20,20 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type { StyleXStyles } from '@stylexjs/stylex';
-import { stack, type StackCrossAlignment, type StackWrap, type SpacingScale } from './stack.stylex';
+import { stack, type StackCrossAlignment, type StackMainAlignment, type StackWrap, type SpacingScale } from './stack.stylex';
 
 export interface XDSHStackProps extends Omit<HTMLAttributes<HTMLElement>, 'style' | 'className'> {
+  /**
+   * Horizontal alignment of items (main-axis for horizontal stack).
+   * - `start`: Align to start (left in LTR)
+   * - `center`: Center items
+   * - `end`: Align to end (right in LTR)
+   * - `between`: Space between items
+   * - `around`: Space around items
+   * - `evenly`: Even space distribution
+   */
+  hAlign?: StackMainAlignment;
+
   /**
    * Vertical alignment of items (cross-axis for horizontal stack).
    * @default 'stretch'
@@ -82,13 +93,14 @@ export interface XDSHStackProps extends Omit<HTMLAttributes<HTMLElement>, 'style
  */
 export const XDSHStack = forwardRef<HTMLElement, XDSHStackProps>(
   function XDSHStack(
-    { vAlign, gap, wrap, element = 'div', xstyle, children, ...props },
+    { hAlign, vAlign, gap, wrap, element = 'div', xstyle, children, ...props },
     ref
   ) {
     const stylexProps = stylex.props(
       ...stack({
         direction: 'horizontal',
         crossAlign: vAlign,
+        mainAlign: hAlign,
         gap,
         wrap,
       }),

@@ -28,3 +28,36 @@ export type {
   XDSVStackProps,
   XDSStackItemProps,
 } from './Stack';
+
+// Container components
+export {
+  XDSLayoutContainer,
+  XDSCard,
+  XDSSection,
+} from './Container';
+export type {
+  XDSLayoutContainerProps,
+  SpacingToken,
+  XDSCardProps,
+  XDSSectionProps,
+  XDSSectionVariant,
+} from './Container';
+
+// Layout structure components
+export {
+  XDSLayout,
+  XDSLayoutHeader,
+  XDSLayoutFooter,
+  XDSLayoutContent,
+  XDSLayoutPanel,
+  XDSLayoutAreaContext,
+} from './XDSLayout';
+export type {
+  XDSLayoutProps,
+  XDSLayoutHeight,
+  XDSLayoutHeaderProps,
+  XDSLayoutFooterProps,
+  XDSLayoutContentProps,
+  XDSLayoutPanelProps,
+  LayoutArea,
+} from './XDSLayout';

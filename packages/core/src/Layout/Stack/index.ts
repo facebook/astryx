@@ -13,6 +13,7 @@ export type {
   StackOptions,
   StackDirection,
   StackCrossAlignment,
+  StackMainAlignment,
   StackWrap,
   SpacingScale,
 } from './stack.stylex';
