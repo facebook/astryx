@@ -32,9 +32,7 @@ export interface XDSStackItemProps extends Omit<HTMLAttributes<HTMLElement>, 'st
   /**
    * Size behavior of the item within the stack.
    * - `static`: Uses intrinsic size, won't grow or shrink (default)
-   * - `fill`: Grows to fill remaining space (1x proportion)
-   * - `fill2x`: Grows with 2x proportion
-   * - `fill3x`: Grows with 3x proportion
+   * - `fill`: Grows to fill remaining space
    *
    * @default "static"
    */

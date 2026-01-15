@@ -102,12 +102,6 @@ Stack item for controlling individual item behavior within a stack. Supports pol
   <XDSStackItem size="static">Actions</XDSStackItem>
 </XDSHStack>
 
-// Proportional fill
-<XDSHStack gap="space2">
-  <XDSStackItem size="fill">1 part</XDSStackItem>
-  <XDSStackItem size="fill2x">2 parts</XDSStackItem>
-</XDSHStack>
-
 // Override alignment
 <XDSHStack vAlign="start">
   <XDSStackItem crossAlignSelf="center">Centered</XDSStackItem>
@@ -122,7 +116,7 @@ Stack item for controlling individual item behavior within a stack. Supports pol
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `size` | `'static' \| 'fill' \| 'fill2x' \| 'fill3x'` | `'static'` | Flex grow behavior |
+| `size` | `'static' \| 'fill'` | `'static'` | Flex grow behavior |
 | `crossAlignSelf` | `'start' \| 'center' \| 'end' \| 'stretch'` | — | Override cross-axis alignment |
 | `element` | `ElementType` | `'div'` | HTML element to render |
 | `children` | `ReactNode` | — | Item content |
@@ -167,7 +161,7 @@ import * as stylex from '@stylexjs/stylex';
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `size` | `'static' \| 'fill' \| 'fill2x' \| 'fill3x'` | `'static'` | Flex grow behavior |
+| `size` | `'static' \| 'fill'` | `'static'` | Flex grow behavior |
 | `crossAlignSelf` | `'start' \| 'center' \| 'end' \| 'stretch'` | — | Override cross-axis alignment |
 
 ## Spacing Scale

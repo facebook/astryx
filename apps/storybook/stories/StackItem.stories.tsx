@@ -94,7 +94,7 @@ const meta: Meta<typeof XDSStackItem> = {
   argTypes: {
     size: {
       control: 'select',
-      options: ['static', 'fill', 'fill2x', 'fill3x'],
+      options: ['static', 'fill'],
       description: 'Size behavior within the stack',
     },
     crossAlignSelf: {
@@ -144,49 +144,22 @@ export const FillSize: Story = {
   ),
 };
 
-export const ProportionalFill: Story = {
+export const EqualFill: Story = {
   render: () => (
-    <XDSVStack gap="space4">
-      <div>
-        <h4 {...stylex.props(styles.heading)}>Equal Fill (1:1:1)</h4>
-        <XDSHStack gap="space2" xstyle={[styles.container, styles.containerWidth, styles.containerPadding]}>
-          <XDSStackItem size="fill">
-            <Box>fill</Box>
-          </XDSStackItem>
-          <XDSStackItem size="fill">
-            <Box>fill</Box>
-          </XDSStackItem>
-          <XDSStackItem size="fill">
-            <Box>fill</Box>
-          </XDSStackItem>
-        </XDSHStack>
-      </div>
-      <div>
-        <h4 {...stylex.props(styles.heading)}>Proportional (1:2)</h4>
-        <XDSHStack gap="space2" xstyle={[styles.container, styles.containerWidth, styles.containerPadding]}>
-          <XDSStackItem size="fill">
-            <Box>fill (1 part)</Box>
-          </XDSStackItem>
-          <XDSStackItem size="fill2x">
-            <Box green>fill2x (2 parts)</Box>
-          </XDSStackItem>
-        </XDSHStack>
-      </div>
-      <div>
-        <h4 {...stylex.props(styles.heading)}>Proportional (1:2:3)</h4>
-        <XDSHStack gap="space2" xstyle={[styles.container, styles.containerWidth, styles.containerPadding]}>
-          <XDSStackItem size="fill">
-            <Box>fill</Box>
-          </XDSStackItem>
-          <XDSStackItem size="fill2x">
-            <Box green>fill2x</Box>
-          </XDSStackItem>
-          <XDSStackItem size="fill3x">
-            <Box purple>fill3x</Box>
-          </XDSStackItem>
-        </XDSHStack>
-      </div>
-    </XDSVStack>
+    <div>
+      <h4 {...stylex.props(styles.heading)}>Equal Fill (1:1:1)</h4>
+      <XDSHStack gap="space2" xstyle={[styles.container, styles.containerWidth, styles.containerPadding]}>
+        <XDSStackItem size="fill">
+          <Box>fill</Box>
+        </XDSStackItem>
+        <XDSStackItem size="fill">
+          <Box green>fill</Box>
+        </XDSStackItem>
+        <XDSStackItem size="fill">
+          <Box purple>fill</Box>
+        </XDSStackItem>
+      </XDSHStack>
+    </div>
   ),
 };
 

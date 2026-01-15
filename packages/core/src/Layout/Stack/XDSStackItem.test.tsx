@@ -38,13 +38,8 @@ describe('XDSStackItem', () => {
     expect(screen.getByText('Content')).toBeInTheDocument();
   });
 
-  it('renders with fill2x size', () => {
-    render(<XDSStackItem size="fill2x">Content</XDSStackItem>);
-    expect(screen.getByText('Content')).toBeInTheDocument();
-  });
-
-  it('renders with fill3x size', () => {
-    render(<XDSStackItem size="fill3x">Content</XDSStackItem>);
+  it('renders with static size', () => {
+    render(<XDSStackItem size="static">Content</XDSStackItem>);
     expect(screen.getByText('Content')).toBeInTheDocument();
   });
 
