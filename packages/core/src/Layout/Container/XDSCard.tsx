@@ -5,7 +5,7 @@
  * @position Higher-order container component for card layouts
  */
 
-import { forwardRef, useContext, type ReactNode, type CSSProperties } from 'react';
+import { forwardRef, useContext, type ReactNode } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorTokens,
@@ -35,6 +35,21 @@ const styles = stylex.create({
     borderRadius: radiusTokens.container,
     boxShadow: elevationTokens.base,
   },
+});
+
+// Dynamic styles for sizing props
+const dynamicStyles = stylex.create({
+  sizing: (
+    width: string | null,
+    height: string | null,
+    maxWidth: string | null,
+    minHeight: string | null
+  ) => ({
+    width,
+    height,
+    maxWidth,
+    minHeight,
+  }),
 });
 
 /**
@@ -75,10 +90,10 @@ export interface XDSCardProps {
 }
 
 /**
- * Converts a size value to a CSS-compatible string.
+ * Converts a size value to a CSS-compatible string or null.
  */
-function formatSize(value: SizeValue | undefined): string | undefined {
-  if (value === undefined) return undefined;
+function formatSize(value: SizeValue | undefined): string | null {
+  if (value === undefined) return null;
   return typeof value === 'number' ? `${value}px` : value;
 }
 
@@ -105,18 +120,19 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
     const themeContext = useContext(ThemeContext);
     const themeOverride = themeContext?.theme.components?.card?.base;
 
-    // Build inline style for sizing props
-    const sizeStyle: CSSProperties = {};
-    if (width !== undefined) sizeStyle.width = formatSize(width);
-    if (height !== undefined) sizeStyle.height = formatSize(height);
-    if (maxWidth !== undefined) sizeStyle.maxWidth = formatSize(maxWidth);
-    if (minHeight !== undefined) sizeStyle.minHeight = formatSize(minHeight);
-
     return (
       <XDSLayoutContainer
         ref={ref}
-        xstyle={[styles.card, themeOverride]}
-        style={sizeStyle}
+        xstyle={[
+          styles.card,
+          themeOverride,
+          dynamicStyles.sizing(
+            formatSize(width),
+            formatSize(height),
+            formatSize(maxWidth),
+            formatSize(minHeight)
+          ),
+        ]}
         paddingInnerX="space4"
         paddingInnerY="space4"
         paddingOuterX="space4"

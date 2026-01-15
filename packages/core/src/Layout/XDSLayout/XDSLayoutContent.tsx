@@ -1,6 +1,6 @@
 /**
  * @file XDSLayoutContent.tsx
- * @input Uses React forwardRef, StyleX
+ * @input Uses React forwardRef, StyleX, XDSLayoutSlotsContext
  * @output Exports XDSLayoutContent component and XDSLayoutContentProps
  * @position Layout content area component
  *
@@ -10,17 +10,35 @@
  */
 
 import type { AriaRole, HTMLAttributes, ReactNode } from 'react';
-import { forwardRef } from 'react';
+import { forwardRef, useContext } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import { spacingTokens } from '../../theme/tokens.stylex';
+import { XDSLayoutSlotsContext } from './XDSLayoutSlotsContext';
 
 const styles = stylex.create({
   content: {
     boxSizing: 'border-box',
     flex: 1,
     minHeight: 0,
+    // Default: inner padding on all sides (will be overridden by position-specific styles)
     paddingInline: `var(--layout-padding-inner-x, ${spacingTokens.space4})`,
     paddingBlock: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
+  },
+  // When no start panel: outer-x on left edge
+  noStart: {
+    paddingInlineStart: `var(--layout-padding-outer-x, ${spacingTokens.space4})`,
+  },
+  // When no end panel: outer-x on right edge
+  noEnd: {
+    paddingInlineEnd: `var(--layout-padding-outer-x, ${spacingTokens.space4})`,
+  },
+  // When no header: outer-y on top
+  noHeader: {
+    paddingBlockStart: `var(--layout-padding-outer-y, ${spacingTokens.space4})`,
+  },
+  // When no footer: outer-y on bottom
+  noFooter: {
+    paddingBlockEnd: `var(--layout-padding-outer-y, ${spacingTokens.space4})`,
   },
   scrollable: {
     overflow: 'auto',
@@ -106,6 +124,8 @@ export const XDSLayoutContent = forwardRef<HTMLElement, XDSLayoutContentProps>(
     { children, isFullBleed = false, isScrollable = true, label, role, ...props },
     ref
   ) {
+    const { hasHeader, hasFooter, hasStart, hasEnd, isFullBleed: isLayoutFullBleed } = useContext(XDSLayoutSlotsContext);
+
     return (
       <div
         ref={ref as React.Ref<HTMLDivElement>}
@@ -113,6 +133,11 @@ export const XDSLayoutContent = forwardRef<HTMLElement, XDSLayoutContentProps>(
         aria-label={label}
         {...stylex.props(
           styles.content,
+          // Outer padding on container edges (unless layout is full bleed)
+          !hasStart && !isLayoutFullBleed && styles.noStart,
+          !hasEnd && !isLayoutFullBleed && styles.noEnd,
+          !hasHeader && !isLayoutFullBleed && styles.noHeader,
+          !hasFooter && !isLayoutFullBleed && styles.noFooter,
           isScrollable && styles.scrollable,
           isFullBleed && styles.fullBleed
         )}

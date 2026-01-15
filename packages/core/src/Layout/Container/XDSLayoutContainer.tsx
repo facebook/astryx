@@ -11,7 +11,6 @@
 
 import {
   forwardRef,
-  type CSSProperties,
   type HTMLAttributes,
   type ReactNode,
 } from 'react';
@@ -93,15 +92,9 @@ const paddingInnerYStyles = stylex.create({
 export interface XDSLayoutContainerProps extends Omit<HTMLAttributes<HTMLDivElement>, 'style' | 'className'> {
   /**
    * Custom styles for the container.
-   * Use for background, shadow, radius, etc.
+   * Use for background, shadow, radius, sizing, etc.
    */
   xstyle?: StyleXStyles;
-
-  /**
-   * Inline styles for sizing (width, height, etc.).
-   * Used internally by higher-order components like XDSCard.
-   */
-  style?: CSSProperties;
 
   /**
    * Outer horizontal padding (left/right).
@@ -166,7 +159,6 @@ export const XDSLayoutContainer = forwardRef<HTMLDivElement, XDSLayoutContainerP
   function XDSLayoutContainer(
     {
       xstyle,
-      style,
       paddingOuterX = 'space4',
       paddingOuterY = 'space4',
       paddingInnerX = 'space4',
@@ -176,20 +168,17 @@ export const XDSLayoutContainer = forwardRef<HTMLDivElement, XDSLayoutContainerP
     },
     ref
   ) {
-    const stylexResult = stylex.props(
-      styles.container,
-      paddingOuterXStyles[paddingOuterX],
-      paddingOuterYStyles[paddingOuterY],
-      paddingInnerXStyles[paddingInnerX],
-      paddingInnerYStyles[paddingInnerY],
-      xstyle
-    );
-
     return (
       <div
         ref={ref}
-        className={stylexResult.className}
-        style={{ ...stylexResult.style, ...style }}
+        {...stylex.props(
+          styles.container,
+          paddingOuterXStyles[paddingOuterX],
+          paddingOuterYStyles[paddingOuterY],
+          paddingInnerXStyles[paddingInnerX],
+          paddingInnerYStyles[paddingInnerY],
+          xstyle
+        )}
         {...props}
       >
         {children}

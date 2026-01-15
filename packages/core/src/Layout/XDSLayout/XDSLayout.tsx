@@ -1,6 +1,6 @@
 /**
  * @file XDSLayout.tsx
- * @input Uses React, XDSHStack, XDSVStack, XDSLayoutAreaContext
+ * @input Uses React, XDSHStack, XDSVStack, XDSLayoutAreaContext, XDSLayoutSlotsContext
  * @output Exports XDSLayout component and XDSLayoutProps, XDSLayoutHeight types
  * @position Core layout component with named slots
  *
@@ -10,9 +10,10 @@
  * - /apps/storybook/stories/Layout.stories.tsx
  */
 
-import { type ReactNode } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import { XDSLayoutAreaContext, type LayoutArea } from './XDSLayoutAreaContext';
+import { XDSLayoutSlotsContext, type LayoutSlots } from './XDSLayoutSlotsContext';
 import { XDSHStack } from '../Stack/XDSHStack';
 import { XDSVStack } from '../Stack/XDSVStack';
 import { XDSStackItem } from '../Stack/XDSStackItem';
@@ -34,11 +35,6 @@ const styles = stylex.create({
   middle: {
     flex: 1,
     minHeight: 0,
-  },
-  fullBleed: {
-    // Removes outer padding from layout edges
-    marginInline: 'calc(-1 * var(--layout-padding-outer-x, 0px))',
-    marginBlock: 'calc(-1 * var(--layout-padding-outer-y, 0px))',
   },
 });
 
@@ -140,23 +136,32 @@ export function XDSLayout({
 }: XDSLayoutProps) {
   const isFill = height === 'fill';
 
+  // Memoize slots info to avoid unnecessary re-renders
+  const slotsValue = useMemo<LayoutSlots>(
+    () => ({
+      hasHeader: header != null,
+      hasFooter: footer != null,
+      hasStart: start != null,
+      hasEnd: end != null,
+      isFullBleed,
+    }),
+    [header != null, footer != null, start != null, end != null, isFullBleed]
+  );
+
   return (
-    <XDSVStack
-      xstyle={[
-        isFill ? styles.fill : styles.auto,
-        isFullBleed && styles.fullBleed,
-      ]}
-    >
-      <AreaProvider area="header">{header}</AreaProvider>
-      <XDSHStack xstyle={styles.middle}>
-        <AreaProvider area="start">{start}</AreaProvider>
-        <XDSStackItem size="fill">
-          <AreaProvider area="content">{content}</AreaProvider>
-        </XDSStackItem>
-        <AreaProvider area="end">{end}</AreaProvider>
-      </XDSHStack>
-      <AreaProvider area="footer">{footer}</AreaProvider>
-    </XDSVStack>
+    <XDSLayoutSlotsContext.Provider value={slotsValue}>
+      <XDSVStack xstyle={isFill ? styles.fill : styles.auto}>
+        <AreaProvider area="header">{header}</AreaProvider>
+        <XDSHStack xstyle={styles.middle}>
+          <AreaProvider area="start">{start}</AreaProvider>
+          <XDSStackItem size="fill">
+            <AreaProvider area="content">{content}</AreaProvider>
+          </XDSStackItem>
+          <AreaProvider area="end">{end}</AreaProvider>
+        </XDSHStack>
+        <AreaProvider area="footer">{footer}</AreaProvider>
+      </XDSVStack>
+    </XDSLayoutSlotsContext.Provider>
   );
 }
 

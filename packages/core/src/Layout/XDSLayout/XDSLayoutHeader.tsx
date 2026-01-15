@@ -1,6 +1,6 @@
 /**
  * @file XDSLayoutHeader.tsx
- * @input Uses React forwardRef, StyleX, XDSLayoutAreaContext
+ * @input Uses React forwardRef, StyleX, XDSLayoutSlotsContext
  * @output Exports XDSLayoutHeader component and XDSLayoutHeaderProps
  * @position Layout content area component
  *
@@ -10,16 +10,24 @@
  */
 
 import type { AriaRole, HTMLAttributes, ReactNode } from 'react';
-import { forwardRef } from 'react';
+import { forwardRef, useContext } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import { colorTokens, spacingTokens } from '../../theme/tokens.stylex';
+import { XDSLayoutSlotsContext } from './XDSLayoutSlotsContext';
 
 const styles = stylex.create({
   header: {
     boxSizing: 'border-box',
     flexShrink: 0,
+    // Default: outer padding on edges that touch container, inner on interior edges
+    paddingInline: `var(--layout-padding-outer-x, ${spacingTokens.space4})`,
+    paddingBlockStart: `var(--layout-padding-outer-y, ${spacingTokens.space4})`,
+    paddingBlockEnd: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
+  },
+  // When layout is full bleed, use inner padding instead of outer
+  layoutFullBleed: {
     paddingInline: `var(--layout-padding-inner-x, ${spacingTokens.space4})`,
-    paddingBlock: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
+    paddingBlockStart: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
   },
   fullBleed: {
     paddingInline: 0,
@@ -87,6 +95,8 @@ export const XDSLayoutHeader = forwardRef<HTMLElement, XDSLayoutHeaderProps>(
     { children, hasDivider = false, isFullBleed = false, label, role, ...props },
     ref
   ) {
+    const { isFullBleed: isLayoutFullBleed } = useContext(XDSLayoutSlotsContext);
+
     // When no divider, collapse spacing for seamless visual flow
     const shouldCollapseSpacing = !hasDivider && !isFullBleed;
 
@@ -97,6 +107,7 @@ export const XDSLayoutHeader = forwardRef<HTMLElement, XDSLayoutHeaderProps>(
         aria-label={label}
         {...stylex.props(
           styles.header,
+          isLayoutFullBleed && styles.layoutFullBleed,
           isFullBleed && styles.fullBleed,
           hasDivider && styles.divider,
           shouldCollapseSpacing && styles.collapseBottom

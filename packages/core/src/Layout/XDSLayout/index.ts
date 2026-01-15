@@ -24,3 +24,6 @@ export type { XDSLayoutPanelProps } from './XDSLayoutPanel';
 
 export { XDSLayoutAreaContext } from './XDSLayoutAreaContext';
 export type { LayoutArea } from './XDSLayoutAreaContext';
+
+export { XDSLayoutSlotsContext } from './XDSLayoutSlotsContext';
+export type { LayoutSlots } from './XDSLayoutSlotsContext';

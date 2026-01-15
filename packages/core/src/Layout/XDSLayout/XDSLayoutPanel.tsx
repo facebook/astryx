@@ -1,6 +1,6 @@
 /**
  * @file XDSLayoutPanel.tsx
- * @input Uses React forwardRef, StyleX, XDSLayoutAreaContext
+ * @input Uses React forwardRef, StyleX, XDSLayoutAreaContext, XDSLayoutSlotsContext
  * @output Exports XDSLayoutPanel component and XDSLayoutPanelProps
  * @position Layout content area component
  *
@@ -14,14 +14,45 @@ import { forwardRef, useContext } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import { colorTokens, spacingTokens } from '../../theme/tokens.stylex';
 import { XDSLayoutAreaContext } from './XDSLayoutAreaContext';
+import { XDSLayoutSlotsContext } from './XDSLayoutSlotsContext';
 
 const styles = stylex.create({
   panel: {
     boxSizing: 'border-box',
     flexShrink: 0,
     overflow: 'auto',
+    // Default: inner padding on all sides (will be overridden by position-specific styles)
     paddingInline: `var(--layout-padding-inner-x, ${spacingTokens.space4})`,
     paddingBlock: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
+  },
+  // Start panel: outer-x on left edge
+  startPanel: {
+    paddingInlineStart: `var(--layout-padding-outer-x, ${spacingTokens.space4})`,
+  },
+  // End panel: outer-x on right edge
+  endPanel: {
+    paddingInlineEnd: `var(--layout-padding-outer-x, ${spacingTokens.space4})`,
+  },
+  // When no header: outer-y on top
+  noHeader: {
+    paddingBlockStart: `var(--layout-padding-outer-y, ${spacingTokens.space4})`,
+  },
+  // When no footer: outer-y on bottom
+  noFooter: {
+    paddingBlockEnd: `var(--layout-padding-outer-y, ${spacingTokens.space4})`,
+  },
+  // When layout is full bleed, use inner padding on outer edges
+  layoutFullBleedStart: {
+    paddingInlineStart: `var(--layout-padding-inner-x, ${spacingTokens.space4})`,
+  },
+  layoutFullBleedEnd: {
+    paddingInlineEnd: `var(--layout-padding-inner-x, ${spacingTokens.space4})`,
+  },
+  layoutFullBleedTop: {
+    paddingBlockStart: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
+  },
+  layoutFullBleedBottom: {
+    paddingBlockEnd: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
   },
   fullBleed: {
     paddingInline: 0,
@@ -112,6 +143,7 @@ export const XDSLayoutPanel = forwardRef<HTMLElement, XDSLayoutPanelProps>(
     ref
   ) {
     const area = useContext(XDSLayoutAreaContext);
+    const { hasHeader, hasFooter, isFullBleed: isLayoutFullBleed } = useContext(XDSLayoutSlotsContext);
 
     // Determine panel position
     const isStartPanel = area === 'start';
@@ -137,6 +169,12 @@ export const XDSLayoutPanel = forwardRef<HTMLElement, XDSLayoutPanelProps>(
         aria-label={label}
         {...stylex.props(
           styles.panel,
+          // Outer padding on container edges (unless layout is full bleed)
+          isStartPanel && !isLayoutFullBleed && styles.startPanel,
+          isEndPanel && !isLayoutFullBleed && styles.endPanel,
+          !hasHeader && !isLayoutFullBleed && styles.noHeader,
+          !hasFooter && !isLayoutFullBleed && styles.noFooter,
+          // Full bleed overrides
           isFullBleed && styles.fullBleed,
           hasDivider && dividerStyle,
           shouldCollapseSpacing && collapseStyle

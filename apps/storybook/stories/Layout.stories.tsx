@@ -6,6 +6,7 @@ import {
   XDSLayoutFooter,
   XDSLayoutContent,
   XDSLayoutPanel,
+  XDSLayoutContainer,
   XDSCard,
   XDSSection,
   XDSHStack,
@@ -16,6 +17,8 @@ import {
   colorTokens,
   spacingTokens,
   typographyTokens,
+  radiusTokens,
+  elevationTokens,
 } from '@xds/core/theme/tokens.stylex';
 import { Theme, neutralTheme, defaultTheme } from '@xds/core';
 
@@ -98,6 +101,12 @@ const styles = stylex.create({
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
     color: colorTokens.textSecondary,
+  },
+  // Demo container styling to visualize bounds
+  demoContainer: {
+    backgroundColor: colorTokens.card,
+    borderRadius: radiusTokens.container,
+    boxShadow: elevationTokens.base,
   },
 });
 
@@ -437,5 +446,109 @@ export const ThemedLayout: Story = {
         </Theme>
       </XDSVStack>
     </XDSHStack>
+  ),
+};
+
+export const OuterPaddingDemo: Story = {
+  name: 'Outer Padding Demonstration',
+  render: () => (
+    <XDSVStack gap="space6" xstyle={styles.storySection}>
+      <p {...stylex.props(styles.sectionLabel)}>Outer Padding</p>
+      <p {...stylex.props(styles.bodyText)}>
+        Outer padding creates space between the container edge and the layout content.
+        Notice how the dividers are inset from the container edges as outer padding increases.
+      </p>
+      <XDSHStack gap="space4" wrap="wrap">
+        <XDSVStack gap="space2">
+          <p {...stylex.props(styles.subheading)}>paddingOuterX/Y = space0</p>
+          <XDSLayoutContainer
+            xstyle={styles.demoContainer}
+            style={{ width: 300, height: 220 }}
+            paddingOuterX="space0"
+            paddingOuterY="space0"
+          >
+            <XDSLayout
+              header={
+                <XDSLayoutHeader hasDivider>
+                  <p {...stylex.props(styles.subheading)}>Header</p>
+                </XDSLayoutHeader>
+              }
+              content={
+                <XDSLayoutContent>
+                  <p {...stylex.props(styles.bodyText)}>
+                    Dividers touch container edges.
+                  </p>
+                </XDSLayoutContent>
+              }
+              footer={
+                <XDSLayoutFooter hasDivider>
+                  <p {...stylex.props(styles.bodyText)}>Footer</p>
+                </XDSLayoutFooter>
+              }
+            />
+          </XDSLayoutContainer>
+        </XDSVStack>
+
+        <XDSVStack gap="space2">
+          <p {...stylex.props(styles.subheading)}>paddingOuterX/Y = space4</p>
+          <XDSLayoutContainer
+            xstyle={styles.demoContainer}
+            style={{ width: 300, height: 220 }}
+            paddingOuterX="space4"
+            paddingOuterY="space4"
+          >
+            <XDSLayout
+              header={
+                <XDSLayoutHeader hasDivider>
+                  <p {...stylex.props(styles.subheading)}>Header</p>
+                </XDSLayoutHeader>
+              }
+              content={
+                <XDSLayoutContent>
+                  <p {...stylex.props(styles.bodyText)}>
+                    16px inset from edges.
+                  </p>
+                </XDSLayoutContent>
+              }
+              footer={
+                <XDSLayoutFooter hasDivider>
+                  <p {...stylex.props(styles.bodyText)}>Footer</p>
+                </XDSLayoutFooter>
+              }
+            />
+          </XDSLayoutContainer>
+        </XDSVStack>
+
+        <XDSVStack gap="space2">
+          <p {...stylex.props(styles.subheading)}>paddingOuterX/Y = space7</p>
+          <XDSLayoutContainer
+            xstyle={styles.demoContainer}
+            style={{ width: 300, height: 220 }}
+            paddingOuterX="space7"
+            paddingOuterY="space7"
+          >
+            <XDSLayout
+              header={
+                <XDSLayoutHeader hasDivider>
+                  <p {...stylex.props(styles.subheading)}>Header</p>
+                </XDSLayoutHeader>
+              }
+              content={
+                <XDSLayoutContent>
+                  <p {...stylex.props(styles.bodyText)}>
+                    48px inset from edges.
+                  </p>
+                </XDSLayoutContent>
+              }
+              footer={
+                <XDSLayoutFooter hasDivider>
+                  <p {...stylex.props(styles.bodyText)}>Footer</p>
+                </XDSLayoutFooter>
+              }
+            />
+          </XDSLayoutContainer>
+        </XDSVStack>
+      </XDSHStack>
+    </XDSVStack>
   ),
 };
