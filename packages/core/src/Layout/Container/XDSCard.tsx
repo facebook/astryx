@@ -1,6 +1,6 @@
 /**
  * @file XDSCard.tsx
- * @input Uses XDSLayoutContainer, StyleX, ThemeContext
+ * @input Uses container utility, StyleX, ThemeContext
  * @output Exports XDSCard component and XDSCardProps
  * @position Higher-order container component for card layouts
  */
@@ -14,7 +14,7 @@ import {
 } from '../../theme/tokens.stylex';
 import { ThemeContext } from '../../theme/ThemeContext';
 import type { StyleXStyles as ThemeStyleXStyles } from '../../theme/types';
-import { XDSLayoutContainer } from './XDSLayoutContainer';
+import { container } from './container.stylex';
 
 // =============================================================================
 // Module Augmentation - Register XDSCard's themeable properties
@@ -92,8 +92,8 @@ export interface XDSCardProps {
 /**
  * A card container with elevation and themed styling.
  *
- * Uses XDSLayoutContainer internally and applies card-specific
- * appearance (background, shadow, border-radius).
+ * Applies card-specific appearance (background, shadow, border-radius)
+ * and sets CSS variables for child layout components.
  *
  * @example
  * ```tsx
@@ -113,9 +113,15 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
     const themeOverride = themeContext?.theme.components?.card?.base;
 
     return (
-      <XDSLayoutContainer
+      <div
         ref={ref}
-        xstyle={[
+        {...stylex.props(
+          ...container({
+            paddingInnerX: 'space4',
+            paddingInnerY: 'space4',
+            paddingOuterX: 'space4',
+            paddingOuterY: 'space4',
+          }),
           styles.card,
           themeOverride,
           dynamicStyles.sizing(
@@ -123,16 +129,12 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
             height ?? null,
             maxWidth ?? null,
             minHeight ?? null
-          ),
-        ]}
-        paddingInnerX="space4"
-        paddingInnerY="space4"
-        paddingOuterX="space4"
-        paddingOuterY="space4"
+          )
+        )}
         {...props}
       >
         {children}
-      </XDSLayoutContainer>
+      </div>
     );
   }
 );

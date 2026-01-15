@@ -20,9 +20,12 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     flex: 1,
     minHeight: 0,
+    overflow: 'clip',
     // Default: inner padding on all sides (will be overridden by position-specific styles)
-    paddingInline: `var(--layout-padding-inner-x, ${spacingTokens.space4})`,
-    paddingBlock: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
+    paddingInlineStart: `var(--layout-padding-inner-x, ${spacingTokens.space4})`,
+    paddingInlineEnd: `var(--layout-padding-inner-x, ${spacingTokens.space4})`,
+    paddingBlockStart: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
+    paddingBlockEnd: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
   },
   // When no start panel: outer-x on left edge
   noStart: {
@@ -44,8 +47,10 @@ const styles = stylex.create({
     overflow: 'auto',
   },
   fullBleed: {
-    paddingInline: 0,
-    paddingBlock: 0,
+    paddingInlineStart: 0,
+    paddingInlineEnd: 0,
+    paddingBlockStart: 0,
+    paddingBlockEnd: 0,
   },
 });
 

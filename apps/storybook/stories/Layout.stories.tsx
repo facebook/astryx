@@ -6,7 +6,7 @@ import {
   XDSLayoutFooter,
   XDSLayoutContent,
   XDSLayoutPanel,
-  XDSLayoutContainer,
+  container,
   XDSCard,
   XDSSection,
   XDSHStack,
@@ -107,6 +107,11 @@ const styles = stylex.create({
     backgroundColor: colorTokens.card,
     borderRadius: radiusTokens.container,
     boxShadow: elevationTokens.base,
+  },
+  // Demo sizing for outer padding story
+  demoSize: {
+    width: 300,
+    height: 220,
   },
 });
 
@@ -461,11 +466,15 @@ export const OuterPaddingDemo: Story = {
       <XDSHStack gap="space4" wrap="wrap">
         <XDSVStack gap="space2">
           <p {...stylex.props(styles.subheading)}>paddingOuterX/Y = space0</p>
-          <XDSLayoutContainer
-            xstyle={styles.demoContainer}
-            style={{ width: 300, height: 220 }}
-            paddingOuterX="space0"
-            paddingOuterY="space0"
+          <div
+            {...stylex.props(
+              ...container({
+                paddingOuterX: 'space0',
+                paddingOuterY: 'space0',
+              }),
+              styles.demoContainer,
+              styles.demoSize
+            )}
           >
             <XDSLayout
               header={
@@ -486,16 +495,20 @@ export const OuterPaddingDemo: Story = {
                 </XDSLayoutFooter>
               }
             />
-          </XDSLayoutContainer>
+          </div>
         </XDSVStack>
 
         <XDSVStack gap="space2">
           <p {...stylex.props(styles.subheading)}>paddingOuterX/Y = space4</p>
-          <XDSLayoutContainer
-            xstyle={styles.demoContainer}
-            style={{ width: 300, height: 220 }}
-            paddingOuterX="space4"
-            paddingOuterY="space4"
+          <div
+            {...stylex.props(
+              ...container({
+                paddingOuterX: 'space4',
+                paddingOuterY: 'space4',
+              }),
+              styles.demoContainer,
+              styles.demoSize
+            )}
           >
             <XDSLayout
               header={
@@ -516,16 +529,20 @@ export const OuterPaddingDemo: Story = {
                 </XDSLayoutFooter>
               }
             />
-          </XDSLayoutContainer>
+          </div>
         </XDSVStack>
 
         <XDSVStack gap="space2">
           <p {...stylex.props(styles.subheading)}>paddingOuterX/Y = space7</p>
-          <XDSLayoutContainer
-            xstyle={styles.demoContainer}
-            style={{ width: 300, height: 220 }}
-            paddingOuterX="space7"
-            paddingOuterY="space7"
+          <div
+            {...stylex.props(
+              ...container({
+                paddingOuterX: 'space7',
+                paddingOuterY: 'space7',
+              }),
+              styles.demoContainer,
+              styles.demoSize
+            )}
           >
             <XDSLayout
               header={
@@ -546,7 +563,7 @@ export const OuterPaddingDemo: Story = {
                 </XDSLayoutFooter>
               }
             />
-          </XDSLayoutContainer>
+          </div>
         </XDSVStack>
       </XDSHStack>
     </XDSVStack>

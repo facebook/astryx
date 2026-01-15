@@ -20,18 +20,22 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     flexShrink: 0,
     // Default: outer padding on edges that touch container, inner on interior edges
-    paddingInline: `var(--layout-padding-outer-x, ${spacingTokens.space4})`,
+    paddingInlineStart: `var(--layout-padding-outer-x, ${spacingTokens.space4})`,
+    paddingInlineEnd: `var(--layout-padding-outer-x, ${spacingTokens.space4})`,
     paddingBlockStart: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
     paddingBlockEnd: `var(--layout-padding-outer-y, ${spacingTokens.space4})`,
   },
   // When layout is full bleed, use inner padding instead of outer
   layoutFullBleed: {
-    paddingInline: `var(--layout-padding-inner-x, ${spacingTokens.space4})`,
+    paddingInlineStart: `var(--layout-padding-inner-x, ${spacingTokens.space4})`,
+    paddingInlineEnd: `var(--layout-padding-inner-x, ${spacingTokens.space4})`,
     paddingBlockEnd: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
   },
   fullBleed: {
-    paddingInline: 0,
-    paddingBlock: 0,
+    paddingInlineStart: 0,
+    paddingInlineEnd: 0,
+    paddingBlockStart: 0,
+    paddingBlockEnd: 0,
   },
   divider: {
     borderBlockStartWidth: 1,
@@ -42,6 +46,13 @@ const styles = stylex.create({
   collapseTop: {
     marginBlockStart: `calc(-1 * var(--layout-padding-inner-y, ${spacingTokens.space4}))`,
   },
+});
+
+// Dynamic styles for sizing props
+const dynamicStyles = stylex.create({
+  sizing: (height: number | string | null) => ({
+    height,
+  }),
 });
 
 export interface XDSLayoutFooterProps extends Omit<HTMLAttributes<HTMLElement>, 'style' | 'className'> {
@@ -56,6 +67,12 @@ export interface XDSLayoutFooterProps extends Omit<HTMLAttributes<HTMLElement>, 
    * @default false
    */
   hasDivider?: boolean;
+
+  /**
+   * Height of the footer.
+   * Numbers are treated as pixels, strings are used as-is.
+   */
+  height?: number | string;
 
   /**
    * Removes internal padding, allowing content to touch the edges.
@@ -92,7 +109,7 @@ export interface XDSLayoutFooterProps extends Omit<HTMLAttributes<HTMLElement>, 
  */
 export const XDSLayoutFooter = forwardRef<HTMLElement, XDSLayoutFooterProps>(
   function XDSLayoutFooter(
-    { children, hasDivider = false, isFullBleed = false, label, role, ...props },
+    { children, hasDivider = false, height, isFullBleed = false, label, role, ...props },
     ref
   ) {
     const { isFullBleed: isLayoutFullBleed } = useContext(XDSLayoutSlotsContext);
@@ -110,6 +127,7 @@ export const XDSLayoutFooter = forwardRef<HTMLElement, XDSLayoutFooterProps>(
         aria-label={label}
         {...stylex.props(
           styles.footer,
+          dynamicStyles.sizing(height ?? null),
           applyLayoutFullBleed && styles.layoutFullBleed,
           isFullBleed && styles.fullBleed,
           hasDivider && styles.divider,

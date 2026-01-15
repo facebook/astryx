@@ -1,17 +1,11 @@
 /**
  * @file index.ts
  * @input Imports Container components
- * @output Exports XDSLayoutContainer, XDSCard, XDSSection and types
+ * @output Exports XDSCard, XDSSection components and types
  * @position Entry point for Layout/Container module
  *
  * SYNC: When modified, update /packages/core/src/Layout/Container/README.md
  */
-
-export { XDSLayoutContainer } from './XDSLayoutContainer';
-export type {
-  XDSLayoutContainerProps,
-  SpacingToken,
-} from './XDSLayoutContainer';
 
 export { XDSCard } from './XDSCard';
 export type { XDSCardProps, SizeValue } from './XDSCard';

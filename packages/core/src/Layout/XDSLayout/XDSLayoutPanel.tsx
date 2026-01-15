@@ -20,10 +20,12 @@ const styles = stylex.create({
   panel: {
     boxSizing: 'border-box',
     flexShrink: 0,
-    overflow: 'auto',
+    overflow: 'clip',
     // Default: inner padding on all sides (will be overridden by position-specific styles)
-    paddingInline: `var(--layout-padding-inner-x, ${spacingTokens.space4})`,
-    paddingBlock: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
+    paddingInlineStart: `var(--layout-padding-inner-x, ${spacingTokens.space4})`,
+    paddingInlineEnd: `var(--layout-padding-inner-x, ${spacingTokens.space4})`,
+    paddingBlockStart: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
+    paddingBlockEnd: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
   },
   // Start panel: outer-x on left edge
   startPanel: {
@@ -55,8 +57,13 @@ const styles = stylex.create({
     paddingBlockEnd: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
   },
   fullBleed: {
-    paddingInline: 0,
-    paddingBlock: 0,
+    paddingInlineStart: 0,
+    paddingInlineEnd: 0,
+    paddingBlockStart: 0,
+    paddingBlockEnd: 0,
+  },
+  scrollable: {
+    overflow: 'auto',
   },
   // For start panel: divider on end edge
   dividerEnd: {
@@ -77,6 +84,13 @@ const styles = stylex.create({
   collapseEnd: {
     marginInlineEnd: `calc(-1 * var(--layout-padding-inner-x, ${spacingTokens.space4}))`,
   },
+});
+
+// Dynamic styles for sizing props
+const dynamicStyles = stylex.create({
+  sizing: (width: number | string | null) => ({
+    width,
+  }),
 });
 
 export interface XDSLayoutPanelProps extends Omit<HTMLAttributes<HTMLElement>, 'style' | 'className'> {
@@ -101,6 +115,14 @@ export interface XDSLayoutPanelProps extends Omit<HTMLAttributes<HTMLElement>, '
   isFullBleed?: boolean;
 
   /**
+   * Enables scrollable overflow for the panel.
+   * Set to false for auto-height layouts where sticky positioning
+   * needs to work with parent containers.
+   * @default true
+   */
+  isScrollable?: boolean;
+
+  /**
    * Accessible label for the landmark.
    * Required when role is set and multiple landmarks of the same type exist.
    */
@@ -111,6 +133,12 @@ export interface XDSLayoutPanelProps extends Omit<HTMLAttributes<HTMLElement>, '
    * Use 'navigation' or 'complementary' only for top-level layouts (not nested).
    */
   role?: AriaRole;
+
+  /**
+   * Width of the panel.
+   * Numbers are treated as pixels, strings are used as-is.
+   */
+  width?: number | string;
 }
 
 /**
@@ -139,7 +167,7 @@ export interface XDSLayoutPanelProps extends Omit<HTMLAttributes<HTMLElement>, '
  */
 export const XDSLayoutPanel = forwardRef<HTMLElement, XDSLayoutPanelProps>(
   function XDSLayoutPanel(
-    { children, hasDivider = false, isFullBleed = false, label, role, ...props },
+    { children, hasDivider = false, isFullBleed = false, isScrollable = true, label, role, width, ...props },
     ref
   ) {
     const area = useContext(XDSLayoutAreaContext);
@@ -172,11 +200,13 @@ export const XDSLayoutPanel = forwardRef<HTMLElement, XDSLayoutPanelProps>(
         aria-label={label}
         {...stylex.props(
           styles.panel,
+          dynamicStyles.sizing(width ?? null),
           // Outer padding on container edges (unless component or layout is full bleed)
           isStartPanel && applyOuterPadding && styles.startPanel,
           isEndPanel && applyOuterPadding && styles.endPanel,
           !hasHeader && applyOuterPadding && styles.noHeader,
           !hasFooter && applyOuterPadding && styles.noFooter,
+          isScrollable && styles.scrollable,
           // Full bleed overrides
           isFullBleed && styles.fullBleed,
           hasDivider && dividerStyle,

@@ -1,21 +1,13 @@
 /**
- * @file XDSLayoutContainer.tsx
- * @input Uses React forwardRef, ReactNode, StyleX
- * @output Exports XDSLayoutContainer component and XDSLayoutContainerProps
- * @position Layout/Container primitive component
+ * @file container.stylex.ts
+ * @input Uses @stylexjs/stylex, spacingTokens from theme
+ * @output StyleX utility for layout container styling
+ * @position Layout utility; used by XDSCard, XDSSection components
  *
- * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Layout/Container/README.md
- * - /packages/core/src/Layout/Container/index.ts
+ * SYNC: When modified, update /packages/core/src/Layout/README.md
  */
 
-import {
-  forwardRef,
-  type HTMLAttributes,
-  type ReactNode,
-} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type { StyleXStyles } from '@stylexjs/stylex';
 import { spacingTokens } from '../../theme/tokens.stylex';
 
 /**
@@ -32,7 +24,7 @@ export type SpacingToken =
   | 'space6'
   | 'space7';
 
-const styles = stylex.create({
+const baseStyles = stylex.create({
   container: {
     boxSizing: 'border-box',
     display: 'flex',
@@ -89,13 +81,7 @@ const paddingInnerYStyles = stylex.create({
   space7: { '--layout-padding-inner-y': spacingTokens.space7 },
 });
 
-export interface XDSLayoutContainerProps extends Omit<HTMLAttributes<HTMLDivElement>, 'style' | 'className'> {
-  /**
-   * Custom styles for the container.
-   * Use for background, shadow, radius, sizing, etc.
-   */
-  xstyle?: StyleXStyles;
-
+export interface ContainerOptions {
   /**
    * Outer horizontal padding (left/right).
    * Sets --layout-padding-outer-x CSS variable.
@@ -123,68 +109,45 @@ export interface XDSLayoutContainerProps extends Omit<HTMLAttributes<HTMLDivElem
    * @default 'space4'
    */
   paddingInnerY?: SpacingToken;
-
-  /**
-   * Content to render inside the container.
-   * Should typically be XDSLayout child components.
-   */
-  children?: ReactNode;
 }
 
 /**
- * A primitive container component for layout composition.
+ * StyleX utility to add layout container styles to any element.
  *
  * Sets CSS variables for padding that child layout components read:
  * - `--layout-padding-outer-x`, `--layout-padding-outer-y`
  * - `--layout-padding-inner-x`, `--layout-padding-inner-y`
  *
- * This is a low-level primitive. For styled containers, use:
- * - XDSCard - Card with elevation
- * - XDSSection - Section with background variants
- * - XDSModal, XDSPopover, etc.
- *
  * @example
  * ```tsx
- * // Direct usage (rare - prefer higher-order components)
- * <XDSLayoutContainer
- *   xstyle={customStyles}
- *   paddingInnerX="space3"
- *   paddingInnerY="space3"
- * >
+ * import { container } from '@xds/core/Layout';
+ * import * as stylex from '@stylexjs/stylex';
+ *
+ * // Basic container with default padding
+ * <div {...stylex.props(...container({}))}>
  *   <XDSLayout ... />
- * </XDSLayoutContainer>
+ * </div>
+ *
+ * // Custom padding values
+ * <div {...stylex.props(
+ *   ...container({ paddingInnerX: 'space3', paddingOuterY: 'space2' }),
+ *   customStyles.card
+ * )}>
+ *   <XDSLayout ... />
+ * </div>
  * ```
  */
-export const XDSLayoutContainer = forwardRef<HTMLDivElement, XDSLayoutContainerProps>(
-  function XDSLayoutContainer(
-    {
-      xstyle,
-      paddingOuterX = 'space4',
-      paddingOuterY = 'space4',
-      paddingInnerX = 'space4',
-      paddingInnerY = 'space4',
-      children,
-      ...props
-    },
-    ref
-  ) {
-    return (
-      <div
-        ref={ref}
-        {...stylex.props(
-          styles.container,
-          paddingOuterXStyles[paddingOuterX],
-          paddingOuterYStyles[paddingOuterY],
-          paddingInnerXStyles[paddingInnerX],
-          paddingInnerYStyles[paddingInnerY],
-          xstyle
-        )}
-        {...props}
-      >
-        {children}
-      </div>
-    );
-  }
-);
-
-XDSLayoutContainer.displayName = 'XDSLayoutContainer';
+export function container({
+  paddingOuterX = 'space4',
+  paddingOuterY = 'space4',
+  paddingInnerX = 'space4',
+  paddingInnerY = 'space4',
+}: ContainerOptions) {
+  return [
+    baseStyles.container,
+    paddingOuterXStyles[paddingOuterX],
+    paddingOuterYStyles[paddingOuterY],
+    paddingInnerXStyles[paddingInnerX],
+    paddingInnerYStyles[paddingInnerY],
+  ] as const;
+}
