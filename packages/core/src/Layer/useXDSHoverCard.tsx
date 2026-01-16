@@ -333,6 +333,8 @@ export function useXDSHoverCard(options: XDSHoverCardOptions = {}): XDSHoverCard
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        // Stop propagation so parent components don't react to the same Escape
+        e.stopPropagation();
         // Hide immediately without refocusing (we're already on trigger)
         clearTimeouts();
         layer.hide();
@@ -414,7 +416,8 @@ export function useXDSHoverCard(options: XDSHoverCardOptions = {}): XDSHoverCard
           }}
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
-              e.preventDefault();
+              // Stop propagation so parent components don't react to the same Escape
+              e.stopPropagation();
               // Set flag to prevent re-show when we refocus trigger
               isEscapeDismissingRef.current = true;
               // Hide immediately
