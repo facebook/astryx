@@ -166,14 +166,13 @@ const colorTheme = stylex.createTheme(colorTokens, {
 // =============================================================================
 
 const elevationTheme = stylex.createTheme(elevationTokens, {
-  base: 'light-dark(0 1px 2px oklch(0 0 0 / 5%), 0 1px 2px oklch(0 0 0 / 20%))',
-  thumb:
-    'light-dark(0 1px 3px oklch(0 0 0 / 10%), 0 1px 3px oklch(0 0 0 / 30%))',
+  base: '0 1px 2px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 20%))',
+  thumb: '0 1px 3px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 30%))',
   dialog:
-    'light-dark(0 4px 6px oklch(0 0 0 / 10%) 0 12px 24px oklch(0 0 0 / 15%), 0 4px 6px oklch(0 0 0 / 25%) 0 12px 24px oklch(0 0 0 / 35%))',
+    '0 4px 6px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 25%)), 0 12px 24px light-dark(oklch(0 0 0 / 15%), oklch(0 0 0 / 35%))',
   hover:
-    'light-dark(0 2px 4px oklch(0 0 0 / 5%) 0 4px 12px oklch(0 0 0 / 10%), 0 2px 4px oklch(0 0 0 / 15%) 0 4px 12px oklch(0 0 0 / 20%))',
-  menu: 'light-dark(0 2px 4px oklch(0 0 0 / 5%) 0 4px 8px oklch(0 0 0 / 10%), 0 2px 4px oklch(0 0 0 / 15%) 0 4px 8px oklch(0 0 0 / 20%))',
+    '0 2px 4px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 15%)), 0 4px 12px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 20%))',
+  menu: '0 2px 4px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 15%)), 0 4px 8px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 20%))',
 });
 
 // =============================================================================
@@ -242,6 +241,38 @@ const buttonVariants = stylex.create({
   },
 });
 
+const cardStyles = stylex.create({
+  // Override card default padding to 12px for tighter layout
+  base: {
+    '--layout-padding-inner-x': spacingTokens.space3,
+    '--layout-padding-inner-y': spacingTokens.space3,
+    '--layout-padding-outer-x': spacingTokens.space3,
+    '--layout-padding-outer-y': spacingTokens.space3,
+  },
+});
+
+const sectionVariants = stylex.create({
+  // Override section padding to 12px for tighter layout
+  section: {
+    '--layout-padding-inner-x': spacingTokens.space3,
+    '--layout-padding-inner-y': spacingTokens.space3,
+    '--layout-padding-outer-x': spacingTokens.space3,
+    '--layout-padding-outer-y': spacingTokens.space3,
+  },
+  transparent: {
+    '--layout-padding-inner-x': spacingTokens.space3,
+    '--layout-padding-inner-y': spacingTokens.space3,
+    '--layout-padding-outer-x': spacingTokens.space3,
+    '--layout-padding-outer-y': spacingTokens.space3,
+  },
+  wash: {
+    '--layout-padding-inner-x': spacingTokens.space3,
+    '--layout-padding-inner-y': spacingTokens.space3,
+    '--layout-padding-outer-x': spacingTokens.space3,
+    '--layout-padding-outer-y': spacingTokens.space3,
+  },
+});
+
 // =============================================================================
 // Theme Export
 // =============================================================================
@@ -257,6 +288,12 @@ export const neutralTheme: Theme = {
   components: {
     button: {
       variants: buttonVariants,
+    },
+    card: {
+      base: cardStyles.base,
+    },
+    section: {
+      variants: sectionVariants,
     },
   },
 };

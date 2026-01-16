@@ -32,6 +32,34 @@ const alignItemsStyles = stylex.create({
  */
 export type StackCrossAlignment = keyof typeof alignItemsStyles;
 
+const justifyContentStyles = stylex.create({
+  start: {
+    justifyContent: 'flex-start',
+  },
+  center: {
+    justifyContent: 'center',
+  },
+  end: {
+    justifyContent: 'flex-end',
+  },
+  between: {
+    justifyContent: 'space-between',
+  },
+  around: {
+    justifyContent: 'space-around',
+  },
+  evenly: {
+    justifyContent: 'space-evenly',
+  },
+});
+
+/**
+ * Main-axis alignment options for stack items.
+ * - For HStack: horizontal alignment
+ * - For VStack: vertical alignment
+ */
+export type StackMainAlignment = keyof typeof justifyContentStyles;
+
 const directionStyles = stylex.create({
   horizontal: {
     flexDirection: 'row',
@@ -143,6 +171,13 @@ export interface StackOptions {
   gap?: SpacingScale;
 
   /**
+   * Position of items along the main-axis.
+   * - For HStack: horizontal alignment
+   * - For VStack: vertical alignment
+   */
+  mainAlign?: StackMainAlignment;
+
+  /**
    * Whether items should wrap to the next line.
    * - `nowrap`: Items stay on one line (default)
    * - `wrap`: Items wrap to next line
@@ -184,6 +219,7 @@ export function stack({
   crossAlign,
   direction,
   gap,
+  mainAlign,
   wrap,
 }: StackOptions) {
   return [
@@ -191,6 +227,7 @@ export function stack({
     directionStyles[direction],
     gap != null && gapStyles[gap],
     crossAlign != null && alignItemsStyles[crossAlign],
+    mainAlign != null && justifyContentStyles[mainAlign],
     wrap != null && wrapStyles[wrap],
   ] as const;
 }

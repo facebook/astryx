@@ -7,24 +7,66 @@
  * SYNC: When modified, update /packages/core/src/Layout/README.md
  */
 
-// Stack utilities and components
+// Utilities
+export { container } from './Container/container.stylex';
+export type { ContainerOptions, SpacingToken } from './Container/container.stylex';
+
+export { stack } from './Stack/stack.stylex';
+export type {
+  StackOptions,
+  StackDirection,
+  StackCrossAlignment,
+  StackMainAlignment,
+  StackWrap,
+  SpacingScale,
+} from './Stack/stack.stylex';
+
+export { stackItem } from './Stack/stackItem.stylex';
+export type {
+  StackItemOptions,
+  StackItemCrossAlignSelf,
+  StackItemSize,
+} from './Stack/stackItem.stylex';
+
+// Stack components
 export {
-  stack,
-  stackItem,
   XDSHStack,
   XDSVStack,
   XDSStackItem,
 } from './Stack';
 export type {
-  StackOptions,
-  StackDirection,
-  StackCrossAlignment,
-  StackWrap,
-  SpacingScale,
-  StackItemOptions,
-  StackItemCrossAlignSelf,
-  StackItemSize,
   XDSHStackProps,
   XDSVStackProps,
   XDSStackItemProps,
 } from './Stack';
+
+// Container components
+export {
+  XDSCard,
+  XDSSection,
+} from './Container';
+export type {
+  XDSCardProps,
+  SizeValue,
+  XDSSectionProps,
+  XDSSectionVariant,
+} from './Container';
+
+// Layout structure components
+export {
+  XDSLayout,
+  XDSLayoutHeader,
+  XDSLayoutFooter,
+  XDSLayoutContent,
+  XDSLayoutPanel,
+  XDSLayoutAreaContext,
+} from './XDSLayout';
+export type {
+  XDSLayoutProps,
+  XDSLayoutHeight,
+  XDSLayoutHeaderProps,
+  XDSLayoutFooterProps,
+  XDSLayoutContentProps,
+  XDSLayoutPanelProps,
+  LayoutArea,
+} from './XDSLayout';

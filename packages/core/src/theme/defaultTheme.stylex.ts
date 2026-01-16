@@ -146,13 +146,13 @@ const colorTheme = stylex.createTheme(colorTokens, {
 // =============================================================================
 
 const elevationTheme = stylex.createTheme(elevationTokens, {
-  base: 'light-dark(0px 0px 1px rgba(0, 0, 0, 0.1), 0px 0px 1px #111112)',
-  thumb: 'light-dark(0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.4))',
+  base: '0 0 1px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.4))',
+  thumb: '0 1px 3px light-dark(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.4))',
   dialog:
-    'light-dark(0px 2px 2px rgba(0, 0, 0, 0.1) 0px 8px 24px rgba(0, 0, 0, 0.1), 0px 2px 2px rgba(0, 0, 0, 0.2) 0px 8px 24px rgba(0, 0, 0, 0.3))',
+    '0 2px 2px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0 8px 24px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3))',
   hover:
-    'light-dark(0px 1px 2px rgba(0, 0, 0, 0.1) 0px 2px 12px rgba(0, 0, 0, 0.1), 0px 1px 2px rgba(0, 0, 0, 0.2) 0px 2px 12px rgba(0, 0, 0, 0.2))',
-  menu: 'light-dark(0px 1px 1px rgba(0, 0, 0, 0.1) 0px 2px 8px rgba(0, 0, 0, 0.1), 0px 1px 1px rgba(0, 0, 0, 0.2) 0px 2px 8px rgba(0, 0, 0, 0.2))',
+    '0 1px 2px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0 2px 12px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2))',
+  menu: '0 1px 1px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0 2px 8px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2))',
 });
 
 // =============================================================================
