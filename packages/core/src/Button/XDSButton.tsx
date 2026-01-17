@@ -160,7 +160,7 @@ declare module '../theme/types' {
 export interface XDSButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /**
    * The visual style variant of the button.
-   * @default 'primary'
+   * @default 'secondary'
    */
   variant?: XDSButtonVariant;
   /**
@@ -221,13 +221,13 @@ const loadingStyles = stylex.create({
  *
  * @example
  * ```tsx
- * <XDSButton variant="primary">Click me</XDSButton>
- * <XDSButton variant="secondary" loading>Saving...</XDSButton>
+ * <XDSButton>Click me</XDSButton>
+ * <XDSButton variant="primary">Primary action</XDSButton>
  * <XDSButton variant="destructive">Delete</XDSButton>
  * ```
  */
 export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
-  ({ variant = 'primary', loading = false, disabled, children, ...props }, ref) => {
+  ({ variant = 'secondary', loading = false, disabled, children, ...props }, ref) => {
     const isDisabled = disabled || loading;
     const useLightSpinner = variant === 'primary' || variant === 'destructive';
 

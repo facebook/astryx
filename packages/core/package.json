@@ -5,14 +5,11 @@
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
-  "files": [
-    "dist",
-    "CLAUDE.md"
-  ],
   "sideEffects": [
     "**/*.stylex.ts",
     "**/*.stylex.js",
-    "**/*.stylex.mjs"
+    "**/*.stylex.mjs",
+    "**/componentStyles.ts"
   ],
   "exports": {
     ".": {
