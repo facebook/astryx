@@ -144,9 +144,9 @@ export const spacingTokens = stylex.defineVars({
  */
 export const radiusTokens = stylex.defineVars({
   rounded: '9999px',
-  container: '12px',
-  element: '8px',
-  content: '4px',
+  container: '16px',
+  element: '12px',
+  content: '8px',
 });
 
 /**
