@@ -18,5 +18,8 @@ export * from './Layout';
 // Layer utilities and components (includes XDSHoverCard)
 export * from './Layer';
 
+// Skeleton loading placeholder
+export * from './Skeleton';
+
 // Theme
 export * from './theme';

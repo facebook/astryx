@@ -32,6 +32,11 @@
       "import": "./dist/Layout/index.mjs",
       "require": "./dist/Layout/index.js"
     },
+    "./Skeleton": {
+      "types": "./dist/Skeleton/index.d.ts",
+      "import": "./dist/Skeleton/index.mjs",
+      "require": "./dist/Skeleton/index.js"
+    },
     "./TextInput": {
       "types": "./dist/TextInput/index.d.ts",
       "import": "./dist/TextInput/index.mjs",
