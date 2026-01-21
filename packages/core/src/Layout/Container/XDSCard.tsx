@@ -8,9 +8,9 @@
 import { forwardRef, useContext, type ReactNode } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
-  colorTokens,
-  radiusTokens,
-  elevationTokens,
+  color,
+  radius,
+  elevation,
 } from '../../theme/tokens.stylex';
 import { ThemeContext } from '../../theme/ThemeContext';
 import type { StyleXStyles as ThemeStyleXStyles } from '../../theme/types';
@@ -31,9 +31,9 @@ declare module '../../theme/types' {
 
 const styles = stylex.create({
   card: {
-    backgroundColor: colorTokens.card,
-    borderRadius: radiusTokens.container,
-    boxShadow: elevationTokens.base,
+    backgroundColor: color.card,
+    borderRadius: radius.container,
+    boxShadow: elevation.base,
   },
 });
 

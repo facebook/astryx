@@ -19,8 +19,8 @@
 import React, { useContext, useMemo } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type { Theme as ThemeType, ThemeMode } from './types';
-import { publicVariables } from './publicVariables.stylex';
 import { ThemeContext, type ThemeContextValue } from './ThemeContext';
+import { color } from './tokens.stylex';
 
 // Re-export for backwards compatibility
 export { ThemeContext } from './ThemeContext';
@@ -54,6 +54,7 @@ interface ThemeProps {
 const wrapperStyles = stylex.create({
   base: {
     display: 'contents',
+    color: color.textPrimary,
   },
   light: {
     colorScheme: 'light',
@@ -91,13 +92,12 @@ export function Theme({
   const stylexProps = stylex.props(
     wrapperStyles.base,
     colorSchemeStyle,
-    publicVariables.all,
-    theme.colorTheme,
-    theme.elevationTheme,
-    theme.spacingTheme,
-    theme.radiusTheme,
-    theme.transitionTheme,
-    theme.typographyTheme
+    theme.styles.colors,
+    theme.styles.spacing,
+    theme.styles.radius,
+    theme.styles.elevation,
+    theme.styles.transition,
+    theme.styles.typography
   );
 
   return (

@@ -7,7 +7,7 @@
 
 import { forwardRef, useContext, type ReactNode } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import { colorTokens } from '../../theme/tokens.stylex';
+import { color } from '../../theme/tokens.stylex';
 import { ThemeContext } from '../../theme/ThemeContext';
 import type { StyleXStyles as ThemeStyleXStyles } from '../../theme/types';
 import { container } from './container.stylex';
@@ -33,13 +33,13 @@ declare module '../../theme/types' {
 
 const variantStyles = stylex.create({
   section: {
-    backgroundColor: colorTokens.surface,
+    backgroundColor: color.surface,
   },
   transparent: {
     backgroundColor: 'transparent',
   },
   wash: {
-    backgroundColor: colorTokens.wash,
+    backgroundColor: color.wash,
   },
 });
 

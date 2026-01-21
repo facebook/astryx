@@ -12,17 +12,17 @@
 import type { AriaRole, HTMLAttributes, ReactNode } from 'react';
 import { forwardRef } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import { colorTokens, spacingTokens } from '../../theme/tokens.stylex';
+import { color, spacing } from '../../theme/tokens.stylex';
 
 const styles = stylex.create({
   footer: {
     boxSizing: 'border-box',
     flexShrink: 0,
     // Default: outer padding on edges that touch container, inner on interior edges
-    paddingInlineStart: `var(--layout-padding-outer-x, ${spacingTokens.space4})`,
-    paddingInlineEnd: `var(--layout-padding-outer-x, ${spacingTokens.space4})`,
-    paddingBlockStart: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
-    paddingBlockEnd: `var(--layout-padding-outer-y, ${spacingTokens.space4})`,
+    paddingInlineStart: `var(--layout-padding-outer-x, ${spacing.space4})`,
+    paddingInlineEnd: `var(--layout-padding-outer-x, ${spacing.space4})`,
+    paddingBlockStart: `var(--layout-padding-inner-y, ${spacing.space4})`,
+    paddingBlockEnd: `var(--layout-padding-outer-y, ${spacing.space4})`,
   },
   fullBleed: {
     paddingInlineStart: 0,
@@ -33,11 +33,11 @@ const styles = stylex.create({
   divider: {
     borderBlockStartWidth: 1,
     borderBlockStartStyle: 'solid',
-    borderBlockStartColor: colorTokens.divider,
+    borderBlockStartColor: color.divider,
   },
   // When no divider, collapse spacing to avoid double-padding with content
   collapseTop: {
-    marginBlockStart: `calc(-1 * var(--layout-padding-inner-y, ${spacingTokens.space4}))`,
+    marginBlockStart: `calc(-1 * var(--layout-padding-inner-y, ${spacing.space4}))`,
   },
 });
 

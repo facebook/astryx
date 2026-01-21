@@ -3,9 +3,6 @@
  */
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type StyleXTheme = any;
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type StyleXStyles = any;
 
 /**
@@ -30,23 +27,52 @@ export interface ComponentStyles {
 }
 
 /**
- * Theme object - pre-compiled StyleX theme
+ * Raw theme values - plain objects with the actual CSS values
+ * Useful for programmatic access (e.g., parsing light-dark() values)
+ */
+export interface ThemeRaw {
+  /** Raw color values (e.g., 'light-dark(#0064E0, #2694FE)') */
+  colors: Record<string, string>;
+  /** Raw spacing values (e.g., '8px') */
+  spacing: Record<string, string>;
+  /** Raw radius values (e.g., '12px') */
+  radius: Record<string, string>;
+  /** Raw elevation values (e.g., '0px 2px 4px rgba(0,0,0,0.1)') */
+  elevation: Record<string, string>;
+  /** Raw transition values (e.g., '0.2s ease') */
+  transition: Record<string, string>;
+  /** Raw typography values (e.g., font family strings) */
+  typography: Record<string, string>;
+}
+
+/**
+ * Theme styles - StyleX styles that set CSS variables
+ */
+export interface ThemeStyles {
+  /** Color CSS variables */
+  colors: StyleXStyles;
+  /** Spacing CSS variables */
+  spacing: StyleXStyles;
+  /** Radius CSS variables */
+  radius: StyleXStyles;
+  /** Elevation CSS variables */
+  elevation: StyleXStyles;
+  /** Transition CSS variables */
+  transition: StyleXStyles;
+  /** Typography CSS variables */
+  typography: StyleXStyles;
+}
+
+/**
+ * Theme object - pre-compiled StyleX styles that set CSS variables
  */
 export interface Theme {
   /** Theme name */
   name: string;
-  /** Color theme StyleX styles */
-  colorTheme: StyleXTheme;
-  /** Elevation theme StyleX styles */
-  elevationTheme: StyleXTheme;
-  /** Spacing theme StyleX styles (optional) */
-  spacingTheme?: StyleXTheme;
-  /** Radius theme StyleX styles (optional) */
-  radiusTheme?: StyleXTheme;
-  /** Transition theme StyleX styles (optional) */
-  transitionTheme?: StyleXTheme;
-  /** Typography theme StyleX styles (optional) */
-  typographyTheme?: StyleXTheme;
+  /** StyleX styles containing CSS variable definitions */
+  styles: ThemeStyles;
+  /** Raw CSS values for programmatic access */
+  raw: ThemeRaw;
   /** Component-specific style overrides (optional) */
   components?: ComponentStyles;
 }

@@ -1,180 +1,314 @@
 /**
  * XDS Design Tokens
  *
- * Defines all CSS variables using StyleX defineVars.
- * These are the base tokens that themes can override.
+ * Defines all design tokens using StyleX defineConsts.
+ * These reference CSS variables that are set by theme files.
  */
 
 import * as stylex from '@stylexjs/stylex';
 
-/**
- * Color tokens - using light mode defaults
- * Themes override these with light-dark() values
- */
-export const colorTokens = stylex.defineVars({
+// =============================================================================
+// Color Tokens
+// =============================================================================
+
+export const color = stylex.defineConsts({
   // Core semantic
-  accent: '#0064E0',
-  accentDeemphasized: '#0082FB33',
-  accentText: '#0143B5',
-  surface: '#FFFFFF',
-  wash: '#F1F4F7',
-  overlay: '#01122866',
-  hoverOverlay: '#0536590C',
-  pressedOverlay: '#05365919',
-  focusOutline: '#042F97',
-  deemphasized: '#0536590C',
+  accent: 'var(--color-accent)',
+  accentDeemphasized: 'var(--color-accent-deemphasized)',
+  accentText: 'var(--color-accent-text)',
+  surface: 'var(--color-surface)',
+  wash: 'var(--color-wash)',
+  overlay: 'var(--color-overlay)',
+  hoverOverlay: 'var(--color-hover-overlay)',
+  pressedOverlay: 'var(--color-pressed-overlay)',
+  focusOutline: 'var(--color-focus-outline)',
+  deemphasized: 'var(--color-deemphasized)',
 
   // Text
-  textPrimary: '#0A1317',
-  textSecondary: '#4E606F',
-  textDisabled: '#A4B0BC',
-  textLink: '#0064E0',
-  textPlaceholder: '#4E606F',
+  textPrimary: 'var(--color-text-primary)',
+  textSecondary: 'var(--color-text-secondary)',
+  textDisabled: 'var(--color-text-disabled)',
+  textLink: 'var(--color-text-link)',
+  textPlaceholder: 'var(--color-text-placeholder)',
 
   // Icon
-  iconPrimary: '#0A1317',
-  iconSecondary: '#4E606F',
-  iconTertiary: '#748695',
-  iconDisabled: '#A4B0BC',
+  iconPrimary: 'var(--color-icon-primary)',
+  iconSecondary: 'var(--color-icon-secondary)',
+  iconTertiary: 'var(--color-icon-tertiary)',
+  iconDisabled: 'var(--color-icon-disabled)',
 
   // Surface variants
-  card: '#FFFFFF',
-  popover: '#FFFFFF',
-  navbar: '#FFFFFF',
+  card: 'var(--color-card)',
+  popover: 'var(--color-popover)',
+  navbar: 'var(--color-navbar)',
 
   // Status/Sentiment
-  positive: '#0D8626',
-  positiveDeemphasized: '#0B991F33',
-  negative: '#E3193B',
-  negativeDeemphasized: '#E3193B33',
-  warning: '#E9AF08',
-  warningDeemphasized: '#E2A40033',
-  educational: '#5B08D8',
-  educationalDeemphasized: '#7952FF33',
+  positive: 'var(--color-positive)',
+  positiveDeemphasized: 'var(--color-positive-deemphasized)',
+  negative: 'var(--color-negative)',
+  negativeDeemphasized: 'var(--color-negative-deemphasized)',
+  warning: 'var(--color-warning)',
+  warningDeemphasized: 'var(--color-warning-deemphasized)',
+  educational: 'var(--color-educational)',
+  educationalDeemphasized: 'var(--color-educational-deemphasized)',
 
   // Divider
-  divider: '#05365919',
-  dividerHighContrast: '#647685',
-  dividerEmphasized: '#CCD3DB',
+  divider: 'var(--color-divider)',
+  dividerHighContrast: 'var(--color-divider-high-contrast)',
+  dividerEmphasized: 'var(--color-divider-emphasized)',
 
   // Disabled/Effects
-  disabledOverlay: '#FFFFFF7F',
-  glimmer: '#CCD3DB',
-  glimmerHighContrast: '#A4B0BC',
-  shadowElevation: 'rgba(5, 54, 89, 0.1)',
+  disabledOverlay: 'var(--color-disabled-overlay)',
+  glimmer: 'var(--color-glimmer)',
+  glimmerHighContrast: 'var(--color-glimmer-high-contrast)',
+  shadowElevation: 'var(--color-shadow-elevation)',
 
   // Literal color sets - Blue
-  blueBackground: '#0171E333',
-  blueBorder: '#0171E3',
-  blueIcon: '#0064E0',
-  blueText: '#042F97',
+  blueBackground: 'var(--color-blue-background)',
+  blueBorder: 'var(--color-blue-border)',
+  blueIcon: 'var(--color-blue-icon)',
+  blueText: 'var(--color-blue-text)',
 
   // Cyan
-  cyanBackground: '#00BCD433',
-  cyanBorder: '#00BCD4',
-  cyanIcon: '#00ACC1',
-  cyanText: '#006064',
+  cyanBackground: 'var(--color-cyan-background)',
+  cyanBorder: 'var(--color-cyan-border)',
+  cyanIcon: 'var(--color-cyan-icon)',
+  cyanText: 'var(--color-cyan-text)',
 
   // Gray
-  grayBackground: '#0A131733',
-  grayBorder: '#647685',
-  grayIcon: '#4E606F',
-  grayText: '#0A1317',
+  grayBackground: 'var(--color-gray-background)',
+  grayBorder: 'var(--color-gray-border)',
+  grayIcon: 'var(--color-gray-icon)',
+  grayText: 'var(--color-gray-text)',
 
   // Green
-  greenBackground: '#24BB5E33',
-  greenBorder: '#24BB5E',
-  greenIcon: '#0D8626',
-  greenText: '#09441F',
+  greenBackground: 'var(--color-green-background)',
+  greenBorder: 'var(--color-green-border)',
+  greenIcon: 'var(--color-green-icon)',
+  greenText: 'var(--color-green-text)',
 
   // Orange
-  orangeBackground: '#F2790233',
-  orangeBorder: '#F27902',
-  orangeIcon: '#E9690B',
-  orangeText: '#6B2203',
+  orangeBackground: 'var(--color-orange-background)',
+  orangeBorder: 'var(--color-orange-border)',
+  orangeIcon: 'var(--color-orange-icon)',
+  orangeText: 'var(--color-orange-text)',
 
   // Pink
-  pinkBackground: '#E91E6333',
-  pinkBorder: '#E91E63',
-  pinkIcon: '#C2185B',
-  pinkText: '#880E4F',
+  pinkBackground: 'var(--color-pink-background)',
+  pinkBorder: 'var(--color-pink-border)',
+  pinkIcon: 'var(--color-pink-icon)',
+  pinkText: 'var(--color-pink-text)',
 
   // Purple
-  purpleBackground: '#7952FF33',
-  purpleBorder: '#7952FF',
-  purpleIcon: '#5B08D8',
-  purpleText: '#3E0697',
+  purpleBackground: 'var(--color-purple-background)',
+  purpleBorder: 'var(--color-purple-border)',
+  purpleIcon: 'var(--color-purple-icon)',
+  purpleText: 'var(--color-purple-text)',
 
   // Red
-  redBackground: '#E3193B33',
-  redBorder: '#E3193B',
-  redIcon: '#D31130',
-  redText: '#7B0210',
+  redBackground: 'var(--color-red-background)',
+  redBorder: 'var(--color-red-border)',
+  redIcon: 'var(--color-red-icon)',
+  redText: 'var(--color-red-text)',
 
   // Teal
-  tealBackground: '#0DB7AF33',
-  tealBorder: '#0DB7AF',
-  tealIcon: '#009688',
-  tealText: '#083943',
+  tealBackground: 'var(--color-teal-background)',
+  tealBorder: 'var(--color-teal-border)',
+  tealIcon: 'var(--color-teal-icon)',
+  tealText: 'var(--color-teal-text)',
 
   // Yellow
-  yellowBackground: '#FFEB3B33',
-  yellowBorder: '#FFEB3B',
-  yellowIcon: '#FBC02D',
-  yellowText: '#F57F17',
+  yellowBackground: 'var(--color-yellow-background)',
+  yellowBorder: 'var(--color-yellow-border)',
+  yellowIcon: 'var(--color-yellow-icon)',
+  yellowText: 'var(--color-yellow-text)',
 });
 
-/**
- * Spacing tokens
- */
-export const spacingTokens = stylex.defineVars({
-  space0: '0px',
-  space0_5: '2px',
-  space1: '4px',
-  space2: '8px',
-  space3: '12px',
-  space4: '16px',
-  space5: '20px',
-  space6: '24px',
-  space7: '32px',
+// =============================================================================
+// Spacing Tokens
+// =============================================================================
+
+export const spacing = stylex.defineConsts({
+  space0: 'var(--spacing-0)',
+  space0_5: 'var(--spacing-0-5)',
+  space1: 'var(--spacing-1)',
+  space2: 'var(--spacing-2)',
+  space3: 'var(--spacing-3)',
+  space4: 'var(--spacing-4)',
+  space5: 'var(--spacing-5)',
+  space6: 'var(--spacing-6)',
+  space7: 'var(--spacing-7)',
 });
 
-/**
- * Radius tokens
- */
-export const radiusTokens = stylex.defineVars({
-  rounded: '9999px',
-  container: '16px',
-  element: '12px',
-  content: '8px',
+// =============================================================================
+// Radius Tokens
+// =============================================================================
+
+export const radius = stylex.defineConsts({
+  rounded: 'var(--radius-rounded)',
+  container: 'var(--radius-container)',
+  element: 'var(--radius-element)',
+  content: 'var(--radius-content)',
+  inner: 'var(--radius-inner)',
 });
 
-/**
- * Elevation tokens
- */
-export const elevationTokens = stylex.defineVars({
-  base: '0px 0px 1px rgba(0, 0, 0, 0.1)',
-  thumb: '0 1px 3px rgba(0, 0, 0, 0.2)',
-  dialog: '0px 2px 2px rgba(0, 0, 0, 0.1), 0px 8px 24px rgba(0, 0, 0, 0.1)',
-  hover: '0px 1px 2px rgba(0, 0, 0, 0.1), 0px 2px 12px rgba(0, 0, 0, 0.1)',
-  menu: '0px 1px 1px rgba(0, 0, 0, 0.1), 0px 2px 8px rgba(0, 0, 0, 0.1)',
+// =============================================================================
+// Elevation Tokens
+// =============================================================================
+
+export const elevation = stylex.defineConsts({
+  base: 'var(--elevation-base)',
+  thumb: 'var(--elevation-thumb)',
+  dialog: 'var(--elevation-dialog)',
+  hover: 'var(--elevation-hover)',
+  menu: 'var(--elevation-menu)',
 });
 
-/**
- * Transition tokens
- */
-export const transitionTokens = stylex.defineVars({
-  fast: '0.15s ease',
-  normal: '0.2s ease',
+// =============================================================================
+// Transition Tokens
+// =============================================================================
+
+export const transition = stylex.defineConsts({
+  fast: 'var(--transition-fast)',
+  normal: 'var(--transition-normal)',
 });
 
-/**
- * Typography tokens
- */
-export const typographyTokens = stylex.defineVars({
-  fontFamilyBody:
-    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-  fontFamilyCode: '"SF Mono", Monaco, Consolas, monospace',
-  fontFamilyHeading:
-    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+// =============================================================================
+// Typography Tokens
+// =============================================================================
+
+export const typography = stylex.defineConsts({
+  fontFamilyBody: 'var(--font-body)',
+  fontFamilyCode: 'var(--font-code)',
+  fontFamilyHeading: 'var(--font-heading)',
 });
+
+// =============================================================================
+// Token Key Types - For theme authoring
+// =============================================================================
+
+export type ColorTokenKey = keyof typeof color;
+export type SpacingTokenKey = keyof typeof spacing;
+export type RadiusTokenKey = keyof typeof radius;
+export type ElevationTokenKey = keyof typeof elevation;
+export type TransitionTokenKey = keyof typeof transition;
+export type TypographyTokenKey = keyof typeof typography;
+
+// =============================================================================
+// CSS Variable Name Types - For strict theme validation
+// =============================================================================
+// These types ensure theme files define exactly the required CSS variables.
+// If you add/remove a token above, update the corresponding VarName type.
+
+export type ColorVarName =
+  | '--color-accent'
+  | '--color-accent-deemphasized'
+  | '--color-accent-text'
+  | '--color-surface'
+  | '--color-wash'
+  | '--color-overlay'
+  | '--color-hover-overlay'
+  | '--color-pressed-overlay'
+  | '--color-focus-outline'
+  | '--color-deemphasized'
+  | '--color-text-primary'
+  | '--color-text-secondary'
+  | '--color-text-disabled'
+  | '--color-text-link'
+  | '--color-text-placeholder'
+  | '--color-icon-primary'
+  | '--color-icon-secondary'
+  | '--color-icon-tertiary'
+  | '--color-icon-disabled'
+  | '--color-card'
+  | '--color-popover'
+  | '--color-navbar'
+  | '--color-positive'
+  | '--color-positive-deemphasized'
+  | '--color-negative'
+  | '--color-negative-deemphasized'
+  | '--color-warning'
+  | '--color-warning-deemphasized'
+  | '--color-educational'
+  | '--color-educational-deemphasized'
+  | '--color-divider'
+  | '--color-divider-high-contrast'
+  | '--color-divider-emphasized'
+  | '--color-disabled-overlay'
+  | '--color-glimmer'
+  | '--color-glimmer-high-contrast'
+  | '--color-shadow-elevation'
+  | '--color-blue-background'
+  | '--color-blue-border'
+  | '--color-blue-icon'
+  | '--color-blue-text'
+  | '--color-cyan-background'
+  | '--color-cyan-border'
+  | '--color-cyan-icon'
+  | '--color-cyan-text'
+  | '--color-gray-background'
+  | '--color-gray-border'
+  | '--color-gray-icon'
+  | '--color-gray-text'
+  | '--color-green-background'
+  | '--color-green-border'
+  | '--color-green-icon'
+  | '--color-green-text'
+  | '--color-orange-background'
+  | '--color-orange-border'
+  | '--color-orange-icon'
+  | '--color-orange-text'
+  | '--color-pink-background'
+  | '--color-pink-border'
+  | '--color-pink-icon'
+  | '--color-pink-text'
+  | '--color-purple-background'
+  | '--color-purple-border'
+  | '--color-purple-icon'
+  | '--color-purple-text'
+  | '--color-red-background'
+  | '--color-red-border'
+  | '--color-red-icon'
+  | '--color-red-text'
+  | '--color-teal-background'
+  | '--color-teal-border'
+  | '--color-teal-icon'
+  | '--color-teal-text'
+  | '--color-yellow-background'
+  | '--color-yellow-border'
+  | '--color-yellow-icon'
+  | '--color-yellow-text';
+
+export type SpacingVarName =
+  | '--spacing-0'
+  | '--spacing-0-5'
+  | '--spacing-1'
+  | '--spacing-2'
+  | '--spacing-3'
+  | '--spacing-4'
+  | '--spacing-5'
+  | '--spacing-6'
+  | '--spacing-7';
+
+export type RadiusVarName =
+  | '--radius-rounded'
+  | '--radius-container'
+  | '--radius-element'
+  | '--radius-content'
+  | '--radius-inner';
+
+export type ElevationVarName =
+  | '--elevation-base'
+  | '--elevation-thumb'
+  | '--elevation-dialog'
+  | '--elevation-hover'
+  | '--elevation-menu';
+
+export type TransitionVarName =
+  | '--transition-fast'
+  | '--transition-normal';
+
+export type TypographyVarName =
+  | '--font-body'
+  | '--font-code'
+  | '--font-heading';

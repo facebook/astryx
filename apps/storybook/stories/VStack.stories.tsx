@@ -1,32 +1,27 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import { XDSVStack } from '@xds/core/Layout';
-import {
-  colorTokens,
-  spacingTokens,
-  radiusTokens,
-  typographyTokens,
-} from '@xds/core/theme/tokens.stylex';
+import { color, spacing, radius, typography } from '@xds/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   box: {
-    backgroundColor: colorTokens.blueBackground,
-    color: colorTokens.blueText,
+    backgroundColor: color.blueBackground,
+    color: color.blueText,
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: colorTokens.blueBorder,
-    paddingBlock: spacingTokens.space4,
-    paddingInline: spacingTokens.space6,
-    borderRadius: radiusTokens.element,
+    borderColor: color.blueBorder,
+    paddingBlock: spacing.space4,
+    paddingInline: spacing.space6,
+    borderRadius: radius.element,
     fontWeight: 500,
   },
   boxAlt: {
-    backgroundColor: colorTokens.grayBackground,
-    color: colorTokens.grayText,
-    borderColor: colorTokens.grayBorder,
+    backgroundColor: color.grayBackground,
+    color: color.grayText,
+    borderColor: color.grayBorder,
   },
   container: {
-    backgroundColor: colorTokens.wash,
+    backgroundColor: color.wash,
   },
   containerWidth: {
     width: 300,
@@ -38,15 +33,15 @@ const styles = stylex.create({
     height: 150,
   },
   containerPadding: {
-    padding: spacingTokens.space2,
+    padding: spacing.space2,
   },
   storyWrapper: {
     display: 'flex',
-    gap: spacingTokens.space6,
+    gap: spacing.space6,
   },
   heading: {
-    margin: `0 0 ${spacingTokens.space2} 0`,
-    fontFamily: typographyTokens.fontFamilyBody,
+    margin: `0 0 ${spacing.space2} 0`,
+    fontFamily: typography.fontFamilyBody,
   },
 });
 

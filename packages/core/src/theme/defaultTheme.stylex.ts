@@ -12,195 +12,199 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {
-  colorTokens,
-  elevationTokens,
-  spacingTokens,
-  radiusTokens,
-  transitionTokens,
-  typographyTokens,
-} from './tokens.stylex';
 import type { Theme } from './types';
+import type {
+  ColorVarName,
+  SpacingVarName,
+  RadiusVarName,
+  ElevationVarName,
+  TransitionVarName,
+  TypographyVarName,
+} from './tokens.stylex';
 
 // =============================================================================
-// Color Theme
+// Raw Theme Values
 // =============================================================================
-// Override tokens with light-dark() values for automatic mode switching.
-// Format: 'light-dark(lightValue, darkValue)'
+// Define raw values as plain objects first, then use in stylex.create
+// This allows programmatic access to values (e.g., parsing light-dark())
 
-const colorTheme = stylex.createTheme(colorTokens, {
+const colorRaw = {
   // Core semantic
-  accent: 'light-dark(#0064E0, #2694FE)',
-  accentDeemphasized: 'light-dark(#0082FB33, #0082FB3F)',
-  accentText: 'light-dark(#0143B5, #4BA9FE)',
-  surface: 'light-dark(#FFFFFF, #1F1F22)',
-  wash: 'light-dark(#F1F4F7, #111112)',
-  overlay: 'light-dark(#01122866, #11111299)',
-  hoverOverlay: 'light-dark(#0536590C, #FFFFFF0C)',
-  pressedOverlay: 'light-dark(#05365919, #FFFFFF19)',
-  focusOutline: 'light-dark(#042F97, #AFD7FF)',
-  deemphasized: 'light-dark(#0536590C, #1111127F)',
+  '--color-accent': 'light-dark(#0064E0, #2694FE)',
+  '--color-accent-deemphasized': 'light-dark(#0082FB33, #0082FB3F)',
+  '--color-accent-text': 'light-dark(#0143B5, #4BA9FE)',
+  '--color-surface': 'light-dark(#FFFFFF, #1F1F22)',
+  '--color-wash': 'light-dark(#F1F4F7, #111112)',
+  '--color-overlay': 'light-dark(#01122866, #11111299)',
+  '--color-hover-overlay': 'light-dark(#0536590C, #FFFFFF0C)',
+  '--color-pressed-overlay': 'light-dark(#05365919, #FFFFFF19)',
+  '--color-focus-outline': 'light-dark(#042F97, #AFD7FF)',
+  '--color-deemphasized': 'light-dark(#0536590C, #1111127F)',
 
   // Text
-  textPrimary: 'light-dark(#0A1317, #DFE2E5)',
-  textSecondary: 'light-dark(#4E606F, #AAAFB5)',
-  textDisabled: 'light-dark(#A4B0BC, #6F747C)',
-  textLink: 'light-dark(#0064E0, #3E9EFB)',
-  textPlaceholder: 'light-dark(#4E606F, #AAAFB5)',
+  '--color-text-primary': 'light-dark(#0A1317, #DFE2E5)',
+  '--color-text-secondary': 'light-dark(#4E606F, #AAAFB5)',
+  '--color-text-disabled': 'light-dark(#A4B0BC, #6F747C)',
+  '--color-text-link': 'light-dark(#0064E0, #3E9EFB)',
+  '--color-text-placeholder': 'light-dark(#4E606F, #AAAFB5)',
 
   // Icon
-  iconPrimary: 'light-dark(#0A1317, #DFE2E5)',
-  iconSecondary: 'light-dark(#4E606F, #AAAFB5)',
-  iconTertiary: 'light-dark(#748695, #8C939B)',
-  iconDisabled: 'light-dark(#A4B0BC, #6F747C)',
+  '--color-icon-primary': 'light-dark(#0A1317, #DFE2E5)',
+  '--color-icon-secondary': 'light-dark(#4E606F, #AAAFB5)',
+  '--color-icon-tertiary': 'light-dark(#748695, #8C939B)',
+  '--color-icon-disabled': 'light-dark(#A4B0BC, #6F747C)',
 
   // Surface variants
-  card: 'light-dark(#FFFFFF, #1F1F22)',
-  popover: 'light-dark(#FFFFFF, #28292C)',
-  navbar: 'light-dark(#FFFFFF, #1F1F22)',
+  '--color-card': 'light-dark(#FFFFFF, #1F1F22)',
+  '--color-popover': 'light-dark(#FFFFFF, #28292C)',
+  '--color-navbar': 'light-dark(#FFFFFF, #1F1F22)',
 
   // Status/Sentiment
-  positive: 'light-dark(#0D8626, #0D8626)',
-  positiveDeemphasized: 'light-dark(#0B991F33, #0B991F3F)',
-  negative: 'light-dark(#E3193B, #F5394F)',
-  negativeDeemphasized: 'light-dark(#E3193B33, #F5394F3F)',
-  warning: 'light-dark(#E9AF08, #F2C00B)',
-  warningDeemphasized: 'light-dark(#E2A40033, #E2A4003F)',
-  educational: 'light-dark(#5B08D8, #6B1EFD)',
-  educationalDeemphasized: 'light-dark(#7952FF33, #5B08D83F)',
+  '--color-positive': 'light-dark(#0D8626, #0D8626)',
+  '--color-positive-deemphasized': 'light-dark(#0B991F33, #0B991F3F)',
+  '--color-negative': 'light-dark(#E3193B, #F5394F)',
+  '--color-negative-deemphasized': 'light-dark(#E3193B33, #F5394F3F)',
+  '--color-warning': 'light-dark(#E9AF08, #F2C00B)',
+  '--color-warning-deemphasized': 'light-dark(#E2A40033, #E2A4003F)',
+  '--color-educational': 'light-dark(#5B08D8, #6B1EFD)',
+  '--color-educational-deemphasized': 'light-dark(#7952FF33, #5B08D83F)',
 
   // Divider
-  divider: 'light-dark(#05365919, #F2F4F619)',
-  dividerHighContrast: 'light-dark(#647685, #6F747C)',
-  dividerEmphasized: 'light-dark(#CCD3DB, #494D53)',
+  '--color-divider': 'light-dark(#05365919, #F2F4F619)',
+  '--color-divider-high-contrast': 'light-dark(#647685, #6F747C)',
+  '--color-divider-emphasized': 'light-dark(#CCD3DB, #494D53)',
 
   // Disabled/Effects
-  disabledOverlay: 'light-dark(#FFFFFF7F, #1F1F227F)',
-  glimmer: 'light-dark(#CCD3DB, #5A5E66)',
-  glimmerHighContrast: 'light-dark(#A4B0BC, #8C939B)',
-  shadowElevation: 'light-dark(rgba(5, 54, 89, 0.1), rgba(0, 0, 0, 0.3))',
+  '--color-disabled-overlay': 'light-dark(#FFFFFF7F, #1F1F227F)',
+  '--color-glimmer': 'light-dark(#CCD3DB, #5A5E66)',
+  '--color-glimmer-high-contrast': 'light-dark(#A4B0BC, #8C939B)',
+  '--color-shadow-elevation':
+    'light-dark(rgba(5, 54, 89, 0.1), rgba(0, 0, 0, 0.3))',
 
   // Literal color sets - Blue
-  blueBackground: 'light-dark(#0171E333, #0171E333)',
-  blueBorder: 'light-dark(#0171E3, #4BA9FE)',
-  blueIcon: 'light-dark(#0064E0, #2694FE)',
-  blueText: 'light-dark(#042F97, #AFD7FF)',
+  '--color-blue-background': 'light-dark(#0171E333, #0171E333)',
+  '--color-blue-border': 'light-dark(#0171E3, #4BA9FE)',
+  '--color-blue-icon': 'light-dark(#0064E0, #2694FE)',
+  '--color-blue-text': 'light-dark(#042F97, #AFD7FF)',
 
   // Cyan
-  cyanBackground: 'light-dark(#00BCD433, #00BCD433)',
-  cyanBorder: 'light-dark(#00BCD4, #4DD0E1)',
-  cyanIcon: 'light-dark(#00ACC1, #26C6DA)',
-  cyanText: 'light-dark(#006064, #B2EBF2)',
+  '--color-cyan-background': 'light-dark(#00BCD433, #00BCD433)',
+  '--color-cyan-border': 'light-dark(#00BCD4, #4DD0E1)',
+  '--color-cyan-icon': 'light-dark(#00ACC1, #26C6DA)',
+  '--color-cyan-text': 'light-dark(#006064, #B2EBF2)',
 
   // Gray
-  grayBackground: 'light-dark(#0A131733, #666A724C)',
-  grayBorder: 'light-dark(#647685, #8C939B)',
-  grayIcon: 'light-dark(#4E606F, #AAAFB5)',
-  grayText: 'light-dark(#0A1317, #E7EAED)',
+  '--color-gray-background': 'light-dark(#0A131733, #666A724C)',
+  '--color-gray-border': 'light-dark(#647685, #8C939B)',
+  '--color-gray-icon': 'light-dark(#4E606F, #AAAFB5)',
+  '--color-gray-text': 'light-dark(#0A1317, #E7EAED)',
 
   // Green
-  greenBackground: 'light-dark(#24BB5E33, #24BB5E33)',
-  greenBorder: 'light-dark(#24BB5E, #4CD964)',
-  greenIcon: 'light-dark(#0D8626, #26A756)',
-  greenText: 'light-dark(#09441F, #A5F690)',
+  '--color-green-background': 'light-dark(#24BB5E33, #24BB5E33)',
+  '--color-green-border': 'light-dark(#24BB5E, #4CD964)',
+  '--color-green-icon': 'light-dark(#0D8626, #26A756)',
+  '--color-green-text': 'light-dark(#09441F, #A5F690)',
 
   // Orange
-  orangeBackground: 'light-dark(#F2790233, #F2790233)',
-  orangeBorder: 'light-dark(#F27902, #FFA040)',
-  orangeIcon: 'light-dark(#E9690B, #FB8C00)',
-  orangeText: 'light-dark(#6B2203, #FDB876)',
+  '--color-orange-background': 'light-dark(#F2790233, #F2790233)',
+  '--color-orange-border': 'light-dark(#F27902, #FFA040)',
+  '--color-orange-icon': 'light-dark(#E9690B, #FB8C00)',
+  '--color-orange-text': 'light-dark(#6B2203, #FDB876)',
 
   // Pink
-  pinkBackground: 'light-dark(#E91E6333, #E91E6333)',
-  pinkBorder: 'light-dark(#E91E63, #F48FB1)',
-  pinkIcon: 'light-dark(#C2185B, #EC407A)',
-  pinkText: 'light-dark(#880E4F, #F8BBD0)',
+  '--color-pink-background': 'light-dark(#E91E6333, #E91E6333)',
+  '--color-pink-border': 'light-dark(#E91E63, #F48FB1)',
+  '--color-pink-icon': 'light-dark(#C2185B, #EC407A)',
+  '--color-pink-text': 'light-dark(#880E4F, #F8BBD0)',
 
   // Purple
-  purpleBackground: 'light-dark(#7952FF33, #7952FF33)',
-  purpleBorder: 'light-dark(#7952FF, #9575CD)',
-  purpleIcon: 'light-dark(#5B08D8, #7952FF)',
-  purpleText: 'light-dark(#3E0697, #B3B0FE)',
+  '--color-purple-background': 'light-dark(#7952FF33, #7952FF33)',
+  '--color-purple-border': 'light-dark(#7952FF, #9575CD)',
+  '--color-purple-icon': 'light-dark(#5B08D8, #7952FF)',
+  '--color-purple-text': 'light-dark(#3E0697, #B3B0FE)',
 
   // Red
-  redBackground: 'light-dark(#E3193B33, #E3193B33)',
-  redBorder: 'light-dark(#E3193B, #F5394F)',
-  redIcon: 'light-dark(#D31130, #E3193B)',
-  redText: 'light-dark(#7B0210, #FFB2B8)',
+  '--color-red-background': 'light-dark(#E3193B33, #E3193B33)',
+  '--color-red-border': 'light-dark(#E3193B, #F5394F)',
+  '--color-red-icon': 'light-dark(#D31130, #E3193B)',
+  '--color-red-text': 'light-dark(#7B0210, #FFB2B8)',
 
   // Teal
-  tealBackground: 'light-dark(#0DB7AF33, #0DB7AF33)',
-  tealBorder: 'light-dark(#0DB7AF, #4DB6AC)',
-  tealIcon: 'light-dark(#009688, #26A69A)',
-  tealText: 'light-dark(#083943, #40DCCD)',
+  '--color-teal-background': 'light-dark(#0DB7AF33, #0DB7AF33)',
+  '--color-teal-border': 'light-dark(#0DB7AF, #4DB6AC)',
+  '--color-teal-icon': 'light-dark(#009688, #26A69A)',
+  '--color-teal-text': 'light-dark(#083943, #40DCCD)',
 
   // Yellow
-  yellowBackground: 'light-dark(#FFEB3B33, #FFEB3B33)',
-  yellowBorder: 'light-dark(#FFEB3B, #FFF176)',
-  yellowIcon: 'light-dark(#FBC02D, #FFEE58)',
-  yellowText: 'light-dark(#F57F17, #FFF9C4)',
-});
+  '--color-yellow-background': 'light-dark(#FFEB3B33, #FFEB3B33)',
+  '--color-yellow-border': 'light-dark(#FFEB3B, #FFF176)',
+  '--color-yellow-icon': 'light-dark(#FBC02D, #FFEE58)',
+  '--color-yellow-text': 'light-dark(#F57F17, #FFF9C4)',
+} as const satisfies Record<ColorVarName, string>;
 
-// =============================================================================
-// Elevation Theme
-// =============================================================================
+const spacingRaw = {
+  '--spacing-0': '0px',
+  '--spacing-0-5': '2px',
+  '--spacing-1': '4px',
+  '--spacing-2': '8px',
+  '--spacing-3': '12px',
+  '--spacing-4': '16px',
+  '--spacing-5': '20px',
+  '--spacing-6': '24px',
+  '--spacing-7': '32px',
+} as const satisfies Record<SpacingVarName, string>;
 
-const elevationTheme = stylex.createTheme(elevationTokens, {
-  base: '0px 0px 1px light-dark(rgba(0, 0, 0, 0.1), #111112)',
-  thumb: '0 1px 3px light-dark(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.4))',
-  dialog:
+const radiusRaw = {
+  '--radius-rounded': '9999px',
+  '--radius-container': '12px',
+  '--radius-element': '8px',
+  '--radius-content': '4px',
+  '--radius-inner': '0px',
+} as const satisfies Record<RadiusVarName, string>;
+
+const elevationRaw = {
+  '--elevation-base': '0px 0px 1px light-dark(rgba(0, 0, 0, 0.1), #111112)',
+  '--elevation-thumb':
+    '0 1px 3px light-dark(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.4))',
+  '--elevation-dialog':
     '0px 2px 2px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0px 8px 24px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3))',
-  hover:
+  '--elevation-hover':
     '0px 1px 2px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0px 2px 12px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2))',
-  menu: '0px 1px 1px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0px 2px 8px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2))',
-});
+  '--elevation-menu':
+    '0px 1px 1px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0px 2px 8px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2))',
+} as const satisfies Record<ElevationVarName, string>;
 
-// =============================================================================
-// Spacing Theme
-// =============================================================================
+const transitionRaw = {
+  '--transition-fast': '0.15s ease',
+  '--transition-normal': '0.2s ease',
+} as const satisfies Record<TransitionVarName, string>;
 
-const spacingTheme = stylex.createTheme(spacingTokens, {
-  space0: '0px',
-  space0_5: '2px',
-  space1: '4px',
-  space2: '8px',
-  space3: '12px',
-  space4: '16px',
-  space5: '20px',
-  space6: '24px',
-  space7: '32px',
-});
-
-// =============================================================================
-// Radius Theme
-// =============================================================================
-
-const radiusTheme = stylex.createTheme(radiusTokens, {
-  rounded: '9999px',
-  container: '12px',
-  element: '8px',
-  content: '4px',
-});
-
-// =============================================================================
-// Transition Theme
-// =============================================================================
-
-const transitionTheme = stylex.createTheme(transitionTokens, {
-  fast: '0.15s ease',
-  normal: '0.2s ease',
-});
-
-// =============================================================================
-// Typography Theme
-// =============================================================================
-
-const typographyTheme = stylex.createTheme(typographyTokens, {
-  fontFamilyBody:
+const typographyRaw = {
+  '--font-body':
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-  fontFamilyCode: '"SF Mono", Monaco, Consolas, monospace',
-  fontFamilyHeading:
+  '--font-code': '"SF Mono", Monaco, Consolas, monospace',
+  '--font-heading':
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+} as const satisfies Record<TypographyVarName, string>;
+
+// =============================================================================
+// Theme Styles
+// =============================================================================
+// Create StyleX styles from raw values for applying to elements
+
+const themeStyles = stylex.create({
+  colors: colorRaw,
+  spacing: spacingRaw,
+  radius: radiusRaw,
+  elevation: elevationRaw,
+  transition: transitionRaw,
+  typography: typographyRaw,
+});
+
+const buttonVariants = stylex.create({
+  secondary: {
+    backgroundColor: 'light-dark(rgba(5 ,54 ,89 ,0.1), rgba(223, 226, 229, 0.2))',
+  },
 });
 
 // =============================================================================
@@ -209,10 +213,25 @@ const typographyTheme = stylex.createTheme(typographyTokens, {
 
 export const defaultTheme: Theme = {
   name: 'default',
-  colorTheme,
-  elevationTheme,
-  spacingTheme,
-  radiusTheme,
-  transitionTheme,
-  typographyTheme,
+  styles: {
+    colors: themeStyles.colors,
+    spacing: themeStyles.spacing,
+    radius: themeStyles.radius,
+    elevation: themeStyles.elevation,
+    transition: themeStyles.transition,
+    typography: themeStyles.typography,
+  },
+  raw: {
+    colors: colorRaw,
+    spacing: spacingRaw,
+    radius: radiusRaw,
+    elevation: elevationRaw,
+    transition: transitionRaw,
+    typography: typographyRaw,
+  },
+  components: {
+    button: {
+      variants: buttonVariants,
+    },
+  },
 };

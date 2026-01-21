@@ -1,8 +1,6 @@
 import type { Preview, Decorator } from '@storybook/react';
 import * as React from 'react';
-import { Theme } from '@xds/core/theme/Theme';
-import { defaultTheme } from '@xds/core/theme/defaultTheme.stylex';
-import { neutralTheme } from '@xds/core/theme/neutralTheme.stylex';
+import { Theme, defaultTheme, neutralTheme } from '@xds/core';
 
 /**
  * Map of available themes
@@ -27,7 +25,7 @@ const withXDSTheme: Decorator = (Story, context) => {
     <Theme theme={theme} mode={mode}>
       <div
         style={{
-          backgroundColor: 'var(--xds-surface)',
+          backgroundColor: 'var(--color-surface)',
           padding: 16,
         }}
       >

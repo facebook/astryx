@@ -13,100 +13,94 @@ import {
   XDSVStack,
 } from '@xds/core/Layout';
 import { XDSButton } from '@xds/core/Button';
-import {
-  colorTokens,
-  spacingTokens,
-  typographyTokens,
-  radiusTokens,
-  elevationTokens,
-} from '@xds/core/theme/tokens.stylex';
+import { color, spacing, typography, radius, elevation } from '@xds/core/theme/tokens.stylex';
 import { Theme, neutralTheme, defaultTheme } from '@xds/core';
 
 const styles = stylex.create({
   // Story wrapper styles
   pageWrapper: {
     height: 500,
-    backgroundColor: colorTokens.wash,
-    padding: spacingTokens.space4,
+    backgroundColor: color.wash,
+    padding: spacing.space4,
   },
   pageWrapperTall: {
     height: 600,
   },
   storySection: {
-    padding: spacingTokens.space4,
-    backgroundColor: colorTokens.wash,
+    padding: spacing.space4,
+    backgroundColor: color.wash,
   },
   // Typography
   heading: {
     margin: 0,
-    fontFamily: typographyTokens.fontFamilyBody,
+    fontFamily: typography.fontFamilyBody,
     fontSize: 18,
     fontWeight: 600,
-    color: colorTokens.textPrimary,
+    color: color.textPrimary,
   },
   subheading: {
     margin: 0,
-    fontFamily: typographyTokens.fontFamilyBody,
+    fontFamily: typography.fontFamilyBody,
     fontSize: 14,
     fontWeight: 500,
-    color: colorTokens.textSecondary,
+    color: color.textSecondary,
   },
   bodyText: {
     margin: 0,
-    fontFamily: typographyTokens.fontFamilyBody,
+    fontFamily: typography.fontFamilyBody,
     fontSize: 14,
     lineHeight: 1.5,
-    color: colorTokens.textSecondary,
+    color: color.textSecondary,
   },
   // Panel content
   navItem: {
-    padding: `${spacingTokens.space2} ${spacingTokens.space3}`,
+    padding: `${spacing.space2} ${spacing.space3}`,
     borderRadius: 6,
     cursor: 'pointer',
-    color: colorTokens.textPrimary,
-    fontFamily: typographyTokens.fontFamilyBody,
+    color: color.textPrimary,
+    fontFamily: typography.fontFamilyBody,
     fontSize: 14,
     backgroundColor: {
       default: 'transparent',
-      ':hover': colorTokens.hoverOverlay,
+      ':hover': color.hoverOverlay,
     },
   },
   navItemActive: {
-    backgroundColor: colorTokens.accentDeemphasized,
-    color: colorTokens.accentText,
+    backgroundColor: color.accentDeemphasized,
+    color: color.accentText,
   },
   // Content placeholder
   placeholder: {
-    backgroundColor: colorTokens.grayBackground,
+    backgroundColor: color.grayBackground,
     borderRadius: 8,
-    padding: spacingTokens.space4,
-    color: colorTokens.textSecondary,
-    fontFamily: typographyTokens.fontFamilyBody,
+    padding: spacing.space4,
+    color: color.textSecondary,
+    fontFamily: typography.fontFamilyBody,
     fontSize: 14,
   },
   // Full bleed placeholder (no radius, no padding)
   placeholderFullBleed: {
-    backgroundColor: colorTokens.grayBackground,
-    padding: spacingTokens.space4,
-    color: colorTokens.textSecondary,
-    fontFamily: typographyTokens.fontFamilyBody,
+    backgroundColor: color.grayBackground,
+    padding: spacing.space4,
+    color: color.textSecondary,
+    fontFamily: typography.fontFamilyBody,
     fontSize: 14,
     minHeight: 100,
   },
   sectionLabel: {
-    margin: `0 0 ${spacingTokens.space2} 0`,
-    fontFamily: typographyTokens.fontFamilyBody,
+    margin: `0 0 ${spacing.space2} 0`,
+    fontFamily: typography.fontFamilyBody,
     fontSize: 12,
     fontWeight: 600,
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
-    color: colorTokens.textSecondary,
+    color: color.textSecondary,
   },
   // Demo container styling to visualize bounds
   demoContainer: {
-    backgroundColor: colorTokens.card,
-    borderRadius: radiusTokens.container,
-    boxShadow: elevationTokens.base,
+    backgroundColor: color.card,
+    borderRadius: radius.container,
+    boxShadow: elevation.base,
   },
   // Demo sizing for outer padding story
   demoSize: {

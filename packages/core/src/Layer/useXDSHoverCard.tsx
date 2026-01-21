@@ -27,18 +27,18 @@ import {
   type LayerPlacement,
 } from './useXDSLayer';
 import {
-  colorTokens,
-  elevationTokens,
-  radiusTokens,
-  spacingTokens,
+  color,
+  elevation,
+  radius,
+  spacing,
 } from '../theme/tokens.stylex';
 
 const styles = stylex.create({
   // Base container styles passed to useXDSLayer (includes animations)
   container: {
-    backgroundColor: colorTokens.surface,
-    borderRadius: radiusTokens.container,
-    boxShadow: elevationTokens.hover,
+    backgroundColor: color.surface,
+    borderRadius: radius.container,
+    boxShadow: elevation.hover,
     // Animation: closed state (default) and open state
     opacity: {
       default: 0,
@@ -61,23 +61,23 @@ const styles = stylex.create({
   },
   // Position-based margin styles
   marginBlock: {
-    marginBlockStart: spacingTokens.space1,
-    marginBlockEnd: spacingTokens.space1,
+    marginBlockStart: spacing.space1,
+    marginBlockEnd: spacing.space1,
     marginInlineStart: 0,
     marginInlineEnd: 0,
   },
   marginInline: {
     marginBlockStart: 0,
     marginBlockEnd: 0,
-    marginInlineStart: spacingTokens.space1,
-    marginInlineEnd: spacingTokens.space1,
+    marginInlineStart: spacing.space1,
+    marginInlineEnd: spacing.space1,
   },
   // Content wrapper for padding and mouse events
   content: {
-    paddingBlockStart: spacingTokens.space3,
-    paddingBlockEnd: spacingTokens.space3,
-    paddingInlineStart: spacingTokens.space3,
-    paddingInlineEnd: spacingTokens.space3,
+    paddingBlockStart: spacing.space3,
+    paddingBlockEnd: spacing.space3,
+    paddingInlineStart: spacing.space3,
+    paddingInlineEnd: spacing.space3,
   },
 });
 

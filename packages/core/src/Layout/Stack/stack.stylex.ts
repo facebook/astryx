@@ -1,6 +1,6 @@
 /**
  * @file stack.stylex.ts
- * @input Uses @stylexjs/stylex, spacingTokens from theme
+ * @input Uses @stylexjs/stylex, spacing from theme
  * @output StyleX utility for stack (flex container) styling
  * @position Layout utility; used by XDSHStack, XDSVStack components
  *
@@ -8,7 +8,7 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import { spacingTokens } from '../../theme/tokens.stylex';
+import { spacing } from '../../theme/tokens.stylex';
 
 const alignItemsStyles = stylex.create({
   center: {
@@ -108,40 +108,40 @@ const baseStyles = stylex.create({
  */
 const gapStyles = stylex.create({
   space0: {
-    columnGap: spacingTokens.space0,
-    rowGap: spacingTokens.space0,
+    columnGap: spacing.space0,
+    rowGap: spacing.space0,
   },
   'space0.5': {
-    columnGap: spacingTokens.space0_5,
-    rowGap: spacingTokens.space0_5,
+    columnGap: spacing.space0_5,
+    rowGap: spacing.space0_5,
   },
   space1: {
-    columnGap: spacingTokens.space1,
-    rowGap: spacingTokens.space1,
+    columnGap: spacing.space1,
+    rowGap: spacing.space1,
   },
   space2: {
-    columnGap: spacingTokens.space2,
-    rowGap: spacingTokens.space2,
+    columnGap: spacing.space2,
+    rowGap: spacing.space2,
   },
   space3: {
-    columnGap: spacingTokens.space3,
-    rowGap: spacingTokens.space3,
+    columnGap: spacing.space3,
+    rowGap: spacing.space3,
   },
   space4: {
-    columnGap: spacingTokens.space4,
-    rowGap: spacingTokens.space4,
+    columnGap: spacing.space4,
+    rowGap: spacing.space4,
   },
   space5: {
-    columnGap: spacingTokens.space5,
-    rowGap: spacingTokens.space5,
+    columnGap: spacing.space5,
+    rowGap: spacing.space5,
   },
   space6: {
-    columnGap: spacingTokens.space6,
-    rowGap: spacingTokens.space6,
+    columnGap: spacing.space6,
+    rowGap: spacing.space6,
   },
   space7: {
-    columnGap: spacingTokens.space7,
-    rowGap: spacingTokens.space7,
+    columnGap: spacing.space7,
+    rowGap: spacing.space7,
   },
 });
 

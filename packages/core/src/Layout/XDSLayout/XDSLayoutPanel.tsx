@@ -12,7 +12,7 @@
 import type { AriaRole, HTMLAttributes, ReactNode } from 'react';
 import { forwardRef, useContext } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import { colorTokens, spacingTokens } from '../../theme/tokens.stylex';
+import { color, spacing } from '../../theme/tokens.stylex';
 import { XDSLayoutAreaContext } from './XDSLayoutAreaContext';
 import { XDSLayoutSlotsContext } from './XDSLayoutSlotsContext';
 
@@ -22,26 +22,26 @@ const styles = stylex.create({
     flexShrink: 0,
     overflow: 'clip',
     // Default: inner padding on all sides (will be overridden by position-specific styles)
-    paddingInlineStart: `var(--layout-padding-inner-x, ${spacingTokens.space4})`,
-    paddingInlineEnd: `var(--layout-padding-inner-x, ${spacingTokens.space4})`,
-    paddingBlockStart: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
-    paddingBlockEnd: `var(--layout-padding-inner-y, ${spacingTokens.space4})`,
+    paddingInlineStart: `var(--layout-padding-inner-x, ${spacing.space4})`,
+    paddingInlineEnd: `var(--layout-padding-inner-x, ${spacing.space4})`,
+    paddingBlockStart: `var(--layout-padding-inner-y, ${spacing.space4})`,
+    paddingBlockEnd: `var(--layout-padding-inner-y, ${spacing.space4})`,
   },
   // Start panel: outer-x on left edge
   startPanel: {
-    paddingInlineStart: `var(--layout-padding-outer-x, ${spacingTokens.space4})`,
+    paddingInlineStart: `var(--layout-padding-outer-x, ${spacing.space4})`,
   },
   // End panel: outer-x on right edge
   endPanel: {
-    paddingInlineEnd: `var(--layout-padding-outer-x, ${spacingTokens.space4})`,
+    paddingInlineEnd: `var(--layout-padding-outer-x, ${spacing.space4})`,
   },
   // When no header: outer-y on top
   noHeader: {
-    paddingBlockStart: `var(--layout-padding-outer-y, ${spacingTokens.space4})`,
+    paddingBlockStart: `var(--layout-padding-outer-y, ${spacing.space4})`,
   },
   // When no footer: outer-y on bottom
   noFooter: {
-    paddingBlockEnd: `var(--layout-padding-outer-y, ${spacingTokens.space4})`,
+    paddingBlockEnd: `var(--layout-padding-outer-y, ${spacing.space4})`,
   },
   fullBleed: {
     paddingInlineStart: 0,
@@ -56,22 +56,22 @@ const styles = stylex.create({
   dividerEnd: {
     borderInlineEndWidth: 1,
     borderInlineEndStyle: 'solid',
-    borderInlineEndColor: colorTokens.divider,
+    borderInlineEndColor: color.divider,
   },
   // For end panel: divider on start edge
   dividerStart: {
     borderInlineStartWidth: 1,
     borderInlineStartStyle: 'solid',
-    borderInlineStartColor: colorTokens.divider,
+    borderInlineStartColor: color.divider,
   },
   // When no divider, collapse spacing on the side facing content
   // Start panel: collapse end (right in LTR) to merge with content
   // End panel: collapse start (left in LTR) to merge with content
   collapseStart: {
-    marginInlineStart: `calc(-1 * var(--layout-padding-inner-x, ${spacingTokens.space4}))`,
+    marginInlineStart: `calc(-1 * var(--layout-padding-inner-x, ${spacing.space4}))`,
   },
   collapseEnd: {
-    marginInlineEnd: `calc(-1 * var(--layout-padding-inner-x, ${spacingTokens.space4}))`,
+    marginInlineEnd: `calc(-1 * var(--layout-padding-inner-x, ${spacing.space4}))`,
   },
 });
 

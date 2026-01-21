@@ -14,211 +14,235 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {
-  colorTokens,
-  elevationTokens,
-  spacingTokens,
-  radiusTokens,
-  transitionTokens,
-  typographyTokens,
-} from './tokens.stylex';
 import type { Theme } from './types';
+import type {
+  ColorVarName,
+  SpacingVarName,
+  RadiusVarName,
+  ElevationVarName,
+  TransitionVarName,
+  TypographyVarName,
+} from './tokens.stylex';
+import { color, spacing } from './tokens.stylex';
 
 // =============================================================================
-// Color Theme
+// Raw Theme Values
 // =============================================================================
-// Neutral grayscale palette using oklch color space.
-// Format: 'light-dark(lightValue, darkValue)'
+// Define raw values as plain objects first, then use in stylex.create
+// This allows programmatic access to values (e.g., parsing light-dark())
 
-const colorTheme = stylex.createTheme(colorTokens, {
+const colorRaw = {
   // Core semantic - neutral grayscale palette
-  accent: 'light-dark(oklch(0.205 0 0), oklch(0.922 0 0))',
-  accentDeemphasized: 'light-dark(oklch(0.97 0 0), oklch(0.269 0 0))',
-  accentText: 'light-dark(oklch(0.205 0 0), oklch(0.985 0 0))',
-  surface: 'light-dark(oklch(1 0 0), oklch(0.145 0 0))',
-  wash: 'light-dark(oklch(0.97 0 0), oklch(0.269 0 0))',
-  overlay: 'light-dark(oklch(0 0 0 / 50%), oklch(0 0 0 / 80%))',
-  hoverOverlay: 'light-dark(oklch(0 0 0 / 5%), oklch(1 0 0 / 5%))',
-  pressedOverlay: 'light-dark(oklch(0 0 0 / 10%), oklch(1 0 0 / 10%))',
-  focusOutline: 'light-dark(oklch(0.708 0 0), oklch(0.556 0 0))',
-  deemphasized: 'light-dark(oklch(0.97 0 0), oklch(0.269 0 0))',
+  '--color-accent': 'light-dark(oklch(0.205 0 0), oklch(0.922 0 0))',
+  '--color-accent-deemphasized': 'light-dark(oklch(0.97 0 0), oklch(0.269 0 0))',
+  '--color-accent-text': 'light-dark(oklch(0.205 0 0), oklch(0.985 0 0))',
+  '--color-surface': 'light-dark(oklch(1 0 0), oklch(0.145 0 0))',
+  '--color-wash': 'light-dark(oklch(0.97 0 0), oklch(0.269 0 0))',
+  '--color-overlay': 'light-dark(oklch(0 0 0 / 50%), oklch(0 0 0 / 80%))',
+  '--color-hover-overlay': 'light-dark(oklch(0 0 0 / 5%), oklch(1 0 0 / 5%))',
+  '--color-pressed-overlay':
+    'light-dark(oklch(0 0 0 / 10%), oklch(1 0 0 / 10%))',
+  '--color-focus-outline': 'light-dark(oklch(0.708 0 0), oklch(0.556 0 0))',
+  '--color-deemphasized': 'light-dark(oklch(0.97 0 0), oklch(0.269 0 0))',
 
   // Text
-  textPrimary: 'light-dark(oklch(0.145 0 0), oklch(0.985 0 0))',
-  textSecondary: 'light-dark(oklch(0.556 0 0), oklch(0.708 0 0))',
-  textDisabled: 'light-dark(oklch(0.708 0 0), oklch(0.439 0 0))',
-  textLink: 'light-dark(oklch(0.205 0 0), oklch(0.922 0 0))',
-  textPlaceholder: 'light-dark(oklch(0.556 0 0), oklch(0.556 0 0))',
+  '--color-text-primary': 'light-dark(oklch(0.145 0 0), oklch(0.985 0 0))',
+  '--color-text-secondary': 'light-dark(oklch(0.556 0 0), oklch(0.708 0 0))',
+  '--color-text-disabled': 'light-dark(oklch(0.708 0 0), oklch(0.439 0 0))',
+  '--color-text-link': 'light-dark(oklch(0.205 0 0), oklch(0.922 0 0))',
+  '--color-text-placeholder': 'light-dark(oklch(0.556 0 0), oklch(0.556 0 0))',
 
   // Icon
-  iconPrimary: 'light-dark(oklch(0.145 0 0), oklch(0.985 0 0))',
-  iconSecondary: 'light-dark(oklch(0.556 0 0), oklch(0.708 0 0))',
-  iconTertiary: 'light-dark(oklch(0.708 0 0), oklch(0.556 0 0))',
-  iconDisabled: 'light-dark(oklch(0.708 0 0), oklch(0.439 0 0))',
+  '--color-icon-primary': 'light-dark(oklch(0.145 0 0), oklch(0.985 0 0))',
+  '--color-icon-secondary': 'light-dark(oklch(0.556 0 0), oklch(0.708 0 0))',
+  '--color-icon-tertiary': 'light-dark(oklch(0.708 0 0), oklch(0.556 0 0))',
+  '--color-icon-disabled': 'light-dark(oklch(0.708 0 0), oklch(0.439 0 0))',
 
   // Surface variants
-  card: 'light-dark(oklch(1 0 0), oklch(0.205 0 0))',
-  popover: 'light-dark(oklch(1 0 0), oklch(0.269 0 0))',
-  navbar: 'light-dark(oklch(0.985 0 0), oklch(0.205 0 0))',
+  '--color-card': 'light-dark(oklch(1 0 0), oklch(0.205 0 0))',
+  '--color-popover': 'light-dark(oklch(1 0 0), oklch(0.269 0 0))',
+  '--color-navbar': 'light-dark(oklch(0.985 0 0), oklch(0.205 0 0))',
 
   // Status/Sentiment
-  positive: 'light-dark(oklch(0.6 0.15 145), oklch(0.7 0.15 145))',
-  positiveDeemphasized:
+  '--color-positive': 'light-dark(oklch(0.6 0.15 145), oklch(0.7 0.15 145))',
+  '--color-positive-deemphasized':
     'light-dark(oklch(0.6 0.15 145 / 20%), oklch(0.7 0.15 145 / 20%))',
-  negative: 'light-dark(oklch(0.577 0.245 27.325), oklch(0.704 0.191 22.216))',
-  negativeDeemphasized:
+  '--color-negative':
+    'light-dark(oklch(0.577 0.245 27.325), oklch(0.704 0.191 22.216))',
+  '--color-negative-deemphasized':
     'light-dark(oklch(0.577 0.245 27.325 / 20%), oklch(0.704 0.191 22.216 / 20%))',
-  warning: 'light-dark(oklch(0.828 0.189 84.429), oklch(0.769 0.188 70.08))',
-  warningDeemphasized:
+  '--color-warning':
+    'light-dark(oklch(0.828 0.189 84.429), oklch(0.769 0.188 70.08))',
+  '--color-warning-deemphasized':
     'light-dark(oklch(0.828 0.189 84.429 / 20%), oklch(0.769 0.188 70.08 / 20%))',
-  educational:
+  '--color-educational':
     'light-dark(oklch(0.488 0.243 264.376), oklch(0.627 0.265 303.9))',
-  educationalDeemphasized:
+  '--color-educational-deemphasized':
     'light-dark(oklch(0.488 0.243 264.376 / 20%), oklch(0.627 0.265 303.9 / 20%))',
 
   // Divider
-  divider: 'light-dark(oklch(0.922 0 0), oklch(1 0 0 / 10%))',
-  dividerHighContrast: 'light-dark(oklch(0.708 0 0), oklch(0.556 0 0))',
-  dividerEmphasized: 'light-dark(oklch(0.85 0 0), oklch(0.371 0 0))',
+  '--color-divider': 'light-dark(oklch(0.922 0 0), oklch(1 0 0 / 10%))',
+  '--color-divider-high-contrast':
+    'light-dark(oklch(0.708 0 0), oklch(0.556 0 0))',
+  '--color-divider-emphasized':
+    'light-dark(oklch(0.85 0 0), oklch(0.371 0 0))',
 
   // Disabled/Effects
-  disabledOverlay: 'light-dark(oklch(1 0 0 / 50%), oklch(0.145 0 0 / 50%))',
-  glimmer: 'light-dark(oklch(0.922 0 0), oklch(0.371 0 0))',
-  glimmerHighContrast: 'light-dark(oklch(0.85 0 0), oklch(0.439 0 0))',
-  shadowElevation: 'light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 30%))',
+  '--color-disabled-overlay':
+    'light-dark(oklch(1 0 0 / 50%), oklch(0.145 0 0 / 50%))',
+  '--color-glimmer': 'light-dark(oklch(0.922 0 0), oklch(0.371 0 0))',
+  '--color-glimmer-high-contrast':
+    'light-dark(oklch(0.85 0 0), oklch(0.439 0 0))',
+  '--color-shadow-elevation':
+    'light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 30%))',
 
   // Literal color sets - Blue
-  blueBackground:
+  '--color-blue-background':
     'light-dark(oklch(0.488 0.243 264.376 / 20%), oklch(0.488 0.243 264.376 / 20%))',
-  blueBorder: 'light-dark(oklch(0.488 0.243 264.376), oklch(0.488 0.243 264.376))',
-  blueIcon: 'light-dark(oklch(0.488 0.243 264.376), oklch(0.488 0.243 264.376))',
-  blueText: 'light-dark(oklch(0.398 0.2 264), oklch(0.7 0.2 264))',
+  '--color-blue-border':
+    'light-dark(oklch(0.488 0.243 264.376), oklch(0.488 0.243 264.376))',
+  '--color-blue-icon':
+    'light-dark(oklch(0.488 0.243 264.376), oklch(0.488 0.243 264.376))',
+  '--color-blue-text': 'light-dark(oklch(0.398 0.2 264), oklch(0.7 0.2 264))',
 
   // Cyan
-  cyanBackground:
+  '--color-cyan-background':
     'light-dark(oklch(0.6 0.118 184.704 / 20%), oklch(0.696 0.17 162.48 / 20%))',
-  cyanBorder: 'light-dark(oklch(0.6 0.118 184.704), oklch(0.696 0.17 162.48))',
-  cyanIcon: 'light-dark(oklch(0.6 0.118 184.704), oklch(0.696 0.17 162.48))',
-  cyanText: 'light-dark(oklch(0.398 0.07 184), oklch(0.8 0.1 162))',
+  '--color-cyan-border':
+    'light-dark(oklch(0.6 0.118 184.704), oklch(0.696 0.17 162.48))',
+  '--color-cyan-icon':
+    'light-dark(oklch(0.6 0.118 184.704), oklch(0.696 0.17 162.48))',
+  '--color-cyan-text': 'light-dark(oklch(0.398 0.07 184), oklch(0.8 0.1 162))',
 
   // Gray
-  grayBackground: 'light-dark(oklch(0.922 0 0 / 50%), oklch(0.371 0 0 / 50%))',
-  grayBorder: 'light-dark(oklch(0.708 0 0), oklch(0.556 0 0))',
-  grayIcon: 'light-dark(oklch(0.556 0 0), oklch(0.708 0 0))',
-  grayText: 'light-dark(oklch(0.145 0 0), oklch(0.985 0 0))',
+  '--color-gray-background':
+    'light-dark(oklch(0.922 0 0 / 50%), oklch(0.371 0 0 / 50%))',
+  '--color-gray-border': 'light-dark(oklch(0.708 0 0), oklch(0.556 0 0))',
+  '--color-gray-icon': 'light-dark(oklch(0.556 0 0), oklch(0.708 0 0))',
+  '--color-gray-text': 'light-dark(oklch(0.145 0 0), oklch(0.985 0 0))',
 
   // Green
-  greenBackground:
+  '--color-green-background':
     'light-dark(oklch(0.6 0.118 184.704 / 20%), oklch(0.696 0.17 162.48 / 20%))',
-  greenBorder: 'light-dark(oklch(0.6 0.118 184.704), oklch(0.696 0.17 162.48))',
-  greenIcon: 'light-dark(oklch(0.6 0.118 184.704), oklch(0.696 0.17 162.48))',
-  greenText: 'light-dark(oklch(0.398 0.07 184), oklch(0.8 0.1 162))',
+  '--color-green-border':
+    'light-dark(oklch(0.6 0.118 184.704), oklch(0.696 0.17 162.48))',
+  '--color-green-icon':
+    'light-dark(oklch(0.6 0.118 184.704), oklch(0.696 0.17 162.48))',
+  '--color-green-text': 'light-dark(oklch(0.398 0.07 184), oklch(0.8 0.1 162))',
 
   // Orange
-  orangeBackground:
+  '--color-orange-background':
     'light-dark(oklch(0.646 0.222 41.116 / 20%), oklch(0.645 0.246 16.439 / 20%))',
-  orangeBorder:
+  '--color-orange-border':
     'light-dark(oklch(0.646 0.222 41.116), oklch(0.645 0.246 16.439))',
-  orangeIcon:
+  '--color-orange-icon':
     'light-dark(oklch(0.646 0.222 41.116), oklch(0.645 0.246 16.439))',
-  orangeText: 'light-dark(oklch(0.5 0.18 41), oklch(0.8 0.2 16))',
+  '--color-orange-text': 'light-dark(oklch(0.5 0.18 41), oklch(0.8 0.2 16))',
 
   // Pink
-  pinkBackground:
+  '--color-pink-background':
     'light-dark(oklch(0.627 0.265 303.9 / 20%), oklch(0.627 0.265 303.9 / 20%))',
-  pinkBorder: 'light-dark(oklch(0.627 0.265 303.9), oklch(0.627 0.265 303.9))',
-  pinkIcon: 'light-dark(oklch(0.627 0.265 303.9), oklch(0.627 0.265 303.9))',
-  pinkText: 'light-dark(oklch(0.5 0.2 303), oklch(0.8 0.2 303))',
+  '--color-pink-border':
+    'light-dark(oklch(0.627 0.265 303.9), oklch(0.627 0.265 303.9))',
+  '--color-pink-icon':
+    'light-dark(oklch(0.627 0.265 303.9), oklch(0.627 0.265 303.9))',
+  '--color-pink-text': 'light-dark(oklch(0.5 0.2 303), oklch(0.8 0.2 303))',
 
   // Purple
-  purpleBackground:
+  '--color-purple-background':
     'light-dark(oklch(0.627 0.265 303.9 / 20%), oklch(0.627 0.265 303.9 / 20%))',
-  purpleBorder: 'light-dark(oklch(0.627 0.265 303.9), oklch(0.627 0.265 303.9))',
-  purpleIcon: 'light-dark(oklch(0.627 0.265 303.9), oklch(0.627 0.265 303.9))',
-  purpleText: 'light-dark(oklch(0.5 0.2 303), oklch(0.8 0.2 303))',
+  '--color-purple-border':
+    'light-dark(oklch(0.627 0.265 303.9), oklch(0.627 0.265 303.9))',
+  '--color-purple-icon':
+    'light-dark(oklch(0.627 0.265 303.9), oklch(0.627 0.265 303.9))',
+  '--color-purple-text': 'light-dark(oklch(0.5 0.2 303), oklch(0.8 0.2 303))',
 
   // Red
-  redBackground:
+  '--color-red-background':
     'light-dark(oklch(0.577 0.245 27.325 / 20%), oklch(0.704 0.191 22.216 / 20%))',
-  redBorder:
+  '--color-red-border':
     'light-dark(oklch(0.577 0.245 27.325), oklch(0.704 0.191 22.216))',
-  redIcon: 'light-dark(oklch(0.577 0.245 27.325), oklch(0.704 0.191 22.216))',
-  redText: 'light-dark(oklch(0.45 0.2 27), oklch(0.85 0.15 22))',
+  '--color-red-icon':
+    'light-dark(oklch(0.577 0.245 27.325), oklch(0.704 0.191 22.216))',
+  '--color-red-text': 'light-dark(oklch(0.45 0.2 27), oklch(0.85 0.15 22))',
 
   // Teal
-  tealBackground:
+  '--color-teal-background':
     'light-dark(oklch(0.6 0.118 184.704 / 20%), oklch(0.696 0.17 162.48 / 20%))',
-  tealBorder: 'light-dark(oklch(0.6 0.118 184.704), oklch(0.696 0.17 162.48))',
-  tealIcon: 'light-dark(oklch(0.6 0.118 184.704), oklch(0.696 0.17 162.48))',
-  tealText: 'light-dark(oklch(0.398 0.07 184), oklch(0.8 0.1 162))',
+  '--color-teal-border':
+    'light-dark(oklch(0.6 0.118 184.704), oklch(0.696 0.17 162.48))',
+  '--color-teal-icon':
+    'light-dark(oklch(0.6 0.118 184.704), oklch(0.696 0.17 162.48))',
+  '--color-teal-text': 'light-dark(oklch(0.398 0.07 184), oklch(0.8 0.1 162))',
 
   // Yellow
-  yellowBackground:
+  '--color-yellow-background':
     'light-dark(oklch(0.828 0.189 84.429 / 20%), oklch(0.769 0.188 70.08 / 20%))',
-  yellowBorder:
+  '--color-yellow-border':
     'light-dark(oklch(0.828 0.189 84.429), oklch(0.769 0.188 70.08))',
-  yellowIcon: 'light-dark(oklch(0.828 0.189 84.429), oklch(0.769 0.188 70.08))',
-  yellowText: 'light-dark(oklch(0.6 0.15 84), oklch(0.9 0.15 70))',
-});
+  '--color-yellow-icon':
+    'light-dark(oklch(0.828 0.189 84.429), oklch(0.769 0.188 70.08))',
+  '--color-yellow-text': 'light-dark(oklch(0.6 0.15 84), oklch(0.9 0.15 70))',
+} as const satisfies Record<ColorVarName, string>;
 
-// =============================================================================
-// Elevation Theme
-// =============================================================================
+const spacingRaw = {
+  '--spacing-0': '0px',
+  '--spacing-0-5': '2px',
+  '--spacing-1': '4px',
+  '--spacing-2': '8px',
+  '--spacing-3': '12px',
+  '--spacing-4': '16px',
+  '--spacing-5': '20px',
+  '--spacing-6': '24px',
+  '--spacing-7': '32px',
+} as const satisfies Record<SpacingVarName, string>;
 
-const elevationTheme = stylex.createTheme(elevationTokens, {
-  base: '0 1px 2px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 20%))',
-  thumb: '0 1px 3px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 30%))',
-  dialog:
+const radiusRaw = {
+  '--radius-rounded': '9999px',
+  '--radius-container': '0.75rem',
+  '--radius-element': '0.625rem',
+  '--radius-content': '0.375rem',
+  '--radius-inner': '0.25rem',
+} as const satisfies Record<RadiusVarName, string>;
+
+const elevationRaw = {
+  '--elevation-base':
+    '0 1px 2px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 20%))',
+  '--elevation-thumb':
+    '0 1px 3px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 30%))',
+  '--elevation-dialog':
     '0 4px 6px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 25%)), 0 12px 24px light-dark(oklch(0 0 0 / 15%), oklch(0 0 0 / 35%))',
-  hover:
+  '--elevation-hover':
     '0 2px 4px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 15%)), 0 4px 12px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 20%))',
-  menu: '0 2px 4px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 15%)), 0 4px 8px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 20%))',
-});
+  '--elevation-menu':
+    '0 2px 4px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 15%)), 0 4px 8px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 20%))',
+} as const satisfies Record<ElevationVarName, string>;
+
+const transitionRaw = {
+  '--transition-fast': '0.15s ease',
+  '--transition-normal': '0.2s ease',
+} as const satisfies Record<TransitionVarName, string>;
+
+const typographyRaw = {
+  '--font-body':
+    'Geist, "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  '--font-code': '"Geist Mono", "SF Mono", Monaco, Consolas, monospace',
+  '--font-heading':
+    'Geist, "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+} as const satisfies Record<TypographyVarName, string>;
 
 // =============================================================================
-// Spacing Theme
+// Theme Styles
 // =============================================================================
+// Create StyleX styles from raw values for applying to elements
 
-const spacingTheme = stylex.createTheme(spacingTokens, {
-  space0: '0px',
-  space0_5: '2px',
-  space1: '4px',
-  space2: '8px',
-  space3: '12px',
-  space4: '16px',
-  space5: '20px',
-  space6: '24px',
-  space7: '32px',
-});
-
-// =============================================================================
-// Radius Theme
-// =============================================================================
-
-const radiusTheme = stylex.createTheme(radiusTokens, {
-  rounded: '9999px',
-  container: '0.75rem',
-  element: '0.625rem',
-  content: '0.375rem',
-});
-
-// =============================================================================
-// Transition Theme
-// =============================================================================
-
-const transitionTheme = stylex.createTheme(transitionTokens, {
-  fast: '0.15s ease',
-  normal: '0.2s ease',
-});
-
-// =============================================================================
-// Typography Theme
-// =============================================================================
-
-const typographyTheme = stylex.createTheme(typographyTokens, {
-  fontFamilyBody: 'Geist, "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-  fontFamilyCode: '"Geist Mono", "SF Mono", Monaco, Consolas, monospace',
-  fontFamilyHeading: 'Geist, "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+const themeStyles = stylex.create({
+  colors: colorRaw,
+  spacing: spacingRaw,
+  radius: radiusRaw,
+  elevation: elevationRaw,
+  transition: transitionRaw,
+  typography: typographyRaw,
 });
 
 // =============================================================================
@@ -237,39 +261,39 @@ const buttonVariants = stylex.create({
   secondary: {
     borderWidth: '1px',
     borderStyle: 'solid',
-    borderColor: colorTokens.divider,
+    borderColor: color.divider,
   },
 });
 
 const cardStyles = stylex.create({
   // Override card default padding to 12px for tighter layout
   base: {
-    '--layout-padding-inner-x': spacingTokens.space3,
-    '--layout-padding-inner-y': spacingTokens.space3,
-    '--layout-padding-outer-x': spacingTokens.space3,
-    '--layout-padding-outer-y': spacingTokens.space3,
+    '--layout-padding-inner-x': spacing.space3,
+    '--layout-padding-inner-y': spacing.space3,
+    '--layout-padding-outer-x': spacing.space3,
+    '--layout-padding-outer-y': spacing.space3,
   },
 });
 
 const sectionVariants = stylex.create({
   // Override section padding to 12px for tighter layout
   section: {
-    '--layout-padding-inner-x': spacingTokens.space3,
-    '--layout-padding-inner-y': spacingTokens.space3,
-    '--layout-padding-outer-x': spacingTokens.space3,
-    '--layout-padding-outer-y': spacingTokens.space3,
+    '--layout-padding-inner-x': spacing.space3,
+    '--layout-padding-inner-y': spacing.space3,
+    '--layout-padding-outer-x': spacing.space3,
+    '--layout-padding-outer-y': spacing.space3,
   },
   transparent: {
-    '--layout-padding-inner-x': spacingTokens.space3,
-    '--layout-padding-inner-y': spacingTokens.space3,
-    '--layout-padding-outer-x': spacingTokens.space3,
-    '--layout-padding-outer-y': spacingTokens.space3,
+    '--layout-padding-inner-x': spacing.space3,
+    '--layout-padding-inner-y': spacing.space3,
+    '--layout-padding-outer-x': spacing.space3,
+    '--layout-padding-outer-y': spacing.space3,
   },
   wash: {
-    '--layout-padding-inner-x': spacingTokens.space3,
-    '--layout-padding-inner-y': spacingTokens.space3,
-    '--layout-padding-outer-x': spacingTokens.space3,
-    '--layout-padding-outer-y': spacingTokens.space3,
+    '--layout-padding-inner-x': spacing.space3,
+    '--layout-padding-inner-y': spacing.space3,
+    '--layout-padding-outer-x': spacing.space3,
+    '--layout-padding-outer-y': spacing.space3,
   },
 });
 
@@ -279,12 +303,22 @@ const sectionVariants = stylex.create({
 
 export const neutralTheme: Theme = {
   name: 'neutral',
-  colorTheme,
-  elevationTheme,
-  spacingTheme,
-  radiusTheme,
-  transitionTheme,
-  typographyTheme,
+  styles: {
+    colors: themeStyles.colors,
+    spacing: themeStyles.spacing,
+    radius: themeStyles.radius,
+    elevation: themeStyles.elevation,
+    transition: themeStyles.transition,
+    typography: themeStyles.typography,
+  },
+  raw: {
+    colors: colorRaw,
+    spacing: spacingRaw,
+    radius: radiusRaw,
+    elevation: elevationRaw,
+    transition: transitionRaw,
+    typography: typographyRaw,
+  },
   components: {
     button: {
       variants: buttonVariants,

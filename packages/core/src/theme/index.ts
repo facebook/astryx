@@ -15,12 +15,28 @@ export { neutralTheme } from './neutralTheme.stylex';
 
 // Export tokens for use in custom components
 export {
-  colorTokens,
-  spacingTokens,
-  radiusTokens,
-  elevationTokens,
-  transitionTokens,
-  typographyTokens,
+  color,
+  spacing,
+  radius,
+  elevation,
+  transition,
+  typography,
 } from './tokens.stylex';
 
-export type { Theme as ThemeType, ThemeMode, ComponentStyles } from './types';
+// Export token key types for theme authoring
+export type {
+  ColorTokenKey,
+  SpacingTokenKey,
+  RadiusTokenKey,
+  ElevationTokenKey,
+  TransitionTokenKey,
+  TypographyTokenKey,
+} from './tokens.stylex';
+
+export type {
+  Theme as ThemeType,
+  ThemeMode,
+  ThemeRaw,
+  ComponentStyles,
+  ThemeStyles,
+} from './types';

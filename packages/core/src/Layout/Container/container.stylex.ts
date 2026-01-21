@@ -1,6 +1,6 @@
 /**
  * @file container.stylex.ts
- * @input Uses @stylexjs/stylex, spacingTokens from theme
+ * @input Uses @stylexjs/stylex, spacing from theme
  * @output StyleX utility for layout container styling
  * @position Layout utility; used by XDSCard, XDSSection components
  *
@@ -8,7 +8,7 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import { spacingTokens } from '../../theme/tokens.stylex';
+import { spacing } from '../../theme/tokens.stylex';
 
 /**
  * Spacing token keys for padding props.
@@ -34,51 +34,51 @@ const baseStyles = stylex.create({
 });
 
 const paddingOuterXStyles = stylex.create({
-  space0: { '--layout-padding-outer-x': spacingTokens.space0 },
-  space0_5: { '--layout-padding-outer-x': spacingTokens.space0_5 },
-  space1: { '--layout-padding-outer-x': spacingTokens.space1 },
-  space2: { '--layout-padding-outer-x': spacingTokens.space2 },
-  space3: { '--layout-padding-outer-x': spacingTokens.space3 },
-  space4: { '--layout-padding-outer-x': spacingTokens.space4 },
-  space5: { '--layout-padding-outer-x': spacingTokens.space5 },
-  space6: { '--layout-padding-outer-x': spacingTokens.space6 },
-  space7: { '--layout-padding-outer-x': spacingTokens.space7 },
+  space0: { '--layout-padding-outer-x': spacing.space0 },
+  space0_5: { '--layout-padding-outer-x': spacing.space0_5 },
+  space1: { '--layout-padding-outer-x': spacing.space1 },
+  space2: { '--layout-padding-outer-x': spacing.space2 },
+  space3: { '--layout-padding-outer-x': spacing.space3 },
+  space4: { '--layout-padding-outer-x': spacing.space4 },
+  space5: { '--layout-padding-outer-x': spacing.space5 },
+  space6: { '--layout-padding-outer-x': spacing.space6 },
+  space7: { '--layout-padding-outer-x': spacing.space7 },
 });
 
 const paddingOuterYStyles = stylex.create({
-  space0: { '--layout-padding-outer-y': spacingTokens.space0 },
-  space0_5: { '--layout-padding-outer-y': spacingTokens.space0_5 },
-  space1: { '--layout-padding-outer-y': spacingTokens.space1 },
-  space2: { '--layout-padding-outer-y': spacingTokens.space2 },
-  space3: { '--layout-padding-outer-y': spacingTokens.space3 },
-  space4: { '--layout-padding-outer-y': spacingTokens.space4 },
-  space5: { '--layout-padding-outer-y': spacingTokens.space5 },
-  space6: { '--layout-padding-outer-y': spacingTokens.space6 },
-  space7: { '--layout-padding-outer-y': spacingTokens.space7 },
+  space0: { '--layout-padding-outer-y': spacing.space0 },
+  space0_5: { '--layout-padding-outer-y': spacing.space0_5 },
+  space1: { '--layout-padding-outer-y': spacing.space1 },
+  space2: { '--layout-padding-outer-y': spacing.space2 },
+  space3: { '--layout-padding-outer-y': spacing.space3 },
+  space4: { '--layout-padding-outer-y': spacing.space4 },
+  space5: { '--layout-padding-outer-y': spacing.space5 },
+  space6: { '--layout-padding-outer-y': spacing.space6 },
+  space7: { '--layout-padding-outer-y': spacing.space7 },
 });
 
 const paddingInnerXStyles = stylex.create({
-  space0: { '--layout-padding-inner-x': spacingTokens.space0 },
-  space0_5: { '--layout-padding-inner-x': spacingTokens.space0_5 },
-  space1: { '--layout-padding-inner-x': spacingTokens.space1 },
-  space2: { '--layout-padding-inner-x': spacingTokens.space2 },
-  space3: { '--layout-padding-inner-x': spacingTokens.space3 },
-  space4: { '--layout-padding-inner-x': spacingTokens.space4 },
-  space5: { '--layout-padding-inner-x': spacingTokens.space5 },
-  space6: { '--layout-padding-inner-x': spacingTokens.space6 },
-  space7: { '--layout-padding-inner-x': spacingTokens.space7 },
+  space0: { '--layout-padding-inner-x': spacing.space0 },
+  space0_5: { '--layout-padding-inner-x': spacing.space0_5 },
+  space1: { '--layout-padding-inner-x': spacing.space1 },
+  space2: { '--layout-padding-inner-x': spacing.space2 },
+  space3: { '--layout-padding-inner-x': spacing.space3 },
+  space4: { '--layout-padding-inner-x': spacing.space4 },
+  space5: { '--layout-padding-inner-x': spacing.space5 },
+  space6: { '--layout-padding-inner-x': spacing.space6 },
+  space7: { '--layout-padding-inner-x': spacing.space7 },
 });
 
 const paddingInnerYStyles = stylex.create({
-  space0: { '--layout-padding-inner-y': spacingTokens.space0 },
-  space0_5: { '--layout-padding-inner-y': spacingTokens.space0_5 },
-  space1: { '--layout-padding-inner-y': spacingTokens.space1 },
-  space2: { '--layout-padding-inner-y': spacingTokens.space2 },
-  space3: { '--layout-padding-inner-y': spacingTokens.space3 },
-  space4: { '--layout-padding-inner-y': spacingTokens.space4 },
-  space5: { '--layout-padding-inner-y': spacingTokens.space5 },
-  space6: { '--layout-padding-inner-y': spacingTokens.space6 },
-  space7: { '--layout-padding-inner-y': spacingTokens.space7 },
+  space0: { '--layout-padding-inner-y': spacing.space0 },
+  space0_5: { '--layout-padding-inner-y': spacing.space0_5 },
+  space1: { '--layout-padding-inner-y': spacing.space1 },
+  space2: { '--layout-padding-inner-y': spacing.space2 },
+  space3: { '--layout-padding-inner-y': spacing.space3 },
+  space4: { '--layout-padding-inner-y': spacing.space4 },
+  space5: { '--layout-padding-inner-y': spacing.space5 },
+  space6: { '--layout-padding-inner-y': spacing.space6 },
+  space7: { '--layout-padding-inner-y': spacing.space7 },
 });
 
 export interface ContainerOptions {

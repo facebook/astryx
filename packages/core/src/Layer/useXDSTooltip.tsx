@@ -27,21 +27,21 @@ import {
   type LayerPlacement,
 } from './useXDSLayer';
 import {
-  colorTokens,
-  radiusTokens,
-  spacingTokens,
-  typographyTokens,
+  color,
+  radius,
+  spacing,
+  typography,
 } from '../theme/tokens.stylex';
 
 const styles = stylex.create({
   // Base container styles - inverted colors for high contrast
   container: {
     // Inverted color palette: dark background, light text
-    backgroundColor: colorTokens.textPrimary,
-    color: colorTokens.surface,
-    borderRadius: radiusTokens.element,
+    backgroundColor: color.textPrimary,
+    color: color.surface,
+    borderRadius: radius.element,
     // Typography
-    fontFamily: typographyTokens.fontFamilyBody,
+    fontFamily: typography.fontFamilyBody,
     fontSize: 14,
     lineHeight: 1.4285714285714,
     // Animation: closed state (default) and open state
@@ -66,23 +66,23 @@ const styles = stylex.create({
   },
   // Position-based margin styles
   marginBlock: {
-    marginBlockStart: spacingTokens.space1,
-    marginBlockEnd: spacingTokens.space1,
+    marginBlockStart: spacing.space1,
+    marginBlockEnd: spacing.space1,
     marginInlineStart: 0,
     marginInlineEnd: 0,
   },
   marginInline: {
     marginBlockStart: 0,
     marginBlockEnd: 0,
-    marginInlineStart: spacingTokens.space1,
-    marginInlineEnd: spacingTokens.space1,
+    marginInlineStart: spacing.space1,
+    marginInlineEnd: spacing.space1,
   },
   // Content wrapper for padding
   content: {
-    paddingBlockStart: spacingTokens.space1,
-    paddingBlockEnd: spacingTokens.space1,
-    paddingInlineStart: spacingTokens.space2,
-    paddingInlineEnd: spacingTokens.space2,
+    paddingBlockStart: spacing.space1,
+    paddingBlockEnd: spacing.space1,
+    paddingInlineStart: spacing.space2,
+    paddingInlineEnd: spacing.space2,
   },
 });
 

@@ -19,7 +19,7 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type { StyleXStyles } from '@stylexjs/stylex';
-import { spacingTokens } from '../theme/tokens.stylex';
+import { spacing } from '../theme/tokens.stylex';
 
 
 // Extend React's HTMLAttributes to include popover API attributes
