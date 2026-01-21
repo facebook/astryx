@@ -26,6 +26,11 @@
       "types": "./dist/Layout/index.d.ts",
       "import": "./dist/Layout/index.mjs",
       "require": "./dist/Layout/index.js"
+    },
+    "./TextInput": {
+      "types": "./dist/TextInput/index.d.ts",
+      "import": "./dist/TextInput/index.mjs",
+      "require": "./dist/TextInput/index.js"
     }
   },
   "scripts": {

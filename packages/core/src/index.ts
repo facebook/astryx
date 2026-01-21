@@ -9,6 +9,7 @@
 
 // Components
 export * from './Button';
+export * from './TextInput';
 
 // Layout utilities and components (includes XDSHStack, XDSVStack)
 export * from './Layout';
