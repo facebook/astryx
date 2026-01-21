@@ -17,6 +17,11 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     },
+    "./Avatar": {
+      "types": "./dist/Avatar/index.d.ts",
+      "import": "./dist/Avatar/index.mjs",
+      "require": "./dist/Avatar/index.js"
+    },
     "./Button": {
       "types": "./dist/Button/index.d.ts",
       "import": "./dist/Button/index.mjs",

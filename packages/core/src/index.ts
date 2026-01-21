@@ -8,6 +8,7 @@
  */
 
 // Components
+export * from './Avatar';
 export * from './Button';
 
 // Layout utilities and components (includes XDSHStack, XDSVStack)
