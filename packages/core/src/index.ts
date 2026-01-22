@@ -10,6 +10,7 @@
 // Components
 export * from './Avatar';
 export * from './Button';
+export * from './Field';
 export * from './TextInput';
 
 // Layout utilities and components (includes XDSHStack, XDSVStack)
@@ -17,6 +18,9 @@ export * from './Layout';
 
 // Layer utilities and components (includes XDSHoverCard)
 export * from './Layer';
+
+// Skeleton loading placeholder
+export * from './Skeleton';
 
 // Theme
 export * from './theme';
