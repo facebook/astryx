@@ -82,4 +82,53 @@ describe('XDSField', () => {
     expect(description).toBeInTheDocument();
     expect(description).not.toHaveAttribute('id');
   });
+
+  it('renders Optional text when isOptional is true', () => {
+    render(
+      <XDSField label="Name" inputID="name-input" isOptional>
+        <input id="name-input" />
+      </XDSField>
+    );
+    expect(screen.getByText('Optional')).toBeInTheDocument();
+  });
+
+  it('renders Required text when isRequired is true', () => {
+    render(
+      <XDSField label="Name" inputID="name-input" isRequired>
+        <input id="name-input" />
+      </XDSField>
+    );
+    expect(screen.getByText('Required')).toBeInTheDocument();
+  });
+
+  it('renders description and Optional text separately', () => {
+    render(
+      <XDSField label="Name" inputID="name-input" description="Enter your name" descriptionID="name-desc" isOptional>
+        <input id="name-input" aria-describedby="name-desc" />
+      </XDSField>
+    );
+    expect(screen.getByText('Enter your name')).toBeInTheDocument();
+    expect(screen.getByText('Optional')).toBeInTheDocument();
+  });
+
+  it('renders description and Required text separately', () => {
+    render(
+      <XDSField label="Name" inputID="name-input" description="This field is mandatory" descriptionID="name-desc" isRequired>
+        <input id="name-input" aria-describedby="name-desc" />
+      </XDSField>
+    );
+    expect(screen.getByText('This field is mandatory')).toBeInTheDocument();
+    expect(screen.getByText('Required')).toBeInTheDocument();
+  });
+
+  it('renders Optional text next to label with bullet separator', () => {
+    render(
+      <XDSField label="Name" inputID="name-input" isOptional>
+        <input id="name-input" />
+      </XDSField>
+    );
+    expect(screen.getByText('Optional')).toBeInTheDocument();
+    expect(screen.getByText('Name')).toBeInTheDocument();
+    expect(screen.getByText('∙', { exact: false })).toBeInTheDocument();
+  });
 });

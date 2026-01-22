@@ -21,6 +21,11 @@ const styles = stylex.create({
     flexDirection: 'column',
     gap: spacing.space1,
   },
+  labelRow: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
   label: {
     fontFamily: typography.fontFamilyBody,
     fontSize: '0.875rem',
@@ -47,6 +52,12 @@ const styles = stylex.create({
     fontSize: '0.75rem',
     color: color.textSecondary,
   },
+  optionalRequired: {
+    fontFamily: typography.fontFamilyBody,
+    fontSize: '0.75rem',
+    color: color.textSecondary,
+    marginInlineStart: spacing.space1,
+  },
 });
 
 export interface XDSFieldProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
@@ -72,6 +83,16 @@ export interface XDSFieldProps extends Omit<HTMLAttributes<HTMLDivElement>, 'chi
    */
   descriptionID?: string;
   /**
+   * Whether the field is optional. Mutually exclusive with isRequired.
+   * @default false
+   */
+  isOptional?: boolean;
+  /**
+   * Whether the field is required. Mutually exclusive with isOptional.
+   * @default false
+   */
+  isRequired?: boolean;
+  /**
    * The input or control to render inside the field.
    */
   children: ReactNode;
@@ -90,16 +111,24 @@ export interface XDSFieldProps extends Omit<HTMLAttributes<HTMLDivElement>, 'chi
  * ```
  */
 export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
-  ({ label, isLabelHidden = false, description, inputID, descriptionID, children, ...props }, ref) => {
+  ({ label, isLabelHidden = false, description, inputID, descriptionID, isOptional = false, isRequired = false, children, ...props }, ref) => {
     return (
       <div ref={ref} {...stylex.props(styles.container)} {...props}>
-        <label
-          htmlFor={inputID}
-          {...stylex.props(styles.label, isLabelHidden && styles.labelHidden)}
-        >
-          {label}
-        </label>
-        {description && (
+        <div {...stylex.props(styles.labelRow)}>
+          <label
+            htmlFor={inputID}
+            {...stylex.props(styles.label, isLabelHidden && styles.labelHidden)}
+          >
+            {label}
+          </label>
+          {isOptional || isRequired ? (
+            <span {...stylex.props(styles.optionalRequired)}>
+              <span aria-hidden="true">{'\u2219 '}</span>
+              {isOptional ? 'Optional' : 'Required'}
+            </span>
+          ) : null}
+        </div>
+        {description != null && (
           <span id={descriptionID} {...stylex.props(styles.description)}>
             {description}
           </span>

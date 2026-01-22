@@ -65,6 +65,16 @@ export interface XDSTextInputProps {
    */
   description?: string;
   /**
+   * Whether the field is optional. Mutually exclusive with isRequired.
+   * @default false
+   */
+  isOptional?: boolean;
+  /**
+   * Whether the field is required. Mutually exclusive with isOptional.
+   * @default false
+   */
+  isRequired?: boolean;
+  /**
    * Callback fired when the input value changes.
    */
   onChange: (value: string, e: ChangeEvent<HTMLInputElement>) => void;
@@ -88,7 +98,7 @@ export interface XDSTextInputProps {
  * ```
  */
 export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
-  ({ label, isLabelHidden = false, description, onChange, value, placeholder }, ref) => {
+  ({ label, isLabelHidden = false, description, isOptional = false, isRequired = false, onChange, value, placeholder }, ref) => {
     const id = useId();
     const descriptionID = useId();
 
@@ -99,6 +109,8 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
         description={description}
         inputID={id}
         descriptionID={description ? descriptionID : undefined}
+        isOptional={isOptional}
+        isRequired={isRequired}
       >
         <input
           ref={ref}
@@ -108,6 +120,7 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
           onChange={(e) => onChange(e.target.value, e)}
           placeholder={placeholder}
           aria-describedby={description ? descriptionID : undefined}
+          aria-required={isRequired === true ? 'true' : undefined}
           {...stylex.props(styles.input)}
         />
       </XDSField>

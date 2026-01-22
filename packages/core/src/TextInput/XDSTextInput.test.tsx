@@ -68,4 +68,14 @@ describe('XDSTextInput', () => {
     const label = screen.getByText('Email');
     expect(label).toBeVisible();
   });
+
+  it('sets aria-required when isRequired is true', () => {
+    render(<XDSTextInput label="Username" isRequired value="" onChange={() => {}} />);
+    expect(screen.getByRole('textbox')).toHaveAttribute('aria-required', 'true');
+  });
+
+  it('does not set aria-required when isRequired is false', () => {
+    render(<XDSTextInput label="Username" value="" onChange={() => {}} />);
+    expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-required');
+  });
 });

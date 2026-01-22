@@ -27,6 +27,14 @@ const meta: Meta<typeof XDSField> = {
       control: 'text',
       description: 'ID for the description element (use for aria-describedby)',
     },
+    isOptional: {
+      control: 'boolean',
+      description: 'Whether the field is optional (mutually exclusive with isRequired)',
+    },
+    isRequired: {
+      control: 'boolean',
+      description: 'Whether the field is required (mutually exclusive with isOptional)',
+    },
   },
 };
 
@@ -98,6 +106,9 @@ export const AllVariations: Story = {
   render: () => {
     const [value1, setValue1] = useState('');
     const [value2, setValue2] = useState('');
+    const [value3, setValue3] = useState('');
+    const [value4, setValue4] = useState('');
+    const [value5, setValue5] = useState('');
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '300px' }}>
         <XDSField label="Default field" inputID="default-input">
@@ -117,7 +128,97 @@ export const AllVariations: Story = {
             style={{ padding: '8px', fontSize: '14px', width: '100%', boxSizing: 'border-box' }}
           />
         </XDSField>
+        <XDSField label="Optional field" isOptional inputID="optional-input">
+          <input
+            id="optional-input"
+            value={value3}
+            onChange={(e) => setValue3(e.target.value)}
+            style={{ padding: '8px', fontSize: '14px', width: '100%', boxSizing: 'border-box' }}
+          />
+        </XDSField>
+        <XDSField label="Required field" isRequired inputID="required-input">
+          <input
+            id="required-input"
+            value={value4}
+            onChange={(e) => setValue4(e.target.value)}
+            style={{ padding: '8px', fontSize: '14px', width: '100%', boxSizing: 'border-box' }}
+          />
+        </XDSField>
+        <XDSField label="With description and optional" description="Enter your nickname" isOptional inputID="desc-optional-input" descriptionID="desc-optional-text">
+          <input
+            id="desc-optional-input"
+            aria-describedby="desc-optional-text"
+            value={value5}
+            onChange={(e) => setValue5(e.target.value)}
+            style={{ padding: '8px', fontSize: '14px', width: '100%', boxSizing: 'border-box' }}
+          />
+        </XDSField>
       </div>
     );
+  },
+};
+
+export const OptionalField: Story = {
+  render: (args) => {
+    const [value, setValue] = useState('');
+    return (
+      <XDSField {...args} inputID="nickname-input">
+        <input
+          id="nickname-input"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="Enter your nickname"
+          style={{ padding: '8px', fontSize: '14px', width: '100%', boxSizing: 'border-box' }}
+        />
+      </XDSField>
+    );
+  },
+  args: {
+    label: 'Nickname',
+    isOptional: true,
+  },
+};
+
+export const RequiredField: Story = {
+  render: (args) => {
+    const [value, setValue] = useState('');
+    return (
+      <XDSField {...args} inputID="username-input">
+        <input
+          id="username-input"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="Enter your username"
+          style={{ padding: '8px', fontSize: '14px', width: '100%', boxSizing: 'border-box' }}
+        />
+      </XDSField>
+    );
+  },
+  args: {
+    label: 'Username',
+    isRequired: true,
+  },
+};
+
+export const DescriptionWithOptional: Story = {
+  render: (args) => {
+    const [value, setValue] = useState('');
+    return (
+      <XDSField {...args} inputID="bio-input" descriptionID="bio-desc">
+        <input
+          id="bio-input"
+          aria-describedby="bio-desc"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="Tell us about yourself"
+          style={{ padding: '8px', fontSize: '14px', width: '100%', boxSizing: 'border-box' }}
+        />
+      </XDSField>
+    );
+  },
+  args: {
+    label: 'Bio',
+    description: 'A short description about yourself',
+    isOptional: true,
   },
 };
