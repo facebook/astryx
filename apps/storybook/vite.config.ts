@@ -1,7 +1,7 @@
 /**
  * @file vite.config.ts
- * @input Uses vite, @vitejs/plugin-react, babel config
- * @output Vite configuration with React/StyleX via Babel
+ * @input Uses vite, @vitejs/plugin-react, @stylexjs/unplugin
+ * @output Vite configuration with React and StyleX via unplugin
  * @position Build config; used by Storybook's Vite integration
  *
  * SYNC: When modified, update this header and /apps/storybook/README.md
@@ -9,18 +9,28 @@
 
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import stylex from '@stylexjs/unplugin';
 import path from 'path';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const babelrc = require('./.babelrc.cjs');
-
+const rootDir = path.resolve(__dirname, '../..');
 const coreRoot = path.resolve(__dirname, '../../packages/core/src');
 
 export default defineConfig({
   plugins: [
-    react({
-      babel: babelrc,
+    stylex.vite({
+      dev: process.env.NODE_ENV === 'development',
+      useCSSLayers: true,
+      styleResolution: 'application-order',
+      aliases: {
+        '@xds/core/*': [path.join(rootDir, 'packages/core/src/*')],
+        '@xds/core': [path.join(rootDir, 'packages/core/src')],
+      },
+      unstable_moduleResolution: {
+        type: 'commonJS',
+        rootDir: rootDir,
+      },
     }),
+    react(),
   ],
   resolve: {
     alias: {
