@@ -105,4 +105,28 @@ describe('XDSTextInput', () => {
     render(<XDSTextInput label="Username" value="" onChange={() => {}} />);
     expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-required');
   });
+
+  it('sets disabled attribute when isDisabled is true', () => {
+    render(
+      <XDSTextInput label="Name" isDisabled value="" onChange={() => {}} />,
+    );
+    expect(screen.getByRole('textbox')).toBeDisabled();
+  });
+
+  it('does not fire onChange when disabled', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <XDSTextInput label="Name" isDisabled value="" onChange={handleChange} />,
+    );
+
+    const input = screen.getByRole('textbox');
+    await user.type(input, 'test');
+    expect(handleChange).not.toHaveBeenCalled();
+  });
+
+  it('is not disabled by default', () => {
+    render(<XDSTextInput label="Name" value="" onChange={() => {}} />);
+    expect(screen.getByRole('textbox')).not.toBeDisabled();
+  });
 });

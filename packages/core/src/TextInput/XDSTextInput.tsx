@@ -54,6 +54,11 @@ const styles = stylex.create({
       color: color.textPlaceholder,
     },
   },
+  disabled: {
+    cursor: 'not-allowed',
+    opacity: 0.5,
+    borderColor: color.dividerEmphasized,
+  },
 });
 
 export interface XDSTextInputProps {
@@ -80,6 +85,11 @@ export interface XDSTextInputProps {
    * @default false
    */
   isRequired?: boolean;
+  /**
+   * Whether the input is disabled.
+   * @default false
+   */
+  isDisabled?: boolean;
   /**
    * Callback fired when the input value changes.
    */
@@ -111,6 +121,7 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
       description,
       isOptional = false,
       isRequired = false,
+      isDisabled = false,
       onChange,
       value,
       placeholder,
@@ -136,9 +147,10 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
           value={value}
           onChange={e => onChange(e.target.value, e)}
           placeholder={placeholder}
+          disabled={isDisabled}
           aria-describedby={description ? descriptionID : undefined}
           aria-required={isRequired === true ? 'true' : undefined}
-          {...stylex.props(styles.input)}
+          {...stylex.props(styles.input, isDisabled && styles.disabled)}
         />
       </XDSField>
     );
