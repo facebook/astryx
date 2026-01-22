@@ -7,23 +7,23 @@
  * SYNC: When modified, update /packages/core/src/Layout/XDSLayout/README.md
  */
 
-export { XDSLayout } from './XDSLayout';
-export type { XDSLayoutProps, XDSLayoutHeight } from './XDSLayout';
+export {XDSLayout} from './XDSLayout';
+export type {XDSLayoutProps, XDSLayoutHeight} from './XDSLayout';
 
-export { XDSLayoutHeader } from './XDSLayoutHeader';
-export type { XDSLayoutHeaderProps } from './XDSLayoutHeader';
+export {XDSLayoutHeader} from './XDSLayoutHeader';
+export type {XDSLayoutHeaderProps} from './XDSLayoutHeader';
 
-export { XDSLayoutFooter } from './XDSLayoutFooter';
-export type { XDSLayoutFooterProps } from './XDSLayoutFooter';
+export {XDSLayoutFooter} from './XDSLayoutFooter';
+export type {XDSLayoutFooterProps} from './XDSLayoutFooter';
 
-export { XDSLayoutContent } from './XDSLayoutContent';
-export type { XDSLayoutContentProps } from './XDSLayoutContent';
+export {XDSLayoutContent} from './XDSLayoutContent';
+export type {XDSLayoutContentProps} from './XDSLayoutContent';
 
-export { XDSLayoutPanel } from './XDSLayoutPanel';
-export type { XDSLayoutPanelProps } from './XDSLayoutPanel';
+export {XDSLayoutPanel} from './XDSLayoutPanel';
+export type {XDSLayoutPanelProps} from './XDSLayoutPanel';
 
-export { XDSLayoutAreaContext } from './XDSLayoutAreaContext';
-export type { LayoutArea } from './XDSLayoutAreaContext';
+export {XDSLayoutAreaContext} from './XDSLayoutAreaContext';
+export type {LayoutArea} from './XDSLayoutAreaContext';
 
-export { XDSLayoutSlotsContext } from './XDSLayoutSlotsContext';
-export type { LayoutSlots } from './XDSLayoutSlotsContext';
+export {XDSLayoutSlotsContext} from './XDSLayoutSlotsContext';
+export type {LayoutSlots} from './XDSLayoutSlotsContext';

@@ -7,9 +7,9 @@
  * SYNC: When XDSHoverCard.tsx changes, update tests to match new behavior
  */
 
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { XDSHoverCard } from './XDSHoverCard';
+import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {XDSHoverCard} from './XDSHoverCard';
 
 // Store original matches to restore later
 const originalMatches = HTMLElement.prototype.matches;
@@ -44,16 +44,16 @@ describe('XDSHoverCard', () => {
     render(
       <XDSHoverCard content={<span>Card content</span>}>
         <button>Trigger</button>
-      </XDSHoverCard>
+      </XDSHoverCard>,
     );
-    expect(screen.getByRole('button', { name: 'Trigger' })).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Trigger'})).toBeInTheDocument();
   });
 
   it('does not show content initially', () => {
     render(
       <XDSHoverCard content={<span>Card content</span>}>
         <button>Trigger</button>
-      </XDSHoverCard>
+      </XDSHoverCard>,
     );
     // Content is in DOM (popover not open but element exists)
     const content = screen.queryByText('Card content');
@@ -64,9 +64,9 @@ describe('XDSHoverCard', () => {
     render(
       <XDSHoverCard content={<span>Card content</span>}>
         <button>Trigger</button>
-      </XDSHoverCard>
+      </XDSHoverCard>,
     );
-    const trigger = screen.getByRole('button', { name: 'Trigger' });
+    const trigger = screen.getByRole('button', {name: 'Trigger'});
     expect(trigger).toHaveAttribute('aria-describedby');
   });
 
@@ -74,9 +74,9 @@ describe('XDSHoverCard', () => {
     render(
       <XDSHoverCard content={<span>Card content</span>}>
         <button aria-describedby="existing-id">Trigger</button>
-      </XDSHoverCard>
+      </XDSHoverCard>,
     );
-    const trigger = screen.getByRole('button', { name: 'Trigger' });
+    const trigger = screen.getByRole('button', {name: 'Trigger'});
     const describedBy = trigger.getAttribute('aria-describedby');
     expect(describedBy).toContain('existing-id');
   });
@@ -87,13 +87,12 @@ describe('XDSHoverCard', () => {
       <XDSHoverCard
         content={<span>Card content</span>}
         onShow={onShow}
-        delay={0}
-      >
+        delay={0}>
         <button>Trigger</button>
-      </XDSHoverCard>
+      </XDSHoverCard>,
     );
 
-    const trigger = screen.getByRole('button', { name: 'Trigger' });
+    const trigger = screen.getByRole('button', {name: 'Trigger'});
     fireEvent.mouseEnter(trigger);
 
     await waitFor(() => {
@@ -108,17 +107,16 @@ describe('XDSHoverCard', () => {
         content={<span>Card content</span>}
         onShow={onShow}
         isEnabled={false}
-        delay={0}
-      >
+        delay={0}>
         <button>Trigger</button>
-      </XDSHoverCard>
+      </XDSHoverCard>,
     );
 
-    const trigger = screen.getByRole('button', { name: 'Trigger' });
+    const trigger = screen.getByRole('button', {name: 'Trigger'});
     fireEvent.mouseEnter(trigger);
 
     // Wait a bit and verify onShow was not called
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await new Promise(resolve => setTimeout(resolve, 50));
     expect(onShow).not.toHaveBeenCalled();
   });
 
@@ -126,7 +124,7 @@ describe('XDSHoverCard', () => {
     render(
       <XDSHoverCard content={<span>Card content</span>}>
         Just text, no element
-      </XDSHoverCard>
+      </XDSHoverCard>,
     );
     // Text should be rendered
     expect(screen.getByText('Just text, no element')).toBeInTheDocument();
@@ -147,13 +145,12 @@ describe('XDSHoverCard', () => {
           content={<span>Card content</span>}
           onHide={onHide}
           delay={0}
-          hideDelay={0}
-        >
+          hideDelay={0}>
           <button>Trigger</button>
-        </XDSHoverCard>
+        </XDSHoverCard>,
       );
 
-      const trigger = screen.getByRole('button', { name: 'Trigger' });
+      const trigger = screen.getByRole('button', {name: 'Trigger'});
 
       // Show the hover card
       fireEvent.mouseEnter(trigger);
@@ -162,7 +159,7 @@ describe('XDSHoverCard', () => {
       });
 
       // Press Escape on trigger
-      fireEvent.keyDown(trigger, { key: 'Escape' });
+      fireEvent.keyDown(trigger, {key: 'Escape'});
 
       // hidePopover should be called
       await waitFor(() => {
@@ -177,13 +174,12 @@ describe('XDSHoverCard', () => {
         <XDSHoverCard
           content={<button>Interactive button</button>}
           delay={0}
-          hideDelay={0}
-        >
+          hideDelay={0}>
           <button>Trigger</button>
-        </XDSHoverCard>
+        </XDSHoverCard>,
       );
 
-      const trigger = screen.getByRole('button', { name: 'Trigger' });
+      const trigger = screen.getByRole('button', {name: 'Trigger'});
 
       // Show the hover card
       fireEvent.mouseEnter(trigger);
@@ -193,7 +189,7 @@ describe('XDSHoverCard', () => {
 
       // Find the interactive content using getByText (works inside popovers)
       const contentButton = screen.getByText('Interactive button');
-      fireEvent.keyDown(contentButton, { key: 'Escape' });
+      fireEvent.keyDown(contentButton, {key: 'Escape'});
 
       // hidePopover should be called
       await waitFor(() => {
@@ -206,13 +202,12 @@ describe('XDSHoverCard', () => {
         <XDSHoverCard
           content={<button>Interactive button</button>}
           delay={0}
-          hideDelay={0}
-        >
+          hideDelay={0}>
           <button>Trigger</button>
-        </XDSHoverCard>
+        </XDSHoverCard>,
       );
 
-      const trigger = screen.getByRole('button', { name: 'Trigger' });
+      const trigger = screen.getByRole('button', {name: 'Trigger'});
 
       // Show the hover card via focus
       fireEvent.focus(trigger);
@@ -225,7 +220,7 @@ describe('XDSHoverCard', () => {
       (contentButton as HTMLElement).focus();
 
       // Press Escape - should refocus trigger
-      fireEvent.keyDown(contentButton, { key: 'Escape' });
+      fireEvent.keyDown(contentButton, {key: 'Escape'});
 
       await waitFor(() => {
         expect(document.activeElement).toBe(trigger);
@@ -239,13 +234,12 @@ describe('XDSHoverCard', () => {
           content={<button>Interactive button</button>}
           onShow={onShow}
           delay={0}
-          hideDelay={0}
-        >
+          hideDelay={0}>
           <button>Trigger</button>
-        </XDSHoverCard>
+        </XDSHoverCard>,
       );
 
-      const trigger = screen.getByRole('button', { name: 'Trigger' });
+      const trigger = screen.getByRole('button', {name: 'Trigger'});
 
       // Show the hover card via focus
       fireEvent.focus(trigger);
@@ -261,10 +255,10 @@ describe('XDSHoverCard', () => {
       onShow.mockClear();
 
       // Press Escape - this refocuses trigger but shouldn't re-show
-      fireEvent.keyDown(contentButton, { key: 'Escape' });
+      fireEvent.keyDown(contentButton, {key: 'Escape'});
 
       // Wait a bit and verify onShow was not called again
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await new Promise(resolve => setTimeout(resolve, 50));
       expect(onShow).not.toHaveBeenCalled();
     });
   });

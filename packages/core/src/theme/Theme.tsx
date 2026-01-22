@@ -16,14 +16,14 @@
  * ```
  */
 
-import React, { useContext, useMemo } from 'react';
+import React, {useContext, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type { Theme as ThemeType, ThemeMode } from './types';
-import { ThemeContext, type ThemeContextValue } from './ThemeContext';
-import { color } from './tokens.stylex';
+import type {Theme as ThemeType, ThemeMode} from './types';
+import {ThemeContext, type ThemeContextValue} from './ThemeContext';
+import {color} from './tokens.stylex';
 
 // Re-export for backwards compatibility
-export { ThemeContext } from './ThemeContext';
+export {ThemeContext} from './ThemeContext';
 
 /**
  * Hook to access current theme
@@ -78,7 +78,7 @@ export function Theme({
   mode = 'system',
   children,
 }: ThemeProps): React.ReactElement {
-  const contextValue = useMemo(() => ({ theme, mode }), [theme, mode]);
+  const contextValue = useMemo(() => ({theme, mode}), [theme, mode]);
 
   // Get the color-scheme style based on mode
   const colorSchemeStyle =
@@ -97,7 +97,7 @@ export function Theme({
     theme.styles.radius,
     theme.styles.elevation,
     theme.styles.transition,
-    theme.styles.typography
+    theme.styles.typography,
   );
 
   return (
@@ -105,8 +105,7 @@ export function Theme({
       <div
         className={stylexProps.className}
         style={stylexProps.style}
-        data-theme={mode === 'system' ? undefined : mode}
-      >
+        data-theme={mode === 'system' ? undefined : mode}>
         {children}
       </div>
     </ThemeContext.Provider>

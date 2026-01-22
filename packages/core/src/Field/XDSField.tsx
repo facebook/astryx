@@ -11,9 +11,9 @@
  * - /apps/storybook/stories/Field.stories.tsx (storybook stories)
  */
 
-import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
+import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import { color, spacing, typography } from '../theme/tokens.stylex';
+import {color, spacing, typography} from '../theme/tokens.stylex';
 
 const styles = stylex.create({
   container: {
@@ -60,7 +60,10 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSFieldProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
+export interface XDSFieldProps extends Omit<
+  HTMLAttributes<HTMLDivElement>,
+  'children'
+> {
   /**
    * Label text for the field (always rendered for accessibility).
    */
@@ -111,14 +114,29 @@ export interface XDSFieldProps extends Omit<HTMLAttributes<HTMLDivElement>, 'chi
  * ```
  */
 export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
-  ({ label, isLabelHidden = false, description, inputID, descriptionID, isOptional = false, isRequired = false, children, ...props }, ref) => {
+  (
+    {
+      label,
+      isLabelHidden = false,
+      description,
+      inputID,
+      descriptionID,
+      isOptional = false,
+      isRequired = false,
+      children,
+      ...props
+    },
+    ref,
+  ) => {
     return (
       <div ref={ref} {...stylex.props(styles.container)} {...props}>
         <div {...stylex.props(styles.labelRow)}>
           <label
             htmlFor={inputID}
-            {...stylex.props(styles.label, isLabelHidden && styles.labelHidden)}
-          >
+            {...stylex.props(
+              styles.label,
+              isLabelHidden && styles.labelHidden,
+            )}>
             {label}
           </label>
           {isOptional || isRequired ? (
@@ -136,7 +154,7 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
         {children}
       </div>
     );
-  }
+  },
 );
 
 XDSField.displayName = 'XDSField';

@@ -19,12 +19,12 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import { ThemeContext } from '../theme/ThemeContext';
-import { useXDSHoverCard, type HoverCardFocusTrigger } from './useXDSHoverCard';
-import type { LayerAlignment, LayerPlacement } from './useXDSLayer';
-import { color } from '../theme/tokens.stylex';
+import {ThemeContext} from '../theme/ThemeContext';
+import {useXDSHoverCard, type HoverCardFocusTrigger} from './useXDSHoverCard';
+import type {LayerAlignment, LayerPlacement} from './useXDSLayer';
+import {color} from '../theme/tokens.stylex';
 
-export type { HoverCardFocusTrigger } from './useXDSHoverCard';
+export type {HoverCardFocusTrigger} from './useXDSHoverCard';
 
 const styles = stylex.create({
   wrapperContents: {
@@ -120,7 +120,7 @@ export interface XDSHoverCardProps {
  */
 function isTextOnly(children: ReactNode): boolean {
   let hasElement = false;
-  React.Children.forEach(children, (child) => {
+  React.Children.forEach(children, child => {
     if (React.isValidElement(child)) {
       hasElement = true;
     }
@@ -175,8 +175,7 @@ export function XDSHoverCard({
 
   // Determine if hover indication should be shown
   const showHoverIndication =
-    hasHoverIndication === true ||
-    (hasHoverIndication === 'auto' && textOnly);
+    hasHoverIndication === true || (hasHoverIndication === 'auto' && textOnly);
 
   // Use the hook for all hover card behavior
   const hoverCard = useXDSHoverCard({
@@ -207,7 +206,7 @@ export function XDSHoverCard({
     const existingDescribedBy = firstChild.getAttribute('aria-describedby');
     firstChild.setAttribute(
       'aria-describedby',
-      mergeIds(existingDescribedBy, hoverCard.describedBy) ?? ''
+      mergeIds(existingDescribedBy, hoverCard.describedBy) ?? '',
     );
 
     return () => {
@@ -231,9 +230,8 @@ export function XDSHoverCard({
           {...stylex.props(
             styles.wrapperInline,
             showHoverIndication && styles.hoverIndication,
-            showHoverIndication && themeHoverIndicationOverride
-          )}
-        >
+            showHoverIndication && themeHoverIndicationOverride,
+          )}>
           {children}
         </span>
         {hoverCard.renderHoverCard(content)}
@@ -246,8 +244,7 @@ export function XDSHoverCard({
     <>
       <div
         ref={wrapperRef as React.RefObject<HTMLDivElement>}
-        {...stylex.props(styles.wrapperContents)}
-      >
+        {...stylex.props(styles.wrapperContents)}>
         {children}
       </div>
       {hoverCard.renderHoverCard(content)}

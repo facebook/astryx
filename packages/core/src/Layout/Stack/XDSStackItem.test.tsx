@@ -7,9 +7,9 @@
  * SYNC: When XDSStackItem.tsx changes, update tests to match new behavior
  */
 
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { XDSStackItem } from './XDSStackItem';
+import {describe, it, expect, vi} from 'vitest';
+import {render, screen} from '@testing-library/react';
+import {XDSStackItem} from './XDSStackItem';
 
 describe('XDSStackItem', () => {
   it('renders children correctly', () => {
@@ -27,7 +27,7 @@ describe('XDSStackItem', () => {
     render(
       <XDSStackItem element="section" data-testid="stack-item">
         Content
-      </XDSStackItem>
+      </XDSStackItem>,
     );
     const element = screen.getByTestId('stack-item');
     expect(element.tagName).toBe('SECTION');
@@ -53,7 +53,7 @@ describe('XDSStackItem', () => {
     render(
       <XDSStackItem ref={ref}>
         <div>Test</div>
-      </XDSStackItem>
+      </XDSStackItem>,
     );
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLDivElement));
   });
@@ -63,7 +63,7 @@ describe('XDSStackItem', () => {
     render(
       <XDSStackItem element="section" ref={ref}>
         <div>Test</div>
-      </XDSStackItem>
+      </XDSStackItem>,
     );
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLElement));
   });
@@ -72,7 +72,7 @@ describe('XDSStackItem', () => {
     render(
       <XDSStackItem data-testid="stack-item" aria-label="Stack item">
         Content
-      </XDSStackItem>
+      </XDSStackItem>,
     );
     const element = screen.getByTestId('stack-item');
     expect(element).toHaveAttribute('aria-label', 'Stack item');

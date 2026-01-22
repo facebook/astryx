@@ -7,6 +7,7 @@ XDS Layout System - composable utilities and components for building structured 
 ## Overview
 
 The layout system provides a container/content separation pattern with:
+
 - **Primitive + higher-order architecture** — XDSLayoutContainer is a primitive; XDSCard, XDSSection are higher-order
 - **Directional padding via CSS variables** — Inner/outer, horizontal/vertical padding control
 - **Context-aware defaults** — Components detect their slot and self-adjust
@@ -109,32 +110,32 @@ Layout/
 
 ### Container Components
 
-| Component | Description |
-|-----------|-------------|
-| `XDSLayoutContainer` | Primitive that sets CSS variables for padding |
-| `XDSCard` | Card with elevation and themed styling |
-| `XDSSection` | Section with background variants (section, transparent, wash) |
+| Component            | Description                                                   |
+| -------------------- | ------------------------------------------------------------- |
+| `XDSLayoutContainer` | Primitive that sets CSS variables for padding                 |
+| `XDSCard`            | Card with elevation and themed styling                        |
+| `XDSSection`         | Section with background variants (section, transparent, wash) |
 
 See [Container/README.md](./Container/README.md) for full documentation.
 
 ### Layout Structure
 
-| Component | Description |
-|-----------|-------------|
-| `XDSLayout` | Arranges content into header, footer, content, start, end slots |
-| `XDSLayoutHeader` | Header content area with optional divider |
-| `XDSLayoutFooter` | Footer content area with optional divider |
-| `XDSLayoutContent` | Scrollable main content area |
-| `XDSLayoutPanel` | Side panel for start/end slots |
+| Component          | Description                                                     |
+| ------------------ | --------------------------------------------------------------- |
+| `XDSLayout`        | Arranges content into header, footer, content, start, end slots |
+| `XDSLayoutHeader`  | Header content area with optional divider                       |
+| `XDSLayoutFooter`  | Footer content area with optional divider                       |
+| `XDSLayoutContent` | Scrollable main content area                                    |
+| `XDSLayoutPanel`   | Side panel for start/end slots                                  |
 
 See [XDSLayout/README.md](./XDSLayout/README.md) for full documentation.
 
 ### Stack Components
 
-| Component | Description |
-|-----------|-------------|
-| `XDSHStack` | Horizontal stack (left-to-right) |
-| `XDSVStack` | Vertical stack (top-to-bottom) |
+| Component      | Description                            |
+| -------------- | -------------------------------------- |
+| `XDSHStack`    | Horizontal stack (left-to-right)       |
+| `XDSVStack`    | Vertical stack (top-to-bottom)         |
 | `XDSStackItem` | Stack item with fill/alignment control |
 
 See [Stack/README.md](./Stack/README.md) for full documentation.
@@ -161,12 +162,12 @@ See [Stack/README.md](./Stack/README.md) for full documentation.
 
 XDSLayoutContainer sets these CSS variables that child components read:
 
-| Variable | Used By | Purpose |
-|----------|---------|---------|
-| `--layout-padding-outer-x` | XDSLayout | Outer horizontal padding |
-| `--layout-padding-outer-y` | XDSLayout | Outer vertical padding |
+| Variable                   | Used By                        | Purpose                  |
+| -------------------------- | ------------------------------ | ------------------------ |
+| `--layout-padding-outer-x` | XDSLayout                      | Outer horizontal padding |
+| `--layout-padding-outer-y` | XDSLayout                      | Outer vertical padding   |
 | `--layout-padding-inner-x` | Header, Footer, Content, Panel | Inner horizontal padding |
-| `--layout-padding-inner-y` | Header, Footer, Content, Panel | Inner vertical padding |
+| `--layout-padding-inner-y` | Header, Footer, Content, Panel | Inner vertical padding   |
 
 ## Related
 

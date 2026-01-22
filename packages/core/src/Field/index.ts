@@ -7,5 +7,5 @@
  * SYNC: When modified, update this header and /packages/core/src/Field/README.md
  */
 
-export { XDSField } from './XDSField';
-export type { XDSFieldProps } from './XDSField';
+export {XDSField} from './XDSField';
+export type {XDSFieldProps} from './XDSField';

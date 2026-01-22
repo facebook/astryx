@@ -7,10 +7,10 @@
  * SYNC: When XDSTextInput.tsx changes, update tests to match new behavior
  */
 
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import {describe, it, expect, vi} from 'vitest';
+import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { XDSTextInput } from './XDSTextInput';
+import {XDSTextInput} from './XDSTextInput';
 
 describe('XDSTextInput', () => {
   it('renders with label', () => {
@@ -19,7 +19,14 @@ describe('XDSTextInput', () => {
   });
 
   it('renders with placeholder', () => {
-    render(<XDSTextInput label="Name" value="" onChange={() => {}} placeholder="Enter text" />);
+    render(
+      <XDSTextInput
+        label="Name"
+        value=""
+        onChange={() => {}}
+        placeholder="Enter text"
+      />,
+    );
     expect(screen.getByPlaceholderText('Enter text')).toBeInTheDocument();
   });
 
@@ -45,18 +52,33 @@ describe('XDSTextInput', () => {
   });
 
   it('displays controlled value', () => {
-    render(<XDSTextInput label="Name" value="Controlled value" onChange={() => {}} />);
+    render(
+      <XDSTextInput
+        label="Name"
+        value="Controlled value"
+        onChange={() => {}}
+      />,
+    );
     expect(screen.getByRole('textbox')).toHaveValue('Controlled value');
   });
 
   it('forwards ref correctly', () => {
     const ref = vi.fn();
-    render(<XDSTextInput ref={ref} label="Name" value="" onChange={() => {}} />);
+    render(
+      <XDSTextInput ref={ref} label="Name" value="" onChange={() => {}} />,
+    );
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLInputElement));
   });
 
   it('visually hides label when isLabelHidden is true', () => {
-    render(<XDSTextInput label="Search" isLabelHidden value="" onChange={() => {}} />);
+    render(
+      <XDSTextInput
+        label="Search"
+        isLabelHidden
+        value=""
+        onChange={() => {}}
+      />,
+    );
     const label = screen.getByText('Search');
     expect(label).toBeInTheDocument();
     // Label should still be accessible
@@ -70,8 +92,13 @@ describe('XDSTextInput', () => {
   });
 
   it('sets aria-required when isRequired is true', () => {
-    render(<XDSTextInput label="Username" isRequired value="" onChange={() => {}} />);
-    expect(screen.getByRole('textbox')).toHaveAttribute('aria-required', 'true');
+    render(
+      <XDSTextInput label="Username" isRequired value="" onChange={() => {}} />,
+    );
+    expect(screen.getByRole('textbox')).toHaveAttribute(
+      'aria-required',
+      'true',
+    );
   });
 
   it('does not set aria-required when isRequired is false', () => {

@@ -19,10 +19,17 @@ import {
   type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type { StyleXStyles } from '@stylexjs/stylex';
-import { stackItem, type StackItemCrossAlignSelf, type StackItemSize } from './stackItem.stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
+import {
+  stackItem,
+  type StackItemCrossAlignSelf,
+  type StackItemSize,
+} from './stackItem.stylex';
 
-export interface XDSStackItemProps extends Omit<HTMLAttributes<HTMLElement>, 'style' | 'className'> {
+export interface XDSStackItemProps extends Omit<
+  HTMLAttributes<HTMLElement>,
+  'style' | 'className'
+> {
   /**
    * Overrides the default cross-alignment for this item.
    * (hAlign for VStack, vAlign for HStack)
@@ -71,10 +78,13 @@ export interface XDSStackItemProps extends Omit<HTMLAttributes<HTMLElement>, 'st
  */
 export const XDSStackItem = forwardRef<HTMLElement, XDSStackItemProps>(
   function XDSStackItem(
-    { crossAlignSelf, size, element = 'div', xstyle, children, ...props },
-    ref
+    {crossAlignSelf, size, element = 'div', xstyle, children, ...props},
+    ref,
   ) {
-    const stylexProps = stylex.props(...stackItem({ crossAlignSelf, size }), xstyle);
+    const stylexProps = stylex.props(
+      ...stackItem({crossAlignSelf, size}),
+      xstyle,
+    );
 
     return createElement(
       element,
@@ -83,9 +93,9 @@ export const XDSStackItem = forwardRef<HTMLElement, XDSStackItemProps>(
         ...stylexProps,
         ...props,
       },
-      children
+      children,
     );
-  }
+  },
 );
 
 XDSStackItem.displayName = 'XDSStackItem';

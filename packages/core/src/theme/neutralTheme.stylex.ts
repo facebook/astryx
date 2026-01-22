@@ -14,7 +14,7 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import type { Theme } from './types';
+import type {Theme} from './types';
 import type {
   ColorVarName,
   SpacingVarName,
@@ -23,7 +23,7 @@ import type {
   TransitionVarName,
   TypographyVarName,
 } from './tokens.stylex';
-import { color, spacing } from './tokens.stylex';
+import {color, spacing} from './tokens.stylex';
 
 // =============================================================================
 // Raw Theme Values
@@ -34,7 +34,8 @@ import { color, spacing } from './tokens.stylex';
 const colorRaw = {
   // Core semantic - neutral grayscale palette
   '--color-accent': 'light-dark(oklch(0.205 0 0), oklch(0.922 0 0))',
-  '--color-accent-deemphasized': 'light-dark(oklch(0.97 0 0), oklch(0.269 0 0))',
+  '--color-accent-deemphasized':
+    'light-dark(oklch(0.97 0 0), oklch(0.269 0 0))',
   '--color-accent-text': 'light-dark(oklch(0.205 0 0), oklch(0.985 0 0))',
   '--color-surface': 'light-dark(oklch(1 0 0), oklch(0.145 0 0))',
   '--color-wash': 'light-dark(oklch(0.97 0 0), oklch(0.269 0 0))',
@@ -84,8 +85,7 @@ const colorRaw = {
   '--color-divider': 'light-dark(oklch(0.922 0 0), oklch(1 0 0 / 10%))',
   '--color-divider-high-contrast':
     'light-dark(oklch(0.708 0 0), oklch(0.556 0 0))',
-  '--color-divider-emphasized':
-    'light-dark(oklch(0.85 0 0), oklch(0.371 0 0))',
+  '--color-divider-emphasized': 'light-dark(oklch(0.85 0 0), oklch(0.371 0 0))',
 
   // Disabled/Effects
   '--color-disabled-overlay':

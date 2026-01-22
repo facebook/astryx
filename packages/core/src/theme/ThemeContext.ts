@@ -5,8 +5,8 @@
  * without pulling in the full theme provider implementation.
  */
 
-import { createContext } from 'react';
-import type { Theme, ThemeMode } from './types';
+import {createContext} from 'react';
+import type {Theme, ThemeMode} from './types';
 
 /**
  * Theme context value

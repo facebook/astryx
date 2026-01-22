@@ -9,7 +9,7 @@
  * - /packages/core/src/Layout/XDSLayout/index.ts
  */
 
-import { createContext } from 'react';
+import {createContext} from 'react';
 
 /**
  * Information about which layout slots are filled.

@@ -7,9 +7,9 @@
  * SYNC: When XDSHStack.tsx changes, update tests to match new behavior
  */
 
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { XDSHStack } from './XDSHStack';
+import {describe, it, expect, vi} from 'vitest';
+import {render, screen} from '@testing-library/react';
+import {XDSHStack} from './XDSHStack';
 
 describe('XDSHStack', () => {
   it('renders children correctly', () => {
@@ -17,7 +17,7 @@ describe('XDSHStack', () => {
       <XDSHStack>
         <div>Item 1</div>
         <div>Item 2</div>
-      </XDSHStack>
+      </XDSHStack>,
     );
     expect(screen.getByText('Item 1')).toBeInTheDocument();
     expect(screen.getByText('Item 2')).toBeInTheDocument();
@@ -33,7 +33,7 @@ describe('XDSHStack', () => {
     render(
       <XDSHStack element="nav" data-testid="hstack">
         Content
-      </XDSHStack>
+      </XDSHStack>,
     );
     const element = screen.getByTestId('hstack');
     expect(element.tagName).toBe('NAV');
@@ -44,7 +44,7 @@ describe('XDSHStack', () => {
       <XDSHStack gap="space4">
         <div>Item 1</div>
         <div>Item 2</div>
-      </XDSHStack>
+      </XDSHStack>,
     );
     expect(screen.getByText('Item 1')).toBeInTheDocument();
   });
@@ -53,7 +53,7 @@ describe('XDSHStack', () => {
     render(
       <XDSHStack vAlign="center">
         <div>Item 1</div>
-      </XDSHStack>
+      </XDSHStack>,
     );
     expect(screen.getByText('Item 1')).toBeInTheDocument();
   });
@@ -63,7 +63,7 @@ describe('XDSHStack', () => {
       <XDSHStack wrap="wrap">
         <div>Item 1</div>
         <div>Item 2</div>
-      </XDSHStack>
+      </XDSHStack>,
     );
     expect(screen.getByText('Item 1')).toBeInTheDocument();
   });
@@ -73,7 +73,7 @@ describe('XDSHStack', () => {
     render(
       <XDSHStack ref={ref}>
         <div>Test</div>
-      </XDSHStack>
+      </XDSHStack>,
     );
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLElement));
   });
@@ -83,7 +83,7 @@ describe('XDSHStack', () => {
     render(
       <XDSHStack element="section" ref={ref}>
         <div>Test</div>
-      </XDSHStack>
+      </XDSHStack>,
     );
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLElement));
   });
@@ -92,7 +92,7 @@ describe('XDSHStack', () => {
     render(
       <XDSHStack data-testid="hstack">
         <div>Item</div>
-      </XDSHStack>
+      </XDSHStack>,
     );
     expect(screen.getByTestId('hstack')).toBeInTheDocument();
   });

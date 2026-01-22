@@ -7,5 +7,5 @@
  * SYNC: When modified, update this header and /packages/core/src/Avatar/README.md
  */
 
-export { XDSAvatar } from './XDSAvatar';
-export type { XDSAvatarProps, XDSAvatarSize } from './XDSAvatar';
+export {XDSAvatar} from './XDSAvatar';
+export type {XDSAvatarProps, XDSAvatarSize} from './XDSAvatar';

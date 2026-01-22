@@ -18,9 +18,8 @@ import React, {
   type RefCallback,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type { StyleXStyles } from '@stylexjs/stylex';
-import { spacing } from '../theme/tokens.stylex';
-
+import type {StyleXStyles} from '@stylexjs/stylex';
+import {spacing} from '../theme/tokens.stylex';
 
 // Extend React's HTMLAttributes to include popover API attributes
 declare module 'react' {
@@ -194,7 +193,7 @@ export interface FixedLayerReturn {
  */
 function getPositionArea(
   placement: LayerPlacement = 'above',
-  alignment: LayerAlignment = 'center'
+  alignment: LayerAlignment = 'center',
 ): string {
   const placementMap: Record<LayerPlacement, string> = {
     above: 'top',
@@ -243,9 +242,9 @@ function getPositionArea(
 export function useXDSLayer(options: ContextLayerOptions): ContextLayerReturn;
 export function useXDSLayer(options: FixedLayerOptions): FixedLayerReturn;
 export function useXDSLayer(
-  options: ContextLayerOptions | FixedLayerOptions
+  options: ContextLayerOptions | FixedLayerOptions,
 ): ContextLayerReturn | FixedLayerReturn {
-  const { mode, onShow, onHide, xstyle } = options;
+  const {mode, onShow, onHide, xstyle} = options;
   const id = useId();
   const anchorId = `--xds-layer-${id.replace(/:/g, '')}`;
 
@@ -275,11 +274,14 @@ export function useXDSLayer(
       ? (el: HTMLElement | null) => {
           // Cleanup previous element
           if (triggerRef.current) {
-            (triggerRef.current.style as unknown as Record<string, string>).anchorName = '';
+            (
+              triggerRef.current.style as unknown as Record<string, string>
+            ).anchorName = '';
           }
 
           if (el) {
-            (el.style as unknown as Record<string, string>).anchorName = anchorId;
+            (el.style as unknown as Record<string, string>).anchorName =
+              anchorId;
           }
 
           triggerRef.current = el;
@@ -298,13 +300,13 @@ export function useXDSLayer(
         onShow?.();
       }
     },
-    [onShow, onHide]
+    [onShow, onHide],
   );
 
   // Render function for context mode
   const renderContext = useCallback(
     (children: ReactNode, props?: ContextRenderProps) => {
-      const { placement = 'above', alignment = 'center' } = props || {};
+      const {placement = 'above', alignment = 'center'} = props || {};
 
       // CSS anchor positioning properties (dynamic, not in StyleX)
       const anchorStyle: React.CSSProperties = {
@@ -315,7 +317,7 @@ export function useXDSLayer(
 
       return (
         <div
-          ref={(el) => {
+          ref={el => {
             popoverRef.current = el;
             if (el) {
               el.addEventListener('toggle', handleToggle);
@@ -324,19 +326,18 @@ export function useXDSLayer(
           id={id}
           popover="manual"
           {...stylex.props(styles.base, xstyle)}
-          style={anchorStyle}
-        >
+          style={anchorStyle}>
           {children}
         </div>
       );
     },
-    [anchorId, handleToggle, id, xstyle]
+    [anchorId, handleToggle, id, xstyle],
   );
 
   // Render function for fixed mode
   const renderFixed = useCallback(
     (children: ReactNode, props: FixedRenderProps) => {
-      const { x, y } = props;
+      const {x, y} = props;
 
       // Dynamic position values
       const positionStyle: React.CSSProperties = {
@@ -346,7 +347,7 @@ export function useXDSLayer(
 
       return (
         <div
-          ref={(el) => {
+          ref={el => {
             popoverRef.current = el;
             if (el) {
               el.addEventListener('toggle', handleToggle);
@@ -355,13 +356,12 @@ export function useXDSLayer(
           id={id}
           popover="manual"
           {...stylex.props(styles.base, styles.fixed, xstyle)}
-          style={positionStyle}
-        >
+          style={positionStyle}>
           {children}
         </div>
       );
     },
-    [handleToggle, id, xstyle]
+    [handleToggle, id, xstyle],
   );
 
   if (mode === 'context') {

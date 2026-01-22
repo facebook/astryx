@@ -11,7 +11,7 @@
 import './componentStyles';
 
 // Core layer hook
-export { useXDSLayer } from './useXDSLayer';
+export {useXDSLayer} from './useXDSLayer';
 export type {
   LayerAlignment,
   LayerPlacement,
@@ -24,23 +24,23 @@ export type {
 } from './useXDSLayer';
 
 // HoverCard hook and component
-export { useXDSHoverCard } from './useXDSHoverCard';
+export {useXDSHoverCard} from './useXDSHoverCard';
 export type {
   HoverCardFocusTrigger,
   XDSHoverCardOptions,
   XDSHoverCardReturn,
 } from './useXDSHoverCard';
 
-export { XDSHoverCard } from './XDSHoverCard';
-export type { XDSHoverCardProps } from './XDSHoverCard';
+export {XDSHoverCard} from './XDSHoverCard';
+export type {XDSHoverCardProps} from './XDSHoverCard';
 
 // Tooltip hook and component
-export { useXDSTooltip } from './useXDSTooltip';
+export {useXDSTooltip} from './useXDSTooltip';
 export type {
   TooltipFocusTrigger,
   XDSTooltipOptions,
   XDSTooltipReturn,
 } from './useXDSTooltip';
 
-export { XDSTooltip } from './XDSTooltip';
-export type { XDSTooltipProps } from './XDSTooltip';
+export {XDSTooltip} from './XDSTooltip';
+export type {XDSTooltipProps} from './XDSTooltip';

@@ -9,12 +9,12 @@
  * - /apps/storybook/stories/Layout.stories.tsx
  */
 
-import type { AriaRole, HTMLAttributes, ReactNode } from 'react';
-import { forwardRef, useContext } from 'react';
+import type {AriaRole, HTMLAttributes, ReactNode} from 'react';
+import {forwardRef, useContext} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import { color, spacing } from '../../theme/tokens.stylex';
-import { XDSLayoutAreaContext } from './XDSLayoutAreaContext';
-import { XDSLayoutSlotsContext } from './XDSLayoutSlotsContext';
+import {color, spacing} from '../../theme/tokens.stylex';
+import {XDSLayoutAreaContext} from './XDSLayoutAreaContext';
+import {XDSLayoutSlotsContext} from './XDSLayoutSlotsContext';
 
 const styles = stylex.create({
   panel: {
@@ -82,7 +82,10 @@ const dynamicStyles = stylex.create({
   }),
 });
 
-export interface XDSLayoutPanelProps extends Omit<HTMLAttributes<HTMLElement>, 'style' | 'className'> {
+export interface XDSLayoutPanelProps extends Omit<
+  HTMLAttributes<HTMLElement>,
+  'style' | 'className'
+> {
   /**
    * Content to render inside the panel.
    */
@@ -156,11 +159,20 @@ export interface XDSLayoutPanelProps extends Omit<HTMLAttributes<HTMLElement>, '
  */
 export const XDSLayoutPanel = forwardRef<HTMLElement, XDSLayoutPanelProps>(
   function XDSLayoutPanel(
-    { children, hasDivider = false, isFullBleed = false, isScrollable = true, label, role, width, ...props },
-    ref
+    {
+      children,
+      hasDivider = false,
+      isFullBleed = false,
+      isScrollable = true,
+      label,
+      role,
+      width,
+      ...props
+    },
+    ref,
   ) {
     const area = useContext(XDSLayoutAreaContext);
-    const { hasHeader, hasFooter } = useContext(XDSLayoutSlotsContext);
+    const {hasHeader, hasFooter} = useContext(XDSLayoutSlotsContext);
 
     // Determine panel position
     const isStartPanel = area === 'start';
@@ -170,14 +182,18 @@ export const XDSLayoutPanel = forwardRef<HTMLElement, XDSLayoutPanelProps>(
     const shouldCollapseSpacing = !hasDivider && !isFullBleed;
 
     // Select divider style based on position
-    const dividerStyle = isStartPanel ? styles.dividerEnd
-      : isEndPanel ? styles.dividerStart
-      : null;
+    const dividerStyle = isStartPanel
+      ? styles.dividerEnd
+      : isEndPanel
+        ? styles.dividerStart
+        : null;
 
     // Select collapse style based on position (collapse the side where divider would be)
-    const collapseStyle = isStartPanel ? styles.collapseEnd
-      : isEndPanel ? styles.collapseStart
-      : null;
+    const collapseStyle = isStartPanel
+      ? styles.collapseEnd
+      : isEndPanel
+        ? styles.collapseStart
+        : null;
 
     return (
       <div
@@ -195,14 +211,13 @@ export const XDSLayoutPanel = forwardRef<HTMLElement, XDSLayoutPanelProps>(
           isScrollable && styles.scrollable,
           isFullBleed && styles.fullBleed,
           hasDivider && dividerStyle,
-          shouldCollapseSpacing && collapseStyle
+          shouldCollapseSpacing && collapseStyle,
         )}
-        {...props}
-      >
+        {...props}>
         {children}
       </div>
     );
-  }
+  },
 );
 
 XDSLayoutPanel.displayName = 'XDSLayoutPanel';

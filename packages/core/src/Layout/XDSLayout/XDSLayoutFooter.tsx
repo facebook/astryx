@@ -9,10 +9,10 @@
  * - /apps/storybook/stories/Layout.stories.tsx
  */
 
-import type { AriaRole, HTMLAttributes, ReactNode } from 'react';
-import { forwardRef } from 'react';
+import type {AriaRole, HTMLAttributes, ReactNode} from 'react';
+import {forwardRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import { color, spacing } from '../../theme/tokens.stylex';
+import {color, spacing} from '../../theme/tokens.stylex';
 
 const styles = stylex.create({
   footer: {
@@ -48,7 +48,10 @@ const dynamicStyles = stylex.create({
   }),
 });
 
-export interface XDSLayoutFooterProps extends Omit<HTMLAttributes<HTMLElement>, 'style' | 'className'> {
+export interface XDSLayoutFooterProps extends Omit<
+  HTMLAttributes<HTMLElement>,
+  'style' | 'className'
+> {
   /**
    * Content to render inside the footer.
    */
@@ -102,8 +105,16 @@ export interface XDSLayoutFooterProps extends Omit<HTMLAttributes<HTMLElement>, 
  */
 export const XDSLayoutFooter = forwardRef<HTMLElement, XDSLayoutFooterProps>(
   function XDSLayoutFooter(
-    { children, hasDivider = false, height, isFullBleed = false, label, role, ...props },
-    ref
+    {
+      children,
+      hasDivider = false,
+      height,
+      isFullBleed = false,
+      label,
+      role,
+      ...props
+    },
+    ref,
   ) {
     // When no divider, collapse spacing for seamless visual flow
     const shouldCollapseSpacing = !hasDivider && !isFullBleed;
@@ -118,14 +129,13 @@ export const XDSLayoutFooter = forwardRef<HTMLElement, XDSLayoutFooterProps>(
           dynamicStyles.sizing(height ?? null),
           isFullBleed && styles.fullBleed,
           hasDivider && styles.divider,
-          shouldCollapseSpacing && styles.collapseTop
+          shouldCollapseSpacing && styles.collapseTop,
         )}
-        {...props}
-      >
+        {...props}>
         {children}
       </div>
     );
-  }
+  },
 );
 
 XDSLayoutFooter.displayName = 'XDSLayoutFooter';

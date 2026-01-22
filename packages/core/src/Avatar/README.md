@@ -35,15 +35,15 @@ import { XDSAvatar } from '@xds/core/Avatar';
 
 ## Props
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `src` | `string` | — | Primary image source URL |
-| `fallbackSrc` | `string` | — | Fallback image when primary fails |
-| `name` | `string` | — | User name for initials and alt text |
-| `alt` | `string` | — | Alt text (falls back to `name`) |
-| `size` | `'xsmall' \| 'small' \| 'medium' \| 'large' \| 'xlarge'` | `'small'` | Avatar size |
-| `status` | `ReactNode` | — | Corner content for status indicators |
-| `data-testid` | `string` | — | Test ID for testing |
+| Prop          | Type                                                     | Default   | Description                          |
+| ------------- | -------------------------------------------------------- | --------- | ------------------------------------ |
+| `src`         | `string`                                                 | —         | Primary image source URL             |
+| `fallbackSrc` | `string`                                                 | —         | Fallback image when primary fails    |
+| `name`        | `string`                                                 | —         | User name for initials and alt text  |
+| `alt`         | `string`                                                 | —         | Alt text (falls back to `name`)      |
+| `size`        | `'xsmall' \| 'small' \| 'medium' \| 'large' \| 'xlarge'` | `'small'` | Avatar size                          |
+| `status`      | `ReactNode`                                              | —         | Corner content for status indicators |
+| `data-testid` | `string`                                                 | —         | Test ID for testing                  |
 
 ## Fallback Cascade
 
@@ -54,11 +54,11 @@ import { XDSAvatar } from '@xds/core/Avatar';
 
 ## Files
 
-| File | Role | Purpose |
-|------|------|---------|
-| `index.ts` | Entry | Exports component and types |
-| `XDSAvatar.tsx` | Core | Component implementation |
-| `XDSAvatar.test.tsx` | Test | Unit tests |
+| File                 | Role  | Purpose                     |
+| -------------------- | ----- | --------------------------- |
+| `index.ts`           | Entry | Exports component and types |
+| `XDSAvatar.tsx`      | Core  | Component implementation    |
+| `XDSAvatar.test.tsx` | Test  | Unit tests                  |
 
 ## Implementation Notes
 

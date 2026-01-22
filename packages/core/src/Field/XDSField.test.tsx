@@ -7,34 +7,44 @@
  * SYNC: When XDSField.tsx changes, update tests to match new behavior
  */
 
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { XDSField } from './XDSField';
+import {describe, it, expect, vi} from 'vitest';
+import {render, screen} from '@testing-library/react';
+import {XDSField} from './XDSField';
 
 describe('XDSField', () => {
   it('renders with label', () => {
     render(
       <XDSField label="Email" inputID="email-input">
         <input id="email-input" />
-      </XDSField>
+      </XDSField>,
     );
     expect(screen.getByLabelText('Email')).toBeInTheDocument();
   });
 
   it('renders description text', () => {
     render(
-      <XDSField label="Email" inputID="email-input" description="We'll never share your email" descriptionID="email-desc">
+      <XDSField
+        label="Email"
+        inputID="email-input"
+        description="We'll never share your email"
+        descriptionID="email-desc">
         <input id="email-input" aria-describedby="email-desc" />
-      </XDSField>
+      </XDSField>,
     );
-    expect(screen.getByText("We'll never share your email")).toBeInTheDocument();
+    expect(
+      screen.getByText("We'll never share your email"),
+    ).toBeInTheDocument();
   });
 
   it('associates description with correct ID', () => {
     render(
-      <XDSField label="Email" inputID="email-input" description="Description text" descriptionID="email-desc">
+      <XDSField
+        label="Email"
+        inputID="email-input"
+        description="Description text"
+        descriptionID="email-desc">
         <input id="email-input" aria-describedby="email-desc" />
-      </XDSField>
+      </XDSField>,
     );
     const description = screen.getByText('Description text');
     expect(description).toHaveAttribute('id', 'email-desc');
@@ -44,7 +54,7 @@ describe('XDSField', () => {
     render(
       <XDSField label="Search" isLabelHidden inputID="search-input">
         <input id="search-input" />
-      </XDSField>
+      </XDSField>,
     );
     const label = screen.getByText('Search');
     expect(label).toBeInTheDocument();
@@ -56,7 +66,7 @@ describe('XDSField', () => {
     render(
       <XDSField label="Email" inputID="email-input">
         <input id="email-input" />
-      </XDSField>
+      </XDSField>,
     );
     const label = screen.getByText('Email');
     expect(label).toBeVisible();
@@ -67,16 +77,19 @@ describe('XDSField', () => {
     render(
       <XDSField ref={ref} label="Name" inputID="name-input">
         <input id="name-input" />
-      </XDSField>
+      </XDSField>,
     );
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLDivElement));
   });
 
   it('renders description without ID attribute when descriptionID is not provided', () => {
     render(
-      <XDSField label="Email" inputID="email-input" description="Description text">
+      <XDSField
+        label="Email"
+        inputID="email-input"
+        description="Description text">
         <input id="email-input" />
-      </XDSField>
+      </XDSField>,
     );
     const description = screen.getByText('Description text');
     expect(description).toBeInTheDocument();
@@ -87,7 +100,7 @@ describe('XDSField', () => {
     render(
       <XDSField label="Name" inputID="name-input" isOptional>
         <input id="name-input" />
-      </XDSField>
+      </XDSField>,
     );
     expect(screen.getByText('Optional')).toBeInTheDocument();
   });
@@ -96,16 +109,21 @@ describe('XDSField', () => {
     render(
       <XDSField label="Name" inputID="name-input" isRequired>
         <input id="name-input" />
-      </XDSField>
+      </XDSField>,
     );
     expect(screen.getByText('Required')).toBeInTheDocument();
   });
 
   it('renders description and Optional text separately', () => {
     render(
-      <XDSField label="Name" inputID="name-input" description="Enter your name" descriptionID="name-desc" isOptional>
+      <XDSField
+        label="Name"
+        inputID="name-input"
+        description="Enter your name"
+        descriptionID="name-desc"
+        isOptional>
         <input id="name-input" aria-describedby="name-desc" />
-      </XDSField>
+      </XDSField>,
     );
     expect(screen.getByText('Enter your name')).toBeInTheDocument();
     expect(screen.getByText('Optional')).toBeInTheDocument();
@@ -113,9 +131,14 @@ describe('XDSField', () => {
 
   it('renders description and Required text separately', () => {
     render(
-      <XDSField label="Name" inputID="name-input" description="This field is mandatory" descriptionID="name-desc" isRequired>
+      <XDSField
+        label="Name"
+        inputID="name-input"
+        description="This field is mandatory"
+        descriptionID="name-desc"
+        isRequired>
         <input id="name-input" aria-describedby="name-desc" />
-      </XDSField>
+      </XDSField>,
     );
     expect(screen.getByText('This field is mandatory')).toBeInTheDocument();
     expect(screen.getByText('Required')).toBeInTheDocument();
@@ -125,10 +148,10 @@ describe('XDSField', () => {
     render(
       <XDSField label="Name" inputID="name-input" isOptional>
         <input id="name-input" />
-      </XDSField>
+      </XDSField>,
     );
     expect(screen.getByText('Optional')).toBeInTheDocument();
     expect(screen.getByText('Name')).toBeInTheDocument();
-    expect(screen.getByText('∙', { exact: false })).toBeInTheDocument();
+    expect(screen.getByText('∙', {exact: false})).toBeInTheDocument();
   });
 });

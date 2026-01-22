@@ -7,5 +7,5 @@
  * SYNC: When modified, update this header and /packages/core/src/Button/README.md
  */
 
-export { XDSButton } from './XDSButton';
-export type { XDSButtonProps, XDSButtonVariant } from './XDSButton';
+export {XDSButton} from './XDSButton';
+export type {XDSButtonProps, XDSButtonVariant} from './XDSButton';

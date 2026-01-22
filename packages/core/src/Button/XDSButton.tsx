@@ -11,7 +11,12 @@
  * - /apps/storybook/stories/Button.stories.tsx (storybook stories)
  */
 
-import { forwardRef, useContext, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import {
+  forwardRef,
+  useContext,
+  type ButtonHTMLAttributes,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   color,
@@ -20,7 +25,7 @@ import {
   transition,
   typography,
 } from '../theme/tokens.stylex';
-import { ThemeContext } from '../theme/ThemeContext';
+import {ThemeContext} from '../theme/ThemeContext';
 
 /**
  * Base button styles
@@ -192,7 +197,7 @@ const loadingStyles = stylex.create({
     borderRightColor: 'transparent',
     borderRadius: '50%',
     animationName: stylex.keyframes({
-      to: { transform: 'rotate(360deg)' },
+      to: {transform: 'rotate(360deg)'},
     }),
     animationDuration: '0.6s',
     animationTimingFunction: 'linear',
@@ -227,13 +232,17 @@ const loadingStyles = stylex.create({
  * ```
  */
 export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
-  ({ variant = 'secondary', loading = false, disabled, children, ...props }, ref) => {
+  (
+    {variant = 'secondary', loading = false, disabled, children, ...props},
+    ref,
+  ) => {
     const isDisabled = disabled || loading;
     const useLightSpinner = variant === 'primary' || variant === 'destructive';
 
     // Get theme context for component-level overrides (optional)
     const themeContext = useContext(ThemeContext);
-    const themeVariantOverride = themeContext?.theme.components?.button?.variants?.[variant];
+    const themeVariantOverride =
+      themeContext?.theme.components?.button?.variants?.[variant];
 
     return (
       <button
@@ -244,22 +253,23 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
           variants[variant],
           themeVariantOverride,
           isDisabled && styles.disabled,
-          loading && loadingStyles.loading
+          loading && loadingStyles.loading,
         )}
-        {...props}
-      >
+        {...props}>
         {loading && (
           <span
             {...stylex.props(
               loadingStyles.spinner,
-              useLightSpinner ? loadingStyles.spinnerLight : loadingStyles.spinnerDark
+              useLightSpinner
+                ? loadingStyles.spinnerLight
+                : loadingStyles.spinnerDark,
             )}
           />
         )}
         {children}
       </button>
     );
-  }
+  },
 );
 
 XDSButton.displayName = 'XDSButton';

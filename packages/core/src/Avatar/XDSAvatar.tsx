@@ -11,14 +11,9 @@
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
  */
 
-import { forwardRef, useState, type HTMLAttributes, type ReactNode } from 'react';
+import {forwardRef, useState, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  color,
-  spacing,
-  radius,
-  typography,
-} from '../theme/tokens.stylex';
+import {color, spacing, radius, typography} from '../theme/tokens.stylex';
 
 /**
  * The offset ratio for positioning elements on a circle's edge at 45°.
@@ -154,7 +149,10 @@ const dynamicStyles = stylex.create({
   }),
 });
 
-export interface XDSAvatarProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
+export interface XDSAvatarProps extends Omit<
+  HTMLAttributes<HTMLDivElement>,
+  'children'
+> {
   /**
    * The alt text shown on hover and made accessible to screen readers.
    * Falls back to `name` if not provided.
@@ -207,15 +205,14 @@ function getInitials(name: string): string {
 /**
  * Default person icon SVG for when no image or name is provided
  */
-function DefaultIcon({ size }: { size: number }) {
+function DefaultIcon({size}: {size: number}) {
   return (
     <svg
       width={size * 0.6}
       height={size * 0.6}
       viewBox="0 0 24 24"
       fill="currentColor"
-      aria-hidden="true"
-    >
+      aria-hidden="true">
       <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
     </svg>
   );
@@ -246,7 +243,7 @@ export const XDSAvatar = forwardRef<HTMLDivElement, XDSAvatarProps>(
       status,
       ...props
     },
-    ref
+    ref,
   ) => {
     const [imageError, setImageError] = useState(false);
     const [fallbackError, setFallbackError] = useState(false);
@@ -266,11 +263,8 @@ export const XDSAvatar = forwardRef<HTMLDivElement, XDSAvatarProps>(
         aria-label={accessibleName}
         data-testid={testId}
         {...stylex.props(styles.wrapper)}
-        {...props}
-      >
-        <div
-          {...stylex.props(styles.content, dynamicStyles.size(numericSize))}
-        >
+        {...props}>
+        <div {...stylex.props(styles.content, dynamicStyles.size(numericSize))}>
           {showImage && (
             <img
               src={src}
@@ -289,8 +283,10 @@ export const XDSAvatar = forwardRef<HTMLDivElement, XDSAvatarProps>(
           )}
           {showInitials && (
             <div
-              {...stylex.props(styles.fallback, dynamicStyles.fontSize(numericSize))}
-            >
+              {...stylex.props(
+                styles.fallback,
+                dynamicStyles.fontSize(numericSize),
+              )}>
               {getInitials(name)}
             </div>
           )}
@@ -302,14 +298,16 @@ export const XDSAvatar = forwardRef<HTMLDivElement, XDSAvatarProps>(
         </div>
         {status && (
           <div
-            {...stylex.props(styles.status, dynamicStyles.statusPosition(numericSize))}
-          >
+            {...stylex.props(
+              styles.status,
+              dynamicStyles.statusPosition(numericSize),
+            )}>
             {status}
           </div>
         )}
       </div>
     );
-  }
+  },
 );
 
 XDSAvatar.displayName = 'XDSAvatar';

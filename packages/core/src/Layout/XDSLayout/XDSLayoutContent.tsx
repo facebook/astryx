@@ -9,11 +9,11 @@
  * - /apps/storybook/stories/Layout.stories.tsx
  */
 
-import type { AriaRole, HTMLAttributes, ReactNode } from 'react';
-import { forwardRef, useContext } from 'react';
+import type {AriaRole, HTMLAttributes, ReactNode} from 'react';
+import {forwardRef, useContext} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import { spacing } from '../../theme/tokens.stylex';
-import { XDSLayoutSlotsContext } from './XDSLayoutSlotsContext';
+import {spacing} from '../../theme/tokens.stylex';
+import {XDSLayoutSlotsContext} from './XDSLayoutSlotsContext';
 
 const styles = stylex.create({
   content: {
@@ -55,7 +55,10 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSLayoutContentProps extends Omit<HTMLAttributes<HTMLElement>, 'style' | 'className'> {
+export interface XDSLayoutContentProps extends Omit<
+  HTMLAttributes<HTMLElement>,
+  'style' | 'className'
+> {
   /**
    * Content to render inside the content area.
    */
@@ -127,10 +130,12 @@ export interface XDSLayoutContentProps extends Omit<HTMLAttributes<HTMLElement>,
  */
 export const XDSLayoutContent = forwardRef<HTMLElement, XDSLayoutContentProps>(
   function XDSLayoutContent(
-    { children, isFullBleed = false, isScrollable = true, label, role, ...props },
-    ref
+    {children, isFullBleed = false, isScrollable = true, label, role, ...props},
+    ref,
   ) {
-    const { hasHeader, hasFooter, hasStart, hasEnd } = useContext(XDSLayoutSlotsContext);
+    const {hasHeader, hasFooter, hasStart, hasEnd} = useContext(
+      XDSLayoutSlotsContext,
+    );
 
     return (
       <div
@@ -145,14 +150,13 @@ export const XDSLayoutContent = forwardRef<HTMLElement, XDSLayoutContentProps>(
           !hasHeader && !isFullBleed && styles.noHeader,
           !hasFooter && !isFullBleed && styles.noFooter,
           isScrollable && styles.scrollable,
-          isFullBleed && styles.fullBleed
+          isFullBleed && styles.fullBleed,
         )}
-        {...props}
-      >
+        {...props}>
         {children}
       </div>
     );
-  }
+  },
 );
 
 XDSLayoutContent.displayName = 'XDSLayoutContent';

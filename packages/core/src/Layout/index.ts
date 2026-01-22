@@ -8,10 +8,13 @@
  */
 
 // Utilities
-export { container } from './Container/container.stylex';
-export type { ContainerOptions, SpacingToken } from './Container/container.stylex';
+export {container} from './Container/container.stylex';
+export type {
+  ContainerOptions,
+  SpacingToken,
+} from './Container/container.stylex';
 
-export { stack } from './Stack/stack.stylex';
+export {stack} from './Stack/stack.stylex';
 export type {
   StackOptions,
   StackDirection,
@@ -21,7 +24,7 @@ export type {
   SpacingScale,
 } from './Stack/stack.stylex';
 
-export { stackItem } from './Stack/stackItem.stylex';
+export {stackItem} from './Stack/stackItem.stylex';
 export type {
   StackItemOptions,
   StackItemCrossAlignSelf,
@@ -29,22 +32,11 @@ export type {
 } from './Stack/stackItem.stylex';
 
 // Stack components
-export {
-  XDSHStack,
-  XDSVStack,
-  XDSStackItem,
-} from './Stack';
-export type {
-  XDSHStackProps,
-  XDSVStackProps,
-  XDSStackItemProps,
-} from './Stack';
+export {XDSHStack, XDSVStack, XDSStackItem} from './Stack';
+export type {XDSHStackProps, XDSVStackProps, XDSStackItemProps} from './Stack';
 
 // Container components
-export {
-  XDSCard,
-  XDSSection,
-} from './Container';
+export {XDSCard, XDSSection} from './Container';
 export type {
   XDSCardProps,
   SizeValue,

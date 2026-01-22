@@ -7,6 +7,7 @@ Layout container components: a primitive and higher-order containers for cards a
 ## Overview
 
 This folder contains:
+
 - **XDSLayoutContainer** — A primitive that sets CSS variables for padding
 - **XDSCard** — Higher-order component with card styling (elevation, radius)
 - **XDSSection** — Higher-order component with background variants
@@ -14,11 +15,7 @@ This folder contains:
 ## Import
 
 ```tsx
-import {
-  XDSLayoutContainer,
-  XDSCard,
-  XDSSection,
-} from '@xds/core/Layout';
+import {XDSLayoutContainer, XDSCard, XDSSection} from '@xds/core/Layout';
 ```
 
 ## Components
@@ -49,13 +46,13 @@ A card container with elevation and themed styling. Use for elevated content con
 </XDSCard>
 ```
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `width` | `SizeValue` | — | Width (number = pixels, string = as-is) |
-| `height` | `SizeValue` | — | Height (number = pixels, string = as-is) |
-| `maxWidth` | `SizeValue` | — | Maximum width |
-| `minHeight` | `SizeValue` | — | Minimum height |
-| `children` | `ReactNode` | — | Content (typically XDSLayout) |
+| Prop        | Type        | Default | Description                              |
+| ----------- | ----------- | ------- | ---------------------------------------- |
+| `width`     | `SizeValue` | —       | Width (number = pixels, string = as-is)  |
+| `height`    | `SizeValue` | —       | Height (number = pixels, string = as-is) |
+| `maxWidth`  | `SizeValue` | —       | Maximum width                            |
+| `minHeight` | `SizeValue` | —       | Minimum height                           |
+| `children`  | `ReactNode` | —       | Content (typically XDSLayout)            |
 
 ### XDSSection
 
@@ -69,22 +66,22 @@ A section container with background variants. Use for content sections within a 
 </XDSSection>
 ```
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `variant` | `'section' \| 'transparent' \| 'wash'` | `'section'` | Background variant |
-| `width` | `SizeValue` | — | Width (number = pixels, string = as-is) |
-| `height` | `SizeValue` | — | Height (number = pixels, string = as-is) |
-| `maxWidth` | `SizeValue` | — | Maximum width |
-| `minHeight` | `SizeValue` | — | Minimum height |
-| `children` | `ReactNode` | — | Content |
+| Prop        | Type                                   | Default     | Description                              |
+| ----------- | -------------------------------------- | ----------- | ---------------------------------------- |
+| `variant`   | `'section' \| 'transparent' \| 'wash'` | `'section'` | Background variant                       |
+| `width`     | `SizeValue`                            | —           | Width (number = pixels, string = as-is)  |
+| `height`    | `SizeValue`                            | —           | Height (number = pixels, string = as-is) |
+| `maxWidth`  | `SizeValue`                            | —           | Maximum width                            |
+| `minHeight` | `SizeValue`                            | —           | Minimum height                           |
+| `children`  | `ReactNode`                            | —           | Content                                  |
 
 **Variants:**
 
-| Variant | Background |
-|---------|------------|
-| `section` | Surface color |
-| `transparent` | Transparent |
-| `wash` | Wash color |
+| Variant       | Background    |
+| ------------- | ------------- |
+| `section`     | Surface color |
+| `transparent` | Transparent   |
+| `wash`        | Wash color    |
 
 ### XDSLayoutContainer (Primitive)
 
@@ -101,28 +98,29 @@ A low-level primitive that sets CSS variables for layout padding. Prefer XDSCard
 </XDSLayoutContainer>
 ```
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `xstyle` | `StyleXStyles` | — | Custom styles (background, shadow, radius, sizing) |
-| `paddingOuterX` | `SpacingToken` | `'space4'` | Outer horizontal padding |
-| `paddingOuterY` | `SpacingToken` | `'space4'` | Outer vertical padding |
-| `paddingInnerX` | `SpacingToken` | `'space4'` | Inner horizontal padding for content areas |
-| `paddingInnerY` | `SpacingToken` | `'space4'` | Inner vertical padding for content areas |
-| `children` | `ReactNode` | — | Content |
+| Prop            | Type           | Default    | Description                                        |
+| --------------- | -------------- | ---------- | -------------------------------------------------- |
+| `xstyle`        | `StyleXStyles` | —          | Custom styles (background, shadow, radius, sizing) |
+| `paddingOuterX` | `SpacingToken` | `'space4'` | Outer horizontal padding                           |
+| `paddingOuterY` | `SpacingToken` | `'space4'` | Outer vertical padding                             |
+| `paddingInnerX` | `SpacingToken` | `'space4'` | Inner horizontal padding for content areas         |
+| `paddingInnerY` | `SpacingToken` | `'space4'` | Inner vertical padding for content areas           |
+| `children`      | `ReactNode`    | —          | Content                                            |
 
 **CSS Variables Set:**
+
 - `--layout-padding-outer-x`, `--layout-padding-outer-y` — Used by XDSLayout for fullBleed calculations
 - `--layout-padding-inner-x`, `--layout-padding-inner-y` — Used by content areas (Header, Footer, Content, Panel)
 
 ## Files
 
-| File | Role | Purpose |
-|------|------|---------|
-| `index.ts` | Entry | Exports all components and types |
+| File                     | Role      | Purpose                            |
+| ------------------------ | --------- | ---------------------------------- |
+| `index.ts`               | Entry     | Exports all components and types   |
 | `XDSLayoutContainer.tsx` | Primitive | Base container, sets CSS variables |
-| `XDSCard.tsx` | Component | Card with elevation |
-| `XDSSection.tsx` | Component | Section with background variants |
-| `README.md` | Docs | This documentation |
+| `XDSCard.tsx`            | Component | Card with elevation                |
+| `XDSSection.tsx`         | Component | Section with background variants   |
+| `README.md`              | Docs      | This documentation                 |
 
 ## Theming
 
@@ -132,14 +130,14 @@ Higher-order components support theme-level overrides:
 // XDSCard theming
 declare module '@xds/core' {
   interface ComponentStyles {
-    card?: { base?: StyleXStyles };
+    card?: {base?: StyleXStyles};
   }
 }
 
 // XDSSection theming
 declare module '@xds/core' {
   interface ComponentStyles {
-    section?: { variants?: Partial<Record<XDSSectionVariant, StyleXStyles>> };
+    section?: {variants?: Partial<Record<XDSSectionVariant, StyleXStyles>>};
   }
 }
 ```

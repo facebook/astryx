@@ -19,12 +19,12 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import { ThemeContext } from '../theme/ThemeContext';
-import { useXDSTooltip, type TooltipFocusTrigger } from './useXDSTooltip';
-import type { LayerAlignment, LayerPlacement } from './useXDSLayer';
-import { color } from '../theme/tokens.stylex';
+import {ThemeContext} from '../theme/ThemeContext';
+import {useXDSTooltip, type TooltipFocusTrigger} from './useXDSTooltip';
+import type {LayerAlignment, LayerPlacement} from './useXDSLayer';
+import {color} from '../theme/tokens.stylex';
 
-export type { TooltipFocusTrigger } from './useXDSTooltip';
+export type {TooltipFocusTrigger} from './useXDSTooltip';
 
 const styles = stylex.create({
   wrapperContents: {
@@ -121,7 +121,7 @@ export interface XDSTooltipProps {
  */
 function isTextOnly(children: ReactNode): boolean {
   let hasElement = false;
-  React.Children.forEach(children, (child) => {
+  React.Children.forEach(children, child => {
     if (React.isValidElement(child)) {
       hasElement = true;
     }
@@ -174,8 +174,7 @@ export function XDSTooltip({
 
   // Determine if hover indication should be shown
   const showHoverIndication =
-    hasHoverIndication === true ||
-    (hasHoverIndication === 'auto' && textOnly);
+    hasHoverIndication === true || (hasHoverIndication === 'auto' && textOnly);
 
   // Use the hook for all tooltip behavior
   const tooltip = useXDSTooltip({
@@ -206,7 +205,7 @@ export function XDSTooltip({
     const existingDescribedBy = firstChild.getAttribute('aria-describedby');
     firstChild.setAttribute(
       'aria-describedby',
-      mergeIds(existingDescribedBy, tooltip.describedBy) ?? ''
+      mergeIds(existingDescribedBy, tooltip.describedBy) ?? '',
     );
 
     return () => {
@@ -230,9 +229,8 @@ export function XDSTooltip({
           {...stylex.props(
             styles.wrapperInline,
             showHoverIndication && styles.hoverIndication,
-            showHoverIndication && themeHoverIndicationOverride
-          )}
-        >
+            showHoverIndication && themeHoverIndicationOverride,
+          )}>
           {children}
         </span>
         {tooltip.renderTooltip(content)}
@@ -245,8 +243,7 @@ export function XDSTooltip({
     <>
       <div
         ref={wrapperRef as React.RefObject<HTMLDivElement>}
-        {...stylex.props(styles.wrapperContents)}
-      >
+        {...stylex.props(styles.wrapperContents)}>
         {children}
       </div>
       {tooltip.renderTooltip(content)}

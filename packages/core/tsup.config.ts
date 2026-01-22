@@ -7,7 +7,7 @@
  * SYNC: When modified, update this header and /packages/core/README.md
  */
 
-import { defineConfig } from 'tsup';
+import {defineConfig} from 'tsup';
 import babel from 'esbuild-plugin-babel';
 
 export default defineConfig({
@@ -22,7 +22,7 @@ export default defineConfig({
       filter: /\.[jt]sx?$/,
       config: {
         presets: [
-          ['@babel/preset-react', { runtime: 'automatic' }],
+          ['@babel/preset-react', {runtime: 'automatic'}],
           '@babel/preset-typescript',
         ],
         plugins: [

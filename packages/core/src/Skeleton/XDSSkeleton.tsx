@@ -10,9 +10,9 @@
  * - /apps/storybook/stories/Skeleton.stories.tsx
  */
 
-import { forwardRef, type HTMLAttributes } from 'react';
+import {forwardRef, type HTMLAttributes} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import { color, radius } from '../theme/tokens.stylex';
+import {color, radius} from '../theme/tokens.stylex';
 
 // =============================================================================
 // Animation Timing Constants
@@ -41,8 +41,8 @@ const STAGGER_TIME = 100;
 // =============================================================================
 
 const skeletonFade = stylex.keyframes({
-  '0%': { opacity: 0.25 },
-  '100%': { opacity: 1 },
+  '0%': {opacity: 0.25},
+  '100%': {opacity: 1},
 });
 
 // =============================================================================
@@ -154,7 +154,7 @@ export const XDSSkeleton = forwardRef<HTMLDivElement, XDSSkeletonProps>(
       'data-testid': testId,
       ...props
     },
-    ref
+    ref,
   ) => {
     return (
       <div
@@ -165,12 +165,12 @@ export const XDSSkeleton = forwardRef<HTMLDivElement, XDSSkeletonProps>(
           styles.animate,
           radiusStyles[radiusProp],
           dynamicStyles.dimensions(width, height),
-          dynamicStyles.animationDelay(index)
+          dynamicStyles.animationDelay(index),
         )}
         {...props}
       />
     );
-  }
+  },
 );
 
 XDSSkeleton.displayName = 'XDSSkeleton';

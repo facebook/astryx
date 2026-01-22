@@ -18,20 +18,15 @@ import {
   type RefCallback,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type { StyleXStyles } from '../theme/types';
-import { ThemeContext } from '../theme/ThemeContext';
+import type {StyleXStyles} from '../theme/types';
+import {ThemeContext} from '../theme/ThemeContext';
 import {
   useXDSLayer,
   type ContextRenderProps,
   type LayerAlignment,
   type LayerPlacement,
 } from './useXDSLayer';
-import {
-  color,
-  radius,
-  spacing,
-  typography,
-} from '../theme/tokens.stylex';
+import {color, radius, spacing, typography} from '../theme/tokens.stylex';
 
 const styles = stylex.create({
   // Base container styles - inverted colors for high contrast
@@ -232,7 +227,9 @@ function isFocusable(element: HTMLElement): boolean {
  * {tooltip.renderTooltip('Helpful tooltip text')}
  * ```
  */
-export function useXDSTooltip(options: XDSTooltipOptions = {}): XDSTooltipReturn {
+export function useXDSTooltip(
+  options: XDSTooltipOptions = {},
+): XDSTooltipReturn {
   const {
     placement = 'above',
     alignment = 'center',
@@ -246,7 +243,8 @@ export function useXDSTooltip(options: XDSTooltipOptions = {}): XDSTooltipReturn
 
   // Get theme context for component-level overrides
   const themeContext = useContext(ThemeContext);
-  const themeContainerOverride = themeContext?.theme.components?.tooltip?.container;
+  const themeContainerOverride =
+    themeContext?.theme.components?.tooltip?.container;
   const themeContentOverride = themeContext?.theme.components?.tooltip?.content;
 
   // Select margin style based on placement axis
@@ -347,7 +345,13 @@ export function useXDSTooltip(options: XDSTooltipOptions = {}): XDSTooltipReturn
 
       triggerRef.current = el;
     },
-    [focusTrigger, handleMouseEnter, handleMouseLeave, handleFocusIn, handleFocusOut]
+    [
+      focusTrigger,
+      handleMouseEnter,
+      handleMouseLeave,
+      handleFocusIn,
+      handleFocusOut,
+    ],
   );
 
   // Combined ref - shorthand for calling both positionRef and interactionRef
@@ -356,7 +360,7 @@ export function useXDSTooltip(options: XDSTooltipOptions = {}): XDSTooltipReturn
       layer.ref(el);
       interactionRef(el);
     },
-    [layer.ref, interactionRef]
+    [layer.ref, interactionRef],
   );
 
   // Cleanup on unmount
@@ -375,11 +379,13 @@ export function useXDSTooltip(options: XDSTooltipOptions = {}): XDSTooltipReturn
       };
 
       return layer.render(
-        <div {...stylex.props(styles.content, themeContentOverride)}>{children}</div>,
-        renderProps
+        <div {...stylex.props(styles.content, themeContentOverride)}>
+          {children}
+        </div>,
+        renderProps,
       );
     },
-    [layer, placement, alignment, themeContentOverride]
+    [layer, placement, alignment, themeContentOverride],
   );
 
   return {

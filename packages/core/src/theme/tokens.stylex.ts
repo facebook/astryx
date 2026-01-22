@@ -304,9 +304,7 @@ export type ElevationVarName =
   | '--elevation-hover'
   | '--elevation-menu';
 
-export type TransitionVarName =
-  | '--transition-fast'
-  | '--transition-normal';
+export type TransitionVarName = '--transition-fast' | '--transition-normal';
 
 export type TypographyVarName =
   | '--font-body'

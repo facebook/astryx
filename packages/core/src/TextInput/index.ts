@@ -7,5 +7,5 @@
  * SYNC: When modified, update this header and /packages/core/src/TextInput/README.md
  */
 
-export { XDSTextInput } from './XDSTextInput';
-export type { XDSTextInputProps } from './XDSTextInput';
+export {XDSTextInput} from './XDSTextInput';
+export type {XDSTextInputProps} from './XDSTextInput';

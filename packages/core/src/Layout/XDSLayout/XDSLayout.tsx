@@ -10,12 +10,12 @@
  * - /apps/storybook/stories/Layout.stories.tsx
  */
 
-import { type ReactNode, useMemo } from 'react';
+import {type ReactNode, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import { XDSLayoutAreaContext, type LayoutArea } from './XDSLayoutAreaContext';
-import { XDSLayoutSlotsContext, type LayoutSlots } from './XDSLayoutSlotsContext';
-import { stack } from '../Stack/stack.stylex';
-import { stackItem } from '../Stack/stackItem.stylex';
+import {XDSLayoutAreaContext, type LayoutArea} from './XDSLayoutAreaContext';
+import {XDSLayoutSlotsContext, type LayoutSlots} from './XDSLayoutSlotsContext';
+import {stack} from '../Stack/stack.stylex';
+import {stackItem} from '../Stack/stackItem.stylex';
 
 /**
  * Height behavior for the layout.
@@ -148,22 +148,22 @@ export function XDSLayout({
       hasStart: start != null,
       hasEnd: end != null,
     }),
-    [header != null, footer != null, start != null, end != null]
+    [header != null, footer != null, start != null, end != null],
   );
 
   return (
     <XDSLayoutSlotsContext.Provider value={slotsValue}>
       <div
         {...stylex.props(
-          ...stack({ direction: 'vertical' }),
+          ...stack({direction: 'vertical'}),
           isFill ? styles.fill : styles.auto,
-          isFullBleed && styles.fullBleed
-        )}
-      >
+          isFullBleed && styles.fullBleed,
+        )}>
         <AreaProvider area="header">{header}</AreaProvider>
-        <div {...stylex.props(...stack({ direction: 'horizontal' }), styles.middle)}>
+        <div
+          {...stylex.props(...stack({direction: 'horizontal'}), styles.middle)}>
           <AreaProvider area="start">{start}</AreaProvider>
-          <div {...stylex.props(...stackItem({ size: 'fill' }))}>
+          <div {...stylex.props(...stackItem({size: 'fill'}))}>
             <AreaProvider area="content">{content}</AreaProvider>
           </div>
           <AreaProvider area="end">{end}</AreaProvider>

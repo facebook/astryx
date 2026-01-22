@@ -18,20 +18,15 @@ import {
   type RefCallback,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type { StyleXStyles } from '../theme/types';
-import { ThemeContext } from '../theme/ThemeContext';
+import type {StyleXStyles} from '../theme/types';
+import {ThemeContext} from '../theme/ThemeContext';
 import {
   useXDSLayer,
   type ContextRenderProps,
   type LayerAlignment,
   type LayerPlacement,
 } from './useXDSLayer';
-import {
-  color,
-  elevation,
-  radius,
-  spacing,
-} from '../theme/tokens.stylex';
+import {color, elevation, radius, spacing} from '../theme/tokens.stylex';
 
 const styles = stylex.create({
   // Base container styles passed to useXDSLayer (includes animations)
@@ -176,7 +171,10 @@ export interface XDSHoverCardReturn {
    * Render function for hover card content.
    * Returns anchor-positioned popover element.
    */
-  renderHoverCard: (children: ReactNode, props?: ContextRenderProps) => ReactNode;
+  renderHoverCard: (
+    children: ReactNode,
+    props?: ContextRenderProps,
+  ) => ReactNode;
 }
 
 /**
@@ -225,7 +223,9 @@ function isFocusable(element: HTMLElement): boolean {
  * // Use positionRef for anchor, interactionRef for event listeners
  * ```
  */
-export function useXDSHoverCard(options: XDSHoverCardOptions = {}): XDSHoverCardReturn {
+export function useXDSHoverCard(
+  options: XDSHoverCardOptions = {},
+): XDSHoverCardReturn {
   const {
     placement = 'above',
     alignment = 'center',
@@ -239,8 +239,10 @@ export function useXDSHoverCard(options: XDSHoverCardOptions = {}): XDSHoverCard
 
   // Get theme context for component-level overrides
   const themeContext = useContext(ThemeContext);
-  const themeContainerOverride = themeContext?.theme.components?.hoverCard?.container;
-  const themeContentOverride = themeContext?.theme.components?.hoverCard?.content;
+  const themeContainerOverride =
+    themeContext?.theme.components?.hoverCard?.container;
+  const themeContentOverride =
+    themeContext?.theme.components?.hoverCard?.content;
 
   // Select margin style based on placement axis
   const marginStyle =
@@ -327,7 +329,7 @@ export function useXDSHoverCard(options: XDSHoverCardOptions = {}): XDSHoverCard
 
       scheduleHide();
     },
-    [layer.id, scheduleHide]
+    [layer.id, scheduleHide],
   );
 
   const handleKeyDown = useCallback(
@@ -340,7 +342,7 @@ export function useXDSHoverCard(options: XDSHoverCardOptions = {}): XDSHoverCard
         layer.hide();
       }
     },
-    [clearTimeouts, layer]
+    [clearTimeouts, layer],
   );
 
   // Interaction ref that handles event listeners only
@@ -351,7 +353,10 @@ export function useXDSHoverCard(options: XDSHoverCardOptions = {}): XDSHoverCard
         triggerRef.current.removeEventListener('mouseenter', handleMouseEnter);
         triggerRef.current.removeEventListener('mouseleave', handleMouseLeave);
         triggerRef.current.removeEventListener('focusin', handleFocusIn);
-        triggerRef.current.removeEventListener('focusout', handleFocusOut as EventListener);
+        triggerRef.current.removeEventListener(
+          'focusout',
+          handleFocusOut as EventListener,
+        );
         triggerRef.current.removeEventListener('keydown', handleKeyDown);
       }
 
@@ -376,7 +381,14 @@ export function useXDSHoverCard(options: XDSHoverCardOptions = {}): XDSHoverCard
 
       triggerRef.current = el;
     },
-    [focusTrigger, handleMouseEnter, handleMouseLeave, handleFocusIn, handleFocusOut, handleKeyDown]
+    [
+      focusTrigger,
+      handleMouseEnter,
+      handleMouseLeave,
+      handleFocusIn,
+      handleFocusOut,
+      handleKeyDown,
+    ],
   );
 
   // Combined ref - shorthand for calling both positionRef and interactionRef
@@ -385,7 +397,7 @@ export function useXDSHoverCard(options: XDSHoverCardOptions = {}): XDSHoverCard
       layer.ref(el);
       interactionRef(el);
     },
-    [layer.ref, interactionRef]
+    [layer.ref, interactionRef],
   );
 
   // Cleanup on unmount
@@ -414,7 +426,7 @@ export function useXDSHoverCard(options: XDSHoverCardOptions = {}): XDSHoverCard
             isHoveringContentRef.current = false;
             scheduleHide();
           }}
-          onKeyDown={(e) => {
+          onKeyDown={e => {
             if (e.key === 'Escape') {
               // Stop propagation so parent components don't react to the same Escape
               e.stopPropagation();
@@ -427,7 +439,7 @@ export function useXDSHoverCard(options: XDSHoverCardOptions = {}): XDSHoverCard
               triggerRef.current?.focus();
             }
           }}
-          onBlur={(e) => {
+          onBlur={e => {
             // Check if focus is moving back to the trigger or staying within content
             const relatedTarget = e.relatedTarget as HTMLElement | null;
             const popoverElement = e.currentTarget;
@@ -444,14 +456,20 @@ export function useXDSHoverCard(options: XDSHoverCardOptions = {}): XDSHoverCard
 
             // Focus is leaving the hover card entirely
             scheduleHide();
-          }}
-        >
+          }}>
           {children}
         </div>,
-        renderProps
+        renderProps,
       );
     },
-    [layer, placement, alignment, clearTimeouts, scheduleHide, themeContentOverride]
+    [
+      layer,
+      placement,
+      alignment,
+      clearTimeouts,
+      scheduleHide,
+      themeContentOverride,
+    ],
   );
 
   return {

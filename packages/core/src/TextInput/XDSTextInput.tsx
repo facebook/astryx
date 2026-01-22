@@ -11,10 +11,16 @@
  * - /apps/storybook/stories/TextInput.stories.tsx (storybook stories)
  */
 
-import { forwardRef, useId, type ChangeEvent } from 'react';
+import {forwardRef, useId, type ChangeEvent} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import { color, spacing, radius, transition, typography } from '../theme/tokens.stylex';
-import { XDSField } from '../Field';
+import {
+  color,
+  spacing,
+  radius,
+  transition,
+  typography,
+} from '../theme/tokens.stylex';
+import {XDSField} from '../Field';
 
 const styles = stylex.create({
   input: {
@@ -98,7 +104,19 @@ export interface XDSTextInputProps {
  * ```
  */
 export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
-  ({ label, isLabelHidden = false, description, isOptional = false, isRequired = false, onChange, value, placeholder }, ref) => {
+  (
+    {
+      label,
+      isLabelHidden = false,
+      description,
+      isOptional = false,
+      isRequired = false,
+      onChange,
+      value,
+      placeholder,
+    },
+    ref,
+  ) => {
     const id = useId();
     const descriptionID = useId();
 
@@ -110,14 +128,13 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
         inputID={id}
         descriptionID={description ? descriptionID : undefined}
         isOptional={isOptional}
-        isRequired={isRequired}
-      >
+        isRequired={isRequired}>
         <input
           ref={ref}
           id={id}
           type="text"
           value={value}
-          onChange={(e) => onChange(e.target.value, e)}
+          onChange={e => onChange(e.target.value, e)}
           placeholder={placeholder}
           aria-describedby={description ? descriptionID : undefined}
           aria-required={isRequired === true ? 'true' : undefined}
@@ -125,7 +142,7 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
         />
       </XDSField>
     );
-  }
+  },
 );
 
 XDSTextInput.displayName = 'XDSTextInput';

@@ -36,24 +36,24 @@ import { XDSSkeleton } from '@xds/core/Skeleton';
 
 ## Props
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `width` | `number \| string` | `'100%'` | Width in pixels (number) or CSS value (string) |
-| `height` | `number \| string` | `'100%'` | Height in pixels (number) or CSS value (string) |
-| `radius` | `'none' \| 'inner' \| 'content' \| 'element' \| 'container' \| 'rounded'` | `'container'` | Border radius using design tokens |
-| `index` | `number` | `0` | Index for staggered animation timing |
-| `data-testid` | `string` | — | Test ID for testing |
+| Prop          | Type                                                                      | Default       | Description                                     |
+| ------------- | ------------------------------------------------------------------------- | ------------- | ----------------------------------------------- |
+| `width`       | `number \| string`                                                        | `'100%'`      | Width in pixels (number) or CSS value (string)  |
+| `height`      | `number \| string`                                                        | `'100%'`      | Height in pixels (number) or CSS value (string) |
+| `radius`      | `'none' \| 'inner' \| 'content' \| 'element' \| 'container' \| 'rounded'` | `'container'` | Border radius using design tokens               |
+| `index`       | `number`                                                                  | `0`           | Index for staggered animation timing            |
+| `data-testid` | `string`                                                                  | —             | Test ID for testing                             |
 
 ## Radius Options
 
-| Value | Use Case |
-|-------|----------|
-| `none` | Sharp corners (images, rectangles) |
-| `inner` | Inner elements |
-| `content` | Content areas |
-| `element` | Standard elements |
-| `container` | Container-level rounding (default) |
-| `rounded` | Fully rounded (avatars, pills, circles) |
+| Value       | Use Case                                |
+| ----------- | --------------------------------------- |
+| `none`      | Sharp corners (images, rectangles)      |
+| `inner`     | Inner elements                          |
+| `content`   | Content areas                           |
+| `element`   | Standard elements                       |
+| `container` | Container-level rounding (default)      |
+| `rounded`   | Fully rounded (avatars, pills, circles) |
 
 ## Animation Timing
 
@@ -67,10 +67,10 @@ For element at index `n`, animation starts at: `DELAY_TIME + (STAGGER_TIME × n)
 
 ## Files
 
-| File | Role | Purpose |
-|------|------|---------|
-| `index.ts` | Entry | Exports component and types |
-| `XDSSkeleton.tsx` | Core | Component implementation |
+| File              | Role  | Purpose                     |
+| ----------------- | ----- | --------------------------- |
+| `index.ts`        | Entry | Exports component and types |
+| `XDSSkeleton.tsx` | Core  | Component implementation    |
 
 ## Implementation Notes
 

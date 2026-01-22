@@ -9,10 +9,10 @@
  * - /apps/storybook/stories/Layout.stories.tsx
  */
 
-import type { AriaRole, HTMLAttributes, ReactNode } from 'react';
-import { forwardRef } from 'react';
+import type {AriaRole, HTMLAttributes, ReactNode} from 'react';
+import {forwardRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import { color, spacing } from '../../theme/tokens.stylex';
+import {color, spacing} from '../../theme/tokens.stylex';
 
 const styles = stylex.create({
   header: {
@@ -48,7 +48,10 @@ const dynamicStyles = stylex.create({
   }),
 });
 
-export interface XDSLayoutHeaderProps extends Omit<HTMLAttributes<HTMLElement>, 'style' | 'className'> {
+export interface XDSLayoutHeaderProps extends Omit<
+  HTMLAttributes<HTMLElement>,
+  'style' | 'className'
+> {
   /**
    * Content to render inside the header.
    */
@@ -102,8 +105,16 @@ export interface XDSLayoutHeaderProps extends Omit<HTMLAttributes<HTMLElement>, 
  */
 export const XDSLayoutHeader = forwardRef<HTMLElement, XDSLayoutHeaderProps>(
   function XDSLayoutHeader(
-    { children, hasDivider = false, height, isFullBleed = false, label, role, ...props },
-    ref
+    {
+      children,
+      hasDivider = false,
+      height,
+      isFullBleed = false,
+      label,
+      role,
+      ...props
+    },
+    ref,
   ) {
     // When no divider, collapse spacing for seamless visual flow
     const shouldCollapseSpacing = !hasDivider && !isFullBleed;
@@ -118,14 +129,13 @@ export const XDSLayoutHeader = forwardRef<HTMLElement, XDSLayoutHeaderProps>(
           dynamicStyles.sizing(height ?? null),
           isFullBleed && styles.fullBleed,
           hasDivider && styles.divider,
-          shouldCollapseSpacing && styles.collapseBottom
+          shouldCollapseSpacing && styles.collapseBottom,
         )}
-        {...props}
-      >
+        {...props}>
         {children}
       </div>
     );
-  }
+  },
 );
 
 XDSLayoutHeader.displayName = 'XDSLayoutHeader';

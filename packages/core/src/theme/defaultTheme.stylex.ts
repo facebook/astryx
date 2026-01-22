@@ -12,7 +12,7 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import type { Theme } from './types';
+import type {Theme} from './types';
 import type {
   ColorVarName,
   SpacingVarName,
@@ -203,7 +203,8 @@ const themeStyles = stylex.create({
 
 const buttonVariants = stylex.create({
   secondary: {
-    backgroundColor: 'light-dark(rgba(5 ,54 ,89 ,0.1), rgba(223, 226, 229, 0.2))',
+    backgroundColor:
+      'light-dark(rgba(5 ,54 ,89 ,0.1), rgba(223, 226, 229, 0.2))',
   },
 });
 

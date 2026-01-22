@@ -21,10 +21,12 @@
     "docs": "yarn workspace @xds/docs dev",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "yarn build && changeset publish"
+    "release": "yarn build && changeset publish",
+    "prepare": "husky install"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.0",
+    "@eslint/js": "^9.39.2",
     "@playwright/test": "^1.48.0",
     "@testing-library/user-event": "^14.5.0",
     "@types/node": "^22.0.0",
@@ -33,13 +35,19 @@
     "@vitejs/plugin-react": "^4.3.0",
     "@vitest/coverage-v8": "^2.1.0",
     "eslint": "^9.15.0",
+    "husky": "^9.1.7",
     "jsdom": "^27.4.0",
     "prettier": "^3.4.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "tsup": "^8.3.0",
     "typescript": "^5.7.0",
+    "typescript-eslint": "^8.53.1",
     "vitest": "^2.1.0"
   },
-  "packageManager": "yarn@1.22.22"
+  "packageManager": "yarn@1.22.22",
+  "lint-staged": {
+    "*.{ts,tsx}": "eslint --cache --fix",
+    "*.{ts,tsx,md}": "prettier --write"
+  }
 }

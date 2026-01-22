@@ -8,11 +8,11 @@
  */
 
 // Components
-export { XDSHStack } from './XDSHStack';
-export type { XDSHStackProps } from './XDSHStack';
+export {XDSHStack} from './XDSHStack';
+export type {XDSHStackProps} from './XDSHStack';
 
-export { XDSVStack } from './XDSVStack';
-export type { XDSVStackProps } from './XDSVStack';
+export {XDSVStack} from './XDSVStack';
+export type {XDSVStackProps} from './XDSVStack';
 
-export { XDSStackItem } from './XDSStackItem';
-export type { XDSStackItemProps } from './XDSStackItem';
+export {XDSStackItem} from './XDSStackItem';
+export type {XDSStackItemProps} from './XDSStackItem';

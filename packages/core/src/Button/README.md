@@ -28,20 +28,20 @@ import { XDSButton } from '@xds/core/Button';
 
 ## Props
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `variant` | `'primary' \| 'secondary' \| 'ghost' \| 'destructive'` | `'primary'` | Visual style variant |
-| `loading` | `boolean` | `false` | Shows loading spinner |
-| `disabled` | `boolean` | `false` | Disables the button |
-| `children` | `ReactNode` | — | Button content |
+| Prop       | Type                                                   | Default     | Description           |
+| ---------- | ------------------------------------------------------ | ----------- | --------------------- |
+| `variant`  | `'primary' \| 'secondary' \| 'ghost' \| 'destructive'` | `'primary'` | Visual style variant  |
+| `loading`  | `boolean`                                              | `false`     | Shows loading spinner |
+| `disabled` | `boolean`                                              | `false`     | Disables the button   |
+| `children` | `ReactNode`                                            | —           | Button content        |
 
 ## Files
 
-| File | Role | Purpose |
-|------|------|---------|
-| `index.ts` | Entry | Exports XDSButton component and types |
-| `XDSButton.tsx` | Core | XDSButton component implementation |
-| `XDSButton.test.tsx` | Test | Unit tests for XDSButton component |
+| File                 | Role  | Purpose                               |
+| -------------------- | ----- | ------------------------------------- |
+| `index.ts`           | Entry | Exports XDSButton component and types |
+| `XDSButton.tsx`      | Core  | XDSButton component implementation    |
+| `XDSButton.test.tsx` | Test  | Unit tests for XDSButton component    |
 
 ## Implementation Notes
 

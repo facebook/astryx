@@ -8,13 +8,19 @@
  * - /packages/core/src/Layout/XDSLayout/README.md
  */
 
-import { createContext } from 'react';
+import {createContext} from 'react';
 
 /**
  * Layout area type representing which slot a component is rendered in.
  * Used by content area components to detect their position and adjust styling.
  */
-export type LayoutArea = 'header' | 'footer' | 'content' | 'start' | 'end' | null;
+export type LayoutArea =
+  | 'header'
+  | 'footer'
+  | 'content'
+  | 'start'
+  | 'end'
+  | null;
 
 /**
  * Context for detecting which layout area a component is rendered in.

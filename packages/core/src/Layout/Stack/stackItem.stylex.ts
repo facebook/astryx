@@ -104,10 +104,7 @@ export interface StackItemOptions {
  * </div>
  * ```
  */
-export function stackItem({
-  crossAlignSelf,
-  size,
-}: StackItemOptions = {}) {
+export function stackItem({crossAlignSelf, size}: StackItemOptions = {}) {
   return [
     minSizeResetStyles.reset,
     sizeStyles[size ?? 'static'],

@@ -7,7 +7,7 @@
  * SYNC: When adding new Layer components, add their style types here.
  */
 
-import type { StyleXStyles } from '../theme/types';
+import type {StyleXStyles} from '../theme/types';
 
 // =============================================================================
 // Module Augmentation - Register Layer component styles with ComponentStyles

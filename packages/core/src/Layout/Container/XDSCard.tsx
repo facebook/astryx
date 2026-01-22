@@ -5,16 +5,12 @@
  * @position Higher-order container component for card layouts
  */
 
-import { forwardRef, useContext, type ReactNode } from 'react';
+import {forwardRef, useContext, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  color,
-  radius,
-  elevation,
-} from '../../theme/tokens.stylex';
-import { ThemeContext } from '../../theme/ThemeContext';
-import type { StyleXStyles as ThemeStyleXStyles } from '../../theme/types';
-import { container } from './container.stylex';
+import {color, radius, elevation} from '../../theme/tokens.stylex';
+import {ThemeContext} from '../../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../../theme/types';
+import {container} from './container.stylex';
 
 // =============================================================================
 // Module Augmentation - Register XDSCard's themeable properties
@@ -43,7 +39,7 @@ const dynamicStyles = stylex.create({
     width: SizeValue | null,
     height: SizeValue | null,
     maxWidth: SizeValue | null,
-    minHeight: SizeValue | null
+    minHeight: SizeValue | null,
   ) => ({
     width,
     height,
@@ -107,7 +103,10 @@ export interface XDSCardProps {
  * ```
  */
 export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
-  function XDSCard({ width, height, maxWidth, minHeight, children, ...props }, ref) {
+  function XDSCard(
+    {width, height, maxWidth, minHeight, children, ...props},
+    ref,
+  ) {
     // Get theme context for component-level overrides
     const themeContext = useContext(ThemeContext);
     const themeOverride = themeContext?.theme.components?.card?.base;
@@ -128,15 +127,14 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
             width ?? null,
             height ?? null,
             maxWidth ?? null,
-            minHeight ?? null
-          )
+            minHeight ?? null,
+          ),
         )}
-        {...props}
-      >
+        {...props}>
         {children}
       </div>
     );
-  }
+  },
 );
 
 XDSCard.displayName = 'XDSCard';

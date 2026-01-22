@@ -19,10 +19,19 @@ import {
   type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type { StyleXStyles } from '@stylexjs/stylex';
-import { stack, type StackCrossAlignment, type StackMainAlignment, type StackWrap, type SpacingScale } from './stack.stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
+import {
+  stack,
+  type StackCrossAlignment,
+  type StackMainAlignment,
+  type StackWrap,
+  type SpacingScale,
+} from './stack.stylex';
 
-export interface XDSHStackProps extends Omit<HTMLAttributes<HTMLElement>, 'style' | 'className'> {
+export interface XDSHStackProps extends Omit<
+  HTMLAttributes<HTMLElement>,
+  'style' | 'className'
+> {
   /**
    * Horizontal alignment of items (main-axis for horizontal stack).
    * - `start`: Align to start (left in LTR)
@@ -93,8 +102,8 @@ export interface XDSHStackProps extends Omit<HTMLAttributes<HTMLElement>, 'style
  */
 export const XDSHStack = forwardRef<HTMLElement, XDSHStackProps>(
   function XDSHStack(
-    { hAlign, vAlign, gap, wrap, element = 'div', xstyle, children, ...props },
-    ref
+    {hAlign, vAlign, gap, wrap, element = 'div', xstyle, children, ...props},
+    ref,
   ) {
     const stylexProps = stylex.props(
       ...stack({
@@ -104,7 +113,7 @@ export const XDSHStack = forwardRef<HTMLElement, XDSHStackProps>(
         gap,
         wrap,
       }),
-      xstyle
+      xstyle,
     );
 
     return createElement(
@@ -114,9 +123,9 @@ export const XDSHStack = forwardRef<HTMLElement, XDSHStackProps>(
         ...stylexProps,
         ...props,
       },
-      children
+      children,
     );
-  }
+  },
 );
 
 XDSHStack.displayName = 'XDSHStack';
