@@ -97,7 +97,7 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
         label={label}
         isLabelHidden={isLabelHidden}
         description={description}
-        labelID={id}
+        inputID={id}
         descriptionID={description ? descriptionID : undefined}
       >
         <input

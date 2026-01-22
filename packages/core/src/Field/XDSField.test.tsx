@@ -14,7 +14,7 @@ import { XDSField } from './XDSField';
 describe('XDSField', () => {
   it('renders with label', () => {
     render(
-      <XDSField label="Email" labelID="email-input">
+      <XDSField label="Email" inputID="email-input">
         <input id="email-input" />
       </XDSField>
     );
@@ -23,7 +23,7 @@ describe('XDSField', () => {
 
   it('renders description text', () => {
     render(
-      <XDSField label="Email" labelID="email-input" description="We'll never share your email" descriptionID="email-desc">
+      <XDSField label="Email" inputID="email-input" description="We'll never share your email" descriptionID="email-desc">
         <input id="email-input" aria-describedby="email-desc" />
       </XDSField>
     );
@@ -32,7 +32,7 @@ describe('XDSField', () => {
 
   it('associates description with correct ID', () => {
     render(
-      <XDSField label="Email" labelID="email-input" description="Description text" descriptionID="email-desc">
+      <XDSField label="Email" inputID="email-input" description="Description text" descriptionID="email-desc">
         <input id="email-input" aria-describedby="email-desc" />
       </XDSField>
     );
@@ -42,7 +42,7 @@ describe('XDSField', () => {
 
   it('visually hides label when isLabelHidden is true', () => {
     render(
-      <XDSField label="Search" isLabelHidden labelID="search-input">
+      <XDSField label="Search" isLabelHidden inputID="search-input">
         <input id="search-input" />
       </XDSField>
     );
@@ -54,7 +54,7 @@ describe('XDSField', () => {
 
   it('shows label visually by default', () => {
     render(
-      <XDSField label="Email" labelID="email-input">
+      <XDSField label="Email" inputID="email-input">
         <input id="email-input" />
       </XDSField>
     );
@@ -65,7 +65,7 @@ describe('XDSField', () => {
   it('forwards ref correctly', () => {
     const ref = vi.fn();
     render(
-      <XDSField ref={ref} label="Name" labelID="name-input">
+      <XDSField ref={ref} label="Name" inputID="name-input">
         <input id="name-input" />
       </XDSField>
     );
@@ -74,7 +74,7 @@ describe('XDSField', () => {
 
   it('renders description without ID attribute when descriptionID is not provided', () => {
     render(
-      <XDSField label="Email" labelID="email-input" description="Description text">
+      <XDSField label="Email" inputID="email-input" description="Description text">
         <input id="email-input" />
       </XDSField>
     );

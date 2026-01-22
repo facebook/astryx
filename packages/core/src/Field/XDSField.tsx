@@ -64,9 +64,9 @@ export interface XDSFieldProps extends Omit<HTMLAttributes<HTMLDivElement>, 'chi
    */
   description?: string;
   /**
-   * ID for the label's htmlFor attribute (should match the input's id).
+   * ID for the input element (used for label's htmlFor attribute).
    */
-  labelID: string;
+  inputID: string;
   /**
    * ID for the description element (use for aria-describedby on the input).
    */
@@ -84,17 +84,17 @@ export interface XDSFieldProps extends Omit<HTMLAttributes<HTMLDivElement>, 'chi
  * ```tsx
  * const id = useId();
  * const descID = useId();
- * <XDSField label="Email" description="We'll never share your email" labelID={id} descriptionID={descID}>
+ * <XDSField label="Email" description="We'll never share your email" inputID={id} descriptionID={descID}>
  *   <input id={id} aria-describedby={descID} />
  * </XDSField>
  * ```
  */
 export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
-  ({ label, isLabelHidden = false, description, labelID, descriptionID, children, ...props }, ref) => {
+  ({ label, isLabelHidden = false, description, inputID, descriptionID, children, ...props }, ref) => {
     return (
       <div ref={ref} {...stylex.props(styles.container)} {...props}>
         <label
-          htmlFor={labelID}
+          htmlFor={inputID}
           {...stylex.props(styles.label, isLabelHidden && styles.labelHidden)}
         >
           {label}

@@ -19,9 +19,9 @@ const meta: Meta<typeof XDSField> = {
       control: 'text',
       description: 'Description text displayed between the label and input',
     },
-    labelID: {
+    inputID: {
       control: 'text',
-      description: 'ID for the label htmlFor attribute (should match input id)',
+      description: 'ID for the input element (used for label htmlFor attribute)',
     },
     descriptionID: {
       control: 'text',
@@ -37,7 +37,7 @@ export const Default: Story = {
   render: (args) => {
     const [value, setValue] = useState('');
     return (
-      <XDSField {...args} labelID="email-input">
+      <XDSField {...args} inputID="email-input">
         <input
           id="email-input"
           value={value}
@@ -56,7 +56,7 @@ export const WithDescription: Story = {
   render: (args) => {
     const [value, setValue] = useState('');
     return (
-      <XDSField {...args} labelID="email-input" descriptionID="email-desc">
+      <XDSField {...args} inputID="email-input" descriptionID="email-desc">
         <input
           id="email-input"
           aria-describedby="email-desc"
@@ -77,7 +77,7 @@ export const WithHiddenLabel: Story = {
   render: (args) => {
     const [value, setValue] = useState('');
     return (
-      <XDSField {...args} labelID="search-input">
+      <XDSField {...args} inputID="search-input">
         <input
           id="search-input"
           value={value}
@@ -100,7 +100,7 @@ export const AllVariations: Story = {
     const [value2, setValue2] = useState('');
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '300px' }}>
-        <XDSField label="Default field" labelID="default-input">
+        <XDSField label="Default field" inputID="default-input">
           <input
             id="default-input"
             value={value1}
@@ -108,7 +108,7 @@ export const AllVariations: Story = {
             style={{ padding: '8px', fontSize: '14px', width: '100%', boxSizing: 'border-box' }}
           />
         </XDSField>
-        <XDSField label="With description" description="This is helpful information" labelID="desc-input" descriptionID="desc-text">
+        <XDSField label="With description" description="This is helpful information" inputID="desc-input" descriptionID="desc-text">
           <input
             id="desc-input"
             aria-describedby="desc-text"

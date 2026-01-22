@@ -9,27 +9,36 @@ A form field wrapper component that provides label and description.
 - **Label Support**: Required label for accessibility (can be visually hidden)
 - **Description**: Optional description text displayed between the label and input
 - **Accessible**: Label properly associated with input via htmlFor/id
-- **Render Props**: Supports render prop pattern for passing id and aria attributes to children
 - **Styled with StyleX**: Uses XDS design tokens for consistent styling
 
 ## Usage
 
 ```tsx
 import { XDSField } from '@xds/core/Field';
+import { useId } from 'react';
 
-// With render props (recommended for full accessibility)
-<XDSField label="Email" description="We'll never share your email">
-  {({ id, ...aria }) => <input id={id} {...aria} />}
+// Basic usage with explicit IDs
+const id = useId();
+<XDSField label="Email" inputID={id}>
+  <input id={id} />
 </XDSField>
 
-// With regular children
-<XDSField label="Name">
-  <XDSTextInput label="Name" isLabelHidden value={name} onChange={setName} />
+// With description
+const inputId = useId();
+const descId = useId();
+<XDSField
+  label="Email"
+  description="We'll never share your email"
+  inputID={inputId}
+  descriptionID={descId}
+>
+  <input id={inputId} aria-describedby={descId} />
 </XDSField>
 
 // Hidden label (for screen readers only)
-<XDSField label="Search" isLabelHidden>
-  {({ id }) => <input id={id} placeholder="Search..." />}
+const searchId = useId();
+<XDSField label="Search" isLabelHidden inputID={searchId}>
+  <input id={searchId} placeholder="Search..." />
 </XDSField>
 ```
 
@@ -40,7 +49,9 @@ import { XDSField } from '@xds/core/Field';
 | `label` | `string` | Yes | Label text for the field (always rendered for accessibility) |
 | `isLabelHidden` | `boolean` | No | Visually hide the label (still accessible to screen readers) |
 | `description` | `string` | No | Description text displayed between the label and input |
-| `children` | `ReactNode \| ((props) => ReactNode)` | Yes | The input or control to render |
+| `inputID` | `string` | Yes | ID for the input element (used for label's htmlFor attribute) |
+| `descriptionID` | `string` | No | ID for the description element (use for aria-describedby on the input) |
+| `children` | `ReactNode` | Yes | The input or control to render |
 
 ## Files
 
@@ -52,7 +63,7 @@ import { XDSField } from '@xds/core/Field';
 
 ## Implementation Notes
 
-- Uses `useId` hook for accessible label-input association
+- Parent components are responsible for generating IDs (using `useId` hook)
 - Label is always rendered for accessibility; use `isLabelHidden` to hide visually
 - Hidden label uses CSS technique that remains accessible to screen readers
-- Supports render prop pattern to pass `id` and `aria-describedby` to children
+- Description is rendered when provided; if `descriptionID` is also provided, the description element gets that ID for `aria-describedby` association
