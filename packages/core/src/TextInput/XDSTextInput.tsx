@@ -1,6 +1,6 @@
 /**
  * @file XDSTextInput.tsx
- * @input Uses React forwardRef, ChangeEvent
+ * @input Uses React forwardRef, useId, ChangeEvent, XDSField
  * @output Exports XDSTextInput component, XDSTextInputProps
  * @position Core implementation; consumed by index.ts, tested by XDSTextInput.test.tsx
  *
@@ -13,41 +13,10 @@
 
 import { forwardRef, useId, type ChangeEvent } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  color,
-  spacing,
-  radius,
-  transition,
-  typography,
-} from '../theme/tokens.stylex';
+import { color, spacing, radius, transition, typography } from '../theme/tokens.stylex';
+import { XDSField } from '../Field';
 
 const styles = stylex.create({
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: spacing.space1,
-  },
-  label: {
-    fontFamily: typography.fontFamilyBody,
-    fontSize: '0.875rem',
-    fontWeight: 500,
-    color: color.textPrimary,
-  },
-  labelHidden: {
-    borderStyle: 'none',
-    clip: 'rect(0, 0, 0, 0)',
-    height: 1,
-    left: 0,
-    margin: -1,
-    overflow: 'hidden',
-    padding: 0,
-    pointerEvents: 'none',
-    position: 'absolute',
-    top: 0,
-    userSelect: 'none',
-    whiteSpace: 'nowrap',
-    width: 1,
-  },
   input: {
     display: 'block',
     width: '100%',
@@ -92,6 +61,10 @@ export interface XDSTextInputProps {
    */
   isLabelHidden?: boolean;
   /**
+   * Description text displayed between the label and input.
+   */
+  description?: string;
+  /**
    * Callback fired when the input value changes.
    */
   onChange: (value: string, e: ChangeEvent<HTMLInputElement>) => void;
@@ -115,17 +88,18 @@ export interface XDSTextInputProps {
  * ```
  */
 export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
-  ({ label, isLabelHidden = false, onChange, value, placeholder }, ref) => {
+  ({ label, isLabelHidden = false, description, onChange, value, placeholder }, ref) => {
     const id = useId();
+    const descriptionID = useId();
 
     return (
-      <div {...stylex.props(styles.container)}>
-        <label
-          htmlFor={id}
-          {...stylex.props(styles.label, isLabelHidden && styles.labelHidden)}
-        >
-          {label}
-        </label>
+      <XDSField
+        label={label}
+        isLabelHidden={isLabelHidden}
+        description={description}
+        labelID={id}
+        descriptionID={description ? descriptionID : undefined}
+      >
         <input
           ref={ref}
           id={id}
@@ -133,9 +107,10 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
           value={value}
           onChange={(e) => onChange(e.target.value, e)}
           placeholder={placeholder}
+          aria-describedby={description ? descriptionID : undefined}
           {...stylex.props(styles.input)}
         />
-      </div>
+      </XDSField>
     );
   }
 );
