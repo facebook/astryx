@@ -8,6 +8,7 @@
  */
 
 // Components
+export * from './Avatar';
 export * from './Button';
 export * from './Field';
 export * from './TextInput';
