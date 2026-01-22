@@ -27,6 +27,16 @@
       "import": "./dist/Button/index.mjs",
       "require": "./dist/Button/index.js"
     },
+    "./CheckboxInput": {
+      "types": "./dist/CheckboxInput/index.d.ts",
+      "import": "./dist/CheckboxInput/index.mjs",
+      "require": "./dist/CheckboxInput/index.js"
+    },
+    "./Field": {
+      "types": "./dist/Field/index.d.ts",
+      "import": "./dist/Field/index.mjs",
+      "require": "./dist/Field/index.js"
+    },
     "./Layout": {
       "types": "./dist/Layout/index.d.ts",
       "import": "./dist/Layout/index.mjs",

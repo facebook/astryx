@@ -10,6 +10,7 @@
 // Components
 export * from './Avatar';
 export * from './Button';
+export * from './CheckboxInput';
 export * from './Field';
 export * from './TextInput';
 

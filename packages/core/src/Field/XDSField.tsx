@@ -1,6 +1,6 @@
 /**
  * @file XDSField.tsx
- * @input Uses React forwardRef, HTMLAttributes, ReactNode
+ * @input Uses React forwardRef, HTMLAttributes, ReactNode, XDSFieldLabel
  * @output Exports XDSField component, XDSFieldProps
  * @position Core implementation; consumed by index.ts, tested by XDSField.test.tsx
  *
@@ -13,6 +13,7 @@
 
 import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {XDSFieldLabel} from './XDSFieldLabel';
 import {colorVars, spacingVars, typographyVars} from '../theme/tokens.stylex';
 
 const styles = stylex.create({
@@ -130,23 +131,14 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
   ) => {
     return (
       <div ref={ref} {...stylex.props(styles.container)} {...props}>
-        <div {...stylex.props(styles.labelRow)}>
-          <label
-            htmlFor={inputID}
-            {...stylex.props(
-              styles.label,
-              isLabelHidden && styles.labelHidden,
-            )}>
-            {label}
-          </label>
-          {isOptional || isRequired ? (
-            <span {...stylex.props(styles.optionalRequired)}>
-              <span aria-hidden="true">{'\u2219 '}</span>
-              {isOptional ? 'Optional' : 'Required'}
-            </span>
-          ) : null}
-        </div>
-        {description != null && (
+        <XDSFieldLabel
+          label={label}
+          inputID={inputID}
+          isLabelHidden={isLabelHidden}
+          isOptional={isOptional}
+          isRequired={isRequired}
+        />
+        {description && (
           <span id={descriptionID} {...stylex.props(styles.description)}>
             {description}
           </span>

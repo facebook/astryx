@@ -57,7 +57,7 @@ const styles = stylex.create({
   disabled: {
     cursor: 'not-allowed',
     opacity: 0.5,
-    borderColor: color.dividerEmphasized,
+    borderColor: colorVars['--color-divider-emphasized'],
   },
 });
 
