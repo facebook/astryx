@@ -11,7 +11,7 @@ import { defineConfig } from 'tsup';
 import babel from 'esbuild-plugin-babel';
 
 export default defineConfig({
-  entry: ['src/index.ts', 'src/Avatar/index.ts', 'src/Button/index.ts', 'src/Layout/index.ts'],
+  entry: ['src/index.ts', 'src/Avatar/index.ts', 'src/Button/index.ts', 'src/Layout/index.ts', 'src/TextInput/index.ts'],
   format: ['cjs', 'esm'],
   dts: true,
   splitting: true,
