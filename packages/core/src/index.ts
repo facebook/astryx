@@ -13,6 +13,7 @@ export * from './Button';
 export * from './CheckboxInput';
 export * from './Field';
 export * from './TextInput';
+export * from './TextArea';
 
 // Layout utilities and components (includes XDSHStack, XDSVStack)
 export * from './Layout';

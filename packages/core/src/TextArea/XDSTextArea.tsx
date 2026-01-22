@@ -1,14 +1,14 @@
 /**
- * @file XDSTextInput.tsx
+ * @file XDSTextArea.tsx
  * @input Uses React forwardRef, useId, ChangeEvent, XDSField
- * @output Exports XDSTextInput component, XDSTextInputProps
- * @position Core implementation; consumed by index.ts, tested by XDSTextInput.test.tsx
+ * @output Exports XDSTextArea component, XDSTextAreaProps
+ * @position Core implementation; consumed by index.ts, tested by XDSTextArea.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/TextInput/README.md (props table, features, implementation notes)
- * - /packages/core/src/TextInput/XDSTextInput.test.tsx (tests for new/changed behavior)
- * - /packages/core/src/TextInput/index.ts (exports if types change)
- * - /apps/storybook/stories/TextInput.stories.tsx (storybook stories)
+ * - /packages/core/src/TextArea/README.md (props table, features, implementation notes)
+ * - /packages/core/src/TextArea/XDSTextArea.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/TextArea/index.ts (exports if types change)
+ * - /apps/storybook/stories/TextArea.stories.tsx (storybook stories)
  */
 
 import {forwardRef, useId, type ChangeEvent} from 'react';
@@ -23,7 +23,7 @@ import {
 import {XDSField} from '../Field';
 
 const styles = stylex.create({
-  input: {
+  textarea: {
     display: 'block',
     width: '100%',
     paddingBlock: spacingVars['--spacing-2'],
@@ -53,17 +53,22 @@ const styles = stylex.create({
     '::placeholder': {
       color: colorVars['--color-text-placeholder'],
     },
+    resize: 'vertical',
+    minHeight: '80px',
   },
   disabled: {
     cursor: 'not-allowed',
     opacity: 0.5,
-    borderColor: colorVars['--color-divider-emphasized'],
+    borderColor: {
+      default: colorVars['--color-divider-emphasized'],
+      ':hover': colorVars['--color-divider-emphasized'],
+    },
   },
 });
 
-export interface XDSTextInputProps {
+export interface XDSTextAreaProps {
   /**
-   * Label text for the input (always rendered for accessibility).
+   * Label text for the textarea (always rendered for accessibility).
    */
   label: string;
   /**
@@ -72,7 +77,7 @@ export interface XDSTextInputProps {
    */
   isLabelHidden?: boolean;
   /**
-   * Description text displayed between the label and input.
+   * Description text displayed between the label and textarea.
    */
   description?: string;
   /**
@@ -86,34 +91,39 @@ export interface XDSTextInputProps {
    */
   isRequired?: boolean;
   /**
-   * Whether the input is disabled.
-   * @default false
+   * Callback fired when the textarea value changes.
    */
-  isDisabled?: boolean;
+  onChange: (value: string, e: ChangeEvent<HTMLTextAreaElement>) => void;
   /**
-   * Callback fired when the input value changes.
-   */
-  onChange: (value: string, e: ChangeEvent<HTMLInputElement>) => void;
-  /**
-   * The current value of the input.
+   * The current value of the textarea.
    */
   value: string;
   /**
-   * Placeholder text shown when the input is empty.
+   * Placeholder text shown when the textarea is empty.
    */
   placeholder?: string;
+  /**
+   * The number of visible text rows.
+   * @default 3
+   */
+  rows?: number;
+  /**
+   * Whether the textarea is disabled.
+   * @default false
+   */
+  isDisabled?: boolean;
 }
 
 /**
- * A text input component for collecting user input.
+ * A multi-line text input component for collecting longer user input.
  *
  * @example
  * ```tsx
- * <XDSTextInput label="Name" value={name} onChange={setName} />
- * <XDSTextInput label="Search" isLabelHidden value={query} onChange={setQuery} />
+ * <XDSTextArea label="Description" value={description} onChange={setDescription} />
+ * <XDSTextArea label="Notes" rows={5} value={notes} onChange={setNotes} />
  * ```
  */
-export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
+export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
   (
     {
       label,
@@ -121,10 +131,11 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
       description,
       isOptional = false,
       isRequired = false,
-      isDisabled = false,
       onChange,
       value,
       placeholder,
+      rows = 3,
+      isDisabled = false,
     },
     ref,
   ) => {
@@ -140,21 +151,21 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
         descriptionID={description ? descriptionID : undefined}
         isOptional={isOptional}
         isRequired={isRequired}>
-        <input
+        <textarea
           ref={ref}
           id={id}
-          type="text"
           value={value}
           onChange={e => onChange(e.target.value, e)}
           placeholder={placeholder}
+          rows={rows}
           disabled={isDisabled}
           aria-describedby={description ? descriptionID : undefined}
           aria-required={isRequired === true ? 'true' : undefined}
-          {...stylex.props(styles.input, isDisabled && styles.disabled)}
+          {...stylex.props(styles.textarea, isDisabled && styles.disabled)}
         />
       </XDSField>
     );
   },
 );
 
-XDSTextInput.displayName = 'XDSTextInput';
+XDSTextArea.displayName = 'XDSTextArea';
