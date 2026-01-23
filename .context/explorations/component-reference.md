@@ -18,9 +18,9 @@ Patterns and techniques for building XDS components with StyleX.
 ### Basic Component Template
 
 ```tsx
-import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
+import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import { colorTokens, spacingTokens } from '../theme/tokens.stylex';
+import {colorTokens, spacingTokens} from '../theme/tokens.stylex';
 
 const styles = stylex.create({
   base: {
@@ -29,7 +29,9 @@ const styles = stylex.create({
 });
 
 const variants = stylex.create({
-  default: { /* ... */ },
+  default: {
+    /* ... */
+  },
   // Add more variants as needed
 });
 
@@ -42,17 +44,16 @@ export interface ComponentProps extends HTMLAttributes<HTMLElement> {
 }
 
 export const Component = forwardRef<HTMLElement, ComponentProps>(
-  ({ variant = 'default', children, ...props }, ref) => {
+  ({variant = 'default', children, ...props}, ref) => {
     return (
       <div
         ref={ref}
         {...stylex.props(styles.base, variants[variant])}
-        {...props}
-      >
+        {...props}>
         {children}
       </div>
     );
-  }
+  },
 );
 
 Component.displayName = 'Component';
@@ -64,9 +65,15 @@ Derive variant types from StyleX objects to keep types in sync with styles:
 
 ```tsx
 const variants = stylex.create({
-  primary: { /* ... */ },
-  secondary: { /* ... */ },
-  ghost: { /* ... */ },
+  primary: {
+    /* ... */
+  },
+  secondary: {
+    /* ... */
+  },
+  ghost: {
+    /* ... */
+  },
 });
 
 export type ButtonVariant = keyof typeof variants;
@@ -121,15 +128,18 @@ StyleX supports common pseudo-selectors:
 ```tsx
 const styles = stylex.create({
   interactive: {
-    ':hover': {
-      backgroundColor: colorTokens.hoverOverlay,
+    backgroundColor: {
+      default: null,
+      ':hover': colorTokens.hoverOverlay,
+      ':active': colorTokens.pressedOverlay,
     },
-    ':active': {
-      backgroundColor: colorTokens.pressedOverlay,
+    outline: {
+      default: null,
+      ':focus-visible': `2px solid ${colorTokens.focusOutline}`,
     },
-    ':focus-visible': {
-      outline: `2px solid ${colorTokens.focusOutline}`,
-      outlineOffset: '3px',
+    outlineOffset: {
+      default: null,
+      ':focus-visible': '3px',
     },
   },
 });
@@ -143,7 +153,7 @@ Use `stylex.keyframes` for animations:
 const styles = stylex.create({
   spinner: {
     animationName: stylex.keyframes({
-      to: { transform: 'rotate(360deg)' },
+      to: {transform: 'rotate(360deg)'},
     }),
     animationDuration: '0.6s',
     animationTimingFunction: 'linear',
@@ -162,11 +172,10 @@ For interactive elements where you want hover/active colors to layer on top of t
 const variants = stylex.create({
   primary: {
     backgroundColor: colorTokens.accent,
-    ':hover': {
-      backgroundImage: `linear-gradient(${colorTokens.hoverOverlay}, ${colorTokens.hoverOverlay})`,
-    },
-    ':active': {
-      backgroundImage: `linear-gradient(${colorTokens.pressedOverlay}, ${colorTokens.pressedOverlay})`,
+    backgroundImage: {
+      default: null,
+      ':hover': `linear-gradient(${colorTokens.hoverOverlay}, ${colorTokens.hoverOverlay})`,
+      ':active': `linear-gradient(${colorTokens.pressedOverlay}, ${colorTokens.pressedOverlay})`,
     },
   },
 });
@@ -181,15 +190,23 @@ Some components need different focus outline colors per variant:
 ```tsx
 const variants = stylex.create({
   primary: {
-    ':focus-visible': {
-      outline: `2px solid ${colorTokens.focusOutline}`,
-      outlineOffset: '3px',
+    outline: {
+      default: null,
+      ':focus-visible': `2px solid ${colorTokens.focusOutline}`,
+    },
+    outlineOffset: {
+      default: null,
+      ':focus-visible': '3px',
     },
   },
   destructive: {
-    ':focus-visible': {
-      outline: `2px solid ${colorTokens.negative}`,
-      outlineOffset: '3px',
+    outline: {
+      default: null,
+      ':focus-visible': `2px solid ${colorTokens.negative}`,
+    },
+    outlineOffset: {
+      default: null,
+      ':focus-visible': '3px',
     },
   },
 });
@@ -231,17 +248,18 @@ See `.context/explorations/stylex-patterns.md` for detailed notes:
 
 Available tokens from `tokens.stylex`:
 
-| Category | Tokens |
-|----------|--------|
-| `colorTokens` | accent, surface, textPrimary, textSecondary, hoverOverlay, pressedOverlay, focusOutline, negative, positive, etc. |
-| `spacingTokens` | space0, space0_5, space1, space2, space3, space4, space5, space6, space7 |
-| `radiusTokens` | rounded, container, element, content |
-| `transitionTokens` | fast, normal |
-| `typographyTokens` | fontFamilyBody, fontFamilyCode, fontFamilyHeading |
+| Category           | Tokens                                                                                                            |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `colorTokens`      | accent, surface, textPrimary, textSecondary, hoverOverlay, pressedOverlay, focusOutline, negative, positive, etc. |
+| `spacingTokens`    | space0, space0_5, space1, space2, space3, space4, space5, space6, space7                                          |
+| `radiusTokens`     | rounded, container, element, content                                                                              |
+| `transitionTokens` | fast, normal                                                                                                      |
+| `typographyTokens` | fontFamilyBody, fontFamilyCode, fontFamilyHeading                                                                 |
 
 ## Example: Button Component
 
 See `/packages/core/src/Button/Button.tsx` for a complete implementation demonstrating:
+
 - Multiple variants (primary, secondary, ghost, destructive)
 - Loading state with spinner
 - Overlay hover/active states

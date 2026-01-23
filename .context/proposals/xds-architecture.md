@@ -1,6 +1,6 @@
 # XDS Architecture Proposal
 
-*Proposal — January 2026*
+_Proposal — January 2026_
 
 ## Builder Jobs To Be Done
 
@@ -8,32 +8,32 @@ XDS serves developers across their workflow phases. Based on research in `fronte
 
 ### Primary Jobs by Phase
 
-| Phase | Job | What Success Looks Like |
-|-------|-----|------------------------|
-| **Setup** | Set up project styling | Define tokens/themes in one place; immediate consistency |
-| **Setup** | Configure for my stack | Works with my build tools, framework, IDE |
-| **Build** | Construct pages from components | Compose UI quickly with typed props, autocomplete |
-| **Build** | Customize component appearance | Theme changes propagate everywhere automatically |
-| **Build** | Handle edge cases | Swizzle when needed, clear escalation path |
-| **Maintain** | Update to new versions | Clear migration path, deprecation warnings |
-| **Collaborate** | Work with AI assistants | Typed APIs, constrained options, predictable patterns |
+| Phase           | Job                             | What Success Looks Like                                  |
+| --------------- | ------------------------------- | -------------------------------------------------------- |
+| **Setup**       | Set up project styling          | Define tokens/themes in one place; immediate consistency |
+| **Setup**       | Configure for my stack          | Works with my build tools, framework, IDE                |
+| **Build**       | Construct pages from components | Compose UI quickly with typed props, autocomplete        |
+| **Build**       | Customize component appearance  | Theme changes propagate everywhere automatically         |
+| **Build**       | Handle edge cases               | Swizzle when needed, clear escalation path               |
+| **Maintain**    | Update to new versions          | Clear migration path, deprecation warnings               |
+| **Collaborate** | Work with AI assistants         | Typed APIs, constrained options, predictable patterns    |
 
 ### How XDS Layers Map to Jobs
 
-| XDS Layer | Primary Jobs Served |
-|-----------|---------------------|
-| **Theme Layer** | Set up styling, customize appearance, maintain consistency |
-| **Component API** | Construct pages, stay consistent, work with AI |
-| **Swizzle Layer** | Handle edge cases, customize beyond theme |
-| **CLI/Tooling** | Configure for stack, adopt incrementally, update versions |
+| XDS Layer         | Primary Jobs Served                                        |
+| ----------------- | ---------------------------------------------------------- |
+| **Theme Layer**   | Set up styling, customize appearance, maintain consistency |
+| **Component API** | Construct pages, stay consistent, work with AI             |
+| **Swizzle Layer** | Handle edge cases, customize beyond theme                  |
+| **CLI/Tooling**   | Configure for stack, adopt incrementally, update versions  |
 
 ### The Three Core Builder Actions
 
-| Job | What the Builder Wants | XDS Layer |
-|-----|------------------------|-----------|
-| **1. Set visual style** | "I want to define my project's look and feel" | **Theme Layer** |
+| Job                               | What the Builder Wants                                    | XDS Layer         |
+| --------------------------------- | --------------------------------------------------------- | ----------------- |
+| **1. Set visual style**           | "I want to define my project's look and feel"             | **Theme Layer**   |
 | **2. Override/create components** | "I want to customize beyond what's possible in the theme" | **Swizzle Layer** |
-| **3. Construct pages** | "I want to use components to build UIs" | **Component API** |
+| **3. Construct pages**            | "I want to use components to build UIs"                   | **Component API** |
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -75,12 +75,12 @@ XDS serves developers across their workflow phases. Based on research in `fronte
 
 ### How the Jobs Relate
 
-| If the builder needs... | They use... | Complexity |
-|------------------------|-------------|------------|
-| Different colors/spacing | Theme tokens | Low |
-| New button variant | Swizzle | Medium |
-| Custom component structure | Swizzle | Medium |
-| New component behavior | New component | High |
+| If the builder needs...    | They use...   | Complexity |
+| -------------------------- | ------------- | ---------- |
+| Different colors/spacing   | Theme tokens  | Low        |
+| New button variant         | Swizzle       | Medium     |
+| Custom component structure | Swizzle       | Medium     |
+| New component behavior     | New component | High       |
 
 **Escalation path**: Theme (tokens) → Swizzle (variants) → Custom. Each step up gives more control at the cost of more responsibility.
 
@@ -89,6 +89,7 @@ XDS serves developers across their workflow phases. Based on research in `fronte
 ## Context
 
 Designing the architecture for XDS based on explorations in:
+
 - `frontend-developer-jtbd.md` — Developer jobs research, workflow phases
 - `zero-styling-architecture.md` — Components with no styles, theme-driven
 - `stylex-vs-tailwind.md` — StyleX core + `@xds/variants` wrapper, token tiers, AI considerations
@@ -158,12 +159,12 @@ Designing the architecture for XDS based on explorations in:
 
 Different design systems have different semantic structures:
 
-| Design System | Button Variants |
-|---------------|----------------|
-| System A | primary, secondary, tertiary |
-| System B | primary, secondary, danger, ghost, link |
-| System C | filled, outlined, text |
-| System D | brand, neutral, destructive, success |
+| Design System | Button Variants                         |
+| ------------- | --------------------------------------- |
+| System A      | primary, secondary, tertiary            |
+| System B      | primary, secondary, danger, ghost, link |
+| System C      | filled, outlined, text                  |
+| System D      | brand, neutral, destructive, success    |
 
 How does XDS support all of these with a single component library?
 
@@ -172,6 +173,7 @@ How does XDS support all of these with a single component library?
 With token-only themes, XDS ships **default components with standard variants**. Users swizzle to customize.
 
 **XDS default Button** (what you get out of the box):
+
 ```typescript
 // @xds/core/Button.tsx
 const button = createVariants({
@@ -193,6 +195,7 @@ export function Button({ variant = 'primary', size = 'md', children }) { ... }
 ```
 
 **System A swizzles** to get their variants:
+
 ```typescript
 // src/components/xds/Button.tsx (swizzled)
 const button = createVariants({
@@ -230,12 +233,12 @@ type ButtonProps = {
 
 ### How This Simplifies Things
 
-| Concern | Token-only approach |
-|---------|---------------------|
+| Concern                         | Token-only approach               |
+| ------------------------------- | --------------------------------- |
 | **Where are variants defined?** | In the component file (one place) |
-| **Type inference** | Self-contained in component |
-| **AI context** | Component file has everything |
-| **Customization path** | Swizzle the component |
+| **Type inference**              | Self-contained in component       |
+| **AI context**                  | Component file has everything     |
+| **Customization path**          | Swizzle the component             |
 
 ---
 
@@ -244,6 +247,7 @@ type ButtonProps = {
 ### The Problem
 
 Components have internal parts that need independent styling:
+
 - Button: icon, label, loading indicator
 - ListItem: leading icon, content, trailing action
 - Input: prefix, input, suffix, error message
@@ -255,6 +259,7 @@ With token-only themes, slots are defined in the component file using Tailwind V
 ### Full Example: Button with Slots
 
 **Step 1: Theme provides tokens**
+
 ```typescript
 // theme.ts
 export const theme = createTheme({
@@ -275,6 +280,7 @@ export const theme = createTheme({
 ```
 
 **Step 2: Component defines variants and slots using tokens**
+
 ```typescript
 // components/Button.tsx
 import { tv } from 'tailwind-variants';
@@ -362,12 +368,13 @@ export function Button({
 ```
 
 **Step 3: Use in app with theme provider**
+
 ```tsx
 // App.tsx
-import { Theme } from '@xds/core';
-import { theme } from './theme';
-import { XDSButton } from './components/Button';
-import { PlusIcon } from './icons';
+import {Theme} from '@xds/core';
+import {theme} from './theme';
+import {XDSButton} from './components/Button';
+import {PlusIcon} from './icons';
 
 function App() {
   return (
@@ -442,14 +449,14 @@ For advanced users who prefer StyleX:
 
 ```typescript
 import * as stylex from '@stylexjs/stylex';
-import { createVariants } from '@xds/variants';
+import {createVariants} from '@xds/variants';
 
 const button = createVariants({
-  base: stylex.create({ root: { cursor: 'pointer', borderRadius: 4 } }).root,
+  base: stylex.create({root: {cursor: 'pointer', borderRadius: 4}}).root,
 
   slots: {
-    icon: stylex.create({ root: { width: 16, height: 16 } }).root,
-    label: stylex.create({ root: { fontWeight: 500 } }).root,
+    icon: stylex.create({root: {width: 16, height: 16}}).root,
+    label: stylex.create({root: {fontWeight: 500}}).root,
   },
 
   variants: {
@@ -458,10 +465,10 @@ const button = createVariants({
         root: {
           backgroundColor: 'var(--xds-color-primary)',
           color: 'var(--xds-color-on-primary)',
-        }
+        },
       }).root,
-    }
-  }
+    },
+  },
 });
 ```
 
@@ -507,8 +514,8 @@ Themes override token values using `stylex.createTheme`:
 ```typescript
 // /packages/core/src/theme/neutralTheme.stylex.ts
 import * as stylex from '@stylexjs/stylex';
-import { colorTokens } from './tokens.stylex';
-import type { Theme } from './types';
+import {colorTokens} from './tokens.stylex';
+import type {Theme} from './types';
 
 const colorTheme = stylex.createTheme(colorTokens, {
   accent: 'light-dark(oklch(0.205 0 0), oklch(0.922 0 0))',
@@ -537,7 +544,7 @@ export const neutralTheme: Theme = {
   transitionTheme,
   typographyTheme,
   components: {
-    button: { variants: buttonVariants },
+    button: {variants: buttonVariants},
   },
 };
 ```
@@ -559,7 +566,7 @@ export interface Theme {
   radiusTheme?: StyleXTheme;
   transitionTheme?: StyleXTheme;
   typographyTheme?: StyleXTheme;
-  components?: ComponentStyles;  // Component-level variant overrides
+  components?: ComponentStyles; // Component-level variant overrides
 }
 ```
 
@@ -569,15 +576,19 @@ All color values use CSS `light-dark()` function for automatic mode switching:
 
 ```css
 /* Generated CSS */
---xds-color-accent: light-dark(#0064E0, #2694FE);
---xds-color-surface: light-dark(#FFFFFF, #1C1C1C);
+--xds-color-accent: light-dark(#0064e0, #2694fe);
+--xds-color-surface: light-dark(#ffffff, #1c1c1c);
 ```
 
 The Theme provider sets `color-scheme` to control which value is used:
 
 ```tsx
 // Theme.tsx applies color-scheme based on mode prop
-<div style={{ colorScheme: mode === 'dark' ? 'dark' : mode === 'light' ? 'light' : 'light dark' }}>
+<div
+  style={{
+    colorScheme:
+      mode === 'dark' ? 'dark' : mode === 'light' ? 'light' : 'light dark',
+  }}>
   {children}
 </div>
 ```
@@ -617,15 +628,18 @@ const variants = stylex.create({
   primary: {
     backgroundColor: colorTokens.accent,
     color: 'white',
-    ':hover': {
-      backgroundImage: `linear-gradient(${colorTokens.hoverOverlay}, ${colorTokens.hoverOverlay})`,
+    backgroundImage: {
+      default: null,
+      ':hover': `linear-gradient(${colorTokens.hoverOverlay}, ${colorTokens.hoverOverlay})`,
+      ':active': `linear-gradient(${colorTokens.pressedOverlay}, ${colorTokens.pressedOverlay})`,
     },
-    ':active': {
-      backgroundImage: `linear-gradient(${colorTokens.pressedOverlay}, ${colorTokens.pressedOverlay})`,
+    outline: {
+      default: null,
+      ':focus-visible': `2px solid ${colorTokens.focusOutline}`,
     },
-    ':focus-visible': {
-      outline: `2px solid ${colorTokens.focusOutline}`,
-      outlineOffset: '3px',
+    outlineOffset: {
+      default: null,
+      ':focus-visible': '3px',
     },
   },
   secondary: { /* ... */ },
@@ -670,23 +684,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
 ### Key Patterns
 
-| Pattern | Purpose |
-|---------|---------|
-| `keyof typeof variants` | Derive variant type from StyleX object |
-| `backgroundImage` for overlays | Layer hover/active colors on top of background |
-| Module augmentation | Register component variants with theme types without circular imports |
-| `ThemeContext` consumption | Apply theme-level variant overrides |
-
-### Overlay Hover/Active States
-
-StyleX doesn't support combined pseudo-selectors like `:hover::after`. Use `backgroundImage` instead:
-
-```typescript
-':hover': {
-  // backgroundImage layers on TOP of backgroundColor
-  backgroundImage: `linear-gradient(${colorTokens.hoverOverlay}, ${colorTokens.hoverOverlay})`,
-},
-```
+| Pattern                        | Purpose                                                               |
+| ------------------------------ | --------------------------------------------------------------------- |
+| `keyof typeof variants`        | Derive variant type from StyleX object                                |
+| `backgroundImage` for overlays | Layer hover/active colors on top of background                        |
+| Module augmentation            | Register component variants with theme types without circular imports |
+| `ThemeContext` consumption     | Apply theme-level variant overrides                                   |
 
 ---
 
@@ -694,14 +697,14 @@ StyleX doesn't support combined pseudo-selectors like `:hover::after`. Use `back
 
 > **Implementation Status**: ✅ Implemented in `/packages/core/src/theme/tokens.stylex.ts`
 
-| Category | Purpose | Examples |
-|----------|---------|----------|
-| `colorTokens` | All colors (semantic, text, icon, status, dividers) | `accent`, `textPrimary`, `hoverOverlay`, `negative` |
-| `spacingTokens` | Consistent spacing scale | `space1` (4px), `space2` (8px), `space4` (16px) |
-| `radiusTokens` | Border radius for different contexts | `rounded`, `container`, `element`, `content` |
-| `elevationTokens` | Box shadows | `base`, `thumb`, `dialog`, `hover`, `menu` |
-| `transitionTokens` | Animation durations | `fast` (0.15s), `normal` (0.2s) |
-| `typographyTokens` | Font families | `fontFamilyBody`, `fontFamilyCode`, `fontFamilyHeading` |
+| Category           | Purpose                                             | Examples                                                |
+| ------------------ | --------------------------------------------------- | ------------------------------------------------------- |
+| `colorTokens`      | All colors (semantic, text, icon, status, dividers) | `accent`, `textPrimary`, `hoverOverlay`, `negative`     |
+| `spacingTokens`    | Consistent spacing scale                            | `space1` (4px), `space2` (8px), `space4` (16px)         |
+| `radiusTokens`     | Border radius for different contexts                | `rounded`, `container`, `element`, `content`            |
+| `elevationTokens`  | Box shadows                                         | `base`, `thumb`, `dialog`, `hover`, `menu`              |
+| `transitionTokens` | Animation durations                                 | `fast` (0.15s), `normal` (0.2s)                         |
+| `typographyTokens` | Font families                                       | `fontFamilyBody`, `fontFamilyCode`, `fontFamilyHeading` |
 
 ---
 
@@ -709,33 +712,33 @@ StyleX doesn't support combined pseudo-selectors like `:hover::after`. Use `back
 
 ### AI-Friendliness by Job
 
-| Job | AI Difficulty | Why |
-|-----|---------------|-----|
-| **Construct pages** | ✅ Easy | Typed props, autocomplete, finite options |
-| **Set visual style** | ⚠️ Medium | Theme structure is learnable, but separate from components |
-| **Override components** | ⚠️ Medium | Documented patterns, semantic tokens, but unfamiliar StyleX |
+| Job                     | AI Difficulty | Why                                                         |
+| ----------------------- | ------------- | ----------------------------------------------------------- |
+| **Construct pages**     | ✅ Easy       | Typed props, autocomplete, finite options                   |
+| **Set visual style**    | ⚠️ Medium     | Theme structure is learnable, but separate from components  |
+| **Override components** | ⚠️ Medium     | Documented patterns, semantic tokens, but unfamiliar StyleX |
 
 ### Why This Architecture Is AI-Friendly
 
-| Design Decision | AI Benefit |
-|-----------------|------------|
-| **Props, not classes** | `variant="primary"` is learnable; `bg-blue-500 hover:bg-blue-600` is arbitrary |
-| **TypeScript enforcement** | Invalid props fail at compile time, AI gets immediate feedback |
-| **Finite variant set** | AI learns discrete options, not infinite styling possibilities |
-| **Consistent patterns** | Same API shape across all components |
-| **No arbitrary values** | Can't generate `mt-[13px]`, only valid tokens |
-| **Re-export pattern** | Concrete types in one file, no cross-package reasoning |
+| Design Decision            | AI Benefit                                                                     |
+| -------------------------- | ------------------------------------------------------------------------------ |
+| **Props, not classes**     | `variant="primary"` is learnable; `bg-blue-500 hover:bg-blue-600` is arbitrary |
+| **TypeScript enforcement** | Invalid props fail at compile time, AI gets immediate feedback                 |
+| **Finite variant set**     | AI learns discrete options, not infinite styling possibilities                 |
+| **Consistent patterns**    | Same API shape across all components                                           |
+| **No arbitrary values**    | Can't generate `mt-[13px]`, only valid tokens                                  |
+| **Re-export pattern**      | Concrete types in one file, no cross-package reasoning                         |
 
 ### The Author vs Consumer Gap
 
 The "AI gap" is primarily for **component authors**, not **component consumers**.
 
-| Role | API Surface | AI Difficulty |
-|------|-------------|---------------|
-| **Consumer** (Job 3) | `<XDSButton variant="primary" size="md">` | Trivial — typed props, autocomplete |
-| **Theme author** (Job 1) | `createTheme({ ... })` | Medium — structured, learnable |
-| **Swizzler** (Job 2) | StyleX + semantic CSS variables | Medium — documented patterns |
-| **Component author** | `createVariants({ ... stylex.create() ... })` | Higher — unfamiliar patterns |
+| Role                     | API Surface                                   | AI Difficulty                       |
+| ------------------------ | --------------------------------------------- | ----------------------------------- |
+| **Consumer** (Job 3)     | `<XDSButton variant="primary" size="md">`     | Trivial — typed props, autocomplete |
+| **Theme author** (Job 1) | `createTheme({ ... })`                        | Medium — structured, learnable      |
+| **Swizzler** (Job 2)     | StyleX + semantic CSS variables               | Medium — documented patterns        |
+| **Component author**     | `createVariants({ ... stylex.create() ... })` | Higher — unfamiliar patterns        |
 
 **Why this matters**: Most users are consumers (Job 3). They never touch StyleX — they just use typed props.
 
@@ -756,6 +759,7 @@ const themeContext = {
 ```
 
 This enables AI to:
+
 1. Know valid prop values without reading source
 2. Generate only theme-valid code
 3. Adapt to different themes dynamically
@@ -780,8 +784,8 @@ This enables AI to:
 
 ```css
 /* @xds/tailwind-preset */
-@import "tailwindcss";
-@import "@xds/tokens/css";
+@import 'tailwindcss';
+@import '@xds/tokens/css';
 
 @theme {
   --color-primary: var(--xds-color-primary);
@@ -794,9 +798,7 @@ This enables AI to:
 Now Tailwind users can use XDS tokens:
 
 ```html
-<div class="bg-primary text-on-primary p-md">
-  Tailwind with XDS tokens
-</div>
+<div class="bg-primary text-on-primary p-md">Tailwind with XDS tokens</div>
 ```
 
 ### Linting for Arbitrary Values
@@ -806,9 +808,9 @@ Provide ESLint/Stylelint rules to prevent:
 ```html
 <!-- ❌ Flagged by lint -->
 <div class="bg-[#0066cc] mt-[13px]">
-
-<!-- ✅ Allowed -->
-<div class="bg-primary mt-md">
+  <!-- ✅ Allowed -->
+  <div class="bg-primary mt-md"></div>
+</div>
 ```
 
 ---
@@ -821,13 +823,13 @@ With token-only themes, swizzle is the path for **any component-level customizat
 
 ### When to Swizzle
 
-| Need | Solution |
-|------|----------|
-| Different primary color | Edit theme tokens |
-| New button variant (e.g. `ghost`) | Swizzle Button |
-| Custom click tracking | Swizzle Button |
-| Different animation | Swizzle Button |
-| Structural changes | Swizzle Button |
+| Need                              | Solution          |
+| --------------------------------- | ----------------- |
+| Different primary color           | Edit theme tokens |
+| New button variant (e.g. `ghost`) | Swizzle Button    |
+| Custom click tracking             | Swizzle Button    |
+| Different animation               | Swizzle Button    |
+| Structural changes                | Swizzle Button    |
 
 ### Swizzle Command
 
@@ -925,12 +927,12 @@ export function Button({ variant, size, icon, children, onClick }: ButtonProps) 
 
 ### Why Tailwind is the Default
 
-| Consideration | Tailwind Variants | StyleX |
-|--------------|-------------------|--------|
-| **AI familiarity** | ✅ High training data | ⚠️ Less common |
-| **Learning curve** | ✅ Familiar to most | ⚠️ New syntax |
-| **Encapsulation** | ⚠️ Classes in DOM | ✅ No exposed classes |
-| **Recommendation** | **Default for most** | Advanced users |
+| Consideration      | Tailwind Variants     | StyleX                |
+| ------------------ | --------------------- | --------------------- |
+| **AI familiarity** | ✅ High training data | ⚠️ Less common        |
+| **Learning curve** | ✅ Familiar to most   | ⚠️ New syntax         |
+| **Encapsulation**  | ⚠️ Classes in DOM     | ✅ No exposed classes |
+| **Recommendation** | **Default for most**  | Advanced users        |
 
 ### Format: StyleX (Alternative)
 
@@ -1020,7 +1022,7 @@ With token-only themes, packages are simple:
 
 ```typescript
 // @company/dark-theme/theme.ts
-import { createTheme } from '@xds/core';
+import {createTheme} from '@xds/core';
 
 export const darkTheme = createTheme({
   tokens: {
@@ -1062,10 +1064,10 @@ function App() {
 
 With token-only themes, type safety is straightforward:
 
-| What | Where Types Come From |
-|------|----------------------|
-| **Tokens** | Theme definition (`darkTheme.tokens.color.primary`) |
-| **Component variants** | Component definition (self-contained) |
+| What                   | Where Types Come From                               |
+| ---------------------- | --------------------------------------------------- |
+| **Tokens**             | Theme definition (`darkTheme.tokens.color.primary`) |
+| **Component variants** | Component definition (self-contained)               |
 
 Components have their own types based on their variant definitions — no cross-package type inference needed.
 
@@ -1132,65 +1134,68 @@ Components have their own types based on their variant definitions — no cross-
 Based on exploration in `stylex-vs-tailwind.md`, the recommended approach is:
 
 **StyleX** for the styling engine:
+
 - Compile-time CSS extraction, zero runtime
 - Full TypeScript integration
 - Scoped theming is first-class
 - No exposed CSS classes to consumers
 
 **`@xds/variants`** wrapper for ergonomics:
+
 - tw-classed-like variant API
 - Slots for sub-part styling
 - Compound variants, default variants
 - Type inference from variant definition
 
 **Tailwind preset** for ecosystem compatibility:
+
 - XDS tokens available as Tailwind utilities
 - Interop without compromising enforcement
 
 ### Why Not Pure Tailwind?
 
-| Issue | Impact |
-|-------|--------|
-| Arbitrary values bypass constraints | AI can generate `mt-[13px]` |
-| Classes are public | Consumers can depend on implementation details |
-| Theme tokens are all public CSS vars | Can't evolve without breaking consumers |
-| Type safety is weak | No compile-time enforcement |
+| Issue                                | Impact                                         |
+| ------------------------------------ | ---------------------------------------------- |
+| Arbitrary values bypass constraints  | AI can generate `mt-[13px]`                    |
+| Classes are public                   | Consumers can depend on implementation details |
+| Theme tokens are all public CSS vars | Can't evolve without breaking consumers        |
+| Type safety is weak                  | No compile-time enforcement                    |
 
 ### Component Authoring with `@xds/variants`
 
 ```typescript
-import { createVariants } from '@xds/variants';
+import {createVariants} from '@xds/variants';
 import * as stylex from '@stylexjs/stylex';
 
 const button = createVariants({
   base: stylex.create({
-    root: { cursor: 'pointer', borderRadius: 4 }
+    root: {cursor: 'pointer', borderRadius: 4},
   }).root,
 
   slots: {
-    icon: stylex.create({ root: { width: 16, height: 16 } }).root,
-    label: stylex.create({ root: { fontWeight: 500 } }).root,
+    icon: stylex.create({root: {width: 16, height: 16}}).root,
+    label: stylex.create({root: {fontWeight: 500}}).root,
   },
 
   variants: {
     variant: {
       primary: stylex.create({
-        root: { backgroundColor: 'var(--xds-color-primary)' }
+        root: {backgroundColor: 'var(--xds-color-primary)'},
       }).root,
       secondary: stylex.create({
-        root: { backgroundColor: 'var(--xds-color-secondary)' }
+        root: {backgroundColor: 'var(--xds-color-secondary)'},
       }).root,
     },
     size: {
-      sm: stylex.create({ root: { padding: 4, fontSize: 14 } }).root,
-      md: stylex.create({ root: { padding: 8, fontSize: 16 } }).root,
-    }
+      sm: stylex.create({root: {padding: 4, fontSize: 14}}).root,
+      md: stylex.create({root: {padding: 8, fontSize: 16}}).root,
+    },
   },
 
   defaultVariants: {
     variant: 'primary',
     size: 'md',
-  }
+  },
 });
 
 // TypeScript infers: { variant: 'primary' | 'secondary', size: 'sm' | 'md' }
@@ -1205,11 +1210,13 @@ This provides tw-classed ergonomics without exposed CSS classes.
 ### Phase 1: Core Infrastructure ✅ Complete
 
 **Token System**
+
 - `stylex.defineVars` for tokens (colors, spacing, typography, radius, transitions, elevation)
 - `light-dark()` CSS function for automatic light/dark mode switching
 - Token categories: color, spacing, radius, transition, typography, elevation
 
 **Theme System**
+
 - `ThemeContext` for providing theme to component tree
 - `Theme` provider component with mode prop ('light' | 'dark' | 'system')
 - `stylex.createTheme` for theme-level token overrides
@@ -1217,27 +1224,32 @@ This provides tw-classed ergonomics without exposed CSS classes.
 - Module augmentation pattern for type-safe component styles (avoids circular imports)
 
 **Pilot Components**
+
 - Button with variants (primary, secondary, ghost, destructive)
 - Loading state with spinner animation
 - Press effect (scale 98%)
 - Theme variant consumption pattern
 
 **Infrastructure**
+
 - Storybook integration with theme switching
 - Vitest with StyleX babel plugin for testing
 - Component template (`/create-component` slash command)
 
 ### Phase 2: Component Library
+
 - Additional components (XDSInput, XDSText, XDSBox, XDSStack, XDSCard, etc.)
 - Slot-level styling (icon, label, prefix, suffix)
 - Full variant/size matrix across components
 
 ### Phase 3: Ecosystem
+
 - Theme gallery / community themes
 - Documentation site
 - Migration guides from other design systems
 
 ### Phase 4: Advanced Features
+
 - Swizzle CLI for component customization
 - Animation tokens
 - Multi-theme composition
