@@ -8,7 +8,7 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {spacing} from '../../theme/tokens.stylex';
+import {spacingVars} from '../../theme/tokens.stylex';
 
 const alignItemsStyles = stylex.create({
   center: {
@@ -108,40 +108,40 @@ const baseStyles = stylex.create({
  */
 const gapStyles = stylex.create({
   space0: {
-    columnGap: spacing.space0,
-    rowGap: spacing.space0,
+    columnGap: spacingVars['--spacing-0'],
+    rowGap: spacingVars['--spacing-0'],
   },
   'space0.5': {
-    columnGap: spacing.space0_5,
-    rowGap: spacing.space0_5,
+    columnGap: spacingVars['--spacing-0-5'],
+    rowGap: spacingVars['--spacing-0-5'],
   },
   space1: {
-    columnGap: spacing.space1,
-    rowGap: spacing.space1,
+    columnGap: spacingVars['--spacing-1'],
+    rowGap: spacingVars['--spacing-1'],
   },
   space2: {
-    columnGap: spacing.space2,
-    rowGap: spacing.space2,
+    columnGap: spacingVars['--spacing-2'],
+    rowGap: spacingVars['--spacing-2'],
   },
   space3: {
-    columnGap: spacing.space3,
-    rowGap: spacing.space3,
+    columnGap: spacingVars['--spacing-3'],
+    rowGap: spacingVars['--spacing-3'],
   },
   space4: {
-    columnGap: spacing.space4,
-    rowGap: spacing.space4,
+    columnGap: spacingVars['--spacing-4'],
+    rowGap: spacingVars['--spacing-4'],
   },
   space5: {
-    columnGap: spacing.space5,
-    rowGap: spacing.space5,
+    columnGap: spacingVars['--spacing-5'],
+    rowGap: spacingVars['--spacing-5'],
   },
   space6: {
-    columnGap: spacing.space6,
-    rowGap: spacing.space6,
+    columnGap: spacingVars['--spacing-6'],
+    rowGap: spacingVars['--spacing-6'],
   },
   space7: {
-    columnGap: spacing.space7,
-    rowGap: spacing.space7,
+    columnGap: spacingVars['--spacing-7'],
+    rowGap: spacingVars['--spacing-7'],
   },
 });
 

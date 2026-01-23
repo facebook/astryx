@@ -1,47 +1,55 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import { XDSAvatar } from '@xds/core/Avatar';
-import { color, spacing, typography } from '@xds/core/theme/tokens.stylex';
+import {XDSAvatar} from '@xds/core/Avatar';
+import {
+  colorVars,
+  spacingVars,
+  typographyVars,
+} from '@xds/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   storyWrapper: {
     display: 'flex',
     flexDirection: 'column',
-    gap: spacing.space6,
+    gap: spacingVars['--spacing-6'],
   },
   row: {
     display: 'flex',
     alignItems: 'center',
-    gap: spacing.space4,
+    gap: spacingVars['--spacing-4'],
   },
   heading: {
-    margin: `0 0 ${spacing.space2} 0`,
-    fontFamily: typography.fontFamilyBody,
+    margin: `0 0 ${spacingVars['--spacing-2']} 0`,
+    fontFamily: typographyVars['--font-body'],
   },
   statusDot: {
     width: 10,
     height: 10,
     borderRadius: '50%',
-    backgroundColor: color.positive,
+    backgroundColor: colorVars['--color-positive'],
     borderWidth: 2,
     borderStyle: 'solid',
-    borderColor: color.surface,
+    borderColor: colorVars['--color-surface'],
   },
   statusDotOffline: {
-    backgroundColor: color.textSecondary,
+    backgroundColor: colorVars['--color-text-secondary'],
   },
   statusDotBusy: {
-    backgroundColor: color.negative,
+    backgroundColor: colorVars['--color-negative'],
   },
 });
 
 // Simple status indicator component for demos
-const StatusDot = ({ status = 'online' }: { status?: 'online' | 'offline' | 'busy' }) => (
+const StatusDot = ({
+  status = 'online',
+}: {
+  status?: 'online' | 'offline' | 'busy';
+}) => (
   <div
     {...stylex.props(
       styles.statusDot,
       status === 'offline' && styles.statusDotOffline,
-      status === 'busy' && styles.statusDotBusy
+      status === 'busy' && styles.statusDotBusy,
     )}
   />
 );
@@ -53,7 +61,27 @@ const meta: Meta<typeof XDSAvatar> = {
   argTypes: {
     size: {
       control: 'select',
-      options: ['tiny', 'xsmall', 'small', 'medium', 'large', 16, 20, 24, 32, 36, 40, 48, 60, 64, 72, 96, 128, 144, 180],
+      options: [
+        'tiny',
+        'xsmall',
+        'small',
+        'medium',
+        'large',
+        16,
+        20,
+        24,
+        32,
+        36,
+        40,
+        48,
+        60,
+        64,
+        72,
+        96,
+        128,
+        144,
+        180,
+      ],
       description: 'Size of the avatar',
     },
     src: {
@@ -121,11 +149,31 @@ export const WithImages: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <h4 {...stylex.props(styles.heading)}>With Images (Different Sizes)</h4>
       <div {...stylex.props(styles.row)}>
-        <XDSAvatar src="https://i.pravatar.cc/150?img=1" name="User 1" size="tiny" />
-        <XDSAvatar src="https://i.pravatar.cc/150?img=2" name="User 2" size="xsmall" />
-        <XDSAvatar src="https://i.pravatar.cc/150?img=3" name="User 3" size="small" />
-        <XDSAvatar src="https://i.pravatar.cc/150?img=4" name="User 4" size="medium" />
-        <XDSAvatar src="https://i.pravatar.cc/150?img=5" name="User 5" size="large" />
+        <XDSAvatar
+          src="https://i.pravatar.cc/150?img=1"
+          name="User 1"
+          size="tiny"
+        />
+        <XDSAvatar
+          src="https://i.pravatar.cc/150?img=2"
+          name="User 2"
+          size="xsmall"
+        />
+        <XDSAvatar
+          src="https://i.pravatar.cc/150?img=3"
+          name="User 3"
+          size="small"
+        />
+        <XDSAvatar
+          src="https://i.pravatar.cc/150?img=4"
+          name="User 4"
+          size="medium"
+        />
+        <XDSAvatar
+          src="https://i.pravatar.cc/150?img=5"
+          name="User 5"
+          size="large"
+        />
       </div>
     </div>
   ),
@@ -167,10 +215,16 @@ export const FallbackChain: Story = {
       <div {...stylex.props(styles.row)}>
         <div>
           <p {...stylex.props(styles.heading)}>Valid src</p>
-          <XDSAvatar src="https://i.pravatar.cc/150?img=10" name="Test User" size="large" />
+          <XDSAvatar
+            src="https://i.pravatar.cc/150?img=10"
+            name="Test User"
+            size="large"
+          />
         </div>
         <div>
-          <p {...stylex.props(styles.heading)}>Invalid src, valid fallbackSrc</p>
+          <p {...stylex.props(styles.heading)}>
+            Invalid src, valid fallbackSrc
+          </p>
           <XDSAvatar
             src="https://invalid-url.example/broken.jpg"
             fallbackSrc="https://i.pravatar.cc/150?img=11"

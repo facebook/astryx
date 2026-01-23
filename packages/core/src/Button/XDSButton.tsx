@@ -19,11 +19,10 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
-  color,
-  spacing,
-  radius,
-  transition,
-  typography,
+  colorVars,
+  spacingVars,
+  radiusVars,
+  transitionVars,
 } from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
 
@@ -38,19 +37,19 @@ const styles = stylex.create({
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.space2,
-    paddingBlock: spacing.space2,
-    paddingInline: spacing.space3,
+    gap: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
     borderWidth: 0,
     borderStyle: 'none',
-    borderRadius: radius.element,
-    fontFamily: typography.fontFamilyBody,
+    borderRadius: radiusVars['--radius-element'],
+    fontFamily: 'inherit',
     fontSize: '0.875rem',
     lineHeight: 1.429,
     fontWeight: 500,
     cursor: 'pointer',
     transitionProperty: 'background-image, transform',
-    transitionDuration: transition.fast,
+    transitionDuration: transitionVars['--transition-fast'],
     transform: {
       default: 'scale(1)',
       ':active': 'scale(0.98)',
@@ -74,70 +73,70 @@ const styles = stylex.create({
  */
 const variants = stylex.create({
   primary: {
-    backgroundColor: color.accent,
+    backgroundColor: colorVars['--color-accent'],
     color: 'white',
     backgroundImage: {
       default: null,
-      ':hover': `linear-gradient(${color.hoverOverlay}, ${color.hoverOverlay})`,
-      ':active': `linear-gradient(${color.pressedOverlay}, ${color.pressedOverlay})`,
+      ':hover': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+      ':active': `linear-gradient(${colorVars['--color-pressed-overlay']}, ${colorVars['--color-pressed-overlay']})`,
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${color.focusOutline}`,
+      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
     },
     outlineOffset: {
-      default: null,
+      default: '0',
       ':focus-visible': '3px',
     },
   },
   secondary: {
-    backgroundColor: color.deemphasized,
-    color: color.textPrimary,
+    backgroundColor: colorVars['--color-deemphasized'],
+    color: colorVars['--color-text-primary'],
     backgroundImage: {
       default: null,
-      ':hover': `linear-gradient(${color.hoverOverlay}, ${color.hoverOverlay})`,
-      ':active': `linear-gradient(${color.pressedOverlay}, ${color.pressedOverlay})`,
+      ':hover': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+      ':active': `linear-gradient(${colorVars['--color-pressed-overlay']}, ${colorVars['--color-pressed-overlay']})`,
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${color.focusOutline}`,
+      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
     },
     outlineOffset: {
-      default: null,
+      default: '0',
       ':focus-visible': '3px',
     },
   },
   ghost: {
     backgroundColor: 'transparent',
-    color: color.textPrimary,
+    color: colorVars['--color-text-primary'],
     backgroundImage: {
       default: null,
-      ':hover': `linear-gradient(${color.hoverOverlay}, ${color.hoverOverlay})`,
-      ':active': `linear-gradient(${color.pressedOverlay}, ${color.pressedOverlay})`,
+      ':hover': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+      ':active': `linear-gradient(${colorVars['--color-pressed-overlay']}, ${colorVars['--color-pressed-overlay']})`,
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${color.focusOutline}`,
+      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
     },
     outlineOffset: {
-      default: null,
+      default: '0',
       ':focus-visible': '3px',
     },
   },
   destructive: {
-    backgroundColor: color.negative,
+    backgroundColor: colorVars['--color-negative'],
     color: 'white',
     backgroundImage: {
       default: null,
-      ':hover': `linear-gradient(${color.hoverOverlay}, ${color.hoverOverlay})`,
-      ':active': `linear-gradient(${color.pressedOverlay}, ${color.pressedOverlay})`,
+      ':hover': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+      ':active': `linear-gradient(${colorVars['--color-pressed-overlay']}, ${colorVars['--color-pressed-overlay']})`,
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${color.negative}`,
+      ':focus-visible': `2px solid ${colorVars['--color-negative']}`,
     },
     outlineOffset: {
-      default: null,
+      default: '0',
       ':focus-visible': '3px',
     },
   },
@@ -210,9 +209,9 @@ const loadingStyles = stylex.create({
     borderRightColor: 'transparent',
   },
   spinnerDark: {
-    borderTopColor: color.textPrimary,
-    borderLeftColor: color.textPrimary,
-    borderBottomColor: color.textPrimary,
+    borderTopColor: colorVars['--color-text-primary'],
+    borderLeftColor: colorVars['--color-text-primary'],
+    borderBottomColor: colorVars['--color-text-primary'],
     borderRightColor: 'transparent',
   },
 });

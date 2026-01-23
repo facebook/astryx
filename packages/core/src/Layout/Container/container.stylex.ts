@@ -8,21 +8,21 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {spacing} from '../../theme/tokens.stylex';
+import {spacingVars} from '../../theme/tokens.stylex';
 
 /**
  * Spacing token keys for padding props.
  */
 export type SpacingToken =
-  | 'space0'
-  | 'space0_5'
-  | 'space1'
-  | 'space2'
-  | 'space3'
-  | 'space4'
-  | 'space5'
-  | 'space6'
-  | 'space7';
+  | 'spacing0'
+  | 'spacing0_5'
+  | 'spacing1'
+  | 'spacing2'
+  | 'spacing3'
+  | 'spacing4'
+  | 'spacing5'
+  | 'spacing6'
+  | 'spacing7';
 
 const baseStyles = stylex.create({
   container: {
@@ -34,79 +34,79 @@ const baseStyles = stylex.create({
 });
 
 const paddingOuterXStyles = stylex.create({
-  space0: {'--layout-padding-outer-x': spacing.space0},
-  space0_5: {'--layout-padding-outer-x': spacing.space0_5},
-  space1: {'--layout-padding-outer-x': spacing.space1},
-  space2: {'--layout-padding-outer-x': spacing.space2},
-  space3: {'--layout-padding-outer-x': spacing.space3},
-  space4: {'--layout-padding-outer-x': spacing.space4},
-  space5: {'--layout-padding-outer-x': spacing.space5},
-  space6: {'--layout-padding-outer-x': spacing.space6},
-  space7: {'--layout-padding-outer-x': spacing.space7},
+  spacing0: {'--layout-padding-outer-x': spacingVars['--spacing-0']},
+  spacing0_5: {'--layout-padding-outer-x': spacingVars['--spacing-0-5']},
+  spacing1: {'--layout-padding-outer-x': spacingVars['--spacing-1']},
+  spacing2: {'--layout-padding-outer-x': spacingVars['--spacing-2']},
+  spacing3: {'--layout-padding-outer-x': spacingVars['--spacing-3']},
+  spacing4: {'--layout-padding-outer-x': spacingVars['--spacing-4']},
+  spacing5: {'--layout-padding-outer-x': spacingVars['--spacing-5']},
+  spacing6: {'--layout-padding-outer-x': spacingVars['--spacing-6']},
+  spacing7: {'--layout-padding-outer-x': spacingVars['--spacing-7']},
 });
 
 const paddingOuterYStyles = stylex.create({
-  space0: {'--layout-padding-outer-y': spacing.space0},
-  space0_5: {'--layout-padding-outer-y': spacing.space0_5},
-  space1: {'--layout-padding-outer-y': spacing.space1},
-  space2: {'--layout-padding-outer-y': spacing.space2},
-  space3: {'--layout-padding-outer-y': spacing.space3},
-  space4: {'--layout-padding-outer-y': spacing.space4},
-  space5: {'--layout-padding-outer-y': spacing.space5},
-  space6: {'--layout-padding-outer-y': spacing.space6},
-  space7: {'--layout-padding-outer-y': spacing.space7},
+  spacing0: {'--layout-padding-outer-y': spacingVars['--spacing-0']},
+  spacing0_5: {'--layout-padding-outer-y': spacingVars['--spacing-0-5']},
+  spacing1: {'--layout-padding-outer-y': spacingVars['--spacing-1']},
+  spacing2: {'--layout-padding-outer-y': spacingVars['--spacing-2']},
+  spacing3: {'--layout-padding-outer-y': spacingVars['--spacing-3']},
+  spacing4: {'--layout-padding-outer-y': spacingVars['--spacing-4']},
+  spacing5: {'--layout-padding-outer-y': spacingVars['--spacing-5']},
+  spacing6: {'--layout-padding-outer-y': spacingVars['--spacing-6']},
+  spacing7: {'--layout-padding-outer-y': spacingVars['--spacing-7']},
 });
 
 const paddingInnerXStyles = stylex.create({
-  space0: {'--layout-padding-inner-x': spacing.space0},
-  space0_5: {'--layout-padding-inner-x': spacing.space0_5},
-  space1: {'--layout-padding-inner-x': spacing.space1},
-  space2: {'--layout-padding-inner-x': spacing.space2},
-  space3: {'--layout-padding-inner-x': spacing.space3},
-  space4: {'--layout-padding-inner-x': spacing.space4},
-  space5: {'--layout-padding-inner-x': spacing.space5},
-  space6: {'--layout-padding-inner-x': spacing.space6},
-  space7: {'--layout-padding-inner-x': spacing.space7},
+  spacing0: {'--layout-padding-inner-x': spacingVars['--spacing-0']},
+  spacing0_5: {'--layout-padding-inner-x': spacingVars['--spacing-0-5']},
+  spacing1: {'--layout-padding-inner-x': spacingVars['--spacing-1']},
+  spacing2: {'--layout-padding-inner-x': spacingVars['--spacing-2']},
+  spacing3: {'--layout-padding-inner-x': spacingVars['--spacing-3']},
+  spacing4: {'--layout-padding-inner-x': spacingVars['--spacing-4']},
+  spacing5: {'--layout-padding-inner-x': spacingVars['--spacing-5']},
+  spacing6: {'--layout-padding-inner-x': spacingVars['--spacing-6']},
+  spacing7: {'--layout-padding-inner-x': spacingVars['--spacing-7']},
 });
 
 const paddingInnerYStyles = stylex.create({
-  space0: {'--layout-padding-inner-y': spacing.space0},
-  space0_5: {'--layout-padding-inner-y': spacing.space0_5},
-  space1: {'--layout-padding-inner-y': spacing.space1},
-  space2: {'--layout-padding-inner-y': spacing.space2},
-  space3: {'--layout-padding-inner-y': spacing.space3},
-  space4: {'--layout-padding-inner-y': spacing.space4},
-  space5: {'--layout-padding-inner-y': spacing.space5},
-  space6: {'--layout-padding-inner-y': spacing.space6},
-  space7: {'--layout-padding-inner-y': spacing.space7},
+  spacing0: {'--layout-padding-inner-y': spacingVars['--spacing-0']},
+  spacing0_5: {'--layout-padding-inner-y': spacingVars['--spacing-0-5']},
+  spacing1: {'--layout-padding-inner-y': spacingVars['--spacing-1']},
+  spacing2: {'--layout-padding-inner-y': spacingVars['--spacing-2']},
+  spacing3: {'--layout-padding-inner-y': spacingVars['--spacing-3']},
+  spacing4: {'--layout-padding-inner-y': spacingVars['--spacing-4']},
+  spacing5: {'--layout-padding-inner-y': spacingVars['--spacing-5']},
+  spacing6: {'--layout-padding-inner-y': spacingVars['--spacing-6']},
+  spacing7: {'--layout-padding-inner-y': spacingVars['--spacing-7']},
 });
 
 export interface ContainerOptions {
   /**
    * Outer horizontal padding (left/right).
    * Sets --layout-padding-outer-x CSS variable.
-   * @default 'space4'
+   * @default 'spacing4'
    */
   paddingOuterX?: SpacingToken;
 
   /**
    * Outer vertical padding (top/bottom).
    * Sets --layout-padding-outer-y CSS variable.
-   * @default 'space4'
+   * @default 'spacing4'
    */
   paddingOuterY?: SpacingToken;
 
   /**
    * Inner horizontal padding for content areas.
    * Sets --layout-padding-inner-x CSS variable.
-   * @default 'space4'
+   * @default 'spacing4'
    */
   paddingInnerX?: SpacingToken;
 
   /**
    * Inner vertical padding for content areas.
    * Sets --layout-padding-inner-y CSS variable.
-   * @default 'space4'
+   * @default 'spacing4'
    */
   paddingInnerY?: SpacingToken;
 }
@@ -138,10 +138,10 @@ export interface ContainerOptions {
  * ```
  */
 export function container({
-  paddingOuterX = 'space4',
-  paddingOuterY = 'space4',
-  paddingInnerX = 'space4',
-  paddingInnerY = 'space4',
+  paddingOuterX = 'spacing4',
+  paddingOuterY = 'spacing4',
+  paddingInnerX = 'spacing4',
+  paddingInnerY = 'spacing4',
 }: ContainerOptions) {
   return [
     baseStyles.container,

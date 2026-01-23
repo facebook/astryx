@@ -12,7 +12,7 @@
 import type {AriaRole, HTMLAttributes, ReactNode} from 'react';
 import {forwardRef, useContext} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {spacing} from '../../theme/tokens.stylex';
+import {spacingVars} from '../../theme/tokens.stylex';
 import {XDSLayoutSlotsContext} from './XDSLayoutSlotsContext';
 
 const styles = stylex.create({
@@ -23,26 +23,26 @@ const styles = stylex.create({
     minHeight: 0,
     overflow: 'clip',
     // Default: inner padding on all sides (will be overridden by position-specific styles)
-    paddingInlineStart: `var(--layout-padding-inner-x, ${spacing.space4})`,
-    paddingInlineEnd: `var(--layout-padding-inner-x, ${spacing.space4})`,
-    paddingBlockStart: `var(--layout-padding-inner-y, ${spacing.space4})`,
-    paddingBlockEnd: `var(--layout-padding-inner-y, ${spacing.space4})`,
+    paddingInlineStart: `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
+    paddingInlineEnd: `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
+    paddingBlockStart: `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
+    paddingBlockEnd: `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
   },
   // When no start panel: outer-x on left edge
   noStart: {
-    paddingInlineStart: `var(--layout-padding-outer-x, ${spacing.space4})`,
+    paddingInlineStart: `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
   },
   // When no end panel: outer-x on right edge
   noEnd: {
-    paddingInlineEnd: `var(--layout-padding-outer-x, ${spacing.space4})`,
+    paddingInlineEnd: `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
   },
   // When no header: outer-y on top
   noHeader: {
-    paddingBlockStart: `var(--layout-padding-outer-y, ${spacing.space4})`,
+    paddingBlockStart: `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
   },
   // When no footer: outer-y on bottom
   noFooter: {
-    paddingBlockEnd: `var(--layout-padding-outer-y, ${spacing.space4})`,
+    paddingBlockEnd: `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
   },
   scrollable: {
     overflow: 'auto',

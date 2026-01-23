@@ -1,44 +1,49 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import { XDSHStack, XDSVStack, XDSStackItem } from '@xds/core/Layout';
-import { color, spacing, radius, typography } from '@xds/core/theme/tokens.stylex';
+import {XDSHStack, XDSVStack, XDSStackItem} from '@xds/core/Layout';
+import {
+  colorVars,
+  spacingVars,
+  radiusVars,
+  typographyVars,
+} from '@xds/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   box: {
-    backgroundColor: color.blueBackground,
-    color: color.blueText,
+    backgroundColor: colorVars['--color-blue-background'],
+    color: colorVars['--color-blue-text'],
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: color.blueBorder,
-    paddingBlock: spacing.space4,
-    paddingInline: spacing.space6,
-    borderRadius: radius.element,
+    borderColor: colorVars['--color-blue-border'],
+    paddingBlock: spacingVars['--spacing-4'],
+    paddingInline: spacingVars['--spacing-6'],
+    borderRadius: radiusVars['--radius-element'],
     fontWeight: 500,
     height: '100%',
     boxSizing: 'border-box',
   },
   boxAlt: {
-    backgroundColor: color.grayBackground,
-    color: color.grayText,
-    borderColor: color.grayBorder,
+    backgroundColor: colorVars['--color-gray-background'],
+    color: colorVars['--color-gray-text'],
+    borderColor: colorVars['--color-gray-border'],
   },
   boxGreen: {
-    backgroundColor: color.greenBackground,
-    color: color.greenText,
-    borderColor: color.greenBorder,
+    backgroundColor: colorVars['--color-green-background'],
+    color: colorVars['--color-green-text'],
+    borderColor: colorVars['--color-green-border'],
   },
   boxPurple: {
-    backgroundColor: color.purpleBackground,
-    color: color.purpleText,
-    borderColor: color.purpleBorder,
+    backgroundColor: colorVars['--color-purple-background'],
+    color: colorVars['--color-purple-text'],
+    borderColor: colorVars['--color-purple-border'],
   },
   boxOrange: {
-    backgroundColor: color.orangeBackground,
-    color: color.orangeText,
-    borderColor: color.orangeBorder,
+    backgroundColor: colorVars['--color-orange-background'],
+    color: colorVars['--color-orange-text'],
+    borderColor: colorVars['--color-orange-border'],
   },
   container: {
-    backgroundColor: color.wash,
+    backgroundColor: colorVars['--color-wash'],
   },
   containerWidth: {
     width: 500,
@@ -53,7 +58,7 @@ const styles = stylex.create({
     height: 200,
   },
   containerPadding: {
-    padding: spacing.space2,
+    padding: spacingVars['--spacing-2'],
   },
   sidebarWidth: {
     width: 150,
@@ -61,23 +66,36 @@ const styles = stylex.create({
   storyWrapper: {
     display: 'flex',
     flexDirection: 'column',
-    gap: spacing.space6,
+    gap: spacingVars['--spacing-6'],
   },
   heading: {
-    margin: `0 0 ${spacing.space2} 0`,
-    fontFamily: typography.fontFamilyBody,
+    margin: `0 0 ${spacingVars['--spacing-2']} 0`,
+    fontFamily: typographyVars['--font-body'],
   },
 });
 
 // Demo box component for visibility
-const Box = ({ children, alt = false, green = false, purple = false, orange = false }: {
+const Box = ({
+  children,
+  alt = false,
+  green = false,
+  purple = false,
+  orange = false,
+}: {
   children: React.ReactNode;
   alt?: boolean;
   green?: boolean;
   purple?: boolean;
   orange?: boolean;
 }) => (
-  <div {...stylex.props(styles.box, alt && styles.boxAlt, green && styles.boxGreen, purple && styles.boxPurple, orange && styles.boxOrange)}>
+  <div
+    {...stylex.props(
+      styles.box,
+      alt && styles.boxAlt,
+      green && styles.boxGreen,
+      purple && styles.boxPurple,
+      orange && styles.boxOrange,
+    )}>
     {children}
   </div>
 );
@@ -113,8 +131,14 @@ export const Default: Story = {
     size: 'static',
     children: null,
   },
-  render: (args) => (
-    <XDSHStack gap="space2" xstyle={[styles.container, styles.containerWidth, styles.containerPadding]}>
+  render: args => (
+    <XDSHStack
+      gap="space2"
+      xstyle={[
+        styles.container,
+        styles.containerWidth,
+        styles.containerPadding,
+      ]}>
       <XDSStackItem {...args}>
         <Box>Stack Item</Box>
       </XDSStackItem>
@@ -125,7 +149,13 @@ export const Default: Story = {
 
 export const FillSize: Story = {
   render: () => (
-    <XDSHStack gap="space2" xstyle={[styles.container, styles.containerWidth, styles.containerPadding]}>
+    <XDSHStack
+      gap="space2"
+      xstyle={[
+        styles.container,
+        styles.containerWidth,
+        styles.containerPadding,
+      ]}>
       <XDSStackItem size="static">
         <Box alt>Static</Box>
       </XDSStackItem>
@@ -143,7 +173,13 @@ export const EqualFill: Story = {
   render: () => (
     <div>
       <h4 {...stylex.props(styles.heading)}>Equal Fill (1:1:1)</h4>
-      <XDSHStack gap="space2" xstyle={[styles.container, styles.containerWidth, styles.containerPadding]}>
+      <XDSHStack
+        gap="space2"
+        xstyle={[
+          styles.container,
+          styles.containerWidth,
+          styles.containerPadding,
+        ]}>
         <XDSStackItem size="fill">
           <Box>fill</Box>
         </XDSStackItem>
@@ -160,7 +196,13 @@ export const EqualFill: Story = {
 
 export const CrossAlignSelf: Story = {
   render: () => (
-    <XDSHStack gap="space2" xstyle={[styles.container, styles.containerHeight, styles.containerPadding]}>
+    <XDSHStack
+      gap="space2"
+      xstyle={[
+        styles.container,
+        styles.containerHeight,
+        styles.containerPadding,
+      ]}>
       <XDSStackItem crossAlignSelf="start">
         <Box>start</Box>
       </XDSStackItem>
@@ -179,7 +221,13 @@ export const CrossAlignSelf: Story = {
 
 export const PolymorphicElement: Story = {
   render: () => (
-    <XDSHStack gap="space2" xstyle={[styles.container, styles.containerWidth, styles.containerPadding]}>
+    <XDSHStack
+      gap="space2"
+      xstyle={[
+        styles.container,
+        styles.containerWidth,
+        styles.containerPadding,
+      ]}>
       <XDSStackItem element="section" size="fill">
         <Box>section element</Box>
       </XDSStackItem>
@@ -198,7 +246,13 @@ export const CommonLayoutPattern: Story = {
     <XDSVStack gap="space4">
       <div>
         <h4 {...stylex.props(styles.heading)}>Header Layout</h4>
-        <XDSHStack gap="space2" xstyle={[styles.container, styles.containerWidthLarge, styles.containerPadding]}>
+        <XDSHStack
+          gap="space2"
+          xstyle={[
+            styles.container,
+            styles.containerWidthLarge,
+            styles.containerPadding,
+          ]}>
           <XDSStackItem size="static">
             <Box alt>Logo</Box>
           </XDSStackItem>
@@ -212,7 +266,14 @@ export const CommonLayoutPattern: Story = {
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>Sidebar Layout</h4>
-        <XDSHStack gap="space2" xstyle={[styles.container, styles.containerWidthLarge, styles.containerHeightLarge, styles.containerPadding]}>
+        <XDSHStack
+          gap="space2"
+          xstyle={[
+            styles.container,
+            styles.containerWidthLarge,
+            styles.containerHeightLarge,
+            styles.containerPadding,
+          ]}>
           <XDSStackItem size="static" xstyle={styles.sidebarWidth}>
             <Box alt>Sidebar</Box>
           </XDSStackItem>
