@@ -13,7 +13,7 @@
 
 import {forwardRef, useState, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {color, spacing, radius, typography} from '../theme/tokens.stylex';
+import {colorVars, typographyVars} from '../theme/tokens.stylex';
 
 /**
  * The offset ratio for positioning elements on a circle's edge at 45°.
@@ -119,9 +119,9 @@ const styles = stylex.create({
     justifyContent: 'center',
     width: '100%',
     height: '100%',
-    backgroundColor: color.deemphasized,
-    color: color.textSecondary,
-    fontFamily: typography.fontFamilyBody,
+    backgroundColor: colorVars['--color-deemphasized'],
+    color: colorVars['--color-text-secondary'],
+    fontFamily: typographyVars['--font-body'],
     fontWeight: 500,
     textTransform: 'uppercase',
   },

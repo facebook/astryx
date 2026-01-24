@@ -13,6 +13,14 @@
 
 import * as stylex from '@stylexjs/stylex';
 import type {Theme} from './types';
+import {
+  colorVars,
+  spacingVars,
+  radiusVars,
+  elevationVars,
+  transitionVars,
+  typographyVars,
+} from './tokens.stylex';
 import type {
   ColorVarName,
   SpacingVarName,
@@ -20,12 +28,18 @@ import type {
   ElevationVarName,
   TransitionVarName,
   TypographyVarName,
+  BaseColorRaw,
+  BaseSpacingRaw,
+  BaseRadiusRaw,
+  BaseElevationRaw,
+  BaseTransitionRaw,
+  BaseTypographyRaw,
 } from './tokens.stylex';
 
 // =============================================================================
 // Raw Theme Values
 // =============================================================================
-// Define raw values as plain objects first, then use in stylex.create
+// Define raw values as plain objects first, then use in createTheme
 // This allows programmatic access to values (e.g., parsing light-dark())
 
 const colorRaw = {
@@ -188,18 +202,42 @@ const typographyRaw = {
 } as const satisfies Record<TypographyVarName, string>;
 
 // =============================================================================
-// Theme Styles
+// Theme Overrides using createTheme
 // =============================================================================
-// Create StyleX styles from raw values for applying to elements
 
-const themeStyles = stylex.create({
-  colors: colorRaw,
-  spacing: spacingRaw,
-  radius: radiusRaw,
-  elevation: elevationRaw,
-  transition: transitionRaw,
-  typography: typographyRaw,
-});
+const colorTheme = stylex.createTheme(
+  colorVars,
+  colorRaw as unknown as BaseColorRaw,
+);
+
+const spacingTheme = stylex.createTheme(
+  spacingVars,
+  spacingRaw as unknown as BaseSpacingRaw,
+);
+
+const radiusTheme = stylex.createTheme(
+  radiusVars,
+  radiusRaw as unknown as BaseRadiusRaw,
+);
+
+const elevationTheme = stylex.createTheme(
+  elevationVars,
+  elevationRaw as unknown as BaseElevationRaw,
+);
+
+const transitionTheme = stylex.createTheme(
+  transitionVars,
+  transitionRaw as unknown as BaseTransitionRaw,
+);
+
+const typographyTheme = stylex.createTheme(
+  typographyVars,
+  typographyRaw as unknown as BaseTypographyRaw,
+);
+
+// =============================================================================
+// Component Style Overrides
+// =============================================================================
 
 const buttonVariants = stylex.create({
   secondary: {
@@ -215,12 +253,12 @@ const buttonVariants = stylex.create({
 export const defaultTheme: Theme = {
   name: 'default',
   styles: {
-    colors: themeStyles.colors,
-    spacing: themeStyles.spacing,
-    radius: themeStyles.radius,
-    elevation: themeStyles.elevation,
-    transition: themeStyles.transition,
-    typography: themeStyles.typography,
+    colors: colorTheme,
+    spacing: spacingTheme,
+    radius: radiusTheme,
+    elevation: elevationTheme,
+    transition: transitionTheme,
+    typography: typographyTheme,
   },
   raw: {
     colors: colorRaw,

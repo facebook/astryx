@@ -22,7 +22,7 @@ import * as stylex from '@stylexjs/stylex';
 import {ThemeContext} from '../theme/ThemeContext';
 import {useXDSTooltip, type TooltipFocusTrigger} from './useXDSTooltip';
 import type {LayerAlignment, LayerPlacement} from './useXDSLayer';
-import {color} from '../theme/tokens.stylex';
+import {colorVars} from '../theme/tokens.stylex';
 
 export type {TooltipFocusTrigger} from './useXDSTooltip';
 
@@ -36,7 +36,7 @@ const styles = stylex.create({
   hoverIndication: {
     textDecorationLine: 'underline',
     textDecorationStyle: 'dashed',
-    textDecorationColor: color.dividerEmphasized,
+    textDecorationColor: colorVars['--color-divider-emphasized'],
     textUnderlineOffset: '2px',
   },
 });

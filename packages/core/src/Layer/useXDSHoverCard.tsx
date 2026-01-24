@@ -26,14 +26,19 @@ import {
   type LayerAlignment,
   type LayerPlacement,
 } from './useXDSLayer';
-import {color, elevation, radius, spacing} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  elevationVars,
+  radiusVars,
+  spacingVars,
+} from '../theme/tokens.stylex';
 
 const styles = stylex.create({
   // Base container styles passed to useXDSLayer (includes animations)
   container: {
-    backgroundColor: color.surface,
-    borderRadius: radius.container,
-    boxShadow: elevation.hover,
+    backgroundColor: colorVars['--color-surface'],
+    borderRadius: radiusVars['--radius-container'],
+    boxShadow: elevationVars['--elevation-hover'],
     // Animation: closed state (default) and open state
     opacity: {
       default: 0,
@@ -56,23 +61,23 @@ const styles = stylex.create({
   },
   // Position-based margin styles
   marginBlock: {
-    marginBlockStart: spacing.space1,
-    marginBlockEnd: spacing.space1,
+    marginBlockStart: spacingVars['--spacing-1'],
+    marginBlockEnd: spacingVars['--spacing-1'],
     marginInlineStart: 0,
     marginInlineEnd: 0,
   },
   marginInline: {
     marginBlockStart: 0,
     marginBlockEnd: 0,
-    marginInlineStart: spacing.space1,
-    marginInlineEnd: spacing.space1,
+    marginInlineStart: spacingVars['--spacing-1'],
+    marginInlineEnd: spacingVars['--spacing-1'],
   },
   // Content wrapper for padding and mouse events
   content: {
-    paddingBlockStart: spacing.space3,
-    paddingBlockEnd: spacing.space3,
-    paddingInlineStart: spacing.space3,
-    paddingInlineEnd: spacing.space3,
+    paddingBlockStart: spacingVars['--spacing-3'],
+    paddingBlockEnd: spacingVars['--spacing-3'],
+    paddingInlineStart: spacingVars['--spacing-3'],
+    paddingInlineEnd: spacingVars['--spacing-3'],
   },
 });
 

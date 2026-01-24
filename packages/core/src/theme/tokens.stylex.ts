@@ -1,8 +1,9 @@
 /**
  * XDS Design Tokens
  *
- * Defines all design tokens using StyleX defineConsts.
- * These reference CSS variables that are set by theme files.
+ * Defines all design tokens using StyleX defineVars.
+ * - *Raw: Plain objects with default values (can be reused by themes)
+ * - *Vars: CSS custom properties that themes can override via createTheme
  */
 
 import * as stylex from '@stylexjs/stylex';
@@ -11,302 +12,213 @@ import * as stylex from '@stylexjs/stylex';
 // Color Tokens
 // =============================================================================
 
-export const color = stylex.defineConsts({
+export const colorRaw = {
   // Core semantic
-  accent: 'var(--color-accent)',
-  accentDeemphasized: 'var(--color-accent-deemphasized)',
-  accentText: 'var(--color-accent-text)',
-  surface: 'var(--color-surface)',
-  wash: 'var(--color-wash)',
-  overlay: 'var(--color-overlay)',
-  hoverOverlay: 'var(--color-hover-overlay)',
-  pressedOverlay: 'var(--color-pressed-overlay)',
-  focusOutline: 'var(--color-focus-outline)',
-  deemphasized: 'var(--color-deemphasized)',
+  '--color-accent': '#0064E0',
+  '--color-accent-deemphasized': '#0082FB33',
+  '--color-accent-text': '#0143B5',
+  '--color-surface': '#FFFFFF',
+  '--color-wash': '#F1F4F7',
+  '--color-overlay': '#01122866',
+  '--color-hover-overlay': '#0536590C',
+  '--color-pressed-overlay': '#05365919',
+  '--color-focus-outline': '#042F97',
+  '--color-deemphasized': '#0536590C',
 
   // Text
-  textPrimary: 'var(--color-text-primary)',
-  textSecondary: 'var(--color-text-secondary)',
-  textDisabled: 'var(--color-text-disabled)',
-  textLink: 'var(--color-text-link)',
-  textPlaceholder: 'var(--color-text-placeholder)',
+  '--color-text-primary': '#0A1317',
+  '--color-text-secondary': '#4E606F',
+  '--color-text-disabled': '#A4B0BC',
+  '--color-text-link': '#0064E0',
+  '--color-text-placeholder': '#4E606F',
 
   // Icon
-  iconPrimary: 'var(--color-icon-primary)',
-  iconSecondary: 'var(--color-icon-secondary)',
-  iconTertiary: 'var(--color-icon-tertiary)',
-  iconDisabled: 'var(--color-icon-disabled)',
+  '--color-icon-primary': '#0A1317',
+  '--color-icon-secondary': '#4E606F',
+  '--color-icon-tertiary': '#748695',
+  '--color-icon-disabled': '#A4B0BC',
 
   // Surface variants
-  card: 'var(--color-card)',
-  popover: 'var(--color-popover)',
-  navbar: 'var(--color-navbar)',
+  '--color-card': '#FFFFFF',
+  '--color-popover': '#FFFFFF',
+  '--color-navbar': '#FFFFFF',
 
   // Status/Sentiment
-  positive: 'var(--color-positive)',
-  positiveDeemphasized: 'var(--color-positive-deemphasized)',
-  negative: 'var(--color-negative)',
-  negativeDeemphasized: 'var(--color-negative-deemphasized)',
-  warning: 'var(--color-warning)',
-  warningDeemphasized: 'var(--color-warning-deemphasized)',
-  educational: 'var(--color-educational)',
-  educationalDeemphasized: 'var(--color-educational-deemphasized)',
+  '--color-positive': '#0D8626',
+  '--color-positive-deemphasized': '#0B991F33',
+  '--color-negative': '#E3193B',
+  '--color-negative-deemphasized': '#E3193B33',
+  '--color-warning': '#E9AF08',
+  '--color-warning-deemphasized': '#E2A40033',
+  '--color-educational': '#5B08D8',
+  '--color-educational-deemphasized': '#7952FF33',
 
   // Divider
-  divider: 'var(--color-divider)',
-  dividerHighContrast: 'var(--color-divider-high-contrast)',
-  dividerEmphasized: 'var(--color-divider-emphasized)',
+  '--color-divider': '#05365919',
+  '--color-divider-high-contrast': '#647685',
+  '--color-divider-emphasized': '#CCD3DB',
 
   // Disabled/Effects
-  disabledOverlay: 'var(--color-disabled-overlay)',
-  glimmer: 'var(--color-glimmer)',
-  glimmerHighContrast: 'var(--color-glimmer-high-contrast)',
-  shadowElevation: 'var(--color-shadow-elevation)',
+  '--color-disabled-overlay': '#FFFFFF7F',
+  '--color-glimmer': '#CCD3DB',
+  '--color-glimmer-high-contrast': '#A4B0BC',
+  '--color-shadow-elevation': 'rgba(5, 54, 89, 0.1)',
 
-  // Literal color sets - Blue
-  blueBackground: 'var(--color-blue-background)',
-  blueBorder: 'var(--color-blue-border)',
-  blueIcon: 'var(--color-blue-icon)',
-  blueText: 'var(--color-blue-text)',
+  // Blue
+  '--color-blue-background': '#0171E333',
+  '--color-blue-border': '#0171E3',
+  '--color-blue-icon': '#0064E0',
+  '--color-blue-text': '#042F97',
 
   // Cyan
-  cyanBackground: 'var(--color-cyan-background)',
-  cyanBorder: 'var(--color-cyan-border)',
-  cyanIcon: 'var(--color-cyan-icon)',
-  cyanText: 'var(--color-cyan-text)',
+  '--color-cyan-background': '#00BCD433',
+  '--color-cyan-border': '#00BCD4',
+  '--color-cyan-icon': '#00ACC1',
+  '--color-cyan-text': '#006064',
 
   // Gray
-  grayBackground: 'var(--color-gray-background)',
-  grayBorder: 'var(--color-gray-border)',
-  grayIcon: 'var(--color-gray-icon)',
-  grayText: 'var(--color-gray-text)',
+  '--color-gray-background': '#0A131733',
+  '--color-gray-border': '#647685',
+  '--color-gray-icon': '#4E606F',
+  '--color-gray-text': '#0A1317',
 
   // Green
-  greenBackground: 'var(--color-green-background)',
-  greenBorder: 'var(--color-green-border)',
-  greenIcon: 'var(--color-green-icon)',
-  greenText: 'var(--color-green-text)',
+  '--color-green-background': '#24BB5E33',
+  '--color-green-border': '#24BB5E',
+  '--color-green-icon': '#0D8626',
+  '--color-green-text': '#09441F',
 
   // Orange
-  orangeBackground: 'var(--color-orange-background)',
-  orangeBorder: 'var(--color-orange-border)',
-  orangeIcon: 'var(--color-orange-icon)',
-  orangeText: 'var(--color-orange-text)',
+  '--color-orange-background': '#F2790233',
+  '--color-orange-border': '#F27902',
+  '--color-orange-icon': '#E9690B',
+  '--color-orange-text': '#6B2203',
 
   // Pink
-  pinkBackground: 'var(--color-pink-background)',
-  pinkBorder: 'var(--color-pink-border)',
-  pinkIcon: 'var(--color-pink-icon)',
-  pinkText: 'var(--color-pink-text)',
+  '--color-pink-background': '#E91E6333',
+  '--color-pink-border': '#E91E63',
+  '--color-pink-icon': '#C2185B',
+  '--color-pink-text': '#880E4F',
 
   // Purple
-  purpleBackground: 'var(--color-purple-background)',
-  purpleBorder: 'var(--color-purple-border)',
-  purpleIcon: 'var(--color-purple-icon)',
-  purpleText: 'var(--color-purple-text)',
+  '--color-purple-background': '#7952FF33',
+  '--color-purple-border': '#7952FF',
+  '--color-purple-icon': '#5B08D8',
+  '--color-purple-text': '#3E0697',
 
   // Red
-  redBackground: 'var(--color-red-background)',
-  redBorder: 'var(--color-red-border)',
-  redIcon: 'var(--color-red-icon)',
-  redText: 'var(--color-red-text)',
+  '--color-red-background': '#E3193B33',
+  '--color-red-border': '#E3193B',
+  '--color-red-icon': '#D31130',
+  '--color-red-text': '#7B0210',
 
   // Teal
-  tealBackground: 'var(--color-teal-background)',
-  tealBorder: 'var(--color-teal-border)',
-  tealIcon: 'var(--color-teal-icon)',
-  tealText: 'var(--color-teal-text)',
+  '--color-teal-background': '#0DB7AF33',
+  '--color-teal-border': '#0DB7AF',
+  '--color-teal-icon': '#009688',
+  '--color-teal-text': '#083943',
 
   // Yellow
-  yellowBackground: 'var(--color-yellow-background)',
-  yellowBorder: 'var(--color-yellow-border)',
-  yellowIcon: 'var(--color-yellow-icon)',
-  yellowText: 'var(--color-yellow-text)',
-});
+  '--color-yellow-background': '#FFEB3B33',
+  '--color-yellow-border': '#FFEB3B',
+  '--color-yellow-icon': '#FBC02D',
+  '--color-yellow-text': '#F57F17',
+} as const;
+
+export const colorVars = stylex.defineVars(colorRaw);
 
 // =============================================================================
 // Spacing Tokens
 // =============================================================================
 
-export const spacing = stylex.defineConsts({
-  space0: 'var(--spacing-0)',
-  space0_5: 'var(--spacing-0-5)',
-  space1: 'var(--spacing-1)',
-  space2: 'var(--spacing-2)',
-  space3: 'var(--spacing-3)',
-  space4: 'var(--spacing-4)',
-  space5: 'var(--spacing-5)',
-  space6: 'var(--spacing-6)',
-  space7: 'var(--spacing-7)',
-});
+export const spacingRaw = {
+  '--spacing-0': '0px',
+  '--spacing-0-5': '2px',
+  '--spacing-1': '4px',
+  '--spacing-2': '8px',
+  '--spacing-3': '12px',
+  '--spacing-4': '16px',
+  '--spacing-5': '20px',
+  '--spacing-6': '24px',
+  '--spacing-7': '32px',
+} as const;
+
+export const spacingVars = stylex.defineVars(spacingRaw);
 
 // =============================================================================
 // Radius Tokens
 // =============================================================================
 
-export const radius = stylex.defineConsts({
-  rounded: 'var(--radius-rounded)',
-  container: 'var(--radius-container)',
-  element: 'var(--radius-element)',
-  content: 'var(--radius-content)',
-  inner: 'var(--radius-inner)',
-});
+export const radiusRaw = {
+  '--radius-rounded': '9999px',
+  '--radius-container': '12px',
+  '--radius-element': '8px',
+  '--radius-content': '4px',
+  '--radius-inner': '0px',
+} as const;
+
+export const radiusVars = stylex.defineVars(radiusRaw);
 
 // =============================================================================
 // Elevation Tokens
 // =============================================================================
 
-export const elevation = stylex.defineConsts({
-  base: 'var(--elevation-base)',
-  thumb: 'var(--elevation-thumb)',
-  dialog: 'var(--elevation-dialog)',
-  hover: 'var(--elevation-hover)',
-  menu: 'var(--elevation-menu)',
-});
+export const elevationRaw = {
+  '--elevation-base': '0px 0px 1px rgba(0, 0, 0, 0.1)',
+  '--elevation-thumb': '0 1px 3px rgba(0, 0, 0, 0.2)',
+  '--elevation-dialog':
+    '0px 2px 2px rgba(0, 0, 0, 0.1), 0px 8px 24px rgba(0, 0, 0, 0.1)',
+  '--elevation-hover':
+    '0px 1px 2px rgba(0, 0, 0, 0.1), 0px 2px 12px rgba(0, 0, 0, 0.1)',
+  '--elevation-menu':
+    '0px 1px 1px rgba(0, 0, 0, 0.1), 0px 2px 8px rgba(0, 0, 0, 0.1)',
+} as const;
+
+export const elevationVars = stylex.defineVars(elevationRaw);
 
 // =============================================================================
 // Transition Tokens
 // =============================================================================
 
-export const transition = stylex.defineConsts({
-  fast: 'var(--transition-fast)',
-  normal: 'var(--transition-normal)',
-});
+export const transitionRaw = {
+  '--transition-fast': '0.15s ease',
+  '--transition-normal': '0.2s ease',
+} as const;
+
+export const transitionVars = stylex.defineVars(transitionRaw);
 
 // =============================================================================
 // Typography Tokens
 // =============================================================================
 
-export const typography = stylex.defineConsts({
-  fontFamilyBody: 'var(--font-body)',
-  fontFamilyCode: 'var(--font-code)',
-  fontFamilyHeading: 'var(--font-heading)',
-});
+export const typographyRaw = {
+  '--font-body':
+    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  '--font-code': '"SF Mono", Monaco, Consolas, monospace',
+  '--font-heading':
+    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+} as const;
+
+export const typographyVars = stylex.defineVars(typographyRaw);
 
 // =============================================================================
-// Token Key Types - For theme authoring
+// Token Types
 // =============================================================================
 
-export type ColorTokenKey = keyof typeof color;
-export type SpacingTokenKey = keyof typeof spacing;
-export type RadiusTokenKey = keyof typeof radius;
-export type ElevationTokenKey = keyof typeof elevation;
-export type TransitionTokenKey = keyof typeof transition;
-export type TypographyTokenKey = keyof typeof typography;
+export type ColorVarName = keyof typeof colorRaw;
+export type SpacingVarName = keyof typeof spacingRaw;
+export type RadiusVarName = keyof typeof radiusRaw;
+export type ElevationVarName = keyof typeof elevationRaw;
+export type TransitionVarName = keyof typeof transitionRaw;
+export type TypographyVarName = keyof typeof typographyRaw;
 
-// =============================================================================
-// CSS Variable Name Types - For strict theme validation
-// =============================================================================
-// These types ensure theme files define exactly the required CSS variables.
-// If you add/remove a token above, update the corresponding VarName type.
-
-export type ColorVarName =
-  | '--color-accent'
-  | '--color-accent-deemphasized'
-  | '--color-accent-text'
-  | '--color-surface'
-  | '--color-wash'
-  | '--color-overlay'
-  | '--color-hover-overlay'
-  | '--color-pressed-overlay'
-  | '--color-focus-outline'
-  | '--color-deemphasized'
-  | '--color-text-primary'
-  | '--color-text-secondary'
-  | '--color-text-disabled'
-  | '--color-text-link'
-  | '--color-text-placeholder'
-  | '--color-icon-primary'
-  | '--color-icon-secondary'
-  | '--color-icon-tertiary'
-  | '--color-icon-disabled'
-  | '--color-card'
-  | '--color-popover'
-  | '--color-navbar'
-  | '--color-positive'
-  | '--color-positive-deemphasized'
-  | '--color-negative'
-  | '--color-negative-deemphasized'
-  | '--color-warning'
-  | '--color-warning-deemphasized'
-  | '--color-educational'
-  | '--color-educational-deemphasized'
-  | '--color-divider'
-  | '--color-divider-high-contrast'
-  | '--color-divider-emphasized'
-  | '--color-disabled-overlay'
-  | '--color-glimmer'
-  | '--color-glimmer-high-contrast'
-  | '--color-shadow-elevation'
-  | '--color-blue-background'
-  | '--color-blue-border'
-  | '--color-blue-icon'
-  | '--color-blue-text'
-  | '--color-cyan-background'
-  | '--color-cyan-border'
-  | '--color-cyan-icon'
-  | '--color-cyan-text'
-  | '--color-gray-background'
-  | '--color-gray-border'
-  | '--color-gray-icon'
-  | '--color-gray-text'
-  | '--color-green-background'
-  | '--color-green-border'
-  | '--color-green-icon'
-  | '--color-green-text'
-  | '--color-orange-background'
-  | '--color-orange-border'
-  | '--color-orange-icon'
-  | '--color-orange-text'
-  | '--color-pink-background'
-  | '--color-pink-border'
-  | '--color-pink-icon'
-  | '--color-pink-text'
-  | '--color-purple-background'
-  | '--color-purple-border'
-  | '--color-purple-icon'
-  | '--color-purple-text'
-  | '--color-red-background'
-  | '--color-red-border'
-  | '--color-red-icon'
-  | '--color-red-text'
-  | '--color-teal-background'
-  | '--color-teal-border'
-  | '--color-teal-icon'
-  | '--color-teal-text'
-  | '--color-yellow-background'
-  | '--color-yellow-border'
-  | '--color-yellow-icon'
-  | '--color-yellow-text';
-
-export type SpacingVarName =
-  | '--spacing-0'
-  | '--spacing-0-5'
-  | '--spacing-1'
-  | '--spacing-2'
-  | '--spacing-3'
-  | '--spacing-4'
-  | '--spacing-5'
-  | '--spacing-6'
-  | '--spacing-7';
-
-export type RadiusVarName =
-  | '--radius-rounded'
-  | '--radius-container'
-  | '--radius-element'
-  | '--radius-content'
-  | '--radius-inner';
-
-export type ElevationVarName =
-  | '--elevation-base'
-  | '--elevation-thumb'
-  | '--elevation-dialog'
-  | '--elevation-hover'
-  | '--elevation-menu';
-
-export type TransitionVarName = '--transition-fast' | '--transition-normal';
-
-export type TypographyVarName =
-  | '--font-body'
-  | '--font-code'
-  | '--font-heading';
+// Base raw types for createTheme casting
+// StyleX's createTheme requires exact literal types from defineVars.
+// Theme overrides have different values, so we cast through these types.
+// Type safety is maintained via `as const satisfies Record<*VarName, string>`.
+export type BaseColorRaw = typeof colorRaw;
+export type BaseSpacingRaw = typeof spacingRaw;
+export type BaseRadiusRaw = typeof radiusRaw;
+export type BaseElevationRaw = typeof elevationRaw;
+export type BaseTransitionRaw = typeof transitionRaw;
+export type BaseTypographyRaw = typeof typographyRaw;

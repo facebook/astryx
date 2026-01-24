@@ -26,17 +26,22 @@ import {
   type LayerAlignment,
   type LayerPlacement,
 } from './useXDSLayer';
-import {color, radius, spacing, typography} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  radiusVars,
+  spacingVars,
+  typographyVars,
+} from '../theme/tokens.stylex';
 
 const styles = stylex.create({
   // Base container styles - inverted colors for high contrast
   container: {
     // Inverted color palette: dark background, light text
-    backgroundColor: color.textPrimary,
-    color: color.surface,
-    borderRadius: radius.element,
+    backgroundColor: colorVars['--color-text-primary'],
+    color: colorVars['--color-surface'],
+    borderRadius: radiusVars['--radius-element'],
     // Typography
-    fontFamily: typography.fontFamilyBody,
+    fontFamily: typographyVars['--font-body'],
     fontSize: 14,
     lineHeight: 1.4285714285714,
     // Animation: closed state (default) and open state
@@ -61,23 +66,23 @@ const styles = stylex.create({
   },
   // Position-based margin styles
   marginBlock: {
-    marginBlockStart: spacing.space1,
-    marginBlockEnd: spacing.space1,
+    marginBlockStart: spacingVars['--spacing-1'],
+    marginBlockEnd: spacingVars['--spacing-1'],
     marginInlineStart: 0,
     marginInlineEnd: 0,
   },
   marginInline: {
     marginBlockStart: 0,
     marginBlockEnd: 0,
-    marginInlineStart: spacing.space1,
-    marginInlineEnd: spacing.space1,
+    marginInlineStart: spacingVars['--spacing-1'],
+    marginInlineEnd: spacingVars['--spacing-1'],
   },
   // Content wrapper for padding
   content: {
-    paddingBlockStart: spacing.space1,
-    paddingBlockEnd: spacing.space1,
-    paddingInlineStart: spacing.space2,
-    paddingInlineEnd: spacing.space2,
+    paddingBlockStart: spacingVars['--spacing-1'],
+    paddingBlockEnd: spacingVars['--spacing-1'],
+    paddingInlineStart: spacingVars['--spacing-2'],
+    paddingInlineEnd: spacingVars['--spacing-2'],
   },
 });
 

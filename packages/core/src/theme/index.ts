@@ -15,22 +15,34 @@ export {neutralTheme} from './neutralTheme.stylex';
 
 // Export tokens for use in custom components
 export {
-  color,
-  spacing,
-  radius,
-  elevation,
-  transition,
-  typography,
+  colorRaw,
+  spacingRaw,
+  radiusRaw,
+  elevationRaw,
+  transitionRaw,
+  typographyRaw,
+  colorVars,
+  spacingVars,
+  radiusVars,
+  elevationVars,
+  transitionVars,
+  typographyVars,
 } from './tokens.stylex';
 
 // Export token key types for theme authoring
 export type {
-  ColorTokenKey,
-  SpacingTokenKey,
-  RadiusTokenKey,
-  ElevationTokenKey,
-  TransitionTokenKey,
-  TypographyTokenKey,
+  ColorVarName,
+  SpacingVarName,
+  RadiusVarName,
+  ElevationVarName,
+  TransitionVarName,
+  TypographyVarName,
+  BaseColorRaw,
+  BaseSpacingRaw,
+  BaseRadiusRaw,
+  BaseElevationRaw,
+  BaseTransitionRaw,
+  BaseTypographyRaw,
 } from './tokens.stylex';
 
 export type {

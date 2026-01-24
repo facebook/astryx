@@ -7,7 +7,7 @@
 
 import {forwardRef, useContext, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {color} from '../../theme/tokens.stylex';
+import {colorVars} from '../../theme/tokens.stylex';
 import {ThemeContext} from '../../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../../theme/types';
 import {container} from './container.stylex';
@@ -33,13 +33,13 @@ declare module '../../theme/types' {
 
 const variantStyles = stylex.create({
   section: {
-    backgroundColor: color.surface,
+    backgroundColor: colorVars['--color-surface'],
   },
   transparent: {
     backgroundColor: 'transparent',
   },
   wash: {
-    backgroundColor: color.wash,
+    backgroundColor: colorVars['--color-wash'],
   },
 });
 
@@ -137,10 +137,10 @@ export const XDSSection = forwardRef<HTMLDivElement, XDSSectionProps>(
         ref={ref}
         {...stylex.props(
           ...container({
-            paddingInnerX: 'space4',
-            paddingInnerY: 'space4',
-            paddingOuterX: 'space4',
-            paddingOuterY: 'space4',
+            paddingInnerX: 'spacing4',
+            paddingInnerY: 'spacing4',
+            paddingOuterX: 'spacing4',
+            paddingOuterY: 'spacing4',
           }),
           variantStyles[variant],
           themeVariantOverride,

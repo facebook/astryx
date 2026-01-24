@@ -14,11 +14,11 @@
 import {forwardRef, useId, type ChangeEvent} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
-  color,
-  spacing,
-  radius,
-  transition,
-  typography,
+  colorVars,
+  spacingVars,
+  radiusVars,
+  transitionVars,
+  typographyVars,
 } from '../theme/tokens.stylex';
 import {XDSField} from '../Field';
 
@@ -26,32 +26,32 @@ const styles = stylex.create({
   input: {
     display: 'block',
     width: '100%',
-    paddingBlock: spacing.space2,
-    paddingInline: spacing.space3,
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
     borderWidth: '1px',
     borderStyle: 'solid',
     borderColor: {
-      default: color.dividerEmphasized,
-      ':hover': color.dividerHighContrast,
+      default: colorVars['--color-divider-emphasized'],
+      ':hover': colorVars['--color-divider-high-contrast'],
     },
-    borderRadius: radius.content,
-    fontFamily: typography.fontFamilyBody,
+    borderRadius: radiusVars['--radius-content'],
+    fontFamily: typographyVars['--font-body'],
     fontSize: '0.875rem',
     lineHeight: 1.429,
-    color: color.textPrimary,
-    backgroundColor: color.surface,
+    color: colorVars['--color-text-primary'],
+    backgroundColor: colorVars['--color-surface'],
     transitionProperty: 'border-color, outline',
-    transitionDuration: transition.fast,
+    transitionDuration: transitionVars['--transition-fast'],
     outline: {
       default: 'none',
-      ':focus': `2px solid ${color.focusOutline}`,
+      ':focus': `2px solid ${colorVars['--color-focus-outline']}`,
     },
     outlineOffset: {
       default: '0',
       ':focus': '1px',
     },
     '::placeholder': {
-      color: color.textPlaceholder,
+      color: colorVars['--color-text-placeholder'],
     },
   },
 });

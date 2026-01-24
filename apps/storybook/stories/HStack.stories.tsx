@@ -1,27 +1,32 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import { XDSHStack } from '@xds/core/Layout';
-import { color, spacing, radius, typography } from '@xds/core/theme/tokens.stylex';
+import {XDSHStack} from '@xds/core/Layout';
+import {
+  colorVars,
+  spacingVars,
+  radiusVars,
+  typographyVars,
+} from '@xds/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   box: {
-    backgroundColor: color.blueBackground,
-    color: color.blueText,
+    backgroundColor: colorVars['--color-blue-background'],
+    color: colorVars['--color-blue-text'],
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: color.blueBorder,
-    paddingBlock: spacing.space4,
-    paddingInline: spacing.space6,
-    borderRadius: radius.element,
+    borderColor: colorVars['--color-blue-border'],
+    paddingBlock: spacingVars['--spacing-4'],
+    paddingInline: spacingVars['--spacing-6'],
+    borderRadius: radiusVars['--radius-element'],
     fontWeight: 500,
   },
   boxAlt: {
-    backgroundColor: color.grayBackground,
-    color: color.grayText,
-    borderColor: color.grayBorder,
+    backgroundColor: colorVars['--color-gray-background'],
+    color: colorVars['--color-gray-text'],
+    borderColor: colorVars['--color-gray-border'],
   },
   container: {
-    backgroundColor: color.wash,
+    backgroundColor: colorVars['--color-wash'],
   },
   containerHeight: {
     height: 120,
@@ -33,23 +38,27 @@ const styles = stylex.create({
     width: 300,
   },
   containerPadding: {
-    padding: spacing.space2,
+    padding: spacingVars['--spacing-2'],
   },
   storyWrapper: {
     display: 'flex',
     flexDirection: 'column',
-    gap: spacing.space6,
+    gap: spacingVars['--spacing-6'],
   },
   heading: {
-    margin: `0 0 ${spacing.space2} 0`,
-    fontFamily: typography.fontFamilyBody,
+    margin: `0 0 ${spacingVars['--spacing-2']} 0`,
+    fontFamily: typographyVars['--font-body'],
   },
 });
 
 // Demo box component for visibility
-const Box = ({ children, alt = false }: { children: React.ReactNode; alt?: boolean }) => (
-  <div {...stylex.props(styles.box, alt && styles.boxAlt)}>{children}</div>
-);
+const Box = ({
+  children,
+  alt = false,
+}: {
+  children: React.ReactNode;
+  alt?: boolean;
+}) => <div {...stylex.props(styles.box, alt && styles.boxAlt)}>{children}</div>;
 
 const meta: Meta<typeof XDSHStack> = {
   title: 'Layout/XDSHStack',
@@ -58,7 +67,17 @@ const meta: Meta<typeof XDSHStack> = {
   argTypes: {
     gap: {
       control: 'select',
-      options: ['space0', 'space0.5', 'space1', 'space2', 'space3', 'space4', 'space5', 'space6', 'space7'],
+      options: [
+        'space0',
+        'space0.5',
+        'space1',
+        'space2',
+        'space3',
+        'space4',
+        'space5',
+        'space6',
+        'space7',
+      ],
       description: 'Spacing token for gap between items',
     },
     vAlign: {
@@ -82,7 +101,7 @@ export const Default: Story = {
     gap: 'space2',
     children: null,
   },
-  render: (args) => (
+  render: args => (
     <XDSHStack {...args}>
       <Box>Item 1</Box>
       <Box>Item 2</Box>
@@ -95,7 +114,7 @@ export const WithGap: Story = {
   args: {
     gap: 'space4',
   },
-  render: (args) => (
+  render: args => (
     <XDSHStack {...args}>
       <Box>Item 1</Box>
       <Box>Item 2</Box>
@@ -109,7 +128,7 @@ export const VerticalAlignCenter: Story = {
     gap: 'space4',
     vAlign: 'center',
   },
-  render: (args) => (
+  render: args => (
     <XDSHStack {...args} xstyle={[styles.container, styles.containerHeight]}>
       <Box>Short</Box>
       <Box>
@@ -127,7 +146,7 @@ export const VerticalAlignStart: Story = {
     gap: 'space4',
     vAlign: 'start',
   },
-  render: (args) => (
+  render: args => (
     <XDSHStack {...args} xstyle={[styles.container, styles.containerHeight]}>
       <Box>Short</Box>
       <Box>
@@ -145,7 +164,7 @@ export const VerticalAlignEnd: Story = {
     gap: 'space4',
     vAlign: 'end',
   },
-  render: (args) => (
+  render: args => (
     <XDSHStack {...args} xstyle={[styles.container, styles.containerHeight]}>
       <Box>Short</Box>
       <Box>
@@ -163,8 +182,14 @@ export const Wrapping: Story = {
     gap: 'space2',
     wrap: 'wrap',
   },
-  render: (args) => (
-    <XDSHStack {...args} xstyle={[styles.container, styles.containerWidth, styles.containerPadding]}>
+  render: args => (
+    <XDSHStack
+      {...args}
+      xstyle={[
+        styles.container,
+        styles.containerWidth,
+        styles.containerPadding,
+      ]}>
       <Box>Item 1</Box>
       <Box>Item 2</Box>
       <Box>Item 3</Box>
@@ -179,7 +204,10 @@ export const AllAlignments: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <div>
         <h4 {...stylex.props(styles.heading)}>vAlign: start</h4>
-        <XDSHStack gap="space2" vAlign="start" xstyle={[styles.container, styles.containerHeightSmall]}>
+        <XDSHStack
+          gap="space2"
+          vAlign="start"
+          xstyle={[styles.container, styles.containerHeightSmall]}>
           <Box>A</Box>
           <Box>
             B<br />B
@@ -189,7 +217,10 @@ export const AllAlignments: Story = {
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>vAlign: center</h4>
-        <XDSHStack gap="space2" vAlign="center" xstyle={[styles.container, styles.containerHeightSmall]}>
+        <XDSHStack
+          gap="space2"
+          vAlign="center"
+          xstyle={[styles.container, styles.containerHeightSmall]}>
           <Box>A</Box>
           <Box>
             B<br />B
@@ -199,7 +230,10 @@ export const AllAlignments: Story = {
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>vAlign: end</h4>
-        <XDSHStack gap="space2" vAlign="end" xstyle={[styles.container, styles.containerHeightSmall]}>
+        <XDSHStack
+          gap="space2"
+          vAlign="end"
+          xstyle={[styles.container, styles.containerHeightSmall]}>
           <Box>A</Box>
           <Box>
             B<br />B
@@ -209,7 +243,10 @@ export const AllAlignments: Story = {
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>vAlign: stretch (default)</h4>
-        <XDSHStack gap="space2" vAlign="stretch" xstyle={[styles.container, styles.containerHeightSmall]}>
+        <XDSHStack
+          gap="space2"
+          vAlign="stretch"
+          xstyle={[styles.container, styles.containerHeightSmall]}>
           <Box>A</Box>
           <Box>
             B<br />B

@@ -12,7 +12,7 @@
 
 import {forwardRef, type HTMLAttributes} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {color, radius} from '../theme/tokens.stylex';
+import {colorVars, radiusVars} from '../theme/tokens.stylex';
 
 // =============================================================================
 // Animation Timing Constants
@@ -52,8 +52,9 @@ const skeletonFade = stylex.keyframes({
 const styles = stylex.create({
   root: {
     backgroundColor: {
-      default: color.glimmer,
-      '@media (prefers-contrast: more)': color.glimmerHighContrast,
+      default: colorVars['--color-glimmer'],
+      '@media (prefers-contrast: more)':
+        colorVars['--color-glimmer-high-contrast'],
     },
     opacity: 0.25,
   },
@@ -71,19 +72,19 @@ const radiusStyles = stylex.create({
     borderRadius: 0,
   },
   rounded: {
-    borderRadius: radius.rounded,
+    borderRadius: radiusVars['--radius-rounded'],
   },
   container: {
-    borderRadius: radius.container,
+    borderRadius: radiusVars['--radius-container'],
   },
   element: {
-    borderRadius: radius.element,
+    borderRadius: radiusVars['--radius-element'],
   },
   content: {
-    borderRadius: radius.content,
+    borderRadius: radiusVars['--radius-content'],
   },
   inner: {
-    borderRadius: radius.inner,
+    borderRadius: radiusVars['--radius-inner'],
   },
 });
 

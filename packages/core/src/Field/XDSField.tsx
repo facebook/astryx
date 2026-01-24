@@ -13,13 +13,13 @@
 
 import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {color, spacing, typography} from '../theme/tokens.stylex';
+import {colorVars, spacingVars, typographyVars} from '../theme/tokens.stylex';
 
 const styles = stylex.create({
   container: {
     display: 'flex',
     flexDirection: 'column',
-    gap: spacing.space1,
+    gap: spacingVars['--spacing-1'],
   },
   labelRow: {
     display: 'flex',
@@ -27,10 +27,10 @@ const styles = stylex.create({
     alignItems: 'baseline',
   },
   label: {
-    fontFamily: typography.fontFamilyBody,
+    fontFamily: typographyVars['--font-body'],
     fontSize: '0.875rem',
     fontWeight: 500,
-    color: color.textPrimary,
+    color: colorVars['--color-text-primary'],
   },
   labelHidden: {
     borderStyle: 'none',
@@ -48,15 +48,15 @@ const styles = stylex.create({
     width: 1,
   },
   description: {
-    fontFamily: typography.fontFamilyBody,
+    fontFamily: typographyVars['--font-body'],
     fontSize: '0.75rem',
-    color: color.textSecondary,
+    color: colorVars['--color-text-secondary'],
   },
   optionalRequired: {
-    fontFamily: typography.fontFamilyBody,
+    fontFamily: typographyVars['--font-body'],
     fontSize: '0.75rem',
-    color: color.textSecondary,
-    marginInlineStart: spacing.space1,
+    color: colorVars['--color-text-secondary'],
+    marginInlineStart: spacingVars['--spacing-1'],
   },
 });
 
