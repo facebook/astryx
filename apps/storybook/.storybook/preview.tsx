@@ -1,12 +1,13 @@
 import type { Preview, Decorator } from '@storybook/react';
 import * as React from 'react';
-import { Theme, defaultTheme, neutralTheme } from '@xds/core';
+import { Theme, defaultTheme, facebookTheme, neutralTheme } from '@xds/core';
 
 /**
  * Map of available themes
  */
 const themes = {
   default: defaultTheme,
+  facebook: facebookTheme,
   neutral: neutralTheme,
 };
 
@@ -56,6 +57,7 @@ const preview: Preview = {
         icon: 'paintbrush',
         items: [
           { value: 'default', title: 'Default', icon: 'circlehollow' },
+          { value: 'facebook', title: 'Facebook', icon: 'facebook' },
           { value: 'neutral', title: 'Neutral', icon: 'circle' },
         ],
         dynamicTitle: true,

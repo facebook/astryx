@@ -11,6 +11,7 @@
 
 export {Theme, useTheme} from './Theme';
 export {defaultTheme} from './defaultTheme.stylex';
+export {facebookTheme} from './facebookTheme.stylex';
 export {neutralTheme} from './neutralTheme.stylex';
 
 // Export tokens for use in custom components
