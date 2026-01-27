@@ -300,7 +300,7 @@ const buttonVariants = stylex.create({
 
 const cardStyles = stylex.create({
   // Override card default padding to 12px for tighter layout
-  base: {
+  content: {
     '--layout-padding-inner-x': spacingVars['--spacing-3'],
     '--layout-padding-inner-y': spacingVars['--spacing-3'],
     '--layout-padding-outer-x': spacingVars['--spacing-3'],
@@ -308,21 +308,9 @@ const cardStyles = stylex.create({
   },
 });
 
-const sectionVariants = stylex.create({
-  // Override section padding to 12px for tighter layout
-  section: {
-    '--layout-padding-inner-x': spacingVars['--spacing-3'],
-    '--layout-padding-inner-y': spacingVars['--spacing-3'],
-    '--layout-padding-outer-x': spacingVars['--spacing-3'],
-    '--layout-padding-outer-y': spacingVars['--spacing-3'],
-  },
-  transparent: {
-    '--layout-padding-inner-x': spacingVars['--spacing-3'],
-    '--layout-padding-inner-y': spacingVars['--spacing-3'],
-    '--layout-padding-outer-x': spacingVars['--spacing-3'],
-    '--layout-padding-outer-y': spacingVars['--spacing-3'],
-  },
-  wash: {
+const sectionStyles = stylex.create({
+  // Override section default padding to 12px for tighter layout
+  content: {
     '--layout-padding-inner-x': spacingVars['--spacing-3'],
     '--layout-padding-inner-y': spacingVars['--spacing-3'],
     '--layout-padding-outer-x': spacingVars['--spacing-3'],
@@ -357,10 +345,10 @@ export const neutralTheme: Theme = {
       variants: buttonVariants,
     },
     card: {
-      base: cardStyles.base,
+      content: cardStyles.content,
     },
     section: {
-      variants: sectionVariants,
+      content: sectionStyles.content,
     },
   },
 };

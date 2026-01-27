@@ -27,10 +27,25 @@ export type SpacingToken =
 const baseStyles = stylex.create({
   container: {
     boxSizing: 'border-box',
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100%',
+    padding: 'var(--container-padding)',
   },
+});
+
+/**
+ * Container padding styles.
+ * Sets --container-padding CSS variable for simple content padding.
+ * XDSLayout will override this to 0 and handle its own padding.
+ */
+const containerPaddingStyles = stylex.create({
+  spacing0: {'--container-padding': spacingVars['--spacing-0']},
+  spacing0_5: {'--container-padding': spacingVars['--spacing-0-5']},
+  spacing1: {'--container-padding': spacingVars['--spacing-1']},
+  spacing2: {'--container-padding': spacingVars['--spacing-2']},
+  spacing3: {'--container-padding': spacingVars['--spacing-3']},
+  spacing4: {'--container-padding': spacingVars['--spacing-4']},
+  spacing5: {'--container-padding': spacingVars['--spacing-5']},
+  spacing6: {'--container-padding': spacingVars['--spacing-6']},
+  spacing7: {'--container-padding': spacingVars['--spacing-7']},
 });
 
 const paddingOuterXStyles = stylex.create({
@@ -83,6 +98,14 @@ const paddingInnerYStyles = stylex.create({
 
 export interface ContainerOptions {
   /**
+   * Default container padding for simple content.
+   * Sets --container-padding CSS variable.
+   * XDSLayout overrides this to 0 and manages its own padding.
+   * @default 'spacing4'
+   */
+  padding?: SpacingToken;
+
+  /**
    * Outer horizontal padding (left/right).
    * Sets --layout-padding-outer-x CSS variable.
    * @default 'spacing4'
@@ -115,6 +138,7 @@ export interface ContainerOptions {
  * StyleX utility to add layout container styles to any element.
  *
  * Sets CSS variables for padding that child layout components read:
+ * - `--container-padding` — Default padding for simple content
  * - `--layout-padding-outer-x`, `--layout-padding-outer-y`
  * - `--layout-padding-inner-x`, `--layout-padding-inner-y`
  *
@@ -130,7 +154,7 @@ export interface ContainerOptions {
  *
  * // Custom padding values
  * <div {...stylex.props(
- *   ...container({ paddingInnerX: 'space3', paddingOuterY: 'space2' }),
+ *   ...container({ padding: 'spacing3', paddingOuterY: 'spacing2', paddingInnerX: 'spacing3' }),
  *   customStyles.card
  * )}>
  *   <XDSLayout ... />
@@ -138,6 +162,7 @@ export interface ContainerOptions {
  * ```
  */
 export function container({
+  padding = 'spacing4',
   paddingOuterX = 'spacing4',
   paddingOuterY = 'spacing4',
   paddingInnerX = 'spacing4',
@@ -145,6 +170,7 @@ export function container({
 }: ContainerOptions) {
   return [
     baseStyles.container,
+    containerPaddingStyles[padding],
     paddingOuterXStyles[paddingOuterX],
     paddingOuterYStyles[paddingOuterY],
     paddingInnerXStyles[paddingInnerX],

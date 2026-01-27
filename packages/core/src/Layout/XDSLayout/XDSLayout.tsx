@@ -25,8 +25,17 @@ import {stackItem} from '../Stack/stackItem.stylex';
 export type XDSLayoutHeight = 'fill' | 'auto';
 
 const styles = stylex.create({
+  // Outer wrapper uses negative margin to escape container padding
+  layoutOuter: {
+    margin: 'calc(-1 * var(--container-padding, 0px))',
+  },
+  // Inner wrapper resets --container-padding for descendants
+  layoutInner: {
+    '--container-padding': '0px',
+  },
   fill: {
-    height: '100%',
+    // Add 2x container padding to compensate for negative margins on top/bottom
+    height: 'calc(100% + 2 * var(--container-padding, 0px))',
   },
   auto: {
     minHeight: '100%',
@@ -155,20 +164,30 @@ export function XDSLayout({
     <XDSLayoutSlotsContext.Provider value={slotsValue}>
       <div
         {...stylex.props(
-          ...stack({direction: 'vertical'}),
+          styles.layoutOuter,
           isFill ? styles.fill : styles.auto,
-          isFullBleed && styles.fullBleed,
         )}>
-        <AreaProvider area="header">{header}</AreaProvider>
         <div
-          {...stylex.props(...stack({direction: 'horizontal'}), styles.middle)}>
-          <AreaProvider area="start">{start}</AreaProvider>
-          <div {...stylex.props(...stackItem({size: 'fill'}))}>
-            <AreaProvider area="content">{content}</AreaProvider>
+          {...stylex.props(
+            styles.layoutInner,
+            ...stack({direction: 'vertical'}),
+            isFill ? styles.fill : styles.auto,
+            isFullBleed && styles.fullBleed,
+          )}>
+          <AreaProvider area="header">{header}</AreaProvider>
+          <div
+            {...stylex.props(
+              ...stack({direction: 'horizontal'}),
+              styles.middle,
+            )}>
+            <AreaProvider area="start">{start}</AreaProvider>
+            <div {...stylex.props(...stackItem({size: 'fill'}))}>
+              <AreaProvider area="content">{content}</AreaProvider>
+            </div>
+            <AreaProvider area="end">{end}</AreaProvider>
           </div>
-          <AreaProvider area="end">{end}</AreaProvider>
+          <AreaProvider area="footer">{footer}</AreaProvider>
         </div>
-        <AreaProvider area="footer">{footer}</AreaProvider>
       </div>
     </XDSLayoutSlotsContext.Provider>
   );

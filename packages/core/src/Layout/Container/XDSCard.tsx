@@ -7,7 +7,11 @@
 
 import {forwardRef, useContext, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, radiusVars, elevationVars} from '../../theme/tokens.stylex';
+import {
+  colorVars,
+  radiusVars,
+  elevationVars,
+} from '../../theme/tokens.stylex';
 import {ThemeContext} from '../../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../../theme/types';
 import {container} from './container.stylex';
@@ -19,17 +23,43 @@ import {container} from './container.stylex';
 declare module '../../theme/types' {
   interface ComponentStyles {
     card?: {
-      /** Base style overrides */
-      base?: ThemeStyleXStyles;
+      /** Outer container styles (background, border, shadow, border-radius) */
+      container?: ThemeStyleXStyles;
+      /** Inner content styles (padding) */
+      content?: ThemeStyleXStyles;
     };
   }
 }
 
 const styles = stylex.create({
-  card: {
+  // Outer wrapper: visual styling with clip for border-radius
+  cardOuter: {
     backgroundColor: colorVars['--color-card'],
     borderRadius: radiusVars['--radius-container'],
     boxShadow: elevationVars['--elevation-base'],
+    // Clip content to border-radius so nested containers don't peek out corners
+    overflow: 'clip',
+    // Use inherited --card-border-color if set by ancestor, otherwise transparent
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'var(--card-border-color, transparent)',
+  },
+  // Inner wrapper: container padding and overflow handling
+  cardInner: {
+    height: '100%',
+    // Cards have surface background, so nested cards need visible borders
+    '--card-border-color': colorVars['--color-divider'],
+  },
+  // Only enable scrolling when card has fixed height
+  scrollable: {
+    overflow: 'auto',
+  },
+  // Full bleed: removes all internal padding
+  fullBleed: {
+    paddingInlineStart: 0,
+    paddingInlineEnd: 0,
+    paddingBlockStart: 0,
+    paddingBlockEnd: 0,
   },
 });
 
@@ -83,6 +113,12 @@ export interface XDSCardProps {
    * Should typically be XDSLayout child components.
    */
   children?: ReactNode;
+
+  /**
+   * Removes internal padding, allowing content to touch the edges.
+   * @default false
+   */
+  isFullBleed?: boolean;
 }
 
 /**
@@ -104,25 +140,23 @@ export interface XDSCardProps {
  */
 export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
   function XDSCard(
-    {width, height, maxWidth, minHeight, children, ...props},
+    {width, height, maxWidth, minHeight, children, isFullBleed = false, ...props},
     ref,
   ) {
     // Get theme context for component-level overrides
     const themeContext = useContext(ThemeContext);
-    const themeOverride = themeContext?.theme.components?.card?.base;
+    const containerOverride = themeContext?.theme.components?.card?.container;
+    const contentOverride = themeContext?.theme.components?.card?.content;
+
+    // Only enable scrolling when card has a fixed height (not null/undefined and not "auto")
+    const hasFixedHeight = height != null && height !== 'auto';
 
     return (
       <div
         ref={ref}
         {...stylex.props(
-          ...container({
-            paddingInnerX: 'spacing4',
-            paddingInnerY: 'spacing4',
-            paddingOuterX: 'spacing4',
-            paddingOuterY: 'spacing4',
-          }),
-          styles.card,
-          themeOverride,
+          styles.cardOuter,
+          containerOverride,
           dynamicStyles.sizing(
             width ?? null,
             height ?? null,
@@ -131,7 +165,21 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
           ),
         )}
         {...props}>
-        {children}
+        <div
+          {...stylex.props(
+            styles.cardInner,
+            hasFixedHeight && styles.scrollable,
+            ...container({
+              paddingInnerX: 'spacing4',
+              paddingInnerY: 'spacing4',
+              paddingOuterX: 'spacing4',
+              paddingOuterY: 'spacing4',
+            }),
+            isFullBleed && styles.fullBleed,
+            contentOverride,
+          )}>
+          {children}
+        </div>
       </div>
     );
   },

@@ -344,7 +344,8 @@ export const Playground = {
             args.showHeader ? (
               <XDSLayoutHeader
                 hasDivider={args.headerHasDivider}
-                isFullBleed={args.headerIsFullBleed}>
+                isFullBleed={args.headerIsFullBleed}
+              >
                 <h3 {...stylex.props(styles.heading)}>Layout Header</h3>
               </XDSLayoutHeader>
             ) : undefined
@@ -355,7 +356,8 @@ export const Playground = {
                 width={args.startPanelWidth}
                 hasDivider={args.startPanelHasDivider}
                 isScrollable={args.startPanelIsScrollable}
-                role="navigation">
+                role="navigation"
+              >
                 <NavItem active>Dashboard</NavItem>
                 <NavItem>Settings</NavItem>
                 <NavItem>Profile</NavItem>
@@ -366,7 +368,8 @@ export const Playground = {
           content={
             <XDSLayoutContent
               isFullBleed={args.contentIsFullBleed}
-              isScrollable={args.contentIsScrollable}>
+              isScrollable={args.contentIsScrollable}
+            >
               <h4 {...stylex.props(styles.subheading)}>Main Content Area</h4>
               <br />
               <p {...stylex.props(styles.bodyText)}>
@@ -391,7 +394,8 @@ export const Playground = {
                 width={args.endPanelWidth}
                 hasDivider={args.endPanelHasDivider}
                 isScrollable={args.endPanelIsScrollable}
-                role="complementary">
+                role="complementary"
+              >
                 <p {...stylex.props(styles.sectionLabel)}>Details</p>
                 <p {...stylex.props(styles.bodyText)}>
                   Additional information or actions can go in the end panel.
@@ -403,7 +407,8 @@ export const Playground = {
             args.showFooter ? (
               <XDSLayoutFooter
                 hasDivider={args.footerHasDivider}
-                isFullBleed={args.footerIsFullBleed}>
+                isFullBleed={args.footerIsFullBleed}
+              >
                 <XDSHStack gap="space2" hAlign="end">
                   <XDSButton variant="secondary">Cancel</XDSButton>
                   <XDSButton variant="primary">Save</XDSButton>
@@ -699,7 +704,7 @@ export const ThemedLayout: Story = {
           Default Theme (16px padding)
         </p>
         <Theme theme={defaultTheme}>
-          <XDSCard width={400} height={350}>
+          <XDSCard width={400}>
             <XDSLayout
               header={
                 <XDSLayoutHeader hasDivider>
@@ -732,7 +737,7 @@ export const ThemedLayout: Story = {
           Neutral Theme (12px padding)
         </p>
         <Theme theme={neutralTheme}>
-          <XDSCard width={400} height={350}>
+          <XDSCard width={400}>
             <XDSLayout
               header={
                 <XDSLayoutHeader hasDivider>
@@ -775,16 +780,17 @@ export const OuterPaddingDemo: Story = {
       </p>
       <XDSHStack gap="space4" wrap="wrap">
         <XDSVStack gap="space2">
-          <p {...stylex.props(styles.subheading)}>paddingOuterX/Y = space0</p>
+          <p {...stylex.props(styles.subheading)}>paddingOuterX/Y = spacing0</p>
           <div
             {...stylex.props(
               ...container({
-                paddingOuterX: 'space0',
-                paddingOuterY: 'space0',
+                paddingOuterX: 'spacing0',
+                paddingOuterY: 'spacing0',
               }),
               styles.demoContainer,
               styles.demoSize,
-            )}>
+            )}
+          >
             <XDSLayout
               header={
                 <XDSLayoutHeader hasDivider>
@@ -808,16 +814,17 @@ export const OuterPaddingDemo: Story = {
         </XDSVStack>
 
         <XDSVStack gap="space2">
-          <p {...stylex.props(styles.subheading)}>paddingOuterX/Y = space4</p>
+          <p {...stylex.props(styles.subheading)}>paddingOuterX/Y = spacing4</p>
           <div
             {...stylex.props(
               ...container({
-                paddingOuterX: 'space4',
-                paddingOuterY: 'space4',
+                paddingOuterX: 'spacing4',
+                paddingOuterY: 'spacing4',
               }),
               styles.demoContainer,
               styles.demoSize,
-            )}>
+            )}
+          >
             <XDSLayout
               header={
                 <XDSLayoutHeader hasDivider>
@@ -841,16 +848,17 @@ export const OuterPaddingDemo: Story = {
         </XDSVStack>
 
         <XDSVStack gap="space2">
-          <p {...stylex.props(styles.subheading)}>paddingOuterX/Y = space7</p>
+          <p {...stylex.props(styles.subheading)}>paddingOuterX/Y = spacing7</p>
           <div
             {...stylex.props(
               ...container({
-                paddingOuterX: 'space7',
-                paddingOuterY: 'space7',
+                paddingOuterX: 'spacing7',
+                paddingOuterY: 'spacing7',
               }),
               styles.demoContainer,
               styles.demoSize,
-            )}>
+            )}
+          >
             <XDSLayout
               header={
                 <XDSLayoutHeader hasDivider>
