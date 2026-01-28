@@ -20,6 +20,9 @@ import {
   elevationVars,
   transitionVars,
   typographyVars,
+  textSizeVars,
+  lineHeightVars,
+  fontWeightVars,
 } from './tokens.stylex';
 import type {
   ColorVarName,
@@ -28,12 +31,18 @@ import type {
   ElevationVarName,
   TransitionVarName,
   TypographyVarName,
+  TextSizeVarName,
+  LineHeightVarName,
+  FontWeightVarName,
   BaseColorRaw,
   BaseSpacingRaw,
   BaseRadiusRaw,
   BaseElevationRaw,
   BaseTransitionRaw,
   BaseTypographyRaw,
+  BaseTextSizeRaw,
+  BaseLineHeightRaw,
+  BaseFontWeightRaw,
 } from './tokens.stylex';
 
 // =============================================================================
@@ -201,6 +210,34 @@ const typographyRaw = {
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
 } as const satisfies Record<TypographyVarName, string>;
 
+const textSizeRaw = {
+  '--text-4xs': '0.5rem', // 8px - citation
+  '--text-3xs': '0.625rem', // 10px - micro
+  '--text-2xs': '0.6875rem', // 11px - small micro
+  '--text-xsm': '0.75rem', // 12px - supporting, badge
+  '--text-sm': '0.8125rem', // 13px - secondary text
+  '--text-base': '0.875rem', // 14px - body text (XDS default)
+  '--text-lg': '1rem', // 16px - large body
+  '--text-xl': '1.125rem', // 18px - h2
+  '--text-2xl': '1.25rem', // 20px - h1
+  '--text-3xl': '1.5rem', // 24px - editorial h2
+  '--text-4xl': '2rem', // 32px - editorial h1, data viz
+} as const satisfies Record<TextSizeVarName, string>;
+
+const lineHeightRaw = {
+  '--leading-tight': '1.25', // Display text, headings
+  '--leading-snug': '1.375', // Compact body text, headings
+  '--leading-normal': '1.5', // Body text, large body
+  '--leading-relaxed': '1.625', // Editorial body, reading text
+} as const satisfies Record<LineHeightVarName, string>;
+
+const fontWeightRaw = {
+  '--font-weight-normal': '400', // body, captions, code
+  '--font-weight-medium': '500', // subheadlines, data viz
+  '--font-weight-semibold': '600', // emphasized body, titles
+  '--font-weight-bold': '700', // strong emphasis, headings
+} as const satisfies Record<FontWeightVarName, string>;
+
 // =============================================================================
 // Theme Overrides using createTheme
 // =============================================================================
@@ -235,6 +272,21 @@ const typographyTheme = stylex.createTheme(
   typographyRaw as unknown as BaseTypographyRaw,
 );
 
+const textSizeTheme = stylex.createTheme(
+  textSizeVars,
+  textSizeRaw as unknown as BaseTextSizeRaw,
+);
+
+const lineHeightTheme = stylex.createTheme(
+  lineHeightVars,
+  lineHeightRaw as unknown as BaseLineHeightRaw,
+);
+
+const fontWeightTheme = stylex.createTheme(
+  fontWeightVars,
+  fontWeightRaw as unknown as BaseFontWeightRaw,
+);
+
 // =============================================================================
 // Component Style Overrides
 // =============================================================================
@@ -243,6 +295,271 @@ const buttonVariants = stylex.create({
   secondary: {
     backgroundColor:
       'light-dark(rgba(5 ,54 ,89 ,0.1), rgba(223, 226, 229, 0.2))',
+  },
+});
+
+/**
+ * Semantic heading styles (h1-h6) - default variant
+ * Uses XDS dense scale for internal tools
+ */
+const headingStyles = stylex.create({
+  // Default variant (dense scale for internal tools)
+  h1: {
+    fontFamily: typographyVars['--font-heading'],
+    fontSize: textSizeVars['--text-2xl'], // 20px
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    lineHeight: 1.2, // 24px
+    color: colorVars['--color-text-primary'],
+    margin: 0,
+  },
+  h2: {
+    fontFamily: typographyVars['--font-heading'],
+    fontSize: textSizeVars['--text-xl'], // 18px
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    lineHeight: 1.3333333333333333, // 24px
+    color: colorVars['--color-text-primary'],
+    margin: 0,
+  },
+  h3: {
+    fontFamily: typographyVars['--font-heading'],
+    fontSize: textSizeVars['--text-lg'], // 16px
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    lineHeight: 1.25, // 20px
+    color: colorVars['--color-text-primary'],
+    margin: 0,
+  },
+  h4: {
+    fontFamily: typographyVars['--font-heading'],
+    fontSize: textSizeVars['--text-base'], // 14px
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    lineHeight: 1.4285714285714286, // 20px
+    color: colorVars['--color-text-primary'],
+    margin: 0,
+  },
+  h5: {
+    fontFamily: typographyVars['--font-heading'],
+    fontSize: textSizeVars['--text-base'], // 14px (same as h4)
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    lineHeight: 1.4285714285714286, // 20px
+    color: colorVars['--color-text-primary'],
+    margin: 0,
+  },
+  h6: {
+    fontFamily: typographyVars['--font-heading'],
+    fontSize: textSizeVars['--text-xsm'], // 12px
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    lineHeight: 1.3333333333333333, // 16px
+    color: colorVars['--color-text-primary'],
+    margin: 0,
+  },
+});
+
+/**
+ * Editorial heading styles (h1-h4) - larger scale for content-heavy pages
+ */
+const headingEditorialStyles = stylex.create({
+  h1: {
+    fontFamily: typographyVars['--font-heading'],
+    fontSize: textSizeVars['--text-4xl'], // 32px
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    lineHeight: 1.5, // 48px
+    color: colorVars['--color-text-primary'],
+    margin: 0,
+  },
+  h2: {
+    fontFamily: typographyVars['--font-heading'],
+    fontSize: textSizeVars['--text-3xl'], // 24px
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    lineHeight: 1.3333333333333333, // 32px
+    color: colorVars['--color-text-primary'],
+    margin: 0,
+  },
+  h3: {
+    fontFamily: typographyVars['--font-heading'],
+    fontSize: textSizeVars['--text-2xl'], // 20px
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    lineHeight: 1.4, // 28px
+    color: colorVars['--color-text-primary'],
+    margin: 0,
+  },
+  h4: {
+    fontFamily: typographyVars['--font-heading'],
+    fontSize: textSizeVars['--text-lg'], // 16px
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    lineHeight: 1.5, // 24px
+    color: colorVars['--color-text-primary'],
+    margin: 0,
+  },
+  // h5 and h6 fall back to default variant
+  h5: {
+    fontFamily: typographyVars['--font-heading'],
+    fontSize: textSizeVars['--text-base'], // 14px
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    lineHeight: 1.4285714285714286, // 20px
+    color: colorVars['--color-text-primary'],
+    margin: 0,
+  },
+  h6: {
+    fontFamily: typographyVars['--font-heading'],
+    fontSize: textSizeVars['--text-xsm'], // 12px
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    lineHeight: 1.3333333333333333, // 16px
+    color: colorVars['--color-text-primary'],
+    margin: 0,
+  },
+});
+
+/**
+ * Semantic text styles for body content
+ */
+const textStyles = stylex.create({
+  /** Body text (14px, regular) - The bulk of content */
+  body: {
+    fontFamily: typographyVars['--font-heading'], // Optimistic
+    fontSize: textSizeVars['--text-base'], // 14px
+    fontWeight: fontWeightVars['--font-weight-normal'],
+    lineHeight: 1.4285714285714286, // 20px
+    color: colorVars['--color-text-primary'],
+    margin: 0,
+  },
+  /** Large body text (16px, regular) - Emphasized content, quotes */
+  large: {
+    fontFamily: typographyVars['--font-heading'], // Optimistic
+    fontSize: textSizeVars['--text-lg'], // 16px
+    fontWeight: fontWeightVars['--font-weight-normal'],
+    lineHeight: 1.5, // 24px
+    color: colorVars['--color-text-primary'],
+    margin: 0,
+  },
+  /** Emphasized text (14px, medium) - Labels for form/chart/table columns */
+  label: {
+    fontFamily: typographyVars['--font-heading'], // Optimistic
+    fontSize: textSizeVars['--text-base'], // 14px
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    lineHeight: 1.4285714285714286, // 20px
+    color: colorVars['--color-text-primary'],
+    margin: 0,
+  },
+  /** Supporting/helper text (12px, regular) - Supplemental info */
+  supporting: {
+    fontFamily: typographyVars['--font-heading'], // Optimistic
+    fontSize: textSizeVars['--text-xsm'], // 12px
+    fontWeight: fontWeightVars['--font-weight-normal'],
+    lineHeight: 1.3333333333333333, // 16px
+    color: colorVars['--color-text-secondary'],
+    margin: 0,
+  },
+  /** Code/monospace text (14px, regular) */
+  code: {
+    fontFamily: typographyVars['--font-code'], // Menlo
+    fontSize: textSizeVars['--text-base'], // 14px
+    fontWeight: fontWeightVars['--font-weight-normal'],
+    lineHeight: 1.4285714285714286, // 20px
+    color: colorVars['--color-text-primary'],
+    margin: 0,
+  },
+});
+
+/**
+ * Prose base styles for XDSFontWrapper
+ */
+const proseBaseStyles = stylex.create({
+  base: {
+    fontSize: textSizeVars['--text-base'], // 14px
+    fontFamily: typographyVars['--font-body'],
+    lineHeight: 1.4285714285714286, // 20px
+    color: colorVars['--color-text-primary'],
+  },
+});
+
+/**
+ * Prose element styles for XDSFontWrapper
+ */
+const proseElementStyles = stylex.create({
+  p: {
+    marginTop: 0,
+    marginBottom: spacingVars['--spacing-3'], // 12px
+  },
+  ul: {
+    marginTop: 0,
+    marginBottom: spacingVars['--spacing-3'], // 12px
+    paddingInlineStart: spacingVars['--spacing-5'], // 20px
+  },
+  ol: {
+    marginTop: 0,
+    marginBottom: spacingVars['--spacing-3'], // 12px
+    paddingInlineStart: spacingVars['--spacing-5'], // 20px
+  },
+  li: {
+    marginBottom: spacingVars['--spacing-1'], // 4px
+  },
+  liLast: {
+    marginBottom: 0,
+  },
+  blockquote: {
+    marginTop: 0,
+    marginBottom: spacingVars['--spacing-3'], // 12px
+    marginInlineStart: 0,
+    marginInlineEnd: 0,
+    paddingInlineStart: spacingVars['--spacing-4'], // 16px
+    borderInlineStartWidth: '3px',
+    borderInlineStartStyle: 'solid',
+    borderInlineStartColor: colorVars['--color-divider-emphasized'],
+    color: colorVars['--color-text-secondary'],
+    fontStyle: 'italic',
+  },
+  code: {
+    fontFamily: typographyVars['--font-code'],
+    fontSize: '0.9em',
+    backgroundColor: colorVars['--color-wash'],
+    paddingBlock: spacingVars['--spacing-0-5'], // 2px
+    paddingInline: spacingVars['--spacing-1'], // 4px
+    borderRadius: radiusVars['--radius-content'], // 4px
+  },
+  pre: {
+    fontFamily: typographyVars['--font-code'],
+    fontSize: textSizeVars['--text-sm'], // 13px
+    lineHeight: 1.5,
+    marginTop: 0,
+    marginBottom: spacingVars['--spacing-3'], // 12px
+    padding: spacingVars['--spacing-3'], // 12px
+    backgroundColor: colorVars['--color-wash'],
+    borderRadius: radiusVars['--radius-element'], // 8px
+    overflow: 'auto',
+    whiteSpace: 'pre',
+  },
+  preCode: {
+    backgroundColor: 'transparent',
+    padding: 0,
+    borderRadius: 0,
+    fontSize: 'inherit',
+  },
+  hr: {
+    marginBlock: spacingVars['--spacing-4'], // 16px
+    border: 'none',
+    borderTopWidth: '1px',
+    borderTopStyle: 'solid',
+    borderTopColor: colorVars['--color-divider'],
+  },
+  strong: {
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+  },
+  em: {
+    fontStyle: 'italic',
+  },
+  a: {
+    color: colorVars['--color-text-link'],
+    textDecoration: 'underline',
+    textUnderlineOffset: '2px',
+  },
+  aHover: {
+    textDecorationThickness: '2px',
+  },
+  firstChild: {
+    marginTop: 0,
+  },
+  lastChild: {
+    marginBottom: 0,
   },
 });
 
@@ -259,6 +576,9 @@ export const defaultTheme: Theme = {
     elevation: elevationTheme,
     transition: transitionTheme,
     typography: typographyTheme,
+    textSize: textSizeTheme,
+    lineHeight: lineHeightTheme,
+    fontWeight: fontWeightTheme,
   },
   raw: {
     colors: colorRaw,
@@ -267,10 +587,24 @@ export const defaultTheme: Theme = {
     elevation: elevationRaw,
     transition: transitionRaw,
     typography: typographyRaw,
+    textSize: textSizeRaw,
+    lineHeight: lineHeightRaw,
+    fontWeight: fontWeightRaw,
   },
   components: {
     button: {
       variants: buttonVariants,
+    },
+    heading: {
+      styles: headingStyles,
+      editorialStyles: headingEditorialStyles,
+    },
+    text: {
+      styles: textStyles,
+    },
+    prose: {
+      base: proseBaseStyles.base,
+      styles: proseElementStyles,
     },
   },
 };

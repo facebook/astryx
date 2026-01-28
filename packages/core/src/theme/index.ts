@@ -21,12 +21,18 @@ export {
   elevationRaw,
   transitionRaw,
   typographyRaw,
+  textSizeRaw,
+  lineHeightRaw,
+  fontWeightRaw,
   colorVars,
   spacingVars,
   radiusVars,
   elevationVars,
   transitionVars,
   typographyVars,
+  textSizeVars,
+  lineHeightVars,
+  fontWeightVars,
 } from './tokens.stylex';
 
 // Export token key types for theme authoring
@@ -37,12 +43,18 @@ export type {
   ElevationVarName,
   TransitionVarName,
   TypographyVarName,
+  TextSizeVarName,
+  LineHeightVarName,
+  FontWeightVarName,
   BaseColorRaw,
   BaseSpacingRaw,
   BaseRadiusRaw,
   BaseElevationRaw,
   BaseTransitionRaw,
   BaseTypographyRaw,
+  BaseTextSizeRaw,
+  BaseLineHeightRaw,
+  BaseFontWeightRaw,
 } from './tokens.stylex';
 
 export type {
@@ -51,4 +63,9 @@ export type {
   ThemeRaw,
   ComponentStyles,
   ThemeStyles,
+  HeadingLevel,
+  XDSTextType,
+  XDSTextSize,
+  XDSTextWeight,
+  XDSTextColor,
 } from './types';
