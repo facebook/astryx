@@ -12,6 +12,7 @@ export * from './Avatar';
 export * from './Button';
 export * from './CheckboxInput';
 export * from './Field';
+export * from './Icon';
 export * from './TextInput';
 export * from './TextArea';
 

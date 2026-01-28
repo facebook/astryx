@@ -37,6 +37,11 @@
       "import": "./dist/Field/index.mjs",
       "require": "./dist/Field/index.js"
     },
+    "./Icon": {
+      "types": "./dist/Icon/index.d.ts",
+      "import": "./dist/Icon/index.mjs",
+      "require": "./dist/Icon/index.js"
+    },
     "./Layout": {
       "types": "./dist/Layout/index.d.ts",
       "import": "./dist/Layout/index.mjs",
@@ -75,6 +80,7 @@
     "esbuild-plugin-babel": "^0.2.3"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@stylexjs/stylex": "^0.17.4"
   }
 }
