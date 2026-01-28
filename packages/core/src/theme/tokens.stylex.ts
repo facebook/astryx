@@ -188,7 +188,7 @@ export const transitionRaw = {
 export const transitionVars = stylex.defineVars(transitionRaw);
 
 // =============================================================================
-// Typography Tokens
+// Typography Tokens - Font Families
 // =============================================================================
 
 export const typographyRaw = {
@@ -202,6 +202,52 @@ export const typographyRaw = {
 export const typographyVars = stylex.defineVars(typographyRaw);
 
 // =============================================================================
+// Typography Tokens - Text Sizes
+// =============================================================================
+
+export const textSizeRaw = {
+  '--text-4xs': '0.5rem', // 8px - citation
+  '--text-3xs': '0.625rem', // 10px - micro
+  '--text-2xs': '0.6875rem', // 11px - small micro
+  '--text-xsm': '0.75rem', // 12px - supporting, badge
+  '--text-sm': '0.8125rem', // 13px - secondary text
+  '--text-base': '0.875rem', // 14px - body text (XDS default)
+  '--text-lg': '1rem', // 16px - large body
+  '--text-xl': '1.125rem', // 18px - h2
+  '--text-2xl': '1.25rem', // 20px - h1
+  '--text-3xl': '1.5rem', // 24px - editorial h2
+  '--text-4xl': '2rem', // 32px - editorial h1, data viz
+} as const;
+
+export const textSizeVars = stylex.defineVars(textSizeRaw);
+
+// =============================================================================
+// Typography Tokens - Line Heights
+// =============================================================================
+
+export const lineHeightRaw = {
+  '--leading-tight': '1.25', // Display text, headings
+  '--leading-snug': '1.375', // Compact body text, headings
+  '--leading-normal': '1.5', // Body text, large body
+  '--leading-relaxed': '1.625', // Editorial body, reading text
+} as const;
+
+export const lineHeightVars = stylex.defineVars(lineHeightRaw);
+
+// =============================================================================
+// Typography Tokens - Font Weights
+// =============================================================================
+
+export const fontWeightRaw = {
+  '--font-weight-normal': '400', // body, captions, code
+  '--font-weight-medium': '500', // subheadlines, data viz
+  '--font-weight-semibold': '600', // emphasized body, titles
+  '--font-weight-bold': '700', // strong emphasis, headings
+} as const;
+
+export const fontWeightVars = stylex.defineVars(fontWeightRaw);
+
+// =============================================================================
 // Token Types
 // =============================================================================
 
@@ -211,6 +257,9 @@ export type RadiusVarName = keyof typeof radiusRaw;
 export type ElevationVarName = keyof typeof elevationRaw;
 export type TransitionVarName = keyof typeof transitionRaw;
 export type TypographyVarName = keyof typeof typographyRaw;
+export type TextSizeVarName = keyof typeof textSizeRaw;
+export type LineHeightVarName = keyof typeof lineHeightRaw;
+export type FontWeightVarName = keyof typeof fontWeightRaw;
 
 // Base raw types for createTheme casting
 // StyleX's createTheme requires exact literal types from defineVars.
@@ -222,3 +271,6 @@ export type BaseRadiusRaw = typeof radiusRaw;
 export type BaseElevationRaw = typeof elevationRaw;
 export type BaseTransitionRaw = typeof transitionRaw;
 export type BaseTypographyRaw = typeof typographyRaw;
+export type BaseTextSizeRaw = typeof textSizeRaw;
+export type BaseLineHeightRaw = typeof lineHeightRaw;
+export type BaseFontWeightRaw = typeof fontWeightRaw;

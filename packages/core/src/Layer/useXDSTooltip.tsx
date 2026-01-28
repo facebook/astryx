@@ -83,6 +83,8 @@ const styles = stylex.create({
     paddingBlockEnd: spacingVars['--spacing-1'],
     paddingInlineStart: spacingVars['--spacing-2'],
     paddingInlineEnd: spacingVars['--spacing-2'],
+    maxWidth: 300,
+    wordBreak: 'break-word',
   },
 });
 

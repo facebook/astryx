@@ -13,6 +13,7 @@ export * from './Button';
 export * from './CheckboxInput';
 export * from './Field';
 export * from './Icon';
+export * from './Text';
 export * from './TextInput';
 export * from './TextArea';
 
