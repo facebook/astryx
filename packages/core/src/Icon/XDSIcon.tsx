@@ -1,7 +1,7 @@
 /**
  * @file XDSIcon.tsx
  * @input Uses React forwardRef, SVGProps, and @heroicons/react icon components
- * @output Exports XDSIcon component, XDSIconProps, XDSIconColor, XDSIconSize types
+ * @output Exports XDSIcon component, XDSIconProps, XDSIconColor, XDSIconSize, XDSIconType types
  * @position Core implementation; consumed by index.ts, tested by XDSIcon.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -82,6 +82,12 @@ export type XDSIconColor = keyof typeof colorStyles;
 export type XDSIconSize = keyof typeof sizeStyles;
 
 /**
+ * Type for icon components that can be passed to XDSIcon.
+ * Use this type when accepting an icon prop in other components.
+ */
+export type XDSIconType = ComponentType<SVGProps<SVGSVGElement>>;
+
+/**
  * Props for XDSIcon component.
  * Extends SVGProps to allow passing additional SVG attributes.
  */
@@ -91,7 +97,7 @@ export interface XDSIconProps
    * The Hero Icon component to render.
    * Import from @heroicons/react/24/outline or @heroicons/react/24/solid.
    */
-  icon: ComponentType<SVGProps<SVGSVGElement>>;
+  icon: XDSIconType;
   /**
    * The color variant of the icon.
    * @default 'primary'
