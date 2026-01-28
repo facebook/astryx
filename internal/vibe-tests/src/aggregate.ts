@@ -792,9 +792,13 @@ function generateHtmlReport(
 async function main() {
   const args = process.argv.slice(2);
   const iterationIndex = args.indexOf('--iteration');
+  const jsonMode = args.includes('--json');
+  const ciMode = args.includes('--ci');
 
   if (iterationIndex === -1 || !args[iterationIndex + 1]) {
-    console.error('Usage: aggregate --iteration <iteration-id>');
+    console.error(
+      'Usage: aggregate --iteration <iteration-id> [--json] [--ci]',
+    );
     process.exit(1);
   }
 
@@ -807,7 +811,55 @@ async function main() {
     const results = readJsonl<TestResult>(runsPath);
 
     const agg = aggregate(iterationId);
-    printReport(agg);
+
+    // JSON mode: output only JSON to stdout
+    if (jsonMode) {
+      console.log(JSON.stringify(agg, null, 2));
+      return;
+    }
+
+    // CI mode: output GitHub Actions format
+    if (ciMode) {
+      // Write to GITHUB_OUTPUT if available
+      const githubOutput = process.env.GITHUB_OUTPUT;
+      const lines = [
+        `iteration_id=${agg.iterationId}`,
+        `success_rate=${agg.successRate}`,
+        `total_tests=${agg.totalTests}`,
+        `gold=${agg.tiers.gold}`,
+        `green=${agg.tiers.green}`,
+        `yellow=${agg.tiers.yellow}`,
+        `red=${agg.tiers.red}`,
+      ];
+
+      if (githubOutput) {
+        fs.appendFileSync(githubOutput, lines.join('\n') + '\n');
+      }
+
+      // Also print to stdout for logging
+      console.log('::group::Vibe Test Results');
+      printReport(agg);
+      console.log('::endgroup::');
+
+      // Set job summary if available
+      const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+      if (summaryPath) {
+        const summary = `## Vibe Test Results
+
+| Metric | Value |
+|--------|-------|
+| Success Rate | ${agg.successRate}% |
+| Total Tests | ${agg.totalTests} |
+| 🥇 Gold | ${agg.tiers.gold} (${agg.tierRate.gold}%) |
+| 🟢 Green | ${agg.tiers.green} (${agg.tierRate.green}%) |
+| 🟡 Yellow | ${agg.tiers.yellow} (${agg.tierRate.yellow}%) |
+| 🔴 Red | ${agg.tiers.red} (${agg.tierRate.red}%) |
+`;
+        fs.appendFileSync(summaryPath, summary);
+      }
+    } else {
+      printReport(agg);
+    }
 
     // Save aggregated results
     writeJson(path.join(resultsDir, 'aggregate.json'), agg);
@@ -818,7 +870,16 @@ async function main() {
     const htmlPath = path.join(resultsDir, 'report.html');
     fs.writeFileSync(htmlPath, htmlReport);
     console.log(`HTML Report: ${htmlPath}`);
-    console.log(`\nOpen in browser: file://${htmlPath}`);
+
+    if (!ciMode) {
+      console.log(`\nOpen in browser: file://${htmlPath}`);
+    }
+
+    // Exit with error if there are critical failures (for CI)
+    if (ciMode && agg.tiers.red > 0) {
+      console.log(`::error::${agg.tiers.red} critical failures detected`);
+      process.exit(1);
+    }
   } catch (error) {
     console.error(`Error: ${error instanceof Error ? error.message : error}`);
     process.exit(1);

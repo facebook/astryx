@@ -217,6 +217,45 @@ Suggested refinements:
   2. [skill_doc] Explicit "do not use Tailwind" note (confidence: 0.7, effort: trivial)
 ```
 
+## CI Integration
+
+Vibe tests run automatically on every PR via GitHub Actions.
+
+### GitHub Action
+
+The workflow (`.github/workflows/vibe-tests.yml`) runs on:
+
+- Every pull request to main/master
+- Every push to main/master
+- Manual trigger with configurable sample size
+
+### What it does:
+
+1. Runs 10 stratified sample tests
+2. Aggregates results and generates HTML report
+3. Posts a summary comment on the PR
+4. Uploads results as artifacts (90-day retention)
+5. Fails the check if:
+   - Success rate is below 70%
+   - Any critical (Red tier) failures
+
+### Required Secrets:
+
+- `ANTHROPIC_API_KEY`: API key for running tests
+
+### Aggregate CLI Flags:
+
+```bash
+# Standard output
+yarn workspace @xds/vibe-tests aggregate --iteration abc123
+
+# JSON output (for scripting)
+yarn workspace @xds/vibe-tests aggregate --iteration abc123 --json
+
+# CI mode (GitHub Actions output format)
+yarn workspace @xds/vibe-tests aggregate --iteration abc123 --ci
+```
+
 ## For More Details
 
 See the full spec in `.context/proposals/vibeability-test-harness.md`
