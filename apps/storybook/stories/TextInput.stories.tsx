@@ -1,6 +1,11 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSTextInput} from '@xds/core/TextInput';
+import {
+  MagnifyingGlassIcon,
+  EnvelopeIcon,
+  UserIcon,
+} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSTextInput> = {
   title: 'Core/XDSTextInput',
@@ -212,5 +217,69 @@ export const Disabled: Story = {
     label: 'Locked Field',
     isDisabled: true,
     value: 'Cannot edit this',
+  },
+};
+
+export const WithStartIcon: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? '');
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Search',
+    placeholder: 'Search...',
+    startIcon: MagnifyingGlassIcon,
+  },
+};
+
+export const WithStartIconAndSmallSize: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? '');
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Search',
+    placeholder: 'Search...',
+    startIcon: MagnifyingGlassIcon,
+    size: 'sm',
+  },
+};
+
+export const StartIconVariations: Story = {
+  render: () => {
+    const [search, setSearch] = useState('');
+    const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          maxWidth: '300px',
+        }}>
+        <XDSTextInput
+          label="Search"
+          value={search}
+          onChange={setSearch}
+          placeholder="Search..."
+          startIcon={MagnifyingGlassIcon}
+        />
+        <XDSTextInput
+          label="Email"
+          value={email}
+          onChange={setEmail}
+          placeholder="Enter your email"
+          startIcon={EnvelopeIcon}
+        />
+        <XDSTextInput
+          label="Username"
+          value={username}
+          onChange={setUsername}
+          placeholder="Enter your username"
+          startIcon={UserIcon}
+        />
+      </div>
+    );
   },
 };

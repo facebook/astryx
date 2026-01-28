@@ -10,6 +10,7 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 import {XDSTextInput} from './XDSTextInput';
 
 describe('XDSTextInput', () => {
@@ -25,7 +26,7 @@ describe('XDSTextInput', () => {
         value=""
         onChange={() => {}}
         placeholder="Enter text"
-      />,
+      />
     );
     expect(screen.getByPlaceholderText('Enter text')).toBeInTheDocument();
   });
@@ -53,11 +54,7 @@ describe('XDSTextInput', () => {
 
   it('displays controlled value', () => {
     render(
-      <XDSTextInput
-        label="Name"
-        value="Controlled value"
-        onChange={() => {}}
-      />,
+      <XDSTextInput label="Name" value="Controlled value" onChange={() => {}} />
     );
     expect(screen.getByRole('textbox')).toHaveValue('Controlled value');
   });
@@ -65,19 +62,14 @@ describe('XDSTextInput', () => {
   it('forwards ref correctly', () => {
     const ref = vi.fn();
     render(
-      <XDSTextInput ref={ref} label="Name" value="" onChange={() => {}} />,
+      <XDSTextInput ref={ref} label="Name" value="" onChange={() => {}} />
     );
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLInputElement));
   });
 
   it('visually hides label when isLabelHidden is true', () => {
     render(
-      <XDSTextInput
-        label="Search"
-        isLabelHidden
-        value=""
-        onChange={() => {}}
-      />,
+      <XDSTextInput label="Search" isLabelHidden value="" onChange={() => {}} />
     );
     const label = screen.getByText('Search');
     expect(label).toBeInTheDocument();
@@ -93,11 +85,11 @@ describe('XDSTextInput', () => {
 
   it('sets aria-required when isRequired is true', () => {
     render(
-      <XDSTextInput label="Username" isRequired value="" onChange={() => {}} />,
+      <XDSTextInput label="Username" isRequired value="" onChange={() => {}} />
     );
     expect(screen.getByRole('textbox')).toHaveAttribute(
       'aria-required',
-      'true',
+      'true'
     );
   });
 
@@ -108,7 +100,7 @@ describe('XDSTextInput', () => {
 
   it('sets disabled attribute when isDisabled is true', () => {
     render(
-      <XDSTextInput label="Name" isDisabled value="" onChange={() => {}} />,
+      <XDSTextInput label="Name" isDisabled value="" onChange={() => {}} />
     );
     expect(screen.getByRole('textbox')).toBeDisabled();
   });
@@ -117,7 +109,7 @@ describe('XDSTextInput', () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
     render(
-      <XDSTextInput label="Name" isDisabled value="" onChange={handleChange} />,
+      <XDSTextInput label="Name" isDisabled value="" onChange={handleChange} />
     );
 
     const input = screen.getByRole('textbox');
@@ -128,5 +120,28 @@ describe('XDSTextInput', () => {
   it('is not disabled by default', () => {
     render(<XDSTextInput label="Name" value="" onChange={() => {}} />);
     expect(screen.getByRole('textbox')).not.toBeDisabled();
+  });
+
+  it('renders with startIcon', () => {
+    render(
+      <XDSTextInput
+        label="Search"
+        value=""
+        onChange={() => {}}
+        startIcon={MagnifyingGlassIcon}
+      />
+    );
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
+    // Icon should be rendered (as an SVG element)
+    const svg = document.querySelector('svg');
+    expect(svg).toBeInTheDocument();
+  });
+
+  it('renders without icon wrapper when startIcon is not provided', () => {
+    const {container} = render(
+      <XDSTextInput label="Name" value="" onChange={() => {}} />
+    );
+    // No SVG should be present
+    expect(container.querySelector('svg')).not.toBeInTheDocument();
   });
 });
