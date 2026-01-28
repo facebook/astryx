@@ -18,12 +18,7 @@ export type HeadingLevel = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 /**
  * Semantic text types for XDSText
  */
-export type XDSTextType =
-  | 'body'
-  | 'large'
-  | 'label'
-  | 'supporting'
-  | 'code';
+export type XDSTextType = 'body' | 'large' | 'label' | 'supporting' | 'code';
 
 /**
  * Text size scale for XDSText size prop override
@@ -112,6 +107,27 @@ export type XDSTextXStyleAllowed = {
 };
 
 /**
+ * Prose element types for XDSFontWrapper
+ */
+export type ProseElement =
+  | 'p'
+  | 'ul'
+  | 'ol'
+  | 'li'
+  | 'liLast'
+  | 'blockquote'
+  | 'code'
+  | 'pre'
+  | 'preCode'
+  | 'hr'
+  | 'strong'
+  | 'em'
+  | 'a'
+  | 'aHover'
+  | 'firstChild'
+  | 'lastChild';
+
+/**
  * Component-specific style overrides
  * Each component augments this interface to add its own entry
  * See Button.tsx for an example of module augmentation
@@ -129,6 +145,13 @@ export interface ComponentStyles {
   text?: {
     /** Semantic text styles (body, large, label, supporting, code) */
     styles?: Partial<Record<XDSTextType, StyleXStyles>>;
+  };
+  /** Prose styles for XDSFontWrapper */
+  prose?: {
+    /** Base wrapper styles */
+    base?: StyleXStyles;
+    /** Prose element styles */
+    styles?: Partial<Record<ProseElement, StyleXStyles>>;
   };
 
   // Components add their entries via module augmentation

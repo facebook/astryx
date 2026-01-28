@@ -460,6 +460,109 @@ const textStyles = stylex.create({
   },
 });
 
+/**
+ * Prose base styles for XDSFontWrapper
+ */
+const proseBaseStyles = stylex.create({
+  base: {
+    fontSize: textSizeVars['--text-base'], // 14px
+    fontFamily: typographyVars['--font-body'],
+    lineHeight: 1.4285714285714286, // 20px
+    color: colorVars['--color-text-primary'],
+  },
+});
+
+/**
+ * Prose element styles for XDSFontWrapper
+ */
+const proseElementStyles = stylex.create({
+  p: {
+    marginTop: 0,
+    marginBottom: spacingVars['--spacing-3'], // 12px
+  },
+  ul: {
+    marginTop: 0,
+    marginBottom: spacingVars['--spacing-3'], // 12px
+    paddingInlineStart: spacingVars['--spacing-5'], // 20px
+  },
+  ol: {
+    marginTop: 0,
+    marginBottom: spacingVars['--spacing-3'], // 12px
+    paddingInlineStart: spacingVars['--spacing-5'], // 20px
+  },
+  li: {
+    marginBottom: spacingVars['--spacing-1'], // 4px
+  },
+  liLast: {
+    marginBottom: 0,
+  },
+  blockquote: {
+    marginTop: 0,
+    marginBottom: spacingVars['--spacing-3'], // 12px
+    marginInlineStart: 0,
+    marginInlineEnd: 0,
+    paddingInlineStart: spacingVars['--spacing-4'], // 16px
+    borderInlineStartWidth: '3px',
+    borderInlineStartStyle: 'solid',
+    borderInlineStartColor: colorVars['--color-divider-emphasized'],
+    color: colorVars['--color-text-secondary'],
+    fontStyle: 'italic',
+  },
+  code: {
+    fontFamily: typographyVars['--font-code'],
+    fontSize: '0.9em',
+    backgroundColor: colorVars['--color-wash'],
+    paddingBlock: spacingVars['--spacing-0-5'], // 2px
+    paddingInline: spacingVars['--spacing-1'], // 4px
+    borderRadius: radiusVars['--radius-content'], // 4px
+  },
+  pre: {
+    fontFamily: typographyVars['--font-code'],
+    fontSize: textSizeVars['--text-sm'], // 13px
+    lineHeight: 1.5,
+    marginTop: 0,
+    marginBottom: spacingVars['--spacing-3'], // 12px
+    padding: spacingVars['--spacing-3'], // 12px
+    backgroundColor: colorVars['--color-wash'],
+    borderRadius: radiusVars['--radius-element'], // 8px
+    overflow: 'auto',
+    whiteSpace: 'pre',
+  },
+  preCode: {
+    backgroundColor: 'transparent',
+    padding: 0,
+    borderRadius: 0,
+    fontSize: 'inherit',
+  },
+  hr: {
+    marginBlock: spacingVars['--spacing-4'], // 16px
+    border: 'none',
+    borderTopWidth: '1px',
+    borderTopStyle: 'solid',
+    borderTopColor: colorVars['--color-divider'],
+  },
+  strong: {
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+  },
+  em: {
+    fontStyle: 'italic',
+  },
+  a: {
+    color: colorVars['--color-text-link'],
+    textDecoration: 'underline',
+    textUnderlineOffset: '2px',
+  },
+  aHover: {
+    textDecorationThickness: '2px',
+  },
+  firstChild: {
+    marginTop: 0,
+  },
+  lastChild: {
+    marginBottom: 0,
+  },
+});
+
 // =============================================================================
 // Theme Export
 // =============================================================================
@@ -498,6 +601,10 @@ export const defaultTheme: Theme = {
     },
     text: {
       styles: textStyles,
+    },
+    prose: {
+      base: proseBaseStyles.base,
+      styles: proseElementStyles,
     },
   },
 };

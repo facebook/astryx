@@ -3,13 +3,24 @@
  * @position Entry point for Text components
  */
 
-export {XDSText, type XDSTextProps, type XDSTextType, type XDSTextSize} from './XDSText';
+export {
+  XDSText,
+  type XDSTextProps,
+  type XDSTextType,
+  type XDSTextSize,
+} from './XDSText';
 export {
   XDSHeading,
   type XDSHeadingProps,
   type XDSHeadingLevel,
   type XDSHeadingVariant,
 } from './XDSHeading';
+export {
+  XDSFontWrapper,
+  useXDSFontWrapperStyles,
+  type XDSFontWrapperProps,
+  type XDSFontWrapperVariant,
+} from './XDSFontWrapper';
 
 // Re-export shared types from theme for convenience
 export type {
@@ -19,7 +30,12 @@ export type {
   XDSWordBreak,
   XDSTextWrap,
   XDSTextXStyleAllowed,
+  ProseElement,
 } from '../theme/types';
 
 // Re-export useTruncation for advanced use cases
-export {useTruncation, type UseTruncationOptions, type UseTruncationReturn} from './useTruncation';
+export {
+  useTruncation,
+  type UseTruncationOptions,
+  type UseTruncationReturn,
+} from './useTruncation';

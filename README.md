@@ -15,6 +15,82 @@ XDS is an open source design system born from years of building internal tools a
 - **Automatic spacing** — Context-aware spacing compensation eliminates "double padding" issues
 - **AI-ready** — JSDoc annotations with composition hints designed for LLM-assisted development
 
+## Getting Started
+
+### Installation
+
+```bash
+npm install @xds/core
+# or
+yarn add @xds/core
+```
+
+### 1. Set Up the Theme Provider
+
+Wrap your application with the `Theme` component. This sets up CSS custom properties used by all XDS components.
+
+```tsx
+import {Theme, defaultTheme} from '@xds/core';
+
+function App() {
+  return (
+    <Theme theme={defaultTheme}>
+      <YourApp />
+    </Theme>
+  );
+}
+```
+
+### 2. Import Typography Styles (Optional)
+
+For styling native HTML elements (h1-h6, p, lists, code blocks, etc.), import the typography stylesheet:
+
+```tsx
+import '@xds/core/typography.css';
+```
+
+Apply to your document body or use `XDSFontWrapper` for scoped sections:
+
+```tsx
+// Option A: Global - apply to body
+<body className="xds-typography">
+
+// Option B: Scoped - wrap specific content
+import { XDSFontWrapper } from '@xds/core';
+
+<XDSFontWrapper>
+  <article dangerouslySetInnerHTML={{ __html: markdownContent }} />
+</XDSFontWrapper>
+```
+
+The typography styles support two heading scales:
+
+- **default** — Dense scale for internal tools (h1: 20px)
+- **editorial** — Larger scale for documentation/content (h1: 32px)
+
+```tsx
+<XDSFontWrapper variant="editorial">
+  <h1>Article Title</h1>
+  <p>Long-form content...</p>
+</XDSFontWrapper>
+```
+
+### 3. Use Components
+
+```tsx
+import {XDSButton, XDSText, XDSHeading} from '@xds/core';
+
+function Example() {
+  return (
+    <>
+      <XDSHeading>Welcome</XDSHeading>
+      <XDSText>Click the button below to get started.</XDSText>
+      <XDSButton label="Get Started" onPress={() => console.log('clicked')} />
+    </>
+  );
+}
+```
+
 ## Philosophy
 
 - **AI-First** — Built to produce better trajectories in AI-assisted development, with auto-documentation and patterns designed for LLM consumption
@@ -37,12 +113,12 @@ A library of 300+ reusable UI building blocks with full TypeScript support.
 
 ## Project Structure
 
-| Directory | Purpose |
-|-----------|---------|
-| `apps/` | Application packages: documentation site, sandbox, and Storybook |
-| `packages/` | Published packages: core components and utilities |
-| `internal/` | Internal tooling: test utilities and build helpers |
-| `e2e/` | End-to-end tests using Playwright |
+| Directory   | Purpose                                                          |
+| ----------- | ---------------------------------------------------------------- |
+| `apps/`     | Application packages: documentation site, sandbox, and Storybook |
+| `packages/` | Published packages: core components and utilities                |
+| `internal/` | Internal tooling: test utilities and build helpers               |
+| `e2e/`      | End-to-end tests using Playwright                                |
 
 ## Contributing
 
