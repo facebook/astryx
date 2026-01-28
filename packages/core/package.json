@@ -56,6 +56,11 @@
       "types": "./dist/TextInput/index.d.ts",
       "import": "./dist/TextInput/index.mjs",
       "require": "./dist/TextInput/index.js"
+    },
+    "./hooks": {
+      "types": "./dist/hooks/index.d.ts",
+      "import": "./dist/hooks/index.mjs",
+      "require": "./dist/hooks/index.js"
     }
   },
   "scripts": {

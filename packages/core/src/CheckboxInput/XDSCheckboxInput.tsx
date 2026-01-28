@@ -1,6 +1,6 @@
 /**
  * @file XDSCheckboxInput.tsx
- * @input Uses React forwardRef, useId, ChangeEvent, XDSFieldLabel
+ * @input Uses React forwardRef, useId, ChangeEvent, XDSFieldLabel, useHoverState
  * @output Exports XDSCheckboxInput component, XDSCheckboxInputProps
  * @position Core implementation; consumed by index.ts, tested by XDSCheckboxInput.test.tsx
  *
@@ -11,7 +11,7 @@
  * - /apps/storybook/stories/CheckboxInput.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useId, type ChangeEvent} from 'react';
+import {forwardRef, useId, type ChangeEvent, type FocusEvent} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -21,6 +21,7 @@ import {
   typographyVars,
 } from '../theme/tokens.stylex';
 import {XDSFieldLabel} from '../Field/XDSFieldLabel';
+import {useHoverState} from '../hooks/useHoverState';
 
 const styles = stylex.create({
   container: {
@@ -34,13 +35,9 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    width: 24,
-    height: 24,
   },
   input: {
     position: 'absolute',
-    width: 24,
-    height: 24,
     margin: 0,
     padding: 0,
     opacity: 0,
@@ -53,8 +50,6 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 22,
-    height: 22,
     borderWidth: 1,
     borderStyle: 'solid',
     borderColor: colorVars['--color-divider-emphasized'],
@@ -64,7 +59,12 @@ const styles = stylex.create({
     transitionDuration: transitionVars['--transition-fast'],
   },
   checkboxHover: {
+    backgroundColor: colorVars['--color-deemphasized'],
     borderColor: colorVars['--color-divider-high-contrast'],
+  },
+  checkboxCheckedHover: {
+    backgroundColor: '#0050B8',
+    borderColor: '#0050B8',
   },
   checkboxChecked: {
     backgroundColor: colorVars['--color-accent'],
@@ -83,8 +83,6 @@ const styles = stylex.create({
   },
   checkmark: {
     display: 'none',
-    width: 14,
-    height: 14,
     fill: 'white',
   },
   checkmarkVisible: {
@@ -92,8 +90,6 @@ const styles = stylex.create({
   },
   indeterminateMark: {
     display: 'none',
-    width: 12,
-    height: 2,
     backgroundColor: 'white',
     borderRadius: 1,
   },
@@ -104,7 +100,6 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-0-5'],
-    marginTop: 3,
   },
   description: {
     fontFamily: typographyVars['--font-body'],
@@ -112,6 +107,61 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
 });
+
+const wrapperSizeStyles = stylex.create({
+  sm: {
+    width: 20,
+    height: 20,
+  },
+  md: {
+    width: 24,
+    height: 24,
+  },
+});
+
+const checkboxSizeStyles = stylex.create({
+  sm: {
+    width: 18,
+    height: 18,
+  },
+  md: {
+    width: 22,
+    height: 22,
+  },
+});
+
+const checkmarkSizeStyles = stylex.create({
+  sm: {
+    width: 12,
+    height: 12,
+  },
+  md: {
+    width: 14,
+    height: 14,
+  },
+});
+
+const indeterminateSizeStyles = stylex.create({
+  sm: {
+    width: 10,
+    height: 2,
+  },
+  md: {
+    width: 12,
+    height: 2,
+  },
+});
+
+const labelWrapperSizeStyles = stylex.create({
+  sm: {
+    marginTop: 1,
+  },
+  md: {
+    marginTop: 3,
+  },
+});
+
+export type XDSCheckboxInputSize = keyof typeof wrapperSizeStyles;
 
 export interface XDSCheckboxInputProps {
   /**
@@ -140,6 +190,26 @@ export interface XDSCheckboxInputProps {
    * @default false
    */
   isDisabled?: boolean;
+  /**
+   * Whether the checkbox is required.
+   * @default false
+   */
+  isRequired?: boolean;
+  /**
+   * The size of the checkbox.
+   * - 'sm': Compact size (28px row height)
+   * - 'md': Default size (36px row height)
+   * @default 'md'
+   */
+  size?: XDSCheckboxInputSize;
+  /**
+   * Callback fired when the checkbox receives focus.
+   */
+  onFocus?: (e: FocusEvent<HTMLInputElement>) => void;
+  /**
+   * Callback fired when the checkbox loses focus.
+   */
+  onBlur?: (e: FocusEvent<HTMLInputElement>) => void;
 }
 
 /**
@@ -172,44 +242,69 @@ export const XDSCheckboxInput = forwardRef<
       onChange,
       value,
       isDisabled = false,
+      isRequired = false,
+      size = 'md',
+      onFocus,
+      onBlur,
     },
-    ref,
+    ref
   ) => {
     const id = useId();
     const descriptionID = useId();
+    const {isHovered, onMouseEnter, onMouseLeave} = useHoverState();
 
     const isIndeterminate = value === 'indeterminate';
     const isChecked = value === true;
+    const showHover = isHovered && !isDisabled;
 
     return (
-      <div {...stylex.props(styles.container)}>
-        <div {...stylex.props(styles.checkboxWrapper)}>
+      <div
+        {...stylex.props(styles.container)}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}>
+        <div {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}>
           <input
             ref={ref}
             id={id}
             type="checkbox"
             checked={isChecked}
             disabled={isDisabled}
+            required={isRequired}
             onChange={e => onChange(e.target.checked, e)}
+            onFocus={onFocus}
+            onBlur={onBlur}
             aria-describedby={description ? descriptionID : undefined}
-            {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
+            {...stylex.props(
+              styles.input,
+              wrapperSizeStyles[size],
+              isDisabled && styles.inputDisabled
+            )}
           />
           <div
             aria-hidden="true"
             {...stylex.props(
               styles.checkbox,
+              checkboxSizeStyles[size],
               (isChecked || isIndeterminate) && styles.checkboxChecked,
+              showHover &&
+                !isChecked &&
+                !isIndeterminate &&
+                styles.checkboxHover,
+              showHover &&
+                (isChecked || isIndeterminate) &&
+                styles.checkboxCheckedHover,
               isDisabled && styles.checkboxDisabled,
               isDisabled &&
                 !isChecked &&
                 !isIndeterminate &&
-                styles.checkboxDisabledUnchecked,
+                styles.checkboxDisabledUnchecked
             )}>
             <svg
               viewBox="0 0 10 10"
               {...stylex.props(
                 styles.checkmark,
-                isChecked && styles.checkmarkVisible,
+                checkmarkSizeStyles[size],
+                isChecked && styles.checkmarkVisible
               )}>
               <path
                 d="M8.5 2.5L4 7.5L1.5 5"
@@ -223,12 +318,14 @@ export const XDSCheckboxInput = forwardRef<
             <div
               {...stylex.props(
                 styles.indeterminateMark,
-                isIndeterminate && styles.indeterminateMarkVisible,
+                indeterminateSizeStyles[size],
+                isIndeterminate && styles.indeterminateMarkVisible
               )}
             />
           </div>
         </div>
-        <div {...stylex.props(styles.labelWrapper)}>
+        <div
+          {...stylex.props(styles.labelWrapper, labelWrapperSizeStyles[size])}>
           <XDSFieldLabel
             label={label}
             inputID={id}
@@ -243,7 +340,7 @@ export const XDSCheckboxInput = forwardRef<
         </div>
       </div>
     );
-  },
+  }
 );
 
 XDSCheckboxInput.displayName = 'XDSCheckboxInput';
