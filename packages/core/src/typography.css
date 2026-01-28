@@ -23,246 +23,248 @@
  * - Radix Themes' prose styles
  */
 
-/* =============================================================================
-   Base Styles
-   ============================================================================= */
+@layer typography {
+  /* ===========================================================================
+     Base Styles
+     =========================================================================== */
 
-.xds-typography {
-  font-size: var(--text-base);
-  font-family: var(--font-body);
-  line-height: 1.4285714285714286;
-  color: var(--color-text-primary);
-}
+  .xds-typography {
+    font-size: var(--text-base);
+    font-family: var(--font-body);
+    line-height: 1.4285714285714286;
+    color: var(--color-text-primary);
+  }
 
-/* =============================================================================
-   Heading Styles - Default Scale
-   ============================================================================= */
+  /* ===========================================================================
+     Heading Styles - Default Scale
+     =========================================================================== */
 
-.xds-typography h1,
-.xds-typography--default h1 {
-  font-family: var(--font-heading);
-  font-size: var(--text-2xl);
-  font-weight: var(--font-weight-semibold);
-  line-height: 1.2;
-  color: var(--color-text-primary);
-  margin-top: var(--spacing-6);
-  margin-bottom: var(--spacing-3);
-}
+  .xds-typography h1,
+  .xds-typography--default h1 {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.2;
+    color: var(--color-text-primary);
+    margin-top: var(--spacing-6);
+    margin-bottom: var(--spacing-3);
+  }
 
-.xds-typography h2,
-.xds-typography--default h2 {
-  font-family: var(--font-heading);
-  font-size: var(--text-xl);
-  font-weight: var(--font-weight-semibold);
-  line-height: 1.333;
-  color: var(--color-text-primary);
-  margin-top: var(--spacing-5);
-  margin-bottom: var(--spacing-3);
-}
+  .xds-typography h2,
+  .xds-typography--default h2 {
+    font-family: var(--font-heading);
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.333;
+    color: var(--color-text-primary);
+    margin-top: var(--spacing-5);
+    margin-bottom: var(--spacing-3);
+  }
 
-.xds-typography h3,
-.xds-typography--default h3 {
-  font-family: var(--font-heading);
-  font-size: var(--text-lg);
-  font-weight: var(--font-weight-semibold);
-  line-height: 1.25;
-  color: var(--color-text-primary);
-  margin-top: var(--spacing-4);
-  margin-bottom: var(--spacing-2);
-}
+  .xds-typography h3,
+  .xds-typography--default h3 {
+    font-family: var(--font-heading);
+    font-size: var(--text-lg);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.25;
+    color: var(--color-text-primary);
+    margin-top: var(--spacing-4);
+    margin-bottom: var(--spacing-2);
+  }
 
-.xds-typography h4,
-.xds-typography--default h4 {
-  font-family: var(--font-heading);
-  font-size: var(--text-base);
-  font-weight: var(--font-weight-semibold);
-  line-height: 1.428;
-  color: var(--color-text-primary);
-  margin-top: var(--spacing-4);
-  margin-bottom: var(--spacing-2);
-}
+  .xds-typography h4,
+  .xds-typography--default h4 {
+    font-family: var(--font-heading);
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.428;
+    color: var(--color-text-primary);
+    margin-top: var(--spacing-4);
+    margin-bottom: var(--spacing-2);
+  }
 
-.xds-typography h5,
-.xds-typography--default h5 {
-  font-family: var(--font-heading);
-  font-size: var(--text-base);
-  font-weight: var(--font-weight-semibold);
-  line-height: 1.428;
-  color: var(--color-text-primary);
-  margin-top: var(--spacing-3);
-  margin-bottom: var(--spacing-2);
-}
+  .xds-typography h5,
+  .xds-typography--default h5 {
+    font-family: var(--font-heading);
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.428;
+    color: var(--color-text-primary);
+    margin-top: var(--spacing-3);
+    margin-bottom: var(--spacing-2);
+  }
 
-.xds-typography h6,
-.xds-typography--default h6 {
-  font-family: var(--font-heading);
-  font-size: var(--text-xsm);
-  font-weight: var(--font-weight-semibold);
-  line-height: 1.333;
-  color: var(--color-text-primary);
-  margin-top: var(--spacing-3);
-  margin-bottom: var(--spacing-2);
-}
+  .xds-typography h6,
+  .xds-typography--default h6 {
+    font-family: var(--font-heading);
+    font-size: var(--text-xsm);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.333;
+    color: var(--color-text-primary);
+    margin-top: var(--spacing-3);
+    margin-bottom: var(--spacing-2);
+  }
 
-/* =============================================================================
-   Heading Styles - Editorial Scale
-   ============================================================================= */
+  /* ===========================================================================
+     Heading Styles - Editorial Scale
+     =========================================================================== */
 
-.xds-typography--editorial h1 {
-  font-family: var(--font-heading);
-  font-size: var(--text-4xl);
-  font-weight: var(--font-weight-semibold);
-  line-height: 1.5;
-  color: var(--color-text-primary);
-  margin-top: var(--spacing-7);
-  margin-bottom: var(--spacing-4);
-}
+  .xds-typography--editorial h1 {
+    font-family: var(--font-heading);
+    font-size: var(--text-4xl);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.5;
+    color: var(--color-text-primary);
+    margin-top: var(--spacing-7);
+    margin-bottom: var(--spacing-4);
+  }
 
-.xds-typography--editorial h2 {
-  font-family: var(--font-heading);
-  font-size: var(--text-3xl);
-  font-weight: var(--font-weight-semibold);
-  line-height: 1.333;
-  color: var(--color-text-primary);
-  margin-top: var(--spacing-6);
-  margin-bottom: var(--spacing-3);
-}
+  .xds-typography--editorial h2 {
+    font-family: var(--font-heading);
+    font-size: var(--text-3xl);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.333;
+    color: var(--color-text-primary);
+    margin-top: var(--spacing-6);
+    margin-bottom: var(--spacing-3);
+  }
 
-.xds-typography--editorial h3 {
-  font-family: var(--font-heading);
-  font-size: var(--text-2xl);
-  font-weight: var(--font-weight-semibold);
-  line-height: 1.4;
-  color: var(--color-text-primary);
-  margin-top: var(--spacing-5);
-  margin-bottom: var(--spacing-3);
-}
+  .xds-typography--editorial h3 {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.4;
+    color: var(--color-text-primary);
+    margin-top: var(--spacing-5);
+    margin-bottom: var(--spacing-3);
+  }
 
-.xds-typography--editorial h4 {
-  font-family: var(--font-heading);
-  font-size: var(--text-lg);
-  font-weight: var(--font-weight-semibold);
-  line-height: 1.5;
-  color: var(--color-text-primary);
-  margin-top: var(--spacing-4);
-  margin-bottom: var(--spacing-2);
-}
+  .xds-typography--editorial h4 {
+    font-family: var(--font-heading);
+    font-size: var(--text-lg);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.5;
+    color: var(--color-text-primary);
+    margin-top: var(--spacing-4);
+    margin-bottom: var(--spacing-2);
+  }
 
-.xds-typography--editorial h5 {
-  font-family: var(--font-heading);
-  font-size: var(--text-base);
-  font-weight: var(--font-weight-semibold);
-  line-height: 1.428;
-  color: var(--color-text-primary);
-  margin-top: var(--spacing-4);
-  margin-bottom: var(--spacing-2);
-}
+  .xds-typography--editorial h5 {
+    font-family: var(--font-heading);
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.428;
+    color: var(--color-text-primary);
+    margin-top: var(--spacing-4);
+    margin-bottom: var(--spacing-2);
+  }
 
-.xds-typography--editorial h6 {
-  font-family: var(--font-heading);
-  font-size: var(--text-xsm);
-  font-weight: var(--font-weight-semibold);
-  line-height: 1.333;
-  color: var(--color-text-primary);
-  margin-top: var(--spacing-3);
-  margin-bottom: var(--spacing-2);
-}
+  .xds-typography--editorial h6 {
+    font-family: var(--font-heading);
+    font-size: var(--text-xsm);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.333;
+    color: var(--color-text-primary);
+    margin-top: var(--spacing-3);
+    margin-bottom: var(--spacing-2);
+  }
 
-/* =============================================================================
-   Prose Styles
-   ============================================================================= */
+  /* ===========================================================================
+     Prose Styles
+     =========================================================================== */
 
-.xds-typography p {
-  margin-top: 0;
-  margin-bottom: var(--spacing-3);
-}
+  .xds-typography p {
+    margin-top: 0;
+    margin-bottom: var(--spacing-3);
+  }
 
-.xds-typography ul,
-.xds-typography ol {
-  margin-top: 0;
-  margin-bottom: var(--spacing-3);
-  padding-inline-start: var(--spacing-5);
-}
+  .xds-typography ul,
+  .xds-typography ol {
+    margin-top: 0;
+    margin-bottom: var(--spacing-3);
+    padding-inline-start: var(--spacing-5);
+  }
 
-.xds-typography li {
-  margin-bottom: var(--spacing-1);
-}
+  .xds-typography li {
+    margin-bottom: var(--spacing-1);
+  }
 
-.xds-typography li:last-child {
-  margin-bottom: 0;
-}
+  .xds-typography li:last-child {
+    margin-bottom: 0;
+  }
 
-.xds-typography blockquote {
-  margin-top: 0;
-  margin-bottom: var(--spacing-3);
-  margin-inline-start: 0;
-  margin-inline-end: 0;
-  padding-inline-start: var(--spacing-4);
-  border-inline-start: 3px solid var(--color-divider-emphasized);
-  color: var(--color-text-secondary);
-  font-style: italic;
-}
+  .xds-typography blockquote {
+    margin-top: 0;
+    margin-bottom: var(--spacing-3);
+    margin-inline-start: 0;
+    margin-inline-end: 0;
+    padding-inline-start: var(--spacing-4);
+    border-inline-start: 3px solid var(--color-divider-emphasized);
+    color: var(--color-text-secondary);
+    font-style: italic;
+  }
 
-.xds-typography code {
-  font-family: var(--font-code);
-  font-size: 0.9em;
-  background-color: var(--color-wash);
-  padding-block: var(--spacing-0-5);
-  padding-inline: var(--spacing-1);
-  border-radius: var(--radius-content);
-}
+  .xds-typography code {
+    font-family: var(--font-code);
+    font-size: 0.9em;
+    background-color: var(--color-wash);
+    padding-block: var(--spacing-0-5);
+    padding-inline: var(--spacing-1);
+    border-radius: var(--radius-content);
+  }
 
-.xds-typography pre {
-  font-family: var(--font-code);
-  font-size: var(--text-sm);
-  line-height: 1.5;
-  margin-top: 0;
-  margin-bottom: var(--spacing-3);
-  padding: var(--spacing-3);
-  background-color: var(--color-wash);
-  border-radius: var(--radius-element);
-  overflow: auto;
-  white-space: pre;
-}
+  .xds-typography pre {
+    font-family: var(--font-code);
+    font-size: var(--text-sm);
+    line-height: 1.5;
+    margin-top: 0;
+    margin-bottom: var(--spacing-3);
+    padding: var(--spacing-3);
+    background-color: var(--color-wash);
+    border-radius: var(--radius-element);
+    overflow: auto;
+    white-space: pre;
+  }
 
-.xds-typography pre code {
-  background-color: transparent;
-  padding: 0;
-  border-radius: 0;
-  font-size: inherit;
-}
+  .xds-typography pre code {
+    background-color: transparent;
+    padding: 0;
+    border-radius: 0;
+    font-size: inherit;
+  }
 
-.xds-typography hr {
-  margin-block: var(--spacing-4);
-  border: none;
-  border-top: 1px solid var(--color-divider);
-}
+  .xds-typography hr {
+    margin-block: var(--spacing-4);
+    border: none;
+    border-top: 1px solid var(--color-divider);
+  }
 
-.xds-typography strong,
-.xds-typography b {
-  font-weight: var(--font-weight-semibold);
-}
+  .xds-typography strong,
+  .xds-typography b {
+    font-weight: var(--font-weight-semibold);
+  }
 
-.xds-typography a {
-  color: var(--color-text-link);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
+  .xds-typography a {
+    color: var(--color-text-link);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
 
-.xds-typography a:hover {
-  text-decoration-thickness: 2px;
-}
+  .xds-typography a:hover {
+    text-decoration-thickness: 2px;
+  }
 
-/* =============================================================================
-   Spacing Utilities
-   ============================================================================= */
+  /* ===========================================================================
+     Spacing Utilities
+     =========================================================================== */
 
-/* Remove top margin from first child */
-.xds-typography > :first-child {
-  margin-top: 0;
-}
+  /* Remove top margin from first child */
+  .xds-typography > :first-child {
+    margin-top: 0;
+  }
 
-/* Remove bottom margin from last child */
-.xds-typography > :last-child {
-  margin-bottom: 0;
+  /* Remove bottom margin from last child */
+  .xds-typography > :last-child {
+    margin-bottom: 0;
+  }
 }
