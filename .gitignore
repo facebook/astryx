@@ -42,3 +42,6 @@ e2e/playwright/.cache/
 
 # Lint
 .eslintcache
+
+# Vibe tests (large generated files)
+internal/vibe-tests/results/

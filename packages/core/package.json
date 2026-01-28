@@ -5,6 +5,13 @@
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "xds-core": "./bin/ai-skill.mjs"
+  },
+  "ai": {
+    "skillDoc": "./llms.txt",
+    "description": "Component library skill doc for LLM integration"
+  },
   "sideEffects": [
     "**/*.stylex.ts",
     "**/*.stylex.js",
@@ -73,7 +80,8 @@
       "types": "./dist/hooks/index.d.ts",
       "import": "./dist/hooks/index.mjs",
       "require": "./dist/hooks/index.js"
-    }
+    },
+    "./llms.txt": "./llms.txt"
   },
   "scripts": {
     "build": "tsup",

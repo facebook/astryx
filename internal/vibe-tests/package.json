@@ -1,0 +1,29 @@
+{
+  "name": "@xds/vibe-tests",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Vibeability test harness for measuring LLM component system usage",
+  "type": "module",
+  "bin": {
+    "vibe-tests": "./src/cli.ts"
+  },
+  "scripts": {
+    "harness": "tsx src/cli.ts",
+    "test:xds": "SKILL_DOC=../../packages/core/llms.txt tsx src/cli.ts run",
+    "test:xds:sample": "SKILL_DOC=../../packages/core/llms.txt tsx src/cli.ts run --sample 10",
+    "test:xds:holdout": "SKILL_DOC=../../packages/core/llms.txt tsx src/cli.ts run --holdout",
+    "interactive": "tsx src/interactive.ts",
+    "interactive:sample": "tsx src/interactive.ts --sample 5",
+    "run-interactive": "tsx src/run-interactive.ts",
+    "run-interactive:sample": "tsx src/run-interactive.ts --sample 5",
+    "aggregate": "tsx src/aggregate.ts",
+    "analyze": "tsx src/cli.ts analyze"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.52.0",
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  }
+}

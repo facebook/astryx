@@ -1,0 +1,929 @@
+# XDS Component Library - AI Assistant Guide
+
+XDS is a design system for building internal tools and products. This guide helps you use XDS components correctly when generating UI code.
+
+## Core Principles
+
+1. **Use XDS components for everything they cover** - Don't recreate functionality that exists in components
+2. **CSS is acceptable for layout and styling gaps** - XDS doesn't provide every utility, use CSS for spacing, responsive design, animations
+3. **All components use the `XDS` prefix** - XDSButton, XDSCard, not Button or Card
+4. **Components are controlled** - Form inputs require `value` and `onChange` props
+5. **Composition over configuration** - Stack multiple components rather than adding props
+
+## Available Components
+
+### Form Components
+
+#### XDSTextInput
+Text input field with label and optional description.
+
+**Required Props:**
+- `label: string` - Label text
+- `value: string` - Current value (controlled)
+- `onChange: (value: string, e: ChangeEvent) => void` - Change handler
+
+**Optional Props:**
+- `isLabelHidden?: boolean` - Visually hide label (still accessible)
+- `description?: string` - Help text below input
+- `isOptional?: boolean` - Shows "(Optional)" indicator
+- `isRequired?: boolean` - Shows "(Required)" indicator
+- `isDisabled?: boolean` - Disabled state
+- `placeholder?: string` - Placeholder text
+
+**Example:**
+```tsx
+<XDSTextInput
+  label="Email"
+  value={email}
+  onChange={(value) => setEmail(value)}
+  placeholder="you@example.com"
+  isRequired
+/>
+```
+
+**Common Mistake:** ❌ Don't use `<input type="text">` directly
+
+---
+
+#### XDSTextArea
+Multi-line text input.
+
+**Required Props:**
+- `label: string`
+- `value: string`
+- `onChange: (value: string, e: ChangeEvent) => void`
+
+**Optional Props:**
+- `isLabelHidden?: boolean`
+- `description?: string`
+- `isOptional?: boolean`
+- `isRequired?: boolean`
+- `isDisabled?: boolean`
+- `placeholder?: string`
+- `rows?: number` - Number of visible rows (default: 3)
+
+**Example:**
+```tsx
+<XDSTextArea
+  label="Description"
+  value={description}
+  onChange={(value) => setDescription(value)}
+  rows={5}
+  placeholder="Enter a detailed description..."
+/>
+```
+
+---
+
+#### XDSCheckboxInput
+Checkbox with label and optional description.
+
+**Required Props:**
+- `label: string`
+- `value: boolean | 'indeterminate'`
+- `onChange: (checked: boolean, e: ChangeEvent) => void`
+
+**Optional Props:**
+- `isLabelHidden?: boolean`
+- `description?: string`
+- `isDisabled?: boolean`
+
+**Example:**
+```tsx
+<XDSCheckboxInput
+  label="Accept terms and conditions"
+  value={accepted}
+  onChange={(checked) => setAccepted(checked)}
+/>
+
+// Indeterminate state (for "select all" scenarios)
+<XDSCheckboxInput
+  label="Select all"
+  value={someSelected ? 'indeterminate' : allSelected}
+  onChange={(checked) => setAllSelected(checked)}
+/>
+```
+
+---
+
+#### XDSField
+Low-level field wrapper for custom form controls. Use XDSTextInput/XDSTextArea/XDSCheckboxInput when possible.
+
+**Required Props:**
+- `label: string`
+- `inputID: string` - ID for htmlFor linking
+- `children: ReactNode` - The input element
+
+**Optional Props:**
+- `isLabelHidden?: boolean`
+- `description?: string`
+- `descriptionID?: string` - For aria-describedby
+- `isOptional?: boolean`
+- `isRequired?: boolean`
+
+**Example:**
+```tsx
+<XDSField
+  label="Custom Input"
+  inputID="custom-input"
+  isRequired
+>
+  <CustomInputComponent id="custom-input" />
+</XDSField>
+```
+
+---
+
+### Button Component
+
+#### XDSButton
+Button with variants and loading state.
+
+**Required Props:**
+- `children: ReactNode` - Button text/content
+
+**Optional Props:**
+- `variant?: 'primary' | 'secondary' | 'ghost' | 'destructive'` (default: 'secondary')
+- `loading?: boolean` - Shows spinner overlay
+- `disabled?: boolean`
+- All standard button HTML attributes (`onClick`, `type`, etc.)
+
+**Variants:**
+- `primary` - Blue, high emphasis (main actions)
+- `secondary` - Gray, medium emphasis (default)
+- `ghost` - Transparent, low emphasis (tertiary actions)
+- `destructive` - Red, for dangerous actions
+
+**Example:**
+```tsx
+<XDSButton variant="primary" onClick={handleSubmit} loading={isSubmitting}>
+  Submit
+</XDSButton>
+
+<XDSButton variant="destructive" onClick={handleDelete}>
+  Delete Account
+</XDSButton>
+
+<XDSButton variant="ghost" onClick={handleCancel}>
+  Cancel
+</XDSButton>
+```
+
+**Common Mistake:** ❌ Don't manually add spinners or disable during loading - use the `loading` prop
+
+---
+
+### Display Components
+
+#### XDSAvatar
+User avatar with fallback and status indicator.
+
+**Optional Props:**
+- `src?: string` - Image URL
+- `fallbackSrc?: string` - Fallback image if src fails
+- `name?: string` - Generates initials if no image
+- `alt?: string` - Alt text (defaults to name)
+- `size?: 'tiny' | 'xsmall' | 'small' | 'medium' | 'large'` or pixel size (default: 'small')
+- `status?: ReactNode` - Status badge (e.g., online indicator)
+
+**Example:**
+```tsx
+<XDSAvatar
+  src={user.avatarUrl}
+  name={user.name}
+  size="medium"
+  status={<OnlineBadge />}
+/>
+
+// Name-only (shows initials)
+<XDSAvatar name="Jane Doe" size="large" />
+
+// Pixel sizing
+<XDSAvatar src={avatarUrl} size={64} />
+```
+
+---
+
+#### XDSSkeleton
+Loading placeholder with animation.
+
+**Optional Props:**
+- `width?: number | string` (default: '100%')
+- `height?: number | string` (default: '100%')
+- `radius?: 'none' | 'inner' | 'content' | 'element' | 'container' | 'rounded'` (default: 'container')
+- `index?: number` - For staggered animation (default: 0)
+
+**Example:**
+```tsx
+// Text line skeleton
+<XDSSkeleton width="80%" height={16} radius="content" />
+
+// Avatar skeleton
+<XDSSkeleton width={48} height={48} radius="rounded" />
+
+// Staggered list
+{[0, 1, 2].map((i) => (
+  <XDSSkeleton key={i} height={60} index={i} />
+))}
+```
+
+---
+
+### Layout Components
+
+#### XDSHStack & XDSVStack
+Horizontal and vertical flex containers with consistent spacing.
+
+**Optional Props:**
+- `gap?: 'space0' | 'space1' | 'space2' | 'space3' | 'space4' | 'space5' | 'space6' | 'space7'` - Spacing between items
+- `wrap?: 'nowrap' | 'wrap' | 'wrap-reverse'` (default: 'nowrap')
+- `element?: ElementType` - Polymorphic element type (default: 'div')
+- `xstyle?: StyleXStyles` - Additional StyleX styles
+- `children?: ReactNode`
+
+**XDSHStack Specific:**
+- `hAlign?: 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly'` - Horizontal alignment
+- `vAlign?: 'stretch' | 'start' | 'center' | 'end'` (default: 'stretch') - Vertical alignment
+
+**XDSVStack Specific:**
+- `vAlign?: 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly'` - Vertical alignment
+- `hAlign?: 'stretch' | 'start' | 'center' | 'end'` (default: 'stretch') - Horizontal alignment
+
+**Space Scale:**
+- `space0`: 0px (no gap)
+- `space1`: 4px
+- `space2`: 8px
+- `space3`: 12px
+- `space4`: 16px
+- `space5`: 24px
+- `space6`: 32px
+- `space7`: 48px
+
+**Example:**
+```tsx
+// Horizontal button group
+<XDSHStack gap="space2" hAlign="end">
+  <XDSButton variant="ghost">Cancel</XDSButton>
+  <XDSButton variant="primary">Save</XDSButton>
+</XDSHStack>
+
+// Vertical form
+<XDSVStack gap="space4">
+  <XDSTextInput label="Name" value={name} onChange={setName} />
+  <XDSTextInput label="Email" value={email} onChange={setEmail} />
+  <XDSButton variant="primary">Submit</XDSButton>
+</XDSVStack>
+
+// Centered content
+<XDSVStack vAlign="center" hAlign="center" gap="space3">
+  <h1>Welcome</h1>
+  <p>Get started below</p>
+  <XDSButton variant="primary">Begin</XDSButton>
+</XDSVStack>
+```
+
+**Common Mistake:** ❌ Don't use inline styles for gap/spacing - use the `gap` prop
+
+---
+
+#### XDSStackItem
+Individual item within a stack with size control.
+
+**Optional Props:**
+- `size?: 'static' | 'fill'` (default: 'static') - Whether item grows to fill space
+- `crossAlignSelf?: 'stretch' | 'start' | 'center' | 'end'` - Override cross-axis alignment
+- `element?: ElementType` (default: 'div')
+- `xstyle?: StyleXStyles`
+- `children?: ReactNode`
+
+**Example:**
+```tsx
+<XDSHStack gap="space2">
+  <XDSStackItem size="fill">
+    <XDSTextInput label="Search" value={query} onChange={setQuery} />
+  </XDSStackItem>
+  <XDSStackItem size="static">
+    <XDSButton>Search</XDSButton>
+  </XDSStackItem>
+</XDSHStack>
+```
+
+---
+
+#### XDSCard
+Elevated container for content grouping.
+
+**Optional Props:**
+- `width?: number | string`
+- `height?: number | string`
+- `maxWidth?: number | string`
+- `minHeight?: number | string`
+- `isFullBleed?: boolean` (default: false) - Removes internal padding
+- `children?: ReactNode`
+
+**Example:**
+```tsx
+// Standard card
+<XDSCard maxWidth={400}>
+  <h2>Card Title</h2>
+  <p>Card content goes here</p>
+</XDSCard>
+
+// Full bleed (for images at card edge)
+<XDSCard isFullBleed>
+  <img src={banner} alt="Banner" style={{width: '100%'}} />
+  <div style={{padding: '16px'}}>
+    <h2>Title</h2>
+    <p>Content with custom padding</p>
+  </div>
+</XDSCard>
+
+// Fixed height with scrolling
+<XDSCard height={300}>
+  <LongContent />
+</XDSCard>
+```
+
+---
+
+#### XDSSection
+Content section with background variants and optional dividers.
+
+**Optional Props:**
+- `variant?: 'section' | 'transparent' | 'wash'` (default: 'section')
+  - `section`: Distinct background color
+  - `transparent`: No background
+  - `wash`: Subtle background tint
+- `width?: number | string`
+- `height?: number | string`
+- `maxWidth?: number | string`
+- `minHeight?: number | string`
+- `dividers?: Array<'top' | 'bottom' | 'start' | 'end'>` - Border sides
+- `isFullBleed?: boolean` (default: false)
+- `children?: ReactNode`
+
+**Example:**
+```tsx
+// Section with top divider
+<XDSSection dividers={['top']}>
+  <h2>Account Settings</h2>
+  <p>Manage your account preferences</p>
+</XDSSection>
+
+// Wash background section
+<XDSSection variant="wash">
+  <XDSCard>Card inside wash section</XDSCard>
+</XDSSection>
+
+// Nested sections with dividers
+<XDSCard>
+  <XDSSection dividers={['bottom']}>Header Section</XDSSection>
+  <XDSSection>Content Section</XDSSection>
+  <XDSSection dividers={['top']}>Footer Section</XDSSection>
+</XDSCard>
+```
+
+---
+
+#### XDSLayout
+Application layout with named slots (header, content, start, end, footer).
+
+**Optional Props:**
+- `header?: ReactNode` - Top bar
+- `content?: ReactNode` - Main content area (center)
+- `start?: ReactNode` - Left sidebar (in LTR)
+- `end?: ReactNode` - Right sidebar (in LTR)
+- `footer?: ReactNode` - Bottom bar
+- `height?: 'fill' | 'auto'` (default: 'fill') - Fill viewport or auto-size
+- `isFullBleed?: boolean` (default: false)
+
+**Example:**
+```tsx
+<XDSLayout
+  header={
+    <XDSLayoutHeader hasDivider>
+      <nav>App Navigation</nav>
+    </XDSLayoutHeader>
+  }
+  start={
+    <XDSLayoutPanel width={240}>
+      <Sidebar />
+    </XDSLayoutPanel>
+  }
+  content={
+    <XDSLayoutContent>
+      <MainContent />
+    </XDSLayoutContent>
+  }
+  end={
+    <XDSLayoutPanel width={300}>
+      <RightPanel />
+    </XDSLayoutPanel>
+  }
+  footer={
+    <XDSLayoutFooter hasDivider>
+      Footer content
+    </XDSLayoutFooter>
+  }
+/>
+```
+
+---
+
+#### XDSLayoutHeader / XDSLayoutFooter
+Header and footer for XDSLayout.
+
+**Optional Props:**
+- `children?: ReactNode`
+- `hasDivider?: boolean` (default: false) - Border on bottom (header) or top (footer)
+- `height?: number | string` - Fixed height
+- `isFullBleed?: boolean` (default: false)
+- `label?: string` - ARIA landmark label
+- `role?: AriaRole` - ARIA role
+
+**Example:**
+```tsx
+<XDSLayoutHeader hasDivider height={64}>
+  <XDSHStack gap="space4" hAlign="between" vAlign="center">
+    <Logo />
+    <UserMenu />
+  </XDSHStack>
+</XDSLayoutHeader>
+```
+
+---
+
+#### XDSLayoutContent
+Main content area for XDSLayout.
+
+**Optional Props:**
+- `children?: ReactNode`
+- `isFullBleed?: boolean` (default: false)
+- `isScrollable?: boolean` (default: true) - Enable/disable scrolling
+- `label?: string` - ARIA landmark label
+- `role?: AriaRole`
+
+**Example:**
+```tsx
+<XDSLayoutContent>
+  <XDSVStack gap="space5">
+    <h1>Dashboard</h1>
+    <DashboardWidgets />
+  </XDSVStack>
+</XDSLayoutContent>
+```
+
+---
+
+#### XDSLayoutPanel
+Side panel for XDSLayout (start or end).
+
+**Optional Props:**
+- `children?: ReactNode`
+- `width?: number | string` - Panel width
+- `hasDivider?: boolean` (default: false) - Auto-positioned border
+- `isFullBleed?: boolean` (default: false)
+- `isScrollable?: boolean` (default: true)
+- `label?: string` - ARIA landmark label
+- `role?: AriaRole`
+
+**Example:**
+```tsx
+<XDSLayoutPanel width={280} hasDivider>
+  <XDSVStack gap="space4">
+    <h2>Filters</h2>
+    <FilterOptions />
+  </XDSVStack>
+</XDSLayoutPanel>
+```
+
+---
+
+### Layer Components (Floating UI)
+
+#### XDSTooltip
+Tooltip that appears on hover/focus.
+
+**Required Props:**
+- `children: ReactNode` - Trigger element(s)
+- `content: ReactNode` - Tooltip content
+
+**Optional Props:**
+- `placement?: 'above' | 'below' | 'start' | 'end'` (default: 'above')
+- `alignment?: 'start' | 'center' | 'end'` (default: 'center')
+- `delay?: number` (default: 200ms) - Show delay
+- `hideDelay?: number` (default: 0ms) - Hide delay
+- `focusTrigger?: 'auto' | 'always' | 'never'` (default: 'auto')
+- `isEnabled?: boolean` (default: true)
+- `hasHoverIndication?: 'auto' | boolean` (default: 'auto') - Dashed underline
+- `onShow?: () => void`
+- `onHide?: () => void`
+
+**Example:**
+```tsx
+<XDSTooltip content="Delete this item">
+  <XDSButton variant="destructive">Delete</XDSButton>
+</XDSTooltip>
+
+// Custom placement
+<XDSTooltip content="Additional information" placement="end" alignment="start">
+  <InfoIcon />
+</XDSTooltip>
+
+// Rich content
+<XDSTooltip
+  content={
+    <XDSVStack gap="space2">
+      <strong>Keyboard Shortcut</strong>
+      <code>⌘ + K</code>
+    </XDSVStack>
+  }
+>
+  <XDSButton>Open Command Palette</XDSButton>
+</XDSTooltip>
+```
+
+**Common Mistake:** ❌ Don't manually add `title` attribute - use XDSTooltip for consistent styling
+
+---
+
+#### XDSHoverCard
+Hover card for rich interactive content (like tooltip but with longer delays).
+
+**Props:** Same as XDSTooltip with different defaults:
+- `delay?: number` (default: 300ms)
+- `hideDelay?: number` (default: 200ms)
+
+**Example:**
+```tsx
+<XDSHoverCard
+  content={
+    <XDSCard width={280}>
+      <XDSVStack gap="space3">
+        <XDSHStack gap="space2" vAlign="center">
+          <XDSAvatar src={user.avatar} name={user.name} />
+          <strong>{user.name}</strong>
+        </XDSHStack>
+        <p>{user.bio}</p>
+      </XDSVStack>
+    </XDSCard>
+  }
+>
+  <a href={`/users/${user.id}`}>@{user.username}</a>
+</XDSHoverCard>
+```
+
+---
+
+## Theme System
+
+XDS includes a theme system with light/dark mode support.
+
+### Theme Provider
+
+```tsx
+import { Theme, defaultTheme } from '@xds/core';
+
+<Theme theme={defaultTheme} mode="system">
+  <App />
+</Theme>
+```
+
+**Modes:**
+- `light` - Force light mode
+- `dark` - Force dark mode
+- `system` - Follow OS preference (default)
+
+### Using Theme Hook
+
+```tsx
+import { useTheme } from '@xds/core';
+
+function MyComponent() {
+  const { theme, mode } = useTheme();
+  // Access theme tokens...
+}
+```
+
+### Available Theme Tokens
+
+- **Colors:** `colorVars` - Primary, secondary, text, background, etc.
+- **Spacing:** `spacingVars` - space0 through space7
+- **Radius:** `radiusVars` - Border radius values
+- **Elevation:** `elevationVars` - Shadow values
+- **Transition:** `transitionVars` - Animation durations
+- **Typography:** `typographyVars` - Font families, sizes, weights
+
+---
+
+## Common Patterns
+
+### Forms
+
+```tsx
+<XDSVStack gap="space4" element="form" onSubmit={handleSubmit}>
+  <XDSTextInput
+    label="Email"
+    value={email}
+    onChange={setEmail}
+    isRequired
+  />
+  <XDSTextInput
+    label="Password"
+    value={password}
+    onChange={setPassword}
+    isRequired
+  />
+  <XDSCheckboxInput
+    label="Remember me"
+    value={remember}
+    onChange={setRemember}
+  />
+  <XDSHStack gap="space2" hAlign="end">
+    <XDSButton variant="ghost">Cancel</XDSButton>
+    <XDSButton variant="primary" type="submit">Sign In</XDSButton>
+  </XDSHStack>
+</XDSVStack>
+```
+
+### Modal Dialog
+
+```tsx
+// XDS doesn't provide a Modal component yet
+// Use supplemental CSS for backdrop and positioning
+<div style={{
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(0, 0, 0, 0.5)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+}}>
+  <XDSCard maxWidth={500}>
+    <XDSVStack gap="space4">
+      <h2>Confirm Action</h2>
+      <p>Are you sure you want to proceed?</p>
+      <XDSHStack gap="space2" hAlign="end">
+        <XDSButton variant="ghost" onClick={onClose}>Cancel</XDSButton>
+        <XDSButton variant="primary" onClick={onConfirm}>Confirm</XDSButton>
+      </XDSHStack>
+    </XDSVStack>
+  </XDSCard>
+</div>
+```
+
+### Data Lists
+
+```tsx
+<XDSVStack gap="space3">
+  {items.map((item) => (
+    <XDSCard key={item.id}>
+      <XDSHStack gap="space3" vAlign="center">
+        <XDSAvatar src={item.avatarUrl} name={item.name} />
+        <XDSVStack gap="space1">
+          <strong>{item.name}</strong>
+          <span>{item.description}</span>
+        </XDSVStack>
+        <XDSStackItem size="fill" />
+        <XDSButton variant="ghost">View</XDSButton>
+      </XDSHStack>
+    </XDSCard>
+  ))}
+</XDSVStack>
+```
+
+### Loading States
+
+```tsx
+function UserProfile({ userId }) {
+  const { data, isLoading } = useUser(userId);
+
+  if (isLoading) {
+    return (
+      <XDSCard>
+        <XDSVStack gap="space3">
+          <XDSHStack gap="space2" vAlign="center">
+            <XDSSkeleton width={48} height={48} radius="rounded" />
+            <XDSSkeleton width={120} height={20} />
+          </XDSHStack>
+          <XDSSkeleton width="100%" height={60} />
+        </XDSVStack>
+      </XDSCard>
+    );
+  }
+
+  return (
+    <XDSCard>
+      <XDSVStack gap="space3">
+        <XDSHStack gap="space2" vAlign="center">
+          <XDSAvatar src={data.avatar} name={data.name} />
+          <strong>{data.name}</strong>
+        </XDSHStack>
+        <p>{data.bio}</p>
+      </XDSVStack>
+    </XDSCard>
+  );
+}
+```
+
+### Responsive Layout
+
+```tsx
+// Use CSS media queries for responsive behavior
+// XDS doesn't provide responsive props
+<div style={{
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+  gap: '16px',
+}}>
+  {cards.map((card) => (
+    <XDSCard key={card.id}>
+      {card.content}
+    </XDSCard>
+  ))}
+</div>
+```
+
+---
+
+## What XDS Does NOT Provide
+
+These require custom CSS or third-party libraries:
+
+1. **Table components** - Use `<table>` with custom styling
+2. **Dropdown/Select menus** - Use `<select>` or custom component
+3. **Modal/Dialog** - Use custom positioning with XDSCard
+4. **Tabs** - Custom implementation needed
+5. **Accordion** - Custom implementation needed
+6. **Date picker** - Use third-party library
+7. **File upload** - Use `<input type="file">` with XDSButton
+8. **Toast/Notification** - Custom implementation needed
+9. **Pagination** - Custom implementation needed
+10. **Search/Autocomplete** - Use XDSTextInput with custom dropdown
+11. **Responsive utilities** - Use CSS media queries directly
+12. **Grid system** - Use CSS Grid or Flexbox directly
+
+**When components don't exist, use supplemental CSS - this is acceptable and expected.**
+
+---
+
+## Anti-Patterns (Don't Do This)
+
+❌ **Hallucinating props:**
+```tsx
+// WRONG - these props don't exist
+<XDSButton size="large" color="blue" icon={<Icon />} />
+<XDSTextInput validation={schema} error={errorMsg} />
+```
+
+✅ **Use what exists:**
+```tsx
+<XDSButton variant="primary">Large Action</XDSButton>
+<XDSTextInput label="Email" value={email} onChange={setEmail} />
+```
+
+---
+
+❌ **Redundant CSS:**
+```tsx
+// WRONG - gap is a prop
+<XDSHStack style={{gap: '16px'}}>
+  <XDSButton>One</XDSButton>
+  <XDSButton>Two</XDSButton>
+</XDSHStack>
+```
+
+✅ **Use component props:**
+```tsx
+<XDSHStack gap="space4">
+  <XDSButton>One</XDSButton>
+  <XDSButton>Two</XDSButton>
+</XDSHStack>
+```
+
+---
+
+❌ **Using wrong component:**
+```tsx
+// WRONG - XDSCard is not for text inputs
+<XDSCard>
+  <input type="text" />
+</XDSCard>
+```
+
+✅ **Use the right component:**
+```tsx
+<XDSTextInput label="Search" value={query} onChange={setQuery} />
+```
+
+---
+
+❌ **Mixing other frameworks:**
+```tsx
+// WRONG - this is Tailwind, not XDS
+<div className="flex gap-4 p-4">
+  <button className="bg-blue-500">Click</button>
+</div>
+```
+
+✅ **Use XDS components:**
+```tsx
+<XDSHStack gap="space4">
+  <XDSButton variant="primary">Click</XDSButton>
+</XDSHStack>
+```
+
+---
+
+## Import Paths
+
+All components are exported from `@xds/core`:
+
+```tsx
+import {
+  // Form
+  XDSTextInput,
+  XDSTextArea,
+  XDSCheckboxInput,
+  XDSField,
+  XDSFieldLabel,
+
+  // Button
+  XDSButton,
+
+  // Display
+  XDSAvatar,
+  XDSSkeleton,
+
+  // Layout
+  XDSHStack,
+  XDSVStack,
+  XDSStackItem,
+  XDSCard,
+  XDSSection,
+  XDSLayout,
+  XDSLayoutHeader,
+  XDSLayoutContent,
+  XDSLayoutFooter,
+  XDSLayoutPanel,
+
+  // Layer
+  XDSTooltip,
+  XDSHoverCard,
+
+  // Theme
+  Theme,
+  useTheme,
+  defaultTheme,
+} from '@xds/core';
+```
+
+---
+
+## Quick Reference
+
+**Form inputs are controlled:**
+- XDSTextInput: `value` + `onChange`
+- XDSTextArea: `value` + `onChange`
+- XDSCheckboxInput: `value` + `onChange`
+
+**Layout uses gap props:**
+- XDSHStack/XDSVStack: `gap="space1"` through `gap="space7"`
+
+**Buttons have 4 variants:**
+- `primary`, `secondary`, `ghost`, `destructive`
+
+**Cards have optional sizing:**
+- `width`, `height`, `maxWidth`, `minHeight`
+
+**Tooltips auto-position:**
+- `placement="above"` | `"below"` | `"start"` | `"end"`
+
+**Theme modes:**
+- `"light"`, `"dark"`, or `"system"`
+
+---
+
+## Summary
+
+XDS provides:
+- ✅ Form inputs (text, textarea, checkbox)
+- ✅ Buttons with variants
+- ✅ Avatar with fallbacks
+- ✅ Loading skeletons
+- ✅ Layout stacks and containers
+- ✅ Tooltips and hover cards
+- ✅ Theme system
+
+XDS requires supplemental CSS for:
+- ✅ Complex layouts (Grid, responsive)
+- ✅ Animations and transitions
+- ✅ Components not in the library
+- ✅ Fine-grained positioning
+
+When generating UI code with XDS:
+1. Use XDS components wherever they exist
+2. Don't invent props - check this doc
+3. Use CSS for layout and styling gaps
+4. Follow the import pattern
+5. Keep forms controlled

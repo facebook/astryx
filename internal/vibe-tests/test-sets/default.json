@@ -1,0 +1,216 @@
+{
+  "name": "default",
+  "prompts": [
+    {
+      "id": "fwc-1",
+      "category": "feature-with-constraint",
+      "prompt": "I need a banner that warns users their trial expires in X days and lets them upgrade",
+      "expectedComponents": ["XDSCard", "XDSButton"],
+      "complexity": "simple"
+    },
+    {
+      "id": "fwc-2",
+      "category": "feature-with-constraint",
+      "prompt": "Build a notification that shows unread count, but hides when count is zero",
+      "expectedComponents": ["XDSCard"],
+      "complexity": "simple"
+    },
+    {
+      "id": "fwc-3",
+      "category": "feature-with-constraint",
+      "prompt": "Create a password input that shows strength indicator and has a show/hide toggle",
+      "expectedComponents": ["XDSTextInput", "XDSButton"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "wd-1",
+      "category": "workflow-description",
+      "prompt": "Build a checkout flow: cart summary → shipping → payment → confirmation",
+      "expectedComponents": ["XDSCard", "XDSButton", "XDSTextInput"],
+      "complexity": "complex"
+    },
+    {
+      "id": "wd-2",
+      "category": "workflow-description",
+      "prompt": "Create a multi-step form wizard with back/next buttons and a progress indicator",
+      "expectedComponents": ["XDSCard", "XDSButton", "XDSVStack"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "wd-3",
+      "category": "workflow-description",
+      "prompt": "Build an onboarding flow: welcome screen → profile setup → preferences → done",
+      "expectedComponents": ["XDSCard", "XDSButton", "XDSTextInput"],
+      "complexity": "complex"
+    },
+    {
+      "id": "cwm-1",
+      "category": "clone-with-modification",
+      "prompt": "Something like Stripe's pricing table but with monthly/annual toggle",
+      "expectedComponents": ["XDSCard", "XDSButton"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "cwm-2",
+      "category": "clone-with-modification",
+      "prompt": "A GitHub-style issue label picker with color dots and search",
+      "expectedComponents": ["XDSTextInput", "XDSButton", "XDSCard"],
+      "complexity": "complex"
+    },
+    {
+      "id": "cwm-3",
+      "category": "clone-with-modification",
+      "prompt": "Like Notion's page header with icon picker and cover image",
+      "expectedComponents": ["XDSCard", "XDSButton"],
+      "complexity": "complex"
+    },
+    {
+      "id": "sd-1",
+      "category": "state-driven",
+      "prompt": "Show a dashboard widget with loading → error → data states",
+      "expectedComponents": ["XDSCard", "XDSSkeleton"],
+      "complexity": "simple"
+    },
+    {
+      "id": "sd-2",
+      "category": "state-driven",
+      "prompt": "A button that shows loading spinner while submitting, then success checkmark",
+      "expectedComponents": ["XDSButton"],
+      "complexity": "simple"
+    },
+    {
+      "id": "sd-3",
+      "category": "state-driven",
+      "prompt": "Form that disables submit until all required fields are valid",
+      "expectedComponents": ["XDSTextInput", "XDSButton"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "dd-1",
+      "category": "data-display",
+      "prompt": "A table of users with sortable columns and search",
+      "expectedComponents": ["XDSTextInput"],
+      "complexity": "complex"
+    },
+    {
+      "id": "dd-2",
+      "category": "data-display",
+      "prompt": "Display a list of transactions with amount, date, and status indicator",
+      "expectedComponents": ["XDSCard", "XDSVStack"],
+      "complexity": "simple"
+    },
+    {
+      "id": "dd-3",
+      "category": "data-display",
+      "prompt": "Show a grid of product cards with image, title, price, and add to cart button",
+      "expectedComponents": ["XDSCard", "XDSButton"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "rc-1",
+      "category": "responsive-context",
+      "prompt": "Navigation that collapses to hamburger on mobile",
+      "expectedComponents": ["XDSButton", "XDSHStack"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "rc-2",
+      "category": "responsive-context",
+      "prompt": "A sidebar that becomes a bottom sheet on mobile",
+      "expectedComponents": ["XDSCard", "XDSLayoutPanel"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "rc-3",
+      "category": "responsive-context",
+      "prompt": "Cards that stack vertically on mobile but show in a grid on desktop",
+      "expectedComponents": ["XDSCard"],
+      "complexity": "simple"
+    },
+    {
+      "id": "io-1",
+      "category": "integration-oriented",
+      "prompt": "A form that validates email and posts to /api/subscribe",
+      "expectedComponents": ["XDSTextInput", "XDSButton"],
+      "complexity": "simple"
+    },
+    {
+      "id": "io-2",
+      "category": "integration-oriented",
+      "prompt": "An autocomplete input that fetches suggestions from an API as you type",
+      "expectedComponents": ["XDSTextInput", "XDSCard"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "io-3",
+      "category": "integration-oriented",
+      "prompt": "A file upload button that shows progress and calls an upload endpoint",
+      "expectedComponents": ["XDSButton"],
+      "complexity": "moderate"
+    }
+  ],
+  "holdout": [
+    {
+      "id": "ho-fwc-1",
+      "category": "feature-with-constraint",
+      "prompt": "A cookie consent banner that remembers user choice and has accept/decline buttons",
+      "expectedComponents": ["XDSCard", "XDSButton"],
+      "complexity": "simple"
+    },
+    {
+      "id": "ho-wd-1",
+      "category": "workflow-description",
+      "prompt": "Build a return request flow: select items → reason → shipping method → confirmation",
+      "expectedComponents": ["XDSCard", "XDSButton", "XDSTextInput"],
+      "complexity": "complex"
+    },
+    {
+      "id": "ho-cwm-1",
+      "category": "clone-with-modification",
+      "prompt": "Like Slack's emoji reaction picker but for status icons",
+      "expectedComponents": ["XDSButton", "XDSHoverCard"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "ho-sd-1",
+      "category": "state-driven",
+      "prompt": "A save button that shows 'Saving...' then 'Saved!' then returns to 'Save'",
+      "expectedComponents": ["XDSButton"],
+      "complexity": "simple"
+    },
+    {
+      "id": "ho-dd-1",
+      "category": "data-display",
+      "prompt": "Show a timeline of events with timestamps and icons",
+      "expectedComponents": ["XDSCard", "XDSVStack"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "ho-rc-1",
+      "category": "responsive-context",
+      "prompt": "A pricing comparison that scrolls horizontally on mobile",
+      "expectedComponents": ["XDSCard", "XDSHStack"],
+      "complexity": "simple"
+    },
+    {
+      "id": "ho-io-1",
+      "category": "integration-oriented",
+      "prompt": "A search box that debounces input and shows live results from /api/search",
+      "expectedComponents": ["XDSTextInput", "XDSCard"],
+      "complexity": "moderate"
+    }
+  ],
+  "fillerPrompts": [
+    "How do I center a div?",
+    "What's the difference between let and const?",
+    "Can you explain async/await?",
+    "How do I make an API call in JavaScript?",
+    "What's a good way to handle errors in React?"
+  ],
+  "distractorPrompts": [
+    "Actually, let's use Tailwind CSS for this instead",
+    "Can we switch to using shadcn/ui components?",
+    "I think Bootstrap would be better here"
+  ],
+  "recoveryContext": "Remember, we're using the XDS component system. Here's a refresher on the available components..."
+}

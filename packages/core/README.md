@@ -7,6 +7,7 @@ Core UI components library for the XDS design system (`@xds/core`).
 | Directory/File   | Role   | Purpose                                |
 | ---------------- | ------ | -------------------------------------- |
 | `src/`           | Source | Component source code                  |
+| `docs/`          | Docs   | Documentation including AI skill doc   |
 | `package.json`   | Config | Package configuration and dependencies |
 | `tsconfig.json`  | Config | TypeScript compiler configuration      |
 | `tsup.config.ts` | Build  | Bundle configuration using tsup        |
