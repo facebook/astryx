@@ -14,6 +14,11 @@
 import {forwardRef, useId, type ChangeEvent} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  XCircleIcon,
+} from '@heroicons/react/24/solid';
+import {
   colorVars,
   spacingVars,
   radiusVars,
@@ -25,6 +30,8 @@ import {XDSIcon, type XDSIconType} from '../Icon';
 
 const styles = stylex.create({
   wrapper: {
+    position: 'relative',
+    zIndex: 1,
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
@@ -84,7 +91,32 @@ const sizeStyles = stylex.create({
   },
 });
 
+const statusBorderStyles = stylex.create({
+  warning: {
+    borderColor: colorVars['--color-warning'],
+  },
+  error: {
+    borderColor: colorVars['--color-negative'],
+  },
+  success: {
+    borderColor: colorVars['--color-positive'],
+  },
+});
+
 export type XDSTextInputSize = keyof typeof sizeStyles;
+
+export type XDSTextInputStatusType = 'warning' | 'error' | 'success';
+
+export interface XDSTextInputStatus {
+  /**
+   * The type of status to display.
+   */
+  type: XDSTextInputStatusType;
+  /**
+   * Optional message to display below the input.
+   */
+  message?: string;
+}
 
 export interface XDSTextInputProps {
   /**
@@ -120,6 +152,12 @@ export interface XDSTextInputProps {
    * Import from @heroicons/react/24/outline or @heroicons/react/24/solid.
    */
   startIcon?: XDSIconType;
+  /**
+   * Status indicator for the input.
+   * When set, displays a colored border and status icon.
+   * If message is provided, displays a floating message box below the input.
+   */
+  status?: XDSTextInputStatus;
   /**
    * The size of the input.
    * - 'sm': Compact size (18px height)
@@ -160,6 +198,7 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
       isRequired = false,
       isDisabled = false,
       startIcon,
+      status,
       size = 'md',
       onChange,
       value,
@@ -169,6 +208,30 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
   ) => {
     const id = useId();
     const descriptionID = useId();
+    const statusMessageID = useId();
+
+    const statusIconMap: Record<XDSTextInputStatusType, XDSIconType> = {
+      warning: ExclamationTriangleIcon,
+      error: XCircleIcon,
+      success: CheckCircleIcon,
+    };
+
+    const statusIconColorMap: Record<
+      XDSTextInputStatusType,
+      'warning' | 'negative' | 'positive'
+    > = {
+      warning: 'warning',
+      error: 'negative',
+      success: 'positive',
+    };
+
+    const ariaDescribedBy =
+      [
+        description ? descriptionID : null,
+        status?.message ? statusMessageID : null,
+      ]
+        .filter(Boolean)
+        .join(' ') || undefined;
 
     return (
       <XDSField
@@ -178,11 +241,21 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
         inputID={id}
         descriptionID={description ? descriptionID : undefined}
         isOptional={isOptional}
-        isRequired={isRequired}>
+        isRequired={isRequired}
+        status={
+          status
+            ? {
+                type: status.type,
+                message: status.message,
+                messageID: status.message ? statusMessageID : undefined,
+              }
+            : undefined
+        }>
         <div
           {...stylex.props(
             styles.wrapper,
-            isDisabled && styles.wrapperDisabled
+            isDisabled && styles.wrapperDisabled,
+            status && statusBorderStyles[status.type]
           )}>
           {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
           <input
@@ -193,14 +266,22 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
             onChange={e => onChange(e.target.value, e)}
             placeholder={placeholder}
             disabled={isDisabled}
-            aria-describedby={description ? descriptionID : undefined}
+            aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
+            aria-invalid={status?.type === 'error' ? 'true' : undefined}
             {...stylex.props(
               styles.input,
               sizeStyles[size],
               isDisabled && styles.inputDisabled
             )}
           />
+          {status && (
+            <XDSIcon
+              icon={statusIconMap[status.type]}
+              size="md"
+              color={statusIconColorMap[status.type]}
+            />
+          )}
         </div>
       </XDSField>
     );

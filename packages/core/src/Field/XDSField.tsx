@@ -14,7 +14,13 @@
 import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSFieldLabel} from './XDSFieldLabel';
-import {colorVars, spacingVars, typographyVars} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  radiusVars,
+  spacingVars,
+  textSizeVars,
+  typographyVars,
+} from '../theme/tokens.stylex';
 import type {XDSIconType} from '../Icon';
 
 const styles = stylex.create({
@@ -30,7 +36,7 @@ const styles = stylex.create({
   },
   label: {
     fontFamily: typographyVars['--font-body'],
-    fontSize: '0.875rem',
+    fontSize: textSizeVars['--text-base'],
     fontWeight: 500,
     color: colorVars['--color-text-primary'],
   },
@@ -51,16 +57,63 @@ const styles = stylex.create({
   },
   description: {
     fontFamily: typographyVars['--font-body'],
-    fontSize: '0.75rem',
+    fontSize: textSizeVars['--text-xsm'],
     color: colorVars['--color-text-secondary'],
   },
   optionalRequired: {
     fontFamily: typographyVars['--font-body'],
-    fontSize: '0.75rem',
+    fontSize: textSizeVars['--text-xsm'],
     color: colorVars['--color-text-secondary'],
     marginInlineStart: spacingVars['--spacing-1'],
   },
+  inputStatusWrapper: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  statusMessage: {
+    marginTop: -6,
+    paddingBlockStart: 14,
+    paddingBlockEnd: 8,
+    paddingInline: spacingVars['--spacing-2'],
+    borderBottomLeftRadius: radiusVars['--radius-element'],
+    borderBottomRightRadius: radiusVars['--radius-element'],
+    fontFamily: typographyVars['--font-body'],
+    fontSize: textSizeVars['--text-xsm'],
+    lineHeight: 1.333,
+  },
 });
+
+const statusMessageColorStyles = stylex.create({
+  warning: {
+    backgroundColor: colorVars['--color-warning-deemphasized'],
+    color: colorVars['--color-yellow-text'],
+  },
+  error: {
+    backgroundColor: colorVars['--color-negative-deemphasized'],
+    color: colorVars['--color-red-text'],
+  },
+  success: {
+    backgroundColor: colorVars['--color-positive-deemphasized'],
+    color: colorVars['--color-green-text'],
+  },
+});
+
+export type XDSFieldStatusType = 'warning' | 'error' | 'success';
+
+export interface XDSFieldStatus {
+  /**
+   * The type of status to display.
+   */
+  type: XDSFieldStatusType;
+  /**
+   * Optional message to display below the input.
+   */
+  message?: string;
+  /**
+   * ID for the status message element (use for aria-describedby on the input).
+   */
+  messageID?: string;
+}
 
 export interface XDSFieldProps
   extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
@@ -100,6 +153,11 @@ export interface XDSFieldProps
    */
   labelStartIcon?: XDSIconType;
   /**
+   * Status indicator for the field.
+   * When set with a message, displays a colored message box below the input.
+   */
+  status?: XDSFieldStatus;
+  /**
    * The input or control to render inside the field.
    */
   children: ReactNode;
@@ -128,6 +186,7 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
       isOptional = false,
       isRequired = false,
       labelStartIcon,
+      status,
       children,
       ...props
     },
@@ -148,7 +207,19 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
             {description}
           </span>
         )}
-        {children}
+        <div {...stylex.props(styles.inputStatusWrapper)}>
+          {children}
+          {status?.message && (
+            <div
+              id={status.messageID}
+              {...stylex.props(
+                styles.statusMessage,
+                statusMessageColorStyles[status.type]
+              )}>
+              {status.message}
+            </div>
+          )}
+        </div>
       </div>
     );
   }

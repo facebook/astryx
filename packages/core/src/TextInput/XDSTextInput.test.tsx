@@ -144,4 +144,123 @@ describe('XDSTextInput', () => {
     // No SVG should be present
     expect(container.querySelector('svg')).not.toBeInTheDocument();
   });
+
+  describe('status prop', () => {
+    it('renders with error status icon', () => {
+      const {container} = render(
+        <XDSTextInput
+          label="Email"
+          value=""
+          onChange={() => {}}
+          status={{type: 'error'}}
+        />
+      );
+      expect(container.querySelector('svg')).toBeInTheDocument();
+    });
+
+    it('renders with warning status icon', () => {
+      const {container} = render(
+        <XDSTextInput
+          label="Email"
+          value=""
+          onChange={() => {}}
+          status={{type: 'warning'}}
+        />
+      );
+      expect(container.querySelector('svg')).toBeInTheDocument();
+    });
+
+    it('renders with success status icon', () => {
+      const {container} = render(
+        <XDSTextInput
+          label="Email"
+          value=""
+          onChange={() => {}}
+          status={{type: 'success'}}
+        />
+      );
+      expect(container.querySelector('svg')).toBeInTheDocument();
+    });
+
+    it('renders status message when provided', () => {
+      render(
+        <XDSTextInput
+          label="Email"
+          value=""
+          onChange={() => {}}
+          status={{type: 'error', message: 'Invalid email address'}}
+        />
+      );
+      expect(screen.getByText('Invalid email address')).toBeInTheDocument();
+    });
+
+    it('does not render status message when not provided', () => {
+      render(
+        <XDSTextInput
+          label="Email"
+          value=""
+          onChange={() => {}}
+          status={{type: 'error'}}
+        />
+      );
+      expect(screen.queryByText(/invalid/i)).not.toBeInTheDocument();
+    });
+
+    it('sets aria-invalid when status type is error', () => {
+      render(
+        <XDSTextInput
+          label="Email"
+          value=""
+          onChange={() => {}}
+          status={{type: 'error'}}
+        />
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute(
+        'aria-invalid',
+        'true'
+      );
+    });
+
+    it('does not set aria-invalid for warning status', () => {
+      render(
+        <XDSTextInput
+          label="Email"
+          value=""
+          onChange={() => {}}
+          status={{type: 'warning'}}
+        />
+      );
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-invalid');
+    });
+
+    it('does not set aria-invalid for success status', () => {
+      render(
+        <XDSTextInput
+          label="Email"
+          value=""
+          onChange={() => {}}
+          status={{type: 'success'}}
+        />
+      );
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-invalid');
+    });
+
+    it('includes status message in aria-describedby', () => {
+      render(
+        <XDSTextInput
+          label="Email"
+          value=""
+          onChange={() => {}}
+          status={{type: 'error', message: 'Invalid email'}}
+        />
+      );
+      const input = screen.getByRole('textbox');
+      const describedBy = input.getAttribute('aria-describedby');
+      expect(describedBy).toBeTruthy();
+      // The status message should be reachable via the described-by ID
+      const messageElement = screen.getByText('Invalid email');
+      expect(messageElement).toHaveAttribute('id');
+      expect(describedBy).toContain(messageElement.id);
+    });
+  });
 });

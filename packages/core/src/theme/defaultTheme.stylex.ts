@@ -162,7 +162,7 @@ const colorRaw = {
   '--color-yellow-background': 'light-dark(#FFEB3B33, #FFEB3B33)',
   '--color-yellow-border': 'light-dark(#FFEB3B, #FFF176)',
   '--color-yellow-icon': 'light-dark(#FBC02D, #FFEE58)',
-  '--color-yellow-text': 'light-dark(#F57F17, #FFF9C4)',
+  '--color-yellow-text': 'light-dark(#753F07, #FBCE03)',
 } as const satisfies Record<ColorVarName, string>;
 
 const spacingRaw = {
@@ -244,47 +244,47 @@ const fontWeightRaw = {
 
 const colorTheme = stylex.createTheme(
   colorVars,
-  colorRaw as unknown as BaseColorRaw,
+  colorRaw as unknown as BaseColorRaw
 );
 
 const spacingTheme = stylex.createTheme(
   spacingVars,
-  spacingRaw as unknown as BaseSpacingRaw,
+  spacingRaw as unknown as BaseSpacingRaw
 );
 
 const radiusTheme = stylex.createTheme(
   radiusVars,
-  radiusRaw as unknown as BaseRadiusRaw,
+  radiusRaw as unknown as BaseRadiusRaw
 );
 
 const elevationTheme = stylex.createTheme(
   elevationVars,
-  elevationRaw as unknown as BaseElevationRaw,
+  elevationRaw as unknown as BaseElevationRaw
 );
 
 const transitionTheme = stylex.createTheme(
   transitionVars,
-  transitionRaw as unknown as BaseTransitionRaw,
+  transitionRaw as unknown as BaseTransitionRaw
 );
 
 const typographyTheme = stylex.createTheme(
   typographyVars,
-  typographyRaw as unknown as BaseTypographyRaw,
+  typographyRaw as unknown as BaseTypographyRaw
 );
 
 const textSizeTheme = stylex.createTheme(
   textSizeVars,
-  textSizeRaw as unknown as BaseTextSizeRaw,
+  textSizeRaw as unknown as BaseTextSizeRaw
 );
 
 const lineHeightTheme = stylex.createTheme(
   lineHeightVars,
-  lineHeightRaw as unknown as BaseLineHeightRaw,
+  lineHeightRaw as unknown as BaseLineHeightRaw
 );
 
 const fontWeightTheme = stylex.createTheme(
   fontWeightVars,
-  fontWeightRaw as unknown as BaseFontWeightRaw,
+  fontWeightRaw as unknown as BaseFontWeightRaw
 );
 
 // =============================================================================

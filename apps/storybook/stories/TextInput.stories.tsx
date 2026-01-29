@@ -1,6 +1,6 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSTextInput} from '@xds/core/TextInput';
+import {XDSTextInput, type XDSTextInputStatus} from '@xds/core/TextInput';
 import {
   MagnifyingGlassIcon,
   EnvelopeIcon,
@@ -46,6 +46,11 @@ const meta: Meta<typeof XDSTextInput> = {
     isDisabled: {
       control: 'boolean',
       description: 'Whether the input is disabled',
+    },
+    status: {
+      control: 'object',
+      description:
+        'Status indicator with type (warning/error/success) and optional message',
     },
   },
 };
@@ -278,6 +283,97 @@ export const StartIconVariations: Story = {
           onChange={setUsername}
           placeholder="Enter your username"
           startIcon={UserIcon}
+        />
+      </div>
+    );
+  },
+};
+
+export const ErrorStatus: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'invalid@');
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Email',
+    placeholder: 'Enter your email',
+    status: {type: 'error', message: 'Please enter a valid email address'},
+  },
+};
+
+export const WarningStatus: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'user123');
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Username',
+    placeholder: 'Enter your username',
+    status: {type: 'warning', message: 'This username is already taken'},
+  },
+};
+
+export const SuccessStatus: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'validuser');
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Username',
+    placeholder: 'Enter your username',
+    status: {type: 'success', message: 'Username is available'},
+  },
+};
+
+export const StatusWithoutMessage: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'test');
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Field',
+    placeholder: 'Enter value',
+    status: {type: 'error'},
+  },
+};
+
+export const StatusVariations: Story = {
+  render: () => {
+    const [error, setError] = useState('invalid@');
+    const [warning, setWarning] = useState('user123');
+    const [success, setSuccess] = useState('validuser');
+    const [errorNoMsg, setErrorNoMsg] = useState('test');
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          maxWidth: '300px',
+        }}>
+        <XDSTextInput
+          label="Error with message"
+          value={error}
+          onChange={setError}
+          status={{type: 'error', message: 'Please enter a valid email'}}
+        />
+        <XDSTextInput
+          label="Warning with message"
+          value={warning}
+          onChange={setWarning}
+          status={{type: 'warning', message: 'This username may be taken'}}
+        />
+        <XDSTextInput
+          label="Success with message"
+          value={success}
+          onChange={setSuccess}
+          status={{type: 'success', message: 'Username is available'}}
+        />
+        <XDSTextInput
+          label="Error without message"
+          value={errorNoMsg}
+          onChange={setErrorNoMsg}
+          status={{type: 'error'}}
         />
       </div>
     );
