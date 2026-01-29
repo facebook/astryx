@@ -19,7 +19,7 @@ Tests how well the AI skill doc helps generate correct XDS component code.
 
 1. Run `yarn workspace @xds/vibe-tests interactive --sample <count>` to set up iteration
 2. Spawn parallel subagents (one per test prompt) to:
-   - Read the skill doc at `packages/core/llms.txt`
+   - Read the skill doc at `packages/core/xds.md`
    - Generate code for the prompt using XDS components
    - Self-evaluate for success/escape hatches
    - Append result to `results/<iteration>/runs.jsonl`
@@ -58,7 +58,6 @@ Look for `<!-- SYNC: ... -->` comments and `SYNC:` in file headers as reminders.
 ## Quick Reference
 
 - **Package manager**: Yarn 1 (Classic)
-- **Monorepo tool**: Turborepo
 - **Testing**: Vitest (colocated tests)
 - **Components**: `packages/core/`
 - **Storybook**: `apps/storybook/`

@@ -42,7 +42,7 @@ jobs:
         id: vibe-test
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          SKILL_DOC: packages/core/llms.txt
+          SKILL_DOC: packages/core/xds.md
         run: |
           # Determine sample size
           SAMPLE_SIZE="${{ github.event.inputs.sample_size || '10' }}"

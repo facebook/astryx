@@ -9,7 +9,7 @@
     "xds-core": "./bin/ai-skill.mjs"
   },
   "ai": {
-    "skillDoc": "./llms.txt",
+    "skillDoc": "./xds.md",
     "description": "Component library skill doc for LLM integration"
   },
   "sideEffects": [
@@ -81,7 +81,7 @@
       "import": "./dist/hooks/index.mjs",
       "require": "./dist/hooks/index.js"
     },
-    "./llms.txt": "./llms.txt"
+    "./xds.md": "./xds.md"
   },
   "scripts": {
     "build": "tsup",

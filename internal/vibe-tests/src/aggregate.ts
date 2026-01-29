@@ -22,7 +22,6 @@ import {readJsonl, readJson, writeJson, getResultsDir} from './utils.js';
 const ANTI_PATTERN_HATCHES: EscapeHatchType[] = [
   'hardcoded_color',
   'hardcoded_spacing',
-  'hardcoded_size',
   'inline_style', // Should use StyleX instead
 ];
 

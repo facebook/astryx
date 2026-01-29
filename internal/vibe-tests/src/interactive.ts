@@ -268,7 +268,7 @@ async function main() {
     '..',
     'packages',
     'core',
-    'llms.txt',
+    'xds.md',
   );
 
   if (!fs.existsSync(skillDocPath)) {

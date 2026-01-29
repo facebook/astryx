@@ -12,7 +12,7 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const llmsPath = path.resolve(__dirname, '..', 'llms.txt');
+const skillDocPath = path.resolve(__dirname, '..', 'xds.md');
 
 const args = process.argv.slice(2);
 
@@ -27,7 +27,7 @@ Usage:
   npx @xds/core ai-skill --path   Print file path only
 
 Integration:
-  Claude Code:  Add to CLAUDE.md: "See @xds/core/llms.txt for component docs"
+  Claude Code:  Add to CLAUDE.md: "See @xds/core/xds.md for component docs"
   Cursor:       Reference in .cursorrules
   Direct API:   Load file and inject as system prompt
 `);
@@ -35,8 +35,8 @@ Integration:
 }
 
 if (args.includes('--path')) {
-  console.log(llmsPath);
+  console.log(skillDocPath);
 } else {
-  const content = fs.readFileSync(llmsPath, 'utf-8');
+  const content = fs.readFileSync(skillDocPath, 'utf-8');
   console.log(content);
 }

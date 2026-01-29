@@ -19,7 +19,7 @@ export type EscapeHatchType =
   | 'inline_style' // Anti-pattern: should use StyleX instead
   | 'hardcoded_color' // Anti-pattern: breaks theming
   | 'hardcoded_spacing' // Anti-pattern: breaks spacing system
-  | 'hardcoded_size' // Anti-pattern: breaks responsive design
+  | 'hardcoded_size' // Acceptable: explicit sizes are often needed
   | 'custom_animation' // Gap: missing animation support
   | 'layout_workaround'; // Gap: missing layout primitive
 
