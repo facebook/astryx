@@ -1,6 +1,6 @@
 /**
  * @file XDSField.tsx
- * @input Uses React forwardRef, HTMLAttributes, ReactNode, XDSFieldLabel
+ * @input Uses React forwardRef, HTMLAttributes, ReactNode, XDSFieldLabel, XDSIconType
  * @output Exports XDSField component, XDSFieldProps
  * @position Core implementation; consumed by index.ts, tested by XDSField.test.tsx
  *
@@ -15,6 +15,7 @@ import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSFieldLabel} from './XDSFieldLabel';
 import {colorVars, spacingVars, typographyVars} from '../theme/tokens.stylex';
+import type {XDSIconType} from '../Icon';
 
 const styles = stylex.create({
   container: {
@@ -61,10 +62,8 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSFieldProps extends Omit<
-  HTMLAttributes<HTMLDivElement>,
-  'children'
-> {
+export interface XDSFieldProps
+  extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
   /**
    * Label text for the field (always rendered for accessibility).
    */
@@ -97,6 +96,10 @@ export interface XDSFieldProps extends Omit<
    */
   isRequired?: boolean;
   /**
+   * Icon to display before the label text.
+   */
+  labelStartIcon?: XDSIconType;
+  /**
    * The input or control to render inside the field.
    */
   children: ReactNode;
@@ -124,10 +127,11 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
       descriptionID,
       isOptional = false,
       isRequired = false,
+      labelStartIcon,
       children,
       ...props
     },
-    ref,
+    ref
   ) => {
     return (
       <div ref={ref} {...stylex.props(styles.container)} {...props}>
@@ -137,6 +141,7 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
           isLabelHidden={isLabelHidden}
           isOptional={isOptional}
           isRequired={isRequired}
+          startIcon={labelStartIcon}
         />
         {description && (
           <span id={descriptionID} {...stylex.props(styles.description)}>
@@ -146,7 +151,7 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
         {children}
       </div>
     );
-  },
+  }
 );
 
 XDSField.displayName = 'XDSField';

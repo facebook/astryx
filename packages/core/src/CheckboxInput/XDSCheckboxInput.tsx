@@ -1,6 +1,6 @@
 /**
  * @file XDSCheckboxInput.tsx
- * @input Uses React forwardRef, useId, ChangeEvent, XDSFieldLabel, useHoverState
+ * @input Uses React forwardRef, useId, ChangeEvent, XDSFieldLabel, useHoverState, XDSIconType
  * @output Exports XDSCheckboxInput component, XDSCheckboxInputProps
  * @position Core implementation; consumed by index.ts, tested by XDSCheckboxInput.test.tsx
  *
@@ -22,6 +22,7 @@ import {
 } from '../theme/tokens.stylex';
 import {XDSFieldLabel} from '../Field/XDSFieldLabel';
 import {useHoverState} from '../hooks/useHoverState';
+import type {XDSIconType} from '../Icon';
 
 const styles = stylex.create({
   container: {
@@ -210,6 +211,10 @@ export interface XDSCheckboxInputProps {
    * Callback fired when the checkbox loses focus.
    */
   onBlur?: (e: FocusEvent<HTMLInputElement>) => void;
+  /**
+   * Icon to display before the label text.
+   */
+  startIcon?: XDSIconType;
 }
 
 /**
@@ -246,6 +251,7 @@ export const XDSCheckboxInput = forwardRef<
       size = 'md',
       onFocus,
       onBlur,
+      startIcon,
     },
     ref
   ) => {
@@ -331,6 +337,7 @@ export const XDSCheckboxInput = forwardRef<
             inputID={id}
             isLabelHidden={isLabelHidden}
             isDisabled={isDisabled}
+            startIcon={startIcon}
           />
           {description && (
             <span id={descriptionID} {...stylex.props(styles.description)}>

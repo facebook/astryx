@@ -1,6 +1,11 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
+import {
+  BellIcon,
+  EnvelopeIcon,
+  ShieldCheckIcon,
+} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSCheckboxInput> = {
   title: 'Core/XDSCheckboxInput',
@@ -234,6 +239,60 @@ export const SizeComparison: Story = {
           value={value4}
           onChange={setValue4}
           size="sm"
+        />
+      </div>
+    );
+  },
+};
+
+export const WithStartIcon: Story = {
+  render: args => {
+    const [value, setValue] = useState<boolean | 'indeterminate'>(
+      args.value ?? false
+    );
+    return <XDSCheckboxInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Enable notifications',
+    description: 'Receive alerts when important events occur',
+    startIcon: BellIcon,
+  },
+};
+
+export const StartIconVariations: Story = {
+  render: () => {
+    const [value1, setValue1] = useState<boolean | 'indeterminate'>(false);
+    const [value2, setValue2] = useState<boolean | 'indeterminate'>(true);
+    const [value3, setValue3] = useState<boolean | 'indeterminate'>(false);
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          maxWidth: '400px',
+        }}>
+        <XDSCheckboxInput
+          label="Email notifications"
+          description="Receive updates via email"
+          value={value1}
+          onChange={setValue1}
+          startIcon={EnvelopeIcon}
+        />
+        <XDSCheckboxInput
+          label="Push notifications"
+          description="Get instant alerts on your device"
+          value={value2}
+          onChange={setValue2}
+          startIcon={BellIcon}
+        />
+        <XDSCheckboxInput
+          label="Two-factor authentication"
+          description="Add an extra layer of security"
+          value={value3}
+          onChange={setValue3}
+          startIcon={ShieldCheckIcon}
+          isDisabled
         />
       </div>
     );

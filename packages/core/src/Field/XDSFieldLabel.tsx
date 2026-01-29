@@ -1,6 +1,6 @@
 /**
  * @file XDSFieldLabel.tsx
- * @input Uses React forwardRef
+ * @input Uses React forwardRef, XDSIcon, XDSIconType
  * @output Exports XDSFieldLabel component, XDSFieldLabelProps
  * @position Core label implementation; used by XDSField, XDSCheckboxInput
  *
@@ -11,10 +11,14 @@
 
 import {forwardRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, typographyVars} from '../theme/tokens.stylex';
+import {colorVars, spacingVars, typographyVars} from '../theme/tokens.stylex';
+import {XDSIcon, type XDSIconType} from '../Icon';
 
 const styles = stylex.create({
   label: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
     fontFamily: typographyVars['--font-body'],
     fontSize: '0.875rem',
     fontWeight: 500,
@@ -78,6 +82,10 @@ export interface XDSFieldLabelProps {
    * @default false
    */
   isRequired?: boolean;
+  /**
+   * Icon to display before the label text.
+   */
+  startIcon?: XDSIconType;
 }
 
 /**
@@ -98,8 +106,9 @@ export const XDSFieldLabel = forwardRef<HTMLLabelElement, XDSFieldLabelProps>(
       isDisabled = false,
       isOptional = false,
       isRequired = false,
+      startIcon,
     },
-    ref,
+    ref
   ) => {
     const statusText = isOptional ? 'Optional' : isRequired ? 'Required' : null;
 
@@ -111,8 +120,15 @@ export const XDSFieldLabel = forwardRef<HTMLLabelElement, XDSFieldLabelProps>(
           styles.label,
           !isDisabled && styles.labelClickable,
           isDisabled && styles.labelDisabled,
-          isLabelHidden && styles.labelHidden,
+          isLabelHidden && styles.labelHidden
         )}>
+        {startIcon && (
+          <XDSIcon
+            icon={startIcon}
+            size="sm"
+            color={isDisabled ? 'disabled' : 'primary'}
+          />
+        )}
         {label}
         {statusText && (
           <span {...stylex.props(styles.optionalRequired)}>
@@ -122,7 +138,7 @@ export const XDSFieldLabel = forwardRef<HTMLLabelElement, XDSFieldLabelProps>(
         )}
       </label>
     );
-  },
+  }
 );
 
 XDSFieldLabel.displayName = 'XDSFieldLabel';
