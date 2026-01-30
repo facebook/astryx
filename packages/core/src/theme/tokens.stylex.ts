@@ -65,6 +65,8 @@ export const colorRaw = {
   '--color-glimmer': '#CCD3DB',
   '--color-glimmer-high-contrast': '#A4B0BC',
   '--color-shadow-elevation': 'rgba(5, 54, 89, 0.1)',
+  // Hover tint: black in light mode, white in dark mode - used with color-mix for hover states
+  '--color-hover-tint': 'black',
 
   // Blue
   '--color-blue-background': '#0171E333',

@@ -7,5 +7,5 @@
  * SYNC: When modified, update this header
  */
 
-export {useHoverState} from './useHoverState';
-export type {UseHoverStateResult} from './useHoverState';
+// Hooks will be added here as needed
+export {};

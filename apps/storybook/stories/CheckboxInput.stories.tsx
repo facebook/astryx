@@ -53,9 +53,16 @@ type Story = StoryObj<typeof XDSCheckboxInput>;
 export const Default: Story = {
   render: args => {
     const [value, setValue] = useState<boolean | 'indeterminate'>(
-      args.value ?? false
+      args.value ?? false,
     );
-    return <XDSCheckboxInput {...args} value={value} onChange={setValue} />;
+    const {value: _, onChange: __, ...restArgs} = args;
+    return (
+      <XDSCheckboxInput
+        {...restArgs}
+        value={value}
+        onChange={checked => setValue(checked)}
+      />
+    );
   },
   args: {
     label: 'Accept terms and conditions',
@@ -65,9 +72,16 @@ export const Default: Story = {
 export const Checked: Story = {
   render: args => {
     const [value, setValue] = useState<boolean | 'indeterminate'>(
-      args.value ?? true
+      args.value ?? true,
     );
-    return <XDSCheckboxInput {...args} value={value} onChange={setValue} />;
+    const {value: _, onChange: __, ...restArgs} = args;
+    return (
+      <XDSCheckboxInput
+        {...restArgs}
+        value={value}
+        onChange={checked => setValue(checked)}
+      />
+    );
   },
   args: {
     label: 'I agree to the terms',
@@ -78,9 +92,16 @@ export const Checked: Story = {
 export const WithDescription: Story = {
   render: args => {
     const [value, setValue] = useState<boolean | 'indeterminate'>(
-      args.value ?? false
+      args.value ?? false,
     );
-    return <XDSCheckboxInput {...args} value={value} onChange={setValue} />;
+    const {value: _, onChange: __, ...restArgs} = args;
+    return (
+      <XDSCheckboxInput
+        {...restArgs}
+        value={value}
+        onChange={checked => setValue(checked)}
+      />
+    );
   },
   args: {
     label: 'Subscribe to newsletter',
@@ -91,9 +112,16 @@ export const WithDescription: Story = {
 export const WithHiddenLabel: Story = {
   render: args => {
     const [value, setValue] = useState<boolean | 'indeterminate'>(
-      args.value ?? false
+      args.value ?? false,
     );
-    return <XDSCheckboxInput {...args} value={value} onChange={setValue} />;
+    const {value: _, onChange: __, ...restArgs} = args;
+    return (
+      <XDSCheckboxInput
+        {...restArgs}
+        value={value}
+        onChange={checked => setValue(checked)}
+      />
+    );
   },
   args: {
     label: 'Select row',
@@ -104,9 +132,16 @@ export const WithHiddenLabel: Story = {
 export const Indeterminate: Story = {
   render: args => {
     const [value, setValue] = useState<boolean | 'indeterminate'>(
-      args.value ?? 'indeterminate'
+      args.value ?? 'indeterminate',
     );
-    return <XDSCheckboxInput {...args} value={value} onChange={setValue} />;
+    const {value: _, onChange: __, ...restArgs} = args;
+    return (
+      <XDSCheckboxInput
+        {...restArgs}
+        value={value}
+        onChange={checked => setValue(checked)}
+      />
+    );
   },
   args: {
     label: 'Select all items',
@@ -118,9 +153,16 @@ export const Indeterminate: Story = {
 export const Disabled: Story = {
   render: args => {
     const [value, setValue] = useState<boolean | 'indeterminate'>(
-      args.value ?? false
+      args.value ?? false,
     );
-    return <XDSCheckboxInput {...args} value={value} onChange={setValue} />;
+    const {value: _, onChange: __, ...restArgs} = args;
+    return (
+      <XDSCheckboxInput
+        {...restArgs}
+        value={value}
+        onChange={checked => setValue(checked)}
+      />
+    );
   },
   args: {
     label: 'Premium feature',
@@ -132,9 +174,16 @@ export const Disabled: Story = {
 export const DisabledChecked: Story = {
   render: args => {
     const [value, setValue] = useState<boolean | 'indeterminate'>(
-      args.value ?? true
+      args.value ?? true,
     );
-    return <XDSCheckboxInput {...args} value={value} onChange={setValue} />;
+    const {value: _, onChange: __, ...restArgs} = args;
+    return (
+      <XDSCheckboxInput
+        {...restArgs}
+        value={value}
+        onChange={checked => setValue(checked)}
+      />
+    );
   },
   args: {
     label: 'Feature enabled',
@@ -148,7 +197,7 @@ export const AllVariations: Story = {
     const [value1, setValue1] = useState<boolean | 'indeterminate'>(false);
     const [value2, setValue2] = useState<boolean | 'indeterminate'>(true);
     const [value3, setValue3] = useState<boolean | 'indeterminate'>(
-      'indeterminate'
+      'indeterminate',
     );
     const [value4, setValue4] = useState<boolean | 'indeterminate'>(false);
     const [value5, setValue5] = useState<boolean | 'indeterminate'>(true);
@@ -192,9 +241,16 @@ export const AllVariations: Story = {
 export const SmallSize: Story = {
   render: args => {
     const [value, setValue] = useState<boolean | 'indeterminate'>(
-      args.value ?? false
+      args.value ?? false,
     );
-    return <XDSCheckboxInput {...args} value={value} onChange={setValue} />;
+    const {value: _, onChange: __, ...restArgs} = args;
+    return (
+      <XDSCheckboxInput
+        {...restArgs}
+        value={value}
+        onChange={checked => setValue(checked)}
+      />
+    );
   },
   args: {
     label: 'Compact checkbox',
@@ -248,9 +304,16 @@ export const SizeComparison: Story = {
 export const WithStartIcon: Story = {
   render: args => {
     const [value, setValue] = useState<boolean | 'indeterminate'>(
-      args.value ?? false
+      args.value ?? false,
     );
-    return <XDSCheckboxInput {...args} value={value} onChange={setValue} />;
+    const {value: _, onChange: __, ...restArgs} = args;
+    return (
+      <XDSCheckboxInput
+        {...restArgs}
+        value={value}
+        onChange={checked => setValue(checked)}
+      />
+    );
   },
   args: {
     label: 'Enable notifications',

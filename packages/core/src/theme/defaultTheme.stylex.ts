@@ -105,6 +105,8 @@ const colorRaw = {
   '--color-glimmer-high-contrast': 'light-dark(#A4B0BC, #8C939B)',
   '--color-shadow-elevation':
     'light-dark(rgba(5, 54, 89, 0.1), rgba(0, 0, 0, 0.3))',
+  // Hover tint: black in light mode, white in dark mode - used with color-mix for hover states
+  '--color-hover-tint': 'light-dark(black, white)',
 
   // Literal color sets - Blue
   '--color-blue-background': 'light-dark(#0171E333, #0171E333)',
