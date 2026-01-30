@@ -31,12 +31,14 @@ export const colorRaw = {
   '--color-text-disabled': '#A4B0BC',
   '--color-text-link': '#0064E0',
   '--color-text-placeholder': '#4E606F',
+  '--color-text-on-media': '#FFFFFF',
 
   // Icon
   '--color-icon-primary': '#0A1317',
   '--color-icon-secondary': '#4E606F',
   '--color-icon-tertiary': '#748695',
   '--color-icon-disabled': '#A4B0BC',
+  '--color-icon-on-media': '#FFFFFF',
 
   // Surface variants
   '--color-card': '#FFFFFF',

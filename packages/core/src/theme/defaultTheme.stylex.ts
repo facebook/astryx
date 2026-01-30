@@ -70,12 +70,14 @@ const colorRaw = {
   '--color-text-disabled': 'light-dark(#A4B0BC, #6F747C)',
   '--color-text-link': 'light-dark(#0064E0, #3E9EFB)',
   '--color-text-placeholder': 'light-dark(#4E606F, #AAAFB5)',
+  '--color-text-on-media': 'light-dark(#FFFFFF, #FFFFFF)',
 
   // Icon
   '--color-icon-primary': 'light-dark(#0A1317, #DFE2E5)',
   '--color-icon-secondary': 'light-dark(#4E606F, #AAAFB5)',
   '--color-icon-tertiary': 'light-dark(#748695, #8C939B)',
   '--color-icon-disabled': 'light-dark(#A4B0BC, #6F747C)',
+  '--color-icon-on-media': 'light-dark(#FFFFFF, #FFFFFF)',
 
   // Surface variants
   '--color-card': 'light-dark(#FFFFFF, #1F1F22)',

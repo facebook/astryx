@@ -74,12 +74,14 @@ const colorRaw = {
   '--color-text-disabled': 'light-dark(oklch(0.708 0 0), oklch(0.439 0 0))',
   '--color-text-link': 'light-dark(oklch(0.205 0 0), oklch(0.922 0 0))',
   '--color-text-placeholder': 'light-dark(oklch(0.556 0 0), oklch(0.556 0 0))',
+  '--color-text-on-media': 'light-dark(oklch(1 0 0), oklch(1 0 0))',
 
   // Icon
   '--color-icon-primary': 'light-dark(oklch(0.145 0 0), oklch(0.985 0 0))',
   '--color-icon-secondary': 'light-dark(oklch(0.556 0 0), oklch(0.708 0 0))',
   '--color-icon-tertiary': 'light-dark(oklch(0.708 0 0), oklch(0.556 0 0))',
   '--color-icon-disabled': 'light-dark(oklch(0.708 0 0), oklch(0.439 0 0))',
+  '--color-icon-on-media': 'light-dark(oklch(1 0 0), oklch(1 0 0))',
 
   // Surface variants
   '--color-card': 'light-dark(oklch(1 0 0), oklch(0.205 0 0))',

@@ -84,14 +84,14 @@ const styles = stylex.create({
   },
   checkmark: {
     display: 'none',
-    fill: 'white',
+    fill: colorVars['--color-icon-on-media'],
   },
   checkmarkVisible: {
     display: 'block',
   },
   indeterminateMark: {
     display: 'none',
-    backgroundColor: 'white',
+    backgroundColor: colorVars['--color-icon-on-media'],
     borderRadius: 1,
   },
   indeterminateMarkVisible: {
