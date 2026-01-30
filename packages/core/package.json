@@ -29,6 +29,11 @@
       "import": "./dist/Button/index.mjs",
       "require": "./dist/Button/index.js"
     },
+    "./Calendar": {
+      "types": "./dist/Calendar/index.d.ts",
+      "import": "./dist/Calendar/index.mjs",
+      "require": "./dist/Calendar/index.js"
+    },
     "./CheckboxInput": {
       "types": "./dist/CheckboxInput/index.d.ts",
       "import": "./dist/CheckboxInput/index.mjs",

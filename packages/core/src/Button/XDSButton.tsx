@@ -63,6 +63,10 @@ const styles = stylex.create({
       ':active': null,
     },
   },
+  iconOnly: {
+    aspectRatio: '1 / 1',
+    paddingInline: spacingVars['--spacing-2'],
+  },
 });
 
 /**
@@ -74,7 +78,7 @@ const styles = stylex.create({
 const variants = stylex.create({
   primary: {
     backgroundColor: colorVars['--color-accent'],
-    color: 'white',
+    color: colorVars['--color-text-on-media'],
     backgroundImage: {
       default: null,
       ':hover': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
@@ -125,7 +129,7 @@ const variants = stylex.create({
   },
   destructive: {
     backgroundColor: colorVars['--color-negative'],
-    color: 'white',
+    color: colorVars['--color-text-on-media'],
     backgroundImage: {
       default: null,
       ':hover': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
@@ -161,7 +165,15 @@ declare module '../theme/types' {
   }
 }
 
-export interface XDSButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface XDSButtonProps extends Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  'children'
+> {
+  /**
+   * Accessible label for the button (required for accessibility).
+   * Used as visible text, or as aria-label for icon-only buttons.
+   */
+  label: string;
   /**
    * The visual style variant of the button.
    * @default 'secondary'
@@ -173,9 +185,15 @@ export interface XDSButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> 
    */
   loading?: boolean;
   /**
-   * Content to render inside the button.
+   * Icon element to render in the button.
+   * If provided without children, button becomes icon-only (square).
    */
-  children: ReactNode;
+  icon?: ReactNode;
+  /**
+   * Optional visible content. If omitted and icon is provided,
+   * button becomes icon-only with label used as aria-label.
+   */
+  children?: ReactNode;
 }
 
 /**
@@ -203,9 +221,9 @@ const loadingStyles = stylex.create({
     animationIterationCount: 'infinite',
   },
   spinnerLight: {
-    borderTopColor: 'white',
-    borderLeftColor: 'white',
-    borderBottomColor: 'white',
+    borderTopColor: colorVars['--color-icon-on-media'],
+    borderLeftColor: colorVars['--color-icon-on-media'],
+    borderBottomColor: colorVars['--color-icon-on-media'],
     borderRightColor: 'transparent',
   },
   spinnerDark: {
@@ -225,18 +243,28 @@ const loadingStyles = stylex.create({
  *
  * @example
  * ```tsx
- * <XDSButton>Click me</XDSButton>
- * <XDSButton variant="primary">Primary action</XDSButton>
- * <XDSButton variant="destructive">Delete</XDSButton>
+ * <XDSButton label="Click me" />
+ * <XDSButton label="Primary action" variant="primary" />
+ * <XDSButton label="Delete" variant="destructive" />
+ * <XDSButton label="Settings" icon={<GearIcon />} />
  * ```
  */
 export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
   (
-    {variant = 'secondary', loading = false, disabled, children, ...props},
+    {
+      label,
+      variant = 'secondary',
+      loading = false,
+      icon,
+      disabled,
+      children,
+      ...props
+    },
     ref,
   ) => {
     const isDisabled = disabled || loading;
     const useLightSpinner = variant === 'primary' || variant === 'destructive';
+    const isIconOnly = icon != null && children == null;
 
     // Get theme context for component-level overrides (optional)
     const themeContext = useContext(ThemeContext);
@@ -247,10 +275,12 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
       <button
         ref={ref}
         disabled={isDisabled}
+        aria-label={isIconOnly ? label : undefined}
         {...stylex.props(
           styles.base,
           variants[variant],
           themeVariantOverride,
+          isIconOnly && styles.iconOnly,
           isDisabled && styles.disabled,
           loading && loadingStyles.loading,
         )}
@@ -265,7 +295,8 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
             )}
           />
         )}
-        {children}
+        {icon}
+        {children ?? (isIconOnly ? null : label)}
       </button>
     );
   },
