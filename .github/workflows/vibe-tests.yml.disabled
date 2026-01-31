@@ -1,3 +1,11 @@
+# =============================================================================
+# DISABLED: This workflow is temporarily disabled.
+#
+# To re-enable:
+# 1. Add ANTHROPIC_API_KEY secret to the repository
+# 2. Rename this file back to vibe-tests.yml
+# =============================================================================
+
 name: Vibe Tests
 
 on:
