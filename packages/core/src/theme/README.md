@@ -6,45 +6,46 @@ XDS theme provider and design tokens.
 
 ## Features
 
-- **Theme Provider**: Wraps app to provide CSS variables
+- **XDSTheme Provider**: Wraps app to provide CSS variables
 - **Design Tokens**: Colors, spacing, radius, typography via StyleX
 - **Multiple Themes**: defaultTheme, neutralTheme
-- **useTheme Hook**: Access current theme in components
+- **useXDSTheme Hook**: Access current theme in components
 
 ## Usage
 
 ```tsx
-import {Theme, defaultTheme} from '@xds/core';
+import {XDSTheme, defaultTheme} from '@xds/core';
 
 function App() {
   return (
-    <Theme theme={defaultTheme}>
+    <XDSTheme theme={defaultTheme}>
       <YourApp />
-    </Theme>
+    </XDSTheme>
   );
 }
 ```
 
 ## Props
 
-| Prop       | Type        | Default | Description                                 |
-| ---------- | ----------- | ------- | ------------------------------------------- |
-| `theme`    | `XDSTheme`  | —       | Theme object (defaultTheme or neutralTheme) |
-| `children` | `ReactNode` | —       | App content                                 |
+| Prop       | Type        | Default    | Description                                 |
+| ---------- | ----------- | ---------- | ------------------------------------------- |
+| `theme`    | `Theme`     | —          | Theme object (defaultTheme or neutralTheme) |
+| `mode`     | `ThemeMode` | `'system'` | Color mode: 'system', 'light', or 'dark'    |
+| `children` | `ReactNode` | —          | App content                                 |
 
 ## Available Themes
 
 - `defaultTheme` - XDS branded colors
 - `neutralTheme` - Grayscale palette
 
-## useTheme Hook
+## useXDSTheme Hook
 
 Access current theme in components:
 
 ```tsx
-import {useTheme} from '@xds/core';
+import {useXDSTheme} from '@xds/core';
 
-const {theme} = useTheme();
+const {theme, mode} = useXDSTheme();
 ```
 
 ## CSS Variables

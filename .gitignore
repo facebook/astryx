@@ -26,9 +26,6 @@ Thumbs.db
 .env.local
 .env.*.local
 
-# Turbo
-.turbo/
-
 # Logs
 *.log
 npm-debug.log*

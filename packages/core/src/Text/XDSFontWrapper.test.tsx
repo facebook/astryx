@@ -7,12 +7,12 @@
 import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {XDSFontWrapper} from './XDSFontWrapper';
-import {Theme} from '../theme/Theme';
+import {XDSTheme} from '../theme/XDSTheme';
 import {defaultTheme} from '../theme/defaultTheme.stylex';
 
 // Helper to wrap with theme
 function renderWithTheme(ui: React.ReactElement) {
-  return render(<Theme theme={defaultTheme}>{ui}</Theme>);
+  return render(<XDSTheme theme={defaultTheme}>{ui}</XDSTheme>);
 }
 
 describe('XDSFontWrapper', () => {

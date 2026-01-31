@@ -19,6 +19,7 @@
     "storybook": "yarn workspace @xds/storybook dev",
     "storybook:build": "yarn workspace @xds/storybook build",
     "docs": "yarn workspace @xds/docs dev",
+    "package:source": "node scripts/package-source.js",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "yarn build && changeset publish",

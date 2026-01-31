@@ -11,7 +11,7 @@
 
 import * as React from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {useTheme} from '../theme/Theme';
+import {useTheme} from '../theme/XDSTheme';
 import '../typography.css';
 
 /**

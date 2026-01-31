@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+**Implemented** - See `scripts/package-source.js` for tarball generation.
 
 ## Context
 
@@ -38,10 +38,12 @@ https://github.com/facebook/stylex/tree/main/examples/example-nextjs
 ### Consuming App (Next.js, Vite, Storybook, etc.)
 
 For Next.js:
+
 - Runs `@stylexjs/babel-plugin` to transform StyleX calls
 - Runs `@stylexjs/postcss-plugin` to extract CSS
 
 For Vite, Webpack/Rspack, and Esbuild:
+
 - Use `@stylexjs/unplugin` to generate and bundle CSS
 - Processes both its own code AND `@xds/core` imports
 - Handles all CSS extraction at build time
@@ -50,11 +52,11 @@ For Vite, Webpack/Rspack, and Esbuild:
 // postcss.config.mjs in consumer app
 stylexPlugin({
   include: [
-    'src/**/*.{ts,tsx}',           // App's own code
+    'src/**/*.{ts,tsx}', // App's own code
     'node_modules/@xds/core/**/*', // XDS components
   ],
   // ...
-})
+});
 ```
 
 ## Consequences
