@@ -56,13 +56,18 @@ async function main() {
     const taskPath = path.join(tasksDir, taskFile);
     const task = JSON.parse(fs.readFileSync(taskPath, 'utf-8'));
 
+    // Generate different instructions based on mode
+    const docInstructions = task.useAgentsMd
+      ? `Use the XDS documentation from AGENTS.md. Read docs from .xds-docs/ as needed (principles.md, tokens.md, {ComponentName}.md).`
+      : `Read skill doc at: ${task.skillDocPath}`;
+
     console.log(`Task("Vibe test: ${task.promptId}", {
   "subagent_type": "general-purpose",
   "description": "Vibe test ${task.promptId}",
   "prompt": "Run vibe test for iteration ${iterationId}, task ${task.promptId}.
 
 Read task file at: ${taskPath}
-Read skill doc at: ${task.skillDocPath}
+${docInstructions}
 
 Generate code for: \\"${task.prompt}\\"
 Expected components: ${task.expectedComponents.join(', ')}
@@ -78,7 +83,7 @@ The TestResult format is:
 {
   id: '${iterationId}-${task.promptId}',
   timestamp: new Date().toISOString(),
-  systemVersion: 'xds-llms-v1',
+  systemVersion: 'xds-agents-v1',
   model: 'claude-code-interactive',
   persona: '${task.persona}',
   promptCategory: '${task.category}',

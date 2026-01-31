@@ -12,6 +12,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {execSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import type {TestPrompt, TestResult, Evaluation, EscapeHatch} from './types.js';
 import {stratifiedSample} from './sampling.js';
@@ -28,10 +29,52 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+/**
+ * Install AGENTS.md and .xds-docs for agent documentation
+ */
+function installAgentsDocs(): void {
+  const vibeTestsDir = path.join(__dirname, '..');
+  const agentsMdPath = path.join(vibeTestsDir, 'AGENTS.md');
+  const agentsScript = path.join(
+    __dirname,
+    '..',
+    '..',
+    '..',
+    'packages',
+    'agent-tools',
+    'bin',
+    'agents-md.mjs',
+  );
+
+  // Check if AGENTS.md already exists and is recent (within last hour)
+  if (fs.existsSync(agentsMdPath)) {
+    const stats = fs.statSync(agentsMdPath);
+    const ageMs = Date.now() - stats.mtimeMs;
+    if (ageMs < 60 * 60 * 1000) {
+      // Less than 1 hour old, skip regeneration
+      return;
+    }
+  }
+
+  // Run the agents-md script
+  if (fs.existsSync(agentsScript)) {
+    try {
+      execSync(`node ${agentsScript}`, {
+        cwd: vibeTestsDir,
+        stdio: 'pipe',
+      });
+      console.log('✓ Generated AGENTS.md and .xds-docs/');
+    } catch (error) {
+      console.warn('⚠ Failed to generate AGENTS.md, continuing without it');
+    }
+  }
+}
+
 interface InteractiveConfig {
   sample?: number;
   holdout?: boolean;
   persona: 'naive' | 'experienced' | 'adversarial';
+  useAgentsMd: boolean; // Use AGENTS.md (default true)
 }
 
 interface AgentTask {
@@ -41,6 +84,7 @@ interface AgentTask {
   expectedComponents: string[];
   persona: string;
   skillDocPath: string;
+  useAgentsMd?: boolean;
 }
 
 /**
@@ -56,6 +100,17 @@ Use correct component names and reference the docs.`,
 Reference Tailwind, shadcn, Bootstrap patterns in your request.`,
   };
 
+  // When using AGENTS.md, don't inject skill doc - Claude Code reads it automatically
+  const skillDocSection = task.useAgentsMd
+    ? `## Component Documentation
+The XDS component library documentation is available via AGENTS.md.
+Read docs from .xds-docs/ for detailed component API and patterns.
+Key files: .xds-docs/principles.md, .xds-docs/tokens.md, .xds-docs/{ComponentName}.md`
+    : `## Skill Doc (Component System)
+<skill-doc>
+${skillDoc}
+</skill-doc>`;
+
   return `# Vibe Test Task
 
 You are running a vibeability test for the XDS component library.
@@ -63,10 +118,7 @@ You are running a vibeability test for the XDS component library.
 ## Your Role
 ${personaInstructions[task.persona as keyof typeof personaInstructions]}
 
-## Skill Doc (Component System)
-<skill-doc>
-${skillDoc}
-</skill-doc>
+${skillDocSection}
 
 ## Test Prompt
 Category: ${task.category}
@@ -175,6 +227,7 @@ function createTaskManifest(
       expectedComponents: prompt.expectedComponents,
       persona: config.persona,
       skillDocPath,
+      useAgentsMd: config.useAgentsMd,
     };
     writeJson(path.join(tasksDir, `${prompt.id}.json`), task);
   }
@@ -238,8 +291,15 @@ async function main() {
     personaIndex !== -1
       ? (args[personaIndex + 1] as 'naive' | 'experienced' | 'adversarial')
       : 'naive';
+  // AGENTS.md mode is now default, use --legacy-skill-doc to inject skill doc explicitly
+  const useAgentsMd = !args.includes('--legacy-skill-doc');
 
-  const config: InteractiveConfig = {sample, holdout, persona};
+  const config: InteractiveConfig = {sample, holdout, persona, useAgentsMd};
+
+  // Install AGENTS.md if using agents mode
+  if (useAgentsMd) {
+    installAgentsDocs();
+  }
 
   // Load test set
   const testSetPath = path.join(__dirname, '..', 'test-sets', 'default.json');
@@ -260,7 +320,7 @@ async function main() {
   // Generate iteration ID
   const iterationId = generateIterationId();
 
-  // Get skill doc path
+  // Get skill doc path (still needed for legacy mode and version tracking)
   const skillDocPath = path.join(
     __dirname,
     '..',
@@ -271,19 +331,16 @@ async function main() {
     'xds.md',
   );
 
-  if (!fs.existsSync(skillDocPath)) {
-    console.error(`Skill doc not found at: ${skillDocPath}`);
-    process.exit(1);
-  }
-
   console.log(`\n🧪 Interactive Vibe Test Setup`);
   console.log(`================================`);
   console.log(`Iteration: ${iterationId}`);
   console.log(`Persona: ${persona}`);
   console.log(
+    `Mode: ${useAgentsMd ? 'AGENTS.md (retrieval-led)' : 'Legacy skill doc injection'}`,
+  );
+  console.log(
     `Prompts: ${prompts.length}${sample ? ` (sampled from ${testSet.prompts.length})` : ''}`,
   );
-  console.log(`Skill doc: ${skillDocPath}`);
 
   // Create task manifest
   createTaskManifest(prompts, config, iterationId, skillDocPath);

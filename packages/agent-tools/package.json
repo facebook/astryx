@@ -1,0 +1,27 @@
+{
+  "name": "@xds/agent-tools",
+  "version": "0.0.1",
+  "description": "XDS documentation tools for AI coding agents",
+  "type": "module",
+  "bin": {
+    "xds-agents-md": "./bin/agents-md.mjs",
+    "xds-skill": "./bin/ai-skill.mjs"
+  },
+  "files": [
+    "bin",
+    "docs"
+  ],
+  "scripts": {
+    "agents-md": "node bin/agents-md.mjs",
+    "skill": "node bin/ai-skill.mjs"
+  },
+  "keywords": [
+    "xds",
+    "ai",
+    "agents",
+    "documentation",
+    "claude",
+    "cursor"
+  ],
+  "license": "MIT"
+}

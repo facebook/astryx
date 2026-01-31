@@ -5,13 +5,6 @@
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
-  "bin": {
-    "xds-core": "./bin/ai-skill.mjs"
-  },
-  "ai": {
-    "skillDoc": "./xds.md",
-    "description": "Component library skill doc for LLM integration"
-  },
   "sideEffects": [
     "**/*.stylex.ts",
     "**/*.stylex.js",

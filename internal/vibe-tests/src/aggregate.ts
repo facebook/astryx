@@ -64,15 +64,27 @@ interface AggregateResult {
   totalOutputTokens: number;
 }
 
+/** Normalize escape hatch to object format (handles string or object) */
+function normalizeEscapeHatch(h: string | EscapeHatch): EscapeHatch {
+  if (typeof h === 'string') {
+    // String escape hatches are treated as acceptable with undefined type
+    return {
+      type: 'supplemental_css', // Default type for string descriptions
+      severity: 'acceptable',
+      codeSnippet: h,
+    };
+  }
+  return h;
+}
+
 /** Calculate the tier for a single result */
 function calculateTier(evaluation: Evaluation): ResultTier {
-  const criticalHatches = evaluation.escapeHatches.filter(
+  const normalizedHatches = evaluation.escapeHatches.map(normalizeEscapeHatch);
+
+  const criticalHatches = normalizedHatches.filter(
     h => h.severity === 'critical',
   );
-  const acceptableHatches = evaluation.escapeHatches.filter(
-    h => h.severity === 'acceptable',
-  );
-  const antiPatternHatches = evaluation.escapeHatches.filter(h =>
+  const antiPatternHatches = normalizedHatches.filter(h =>
     ANTI_PATTERN_HATCHES.includes(h.type),
   );
 
@@ -87,7 +99,7 @@ function calculateTier(evaluation: Evaluation): ResultTier {
   }
 
   // Gold: Pure XDS, no escape hatches
-  if (acceptableHatches.length === 0) {
+  if (normalizedHatches.length === 0) {
     return 'gold';
   }
 
@@ -103,7 +115,8 @@ function analyzeGaps(results: TestResult[]): GapSuggestion[] {
   >();
 
   for (const result of results) {
-    for (const hatch of result.evaluation.escapeHatches) {
+    for (const rawHatch of result.evaluation.escapeHatches) {
+      const hatch = normalizeEscapeHatch(rawHatch);
       // Group by gap description or type
       const key = hatch.gap || hatch.type;
       if (!gapMap.has(key)) {
@@ -243,7 +256,8 @@ function aggregate(iterationId: string): AggregateResult {
     }
 
     // Escape hatches
-    for (const hatch of result.evaluation.escapeHatches) {
+    for (const rawHatch of result.evaluation.escapeHatches) {
+      const hatch = normalizeEscapeHatch(rawHatch);
       if (hatch.severity === 'critical') {
         criticalIssues[hatch.type] = (criticalIssues[hatch.type] || 0) + 1;
       } else if (ANTI_PATTERN_HATCHES.includes(hatch.type)) {
@@ -410,8 +424,8 @@ function generateHtmlReport(
   agg: AggregateResult,
   results: TestResult[],
 ): string {
-  const escapeHtml = (str: string) =>
-    str
+  const escapeHtml = (str: string | undefined) =>
+    (str || '')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
@@ -495,7 +509,8 @@ function generateHtmlReport(
               ? '🟡'
               : '🔴';
       const escapeHatchBadges = r.evaluation.escapeHatches
-        .map(h => {
+        .map(rawH => {
+          const h = normalizeEscapeHatch(rawH);
           const isAntiPattern = ANTI_PATTERN_HATCHES.includes(h.type);
           const badgeClass =
             h.severity === 'critical'

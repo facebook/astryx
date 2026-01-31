@@ -59,7 +59,8 @@ export interface Evaluation {
   tier?: ResultTier;
   componentsUsed: string[];
   componentsExpected: string[];
-  escapeHatches: EscapeHatch[];
+  /** Escape hatches can be strings (simple descriptions) or structured objects */
+  escapeHatches: (string | EscapeHatch)[];
   /** Count of acceptable escape hatches (for scoring) */
   escapeHatchCount?: number;
   failureMode: string | null;

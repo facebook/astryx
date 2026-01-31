@@ -4,6 +4,8 @@
  * Defines all design tokens using StyleX defineVars.
  * - *Raw: Plain objects with default values (can be reused by themes)
  * - *Vars: CSS custom properties that themes can override via createTheme
+ *
+ * SYNC: When modified, update /packages/agent-tools/docs/tokens.md
  */
 
 import * as stylex from '@stylexjs/stylex';
