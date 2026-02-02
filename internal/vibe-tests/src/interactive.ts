@@ -74,7 +74,7 @@ interface InteractiveConfig {
   sample?: number;
   holdout?: boolean;
   persona: 'naive' | 'experienced' | 'adversarial';
-  useAgentsMd: boolean; // Use AGENTS.md (default true)
+  degradation?: boolean; // Enable degradation curve testing
 }
 
 interface AgentTask {
@@ -83,14 +83,13 @@ interface AgentTask {
   prompt: string;
   expectedComponents: string[];
   persona: string;
-  skillDocPath: string;
-  useAgentsMd?: boolean;
+  degradation?: boolean; // Run multi-turn degradation test
 }
 
 /**
  * Generate the agent prompt for a single test
  */
-function generateAgentPrompt(task: AgentTask, skillDoc: string): string {
+function generateAgentPrompt(task: AgentTask): string {
   const personaInstructions = {
     naive: `You are testing as a NAIVE user who describes UIs in plain language without technical terms.
 You don't know component names. Describe what you want visually.`,
@@ -100,16 +99,13 @@ Use correct component names and reference the docs.`,
 Reference Tailwind, shadcn, Bootstrap patterns in your request.`,
   };
 
-  // When using AGENTS.md, don't inject skill doc - Claude Code reads it automatically
-  const skillDocSection = task.useAgentsMd
-    ? `## Component Documentation
-The XDS component library documentation is available via AGENTS.md.
-Read docs from .xds-docs/ for detailed component API and patterns.
-Key files: .xds-docs/principles.md, .xds-docs/tokens.md, .xds-docs/{ComponentName}.md`
-    : `## Skill Doc (Component System)
-<skill-doc>
-${skillDoc}
-</skill-doc>`;
+  // Always use AGENTS.md - Claude Code auto-injects it from cwd
+  const skillDocSection = `## Component Documentation
+
+XDS documentation is auto-loaded via AGENTS.md.
+
+Before generating code, read \`.xds-docs/tokens.md\` for valid CSS variable names.
+Valid patterns: \`--color-*\`, \`--spacing-*\`, \`--radius-*\`, \`--elevation-*\`, \`--text-*\`, \`--font-body\`, \`--font-code\`, \`--font-heading\``;
 
   return `# Vibe Test Task
 
@@ -135,6 +131,7 @@ Expected Components: ${task.expectedComponents.join(', ')}
    - Did you hallucinate any props that don't exist?
    - Did you use redundant CSS for things components already handle?
    - Did you use acceptable supplemental CSS for gaps?
+   - **CSS Variables**: Did you use valid XDS tokens? Check .xds-docs/tokens.md for the complete list of valid variable names.
 
 3. **Output JSON** in this exact format:
 \`\`\`json
@@ -192,7 +189,6 @@ function createTaskManifest(
   prompts: TestPrompt[],
   config: InteractiveConfig,
   iterationId: string,
-  skillDocPath: string,
 ): void {
   const resultsDir = path.join(getResultsDir(), iterationId);
   ensureDir(resultsDir);
@@ -201,7 +197,6 @@ function createTaskManifest(
     iterationId,
     createdAt: timestamp(),
     config,
-    skillDocPath,
     prompts: prompts.map(p => ({
       id: p.id,
       category: p.category,
@@ -226,8 +221,7 @@ function createTaskManifest(
       prompt: prompt.prompt,
       expectedComponents: prompt.expectedComponents,
       persona: config.persona,
-      skillDocPath,
-      useAgentsMd: config.useAgentsMd,
+      degradation: config.degradation,
     };
     writeJson(path.join(tasksDir, `${prompt.id}.json`), task);
   }
@@ -244,8 +238,26 @@ function createTaskManifest(
 function generateSubagentInstructions(
   iterationId: string,
   prompts: TestPrompt[],
+  config: InteractiveConfig,
 ): string {
   const resultsDir = path.join(getResultsDir(), iterationId);
+
+  const degradationInstructions = config.degradation
+    ? `
+
+### Degradation Protocol (10-turn curve)
+Each test runs through multiple conversation turns:
+- Turn 0: Initial probe (generate code)
+- Turns 1-5: Filler prompts (unrelated questions)
+- Turn 6: Re-probe with "Actually, let me revisit this..."
+- Turn 7: Distractor (different framework question)
+- Turn 8: Re-probe with "I want to redo that earlier request..."
+- Turn 9: Recovery (re-inject partial context)
+- Turn 10: Final re-probe with "Let me try that again..."
+
+Record results at turns 0, 6, 8, and 10 with trajectoryDepth field set accordingly.
+`
+    : '';
 
   return `
 # Interactive Vibe Test - Iteration ${iterationId}
@@ -254,6 +266,8 @@ function generateSubagentInstructions(
 
 To run these ${prompts.length} tests in parallel, use the Task tool to spawn subagents.
 
+**Recommended**: Run with \`mode: "bypassPermissions"\` to avoid approval prompts for writing results.
+${degradationInstructions}
 ### Option 1: Run all in parallel (recommended for small batches)
 Spawn ${prompts.length} subagents, one for each test prompt.
 
@@ -263,18 +277,19 @@ Spawn subagents in groups of 3-5 for larger test sets.
 ### Subagent Prompt Template
 For each test, the subagent should:
 1. Read the task file: ${resultsDir}/tasks/{prompt-id}.json
-2. Read the skill doc
-3. Generate a response to the prompt
+2. Read XDS docs from .xds-docs/ (AGENTS.md auto-injected)
+3. Generate a response to the prompt${config.degradation ? ' (with multi-turn conversation)' : ''}
 4. Self-evaluate the response
-5. Write results to: ${resultsDir}/runs.jsonl
+5. Write result to individual file: ${resultsDir}/results/{promptId}.json
+   (Use individual files to avoid parallel write conflicts)
 
 ### After All Tests Complete
 Run: yarn workspace @xds/vibe-tests aggregate --iteration ${iterationId}
 
 This will:
-- Read all results from runs.jsonl
+- Read all results from results/ directory
 - Calculate success rates by category
-- Generate the summary report
+- Generate the summary report${config.degradation ? '\n- Show degradation curve with line graph' : ''}
 `;
 }
 
@@ -291,15 +306,12 @@ async function main() {
     personaIndex !== -1
       ? (args[personaIndex + 1] as 'naive' | 'experienced' | 'adversarial')
       : 'naive';
-  // AGENTS.md mode is now default, use --legacy-skill-doc to inject skill doc explicitly
-  const useAgentsMd = !args.includes('--legacy-skill-doc');
+  const degradation = args.includes('--degradation');
 
-  const config: InteractiveConfig = {sample, holdout, persona, useAgentsMd};
+  const config: InteractiveConfig = {sample, holdout, persona, degradation};
 
-  // Install AGENTS.md if using agents mode
-  if (useAgentsMd) {
-    installAgentsDocs();
-  }
+  // Always install AGENTS.md for retrieval-led approach
+  installAgentsDocs();
 
   // Load test set
   const testSetPath = path.join(__dirname, '..', 'test-sets', 'default.json');
@@ -320,33 +332,23 @@ async function main() {
   // Generate iteration ID
   const iterationId = generateIterationId();
 
-  // Get skill doc path (still needed for legacy mode and version tracking)
-  const skillDocPath = path.join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    'packages',
-    'core',
-    'xds.md',
-  );
-
   console.log(`\n🧪 Interactive Vibe Test Setup`);
   console.log(`================================`);
   console.log(`Iteration: ${iterationId}`);
   console.log(`Persona: ${persona}`);
+  console.log(`Mode: AGENTS.md (retrieval-led)`);
   console.log(
-    `Mode: ${useAgentsMd ? 'AGENTS.md (retrieval-led)' : 'Legacy skill doc injection'}`,
+    `Protocol: ${degradation ? 'Degradation (10-turn curve)' : 'One-shot'}`,
   );
   console.log(
     `Prompts: ${prompts.length}${sample ? ` (sampled from ${testSet.prompts.length})` : ''}`,
   );
 
   // Create task manifest
-  createTaskManifest(prompts, config, iterationId, skillDocPath);
+  createTaskManifest(prompts, config, iterationId);
 
   // Output instructions
-  console.log(generateSubagentInstructions(iterationId, prompts));
+  console.log(generateSubagentInstructions(iterationId, prompts, config));
 
   // Output the prompts for easy reference
   console.log(`\n## Test Prompts\n`);

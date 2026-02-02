@@ -6,29 +6,44 @@ A design system for building internal tools and products.
 
 ### `/vibe-test [count]` - Run vibeability tests
 
-Tests how well the AI skill doc helps generate correct XDS component code.
+Tests how well AGENTS.md helps LLMs generate correct XDS component code.
 
 **Usage:**
 
 ```
-/vibe-test 5      # Run 5 stratified sample tests
-/vibe-test        # Run all 21 tests
+/vibe-test 5                    # Run 5 stratified sample tests (one-shot)
+/vibe-test                      # Run all 21 tests (one-shot)
+/vibe-test 5 --degradation      # Run 5 tests with degradation curve (10-turn)
 ```
 
 **How to execute:**
 
-1. Run `yarn workspace @xds/vibe-tests interactive --sample <count>` to set up iteration
-2. Spawn parallel subagents (one per test prompt) to:
-   - Read the skill doc at `packages/core/xds.md`
-   - Generate code for the prompt using XDS components
+1. Run `yarn workspace @xds/vibe-tests interactive --sample <count> [--degradation]` to set up iteration
+2. Spawn parallel subagents (one per test prompt) with `mode: "bypassPermissions"` to:
+   - Read the task file from `results/<iteration>/tasks/{promptId}.json`
+   - Generate code for the prompt using XDS components (AGENTS.md auto-injected)
    - Self-evaluate for success/escape hatches
-   - Append result to `results/<iteration>/runs.jsonl`
+   - Write result to individual file: `results/<iteration>/results/{promptId}.json`
 3. Run `yarn workspace @xds/vibe-tests aggregate --iteration <id>` to see results
 
-**Result format in runs.jsonl:**
+**Degradation mode (--degradation):**
+Tests context retention across 10-turn conversations with filler, distractor, and recovery turns.
+Probes at turns 0, 6, 8, 10 to measure quality degradation. Results show a line graph of each test's progression.
+
+**Result format:**
 
 ```json
-{"id":"<iter>-<promptId>","timestamp":"...","model":"claude-code-interactive","persona":"naive","promptCategory":"...","prompt":"...","response":"<code>","evaluation":{"success":true,"componentsUsed":[...],"escapeHatches":[...]}}
+{
+  "id": "<iter>-<promptId>",
+  "timestamp": "...",
+  "model": "claude-code-interactive",
+  "persona": "naive",
+  "promptCategory": "...",
+  "trajectoryDepth": 0,
+  "prompt": "...",
+  "response": "<code>",
+  "evaluation": {"success": true, "componentsUsed": [...], "escapeHatches": [...]}
+}
 ```
 
 ## AI Context

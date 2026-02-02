@@ -67,6 +67,38 @@ export interface Evaluation {
   confusionSignals: string[];
 }
 
+/** Job breakdown for output token analysis */
+export interface JobBreakdown {
+  componentRouting: number;
+  componentConfig: number;
+  supplementalStyling: number;
+  contentAuthoring: number;
+  businessLogic: number;
+  boilerplate: number;
+  total: number;
+}
+
+/** Input token breakdown by doc type */
+export interface InputTokenBreakdown {
+  /** AGENTS.md - always read */
+  agentsMd: number;
+  /** principles.md, tokens.md - styling/design guidance */
+  designDocs: number;
+  /** Component-specific docs (Button.md, TextInput.md, etc.) */
+  componentDocs: number;
+  /** Prompt and instructions */
+  promptOverhead: number;
+  /** Total estimated input tokens */
+  total: number;
+}
+
+/** Full token usage breakdown */
+export interface TokenUsageBreakdown {
+  input: InputTokenBreakdown;
+  output: JobBreakdown;
+  total: number;
+}
+
 export interface TestResult {
   id: string;
   timestamp: string;
@@ -84,6 +116,10 @@ export interface TestResult {
   durationMs: number;
   inputTokens: number;
   outputTokens: number;
+  // Optional job breakdown
+  jobBreakdown?: JobBreakdown;
+  // Docs that were read (for input token tracking)
+  docsRead?: string[];
 }
 
 export type RefinementTarget =

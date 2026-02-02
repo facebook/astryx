@@ -68,6 +68,45 @@ A response can be successful AND have acceptable escape hatches.
 3. `redundant_css` is critical only when a component prop exists for the same thing
 4. Check the skill doc carefully before marking something as hallucinated
 
+### CSS Variable Validation
+
+XDS uses specific CSS variable naming. **Any variable not matching these patterns is a hallucination.**
+
+**Valid CSS variable prefixes:**
+
+| Category      | Prefix                                         | Examples                                                     |
+| ------------- | ---------------------------------------------- | ------------------------------------------------------------ |
+| Colors        | `--color-*`                                    | `--color-surface`, `--color-text-primary`, `--color-accent`  |
+| Spacing       | `--spacing-*`                                  | `--spacing-0` through `--spacing-7`                          |
+| Radius        | `--radius-*`                                   | `--radius-container`, `--radius-element`, `--radius-content` |
+| Elevation     | `--elevation-*`                                | `--elevation-base`, `--elevation-dialog`, `--elevation-menu` |
+| Transitions   | `--transition-*`                               | `--transition-fast`, `--transition-normal`                   |
+| Font families | `--font-body`, `--font-code`, `--font-heading` | (only these three)                                           |
+| Text sizes    | `--text-*`                                     | `--text-base`, `--text-sm`, `--text-lg`, `--text-xl`         |
+| Line heights  | `--leading-*`                                  | `--leading-tight`, `--leading-normal`, `--leading-relaxed`   |
+| Font weights  | `--font-weight-*`                              | `--font-weight-normal`, `--font-weight-bold`                 |
+
+**Common hallucinations to flag:**
+
+- `--xds-*` prefix (INVALID - XDS doesn't use this prefix)
+- `--xds-color-*`, `--xds-space-*`, `--xds-font-*` (INVALID)
+- `--space-*` instead of `--spacing-*`
+- `--border-*` (doesn't exist - use `--color-divider` or component props)
+- `--font-family-*` (doesn't exist - use `--font-body`, `--font-code`, `--font-heading`)
+- `--font-size-*` (doesn't exist - use `--text-*`)
+- `--shadow-*` (doesn't exist - use `--elevation-*`)
+
+When you detect a hallucinated CSS variable, create an escape hatch entry:
+
+```json
+{
+  "type": "hallucination",
+  "severity": "critical",
+  "detail": "Used non-existent CSS variable --xds-font-family-base. Valid alternatives: --font-body, --font-code, --font-heading",
+  "codeSnippet": "fontFamily: 'var(--xds-font-family-base)'"
+}
+```
+
 ### Confusion Signals
 
 Look for these in the response:

@@ -5,24 +5,31 @@ Build a test harness that measures how well LLMs can use a component system, tra
 ## Directory Structure
 
 ```
-tools/vibeability-harness/
-├── harness.ts              # Main entry point (Deno)
+internal/vibe-tests/
+├── src/
+│   ├── interactive.ts      # Sets up test iteration for Claude Code subagents
+│   ├── run-interactive.ts  # Generates subagent spawn instructions
+│   ├── aggregate.ts        # Aggregates results, generates reports
+│   ├── types.ts            # Core type definitions
+│   └── utils.ts            # Shared utilities
+├── docs/
+│   └── job-taxonomy.md     # Token/time analysis documentation
 ├── prompts/
-│   ├── evaluator.md        # Judges generated code against criteria
-│   ├── analyst.md          # Analyzes results, suggests refinements
-│   └── personas/
-│       ├── naive.md        # "I want a card with an image"
-│       ├── experienced.md  # Uses correct terminology
-│       └── adversarial.md  # References competing patterns
-├── test-sets/
-│   └── default.json        # Prompt battery organized by category
+│   └── test-set.json       # Prompt battery organized by category
 ├── results/
 │   └── {iteration-id}/
-│       ├── runs.jsonl      # Append-only test results
-│       ├── report.html     # Visual report with live previews
-│       ├── analysis.json   # Analyst output
-│       └── refinements.json
-└── iterations.json         # Tracks lineage across refinement cycles
+│       ├── manifest.json   # Iteration metadata
+│       ├── tasks/          # Individual task files for subagents
+│       │   └── {promptId}.json
+│       ├── results/        # Individual result files (avoids race conditions)
+│       │   └── {promptId}.json
+│       ├── aggregate.json  # Aggregated metrics
+│       └── report.html     # Visual report with charts
+└── .xds-docs/              # XDS documentation (auto-injected via AGENTS.md)
+    ├── AGENTS.md
+    ├── principles.md
+    ├── tokens.md
+    └── {Component}.md
 ```
 
 ## Core Types
@@ -35,32 +42,73 @@ interface Turn {
   evaluation?: Evaluation;
 }
 
+type EscapeHatchType =
+  | 'hallucination'
+  | 'wrong_component'
+  | 'redundant_css'
+  | 'supplemental_css'
+  | 'wrapper_div'
+  | 'inline_style' // Anti-pattern: should use StyleX instead
+  | 'hardcoded_color' // Anti-pattern: breaks theming
+  | 'hardcoded_spacing' // Anti-pattern: breaks spacing system
+  | 'hardcoded_size' // Acceptable: explicit sizes are often needed
+  | 'custom_animation' // Gap: missing animation support
+  | 'layout_workaround'; // Gap: missing layout primitive
+
+type EscapeHatchSeverity = 'critical' | 'acceptable';
+
 interface EscapeHatch {
-  type:
-    | 'hallucination'
-    | 'wrong_component'
-    | 'redundant_css'
-    | 'supplemental_css'
-    | 'wrapper_div'
-    | 'inline_style';
-  severity: 'critical' | 'acceptable';
+  type: EscapeHatchType;
+  severity: EscapeHatchSeverity;
   detail: string;
   codeSnippet: string;
+  gap?: string; // What capability gap does this represent?
 }
+
+/**
+ * Result quality tiers:
+ * - gold: Pure XDS, no escape hatches needed
+ * - green: Correct components, only acceptable escape hatches
+ * - yellow: Minor issues (anti-patterns like hardcoded values)
+ * - red: Critical failures (hallucinations, wrong components)
+ */
+type ResultTier = 'gold' | 'green' | 'yellow' | 'red';
 
 interface Evaluation {
   success: boolean;
+  tier?: ResultTier;
   componentsUsed: string[];
   componentsExpected: string[];
-  escapeHatches: EscapeHatch[];
+  escapeHatches: (string | EscapeHatch)[];
+  escapeHatchCount?: number;
   failureMode: string | null;
-  confusionSignals: string[]; // hedging language, clarifying questions
+  confusionSignals: string[];
+}
+
+/** Job breakdown for output token analysis */
+interface JobBreakdown {
+  componentRouting: number; // Import statements for XDS components
+  componentConfig: number; // Props and configuration on XDS components
+  supplementalStyling: number; // StyleX blocks
+  contentAuthoring: number; // HTML structure, JSX
+  businessLogic: number; // State, handlers, logic
+  boilerplate: number; // Type definitions, exports
+  total: number;
+}
+
+/** Input token breakdown by doc type */
+interface InputTokenBreakdown {
+  agentsMd: number; // AGENTS.md - always read
+  designDocs: number; // principles.md, tokens.md
+  componentDocs: number; // Component-specific docs (Button.md, etc.)
+  promptOverhead: number; // Task instructions
+  total: number;
 }
 
 interface TestResult {
   id: string;
   timestamp: string;
-  systemVersion: string; // hash or version of skill doc
+  systemVersion: string;
   model: string;
   persona: string;
   promptCategory: string;
@@ -70,289 +118,251 @@ interface TestResult {
   evaluation: Evaluation;
   fullConversation: Turn[];
   contextWindowUsage: number;
+  // Timing and usage metrics
+  durationMs: number;
+  inputTokens: number;
+  outputTokens: number;
+  // Optional detailed breakdowns
+  jobBreakdown?: JobBreakdown;
+  docsRead?: string[]; // Docs accessed during generation
 }
 
 interface Refinement {
   target: 'skill_doc' | 'component_api' | 'component_naming' | 'examples';
   component: string | null;
   suggestion: string;
-  evidence: string[]; // TestResult IDs
+  evidence: string[];
   confidence: number;
   effortEstimate: 'trivial' | 'moderate' | 'significant';
 }
-
-interface Iteration {
-  id: string;
-  parentIteration: string | null;
-  skillDocHash: string;
-  refinementsApplied: Refinement[];
-  aggregateMetrics: {
-    overallSuccessRate: number;
-    byCategory: Record<string, number>;
-    byPersona: Record<string, number>;
-    degradationCliff: number; // avg turn where accuracy drops below 80%
-  };
-  analystSummary: string;
-  nextRefinements: Refinement[];
-  promptsRun: string[]; // IDs of prompts actually run (may be sampled subset)
-  promptsTotal: number; // total prompts in pool
-}
-
-interface TestPrompt {
-  id: string;
-  category: string;
-  prompt: string;
-  expectedComponents: string[];
-  complexity: 'simple' | 'moderate' | 'complex';
-}
-
-interface TestSet {
-  name: string;
-  prompts: TestPrompt[];
-  holdout?: TestPrompt[]; // separate prompts for unbiased evaluation
-  fillerPrompts?: string[];
-  distractorPrompts?: string[];
-  recoveryContext?: string;
-}
 ```
+
+## Quality Tiers
+
+Results are categorized into quality tiers for nuanced analysis:
+
+| Tier   | Icon | Meaning                                              | Counts as Success |
+| ------ | ---- | ---------------------------------------------------- | ----------------- |
+| Gold   | 🥇   | Pure XDS, no escape hatches needed                   | Yes               |
+| Green  | 🟢   | Correct components, only acceptable escape hatches   | Yes               |
+| Yellow | 🟡   | Anti-patterns (hardcoded values break theming)       | Yes               |
+| Red    | 🔴   | Critical failures (hallucinations, wrong components) | No                |
+
+## Token Usage Breakdown
+
+The harness tracks token usage across two dimensions:
+
+### Input Tokens (estimated from doc reading)
+
+| Source              | Description                                 | Est. Tokens    |
+| ------------------- | ------------------------------------------- | -------------- |
+| **AGENTS.md**       | Component catalog and XDS guidance          | ~173           |
+| **Design docs**     | principles.md, tokens.md - styling patterns | ~1,200         |
+| **Component docs**  | Button.md, TextInput.md, etc.               | 300-2,000 each |
+| **Prompt overhead** | Task instructions and persona               | ~375           |
+
+### Output Tokens (by job type)
+
+Each generated code response is analyzed by job category:
+
+| Job                      | Description                                 | Typical % |
+| ------------------------ | ------------------------------------------- | --------- |
+| **Component Routing**    | Import statements for XDS components        | 3-10%     |
+| **Component Config**     | Props and attributes on XDS components      | 7-30%     |
+| **Supplemental Styling** | StyleX blocks for layout/spacing gaps       | 10-27%    |
+| **Content Authoring**    | HTML structure, JSX elements, copy          | 15-27%    |
+| **Business Logic**       | useState, handlers, API calls, conditionals | 5-51%     |
+| **Boilerplate**          | Type definitions, imports, exports          | 5-10%     |
+
+Business logic dominates integration-oriented prompts (51%), while page-setup prompts are more balanced across styling, content, and config.
+
+## Timing
+
+Timing is tracked per test and aggregated per category:
+
+- **Per test**: `durationMs` field in TestResult
+- **Inferred**: When not reported, timing is calculated from file timestamps (task creation → result write)
+- **Per category**: Average duration shown in aggregate reports
 
 ## Escape Hatch Severity
 
-Escape hatches have two severity levels that determine whether they count against success:
+**Critical** (red tier - counts against success):
 
-**Critical** (counts against success):
+- `hallucination` — Inventing props, components, or APIs that don't exist
+- `wrong_component` — Using a component incorrectly
+- `redundant_css` — CSS that duplicates component props
 
-- `hallucination` — Inventing props, components, events, or APIs that don't exist
-- `wrong_component` — Using a component for something it wasn't designed for
-- `redundant_css` — CSS that duplicates what a component prop already handles
+**Anti-pattern** (yellow tier - noted, still success):
 
-**Acceptable** (noted but does NOT count against success):
+- `inline_style` — Should use StyleX
+- `hardcoded_color` — Breaks theming
+- `hardcoded_spacing` — Breaks spacing system
 
-- `supplemental_css` — CSS for things the component system doesn't cover (layout gaps, responsive breakpoints, animations, decoration)
-- `wrapper_div` — Structural HTML needed to compose components
-- `inline_style` — Minor inline styles for things without a component prop
+**Acceptable** (green tier - expected gaps):
 
-The component system doesn't aim for 100% coverage. CSS for layout, responsive behavior, or decoration outside component scope is expected and acceptable.
+- `supplemental_css` — CSS for layout gaps
+- `wrapper_div` — Structural HTML for composition
+- `hardcoded_size` — Explicit sizes often needed
+- `custom_animation` — Missing animation support
+- `layout_workaround` — Missing layout primitive
 
-## Prompt Categories for Test Set
+## Prompt Categories
 
-Generate realistic user prompts (goal-oriented, not component-oriented) in these categories:
-
-1. **feature-with-constraint**: "I need a banner that warns users their trial expires in X days and lets them upgrade"
-2. **workflow-description**: "Build a checkout flow: cart summary → shipping → payment → confirmation"
-3. **clone-with-modification**: "Something like Stripe's pricing table but with monthly/annual toggle"
-4. **state-driven**: "Show a dashboard with loading → error → data states"
-5. **data-display**: "A table of users with sortable columns and search"
+1. **feature-with-constraint**: "A banner warning trial expires in X days with upgrade button"
+2. **workflow-description**: "Checkout flow: cart → shipping → payment → confirmation"
+3. **clone-with-modification**: "Stripe's pricing table with monthly/annual toggle"
+4. **state-driven**: "Dashboard with loading → error → data states"
+5. **data-display**: "User table with sortable columns and search"
 6. **responsive-context**: "Navigation that collapses to hamburger on mobile"
-7. **integration-oriented**: "A form that validates email and posts to /api/subscribe"
-
-Each category should have 3-5 prompts at varying complexity. The test set also includes a `holdout` array with different prompts per category for unbiased evaluation.
-
-## Prompt Sampling
-
-To prevent refinement suggestions from overfitting to specific test prompts:
-
-- **`--sample N`**: Stratified sampling — selects N prompts with at least 1 per category, distributes remaining slots round-robin. Each run sees a different subset.
-- **`--holdout`**: Runs the holdout prompt set instead of the main set. Use to validate that doc improvements generalize beyond training prompts.
-- **No flag**: Runs all prompts (original behavior).
-
-Iteration metadata records `promptsRun` (IDs of prompts used) and `promptsTotal` (pool size) so the analyst knows whether results are from a sample.
+7. **integration-oriented**: "Form that validates email and posts to /api/subscribe"
+8. **page-setup**: "Landing page with hero, features, and CTA"
 
 ## Test Protocols
 
-### One-shot baseline
+### One-shot (default)
 
-1. Inject skill doc as system context
-2. Run each prompt from test set (or sampled subset)
-3. Evaluate response
-4. Record result
+1. Read XDS docs (AGENTS.md auto-injected, component docs as needed)
+2. Generate code for prompt
+3. Self-evaluate response
+4. Write result to individual file
 
-### Degradation curve
+### Degradation curve (`--degradation`)
 
-1. Inject skill doc
-2. Probe with test prompt, evaluate (turn 0)
-3. Run 5 filler turns (unrelated coding questions)
-4. Re-probe with natural framing, evaluate (turn 6)
-5. Inject distractor ("now do it in Tailwind")
-6. Re-probe with natural framing, evaluate (turn 8)
-7. Inject recovery (re-inject partial skill doc)
-8. Re-probe with natural framing, evaluate (turn 10)
-9. Plot accuracy over turns
-
-Re-probes use conversational framing (e.g., "Actually, let me revisit this. {prompt}" or "I want to redo that earlier request. {prompt}") instead of repeating the prompt verbatim. This prevents the LLM from noticing duplicate requests and hedging. Evaluation still uses the original prompt expectations.
-
-### Persona comparison
-
-Run same prompt set with each persona, compare success rates and failure modes.
-
-## Agent Prompts
-
-### Evaluator (prompts/evaluator.md)
-
-You evaluate LLM-generated UI code against a component system.
-
-Given:
-
-- The user's prompt
-- The generated response
-- The expected components for this task
-
-Return JSON matching the Evaluation schema. Key rules:
-
-- **Success = correct components used where they exist + no critical escape hatches**
-- Custom CSS for things the component system doesn't cover is acceptable
-- Hallucinated props/events are always critical
-- `redundant_css` is critical only when a component prop exists for the same thing
-- A response can be successful AND have acceptable escape hatches
-
-### Analyst (prompts/analyst.md)
-
-You analyze batches of vibeability test results to identify patterns and suggest refinements.
-
-Look for:
-
-- Which prompt categories fail most often
-- Which components get hallucinated or misused
-- Where degradation typically starts in long conversations
-- Whether certain personas expose different weaknesses
-- **Critical** escape hatch patterns only (ignore acceptable ones)
-
-Root cause categories:
-
-- **Documentation gap**: Component exists but isn't well explained
-- **Naming confusion**: Component name suggests wrong usage
-- **Missing example**: Use case isn't demonstrated
-- **API complexity**: Too many props or unclear defaults
-- **Competing patterns**: Other frameworks' patterns interfere
-- **Component gap**: No component exists for this need (flag for component team, not a doc fix)
-
-Sampling awareness:
-
-- Require evidence from ≥2 different categories before suggesting a refinement (unless confidence > 0.85 for a component-specific issue)
-- Distinguish systemic doc gaps from prompt-specific quirks
-- Don't over-index on frequency in sampled results
-
-Prioritize refinements by: high impact + low effort first.
-
-### Personas
-
-**naive.md**: You describe UIs in plain language without technical terms. You don't know component names. You say things like "a box with a shadow" not "a Card component".
-
-**experienced.md**: You know the component system well. You use correct component names and props. You might reference the docs.
-
-**adversarial.md**: You mix in patterns from other systems (Tailwind, shadcn, Bootstrap). You say things like "use flex justify-between" or "like a shadcn Dialog".
+1. Probe at turn 0, evaluate
+2. Run 5 filler turns (unrelated questions)
+3. Re-probe at turn 6, evaluate
+4. Inject distractor ("now do it in Tailwind")
+5. Re-probe at turn 8, evaluate
+6. Inject recovery (re-read docs)
+7. Re-probe at turn 10, evaluate
+8. Generate line graph showing tier progression
 
 ## CLI Interface
 
 ```bash
-# Run full test battery
-deno run --allow-all harness.ts run
+# Set up interactive test iteration
+yarn workspace @xds/vibe-tests interactive --sample 5
 
-# Run sampled subset (stratified across categories)
-deno run --allow-all harness.ts run --sample 10
+# Set up degradation test
+yarn workspace @xds/vibe-tests interactive --sample 3 --degradation
 
-# Run holdout set for unbiased evaluation
-deno run --allow-all harness.ts run --holdout
+# Aggregate results after subagents complete
+yarn workspace @xds/vibe-tests aggregate --iteration abc123
 
-# Run specific protocol
-deno run --allow-all harness.ts run --protocol degradation
+# Output JSON instead of console
+yarn workspace @xds/vibe-tests aggregate --iteration abc123 --json
 
-# Run with specific persona
-deno run --allow-all harness.ts run --persona naive
-
-# Generate HTML report for visual inspection
-deno run --allow-all harness.ts report --iteration abc123
-
-# Analyze results from an iteration
-deno run --allow-all harness.ts analyze --iteration abc123
-
-# Start new iteration with refinements applied
-deno run --allow-all harness.ts iterate --from abc123
-
-# View iteration history
-deno run --allow-all harness.ts history
+# CI mode (non-zero exit on low success rate)
+yarn workspace @xds/vibe-tests aggregate --iteration abc123 --ci
 ```
 
-## Configuration
+## Running Tests with Subagents
 
-Read skill doc path from env or flag:
+Tests are run via Claude Code subagents spawned in parallel:
 
-```bash
-SKILL_DOC=./skills/brownie.md deno run --allow-all harness.ts run
-```
-
-Model selection:
-
-```bash
-deno run --allow-all harness.ts run --model claude-sonnet-4-20250514
-deno run --allow-all harness.ts run --model gpt-4o
-```
-
-## Key Implementation Notes
-
-- Use JSONL for results (append-only, resumable)
-- Generate iteration IDs as short hashes (first 8 chars of UUID)
-- Hash skill doc content to track versions
-- Run tests sequentially (rate limit protection with 500ms delay)
-- Store full conversation history for debugging
-- Analyst should receive batch of results, not one at a time
-- Analyst receives sampling metadata (prompts run vs total pool) to avoid overfit suggestions
-- Keep token counts rough (string length / 4 is fine)
-- Summary output separates critical issues from acceptable escape hatches
+1. Run `yarn workspace @xds/vibe-tests interactive --sample N`
+2. Spawn subagents with `mode: "bypassPermissions"` for each task
+3. Each subagent:
+   - Reads task file from `results/{iteration}/tasks/{promptId}.json`
+   - Reads XDS docs (AGENTS.md auto-injected)
+   - Generates code for the prompt
+   - Self-evaluates the response
+   - Tracks timing (start → end)
+   - Records docs read
+   - Writes result to `results/{iteration}/results/{promptId}.json`
+4. Run `yarn workspace @xds/vibe-tests aggregate --iteration {id}`
 
 ## Output Example
 
-After `harness.ts run --sample 10`:
+### Console Output
 
 ```
-Running vibeability tests...
-  Protocol: one-shot
-  Persona: naive
-  Model: claude-sonnet-4-20250514
-  Test set: default (10 sampled from 22 prompts)
-  Iteration: a1b2c3d4
+📊 Vibe Test Results - Iteration 657c993f
+==================================================
 
-  [████████████████████] 10/10
+Overall: 100% success (2/2)
 
-Results:
-  Overall: 70% success (7/10)
+🏆 Quality Tiers:
+  🥇 Gold (pure XDS):     2 (100%)
+  🟢 Green (acceptable):  0 (0%)
+  🟡 Yellow (anti-pattern): 0 (0%)
+  🔴 Red (critical):      0 (0%)
 
-  By category:
-    feature-with-constraint: 100%
-    workflow-description: 0%
-    clone-with-modification: 100%
-    state-driven: 100%
-    data-display: 100%
-    responsive-context: 0%
-    integration-oriented: 50%
+⏱️  Performance:
+  Total time: 33.3s (avg 16.7s per test)
 
-  Critical issues:
-    - hallucination (2)
-    - redundant_css (1)
+By Category:
+  data-display              100% (1/1) [🥇1 🟢0 🟡0 🔴0] ⏱️23.3s
+  integration-oriented      100% (1/1) [🥇1 🟢0 🟡0 🔴0] ⏱️10.0s
 
-  Acceptable escape hatches:
-    - supplemental_css (5)
-    - wrapper_div (2)
+📊 Token Usage Breakdown:
+  ┌─────────────────────────────────────────────────┐
+  │ INPUT TOKENS (estimated from doc reading)       │
+  ├─────────────────────────────────────────────────┤
+  │   AGENTS.md:           346 tokens               │
+  │   Design docs:        2360 tokens               │
+  │   Component docs:     7033 tokens               │
+  │   Prompt overhead:     750 tokens               │
+  │   ─────────────────────────────                 │
+  │   Input subtotal:    10489 tokens               │
+  ├─────────────────────────────────────────────────┤
+  │ OUTPUT TOKENS (from job breakdown)              │
+  ├─────────────────────────────────────────────────┤
+  │   Component routing:       3%  (~73 tokens)     │
+  │   Component config:       13%  (~281 tokens)    │
+  │   Supplemental styling:   14%  (~301 tokens)    │
+  │   Content authoring:      45%  (~943 tokens)    │
+  │   Business logic:         19%  (~411 tokens)    │
+  │   Boilerplate:             5%  (~103 tokens)    │
+  │   ─────────────────────────────                 │
+  │   Output subtotal:       2112 tokens            │
+  ├─────────────────────────────────────────────────┤
+  │ TOTAL:                  12601 tokens            │
+  └─────────────────────────────────────────────────┘
 
-  Results saved: ./results/a1b2c3d4/runs.jsonl
+✓ Acceptable Escape Hatches:
+  - supplemental_css: 2
 
-Run `harness.ts analyze --iteration a1b2c3d4` for refinement suggestions.
+💡 Gap Suggestions (component/API improvements):
+  🔧 [trivial] Add prop or variant to cover: supplemental_css (seen 2x)
 ```
 
-After `harness.ts analyze`:
+### HTML Report
 
-```
-Analyzing iteration a1b2c3d4...
+The HTML report includes:
 
-Patterns detected:
-  - "clone-with-modification" prompts trigger Tailwind patterns
-  - brow-select events hallucinated (brow-open, input) across 3 categories
-  - countdown/timer props frequently hallucinated on Alert
+- Quality tier breakdown with visual bars
+- Results by category with timing
+- Token usage breakdown (input and output) - aggregate and per test
+- Degradation line graph (if degradation mode)
+- Critical issues, anti-patterns, acceptable hatches
+- Gap suggestions for component improvements
+- Individual test results with:
+  - Tier icon and category
+  - Prompt text
+  - Escape hatches (if any)
+  - Duration (e.g., 23.3s)
+  - Token breakdown: Total (input/output) with hover tooltip showing full breakdown
+  - Docs read badges (which .md files were accessed)
+  - Expandable code view
 
-Suggested refinements:
-  1. [component_api] Document brow-select events explicitly (confidence: 0.9, effort: trivial)
-  2. [examples] Add countdown example to Alert docs (confidence: 0.9, effort: trivial)
-  3. [skill_doc] Add explicit "do not use Tailwind" guidance (confidence: 0.7, effort: trivial)
+### Per-Run Token Breakdown
 
-Saved: ./results/a1b2c3d4/refinements.json
-```
+Each individual test shows:
+
+- **Total tokens**: Sum of input + output
+- **Input/Output split**: e.g., `6245 (5189/1056)` means 5189 input, 1056 output
+- **Hover tooltip**: Full breakdown including:
+  - Input: AGENTS tokens, Design doc tokens, Component doc tokens
+  - Output: Routing, Config, Styling, Content, Logic, Boilerplate tokens
+- **Docs read**: Badges showing which docs were accessed (e.g., `AGENTS`, `principles`, `tokens`, `TextInput`)
+
+## Key Implementation Notes
+
+- **Individual result files**: Each subagent writes to `results/{promptId}.json` to avoid parallel write conflicts
+- **Timing inference**: When `durationMs` is 0, timing is inferred from file timestamps
+- **Doc tracking**: Subagents record which docs they read in `docsRead` array
+- **Token estimation**: Input tokens estimated from doc sizes (~4 chars per token)
+- **Job analysis**: Output tokens categorized by parsing code structure
+- **Quality tiers**: Gold/green/yellow/red for nuanced success tracking
+- **AGENTS.md**: Always used (auto-injected by Claude Code)

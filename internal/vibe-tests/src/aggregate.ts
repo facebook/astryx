@@ -15,8 +15,222 @@ import type {
   EscapeHatch,
   GapSuggestion,
   EscapeHatchType,
+  JobBreakdown,
+  InputTokenBreakdown,
+  TokenUsageBreakdown,
 } from './types.js';
-import {readJsonl, readJson, writeJson, getResultsDir} from './utils.js';
+import {readJson, writeJson, getResultsDir} from './utils.js';
+
+/**
+ * Doc file sizes in characters (for input token estimation)
+ * ~4 chars per token is a reasonable estimate
+ */
+const DOC_SIZES: Record<string, number> = {
+  'AGENTS.md': 691,
+  'principles.md': 1131,
+  'tokens.md': 3586,
+  'Button.md': 1347,
+  'Theme.md': 1355,
+  'CheckboxInput.md': 1920,
+  'Text.md': 2172,
+  'Avatar.md': 2280,
+  'Calendar.md': 2989,
+  'Field.md': 3010,
+  'TextInput.md': 3026,
+  'Skeleton.md': 3096,
+  'Icon.md': 3560,
+  'TextArea.md': 3637,
+  'Layer.md': 4867,
+  'Container.md': 6263,
+  'Layout.md': 6632,
+  'Stack.md': 7007,
+  'XDSLayout.md': 8284,
+};
+
+/** Base prompt overhead (task instructions, persona, etc.) in characters */
+const PROMPT_OVERHEAD_CHARS = 1500;
+
+/**
+ * Estimate input tokens based on docs read
+ */
+function estimateInputTokens(
+  docsRead: string[] | undefined,
+): InputTokenBreakdown {
+  const breakdown: InputTokenBreakdown = {
+    agentsMd: 0,
+    designDocs: 0,
+    componentDocs: 0,
+    promptOverhead: Math.round(PROMPT_OVERHEAD_CHARS / 4),
+    total: 0,
+  };
+
+  if (!docsRead || docsRead.length === 0) {
+    // Default: assume AGENTS.md was read
+    breakdown.agentsMd = Math.round((DOC_SIZES['AGENTS.md'] || 700) / 4);
+  } else {
+    for (const doc of docsRead) {
+      const size = DOC_SIZES[doc] || 2000; // Default 2000 chars for unknown docs
+      const tokens = Math.round(size / 4);
+
+      if (doc === 'AGENTS.md') {
+        breakdown.agentsMd += tokens;
+      } else if (doc === 'principles.md' || doc === 'tokens.md') {
+        breakdown.designDocs += tokens;
+      } else {
+        breakdown.componentDocs += tokens;
+      }
+    }
+  }
+
+  breakdown.total =
+    breakdown.agentsMd +
+    breakdown.designDocs +
+    breakdown.componentDocs +
+    breakdown.promptOverhead;
+  return breakdown;
+}
+
+/**
+ * Analyze code to break down tokens by job type
+ */
+function analyzeJobBreakdown(code: string): JobBreakdown {
+  const jobs = {
+    componentRouting: 0,
+    componentConfig: 0,
+    supplementalStyling: 0,
+    contentAuthoring: 0,
+    businessLogic: 0,
+    boilerplate: 0,
+  };
+
+  const lines = code.split('\n');
+  let inStyles = false;
+
+  for (const line of lines) {
+    const stripped = line.trim();
+    const chars = line.length + 1; // +1 for newline
+
+    // Imports
+    if (stripped.startsWith('import')) {
+      if (line.includes('XDS') || line.includes('@xds')) {
+        jobs.componentRouting += chars;
+      } else {
+        jobs.boilerplate += chars;
+      }
+      continue;
+    }
+
+    // StyleX styles block
+    if (line.includes('stylex.create')) {
+      inStyles = true;
+    }
+    if (inStyles) {
+      jobs.supplementalStyling += chars;
+      if (stripped === '});') {
+        inStyles = false;
+      }
+      continue;
+    }
+
+    // Type definitions
+    if (stripped.startsWith('type ') || stripped.startsWith('interface ')) {
+      jobs.boilerplate += chars;
+      continue;
+    }
+
+    // Function signature
+    if (
+      stripped.includes('function') &&
+      (stripped.includes('export') || stripped.startsWith('function'))
+    ) {
+      jobs.boilerplate += chars;
+      continue;
+    }
+
+    // JSX with XDS components and props
+    const propPatterns = [
+      'label=',
+      'value=',
+      'onChange=',
+      'variant=',
+      'disabled=',
+      'loading=',
+      'onClick=',
+      'placeholder=',
+      'isRequired',
+      'header=',
+      'content=',
+      'theme=',
+    ];
+    if (
+      line.includes('<XDS') ||
+      line.includes('</XDS') ||
+      (stripped && propPatterns.some(p => line.includes(p)))
+    ) {
+      jobs.componentConfig += chars;
+      continue;
+    }
+
+    // JSX structure (html elements)
+    if (/<\/?[a-z]/.test(line) && !line.includes('XDS')) {
+      jobs.contentAuthoring += chars;
+      continue;
+    }
+
+    // State, handlers, logic
+    const logicPatterns = [
+      'useState',
+      'useRef',
+      'useEffect',
+      'useCallback',
+      'const ',
+      'let ',
+      'if ',
+      'if(',
+      'try ',
+      'catch ',
+      'await ',
+      'async ',
+      '.then',
+      '.catch',
+      'xhr.',
+      'formData',
+      'setIs',
+      'setProgress',
+      'handle',
+    ];
+    if (logicPatterns.some(p => line.includes(p))) {
+      if (line.includes('return (') || line.includes('return <')) {
+        jobs.contentAuthoring += chars;
+      } else {
+        jobs.businessLogic += chars;
+      }
+      continue;
+    }
+
+    // Closing braces and returns
+    if (
+      ['}', '});', ');', '};', 'return (', '} catch', '} finally'].includes(
+        stripped,
+      )
+    ) {
+      jobs.businessLogic += chars;
+      continue;
+    }
+
+    // Default: content authoring
+    if (stripped) {
+      jobs.contentAuthoring += chars;
+    }
+  }
+
+  const total = Object.values(jobs).reduce((a, b) => a + b, 0);
+
+  return {
+    ...jobs,
+    total,
+  };
+}
 
 /** Escape hatch types that indicate anti-patterns (break theming/system) */
 const ANTI_PATTERN_HATCHES: EscapeHatchType[] = [
@@ -39,6 +253,14 @@ interface TierCounts {
   red: number;
 }
 
+/** Individual test progression through degradation turns */
+interface TestProgression {
+  promptId: string;
+  category: string;
+  prompt: string;
+  turns: {depth: number; tier: ResultTier; success: boolean}[];
+}
+
 interface AggregateResult {
   iterationId: string;
   totalTests: number;
@@ -49,9 +271,23 @@ interface AggregateResult {
   tierRate: Record<ResultTier, number>;
   byCategory: Record<
     string,
-    {success: number; total: number; rate: number; tiers: TierCounts}
+    {
+      success: number;
+      total: number;
+      rate: number;
+      tiers: TierCounts;
+      avgDurationMs: number;
+    }
   >;
   byPersona: Record<string, {success: number; total: number; rate: number}>;
+  // Degradation curve (only present if trajectory depths vary)
+  byTrajectoryDepth?: Record<
+    number,
+    {success: number; total: number; rate: number; tiers: TierCounts}
+  >;
+  degradationCliff?: number; // First depth where success rate drops below 80%
+  // Individual test progressions for line graph visualization
+  testProgressions?: TestProgression[];
   criticalIssues: Record<string, number>;
   acceptableEscapeHatches: Record<string, number>;
   antiPatterns: Record<string, number>;
@@ -62,6 +298,31 @@ interface AggregateResult {
   avgDurationMs: number;
   totalInputTokens: number;
   totalOutputTokens: number;
+  // Job breakdown stats (tokens by job type)
+  jobStats?: {
+    total: JobBreakdown;
+    byCategory: Record<string, JobBreakdown>;
+    percentages: {
+      componentRouting: number;
+      componentConfig: number;
+      supplementalStyling: number;
+      contentAuthoring: number;
+      businessLogic: number;
+      boilerplate: number;
+    };
+  };
+  // Full token usage breakdown (input + output)
+  tokenUsage?: {
+    input: {
+      total: InputTokenBreakdown;
+      byCategory: Record<string, InputTokenBreakdown>;
+    };
+    output: {
+      total: JobBreakdown;
+      byCategory: Record<string, JobBreakdown>;
+    };
+    grandTotal: number;
+  };
 }
 
 /** Normalize escape hatch to object format (handles string or object) */
@@ -71,6 +332,7 @@ function normalizeEscapeHatch(h: string | EscapeHatch): EscapeHatch {
     return {
       type: 'supplemental_css', // Default type for string descriptions
       severity: 'acceptable',
+      detail: h,
       codeSnippet: h,
     };
   }
@@ -188,15 +450,60 @@ function analyzeGaps(results: TestResult[]): GapSuggestion[] {
   return suggestions.sort((a, b) => b.frequency - a.frequency);
 }
 
-function aggregate(iterationId: string): AggregateResult {
-  const resultsDir = path.join(getResultsDir(), iterationId);
-  const runsPath = path.join(resultsDir, 'runs.jsonl');
+/**
+ * Load results from individual result files
+ * Optionally infers timing from file timestamps if durationMs is 0
+ */
+function loadResults(resultsDir: string): TestResult[] {
+  const individualResultsDir = path.join(resultsDir, 'results');
+  const tasksDir = path.join(resultsDir, 'tasks');
+  const results: TestResult[] = [];
 
-  if (!fs.existsSync(runsPath)) {
-    throw new Error(`No results found at ${runsPath}`);
+  if (!fs.existsSync(individualResultsDir)) {
+    throw new Error(`No results directory found at ${individualResultsDir}`);
   }
 
-  const results = readJsonl<TestResult>(runsPath);
+  const files = fs
+    .readdirSync(individualResultsDir)
+    .filter(f => f.endsWith('.json'));
+
+  if (files.length === 0) {
+    throw new Error(`No result files found in ${individualResultsDir}`);
+  }
+
+  for (const file of files) {
+    try {
+      const resultPath = path.join(individualResultsDir, file);
+      const content = fs.readFileSync(resultPath, 'utf-8');
+      const result = JSON.parse(content) as TestResult;
+
+      // Infer timing from file timestamps if durationMs is 0 or missing
+      if (!result.durationMs || result.durationMs === 0) {
+        const taskPath = path.join(tasksDir, file);
+        if (fs.existsSync(taskPath)) {
+          const taskStat = fs.statSync(taskPath);
+          const resultStat = fs.statSync(resultPath);
+          // Duration = result file mtime - task file mtime
+          const inferredDurationMs = resultStat.mtimeMs - taskStat.mtimeMs;
+          if (inferredDurationMs > 0) {
+            result.durationMs = Math.round(inferredDurationMs);
+          }
+        }
+      }
+
+      results.push(result);
+    } catch (e) {
+      console.warn(`Warning: Failed to parse ${file}: ${e}`);
+    }
+  }
+
+  return results;
+}
+
+function aggregate(iterationId: string): AggregateResult {
+  const resultsDir = path.join(getResultsDir(), iterationId);
+
+  const results = loadResults(resultsDir);
 
   if (results.length === 0) {
     throw new Error('No results to aggregate');
@@ -204,9 +511,22 @@ function aggregate(iterationId: string): AggregateResult {
 
   const byCategory: Record<
     string,
-    {success: number; total: number; tiers: TierCounts}
+    {success: number; total: number; tiers: TierCounts; durationMs: number}
   > = {};
   const byPersona: Record<string, {success: number; total: number}> = {};
+  const byTrajectoryDepth: Record<
+    number,
+    {success: number; total: number; tiers: TierCounts}
+  > = {};
+  // Track individual test progressions for degradation line graph
+  const progressionMap = new Map<
+    string,
+    {
+      category: string;
+      prompt: string;
+      turns: {depth: number; tier: ResultTier; success: boolean}[];
+    }
+  >();
   const criticalIssues: Record<string, number> = {};
   const acceptableEscapeHatches: Record<string, number> = {};
   const antiPatterns: Record<string, number> = {};
@@ -238,10 +558,12 @@ function aggregate(iterationId: string): AggregateResult {
         success: 0,
         total: 0,
         tiers: {gold: 0, green: 0, yellow: 0, red: 0},
+        durationMs: 0,
       };
     }
     byCategory[result.promptCategory].total++;
     byCategory[result.promptCategory].tiers[tier]++;
+    byCategory[result.promptCategory].durationMs += result.durationMs || 0;
     if (tier !== 'red') {
       byCategory[result.promptCategory].success++;
     }
@@ -254,6 +576,43 @@ function aggregate(iterationId: string): AggregateResult {
     if (tier !== 'red') {
       byPersona[result.persona].success++;
     }
+
+    // By trajectory depth (for degradation curve analysis)
+    const depth = result.trajectoryDepth ?? 0;
+    if (!byTrajectoryDepth[depth]) {
+      byTrajectoryDepth[depth] = {
+        success: 0,
+        total: 0,
+        tiers: {gold: 0, green: 0, yellow: 0, red: 0},
+      };
+    }
+    byTrajectoryDepth[depth].total++;
+    byTrajectoryDepth[depth].tiers[tier]++;
+    if (tier !== 'red') {
+      byTrajectoryDepth[depth].success++;
+    }
+
+    // Track individual test progressions (for degradation line graph)
+    // Extract base prompt ID - remove iteration prefix and depth suffix if present
+    // Format: iterationId-promptId or iterationId-promptId-depthN
+    const idParts = result.id.split('-');
+    // Remove first part (iteration) and reconstruct, checking for depth suffix
+    const basePromptId = idParts
+      .slice(1)
+      .filter(p => !p.match(/^depth\d+$/))
+      .join('-');
+    if (!progressionMap.has(basePromptId)) {
+      progressionMap.set(basePromptId, {
+        category: result.promptCategory,
+        prompt: result.prompt,
+        turns: [],
+      });
+    }
+    progressionMap.get(basePromptId)!.turns.push({
+      depth,
+      tier,
+      success: tier !== 'red',
+    });
 
     // Escape hatches
     for (const rawHatch of result.evaluation.escapeHatches) {
@@ -272,12 +631,19 @@ function aggregate(iterationId: string): AggregateResult {
   // Calculate rates
   const byCategoryWithRates: Record<
     string,
-    {success: number; total: number; rate: number; tiers: TierCounts}
+    {
+      success: number;
+      total: number;
+      rate: number;
+      tiers: TierCounts;
+      avgDurationMs: number;
+    }
   > = {};
   for (const [cat, stats] of Object.entries(byCategory)) {
     byCategoryWithRates[cat] = {
       ...stats,
       rate: Math.round((stats.success / stats.total) * 100),
+      avgDurationMs: Math.round(stats.durationMs / stats.total),
     };
   }
 
@@ -300,8 +666,185 @@ function aggregate(iterationId: string): AggregateResult {
     red: Math.round((tiers.red / results.length) * 100),
   };
 
+  // Calculate trajectory depth rates and degradation cliff
+  const depths = Object.keys(byTrajectoryDepth)
+    .map(Number)
+    .sort((a, b) => a - b);
+  const hasDegradationData =
+    depths.length > 1 || (depths.length === 1 && depths[0] !== 0);
+
+  let byTrajectoryDepthWithRates:
+    | Record<
+        number,
+        {success: number; total: number; rate: number; tiers: TierCounts}
+      >
+    | undefined;
+  let degradationCliff: number | undefined;
+
+  if (hasDegradationData) {
+    byTrajectoryDepthWithRates = {};
+    for (const [depthStr, stats] of Object.entries(byTrajectoryDepth)) {
+      const depth = Number(depthStr);
+      const rate = Math.round((stats.success / stats.total) * 100);
+      byTrajectoryDepthWithRates[depth] = {
+        ...stats,
+        rate,
+      };
+      // Find degradation cliff (first depth where rate drops below 80%)
+      if (degradationCliff === undefined && rate < 80 && depth > 0) {
+        degradationCliff = depth;
+      }
+    }
+  }
+
+  // Build test progressions array (only include tests with multiple turns)
+  const testProgressions: TestProgression[] = [];
+  for (const [promptId, data] of progressionMap) {
+    if (data.turns.length > 1) {
+      // Sort turns by depth
+      data.turns.sort((a, b) => a.depth - b.depth);
+      testProgressions.push({
+        promptId,
+        category: data.category,
+        prompt: data.prompt,
+        turns: data.turns,
+      });
+    }
+  }
+
   // Analyze gaps and generate suggestions
   const gaps = analyzeGaps(results);
+
+  // Analyze job breakdown for each result
+  const jobsByCategory: Record<string, JobBreakdown> = {};
+  const totalJobs: JobBreakdown = {
+    componentRouting: 0,
+    componentConfig: 0,
+    supplementalStyling: 0,
+    contentAuthoring: 0,
+    businessLogic: 0,
+    boilerplate: 0,
+    total: 0,
+  };
+
+  // Input token tracking
+  const inputByCategory: Record<string, InputTokenBreakdown> = {};
+  const totalInput: InputTokenBreakdown = {
+    agentsMd: 0,
+    designDocs: 0,
+    componentDocs: 0,
+    promptOverhead: 0,
+    total: 0,
+  };
+
+  for (const result of results) {
+    const breakdown = analyzeJobBreakdown(result.response);
+
+    // Accumulate output totals
+    totalJobs.componentRouting += breakdown.componentRouting;
+    totalJobs.componentConfig += breakdown.componentConfig;
+    totalJobs.supplementalStyling += breakdown.supplementalStyling;
+    totalJobs.contentAuthoring += breakdown.contentAuthoring;
+    totalJobs.businessLogic += breakdown.businessLogic;
+    totalJobs.boilerplate += breakdown.boilerplate;
+    totalJobs.total += breakdown.total;
+
+    // Accumulate output by category
+    if (!jobsByCategory[result.promptCategory]) {
+      jobsByCategory[result.promptCategory] = {
+        componentRouting: 0,
+        componentConfig: 0,
+        supplementalStyling: 0,
+        contentAuthoring: 0,
+        businessLogic: 0,
+        boilerplate: 0,
+        total: 0,
+      };
+    }
+    const catJobs = jobsByCategory[result.promptCategory];
+    catJobs.componentRouting += breakdown.componentRouting;
+    catJobs.componentConfig += breakdown.componentConfig;
+    catJobs.supplementalStyling += breakdown.supplementalStyling;
+    catJobs.contentAuthoring += breakdown.contentAuthoring;
+    catJobs.businessLogic += breakdown.businessLogic;
+    catJobs.boilerplate += breakdown.boilerplate;
+    catJobs.total += breakdown.total;
+
+    // Estimate input tokens based on docs read
+    const inputBreakdown = estimateInputTokens(result.docsRead);
+    totalInput.agentsMd += inputBreakdown.agentsMd;
+    totalInput.designDocs += inputBreakdown.designDocs;
+    totalInput.componentDocs += inputBreakdown.componentDocs;
+    totalInput.promptOverhead += inputBreakdown.promptOverhead;
+    totalInput.total += inputBreakdown.total;
+
+    // Accumulate input by category
+    if (!inputByCategory[result.promptCategory]) {
+      inputByCategory[result.promptCategory] = {
+        agentsMd: 0,
+        designDocs: 0,
+        componentDocs: 0,
+        promptOverhead: 0,
+        total: 0,
+      };
+    }
+    const catInput = inputByCategory[result.promptCategory];
+    catInput.agentsMd += inputBreakdown.agentsMd;
+    catInput.designDocs += inputBreakdown.designDocs;
+    catInput.componentDocs += inputBreakdown.componentDocs;
+    catInput.promptOverhead += inputBreakdown.promptOverhead;
+    catInput.total += inputBreakdown.total;
+  }
+
+  // Calculate percentages
+  const jobPercentages =
+    totalJobs.total > 0
+      ? {
+          componentRouting: Math.round(
+            (totalJobs.componentRouting / totalJobs.total) * 100,
+          ),
+          componentConfig: Math.round(
+            (totalJobs.componentConfig / totalJobs.total) * 100,
+          ),
+          supplementalStyling: Math.round(
+            (totalJobs.supplementalStyling / totalJobs.total) * 100,
+          ),
+          contentAuthoring: Math.round(
+            (totalJobs.contentAuthoring / totalJobs.total) * 100,
+          ),
+          businessLogic: Math.round(
+            (totalJobs.businessLogic / totalJobs.total) * 100,
+          ),
+          boilerplate: Math.round(
+            (totalJobs.boilerplate / totalJobs.total) * 100,
+          ),
+        }
+      : undefined;
+
+  const jobStats = jobPercentages
+    ? {
+        total: totalJobs,
+        byCategory: jobsByCategory,
+        percentages: jobPercentages,
+      }
+    : undefined;
+
+  // Calculate output tokens from job breakdown (chars / 4)
+  const outputTokens = Math.round(totalJobs.total / 4);
+  const grandTotal = totalInput.total + outputTokens;
+
+  // Full token usage breakdown
+  const tokenUsage = {
+    input: {
+      total: totalInput,
+      byCategory: inputByCategory,
+    },
+    output: {
+      total: totalJobs,
+      byCategory: jobsByCategory,
+    },
+    grandTotal,
+  };
 
   return {
     iterationId,
@@ -312,6 +855,10 @@ function aggregate(iterationId: string): AggregateResult {
     tierRate,
     byCategory: byCategoryWithRates,
     byPersona: byPersonaWithRates,
+    byTrajectoryDepth: byTrajectoryDepthWithRates,
+    degradationCliff,
+    testProgressions:
+      testProgressions.length > 0 ? testProgressions : undefined,
     criticalIssues,
     acceptableEscapeHatches,
     antiPatterns,
@@ -320,6 +867,8 @@ function aggregate(iterationId: string): AggregateResult {
     avgDurationMs: Math.round(totalDurationMs / results.length),
     totalInputTokens,
     totalOutputTokens,
+    jobStats,
+    tokenUsage,
   };
 }
 
@@ -364,9 +913,122 @@ function printReport(agg: AggregateResult): void {
   console.log(`\nBy Category:`);
   for (const [cat, stats] of Object.entries(agg.byCategory)) {
     const tierBar = `🥇${stats.tiers.gold} 🟢${stats.tiers.green} 🟡${stats.tiers.yellow} 🔴${stats.tiers.red}`;
+    const avgTime =
+      stats.avgDurationMs > 0
+        ? ` ⏱️${(stats.avgDurationMs / 1000).toFixed(1)}s`
+        : '';
     console.log(
-      `  ${cat.padEnd(25)} ${stats.rate}% (${stats.success}/${stats.total}) [${tierBar}]`,
+      `  ${cat.padEnd(25)} ${stats.rate}% (${stats.success}/${stats.total}) [${tierBar}]${avgTime}`,
     );
+  }
+
+  // Full token usage breakdown (if present)
+  if (agg.tokenUsage) {
+    const tu = agg.tokenUsage;
+    console.log(`\n📊 Token Usage Breakdown:`);
+    console.log(`  ┌─────────────────────────────────────────────────┐`);
+    console.log(`  │ INPUT TOKENS (estimated from doc reading)       │`);
+    console.log(`  ├─────────────────────────────────────────────────┤`);
+    console.log(
+      `  │   AGENTS.md:        ${String(tu.input.total.agentsMd).padStart(6)} tokens             │`,
+    );
+    console.log(
+      `  │   Design docs:      ${String(tu.input.total.designDocs).padStart(6)} tokens             │`,
+    );
+    console.log(
+      `  │   Component docs:   ${String(tu.input.total.componentDocs).padStart(6)} tokens             │`,
+    );
+    console.log(
+      `  │   Prompt overhead:  ${String(tu.input.total.promptOverhead).padStart(6)} tokens             │`,
+    );
+    console.log(`  │   ─────────────────────────────                 │`);
+    console.log(
+      `  │   Input subtotal:   ${String(tu.input.total.total).padStart(6)} tokens             │`,
+    );
+    console.log(`  ├─────────────────────────────────────────────────┤`);
+    console.log(`  │ OUTPUT TOKENS (from job breakdown)              │`);
+    console.log(`  ├─────────────────────────────────────────────────┤`);
+    if (agg.jobStats) {
+      const p = agg.jobStats.percentages;
+      const outputTokens = Math.round(tu.output.total.total / 4);
+      console.log(
+        `  │   Component routing:     ${String(p.componentRouting).padStart(3)}%  (~${Math.round(tu.output.total.componentRouting / 4)} tokens) │`,
+      );
+      console.log(
+        `  │   Component config:      ${String(p.componentConfig).padStart(3)}%  (~${Math.round(tu.output.total.componentConfig / 4)} tokens) │`,
+      );
+      console.log(
+        `  │   Supplemental styling:  ${String(p.supplementalStyling).padStart(3)}%  (~${Math.round(tu.output.total.supplementalStyling / 4)} tokens) │`,
+      );
+      console.log(
+        `  │   Content authoring:     ${String(p.contentAuthoring).padStart(3)}%  (~${Math.round(tu.output.total.contentAuthoring / 4)} tokens) │`,
+      );
+      console.log(
+        `  │   Business logic:        ${String(p.businessLogic).padStart(3)}%  (~${Math.round(tu.output.total.businessLogic / 4)} tokens) │`,
+      );
+      console.log(
+        `  │   Boilerplate:           ${String(p.boilerplate).padStart(3)}%  (~${Math.round(tu.output.total.boilerplate / 4)} tokens) │`,
+      );
+      console.log(`  │   ─────────────────────────────                 │`);
+      console.log(
+        `  │   Output subtotal:  ${String(outputTokens).padStart(6)} tokens             │`,
+      );
+    }
+    console.log(`  ├─────────────────────────────────────────────────┤`);
+    console.log(
+      `  │ TOTAL:              ${String(tu.grandTotal).padStart(6)} tokens             │`,
+    );
+    console.log(`  └─────────────────────────────────────────────────┘`);
+  } else if (agg.jobStats) {
+    // Fallback: just show job breakdown if no full token usage
+    console.log(`\n🔧 Job Breakdown (output token distribution):`);
+    const p = agg.jobStats.percentages;
+    console.log(
+      `  Component routing:     ${String(p.componentRouting).padStart(3)}%`,
+    );
+    console.log(
+      `  Component config:      ${String(p.componentConfig).padStart(3)}%`,
+    );
+    console.log(
+      `  Supplemental styling:  ${String(p.supplementalStyling).padStart(3)}%`,
+    );
+    console.log(
+      `  Content authoring:     ${String(p.contentAuthoring).padStart(3)}%`,
+    );
+    console.log(
+      `  Business logic:        ${String(p.businessLogic).padStart(3)}%`,
+    );
+    console.log(
+      `  Boilerplate:           ${String(p.boilerplate).padStart(3)}%`,
+    );
+    console.log(
+      `  Total chars: ${agg.jobStats.total.total} (~${Math.round(agg.jobStats.total.total / 4)} tokens)`,
+    );
+  }
+
+  // Degradation curve (if present)
+  if (agg.byTrajectoryDepth && Object.keys(agg.byTrajectoryDepth).length > 0) {
+    console.log(`\n📉 Degradation Curve (success rate by conversation depth):`);
+    const depths = Object.keys(agg.byTrajectoryDepth)
+      .map(Number)
+      .sort((a, b) => a - b);
+    for (const depth of depths) {
+      const stats = agg.byTrajectoryDepth[depth];
+      const bar = '█'.repeat(Math.round(stats.rate / 5));
+      const tierBar = `🥇${stats.tiers.gold} 🟢${stats.tiers.green} 🟡${stats.tiers.yellow} 🔴${stats.tiers.red}`;
+      console.log(
+        `  Turn ${String(depth).padStart(2)}: ${bar.padEnd(20)} ${stats.rate}% (${stats.success}/${stats.total}) [${tierBar}]`,
+      );
+    }
+    if (agg.degradationCliff !== undefined) {
+      console.log(
+        `  ⚠️  Degradation cliff at turn ${agg.degradationCliff} (success dropped below 80%)`,
+      );
+    } else {
+      console.log(
+        `  ✓ No degradation cliff detected (maintained ≥80% throughout)`,
+      );
+    }
   }
 
   if (Object.keys(agg.criticalIssues).length > 0) {
@@ -452,6 +1114,7 @@ function generateHtmlReport(
           <span class="tier-label yellow">${stats.tiers.yellow}</span>
           <span class="tier-label red">${stats.tiers.red}</span>
         </td>
+        <td>${stats.avgDurationMs > 0 ? (stats.avgDurationMs / 1000).toFixed(1) + 's' : '-'}</td>
       </tr>
     `,
     )
@@ -496,6 +1159,166 @@ function generateHtmlReport(
     })
     .join('');
 
+  // Generate degradation line graph data if available
+  let degradationGraphHtml = '';
+  if (agg.testProgressions && agg.testProgressions.length > 0) {
+    // Map tier to numeric value for graphing (higher = better)
+    const tierToValue = (tier: ResultTier): number => {
+      switch (tier) {
+        case 'gold':
+          return 100;
+        case 'green':
+          return 75;
+        case 'yellow':
+          return 50;
+        case 'red':
+          return 0;
+      }
+    };
+
+    const tierToColor = (tier: ResultTier): string => {
+      switch (tier) {
+        case 'gold':
+          return '#f59e0b';
+        case 'green':
+          return '#22c55e';
+        case 'yellow':
+          return '#eab308';
+        case 'red':
+          return '#ef4444';
+      }
+    };
+
+    // Get all unique depths and sort them
+    const allDepths = new Set<number>();
+    for (const prog of agg.testProgressions) {
+      for (const turn of prog.turns) {
+        allDepths.add(turn.depth);
+      }
+    }
+    const depths = Array.from(allDepths).sort((a, b) => a - b);
+
+    // SVG dimensions
+    const svgWidth = 800;
+    const svgHeight = 400;
+    const padding = {top: 40, right: 120, bottom: 60, left: 60};
+    const graphWidth = svgWidth - padding.left - padding.right;
+    const graphHeight = svgHeight - padding.top - padding.bottom;
+
+    // X scale
+    const xStep = graphWidth / (depths.length - 1 || 1);
+    const xPos = (depthIndex: number) => padding.left + depthIndex * xStep;
+
+    // Y scale (0-100)
+    const yPos = (value: number) =>
+      padding.top + graphHeight - (value / 100) * graphHeight;
+
+    // Generate unique colors for each test
+    const colors = [
+      '#6366f1',
+      '#ec4899',
+      '#14b8a6',
+      '#f97316',
+      '#8b5cf6',
+      '#06b6d4',
+      '#84cc16',
+      '#f43f5e',
+      '#0ea5e9',
+      '#a855f7',
+    ];
+
+    // Build SVG paths and legends
+    let paths = '';
+    let legends = '';
+    let legendY = padding.top;
+
+    agg.testProgressions.forEach((prog, idx) => {
+      const color = colors[idx % colors.length];
+      const points: string[] = [];
+
+      for (const turn of prog.turns) {
+        const depthIndex = depths.indexOf(turn.depth);
+        if (depthIndex !== -1) {
+          const x = xPos(depthIndex);
+          const y = yPos(tierToValue(turn.tier));
+          points.push(`${x},${y}`);
+        }
+      }
+
+      if (points.length > 1) {
+        paths += `<polyline points="${points.join(' ')}" fill="none" stroke="${color}" stroke-width="2" stroke-opacity="0.7" />`;
+        // Add dots at each point
+        for (const turn of prog.turns) {
+          const depthIndex = depths.indexOf(turn.depth);
+          if (depthIndex !== -1) {
+            const x = xPos(depthIndex);
+            const y = yPos(tierToValue(turn.tier));
+            paths += `<circle cx="${x}" cy="${y}" r="4" fill="${tierToColor(turn.tier)}" stroke="${color}" stroke-width="1" />`;
+          }
+        }
+      }
+
+      // Legend entry
+      legends += `
+        <g transform="translate(${svgWidth - padding.right + 10}, ${legendY})">
+          <line x1="0" y1="0" x2="20" y2="0" stroke="${color}" stroke-width="2" />
+          <text x="25" y="4" font-size="11" fill="#333">${escapeHtml(prog.promptId.slice(0, 15))}</text>
+        </g>
+      `;
+      legendY += 20;
+    });
+
+    // Build X axis labels
+    let xAxisLabels = '';
+    depths.forEach((depth, idx) => {
+      const x = xPos(idx);
+      xAxisLabels += `
+        <text x="${x}" y="${svgHeight - padding.bottom + 20}" text-anchor="middle" font-size="12" fill="#666">Turn ${depth}</text>
+      `;
+    });
+
+    // Build Y axis labels and gridlines
+    let yAxisContent = '';
+    const yTicks = [0, 25, 50, 75, 100];
+    const yLabels: Record<number, string> = {
+      0: 'Red',
+      25: '',
+      50: 'Yellow',
+      75: 'Green',
+      100: 'Gold',
+    };
+    yTicks.forEach(tick => {
+      const y = yPos(tick);
+      yAxisContent += `
+        <line x1="${padding.left}" y1="${y}" x2="${svgWidth - padding.right}" y2="${y}" stroke="#e5e7eb" stroke-dasharray="4" />
+        <text x="${padding.left - 10}" y="${y + 4}" text-anchor="end" font-size="11" fill="#666">${yLabels[tick] || ''}</text>
+      `;
+    });
+
+    degradationGraphHtml = `
+  <div class="card">
+    <h2>📉 Degradation Progression</h2>
+    <p style="color: #666; font-size: 0.9em;">Each line shows a test's quality tier across conversation turns (probe points at turns 0, 6, 8, 10).</p>
+    <svg width="${svgWidth}" height="${svgHeight}" style="max-width: 100%; height: auto;">
+      <!-- Grid and axes -->
+      ${yAxisContent}
+      <line x1="${padding.left}" y1="${svgHeight - padding.bottom}" x2="${svgWidth - padding.right}" y2="${svgHeight - padding.bottom}" stroke="#333" />
+      <line x1="${padding.left}" y1="${padding.top}" x2="${padding.left}" y2="${svgHeight - padding.bottom}" stroke="#333" />
+      ${xAxisLabels}
+      <!-- Data lines -->
+      ${paths}
+      <!-- Legend -->
+      ${legends}
+    </svg>
+    ${
+      agg.degradationCliff !== undefined
+        ? `<p style="color: #dc2626; margin-top: 12px;">⚠️ Degradation cliff detected at turn ${agg.degradationCliff} (aggregate success dropped below 80%)</p>`
+        : `<p style="color: #16a34a; margin-top: 12px;">✓ No degradation cliff detected (maintained ≥80% success throughout)</p>`
+    }
+  </div>
+    `;
+  }
+
   const testRows = results
     .map(r => {
       const tier = calculateTier(r.evaluation);
@@ -524,10 +1347,25 @@ function generateHtmlReport(
       const durationStr = r.durationMs
         ? `${(r.durationMs / 1000).toFixed(1)}s`
         : '-';
-      const tokensStr =
-        r.inputTokens || r.outputTokens
-          ? `${(r.inputTokens || 0).toLocaleString()} / ${(r.outputTokens || 0).toLocaleString()}`
-          : '-';
+
+      // Calculate per-test token breakdown
+      const jobBreakdown = analyzeJobBreakdown(r.response);
+      const inputBreakdown = estimateInputTokens(r.docsRead);
+      const outputTokens = Math.round(jobBreakdown.total / 4);
+      const totalTokens = inputBreakdown.total + outputTokens;
+
+      // Build token breakdown tooltip content
+      const tokenDetails = `Input: ${inputBreakdown.total} (AGENTS: ${inputBreakdown.agentsMd}, Design: ${inputBreakdown.designDocs}, Components: ${inputBreakdown.componentDocs})&#10;Output: ${outputTokens} (Routing: ${Math.round(jobBreakdown.componentRouting / 4)}, Config: ${Math.round(jobBreakdown.componentConfig / 4)}, Styling: ${Math.round(jobBreakdown.supplementalStyling / 4)}, Content: ${Math.round(jobBreakdown.contentAuthoring / 4)}, Logic: ${Math.round(jobBreakdown.businessLogic / 4)}, Boilerplate: ${Math.round(jobBreakdown.boilerplate / 4)})`;
+
+      // Docs read badges
+      const docsReadBadges = r.docsRead
+        ? r.docsRead
+            .map(
+              d =>
+                `<span class="badge doc-badge">${escapeHtml(d.replace('.md', ''))}</span>`,
+            )
+            .join(' ')
+        : '-';
 
       return `
       <tr class="${tierClass}">
@@ -536,7 +1374,8 @@ function generateHtmlReport(
         <td class="prompt-cell">${escapeHtml(r.prompt)}</td>
         <td>${escapeHatchBadges || '-'}</td>
         <td>${durationStr}</td>
-        <td>${tokensStr}</td>
+        <td title="${tokenDetails}" style="cursor: help;">${totalTokens} <span style="color: #666; font-size: 0.8em;">(${inputBreakdown.total}/${outputTokens})</span></td>
+        <td class="docs-cell">${docsReadBadges}</td>
         <td>
           <button class="toggle-code" onclick="toggleCode('${r.id}')">View Code</button>
           <pre class="code-block" id="code-${r.id}" style="display:none"><code>${escapeHtml(r.response)}</code></pre>
@@ -552,7 +1391,102 @@ function generateHtmlReport(
   const avgSecs = agg.avgDurationMs
     ? (agg.avgDurationMs / 1000).toFixed(1)
     : '-';
-  const totalTokens = agg.totalInputTokens + agg.totalOutputTokens;
+  // Use tokenUsage.grandTotal (calculated from docs read + job breakdown) instead of raw totals
+  const totalTokens =
+    agg.tokenUsage?.grandTotal ?? agg.totalInputTokens + agg.totalOutputTokens;
+
+  // Generate token usage breakdown HTML
+  let tokenUsageHtml = '';
+  if (agg.tokenUsage) {
+    const tu = agg.tokenUsage;
+    const outputTokens = Math.round(tu.output.total.total / 4);
+    const jobRows = agg.jobStats
+      ? `
+      <tr>
+        <td><strong>Component Routing</strong><br><span class="job-desc">Import statements for XDS components</span></td>
+        <td>${agg.jobStats.percentages.componentRouting}%</td>
+        <td>~${Math.round(tu.output.total.componentRouting / 4)}</td>
+      </tr>
+      <tr>
+        <td><strong>Component Config</strong><br><span class="job-desc">Props and attributes on XDS components</span></td>
+        <td>${agg.jobStats.percentages.componentConfig}%</td>
+        <td>~${Math.round(tu.output.total.componentConfig / 4)}</td>
+      </tr>
+      <tr>
+        <td><strong>Supplemental Styling</strong><br><span class="job-desc">StyleX blocks for layout/spacing gaps</span></td>
+        <td>${agg.jobStats.percentages.supplementalStyling}%</td>
+        <td>~${Math.round(tu.output.total.supplementalStyling / 4)}</td>
+      </tr>
+      <tr>
+        <td><strong>Content Authoring</strong><br><span class="job-desc">HTML structure, JSX elements, copy</span></td>
+        <td>${agg.jobStats.percentages.contentAuthoring}%</td>
+        <td>~${Math.round(tu.output.total.contentAuthoring / 4)}</td>
+      </tr>
+      <tr>
+        <td><strong>Business Logic</strong><br><span class="job-desc">useState, handlers, API calls, conditionals</span></td>
+        <td>${agg.jobStats.percentages.businessLogic}%</td>
+        <td>~${Math.round(tu.output.total.businessLogic / 4)}</td>
+      </tr>
+      <tr>
+        <td><strong>Boilerplate</strong><br><span class="job-desc">Type definitions, imports, exports</span></td>
+        <td>${agg.jobStats.percentages.boilerplate}%</td>
+        <td>~${Math.round(tu.output.total.boilerplate / 4)}</td>
+      </tr>
+    `
+      : '';
+
+    // Input token descriptions
+    const inputRows = `
+      <tr>
+        <td><strong>AGENTS.md</strong><br><span class="job-desc">Component catalog and XDS guidance</span></td>
+        <td>${tu.input.total.agentsMd}</td>
+      </tr>
+      <tr>
+        <td><strong>Design docs</strong><br><span class="job-desc">principles.md, tokens.md - styling patterns</span></td>
+        <td>${tu.input.total.designDocs}</td>
+      </tr>
+      <tr>
+        <td><strong>Component docs</strong><br><span class="job-desc">Button.md, TextInput.md, etc.</span></td>
+        <td>${tu.input.total.componentDocs}</td>
+      </tr>
+      <tr>
+        <td><strong>Prompt overhead</strong><br><span class="job-desc">Task instructions and persona</span></td>
+        <td>${tu.input.total.promptOverhead}</td>
+      </tr>
+      <tr style="font-weight: bold; border-top: 2px solid #333;"><td>Input Subtotal</td><td>${tu.input.total.total}</td></tr>
+    `;
+
+    tokenUsageHtml = `
+  <div class="card">
+    <h2>📊 Token Usage Breakdown</h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      <div>
+        <h3 style="margin-top: 0;">Input Tokens (estimated)</h3>
+        <table>
+          <thead><tr><th>Source</th><th>Tokens</th></tr></thead>
+          <tbody>
+            ${inputRows}
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <h3 style="margin-top: 0;">Output Tokens (by job)</h3>
+        <table>
+          <thead><tr><th>Job</th><th>%</th><th>Tokens</th></tr></thead>
+          <tbody>
+            ${jobRows}
+            <tr style="font-weight: bold; border-top: 2px solid #333;"><td>Output Subtotal</td><td>100%</td><td>${outputTokens}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div style="text-align: center; margin-top: 16px; padding: 12px; background: #f0f9ff; border-radius: 8px;">
+      <span style="font-size: 1.2em; font-weight: bold;">Total: ${tu.grandTotal.toLocaleString()} tokens</span>
+      <span style="color: #666; margin-left: 12px;">(${tu.input.total.total} input + ${outputTokens} output)</span>
+    </div>
+  </div>
+    `;
+  }
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -630,10 +1564,13 @@ function generateHtmlReport(
     .badge.critical { background: #fee2e2; color: #dc2626; }
     .badge.anti-pattern { background: #fef9c3; color: #ca8a04; }
     .badge.acceptable { background: #e0f2fe; color: #0369a1; }
+    .badge.doc-badge { background: #f3f4f6; color: #374151; font-size: 0.75em; }
     .badge.gap-type { background: #e0e7ff; color: #4338ca; }
     .badge.effort-trivial { background: #dcfce7; color: #16a34a; }
     .badge.effort-moderate { background: #fef3c7; color: #d97706; }
     .badge.effort-significant { background: #fee2e2; color: #dc2626; }
+    .docs-cell { max-width: 200px; }
+    .job-desc { font-size: 0.8em; color: #666; font-weight: normal; }
     tr.tier-gold { background: #fffbeb; }
     tr.tier-green { background: #f0fdf4; }
     tr.tier-yellow { background: #fefce8; }
@@ -718,11 +1655,15 @@ function generateHtmlReport(
     <h2>Results by Category</h2>
     <table>
       <thead>
-        <tr><th>Category</th><th>Tiers</th><th>Rate</th><th>Count</th><th>Breakdown</th></tr>
+        <tr><th>Category</th><th>Tiers</th><th>Rate</th><th>Count</th><th>Breakdown</th><th>Avg Time</th></tr>
       </thead>
       <tbody>${categoryRows}</tbody>
     </table>
   </div>
+
+  ${tokenUsageHtml}
+
+  ${degradationGraphHtml}
 
   ${
     criticalRows
@@ -784,8 +1725,9 @@ function generateHtmlReport(
           <th>Category</th>
           <th>Prompt</th>
           <th>Escape Hatches</th>
-          <th>Duration</th>
-          <th>Tokens</th>
+          <th>Time</th>
+          <th>Tokens (in/out)</th>
+          <th>Docs Read</th>
           <th>Response</th>
         </tr>
       </thead>
@@ -820,9 +1762,8 @@ async function main() {
   const resultsDir = path.join(getResultsDir(), iterationId);
 
   try {
-    // Read results for HTML report
-    const runsPath = path.join(resultsDir, 'runs.jsonl');
-    const results = readJsonl<TestResult>(runsPath);
+    // Read results for HTML report (uses individual files or runs.jsonl)
+    const results = loadResults(resultsDir);
 
     const agg = aggregate(iterationId);
 

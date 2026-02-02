@@ -67,9 +67,24 @@ import {Theme, useTheme, defaultTheme} from '@xds/core';
 
 // Good - use theme tokens via StyleX
 const styles = stylex.create({
-  error: { color: 'var(--xds-color-negative)' }
+  error: { color: 'var(--color-negative)' }
 });
 ```
+
+## CSS Variables Reference
+
+XDS provides design tokens as CSS variables. Only use these patterns:
+
+| Category      | Pattern                                        | Examples                                                                        |
+| ------------- | ---------------------------------------------- | ------------------------------------------------------------------------------- |
+| Colors        | `--color-*`                                    | `--color-surface`, `--color-text-primary`, `--color-accent`, `--color-negative` |
+| Spacing       | `--spacing-*`                                  | `--spacing-0`, `--spacing-1`, `--spacing-2`, ..., `--spacing-7`                 |
+| Radius        | `--radius-*`                                   | `--radius-container`, `--radius-element`, `--radius-content`                    |
+| Elevation     | `--elevation-*`                                | `--elevation-base`, `--elevation-dialog`, `--elevation-menu`                    |
+| Font families | `--font-body`, `--font-code`, `--font-heading` | (only these three exist)                                                        |
+| Text sizes    | `--text-*`                                     | `--text-sm`, `--text-base`, `--text-lg`, `--text-xl`                            |
+| Line heights  | `--leading-*`                                  | `--leading-tight`, `--leading-normal`, `--leading-relaxed`                      |
+| Font weights  | `--font-weight-*`                              | `--font-weight-normal`, `--font-weight-semibold`, `--font-weight-bold`          |
 
 ❌ **Hardcoded spacing** - Use semantic tokens
 

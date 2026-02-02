@@ -56,18 +56,19 @@ async function main() {
     const taskPath = path.join(tasksDir, taskFile);
     const task = JSON.parse(fs.readFileSync(taskPath, 'utf-8'));
 
-    // Generate different instructions based on mode
-    const docInstructions = task.useAgentsMd
-      ? `Use the XDS documentation from AGENTS.md. Read docs from .xds-docs/ as needed (principles.md, tokens.md, {ComponentName}.md).`
-      : `Read skill doc at: ${task.skillDocPath}`;
-
     console.log(`Task("Vibe test: ${task.promptId}", {
   "subagent_type": "general-purpose",
   "description": "Vibe test ${task.promptId}",
+  "mode": "bypassPermissions",
   "prompt": "Run vibe test for iteration ${iterationId}, task ${task.promptId}.
 
+TIMING: Record the current timestamp as startTime NOW before doing anything else.
+
 Read task file at: ${taskPath}
-${docInstructions}
+
+XDS AGENTS.md is auto-injected and provides guidance on XDS components and which docs to read.
+
+IMPORTANT: Track which docs you read. Keep a list of doc filenames (e.g., ['AGENTS.md', 'Button.md', 'tokens.md']).
 
 Generate code for: \\"${task.prompt}\\"
 Expected components: ${task.expectedComponents.join(', ')}
@@ -77,7 +78,9 @@ Self-evaluate your response and output JSON with:
 - response: your code
 - evaluation: { success, componentsUsed, componentsExpected, escapeHatches, failureMode, confusionSignals }
 
-Then append the result as a TestResult JSON object to: ${resultsDir}/runs.jsonl
+TIMING: Record the current timestamp as endTime and calculate durationMs = endTime - startTime.
+
+Write the result as a TestResult JSON object to: ${resultsDir}/results/${task.promptId}.json
 
 The TestResult format is:
 {
@@ -92,7 +95,11 @@ The TestResult format is:
   response: <your generated code>,
   evaluation: <your evaluation>,
   fullConversation: [],
-  contextWindowUsage: 0
+  contextWindowUsage: 0,
+  durationMs: <calculated duration in milliseconds>,
+  inputTokens: 0,
+  outputTokens: 0,
+  docsRead: <list of doc filenames you read>
 }"
 });
 `);
