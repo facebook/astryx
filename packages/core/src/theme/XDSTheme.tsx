@@ -1,18 +1,18 @@
 /**
- * Theme Provider Component
+ * XDSTheme Provider Component
  *
  * Applies StyleX theme and sets color-scheme for light-dark() to work.
  *
  * Usage:
  * ```tsx
- * <Theme theme={myTheme}>
+ * <XDSTheme theme={myTheme}>
  *   <App />
- * </Theme>
+ * </XDSTheme>
  *
  * // With mode override
- * <Theme theme={myTheme} mode="dark">
+ * <XDSTheme theme={myTheme} mode="dark">
  *   <App />
- * </Theme>
+ * </XDSTheme>
  * ```
  */
 
@@ -28,18 +28,21 @@ export {ThemeContext} from './ThemeContext';
 /**
  * Hook to access current theme
  */
-export function useTheme(): ThemeContextValue {
+export function useXDSTheme(): ThemeContextValue {
   const context = useContext(ThemeContext);
   if (!context) {
-    throw new Error('useTheme must be used within a Theme provider');
+    throw new Error('useXDSTheme must be used within an XDSTheme provider');
   }
   return context;
 }
 
+/** @deprecated Use useXDSTheme instead */
+export const useTheme = useXDSTheme;
+
 /**
- * Theme provider props
+ * XDSTheme provider props
  */
-interface ThemeProps {
+interface XDSThemeProps {
   /** Theme created by createTheme() */
   theme: ThemeType;
   /** Color mode - 'system' follows OS preference */
@@ -69,16 +72,16 @@ const wrapperStyles = stylex.create({
 });
 
 /**
- * Theme provider component
+ * XDSTheme provider component
  *
  * Applies StyleX theme variables and sets color-scheme for light-dark() to work.
  * Use mode prop to override system preference.
  */
-export function Theme({
+export function XDSTheme({
   theme,
   mode = 'system',
   children,
-}: ThemeProps): React.ReactElement {
+}: XDSThemeProps): React.ReactElement {
   const contextValue = useMemo(() => ({theme, mode}), [theme, mode]);
 
   // Get the color-scheme style based on mode
@@ -112,3 +115,6 @@ export function Theme({
     </ThemeContext.Provider>
   );
 }
+
+/** @deprecated Use XDSTheme instead */
+export const Theme = XDSTheme;

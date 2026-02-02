@@ -177,17 +177,17 @@ export const MarkdownContent: Story = {
 
         <h2>Basic Usage</h2>
         <p>
-          Import the components you need and wrap your app in the Theme
+          Import the components you need and wrap your app in the XDSTheme
           provider:
         </p>
         <pre>
-          <code>{`import { Theme, defaultTheme, XDSButton } from '@xds/core';
+          <code>{`import { XDSTheme, defaultTheme, XDSButton } from '@xds/core';
 
 function App() {
   return (
-    <Theme theme={defaultTheme}>
+    <XDSTheme theme={defaultTheme}>
       <XDSButton label="Click me" onPress={() => alert('Hello!')} />
-    </Theme>
+    </XDSTheme>
   );
 }`}</code>
         </pre>

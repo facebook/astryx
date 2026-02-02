@@ -119,28 +119,6 @@ xds/
 | `yarn storybook` | Start Storybook at localhost:6006 |
 | `yarn lint` | Lint all packages |
 
-### Using Turborepo
-
-Turbo runs tasks across the monorepo with caching for speed.
-
-```bash
-# Run tasks for all packages
-yarn turbo build
-yarn turbo test
-
-# Filter to specific package
-yarn turbo build --filter=@xds/core
-
-# Include dependencies
-yarn turbo build --filter=@xds/core...
-
-# Force fresh run (skip cache)
-yarn turbo build --force
-
-# See what would run
-yarn turbo build --dry-run
-```
-
 ## Adding a New Component
 
 Components use **colocated tests** — test files live alongside the component.
@@ -265,7 +243,7 @@ yarn test
 yarn test:watch
 
 # Specific package
-yarn turbo test --filter=@xds/core
+yarn workspace @xds/core test
 
 # With coverage
 yarn test:coverage

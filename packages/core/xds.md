@@ -39,12 +39,12 @@ Each component has a README.md in its source directory with usage examples, prop
 Theme tokens and utilities are documented in [src/theme/README.md](src/theme/README.md) (if available).
 
 ```tsx
-import {Theme, useTheme, defaultTheme} from '@xds/core';
+import {XDSTheme, useXDSTheme, defaultTheme} from '@xds/core';
 
 // Wrap app in theme provider
-<Theme theme={defaultTheme}>
+<XDSTheme theme={defaultTheme}>
   <App />
-</Theme>;
+</XDSTheme>;
 ```
 
 ## Anti-Patterns to Avoid

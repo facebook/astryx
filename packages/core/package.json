@@ -69,10 +69,25 @@
       "import": "./dist/TextInput/index.mjs",
       "require": "./dist/TextInput/index.js"
     },
+    "./TextArea": {
+      "types": "./dist/TextArea/index.d.ts",
+      "import": "./dist/TextArea/index.mjs",
+      "require": "./dist/TextArea/index.js"
+    },
+    "./Layer": {
+      "types": "./dist/Layer/index.d.ts",
+      "import": "./dist/Layer/index.mjs",
+      "require": "./dist/Layer/index.js"
+    },
     "./hooks": {
       "types": "./dist/hooks/index.d.ts",
       "import": "./dist/hooks/index.mjs",
       "require": "./dist/hooks/index.js"
+    },
+    "./theme": {
+      "types": "./dist/theme/index.d.ts",
+      "import": "./dist/theme/index.mjs",
+      "require": "./dist/theme/index.js"
     },
     "./xds.md": "./xds.md"
   },

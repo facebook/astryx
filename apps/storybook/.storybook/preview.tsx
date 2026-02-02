@@ -1,6 +1,6 @@
-import type { Preview, Decorator } from '@storybook/react';
+import type {Preview, Decorator} from '@storybook/react';
 import * as React from 'react';
-import { Theme, defaultTheme, neutralTheme } from '@xds/core';
+import {XDSTheme, defaultTheme, neutralTheme} from '@xds/core';
 
 /**
  * Map of available themes
@@ -15,23 +15,23 @@ const themes = {
  */
 const withXDSTheme: Decorator = (Story, context) => {
   // Get theme selection from toolbar
-  const themeKey = (context.globals?.xdsTheme || 'default') as keyof typeof themes;
+  const themeKey = (context.globals?.xdsTheme ||
+    'default') as keyof typeof themes;
   const theme = themes[themeKey] || defaultTheme;
 
   // Get color mode from toolbar
   const mode = context.globals?.colorMode === 'dark' ? 'dark' : 'light';
 
   return (
-    <Theme theme={theme} mode={mode}>
+    <XDSTheme theme={theme} mode={mode}>
       <div
         style={{
           backgroundColor: 'var(--color-surface)',
           padding: 16,
-        }}
-      >
+        }}>
         <Story />
       </div>
-    </Theme>
+    </XDSTheme>
   );
 };
 
@@ -55,8 +55,8 @@ const preview: Preview = {
         title: 'Theme',
         icon: 'paintbrush',
         items: [
-          { value: 'default', title: 'Default', icon: 'circlehollow' },
-          { value: 'neutral', title: 'Neutral', icon: 'circle' },
+          {value: 'default', title: 'Default', icon: 'circlehollow'},
+          {value: 'neutral', title: 'Neutral', icon: 'circle'},
         ],
         dynamicTitle: true,
       },
@@ -67,8 +67,8 @@ const preview: Preview = {
         title: 'Mode',
         icon: 'contrast',
         items: [
-          { value: 'light', title: 'Light', icon: 'sun' },
-          { value: 'dark', title: 'Dark', icon: 'moon' },
+          {value: 'light', title: 'Light', icon: 'sun'},
+          {value: 'dark', title: 'Dark', icon: 'moon'},
         ],
         dynamicTitle: true,
       },
