@@ -55,7 +55,7 @@ const StatusDot = ({
 );
 
 const meta: Meta<typeof XDSAvatar> = {
-  title: 'Components/XDSAvatar',
+  title: 'Core/XDSAvatar',
   component: XDSAvatar,
   tags: ['autodocs'],
   argTypes: {
