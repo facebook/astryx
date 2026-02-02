@@ -177,6 +177,10 @@ export interface XDSTextInputProps {
    * Placeholder text shown when the input is empty.
    */
   placeholder?: string;
+  /**
+   * Tooltip text to display in an info icon at the end of the label.
+   */
+  labelTooltip?: string;
 }
 
 /**
@@ -203,6 +207,7 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
       onChange,
       value,
       placeholder,
+      labelTooltip,
     },
     ref
   ) => {
@@ -250,7 +255,8 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
                 messageID: status.message ? statusMessageID : undefined,
               }
             : undefined
-        }>
+        }
+        labelTooltip={labelTooltip}>
         <div
           {...stylex.props(
             styles.wrapper,

@@ -263,4 +263,22 @@ describe('XDSTextInput', () => {
       expect(describedBy).toContain(messageElement.id);
     });
   });
+
+  it('renders tooltip info icon when labelTooltip is provided', () => {
+    render(
+      <XDSTextInput
+        label="Help"
+        value=""
+        onChange={() => {}}
+        labelTooltip="Helpful info"
+      />
+    );
+    // Info icon should be present
+    expect(document.querySelector('svg')).toBeInTheDocument();
+  });
+
+  it('does not render tooltip icon when labelTooltip is not provided', () => {
+    render(<XDSTextInput label="Name" value="" onChange={() => {}} />);
+    expect(document.querySelector('svg')).not.toBeInTheDocument();
+  });
 });

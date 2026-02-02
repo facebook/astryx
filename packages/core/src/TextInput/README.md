@@ -9,6 +9,7 @@ A text input component for collecting user text input.
 - **Label Support**: Required label for accessibility (can be visually hidden)
 - **Description**: Optional description text displayed between the label and input
 - **Optional/Required Indicators**: Display "Optional" or "Required" text with bullet separator
+- **Label Tooltip**: Optional info icon with tooltip at end of label
 - **Accessible**: Label properly associated with input via htmlFor/id
 - **Styled with StyleX**: Uses XDS design tokens for consistent styling
 
@@ -51,6 +52,7 @@ import { XDSTextInput } from '@xds/core/TextInput';
 | `isOptional`    | `boolean`                                                   | No       | Whether the field is optional (mutually exclusive with isRequired) |
 | `isRequired`    | `boolean`                                                   | No       | Whether the field is required (mutually exclusive with isOptional) |
 | `placeholder`   | `string`                                                    | No       | Placeholder text                                                   |
+| `labelTooltip`  | `string`                                                    | No       | Tooltip text to display in an info icon at the end of the label    |
 
 ## Files
 

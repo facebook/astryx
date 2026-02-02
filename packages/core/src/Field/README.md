@@ -9,6 +9,7 @@ A form field wrapper component that provides label and description.
 - **Label Support**: Required label for accessibility (can be visually hidden)
 - **Description**: Optional description text displayed between the label and input
 - **Optional/Required Indicators**: Display "Optional" or "Required" text with bullet separator
+- **Label Tooltip**: Optional info icon with tooltip at end of label
 - **Accessible**: Label properly associated with input via htmlFor/id
 - **Styled with StyleX**: Uses XDS design tokens for consistent styling
 
@@ -68,16 +69,18 @@ const bioDescId = useId();
 
 ## Props
 
-| Prop            | Type        | Required | Description                                                            |
-| --------------- | ----------- | -------- | ---------------------------------------------------------------------- |
-| `label`         | `string`    | Yes      | Label text for the field (always rendered for accessibility)           |
-| `isLabelHidden` | `boolean`   | No       | Visually hide the label (still accessible to screen readers)           |
-| `description`   | `string`    | No       | Description text displayed between the label and input                 |
-| `inputID`       | `string`    | Yes      | ID for the input element (used for label's htmlFor attribute)          |
-| `descriptionID` | `string`    | No       | ID for the description element (use for aria-describedby on the input) |
-| `isOptional`    | `boolean`   | No       | Whether the field is optional (mutually exclusive with isRequired)     |
-| `isRequired`    | `boolean`   | No       | Whether the field is required (mutually exclusive with isOptional)     |
-| `children`      | `ReactNode` | Yes      | The input or control to render                                         |
+| Prop             | Type          | Required | Description                                                            |
+| ---------------- | ------------- | -------- | ---------------------------------------------------------------------- |
+| `label`          | `string`      | Yes      | Label text for the field (always rendered for accessibility)           |
+| `isLabelHidden`  | `boolean`     | No       | Visually hide the label (still accessible to screen readers)           |
+| `description`    | `string`      | No       | Description text displayed between the label and input                 |
+| `inputID`        | `string`      | Yes      | ID for the input element (used for label's htmlFor attribute)          |
+| `descriptionID`  | `string`      | No       | ID for the description element (use for aria-describedby on the input) |
+| `isOptional`     | `boolean`     | No       | Whether the field is optional (mutually exclusive with isRequired)     |
+| `isRequired`     | `boolean`     | No       | Whether the field is required (mutually exclusive with isOptional)     |
+| `labelStartIcon` | `XDSIconType` | No       | Icon to display before the label text                                  |
+| `labelTooltip`   | `string`      | No       | Tooltip text to display in an info icon at the end of the label        |
+| `children`       | `ReactNode`   | Yes      | The input or control to render                                         |
 
 ## Files
 

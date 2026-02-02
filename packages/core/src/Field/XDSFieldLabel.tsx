@@ -11,8 +11,10 @@
 
 import {forwardRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {InformationCircleIcon} from '@heroicons/react/24/outline';
 import {colorVars, spacingVars, typographyVars} from '../theme/tokens.stylex';
 import {XDSIcon, type XDSIconType} from '../Icon';
+import {XDSTooltip} from '../Layer';
 
 const styles = stylex.create({
   label: {
@@ -86,6 +88,10 @@ export interface XDSFieldLabelProps {
    * Icon to display before the label text.
    */
   startIcon?: XDSIconType;
+  /**
+   * Tooltip text to display in an info icon at the end of the label.
+   */
+  tooltip?: string;
 }
 
 /**
@@ -107,6 +113,7 @@ export const XDSFieldLabel = forwardRef<HTMLLabelElement, XDSFieldLabelProps>(
       isOptional = false,
       isRequired = false,
       startIcon,
+      tooltip,
     },
     ref
   ) => {
@@ -135,6 +142,15 @@ export const XDSFieldLabel = forwardRef<HTMLLabelElement, XDSFieldLabelProps>(
             {' '}
             ∙ {statusText}
           </span>
+        )}
+        {tooltip && (
+          <XDSTooltip content={tooltip} placement="above">
+            <XDSIcon
+              icon={InformationCircleIcon}
+              size="sm"
+              color={isDisabled ? 'disabled' : 'secondary'}
+            />
+          </XDSTooltip>
         )}
       </label>
     );
