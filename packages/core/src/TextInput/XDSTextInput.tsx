@@ -181,6 +181,16 @@ export interface XDSTextInputProps {
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
+  /**
+   * Whether to automatically focus the input on mount.
+   * @default false
+   */
+  hasAutoFocus?: boolean;
+  /**
+   * The HTML name attribute for the input.
+   * Useful for form submissions.
+   */
+  htmlName?: string;
 }
 
 /**
@@ -208,6 +218,8 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
       value,
       placeholder,
       labelTooltip,
+      hasAutoFocus = false,
+      htmlName,
     },
     ref
   ) => {
@@ -267,11 +279,13 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
           <input
             ref={ref}
             id={id}
+            name={htmlName}
             type="text"
             value={value}
             onChange={e => onChange(e.target.value, e)}
             placeholder={placeholder}
             disabled={isDisabled}
+            autoFocus={hasAutoFocus}
             aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}

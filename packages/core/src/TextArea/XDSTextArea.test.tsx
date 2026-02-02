@@ -8,8 +8,9 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 import {XDSTextArea} from './XDSTextArea';
 
 describe('XDSTextArea', () => {
@@ -25,10 +26,10 @@ describe('XDSTextArea', () => {
         value=""
         onChange={() => {}}
         placeholder="Enter description"
-      />,
+      />
     );
     expect(
-      screen.getByPlaceholderText('Enter description'),
+      screen.getByPlaceholderText('Enter description')
     ).toBeInTheDocument();
   });
 
@@ -36,7 +37,7 @@ describe('XDSTextArea', () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
     render(
-      <XDSTextArea label="Description" value="" onChange={handleChange} />,
+      <XDSTextArea label="Description" value="" onChange={handleChange} />
     );
 
     const textarea = screen.getByRole('textbox');
@@ -61,7 +62,7 @@ describe('XDSTextArea', () => {
         label="Description"
         value="Controlled value"
         onChange={() => {}}
-      />,
+      />
     );
     expect(screen.getByRole('textbox')).toHaveValue('Controlled value');
   });
@@ -69,12 +70,7 @@ describe('XDSTextArea', () => {
   it('forwards ref correctly', () => {
     const ref = vi.fn();
     render(
-      <XDSTextArea
-        ref={ref}
-        label="Description"
-        value=""
-        onChange={() => {}}
-      />,
+      <XDSTextArea ref={ref} label="Description" value="" onChange={() => {}} />
     );
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLTextAreaElement));
   });
@@ -86,7 +82,7 @@ describe('XDSTextArea', () => {
         isLabelHidden
         value=""
         onChange={() => {}}
-      />,
+      />
     );
     const label = screen.getByText('Comments');
     expect(label).toBeInTheDocument();
@@ -102,11 +98,11 @@ describe('XDSTextArea', () => {
 
   it('sets aria-required when isRequired is true', () => {
     render(
-      <XDSTextArea label="Feedback" isRequired value="" onChange={() => {}} />,
+      <XDSTextArea label="Feedback" isRequired value="" onChange={() => {}} />
     );
     expect(screen.getByRole('textbox')).toHaveAttribute(
       'aria-required',
-      'true',
+      'true'
     );
   });
 
@@ -117,7 +113,7 @@ describe('XDSTextArea', () => {
 
   it('renders with custom rows', () => {
     render(
-      <XDSTextArea label="Description" value="" onChange={() => {}} rows={5} />,
+      <XDSTextArea label="Description" value="" onChange={() => {}} rows={5} />
     );
     expect(screen.getByRole('textbox')).toHaveAttribute('rows', '5');
   });
@@ -134,7 +130,7 @@ describe('XDSTextArea', () => {
         isDisabled
         value=""
         onChange={() => {}}
-      />,
+      />
     );
     expect(screen.getByRole('textbox')).toBeDisabled();
   });
@@ -153,11 +149,337 @@ describe('XDSTextArea', () => {
         isDisabled
         value=""
         onChange={handleChange}
-      />,
+      />
     );
 
     const textarea = screen.getByRole('textbox');
     await user.type(textarea, 'Hi');
     expect(handleChange).not.toHaveBeenCalled();
+  });
+
+  it('renders with startIcon', () => {
+    render(
+      <XDSTextArea
+        label="Description"
+        value=""
+        onChange={() => {}}
+        startIcon={MagnifyingGlassIcon}
+      />
+    );
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
+    // Icon should be rendered (as an SVG element)
+    const svg = document.querySelector('svg');
+    expect(svg).toBeInTheDocument();
+  });
+
+  it('renders without icon wrapper when startIcon is not provided', () => {
+    const {container} = render(
+      <XDSTextArea label="Description" value="" onChange={() => {}} />
+    );
+    // No SVG should be present
+    expect(container.querySelector('svg')).not.toBeInTheDocument();
+  });
+
+  describe('status prop', () => {
+    it('renders with error status icon', () => {
+      const {container} = render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          status={{type: 'error'}}
+        />
+      );
+      expect(container.querySelector('svg')).toBeInTheDocument();
+    });
+
+    it('renders with warning status icon', () => {
+      const {container} = render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          status={{type: 'warning'}}
+        />
+      );
+      expect(container.querySelector('svg')).toBeInTheDocument();
+    });
+
+    it('renders with success status icon', () => {
+      const {container} = render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          status={{type: 'success'}}
+        />
+      );
+      expect(container.querySelector('svg')).toBeInTheDocument();
+    });
+
+    it('renders status message when provided', () => {
+      render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          status={{type: 'error', message: 'Description is required'}}
+        />
+      );
+      expect(screen.getByText('Description is required')).toBeInTheDocument();
+    });
+
+    it('does not render status message when not provided', () => {
+      render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          status={{type: 'error'}}
+        />
+      );
+      expect(screen.queryByText(/required/i)).not.toBeInTheDocument();
+    });
+
+    it('sets aria-invalid when status type is error', () => {
+      render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          status={{type: 'error'}}
+        />
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute(
+        'aria-invalid',
+        'true'
+      );
+    });
+
+    it('does not set aria-invalid for warning status', () => {
+      render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          status={{type: 'warning'}}
+        />
+      );
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-invalid');
+    });
+
+    it('does not set aria-invalid for success status', () => {
+      render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          status={{type: 'success'}}
+        />
+      );
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-invalid');
+    });
+
+    it('includes status message in aria-describedby', () => {
+      render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          status={{type: 'error', message: 'Too short'}}
+        />
+      );
+      const textarea = screen.getByRole('textbox');
+      const describedBy = textarea.getAttribute('aria-describedby');
+      expect(describedBy).toBeTruthy();
+      // The status message should be reachable via the described-by ID
+      const messageElement = screen.getByText('Too short');
+      expect(messageElement).toHaveAttribute('id');
+      expect(describedBy).toContain(messageElement.id);
+    });
+  });
+
+  it('renders tooltip info icon when labelTooltip is provided', () => {
+    render(
+      <XDSTextArea
+        label="Description"
+        value=""
+        onChange={() => {}}
+        labelTooltip="Enter a detailed description"
+      />
+    );
+    // Info icon should be present
+    expect(document.querySelector('svg')).toBeInTheDocument();
+  });
+
+  it('does not render tooltip icon when labelTooltip is not provided', () => {
+    render(<XDSTextArea label="Description" value="" onChange={() => {}} />);
+    expect(document.querySelector('svg')).not.toBeInTheDocument();
+  });
+
+  describe('hasSpellCheck prop', () => {
+    it('enables spellcheck by default', () => {
+      render(<XDSTextArea label="Description" value="" onChange={() => {}} />);
+      expect(screen.getByRole('textbox')).toHaveAttribute('spellcheck', 'true');
+    });
+
+    it('enables spellcheck when hasSpellCheck is true', () => {
+      render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          hasSpellCheck={true}
+        />
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute('spellcheck', 'true');
+    });
+
+    it('disables spellcheck when hasSpellCheck is false', () => {
+      render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          hasSpellCheck={false}
+        />
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute(
+        'spellcheck',
+        'false'
+      );
+    });
+  });
+
+  describe('onPaste prop', () => {
+    it('calls onPaste when content is pasted', () => {
+      const handlePaste = vi.fn();
+      render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          onPaste={handlePaste}
+        />
+      );
+
+      const textarea = screen.getByRole('textbox');
+      fireEvent.paste(textarea, {
+        clipboardData: {getData: () => 'pasted text'},
+      });
+      expect(handlePaste).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not throw when onPaste is not provided', () => {
+      render(<XDSTextArea label="Description" value="" onChange={() => {}} />);
+
+      const textarea = screen.getByRole('textbox');
+      expect(() => {
+        fireEvent.paste(textarea, {
+          clipboardData: {getData: () => 'pasted text'},
+        });
+      }).not.toThrow();
+    });
+  });
+
+  describe('maxLength prop', () => {
+    it('displays character counter when maxLength is provided', () => {
+      render(
+        <XDSTextArea
+          label="Description"
+          value="Hello"
+          onChange={() => {}}
+          maxLength={20}
+        />
+      );
+      expect(screen.getByText('5/20')).toBeInTheDocument();
+    });
+
+    it('does not display counter when maxLength is not provided', () => {
+      render(
+        <XDSTextArea label="Description" value="Hello" onChange={() => {}} />
+      );
+      expect(screen.queryByText(/\/\d+/)).not.toBeInTheDocument();
+    });
+
+    it('updates counter as value changes', () => {
+      const {rerender} = render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          maxLength={100}
+        />
+      );
+      expect(screen.getByText('0/100')).toBeInTheDocument();
+
+      rerender(
+        <XDSTextArea
+          label="Description"
+          value="Hello World"
+          onChange={() => {}}
+          maxLength={100}
+        />
+      );
+      expect(screen.getByText('11/100')).toBeInTheDocument();
+    });
+
+    it('sets maxLength attribute on textarea', () => {
+      render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          maxLength={50}
+        />
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute('maxlength', '50');
+    });
+
+    it('does not set maxLength attribute when not provided', () => {
+      render(<XDSTextArea label="Description" value="" onChange={() => {}} />);
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('maxlength');
+    });
+  });
+
+  describe('hasAutoFocus prop', () => {
+    it('sets autofocus attribute when hasAutoFocus is true', () => {
+      render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          hasAutoFocus
+        />
+      );
+      expect(screen.getByRole('textbox')).toHaveFocus();
+    });
+
+    it('does not set autofocus when hasAutoFocus is false', () => {
+      render(<XDSTextArea label="Description" value="" onChange={() => {}} />);
+      expect(screen.getByRole('textbox')).not.toHaveFocus();
+    });
+  });
+
+  describe('htmlName prop', () => {
+    it('sets name attribute when htmlName is provided', () => {
+      render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          htmlName="description"
+        />
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute(
+        'name',
+        'description'
+      );
+    });
+
+    it('does not set name attribute when htmlName is not provided', () => {
+      render(<XDSTextArea label="Description" value="" onChange={() => {}} />);
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('name');
+    });
   });
 });

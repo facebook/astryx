@@ -281,4 +281,37 @@ describe('XDSTextInput', () => {
     render(<XDSTextInput label="Name" value="" onChange={() => {}} />);
     expect(document.querySelector('svg')).not.toBeInTheDocument();
   });
+
+  describe('hasAutoFocus prop', () => {
+    it('focuses the input when hasAutoFocus is true', () => {
+      render(
+        <XDSTextInput label="Name" value="" onChange={() => {}} hasAutoFocus />
+      );
+      expect(screen.getByRole('textbox')).toHaveFocus();
+    });
+
+    it('does not focus when hasAutoFocus is false', () => {
+      render(<XDSTextInput label="Name" value="" onChange={() => {}} />);
+      expect(screen.getByRole('textbox')).not.toHaveFocus();
+    });
+  });
+
+  describe('htmlName prop', () => {
+    it('sets name attribute when htmlName is provided', () => {
+      render(
+        <XDSTextInput
+          label="Name"
+          value=""
+          onChange={() => {}}
+          htmlName="username"
+        />
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute('name', 'username');
+    });
+
+    it('does not set name attribute when htmlName is not provided', () => {
+      render(<XDSTextInput label="Name" value="" onChange={() => {}} />);
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('name');
+    });
+  });
 });
