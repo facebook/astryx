@@ -22,6 +22,7 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 
 // Extend React's HTMLAttributes to include popover API attributes
 declare module 'react' {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface HTMLAttributes<T> {
     popover?: 'auto' | 'manual' | '';
   }
@@ -92,6 +93,13 @@ interface BaseLayerOptions {
    * StyleX styles for the layer container
    */
   xstyle?: StyleXStyles;
+
+  /**
+   * Whether clicking outside should dismiss the layer.
+   * When true, uses popover="auto" for native light-dismiss behavior.
+   * @default false
+   */
+  lightDismiss?: boolean;
 }
 
 /**
@@ -243,7 +251,7 @@ export function useXDSLayer(options: FixedLayerOptions): FixedLayerReturn;
 export function useXDSLayer(
   options: ContextLayerOptions | FixedLayerOptions,
 ): ContextLayerReturn | FixedLayerReturn {
-  const {mode, onShow, onHide, xstyle} = options;
+  const {mode, onShow, onHide, xstyle, lightDismiss = false} = options;
   const id = useId();
   const anchorId = `--xds-layer-${id.replace(/:/g, '')}`;
 
@@ -323,14 +331,14 @@ export function useXDSLayer(
             }
           }}
           id={id}
-          popover="manual"
+          popover={lightDismiss ? 'auto' : 'manual'}
           {...stylex.props(styles.base, xstyle)}
           style={anchorStyle}>
           {children}
         </div>
       );
     },
-    [anchorId, handleToggle, id, xstyle],
+    [anchorId, handleToggle, id, lightDismiss, xstyle],
   );
 
   // Render function for fixed mode
@@ -353,14 +361,14 @@ export function useXDSLayer(
             }
           }}
           id={id}
-          popover="manual"
+          popover={lightDismiss ? 'auto' : 'manual'}
           {...stylex.props(styles.base, styles.fixed, xstyle)}
           style={positionStyle}>
           {children}
         </div>
       );
     },
-    [handleToggle, id, xstyle],
+    [handleToggle, id, lightDismiss, xstyle],
   );
 
   if (mode === 'context') {

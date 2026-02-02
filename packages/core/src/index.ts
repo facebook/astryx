@@ -12,6 +12,7 @@ export * from './Avatar';
 export * from './Button';
 export * from './Calendar';
 export * from './CheckboxInput';
+export * from './DatePicker';
 export * from './Field';
 export * from './Icon';
 export * from './Text';
@@ -29,6 +30,9 @@ export * from './Skeleton';
 
 // Hooks
 export * from './hooks';
+
+// Utilities
+export * from './utils';
 
 // Theme
 export * from './theme';

@@ -1,6 +1,6 @@
 /**
  * @file XDSCalendar.tsx
- * @input Uses React useState, useMemo, useCallback, forwardRef
+ * @input Uses React useState, useMemo, useCallback, forwardRef, hooks
  * @output Exports XDSCalendar component and related types
  * @position Core implementation; consumed by index.ts, tested by XDSCalendar.test.tsx
  *
@@ -16,18 +16,33 @@ import {
   useState,
   useMemo,
   useCallback,
+  useEffect,
   type HTMLAttributes,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  colorVars,
-  spacingVars,
-  radiusVars,
-  transitionVars,
-  textSizeVars,
-} from '../theme/tokens.stylex';
 import {XDSButton} from '../Button';
 import {ChevronLeftIcon, ChevronRightIcon} from '@heroicons/react/24/outline';
+import {useGridFocus} from '../hooks';
+import {
+  useCalendarDays,
+  useCalendarConstraints,
+  useCalendarRovingTabindex,
+  type CalendarDay,
+} from './hooks';
+import {
+  calendarStyles,
+  monthGridStyles,
+  dayCellStyles,
+  dayCellTheme,
+} from './styles';
+import {
+  dateToISO,
+  parseISO,
+  isSameDay,
+  isDateInRange,
+  getWeekNumber,
+  formatAccessibleDate,
+} from './utils';
 
 // =============================================================================
 // Types
@@ -137,571 +152,37 @@ interface XDSCalendarRangeProps extends XDSCalendarBaseProps {
 export type XDSCalendarProps = XDSCalendarSingleProps | XDSCalendarRangeProps;
 
 // =============================================================================
-// Utility Functions
-// =============================================================================
-
-function dateToISO(date: Date): ISODateString {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}` as ISODateString;
-}
-
-function parseISO(str: ISODateString): Date {
-  const [year, month, day] = str.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function isSameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
-function isDateInRange(date: Date, start: Date, end: Date): boolean {
-  const time = date.getTime();
-  return time >= start.getTime() && time <= end.getTime();
-}
-
-function getWeekNumber(date: Date): number {
-  const d = new Date(
-    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
-  );
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
-}
-
-// =============================================================================
-// Styles
-// =============================================================================
-
-const styles = stylex.create({
-  calendar: {
-    display: 'inline-block',
-    backgroundColor: colorVars['--color-surface'],
-    padding: spacingVars['--spacing-3'],
-    minWidth: '220px',
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacingVars['--spacing-2'],
-    gap: spacingVars['--spacing-2'],
-  },
-  monthYearLabel: {
-    flex: 1,
-    textAlign: 'center',
-    fontWeight: 600,
-    fontSize: textSizeVars['--text-base'],
-    color: colorVars['--color-text-primary'],
-  },
-  monthsContainer: {
-    display: 'flex',
-    gap: spacingVars['--spacing-4'],
-  },
-  monthGrid: {
-    flex: '1 1 0',
-  },
-  weekHeader: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(7, 1fr)',
-    marginBottom: spacingVars['--spacing-1'],
-  },
-  weekHeaderWithNumbers: {
-    gridTemplateColumns: 'auto repeat(7, 1fr)',
-  },
-  dayName: {
-    width: '32px',
-    height: '32px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: textSizeVars['--text-xsm'],
-    fontWeight: 400,
-    color: colorVars['--color-text-secondary'],
-  },
-  weekNumberHeader: {
-    width: '32px',
-  },
-  daysGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(7, 1fr)',
-  },
-  daysGridWithNumbers: {
-    gridTemplateColumns: 'auto repeat(7, 1fr)',
-  },
-  weekNumber: {
-    width: '32px',
-    height: '32px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: textSizeVars['--text-xsm'],
-    color: colorVars['--color-text-secondary'],
-  },
-  weekRow: {
-    display: 'contents',
-  },
-  // Cell wrapper - contains positioned background element
-  dayCell: {
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '32px',
-  },
-  // Range background element - positioned behind the day button
-  dayRangeBg: {
-    position: 'absolute',
-    top: '2px',
-    bottom: '2px',
-    left: 0,
-    right: 0,
-    backgroundColor: colorVars['--color-accent-deemphasized'],
-  },
-  // Radius only (for row edges)
-  dayRangeBgRadiusLeft: {
-    left: '2px',
-    borderTopLeftRadius: radiusVars['--radius-rounded'],
-    borderBottomLeftRadius: radiusVars['--radius-rounded'],
-  },
-  dayRangeBgRadiusRight: {
-    right: '2px',
-    borderTopRightRadius: radiusVars['--radius-rounded'],
-    borderBottomRightRadius: radiusVars['--radius-rounded'],
-  },
-  // Inset (for actual range start/end)
-  dayRangeInsetLeft: {
-    left: '2px',
-  },
-  dayRangeInsetRight: {
-    right: '2px',
-  },
-  // Preview range background (dotted border)
-  dayRangePreview: {
-    position: 'absolute',
-    top: '2px',
-    bottom: '2px',
-    left: 0,
-    right: 0,
-    borderTopWidth: 1,
-    borderTopStyle: 'dotted',
-    borderTopColor: colorVars['--color-divider-emphasized'],
-    borderBottomWidth: 1,
-    borderBottomStyle: 'dotted',
-    borderBottomColor: colorVars['--color-divider-emphasized'],
-  },
-  // Radius only (for row edges)
-  dayRangePreviewRadiusLeft: {
-    left: '2px',
-    borderTopLeftRadius: radiusVars['--radius-rounded'],
-    borderBottomLeftRadius: radiusVars['--radius-rounded'],
-    borderLeftWidth: 1,
-    borderLeftStyle: 'dotted',
-    borderLeftColor: colorVars['--color-divider-emphasized'],
-  },
-  dayRangePreviewRadiusRight: {
-    right: '2px',
-    borderTopRightRadius: radiusVars['--radius-rounded'],
-    borderBottomRightRadius: radiusVars['--radius-rounded'],
-    borderRightWidth: 1,
-    borderRightStyle: 'dotted',
-    borderRightColor: colorVars['--color-divider-emphasized'],
-  },
-  // Border + inset (for actual preview start/end)
-  dayRangePreviewStart: {
-    left: '2px',
-    borderLeftWidth: 1,
-    borderLeftStyle: 'dotted',
-    borderLeftColor: colorVars['--color-divider-emphasized'],
-    borderTopLeftRadius: radiusVars['--radius-rounded'],
-    borderBottomLeftRadius: radiusVars['--radius-rounded'],
-  },
-  dayRangePreviewEnd: {
-    right: '2px',
-    borderRightWidth: 1,
-    borderRightStyle: 'dotted',
-    borderRightColor: colorVars['--color-divider-emphasized'],
-    borderTopRightRadius: radiusVars['--radius-rounded'],
-    borderBottomRightRadius: radiusVars['--radius-rounded'],
-  },
-  day: {
-    width: '28px',
-    height: '28px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: '50%',
-    borderWidth: 0,
-    borderStyle: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    fontSize: textSizeVars['--text-sm'],
-    color: colorVars['--color-text-primary'],
-    padding: 0,
-    position: 'relative',
-    zIndex: 1,
-    transitionProperty: 'background-color, color',
-    transitionDuration: transitionVars['--transition-fast'],
-    backgroundImage: {
-      default: null,
-      ':hover': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
-  },
-  dayOutside: {
-    color: colorVars['--color-text-secondary'],
-    opacity: 0.5,
-  },
-  dayToday: {
-    boxShadow: `inset 0 0 0 1px ${colorVars['--color-divider-emphasized']}`,
-  },
-  dayTodayInRange: {
-    boxShadow: `inset 0 0 0 1px ${colorVars['--color-text-primary']}`,
-  },
-  daySelected: {
-    backgroundColor: colorVars['--color-accent'],
-    color: colorVars['--color-text-on-media'],
-    backgroundImage: {
-      default: null,
-      ':hover': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
-    },
-  },
-  dayDisabled: {
-    opacity: 0.3,
-    cursor: 'not-allowed',
-    backgroundImage: {
-      default: null,
-      ':hover': null,
-    },
-  },
-  navIcon: {
-    width: '16px',
-    height: '16px',
-  },
-});
-
-// =============================================================================
-// Sub-components
-// =============================================================================
-
-interface MonthGridProps {
-  month: Date;
-  value: ISODateString | DateRange | undefined;
-  mode: 'single' | 'range';
-  rangeSelectionStart: ISODateString | null;
-  hoveredDate: ISODateString | null;
-  min?: ISODateString;
-  max?: ISODateString;
-  dateConstraints?: ReadonlyArray<(date: Date) => boolean>;
-  hasOutsideDays: boolean;
-  hasWeekNumbers: boolean;
-  hasVariableRowCount: boolean;
-  weekStartsOn: DayOfWeek;
-  onDayClick: (date: Date) => void;
-  onDayHover: (date: Date | null) => void;
-  today: Date;
-}
-
-function MonthGrid({
-  month,
-  value,
-  mode,
-  rangeSelectionStart,
-  hoveredDate,
-  min,
-  max,
-  dateConstraints,
-  hasOutsideDays,
-  hasWeekNumbers,
-  hasVariableRowCount,
-  weekStartsOn,
-  onDayClick,
-  onDayHover,
-  today,
-}: MonthGridProps) {
-  const year = month.getFullYear();
-  const monthIndex = month.getMonth();
-
-  // Calculate days to display
-  const firstDayOfMonth = new Date(year, monthIndex, 1);
-  const lastDayOfMonth = new Date(year, monthIndex + 1, 0);
-  const daysInMonth = lastDayOfMonth.getDate();
-
-  // Calculate starting offset based on weekStartsOn
-  let startingDayOfWeek = firstDayOfMonth.getDay() - weekStartsOn;
-  if (startingDayOfWeek < 0) startingDayOfWeek += 7;
-
-  // Calculate total cells
-  const totalDays = daysInMonth + startingDayOfWeek;
-  const totalRows = hasVariableRowCount ? Math.ceil(totalDays / 7) : 6;
-  const totalCells = totalRows * 7;
-
-  // Parse constraints
-  const minDate = min ? parseISO(min) : null;
-  const maxDate = max ? parseISO(max) : null;
-
-  // Parse selection
-  let selectedDate: Date | null = null;
-  let rangeStart: Date | null = null;
-  let rangeEnd: Date | null = null;
-
-  if (mode === 'single' && value && typeof value === 'string') {
-    selectedDate = parseISO(value as ISODateString);
-  } else if (mode === 'range' && value && typeof value === 'object') {
-    const range = value as DateRange;
-    rangeStart = parseISO(range.start);
-    rangeEnd = parseISO(range.end);
-  }
-
-  // Handle in-progress range selection
-  if (rangeSelectionStart) {
-    rangeStart = parseISO(rangeSelectionStart);
-    rangeEnd = rangeStart; // Show as single day until end is selected
-  }
-
-  // Calculate preview range when hovering during range selection
-  let previewStart: Date | null = null;
-  let previewEnd: Date | null = null;
-  if (mode === 'range' && rangeSelectionStart && hoveredDate) {
-    const startDate = parseISO(rangeSelectionStart);
-    const hoverDate = parseISO(hoveredDate);
-    if (startDate.getTime() !== hoverDate.getTime()) {
-      if (hoverDate < startDate) {
-        previewStart = hoverDate;
-        previewEnd = startDate;
-      } else {
-        previewStart = startDate;
-        previewEnd = hoverDate;
-      }
-    }
-  }
-
-  // Generate day names
-  const dayNames = useMemo(() => {
-    const names = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-    const rotated = [];
-    for (let i = 0; i < 7; i++) {
-      rotated.push(names[(i + weekStartsOn) % 7]);
-    }
-    return rotated;
-  }, [weekStartsOn]);
-
-  // Generate days
-  const days = useMemo(() => {
-    const result: Array<{
-      date: Date;
-      isOutside: boolean;
-      dayNumber: number;
-    }> = [];
-
-    for (let i = 0; i < totalCells; i++) {
-      const dayOffset = i - startingDayOfWeek + 1;
-      const date = new Date(year, monthIndex, dayOffset);
-      const isOutside = dayOffset < 1 || dayOffset > daysInMonth;
-
-      result.push({
-        date,
-        isOutside,
-        dayNumber: date.getDate(),
-      });
-    }
-
-    return result;
-  }, [year, monthIndex, totalCells, startingDayOfWeek, daysInMonth]);
-
-  // Group days into weeks for week numbers
-  const weeks = useMemo(() => {
-    const result: Array<typeof days> = [];
-    for (let i = 0; i < days.length; i += 7) {
-      result.push(days.slice(i, i + 7));
-    }
-    return result;
-  }, [days]);
-
-  const isDateDisabled = useCallback(
-    (date: Date): boolean => {
-      if (minDate && date < minDate) return true;
-      if (maxDate && date > maxDate) return true;
-      if (dateConstraints) {
-        for (const constraint of dateConstraints) {
-          if (!constraint(date)) return true;
-        }
-      }
-      return false;
-    },
-    [minDate, maxDate, dateConstraints],
-  );
-
-  return (
-    <div {...stylex.props(styles.monthGrid)}>
-      {/* Day names header */}
-      <div
-        {...stylex.props(
-          styles.weekHeader,
-          hasWeekNumbers && styles.weekHeaderWithNumbers,
-        )}>
-        {hasWeekNumbers && (
-          <div {...stylex.props(styles.dayName, styles.weekNumberHeader)} />
-        )}
-        {dayNames.map((name, i) => (
-          <div key={i} {...stylex.props(styles.dayName)}>
-            {name}
-          </div>
-        ))}
-      </div>
-
-      {/* Days grid */}
-      <div
-        role="grid"
-        {...stylex.props(
-          styles.daysGrid,
-          hasWeekNumbers && styles.daysGridWithNumbers,
-        )}>
-        {weeks.map((week, weekIndex) => {
-          // Find first non-outside day for week number
-          const weekDate = week.find(d => !d.isOutside)?.date || week[0].date;
-          const weekNum = getWeekNumber(weekDate);
-
-          return (
-            <div key={weekIndex} role="row" {...stylex.props(styles.weekRow)}>
-              {hasWeekNumbers && (
-                <div {...stylex.props(styles.weekNumber)}>{weekNum}</div>
-              )}
-              {week.map((day, dayIndex) => {
-                const {date, isOutside, dayNumber} = day;
-
-                if (isOutside && !hasOutsideDays) {
-                  return (
-                    <div key={dayIndex} {...stylex.props(styles.dayCell)} />
-                  );
-                }
-
-                const isToday = isSameDay(date, today);
-                const isSelected =
-                  mode === 'single' &&
-                  selectedDate &&
-                  isSameDay(date, selectedDate);
-                const isInRange =
-                  mode === 'range' &&
-                  rangeStart &&
-                  rangeEnd &&
-                  isDateInRange(date, rangeStart, rangeEnd);
-                const isRangeStart =
-                  mode === 'range' && rangeStart && isSameDay(date, rangeStart);
-                const isRangeEnd =
-                  mode === 'range' && rangeEnd && isSameDay(date, rangeEnd);
-                const isDisabled = isDateDisabled(date);
-
-                // Preview range calculations
-                const isInPreview =
-                  previewStart &&
-                  previewEnd &&
-                  isDateInRange(date, previewStart, previewEnd);
-                const isPreviewStart =
-                  previewStart && isSameDay(date, previewStart);
-                const isPreviewEnd = previewEnd && isSameDay(date, previewEnd);
-
-                // Determine cell background for range - show for all cells in range
-                const hasRangeBackground = isInRange;
-
-                // Round edges at grid boundaries or range endpoints
-                const isFirstColumn = dayIndex === 0;
-                const isLastColumn = dayIndex === 6;
-
-                // Determine if background needs rounded edges
-                const roundLeft = isRangeStart || isFirstColumn;
-                const roundRight = isRangeEnd || isLastColumn;
-
-                // Determine if preview needs rounded edges
-                const previewRoundLeft = isPreviewStart || isFirstColumn;
-                const previewRoundRight = isPreviewEnd || isLastColumn;
-
-                return (
-                  <div key={dayIndex} {...stylex.props(styles.dayCell)}>
-                    {hasRangeBackground && (
-                      <div
-                        {...stylex.props(
-                          styles.dayRangeBg,
-                          roundLeft && styles.dayRangeBgRadiusLeft,
-                          roundRight && styles.dayRangeBgRadiusRight,
-                          isRangeStart && styles.dayRangeInsetLeft,
-                          isRangeStart &&
-                            roundRight &&
-                            styles.dayRangeInsetRight,
-                          isRangeEnd && styles.dayRangeInsetRight,
-                          isRangeStart && roundLeft && styles.dayRangeInsetLeft,
-                        )}
-                      />
-                    )}
-                    {isInPreview && (
-                      <div
-                        {...stylex.props(
-                          styles.dayRangePreview,
-                          previewRoundLeft && styles.dayRangePreviewRadiusLeft,
-                          previewRoundRight &&
-                            styles.dayRangePreviewRadiusRight,
-                          isPreviewStart && styles.dayRangePreviewStart,
-                          isPreviewStart &&
-                            roundRight &&
-                            styles.dayRangeInsetRight,
-                          isPreviewEnd && styles.dayRangePreviewEnd,
-                          isPreviewEnd && roundLeft && styles.dayRangeInsetLeft,
-                        )}
-                      />
-                    )}
-                    <button
-                      type="button"
-                      role="gridcell"
-                      aria-selected={isSelected || isInRange || undefined}
-                      aria-disabled={isDisabled || undefined}
-                      disabled={isDisabled}
-                      tabIndex={isToday && !isDisabled ? 0 : -1}
-                      onClick={() => !isDisabled && onDayClick(date)}
-                      onMouseEnter={() => !isDisabled && onDayHover(date)}
-                      onMouseLeave={() => onDayHover(null)}
-                      {...stylex.props(
-                        styles.day,
-                        isOutside && styles.dayOutside,
-                        isToday && !isSelected && !isInRange && styles.dayToday,
-                        isToday &&
-                          !isSelected &&
-                          isInRange &&
-                          styles.dayTodayInRange,
-                        (isSelected || isRangeStart || isRangeEnd) &&
-                          styles.daySelected,
-                        isDisabled && styles.dayDisabled,
-                      )}>
-                      {dayNumber}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// =============================================================================
 // Main Component
 // =============================================================================
 
+/**
+ * A calendar component for selecting dates or date ranges.
+ *
+ * @example
+ * ```tsx
+ * // Single date selection
+ * <XDSCalendar
+ *   value={selectedDate}
+ *   onChange={(date) => setSelectedDate(date)}
+ * />
+ *
+ * // Date range selection
+ * <XDSCalendar
+ *   mode="range"
+ *   value={dateRange}
+ *   onChange={(range) => setDateRange(range)}
+ * />
+ *
+ * // With constraints
+ * <XDSCalendar
+ *   min="2026-01-01"
+ *   max="2026-12-31"
+ *   dateConstraints={[(date) => date.getDay() !== 0]} // No Sundays
+ *   value={selectedDate}
+ *   onChange={setSelectedDate}
+ * />
+ * ```
+ */
 export const XDSCalendar = forwardRef<HTMLDivElement, XDSCalendarProps>(
   (props, ref) => {
     const {
@@ -736,6 +217,11 @@ export const XDSCalendar = forwardRef<HTMLDivElement, XDSCalendarProps>(
 
     // Hovered date for range preview
     const [hoveredDate, setHoveredDate] = useState<ISODateString | null>(null);
+
+    // Pending focus target after month navigation
+    const [pendingFocus, setPendingFocus] = useState<ISODateString | null>(
+      null,
+    );
 
     // Determine effective value
     const effectiveValue = value !== undefined ? value : internalValue;
@@ -790,10 +276,18 @@ export const XDSCalendar = forwardRef<HTMLDivElement, XDSCalendarProps>(
 
     // Navigation handlers
     const navigateMonth = useCallback(
-      (delta: number) => {
+      (delta: number, focusedDate?: ISODateString, offset?: number) => {
         const newDate = new Date(baseMonth);
         newDate.setMonth(baseMonth.getMonth() + delta);
         const newISO = dateToISO(newDate);
+
+        // Calculate target focus date if a focused date was provided
+        if (focusedDate) {
+          const currentDate = parseISO(focusedDate);
+          const daysToMove = offset ?? 7;
+          currentDate.setDate(currentDate.getDate() + delta * daysToMove);
+          setPendingFocus(dateToISO(currentDate));
+        }
 
         if (onFocusDateChange) {
           onFocusDateChange(newISO);
@@ -843,29 +337,33 @@ export const XDSCalendar = forwardRef<HTMLDivElement, XDSCalendarProps>(
     );
 
     return (
-      <div ref={ref} {...stylex.props(styles.calendar)} {...rest}>
+      <div ref={ref} {...stylex.props(calendarStyles.calendar)} {...rest}>
         {/* Header with navigation */}
-        <div {...stylex.props(styles.header)}>
+        <div {...stylex.props(calendarStyles.header)}>
           <XDSButton
             label="Previous month"
             variant="ghost"
-            icon={<ChevronLeftIcon {...stylex.props(styles.navIcon)} />}
+            icon={<ChevronLeftIcon {...stylex.props(calendarStyles.navIcon)} />}
             onClick={() => navigateMonth(-1)}
           />
 
-          <span {...stylex.props(styles.monthYearLabel)}>{monthYearLabel}</span>
+          <span {...stylex.props(calendarStyles.monthYearLabel)}>
+            {monthYearLabel}
+          </span>
 
           <XDSButton
             label="Next month"
             variant="ghost"
-            icon={<ChevronRightIcon {...stylex.props(styles.navIcon)} />}
+            icon={
+              <ChevronRightIcon {...stylex.props(calendarStyles.navIcon)} />
+            }
             onClick={() => navigateMonth(1)}
           />
         </div>
 
         {/* Month grids */}
-        <div {...stylex.props(styles.monthsContainer)}>
-          {visibleMonths.map((month, index) => (
+        <div {...stylex.props(calendarStyles.monthsContainer)}>
+          {visibleMonths.map(month => (
             <MonthGrid
               key={`${month.getFullYear()}-${month.getMonth()}`}
               month={month}
@@ -883,6 +381,14 @@ export const XDSCalendar = forwardRef<HTMLDivElement, XDSCalendarProps>(
               onDayClick={handleDayClick}
               onDayHover={date => setHoveredDate(date ? dateToISO(date) : null)}
               today={today}
+              onNavigatePrevious={(focusedDate, offset) =>
+                navigateMonth(-1, focusedDate, offset)
+              }
+              onNavigateNext={(focusedDate, offset) =>
+                navigateMonth(1, focusedDate, offset)
+              }
+              pendingFocus={pendingFocus}
+              onPendingFocusHandled={() => setPendingFocus(null)}
             />
           ))}
         </div>
@@ -892,3 +398,426 @@ export const XDSCalendar = forwardRef<HTMLDivElement, XDSCalendarProps>(
 );
 
 XDSCalendar.displayName = 'XDSCalendar';
+
+// =============================================================================
+// MonthGrid (Private)
+// =============================================================================
+
+interface MonthGridProps {
+  month: Date;
+  value: ISODateString | DateRange | undefined;
+  mode: 'single' | 'range';
+  rangeSelectionStart: ISODateString | null;
+  hoveredDate: ISODateString | null;
+  min?: ISODateString;
+  max?: ISODateString;
+  dateConstraints?: ReadonlyArray<(date: Date) => boolean>;
+  hasOutsideDays: boolean;
+  hasWeekNumbers: boolean;
+  hasVariableRowCount: boolean;
+  weekStartsOn: DayOfWeek;
+  onDayClick: (date: Date) => void;
+  onDayHover: (date: Date | null) => void;
+  today: Date;
+  onNavigatePrevious?: (focusedDate: ISODateString, offset: number) => void;
+  onNavigateNext?: (focusedDate: ISODateString, offset: number) => void;
+  pendingFocus?: ISODateString | null;
+  onPendingFocusHandled?: () => void;
+}
+
+function MonthGrid({
+  month,
+  value,
+  mode,
+  rangeSelectionStart,
+  hoveredDate,
+  min,
+  max,
+  dateConstraints,
+  hasOutsideDays,
+  hasWeekNumbers,
+  hasVariableRowCount,
+  weekStartsOn,
+  onDayClick,
+  onDayHover,
+  today,
+  onNavigatePrevious,
+  onNavigateNext,
+  pendingFocus,
+  onPendingFocusHandled,
+}: MonthGridProps) {
+  const year = month.getFullYear();
+  const monthIndex = month.getMonth();
+
+  // Use hooks for days generation and constraints
+  const {days, weeks, dayNames} = useCalendarDays({
+    year,
+    month: monthIndex,
+    weekStartsOn,
+    hasVariableRowCount,
+  });
+
+  const {isDateDisabled} = useCalendarConstraints({
+    min,
+    max,
+    dateConstraints,
+  });
+
+  const {isTabbable} = useCalendarRovingTabindex({
+    days,
+    today,
+    year,
+    month: monthIndex,
+    isDateDisabled,
+  });
+
+  // Helper to get the focused date from the currently focused element
+  const getFocusedDate = useCallback((): ISODateString | null => {
+    const activeElement = document.activeElement as HTMLElement | null;
+    if (!activeElement) return null;
+
+    const ariaLabel = activeElement.getAttribute('aria-label');
+    if (!ariaLabel) return null;
+
+    const parsed = new Date(ariaLabel);
+    if (isNaN(parsed.getTime())) return null;
+
+    return dateToISO(parsed);
+  }, []);
+
+  // Handle navigation to previous month
+  const handleNavigatePrevious = useCallback(
+    (_column: number, offset: number) => {
+      const focusedDate = getFocusedDate();
+      if (focusedDate) {
+        onNavigatePrevious?.(focusedDate, offset);
+      }
+    },
+    [getFocusedDate, onNavigatePrevious],
+  );
+
+  // Handle navigation to next month
+  const handleNavigateNext = useCallback(
+    (_column: number, offset: number) => {
+      const focusedDate = getFocusedDate();
+      if (focusedDate) {
+        onNavigateNext?.(focusedDate, offset);
+      }
+    },
+    [getFocusedDate, onNavigateNext],
+  );
+
+  // Handle PageUp/PageDown
+  const handlePageUp = useCallback(() => {
+    const focusedDate = getFocusedDate();
+    if (focusedDate) {
+      onNavigatePrevious?.(focusedDate, 7);
+    }
+  }, [getFocusedDate, onNavigatePrevious]);
+
+  const handlePageDown = useCallback(() => {
+    const focusedDate = getFocusedDate();
+    if (focusedDate) {
+      onNavigateNext?.(focusedDate, 7);
+    }
+  }, [getFocusedDate, onNavigateNext]);
+
+  // Grid focus navigation
+  const {gridRef, handleKeyDown: handleGridKeyDown} = useGridFocus({
+    columns: 7,
+    cellSelector: 'button:not([disabled])',
+    onNavigateBefore: handleNavigatePrevious,
+    onNavigateAfter: handleNavigateNext,
+    onPageUp: handlePageUp,
+    onPageDown: handlePageDown,
+  });
+
+  // Handle pending focus after month navigation
+  useEffect(() => {
+    if (!pendingFocus || !gridRef.current) return;
+
+    const buttons = gridRef.current.querySelectorAll<HTMLElement>(
+      'button:not([disabled])',
+    );
+
+    const targetDate = parseISO(pendingFocus);
+    const targetLabel = formatAccessibleDate(targetDate);
+
+    let targetButton: HTMLElement | null = null;
+    for (const button of buttons) {
+      if (button.getAttribute('aria-label') === targetLabel) {
+        targetButton = button;
+        break;
+      }
+    }
+
+    if (!targetButton && buttons.length > 0) {
+      targetButton = buttons[0];
+    }
+
+    targetButton?.focus();
+    onPendingFocusHandled?.();
+  }, [pendingFocus, gridRef, onPendingFocusHandled]);
+
+  // Parse selection
+  let selectedDate: Date | null = null;
+  let rangeStart: Date | null = null;
+  let rangeEnd: Date | null = null;
+
+  if (mode === 'single' && value && typeof value === 'string') {
+    selectedDate = parseISO(value as ISODateString);
+  } else if (mode === 'range' && value && typeof value === 'object') {
+    const range = value as DateRange;
+    rangeStart = parseISO(range.start);
+    rangeEnd = parseISO(range.end);
+  }
+
+  // Handle in-progress range selection
+  if (rangeSelectionStart) {
+    rangeStart = parseISO(rangeSelectionStart);
+    rangeEnd = rangeStart;
+  }
+
+  // Calculate preview range when hovering during range selection
+  let previewStart: Date | null = null;
+  let previewEnd: Date | null = null;
+  if (mode === 'range' && rangeSelectionStart && hoveredDate) {
+    const startDate = parseISO(rangeSelectionStart);
+    const hoverDate = parseISO(hoveredDate);
+    if (startDate.getTime() !== hoverDate.getTime()) {
+      if (hoverDate < startDate) {
+        previewStart = hoverDate;
+        previewEnd = startDate;
+      } else {
+        previewStart = startDate;
+        previewEnd = hoverDate;
+      }
+    }
+  }
+
+  // Month label for announcements
+  const monthLabel = useMemo(() => {
+    return new Intl.DateTimeFormat(undefined, {
+      year: 'numeric',
+      month: 'long',
+    }).format(month);
+  }, [month]);
+
+  return (
+    <div {...stylex.props(monthGridStyles.monthGrid)}>
+      {/* Day names header */}
+      <div
+        {...stylex.props(
+          monthGridStyles.weekHeader,
+          hasWeekNumbers && monthGridStyles.weekHeaderWithNumbers,
+        )}>
+        {hasWeekNumbers && (
+          <div
+            {...stylex.props(
+              monthGridStyles.dayName,
+              monthGridStyles.weekNumberHeader,
+            )}
+          />
+        )}
+        {dayNames.map((name, i) => (
+          <div key={i} {...stylex.props(monthGridStyles.dayName)}>
+            {name}
+          </div>
+        ))}
+      </div>
+
+      {/* Days grid */}
+      <div
+        ref={gridRef as React.RefObject<HTMLDivElement>}
+        role="grid"
+        aria-label={monthLabel}
+        onKeyDown={handleGridKeyDown}
+        {...stylex.props(
+          monthGridStyles.daysGrid,
+          hasWeekNumbers && monthGridStyles.daysGridWithNumbers,
+        )}>
+        {weeks.map((week, weekIndex) => {
+          const weekDate = week.find(d => !d.isOutside)?.date || week[0].date;
+          const weekNum = getWeekNumber(weekDate);
+
+          return (
+            <div
+              key={weekIndex}
+              role="row"
+              {...stylex.props(monthGridStyles.weekRow)}>
+              {hasWeekNumbers && (
+                <div {...stylex.props(monthGridStyles.weekNumber)}>
+                  {weekNum}
+                </div>
+              )}
+              {week.map((day, dayIndex) => (
+                <DayCell
+                  key={dayIndex}
+                  day={day}
+                  dayIndex={dayIndex}
+                  mode={mode}
+                  selectedDate={selectedDate}
+                  rangeStart={rangeStart}
+                  rangeEnd={rangeEnd}
+                  previewStart={previewStart}
+                  previewEnd={previewEnd}
+                  today={today}
+                  hasOutsideDays={hasOutsideDays}
+                  isDisabled={isDateDisabled(day.date)}
+                  isTabbable={isTabbable(day.iso)}
+                  onDayClick={onDayClick}
+                  onDayHover={onDayHover}
+                />
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// DayCell (Private)
+// =============================================================================
+
+interface DayCellProps {
+  day: CalendarDay;
+  dayIndex: number;
+  mode: 'single' | 'range';
+  selectedDate: Date | null;
+  rangeStart: Date | null;
+  rangeEnd: Date | null;
+  previewStart: Date | null;
+  previewEnd: Date | null;
+  today: Date;
+  hasOutsideDays: boolean;
+  isDisabled: boolean;
+  isTabbable: boolean;
+  onDayClick: (date: Date) => void;
+  onDayHover: (date: Date | null) => void;
+}
+
+function DayCell({
+  day,
+  dayIndex,
+  mode,
+  selectedDate,
+  rangeStart,
+  rangeEnd,
+  previewStart,
+  previewEnd,
+  today,
+  hasOutsideDays,
+  isDisabled,
+  isTabbable: isTabbableDay,
+  onDayClick,
+  onDayHover,
+}: DayCellProps) {
+  const {date, isOutside, dayNumber} = day;
+
+  // Empty cell for outside days when not showing them
+  if (isOutside && !hasOutsideDays) {
+    return <div {...stylex.props(dayCellStyles.cell)} />;
+  }
+
+  const isToday = isSameDay(date, today);
+  const isSelected =
+    mode === 'single' && selectedDate && isSameDay(date, selectedDate);
+  const isInRange =
+    mode === 'range' &&
+    rangeStart &&
+    rangeEnd &&
+    isDateInRange(date, rangeStart, rangeEnd);
+  const isRangeStart =
+    mode === 'range' && rangeStart && isSameDay(date, rangeStart);
+  const isRangeEnd = mode === 'range' && rangeEnd && isSameDay(date, rangeEnd);
+
+  // Preview range calculations
+  const isInPreview =
+    previewStart && previewEnd && isDateInRange(date, previewStart, previewEnd);
+  const isPreviewStart = previewStart && isSameDay(date, previewStart);
+  const isPreviewEnd = previewEnd && isSameDay(date, previewEnd);
+
+  // Determine cell background for range
+  const hasRangeBackground = isInRange;
+
+  // Round edges at grid boundaries or range endpoints
+  const isFirstColumn = dayIndex === 0;
+  const isLastColumn = dayIndex === 6;
+
+  // Determine if background needs rounded edges
+  const roundLeft = isRangeStart || isFirstColumn;
+  const roundRight = isRangeEnd || isLastColumn;
+
+  // Determine if preview needs rounded edges
+  const previewRoundLeft = isPreviewStart || isFirstColumn;
+  const previewRoundRight = isPreviewEnd || isLastColumn;
+
+  return (
+    <div {...stylex.props(dayCellStyles.cell)}>
+      {/* Range background */}
+      {hasRangeBackground && (
+        <div
+          {...stylex.props(
+            dayCellStyles.rangeBg,
+            dayCellTheme.rangeBg,
+            roundLeft && dayCellStyles.rangeBgRadiusLeft,
+            roundRight && dayCellStyles.rangeBgRadiusRight,
+            isRangeStart && dayCellStyles.rangeInsetLeft,
+            isRangeStart && roundRight && dayCellStyles.rangeInsetRight,
+            isRangeEnd && dayCellStyles.rangeInsetRight,
+            isRangeStart && roundLeft && dayCellStyles.rangeInsetLeft,
+          )}
+        />
+      )}
+
+      {/* Preview range background */}
+      {isInPreview && (
+        <div
+          {...stylex.props(
+            dayCellStyles.previewBg,
+            dayCellTheme.previewBg,
+            previewRoundLeft && dayCellStyles.previewBgRadiusLeft,
+            previewRoundRight && dayCellStyles.previewBgRadiusRight,
+            isPreviewStart && dayCellStyles.previewStart,
+            isPreviewStart && roundRight && dayCellStyles.rangeInsetRight,
+            isPreviewEnd && dayCellStyles.previewEnd,
+            isPreviewEnd && roundLeft && dayCellStyles.rangeInsetLeft,
+          )}
+        />
+      )}
+
+      {/* Day button */}
+      <button
+        type="button"
+        role="gridcell"
+        aria-label={formatAccessibleDate(date)}
+        aria-selected={isSelected || isInRange || undefined}
+        aria-disabled={isDisabled || undefined}
+        disabled={isDisabled}
+        tabIndex={isTabbableDay ? 0 : -1}
+        onClick={() => !isDisabled && onDayClick(date)}
+        onMouseEnter={() => !isDisabled && onDayHover(date)}
+        onMouseLeave={() => onDayHover(null)}
+        {...stylex.props(
+          dayCellStyles.day,
+          dayCellTheme.day,
+          isOutside && dayCellStyles.dayOutside,
+          isOutside && dayCellTheme.dayOutside,
+          isToday && !isSelected && !isInRange && dayCellStyles.dayToday,
+          isToday && !isSelected && !isInRange && dayCellTheme.dayToday,
+          isToday && !isSelected && isInRange && dayCellStyles.dayTodayInRange,
+          isToday && !isSelected && isInRange && dayCellTheme.dayTodayInRange,
+          (isSelected || isRangeStart || isRangeEnd) &&
+            dayCellStyles.daySelected,
+          (isSelected || isRangeStart || isRangeEnd) &&
+            dayCellTheme.daySelected,
+          isDisabled && dayCellStyles.dayDisabled,
+          isDisabled && dayCellTheme.dayDisabled,
+        )}>
+        {dayNumber}
+      </button>
+    </div>
+  );
+}
