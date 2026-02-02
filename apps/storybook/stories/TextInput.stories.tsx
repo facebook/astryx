@@ -52,6 +52,11 @@ const meta: Meta<typeof XDSTextInput> = {
       description:
         'Status indicator with type (warning/error/success) and optional message',
     },
+    labelTooltip: {
+      control: 'text',
+      description:
+        'Tooltip text to display in an info icon at the end of the label',
+    },
   },
 };
 
@@ -377,5 +382,30 @@ export const StatusVariations: Story = {
         />
       </div>
     );
+  },
+};
+
+export const WithTooltip: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? '');
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'API Key',
+    placeholder: 'Enter your API key',
+    labelTooltip: 'Your unique API key for authentication. Keep this secret!',
+  },
+};
+
+export const TooltipWithOptional: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? '');
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Webhook URL',
+    placeholder: 'https://example.com/webhook',
+    labelTooltip: 'The URL where we will send event notifications.',
+    isOptional: true,
   },
 };

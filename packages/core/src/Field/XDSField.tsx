@@ -158,6 +158,10 @@ export interface XDSFieldProps
    */
   status?: XDSFieldStatus;
   /**
+   * Tooltip text to display in an info icon at the end of the label.
+   */
+  labelTooltip?: string;
+  /**
    * The input or control to render inside the field.
    */
   children: ReactNode;
@@ -187,6 +191,7 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
       isRequired = false,
       labelStartIcon,
       status,
+      labelTooltip,
       children,
       ...props
     },
@@ -201,6 +206,7 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
           isOptional={isOptional}
           isRequired={isRequired}
           startIcon={labelStartIcon}
+          tooltip={labelTooltip}
         />
         {description && (
           <span id={descriptionID} {...stylex.props(styles.description)}>
