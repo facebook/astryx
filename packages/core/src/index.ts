@@ -8,12 +8,16 @@
  */
 
 // Components
+export * from './AspectRatio';
 export * from './Avatar';
 export * from './Button';
 export * from './Calendar';
+export * from './Center';
 export * from './CheckboxInput';
 export * from './DatePicker';
+export * from './Divider';
 export * from './Field';
+export * from './Grid';
 export * from './Icon';
 export * from './Text';
 export * from './TextInput';
