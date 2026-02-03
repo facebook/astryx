@@ -14,14 +14,15 @@ export * from './Button';
 export * from './Calendar';
 export * from './Center';
 export * from './CheckboxInput';
-export * from './DatePicker';
 export * from './Divider';
+export * from './DateInput';
 export * from './Field';
 export * from './Grid';
 export * from './Icon';
 export * from './Text';
 export * from './TextInput';
 export * from './TextArea';
+export * from './TimeInput';
 
 // Layout utilities and components (includes XDSHStack, XDSVStack)
 export * from './Layout';

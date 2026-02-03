@@ -1,11 +1,11 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSDatePicker} from '@xds/core/DatePicker';
+import {XDSDateInput} from '@xds/core/DateInput';
 import type {ISODateString} from '@xds/core/Calendar';
 
-const meta: Meta<typeof XDSDatePicker> = {
-  title: 'Core/XDSDatePicker',
-  component: XDSDatePicker,
+const meta: Meta<typeof XDSDateInput> = {
+  title: 'Core/XDSDateInput',
+  component: XDSDateInput,
   tags: ['autodocs'],
   argTypes: {
     label: {
@@ -53,12 +53,12 @@ const meta: Meta<typeof XDSDatePicker> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSDatePicker>;
+type Story = StoryObj<typeof XDSDateInput>;
 
 export const Default: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
-    return <XDSDatePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Date',
@@ -71,7 +71,7 @@ export const WithValue: Story = {
     const [value, setValue] = useState<ISODateString | undefined>(
       '2026-01-25' as ISODateString,
     );
-    return <XDSDatePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Event date',
@@ -81,7 +81,7 @@ export const WithValue: Story = {
 export const WithDescription: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
-    return <XDSDatePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Birthday',
@@ -93,7 +93,7 @@ export const WithDescription: Story = {
 export const WithHiddenLabel: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
-    return <XDSDatePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Date',
@@ -105,7 +105,7 @@ export const WithHiddenLabel: Story = {
 export const Optional: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
-    return <XDSDatePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Preferred date',
@@ -117,7 +117,7 @@ export const Optional: Story = {
 export const Required: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
-    return <XDSDatePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Start date',
@@ -131,7 +131,7 @@ export const Disabled: Story = {
     const [value, setValue] = useState<ISODateString | undefined>(
       '2026-01-25' as ISODateString,
     );
-    return <XDSDatePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Locked date',
@@ -142,7 +142,7 @@ export const Disabled: Story = {
 export const SmallSize: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
-    return <XDSDatePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Date',
@@ -154,7 +154,7 @@ export const SmallSize: Story = {
 export const WithMinMax: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
-    return <XDSDatePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Booking date',
@@ -168,12 +168,60 @@ export const WithMinMax: Story = {
 export const TwoMonthCalendar: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
-    return <XDSDatePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Travel date',
     numberOfMonths: 2,
     placeholder: 'Select a travel date',
+  },
+};
+
+export const WithErrorStatus: Story = {
+  render: args => {
+    const [value, setValue] = useState<ISODateString | undefined>(
+      '2026-01-25' as ISODateString,
+    );
+    return <XDSDateInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Event date',
+    status: {
+      type: 'error',
+      message: 'This date is not available',
+    },
+  },
+};
+
+export const WithWarningStatus: Story = {
+  render: args => {
+    const [value, setValue] = useState<ISODateString | undefined>(
+      '2026-01-01' as ISODateString,
+    );
+    return <XDSDateInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Meeting date',
+    status: {
+      type: 'warning',
+      message: 'This is a holiday - are you sure?',
+    },
+  },
+};
+
+export const WithSuccessStatus: Story = {
+  render: args => {
+    const [value, setValue] = useState<ISODateString | undefined>(
+      '2026-02-10' as ISODateString,
+    );
+    return <XDSDateInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Appointment date',
+    status: {
+      type: 'success',
+      message: 'Date is available',
+    },
   },
 };
 
@@ -189,6 +237,9 @@ export const AllVariations: Story = {
     const [value6, setValue6] = useState<ISODateString | undefined>(
       '2026-03-10' as ISODateString,
     );
+    const [value7, setValue7] = useState<ISODateString | undefined>(
+      '2026-01-25' as ISODateString,
+    );
 
     return (
       <div
@@ -198,39 +249,48 @@ export const AllVariations: Story = {
           gap: '16px',
           maxWidth: '300px',
         }}>
-        <XDSDatePicker
+        <XDSDateInput
           label="Default"
           value={value1}
           onChange={setValue1}
           placeholder="Select a date"
         />
-        <XDSDatePicker label="With value" value={value2} onChange={setValue2} />
-        <XDSDatePicker
+        <XDSDateInput label="With value" value={value2} onChange={setValue2} />
+        <XDSDateInput
           label="With description"
           description="Pick your preferred date"
           value={value3}
           onChange={setValue3}
           placeholder="Select a date"
         />
-        <XDSDatePicker
+        <XDSDateInput
           label="Optional field"
           isOptional
           value={value4}
           onChange={setValue4}
           placeholder="Select a date (optional)"
         />
-        <XDSDatePicker
+        <XDSDateInput
           label="Required field"
           isRequired
           value={value5}
           onChange={setValue5}
           placeholder="Select a date"
         />
-        <XDSDatePicker
+        <XDSDateInput
           label="Disabled"
           isDisabled
           value={value6}
           onChange={setValue6}
+        />
+        <XDSDateInput
+          label="With error"
+          value={value7}
+          onChange={setValue7}
+          status={{
+            type: 'error',
+            message: 'Invalid date selection',
+          }}
         />
       </div>
     );

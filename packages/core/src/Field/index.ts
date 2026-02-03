@@ -15,3 +15,6 @@ export type {
 } from './XDSField';
 export {XDSFieldLabel} from './XDSFieldLabel';
 export type {XDSFieldLabelProps} from './XDSFieldLabel';
+
+// Shared input types
+export type {XDSInputStatus, XDSInputStatusType, XDSInputSize} from './types';

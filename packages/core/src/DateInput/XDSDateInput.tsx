@@ -1,14 +1,14 @@
 /**
- * @file XDSDatePicker.tsx
+ * @file XDSDateInput.tsx
  * @input Uses React forwardRef, useId, useState, useEffect, useCallback, useRef, XDSField, XDSIcon, XDSCalendar, useXDSPopover
- * @output Exports XDSDatePicker component, XDSDatePickerProps
- * @position Core implementation; consumed by index.ts, tested by XDSDatePicker.test.tsx
+ * @output Exports XDSDateInput component, XDSDateInputProps
+ * @position Core implementation; consumed by index.ts, tested by XDSDateInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/DatePicker/README.md (props table, features, implementation notes)
- * - /packages/core/src/DatePicker/XDSDatePicker.test.tsx (tests for new/changed behavior)
- * - /packages/core/src/DatePicker/index.ts (exports if types change)
- * - /apps/storybook/stories/DatePicker.stories.tsx (storybook stories)
+ * - /packages/core/src/DateInput/README.md (props table, features, implementation notes)
+ * - /packages/core/src/DateInput/XDSDateInput.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/DateInput/index.ts (exports if types change)
+ * - /apps/storybook/stories/DateInput.stories.tsx (storybook stories)
  */
 
 import {
@@ -18,9 +18,15 @@ import {
   useEffect,
   useCallback,
   useRef,
+  useMemo,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {CalendarDaysIcon} from '@heroicons/react/24/outline';
+import {
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  XCircleIcon,
+} from '@heroicons/react/24/solid';
 import {
   colorVars,
   spacingVars,
@@ -31,7 +37,7 @@ import {
   lineHeightVars,
   elevationVars,
 } from '../theme/tokens.stylex';
-import {XDSField} from '../Field';
+import {XDSField, type XDSInputStatus, type XDSInputStatusType} from '../Field';
 import {XDSIcon} from '../Icon';
 import {XDSCalendar, type ISODateString} from '../Calendar';
 import {useXDSPopover} from '../Layer';
@@ -39,6 +45,7 @@ import {parseDateInput, formatDisplayDate} from '../utils';
 
 const styles = stylex.create({
   wrapper: {
+    position: 'relative',
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
@@ -108,6 +115,9 @@ const styles = stylex.create({
   inputDisabled: {
     cursor: 'not-allowed',
   },
+  inputInvalid: {
+    color: colorVars['--color-text-secondary'],
+  },
   popover: {
     backgroundColor: colorVars['--color-popover'],
     borderRadius: radiusVars['--radius-container'],
@@ -124,9 +134,27 @@ const sizeStyles = stylex.create({
   },
 });
 
-export type XDSDatePickerSize = keyof typeof sizeStyles;
+const statusBorderStyles = stylex.create({
+  warning: {
+    borderColor: colorVars['--color-warning'],
+  },
+  error: {
+    borderColor: colorVars['--color-negative'],
+  },
+  success: {
+    borderColor: colorVars['--color-positive'],
+  },
+});
 
-export interface XDSDatePickerProps {
+export type XDSDateInputSize = keyof typeof sizeStyles;
+
+// Re-export shared types for convenience
+export type {
+  XDSInputStatus as XDSDateInputStatus,
+  XDSInputStatusType as XDSDateInputStatusType,
+} from '../Field';
+
+export interface XDSDateInputProps {
   /**
    * Label text for the input (required for accessibility).
    */
@@ -199,7 +227,14 @@ export interface XDSDatePickerProps {
    * - 'md': Default size (26px height)
    * @default 'md'
    */
-  size?: XDSDatePickerSize;
+  size?: XDSDateInputSize;
+
+  /**
+   * Status indicator for the input.
+   * When set, displays a colored border and status icon.
+   * If message is provided, displays below the input.
+   */
+  status?: XDSInputStatus;
 
   /**
    * Number of months to display in the calendar popover.
@@ -213,14 +248,14 @@ export interface XDSDatePickerProps {
  *
  * @example
  * ```tsx
- * <XDSDatePicker
+ * <XDSDateInput
  *   label="Event date"
  *   value={date}
  *   onChange={setDate}
  * />
  * ```
  */
-export const XDSDatePicker = forwardRef<HTMLInputElement, XDSDatePickerProps>(
+export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
   (
     {
       label,
@@ -236,16 +271,51 @@ export const XDSDatePicker = forwardRef<HTMLInputElement, XDSDatePickerProps>(
       dateConstraints,
       placeholder = 'Select a date',
       size = 'md',
+      status,
       numberOfMonths = 1,
     },
     ref,
   ) => {
     const id = useId();
     const descriptionID = useId();
+    const statusMessageID = useId();
     const inputRef = useRef<HTMLInputElement | null>(null);
+
+    // Status icon mapping
+    const statusIconMap: Record<XDSInputStatusType, typeof CalendarDaysIcon> = {
+      warning: ExclamationTriangleIcon,
+      error: XCircleIcon,
+      success: CheckCircleIcon,
+    };
+
+    const statusIconColorMap: Record<
+      XDSInputStatusType,
+      'warning' | 'negative' | 'positive'
+    > = {
+      warning: 'warning',
+      error: 'negative',
+      success: 'positive',
+    };
+
+    const ariaDescribedBy =
+      [
+        description ? descriptionID : null,
+        status?.message ? statusMessageID : null,
+      ]
+        .filter(Boolean)
+        .join(' ') || undefined;
 
     // Track input text separately from value for manual editing
     const [inputValue, setInputValue] = useState('');
+
+    // Check if current input is valid (for styling purposes)
+    const isInputValid = useMemo(() => {
+      // Empty input is considered valid (will clear on blur)
+      if (!inputValue.trim()) {
+        return true;
+      }
+      return parseDateInput(inputValue) !== null;
+    }, [inputValue]);
 
     // Use XDSPopover for popover rendering, positioning, and focus trapping
     const popover = useXDSPopover({
@@ -267,10 +337,17 @@ export const XDSDatePicker = forwardRef<HTMLInputElement, XDSDatePickerProps>(
       }
     }, [value]);
 
-    // Handle opening the popover
+    // Handle opening the popover from button click (focus calendar)
     const handleOpen = useCallback(() => {
       if (!isDisabled && !popover.isOpen) {
         popover.show();
+      }
+    }, [isDisabled, popover]);
+
+    // Handle opening the popover from input click (keep focus in input)
+    const handleInputClick = useCallback(() => {
+      if (!isDisabled && !popover.isOpen) {
+        popover.show({skipAutoFocus: true});
       }
     }, [isDisabled, popover]);
 
@@ -349,12 +426,22 @@ export const XDSDatePicker = forwardRef<HTMLInputElement, XDSDatePickerProps>(
         inputID={id}
         descriptionID={description ? descriptionID : undefined}
         isOptional={isOptional}
-        isRequired={isRequired}>
+        isRequired={isRequired}
+        status={
+          status
+            ? {
+                type: status.type,
+                message: status.message,
+                messageID: status.message ? statusMessageID : undefined,
+              }
+            : undefined
+        }>
         <div
           ref={popover.triggerRef}
           {...stylex.props(
             styles.wrapper,
             isDisabled && styles.wrapperDisabled,
+            status && statusBorderStyles[status.type],
           )}>
           <button
             type="button"
@@ -375,18 +462,27 @@ export const XDSDatePicker = forwardRef<HTMLInputElement, XDSDatePickerProps>(
             value={inputValue}
             onChange={handleInputChange}
             onBlur={handleBlur}
-            onClick={handleOpen}
+            onClick={handleInputClick}
             onKeyDown={handleInputKeyDown}
             placeholder={placeholder}
             disabled={isDisabled}
-            aria-describedby={description ? descriptionID : undefined}
+            aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
+            aria-invalid={status?.type === 'error' ? 'true' : undefined}
             {...stylex.props(
               styles.input,
               sizeStyles[size],
               isDisabled && styles.inputDisabled,
+              !isInputValid && styles.inputInvalid,
             )}
           />
+          {status && (
+            <XDSIcon
+              icon={statusIconMap[status.type]}
+              size="md"
+              color={statusIconColorMap[status.type]}
+            />
+          )}
         </div>
         {popover.render(
           <XDSCalendar
@@ -406,4 +502,4 @@ export const XDSDatePicker = forwardRef<HTMLInputElement, XDSDatePickerProps>(
   },
 );
 
-XDSDatePicker.displayName = 'XDSDatePicker';
+XDSDateInput.displayName = 'XDSDateInput';

@@ -159,9 +159,11 @@ export interface UseXDSPopoverReturn {
   anchorId: string;
 
   /**
-   * Show the popover
+   * Show the popover.
+   * @param options.skipAutoFocus - If true, don't auto-focus the first element.
+   *   Useful when triggered by mouse click on an input that should retain focus.
    */
-  show: () => void;
+  show: (options?: {skipAutoFocus?: boolean}) => void;
 
   /**
    * Hide the popover
@@ -270,6 +272,9 @@ export function useXDSPopover(
   // Track the trigger element for returning focus
   const triggerElementRef = useRef<HTMLElement | null>(null);
 
+  // Track whether to skip auto-focus for the current open event
+  const skipAutoFocusRef = useRef(false);
+
   // Core layer for popover positioning
   const layer = useXDSLayer({
     mode: 'context',
@@ -285,13 +290,17 @@ export function useXDSPopover(
     onEscape: layer.hide,
   });
 
-  // Auto-focus first element when popover opens
+  // Auto-focus first element when popover opens (unless skipped)
   useEffect(() => {
-    if (layer.isOpen && hasAutoFocus) {
+    if (layer.isOpen && hasAutoFocus && !skipAutoFocusRef.current) {
       // Use requestAnimationFrame to ensure DOM is ready
       requestAnimationFrame(() => {
         focusFirst();
       });
+    }
+    // Reset the skip flag after the effect runs
+    if (!layer.isOpen) {
+      skipAutoFocusRef.current = false;
     }
   }, [layer.isOpen, hasAutoFocus, focusFirst]);
 
@@ -311,14 +320,23 @@ export function useXDSPopover(
     [layer],
   );
 
+  // Show function with optional skipAutoFocus
+  const show = useCallback(
+    (showOptions?: {skipAutoFocus?: boolean}) => {
+      skipAutoFocusRef.current = showOptions?.skipAutoFocus ?? false;
+      layer.show();
+    },
+    [layer],
+  );
+
   // Toggle function
   const toggle = useCallback(() => {
     if (layer.isOpen) {
       layer.hide();
     } else {
-      layer.show();
+      show();
     }
-  }, [layer]);
+  }, [layer, show]);
 
   // ARIA attributes for the trigger
   const triggerProps = {
@@ -370,7 +388,7 @@ export function useXDSPopover(
     triggerRef,
     contentRef,
     anchorId: layer.anchorId,
-    show: layer.show,
+    show,
     hide: layer.hide,
     toggle,
     isOpen: layer.isOpen,

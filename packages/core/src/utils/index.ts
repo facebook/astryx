@@ -12,3 +12,17 @@ export {
   parseISO,
   isLocaleDayFirst,
 } from './dateParser';
+
+export {
+  parseISOTime,
+  formatISOTime,
+  formatDisplayTime12h,
+  formatDisplayTime24h,
+  parseTimeInput,
+  compareTime,
+  isTimeInRange,
+  clampTime,
+  adjustTime,
+  createISOTimeString,
+} from './timeParser';
+export type {ISOTimeString, ParsedTime} from './timeParser';

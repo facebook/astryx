@@ -25,7 +25,7 @@ import {
   transitionVars,
   typographyVars,
 } from '../theme/tokens.stylex';
-import {XDSField} from '../Field';
+import {XDSField, type XDSInputStatus, type XDSInputStatusType} from '../Field';
 import {XDSIcon, type XDSIconType} from '../Icon';
 
 const styles = stylex.create({
@@ -105,18 +105,11 @@ const statusBorderStyles = stylex.create({
 
 export type XDSTextInputSize = keyof typeof sizeStyles;
 
-export type XDSTextInputStatusType = 'warning' | 'error' | 'success';
-
-export interface XDSTextInputStatus {
-  /**
-   * The type of status to display.
-   */
-  type: XDSTextInputStatusType;
-  /**
-   * Optional message to display below the input.
-   */
-  message?: string;
-}
+// Re-export shared types for convenience
+export type {
+  XDSInputStatus as XDSTextInputStatus,
+  XDSInputStatusType as XDSTextInputStatusType,
+} from '../Field';
 
 export interface XDSTextInputProps {
   /**
@@ -157,7 +150,7 @@ export interface XDSTextInputProps {
    * When set, displays a colored border and status icon.
    * If message is provided, displays a floating message box below the input.
    */
-  status?: XDSTextInputStatus;
+  status?: XDSInputStatus;
   /**
    * The size of the input.
    * - 'sm': Compact size (18px height)
@@ -221,20 +214,20 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
       hasAutoFocus = false,
       htmlName,
     },
-    ref
+    ref,
   ) => {
     const id = useId();
     const descriptionID = useId();
     const statusMessageID = useId();
 
-    const statusIconMap: Record<XDSTextInputStatusType, XDSIconType> = {
+    const statusIconMap: Record<XDSInputStatusType, XDSIconType> = {
       warning: ExclamationTriangleIcon,
       error: XCircleIcon,
       success: CheckCircleIcon,
     };
 
     const statusIconColorMap: Record<
-      XDSTextInputStatusType,
+      XDSInputStatusType,
       'warning' | 'negative' | 'positive'
     > = {
       warning: 'warning',
@@ -273,7 +266,7 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
           {...stylex.props(
             styles.wrapper,
             isDisabled && styles.wrapperDisabled,
-            status && statusBorderStyles[status.type]
+            status && statusBorderStyles[status.type],
           )}>
           {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
           <input
@@ -292,7 +285,7 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
             {...stylex.props(
               styles.input,
               sizeStyles[size],
-              isDisabled && styles.inputDisabled
+              isDisabled && styles.inputDisabled,
             )}
           />
           {status && (
@@ -305,7 +298,7 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
         </div>
       </XDSField>
     );
-  }
+  },
 );
 
 XDSTextInput.displayName = 'XDSTextInput';
