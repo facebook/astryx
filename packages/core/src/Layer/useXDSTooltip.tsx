@@ -264,8 +264,10 @@ export function useXDSTooltip(
     mode: 'context',
     onShow,
     onHide,
-    xstyle: [styles.container, marginStyle, themeContainerOverride],
   });
+
+  // StyleX for the popover container
+  const popoverXstyle = [styles.container, marginStyle, themeContainerOverride];
 
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -383,6 +385,7 @@ export function useXDSTooltip(
       const renderProps = {
         placement: props?.placement ?? placement,
         alignment: props?.alignment ?? alignment,
+        xstyle: popoverXstyle,
       };
 
       return layer.render(
@@ -392,7 +395,7 @@ export function useXDSTooltip(
         renderProps,
       );
     },
-    [layer, placement, alignment, themeContentOverride],
+    [layer, placement, alignment, themeContentOverride, popoverXstyle],
   );
 
   return {

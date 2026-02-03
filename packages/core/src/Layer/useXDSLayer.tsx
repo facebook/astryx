@@ -65,6 +65,10 @@ export type LayerAlignment = 'start' | 'center' | 'end';
 export interface ContextRenderProps {
   placement?: LayerPlacement;
   alignment?: LayerAlignment;
+  /**
+   * StyleX styles for the popover container.
+   */
+  xstyle?: StyleXStyles;
 }
 
 /**
@@ -88,11 +92,6 @@ interface BaseLayerOptions {
    * Callback fired when layer is hidden
    */
   onHide?: () => void;
-
-  /**
-   * StyleX styles for the layer container
-   */
-  xstyle?: StyleXStyles;
 
   /**
    * Whether clicking outside should dismiss the layer.
@@ -251,7 +250,7 @@ export function useXDSLayer(options: FixedLayerOptions): FixedLayerReturn;
 export function useXDSLayer(
   options: ContextLayerOptions | FixedLayerOptions,
 ): ContextLayerReturn | FixedLayerReturn {
-  const {mode, onShow, onHide, xstyle, lightDismiss = false} = options;
+  const {mode, onShow, onHide, lightDismiss = false} = options;
   const id = useId();
   const anchorId = `--xds-layer-${id.replace(/:/g, '')}`;
 
@@ -313,9 +312,9 @@ export function useXDSLayer(
   // Render function for context mode
   const renderContext = useCallback(
     (children: ReactNode, props?: ContextRenderProps) => {
-      const {placement = 'above', alignment = 'center'} = props || {};
+      const {placement = 'above', alignment = 'center', xstyle} = props || {};
 
-      // CSS anchor positioning properties (dynamic, not in StyleX)
+      // CSS anchor positioning (dynamic, not in StyleX)
       const anchorStyle: React.CSSProperties = {
         positionAnchor: anchorId,
         positionArea: getPositionArea(placement, alignment),
@@ -338,7 +337,7 @@ export function useXDSLayer(
         </div>
       );
     },
-    [anchorId, handleToggle, id, lightDismiss, xstyle],
+    [anchorId, handleToggle, id, lightDismiss],
   );
 
   // Render function for fixed mode
@@ -362,13 +361,13 @@ export function useXDSLayer(
           }}
           id={id}
           popover={lightDismiss ? 'auto' : 'manual'}
-          {...stylex.props(styles.base, styles.fixed, xstyle)}
+          {...stylex.props(styles.base, styles.fixed)}
           style={positionStyle}>
           {children}
         </div>
       );
     },
-    [handleToggle, id, lightDismiss, xstyle],
+    [handleToggle, id, lightDismiss],
   );
 
   if (mode === 'context') {

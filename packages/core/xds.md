@@ -25,6 +25,7 @@ Each component has a README.md in its source directory with usage examples, prop
 | `@xds/core/TextInput`     | [src/TextInput/README.md](src/TextInput/README.md)               | XDSTextInput                                                                  |
 | `@xds/core/TextArea`      | [src/TextArea/README.md](src/TextArea/README.md)                 | XDSTextArea                                                                   |
 | `@xds/core/CheckboxInput` | [src/CheckboxInput/README.md](src/CheckboxInput/README.md)       | XDSCheckboxInput                                                              |
+| `@xds/core/Selector`      | [src/Selector/README.md](src/Selector/README.md)                 | XDSSelector                                                                   |
 | `@xds/core/Field`         | [src/Field/README.md](src/Field/README.md)                       | XDSField                                                                      |
 | `@xds/core/Avatar`        | [src/Avatar/README.md](src/Avatar/README.md)                     | XDSAvatar                                                                     |
 | `@xds/core/Skeleton`      | [src/Skeleton/README.md](src/Skeleton/README.md)                 | XDSSkeleton                                                                   |

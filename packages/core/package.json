@@ -54,6 +54,11 @@
       "import": "./dist/Icon/index.mjs",
       "require": "./dist/Icon/index.js"
     },
+    "./Selector": {
+      "types": "./dist/Selector/index.d.ts",
+      "import": "./dist/Selector/index.mjs",
+      "require": "./dist/Selector/index.js"
+    },
     "./Layout": {
       "types": "./dist/Layout/index.d.ts",
       "import": "./dist/Layout/index.mjs",

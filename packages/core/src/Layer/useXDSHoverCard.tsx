@@ -259,8 +259,10 @@ export function useXDSHoverCard(
     mode: 'context',
     onShow,
     onHide,
-    xstyle: [styles.container, marginStyle, themeContainerOverride],
   });
+
+  // StyleX for the popover container
+  const popoverXstyle = [styles.container, marginStyle, themeContainerOverride];
 
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -418,6 +420,7 @@ export function useXDSHoverCard(
       const renderProps = {
         placement: props?.placement ?? placement,
         alignment: props?.alignment ?? alignment,
+        xstyle: popoverXstyle,
       };
 
       return layer.render(
@@ -474,6 +477,7 @@ export function useXDSHoverCard(
       clearTimeouts,
       scheduleHide,
       themeContentOverride,
+      popoverXstyle,
     ],
   );
 

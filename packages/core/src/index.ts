@@ -18,6 +18,7 @@ export * from './DatePicker';
 export * from './Divider';
 export * from './Field';
 export * from './Grid';
+export * from './Selector';
 export * from './Icon';
 export * from './Text';
 export * from './TextInput';
