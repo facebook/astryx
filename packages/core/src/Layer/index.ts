@@ -23,6 +23,10 @@ export type {
   FixedLayerReturn,
 } from './useXDSLayer';
 
+// Popover hook (combines layer + focus trap)
+export {useXDSPopover} from './useXDSPopover';
+export type {UseXDSPopoverOptions, UseXDSPopoverReturn} from './useXDSPopover';
+
 // HoverCard hook and component
 export {useXDSHoverCard} from './useXDSHoverCard';
 export type {

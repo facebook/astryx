@@ -7,5 +7,8 @@
  * SYNC: When modified, update this header
  */
 
-// Hooks will be added here as needed
-export {};
+export {useFocusTrap} from './useFocusTrap';
+export type {UseFocusTrapOptions, UseFocusTrapReturn} from './useFocusTrap';
+
+export {useGridFocus} from './useGridFocus';
+export type {UseGridFocusOptions, UseGridFocusReturn} from './useGridFocus';

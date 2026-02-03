@@ -39,6 +39,11 @@
       "import": "./dist/CheckboxInput/index.mjs",
       "require": "./dist/CheckboxInput/index.js"
     },
+    "./DatePicker": {
+      "types": "./dist/DatePicker/index.d.ts",
+      "import": "./dist/DatePicker/index.mjs",
+      "require": "./dist/DatePicker/index.js"
+    },
     "./Field": {
       "types": "./dist/Field/index.d.ts",
       "import": "./dist/Field/index.mjs",
@@ -88,6 +93,11 @@
       "types": "./dist/theme/index.d.ts",
       "import": "./dist/theme/index.mjs",
       "require": "./dist/theme/index.js"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "import": "./dist/utils/index.mjs",
+      "require": "./dist/utils/index.js"
     },
     "./xds.md": "./xds.md"
   },

@@ -12,6 +12,16 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSCalendar} from './XDSCalendar';
 
+/**
+ * Helper to find a day button by its day number.
+ * Day buttons have aria-labels like "Thursday, January 15, 2026".
+ */
+function getDayButton(day: number, month = 'January', year = 2026) {
+  // Match the full date pattern with the day number
+  const pattern = new RegExp(`${month}\\s+${day},\\s+${year}`);
+  return screen.getByRole('gridcell', {name: pattern});
+}
+
 describe('XDSCalendar', () => {
   // ─── Basic Rendering ─────────────────────────────────────────
 
@@ -53,7 +63,7 @@ describe('XDSCalendar', () => {
   it('highlights selected date', () => {
     render(<XDSCalendar value="2026-01-15" focusDate="2026-01-01" />);
 
-    const day15 = screen.getByRole('gridcell', {name: '15'});
+    const day15 = getDayButton(15);
     expect(day15).toHaveAttribute('aria-selected', 'true');
   });
 
@@ -63,7 +73,7 @@ describe('XDSCalendar', () => {
 
     render(<XDSCalendar onChange={handleChange} focusDate="2026-01-01" />);
 
-    const day15 = screen.getByRole('gridcell', {name: '15'});
+    const day15 = getDayButton(15);
     await user.click(day15);
 
     expect(handleChange).toHaveBeenCalledTimes(1);
@@ -122,22 +132,22 @@ describe('XDSCalendar', () => {
   it('respects min date constraint', () => {
     render(<XDSCalendar focusDate="2026-01-01" min="2026-01-10" />);
 
-    // Find day 5 in current month (not outside day from adjacent month)
-    const day5Buttons = screen.getAllByRole('gridcell', {name: '5'});
-    const day5 = day5Buttons.find(btn => !btn.className.includes('Outside'));
+    // Day 5 should be disabled (before min)
+    const day5 = getDayButton(5);
     expect(day5).toBeDisabled();
 
-    const day15 = screen.getByRole('gridcell', {name: '15'});
+    // Day 15 should be enabled (after min)
+    const day15 = getDayButton(15);
     expect(day15).not.toBeDisabled();
   });
 
   it('respects max date constraint', () => {
     render(<XDSCalendar focusDate="2026-01-01" max="2026-01-20" />);
 
-    const day25 = screen.getByRole('gridcell', {name: '25'});
+    const day25 = getDayButton(25);
     expect(day25).toBeDisabled();
 
-    const day15 = screen.getByRole('gridcell', {name: '15'});
+    const day15 = getDayButton(15);
     expect(day15).not.toBeDisabled();
   });
 
@@ -152,12 +162,8 @@ describe('XDSCalendar', () => {
       <XDSCalendar focusDate="2026-01-01" dateConstraints={[isWeekday]} />,
     );
 
-    // January 4, 2026 is a Sunday
-    const sundayButtons = screen.getAllByRole('gridcell', {name: '4'});
-    // Find the one that's in the current month (not outside)
-    const sunday = sundayButtons.find(
-      btn => !btn.className.includes('Outside'),
-    );
+    // January 4, 2026 is a Sunday - should be disabled
+    const sunday = getDayButton(4);
     expect(sunday).toBeDisabled();
   });
 
@@ -216,11 +222,11 @@ describe('XDSCalendar', () => {
     );
 
     // Click start date
-    const day10 = screen.getByRole('gridcell', {name: '10'});
+    const day10 = getDayButton(10);
     await user.click(day10);
 
     // Click end date
-    const day15 = screen.getByRole('gridcell', {name: '15'});
+    const day15 = getDayButton(15);
     await user.click(day15);
 
     expect(handleChange).toHaveBeenCalledWith({
@@ -242,11 +248,11 @@ describe('XDSCalendar', () => {
     );
 
     // Click later date first
-    const day20 = screen.getByRole('gridcell', {name: '20'});
+    const day20 = getDayButton(20);
     await user.click(day20);
 
     // Click earlier date
-    const day10 = screen.getByRole('gridcell', {name: '10'});
+    const day10 = getDayButton(10);
     await user.click(day10);
 
     // Should swap to ensure start <= end
@@ -265,9 +271,9 @@ describe('XDSCalendar', () => {
       />,
     );
 
-    const day10 = screen.getByRole('gridcell', {name: '10'});
-    const day12 = screen.getByRole('gridcell', {name: '12'});
-    const day15 = screen.getByRole('gridcell', {name: '15'});
+    const day10 = getDayButton(10);
+    const day12 = getDayButton(12);
+    const day15 = getDayButton(15);
 
     expect(day10).toHaveAttribute('aria-selected', 'true');
     expect(day12).toHaveAttribute('aria-selected', 'true');

@@ -1,0 +1,97 @@
+# /packages/core/src/DatePicker
+
+XDSDatePicker component combining a text input with a calendar popover for date selection.
+
+## Features
+
+- **Text Input**: Manual date entry with flexible parsing (supports various formats)
+- **Calendar Popover**: Click icon or use keyboard to open calendar picker
+- **Date Constraints**: `min`, `max`, and custom `dateConstraints` functions
+- **Accessibility**: Full keyboard navigation, focus trapping, screen reader support
+- **Field Integration**: Built on XDSField for consistent label, description, and validation states
+
+## Usage
+
+```tsx
+import { XDSDatePicker } from '@xds/core/DatePicker';
+
+// Basic usage
+<XDSDatePicker
+  label="Event date"
+  value={date}
+  onChange={setDate}
+/>
+
+// With constraints
+<XDSDatePicker
+  label="Departure date"
+  value={date}
+  onChange={setDate}
+  min="2026-01-01"
+  max="2026-12-31"
+  placeholder="Pick a date"
+/>
+
+// Two-month calendar
+<XDSDatePicker
+  label="Check-in date"
+  value={date}
+  onChange={setDate}
+  numberOfMonths={2}
+/>
+
+// With description and required
+<XDSDatePicker
+  label="Due date"
+  description="When should this task be completed?"
+  isRequired
+  value={date}
+  onChange={setDate}
+/>
+```
+
+## Props
+
+| Prop            | Type                                          | Default           | Description                      |
+| --------------- | --------------------------------------------- | ----------------- | -------------------------------- |
+| label           | `string`                                      | —                 | Label text (required)            |
+| isLabelHidden   | `boolean`                                     | `false`           | Visually hide label              |
+| description     | `string`                                      | —                 | Helper text below label          |
+| isOptional      | `boolean`                                     | `false`           | Show "(optional)" indicator      |
+| isRequired      | `boolean`                                     | `false`           | Mark field as required           |
+| isDisabled      | `boolean`                                     | `false`           | Disable input and calendar       |
+| value           | `ISODateString`                               | —                 | Selected date (YYYY-MM-DD)       |
+| onChange        | `(value: ISODateString \| undefined) => void` | —                 | Selection callback               |
+| min             | `ISODateString`                               | —                 | Minimum selectable date          |
+| max             | `ISODateString`                               | —                 | Maximum selectable date          |
+| dateConstraints | `Array<(date: Date) => boolean>`              | —                 | Custom constraint functions      |
+| placeholder     | `string`                                      | `"Select a date"` | Input placeholder text           |
+| size            | `'sm' \| 'md'`                                | `'md'`            | Input size                       |
+| numberOfMonths  | `1 \| 2`                                      | `1`               | Months shown in calendar popover |
+
+## Keyboard Navigation
+
+- **Tab**: Move between input and calendar icon button
+- **Enter/Space** on icon: Open calendar and move focus into it
+- **Escape**: Close calendar popover
+- **Arrow keys** in calendar: Navigate between days
+- **Page Up/Down** in calendar: Navigate between months
+
+## Date Input Parsing
+
+The text input accepts various date formats:
+
+- ISO format: `2026-01-28`
+- US format: `01/28/2026`, `1/28/2026`
+- Written: `Jan 28, 2026`, `January 28 2026`
+
+Invalid input reverts to the previous valid value on blur.
+
+## Files
+
+| File                   | Role   | Purpose                  |
+| ---------------------- | ------ | ------------------------ |
+| XDSDatePicker.tsx      | Core   | Component implementation |
+| XDSDatePicker.test.tsx | Test   | Unit tests               |
+| index.ts               | Export | Public API exports       |
+| README.md              | Docs   | This documentation       |
