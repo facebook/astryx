@@ -17,6 +17,9 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
+  textSizeVars,
+  fontWeightVars,
+  lineHeightVars,
 } from '../theme/tokens.stylex';
 
 /**
@@ -32,9 +35,10 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-element'],
     fontFamily: 'inherit',
-    fontSize: '0.75rem',
-    lineHeight: 1.333,
-    fontWeight: 500,
+    fontSize: textSizeVars['--text-xsm'],
+    lineHeight: lineHeightVars['--leading-snug'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    letterSpacing: '-0.24px',
     whiteSpace: 'nowrap',
   },
   dot: {
