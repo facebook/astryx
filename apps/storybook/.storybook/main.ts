@@ -1,9 +1,15 @@
 import type { StorybookConfig } from '@storybook/react-vite';
 import { join, dirname } from 'path';
+import { mergeConfig } from 'vite';
+import stylex from '@stylexjs/unplugin';
+import path from 'path';
 
 function getAbsolutePath(value: string): string {
   return dirname(require.resolve(join(value, 'package.json')));
 }
+
+const rootDir = path.resolve(__dirname, '../../..');
+const coreRoot = path.resolve(__dirname, '../../../packages/core/src');
 
 const config: StorybookConfig = {
   stories: [
@@ -21,6 +27,30 @@ const config: StorybookConfig = {
   },
   docs: {
     autodocs: 'tag',
+  },
+  viteFinal: async (config) => {
+    return mergeConfig(config, {
+      plugins: [
+        stylex.vite({
+          dev: process.env.NODE_ENV === 'development',
+          useCSSLayers: true,
+          styleResolution: 'application-order',
+          aliases: {
+            '@xds/core/*': [path.join(rootDir, 'packages/core/src/*')],
+            '@xds/core': [path.join(rootDir, 'packages/core/src')],
+          },
+          unstable_moduleResolution: {
+            type: 'commonJS',
+            rootDir: rootDir,
+          },
+        }),
+      ],
+      resolve: {
+        alias: {
+          '@xds/core': coreRoot,
+        },
+      },
+    });
   },
 };
 

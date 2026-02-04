@@ -2,9 +2,6 @@ import type {Preview, Decorator} from '@storybook/react';
 import * as React from 'react';
 import {XDSTheme, defaultTheme, neutralTheme} from '@xds/core';
 
-// Import StyleX generated CSS bundle
-import 'stylex-bundle.css';
-
 /**
  * Map of available themes
  */

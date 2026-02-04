@@ -18,10 +18,8 @@ const coreRoot = path.resolve(__dirname, '../../packages/core/src');
 export default defineConfig({
   plugins: [
     stylex.vite({
-      // Use production mode with CSS extraction
-      dev: false,
-      // Generate CSS file that will be auto-injected
-      fileName: 'stylex-bundle.css',
+      // Production mode extracts CSS, dev mode injects via JS
+      dev: process.env.NODE_ENV === 'development',
       useCSSLayers: true,
       styleResolution: 'application-order',
       aliases: {
