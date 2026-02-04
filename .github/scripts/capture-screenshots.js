@@ -2,8 +2,8 @@
 
 /**
  * @description Captures screenshots of component stories using Playwright
- * @input --storybook-dir <path> --output-dir <path> --storybook-url <url> --components <comma-separated>
- * @output PNG screenshots in output directory with manifest including Storybook links
+ * @input --storybook-dir <path> --output-dir <path> --components <comma-separated>
+ * @output PNG screenshots in output directory with manifest
  */
 
 const { chromium } = require('playwright');
@@ -19,11 +19,10 @@ const getArg = (name) => {
 
 const storybookDir = getArg('storybook-dir') || 'apps/storybook/dist';
 const outputDir = getArg('output-dir') || 'screenshots';
-const storybookUrl = getArg('storybook-url') || '';
 const componentsArg = getArg('components') || '';
 const components = componentsArg.split(',').filter(Boolean);
 
-// Simple static file server
+// Simple static file server with proper MIME types
 function createServer(dir, port) {
   return new Promise((resolve) => {
     const server = http.createServer((req, res) => {
@@ -36,10 +35,19 @@ function createServer(dir, port) {
       const contentTypes = {
         '.html': 'text/html',
         '.js': 'application/javascript',
+        '.mjs': 'application/javascript',
+        '.cjs': 'application/javascript',
         '.css': 'text/css',
         '.json': 'application/json',
         '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
         '.svg': 'image/svg+xml',
+        '.woff': 'font/woff',
+        '.woff2': 'font/woff2',
+        '.ttf': 'font/ttf',
+        '.eot': 'application/vnd.ms-fontobject',
       };
 
       fs.readFile(filePath, (err, data) => {
@@ -48,7 +56,7 @@ function createServer(dir, port) {
           res.end('Not found');
           return;
         }
-        res.writeHead(200, { 'Content-Type': contentTypes[ext] || 'text/plain' });
+        res.writeHead(200, { 'Content-Type': contentTypes[ext] || 'application/octet-stream' });
         res.end(data);
       });
     });
@@ -74,12 +82,6 @@ async function getStories(storybookPath) {
   }
 }
 
-// Build Storybook URL for a story
-function buildStoryUrl(storyId) {
-  if (!storybookUrl) return null;
-  return `${storybookUrl}/?path=/story/${storyId}`;
-}
-
 async function captureScreenshots() {
   console.log('Starting screenshot capture...');
   console.log(`Components to capture: ${components.length > 0 ? components.join(', ') : 'all'}`);
@@ -94,7 +96,6 @@ async function captureScreenshots() {
     fs.writeFileSync(path.join(outputDir, 'screenshots.json'), JSON.stringify({
       error: 'Storybook not built',
       screenshots: [],
-      storybookUrl: storybookUrl || null,
     }));
     return;
   }
@@ -109,8 +110,11 @@ async function captureScreenshots() {
 
   console.log(`Found ${storyIds.length} stories`);
 
-  // Filter stories for relevant components
+  // Filter stories for relevant components - exclude docs pages
   const relevantStories = storyIds.filter(id => {
+    // Skip docs pages - they often have rendering issues
+    if (id.endsWith('--docs')) return false;
+
     if (components.length === 0) return true;
     const story = stories[id];
     const title = story.title || '';
@@ -124,7 +128,8 @@ async function captureScreenshots() {
 
   const browser = await chromium.launch();
   const context = await browser.newContext({
-    viewport: { width: 1280, height: 720 },
+    viewport: { width: 800, height: 600 },
+    deviceScaleFactor: 2, // Retina quality
   });
 
   const screenshots = [];
@@ -136,23 +141,38 @@ async function captureScreenshots() {
     try {
       // Navigate to story in iframe mode
       const url = `http://localhost:${port}/iframe.html?id=${storyId}&viewMode=story`;
-      await page.goto(url, { waitUntil: 'networkidle', timeout: 10000 });
+      await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
 
-      // Wait a bit for any animations
+      // Wait for Storybook to render the story
+      await page.waitForSelector('#storybook-root', { timeout: 10000 });
+
+      // Wait for styles to be injected (StyleX runtime injection)
+      await page.waitForTimeout(1000);
+
+      // Wait for any fonts to load
+      await page.evaluate(() => document.fonts.ready);
+
+      // Additional wait for any CSS transitions/animations
       await page.waitForTimeout(500);
 
-      // Take screenshot
+      // Take screenshot of just the story root, with padding
+      const storyRoot = await page.$('#storybook-root');
+
       const filename = `${storyId.replace(/[^a-z0-9]/gi, '-')}.png`;
       const filepath = path.join(outputDir, filename);
 
-      await page.screenshot({ path: filepath, fullPage: false });
+      if (storyRoot) {
+        await storyRoot.screenshot({ path: filepath });
+      } else {
+        // Fallback to full page
+        await page.screenshot({ path: filepath, fullPage: false });
+      }
 
       screenshots.push({
         storyId,
         title: story.title,
         name: story.name,
         filename,
-        storybookLink: buildStoryUrl(storyId),
       });
 
       console.log(`[ok] Captured: ${story.title} / ${story.name}`);
@@ -171,7 +191,6 @@ async function captureScreenshots() {
     path.join(outputDir, 'screenshots.json'),
     JSON.stringify({
       screenshots,
-      storybookUrl: storybookUrl || null,
       capturedAt: new Date().toISOString()
     }, null, 2)
   );

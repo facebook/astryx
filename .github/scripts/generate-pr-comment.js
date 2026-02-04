@@ -148,9 +148,10 @@ if (hasAffectedComponents && screenshots.length > 0) {
       const imageUrl = screenshotUrls[filename];
 
       if (imageUrl) {
-        // Embed the image directly
+        // Embed the image directly with story ID for local access
         screenshotSection += `<details>\n<summary><strong>${storyName}</strong></summary>\n\n`;
         screenshotSection += `![${storyName}](${imageUrl})\n\n`;
+        screenshotSection += `\`yarn storybook\` then navigate to: \`${shot.storyId}\`\n\n`;
         screenshotSection += `</details>\n\n`;
       } else {
         screenshotSection += `- **${storyName}** _(screenshot not available)_\n`;
