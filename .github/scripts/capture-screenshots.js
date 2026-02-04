@@ -172,14 +172,20 @@ async function captureScreenshots() {
         const computedBg = firstElement ? getComputedStyle(firstElement).backgroundColor : 'no element';
         const classes = firstElement ? firstElement.className : 'no element';
 
+        // Get style content lengths
+        const styleContents = Array.from(styleElements).map(s => ({
+          length: s.textContent?.length || 0,
+          preview: s.textContent?.substring(0, 100) || 'empty',
+        }));
+
         return {
           styleCount: styleElements.length,
+          styleContents,
           linkCount: linkElements.length,
           hasStoryRoot: !!storyRoot,
           firstElementTag: firstElement?.tagName || 'none',
-          firstElementClasses: classes,
+          firstElementClasses: classes?.substring(0, 100),
           backgroundColor: computedBg,
-          innerHTML: storyRoot?.innerHTML?.substring(0, 200) || 'empty',
         };
       });
       console.log(`[debug] ${storyId}:`, JSON.stringify(debugInfo));
