@@ -20,6 +20,7 @@ const screenshotsFile = getArg('screenshots') || 'screenshots/screenshots.json';
 const screenshotUrlsFile = getArg('screenshot-urls') || 'screenshot-urls.json';
 const runUrl = getArg('run-url') || '';
 const storybookUrl = getArg('storybook-url') || '';
+const prNumber = getArg('pr-number') || '';
 
 // Read analysis results
 let analysis = { newComponents: [], modifiedComponents: [], componentStats: {}, totalBundle: {} };
@@ -175,7 +176,14 @@ if (hasAffectedComponents && screenshots.length > 0) {
           screenshotSection += `**Interaction Preview:** ([view video](${fullVideoUrl}))\n\n![${storyName} interaction](${videoUrl})\n\n`;
         }
 
-        screenshotSection += `\`yarn storybook\` then navigate to: \`${shot.storyId}\`\n\n`;
+        // Add link to live Storybook if available
+        if (storybookUrl) {
+          const storyPath = `?path=/story/${shot.storyId}`;
+          screenshotSection += `**[View in Storybook](${storybookUrl}${storyPath})**\n\n`;
+        } else {
+          screenshotSection += `\`yarn storybook\` then navigate to: \`${shot.storyId}\`\n\n`;
+        }
+
         screenshotSection += `</details>\n\n`;
       } else {
         screenshotSection += `- **${storyName}** _(media not available)_\n`;
