@@ -15,6 +15,7 @@ export * from './Calendar';
 export * from './Center';
 export * from './CheckboxInput';
 export * from './Divider';
+export * from './Switch';
 export * from './DateInput';
 export * from './Field';
 export * from './Grid';
