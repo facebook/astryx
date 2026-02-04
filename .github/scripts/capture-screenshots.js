@@ -291,7 +291,6 @@ async function captureScreenshots() {
           // Wait for video to be saved - this resolves when the file is ready
           try {
             videoPath = await video.path();
-            console.log(`[debug] Video path for ${storyId}: ${videoPath}`);
           } catch (e) {
             console.error(`[warn] Failed to get video path for ${storyId}: ${e.message}`);
           }
@@ -308,7 +307,6 @@ async function captureScreenshots() {
 
         // Ensure the video file exists and has content
         const videoStats = fs.existsSync(videoPath) ? fs.statSync(videoPath) : null;
-        console.log(`[debug] Video stats for ${storyId}: ${videoStats?.size || 0} bytes`);
 
         if (videoStats && videoStats.size > 1000) {
           // Convert to GIF using ffmpeg
