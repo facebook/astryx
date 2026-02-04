@@ -57,8 +57,9 @@ jobs:
         run: |
           COMPONENTS=$(cat analysis.json | jq -r '(.newComponents + .modifiedComponents) | join(",")')
           node .github/scripts/capture-screenshots.js \
-            --storybook-dir apps/storybook/storybook-static \
+            --storybook-dir apps/storybook/dist \
             --output-dir screenshots \
+            --storybook-url "https://facebookexperimental.github.io/xds" \
             --components "$COMPONENTS"
 
       - name: Run accessibility audit
@@ -66,7 +67,7 @@ jobs:
         run: |
           COMPONENTS=$(cat analysis.json | jq -r '(.newComponents + .modifiedComponents) | join(",")')
           node .github/scripts/accessibility-audit.js \
-            --storybook-dir apps/storybook/storybook-static \
+            --storybook-dir apps/storybook/dist \
             --output a11y-report.json \
             --components "$COMPONENTS"
 
@@ -84,6 +85,7 @@ jobs:
           COMMENT_BODY=$(node .github/scripts/generate-pr-comment.js \
             --analysis analysis.json \
             --a11y a11y-report.json \
+            --screenshots screenshots/screenshots.json \
             --run-url "$RUN_URL")
 
           # Save to file for the next step

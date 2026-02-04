@@ -2,8 +2,8 @@
 
 /**
  * @description Captures screenshots of component stories using Playwright
- * @input --storybook-dir <path> --output-dir <path> --components <comma-separated>
- * @output PNG screenshots in output directory
+ * @input --storybook-dir <path> --output-dir <path> --storybook-url <url> --components <comma-separated>
+ * @output PNG screenshots in output directory with manifest including Storybook links
  */
 
 const { chromium } = require('playwright');
@@ -17,8 +17,9 @@ const getArg = (name) => {
   return idx !== -1 ? args[idx + 1] : null;
 };
 
-const storybookDir = getArg('storybook-dir') || 'apps/storybook/storybook-static';
+const storybookDir = getArg('storybook-dir') || 'apps/storybook/dist';
 const outputDir = getArg('output-dir') || 'screenshots';
+const storybookUrl = getArg('storybook-url') || '';
 const componentsArg = getArg('components') || '';
 const components = componentsArg.split(',').filter(Boolean);
 
@@ -73,6 +74,12 @@ async function getStories(storybookPath) {
   }
 }
 
+// Build Storybook URL for a story
+function buildStoryUrl(storyId) {
+  if (!storybookUrl) return null;
+  return `${storybookUrl}/?path=/story/${storyId}`;
+}
+
 async function captureScreenshots() {
   console.log('Starting screenshot capture...');
   console.log(`Components to capture: ${components.length > 0 ? components.join(', ') : 'all'}`);
@@ -84,7 +91,11 @@ async function captureScreenshots() {
 
   if (!fs.existsSync(storybookPath)) {
     console.error(`Storybook build not found at ${storybookPath}`);
-    fs.writeFileSync(path.join(outputDir, 'screenshots.json'), JSON.stringify({ error: 'Storybook not built' }));
+    fs.writeFileSync(path.join(outputDir, 'screenshots.json'), JSON.stringify({
+      error: 'Storybook not built',
+      screenshots: [],
+      storybookUrl: storybookUrl || null,
+    }));
     return;
   }
 
@@ -141,11 +152,12 @@ async function captureScreenshots() {
         title: story.title,
         name: story.name,
         filename,
+        storybookLink: buildStoryUrl(storyId),
       });
 
-      console.log(`✓ Captured: ${story.title} / ${story.name}`);
+      console.log(`[ok] Captured: ${story.title} / ${story.name}`);
     } catch (e) {
-      console.error(`✗ Failed: ${storyId} - ${e.message}`);
+      console.error(`[fail] Failed: ${storyId} - ${e.message}`);
     } finally {
       await page.close();
     }
@@ -157,7 +169,11 @@ async function captureScreenshots() {
   // Write manifest
   fs.writeFileSync(
     path.join(outputDir, 'screenshots.json'),
-    JSON.stringify({ screenshots, capturedAt: new Date().toISOString() }, null, 2)
+    JSON.stringify({
+      screenshots,
+      storybookUrl: storybookUrl || null,
+      capturedAt: new Date().toISOString()
+    }, null, 2)
   );
 
   console.log(`\nCaptured ${screenshots.length} screenshots`);

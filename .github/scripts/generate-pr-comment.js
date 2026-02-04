@@ -2,7 +2,7 @@
 
 /**
  * @description Generates and posts PR comment with analysis results
- * @input --analysis <file> --a11y <file> --run-url <url>
+ * @input --analysis <file> --a11y <file> --screenshots <file> --run-url <url>
  * @output Formatted markdown comment body to stdout
  */
 
@@ -16,11 +16,13 @@ const getArg = (name) => {
 
 const analysisFile = getArg('analysis') || 'analysis.json';
 const a11yFile = getArg('a11y') || 'a11y-report.json';
+const screenshotsFile = getArg('screenshots') || 'screenshots/screenshots.json';
 const runUrl = getArg('run-url') || '';
 
 // Read analysis results
 let analysis = { newComponents: [], modifiedComponents: [], componentStats: {}, totalBundle: {} };
 let a11yReport = { components: {} };
+let screenshotsData = { screenshots: [], storybookUrl: null };
 
 try {
   analysis = JSON.parse(fs.readFileSync(analysisFile, 'utf8'));
@@ -32,6 +34,12 @@ try {
   a11yReport = JSON.parse(fs.readFileSync(a11yFile, 'utf8'));
 } catch (e) {
   console.error('Warning: Could not read a11y report:', e.message);
+}
+
+try {
+  screenshotsData = JSON.parse(fs.readFileSync(screenshotsFile, 'utf8'));
+} catch (e) {
+  console.error('Warning: Could not read screenshots manifest:', e.message);
 }
 
 // Build component stats section
@@ -105,12 +113,44 @@ if (analysis.bundleDelta) {
   bundleSection += `**Bundle size ${direction}:** ${delta > 0 ? '+' : ''}${delta} bytes\n\n`;
 }
 
-// Build screenshots section
+// Build screenshots/previews section with Storybook links
 let screenshotSection = '';
 const hasAffectedComponents = (analysis.newComponents?.length > 0) || (analysis.modifiedComponents?.length > 0);
-if (hasAffectedComponents && runUrl) {
+const screenshots = screenshotsData.screenshots || [];
+
+if (hasAffectedComponents) {
   screenshotSection = `### Component Previews\n\n`;
-  screenshotSection += `Component screenshots are available in the [workflow artifacts](${runUrl}).\n\n`;
+
+  if (screenshots.length > 0) {
+    // Group screenshots by component title
+    const byComponent = {};
+    for (const shot of screenshots) {
+      const compName = shot.title?.split('/').pop() || shot.title || 'Unknown';
+      if (!byComponent[compName]) {
+        byComponent[compName] = [];
+      }
+      byComponent[compName].push(shot);
+    }
+
+    screenshotSection += `| Component | Story | Storybook Link |\n`;
+    screenshotSection += `|-----------|-------|----------------|\n`;
+
+    for (const [compName, shots] of Object.entries(byComponent)) {
+      for (const shot of shots) {
+        const storyName = shot.name || shot.storyId;
+        const link = shot.storybookLink
+          ? `[View in Storybook](${shot.storybookLink})`
+          : 'N/A';
+        screenshotSection += `| ${compName} | ${storyName} | ${link} |\n`;
+      }
+    }
+
+    screenshotSection += `\n`;
+  }
+
+  if (runUrl) {
+    screenshotSection += `Screenshots are available in the [workflow artifacts](${runUrl}).\n\n`;
+  }
 }
 
 // Build the full comment

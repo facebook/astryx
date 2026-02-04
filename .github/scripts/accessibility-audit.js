@@ -17,7 +17,7 @@ const getArg = (name) => {
   return idx !== -1 ? args[idx + 1] : null;
 };
 
-const storybookDir = getArg('storybook-dir') || 'apps/storybook/storybook-static';
+const storybookDir = getArg('storybook-dir') || 'apps/storybook/dist';
 const outputFile = getArg('output') || 'a11y-report.json';
 const componentsArg = getArg('components') || '';
 const components = componentsArg.split(',').filter(Boolean);
