@@ -98,6 +98,17 @@ jobs:
             fi
           done
 
+          # Upload MP4 videos
+          for file in screenshots/*.mp4; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              url=$(cml publish "$file")
+              echo "Uploaded $filename -> $url"
+              jq --arg name "$filename" --arg url "$url" \
+                '. + {($name): $url}' screenshot-urls.json > tmp.json && mv tmp.json screenshot-urls.json
+            fi
+          done
+
           cat screenshot-urls.json
 
       - name: Run accessibility audit
@@ -116,16 +127,25 @@ jobs:
           path: screenshots/
           retention-days: 30
 
+      - name: Upload Storybook artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: storybook-build
+          path: apps/storybook/dist/
+          retention-days: 30
+
       - name: Generate PR comment
         id: comment
         run: |
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
           COMMENT_BODY=$(node .github/scripts/generate-pr-comment.js \
             --analysis analysis.json \
             --a11y a11y-report.json \
             --screenshots screenshots/screenshots.json \
             --screenshot-urls screenshot-urls.json \
-            --run-url "$RUN_URL")
+            --run-url "$RUN_URL" \
+            --pr-number "${{ github.event.pull_request.number }}")
 
           # Save to file for the next step
           echo "$COMMENT_BODY" > pr-comment.md
