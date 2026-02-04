@@ -32,7 +32,9 @@ const config: StorybookConfig = {
     return mergeConfig(config, {
       plugins: [
         stylex.vite({
-          dev: process.env.NODE_ENV === 'development',
+          // Always use dev mode - injects styles via JavaScript
+          // This works reliably in both dev and production builds
+          dev: true,
           useCSSLayers: true,
           styleResolution: 'application-order',
           aliases: {
