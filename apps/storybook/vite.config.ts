@@ -18,7 +18,9 @@ const coreRoot = path.resolve(__dirname, '../../packages/core/src');
 export default defineConfig({
   plugins: [
     stylex.vite({
-      dev: process.env.NODE_ENV === 'development',
+      // Always use dev mode to inject styles via JS (works in both dev and production)
+      // This ensures styles are applied without needing to configure CSS extraction
+      dev: true,
       useCSSLayers: true,
       styleResolution: 'application-order',
       aliases: {
