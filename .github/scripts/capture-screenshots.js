@@ -163,6 +163,27 @@ async function captureScreenshots() {
       // Wait for Storybook to render the story
       await page.waitForSelector('#storybook-root', { timeout: 10000 });
 
+      // Debug: Check for style elements and what's in the DOM
+      const debugInfo = await page.evaluate(() => {
+        const styleElements = document.querySelectorAll('style');
+        const linkElements = document.querySelectorAll('link[rel="stylesheet"]');
+        const storyRoot = document.querySelector('#storybook-root');
+        const firstElement = storyRoot?.querySelector('*');
+        const computedBg = firstElement ? getComputedStyle(firstElement).backgroundColor : 'no element';
+        const classes = firstElement ? firstElement.className : 'no element';
+
+        return {
+          styleCount: styleElements.length,
+          linkCount: linkElements.length,
+          hasStoryRoot: !!storyRoot,
+          firstElementTag: firstElement?.tagName || 'none',
+          firstElementClasses: classes,
+          backgroundColor: computedBg,
+          innerHTML: storyRoot?.innerHTML?.substring(0, 200) || 'empty',
+        };
+      });
+      console.log(`[debug] ${storyId}:`, JSON.stringify(debugInfo));
+
       // Wait for all stylesheets to be loaded
       await page.evaluate(async () => {
         // Wait for all link stylesheets
