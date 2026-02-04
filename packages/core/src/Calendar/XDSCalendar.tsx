@@ -17,6 +17,7 @@ import {
   useMemo,
   useCallback,
   useEffect,
+  useImperativeHandle,
   type HTMLAttributes,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -62,6 +63,12 @@ export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 export interface DateRange {
   start: ISODateString;
   end: ISODateString;
+}
+
+/** Imperative handle for XDSCalendar ref */
+export interface XDSCalendarHandle {
+  /** Navigate the calendar to show the month containing the given date */
+  navigateTo: (date: ISODateString) => void;
 }
 
 // ─── Base Props (shared across all modes) ─────────────────────
@@ -159,31 +166,9 @@ export type XDSCalendarProps = XDSCalendarSingleProps | XDSCalendarRangeProps;
  * A calendar component for selecting dates or date ranges.
  *
  * @example
- * ```tsx
- * // Single date selection
- * <XDSCalendar
- *   value={selectedDate}
- *   onChange={(date) => setSelectedDate(date)}
- * />
- *
- * // Date range selection
- * <XDSCalendar
- *   mode="range"
- *   value={dateRange}
- *   onChange={(range) => setDateRange(range)}
- * />
- *
- * // With constraints
- * <XDSCalendar
- *   min="2026-01-01"
- *   max="2026-12-31"
- *   dateConstraints={[(date) => date.getDay() !== 0]} // No Sundays
- *   value={selectedDate}
- *   onChange={setSelectedDate}
- * />
- * ```
+ * <XDSCalendar value={selectedDate} onChange={setSelectedDate} />
  */
-export const XDSCalendar = forwardRef<HTMLDivElement, XDSCalendarProps>(
+export const XDSCalendar = forwardRef<XDSCalendarHandle, XDSCalendarProps>(
   (props, ref) => {
     const {
       mode = 'single',
@@ -245,6 +230,21 @@ export const XDSCalendar = forwardRef<HTMLDivElement, XDSCalendarProps>(
     const focusDate = isControlledFocus
       ? parseISO(focusDateProp)
       : internalFocusDate;
+
+    // Expose imperative handle for external navigation
+    useImperativeHandle(
+      ref,
+      () => ({
+        navigateTo: (date: ISODateString) => {
+          if (isControlledFocus) {
+            onFocusDateChange?.(date);
+          } else {
+            setInternalFocusDate(parseISO(date));
+          }
+        },
+      }),
+      [isControlledFocus, onFocusDateChange],
+    );
 
     // Base month (first day of focus month)
     const baseMonth = useMemo(() => {
@@ -337,7 +337,7 @@ export const XDSCalendar = forwardRef<HTMLDivElement, XDSCalendarProps>(
     );
 
     return (
-      <div ref={ref} {...stylex.props(calendarStyles.calendar)} {...rest}>
+      <div {...stylex.props(calendarStyles.calendar)} {...rest}>
         {/* Header with navigation */}
         <div {...stylex.props(calendarStyles.header)}>
           <XDSButton
@@ -781,9 +781,7 @@ function DayCell({
             previewRoundLeft && dayCellStyles.previewBgRadiusLeft,
             previewRoundRight && dayCellStyles.previewBgRadiusRight,
             isPreviewStart && dayCellStyles.previewStart,
-            isPreviewStart && roundRight && dayCellStyles.rangeInsetRight,
             isPreviewEnd && dayCellStyles.previewEnd,
-            isPreviewEnd && roundLeft && dayCellStyles.rangeInsetLeft,
           )}
         />
       )}

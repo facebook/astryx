@@ -28,7 +28,9 @@ export function isLocaleDayFirst(): boolean {
  * Supports:
  * - ISO format: "2026-01-25"
  * - Full month names: "January 25, 2026", "25 January 2026"
+ * - Full month names without year: "January 25", "25 January" (defaults to current year)
  * - Numeric formats: "1/25/2026", "25/1/2026" (locale-aware with heuristics)
+ * - Numeric formats without year: "1/25", "25/1" (defaults to current year)
  *
  * For ambiguous numeric formats (both numbers ≤ 12), uses locale preference.
  *
@@ -38,6 +40,8 @@ export function parseDateInput(input: string): ISODateString | null {
   const trimmed = input.trim();
   if (!trimmed) return null;
 
+  const currentYear = new Date().getFullYear();
+
   // 1. Try ISO format first (YYYY-MM-DD) - always unambiguous
   const isoMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   if (isoMatch) {
@@ -45,13 +49,13 @@ export function parseDateInput(input: string): ISODateString | null {
     return createISODate(+year, +month, +day);
   }
 
-  // 2. Try full month name formats
+  // 2. Try full month name formats with year
   // "January 25, 2026" or "Jan 25, 2026"
-  const monthFirstMatch = trimmed.match(
+  const monthFirstWithYearMatch = trimmed.match(
     /^([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})$/,
   );
-  if (monthFirstMatch) {
-    const [, monthName, day, year] = monthFirstMatch;
+  if (monthFirstWithYearMatch) {
+    const [, monthName, day, year] = monthFirstWithYearMatch;
     const month = parseMonthName(monthName);
     if (month !== null) {
       return createISODate(+year, month, +day);
@@ -59,23 +63,55 @@ export function parseDateInput(input: string): ISODateString | null {
   }
 
   // "25 January 2026" or "25 Jan 2026"
-  const dayFirstMatch = trimmed.match(/^(\d{1,2})\s+([A-Za-z]+),?\s+(\d{4})$/);
-  if (dayFirstMatch) {
-    const [, day, monthName, year] = dayFirstMatch;
+  const dayFirstWithYearMatch = trimmed.match(
+    /^(\d{1,2})\s+([A-Za-z]+),?\s+(\d{4})$/,
+  );
+  if (dayFirstWithYearMatch) {
+    const [, day, monthName, year] = dayFirstWithYearMatch;
     const month = parseMonthName(monthName);
     if (month !== null) {
       return createISODate(+year, month, +day);
     }
   }
 
-  // 3. Try numeric formats with separators (/, -, .)
-  const numericMatch = trimmed.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
-  if (numericMatch) {
-    const [, first, second, year] = numericMatch;
+  // 3. Try full month name formats WITHOUT year (defaults to current year)
+  // "January 25" or "Jan 25"
+  const monthFirstNoYearMatch = trimmed.match(/^([A-Za-z]+)\s+(\d{1,2})$/);
+  if (monthFirstNoYearMatch) {
+    const [, monthName, day] = monthFirstNoYearMatch;
+    const month = parseMonthName(monthName);
+    if (month !== null) {
+      return createISODate(currentYear, month, +day);
+    }
+  }
+
+  // "25 January" or "25 Jan"
+  const dayFirstNoYearMatch = trimmed.match(/^(\d{1,2})\s+([A-Za-z]+)$/);
+  if (dayFirstNoYearMatch) {
+    const [, day, monthName] = dayFirstNoYearMatch;
+    const month = parseMonthName(monthName);
+    if (month !== null) {
+      return createISODate(currentYear, month, +day);
+    }
+  }
+
+  // 4. Try numeric formats with separators (/, -, .) WITH year
+  const numericWithYearMatch = trimmed.match(
+    /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/,
+  );
+  if (numericWithYearMatch) {
+    const [, first, second, year] = numericWithYearMatch;
     return parseNumericDate(+first, +second, +year);
   }
 
-  // 4. Fall back to native Date parsing for other formats
+  // 5. Try numeric formats WITHOUT year (defaults to current year)
+  const numericNoYearMatch = trimmed.match(/^(\d{1,2})[-/.](\d{1,2})$/);
+  if (numericNoYearMatch) {
+    const [, first, second] = numericNoYearMatch;
+    return parseNumericDate(+first, +second, currentYear);
+  }
+
+  // 6. Fall back to native Date parsing for other formats
   const parsed = new Date(trimmed);
   if (!isNaN(parsed.getTime())) {
     return dateToISO(parsed);

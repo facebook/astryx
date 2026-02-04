@@ -10,6 +10,7 @@
 export {XDSCalendar} from './XDSCalendar';
 export type {
   XDSCalendarProps,
+  XDSCalendarHandle,
   ISODateString,
   DayOfWeek,
   DateRange,

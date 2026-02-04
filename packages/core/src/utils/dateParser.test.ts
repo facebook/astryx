@@ -78,6 +78,43 @@ describe('parseDateInput', () => {
     });
   });
 
+  describe('formats without year (defaults to current year)', () => {
+    const currentYear = new Date().getFullYear();
+
+    it('parses "January 25" (month-first without year)', () => {
+      expect(parseDateInput('January 25')).toBe(`${currentYear}-01-25`);
+    });
+
+    it('parses "Jan 25" (abbreviated month without year)', () => {
+      expect(parseDateInput('Jan 25')).toBe(`${currentYear}-01-25`);
+    });
+
+    it('parses "25 January" (day-first without year)', () => {
+      expect(parseDateInput('25 January')).toBe(`${currentYear}-01-25`);
+    });
+
+    it('parses "25 Jan" (day-first abbreviated without year)', () => {
+      expect(parseDateInput('25 Jan')).toBe(`${currentYear}-01-25`);
+    });
+
+    it('parses "1/25" (numeric without year)', () => {
+      expect(parseDateInput('1/25')).toBe(`${currentYear}-01-25`);
+    });
+
+    it('parses "25/1" (numeric day-first without year)', () => {
+      expect(parseDateInput('25/1')).toBe(`${currentYear}-01-25`);
+    });
+
+    it('parses "12-31" (numeric with dash without year)', () => {
+      expect(parseDateInput('12-31')).toBe(`${currentYear}-12-31`);
+    });
+
+    it('handles all months without year', () => {
+      expect(parseDateInput('Feb 15')).toBe(`${currentYear}-02-15`);
+      expect(parseDateInput('Dec 25')).toBe(`${currentYear}-12-25`);
+    });
+  });
+
   describe('numeric formats with heuristics', () => {
     it('detects day when first number > 12', () => {
       expect(parseDateInput('25/1/2026')).toBe('2026-01-25');

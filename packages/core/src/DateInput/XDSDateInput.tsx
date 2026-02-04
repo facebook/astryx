@@ -11,15 +11,7 @@
  * - /apps/storybook/stories/DateInput.stories.tsx (storybook stories)
  */
 
-import {
-  forwardRef,
-  useId,
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-  useMemo,
-} from 'react';
+import {forwardRef, useId, useState, useCallback, useRef, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {CalendarDaysIcon} from '@heroicons/react/24/outline';
 import {
@@ -39,7 +31,11 @@ import {
 } from '../theme/tokens.stylex';
 import {XDSField, type XDSInputStatus, type XDSInputStatusType} from '../Field';
 import {XDSIcon} from '../Icon';
-import {XDSCalendar, type ISODateString} from '../Calendar';
+import {
+  XDSCalendar,
+  type ISODateString,
+  type XDSCalendarHandle,
+} from '../Calendar';
 import {useXDSPopover} from '../Layer';
 import {parseDateInput, formatDisplayDate} from '../utils';
 
@@ -280,6 +276,7 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
     const descriptionID = useId();
     const statusMessageID = useId();
     const inputRef = useRef<HTMLInputElement | null>(null);
+    const calendarRef = useRef<XDSCalendarHandle | null>(null);
 
     // Status icon mapping
     const statusIconMap: Record<XDSInputStatusType, typeof CalendarDaysIcon> = {
@@ -305,17 +302,25 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
         .filter(Boolean)
         .join(' ') || undefined;
 
-    // Track input text separately from value for manual editing
-    const [inputValue, setInputValue] = useState('');
+    // Pending input while user is typing (null = show formatted value)
+    const [pendingInput, setPendingInput] = useState<string | null>(null);
+
+    // Display value: pending input if typing, otherwise formatted value
+    const displayValue = useMemo(() => {
+      if (pendingInput !== null) {
+        return pendingInput;
+      }
+      return value ? formatDisplayDate(value) : '';
+    }, [pendingInput, value]);
 
     // Check if current input is valid (for styling purposes)
     const isInputValid = useMemo(() => {
-      // Empty input is considered valid (will clear on blur)
-      if (!inputValue.trim()) {
+      // Only check pending input for validity styling
+      if (pendingInput === null || !pendingInput.trim()) {
         return true;
       }
-      return parseDateInput(inputValue) !== null;
-    }, [inputValue]);
+      return parseDateInput(pendingInput) !== null;
+    }, [pendingInput]);
 
     // Use XDSPopover for popover rendering, positioning, and focus trapping
     const popover = useXDSPopover({
@@ -327,15 +332,6 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
         inputRef.current?.focus();
       },
     });
-
-    // Sync input value with controlled value
-    useEffect(() => {
-      if (value) {
-        setInputValue(formatDisplayDate(value));
-      } else {
-        setInputValue('');
-      }
-    }, [value]);
 
     // Handle opening the popover from button click (focus calendar)
     const handleOpen = useCallback(() => {
@@ -355,44 +351,54 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
     const handleDateSelect = useCallback(
       (selectedDate: ISODateString) => {
         onChange(selectedDate);
+        setPendingInput(null);
         popover.hide();
       },
       [onChange, popover],
     );
 
-    // Handle input text change
+    // Handle input text change - update immediately if valid
     const handleInputChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
-        setInputValue(e.target.value);
+        const newValue = e.target.value;
+        setPendingInput(newValue);
+
+        // If the input is valid, update immediately (don't wait for blur)
+        const parsed = parseDateInput(newValue);
+        if (parsed && parsed !== value) {
+          onChange(parsed);
+          // Navigate calendar to show the parsed date's month
+          calendarRef.current?.navigateTo(parsed);
+        }
       },
-      [],
+      [value, onChange],
     );
 
-    // Handle blur - parse the input and validate
+    // Handle blur - validate and clear pending input
     const handleBlur = useCallback(() => {
-      if (!inputValue.trim()) {
+      if (pendingInput === null) {
+        return;
+      }
+
+      if (!pendingInput.trim()) {
         // Empty input clears the value
         if (value !== undefined) {
           onChange(undefined);
         }
+        setPendingInput(null);
         return;
       }
 
-      const parsed = parseDateInput(inputValue);
+      const parsed = parseDateInput(pendingInput);
       if (parsed) {
         // Valid date - update if different
         if (parsed !== value) {
           onChange(parsed);
         }
-      } else {
-        // Invalid date - revert to previous value
-        if (value) {
-          setInputValue(formatDisplayDate(value));
-        } else {
-          setInputValue('');
-        }
       }
-    }, [inputValue, value, onChange]);
+      // Clear pending input - display will revert to formatted value
+      setPendingInput(null);
+    }, [pendingInput, value, onChange]);
 
     // Handle keyboard events on input
     const handleInputKeyDown = useCallback(
@@ -459,7 +465,7 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
             ref={setRefs}
             id={id}
             type="text"
-            value={inputValue}
+            value={displayValue}
             onChange={handleInputChange}
             onBlur={handleBlur}
             onClick={handleInputClick}
@@ -486,6 +492,7 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
         </div>
         {popover.render(
           <XDSCalendar
+            ref={calendarRef}
             mode="single"
             value={value}
             onChange={handleDateSelect}
@@ -493,7 +500,6 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
             max={max}
             dateConstraints={dateConstraints}
             numberOfMonths={numberOfMonths}
-            focusDate={value}
           />,
           {placement: 'below', alignment: 'start'},
         )}

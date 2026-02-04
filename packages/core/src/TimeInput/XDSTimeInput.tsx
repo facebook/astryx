@@ -15,7 +15,6 @@ import {
   forwardRef,
   useId,
   useState,
-  useEffect,
   useCallback,
   useRef,
   useMemo,
@@ -330,51 +329,57 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
         .filter(Boolean)
         .join(' ') || undefined;
 
-    // Track input text separately from value for manual editing
-    const [inputValue, setInputValue] = useState('');
+    // Pending input while user is typing (null = show formatted value)
+    const [pendingInput, setPendingInput] = useState<string | null>(null);
     const [isFocused, setIsFocused] = useState(false);
-
-    // Check if current input is valid (for styling purposes)
-    const isInputValid = useMemo(() => {
-      // Empty input is considered valid (will clear on blur)
-      if (!inputValue.trim()) {
-        return true;
-      }
-      const parsed = parseTimeInput(inputValue, hasSeconds);
-      if (!parsed) {
-        return false;
-      }
-      // Also check min/max range
-      return isTimeInRange(parsed, min, max);
-    }, [inputValue, hasSeconds, min, max]);
 
     // Format function based on hourFormat
     const formatDisplayTime =
       hourFormat === '12h' ? formatDisplayTime12h : formatDisplayTime24h;
 
+    // Display value: pending input if typing, otherwise formatted value
+    const displayValue = useMemo(() => {
+      if (pendingInput !== null) {
+        return pendingInput;
+      }
+      return value ? formatDisplayTime(value, hasSeconds) : '';
+    }, [pendingInput, value, formatDisplayTime, hasSeconds]);
+
+    // Check if current input is valid (for styling purposes)
+    const isInputValid = useMemo(() => {
+      // Only check pending input for validity styling
+      if (pendingInput === null || !pendingInput.trim()) {
+        return true;
+      }
+      const parsed = parseTimeInput(pendingInput, hasSeconds);
+      if (!parsed) {
+        return false;
+      }
+      // Also check min/max range
+      return isTimeInRange(parsed, min, max);
+    }, [pendingInput, hasSeconds, min, max]);
+
     // Placeholder that shows format hint when focused and empty
     const displayPlaceholder = useMemo(() => {
-      if (isFocused && !inputValue) {
+      if (isFocused && !displayValue) {
         return hourFormat === '12h' ? 'e.g., 2:30 PM' : 'e.g., 14:30';
       }
       return placeholder;
-    }, [isFocused, inputValue, hourFormat, placeholder]);
+    }, [isFocused, displayValue, hourFormat, placeholder]);
 
-    // Sync input value with controlled value
-    useEffect(() => {
-      if (value) {
-        setInputValue(formatDisplayTime(value, hasSeconds));
-      } else {
-        setInputValue('');
-      }
-    }, [value, formatDisplayTime, hasSeconds]);
-
-    // Handle input text change
+    // Handle input text change - update immediately if valid
     const handleInputChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
-        setInputValue(e.target.value);
+        const newValue = e.target.value;
+        setPendingInput(newValue);
+
+        // If the input is valid, update immediately (don't wait for blur)
+        const parsed = parseTimeInput(newValue, hasSeconds);
+        if (parsed && isTimeInRange(parsed, min, max) && parsed !== value) {
+          onChange(parsed);
+        }
       },
-      [],
+      [hasSeconds, min, max, value, onChange],
     );
 
     // Handle focus
@@ -382,45 +387,35 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
       setIsFocused(true);
     }, []);
 
-    // Handle blur - parse the input and validate
+    // Handle blur - validate and clear pending input
     const handleBlur = useCallback(
       (e: FocusEvent<HTMLInputElement>) => {
         setIsFocused(false);
 
-        if (!inputValue.trim()) {
+        if (pendingInput === null) {
+          return;
+        }
+
+        if (!pendingInput.trim()) {
           // Empty input clears the value
           if (value !== undefined) {
             onChange(undefined);
           }
+          setPendingInput(null);
           return;
         }
 
-        const parsed = parseTimeInput(inputValue, hasSeconds);
-        if (parsed) {
-          // Check if within min/max range
-          if (isTimeInRange(parsed, min, max)) {
-            // Valid time - update if different
-            if (parsed !== value) {
-              onChange(parsed);
-            }
-          } else {
-            // Out of range - revert to previous value
-            if (value) {
-              setInputValue(formatDisplayTime(value, hasSeconds));
-            } else {
-              setInputValue('');
-            }
-          }
-        } else {
-          // Invalid time - revert to previous value
-          if (value) {
-            setInputValue(formatDisplayTime(value, hasSeconds));
-          } else {
-            setInputValue('');
+        const parsed = parseTimeInput(pendingInput, hasSeconds);
+        if (parsed && isTimeInRange(parsed, min, max)) {
+          // Valid time - update if different
+          if (parsed !== value) {
+            onChange(parsed);
           }
         }
+        // Clear pending input - display will revert to formatted value
+        setPendingInput(null);
       },
-      [inputValue, value, onChange, hasSeconds, min, max, formatDisplayTime],
+      [pendingInput, value, onChange, hasSeconds, min, max],
     );
 
     // Handle keyboard navigation on input
@@ -505,7 +500,7 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
             ref={setRefs}
             id={id}
             type="text"
-            value={inputValue}
+            value={displayValue}
             onChange={handleInputChange}
             onFocus={handleFocus}
             onBlur={handleBlur}

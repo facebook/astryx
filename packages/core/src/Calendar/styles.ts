@@ -190,6 +190,15 @@ export const dayCellStyles = stylex.create({
     zIndex: 1,
     transitionProperty: 'background-color, color',
     transitionDuration: transitionVars['--transition-fast'],
+    // Expand hit target by 2px on each side to prevent gaps
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      top: '-2px',
+      right: '-2px',
+      bottom: '-2px',
+      left: '-2px',
+    },
   },
 
   // State modifiers - structural only
@@ -214,20 +223,9 @@ export const dayCellTheme = stylex.create({
     backgroundColor: colorVars['--color-accent-deemphasized'],
   },
 
-  // Preview background (dotted border style)
+  // Preview background (muted overlay)
   previewBg: {
-    borderTopWidth: 1,
-    borderTopStyle: 'dotted',
-    borderTopColor: colorVars['--color-divider-emphasized'],
-    borderBottomWidth: 1,
-    borderBottomStyle: 'dotted',
-    borderBottomColor: colorVars['--color-divider-emphasized'],
-    borderLeftWidth: 1,
-    borderLeftStyle: 'dotted',
-    borderLeftColor: colorVars['--color-divider-emphasized'],
-    borderRightWidth: 1,
-    borderRightStyle: 'dotted',
-    borderRightColor: colorVars['--color-divider-emphasized'],
+    backgroundColor: colorVars['--color-hover-overlay'],
   },
 
   // Day button - default state

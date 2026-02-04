@@ -172,4 +172,16 @@ describe('XDSTimeInput', () => {
 
     expect(onChange).toHaveBeenCalledWith('15:45');
   });
+
+  it('calls onChange immediately when input becomes valid', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<XDSTimeInput label="Time" onChange={onChange} />);
+
+    const input = screen.getByRole('textbox');
+    await user.type(input, '3:45 pm');
+
+    // onChange should be called immediately when input is valid, not waiting for blur
+    expect(onChange).toHaveBeenCalledWith('15:45');
+  });
 });

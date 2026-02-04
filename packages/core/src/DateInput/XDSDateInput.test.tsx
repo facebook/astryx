@@ -145,6 +145,18 @@ describe('XDSDateInput', () => {
     expect(onChange).toHaveBeenCalledWith('2026-03-15');
   });
 
+  it('calls onChange immediately when input becomes valid', async () => {
+    const onChange = vi.fn();
+    render(<XDSDateInput label="Date" onChange={onChange} />);
+
+    const input = screen.getByRole('textbox');
+    // Use fireEvent to avoid triggering click handler (which opens popover)
+    fireEvent.change(input, {target: {value: '03/15/2026'}});
+
+    // onChange should be called immediately when input is valid, not waiting for blur
+    expect(onChange).toHaveBeenCalledWith('2026-03-15');
+  });
+
   // Note: Tests involving blur that trigger popover are skipped because
   // jsdom doesn't support the Popover API (showPopover is not a function).
   // These behaviors are tested in the browser via Storybook.
