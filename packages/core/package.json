@@ -24,6 +24,11 @@
       "import": "./dist/Avatar/index.mjs",
       "require": "./dist/Avatar/index.js"
     },
+    "./Badge": {
+      "types": "./dist/Badge/index.d.ts",
+      "import": "./dist/Badge/index.mjs",
+      "require": "./dist/Badge/index.js"
+    },
     "./Button": {
       "types": "./dist/Button/index.d.ts",
       "import": "./dist/Button/index.mjs",
