@@ -2,6 +2,10 @@ import type {Preview, Decorator} from '@storybook/react';
 import * as React from 'react';
 import {XDSTheme, defaultTheme, neutralTheme} from '@xds/core';
 
+// Import the pre-built StyleX CSS from the core package
+// This CSS is generated when the core package is built
+import '@xds/core/dist/index.css';
+
 /**
  * Map of available themes
  */
