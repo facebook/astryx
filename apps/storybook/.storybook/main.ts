@@ -1,6 +1,5 @@
 import type { StorybookConfig } from '@storybook/react-vite';
 import { join, dirname } from 'path';
-import { mergeConfig } from 'vite';
 import stylex from '@stylexjs/unplugin';
 import path from 'path';
 
@@ -29,12 +28,18 @@ const config: StorybookConfig = {
     autodocs: 'tag',
   },
   viteFinal: async (config) => {
-    return mergeConfig(config, {
+    // Filter out any existing StyleX plugins to avoid conflicts
+    const filteredPlugins = config.plugins?.filter(
+      (plugin: any) => !(plugin?.name?.includes?.('stylex'))
+    ) || [];
+
+    return {
+      ...config,
       plugins: [
+        ...filteredPlugins,
         stylex.vite({
-          // Always use dev mode - injects styles via JavaScript
-          // This works reliably in both dev and production builds
-          dev: true,
+          // Use production mode with CSS extraction
+          dev: false,
           useCSSLayers: true,
           styleResolution: 'application-order',
           aliases: {
@@ -48,11 +53,13 @@ const config: StorybookConfig = {
         }),
       ],
       resolve: {
+        ...config.resolve,
         alias: {
+          ...config.resolve?.alias,
           '@xds/core': coreRoot,
         },
       },
-    });
+    };
   },
 };
 
