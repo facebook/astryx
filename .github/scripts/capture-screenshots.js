@@ -242,7 +242,7 @@ async function captureScreenshots() {
 
       // If capturing video, simulate some interactions with visible cursor
       if (captureVideo) {
-        // Inject a visible cursor element that follows mouse movements
+        // Inject a visible cursor element
         await page.evaluate(() => {
           const cursor = document.createElement('div');
           cursor.id = 'playwright-cursor';
@@ -253,63 +253,69 @@ async function captureScreenshots() {
           `;
           cursor.style.cssText = `
             position: fixed;
-            top: 0;
-            left: 0;
+            top: 100px;
+            left: 100px;
             width: 24px;
             height: 24px;
             pointer-events: none;
             z-index: 999999;
             transform: translate(-2px, -2px);
-            transition: transform 0.1s ease-out;
           `;
           document.body.appendChild(cursor);
 
-          // Track mouse position and update cursor
-          document.addEventListener('mousemove', (e) => {
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
-          });
+          // Expose function to update cursor position
+          window.updateCursor = (x, y) => {
+            cursor.style.left = x + 'px';
+            cursor.style.top = y + 'px';
+          };
         });
 
-        // Helper function to move cursor smoothly to element
-        const moveCursorTo = async (element) => {
-          const box = await element.boundingBox();
-          if (!box) return false;
-
-          const targetX = box.x + box.width / 2;
-          const targetY = box.y + box.height / 2;
-
-          // Get current mouse position (start from center if first move)
-          const startX = await page.evaluate(() => {
+        // Helper function to move cursor smoothly to a position
+        const moveCursorTo = async (targetX, targetY) => {
+          // Get current cursor position
+          const pos = await page.evaluate(() => {
             const cursor = document.getElementById('playwright-cursor');
-            return cursor ? parseFloat(cursor.style.left) || 400 : 400;
-          });
-          const startY = await page.evaluate(() => {
-            const cursor = document.getElementById('playwright-cursor');
-            return cursor ? parseFloat(cursor.style.top) || 300 : 300;
+            return {
+              x: parseFloat(cursor.style.left) || 100,
+              y: parseFloat(cursor.style.top) || 100
+            };
           });
 
           // Animate cursor movement in steps
-          const steps = 10;
+          const steps = 15;
           for (let i = 1; i <= steps; i++) {
-            const x = startX + (targetX - startX) * (i / steps);
-            const y = startY + (targetY - startY) * (i / steps);
-            await page.mouse.move(x, y);
-            await page.waitForTimeout(30);
-          }
+            const x = pos.x + (targetX - pos.x) * (i / steps);
+            const y = pos.y + (targetY - pos.y) * (i / steps);
 
+            // Update cursor position directly
+            await page.evaluate(({x, y}) => {
+              window.updateCursor(x, y);
+            }, {x, y});
+
+            // Also move the actual mouse to trigger hover effects
+            await page.mouse.move(x, y);
+            await page.waitForTimeout(25);
+          }
+        };
+
+        // Helper to move to element center
+        const moveCursorToElement = async (element) => {
+          const box = await element.boundingBox();
+          if (!box) return false;
+          await moveCursorTo(box.x + box.width / 2, box.y + box.height / 2);
           return true;
         };
 
-        // Wait for cursor to be visible
-        await page.waitForTimeout(300);
+        // Start cursor in center
+        await page.evaluate(() => window.updateCursor(400, 300));
+        await page.waitForTimeout(500);
 
         // Hover over interactive elements to show hover states
         const buttons = await page.$$('button');
         for (const button of buttons.slice(0, 3)) {
           try {
-            if (await moveCursorTo(button)) {
-              await page.waitForTimeout(400);
+            if (await moveCursorToElement(button)) {
+              await page.waitForTimeout(500);
             }
           } catch {
             // Element not hoverable, skip
@@ -320,19 +326,19 @@ async function captureScreenshots() {
         const links = await page.$$('a');
         for (const link of links.slice(0, 2)) {
           try {
-            if (await moveCursorTo(link)) {
-              await page.waitForTimeout(400);
+            if (await moveCursorToElement(link)) {
+              await page.waitForTimeout(500);
             }
           } catch {
             // Element not hoverable, skip
           }
         }
 
-        // Hover over any span with role=button (badges, etc)
-        const interactiveSpans = await page.$$('[role="button"], .badge, span[class]');
-        for (const span of interactiveSpans.slice(0, 5)) {
+        // Hover over spans (badges, etc)
+        const spans = await page.$$('span[class]');
+        for (const span of spans.slice(0, 6)) {
           try {
-            if (await moveCursorTo(span)) {
+            if (await moveCursorToElement(span)) {
               await page.waitForTimeout(400);
             }
           } catch {
@@ -340,8 +346,8 @@ async function captureScreenshots() {
           }
         }
 
-        // Move cursor to corner and wait
-        await page.mouse.move(10, 10);
+        // Move cursor away and wait
+        await moveCursorTo(50, 50);
         await page.waitForTimeout(500);
       }
 
@@ -377,6 +383,24 @@ async function captureScreenshots() {
           const gifFilename = `${storyId.replace(/[^a-z0-9]/gi, '-')}.gif`;
           const gifPath = path.join(outputDir, gifFilename);
 
+          // Also keep the video as mp4 for better quality viewing
+          const mp4Filename = `${storyId.replace(/[^a-z0-9]/gi, '-')}.mp4`;
+          const mp4Path = path.join(outputDir, mp4Filename);
+
+          try {
+            // Convert webm to mp4 for broader compatibility
+            execSync(
+              `ffmpeg -i "${videoPath}" -c:v libx264 -preset fast -crf 23 "${mp4Path}" -y 2>&1`,
+              { stdio: 'pipe', timeout: 30000 }
+            );
+
+            if (fs.existsSync(mp4Path) && fs.statSync(mp4Path).size > 100) {
+              result.mp4Filename = mp4Filename;
+            }
+          } catch (e) {
+            console.error(`[warn] MP4 conversion failed for ${storyId}: ${e.message}`);
+          }
+
           try {
             // Use ffmpeg to convert webm to gif (with palette for better quality)
             // Add -t 5 to limit to 5 seconds max, and use simpler filter for reliability
@@ -388,7 +412,7 @@ async function captureScreenshots() {
             // Verify GIF was created
             if (fs.existsSync(gifPath) && fs.statSync(gifPath).size > 100) {
               result.videoFilename = gifFilename;
-              console.log(`[ok] Video: ${story.title} / ${story.name} (${videoStats.size} bytes webm -> gif)`);
+              console.log(`[ok] Video: ${story.title} / ${story.name} (${videoStats.size} bytes webm -> gif + mp4)`);
             } else {
               console.error(`[warn] GIF file empty or not created for ${storyId}`);
             }

@@ -159,6 +159,8 @@ if (hasAffectedComponents && screenshots.length > 0) {
       const imageUrl = screenshotUrls[filename];
       const videoFilename = shot.videoFilename;
       const videoUrl = videoFilename ? screenshotUrls[videoFilename] : null;
+      const mp4Filename = shot.mp4Filename;
+      const mp4Url = mp4Filename ? screenshotUrls[mp4Filename] : null;
 
       if (imageUrl || videoUrl) {
         screenshotSection += `<details>\n<summary><strong>${storyName}</strong></summary>\n\n`;
@@ -168,7 +170,9 @@ if (hasAffectedComponents && screenshots.length > 0) {
         }
 
         if (videoUrl) {
-          screenshotSection += `**Interaction Preview:** ([view full size](${videoUrl}))\n\n![${storyName} interaction](${videoUrl})\n\n`;
+          // Link to mp4 if available, otherwise link to gif
+          const fullVideoUrl = mp4Url || videoUrl;
+          screenshotSection += `**Interaction Preview:** ([view video](${fullVideoUrl}))\n\n![${storyName} interaction](${videoUrl})\n\n`;
         }
 
         screenshotSection += `\`yarn storybook\` then navigate to: \`${shot.storyId}\`\n\n`;
