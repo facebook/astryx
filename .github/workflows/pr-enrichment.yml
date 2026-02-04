@@ -13,7 +13,7 @@ jobs:
     name: Analyze PR
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       pull-requests: write
       actions: read
 
@@ -49,6 +49,52 @@ jobs:
       - name: Build Storybook
         run: yarn storybook:build
 
+      - name: Deploy Storybook preview
+        id: deploy
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          DEPLOY_PATH="pr/${PR_NUMBER}"
+          PAGES_URL="https://facebookexperimental.github.io/xds/${DEPLOY_PATH}"
+
+          # Save storybook build to temp
+          mkdir -p /tmp/storybook-deploy
+          cp -r apps/storybook/dist/* /tmp/storybook-deploy/
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Check if gh-pages exists on remote
+          if git ls-remote --exit-code --heads origin gh-pages > /dev/null 2>&1; then
+            # Branch exists, fetch and checkout
+            git fetch origin gh-pages
+            git checkout -B gh-pages origin/gh-pages
+          else
+            # Branch doesn't exist, create orphan
+            git checkout --orphan gh-pages
+            git rm -rf . || true
+            echo "# GitHub Pages" > README.md
+          fi
+
+          # Create PR directory and copy build
+          mkdir -p "${DEPLOY_PATH}"
+          rm -rf "${DEPLOY_PATH:?}"/*
+          cp -r /tmp/storybook-deploy/* "${DEPLOY_PATH}/"
+
+          # Add .nojekyll if not present
+          touch .nojekyll
+
+          # Commit and push
+          git add .
+          git commit -m "Deploy Storybook preview for PR #${PR_NUMBER}" || echo "No changes to commit"
+          git push origin gh-pages
+
+          # Switch back to PR branch
+          git checkout -
+
+          echo "pages_url=${PAGES_URL}" >> $GITHUB_OUTPUT
+          echo "Deployed to: ${PAGES_URL}"
+
       - name: Install Playwright
         run: npx playwright install chromium
 
@@ -56,10 +102,11 @@ jobs:
         id: screenshots
         run: |
           COMPONENTS=$(cat analysis.json | jq -r '(.newComponents + .modifiedComponents) | join(",")')
+          PAGES_URL="${{ steps.deploy.outputs.pages_url }}"
           node .github/scripts/capture-screenshots.js \
             --storybook-dir apps/storybook/dist \
             --output-dir screenshots \
-            --storybook-url "https://facebookexperimental.github.io/xds" \
+            --storybook-url "${PAGES_URL}" \
             --components "$COMPONENTS"
 
       - name: Run accessibility audit
@@ -82,10 +129,12 @@ jobs:
         id: comment
         run: |
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          PAGES_URL="${{ steps.deploy.outputs.pages_url }}"
           COMMENT_BODY=$(node .github/scripts/generate-pr-comment.js \
             --analysis analysis.json \
             --a11y a11y-report.json \
             --screenshots screenshots/screenshots.json \
+            --storybook-url "${PAGES_URL}" \
             --run-url "$RUN_URL")
 
           # Save to file for the next step

@@ -1,0 +1,39 @@
+name: Cleanup PR Preview
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  cleanup:
+    name: Remove Storybook Preview
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          fetch-depth: 0
+
+      - name: Remove PR preview
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          DEPLOY_PATH="pr/${PR_NUMBER}"
+
+          if [ -d "${DEPLOY_PATH}" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+
+            rm -rf "${DEPLOY_PATH}"
+            git add .
+            git commit -m "Remove Storybook preview for PR #${PR_NUMBER}" || echo "No changes to commit"
+            git push origin gh-pages
+
+            echo "Removed preview at ${DEPLOY_PATH}"
+          else
+            echo "No preview found at ${DEPLOY_PATH}"
+          fi

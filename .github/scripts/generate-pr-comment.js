@@ -17,6 +17,7 @@ const getArg = (name) => {
 const analysisFile = getArg('analysis') || 'analysis.json';
 const a11yFile = getArg('a11y') || 'a11y-report.json';
 const screenshotsFile = getArg('screenshots') || 'screenshots/screenshots.json';
+const storybookUrlOverride = getArg('storybook-url') || '';
 const runUrl = getArg('run-url') || '';
 
 // Read analysis results
@@ -117,9 +118,14 @@ if (analysis.bundleDelta) {
 let screenshotSection = '';
 const hasAffectedComponents = (analysis.newComponents?.length > 0) || (analysis.modifiedComponents?.length > 0);
 const screenshots = screenshotsData.screenshots || [];
+const storybookBaseUrl = storybookUrlOverride || screenshotsData.storybookUrl || '';
 
 if (hasAffectedComponents) {
   screenshotSection = `### Component Previews\n\n`;
+
+  if (storybookBaseUrl) {
+    screenshotSection += `**[View Storybook Preview](${storybookBaseUrl})**\n\n`;
+  }
 
   if (screenshots.length > 0) {
     // Group screenshots by component title
@@ -138,8 +144,12 @@ if (hasAffectedComponents) {
     for (const [compName, shots] of Object.entries(byComponent)) {
       for (const shot of shots) {
         const storyName = shot.name || shot.storyId;
-        const link = shot.storybookLink
-          ? `[View in Storybook](${shot.storybookLink})`
+        // Use override URL if provided, otherwise fall back to shot's link
+        const storyLink = storybookBaseUrl
+          ? `${storybookBaseUrl}/?path=/story/${shot.storyId}`
+          : shot.storybookLink;
+        const link = storyLink
+          ? `[View](${storyLink})`
           : 'N/A';
         screenshotSection += `| ${compName} | ${storyName} | ${link} |\n`;
       }
