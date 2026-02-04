@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * @description Generates and posts PR comment with analysis results
- * @input --analysis <file> --a11y <file> --screenshots <file> --run-url <url>
+ * @description Generates and posts PR comment with analysis results and embedded screenshots
+ * @input --analysis <file> --a11y <file> --screenshots <file> --screenshot-urls <file> --run-url <url>
  * @output Formatted markdown comment body to stdout
  */
 
@@ -17,13 +17,14 @@ const getArg = (name) => {
 const analysisFile = getArg('analysis') || 'analysis.json';
 const a11yFile = getArg('a11y') || 'a11y-report.json';
 const screenshotsFile = getArg('screenshots') || 'screenshots/screenshots.json';
-const storybookUrlOverride = getArg('storybook-url') || '';
+const screenshotUrlsFile = getArg('screenshot-urls') || 'screenshot-urls.json';
 const runUrl = getArg('run-url') || '';
 
 // Read analysis results
 let analysis = { newComponents: [], modifiedComponents: [], componentStats: {}, totalBundle: {} };
 let a11yReport = { components: {} };
-let screenshotsData = { screenshots: [], storybookUrl: null };
+let screenshotsData = { screenshots: [] };
+let screenshotUrls = {};
 
 try {
   analysis = JSON.parse(fs.readFileSync(analysisFile, 'utf8'));
@@ -41,6 +42,12 @@ try {
   screenshotsData = JSON.parse(fs.readFileSync(screenshotsFile, 'utf8'));
 } catch (e) {
   console.error('Warning: Could not read screenshots manifest:', e.message);
+}
+
+try {
+  screenshotUrls = JSON.parse(fs.readFileSync(screenshotUrlsFile, 'utf8'));
+} catch (e) {
+  console.error('Warning: Could not read screenshot URLs:', e.message);
 }
 
 // Build component stats section
@@ -114,52 +121,41 @@ if (analysis.bundleDelta) {
   bundleSection += `**Bundle size ${direction}:** ${delta > 0 ? '+' : ''}${delta} bytes\n\n`;
 }
 
-// Build screenshots/previews section with Storybook links
+// Build screenshots section with embedded images
 let screenshotSection = '';
 const hasAffectedComponents = (analysis.newComponents?.length > 0) || (analysis.modifiedComponents?.length > 0);
 const screenshots = screenshotsData.screenshots || [];
-const storybookBaseUrl = storybookUrlOverride || screenshotsData.storybookUrl || '';
 
-if (hasAffectedComponents) {
+if (hasAffectedComponents && screenshots.length > 0) {
   screenshotSection = `### Component Previews\n\n`;
 
-  if (storybookBaseUrl) {
-    screenshotSection += `**[View Storybook Preview](${storybookBaseUrl})**\n\n`;
+  // Group screenshots by component title
+  const byComponent = {};
+  for (const shot of screenshots) {
+    const compName = shot.title?.split('/').pop() || shot.title || 'Unknown';
+    if (!byComponent[compName]) {
+      byComponent[compName] = [];
+    }
+    byComponent[compName].push(shot);
   }
 
-  if (screenshots.length > 0) {
-    // Group screenshots by component title
-    const byComponent = {};
-    for (const shot of screenshots) {
-      const compName = shot.title?.split('/').pop() || shot.title || 'Unknown';
-      if (!byComponent[compName]) {
-        byComponent[compName] = [];
-      }
-      byComponent[compName].push(shot);
-    }
+  for (const [compName, shots] of Object.entries(byComponent)) {
+    screenshotSection += `#### ${compName}\n\n`;
 
-    screenshotSection += `| Component | Story | Storybook Link |\n`;
-    screenshotSection += `|-----------|-------|----------------|\n`;
+    for (const shot of shots) {
+      const storyName = shot.name || shot.storyId;
+      const filename = shot.filename;
+      const imageUrl = screenshotUrls[filename];
 
-    for (const [compName, shots] of Object.entries(byComponent)) {
-      for (const shot of shots) {
-        const storyName = shot.name || shot.storyId;
-        // Use override URL if provided, otherwise fall back to shot's link
-        const storyLink = storybookBaseUrl
-          ? `${storybookBaseUrl}/?path=/story/${shot.storyId}`
-          : shot.storybookLink;
-        const link = storyLink
-          ? `[View](${storyLink})`
-          : 'N/A';
-        screenshotSection += `| ${compName} | ${storyName} | ${link} |\n`;
+      if (imageUrl) {
+        // Embed the image directly
+        screenshotSection += `<details>\n<summary><strong>${storyName}</strong></summary>\n\n`;
+        screenshotSection += `![${storyName}](${imageUrl})\n\n`;
+        screenshotSection += `</details>\n\n`;
+      } else {
+        screenshotSection += `- **${storyName}** _(screenshot not available)_\n`;
       }
     }
-
-    screenshotSection += `\n`;
-  }
-
-  if (runUrl) {
-    screenshotSection += `Screenshots are available in the [workflow artifacts](${runUrl}).\n\n`;
   }
 }
 
