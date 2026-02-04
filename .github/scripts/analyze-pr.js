@@ -175,9 +175,115 @@ function hasStories(componentName) {
   }
 }
 
+// Count lines of code in a file (excluding blank lines and comments)
+function countLOC(filePath) {
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+    const lines = content.split('\n');
+    let loc = 0;
+    let inBlockComment = false;
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+
+      // Track block comments
+      if (trimmed.startsWith('/*')) inBlockComment = true;
+      if (trimmed.endsWith('*/')) {
+        inBlockComment = false;
+        continue;
+      }
+
+      if (inBlockComment) continue;
+      if (!trimmed) continue;
+      if (trimmed.startsWith('//')) continue;
+      if (trimmed.startsWith('*')) continue;
+
+      loc++;
+    }
+
+    return loc;
+  } catch {
+    return 0;
+  }
+}
+
+// Get total LOC for a component
+function getComponentLOC(componentName) {
+  const componentDir = path.join(process.cwd(), CORE_SRC, componentName);
+  try {
+    const files = fs.readdirSync(componentDir);
+    let totalLOC = 0;
+    let fileCount = 0;
+
+    for (const file of files) {
+      if (file.endsWith('.ts') || file.endsWith('.tsx')) {
+        // Skip test files
+        if (file.includes('.test.')) continue;
+        totalLOC += countLOC(path.join(componentDir, file));
+        fileCount++;
+      }
+    }
+
+    return { totalLOC, fileCount };
+  } catch {
+    return { totalLOC: 0, fileCount: 0 };
+  }
+}
+
+// Calculate cyclomatic complexity (simplified - counts decision points)
+function getComplexity(componentName) {
+  const componentDir = path.join(process.cwd(), CORE_SRC, componentName);
+  try {
+    const files = fs.readdirSync(componentDir);
+    let complexity = 1; // Base complexity
+
+    for (const file of files) {
+      if (!file.endsWith('.tsx')) continue;
+      if (file.includes('.test.')) continue;
+
+      const content = fs.readFileSync(path.join(componentDir, file), 'utf8');
+
+      // Count decision points (simplified cyclomatic complexity)
+      const patterns = [
+        /\bif\s*\(/g,
+        /\belse\s+if\s*\(/g,
+        /\bswitch\s*\(/g,
+        /\bcase\s+/g,
+        /\?\s*[^:]/g,  // Ternary operators
+        /\|\|/g,       // Logical OR (short-circuit)
+        /&&/g,         // Logical AND (short-circuit)
+        /\.map\s*\(/g, // Array iterations
+        /\.filter\s*\(/g,
+        /\.reduce\s*\(/g,
+        /\.forEach\s*\(/g,
+      ];
+
+      for (const pattern of patterns) {
+        const matches = content.match(pattern);
+        if (matches) {
+          complexity += matches.length;
+        }
+      }
+    }
+
+    // Categorize complexity
+    let rating;
+    if (complexity <= 5) rating = 'Low';
+    else if (complexity <= 15) rating = 'Medium';
+    else if (complexity <= 30) rating = 'High';
+    else rating = 'Very High';
+
+    return { score: complexity, rating };
+  } catch {
+    return { score: 0, rating: 'Unknown' };
+  }
+}
+
 // Get component stats
 function getComponentStats(componentName) {
   const distPath = path.join(process.cwd(), CORE_DIST, componentName);
+  const loc = getComponentLOC(componentName);
+  const complexity = getComplexity(componentName);
 
   return {
     esmSize: getFileSize(path.join(distPath, 'index.mjs')),
@@ -188,6 +294,10 @@ function getComponentStats(componentName) {
     propsCount: getPropsCount(componentName),
     hasTests: hasTests(componentName),
     hasStories: hasStories(componentName),
+    linesOfCode: loc.totalLOC,
+    fileCount: loc.fileCount,
+    complexity: complexity.score,
+    complexityRating: complexity.rating,
   };
 }
 

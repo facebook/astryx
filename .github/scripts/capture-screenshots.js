@@ -273,34 +273,53 @@ async function captureScreenshots() {
         await page.waitForTimeout(500);
       }
 
-      // Close page and get video path
+      // Close page to finalize video recording
       await page.close();
 
       if (captureVideo) {
         const video = page.video();
         if (video) {
+          // Wait for video to be saved - this resolves when the file is ready
           const videoPath = await video.path();
 
-          // Convert to GIF using ffmpeg
-          const gifFilename = `${storyId.replace(/[^a-z0-9]/gi, '-')}.gif`;
-          const gifPath = path.join(outputDir, gifFilename);
+          // Ensure the video file exists and has content
+          const videoStats = fs.existsSync(videoPath) ? fs.statSync(videoPath) : null;
 
-          try {
-            // Use ffmpeg to convert webm to gif (with palette for better quality)
-            execSync(
-              `ffmpeg -i "${videoPath}" -vf "fps=10,scale=400:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" -loop 0 "${gifPath}" -y`,
-              { stdio: 'pipe' }
-            );
-            result.videoFilename = gifFilename;
-            console.log(`[ok] Video: ${story.title} / ${story.name}`);
-          } catch (e) {
-            console.error(`[warn] GIF conversion failed: ${e.message}`);
+          if (videoStats && videoStats.size > 1000) {
+            // Convert to GIF using ffmpeg
+            const gifFilename = `${storyId.replace(/[^a-z0-9]/gi, '-')}.gif`;
+            const gifPath = path.join(outputDir, gifFilename);
+
+            try {
+              // Use ffmpeg to convert webm to gif (with palette for better quality)
+              // Add -t 5 to limit to 5 seconds max, and use simpler filter for reliability
+              execSync(
+                `ffmpeg -i "${videoPath}" -t 5 -vf "fps=8,scale=400:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" -loop 0 "${gifPath}" -y 2>&1`,
+                { stdio: 'pipe', timeout: 30000 }
+              );
+
+              // Verify GIF was created
+              if (fs.existsSync(gifPath) && fs.statSync(gifPath).size > 100) {
+                result.videoFilename = gifFilename;
+                console.log(`[ok] Video: ${story.title} / ${story.name} (${videoStats.size} bytes webm -> gif)`);
+              } else {
+                console.error(`[warn] GIF file empty or not created for ${storyId}`);
+              }
+            } catch (e) {
+              console.error(`[warn] GIF conversion failed for ${storyId}: ${e.message}`);
+            }
+
+            // Clean up webm file
+            try {
+              fs.unlinkSync(videoPath);
+            } catch {}
+          } else {
+            console.error(`[warn] Video file too small or missing for ${storyId}: ${videoStats?.size || 0} bytes`);
+            // Clean up invalid webm file
+            try {
+              if (videoPath) fs.unlinkSync(videoPath);
+            } catch {}
           }
-
-          // Clean up webm file
-          try {
-            fs.unlinkSync(videoPath);
-          } catch {}
         }
       }
 
