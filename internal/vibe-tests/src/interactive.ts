@@ -215,13 +215,22 @@ function createTaskManifest(
   ensureDir(tasksDir);
 
   for (const prompt of prompts) {
-    const task: AgentTask = {
+    // Generate the complete subagent prompt
+    const subagentPrompt = generateSubagentPrompt(
+      iterationId,
+      prompt,
+      config,
+      resultsDir,
+    );
+
+    const task: AgentTask & {subagentPrompt: string} = {
       promptId: prompt.id,
       category: prompt.category,
       prompt: prompt.prompt,
       expectedComponents: prompt.expectedComponents,
       persona: config.persona,
       degradation: config.degradation,
+      subagentPrompt,
     };
     writeJson(path.join(tasksDir, `${prompt.id}.json`), task);
   }
@@ -230,6 +239,38 @@ function createTaskManifest(
     `\nCreated task manifest: ${path.join(resultsDir, 'manifest.json')}`,
   );
   console.log(`Individual tasks: ${tasksDir}/`);
+}
+
+/**
+ * Generate the complete prompt for a subagent to run a single test
+ */
+function generateSubagentPrompt(
+  iterationId: string,
+  prompt: TestPrompt,
+  config: InteractiveConfig,
+  resultsDir: string,
+): string {
+  const codePath = `${resultsDir}/results/${prompt.id}.tsx`;
+  const metaPath = `${resultsDir}/results/${prompt.id}.meta.json`;
+
+  // Persona-specific framing to simulate different user types
+  const personaFraming: Record<string, string> = {
+    naive: '', // No special framing - just the natural request
+    experienced: `Use XDS components from @xds/core. `,
+    adversarial: `I'm used to Tailwind/shadcn patterns but need to use your design system. `,
+  };
+
+  const framing = personaFraming[config.persona] || '';
+
+  // Natural prompt with AGENTS.md instruction and metadata tracking
+  return `First read AGENTS.md in this directory for component library guidance.
+
+${framing}${prompt.prompt}
+
+Write the code to: ${codePath}
+
+After writing the code, create ${metaPath} listing any doc files you read:
+{"docsRead": ["filename1.md", "filename2.md"]}`;
 }
 
 /**

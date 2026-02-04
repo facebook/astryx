@@ -451,49 +451,274 @@ function analyzeGaps(results: TestResult[]): GapSuggestion[] {
 }
 
 /**
- * Load results from individual result files
- * Optionally infers timing from file timestamps if durationMs is 0
+ * Extract XDS components used from code imports
+ */
+function extractComponentsFromCode(code: string): string[] {
+  const components: string[] = [];
+  // Match imports from @xds/core or @xds/core/*
+  const importRegex = /import\s+\{([^}]+)\}\s+from\s+['"]@xds\/core[^'"]*['"]/g;
+  let match;
+  while ((match = importRegex.exec(code)) !== null) {
+    const imports = match[1].split(',').map(s => s.trim());
+    for (const imp of imports) {
+      // Handle "Foo as Bar" syntax
+      const name = imp.split(/\s+as\s+/)[0].trim();
+      if (name.startsWith('XDS')) {
+        components.push(name);
+      }
+    }
+  }
+  return [...new Set(components)];
+}
+
+/**
+ * Detect escape hatches in code
+ */
+function detectEscapeHatches(code: string): EscapeHatch[] {
+  const hatches: EscapeHatch[] = [];
+
+  // Check for hardcoded colors (hex, rgb, hsl, or named colors in style context)
+  const hardcodedColorRegex =
+    /(?:color|background|border|fill|stroke)\s*:\s*['"]?(#[0-9a-fA-F]{3,8}|rgb\([^)]+\)|hsl\([^)]+\)|rgba\([^)]+\)|hsla\([^)]+\))['"]?/gi;
+  let match;
+  while ((match = hardcodedColorRegex.exec(code)) !== null) {
+    hatches.push({
+      type: 'hardcoded_color',
+      severity: 'acceptable',
+      detail: 'Hardcoded color value instead of CSS variable',
+      codeSnippet: match[0],
+    });
+  }
+
+  // Check for hardcoded spacing (px values in padding, margin, gap)
+  const hardcodedSpacingRegex =
+    /(?:padding|margin|gap|top|bottom|left|right|width|height)\s*:\s*['"]?\d+px['"]?/gi;
+  while ((match = hardcodedSpacingRegex.exec(code)) !== null) {
+    // Skip if it's inside a var() or uses spacing tokens
+    if (!match[0].includes('var(')) {
+      hatches.push({
+        type: 'hardcoded_spacing',
+        severity: 'acceptable',
+        detail: 'Hardcoded spacing value instead of spacing token',
+        codeSnippet: match[0],
+      });
+    }
+  }
+
+  // Check for inline style props (not StyleX)
+  const inlineStyleRegex = /style\s*=\s*\{\{/g;
+  while ((match = inlineStyleRegex.exec(code)) !== null) {
+    hatches.push({
+      type: 'inline_style',
+      severity: 'acceptable',
+      detail: 'Inline style object instead of StyleX',
+      codeSnippet: match[0],
+    });
+  }
+
+  // Check for wrapper divs (plain divs that could use XDS layout)
+  const wrapperDivRegex = /<div\s+(?:className|style)/g;
+  while ((match = wrapperDivRegex.exec(code)) !== null) {
+    hatches.push({
+      type: 'wrapper_div',
+      severity: 'acceptable',
+      detail: 'Wrapper div that could potentially use XDS layout components',
+      codeSnippet: match[0],
+    });
+  }
+
+  // Check for hallucinated props (common mistakes)
+  // Only flag clearly invalid patterns, not valid but uncommon props
+  const hallucinatedProps = [
+    {pattern: /variant\s*=\s*["']outline["']/g, prop: 'variant="outline"'},
+    {pattern: /size\s*=\s*["'](?:xs|xxl|xxxl)["']/g, prop: 'invalid size prop'},
+  ];
+  for (const {pattern, prop} of hallucinatedProps) {
+    if (pattern.test(code)) {
+      hatches.push({
+        type: 'hallucination',
+        severity: 'critical',
+        detail: `Potentially hallucinated prop: ${prop}`,
+        codeSnippet: prop,
+      });
+    }
+  }
+
+  // Check for StyleX with valid CSS variables (this is acceptable - supplemental_css)
+  const stylexBlockRegex = /stylex\.create\(\{[\s\S]*?\}\)/g;
+  while ((match = stylexBlockRegex.exec(code)) !== null) {
+    // Only flag if it has significant styling (not just layout)
+    const block = match[0];
+    if (
+      block.includes('backgroundColor') ||
+      block.includes('borderColor') ||
+      block.includes('color:')
+    ) {
+      // Check if using CSS variables
+      if (block.includes('var(--')) {
+        hatches.push({
+          type: 'supplemental_css',
+          severity: 'acceptable',
+          detail: 'StyleX styling using CSS variables',
+          codeSnippet: block.slice(0, 100) + '...',
+        });
+      }
+    }
+  }
+
+  return hatches;
+}
+
+/**
+ * Load results from individual result files (.tsx code files)
+ * Evaluates code externally instead of relying on self-evaluation
  */
 function loadResults(resultsDir: string): TestResult[] {
   const individualResultsDir = path.join(resultsDir, 'results');
   const tasksDir = path.join(resultsDir, 'tasks');
+  const manifestPath = path.join(resultsDir, 'manifest.json');
   const results: TestResult[] = [];
 
   if (!fs.existsSync(individualResultsDir)) {
     throw new Error(`No results directory found at ${individualResultsDir}`);
   }
 
-  const files = fs
+  // Try to load .tsx files first (new natural prompt format)
+  let files = fs
     .readdirSync(individualResultsDir)
-    .filter(f => f.endsWith('.json'));
+    .filter(f => f.endsWith('.tsx'));
 
+  // Fall back to .json files if no .tsx files found
   if (files.length === 0) {
-    throw new Error(`No result files found in ${individualResultsDir}`);
+    files = fs
+      .readdirSync(individualResultsDir)
+      .filter(f => f.endsWith('.json'));
+
+    if (files.length === 0) {
+      throw new Error(`No result files found in ${individualResultsDir}`);
+    }
+
+    // Process JSON files (legacy format)
+    for (const file of files) {
+      try {
+        const resultPath = path.join(individualResultsDir, file);
+        const content = fs.readFileSync(resultPath, 'utf-8');
+        const result = JSON.parse(content) as TestResult;
+
+        // Infer timing from file timestamps if durationMs is 0 or missing
+        if (!result.durationMs || result.durationMs === 0) {
+          const taskPath = path.join(tasksDir, file);
+          if (fs.existsSync(taskPath)) {
+            const taskStat = fs.statSync(taskPath);
+            const resultStat = fs.statSync(resultPath);
+            const inferredDurationMs = resultStat.mtimeMs - taskStat.mtimeMs;
+            if (inferredDurationMs > 0) {
+              result.durationMs = Math.round(inferredDurationMs);
+            }
+          }
+        }
+
+        results.push(result);
+      } catch (e) {
+        console.warn(`Warning: Failed to parse ${file}: ${e}`);
+      }
+    }
+
+    return results;
   }
 
+  // Load manifest for iteration info
+  let manifest: {iterationId: string; config: {persona: string}} | null = null;
+  if (fs.existsSync(manifestPath)) {
+    try {
+      manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+    } catch {
+      console.warn('Warning: Could not parse manifest.json');
+    }
+  }
+
+  // Process .tsx files (new format - external evaluation)
   for (const file of files) {
     try {
+      const promptId = file.replace('.tsx', '');
       const resultPath = path.join(individualResultsDir, file);
-      const content = fs.readFileSync(resultPath, 'utf-8');
-      const result = JSON.parse(content) as TestResult;
+      const taskPath = path.join(tasksDir, `${promptId}.json`);
+      const metaPath = path.join(individualResultsDir, `${promptId}.meta.json`);
 
-      // Infer timing from file timestamps if durationMs is 0 or missing
-      if (!result.durationMs || result.durationMs === 0) {
-        const taskPath = path.join(tasksDir, file);
-        if (fs.existsSync(taskPath)) {
-          const taskStat = fs.statSync(taskPath);
-          const resultStat = fs.statSync(resultPath);
-          // Duration = result file mtime - task file mtime
-          const inferredDurationMs = resultStat.mtimeMs - taskStat.mtimeMs;
-          if (inferredDurationMs > 0) {
-            result.durationMs = Math.round(inferredDurationMs);
-          }
+      // Read the generated code
+      const code = fs.readFileSync(resultPath, 'utf-8');
+
+      // Load task metadata
+      let task: {
+        promptId: string;
+        category: string;
+        prompt: string;
+        expectedComponents: string[];
+        persona: string;
+      } | null = null;
+      if (fs.existsSync(taskPath)) {
+        task = JSON.parse(fs.readFileSync(taskPath, 'utf-8'));
+      }
+
+      // Load docs read metadata if available
+      let docsRead: string[] | undefined;
+      if (fs.existsSync(metaPath)) {
+        try {
+          const meta = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+          docsRead = meta.docsRead;
+        } catch {
+          console.warn(`Warning: Could not parse ${metaPath}`);
         }
       }
 
+      // External evaluation: extract components and detect escape hatches
+      const componentsUsed = extractComponentsFromCode(code);
+      const escapeHatches = detectEscapeHatches(code);
+
+      // Determine success based on critical escape hatches
+      const hasCritical = escapeHatches.some(h => h.severity === 'critical');
+      const success = !hasCritical;
+
+      // Infer timing from file timestamps
+      let durationMs = 0;
+      if (fs.existsSync(taskPath)) {
+        const taskStat = fs.statSync(taskPath);
+        const resultStat = fs.statSync(resultPath);
+        const inferredDurationMs = resultStat.mtimeMs - taskStat.mtimeMs;
+        if (inferredDurationMs > 0) {
+          durationMs = Math.round(inferredDurationMs);
+        }
+      }
+
+      const result: TestResult = {
+        id: `${manifest?.iterationId || 'unknown'}-${promptId}`,
+        timestamp: new Date().toISOString(),
+        systemVersion: 'claude-code-interactive',
+        model: 'claude-code-interactive',
+        persona: task?.persona || manifest?.config?.persona || 'naive',
+        promptCategory: task?.category || 'unknown',
+        trajectoryDepth: 0,
+        prompt: task?.prompt || promptId,
+        response: code,
+        evaluation: {
+          success,
+          componentsUsed,
+          componentsExpected: task?.expectedComponents || [],
+          escapeHatches,
+          failureMode: hasCritical ? 'Critical escape hatches detected' : null,
+          confusionSignals: [],
+        },
+        fullConversation: [],
+        contextWindowUsage: 0,
+        durationMs,
+        inputTokens: 0,
+        outputTokens: 0,
+        docsRead,
+      };
+
       results.push(result);
     } catch (e) {
-      console.warn(`Warning: Failed to parse ${file}: ${e}`);
+      console.warn(`Warning: Failed to process ${file}: ${e}`);
     }
   }
 

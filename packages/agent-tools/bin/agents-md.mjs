@@ -134,17 +134,87 @@ function findComponentReadmes(coreDir) {
 }
 
 /**
+ * Discover all XDS components by scanning for XDS*.tsx files
+ * Returns { components: string[], layout: string[] }
+ */
+function discoverComponents(coreDir) {
+  const srcDir = path.join(coreDir, 'src');
+  const components = new Set();
+  const layoutComponents = new Set();
+
+  // Layout-related directory names
+  const LAYOUT_DIRS = ['Layout', 'Grid', 'Center', 'Divider', 'AspectRatio', 'Section'];
+
+  if (!fs.existsSync(srcDir)) {
+    return { components: [], layout: [] };
+  }
+
+  /**
+   * Recursively scan a directory for XDS*.tsx files
+   */
+  function scanDir(dirPath, isLayoutContext) {
+    const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const fullPath = path.join(dirPath, entry.name);
+
+      if (entry.isDirectory()) {
+        // Recurse into subdirectories
+        scanDir(fullPath, isLayoutContext);
+      } else if (
+        entry.name.startsWith('XDS') &&
+        entry.name.endsWith('.tsx') &&
+        !entry.name.includes('.test.')
+      ) {
+        const componentName = entry.name.replace('.tsx', '');
+        if (isLayoutContext) {
+          layoutComponents.add(componentName);
+        } else {
+          components.add(componentName);
+        }
+      }
+    }
+  }
+
+  const entries = fs.readdirSync(srcDir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+
+    const dirPath = path.join(srcDir, entry.name);
+    const isLayoutDir = LAYOUT_DIRS.includes(entry.name);
+
+    scanDir(dirPath, isLayoutDir);
+  }
+
+  // Sort alphabetically for consistent output
+  return {
+    components: [...components].sort(),
+    layout: [...layoutComponents].sort(),
+  };
+}
+
+/**
  * Compressed index for AGENTS.md
  * Uses pipe-delimited format for 80% token reduction per Vercel research
  */
-function generateCompressedIndex(version) {
+function generateCompressedIndex(version, discoveredComponents) {
+  // Use discovered components if available, otherwise use defaults
+  const componentList = discoveredComponents?.components?.length > 0
+    ? discoveredComponents.components.join('|')
+    : 'Button|TextInput|TextArea|CheckboxInput|Field|Layout|Layer|Avatar|Skeleton|Text|Icon';
+
+  const layoutList = discoveredComponents?.layout?.length > 0
+    ? discoveredComponents.layout.join('|')
+    : 'XDSLayout|XDSLayoutHeader|XDSLayoutContent|XDSLayoutPanel|XDSHStack|XDSVStack|XDSCard';
+
   return `${XDS_MARKER_START}
 [XDS Component Library v${version}]|root: ./${XDS_DOCS_DIR}
 |IMPORTANT: Prefer retrieval-led reasoning. Read docs from .xds-docs/ before generating XDS code.
 |principles.md: Key rules, anti-patterns, StyleX patterns
 |tokens.md: Full design token reference (spacing, colors, radius, typography)
-|components: Button|TextInput|TextArea|CheckboxInput|Field|Layout|Layer|Avatar|Skeleton|Text|Icon
-|layout: XDSLayout|XDSLayoutHeader|XDSLayoutContent|XDSLayoutPanel|XDSHStack|XDSVStack|XDSCard
+|layout: ${layoutList}
+|components: ${componentList}
 |theme: Theme provider, defaultTheme, CSS variables via StyleX
 |For component API: read .xds-docs/{ComponentName}.md
 ${XDS_MARKER_END}`;
@@ -250,9 +320,9 @@ function installDocs(targetDir) {
 /**
  * Inject or update XDS section in AGENTS.md
  */
-function injectAgentsMd(targetDir, version) {
+function injectAgentsMd(targetDir, version, discoveredComponents) {
   const agentsPath = path.join(targetDir, AGENTS_MD);
-  const compressedIndex = generateCompressedIndex(version);
+  const compressedIndex = generateCompressedIndex(version, discoveredComponents);
 
   let content = '';
 
@@ -384,7 +454,13 @@ if (args.includes('--remove')) {
     process.exit(1);
   }
 
-  injectAgentsMd(targetDir, version);
+  // Discover components dynamically
+  const discoveredComponents = coreDir ? discoverComponents(coreDir) : null;
+  if (discoveredComponents) {
+    console.log(`✓ Discovered ${discoveredComponents.layout.length} layout + ${discoveredComponents.components.length} other components`);
+  }
+
+  injectAgentsMd(targetDir, version, discoveredComponents);
   console.log(`✓ Injected compressed index into ${AGENTS_MD}`);
 
   updateGitignore(targetDir);
