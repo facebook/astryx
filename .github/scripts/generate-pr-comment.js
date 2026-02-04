@@ -168,7 +168,7 @@ if (hasAffectedComponents && screenshots.length > 0) {
         }
 
         if (videoUrl) {
-          screenshotSection += `**Interaction Preview:**\n\n![${storyName} interaction](${videoUrl})\n\n`;
+          screenshotSection += `**Interaction Preview:** ([view full size](${videoUrl}))\n\n![${storyName} interaction](${videoUrl})\n\n`;
         }
 
         screenshotSection += `\`yarn storybook\` then navigate to: \`${shot.storyId}\`\n\n`;

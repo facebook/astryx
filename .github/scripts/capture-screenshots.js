@@ -240,15 +240,77 @@ async function captureScreenshots() {
         filename: screenshotFilename,
       };
 
-      // If capturing video, simulate some interactions
+      // If capturing video, simulate some interactions with visible cursor
       if (captureVideo) {
+        // Inject a visible cursor element that follows mouse movements
+        await page.evaluate(() => {
+          const cursor = document.createElement('div');
+          cursor.id = 'playwright-cursor';
+          cursor.innerHTML = `
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5.5 3.21V20.8C5.5 21.3 5.74 21.48 6.09 21.21L10.85 17.38L14.03 23.44C14.16 23.69 14.45 23.8 14.71 23.67L16.81 22.62C17.07 22.49 17.18 22.2 17.05 21.94L13.86 15.87L19.77 14.82C20.19 14.74 20.3 14.41 19.99 14.13L6.41 2.93C6.1 2.65 5.5 2.75 5.5 3.21Z" fill="white" stroke="black" stroke-width="1.5"/>
+            </svg>
+          `;
+          cursor.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 24px;
+            height: 24px;
+            pointer-events: none;
+            z-index: 999999;
+            transform: translate(-2px, -2px);
+            transition: transform 0.1s ease-out;
+          `;
+          document.body.appendChild(cursor);
+
+          // Track mouse position and update cursor
+          document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+          });
+        });
+
+        // Helper function to move cursor smoothly to element
+        const moveCursorTo = async (element) => {
+          const box = await element.boundingBox();
+          if (!box) return false;
+
+          const targetX = box.x + box.width / 2;
+          const targetY = box.y + box.height / 2;
+
+          // Get current mouse position (start from center if first move)
+          const startX = await page.evaluate(() => {
+            const cursor = document.getElementById('playwright-cursor');
+            return cursor ? parseFloat(cursor.style.left) || 400 : 400;
+          });
+          const startY = await page.evaluate(() => {
+            const cursor = document.getElementById('playwright-cursor');
+            return cursor ? parseFloat(cursor.style.top) || 300 : 300;
+          });
+
+          // Animate cursor movement in steps
+          const steps = 10;
+          for (let i = 1; i <= steps; i++) {
+            const x = startX + (targetX - startX) * (i / steps);
+            const y = startY + (targetY - startY) * (i / steps);
+            await page.mouse.move(x, y);
+            await page.waitForTimeout(30);
+          }
+
+          return true;
+        };
+
+        // Wait for cursor to be visible
+        await page.waitForTimeout(300);
+
         // Hover over interactive elements to show hover states
-        // Use short timeout and catch errors to avoid blocking
         const buttons = await page.$$('button');
         for (const button of buttons.slice(0, 3)) {
           try {
-            await button.hover({ timeout: 2000 });
-            await page.waitForTimeout(300);
+            if (await moveCursorTo(button)) {
+              await page.waitForTimeout(400);
+            }
           } catch {
             // Element not hoverable, skip
           }
@@ -258,8 +320,9 @@ async function captureScreenshots() {
         const links = await page.$$('a');
         for (const link of links.slice(0, 2)) {
           try {
-            await link.hover({ timeout: 2000 });
-            await page.waitForTimeout(300);
+            if (await moveCursorTo(link)) {
+              await page.waitForTimeout(400);
+            }
           } catch {
             // Element not hoverable, skip
           }
@@ -267,17 +330,18 @@ async function captureScreenshots() {
 
         // Hover over any span with role=button (badges, etc)
         const interactiveSpans = await page.$$('[role="button"], .badge, span[class]');
-        for (const span of interactiveSpans.slice(0, 3)) {
+        for (const span of interactiveSpans.slice(0, 5)) {
           try {
-            await span.hover({ timeout: 2000 });
-            await page.waitForTimeout(300);
+            if (await moveCursorTo(span)) {
+              await page.waitForTimeout(400);
+            }
           } catch {
             // Element not hoverable, skip
           }
         }
 
-        // Move mouse away
-        await page.mouse.move(0, 0);
+        // Move cursor to corner and wait
+        await page.mouse.move(10, 10);
         await page.waitForTimeout(500);
       }
 
