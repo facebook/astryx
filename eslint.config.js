@@ -18,8 +18,6 @@ import xdsPlugin from "./internal/eslint-plugin-xds/index.js";
 const isStrictMode = process.env.XDS_STRICT_LINT === '1' || process.env.CI === 'true';
 const xdsConfig = isStrictMode ? xdsPlugin.configs.strict : xdsPlugin.configs.recommended;
 
-console.log(`ESLint running in ${isStrictMode ? 'STRICT (agent/CI)' : 'RECOMMENDED (human)'} mode`);
-
 export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
