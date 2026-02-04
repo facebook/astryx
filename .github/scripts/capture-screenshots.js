@@ -163,11 +163,52 @@ async function captureScreenshots() {
       // Wait for Storybook to render the story
       await page.waitForSelector('#storybook-root', { timeout: 10000 });
 
+      // Wait for all stylesheets to be loaded
+      await page.evaluate(async () => {
+        // Wait for all link stylesheets
+        const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
+        await Promise.all(links.map(link => {
+          if (link.sheet) return Promise.resolve();
+          return new Promise((resolve) => {
+            link.addEventListener('load', resolve);
+            link.addEventListener('error', resolve);
+          });
+        }));
+
+        // Wait for any style elements to be processed
+        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise(resolve => requestAnimationFrame(resolve));
+      });
+
       // Wait for styles to be injected (StyleX runtime injection)
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(1500);
 
       // Wait for any fonts to load
       await page.evaluate(() => document.fonts.ready);
+
+      // Wait for CSS variables to be resolved - check for theme wrapper
+      await page.evaluate(async () => {
+        // Wait for CSS custom properties to be defined
+        const checkStyles = () => {
+          const storyRoot = document.querySelector('#storybook-root');
+          if (!storyRoot) return false;
+
+          // Check if any element has computed styles (not just default)
+          const firstChild = storyRoot.querySelector('*');
+          if (firstChild) {
+            const styles = getComputedStyle(firstChild);
+            // Check if display is not empty (styles are applied)
+            return styles.display !== '';
+          }
+          return true;
+        };
+
+        // Poll for styles to be ready
+        for (let i = 0; i < 20; i++) {
+          if (checkStyles()) break;
+          await new Promise(r => setTimeout(r, 100));
+        }
+      });
 
       // Additional wait for any CSS transitions/animations
       await page.waitForTimeout(500);
@@ -194,17 +235,37 @@ async function captureScreenshots() {
       // If capturing video, simulate some interactions
       if (captureVideo) {
         // Hover over interactive elements to show hover states
+        // Use short timeout and catch errors to avoid blocking
         const buttons = await page.$$('button');
         for (const button of buttons.slice(0, 3)) {
-          await button.hover();
-          await page.waitForTimeout(300);
+          try {
+            await button.hover({ timeout: 2000 });
+            await page.waitForTimeout(300);
+          } catch {
+            // Element not hoverable, skip
+          }
         }
 
         // Hover over links
         const links = await page.$$('a');
         for (const link of links.slice(0, 2)) {
-          await link.hover();
-          await page.waitForTimeout(300);
+          try {
+            await link.hover({ timeout: 2000 });
+            await page.waitForTimeout(300);
+          } catch {
+            // Element not hoverable, skip
+          }
+        }
+
+        // Hover over any span with role=button (badges, etc)
+        const interactiveSpans = await page.$$('[role="button"], .badge, span[class]');
+        for (const span of interactiveSpans.slice(0, 3)) {
+          try {
+            await span.hover({ timeout: 2000 });
+            await page.waitForTimeout(300);
+          } catch {
+            // Element not hoverable, skip
+          }
         }
 
         // Move mouse away
