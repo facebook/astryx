@@ -52,16 +52,20 @@ jobs:
       - name: Install Playwright
         run: npx playwright install chromium
 
-      - name: Capture component screenshots
+      - name: Install ffmpeg for video conversion
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Capture component screenshots and videos
         id: screenshots
         run: |
           COMPONENTS=$(cat analysis.json | jq -r '(.newComponents + .modifiedComponents) | join(",")')
           node .github/scripts/capture-screenshots.js \
             --storybook-dir apps/storybook/dist \
             --output-dir screenshots \
-            --components "$COMPONENTS"
+            --components "$COMPONENTS" \
+            --video
 
-      - name: Upload screenshots to GitHub
+      - name: Upload screenshots and videos to GitHub
         id: upload_screenshots
         env:
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -69,17 +73,26 @@ jobs:
           # Install CML CLI only (no visualization deps)
           npm install -g @dvcorg/cml
 
-          # Upload each screenshot and collect URLs
+          # Upload each screenshot and video, collect URLs
           echo '{}' > screenshot-urls.json
 
+          # Upload PNG screenshots
           for file in screenshots/*.png; do
             if [ -f "$file" ]; then
               filename=$(basename "$file")
-              # Use cml to publish image and get URL
               url=$(cml publish "$file")
               echo "Uploaded $filename -> $url"
+              jq --arg name "$filename" --arg url "$url" \
+                '. + {($name): $url}' screenshot-urls.json > tmp.json && mv tmp.json screenshot-urls.json
+            fi
+          done
 
-              # Add to JSON
+          # Upload GIF videos
+          for file in screenshots/*.gif; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              url=$(cml publish "$file")
+              echo "Uploaded $filename -> $url"
               jq --arg name "$filename" --arg url "$url" \
                 '. + {($name): $url}' screenshot-urls.json > tmp.json && mv tmp.json screenshot-urls.json
             fi

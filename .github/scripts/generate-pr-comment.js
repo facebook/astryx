@@ -129,6 +129,11 @@ const screenshots = screenshotsData.screenshots || [];
 if (hasAffectedComponents && screenshots.length > 0) {
   screenshotSection = `### Component Previews\n\n`;
 
+  const hasVideos = screenshots.some(s => s.videoFilename);
+  if (hasVideos) {
+    screenshotSection += `_Includes interactive hover previews as animated GIFs._\n\n`;
+  }
+
   // Group screenshots by component title
   const byComponent = {};
   for (const shot of screenshots) {
@@ -146,15 +151,24 @@ if (hasAffectedComponents && screenshots.length > 0) {
       const storyName = shot.name || shot.storyId;
       const filename = shot.filename;
       const imageUrl = screenshotUrls[filename];
+      const videoFilename = shot.videoFilename;
+      const videoUrl = videoFilename ? screenshotUrls[videoFilename] : null;
 
-      if (imageUrl) {
-        // Embed the image directly with story ID for local access
+      if (imageUrl || videoUrl) {
         screenshotSection += `<details>\n<summary><strong>${storyName}</strong></summary>\n\n`;
-        screenshotSection += `![${storyName}](${imageUrl})\n\n`;
+
+        if (imageUrl) {
+          screenshotSection += `**Screenshot:**\n\n![${storyName}](${imageUrl})\n\n`;
+        }
+
+        if (videoUrl) {
+          screenshotSection += `**Interaction Preview:**\n\n![${storyName} interaction](${videoUrl})\n\n`;
+        }
+
         screenshotSection += `\`yarn storybook\` then navigate to: \`${shot.storyId}\`\n\n`;
         screenshotSection += `</details>\n\n`;
       } else {
-        screenshotSection += `- **${storyName}** _(screenshot not available)_\n`;
+        screenshotSection += `- **${storyName}** _(media not available)_\n`;
       }
     }
   }

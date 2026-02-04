@@ -1,26 +1,29 @@
 #!/usr/bin/env node
 
 /**
- * @description Captures screenshots of component stories using Playwright
- * @input --storybook-dir <path> --output-dir <path> --components <comma-separated>
- * @output PNG screenshots in output directory with manifest
+ * @description Captures screenshots and videos of component stories using Playwright
+ * @input --storybook-dir <path> --output-dir <path> --components <comma-separated> --video
+ * @output PNG screenshots and GIF videos in output directory with manifest
  */
 
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
+const { execSync } = require('child_process');
 
 const args = process.argv.slice(2);
 const getArg = (name) => {
   const idx = args.indexOf(`--${name}`);
   return idx !== -1 ? args[idx + 1] : null;
 };
+const hasFlag = (name) => args.includes(`--${name}`);
 
 const storybookDir = getArg('storybook-dir') || 'apps/storybook/dist';
 const outputDir = getArg('output-dir') || 'screenshots';
 const componentsArg = getArg('components') || '';
 const components = componentsArg.split(',').filter(Boolean);
+const captureVideo = hasFlag('video');
 
 // Simple static file server with proper MIME types
 function createServer(dir, port) {
@@ -125,17 +128,31 @@ async function captureScreenshots() {
   });
 
   console.log(`Capturing ${relevantStories.length} relevant stories`);
+  if (captureVideo) {
+    console.log('Video capture enabled - will record interactions and convert to GIF');
+  }
 
   const browser = await chromium.launch();
-  const context = await browser.newContext({
-    viewport: { width: 800, height: 600 },
-    deviceScaleFactor: 2, // Retina quality
-  });
 
   const screenshots = [];
 
   for (const storyId of relevantStories) {
     const story = stories[storyId];
+
+    // Create context with video recording if enabled
+    const contextOptions = {
+      viewport: { width: 800, height: 600 },
+      deviceScaleFactor: 2,
+    };
+
+    if (captureVideo) {
+      contextOptions.recordVideo = {
+        dir: path.join(outputDir, 'videos'),
+        size: { width: 800, height: 600 },
+      };
+    }
+
+    const context = await browser.newContext(contextOptions);
     const page = await context.newPage();
 
     try {
@@ -155,47 +172,110 @@ async function captureScreenshots() {
       // Additional wait for any CSS transitions/animations
       await page.waitForTimeout(500);
 
-      // Take screenshot of just the story root, with padding
+      // Take screenshot of just the story root
       const storyRoot = await page.$('#storybook-root');
 
-      const filename = `${storyId.replace(/[^a-z0-9]/gi, '-')}.png`;
-      const filepath = path.join(outputDir, filename);
+      const screenshotFilename = `${storyId.replace(/[^a-z0-9]/gi, '-')}.png`;
+      const screenshotPath = path.join(outputDir, screenshotFilename);
 
       if (storyRoot) {
-        await storyRoot.screenshot({ path: filepath });
+        await storyRoot.screenshot({ path: screenshotPath });
       } else {
-        // Fallback to full page
-        await page.screenshot({ path: filepath, fullPage: false });
+        await page.screenshot({ path: screenshotPath, fullPage: false });
       }
 
-      screenshots.push({
+      const result = {
         storyId,
         title: story.title,
         name: story.name,
-        filename,
-      });
+        filename: screenshotFilename,
+      };
+
+      // If capturing video, simulate some interactions
+      if (captureVideo) {
+        // Hover over interactive elements to show hover states
+        const buttons = await page.$$('button');
+        for (const button of buttons.slice(0, 3)) {
+          await button.hover();
+          await page.waitForTimeout(300);
+        }
+
+        // Hover over links
+        const links = await page.$$('a');
+        for (const link of links.slice(0, 2)) {
+          await link.hover();
+          await page.waitForTimeout(300);
+        }
+
+        // Move mouse away
+        await page.mouse.move(0, 0);
+        await page.waitForTimeout(500);
+      }
+
+      // Close page and get video path
+      await page.close();
+
+      if (captureVideo) {
+        const video = page.video();
+        if (video) {
+          const videoPath = await video.path();
+
+          // Convert to GIF using ffmpeg
+          const gifFilename = `${storyId.replace(/[^a-z0-9]/gi, '-')}.gif`;
+          const gifPath = path.join(outputDir, gifFilename);
+
+          try {
+            // Use ffmpeg to convert webm to gif (with palette for better quality)
+            execSync(
+              `ffmpeg -i "${videoPath}" -vf "fps=10,scale=400:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" -loop 0 "${gifPath}" -y`,
+              { stdio: 'pipe' }
+            );
+            result.videoFilename = gifFilename;
+            console.log(`[ok] Video: ${story.title} / ${story.name}`);
+          } catch (e) {
+            console.error(`[warn] GIF conversion failed: ${e.message}`);
+          }
+
+          // Clean up webm file
+          try {
+            fs.unlinkSync(videoPath);
+          } catch {}
+        }
+      }
+
+      await context.close();
+
+      screenshots.push(result);
 
       console.log(`[ok] Captured: ${story.title} / ${story.name}`);
     } catch (e) {
       console.error(`[fail] Failed: ${storyId} - ${e.message}`);
-    } finally {
-      await page.close();
+      await context.close();
     }
   }
 
   await browser.close();
   server.close();
 
+  // Clean up videos directory if empty
+  try {
+    const videosDir = path.join(outputDir, 'videos');
+    if (fs.existsSync(videosDir) && fs.readdirSync(videosDir).length === 0) {
+      fs.rmdirSync(videosDir);
+    }
+  } catch {}
+
   // Write manifest
   fs.writeFileSync(
     path.join(outputDir, 'screenshots.json'),
     JSON.stringify({
       screenshots,
+      hasVideos: captureVideo,
       capturedAt: new Date().toISOString()
     }, null, 2)
   );
 
-  console.log(`\nCaptured ${screenshots.length} screenshots`);
+  console.log(`\nCaptured ${screenshots.length} screenshots${captureVideo ? ' with videos' : ''}`);
 }
 
 captureScreenshots().catch(e => {
