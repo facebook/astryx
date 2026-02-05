@@ -6,175 +6,275 @@
       "category": "feature-with-constraint",
       "prompt": "I need a banner that warns users their trial expires in X days and lets them upgrade",
       "expectedComponents": ["XDSCard", "XDSButton"],
-      "complexity": "simple"
+      "complexity": "simple",
+      "followUps": [
+        "Add a dismiss button that hides the banner and remembers the choice",
+        "Make the banner more urgent (red styling) when less than 3 days remain"
+      ]
     },
     {
       "id": "fwc-2",
       "category": "feature-with-constraint",
       "prompt": "Build a notification that shows unread count, but hides when count is zero",
       "expectedComponents": ["XDSCard"],
-      "complexity": "simple"
+      "complexity": "simple",
+      "followUps": [
+        "Add a dropdown that shows the list of notifications when clicked",
+        "Add a 'Mark all as read' button to the dropdown"
+      ]
     },
     {
       "id": "fwc-3",
       "category": "feature-with-constraint",
       "prompt": "Create a password input that shows strength indicator and has a show/hide toggle",
       "expectedComponents": ["XDSTextInput", "XDSButton"],
-      "complexity": "moderate"
+      "complexity": "moderate",
+      "followUps": [
+        "Add specific requirements that check off as you type (8+ chars, uppercase, number, symbol)",
+        "Add a 'Generate strong password' button"
+      ]
     },
     {
       "id": "wd-1",
       "category": "workflow-description",
       "prompt": "Build a checkout flow: cart summary → shipping → payment → confirmation",
       "expectedComponents": ["XDSCard", "XDSButton", "XDSTextInput"],
-      "complexity": "complex"
+      "complexity": "complex",
+      "followUps": [
+        "Add form validation with inline error messages for required fields",
+        "Add a 'Save shipping address for future orders' checkbox"
+      ]
     },
     {
       "id": "wd-2",
       "category": "workflow-description",
       "prompt": "Create a multi-step form wizard with back/next buttons and a progress indicator",
       "expectedComponents": ["XDSCard", "XDSButton", "XDSVStack"],
-      "complexity": "moderate"
+      "complexity": "moderate",
+      "followUps": [
+        "Add validation that prevents going to the next step if required fields are empty",
+        "Add the ability to click on completed steps to jump back to them"
+      ]
     },
     {
       "id": "wd-3",
       "category": "workflow-description",
       "prompt": "Build an onboarding flow: welcome screen → profile setup → preferences → done",
       "expectedComponents": ["XDSCard", "XDSButton", "XDSTextInput"],
-      "complexity": "complex"
+      "complexity": "complex",
+      "followUps": [
+        "Add a skip button that allows skipping optional steps",
+        "Add animations/transitions between steps"
+      ]
     },
     {
       "id": "cwm-1",
       "category": "clone-with-modification",
       "prompt": "Something like Stripe's pricing table but with monthly/annual toggle",
       "expectedComponents": ["XDSCard", "XDSButton"],
-      "complexity": "moderate"
+      "complexity": "moderate",
+      "followUps": [
+        "Highlight the most popular plan with a badge",
+        "Add a comparison table below that shows features per plan"
+      ]
     },
     {
       "id": "cwm-2",
       "category": "clone-with-modification",
       "prompt": "A GitHub-style issue label picker with color dots and search",
       "expectedComponents": ["XDSTextInput", "XDSButton", "XDSCard"],
-      "complexity": "complex"
+      "complexity": "complex",
+      "followUps": [
+        "Add the ability to create a new label inline with a color picker",
+        "Show a count of how many issues have each label"
+      ]
     },
     {
       "id": "cwm-3",
       "category": "clone-with-modification",
       "prompt": "Like Notion's page header with icon picker and cover image",
       "expectedComponents": ["XDSCard", "XDSButton"],
-      "complexity": "complex"
+      "complexity": "complex",
+      "followUps": [
+        "Add the ability to reposition the cover image by dragging",
+        "Add a breadcrumb trail above the title"
+      ]
     },
     {
       "id": "sd-1",
       "category": "state-driven",
       "prompt": "Show a dashboard widget with loading → error → data states",
       "expectedComponents": ["XDSCard", "XDSSkeleton"],
-      "complexity": "simple"
+      "complexity": "simple",
+      "followUps": [
+        "Add a refresh button that reloads the data",
+        "Add a retry button in the error state"
+      ]
     },
     {
       "id": "sd-2",
       "category": "state-driven",
       "prompt": "A button that shows loading spinner while submitting, then success checkmark",
       "expectedComponents": ["XDSButton"],
-      "complexity": "simple"
+      "complexity": "simple",
+      "followUps": [
+        "Add an error state with a red X icon and error message tooltip",
+        "Make the success state auto-dismiss after 2 seconds"
+      ]
     },
     {
       "id": "sd-3",
       "category": "state-driven",
       "prompt": "Form that disables submit until all required fields are valid",
       "expectedComponents": ["XDSTextInput", "XDSButton"],
-      "complexity": "moderate"
+      "complexity": "moderate",
+      "followUps": [
+        "Show validation errors inline below each field after blur",
+        "Add a loading state while the form is submitting"
+      ]
     },
     {
       "id": "dd-1",
       "category": "data-display",
       "prompt": "A table of users with sortable columns and search",
       "expectedComponents": ["XDSTextInput"],
-      "complexity": "complex"
+      "complexity": "complex",
+      "followUps": [
+        "Add pagination with page size selector (10, 25, 50)",
+        "Add row selection with a bulk actions dropdown"
+      ]
     },
     {
       "id": "dd-2",
       "category": "data-display",
       "prompt": "Display a list of transactions with amount, date, and status indicator",
       "expectedComponents": ["XDSCard", "XDSVStack"],
-      "complexity": "simple"
+      "complexity": "simple",
+      "followUps": [
+        "Add filtering by date range and status",
+        "Add a details drawer that slides in when clicking a transaction"
+      ]
     },
     {
       "id": "dd-3",
       "category": "data-display",
       "prompt": "Show a grid of product cards with image, title, price, and add to cart button",
       "expectedComponents": ["XDSCard", "XDSButton"],
-      "complexity": "moderate"
+      "complexity": "moderate",
+      "followUps": [
+        "Add a quantity selector to each card",
+        "Add a 'Quick view' button that opens a modal with more details"
+      ]
     },
     {
       "id": "rc-1",
       "category": "responsive-context",
       "prompt": "Navigation that collapses to hamburger on mobile",
       "expectedComponents": ["XDSButton", "XDSHStack"],
-      "complexity": "moderate"
+      "complexity": "moderate",
+      "followUps": [
+        "Add a dropdown for nav items with children",
+        "Add keyboard navigation (arrow keys and escape to close)"
+      ]
     },
     {
       "id": "rc-2",
       "category": "responsive-context",
       "prompt": "A sidebar that becomes a bottom sheet on mobile",
       "expectedComponents": ["XDSCard", "XDSLayoutPanel"],
-      "complexity": "moderate"
+      "complexity": "moderate",
+      "followUps": [
+        "Add a drag handle to resize the bottom sheet",
+        "Add swipe-to-dismiss gesture on mobile"
+      ]
     },
     {
       "id": "rc-3",
       "category": "responsive-context",
       "prompt": "Cards that stack vertically on mobile but show in a grid on desktop",
       "expectedComponents": ["XDSCard"],
-      "complexity": "simple"
+      "complexity": "simple",
+      "followUps": [
+        "Add a toggle to switch between grid and list view",
+        "Add skeleton loading states that match the current layout"
+      ]
     },
     {
       "id": "io-1",
       "category": "integration-oriented",
       "prompt": "A form that validates email and posts to /api/subscribe",
       "expectedComponents": ["XDSTextInput", "XDSButton"],
-      "complexity": "simple"
+      "complexity": "simple",
+      "followUps": [
+        "Show a success message with the user's email after subscribing",
+        "Add error handling that shows the API error message"
+      ]
     },
     {
       "id": "io-2",
       "category": "integration-oriented",
       "prompt": "An autocomplete input that fetches suggestions from an API as you type",
       "expectedComponents": ["XDSTextInput", "XDSCard"],
-      "complexity": "moderate"
+      "complexity": "moderate",
+      "followUps": [
+        "Add keyboard navigation (up/down arrows, enter to select)",
+        "Show a loading spinner while fetching and handle empty results"
+      ]
     },
     {
       "id": "io-3",
       "category": "integration-oriented",
       "prompt": "A file upload button that shows progress and calls an upload endpoint",
       "expectedComponents": ["XDSButton"],
-      "complexity": "moderate"
+      "complexity": "moderate",
+      "followUps": [
+        "Add drag-and-drop support with a drop zone",
+        "Add the ability to cancel an in-progress upload"
+      ]
     },
     {
       "id": "wd-4",
       "category": "workflow-description",
       "prompt": "Create a new internal tool called TodoTracker. UI Requirements: Display todos in a paginated table (default 25 per page). Columns: Title, Status, Created, Updated. Sortable by: Updated date (default desc), Created date, Title. Add a filter bar that filters by title (substring match) and status. Inline editing for todo title (with save/cancel). Status toggle button (Open <-> Closed). 'Create Todo' button that opens a modal with title input. Delete button with confirmation dialog. UI should update optimistically after any modification. Optimistic updates should be marked as 'pending' until the modification is complete.",
       "expectedComponents": ["XDSTable", "XDSButton", "XDSTextInput"],
-      "complexity": "complex"
+      "complexity": "complex",
+      "followUps": [
+        "Add keyboard shortcuts: Ctrl+N for new todo, Delete key to delete selected",
+        "Add bulk selection with checkboxes to delete or change status of multiple todos"
+      ]
     },
     {
       "id": "ps-1",
       "category": "page-setup",
       "prompt": "Create a new page for a settings dashboard. It should have a header with the app title, a sidebar for navigation, and a main content area. Use the XDS theme system.",
       "expectedComponents": ["Theme", "XDSLayout", "XDSLayoutHeader", "XDSLayoutContent", "XDSLayoutPanel"],
-      "complexity": "moderate"
+      "complexity": "moderate",
+      "followUps": [
+        "Add a user avatar with dropdown menu in the header",
+        "Make the sidebar collapsible with a toggle button"
+      ]
     },
     {
       "id": "ps-2",
       "category": "page-setup",
       "prompt": "Set up the root layout for a new internal tool. Include proper body styling, theme provider with defaultTheme, and a layout with header and main content area.",
       "expectedComponents": ["Theme", "defaultTheme", "XDSLayout", "XDSLayoutHeader", "XDSLayoutContent"],
-      "complexity": "simple"
+      "complexity": "simple",
+      "followUps": [
+        "Add a theme toggle button (light/dark mode)",
+        "Add a global loading indicator in the header"
+      ]
     },
     {
       "id": "ps-3",
       "category": "page-setup",
       "prompt": "Create an admin panel page layout with a fixed header, collapsible left sidebar, main content area, and a right panel for details. Wrap everything in the XDS theme.",
       "expectedComponents": ["Theme", "XDSLayout", "XDSLayoutHeader", "XDSLayoutContent", "XDSLayoutPanel"],
-      "complexity": "moderate"
+      "complexity": "moderate",
+      "followUps": [
+        "Add breadcrumbs below the header",
+        "Add a footer with version info and links"
+      ]
     }
   ],
   "holdout": [
@@ -183,49 +283,77 @@
       "category": "feature-with-constraint",
       "prompt": "A cookie consent banner that remembers user choice and has accept/decline buttons",
       "expectedComponents": ["XDSCard", "XDSButton"],
-      "complexity": "simple"
+      "complexity": "simple",
+      "followUps": [
+        "Add a 'Manage preferences' link that opens a modal with cookie categories",
+        "Add a compact mode that shows after the user has made a choice"
+      ]
     },
     {
       "id": "ho-wd-1",
       "category": "workflow-description",
       "prompt": "Build a return request flow: select items → reason → shipping method → confirmation",
       "expectedComponents": ["XDSCard", "XDSButton", "XDSTextInput"],
-      "complexity": "complex"
+      "complexity": "complex",
+      "followUps": [
+        "Add a photo upload step for damaged items",
+        "Show a tracking number and QR code on the confirmation step"
+      ]
     },
     {
       "id": "ho-cwm-1",
       "category": "clone-with-modification",
       "prompt": "Like Slack's emoji reaction picker but for status icons",
       "expectedComponents": ["XDSButton", "XDSHoverCard"],
-      "complexity": "moderate"
+      "complexity": "moderate",
+      "followUps": [
+        "Add a search filter for icons",
+        "Show recently used icons at the top"
+      ]
     },
     {
       "id": "ho-sd-1",
       "category": "state-driven",
       "prompt": "A save button that shows 'Saving...' then 'Saved!' then returns to 'Save'",
       "expectedComponents": ["XDSButton"],
-      "complexity": "simple"
+      "complexity": "simple",
+      "followUps": [
+        "Add an 'Unsaved changes' indicator next to the button",
+        "Add keyboard shortcut hint (Ctrl+S) in a tooltip"
+      ]
     },
     {
       "id": "ho-dd-1",
       "category": "data-display",
       "prompt": "Show a timeline of events with timestamps and icons",
       "expectedComponents": ["XDSCard", "XDSVStack"],
-      "complexity": "moderate"
+      "complexity": "moderate",
+      "followUps": [
+        "Add expandable details for each event",
+        "Add filtering by event type"
+      ]
     },
     {
       "id": "ho-rc-1",
       "category": "responsive-context",
       "prompt": "A pricing comparison that scrolls horizontally on mobile",
       "expectedComponents": ["XDSCard", "XDSHStack"],
-      "complexity": "simple"
+      "complexity": "simple",
+      "followUps": [
+        "Add sticky column headers that stay visible while scrolling",
+        "Add a 'Compare selected' mode with checkboxes"
+      ]
     },
     {
       "id": "ho-io-1",
       "category": "integration-oriented",
       "prompt": "A search box that debounces input and shows live results from /api/search",
       "expectedComponents": ["XDSTextInput", "XDSCard"],
-      "complexity": "moderate"
+      "complexity": "moderate",
+      "followUps": [
+        "Add recent searches that show before typing",
+        "Add result categories with headers (Users, Posts, etc.)"
+      ]
     }
   ],
   "fillerPrompts": [
@@ -233,7 +361,11 @@
     "What's the difference between let and const?",
     "Can you explain async/await?",
     "How do I make an API call in JavaScript?",
-    "What's a good way to handle errors in React?"
+    "What's a good way to handle errors in React?",
+    "What are React hooks?",
+    "How does useEffect work?",
+    "What's the difference between == and ===?",
+    "How do I debounce a function?"
   ],
   "distractorPrompts": [
     "Actually, let's use Tailwind CSS for this instead",

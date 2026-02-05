@@ -336,6 +336,7 @@ const ANTI_PATTERN_HATCHES: EscapeHatchType[] = [
   'hardcoded_color',
   'hardcoded_spacing',
   'inline_style', // Should use StyleX instead
+  'a11y_click_handler', // Accessibility issue: use button instead
 ];
 
 interface TierCounts {
@@ -433,6 +434,20 @@ function normalizeEscapeHatch(h: string | EscapeHatch): EscapeHatch {
 
 /** Calculate the tier for a single result */
 function calculateTier(evaluation: Evaluation): ResultTier {
+  // If the evaluation explicitly marks this as a failure, respect that
+  // This is important for degradation tests where subagents evaluate in-context
+  if (evaluation.success === false) {
+    // Check if there's a failure mode indicating severity
+    if (
+      evaluation.failureMode === 'complete_context_loss' ||
+      evaluation.failureMode === 'hallucination'
+    ) {
+      return 'red';
+    }
+    // Context drift or other failures are yellow (degraded but not critical)
+    return 'yellow';
+  }
+
   const normalizedHatches = evaluation.escapeHatches.map(normalizeEscapeHatch);
 
   const criticalHatches = normalizedHatches.filter(
@@ -574,13 +589,25 @@ function detectEscapeHatches(
 ): EscapeHatch[] {
   const hatches: EscapeHatch[] = [];
 
-  // Check for hardcoded colors (hex, rgb, hsl, or named colors in style context)
-  // Only check in StyleX/style contexts, not in Tailwind className strings
+  // Check for hardcoded colors (hex, rgb, hsl in StyleX style definitions)
+  // Only flag colors in stylex.create() blocks, not in data objects
+  // Dynamic data colors (like user-defined label colors) are acceptable
   if (target === 'xds') {
+    // Match colors specifically in style property contexts (after colon with property name)
+    // Skip if the color is a variable reference (like label.color) or data property
     const hardcodedColorRegex =
-      /(?:color|background|border|fill|stroke)\s*:\s*['"]?(#[0-9a-fA-F]{3,8}|rgb\([^)]+\)|hsl\([^)]+\)|rgba\([^)]+\)|hsla\([^)]+\))['"]?/gi;
+      /(?:backgroundColor|borderColor|color|fill|stroke)\s*:\s*['"]?(#[0-9a-fA-F]{3,8}|rgb\([^)]+\)|hsl\([^)]+\)|rgba\([^)]+\)|hsla\([^)]+\))['"]?/gi;
     let match;
     while ((match = hardcodedColorRegex.exec(code)) !== null) {
+      // Skip if it looks like it's in a data array (preceded by id, name, etc.)
+      const context = code.slice(Math.max(0, match.index - 50), match.index);
+      if (
+        context.includes('name:') ||
+        context.includes('id:') ||
+        context.includes('label:')
+      ) {
+        continue; // Skip data objects
+      }
       hatches.push({
         type: 'hardcoded_color',
         severity: 'acceptable',
@@ -592,9 +619,11 @@ function detectEscapeHatches(
 
   // Check for hardcoded spacing (px values in padding, margin, gap)
   // Skip for baseline since Tailwind classes handle this differently
+  // Note: width/height are dimension constraints, not spacing - they're acceptable
   if (target === 'xds') {
+    // Only match true spacing properties, not dimensions
     const hardcodedSpacingRegex =
-      /(?:padding|margin|gap|top|bottom|left|right|width|height)\s*:\s*['"]?\d+px['"]?/gi;
+      /(?:padding|margin|gap|paddingTop|paddingBottom|paddingLeft|paddingRight|paddingBlock|paddingInline|marginTop|marginBottom|marginLeft|marginRight|marginBlock|marginInline|rowGap|columnGap)\s*:\s*['"]?\d+px['"]?/gi;
     let match;
     while ((match = hardcodedSpacingRegex.exec(code)) !== null) {
       // Skip if it's inside a var() or uses spacing tokens
@@ -610,9 +639,18 @@ function detectEscapeHatches(
   }
 
   // Check for inline style props (not StyleX/Tailwind)
-  const inlineStyleRegex = /style\s*=\s*\{\{/g;
+  // Skip inline styles that only use variable references (dynamic data values)
+  const inlineStyleRegex = /style\s*=\s*\{\{([^}]+)\}\}/g;
   let match;
   while ((match = inlineStyleRegex.exec(code)) !== null) {
+    const styleContent = match[1];
+    // Check if the style only contains variable references (no literals)
+    // Pattern like "backgroundColor: item.color" or "color: data.value" is OK
+    const hasOnlyVariableRefs = /^\s*\w+:\s*[\w.]+\s*$/.test(styleContent);
+    if (hasOnlyVariableRefs) {
+      // Skip - this is a legitimate dynamic data value
+      continue;
+    }
     hatches.push({
       type: 'inline_style',
       severity: 'acceptable',
@@ -635,6 +673,28 @@ function detectEscapeHatches(
           ? 'Wrapper div that could potentially use XDS layout components'
           : 'Wrapper div (common in Tailwind patterns)',
       codeSnippet: match[0],
+    });
+  }
+
+  // Check for accessibility issues: onClick on non-interactive elements
+  // Elements like <span>, <div>, <p>, <td> with onClick should use <button> instead
+  const a11yClickRegex =
+    /<(span|div|p|td|tr|li|label|img|svg)\b[^>]*\bonClick\b/gi;
+  while ((match = a11yClickRegex.exec(code)) !== null) {
+    // Skip if it has role="button" or tabIndex (attempts at a11y fix)
+    const elementContext = code.slice(match.index, match.index + 200);
+    if (
+      elementContext.includes('role="button"') ||
+      elementContext.includes("role='button'") ||
+      elementContext.includes('tabIndex')
+    ) {
+      continue; // Has some a11y attributes, less severe
+    }
+    hatches.push({
+      type: 'a11y_click_handler',
+      severity: 'acceptable', // Still acceptable but flagged as anti-pattern
+      detail: `onClick on <${match[1]}> should use Button component for accessibility`,
+      codeSnippet: match[0].slice(0, 60),
     });
   }
 

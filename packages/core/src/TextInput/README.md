@@ -36,23 +36,29 @@ import { XDSTextInput } from '@xds/core/TextInput';
 // Required field
 <XDSTextInput label="Username" isRequired value={username} onChange={setUsername} />
 
-// Description with optional indicator
-<XDSTextInput label="Bio" description="Tell us about yourself" isOptional value={bio} onChange={setBio} />
+// With validation status (error, warning, or success)
+<XDSTextInput
+  label="Email"
+  value={email}
+  onChange={setEmail}
+  status={{ type: 'error', message: 'Invalid email address' }}
+/>
 ```
 
 ## Props
 
-| Prop            | Type                                                        | Required | Description                                                        |
-| --------------- | ----------------------------------------------------------- | -------- | ------------------------------------------------------------------ |
-| `label`         | `string`                                                    | Yes      | Label text for the input (always rendered for accessibility)       |
-| `value`         | `string`                                                    | Yes      | Current value of the input                                         |
-| `onChange`      | `(value: string, e: ChangeEvent<HTMLInputElement>) => void` | Yes      | Callback fired when input value changes                            |
-| `isLabelHidden` | `boolean`                                                   | No       | Visually hide the label (still accessible to screen readers)       |
-| `description`   | `string`                                                    | No       | Description text displayed between the label and input             |
-| `isOptional`    | `boolean`                                                   | No       | Whether the field is optional (mutually exclusive with isRequired) |
-| `isRequired`    | `boolean`                                                   | No       | Whether the field is required (mutually exclusive with isOptional) |
-| `placeholder`   | `string`                                                    | No       | Placeholder text                                                   |
-| `labelTooltip`  | `string`                                                    | No       | Tooltip text to display in an info icon at the end of the label    |
+| Prop            | Type                                                        | Required | Description                                                           |
+| --------------- | ----------------------------------------------------------- | -------- | --------------------------------------------------------------------- |
+| `label`         | `string`                                                    | Yes      | Label text for the input (always rendered for accessibility)          |
+| `value`         | `string`                                                    | Yes      | Current value of the input                                            |
+| `onChange`      | `(value: string, e: ChangeEvent<HTMLInputElement>) => void` | Yes      | Callback fired when input value changes                               |
+| `isLabelHidden` | `boolean`                                                   | No       | Visually hide the label (still accessible to screen readers)          |
+| `description`   | `string`                                                    | No       | Description text displayed between the label and input                |
+| `isOptional`    | `boolean`                                                   | No       | Whether the field is optional (mutually exclusive with isRequired)    |
+| `isRequired`    | `boolean`                                                   | No       | Whether the field is required (mutually exclusive with isOptional)    |
+| `placeholder`   | `string`                                                    | No       | Placeholder text                                                      |
+| `labelTooltip`  | `string`                                                    | No       | Tooltip text to display in an info icon at the end of the label       |
+| `status`        | `{type: 'error'\|'warning'\|'success', message?: string}`   | No       | Validation status with optional message (sets aria-invalid for error) |
 
 ## Files
 

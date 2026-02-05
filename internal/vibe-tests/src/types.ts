@@ -21,7 +21,8 @@ export type EscapeHatchType =
   | 'hardcoded_spacing' // Anti-pattern: breaks spacing system
   | 'hardcoded_size' // Acceptable: explicit sizes are often needed
   | 'custom_animation' // Gap: missing animation support
-  | 'layout_workaround'; // Gap: missing layout primitive
+  | 'layout_workaround' // Gap: missing layout primitive
+  | 'a11y_click_handler'; // Anti-pattern: onClick on non-interactive element
 
 export type EscapeHatchSeverity = 'critical' | 'acceptable';
 
@@ -166,6 +167,8 @@ export interface TestPrompt {
   prompt: string;
   expectedComponents: string[];
   complexity: PromptComplexity;
+  /** Follow-up prompts for iterative degradation testing */
+  followUps?: string[];
 }
 
 export interface TestSet {

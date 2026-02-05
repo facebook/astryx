@@ -729,6 +729,7 @@ interface AgentTask {
   category: string;
   prompt: string;
   expectedComponents: string[];
+  followUps?: string[]; // Follow-up prompts for iterative degradation testing
   persona: string;
   degradation?: boolean; // Run multi-turn degradation test
   target: string; // Target design system (xds, baseline)
@@ -876,6 +877,7 @@ function createTaskManifest(
       category: prompt.category,
       prompt: prompt.prompt,
       expectedComponents: prompt.expectedComponents,
+      followUps: prompt.followUps,
       persona: config.persona,
       degradation: config.degradation,
       target: config.target,
@@ -946,17 +948,16 @@ function generateSubagentInstructions(
   const degradationInstructions = config.degradation
     ? `
 
-### Degradation Protocol (10-turn curve)
-Each test runs through multiple conversation turns:
-- Turn 0: Initial probe (generate code)
-- Turns 1-5: Filler prompts (unrelated questions)
-- Turn 6: Re-probe with "Actually, let me revisit this..."
-- Turn 7: Distractor (different framework question)
-- Turn 8: Re-probe with "I want to redo that earlier request..."
-- Turn 9: Recovery (re-inject partial context)
-- Turn 10: Final re-probe with "Let me try that again..."
+### Degradation Protocol (10-turn iterative development)
+Each test simulates realistic iterative development with follow-up requests:
+- Turn 0: Initial prompt (generate initial implementation)
+- Turns 1-5: Filler prompts (unrelated questions like "How do I center a div?")
+- Turn 6: First follow-up improvement request (from prompt's followUps[0])
+- Turns 7-9: More filler prompts (continue unrelated questions)
+- Turn 10: Second follow-up improvement request (from prompt's followUps[1])
 
-Record results at turns 0, 6, 8, and 10 with trajectoryDepth field set accordingly.
+Record results at turns 0, 6, and 10 with trajectoryDepth field set accordingly.
+This tests: "Does the LLM maintain design system patterns while iterating on existing code?"
 `
     : '';
 
@@ -1011,6 +1012,9 @@ async function main() {
   const targetIndex = args.indexOf('--target');
   const target =
     targetIndex !== -1 ? (args[targetIndex + 1] as 'xds' | 'baseline') : 'xds';
+  const promptsIndex = args.indexOf('--prompts');
+  const promptIds =
+    promptsIndex !== -1 ? args[promptsIndex + 1].split(',') : undefined;
 
   const config: InteractiveConfig = {
     sample,
@@ -1035,7 +1039,15 @@ async function main() {
 
   // Select prompts
   let prompts: TestPrompt[];
-  if (holdout && testSet.holdout) {
+  if (promptIds) {
+    // Filter to specific prompt IDs
+    prompts = testSet.prompts.filter(p => promptIds.includes(p.id));
+    if (prompts.length !== promptIds.length) {
+      const found = prompts.map(p => p.id);
+      const missing = promptIds.filter(id => !found.includes(id));
+      console.warn(`Warning: Prompt IDs not found: ${missing.join(', ')}`);
+    }
+  } else if (holdout && testSet.holdout) {
     prompts = testSet.holdout;
   } else if (sample && sample < testSet.prompts.length) {
     prompts = stratifiedSample(testSet.prompts, sample);
