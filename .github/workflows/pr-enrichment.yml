@@ -46,26 +46,38 @@ jobs:
             --head HEAD \
             --output analysis.json
 
+          # Set output for conditional steps
+          COMPONENTS=$(cat analysis.json | jq -r '(.newComponents + .modifiedComponents) | join(",")')
+          if [ -z "$COMPONENTS" ]; then
+            echo "has_components=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_components=true" >> $GITHUB_OUTPUT
+            echo "components=$COMPONENTS" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build Storybook
         run: yarn storybook:build
 
       - name: Install Playwright
+        if: steps.analyze.outputs.has_components == 'true'
         run: npx playwright install chromium
 
       - name: Install ffmpeg for video conversion
+        if: steps.analyze.outputs.has_components == 'true'
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
       - name: Capture component screenshots and videos
+        if: steps.analyze.outputs.has_components == 'true'
         id: screenshots
         run: |
-          COMPONENTS=$(cat analysis.json | jq -r '(.newComponents + .modifiedComponents) | join(",")')
           node .github/scripts/capture-screenshots.js \
             --storybook-dir apps/storybook/dist \
             --output-dir screenshots \
-            --components "$COMPONENTS" \
+            --components "${{ steps.analyze.outputs.components }}" \
             --video
 
       - name: Upload screenshots and videos to GitHub
+        if: steps.analyze.outputs.has_components == 'true'
         id: upload_screenshots
         env:
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -112,20 +124,29 @@ jobs:
           cat screenshot-urls.json
 
       - name: Run accessibility audit
+        if: steps.analyze.outputs.has_components == 'true'
         id: a11y
         run: |
-          COMPONENTS=$(cat analysis.json | jq -r '(.newComponents + .modifiedComponents) | join(",")')
           node .github/scripts/accessibility-audit.js \
             --storybook-dir apps/storybook/dist \
             --output a11y-report.json \
-            --components "$COMPONENTS"
+            --components "${{ steps.analyze.outputs.components }}"
 
       - name: Upload screenshots artifact
+        if: steps.analyze.outputs.has_components == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: component-screenshots
           path: screenshots/
           retention-days: 30
+
+      - name: Create empty reports when no components changed
+        if: steps.analyze.outputs.has_components != 'true'
+        run: |
+          mkdir -p screenshots
+          echo '{"screenshots": [], "hasVideos": false}' > screenshots/screenshots.json
+          echo '{}' > screenshot-urls.json
+          echo '{"violations": [], "passes": [], "incomplete": []}' > a11y-report.json
 
       - name: Upload Storybook artifact
         uses: actions/upload-artifact@v4
