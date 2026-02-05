@@ -1,0 +1,94 @@
+# Deploy Storybook to GitHub Pages with versioned builds
+name: Deploy Storybook to Pages
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ["main"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Run tests first
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'yarn'
+
+      - run: yarn install --frozen-lockfile
+
+      - run: yarn test
+
+      - run: yarn build
+
+  # Deploy job runs after tests pass
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build Storybook
+        run: yarn workspace @xds/storybook build
+
+      - name: Prepare versioned deployment
+        run: |
+          COMMIT_HASH="${{ github.sha }}"
+          SHORT_HASH="${COMMIT_HASH:0:7}"
+
+          # Create deployment directory structure
+          mkdir -p deploy/${SHORT_HASH}
+          mv apps/storybook/dist/* deploy/${SHORT_HASH}/
+
+          # Create root index.html that redirects to latest build
+          cat > deploy/index.html << EOF
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta http-equiv="refresh" content="0;url=${SHORT_HASH}/index.html">
+            <title>XDS Storybook</title>
+          </head>
+          <body>
+            <p>Redirecting to <a href="${SHORT_HASH}/index.html">latest Storybook (${SHORT_HASH})</a>...</p>
+          </body>
+          </html>
+          EOF
+
+          # Create .nojekyll to prevent GitHub Pages from ignoring files starting with underscore
+          touch deploy/.nojekyll
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./deploy
+          keep_files: true
+          destination_dir: .
