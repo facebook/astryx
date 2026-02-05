@@ -1,3 +1,7 @@
 # XDS agent docs (generated)
 .xds-docs/
 AGENTS.md
+
+# Baseline comparison docs (generated)
+.baseline-docs/
+AGENTS.baseline.md
