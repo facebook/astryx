@@ -14,10 +14,10 @@ import * as stylex from '@stylexjs/stylex';
 import {InformationCircleIcon} from '@heroicons/react/24/outline';
 import {
   colorVars,
-  spacingVars,
-  typographyVars,
-  textSizeVars,
   fontWeightVars,
+  spacingVars,
+  textSizeVars,
+  typographyVars,
 } from '../theme/tokens.stylex';
 import {XDSIcon, type XDSIconType} from '../Icon';
 import {XDSTooltip} from '../Layer';
