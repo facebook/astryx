@@ -20,7 +20,12 @@
     "aggregate": "tsx src/aggregate.ts",
     "aggregate:ci": "tsx src/aggregate.ts --ci",
     "aggregate:json": "tsx src/aggregate.ts --json",
-    "analyze": "tsx src/cli.ts analyze"
+    "analyze": "tsx src/cli.ts analyze",
+    "pr-test": "tsx scripts/pr-vibe-tests.ts",
+    "pr-test:sample": "tsx scripts/pr-vibe-tests.ts --sample 5",
+    "pr-test:fuzz": "tsx scripts/pr-vibe-tests.ts --fuzz",
+    "pr-test:all-clis": "tsx scripts/pr-vibe-tests.ts --cli all --sample 5",
+    "fuzz": "tsx scripts/pr-vibe-tests.ts --fuzz"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0",
