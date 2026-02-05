@@ -36,7 +36,7 @@ describe('XDSFieldLabel', () => {
 
   it('shows Optional when both isOptional and isRequired are true', () => {
     render(
-      <XDSFieldLabel label="Name" inputID="name-input" isOptional isRequired />
+      <XDSFieldLabel label="Name" inputID="name-input" isOptional isRequired />,
     );
     expect(screen.getByText(/Optional/)).toBeInTheDocument();
     expect(screen.queryByText(/Required/)).not.toBeInTheDocument();
@@ -48,7 +48,7 @@ describe('XDSFieldLabel', () => {
         label="Starred"
         inputID="starred-input"
         startIcon={StarIcon}
-      />
+      />,
     );
     const svg = document.querySelector('svg');
     expect(svg).toBeInTheDocument();
@@ -66,7 +66,7 @@ describe('XDSFieldLabel', () => {
         label="Help"
         inputID="help-input"
         tooltip="This is helpful information"
-      />
+      />,
     );
     // Two SVGs: the info icon is wrapped in tooltip
     const svgs = document.querySelectorAll('svg');
@@ -86,7 +86,7 @@ describe('XDSFieldLabel', () => {
         inputID="field-input"
         isOptional
         tooltip="Help text"
-      />
+      />,
     );
     expect(screen.getByText(/Optional/)).toBeInTheDocument();
     // Info icon should be present

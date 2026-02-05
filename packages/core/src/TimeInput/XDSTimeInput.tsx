@@ -389,7 +389,7 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
 
     // Handle blur - validate and clear pending input
     const handleBlur = useCallback(
-      (e: FocusEvent<HTMLInputElement>) => {
+      (_e: FocusEvent<HTMLInputElement>) => {
         setIsFocused(false);
 
         if (pendingInput === null) {

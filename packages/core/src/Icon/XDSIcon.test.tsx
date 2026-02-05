@@ -31,7 +31,7 @@ describe('XDSIcon', () => {
 
   it('renders with different color variants', () => {
     const {rerender} = render(
-      <XDSIcon icon={HomeIcon} color="primary" data-testid="icon" />
+      <XDSIcon icon={HomeIcon} color="primary" data-testid="icon" />,
     );
     expect(screen.getByTestId('icon')).toBeInTheDocument();
 
@@ -56,7 +56,7 @@ describe('XDSIcon', () => {
 
   it('renders with different size variants', () => {
     const {rerender} = render(
-      <XDSIcon icon={HomeIcon} size="xsm" data-testid="icon" />
+      <XDSIcon icon={HomeIcon} size="xsm" data-testid="icon" />,
     );
     expect(screen.getByTestId('icon')).toBeInTheDocument();
 
@@ -83,7 +83,7 @@ describe('XDSIcon', () => {
         data-testid="icon"
         role="img"
         aria-label="Home"
-      />
+      />,
     );
     const icon = screen.getByTestId('icon');
     expect(icon).toHaveAttribute('role', 'img');

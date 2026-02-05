@@ -61,7 +61,7 @@ type Story = StoryObj<typeof XDSSwitch>;
 export const Default: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? false);
-    const {value: _, onChange: __, ...restArgs} = args;
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
       <XDSSwitch
         {...restArgs}
@@ -78,7 +78,7 @@ export const Default: Story = {
 export const On: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? true);
-    const {value: _, onChange: __, ...restArgs} = args;
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
       <XDSSwitch
         {...restArgs}
@@ -96,7 +96,7 @@ export const On: Story = {
 export const WithDescription: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? false);
-    const {value: _, onChange: __, ...restArgs} = args;
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
       <XDSSwitch
         {...restArgs}
@@ -114,7 +114,7 @@ export const WithDescription: Story = {
 export const WithHiddenLabel: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? false);
-    const {value: _, onChange: __, ...restArgs} = args;
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
       <XDSSwitch
         {...restArgs}
@@ -132,7 +132,7 @@ export const WithHiddenLabel: Story = {
 export const Disabled: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? false);
-    const {value: _, onChange: __, ...restArgs} = args;
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
       <XDSSwitch
         {...restArgs}
@@ -151,7 +151,7 @@ export const Disabled: Story = {
 export const DisabledOn: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? true);
-    const {value: _, onChange: __, ...restArgs} = args;
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
       <XDSSwitch
         {...restArgs}
@@ -170,7 +170,7 @@ export const DisabledOn: Story = {
 export const Required: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? false);
-    const {value: _, onChange: __, ...restArgs} = args;
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
       <XDSSwitch
         {...restArgs}
@@ -188,7 +188,7 @@ export const Required: Story = {
 export const Optional: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? false);
-    const {value: _, onChange: __, ...restArgs} = args;
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
       <XDSSwitch
         {...restArgs}
@@ -206,7 +206,7 @@ export const Optional: Story = {
 export const WithLabelIcon: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? false);
-    const {value: _, onChange: __, ...restArgs} = args;
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
       <XDSSwitch
         {...restArgs}
@@ -225,7 +225,7 @@ export const WithLabelIcon: Story = {
 export const WithLabelTooltip: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? false);
-    const {value: _, onChange: __, ...restArgs} = args;
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
       <XDSSwitch
         {...restArgs}
@@ -244,7 +244,7 @@ export const WithLabelTooltip: Story = {
 export const LabelPositionStart: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? false);
-    const {value: _, onChange: __, ...restArgs} = args;
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
       <XDSSwitch
         {...restArgs}
@@ -263,7 +263,7 @@ export const LabelPositionStart: Story = {
 export const LabelSpacingSpread: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? false);
-    const {value: _, onChange: __, ...restArgs} = args;
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
       <div style={{width: 300, border: '1px solid #ccc', padding: 16}}>
         <XDSSwitch

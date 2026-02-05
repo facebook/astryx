@@ -10,7 +10,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const docsDir = path.resolve(__dirname, '..', 'docs');
@@ -43,7 +43,10 @@ if (args.includes('--path')) {
   console.log('Available docs:');
   files.forEach(f => console.log(`  ${f}`));
 } else if (args.includes('--all')) {
-  const files = fs.readdirSync(docsDir).filter(f => f.endsWith('.md')).sort();
+  const files = fs
+    .readdirSync(docsDir)
+    .filter(f => f.endsWith('.md'))
+    .sort();
   for (const file of files) {
     const content = fs.readFileSync(path.join(docsDir, file), 'utf-8');
     console.log(`\n${'='.repeat(60)}\n${file}\n${'='.repeat(60)}\n`);

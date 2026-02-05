@@ -239,7 +239,7 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
       hasAutoFocus = false,
       htmlName,
     },
-    ref
+    ref,
   ) => {
     const id = useId();
     const descriptionID = useId();
@@ -291,7 +291,7 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
           {...stylex.props(
             styles.wrapper,
             isDisabled && styles.wrapperDisabled,
-            status && statusBorderStyles[status.type]
+            status && statusBorderStyles[status.type],
           )}>
           {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
           <textarea
@@ -312,7 +312,7 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
             {...stylex.props(
               styles.textarea,
-              isDisabled && styles.textareaDisabled
+              isDisabled && styles.textareaDisabled,
             )}
           />
           {status && (
@@ -327,14 +327,14 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
           <div
             {...stylex.props(
               styles.counter,
-              value.length > maxLength && styles.counterError
+              value.length > maxLength && styles.counterError,
             )}>
             {value.length}/{maxLength}
           </div>
         )}
       </XDSField>
     );
-  }
+  },
 );
 
 XDSTextArea.displayName = 'XDSTextArea';

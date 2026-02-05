@@ -31,9 +31,7 @@ describe('XDSBadge', () => {
 
   it('renders with icon', () => {
     render(
-      <XDSBadge icon={<span data-testid="icon">*</span>}>
-        With Icon
-      </XDSBadge>
+      <XDSBadge icon={<span data-testid="icon">*</span>}>With Icon</XDSBadge>,
     );
     expect(screen.getByTestId('icon')).toBeInTheDocument();
     expect(screen.getByText('With Icon')).toBeInTheDocument();

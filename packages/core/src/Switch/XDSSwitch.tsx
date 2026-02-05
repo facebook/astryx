@@ -20,6 +20,7 @@ import {
   transitionVars,
   typographyVars,
   elevationVars,
+  textSizeVars,
 } from '../theme/tokens.stylex';
 import {XDSFieldLabel} from '../Field/XDSFieldLabel';
 import type {XDSIconType} from '../Icon';
@@ -141,7 +142,7 @@ const styles = stylex.create({
   },
   description: {
     fontFamily: typographyVars['--font-body'],
-    fontSize: '0.75rem',
+    fontSize: textSizeVars['--text-xsm'],
     color: colorVars['--color-text-secondary'],
   },
 });
@@ -254,7 +255,7 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
       labelPosition = 'end',
       labelSpacing = 'default',
     },
-    ref
+    ref,
   ) => {
     const id = useId();
     const descriptionID = useId();
@@ -282,12 +283,12 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
           {...stylex.props(
             styles.track,
             isDisabled && styles.trackDisabled,
-            isDisabled && !isOn && styles.trackDisabledOff
+            isDisabled && !isOn && styles.trackDisabledOff,
           )}>
           <div
             {...stylex.props(
               styles.thumb,
-              isOn ? styles.thumbOn : styles.thumbOff
+              isOn ? styles.thumbOn : styles.thumbOff,
             )}
           />
         </div>
@@ -321,7 +322,7 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
           labelSpacing === 'spread' && styles.containerSpread,
           isOn ? styles.containerOn : styles.containerOff,
           !isDisabled &&
-            (isOn ? styles.containerHoverOn : styles.containerHoverOff)
+            (isOn ? styles.containerHoverOn : styles.containerHoverOff),
         )}>
         {labelPosition === 'start' ? (
           <>
@@ -336,7 +337,7 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
         )}
       </div>
     );
-  }
+  },
 );
 
 XDSSwitch.displayName = 'XDSSwitch';

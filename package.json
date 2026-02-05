@@ -47,6 +47,9 @@
     "typescript-eslint": "^8.53.1",
     "vitest": "^2.1.0"
   },
+  "resolutions": {
+    "prettier": "^3.4.0"
+  },
   "packageManager": "yarn@1.22.22",
   "lint-staged": {
     "*.{ts,tsx}": "eslint --cache --fix",

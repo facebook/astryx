@@ -59,4 +59,4 @@ const badStyles = stylex.create({
   },
 });
 
-export { badStyles };
+export {badStyles};

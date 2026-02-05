@@ -422,7 +422,7 @@ export function XDSSelector<T extends XDSSelectorOption>({
   // Selector behavior (keyboard nav, typeahead, selection)
   const {
     highlightedIndex,
-    setHighlightedIndex: _,
+    setHighlightedIndex: _setHighlightedIndex,
     getItemId,
     onTriggerClick,
     onKeyDown,

@@ -4,19 +4,19 @@ A badge component for displaying status indicators, counts, or labels.
 
 ## Exports
 
-| Export | Type | Description |
-|--------|------|-------------|
-| `XDSBadge` | Component | Main badge component |
-| `XDSBadgeProps` | Type | Props interface |
-| `XDSBadgeVariant` | Type | Variant union type |
+| Export            | Type      | Description          |
+| ----------------- | --------- | -------------------- |
+| `XDSBadge`        | Component | Main badge component |
+| `XDSBadgeProps`   | Type      | Props interface      |
+| `XDSBadgeVariant` | Type      | Variant union type   |
 
 ## Props
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `variant` | `'neutral' \| 'info' \| 'success' \| 'warning' \| 'error'` | `'neutral'` | Visual style variant |
-| `children` | `ReactNode` | - | Badge content. Omit for dot indicator |
-| `icon` | `ReactNode` | - | Optional leading icon |
+| Prop       | Type                                                       | Default     | Description                           |
+| ---------- | ---------------------------------------------------------- | ----------- | ------------------------------------- |
+| `variant`  | `'neutral' \| 'info' \| 'success' \| 'warning' \| 'error'` | `'neutral'` | Visual style variant                  |
+| `children` | `ReactNode`                                                | -           | Badge content. Omit for dot indicator |
+| `icon`     | `ReactNode`                                                | -           | Optional leading icon                 |
 
 ## Usage
 
@@ -40,8 +40,8 @@ import {XDSBadge} from '@xds/core/Badge';
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `XDSBadge.tsx` | Component implementation |
-| `XDSBadge.test.tsx` | Unit tests |
-| `index.ts` | Barrel exports |
+| File                | Purpose                  |
+| ------------------- | ------------------------ |
+| `XDSBadge.tsx`      | Component implementation |
+| `XDSBadge.test.tsx` | Unit tests               |
+| `index.ts`          | Barrel exports           |

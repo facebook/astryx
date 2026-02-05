@@ -26,7 +26,7 @@ describe('XDSTextInput', () => {
         value=""
         onChange={() => {}}
         placeholder="Enter text"
-      />
+      />,
     );
     expect(screen.getByPlaceholderText('Enter text')).toBeInTheDocument();
   });
@@ -54,7 +54,11 @@ describe('XDSTextInput', () => {
 
   it('displays controlled value', () => {
     render(
-      <XDSTextInput label="Name" value="Controlled value" onChange={() => {}} />
+      <XDSTextInput
+        label="Name"
+        value="Controlled value"
+        onChange={() => {}}
+      />,
     );
     expect(screen.getByRole('textbox')).toHaveValue('Controlled value');
   });
@@ -62,14 +66,19 @@ describe('XDSTextInput', () => {
   it('forwards ref correctly', () => {
     const ref = vi.fn();
     render(
-      <XDSTextInput ref={ref} label="Name" value="" onChange={() => {}} />
+      <XDSTextInput ref={ref} label="Name" value="" onChange={() => {}} />,
     );
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLInputElement));
   });
 
   it('visually hides label when isLabelHidden is true', () => {
     render(
-      <XDSTextInput label="Search" isLabelHidden value="" onChange={() => {}} />
+      <XDSTextInput
+        label="Search"
+        isLabelHidden
+        value=""
+        onChange={() => {}}
+      />,
     );
     const label = screen.getByText('Search');
     expect(label).toBeInTheDocument();
@@ -85,11 +94,11 @@ describe('XDSTextInput', () => {
 
   it('sets aria-required when isRequired is true', () => {
     render(
-      <XDSTextInput label="Username" isRequired value="" onChange={() => {}} />
+      <XDSTextInput label="Username" isRequired value="" onChange={() => {}} />,
     );
     expect(screen.getByRole('textbox')).toHaveAttribute(
       'aria-required',
-      'true'
+      'true',
     );
   });
 
@@ -100,7 +109,7 @@ describe('XDSTextInput', () => {
 
   it('sets disabled attribute when isDisabled is true', () => {
     render(
-      <XDSTextInput label="Name" isDisabled value="" onChange={() => {}} />
+      <XDSTextInput label="Name" isDisabled value="" onChange={() => {}} />,
     );
     expect(screen.getByRole('textbox')).toBeDisabled();
   });
@@ -109,7 +118,7 @@ describe('XDSTextInput', () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
     render(
-      <XDSTextInput label="Name" isDisabled value="" onChange={handleChange} />
+      <XDSTextInput label="Name" isDisabled value="" onChange={handleChange} />,
     );
 
     const input = screen.getByRole('textbox');
@@ -129,7 +138,7 @@ describe('XDSTextInput', () => {
         value=""
         onChange={() => {}}
         startIcon={MagnifyingGlassIcon}
-      />
+      />,
     );
     expect(screen.getByRole('textbox')).toBeInTheDocument();
     // Icon should be rendered (as an SVG element)
@@ -139,7 +148,7 @@ describe('XDSTextInput', () => {
 
   it('renders without icon wrapper when startIcon is not provided', () => {
     const {container} = render(
-      <XDSTextInput label="Name" value="" onChange={() => {}} />
+      <XDSTextInput label="Name" value="" onChange={() => {}} />,
     );
     // No SVG should be present
     expect(container.querySelector('svg')).not.toBeInTheDocument();
@@ -153,7 +162,7 @@ describe('XDSTextInput', () => {
           value=""
           onChange={() => {}}
           status={{type: 'error'}}
-        />
+        />,
       );
       expect(container.querySelector('svg')).toBeInTheDocument();
     });
@@ -165,7 +174,7 @@ describe('XDSTextInput', () => {
           value=""
           onChange={() => {}}
           status={{type: 'warning'}}
-        />
+        />,
       );
       expect(container.querySelector('svg')).toBeInTheDocument();
     });
@@ -177,7 +186,7 @@ describe('XDSTextInput', () => {
           value=""
           onChange={() => {}}
           status={{type: 'success'}}
-        />
+        />,
       );
       expect(container.querySelector('svg')).toBeInTheDocument();
     });
@@ -189,7 +198,7 @@ describe('XDSTextInput', () => {
           value=""
           onChange={() => {}}
           status={{type: 'error', message: 'Invalid email address'}}
-        />
+        />,
       );
       expect(screen.getByText('Invalid email address')).toBeInTheDocument();
     });
@@ -201,7 +210,7 @@ describe('XDSTextInput', () => {
           value=""
           onChange={() => {}}
           status={{type: 'error'}}
-        />
+        />,
       );
       expect(screen.queryByText(/invalid/i)).not.toBeInTheDocument();
     });
@@ -213,11 +222,11 @@ describe('XDSTextInput', () => {
           value=""
           onChange={() => {}}
           status={{type: 'error'}}
-        />
+        />,
       );
       expect(screen.getByRole('textbox')).toHaveAttribute(
         'aria-invalid',
-        'true'
+        'true',
       );
     });
 
@@ -228,7 +237,7 @@ describe('XDSTextInput', () => {
           value=""
           onChange={() => {}}
           status={{type: 'warning'}}
-        />
+        />,
       );
       expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-invalid');
     });
@@ -240,7 +249,7 @@ describe('XDSTextInput', () => {
           value=""
           onChange={() => {}}
           status={{type: 'success'}}
-        />
+        />,
       );
       expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-invalid');
     });
@@ -252,7 +261,7 @@ describe('XDSTextInput', () => {
           value=""
           onChange={() => {}}
           status={{type: 'error', message: 'Invalid email'}}
-        />
+        />,
       );
       const input = screen.getByRole('textbox');
       const describedBy = input.getAttribute('aria-describedby');
@@ -271,7 +280,7 @@ describe('XDSTextInput', () => {
         value=""
         onChange={() => {}}
         labelTooltip="Helpful info"
-      />
+      />,
     );
     // Info icon should be present
     expect(document.querySelector('svg')).toBeInTheDocument();
@@ -285,7 +294,7 @@ describe('XDSTextInput', () => {
   describe('hasAutoFocus prop', () => {
     it('focuses the input when hasAutoFocus is true', () => {
       render(
-        <XDSTextInput label="Name" value="" onChange={() => {}} hasAutoFocus />
+        <XDSTextInput label="Name" value="" onChange={() => {}} hasAutoFocus />,
       );
       expect(screen.getByRole('textbox')).toHaveFocus();
     });
@@ -304,7 +313,7 @@ describe('XDSTextInput', () => {
           value=""
           onChange={() => {}}
           htmlName="username"
-        />
+        />,
       );
       expect(screen.getByRole('textbox')).toHaveAttribute('name', 'username');
     });

@@ -7,11 +7,7 @@
 
 import {forwardRef, useContext, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  colorVars,
-  radiusVars,
-  elevationVars,
-} from '../../theme/tokens.stylex';
+import {colorVars, radiusVars, elevationVars} from '../../theme/tokens.stylex';
 import {ThemeContext} from '../../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../../theme/types';
 import {container} from './container.stylex';
@@ -140,7 +136,15 @@ export interface XDSCardProps {
  */
 export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
   function XDSCard(
-    {width, height, maxWidth, minHeight, children, isFullBleed = false, ...props},
+    {
+      width,
+      height,
+      maxWidth,
+      minHeight,
+      children,
+      isFullBleed = false,
+      ...props
+    },
     ref,
   ) {
     // Get theme context for component-level overrides

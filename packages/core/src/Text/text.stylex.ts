@@ -9,10 +9,7 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {
-  colorVars,
-  fontWeightVars,
-} from '../theme/tokens.stylex';
+import {colorVars, fontWeightVars} from '../theme/tokens.stylex';
 
 // =============================================================================
 // Color Styles

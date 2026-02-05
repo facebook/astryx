@@ -12,7 +12,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const STATIC_DOCS = path.resolve(__dirname, '..', 'docs');
@@ -101,7 +101,7 @@ function findComponentReadmes(coreDir) {
     return readmes;
   }
 
-  const entries = fs.readdirSync(srcDir, { withFileTypes: true });
+  const entries = fs.readdirSync(srcDir, {withFileTypes: true});
 
   for (const entry of entries) {
     if (entry.isDirectory()) {
@@ -115,7 +115,7 @@ function findComponentReadmes(coreDir) {
 
       // Check for nested components (e.g., Layout/XDSLayout)
       const nestedDir = path.join(srcDir, entry.name);
-      const nestedEntries = fs.readdirSync(nestedDir, { withFileTypes: true });
+      const nestedEntries = fs.readdirSync(nestedDir, {withFileTypes: true});
       for (const nested of nestedEntries) {
         if (nested.isDirectory()) {
           const nestedReadme = path.join(nestedDir, nested.name, 'README.md');
@@ -143,17 +143,24 @@ function discoverComponents(coreDir) {
   const layoutComponents = new Set();
 
   // Layout-related directory names
-  const LAYOUT_DIRS = ['Layout', 'Grid', 'Center', 'Divider', 'AspectRatio', 'Section'];
+  const LAYOUT_DIRS = [
+    'Layout',
+    'Grid',
+    'Center',
+    'Divider',
+    'AspectRatio',
+    'Section',
+  ];
 
   if (!fs.existsSync(srcDir)) {
-    return { components: [], layout: [] };
+    return {components: [], layout: []};
   }
 
   /**
    * Recursively scan a directory for XDS*.tsx files
    */
   function scanDir(dirPath, isLayoutContext) {
-    const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
 
     for (const entry of entries) {
       const fullPath = path.join(dirPath, entry.name);
@@ -176,7 +183,7 @@ function discoverComponents(coreDir) {
     }
   }
 
-  const entries = fs.readdirSync(srcDir, { withFileTypes: true });
+  const entries = fs.readdirSync(srcDir, {withFileTypes: true});
 
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
@@ -200,13 +207,15 @@ function discoverComponents(coreDir) {
  */
 function generateCompressedIndex(version, discoveredComponents) {
   // Use discovered components if available, otherwise use defaults
-  const componentList = discoveredComponents?.components?.length > 0
-    ? discoveredComponents.components.join('|')
-    : 'Button|TextInput|TextArea|CheckboxInput|Field|Layout|Layer|Avatar|Skeleton|Text|Icon';
+  const componentList =
+    discoveredComponents?.components?.length > 0
+      ? discoveredComponents.components.join('|')
+      : 'Button|TextInput|TextArea|CheckboxInput|Field|Layout|Layer|Avatar|Skeleton|Text|Icon';
 
-  const layoutList = discoveredComponents?.layout?.length > 0
-    ? discoveredComponents.layout.join('|')
-    : 'XDSLayout|XDSLayoutHeader|XDSLayoutContent|XDSLayoutPanel|XDSHStack|XDSVStack|XDSCard';
+  const layoutList =
+    discoveredComponents?.layout?.length > 0
+      ? discoveredComponents.layout.join('|')
+      : 'XDSLayout|XDSLayoutHeader|XDSLayoutContent|XDSLayoutPanel|XDSHStack|XDSVStack|XDSCard';
 
   return `${XDS_MARKER_START}
 [XDS Component Library v${version}]|root: ./${XDS_DOCS_DIR}
@@ -270,7 +279,7 @@ function installDocs(targetDir) {
 
   // Create directory if it doesn't exist
   if (!fs.existsSync(docsDir)) {
-    fs.mkdirSync(docsDir, { recursive: true });
+    fs.mkdirSync(docsDir, {recursive: true});
   }
 
   let extracted = 0;
@@ -283,7 +292,7 @@ function installDocs(targetDir) {
     // Extract from component READMEs
     const readmes = findComponentReadmes(coreDir);
 
-    for (const { name, path: readmePath } of readmes) {
+    for (const {name, path: readmePath} of readmes) {
       const content = fs.readFileSync(readmePath, 'utf-8');
       const extracted_content = extractEssentialSections(content, name);
       // Capitalize first letter for file name (e.g., "theme" -> "Theme.md")
@@ -322,7 +331,10 @@ function installDocs(targetDir) {
  */
 function injectAgentsMd(targetDir, version, discoveredComponents) {
   const agentsPath = path.join(targetDir, AGENTS_MD);
-  const compressedIndex = generateCompressedIndex(version, discoveredComponents);
+  const compressedIndex = generateCompressedIndex(
+    version,
+    discoveredComponents,
+  );
 
   let content = '';
 
@@ -335,7 +347,10 @@ function injectAgentsMd(targetDir, version, discoveredComponents) {
 
     if (startIdx !== -1 && endIdx !== -1) {
       // Replace existing section
-      content = content.slice(0, startIdx) + compressedIndex + content.slice(endIdx + XDS_MARKER_END.length);
+      content =
+        content.slice(0, startIdx) +
+        compressedIndex +
+        content.slice(endIdx + XDS_MARKER_END.length);
     } else {
       // Append to end
       content = content.trimEnd() + '\n\n' + compressedIndex + '\n';
@@ -362,7 +377,7 @@ function removeXdsDocs(targetDir) {
 
   // Remove docs directory
   if (fs.existsSync(docsDir)) {
-    fs.rmSync(docsDir, { recursive: true });
+    fs.rmSync(docsDir, {recursive: true});
     console.log(`✓ Removed ${XDS_DOCS_DIR}/`);
   }
 
@@ -457,7 +472,9 @@ if (args.includes('--remove')) {
   // Discover components dynamically
   const discoveredComponents = coreDir ? discoverComponents(coreDir) : null;
   if (discoveredComponents) {
-    console.log(`✓ Discovered ${discoveredComponents.layout.length} layout + ${discoveredComponents.components.length} other components`);
+    console.log(
+      `✓ Discovered ${discoveredComponents.layout.length} layout + ${discoveredComponents.components.length} other components`,
+    );
   }
 
   injectAgentsMd(targetDir, version, discoveredComponents);

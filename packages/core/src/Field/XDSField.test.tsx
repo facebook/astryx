@@ -16,7 +16,7 @@ describe('XDSField', () => {
     render(
       <XDSField label="Email" inputID="email-input">
         <input id="email-input" />
-      </XDSField>
+      </XDSField>,
     );
     expect(screen.getByLabelText('Email')).toBeInTheDocument();
   });
@@ -29,10 +29,10 @@ describe('XDSField', () => {
         description="We'll never share your email"
         descriptionID="email-desc">
         <input id="email-input" aria-describedby="email-desc" />
-      </XDSField>
+      </XDSField>,
     );
     expect(
-      screen.getByText("We'll never share your email")
+      screen.getByText("We'll never share your email"),
     ).toBeInTheDocument();
   });
 
@@ -44,7 +44,7 @@ describe('XDSField', () => {
         description="Description text"
         descriptionID="email-desc">
         <input id="email-input" aria-describedby="email-desc" />
-      </XDSField>
+      </XDSField>,
     );
     const description = screen.getByText('Description text');
     expect(description).toHaveAttribute('id', 'email-desc');
@@ -54,7 +54,7 @@ describe('XDSField', () => {
     render(
       <XDSField label="Search" isLabelHidden inputID="search-input">
         <input id="search-input" />
-      </XDSField>
+      </XDSField>,
     );
     const label = screen.getByText('Search');
     expect(label).toBeInTheDocument();
@@ -66,7 +66,7 @@ describe('XDSField', () => {
     render(
       <XDSField label="Email" inputID="email-input">
         <input id="email-input" />
-      </XDSField>
+      </XDSField>,
     );
     const label = screen.getByText('Email');
     expect(label).toBeVisible();
@@ -77,7 +77,7 @@ describe('XDSField', () => {
     render(
       <XDSField ref={ref} label="Name" inputID="name-input">
         <input id="name-input" />
-      </XDSField>
+      </XDSField>,
     );
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLDivElement));
   });
@@ -89,7 +89,7 @@ describe('XDSField', () => {
         inputID="email-input"
         description="Description text">
         <input id="email-input" />
-      </XDSField>
+      </XDSField>,
     );
     const description = screen.getByText('Description text');
     expect(description).toBeInTheDocument();
@@ -100,7 +100,7 @@ describe('XDSField', () => {
     render(
       <XDSField label="Name" inputID="name-input" isOptional>
         <input id="name-input" />
-      </XDSField>
+      </XDSField>,
     );
     expect(screen.getByText('Name')).toBeInTheDocument();
     expect(screen.getByText(/Optional/)).toBeInTheDocument();
@@ -110,7 +110,7 @@ describe('XDSField', () => {
     render(
       <XDSField label="Name" inputID="name-input" isRequired>
         <input id="name-input" />
-      </XDSField>
+      </XDSField>,
     );
     expect(screen.getByText('Name')).toBeInTheDocument();
     expect(screen.getByText(/Required/)).toBeInTheDocument();
@@ -125,7 +125,7 @@ describe('XDSField', () => {
         descriptionID="name-desc"
         isOptional>
         <input id="name-input" aria-describedby="name-desc" />
-      </XDSField>
+      </XDSField>,
     );
     expect(screen.getByText('Enter your name')).toBeInTheDocument();
     expect(screen.getByText(/Optional/)).toBeInTheDocument();
@@ -140,7 +140,7 @@ describe('XDSField', () => {
         descriptionID="name-desc"
         isRequired>
         <input id="name-input" aria-describedby="name-desc" />
-      </XDSField>
+      </XDSField>,
     );
     expect(screen.getByText('This field is mandatory')).toBeInTheDocument();
     expect(screen.getByText(/Required/)).toBeInTheDocument();
@@ -150,7 +150,7 @@ describe('XDSField', () => {
     render(
       <XDSField label="Name" inputID="name-input" isOptional>
         <input id="name-input" />
-      </XDSField>
+      </XDSField>,
     );
     expect(screen.getByText('Name')).toBeInTheDocument();
     expect(screen.getByText(/∙.*Optional/)).toBeInTheDocument();
@@ -160,7 +160,7 @@ describe('XDSField', () => {
     render(
       <XDSField label="Help" inputID="help-input" labelTooltip="Helpful info">
         <input id="help-input" />
-      </XDSField>
+      </XDSField>,
     );
     // Info icon should be present
     expect(document.querySelector('svg')).toBeInTheDocument();
@@ -170,7 +170,7 @@ describe('XDSField', () => {
     render(
       <XDSField label="Name" inputID="name-input">
         <input id="name-input" />
-      </XDSField>
+      </XDSField>,
     );
     expect(document.querySelector('svg')).not.toBeInTheDocument();
   });

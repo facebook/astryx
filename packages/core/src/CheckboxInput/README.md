@@ -59,22 +59,22 @@ import { XDSCheckboxInput } from '@xds/core/CheckboxInput';
 
 ## Props
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `label` | `string` | — | Label text for the checkbox (always rendered for accessibility) |
-| `isLabelHidden` | `boolean` | `false` | Whether to visually hide the label |
-| `description` | `string` | — | Description text displayed below the label |
-| `value` | `boolean \| 'indeterminate'` | — | Whether the checkbox is checked, unchecked, or indeterminate |
-| `onChange` | `(checked: boolean, e: ChangeEvent) => void` | — | Callback fired when the checkbox state changes |
-| `isDisabled` | `boolean` | `false` | Whether the checkbox is disabled |
+| Prop            | Type                                         | Default | Description                                                     |
+| --------------- | -------------------------------------------- | ------- | --------------------------------------------------------------- |
+| `label`         | `string`                                     | —       | Label text for the checkbox (always rendered for accessibility) |
+| `isLabelHidden` | `boolean`                                    | `false` | Whether to visually hide the label                              |
+| `description`   | `string`                                     | —       | Description text displayed below the label                      |
+| `value`         | `boolean \| 'indeterminate'`                 | —       | Whether the checkbox is checked, unchecked, or indeterminate    |
+| `onChange`      | `(checked: boolean, e: ChangeEvent) => void` | —       | Callback fired when the checkbox state changes                  |
+| `isDisabled`    | `boolean`                                    | `false` | Whether the checkbox is disabled                                |
 
 ## Files
 
-| File | Role | Purpose |
-|------|------|---------|
-| `index.ts` | Entry | Exports component and types |
-| `XDSCheckboxInput.tsx` | Core | Component implementation |
-| `XDSCheckboxInput.test.tsx` | Test | Unit tests |
+| File                        | Role  | Purpose                     |
+| --------------------------- | ----- | --------------------------- |
+| `index.ts`                  | Entry | Exports component and types |
+| `XDSCheckboxInput.tsx`      | Core  | Component implementation    |
+| `XDSCheckboxInput.test.tsx` | Test  | Unit tests                  |
 
 ## Implementation Notes
 

@@ -177,7 +177,7 @@ const defaultColorByType: Record<XDSTextType, XDSTextColor> = {
 export const XDSText = forwardRef<HTMLElement, XDSTextProps>(function XDSText(
   {
     type,
-    size,
+    size: _size,
     color,
     weight,
     display = 'inline',
@@ -207,8 +207,7 @@ export const XDSText = forwardRef<HTMLElement, XDSTextProps>(function XDSText(
     wordBreak ?? (maxLines === 1 ? 'break-all' : 'break-word');
 
   // Resolve display - force block when maxLines > 0 or hasCapsize
-  const resolvedDisplay =
-    maxLines > 0 || hasCapsize ? 'block' : display;
+  const resolvedDisplay = maxLines > 0 || hasCapsize ? 'block' : display;
 
   // Truncation detection
   const truncation = useTruncation({maxLines});
@@ -242,8 +241,7 @@ export const XDSText = forwardRef<HTMLElement, XDSTextProps>(function XDSText(
   );
 
   // Build inline style for -webkit-line-clamp (dynamic value)
-  const inlineStyle =
-    maxLines > 1 ? {WebkitLineClamp: maxLines} : undefined;
+  const inlineStyle = maxLines > 1 ? {WebkitLineClamp: maxLines} : undefined;
 
   return (
     <>
@@ -273,8 +271,7 @@ export const XDSText = forwardRef<HTMLElement, XDSTextProps>(function XDSText(
         )}
         style={inlineStyle}
         aria-describedby={tooltipEnabled ? tooltip.describedBy : undefined}
-        {...props}
-      >
+        {...props}>
         {children}
       </Component>
       {tooltipEnabled &&

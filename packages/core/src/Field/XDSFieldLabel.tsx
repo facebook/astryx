@@ -115,7 +115,7 @@ export const XDSFieldLabel = forwardRef<HTMLLabelElement, XDSFieldLabelProps>(
       startIcon,
       tooltip,
     },
-    ref
+    ref,
   ) => {
     const statusText = isOptional ? 'Optional' : isRequired ? 'Required' : null;
 
@@ -127,7 +127,7 @@ export const XDSFieldLabel = forwardRef<HTMLLabelElement, XDSFieldLabelProps>(
           styles.label,
           !isDisabled && styles.labelClickable,
           isDisabled && styles.labelDisabled,
-          isLabelHidden && styles.labelHidden
+          isLabelHidden && styles.labelHidden,
         )}>
         {startIcon && (
           <XDSIcon
@@ -154,7 +154,7 @@ export const XDSFieldLabel = forwardRef<HTMLLabelElement, XDSFieldLabelProps>(
         )}
       </label>
     );
-  }
+  },
 );
 
 XDSFieldLabel.displayName = 'XDSFieldLabel';

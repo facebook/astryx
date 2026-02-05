@@ -91,8 +91,10 @@ export type XDSIconType = ComponentType<SVGProps<SVGSVGElement>>;
  * Props for XDSIcon component.
  * Extends SVGProps to allow passing additional SVG attributes.
  */
-export interface XDSIconProps
-  extends Omit<SVGProps<SVGSVGElement>, 'ref' | 'color'> {
+export interface XDSIconProps extends Omit<
+  SVGProps<SVGSVGElement>,
+  'ref' | 'color'
+> {
   /**
    * The Hero Icon component to render.
    * Import from @heroicons/react/24/outline or @heroicons/react/24/solid.
@@ -128,7 +130,7 @@ export const XDSIcon = forwardRef<SVGSVGElement, XDSIconProps>(
         {...props}
       />
     );
-  }
+  },
 );
 
 XDSIcon.displayName = 'XDSIcon';

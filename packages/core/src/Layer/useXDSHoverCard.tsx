@@ -18,7 +18,6 @@ import {
   type RefCallback,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '../theme/types';
 import {ThemeContext} from '../theme/ThemeContext';
 import {
   useXDSLayer,

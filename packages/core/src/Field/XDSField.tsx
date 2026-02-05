@@ -115,8 +115,10 @@ export interface XDSFieldStatus {
   messageID?: string;
 }
 
-export interface XDSFieldProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
+export interface XDSFieldProps extends Omit<
+  HTMLAttributes<HTMLDivElement>,
+  'children'
+> {
   /**
    * Label text for the field (always rendered for accessibility).
    */
@@ -195,7 +197,7 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
       children,
       ...props
     },
-    ref
+    ref,
   ) => {
     return (
       <div ref={ref} {...stylex.props(styles.container)} {...props}>
@@ -220,7 +222,7 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
               id={status.messageID}
               {...stylex.props(
                 styles.statusMessage,
-                statusMessageColorStyles[status.type]
+                statusMessageColorStyles[status.type],
               )}>
               {status.message}
             </div>
@@ -228,7 +230,7 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
         </div>
       </div>
     );
-  }
+  },
 );
 
 XDSField.displayName = 'XDSField';

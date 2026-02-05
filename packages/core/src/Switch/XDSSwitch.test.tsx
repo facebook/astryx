@@ -19,7 +19,7 @@ describe('XDSSwitch', () => {
         label="Enable notifications"
         value={false}
         onChange={() => {}}
-      />
+      />,
     );
     expect(screen.getByLabelText('Enable notifications')).toBeInTheDocument();
   });
@@ -30,7 +30,7 @@ describe('XDSSwitch', () => {
         label="Enable notifications"
         value={false}
         onChange={() => {}}
-      />
+      />,
     );
     expect(screen.getByRole('switch')).not.toBeChecked();
   });
@@ -41,7 +41,7 @@ describe('XDSSwitch', () => {
         label="Enable notifications"
         value={true}
         onChange={() => {}}
-      />
+      />,
     );
     expect(screen.getByRole('switch')).toBeChecked();
   });
@@ -54,7 +54,7 @@ describe('XDSSwitch', () => {
         label="Enable notifications"
         value={false}
         onChange={handleChange}
-      />
+      />,
     );
 
     const switchEl = screen.getByRole('switch');
@@ -71,7 +71,7 @@ describe('XDSSwitch', () => {
         label="Enable notifications"
         value={true}
         onChange={handleChange}
-      />
+      />,
     );
 
     const switchEl = screen.getByRole('switch');
@@ -87,7 +87,7 @@ describe('XDSSwitch', () => {
         label="Enable notifications"
         value={false}
         onChange={handleChange}
-      />
+      />,
     );
 
     const label = screen.getByText('Enable notifications');
@@ -102,10 +102,10 @@ describe('XDSSwitch', () => {
         description="Switch to a darker color scheme"
         value={false}
         onChange={() => {}}
-      />
+      />,
     );
     expect(
-      screen.getByText('Switch to a darker color scheme')
+      screen.getByText('Switch to a darker color scheme'),
     ).toBeInTheDocument();
   });
 
@@ -116,7 +116,7 @@ describe('XDSSwitch', () => {
         description="Switch to a darker color scheme"
         value={false}
         onChange={() => {}}
-      />
+      />,
     );
     const switchEl = screen.getByRole('switch');
     const description = screen.getByText('Switch to a darker color scheme');
@@ -130,7 +130,7 @@ describe('XDSSwitch', () => {
         value={false}
         onChange={() => {}}
         isDisabled
-      />
+      />,
     );
     expect(screen.getByRole('switch')).toBeDisabled();
   });
@@ -144,7 +144,7 @@ describe('XDSSwitch', () => {
         value={false}
         onChange={handleChange}
         isDisabled
-      />
+      />,
     );
 
     const switchEl = screen.getByRole('switch');
@@ -160,7 +160,7 @@ describe('XDSSwitch', () => {
         label="Enable notifications"
         value={false}
         onChange={() => {}}
-      />
+      />,
     );
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLInputElement));
   });
@@ -172,7 +172,7 @@ describe('XDSSwitch', () => {
         isLabelHidden
         value={false}
         onChange={() => {}}
-      />
+      />,
     );
     const label = screen.getByText('Toggle row');
     expect(label).toBeInTheDocument();
@@ -186,7 +186,7 @@ describe('XDSSwitch', () => {
         label="Enable notifications"
         value={false}
         onChange={() => {}}
-      />
+      />,
     );
     const label = screen.getByText('Enable notifications');
     expect(label).toBeVisible();
@@ -199,7 +199,7 @@ describe('XDSSwitch', () => {
         value={false}
         onChange={() => {}}
         labelPosition="start"
-      />
+      />,
     );
     const containerDiv = container.firstChild as HTMLElement;
     const children = Array.from(containerDiv.children);
@@ -214,7 +214,7 @@ describe('XDSSwitch', () => {
         value={false}
         onChange={() => {}}
         labelPosition="end"
-      />
+      />,
     );
     const containerDiv = container.firstChild as HTMLElement;
     const children = Array.from(containerDiv.children);
@@ -228,7 +228,7 @@ describe('XDSSwitch', () => {
         label="Enable notifications"
         value={false}
         onChange={() => {}}
-      />
+      />,
     );
     expect(screen.getByRole('switch')).toBeInTheDocument();
   });

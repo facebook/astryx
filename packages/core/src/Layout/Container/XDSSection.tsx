@@ -208,7 +208,8 @@ export const XDSSection = forwardRef<HTMLDivElement, XDSSectionProps>(
   ) {
     // Get theme context for component-level overrides
     const themeContext = useContext(ThemeContext);
-    const containerOverride = themeContext?.theme.components?.section?.container;
+    const containerOverride =
+      themeContext?.theme.components?.section?.container;
     const contentOverride = themeContext?.theme.components?.section?.content;
     const variantOverride =
       themeContext?.theme.components?.section?.variants?.[variant];
