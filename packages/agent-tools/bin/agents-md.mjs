@@ -22,20 +22,33 @@ const AGENTS_MD = 'AGENTS.md';
 const XDS_MARKER_START = '<!-- XDS:START -->';
 const XDS_MARKER_END = '<!-- XDS:END -->';
 
-// Sections to extract from READMEs (in order)
-const SECTIONS_TO_EXTRACT = ['Usage', 'Import', 'Props', 'Examples'];
-// Sections to skip
-const SECTIONS_TO_SKIP = ['Files', 'Implementation Notes'];
+// Sections to extract from READMEs (in order of importance)
+const SECTIONS_TO_EXTRACT = ['Import', 'Usage'];
+// Sections to skip entirely
+const SECTIONS_TO_SKIP = [
+  'Files',
+  'Implementation Notes',
+  'RTL Support',
+  'Related',
+  'Dividers',
+  'Components', // Component tables - LLM can infer from examples
+];
+// Maximum number of code examples to include
+const MAX_EXAMPLES = 2;
 
 /**
  * Extract essential sections from a README
- * Keeps: title, description, Usage/Import, Props, Examples
- * Skips: Files, Implementation Notes
+ * Keeps: title, brief description, Import, Usage (limited examples)
+ * Skips: Files, Implementation Notes, RTL, Dividers, prop tables, ASCII diagrams
  */
 function extractEssentialSections(content, componentName) {
   const lines = content.split('\n');
   const output = [];
   let inSkipSection = false;
+  let inCodeBlock = false;
+  let codeBlockCount = 0;
+  let skipCurrentBlock = false;
+  let inPropsSection = false;
   let currentSection = null;
 
   // Determine display name (capitalize first letter for non-XDS names like "theme")
@@ -46,21 +59,83 @@ function extractEssentialSections(content, componentName) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
+    // Track code blocks
+    if (line.startsWith('```')) {
+      if (!inCodeBlock) {
+        // Starting a code block
+        inCodeBlock = true;
+        // Check if this block is just ASCII art (peek ahead)
+        const nextLine = lines[i + 1] || '';
+        const isAsciiBlock =
+          /^[┌┐└┘├┤┬┴┼─│\s]+$/.test(nextLine) ||
+          /^\s*[│├└┌]/.test(nextLine);
+        if (isAsciiBlock) {
+          skipCurrentBlock = true;
+          continue;
+        }
+        // Check if we've hit the example limit
+        if (codeBlockCount >= MAX_EXAMPLES) {
+          skipCurrentBlock = true;
+          continue;
+        }
+        codeBlockCount++;
+        skipCurrentBlock = false;
+      } else {
+        // Ending a code block
+        inCodeBlock = false;
+        if (skipCurrentBlock) {
+          skipCurrentBlock = false;
+          continue;
+        }
+      }
+    }
+
+    // Skip content inside skipped code blocks
+    if (inCodeBlock && skipCurrentBlock) {
+      continue;
+    }
+
     // Check for section headers
     const sectionMatch = line.match(/^##\s+(.+)$/);
     if (sectionMatch) {
       const sectionName = sectionMatch[1].trim();
 
-      // Check if this is a section to skip
-      if (SECTIONS_TO_SKIP.some(s => sectionName.includes(s))) {
+      // Reset code block count for new sections
+      codeBlockCount = 0;
+
+      // Skip Props section (LLM can infer from examples)
+      if (sectionName === 'Props' || sectionName.startsWith('Props')) {
+        inPropsSection = true;
         inSkipSection = true;
         currentSection = sectionName;
         continue;
       }
 
-      // End skip mode when we hit a new section
+      // Skip Overview section (keep just the first line of description)
+      if (sectionName === 'Overview') {
+        inSkipSection = true;
+        currentSection = sectionName;
+        continue;
+      }
+
+      // Check if this is a section to skip
+      if (SECTIONS_TO_SKIP.some((s) => sectionName.includes(s))) {
+        inSkipSection = true;
+        currentSection = sectionName;
+        continue;
+      }
+
+      // End skip mode when we hit a new non-skip section
       inSkipSection = false;
+      inPropsSection = false;
       currentSection = sectionName;
+    }
+
+    // Check for subsection headers (### ) - only keep first one in Usage
+    const subsectionMatch = line.match(/^###\s+(.+)$/);
+    if (subsectionMatch && currentSection === 'Usage' && codeBlockCount >= MAX_EXAMPLES) {
+      // Skip remaining subsections after hitting example limit
+      continue;
     }
 
     // Skip lines in skip sections
@@ -73,6 +148,11 @@ function extractEssentialSections(content, componentName) {
       continue;
     }
 
+    // Skip standalone ASCII art lines
+    if (/^[┌┐└┘├┤┬┴┼─│\s]+$/.test(line) || /^\s*[│├└┌]\s*/.test(line)) {
+      continue;
+    }
+
     // Clean up the title line (remove path prefix)
     if (line.startsWith('# /')) {
       output.push(`# ${displayName}`);
@@ -82,12 +162,22 @@ function extractEssentialSections(content, componentName) {
     output.push(line);
   }
 
-  // Clean up trailing whitespace
+  // Clean up trailing whitespace and empty lines
   while (output.length > 0 && output[output.length - 1].trim() === '') {
     output.pop();
   }
 
-  return output.join('\n') + '\n';
+  // Remove consecutive empty lines and orphaned text between examples
+  const cleaned = [];
+  let prevEmpty = false;
+  for (const line of output) {
+    const isEmpty = line.trim() === '';
+    if (isEmpty && prevEmpty) continue;
+    cleaned.push(line);
+    prevEmpty = isEmpty;
+  }
+
+  return cleaned.join('\n') + '\n';
 }
 
 /**
