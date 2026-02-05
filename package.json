@@ -16,6 +16,7 @@
     "test:coverage": "vitest --coverage",
     "test:e2e": "playwright test",
     "lint": "eslint .",
+    "lint:strict": "XDS_STRICT_LINT=1 eslint .",
     "storybook": "yarn workspace @xds/storybook dev",
     "storybook:build": "yarn workspace @xds/storybook build",
     "docs": "yarn workspace @xds/docs dev",
