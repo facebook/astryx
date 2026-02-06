@@ -11,24 +11,29 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write
-      checks: write
 
     steps:
       - uses: actions/checkout@v4
 
+      # Debug: show which commit we're running on
+      - name: Debug info
+        run: |
+          echo "Commit: $(git rev-parse HEAD)"
+          echo "Branch: $(git branch --show-current)"
+          git log --oneline -3
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          # cache key will bust when yarn.lock changes; add suffix to force bust
           cache: 'yarn'
+          cache-dependency-path: 'yarn.lock'
 
       - run: yarn install --frozen-lockfile
 
+      # Clear ESLint cache to ensure fresh run
+      - name: Clear ESLint cache
+        run: rm -rf .eslintcache node_modules/.cache
+
       - name: Run ESLint
-        uses: reviewdog/action-eslint@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          reporter: github-pr-review
-          eslint_flags: '--max-warnings 0 packages/core/src/'
-          fail_on_error: true
-          filter_mode: nofilter
+        run: yarn lint
