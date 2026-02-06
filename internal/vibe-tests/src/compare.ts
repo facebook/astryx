@@ -19,6 +19,41 @@ interface ComparisonResult {
   baseline: QualityAssessment | null;
 }
 
+interface AggregateData {
+  iterationId: string;
+  totalTests: number;
+  successCount: number;
+  successRate: number;
+  tiers?: {
+    gold: number;
+    green: number;
+    yellow: number;
+    red: number;
+  };
+  totalDurationMs?: number;
+  avgDurationMs?: number;
+  tokenUsage?: {
+    input: {total: number};
+    output: {total: number};
+    grandTotal: number;
+  };
+  quality?: {
+    assessed: number;
+    byScore: Record<string, number>;
+    accessibility: {totalIssues: number; criticalIssues: number};
+    designSystem: {totalIssues: number; criticalIssues: number};
+    codeQuality: {totalIssues: number; criticalIssues: number};
+  };
+}
+
+function loadAggregate(iterationId: string): AggregateData | null {
+  const filePath = path.join(RESULTS_DIR, iterationId, 'aggregate.json');
+  if (!fs.existsSync(filePath)) {
+    return null;
+  }
+  return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+}
+
 function loadQualityAssessment(
   iterationId: string,
   promptId: string,
@@ -80,27 +115,336 @@ function formatIssues(
     .join('\n');
 }
 
+function formatTime(ms: number): string {
+  const seconds = ms / 1000;
+  if (seconds < 60) return `${seconds.toFixed(1)}s`;
+  const minutes = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${minutes}m ${secs.toFixed(0)}s`;
+}
+
 function generateComparisonReport(
   xdsIteration: string,
   baselineIteration: string,
 ): string {
   const lines: string[] = [];
 
-  lines.push('═══════════════════════════════════════════════════════════════');
-  lines.push('                    COMPARISON REPORT');
   lines.push(
-    `                XDS (${xdsIteration}) vs Baseline (${baselineIteration})`,
+    '═══════════════════════════════════════════════════════════════════════════',
   );
-  lines.push('═══════════════════════════════════════════════════════════════');
+  lines.push('                         VIBE TEST COMPARISON REPORT');
+  lines.push(
+    `                    XDS (${xdsIteration}) vs Baseline (${baselineIteration})`,
+  );
+  lines.push(
+    '═══════════════════════════════════════════════════════════════════════════',
+  );
   lines.push('');
+
+  // Load aggregate data
+  const xdsAgg = loadAggregate(xdsIteration);
+  const baselineAgg = loadAggregate(baselineIteration);
+
+  // ===== METRICS SUMMARY =====
+  lines.push('📊 METRICS SUMMARY');
+  lines.push(
+    '───────────────────────────────────────────────────────────────────────────',
+  );
+  lines.push('');
+  lines.push(
+    '┌─────────────────────────┬─────────────────┬─────────────────┬──────────┐',
+  );
+  lines.push(
+    '│ Metric                  │ XDS             │ Baseline        │ Winner   │',
+  );
+  lines.push(
+    '├─────────────────────────┼─────────────────┼─────────────────┼──────────┤',
+  );
+
+  // Success Rate
+  const xdsSuccess = xdsAgg
+    ? `${xdsAgg.successRate.toFixed(0)}% (${xdsAgg.successCount}/${xdsAgg.totalTests})`
+    : 'N/A';
+  const baselineSuccess = baselineAgg
+    ? `${baselineAgg.successRate.toFixed(0)}% (${baselineAgg.successCount}/${baselineAgg.totalTests})`
+    : 'N/A';
+  const successWinner =
+    !xdsAgg || !baselineAgg
+      ? '—'
+      : xdsAgg.successRate > baselineAgg.successRate
+        ? 'XDS'
+        : baselineAgg.successRate > xdsAgg.successRate
+          ? 'Baseline'
+          : 'Tie';
+  lines.push(
+    `│ Success Rate            │ ${xdsSuccess.padEnd(15)} │ ${baselineSuccess.padEnd(15)} │ ${successWinner.padEnd(8)} │`,
+  );
+
+  // Total Time
+  const xdsTime = xdsAgg?.totalDurationMs
+    ? formatTime(xdsAgg.totalDurationMs)
+    : 'N/A';
+  const baselineTime = baselineAgg?.totalDurationMs
+    ? formatTime(baselineAgg.totalDurationMs)
+    : 'N/A';
+  const timeWinner =
+    !xdsAgg?.totalDurationMs || !baselineAgg?.totalDurationMs
+      ? '—'
+      : xdsAgg.totalDurationMs < baselineAgg.totalDurationMs
+        ? 'XDS'
+        : baselineAgg.totalDurationMs < xdsAgg.totalDurationMs
+          ? 'Baseline'
+          : 'Tie';
+  lines.push(
+    `│ Total Time              │ ${xdsTime.padEnd(15)} │ ${baselineTime.padEnd(15)} │ ${timeWinner.padEnd(8)} │`,
+  );
+
+  // Avg Time per Test
+  const xdsAvg = xdsAgg?.avgDurationMs
+    ? formatTime(xdsAgg.avgDurationMs)
+    : 'N/A';
+  const baselineAvg = baselineAgg?.avgDurationMs
+    ? formatTime(baselineAgg.avgDurationMs)
+    : 'N/A';
+  lines.push(
+    `│ Avg Time/Test           │ ${xdsAvg.padEnd(15)} │ ${baselineAvg.padEnd(15)} │ ${timeWinner.padEnd(8)} │`,
+  );
+
+  // Input Tokens
+  const xdsInputVal = (xdsAgg?.tokenUsage?.input?.total as {total?: number})
+    ?.total;
+  const baselineInputVal = (
+    baselineAgg?.tokenUsage?.input?.total as {total?: number}
+  )?.total;
+  const xdsInput = xdsInputVal ? xdsInputVal.toLocaleString() : 'N/A';
+  const baselineInput = baselineInputVal
+    ? baselineInputVal.toLocaleString()
+    : 'N/A';
+  const inputWinner =
+    !xdsInputVal || !baselineInputVal
+      ? '—'
+      : xdsInputVal < baselineInputVal
+        ? 'XDS'
+        : baselineInputVal < xdsInputVal
+          ? 'Baseline'
+          : 'Tie';
+  lines.push(
+    `│ Input Tokens            │ ${xdsInput.padEnd(15)} │ ${baselineInput.padEnd(15)} │ ${inputWinner.padEnd(8)} │`,
+  );
+
+  // Output Tokens
+  const xdsOutputVal = (xdsAgg?.tokenUsage?.output?.total as {total?: number})
+    ?.total;
+  const baselineOutputVal = (
+    baselineAgg?.tokenUsage?.output?.total as {total?: number}
+  )?.total;
+  const xdsOutput = xdsOutputVal ? xdsOutputVal.toLocaleString() : 'N/A';
+  const baselineOutput = baselineOutputVal
+    ? baselineOutputVal.toLocaleString()
+    : 'N/A';
+  const outputWinner =
+    !xdsOutputVal || !baselineOutputVal
+      ? '—'
+      : xdsOutputVal < baselineOutputVal
+        ? 'XDS'
+        : baselineOutputVal < xdsOutputVal
+          ? 'Baseline'
+          : 'Tie';
+  lines.push(
+    `│ Output Tokens           │ ${xdsOutput.padEnd(15)} │ ${baselineOutput.padEnd(15)} │ ${outputWinner.padEnd(8)} │`,
+  );
+
+  lines.push(
+    '└─────────────────────────┴─────────────────┴─────────────────┴──────────┘',
+  );
+  lines.push('');
+
+  // ===== QUALITY TIERS =====
+  if (xdsAgg?.tiers || baselineAgg?.tiers) {
+    lines.push('🏆 QUALITY TIERS');
+    lines.push(
+      '───────────────────────────────────────────────────────────────────────────',
+    );
+    lines.push('');
+    lines.push(
+      '┌─────────────────────────┬─────────────────┬─────────────────┐',
+    );
+    lines.push(
+      '│ Tier                    │ XDS             │ Baseline        │',
+    );
+    lines.push(
+      '├─────────────────────────┼─────────────────┼─────────────────┤',
+    );
+
+    const tiers = ['gold', 'green', 'yellow', 'red'] as const;
+    const tierLabels = {
+      gold: '🥇 Gold (pure DS)',
+      green: '🟢 Green (acceptable)',
+      yellow: '🟡 Yellow (anti-pattern)',
+      red: '🔴 Red (critical)',
+    };
+
+    for (const tier of tiers) {
+      const xdsVal = xdsAgg?.tiers?.[tier] ?? 0;
+      const baselineVal = baselineAgg?.tiers?.[tier] ?? 0;
+      const xdsPct = xdsAgg?.totalTests
+        ? `${xdsVal} (${((xdsVal / xdsAgg.totalTests) * 100).toFixed(0)}%)`
+        : 'N/A';
+      const baselinePct = baselineAgg?.totalTests
+        ? `${baselineVal} (${((baselineVal / baselineAgg.totalTests) * 100).toFixed(0)}%)`
+        : 'N/A';
+      lines.push(
+        `│ ${tierLabels[tier].padEnd(23)} │ ${xdsPct.padEnd(15)} │ ${baselinePct.padEnd(15)} │`,
+      );
+    }
+
+    lines.push(
+      '└─────────────────────────┴─────────────────┴─────────────────┘',
+    );
+    lines.push('');
+  }
+
+  // ===== QUALITY ASSESSMENT SUMMARY =====
+  if (xdsAgg?.quality || baselineAgg?.quality) {
+    lines.push('🔬 QUALITY ASSESSMENT SUMMARY');
+    lines.push(
+      '───────────────────────────────────────────────────────────────────────────',
+    );
+    lines.push('');
+    lines.push(
+      '┌─────────────────────────┬─────────────────┬─────────────────┬──────────┐',
+    );
+    lines.push(
+      '│ Category                │ XDS             │ Baseline        │ Winner   │',
+    );
+    lines.push(
+      '├─────────────────────────┼─────────────────┼─────────────────┼──────────┤',
+    );
+
+    // Overall Good scores
+    const xdsGood = xdsAgg?.quality?.byScore?.good ?? 0;
+    const baselineGood = baselineAgg?.quality?.byScore?.good ?? 0;
+    const goodWinner =
+      xdsGood > baselineGood
+        ? 'XDS'
+        : baselineGood > xdsGood
+          ? 'Baseline'
+          : 'Tie';
+    lines.push(
+      `│ ✅ Overall Good         │ ${String(xdsGood).padEnd(15)} │ ${String(baselineGood).padEnd(15)} │ ${goodWinner.padEnd(8)} │`,
+    );
+
+    // Needs Work
+    const xdsNeedsWork = xdsAgg?.quality?.byScore?.['needs-work'] ?? 0;
+    const baselineNeedsWork =
+      baselineAgg?.quality?.byScore?.['needs-work'] ?? 0;
+    const needsWorkWinner =
+      xdsNeedsWork < baselineNeedsWork
+        ? 'XDS'
+        : baselineNeedsWork < xdsNeedsWork
+          ? 'Baseline'
+          : 'Tie';
+    lines.push(
+      `│ ⚠️  Needs Work           │ ${String(xdsNeedsWork).padEnd(15)} │ ${String(baselineNeedsWork).padEnd(15)} │ ${needsWorkWinner.padEnd(8)} │`,
+    );
+
+    // Poor
+    const xdsPoor = xdsAgg?.quality?.byScore?.poor ?? 0;
+    const baselinePoor = baselineAgg?.quality?.byScore?.poor ?? 0;
+    const poorWinner =
+      xdsPoor < baselinePoor
+        ? 'XDS'
+        : baselinePoor < xdsPoor
+          ? 'Baseline'
+          : 'Tie';
+    lines.push(
+      `│ ❌ Poor                  │ ${String(xdsPoor).padEnd(15)} │ ${String(baselinePoor).padEnd(15)} │ ${poorWinner.padEnd(8)} │`,
+    );
+
+    lines.push(
+      '├─────────────────────────┼─────────────────┼─────────────────┼──────────┤',
+    );
+
+    // A11y Issues
+    const xdsA11y = xdsAgg?.quality?.accessibility;
+    const baselineA11y = baselineAgg?.quality?.accessibility;
+    const xdsA11yStr = xdsA11y
+      ? `${xdsA11y.totalIssues} (${xdsA11y.criticalIssues} crit)`
+      : 'N/A';
+    const baselineA11yStr = baselineA11y
+      ? `${baselineA11y.totalIssues} (${baselineA11y.criticalIssues} crit)`
+      : 'N/A';
+    const a11yWinner =
+      !xdsA11y || !baselineA11y
+        ? '—'
+        : xdsA11y.criticalIssues < baselineA11y.criticalIssues
+          ? 'XDS'
+          : baselineA11y.criticalIssues < xdsA11y.criticalIssues
+            ? 'Baseline'
+            : xdsA11y.totalIssues < baselineA11y.totalIssues
+              ? 'XDS'
+              : baselineA11y.totalIssues < xdsA11y.totalIssues
+                ? 'Baseline'
+                : 'Tie';
+    lines.push(
+      `│ ♿ A11y Issues           │ ${xdsA11yStr.padEnd(15)} │ ${baselineA11yStr.padEnd(15)} │ ${a11yWinner.padEnd(8)} │`,
+    );
+
+    // Design System Issues
+    const xdsDS = xdsAgg?.quality?.designSystem;
+    const baselineDS = baselineAgg?.quality?.designSystem;
+    const xdsDSStr = xdsDS
+      ? `${xdsDS.totalIssues} (${xdsDS.criticalIssues} crit)`
+      : 'N/A';
+    const baselineDSStr = baselineDS
+      ? `${baselineDS.totalIssues} (${baselineDS.criticalIssues} crit)`
+      : 'N/A';
+    const dsWinner =
+      !xdsDS || !baselineDS
+        ? '—'
+        : xdsDS.totalIssues < baselineDS.totalIssues
+          ? 'XDS'
+          : baselineDS.totalIssues < xdsDS.totalIssues
+            ? 'Baseline'
+            : 'Tie';
+    lines.push(
+      `│ 🎨 Design System Issues │ ${xdsDSStr.padEnd(15)} │ ${baselineDSStr.padEnd(15)} │ ${dsWinner.padEnd(8)} │`,
+    );
+
+    // Code Quality Issues
+    const xdsCQ = xdsAgg?.quality?.codeQuality;
+    const baselineCQ = baselineAgg?.quality?.codeQuality;
+    const xdsCQStr = xdsCQ
+      ? `${xdsCQ.totalIssues} (${xdsCQ.criticalIssues} crit)`
+      : 'N/A';
+    const baselineCQStr = baselineCQ
+      ? `${baselineCQ.totalIssues} (${baselineCQ.criticalIssues} crit)`
+      : 'N/A';
+    const cqWinner =
+      !xdsCQ || !baselineCQ
+        ? '—'
+        : xdsCQ.totalIssues < baselineCQ.totalIssues
+          ? 'XDS'
+          : baselineCQ.totalIssues < xdsCQ.totalIssues
+            ? 'Baseline'
+            : 'Tie';
+    lines.push(
+      `│ 💻 Code Quality Issues  │ ${xdsCQStr.padEnd(15)} │ ${baselineCQStr.padEnd(15)} │ ${cqWinner.padEnd(8)} │`,
+    );
+
+    lines.push(
+      '└─────────────────────────┴─────────────────┴─────────────────┴──────────┘',
+    );
+    lines.push('');
+  }
 
   // Get prompt IDs from both iterations
   const xdsPrompts = loadPromptIds(xdsIteration);
   const baselinePrompts = loadPromptIds(baselineIteration);
   const allPrompts = [...new Set([...xdsPrompts, ...baselinePrompts])];
 
-  // Summary table
-  lines.push('SUMMARY');
+  // ===== PER-TEST QUALITY SCORES =====
+  lines.push('📝 PER-TEST QUALITY SCORES');
   lines.push('───────────────────────────────────────────────────────────────');
   lines.push(
     '│ Test    │ Category       │ XDS Overall │ Baseline Overall │ Winner │',
