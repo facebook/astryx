@@ -196,59 +196,6 @@ const noHardcodedStylesRule = {
 };
 
 // =============================================================================
-// Rule: require-letter-spacing
-// Ensures letterSpacing is defined when fontSize is used (badge-specific pattern)
-// =============================================================================
-
-const requireLetterSpacingRule = {
-  meta: {
-    type: 'suggestion',
-    docs: {
-      description: 'Recommend adding letterSpacing when defining fontSize in StyleX',
-      category: 'Best Practices',
-      recommended: false,
-    },
-    messages: {
-      addLetterSpacing: 'Consider adding letterSpacing when using fontSize. Common value: letterSpacing: \'-0.24px\'',
-    },
-    schema: [],
-  },
-  create(context) {
-    return {
-      Property(node) {
-        // Only check inside stylex.create()
-        if (!isInsideStylexCreate(node)) {
-          return;
-        }
-
-        // Look for fontSize property
-        const propName = node.key?.name || node.key?.value;
-        if (propName !== 'fontSize') {
-          return;
-        }
-
-        // Check if sibling properties include letterSpacing
-        const parent = node.parent;
-        if (parent?.type !== 'ObjectExpression') {
-          return;
-        }
-
-        const hasLetterSpacing = parent.properties.some(
-          (prop) => (prop.key?.name || prop.key?.value) === 'letterSpacing'
-        );
-
-        if (!hasLetterSpacing) {
-          context.report({
-            node,
-            messageId: 'addLetterSpacing',
-          });
-        }
-      },
-    };
-  },
-};
-
-// =============================================================================
 // Plugin Export
 // =============================================================================
 
@@ -259,7 +206,6 @@ const plugin = {
   },
   rules: {
     'no-hardcoded-styles': noHardcodedStylesRule,
-    'require-letter-spacing': requireLetterSpacingRule,
   },
   configs: {},
 };
@@ -271,7 +217,6 @@ plugin.configs.strict = {
   },
   rules: {
     '@xds/no-hardcoded-styles': 'error',
-    '@xds/require-letter-spacing': 'error',
   },
 };
 
@@ -282,7 +227,6 @@ plugin.configs.recommended = {
   },
   rules: {
     '@xds/no-hardcoded-styles': 'warn',
-    '@xds/require-letter-spacing': 'off', // Optional for humans
   },
 };
 
