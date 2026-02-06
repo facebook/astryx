@@ -15,19 +15,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Debug: show which commit we're running on
-      - name: Debug info
-        run: |
-          echo "Commit: $(git rev-parse HEAD)"
-          echo "Branch: $(git branch --show-current)"
-          git log --oneline -3
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          # cache key will bust when yarn.lock changes; add suffix to force bust
           cache: 'yarn'
-          cache-dependency-path: 'yarn.lock'
 
       - run: yarn install --frozen-lockfile
 
