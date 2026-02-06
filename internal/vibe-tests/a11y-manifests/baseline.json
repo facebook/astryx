@@ -1,0 +1,380 @@
+{
+  "source": "https://www.radix-ui.com/primitives/docs/overview/accessibility",
+  "generatedAt": "2026-02-05T18:03:04.623Z",
+  "version": "1.0.0",
+  "components": {
+    "Button": {
+      "component": "Button",
+      "builtIn": [
+        "Native button element with proper role",
+        "Keyboard activation (Enter/Space)",
+        "Focus management"
+      ],
+      "keyboard": [
+        "Enter/Space to activate"
+      ],
+      "developerMust": [
+        "Provide aria-label for icon-only buttons",
+        "Use aria-pressed for toggle buttons",
+        "Use aria-expanded for buttons that control expandable content"
+      ],
+      "notes": [
+        "Based on native <button> element"
+      ]
+    },
+    "Dialog": {
+      "component": "Dialog",
+      "builtIn": [
+        "Focus trap - focus stays within dialog",
+        "Escape key closes dialog",
+        "aria-modal=\"true\" on dialog",
+        "aria-labelledby pointing to title",
+        "aria-describedby pointing to description",
+        "Returns focus to trigger on close",
+        "Scrolling blocked on body when open"
+      ],
+      "keyboard": [
+        "Escape to close",
+        "Tab/Shift+Tab to navigate within"
+      ],
+      "developerMust": [
+        "Provide DialogTitle for aria-labelledby",
+        "Provide DialogDescription for aria-describedby (or use aria-describedby={undefined})"
+      ],
+      "notes": [
+        "WAI-ARIA Dialog pattern"
+      ]
+    },
+    "DropdownMenu": {
+      "component": "DropdownMenu",
+      "builtIn": [
+        "role=\"menu\" on content",
+        "role=\"menuitem\" on items",
+        "Arrow key navigation",
+        "Typeahead to jump to items",
+        "Focus returns to trigger on close",
+        "Escape closes menu",
+        "Submenu support with proper aria-haspopup"
+      ],
+      "keyboard": [
+        "Arrow Down/Up to navigate",
+        "Enter/Space to select",
+        "Escape to close",
+        "Arrow Right/Left for submenus",
+        "A-Z for typeahead"
+      ],
+      "developerMust": [],
+      "notes": [
+        "WAI-ARIA Menu pattern"
+      ]
+    },
+    "Select": {
+      "component": "Select",
+      "builtIn": [
+        "role=\"combobox\" on trigger",
+        "role=\"listbox\" on content",
+        "role=\"option\" on items",
+        "aria-expanded on trigger",
+        "aria-activedescendant for focus",
+        "Arrow key navigation",
+        "Typeahead support"
+      ],
+      "keyboard": [
+        "Arrow Down/Up to navigate",
+        "Enter/Space to select",
+        "Escape to close",
+        "A-Z for typeahead",
+        "Home/End to jump"
+      ],
+      "developerMust": [
+        "Provide accessible label (Label component or aria-label)"
+      ],
+      "notes": [
+        "WAI-ARIA Combobox pattern (Select-Only)"
+      ]
+    },
+    "Checkbox": {
+      "component": "Checkbox",
+      "builtIn": [
+        "role=\"checkbox\"",
+        "aria-checked state",
+        "Keyboard activation (Space)",
+        "Supports indeterminate state"
+      ],
+      "keyboard": [
+        "Space to toggle"
+      ],
+      "developerMust": [
+        "Provide accessible label (Label component or aria-label)"
+      ],
+      "notes": [
+        "WAI-ARIA Checkbox pattern"
+      ]
+    },
+    "Switch": {
+      "component": "Switch",
+      "builtIn": [
+        "role=\"switch\"",
+        "aria-checked state",
+        "Keyboard activation (Space)"
+      ],
+      "keyboard": [
+        "Space to toggle"
+      ],
+      "developerMust": [
+        "Provide accessible label (Label component or aria-label)"
+      ],
+      "notes": [
+        "WAI-ARIA Switch pattern"
+      ]
+    },
+    "Tabs": {
+      "component": "Tabs",
+      "builtIn": [
+        "role=\"tablist\" on list",
+        "role=\"tab\" on triggers",
+        "role=\"tabpanel\" on content",
+        "aria-selected on active tab",
+        "Arrow key navigation between tabs",
+        "Automatic activation on focus (or manual mode)"
+      ],
+      "keyboard": [
+        "Arrow Left/Right to navigate tabs",
+        "Home/End to jump to first/last tab",
+        "Tab to move into panel"
+      ],
+      "developerMust": [],
+      "notes": [
+        "WAI-ARIA Tabs pattern"
+      ]
+    },
+    "Tooltip": {
+      "component": "Tooltip",
+      "builtIn": [
+        "aria-describedby linking trigger to content",
+        "Escape to dismiss",
+        "Delay before showing (configurable)",
+        "Touch-friendly behavior"
+      ],
+      "keyboard": [
+        "Escape to dismiss"
+      ],
+      "developerMust": [
+        "Ensure trigger is focusable (use asChild with focusable element)"
+      ],
+      "notes": [
+        "Content should be supplementary, not essential"
+      ]
+    },
+    "Popover": {
+      "component": "Popover",
+      "builtIn": [
+        "Focus management",
+        "Escape to close",
+        "Click outside to close",
+        "aria-haspopup on trigger"
+      ],
+      "keyboard": [
+        "Escape to close",
+        "Tab to navigate within"
+      ],
+      "developerMust": [
+        "Manage focus appropriately within popover content"
+      ],
+      "notes": [
+        "Non-modal by default - focus is not trapped"
+      ]
+    },
+    "AlertDialog": {
+      "component": "AlertDialog",
+      "builtIn": [
+        "Focus trap",
+        "aria-modal=\"true\"",
+        "role=\"alertdialog\"",
+        "aria-labelledby pointing to title",
+        "aria-describedby pointing to description",
+        "Escape is disabled by default (requires explicit action)"
+      ],
+      "keyboard": [
+        "Tab/Shift+Tab to navigate within"
+      ],
+      "developerMust": [
+        "Provide AlertDialogTitle",
+        "Provide AlertDialogDescription",
+        "Include at least one focusable action button"
+      ],
+      "notes": [
+        "WAI-ARIA AlertDialog pattern - for important interruptions"
+      ]
+    },
+    "Progress": {
+      "component": "Progress",
+      "builtIn": [
+        "role=\"progressbar\"",
+        "aria-valuenow",
+        "aria-valuemin",
+        "aria-valuemax"
+      ],
+      "keyboard": [],
+      "developerMust": [
+        "Provide aria-label or aria-labelledby for context"
+      ],
+      "notes": [
+        "Use aria-valuetext for non-percentage values"
+      ]
+    },
+    "Slider": {
+      "component": "Slider",
+      "builtIn": [
+        "role=\"slider\"",
+        "aria-valuenow, aria-valuemin, aria-valuemax",
+        "Arrow key adjustment",
+        "Home/End for min/max",
+        "Page Up/Down for larger steps"
+      ],
+      "keyboard": [
+        "Arrow Left/Down to decrease",
+        "Arrow Right/Up to increase",
+        "Home for minimum",
+        "End for maximum",
+        "Page Up/Down for larger steps"
+      ],
+      "developerMust": [
+        "Provide aria-label for context"
+      ],
+      "notes": [
+        "WAI-ARIA Slider pattern"
+      ]
+    },
+    "Accordion": {
+      "component": "Accordion",
+      "builtIn": [
+        "role=\"region\" on panels (when expanded)",
+        "aria-expanded on triggers",
+        "aria-controls linking trigger to panel",
+        "Arrow key navigation between triggers"
+      ],
+      "keyboard": [
+        "Enter/Space to toggle",
+        "Arrow Down/Up to navigate",
+        "Home/End to jump"
+      ],
+      "developerMust": [],
+      "notes": [
+        "WAI-ARIA Accordion pattern"
+      ]
+    },
+    "RadioGroup": {
+      "component": "RadioGroup",
+      "builtIn": [
+        "role=\"radiogroup\"",
+        "role=\"radio\" on items",
+        "aria-checked state",
+        "Arrow key navigation",
+        "Roving tabindex"
+      ],
+      "keyboard": [
+        "Arrow keys to navigate and select",
+        "Tab to enter/leave group"
+      ],
+      "developerMust": [
+        "Provide aria-label or aria-labelledby on group"
+      ],
+      "notes": [
+        "WAI-ARIA Radio Group pattern"
+      ]
+    },
+    "Label": {
+      "component": "Label",
+      "builtIn": [
+        "Native label element",
+        "Click on label focuses associated control",
+        "Proper htmlFor association"
+      ],
+      "keyboard": [],
+      "developerMust": [],
+      "notes": [
+        "Always use with form controls"
+      ]
+    },
+    "Input": {
+      "component": "Input",
+      "builtIn": [
+        "Native input element"
+      ],
+      "keyboard": [],
+      "developerMust": [
+        "Provide accessible label (Label component, aria-label, or aria-labelledby)",
+        "Use aria-describedby for error/help text",
+        "Set aria-invalid for error states"
+      ],
+      "notes": [
+        "shadcn Input is a styled native input"
+      ]
+    },
+    "Card": {
+      "component": "Card",
+      "builtIn": [],
+      "keyboard": [],
+      "developerMust": [
+        "If clickable, use button or link element, not onClick on div",
+        "Provide appropriate role if interactive"
+      ],
+      "notes": [
+        "Card is purely visual - has no semantic meaning"
+      ]
+    },
+    "Badge": {
+      "component": "Badge",
+      "builtIn": [],
+      "keyboard": [],
+      "developerMust": [
+        "Provide context via aria-label or surrounding text",
+        "For status badges, consider aria-live for dynamic updates"
+      ],
+      "notes": [
+        "Badge is purely visual - has no semantic meaning"
+      ]
+    },
+    "Avatar": {
+      "component": "Avatar",
+      "builtIn": [],
+      "keyboard": [],
+      "developerMust": [
+        "Provide alt text on AvatarImage",
+        "AvatarFallback provides fallback for screen readers"
+      ],
+      "notes": [
+        "Decorative avatars should have empty alt=\"\""
+      ]
+    },
+    "Skeleton": {
+      "component": "Skeleton",
+      "builtIn": [],
+      "keyboard": [],
+      "developerMust": [
+        "Provide aria-busy=\"true\" on parent container",
+        "Consider aria-live region for loading announcements"
+      ],
+      "notes": [
+        "Skeleton is decorative - loading state should be announced separately"
+      ]
+    },
+    "Table": {
+      "component": "Table",
+      "builtIn": [
+        "Native table element with proper structure",
+        "th elements for headers",
+        "Proper table semantics"
+      ],
+      "keyboard": [],
+      "developerMust": [
+        "Use TableCaption for table description",
+        "Use scope=\"col\" or scope=\"row\" on headers"
+      ],
+      "notes": [
+        "Use native table semantics, avoid role=\"presentation\""
+      ]
+    }
+  }
+}

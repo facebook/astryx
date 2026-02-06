@@ -20,7 +20,10 @@
     "aggregate": "tsx src/aggregate.ts",
     "aggregate:ci": "tsx src/aggregate.ts --ci",
     "aggregate:json": "tsx src/aggregate.ts --json",
-    "analyze": "tsx src/cli.ts analyze"
+    "analyze": "tsx src/cli.ts analyze",
+    "quality": "tsx src/quality.ts",
+    "compare": "tsx src/compare.ts",
+    "generate-a11y-manifest": "tsx src/generate-a11y-manifest.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0",

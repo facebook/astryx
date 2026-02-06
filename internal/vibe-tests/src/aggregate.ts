@@ -17,6 +17,9 @@ import type {
   EscapeHatchType,
   JobBreakdown,
   InputTokenBreakdown,
+  TokenUsageBreakdown,
+  QualityAssessment,
+  QualityScore,
 } from './types.js';
 import {writeJson, getResultsDir} from './utils.js';
 
@@ -415,6 +418,26 @@ interface AggregateResult {
       byCategory: Record<string, JobBreakdown>;
     };
     grandTotal: number;
+  };
+  // Quality assessment results (from quality agent)
+  quality?: {
+    assessed: number;
+    byScore: Record<QualityScore, number>;
+    accessibility: {
+      byScore: Record<QualityScore, number>;
+      totalIssues: number;
+      criticalIssues: number;
+    };
+    designSystem: {
+      byScore: Record<QualityScore, number>;
+      totalIssues: number;
+      criticalIssues: number;
+    };
+    codeQuality: {
+      byScore: Record<QualityScore, number>;
+      totalIssues: number;
+      criticalIssues: number;
+    };
   };
 }
 
@@ -910,6 +933,38 @@ function loadResults(resultsDir: string): (TestResult & {target?: string})[] {
   return results;
 }
 
+/**
+ * Load quality assessments from .quality.json files
+ */
+function loadQualityAssessments(
+  resultsDir: string,
+): Map<string, QualityAssessment> {
+  const individualResultsDir = path.join(resultsDir, 'results');
+  const assessments = new Map<string, QualityAssessment>();
+
+  if (!fs.existsSync(individualResultsDir)) {
+    return assessments;
+  }
+
+  const files = fs
+    .readdirSync(individualResultsDir)
+    .filter(f => f.endsWith('.quality.json'));
+
+  for (const file of files) {
+    try {
+      const promptId = file.replace('.quality.json', '');
+      const assessmentPath = path.join(individualResultsDir, file);
+      const content = fs.readFileSync(assessmentPath, 'utf-8');
+      const assessment = JSON.parse(content) as QualityAssessment;
+      assessments.set(promptId, assessment);
+    } catch (e) {
+      console.warn(`Warning: Failed to parse quality assessment ${file}: ${e}`);
+    }
+  }
+
+  return assessments;
+}
+
 function aggregate(iterationId: string): AggregateResult {
   const resultsDir = path.join(getResultsDir(), iterationId);
 
@@ -1259,6 +1314,94 @@ function aggregate(iterationId: string): AggregateResult {
     grandTotal,
   };
 
+  // Load and aggregate quality assessments
+  const qualityAssessments = loadQualityAssessments(resultsDir);
+  let quality:
+    | {
+        assessed: number;
+        byScore: Record<QualityScore, number>;
+        accessibility: {
+          byScore: Record<QualityScore, number>;
+          totalIssues: number;
+          criticalIssues: number;
+        };
+        designSystem: {
+          byScore: Record<QualityScore, number>;
+          totalIssues: number;
+          criticalIssues: number;
+        };
+        codeQuality: {
+          byScore: Record<QualityScore, number>;
+          totalIssues: number;
+          criticalIssues: number;
+        };
+      }
+    | undefined;
+
+  if (qualityAssessments.size > 0) {
+    const byScore: Record<QualityScore, number> = {
+      good: 0,
+      'needs-work': 0,
+      poor: 0,
+    };
+    const accessibility = {
+      byScore: {good: 0, 'needs-work': 0, poor: 0} as Record<
+        QualityScore,
+        number
+      >,
+      totalIssues: 0,
+      criticalIssues: 0,
+    };
+    const designSystem = {
+      byScore: {good: 0, 'needs-work': 0, poor: 0} as Record<
+        QualityScore,
+        number
+      >,
+      totalIssues: 0,
+      criticalIssues: 0,
+    };
+    const codeQuality = {
+      byScore: {good: 0, 'needs-work': 0, poor: 0} as Record<
+        QualityScore,
+        number
+      >,
+      totalIssues: 0,
+      criticalIssues: 0,
+    };
+
+    for (const assessment of qualityAssessments.values()) {
+      byScore[assessment.overallScore]++;
+
+      accessibility.byScore[assessment.accessibility.score]++;
+      accessibility.totalIssues += assessment.accessibility.issues.length;
+      accessibility.criticalIssues += assessment.accessibility.issues.filter(
+        i => i.severity === 'critical',
+      ).length;
+
+      designSystem.byScore[assessment.designSystemAdherence.score]++;
+      designSystem.totalIssues +=
+        assessment.designSystemAdherence.issues.length;
+      designSystem.criticalIssues +=
+        assessment.designSystemAdherence.issues.filter(
+          i => i.severity === 'critical',
+        ).length;
+
+      codeQuality.byScore[assessment.codeQuality.score]++;
+      codeQuality.totalIssues += assessment.codeQuality.issues.length;
+      codeQuality.criticalIssues += assessment.codeQuality.issues.filter(
+        i => i.severity === 'critical',
+      ).length;
+    }
+
+    quality = {
+      assessed: qualityAssessments.size,
+      byScore,
+      accessibility,
+      designSystem,
+      codeQuality,
+    };
+  }
+
   return {
     iterationId,
     totalTests: results.length,
@@ -1282,6 +1425,7 @@ function aggregate(iterationId: string): AggregateResult {
     totalOutputTokens,
     jobStats,
     tokenUsage,
+    quality,
   };
 }
 
@@ -1456,6 +1600,26 @@ function printReport(agg: AggregateResult): void {
     for (const [type, count] of Object.entries(agg.antiPatterns)) {
       console.log(`  - ${type}: ${count}`);
     }
+  }
+
+  // Quality assessment results (if present)
+  if (agg.quality) {
+    const q = agg.quality;
+    console.log(`\n🔬 Quality Assessment (${q.assessed} assessed):`);
+    console.log(`  Overall Scores:`);
+    console.log(
+      `    ✓ Good: ${q.byScore.good}  ⚠ Needs Work: ${q.byScore['needs-work']}  ✗ Poor: ${q.byScore.poor}`,
+    );
+    console.log(`  By Category:`);
+    console.log(
+      `    Accessibility:  ${q.accessibility.totalIssues} issues (${q.accessibility.criticalIssues} critical)`,
+    );
+    console.log(
+      `    Design System:  ${q.designSystem.totalIssues} issues (${q.designSystem.criticalIssues} critical)`,
+    );
+    console.log(
+      `    Code Quality:   ${q.codeQuality.totalIssues} issues (${q.codeQuality.criticalIssues} critical)`,
+    );
   }
 
   if (Object.keys(agg.acceptableEscapeHatches).length > 0) {
@@ -1898,6 +2062,74 @@ function generateHtmlReport(
     `;
   }
 
+  // Generate quality assessment HTML if present
+  let qualityHtml = '';
+  if (agg.quality) {
+    const q = agg.quality;
+    const scoreBar = (good: number, needsWork: number, poor: number) => {
+      const total = good + needsWork + poor;
+      if (total === 0) return '';
+      return `
+        <div class="score-bar">
+          <span class="score good" style="width: ${(good / total) * 100}%"></span>
+          <span class="score needs-work" style="width: ${(needsWork / total) * 100}%"></span>
+          <span class="score poor" style="width: ${(poor / total) * 100}%"></span>
+        </div>
+      `;
+    };
+
+    qualityHtml = `
+  <div class="card">
+    <h2>🔬 Quality Assessment</h2>
+    <p style="color: #666; font-size: 0.9em;">${q.assessed} of ${agg.totalTests} tests assessed by quality agent.</p>
+
+    <div class="quality-grid">
+      <div class="quality-stat">
+        <div class="quality-label">Overall</div>
+        ${scoreBar(q.byScore.good, q.byScore['needs-work'], q.byScore.poor)}
+        <div class="quality-counts">
+          <span class="score-label good">✓ ${q.byScore.good} Good</span>
+          <span class="score-label needs-work">⚠ ${q.byScore['needs-work']} Needs Work</span>
+          <span class="score-label poor">✗ ${q.byScore.poor} Poor</span>
+        </div>
+      </div>
+    </div>
+
+    <table style="margin-top: 16px;">
+      <thead>
+        <tr><th>Category</th><th>Good</th><th>Needs Work</th><th>Poor</th><th>Issues</th><th>Critical</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>♿ Accessibility</td>
+          <td style="color: #16a34a;">${q.accessibility.byScore.good}</td>
+          <td style="color: #ca8a04;">${q.accessibility.byScore['needs-work']}</td>
+          <td style="color: #dc2626;">${q.accessibility.byScore.poor}</td>
+          <td>${q.accessibility.totalIssues}</td>
+          <td style="color: ${q.accessibility.criticalIssues > 0 ? '#dc2626' : '#666'};">${q.accessibility.criticalIssues}</td>
+        </tr>
+        <tr>
+          <td>🎨 Design System</td>
+          <td style="color: #16a34a;">${q.designSystem.byScore.good}</td>
+          <td style="color: #ca8a04;">${q.designSystem.byScore['needs-work']}</td>
+          <td style="color: #dc2626;">${q.designSystem.byScore.poor}</td>
+          <td>${q.designSystem.totalIssues}</td>
+          <td style="color: ${q.designSystem.criticalIssues > 0 ? '#dc2626' : '#666'};">${q.designSystem.criticalIssues}</td>
+        </tr>
+        <tr>
+          <td>🔧 Code Quality</td>
+          <td style="color: #16a34a;">${q.codeQuality.byScore.good}</td>
+          <td style="color: #ca8a04;">${q.codeQuality.byScore['needs-work']}</td>
+          <td style="color: #dc2626;">${q.codeQuality.byScore.poor}</td>
+          <td>${q.codeQuality.totalIssues}</td>
+          <td style="color: ${q.codeQuality.criticalIssues > 0 ? '#dc2626' : '#666'};">${q.codeQuality.criticalIssues}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+    `;
+  }
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1981,6 +2213,19 @@ function generateHtmlReport(
     .badge.effort-significant { background: #fee2e2; color: #dc2626; }
     .docs-cell { max-width: 200px; }
     .job-desc { font-size: 0.8em; color: #666; font-weight: normal; }
+    .quality-grid { display: flex; gap: 16px; flex-wrap: wrap; }
+    .quality-stat { flex: 1; min-width: 200px; }
+    .quality-label { font-weight: 600; margin-bottom: 8px; }
+    .score-bar { display: flex; width: 100%; height: 12px; border-radius: 6px; overflow: hidden; background: #e5e7eb; }
+    .score-bar .score { height: 100%; }
+    .score-bar .score.good { background: #22c55e; }
+    .score-bar .score.needs-work { background: #eab308; }
+    .score-bar .score.poor { background: #ef4444; }
+    .quality-counts { margin-top: 8px; font-size: 0.85em; }
+    .score-label { margin-right: 12px; }
+    .score-label.good { color: #16a34a; }
+    .score-label.needs-work { color: #ca8a04; }
+    .score-label.poor { color: #dc2626; }
     tr.tier-gold { background: #fffbeb; }
     tr.tier-green { background: #f0fdf4; }
     tr.tier-yellow { background: #fefce8; }
@@ -2072,6 +2317,8 @@ function generateHtmlReport(
   </div>
 
   ${tokenUsageHtml}
+
+  ${qualityHtml}
 
   ${degradationGraphHtml}
 

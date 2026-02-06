@@ -1,0 +1,146 @@
+{
+  "source": "packages/core/src/*/README.md",
+  "generatedAt": "2026-02-05T18:03:04.596Z",
+  "version": "1.0.0",
+  "components": {
+    "Avatar": {
+      "component": "Avatar",
+      "builtIn": [
+        "Accessible: Proper role and aria-label support"
+      ],
+      "keyboard": [],
+      "developerMust": [],
+      "notes": []
+    },
+    "Button": {
+      "component": "Button",
+      "builtIn": [
+        "Variants: `primary`, `secondary`, `ghost`, `destructive`",
+        "Focus visible: Accessible focus outline with variant-specific colors"
+      ],
+      "keyboard": [],
+      "developerMust": [
+        "Provide aria-label for icon-only buttons",
+        "Use aria-pressed for toggle buttons"
+      ],
+      "notes": [
+        "`XDSButtonVariant` type is derived from the `variants` StyleX object using `keyof typeof variants`",
+        "Destructive variant uses `colorTokens.negative` for its focus outline color"
+      ]
+    },
+    "CheckboxInput": {
+      "component": "CheckboxInput",
+      "builtIn": [
+        "Accessible: Always includes a label (can be visually hidden)",
+        "Supports visually hidden labels (still accessible to screen readers)"
+      ],
+      "keyboard": [],
+      "developerMust": [],
+      "notes": [
+        "Label is clickable and properly associated with the input via `htmlFor`/`id`",
+        "Label is required prop - component handles label association"
+      ]
+    },
+    "DateInput": {
+      "component": "DateInput",
+      "builtIn": [
+        "Calendar Popover: Click icon or use keyboard to open calendar picker",
+        "Accessibility: Full keyboard navigation, focus trapping, screen reader support",
+        "Supports visually hidden labels (still accessible to screen readers)"
+      ],
+      "keyboard": [],
+      "developerMust": [],
+      "notes": [
+        "Label is required prop - component handles label association"
+      ]
+    },
+    "Field": {
+      "component": "Field",
+      "builtIn": [
+        "Accessible: Label properly associated with input via htmlFor/id",
+        "Uses aria-describedby for descriptions",
+        "Supports visually hidden labels (still accessible to screen readers)"
+      ],
+      "keyboard": [],
+      "developerMust": [],
+      "notes": [
+        "Label is always rendered for accessibility; use `isLabelHidden` to hide visually",
+        "Hidden label uses CSS technique that remains accessible to screen readers",
+        "Description is rendered when provided; if `descriptionID` is also provided, the description element gets that ID for `aria-describedby` association",
+        "Optional/Required text appears on the same line as the label"
+      ]
+    },
+    "Icon": {
+      "component": "Icon",
+      "builtIn": [
+        "Theme Colors: Color variants mapped to XDS icon color tokens",
+        "Accessible: Icons are hidden from screen readers by default (aria-hidden)"
+      ],
+      "keyboard": [],
+      "developerMust": [],
+      "notes": [
+        "Uses `aria-hidden=\"true\"` by default since icons are typically decorative",
+        "For meaningful icons, set `aria-hidden={false}`, `role=\"img\"`, and `aria-label`"
+      ]
+    },
+    "Selector": {
+      "component": "Selector",
+      "builtIn": [
+        "Uses `role=\"combobox\"` trigger",
+        "`role=\"listbox\"` dropdown",
+        "`role=\"group\"` for sections",
+        "`aria-activedescendant` for focus",
+        "Supports visually hidden labels (still accessible to screen readers)"
+      ],
+      "keyboard": [
+        "↑↓ navigate, Enter/Space select, Escape close, Home/End jump, A-Z typeahead."
+      ],
+      "developerMust": [],
+      "notes": []
+    },
+    "TextArea": {
+      "component": "TextArea",
+      "builtIn": [
+        "Accessible: Label properly associated with textarea via htmlFor/id",
+        "Supports visually hidden labels (still accessible to screen readers)"
+      ],
+      "keyboard": [],
+      "developerMust": [],
+      "notes": [
+        "Uses `useId` hook for accessible label-textarea association",
+        "Label is always rendered for accessibility; use `isLabelHidden` to hide visually",
+        "Hidden label uses CSS technique that remains accessible to screen readers",
+        "Wraps `XDSField` component for label, description, and optional/required handling",
+        "Optional/Required text appears on the same line as the label",
+        "Label is required prop - component handles label association"
+      ]
+    },
+    "TextInput": {
+      "component": "TextInput",
+      "builtIn": [
+        "Accessible: Label properly associated with input via htmlFor/id",
+        "Sets aria-invalid for error status",
+        "Supports visually hidden labels (still accessible to screen readers)"
+      ],
+      "keyboard": [],
+      "developerMust": [],
+      "notes": [
+        "Uses `useId` hook for accessible label-input association",
+        "Label is always rendered for accessibility; use `isLabelHidden` to hide visually",
+        "Hidden label uses CSS technique that remains accessible to screen readers",
+        "Wraps `XDSField` component for label, description, and optional/required handling",
+        "Optional/Required text appears on the same line as the label",
+        "Label is required prop - component handles label association"
+      ]
+    },
+    "theme": {
+      "component": "theme",
+      "builtIn": [
+        "XDSTheme Provider: Wraps app to provide CSS variables"
+      ],
+      "keyboard": [],
+      "developerMust": [],
+      "notes": []
+    }
+  }
+}

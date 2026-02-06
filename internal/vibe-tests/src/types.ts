@@ -198,3 +198,54 @@ export interface AnalysisResult {
   refinements: Refinement[];
   summary: string;
 }
+
+// ============================================================
+// Quality Assessment Types
+// ============================================================
+
+export type QualityScore = 'good' | 'needs-work' | 'poor';
+
+export interface AccessibilityIssue {
+  severity: 'critical' | 'moderate' | 'minor';
+  element: string;
+  issue: string;
+  recommendation: string;
+  lineNumber?: number;
+}
+
+export interface DesignSystemIssue {
+  severity: 'critical' | 'moderate' | 'minor';
+  category: 'component-usage' | 'token-usage' | 'pattern-violation';
+  issue: string;
+  recommendation: string;
+  codeSnippet?: string;
+}
+
+export interface CodeQualityIssue {
+  severity: 'critical' | 'moderate' | 'minor';
+  category:
+    | 'state-management'
+    | 'event-handling'
+    | 'typescript'
+    | 'performance';
+  issue: string;
+  recommendation: string;
+  codeSnippet?: string;
+}
+
+export interface QualityAssessment {
+  accessibility: {
+    issues: AccessibilityIssue[];
+    score: QualityScore;
+  };
+  designSystemAdherence: {
+    issues: DesignSystemIssue[];
+    score: QualityScore;
+  };
+  codeQuality: {
+    issues: CodeQualityIssue[];
+    score: QualityScore;
+  };
+  overallScore: QualityScore;
+  summary: string;
+}
