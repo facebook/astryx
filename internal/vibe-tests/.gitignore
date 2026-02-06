@@ -5,3 +5,6 @@ AGENTS.md
 # Baseline comparison docs (generated)
 .baseline-docs/
 AGENTS.baseline.md
+
+# Test results (generated)
+results/

@@ -10,12 +10,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import {
-  generateQualityAssessmentPrompt,
-  parseQualityAssessment,
-  summarizeQualityIssues,
-} from './quality-agent.js';
-import type {QualityAssessment} from './types.js';
+import {generateQualityAssessmentPrompt} from './quality-agent.js';
 
 const RESULTS_DIR = path.join(import.meta.dirname, '..', 'results');
 
@@ -50,20 +45,6 @@ function loadCode(iterationId: string, promptId: string): string | null {
     return null;
   }
   return fs.readFileSync(codePath, 'utf-8');
-}
-
-function saveAssessment(
-  iterationId: string,
-  promptId: string,
-  assessment: QualityAssessment,
-): void {
-  const assessmentPath = path.join(
-    RESULTS_DIR,
-    iterationId,
-    'results',
-    `${promptId}.quality.json`,
-  );
-  fs.writeFileSync(assessmentPath, JSON.stringify(assessment, null, 2));
 }
 
 function printUsage(): void {

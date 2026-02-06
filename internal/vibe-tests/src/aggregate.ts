@@ -17,7 +17,6 @@ import type {
   EscapeHatchType,
   JobBreakdown,
   InputTokenBreakdown,
-  TokenUsageBreakdown,
   QualityAssessment,
   QualityScore,
 } from './types.js';
