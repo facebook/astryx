@@ -274,6 +274,7 @@ const textSizeRaw = {
 const lineHeightRaw = {
   '--leading-tight': '1.25', // Display text, headings
   '--leading-snug': '1.375', // Compact body text, headings
+  '--leading-base': '1.4285714285714286', // Body text with --text-base (20px line / 14px font)
   '--leading-normal': '1.5', // Body text, large body
   '--leading-relaxed': '1.625', // Editorial body, reading text
 } as const satisfies Record<LineHeightVarName, string>;
@@ -407,7 +408,7 @@ const headingStyles = stylex.create({
     fontFamily: typographyVars['--font-heading'],
     fontSize: textSizeVars['--text-base'], // 14px
     fontWeight: fontWeightVars['--font-weight-bold'],
-    lineHeight: 1.4285714285714286, // 20px
+    lineHeight: lineHeightVars['--leading-base'], // 20px
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
@@ -415,7 +416,7 @@ const headingStyles = stylex.create({
     fontFamily: typographyVars['--font-heading'],
     fontSize: textSizeVars['--text-base'], // 14px (same as h4)
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    lineHeight: 1.4285714285714286, // 20px
+    lineHeight: lineHeightVars['--leading-base'], // 20px
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
@@ -469,7 +470,7 @@ const headingEditorialStyles = stylex.create({
     fontFamily: typographyVars['--font-heading'],
     fontSize: textSizeVars['--text-base'], // 14px
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    lineHeight: 1.4285714285714286, // 20px
+    lineHeight: lineHeightVars['--leading-base'], // 20px
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
@@ -492,7 +493,7 @@ const textStyles = stylex.create({
     fontFamily: typographyVars['--font-body'],
     fontSize: textSizeVars['--text-base'], // 14px
     fontWeight: fontWeightVars['--font-weight-normal'],
-    lineHeight: 1.4285714285714286, // 20px
+    lineHeight: lineHeightVars['--leading-base'], // 20px
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
@@ -510,7 +511,7 @@ const textStyles = stylex.create({
     fontFamily: typographyVars['--font-body'],
     fontSize: textSizeVars['--text-base'], // 14px
     fontWeight: fontWeightVars['--font-weight-medium'],
-    lineHeight: 1.4285714285714286, // 20px
+    lineHeight: lineHeightVars['--leading-base'], // 20px
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
@@ -528,7 +529,7 @@ const textStyles = stylex.create({
     fontFamily: typographyVars['--font-code'],
     fontSize: textSizeVars['--text-base'], // 14px
     fontWeight: fontWeightVars['--font-weight-normal'],
-    lineHeight: 1.4285714285714286, // 20px
+    lineHeight: lineHeightVars['--leading-base'], // 20px
     color: colorVars['--color-text-primary'],
     margin: 0,
   },

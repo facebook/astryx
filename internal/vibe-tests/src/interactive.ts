@@ -14,13 +14,11 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {execSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import type {TestPrompt, TestResult, Evaluation, EscapeHatch} from './types.js';
+import type {TestPrompt, Evaluation} from './types.js';
 import {stratifiedSample} from './sampling.js';
 import {
   generateIterationId,
-  hashContent,
   ensureDir,
-  appendJsonl,
   writeJson,
   readJson,
   timestamp,
@@ -64,7 +62,7 @@ function installAgentsDocs(): void {
         stdio: 'pipe',
       });
       console.log('✓ Generated AGENTS.md and .xds-docs/');
-    } catch (error) {
+    } catch (_error) {
       console.warn('⚠ Failed to generate AGENTS.md, continuing without it');
     }
   }
@@ -89,7 +87,7 @@ interface AgentTask {
 /**
  * Generate the agent prompt for a single test
  */
-function generateAgentPrompt(task: AgentTask): string {
+function _generateAgentPrompt(task: AgentTask): string {
   const personaInstructions = {
     naive: `You are testing as a NAIVE user who describes UIs in plain language without technical terms.
 You don't know component names. Describe what you want visually.`,
@@ -165,7 +163,7 @@ Remember:
 /**
  * Parse agent output to extract evaluation
  */
-function parseAgentOutput(
+function _parseAgentOutput(
   output: string,
 ): {response: string; evaluation: Evaluation} | null {
   try {

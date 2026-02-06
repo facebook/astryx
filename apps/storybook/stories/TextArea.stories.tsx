@@ -1,6 +1,6 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSTextArea, type XDSTextAreaStatus} from '@xds/core/TextArea';
+import {XDSTextArea} from '@xds/core/TextArea';
 import {
   DocumentTextIcon,
   ChatBubbleLeftIcon,
@@ -115,7 +115,7 @@ export const WithValue: Story = {
   render: args => {
     const [value, setValue] = useState(
       args.value ??
-        'This is a pre-filled textarea with some content that demonstrates how the component handles existing text.'
+        'This is a pre-filled textarea with some content that demonstrates how the component handles existing text.',
     );
     return <XDSTextArea {...args} value={value} onChange={setValue} />;
   },
@@ -258,7 +258,7 @@ export const DescriptionWithOptional: Story = {
 export const Disabled: Story = {
   render: args => {
     const [value, setValue] = useState(
-      args.value ?? 'This textarea is disabled and cannot be edited.'
+      args.value ?? 'This textarea is disabled and cannot be edited.',
     );
     return <XDSTextArea {...args} value={value} onChange={setValue} />;
   },
@@ -338,7 +338,7 @@ export const ErrorStatus: Story = {
 export const WarningStatus: Story = {
   render: args => {
     const [value, setValue] = useState(
-      args.value ?? 'This content may contain issues'
+      args.value ?? 'This content may contain issues',
     );
     return <XDSTextArea {...args} value={value} onChange={setValue} />;
   },
@@ -355,7 +355,7 @@ export const WarningStatus: Story = {
 export const SuccessStatus: Story = {
   render: args => {
     const [value, setValue] = useState(
-      args.value ?? 'This is a valid description that meets all requirements.'
+      args.value ?? 'This is a valid description that meets all requirements.',
     );
     return <XDSTextArea {...args} value={value} onChange={setValue} />;
   },
@@ -383,7 +383,7 @@ export const StatusVariations: Story = {
     const [error, setError] = useState('Too short');
     const [warning, setWarning] = useState('This may need review');
     const [success, setSuccess] = useState(
-      'This description meets all the requirements perfectly.'
+      'This description meets all the requirements perfectly.',
     );
     const [errorNoMsg, setErrorNoMsg] = useState('Invalid');
     return (
@@ -468,8 +468,8 @@ export const CombinedFeatures: Story = {
             value.length > 0 && value.length < 20
               ? {type: 'warning', message: 'Consider adding more detail'}
               : value.length >= 20
-              ? {type: 'success', message: 'Description looks good!'}
-              : undefined
+                ? {type: 'success', message: 'Description looks good!'}
+                : undefined
           }
         />
       </div>
@@ -493,7 +493,7 @@ export const MaxLengthWithValue: Story = {
   render: args => {
     const [value, setValue] = useState(
       args.value ??
-        'This is a pre-filled bio that demonstrates the character counter.'
+        'This is a pre-filled bio that demonstrates the character counter.',
     );
     return <XDSTextArea {...args} value={value} onChange={setValue} />;
   },
@@ -508,7 +508,7 @@ export const MaxLengthVariations: Story = {
     const [short, setShort] = useState('');
     const [medium, setMedium] = useState('Some text here');
     const [long, setLong] = useState(
-      'This is a longer text that approaches the maximum length limit.'
+      'This is a longer text that approaches the maximum length limit.',
     );
     return (
       <div

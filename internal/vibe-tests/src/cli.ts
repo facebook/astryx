@@ -16,7 +16,6 @@ import {
   readJsonl,
   writeJson,
   readJson,
-  ensureDir,
   getResultsDir,
 } from './utils.js';
 import type {TestResult} from './types.js';

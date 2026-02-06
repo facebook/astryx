@@ -25,6 +25,7 @@ import {
   transitionVars,
   typographyVars,
   textSizeVars,
+  lineHeightVars,
 } from '../theme/tokens.stylex';
 import {XDSField} from '../Field';
 import {XDSIcon, type XDSIconType} from '../Icon';
@@ -70,7 +71,7 @@ const styles = stylex.create({
     padding: 0,
     fontFamily: typographyVars['--font-body'],
     fontSize: textSizeVars['--text-base'],
-    lineHeight: 1.429,
+    lineHeight: lineHeightVars['--leading-base'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
     outline: 0,

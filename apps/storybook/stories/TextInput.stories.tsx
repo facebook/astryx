@@ -1,6 +1,6 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSTextInput, type XDSTextInputStatus} from '@xds/core/TextInput';
+import {XDSTextInput} from '@xds/core/TextInput';
 import {
   MagnifyingGlassIcon,
   EnvelopeIcon,

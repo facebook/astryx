@@ -18,6 +18,7 @@ import {
   radiusVars,
   transitionVars,
   textSizeVars,
+  fontWeightVars,
 } from '../theme/tokens.stylex';
 
 // =============================================================================
@@ -40,7 +41,7 @@ export const calendarStyles = stylex.create({
   monthYearLabel: {
     flex: 1,
     textAlign: 'center',
-    fontWeight: 600,
+    fontWeight: fontWeightVars['--font-weight-semibold'],
     fontSize: textSizeVars['--text-base'],
     color: colorVars['--color-text-primary'],
   },
@@ -77,7 +78,7 @@ export const monthGridStyles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     fontSize: textSizeVars['--text-xsm'],
-    fontWeight: 400,
+    fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
   },
   weekNumberHeader: {

@@ -36,6 +36,7 @@ import {
   typographyVars,
   textSizeVars,
   fontWeightVars,
+  lineHeightVars,
 } from '../theme/tokens.stylex';
 import {type XDSSelectorOption, type XDSSelectorItemData} from './types';
 import {
@@ -69,7 +70,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-surface'],
     fontFamily: typographyVars['--font-body'],
     fontSize: textSizeVars['--text-base'],
-    lineHeight: 1.429,
+    lineHeight: lineHeightVars['--leading-base'],
     color: colorVars['--color-text-primary'],
     cursor: 'pointer',
     transitionProperty: 'border-color, outline',

@@ -1,11 +1,6 @@
-import type { StorybookConfig } from '@storybook/react-vite';
-import { join, dirname } from 'path';
+import type {StorybookConfig} from '@storybook/react-vite';
 import stylex from '@stylexjs/unplugin';
 import path from 'path';
-
-function getAbsolutePath(value: string): string {
-  return dirname(require.resolve(join(value, 'package.json')));
-}
 
 const rootDir = path.resolve(__dirname, '../../..');
 const coreRoot = path.resolve(__dirname, '../../../packages/core/src');
@@ -27,11 +22,19 @@ const config: StorybookConfig = {
   docs: {
     autodocs: 'tag',
   },
-  viteFinal: async (config) => {
+  viteFinal: async config => {
     // Filter out any existing StyleX plugins to avoid conflicts
-    const filteredPlugins = config.plugins?.filter(
-      (plugin: any) => !(plugin?.name?.includes?.('stylex'))
-    ) || [];
+    const filteredPlugins =
+      config.plugins?.filter(
+        plugin =>
+          !(
+            plugin &&
+            typeof plugin === 'object' &&
+            'name' in plugin &&
+            typeof plugin.name === 'string' &&
+            plugin.name.includes('stylex')
+          ),
+      ) || [];
 
     return {
       ...config,

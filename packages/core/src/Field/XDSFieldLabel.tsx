@@ -12,7 +12,13 @@
 import {forwardRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {InformationCircleIcon} from '@heroicons/react/24/outline';
-import {colorVars, spacingVars, typographyVars} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  spacingVars,
+  typographyVars,
+  textSizeVars,
+  fontWeightVars,
+} from '../theme/tokens.stylex';
 import {XDSIcon, type XDSIconType} from '../Icon';
 import {XDSTooltip} from '../Layer';
 
@@ -22,8 +28,8 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
     fontFamily: typographyVars['--font-body'],
-    fontSize: '0.875rem',
-    fontWeight: 500,
+    fontSize: textSizeVars['--text-base'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-primary'],
   },
   labelClickable: {
@@ -49,8 +55,8 @@ const styles = stylex.create({
     width: 1,
   },
   optionalRequired: {
-    fontWeight: 400,
-    fontSize: '0.75rem',
+    fontWeight: fontWeightVars['--font-weight-normal'],
+    fontSize: textSizeVars['--text-xsm'],
     color: colorVars['--color-text-secondary'],
   },
 });

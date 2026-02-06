@@ -234,6 +234,7 @@ export const textSizeVars = stylex.defineVars(textSizeRaw);
 export const lineHeightRaw = {
   '--leading-tight': '1.25', // Display text, headings
   '--leading-snug': '1.375', // Compact body text, headings
+  '--leading-base': '1.4285714285714286', // Body text with --text-base (20px line / 14px font)
   '--leading-normal': '1.5', // Body text, large body
   '--leading-relaxed': '1.625', // Editorial body, reading text
 } as const;

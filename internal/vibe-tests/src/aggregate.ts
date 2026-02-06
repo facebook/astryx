@@ -17,9 +17,8 @@ import type {
   EscapeHatchType,
   JobBreakdown,
   InputTokenBreakdown,
-  TokenUsageBreakdown,
 } from './types.js';
-import {readJson, writeJson, getResultsDir} from './utils.js';
+import {writeJson, getResultsDir} from './utils.js';
 
 /**
  * Doc file sizes in characters (for input token estimation)
@@ -237,13 +236,6 @@ const ANTI_PATTERN_HATCHES: EscapeHatchType[] = [
   'hardcoded_color',
   'hardcoded_spacing',
   'inline_style', // Should use StyleX instead
-];
-
-/** Escape hatch types that indicate gaps in the component system */
-const GAP_HATCHES: EscapeHatchType[] = [
-  'supplemental_css',
-  'custom_animation',
-  'layout_workaround',
 ];
 
 interface TierCounts {
@@ -1612,9 +1604,6 @@ function generateHtmlReport(
 
   const totalSecs = agg.totalDurationMs
     ? (agg.totalDurationMs / 1000).toFixed(1)
-    : '-';
-  const avgSecs = agg.avgDurationMs
-    ? (agg.avgDurationMs / 1000).toFixed(1)
     : '-';
   // Use tokenUsage.grandTotal (calculated from docs read + job breakdown) instead of raw totals
   const totalTokens =

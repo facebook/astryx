@@ -24,6 +24,8 @@ import {
   radiusVars,
   transitionVars,
   typographyVars,
+  textSizeVars,
+  lineHeightVars,
 } from '../theme/tokens.stylex';
 import {XDSField, type XDSInputStatus, type XDSInputStatusType} from '../Field';
 import {XDSIcon, type XDSIconType} from '../Icon';
@@ -68,8 +70,8 @@ const styles = stylex.create({
     border: 0,
     padding: 0,
     fontFamily: typographyVars['--font-body'],
-    fontSize: '0.875rem',
-    lineHeight: 1.429,
+    fontSize: textSizeVars['--text-base'],
+    lineHeight: lineHeightVars['--leading-base'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
     outline: 0,

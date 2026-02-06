@@ -23,6 +23,9 @@ import {
   spacingVars,
   radiusVars,
   transitionVars,
+  textSizeVars,
+  fontWeightVars,
+  lineHeightVars,
 } from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
 
@@ -44,9 +47,9 @@ const styles = stylex.create({
     borderStyle: 'none',
     borderRadius: radiusVars['--radius-element'],
     fontFamily: 'inherit',
-    fontSize: '0.875rem',
-    lineHeight: 1.429,
-    fontWeight: 500,
+    fontSize: textSizeVars['--text-base'],
+    lineHeight: lineHeightVars['--leading-base'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
     cursor: 'pointer',
     transitionProperty: 'background-image, transform',
     transitionDuration: transitionVars['--transition-fast'],

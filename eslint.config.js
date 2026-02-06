@@ -2,6 +2,8 @@ import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import xdsPlugin from "./internal/eslint-plugin-xds/index.js";
 
+/* global process */
+
 /**
  * XDS ESLint Configuration
  *
@@ -22,7 +24,15 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    ignores: ["**/dist/**", "**/node_modules/**", "**/internal/eslint-plugin-xds/**"],
+    ignores: [
+      "**/dist/**",
+      "**/node_modules/**",
+      "**/internal/eslint-plugin-xds/**",
+      ".github/scripts/**",
+      "scripts/**",
+      "**/*.mjs",
+      "**/*.test-violations.tsx",
+    ],
   },
   {
     files: ["**/*.{ts,tsx}"],
@@ -34,12 +44,18 @@ export default tseslint.config(
       },
     },
     rules: {
-      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-unused-vars": ["warn", {
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_",
+        destructuredArrayIgnorePattern: "^_",
+        caughtErrorsIgnorePattern: "^_",
+      }],
     },
   },
-  // XDS design token enforcement - applies to core package
+  // XDS design token enforcement - applies to core package (excluding theme files)
   {
     files: ["packages/core/src/**/*.{ts,tsx}"],
+    ignores: ["packages/core/src/theme/**"],
     ...xdsConfig,
   },
 );

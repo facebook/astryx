@@ -30,6 +30,7 @@ import {
   radiusVars,
   spacingVars,
   typographyVars,
+  lineHeightVars,
 } from '../theme/tokens.stylex';
 
 const styles = stylex.create({
@@ -42,7 +43,7 @@ const styles = stylex.create({
     // Typography
     fontFamily: typographyVars['--font-body'],
     fontSize: 14,
-    lineHeight: 1.4285714285714,
+    lineHeight: lineHeightVars['--leading-base'],
     // Animation: closed state (default) and open state
     opacity: {
       default: 0,

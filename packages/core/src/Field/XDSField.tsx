@@ -20,6 +20,8 @@ import {
   spacingVars,
   textSizeVars,
   typographyVars,
+  fontWeightVars,
+  lineHeightVars,
 } from '../theme/tokens.stylex';
 import type {XDSIconType} from '../Icon';
 
@@ -37,7 +39,7 @@ const styles = stylex.create({
   label: {
     fontFamily: typographyVars['--font-body'],
     fontSize: textSizeVars['--text-base'],
-    fontWeight: 500,
+    fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-primary'],
   },
   labelHidden: {
@@ -79,7 +81,7 @@ const styles = stylex.create({
     borderBottomRightRadius: radiusVars['--radius-element'],
     fontFamily: typographyVars['--font-body'],
     fontSize: textSizeVars['--text-xsm'],
-    lineHeight: 1.333,
+    lineHeight: lineHeightVars['--leading-base'],
   },
 });
 

@@ -19,6 +19,7 @@ import {
   radiusVars,
   transitionVars,
   typographyVars,
+  textSizeVars,
 } from '../theme/tokens.stylex';
 import {XDSFieldLabel} from '../Field/XDSFieldLabel';
 import type {XDSIconType} from '../Icon';
@@ -116,7 +117,7 @@ const styles = stylex.create({
   },
   description: {
     fontFamily: typographyVars['--font-body'],
-    fontSize: '0.75rem',
+    fontSize: textSizeVars['--text-xsm'],
     color: colorVars['--color-text-secondary'],
   },
 });
