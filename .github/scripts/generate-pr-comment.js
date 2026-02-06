@@ -2,7 +2,7 @@
 
 /**
  * @description Generates and posts PR comment with analysis results and embedded screenshots
- * @input --analysis <file> --a11y <file> --screenshots <file> --screenshot-urls <file> --run-url <url>
+ * @input --analysis <file> --a11y <file> --screenshots <file> --screenshot-urls <file> --storybook-url <url> --run-url <url>
  * @output Formatted markdown comment body to stdout
  */
 
@@ -20,6 +20,7 @@ const screenshotsFile = getArg('screenshots') || 'screenshots/screenshots.json';
 const screenshotUrlsFile = getArg('screenshot-urls') || 'screenshot-urls.json';
 const runUrl = getArg('run-url') || '';
 const prNumber = getArg('pr-number') || '';
+const storybookUrl = getArg('storybook-url') || '';
 
 // Read analysis results
 let analysis = { newComponents: [], modifiedComponents: [], componentStats: {}, totalBundle: {} };
@@ -185,15 +186,26 @@ if (hasAffectedComponents && screenshots.length > 0) {
   }
 }
 
+// Build storybook link section
+let storybookSection = '';
+if (storybookUrl) {
+  storybookSection = `### 📚 Storybook Preview
+
+**[View Storybook for this PR](${storybookUrl})**
+
+`;
+}
+
 // Build footer with links
 let footerLinks = [];
+if (storybookUrl) footerLinks.push(`[Storybook](${storybookUrl})`);
 if (runUrl) footerLinks.push(`[View full report](${runUrl})`);
 const footerLinksStr = footerLinks.length > 0 ? ` | ${footerLinks.join(' | ')}` : '';
 
 // Build the full comment
 const body = `## PR Analysis Report
 
-${componentSection || '_No new or modified components detected._\n\n'}
+${storybookSection}${componentSection || '_No new or modified components detected._\n\n'}
 ${bundleSection}
 ${a11ySection}
 ${screenshotSection}

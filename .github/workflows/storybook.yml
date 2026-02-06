@@ -6,6 +6,10 @@ on:
   push:
     branches: ["main"]
 
+  # Runs on pull requests
+  pull_request:
+    branches: ["main"]
+
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -18,8 +22,8 @@ permissions:
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: "pages-${{ github.head_ref || github.ref }}"
+  cancel-in-progress: true
 
 jobs:
   # Run tests first
@@ -39,10 +43,13 @@ jobs:
 
       - run: yarn build
 
-  # Deploy job runs after tests pass
+  # Build and deploy Storybook
   deploy:
     needs: test
     runs-on: ubuntu-latest
+    outputs:
+      storybook_url: ${{ steps.urls.outputs.storybook_url }}
+      short_hash: ${{ steps.urls.outputs.short_hash }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -56,20 +63,31 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      - name: Build core package
+        run: yarn build
+
       - name: Build Storybook
         run: yarn workspace @xds/storybook build
 
       - name: Prepare versioned deployment
+        id: urls
         run: |
-          COMMIT_HASH="${{ github.sha }}"
+          COMMIT_HASH="${{ github.event.pull_request.head.sha || github.sha }}"
           SHORT_HASH="${COMMIT_HASH:0:7}"
+          REPO_NAME="${{ github.event.repository.name }}"
+          REPO_OWNER="${{ github.repository_owner }}"
+          STORYBOOK_URL="https://${REPO_OWNER}.github.io/${REPO_NAME}/${SHORT_HASH}/"
+
+          echo "short_hash=${SHORT_HASH}" >> $GITHUB_OUTPUT
+          echo "storybook_url=${STORYBOOK_URL}" >> $GITHUB_OUTPUT
 
           # Create deployment directory structure
           mkdir -p deploy/${SHORT_HASH}
           mv apps/storybook/dist/* deploy/${SHORT_HASH}/
 
-          # Create root index.html that redirects to latest build
-          cat > deploy/index.html << EOF
+          # Create root index.html that redirects to latest build (only for main branch)
+          if [ "${{ github.event_name }}" == "push" ]; then
+            cat > deploy/index.html << EOF
           <!DOCTYPE html>
           <html>
           <head>
@@ -81,9 +99,17 @@ jobs:
           </body>
           </html>
           EOF
+          fi
 
           # Create .nojekyll to prevent GitHub Pages from ignoring files starting with underscore
           touch deploy/.nojekyll
+
+      - name: Upload Storybook artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: storybook-${{ steps.urls.outputs.short_hash }}
+          path: apps/storybook/dist/
+          retention-days: 30
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
