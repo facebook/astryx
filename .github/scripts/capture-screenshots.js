@@ -87,7 +87,7 @@ async function getStories(storybookPath) {
 
 async function captureScreenshots() {
   console.log('Starting screenshot capture...');
-  console.log(`Components to capture: ${components.length > 0 ? components.join(', ') : 'all'}`);
+  console.log(`Components to capture: ${components.length > 0 ? components.join(', ') : 'none (no components specified)'}`);
 
   // Ensure output directory exists
   fs.mkdirSync(outputDir, { recursive: true });
@@ -118,13 +118,27 @@ async function captureScreenshots() {
     // Skip docs pages - they often have rendering issues
     if (id.endsWith('--docs')) return false;
 
-    if (components.length === 0) return true;
+    // If no components specified, don't capture any (avoid accidental full runs)
+    if (components.length === 0) return false;
+
     const story = stories[id];
     const title = story.title || '';
-    return components.some(comp =>
-      title.toLowerCase().includes(comp.toLowerCase()) ||
-      id.toLowerCase().includes(comp.toLowerCase())
-    );
+
+    // Titles are like "Core/XDSButton" or "Layout/XDSCard"
+    // Components are folder names like "Button" or "Layout"
+    const titleParts = title.split('/');
+    const category = titleParts[0].toLowerCase(); // e.g., "core", "layout", "typography"
+    const componentPart = titleParts.length > 1 ? titleParts[1] : titleParts[0];
+    // Remove "XDS" prefix if present for matching
+    const normalizedComponent = componentPart.replace(/^XDS/i, '').toLowerCase();
+
+    return components.some(comp => {
+      const compLower = comp.toLowerCase();
+      // Match if:
+      // 1. Component name matches (e.g., "Button" matches "Core/XDSButton")
+      // 2. Category matches (e.g., "Layout" matches "Layout/XDSCard")
+      return normalizedComponent === compLower || category === compLower;
+    });
   });
 
   console.log(`Capturing ${relevantStories.length} relevant stories`);
