@@ -18,6 +18,8 @@ permissions:
   contents: write
   pages: write
   id-token: write
+  pull-requests: write
+  actions: read
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
@@ -83,7 +85,7 @@ jobs:
 
           # Create deployment directory structure
           mkdir -p deploy/${SHORT_HASH}
-          mv apps/storybook/dist/* deploy/${SHORT_HASH}/
+          cp -r apps/storybook/dist/* deploy/${SHORT_HASH}/
 
           # Create root index.html that redirects to latest build (only for main branch)
           if [ "${{ github.event_name }}" == "push" ]; then
@@ -118,3 +120,171 @@ jobs:
           publish_dir: ./deploy
           keep_files: true
           destination_dir: .
+
+  # PR Enrichment - only runs on pull requests
+  pr-enrichment:
+    needs: deploy
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build packages
+        run: yarn build
+
+      - name: Analyze components
+        id: analyze
+        run: |
+          node .github/scripts/analyze-pr.js \
+            --base origin/${{ github.base_ref }} \
+            --head HEAD \
+            --output analysis.json
+
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: storybook-${{ needs.deploy.outputs.short_hash }}
+          path: apps/storybook/dist
+
+      - name: Install Playwright
+        run: npx playwright install chromium
+
+      - name: Install ffmpeg for video conversion
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Capture component screenshots and videos
+        id: screenshots
+        run: |
+          COMPONENTS=$(cat analysis.json | jq -r '(.newComponents + .modifiedComponents) | join(",")')
+          node .github/scripts/capture-screenshots.js \
+            --storybook-dir apps/storybook/dist \
+            --output-dir screenshots \
+            --components "$COMPONENTS" \
+            --video
+
+      - name: Upload screenshots and videos to GitHub
+        id: upload_screenshots
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Install CML CLI only (no visualization deps)
+          npm install -g @dvcorg/cml
+
+          # Upload each screenshot and video, collect URLs
+          echo '{}' > screenshot-urls.json
+
+          # Upload PNG screenshots
+          for file in screenshots/*.png; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              url=$(cml publish "$file")
+              echo "Uploaded $filename -> $url"
+              jq --arg name "$filename" --arg url "$url" \
+                '. + {($name): $url}' screenshot-urls.json > tmp.json && mv tmp.json screenshot-urls.json
+            fi
+          done
+
+          # Upload GIF videos
+          for file in screenshots/*.gif; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              url=$(cml publish "$file")
+              echo "Uploaded $filename -> $url"
+              jq --arg name "$filename" --arg url "$url" \
+                '. + {($name): $url}' screenshot-urls.json > tmp.json && mv tmp.json screenshot-urls.json
+            fi
+          done
+
+          # Upload MP4 videos
+          for file in screenshots/*.mp4; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              url=$(cml publish "$file")
+              echo "Uploaded $filename -> $url"
+              jq --arg name "$filename" --arg url "$url" \
+                '. + {($name): $url}' screenshot-urls.json > tmp.json && mv tmp.json screenshot-urls.json
+            fi
+          done
+
+          cat screenshot-urls.json
+
+      - name: Run accessibility audit
+        id: a11y
+        run: |
+          COMPONENTS=$(cat analysis.json | jq -r '(.newComponents + .modifiedComponents) | join(",")')
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output a11y-report.json \
+            --components "$COMPONENTS"
+
+      - name: Upload screenshots artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: component-screenshots
+          path: screenshots/
+          retention-days: 30
+
+      - name: Generate PR comment
+        id: comment
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          COMMENT_BODY=$(node .github/scripts/generate-pr-comment.js \
+            --analysis analysis.json \
+            --a11y a11y-report.json \
+            --screenshots screenshots/screenshots.json \
+            --screenshot-urls screenshot-urls.json \
+            --storybook-url "${{ needs.deploy.outputs.storybook_url }}" \
+            --run-url "$RUN_URL" \
+            --pr-number "${{ github.event.pull_request.number }}")
+
+          # Save to file for the next step
+          echo "$COMMENT_BODY" > pr-comment.md
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('pr-comment.md', 'utf8');
+            const prNumber = ${{ github.event.pull_request.number }};
+
+            // Find and update existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('PR Analysis Report')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body
+              });
+            }
