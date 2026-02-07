@@ -979,10 +979,13 @@ Spawn subagents in groups of 3-5 for larger test sets.
 ### Subagent Prompt Template
 For each test, the subagent should:
 1. Read the task file: ${resultsDir}/tasks/{prompt-id}.json
-2. Read XDS docs from .xds-docs/ (AGENTS.md auto-injected)
+2. Read docs from the docs directory (AGENTS.md auto-injected)
 3. Generate a response to the prompt${config.degradation ? ' (with multi-turn conversation)' : ''}
 4. Self-evaluate the response
-5. Write result to individual file: ${resultsDir}/results/{promptId}.json
+5. Track which doc files were read during the task
+6. Write result to individual file: ${resultsDir}/results/{promptId}.json
+   - Include a "docsRead" array listing all doc files read (e.g., ["AGENTS.md", "Button.md", "tokens.md"])
+   - This is required for accurate token usage tracking
    (Use individual files to avoid parallel write conflicts)
 
 ### After All Tests Complete
