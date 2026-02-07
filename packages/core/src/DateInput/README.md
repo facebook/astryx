@@ -78,7 +78,7 @@ import { XDSDateInput } from '@xds/core/DateInput';
 | max             | `ISODateString`                               | —                 | Maximum selectable date                  |
 | dateConstraints | `Array<(date: Date) => boolean>`              | —                 | Custom constraint functions              |
 | placeholder     | `string`                                      | `"Select a date"` | Input placeholder text                   |
-| size            | `'sm' \| 'md'`                                | `'md'`            | Input size                               |
+| size            | `'sm' \| 'md' \| 'lg'`                        | `'md'`            | Input size                               |
 | status          | `XDSInputStatus`                              | —                 | Status indicator (error/warning/success) |
 | numberOfMonths  | `1 \| 2`                                      | `1`               | Months shown in calendar popover         |
 

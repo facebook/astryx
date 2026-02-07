@@ -70,7 +70,7 @@ import {XDSSelector, XDSSelectorItem} from '@xds/core/Selector';
 | `value`                     | `string`                                                  | Selected value                                                      |
 | `onChange`                  | `(value: string) => void`                                 | Selection callback                                                  |
 | `placeholder`               | `string`                                                  | Placeholder text (default: `'Select...'`)                           |
-| `size`                      | `'sm' \| 'md'`                                            | Size variant (default: `'md'`)                                      |
+| `size`                      | `'sm' \| 'md' \| 'lg'`                                    | Size variant (default: `'md'`)                                      |
 | `isDisabled`                | `boolean`                                                 | Disable selector                                                    |
 | `isLabelHidden`             | `boolean`                                                 | Visually hide label                                                 |
 | `description`               | `string`                                                  | Helper text below label                                             |

@@ -45,7 +45,7 @@ const meta: Meta<typeof XDSSelector> = {
     },
     size: {
       control: 'radio',
-      options: ['sm', 'md'],
+      options: ['sm', 'md', 'lg'],
       description: 'Size variant of the selector',
     },
     isDisabled: {
@@ -253,6 +253,7 @@ export const SizeVariants: Story = {
   render: () => {
     const [value1, setValue1] = useState<string | undefined>();
     const [value2, setValue2] = useState<string | undefined>();
+    const [value3, setValue3] = useState<string | undefined>();
     return (
       <div
         style={{display: 'flex', flexDirection: 'column', gap: 16, width: 250}}>
@@ -262,7 +263,7 @@ export const SizeVariants: Story = {
           items={['Apple', 'Banana', 'Orange']}
           value={value1}
           onChange={setValue1}
-          placeholder="Small size"
+          placeholder="Small size (28px)"
         />
         <XDSSelector
           label="Medium"
@@ -270,7 +271,15 @@ export const SizeVariants: Story = {
           items={['Apple', 'Banana', 'Orange']}
           value={value2}
           onChange={setValue2}
-          placeholder="Medium size (default)"
+          placeholder="Medium size (32px)"
+        />
+        <XDSSelector
+          label="Large"
+          size="lg"
+          items={['Apple', 'Banana', 'Orange']}
+          value={value3}
+          onChange={setValue3}
+          placeholder="Large size (36px)"
         />
       </div>
     );

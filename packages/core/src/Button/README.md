@@ -1,12 +1,13 @@
 # /packages/core/src/Button
 
-XDSButton component with multiple variants and loading state support.
+XDSButton component with multiple variants, sizes, and loading state support.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
 ## Features
 
 - **Variants**: `primary`, `secondary`, `ghost`, `destructive`
+- **Sizes**: `sm` (28px), `md` (32px), `lg` (36px)
 - **Loading state**: Shows spinner, disables interaction
 - **Focus visible**: Accessible focus outline with variant-specific colors
 - **Hover/active states**: Uses overlay colors via `backgroundImage` for consistent layering
@@ -17,23 +18,29 @@ XDSButton component with multiple variants and loading state support.
 import { XDSButton } from '@xds/core/Button';
 
 // Basic usage
-<XDSButton variant="primary">Click me</XDSButton>
+<XDSButton label="Click me" variant="primary" />
+
+// With size
+<XDSButton label="Large button" variant="primary" size="lg" />
 
 // With loading state
-<XDSButton variant="primary" loading>Saving...</XDSButton>
+<XDSButton label="Saving..." variant="primary" loading />
 
 // Destructive action
-<XDSButton variant="destructive">Delete</XDSButton>
+<XDSButton label="Delete" variant="destructive" />
 ```
 
 ## Props
 
-| Prop       | Type                                                   | Default     | Description           |
-| ---------- | ------------------------------------------------------ | ----------- | --------------------- |
-| `variant`  | `'primary' \| 'secondary' \| 'ghost' \| 'destructive'` | `'primary'` | Visual style variant  |
-| `loading`  | `boolean`                                              | `false`     | Shows loading spinner |
-| `disabled` | `boolean`                                              | `false`     | Disables the button   |
-| `children` | `ReactNode`                                            | —           | Button content        |
+| Prop       | Type                                                   | Default       | Description                 |
+| ---------- | ------------------------------------------------------ | ------------- | --------------------------- |
+| `label`    | `string`                                               | —             | Accessible label (required) |
+| `variant`  | `'primary' \| 'secondary' \| 'ghost' \| 'destructive'` | `'secondary'` | Visual style variant        |
+| `size`     | `'sm' \| 'md' \| 'lg'`                                 | `'md'`        | Size variant                |
+| `loading`  | `boolean`                                              | `false`       | Shows loading spinner       |
+| `disabled` | `boolean`                                              | `false`       | Disables the button         |
+| `icon`     | `ReactNode`                                            | —             | Icon element                |
+| `children` | `ReactNode`                                            | —             | Button content              |
 
 ## Files
 

@@ -21,6 +21,7 @@ import {
 } from '@heroicons/react/24/solid';
 import {
   colorVars,
+  sizeVars,
   spacingVars,
   radiusVars,
   transitionVars,
@@ -123,10 +124,13 @@ const styles = stylex.create({
 
 const sizeStyles = stylex.create({
   sm: {
-    height: 18,
+    height: sizeVars['--size-sm'],
   },
   md: {
-    height: 26,
+    height: sizeVars['--size-md'],
+  },
+  lg: {
+    height: sizeVars['--size-lg'],
   },
 });
 
@@ -446,6 +450,7 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
           ref={popover.triggerRef}
           {...stylex.props(
             styles.wrapper,
+            sizeStyles[size],
             isDisabled && styles.wrapperDisabled,
             status && statusBorderStyles[status.type],
           )}>
@@ -477,7 +482,6 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
             {...stylex.props(
               styles.input,
-              sizeStyles[size],
               isDisabled && styles.inputDisabled,
               !isInputValid && styles.inputInvalid,
             )}

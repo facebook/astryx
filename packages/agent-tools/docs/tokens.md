@@ -18,6 +18,16 @@ All design tokens are defined in `packages/core/src/theme/tokens.stylex.ts`.
 
 Component gap props use `space0`-`space7` which map to these tokens.
 
+## Size Tokens
+
+Control heights for consistent sizing across buttons, inputs, and selectors.
+
+| Token     | Value | Usage                           |
+| --------- | ----- | ------------------------------- |
+| --size-sm | 28px  | Compact controls                |
+| --size-md | 32px  | Default control size            |
+| --size-lg | 36px  | Larger, more prominent controls |
+
 ## Color Tokens
 
 ### Semantic Colors
@@ -103,13 +113,16 @@ Component gap props use `space0`-`space7` which map to these tokens.
 
 ```tsx
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars, radiusVars} from '@xds/core';
+import {colorVars, spacingVars, sizeVars, radiusVars} from '@xds/core';
 
 const styles = stylex.create({
   card: {
     padding: spacingVars['--spacing-4'],
     backgroundColor: colorVars['--color-surface'],
     borderRadius: radiusVars['--radius-container'],
+  },
+  button: {
+    height: sizeVars['--size-md'],
   },
 });
 ```

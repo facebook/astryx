@@ -30,6 +30,7 @@ import {XDSField} from '../Field';
 import {XDSDivider} from '../Divider';
 import {
   colorVars,
+  sizeVars,
   spacingVars,
   radiusVars,
   transitionVars,
@@ -192,10 +193,13 @@ const styles = stylex.create({
 
 const sizeStyles = stylex.create({
   sm: {
-    paddingBlock: spacingVars['--spacing-1'],
+    height: sizeVars['--size-sm'],
   },
   md: {
-    paddingBlock: spacingVars['--spacing-2'],
+    height: sizeVars['--size-md'],
+  },
+  lg: {
+    height: sizeVars['--size-lg'],
   },
 });
 
@@ -226,7 +230,7 @@ const STATUS_ICON_COLOR_MAP: Record<
   success: 'positive',
 };
 
-export type XDSSelectorSize = 'sm' | 'md';
+export type XDSSelectorSize = 'sm' | 'md' | 'lg';
 
 export type XDSSelectorStatusType = 'warning' | 'error' | 'success';
 

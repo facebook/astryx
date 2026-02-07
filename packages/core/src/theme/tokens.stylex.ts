@@ -152,6 +152,18 @@ export const spacingRaw = {
 export const spacingVars = stylex.defineVars(spacingRaw);
 
 // =============================================================================
+// Size Tokens
+// =============================================================================
+
+export const sizeRaw = {
+  '--size-sm': '28px',
+  '--size-md': '32px',
+  '--size-lg': '36px',
+} as const;
+
+export const sizeVars = stylex.defineVars(sizeRaw);
+
+// =============================================================================
 // Radius Tokens
 // =============================================================================
 
@@ -260,6 +272,7 @@ export const fontWeightVars = stylex.defineVars(fontWeightRaw);
 
 export type ColorVarName = keyof typeof colorRaw;
 export type SpacingVarName = keyof typeof spacingRaw;
+export type SizeVarName = keyof typeof sizeRaw;
 export type RadiusVarName = keyof typeof radiusRaw;
 export type ElevationVarName = keyof typeof elevationRaw;
 export type TransitionVarName = keyof typeof transitionRaw;
@@ -274,6 +287,7 @@ export type FontWeightVarName = keyof typeof fontWeightRaw;
 // Type safety is maintained via `as const satisfies Record<*VarName, string>`.
 export type BaseColorRaw = typeof colorRaw;
 export type BaseSpacingRaw = typeof spacingRaw;
+export type BaseSizeRaw = typeof sizeRaw;
 export type BaseRadiusRaw = typeof radiusRaw;
 export type BaseElevationRaw = typeof elevationRaw;
 export type BaseTransitionRaw = typeof transitionRaw;
