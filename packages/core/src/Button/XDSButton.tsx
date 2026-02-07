@@ -20,6 +20,7 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
+  sizeVars,
   spacingVars,
   radiusVars,
   transitionVars,
@@ -69,6 +70,18 @@ const styles = stylex.create({
   iconOnly: {
     aspectRatio: '1 / 1',
     paddingInline: spacingVars['--spacing-2'],
+  },
+});
+
+const sizeStyles = stylex.create({
+  sm: {
+    height: sizeVars['--size-sm'],
+  },
+  md: {
+    height: sizeVars['--size-md'],
+  },
+  lg: {
+    height: sizeVars['--size-lg'],
   },
 });
 
@@ -154,6 +167,11 @@ const variants = stylex.create({
  */
 export type XDSButtonVariant = keyof typeof variants;
 
+/**
+ * Button size type derived from the sizeStyles StyleX object
+ */
+export type XDSButtonSize = keyof typeof sizeStyles;
+
 // =============================================================================
 // Module Augmentation - Register Button's variant type with ComponentStyles
 // =============================================================================
@@ -182,6 +200,11 @@ export interface XDSButtonProps extends Omit<
    * @default 'secondary'
    */
   variant?: XDSButtonVariant;
+  /**
+   * The size of the button.
+   * @default 'md'
+   */
+  size?: XDSButtonSize;
   /**
    * Whether the button is in a loading state.
    * @default false
@@ -257,6 +280,7 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
     {
       label,
       variant = 'secondary',
+      size = 'md',
       loading = false,
       icon,
       disabled,
@@ -281,6 +305,7 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
         aria-label={isIconOnly ? label : undefined}
         {...stylex.props(
           styles.base,
+          sizeStyles[size],
           variants[variant],
           themeVariantOverride,
           isIconOnly && styles.iconOnly,

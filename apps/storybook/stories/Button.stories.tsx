@@ -16,6 +16,11 @@ const meta: Meta<typeof XDSButton> = {
       options: ['primary', 'secondary', 'ghost', 'destructive'],
       description: 'Visual style variant',
     },
+    size: {
+      control: 'select',
+      options: ['sm', 'md', 'lg'],
+      description: 'Size variant',
+    },
     loading: {
       control: 'boolean',
       description: 'Loading state',
@@ -72,6 +77,16 @@ export const Disabled: Story = {
     variant: 'primary',
     disabled: true,
   },
+};
+
+export const SizeVariants: Story = {
+  render: () => (
+    <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+      <XDSButton label="Small" variant="primary" size="sm" />
+      <XDSButton label="Medium" variant="primary" size="md" />
+      <XDSButton label="Large" variant="primary" size="lg" />
+    </div>
+  ),
 };
 
 export const IconOnly: Story = {

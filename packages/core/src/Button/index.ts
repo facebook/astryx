@@ -8,4 +8,8 @@
  */
 
 export {XDSButton} from './XDSButton';
-export type {XDSButtonProps, XDSButtonVariant} from './XDSButton';
+export type {
+  XDSButtonProps,
+  XDSButtonVariant,
+  XDSButtonSize,
+} from './XDSButton';

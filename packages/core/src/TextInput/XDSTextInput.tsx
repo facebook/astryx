@@ -20,6 +20,7 @@ import {
 } from '@heroicons/react/24/solid';
 import {
   colorVars,
+  sizeVars,
   spacingVars,
   radiusVars,
   transitionVars,
@@ -86,10 +87,13 @@ const styles = stylex.create({
 
 const sizeStyles = stylex.create({
   sm: {
-    height: 18,
+    height: sizeVars['--size-sm'],
   },
   md: {
-    height: 26,
+    height: sizeVars['--size-md'],
+  },
+  lg: {
+    height: sizeVars['--size-lg'],
   },
 });
 
@@ -267,6 +271,7 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
         <div
           {...stylex.props(
             styles.wrapper,
+            sizeStyles[size],
             isDisabled && styles.wrapperDisabled,
             status && statusBorderStyles[status.type],
           )}>
@@ -284,11 +289,7 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
             aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
-            {...stylex.props(
-              styles.input,
-              sizeStyles[size],
-              isDisabled && styles.inputDisabled,
-            )}
+            {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
           />
           {status && (
             <XDSIcon

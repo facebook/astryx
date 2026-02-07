@@ -41,7 +41,7 @@ const meta: Meta<typeof XDSTimeInput> = {
     },
     size: {
       control: 'radio',
-      options: ['sm', 'md'],
+      options: ['sm', 'md', 'lg'],
       description: 'Size of the input',
     },
     hourFormat: {

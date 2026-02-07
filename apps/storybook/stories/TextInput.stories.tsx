@@ -33,6 +33,11 @@ const meta: Meta<typeof XDSTextInput> = {
       control: 'text',
       description: 'Current input value (required)',
     },
+    size: {
+      control: 'select',
+      options: ['sm', 'md', 'lg'],
+      description: 'Size variant',
+    },
     isOptional: {
       control: 'boolean',
       description:
@@ -252,6 +257,45 @@ export const WithStartIconAndSmallSize: Story = {
     placeholder: 'Search...',
     startIcon: MagnifyingGlassIcon,
     size: 'sm',
+  },
+};
+
+export const SizeVariants: Story = {
+  render: () => {
+    const [sm, setSm] = useState('');
+    const [md, setMd] = useState('');
+    const [lg, setLg] = useState('');
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          maxWidth: '300px',
+        }}>
+        <XDSTextInput
+          label="Small (28px)"
+          value={sm}
+          onChange={setSm}
+          placeholder="Small size"
+          size="sm"
+        />
+        <XDSTextInput
+          label="Medium (32px)"
+          value={md}
+          onChange={setMd}
+          placeholder="Medium size (default)"
+          size="md"
+        />
+        <XDSTextInput
+          label="Large (36px)"
+          value={lg}
+          onChange={setLg}
+          placeholder="Large size"
+          size="lg"
+        />
+      </div>
+    );
   },
 };
 
