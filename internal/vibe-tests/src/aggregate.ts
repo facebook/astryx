@@ -867,6 +867,7 @@ function loadResults(resultsDir: string): (TestResult & {target?: string})[] {
       }
 
       // Load docs read metadata if available
+      // First try .meta.json, then fall back to corresponding .json result file
       let docsRead: string[] | undefined;
       if (fs.existsSync(metaPath)) {
         try {
@@ -874,6 +875,23 @@ function loadResults(resultsDir: string): (TestResult & {target?: string})[] {
           docsRead = meta.docsRead;
         } catch {
           console.warn(`Warning: Could not parse ${metaPath}`);
+        }
+      }
+      // Fall back to loading from .json result file if .meta.json doesn't exist or didn't have docsRead
+      if (!docsRead) {
+        const jsonResultPath = path.join(
+          individualResultsDir,
+          `${promptId}.json`,
+        );
+        if (fs.existsSync(jsonResultPath)) {
+          try {
+            const jsonResult = JSON.parse(
+              fs.readFileSync(jsonResultPath, 'utf-8'),
+            );
+            docsRead = jsonResult.docsRead;
+          } catch {
+            // Ignore parse errors, docsRead will remain undefined
+          }
         }
       }
 
