@@ -902,7 +902,6 @@ function generateSubagentPrompt(
   resultsDir: string,
 ): string {
   const codePath = `${resultsDir}/results/${prompt.id}.tsx`;
-  const metaPath = `${resultsDir}/results/${prompt.id}.meta.json`;
 
   // Target-specific AGENTS.md file
   const agentsMdFile =
@@ -924,15 +923,13 @@ function generateSubagentPrompt(
 
   const framing = personaFraming[config.target]?.[config.persona] || '';
 
-  // Natural prompt with AGENTS.md instruction and metadata tracking
+  // Natural prompt with AGENTS.md instruction
+  // Note: docsRead tracking is handled via the structured JSON result (see subagent instructions)
   return `First read ${agentsMdFile} in this directory for component library guidance.
 
 ${framing}${prompt.prompt}
 
-Write the code to: ${codePath}
-
-After writing the code, create ${metaPath} listing any doc files you read:
-{"docsRead": ["filename1.md", "filename2.md"]}`;
+Write the code to: ${codePath}`;
 }
 
 /**
