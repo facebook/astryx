@@ -30,30 +30,6 @@ const styles = stylex.create({
     alignItems: 'flex-start',
     gap: spacingVars['--spacing-2'],
   },
-  // Default CSS variables for unchecked state
-  containerUnchecked: {
-    '--xds-checkbox-bg': colorVars['--color-surface'],
-    '--xds-checkbox-border': colorVars['--color-divider-emphasized'],
-  },
-  // Default CSS variables for checked/indeterminate state
-  containerChecked: {
-    '--xds-checkbox-bg': colorVars['--color-accent'],
-    '--xds-checkbox-border': colorVars['--color-accent'],
-  },
-  // Hover overrides for unchecked (only applied when not disabled)
-  containerHoverUnchecked: {
-    ':hover': {
-      '--xds-checkbox-bg': `color-mix(in srgb, ${colorVars['--color-surface']}, ${colorVars['--color-hover-tint']} 5%)`,
-      '--xds-checkbox-border': `color-mix(in srgb, ${colorVars['--color-divider-emphasized']}, ${colorVars['--color-hover-tint']} 20%)`,
-    },
-  },
-  // Hover overrides for checked/indeterminate (only applied when not disabled)
-  containerHoverChecked: {
-    ':hover': {
-      '--xds-checkbox-bg': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
-      '--xds-checkbox-border': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
-    },
-  },
   checkboxWrapper: {
     position: 'relative',
     display: 'flex',
@@ -78,15 +54,38 @@ const styles = stylex.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: 'var(--xds-checkbox-border)',
     borderRadius: radiusVars['--radius-content'],
-    backgroundColor: 'var(--xds-checkbox-bg)',
     transitionProperty: 'background-color, border-color',
     transitionDuration: transitionVars['--transition-fast'],
   },
   checkboxFocused: {
     outline: `2px solid ${colorVars['--color-focus-outline']}`,
     outlineOffset: 2,
+  },
+  // State-dependent colors with ancestor hover behavior
+  checkboxUnchecked: {
+    borderColor: {
+      default: colorVars['--color-divider-emphasized'],
+      [stylex.when.ancestor(':hover')]:
+        `color-mix(in srgb, ${colorVars['--color-divider-emphasized']}, ${colorVars['--color-hover-tint']} 20%)`,
+    },
+    backgroundColor: {
+      default: colorVars['--color-surface'],
+      [stylex.when.ancestor(':hover')]:
+        `color-mix(in srgb, ${colorVars['--color-surface']}, ${colorVars['--color-hover-tint']} 5%)`,
+    },
+  },
+  checkboxChecked: {
+    borderColor: {
+      default: colorVars['--color-accent'],
+      [stylex.when.ancestor(':hover')]:
+        `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
+    },
+    backgroundColor: {
+      default: colorVars['--color-accent'],
+      [stylex.when.ancestor(':hover')]:
+        `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
+    },
   },
   checkboxDisabled: {
     opacity: 0.5,
@@ -279,13 +278,7 @@ export const XDSCheckboxInput = forwardRef<
       <div
         {...stylex.props(
           styles.container,
-          isCheckedOrIndeterminate
-            ? styles.containerChecked
-            : styles.containerUnchecked,
-          !isDisabled &&
-            (isCheckedOrIndeterminate
-              ? styles.containerHoverChecked
-              : styles.containerHoverUnchecked),
+          !isDisabled && stylex.defaultMarker(),
         )}>
         <div {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}>
           <input
@@ -310,6 +303,9 @@ export const XDSCheckboxInput = forwardRef<
             {...stylex.props(
               styles.checkbox,
               checkboxSizeStyles[size],
+              isCheckedOrIndeterminate
+                ? styles.checkboxChecked
+                : styles.checkboxUnchecked,
               isDisabled && styles.checkboxDisabled,
               isDisabled &&
                 !isCheckedOrIndeterminate &&

@@ -46,30 +46,6 @@ const styles = stylex.create({
     justifyContent: 'space-between',
     width: '100%',
   },
-  // Default CSS variables for off state
-  containerOff: {
-    '--xds-switch-track-bg': colorVars['--color-deemphasized'],
-    '--xds-switch-track-border': colorVars['--color-divider-emphasized'],
-  },
-  // Default CSS variables for on state
-  containerOn: {
-    '--xds-switch-track-bg': colorVars['--color-accent'],
-    '--xds-switch-track-border': colorVars['--color-accent'],
-  },
-  // Hover overrides for off state (only applied when not disabled)
-  containerHoverOff: {
-    ':hover': {
-      '--xds-switch-track-bg': `color-mix(in srgb, ${colorVars['--color-deemphasized']}, ${colorVars['--color-hover-tint']} 5%)`,
-      '--xds-switch-track-border': `color-mix(in srgb, ${colorVars['--color-divider-emphasized']}, ${colorVars['--color-hover-tint']} 20%)`,
-    },
-  },
-  // Hover overrides for on state (only applied when not disabled)
-  containerHoverOn: {
-    ':hover': {
-      '--xds-switch-track-bg': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
-      '--xds-switch-track-border': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
-    },
-  },
   switchWrapper: {
     position: 'relative',
     display: 'flex',
@@ -99,9 +75,7 @@ const styles = stylex.create({
     padding: TRACK_PADDING,
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: 'var(--xds-switch-track-border)',
     borderRadius: radiusVars['--radius-rounded'],
-    backgroundColor: 'var(--xds-switch-track-bg)',
     transitionProperty: 'background-color, border-color',
     transitionDuration: transitionVars['--transition-fast'],
     boxSizing: 'border-box',
@@ -109,6 +83,31 @@ const styles = stylex.create({
   trackFocused: {
     outline: `2px solid ${colorVars['--color-focus-outline']}`,
     outlineOffset: 2,
+  },
+  // State-dependent colors with ancestor hover behavior
+  trackOff: {
+    borderColor: {
+      default: colorVars['--color-divider-emphasized'],
+      [stylex.when.ancestor(':hover')]:
+        `color-mix(in srgb, ${colorVars['--color-divider-emphasized']}, ${colorVars['--color-hover-tint']} 20%)`,
+    },
+    backgroundColor: {
+      default: colorVars['--color-deemphasized'],
+      [stylex.when.ancestor(':hover')]:
+        `color-mix(in srgb, ${colorVars['--color-deemphasized']}, ${colorVars['--color-hover-tint']} 5%)`,
+    },
+  },
+  trackOn: {
+    borderColor: {
+      default: colorVars['--color-accent'],
+      [stylex.when.ancestor(':hover')]:
+        `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
+    },
+    backgroundColor: {
+      default: colorVars['--color-accent'],
+      [stylex.when.ancestor(':hover')]:
+        `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
+    },
   },
   trackDisabled: {
     opacity: 0.5,
@@ -282,6 +281,7 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
           aria-hidden="true"
           {...stylex.props(
             styles.track,
+            isOn ? styles.trackOn : styles.trackOff,
             isDisabled && styles.trackDisabled,
             isDisabled && !isOn && styles.trackDisabledOff,
           )}>
@@ -320,9 +320,7 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
         {...stylex.props(
           styles.container,
           labelSpacing === 'spread' && styles.containerSpread,
-          isOn ? styles.containerOn : styles.containerOff,
-          !isDisabled &&
-            (isOn ? styles.containerHoverOn : styles.containerHoverOff),
+          !isDisabled && stylex.defaultMarker(),
         )}>
         {labelPosition === 'start' ? (
           <>
