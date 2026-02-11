@@ -12,3 +12,6 @@ export type {UseFocusTrapOptions, UseFocusTrapReturn} from './useFocusTrap';
 
 export {useGridFocus} from './useGridFocus';
 export type {UseGridFocusOptions, UseGridFocusReturn} from './useGridFocus';
+
+export {useListFocus} from './useListFocus';
+export type {UseListFocusOptions, UseListFocusReturn} from './useListFocus';
