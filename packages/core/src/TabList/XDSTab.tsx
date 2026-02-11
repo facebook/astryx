@@ -66,7 +66,7 @@ const styles = stylex.create({
     fontFamily: 'inherit',
     fontSize: textSizeVars['--text-base'],
     lineHeight: lineHeightVars['--leading-base'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
     cursor: 'pointer',
     textDecoration: 'none',
@@ -97,28 +97,41 @@ const styles = stylex.create({
       borderRadius: radiusVars['--radius-rounded'],
     },
   },
-  underlineHover: {
-    '::after': {
-      content: '""',
-      position: 'absolute',
-      bottom: 0,
-      left: spacingVars['--spacing-3'],
-      right: spacingVars['--spacing-3'],
-      height: '2px',
-      backgroundColor: {
-        default: 'transparent',
-        ':hover': colorVars['--color-divider'],
-      },
-      borderRadius: radiusVars['--radius-rounded'],
-      transitionProperty: 'background-color',
-      transitionDuration: transitionVars['--transition-fast'],
+  hoverUnderline: {
+    position: 'absolute',
+    bottom: 0,
+    left: spacingVars['--spacing-3'],
+    right: spacingVars['--spacing-3'],
+    height: '2px',
+    backgroundColor: colorVars['--color-divider'],
+    borderRadius: radiusVars['--radius-rounded'],
+    opacity: {
+      default: 0,
+      [stylex.when.ancestor(':hover')]: 1,
     },
+    transitionProperty: 'opacity',
+    transitionDuration: transitionVars['--transition-fast'],
+    pointerEvents: 'none',
   },
   icon: {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+  },
+  labelContainer: {
+    display: 'inline-grid',
+  },
+  labelText: {
+    gridRowStart: 1,
+    gridColumnStart: 1,
+  },
+  labelSizer: {
+    gridRowStart: 1,
+    gridColumnStart: 1,
+    visibility: 'hidden',
+    pointerEvents: 'none',
+    fontWeight: fontWeightVars['--font-weight-semibold'],
   },
 });
 
@@ -161,15 +174,30 @@ export function XDSTab({value, label, href, icon, selectedIcon}: XDSTabProps) {
       styles.base,
       sizeStyles[size],
       isSelected && styles.selected,
-      isSelected ? styles.underlineSelected : styles.underlineHover,
+      isSelected && styles.underlineSelected,
+      !isSelected && stylex.defaultMarker(),
     ),
   };
+
+  const hoverUnderlineElement = !isSelected ? (
+    <span {...stylex.props(styles.hoverUnderline)} />
+  ) : null;
+
+  const labelElement = (
+    <span {...stylex.props(styles.labelContainer)}>
+      <span {...stylex.props(styles.labelText)}>{label}</span>
+      <span aria-hidden="true" {...stylex.props(styles.labelSizer)}>
+        {label}
+      </span>
+    </span>
+  );
 
   if (href != null) {
     return (
       <a href={href} onClick={handleSelect} {...sharedProps}>
         {iconElement}
-        {label}
+        {labelElement}
+        {hoverUnderlineElement}
       </a>
     );
   }
@@ -177,7 +205,8 @@ export function XDSTab({value, label, href, icon, selectedIcon}: XDSTabProps) {
   return (
     <button type="button" onClick={handleSelect} {...sharedProps}>
       {iconElement}
-      {label}
+      {labelElement}
+      {hoverUnderlineElement}
     </button>
   );
 }

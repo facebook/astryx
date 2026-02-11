@@ -74,12 +74,9 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
     cursor: 'pointer',
-    transitionProperty: 'color, background-image',
+    textDecoration: 'none',
+    transitionProperty: 'color',
     transitionDuration: transitionVars['--transition-fast'],
-    backgroundImage: {
-      default: null,
-      ':hover': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
-    },
     outline: {
       default: null,
       ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
@@ -95,9 +92,20 @@ const styles = stylex.create({
   },
   triggerLabel: {
     position: 'relative',
-    display: 'inline-flex',
+    display: 'inline-grid',
     alignItems: 'center',
     alignSelf: 'stretch',
+  },
+  triggerLabelText: {
+    gridRowStart: 1,
+    gridColumnStart: 1,
+  },
+  triggerLabelSizer: {
+    gridRowStart: 1,
+    gridColumnStart: 1,
+    visibility: 'hidden',
+    pointerEvents: 'none',
+    fontWeight: fontWeightVars['--font-weight-semibold'],
   },
   underline: {
     '::after': {
@@ -110,6 +118,22 @@ const styles = stylex.create({
       backgroundColor: colorVars['--color-accent'],
       borderRadius: radiusVars['--radius-rounded'],
     },
+  },
+  hoverUnderline: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '2px',
+    backgroundColor: colorVars['--color-divider'],
+    borderRadius: radiusVars['--radius-rounded'],
+    opacity: {
+      default: 0,
+      [stylex.when.ancestor(':hover')]: 1,
+    },
+    transitionProperty: 'opacity',
+    transitionDuration: transitionVars['--transition-fast'],
+    pointerEvents: 'none',
   },
   chevron: {
     width: '16px',
@@ -232,13 +256,20 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
           styles.trigger,
           sizeStyles[size],
           hasSelectedOption && styles.triggerSelected,
+          !hasSelectedOption && stylex.defaultMarker(),
         )}>
         <span
           {...stylex.props(
             styles.triggerLabel,
             hasSelectedOption && styles.underline,
           )}>
-          {triggerLabel}
+          <span {...stylex.props(styles.triggerLabelText)}>{triggerLabel}</span>
+          <span aria-hidden="true" {...stylex.props(styles.triggerLabelSizer)}>
+            {triggerLabel}
+          </span>
+          {!hasSelectedOption && (
+            <span {...stylex.props(styles.hoverUnderline)} />
+          )}
         </span>
         <ChevronDownIcon
           aria-hidden="true"
