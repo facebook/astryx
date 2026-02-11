@@ -14,14 +14,13 @@
 import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSFieldLabel} from './XDSFieldLabel';
+import {XDSFieldStatus} from './XDSFieldStatus';
 import {
   colorVars,
-  radiusVars,
+  fontWeightVars,
   spacingVars,
   textSizeVars,
   typographyVars,
-  fontWeightVars,
-  lineHeightVars,
 } from '../theme/tokens.stylex';
 import type {XDSIconType} from '../Icon';
 
@@ -71,32 +70,6 @@ const styles = stylex.create({
   inputStatusWrapper: {
     display: 'flex',
     flexDirection: 'column',
-  },
-  statusMessage: {
-    marginTop: -6,
-    paddingBlockStart: 14,
-    paddingBlockEnd: 8,
-    paddingInline: spacingVars['--spacing-2'],
-    borderBottomLeftRadius: radiusVars['--radius-element'],
-    borderBottomRightRadius: radiusVars['--radius-element'],
-    fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-xsm'],
-    lineHeight: lineHeightVars['--leading-base'],
-  },
-});
-
-const statusMessageColorStyles = stylex.create({
-  warning: {
-    backgroundColor: colorVars['--color-warning-deemphasized'],
-    color: colorVars['--color-yellow-text'],
-  },
-  error: {
-    backgroundColor: colorVars['--color-negative-deemphasized'],
-    color: colorVars['--color-red-text'],
-  },
-  success: {
-    backgroundColor: colorVars['--color-positive-deemphasized'],
-    color: colorVars['--color-green-text'],
   },
 });
 
@@ -220,14 +193,12 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
         <div {...stylex.props(styles.inputStatusWrapper)}>
           {children}
           {status?.message && (
-            <div
+            <XDSFieldStatus
+              type={status.type}
+              message={status.message}
               id={status.messageID}
-              {...stylex.props(
-                styles.statusMessage,
-                statusMessageColorStyles[status.type],
-              )}>
-              {status.message}
-            </div>
+              variant="attached"
+            />
           )}
         </div>
       </div>

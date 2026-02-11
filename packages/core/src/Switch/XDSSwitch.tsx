@@ -1,6 +1,6 @@
 /**
  * @file XDSSwitch.tsx
- * @input Uses React forwardRef, useId, ChangeEvent, XDSFieldLabel, XDSIconType
+ * @input Uses React forwardRef, useId, ChangeEvent, XDSFieldLabel, XDSFieldStatus, XDSIconType, XDSInputStatus
  * @output Exports XDSSwitch component, XDSSwitchProps, XDSSwitchLabelPosition, XDSSwitchLabelSpacing
  * @position Core implementation; consumed by index.ts, tested by XDSSwitch.test.tsx
  *
@@ -23,7 +23,9 @@ import {
   textSizeVars,
 } from '../theme/tokens.stylex';
 import {XDSFieldLabel} from '../Field/XDSFieldLabel';
+import {XDSFieldStatus} from '../Field/XDSFieldStatus';
 import type {XDSIconType} from '../Icon';
+import type {XDSInputStatus} from '../Field/types';
 
 // Fixed dimensions: 40px width, 24px height, 16px thumb (off), 20px thumb (on)
 const SWITCH_WIDTH = 40;
@@ -216,6 +218,11 @@ export interface XDSSwitchProps {
    * @default 'default'
    */
   labelSpacing?: XDSSwitchLabelSpacing;
+  /**
+   * Status indicator for the switch.
+   * When set with a message, displays a colored message box below the switch.
+   */
+  status?: XDSInputStatus;
 }
 
 /**
@@ -253,13 +260,22 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
       labelTooltip,
       labelPosition = 'end',
       labelSpacing = 'default',
+      status,
     },
     ref,
   ) => {
     const id = useId();
     const descriptionID = useId();
+    const statusMessageID = useId();
 
     const isOn = value === true;
+
+    // Build aria-describedby from description and status message
+    const describedByParts: string[] = [];
+    if (description) describedByParts.push(descriptionID);
+    if (status?.message) describedByParts.push(statusMessageID);
+    const ariaDescribedBy =
+      describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
 
     const switchElement = (
       <div {...stylex.props(styles.switchWrapper)}>
@@ -274,7 +290,8 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
           onChange={e => onChange(e.target.checked, e)}
           onFocus={onFocus}
           onBlur={onBlur}
-          aria-describedby={description ? descriptionID : undefined}
+          aria-describedby={ariaDescribedBy}
+          aria-invalid={status?.type === 'error' ? true : undefined}
           {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
         />
         <div
@@ -316,22 +333,32 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
     );
 
     return (
-      <div
-        {...stylex.props(
-          styles.container,
-          labelSpacing === 'spread' && styles.containerSpread,
-          !isDisabled && stylex.defaultMarker(),
-        )}>
-        {labelPosition === 'start' ? (
-          <>
-            {labelElement}
-            {switchElement}
-          </>
-        ) : (
-          <>
-            {switchElement}
-            {labelElement}
-          </>
+      <div>
+        <div
+          {...stylex.props(
+            styles.container,
+            labelSpacing === 'spread' && styles.containerSpread,
+            !isDisabled && stylex.defaultMarker(),
+          )}>
+          {labelPosition === 'start' ? (
+            <>
+              {labelElement}
+              {switchElement}
+            </>
+          ) : (
+            <>
+              {switchElement}
+              {labelElement}
+            </>
+          )}
+        </div>
+        {status?.message && (
+          <XDSFieldStatus
+            type={status.type}
+            message={status.message}
+            id={statusMessageID}
+            variant="detached"
+          />
         )}
       </div>
     );
