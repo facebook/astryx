@@ -94,7 +94,7 @@ const styles = stylex.create({
       right: spacingVars['--spacing-3'],
       height: '2px',
       backgroundColor: colorVars['--color-accent'],
-      borderRadius: '1px',
+      borderRadius: radiusVars['--radius-rounded'],
     },
   },
   underlineHover: {
@@ -109,7 +109,7 @@ const styles = stylex.create({
         default: 'transparent',
         ':hover': colorVars['--color-divider'],
       },
-      borderRadius: '1px',
+      borderRadius: radiusVars['--radius-rounded'],
       transitionProperty: 'background-color',
       transitionDuration: transitionVars['--transition-fast'],
     },

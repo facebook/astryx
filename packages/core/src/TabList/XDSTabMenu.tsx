@@ -108,7 +108,7 @@ const styles = stylex.create({
       right: 0,
       height: '2px',
       backgroundColor: colorVars['--color-accent'],
-      borderRadius: '1px',
+      borderRadius: radiusVars['--radius-rounded'],
     },
   },
   chevron: {
