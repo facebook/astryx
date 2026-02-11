@@ -1,0 +1,30 @@
+{
+  "name": "@xds/cli",
+  "version": "0.0.1",
+  "description": "XDS design system CLI — init, swizzle, theme, templates, and agent docs",
+  "type": "module",
+  "bin": {
+    "xds": "./bin/xds.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "templates",
+    "docs"
+  ],
+  "scripts": {
+    "xds": "node bin/xds.mjs"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.9.1",
+    "commander": "^12.1.0"
+  },
+  "keywords": [
+    "xds",
+    "cli",
+    "design-system",
+    "init",
+    "swizzle"
+  ],
+  "license": "MIT"
+}
