@@ -24,6 +24,7 @@ export * from './Selector';
 export * from './Icon';
 export * from './Text';
 export * from './TextInput';
+export * from './TabList';
 export * from './TextArea';
 export * from './TimeInput';
 
