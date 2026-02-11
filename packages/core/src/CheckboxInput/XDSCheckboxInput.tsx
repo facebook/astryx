@@ -1,6 +1,6 @@
 /**
  * @file XDSCheckboxInput.tsx
- * @input Uses React forwardRef, useId, ChangeEvent, XDSFieldLabel, XDSIconType
+ * @input Uses React forwardRef, useId, ChangeEvent, XDSFieldLabel, XDSFieldStatus, XDSIconType, XDSInputStatus
  * @output Exports XDSCheckboxInput component, XDSCheckboxInputProps
  * @position Core implementation; consumed by index.ts, tested by XDSCheckboxInput.test.tsx
  *
@@ -17,12 +17,14 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
+  textSizeVars,
   transitionVars,
   typographyVars,
-  textSizeVars,
 } from '../theme/tokens.stylex';
 import {XDSFieldLabel} from '../Field/XDSFieldLabel';
+import {XDSFieldStatus} from '../Field/XDSFieldStatus';
 import type {XDSIconType} from '../Icon';
+import type {XDSInputStatus} from '../Field/types';
 
 const styles = stylex.create({
   container: {
@@ -227,6 +229,11 @@ export interface XDSCheckboxInputProps {
    * Icon to display before the label text.
    */
   startIcon?: XDSIconType;
+  /**
+   * Status indicator for the checkbox.
+   * When set with a message, displays a colored message box below the checkbox.
+   */
+  status?: XDSInputStatus;
 }
 
 /**
@@ -264,93 +271,117 @@ export const XDSCheckboxInput = forwardRef<
       onFocus,
       onBlur,
       startIcon,
+      status,
     },
     ref,
   ) => {
     const id = useId();
     const descriptionID = useId();
+    const statusMessageID = useId();
 
     const isIndeterminate = value === 'indeterminate';
     const isChecked = value === true;
     const isCheckedOrIndeterminate = isChecked || isIndeterminate;
 
+    // Build aria-describedby from description and status message
+    const describedByParts: string[] = [];
+    if (description) describedByParts.push(descriptionID);
+    if (status?.message) describedByParts.push(statusMessageID);
+    const ariaDescribedBy =
+      describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
+
     return (
-      <div
-        {...stylex.props(
-          styles.container,
-          !isDisabled && stylex.defaultMarker(),
-        )}>
-        <div {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}>
-          <input
-            ref={ref}
-            id={id}
-            type="checkbox"
-            checked={isChecked}
-            disabled={isDisabled}
-            required={isRequired}
-            onChange={e => onChange(e.target.checked, e)}
-            onFocus={onFocus}
-            onBlur={onBlur}
-            aria-describedby={description ? descriptionID : undefined}
-            {...stylex.props(
-              styles.input,
-              wrapperSizeStyles[size],
-              isDisabled && styles.inputDisabled,
-            )}
-          />
+      <div>
+        <div
+          {...stylex.props(
+            styles.container,
+            !isDisabled && stylex.defaultMarker(),
+          )}>
           <div
-            aria-hidden="true"
-            {...stylex.props(
-              styles.checkbox,
-              checkboxSizeStyles[size],
-              isCheckedOrIndeterminate
-                ? styles.checkboxChecked
-                : styles.checkboxUnchecked,
-              isDisabled && styles.checkboxDisabled,
-              isDisabled &&
-                !isCheckedOrIndeterminate &&
-                styles.checkboxDisabledUnchecked,
-            )}>
-            <svg
-              viewBox="0 0 10 10"
+            {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}>
+            <input
+              ref={ref}
+              id={id}
+              type="checkbox"
+              checked={isChecked}
+              disabled={isDisabled}
+              required={isRequired}
+              onChange={e => onChange(e.target.checked, e)}
+              onFocus={onFocus}
+              onBlur={onBlur}
+              aria-describedby={ariaDescribedBy}
+              aria-invalid={status?.type === 'error' ? true : undefined}
               {...stylex.props(
-                styles.checkmark,
-                checkmarkSizeStyles[size],
-                isChecked && styles.checkmarkVisible,
-              )}>
-              <path
-                d="M8.5 2.5L4 7.5L1.5 5"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <div
-              {...stylex.props(
-                styles.indeterminateMark,
-                indeterminateSizeStyles[size],
-                isIndeterminate && styles.indeterminateMarkVisible,
+                styles.input,
+                wrapperSizeStyles[size],
+                isDisabled && styles.inputDisabled,
               )}
             />
+            <div
+              aria-hidden="true"
+              {...stylex.props(
+                styles.checkbox,
+                checkboxSizeStyles[size],
+                isCheckedOrIndeterminate
+                  ? styles.checkboxChecked
+                  : styles.checkboxUnchecked,
+                isDisabled && styles.checkboxDisabled,
+                isDisabled &&
+                  !isCheckedOrIndeterminate &&
+                  styles.checkboxDisabledUnchecked,
+              )}>
+              <svg
+                viewBox="0 0 10 10"
+                {...stylex.props(
+                  styles.checkmark,
+                  checkmarkSizeStyles[size],
+                  isChecked && styles.checkmarkVisible,
+                )}>
+                <path
+                  d="M8.5 2.5L4 7.5L1.5 5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <div
+                {...stylex.props(
+                  styles.indeterminateMark,
+                  indeterminateSizeStyles[size],
+                  isIndeterminate && styles.indeterminateMarkVisible,
+                )}
+              />
+            </div>
+          </div>
+          <div
+            {...stylex.props(
+              styles.labelWrapper,
+              labelWrapperSizeStyles[size],
+            )}>
+            <XDSFieldLabel
+              label={label}
+              inputID={id}
+              isLabelHidden={isLabelHidden}
+              isDisabled={isDisabled}
+              startIcon={startIcon}
+            />
+            {description && (
+              <span id={descriptionID} {...stylex.props(styles.description)}>
+                {description}
+              </span>
+            )}
           </div>
         </div>
-        <div
-          {...stylex.props(styles.labelWrapper, labelWrapperSizeStyles[size])}>
-          <XDSFieldLabel
-            label={label}
-            inputID={id}
-            isLabelHidden={isLabelHidden}
-            isDisabled={isDisabled}
-            startIcon={startIcon}
+        {status?.message && (
+          <XDSFieldStatus
+            type={status.type}
+            message={status.message}
+            id={statusMessageID}
+            variant="detached"
           />
-          {description && (
-            <span id={descriptionID} {...stylex.props(styles.description)}>
-              {description}
-            </span>
-          )}
-        </div>
+        )}
       </div>
     );
   },

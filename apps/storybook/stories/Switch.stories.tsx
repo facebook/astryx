@@ -435,3 +435,105 @@ export const SpreadSpacingExample: Story = {
     );
   },
 };
+
+export const WithErrorStatus: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? false);
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
+    return (
+      <XDSSwitch
+        {...restArgs}
+        value={value}
+        onChange={checked => setValue(checked)}
+      />
+    );
+  },
+  args: {
+    label: 'Accept terms and conditions',
+    isRequired: true,
+    status: {type: 'error', message: 'You must accept the terms to continue'},
+  },
+};
+
+export const WithWarningStatus: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? true);
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
+    return (
+      <XDSSwitch
+        {...restArgs}
+        value={value}
+        onChange={checked => setValue(checked)}
+      />
+    );
+  },
+  args: {
+    label: 'Share usage data',
+    description: 'Help us improve by sharing anonymous usage statistics',
+    status: {type: 'warning', message: 'This data may be shared with partners'},
+  },
+};
+
+export const WithSuccessStatus: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? true);
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
+    return (
+      <XDSSwitch
+        {...restArgs}
+        value={value}
+        onChange={checked => setValue(checked)}
+      />
+    );
+  },
+  args: {
+    label: 'Two-factor authentication',
+    labelIcon: ShieldCheckIcon,
+    status: {type: 'success', message: 'Your account is now more secure'},
+  },
+};
+
+export const StatusVariations: Story = {
+  render: () => {
+    const [value1, setValue1] = useState(false);
+    const [value2, setValue2] = useState(true);
+    const [value3, setValue3] = useState(true);
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '24px',
+          maxWidth: '400px',
+        }}>
+        <XDSSwitch
+          label="Accept terms and conditions"
+          value={value1}
+          onChange={setValue1}
+          isRequired
+          status={{
+            type: 'error',
+            message: 'You must accept the terms to continue',
+          }}
+        />
+        <XDSSwitch
+          label="Share usage data"
+          description="Help us improve by sharing anonymous usage statistics"
+          value={value2}
+          onChange={setValue2}
+          status={{
+            type: 'warning',
+            message: 'This data may be shared with partners',
+          }}
+        />
+        <XDSSwitch
+          label="Two-factor authentication"
+          value={value3}
+          onChange={setValue3}
+          labelIcon={ShieldCheckIcon}
+          status={{type: 'success', message: 'Your account is now more secure'}}
+        />
+      </div>
+    );
+  },
+};

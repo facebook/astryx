@@ -16,6 +16,7 @@ export * from './Calendar';
 export * from './Center';
 export * from './CheckboxInput';
 export * from './Divider';
+export * from './Link';
 export * from './Switch';
 export * from './DateInput';
 export * from './Field';
@@ -27,6 +28,7 @@ export * from './TextInput';
 export * from './TextArea';
 export * from './TimeInput';
 export * from './NumberInput';
+export * from './Table';
 
 // Layout utilities and components (includes XDSHStack, XDSVStack)
 export * from './Layout';
