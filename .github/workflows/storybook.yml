@@ -174,51 +174,13 @@ jobs:
             --components "$COMPONENTS" \
             --video
 
-      - name: Upload screenshots and videos to GitHub
-        id: upload_screenshots
-        env:
-          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Install CML CLI only (no visualization deps)
-          npm install -g @dvcorg/cml
-
-          # Upload each screenshot and video, collect URLs
-          echo '{}' > screenshot-urls.json
-
-          # Upload PNG screenshots
-          for file in screenshots/*.png; do
-            if [ -f "$file" ]; then
-              filename=$(basename "$file")
-              url=$(cml publish "$file")
-              echo "Uploaded $filename -> $url"
-              jq --arg name "$filename" --arg url "$url" \
-                '. + {($name): $url}' screenshot-urls.json > tmp.json && mv tmp.json screenshot-urls.json
-            fi
-          done
-
-          # Upload GIF videos
-          for file in screenshots/*.gif; do
-            if [ -f "$file" ]; then
-              filename=$(basename "$file")
-              url=$(cml publish "$file")
-              echo "Uploaded $filename -> $url"
-              jq --arg name "$filename" --arg url "$url" \
-                '. + {($name): $url}' screenshot-urls.json > tmp.json && mv tmp.json screenshot-urls.json
-            fi
-          done
-
-          # Upload MP4 videos
-          for file in screenshots/*.mp4; do
-            if [ -f "$file" ]; then
-              filename=$(basename "$file")
-              url=$(cml publish "$file")
-              echo "Uploaded $filename -> $url"
-              jq --arg name "$filename" --arg url "$url" \
-                '. + {($name): $url}' screenshot-urls.json > tmp.json && mv tmp.json screenshot-urls.json
-            fi
-          done
-
-          cat screenshot-urls.json
+      - name: Deploy screenshots to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./screenshots
+          destination_dir: ${{ needs.deploy.outputs.short_hash }}/screenshots
+          keep_files: true
 
       - name: Run accessibility audit
         id: a11y
@@ -245,7 +207,6 @@ jobs:
             --analysis analysis.json \
             --a11y a11y-report.json \
             --screenshots screenshots/screenshots.json \
-            --screenshot-urls screenshot-urls.json \
             --storybook-url "${{ needs.deploy.outputs.storybook_url }}" \
             --run-url "$RUN_URL" \
             --pr-number "${{ github.event.pull_request.number }}")

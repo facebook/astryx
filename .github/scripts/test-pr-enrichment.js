@@ -107,14 +107,6 @@ const mockScreenshots = {
   capturedAt: new Date().toISOString(),
 };
 
-const mockScreenshotUrls = {
-  'core-xdsdatepicker--default.png': 'https://example.com/screenshots/core-xdsdatepicker--default.png',
-  'core-xdsdatepicker--default.gif': 'https://example.com/screenshots/core-xdsdatepicker--default.gif',
-  'core-xdsdatepicker--default.mp4': 'https://example.com/screenshots/core-xdsdatepicker--default.mp4',
-  'core-xdsbutton--primary.png': 'https://example.com/screenshots/core-xdsbutton--primary.png',
-  'core-xdsbutton--primary.gif': 'https://example.com/screenshots/core-xdsbutton--primary.gif',
-};
-
 // --- Write mock files ---
 
 const tmpDir = '/tmp/pr-enrichment-test';
@@ -124,7 +116,6 @@ const files = {
   'analysis.json': mockAnalysis,
   'a11y-report.json': mockA11y,
   'screenshots.json': mockScreenshots,
-  'screenshot-urls.json': mockScreenshotUrls,
 };
 
 for (const [name, data] of Object.entries(files)) {
@@ -142,7 +133,6 @@ const output = execSync([
   `--analysis "${path.join(tmpDir, 'analysis.json')}"`,
   `--a11y "${path.join(tmpDir, 'a11y-report.json')}"`,
   `--screenshots "${path.join(tmpDir, 'screenshots.json')}"`,
-  `--screenshot-urls "${path.join(tmpDir, 'screenshot-urls.json')}"`,
   `--storybook-url "https://xds-storybook.example.com"`,
   `--run-url "https://github.com/example/xds/actions/runs/12345"`,
 ].join(' '), { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });

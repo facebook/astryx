@@ -73,11 +73,11 @@ _Includes interactive previews._
 
 **Screenshot:**
 
-![Default](https://example.com/screenshots/core-xdsdatepicker--default.png)
+![Default](https://xds-storybook.example.com/screenshots/core-xdsdatepicker--default.png)
 
-**Interaction Preview:** ([view mp4](https://example.com/screenshots/core-xdsdatepicker--default.mp4))
+**Interaction Preview:** ([view gif](https://xds-storybook.example.com/screenshots/core-xdsdatepicker--default.gif))
 
-![Default interaction](https://example.com/screenshots/core-xdsdatepicker--default.gif)
+<video src="https://xds-storybook.example.com/screenshots/core-xdsdatepicker--default.mp4" autoplay loop muted playsinline width="600"></video>
 
 [View in Storybook](https://xds-storybook.example.com?path=/story/core-xdsdatepicker--default)
 
@@ -90,11 +90,11 @@ _Includes interactive previews._
 
 **Screenshot:**
 
-![Primary](https://example.com/screenshots/core-xdsbutton--primary.png)
+![Primary](https://xds-storybook.example.com/screenshots/core-xdsbutton--primary.png)
 
 **Interaction Preview:**
 
-![Primary interaction](https://example.com/screenshots/core-xdsbutton--primary.gif)
+![Primary interaction](https://xds-storybook.example.com/screenshots/core-xdsbutton--primary.gif)
 
 [View in Storybook](https://xds-storybook.example.com?path=/story/core-xdsbutton--primary)
 

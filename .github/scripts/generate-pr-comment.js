@@ -2,7 +2,7 @@
 
 /**
  * @description Generates and posts PR comment with analysis results and embedded screenshots
- * @input --analysis <file> --a11y <file> --screenshots <file> --screenshot-urls <file> --storybook-url <url> --run-url <url>
+ * @input --analysis <file> --a11y <file> --screenshots <file> --storybook-url <url> --run-url <url>
  * @output Formatted markdown comment body to stdout
  */
 
@@ -17,7 +17,6 @@ const getArg = (name) => {
 const analysisFile = getArg('analysis') || 'analysis.json';
 const a11yFile = getArg('a11y') || 'a11y-report.json';
 const screenshotsFile = getArg('screenshots') || 'screenshots/screenshots.json';
-const screenshotUrlsFile = getArg('screenshot-urls') || 'screenshot-urls.json';
 const runUrl = getArg('run-url') || '';
 const prNumber = getArg('pr-number') || '';
 const storybookUrl = getArg('storybook-url') || '';
@@ -106,7 +105,6 @@ function getComponentHealthEmoji(stats) {
 let analysis = { newComponents: [], modifiedComponents: [], componentStats: {}, totalBundle: {} };
 let a11yReport = { components: {} };
 let screenshotsData = { screenshots: [] };
-let screenshotUrls = {};
 
 try {
   analysis = JSON.parse(fs.readFileSync(analysisFile, 'utf8'));
@@ -126,11 +124,10 @@ try {
   console.error('Warning: Could not read screenshots manifest:', e.message);
 }
 
-try {
-  screenshotUrls = JSON.parse(fs.readFileSync(screenshotUrlsFile, 'utf8'));
-} catch (e) {
-  console.error('Warning: Could not read screenshot URLs:', e.message);
-}
+// Construct screenshot base URL from storybook URL
+const screenshotBaseUrl = storybookUrl
+  ? (storybookUrl.endsWith('/') ? storybookUrl : storybookUrl + '/') + 'screenshots/'
+  : null;
 
 // Build component stats section
 let componentSection = '';
@@ -240,25 +237,27 @@ if (hasAffectedComponents && screenshots.length > 0) {
     for (const shot of shots) {
       const storyName = shot.name || shot.storyId;
       const filename = shot.filename;
-      const imageUrl = screenshotUrls[filename];
+      const imageUrl = screenshotBaseUrl ? screenshotBaseUrl + filename : null;
       const videoFilename = shot.videoFilename;
-      const videoUrl = videoFilename ? screenshotUrls[videoFilename] : null;
+      const videoUrl = (screenshotBaseUrl && videoFilename) ? screenshotBaseUrl + videoFilename : null;
       const mp4Filename = shot.mp4Filename;
-      const mp4Url = mp4Filename ? screenshotUrls[mp4Filename] : null;
+      const mp4Url = (screenshotBaseUrl && mp4Filename) ? screenshotBaseUrl + mp4Filename : null;
 
-      if (imageUrl || videoUrl) {
+      if (imageUrl || videoUrl || mp4Url) {
         screenshotSection += `<details>\n<summary><strong>${storyName}</strong></summary>\n\n`;
 
         if (imageUrl) {
           screenshotSection += `**Screenshot:**\n\n![${storyName}](${imageUrl})\n\n`;
         }
 
-        if (videoUrl) {
+        if (mp4Url) {
           screenshotSection += `**Interaction Preview:**`;
-          if (mp4Url) {
-            screenshotSection += ` ([view mp4](${mp4Url}))`;
+          if (videoUrl) {
+            screenshotSection += ` ([view gif](${videoUrl}))`;
           }
-          screenshotSection += `\n\n![${storyName} interaction](${videoUrl})\n\n`;
+          screenshotSection += `\n\n<video src="${mp4Url}" autoplay loop muted playsinline width="600"></video>\n\n`;
+        } else if (videoUrl) {
+          screenshotSection += `**Interaction Preview:**\n\n![${storyName} interaction](${videoUrl})\n\n`;
         }
 
         if (storybookUrl) {
