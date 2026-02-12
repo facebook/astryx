@@ -44,6 +44,8 @@ program
   │                                                   │
   │   Or run directly:                                │
   │     npx xds agent-docs    Install AI agent docs   │
+  │     npx xds component     Browse component docs   │
+  │     npx xds docs          Design system reference │
   │     npx xds theme         Apply a theme           │
   │     npx xds swizzle       Customize a component   │
   │     npx xds template      Add a page template     │
