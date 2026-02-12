@@ -22,6 +22,86 @@ const runUrl = getArg('run-url') || '';
 const prNumber = getArg('pr-number') || '';
 const storybookUrl = getArg('storybook-url') || '';
 
+// --- Emoji threshold helpers ---
+
+const THRESHOLDS = {
+  bundleSize: { low: 1024, high: 5120 },       // bytes
+  linesOfCode: { low: 100, high: 500 },
+  propsCount: { low: 5, high: 15 },
+};
+
+function getBundleSizeEmoji(bytes) {
+  if (bytes == null) return '';
+  if (bytes < THRESHOLDS.bundleSize.low) return ' ⬇️';
+  if (bytes <= THRESHOLDS.bundleSize.high) return ' ➡️';
+  return ' ⬆️';
+}
+
+function getLOCEmoji(loc) {
+  if (loc == null) return '';
+  if (loc < THRESHOLDS.linesOfCode.low) return ' ⬇️';
+  if (loc <= THRESHOLDS.linesOfCode.high) return ' ➡️';
+  return ' ⬆️';
+}
+
+function getComplexityEmoji(rating) {
+  if (!rating) return '';
+  const lower = rating.toLowerCase();
+  if (lower === 'low') return ' ⬇️';
+  if (lower === 'medium') return ' ➡️';
+  return ' ⬆️'; // high, very high
+}
+
+function getPropsEmoji(count) {
+  if (count == null) return '';
+  if (count < THRESHOLDS.propsCount.low) return ' ⬇️';
+  if (count <= THRESHOLDS.propsCount.high) return ' ➡️';
+  return ' ⬆️';
+}
+
+function getBoolEmoji(value) {
+  return value ? ' ✅' : ' ❌';
+}
+
+function getDeltaEmoji(delta) {
+  if (delta == null) return '';
+  if (delta > THRESHOLDS.bundleSize.high) return ' ⬆️';
+  if (delta > THRESHOLDS.bundleSize.low) return ' ➡️';
+  if (delta < 0) return ' ⬇️';
+  return ' ➡️';
+}
+
+function getComponentHealthEmoji(stats) {
+  if (!stats) return '';
+  let score = 0;
+  let factors = 0;
+
+  // Bundle size
+  if (stats.esmBytes != null) {
+    factors++;
+    if (stats.esmBytes < THRESHOLDS.bundleSize.low) score += 2;
+    else if (stats.esmBytes <= THRESHOLDS.bundleSize.high) score += 1;
+  }
+
+  // Complexity
+  if (stats.complexityRating) {
+    factors++;
+    const lower = stats.complexityRating.toLowerCase();
+    if (lower === 'low') score += 2;
+    else if (lower === 'medium') score += 1;
+  }
+
+  // Tests & Stories
+  if (stats.hasTests != null) { factors++; if (stats.hasTests) score += 2; }
+  if (stats.hasStories != null) { factors++; if (stats.hasStories) score += 2; }
+
+  if (factors === 0) return '';
+  const ratio = score / (factors * 2);
+  if (ratio >= 0.75) return ' 🟢';
+  if (ratio >= 0.4) return ' 🟡';
+  return ' 🔴';
+}
+
 // Read analysis results
 let analysis = { newComponents: [], modifiedComponents: [], componentStats: {}, totalBundle: {} };
 let a11yReport = { components: {} };
@@ -58,17 +138,18 @@ if (analysis.newComponents && analysis.newComponents.length > 0) {
   componentSection += `### New Components\n\n`;
   for (const comp of analysis.newComponents) {
     const stats = analysis.componentStats[comp] || {};
-    componentSection += `<details>\n<summary><strong>${comp}</strong></summary>\n\n`;
+    const healthEmoji = getComponentHealthEmoji(stats);
+    componentSection += `<details>\n<summary><strong>${comp}</strong>${healthEmoji}</summary>\n\n`;
     componentSection += `| Metric | Value |\n|--------|-------|\n`;
-    componentSection += `| Bundle Size (ESM) | ${stats.esmSize || 'N/A'} |\n`;
-    componentSection += `| Bundle Size (CJS) | ${stats.cjsSize || 'N/A'} |\n`;
-    componentSection += `| Lines of Code | ${stats.linesOfCode || 'N/A'} |\n`;
+    componentSection += `| Bundle Size (ESM) | ${stats.esmSize || 'N/A'}${getBundleSizeEmoji(stats.esmBytes)} |\n`;
+    componentSection += `| Bundle Size (CJS) | ${stats.cjsSize || 'N/A'}${getBundleSizeEmoji(stats.cjsBytes)} |\n`;
+    componentSection += `| Lines of Code | ${stats.linesOfCode || 'N/A'}${getLOCEmoji(stats.linesOfCode)} |\n`;
     componentSection += `| Source Files | ${stats.fileCount || 'N/A'} |\n`;
-    componentSection += `| Complexity | ${stats.complexityRating || 'N/A'} (${stats.complexity || 0}) |\n`;
+    componentSection += `| Complexity | ${stats.complexityRating || 'N/A'} (${stats.complexity || 0})${getComplexityEmoji(stats.complexityRating)} |\n`;
     componentSection += `| Exports | ${stats.exports?.join(', ') || 'N/A'} |\n`;
-    componentSection += `| Props Count | ${stats.propsCount || 'N/A'} |\n`;
-    componentSection += `| Has Tests | ${stats.hasTests ? 'Yes' : 'No'} |\n`;
-    componentSection += `| Has Stories | ${stats.hasStories ? 'Yes' : 'No'} |\n`;
+    componentSection += `| Props Count | ${stats.propsCount || 'N/A'}${getPropsEmoji(stats.propsCount)} |\n`;
+    componentSection += `| Has Tests | ${stats.hasTests ? 'Yes' : 'No'}${getBoolEmoji(stats.hasTests)} |\n`;
+    componentSection += `| Has Stories | ${stats.hasStories ? 'Yes' : 'No'}${getBoolEmoji(stats.hasStories)} |\n`;
     componentSection += `\n</details>\n\n`;
   }
 }
@@ -78,19 +159,20 @@ if (analysis.modifiedComponents && analysis.modifiedComponents.length > 0) {
   for (const comp of analysis.modifiedComponents) {
     const stats = analysis.componentStats[comp] || {};
     const baseStats = analysis.baseComponentStats?.[comp] || {};
-    componentSection += `<details>\n<summary><strong>${comp}</strong></summary>\n\n`;
+    const healthEmoji = getComponentHealthEmoji(stats);
+    componentSection += `<details>\n<summary><strong>${comp}</strong>${healthEmoji}</summary>\n\n`;
     componentSection += `| Metric | Before | After | Delta |\n|--------|--------|-------|-------|\n`;
 
     const esmDelta = stats.esmBytes && baseStats.esmBytes
       ? (stats.esmBytes - baseStats.esmBytes)
       : null;
     const esmDeltaStr = esmDelta !== null
-      ? (esmDelta > 0 ? `+${esmDelta}B` : `${esmDelta}B`)
+      ? (esmDelta > 0 ? `+${esmDelta}B` : `${esmDelta}B`) + getDeltaEmoji(esmDelta)
       : 'N/A';
 
-    componentSection += `| Bundle Size (ESM) | ${baseStats.esmSize || 'N/A'} | ${stats.esmSize || 'N/A'} | ${esmDeltaStr} |\n`;
-    componentSection += `| Lines of Code | ${baseStats.linesOfCode || 'N/A'} | ${stats.linesOfCode || 'N/A'} | - |\n`;
-    componentSection += `| Complexity | ${baseStats.complexityRating || 'N/A'} | ${stats.complexityRating || 'N/A'} (${stats.complexity || 0}) | - |\n`;
+    componentSection += `| Bundle Size (ESM) | ${baseStats.esmSize || 'N/A'} | ${stats.esmSize || 'N/A'}${getBundleSizeEmoji(stats.esmBytes)} | ${esmDeltaStr} |\n`;
+    componentSection += `| Lines of Code | ${baseStats.linesOfCode || 'N/A'} | ${stats.linesOfCode || 'N/A'}${getLOCEmoji(stats.linesOfCode)} | - |\n`;
+    componentSection += `| Complexity | ${baseStats.complexityRating || 'N/A'} | ${stats.complexityRating || 'N/A'} (${stats.complexity || 0})${getComplexityEmoji(stats.complexityRating)} | - |\n`;
     componentSection += `\n</details>\n\n`;
   }
 }
@@ -125,7 +207,8 @@ bundleSection += `| @xds/core | ${analysis.totalBundle?.esmSize || 'N/A'} | ${an
 if (analysis.bundleDelta) {
   const delta = analysis.bundleDelta;
   const direction = delta > 0 ? 'increased' : delta < 0 ? 'decreased' : 'unchanged';
-  bundleSection += `**Bundle size ${direction}:** ${delta > 0 ? '+' : ''}${delta} bytes\n\n`;
+  const deltaEmoji = delta > 0 ? ' ⬆️' : delta < 0 ? ' ⬇️' : ' ➡️';
+  bundleSection += `**Bundle size ${direction}:**${deltaEmoji} ${delta > 0 ? '+' : ''}${delta} bytes\n\n`;
 }
 
 // Build screenshots section with embedded images
@@ -138,7 +221,7 @@ if (hasAffectedComponents && screenshots.length > 0) {
 
   const hasVideos = screenshots.some(s => s.videoFilename);
   if (hasVideos) {
-    screenshotSection += `_Includes interactive hover previews as animated GIFs._\n\n`;
+    screenshotSection += `_Includes interactive previews._\n\n`;
   }
 
   // Group screenshots by component title
@@ -171,12 +254,19 @@ if (hasAffectedComponents && screenshots.length > 0) {
         }
 
         if (videoUrl) {
-          // Link to mp4 if available, otherwise link to gif
-          const fullVideoUrl = mp4Url || videoUrl;
-          screenshotSection += `**Interaction Preview:** ([view video](${fullVideoUrl}))\n\n![${storyName} interaction](${videoUrl})\n\n`;
+          if (mp4Url) {
+            screenshotSection += `**Interaction Preview:**\n\n<video src="${mp4Url}" autoplay loop muted playsinline width="400"></video>\n\n`;
+          } else {
+            screenshotSection += `**Interaction Preview:**\n\n![${storyName} interaction](${videoUrl})\n\n`;
+          }
         }
 
-        screenshotSection += `Run \`yarn storybook\` and navigate to: \`${shot.storyId}\`\n\n`;
+        if (storybookUrl) {
+          const baseUrl = storybookUrl.replace(/\/+$/, '');
+          screenshotSection += `[View in Storybook](${baseUrl}?path=/story/${shot.storyId})\n\n`;
+        } else {
+          screenshotSection += `Run \`yarn storybook\` and navigate to: \`${shot.storyId}\`\n\n`;
+        }
 
         screenshotSection += `</details>\n\n`;
       } else {

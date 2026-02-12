@@ -324,40 +324,164 @@ async function captureScreenshots() {
         await page.evaluate(() => window.updateCursor(400, 300));
         await page.waitForTimeout(500);
 
-        // Hover over interactive elements to show hover states
-        const buttons = await page.$$('button');
-        for (const button of buttons.slice(0, 3)) {
-          try {
-            if (await moveCursorToElement(button)) {
-              await page.waitForTimeout(500);
-            }
-          } catch {
-            // Element not hoverable, skip
+        // Time budget: 15s max per story for interactions
+        const interactionStart = Date.now();
+        const TIME_BUDGET_MS = 15000;
+        const hasTimeBudget = () => (Date.now() - interactionStart) < TIME_BUDGET_MS;
+
+        // Detect interactive elements on the page
+        const interactiveElements = await page.evaluate(() => {
+          const root = document.querySelector('#storybook-root');
+          if (!root) return {};
+          return {
+            buttons: root.querySelectorAll('button').length,
+            inputs: root.querySelectorAll('input[type="text"], input:not([type]), textarea').length,
+            checkboxes: root.querySelectorAll('input[type="checkbox"]').length,
+            switches: root.querySelectorAll('[role="switch"]').length,
+            tabs: root.querySelectorAll('[role="tab"]').length,
+            selects: root.querySelectorAll('select, [role="combobox"], [role="listbox"]').length,
+            dialogTriggers: root.querySelectorAll('[aria-haspopup="dialog"], [aria-haspopup="true"]').length,
+            menuTriggers: root.querySelectorAll('[aria-haspopup="menu"]').length,
+            links: root.querySelectorAll('a').length,
+            scrollable: root.scrollHeight > root.clientHeight ? 1 : 0,
+          };
+        });
+
+        // 1. Text inputs: click + type
+        if (hasTimeBudget() && interactiveElements.inputs > 0) {
+          const inputs = await page.$$('#storybook-root input[type="text"], #storybook-root input:not([type]), #storybook-root textarea');
+          for (const input of inputs.slice(0, 2)) {
+            if (!hasTimeBudget()) break;
+            try {
+              if (await moveCursorToElement(input)) {
+                await input.click();
+                await page.waitForTimeout(200);
+                await input.type('Hello world', { delay: 50 });
+                await page.waitForTimeout(400);
+              }
+            } catch { /* skip */ }
           }
         }
 
-        // Hover over links
-        const links = await page.$$('a');
-        for (const link of links.slice(0, 2)) {
-          try {
-            if (await moveCursorToElement(link)) {
-              await page.waitForTimeout(500);
-            }
-          } catch {
-            // Element not hoverable, skip
+        // 2. Switches and checkboxes: toggle
+        if (hasTimeBudget() && (interactiveElements.switches > 0 || interactiveElements.checkboxes > 0)) {
+          const toggles = await page.$$('#storybook-root [role="switch"], #storybook-root input[type="checkbox"]');
+          for (const toggle of toggles.slice(0, 3)) {
+            if (!hasTimeBudget()) break;
+            try {
+              if (await moveCursorToElement(toggle)) {
+                await toggle.click();
+                await page.waitForTimeout(400);
+              }
+            } catch { /* skip */ }
           }
         }
 
-        // Hover over spans (badges, etc)
-        const spans = await page.$$('span[class]');
-        for (const span of spans.slice(0, 6)) {
-          try {
-            if (await moveCursorToElement(span)) {
-              await page.waitForTimeout(400);
-            }
-          } catch {
-            // Element not hoverable, skip
+        // 3. Tabs: click through (up to 4)
+        if (hasTimeBudget() && interactiveElements.tabs > 0) {
+          const tabs = await page.$$('#storybook-root [role="tab"]');
+          for (const tab of tabs.slice(0, 4)) {
+            if (!hasTimeBudget()) break;
+            try {
+              if (await moveCursorToElement(tab)) {
+                await tab.click();
+                await page.waitForTimeout(500);
+              }
+            } catch { /* skip */ }
           }
+        }
+
+        // 4. Buttons: click, detect dialog/menu triggers
+        if (hasTimeBudget() && interactiveElements.buttons > 0) {
+          // First handle dialog/menu triggers
+          const popupTriggers = await page.$$('#storybook-root [aria-haspopup="dialog"], #storybook-root [aria-haspopup="true"], #storybook-root [aria-haspopup="menu"]');
+          for (const trigger of popupTriggers.slice(0, 2)) {
+            if (!hasTimeBudget()) break;
+            try {
+              if (await moveCursorToElement(trigger)) {
+                await trigger.click();
+                await page.waitForTimeout(800);
+                // Dismiss by clicking away
+                await page.mouse.click(10, 10);
+                await page.waitForTimeout(400);
+              }
+            } catch { /* skip */ }
+          }
+
+          // Then regular buttons (excluding triggers already handled)
+          const buttons = await page.$$('#storybook-root button:not([aria-haspopup])');
+          for (const button of buttons.slice(0, 3)) {
+            if (!hasTimeBudget()) break;
+            try {
+              if (await moveCursorToElement(button)) {
+                await button.click();
+                await page.waitForTimeout(400);
+              }
+            } catch { /* skip */ }
+          }
+        }
+
+        // 5. Selects/comboboxes: open, select an option
+        if (hasTimeBudget() && interactiveElements.selects > 0) {
+          const selects = await page.$$('#storybook-root select, #storybook-root [role="combobox"]');
+          for (const select of selects.slice(0, 2)) {
+            if (!hasTimeBudget()) break;
+            try {
+              if (await moveCursorToElement(select)) {
+                await select.click();
+                await page.waitForTimeout(400);
+                // Try to select the second option if it's a native select
+                const tagName = await select.evaluate(el => el.tagName.toLowerCase());
+                if (tagName === 'select') {
+                  const options = await select.$$('option');
+                  if (options.length > 1) {
+                    await select.selectOption({ index: 1 });
+                    await page.waitForTimeout(400);
+                  }
+                } else {
+                  // For combobox, try clicking the first option in a listbox
+                  const option = await page.$('[role="option"]');
+                  if (option) {
+                    await option.click();
+                    await page.waitForTimeout(400);
+                  } else {
+                    // Dismiss by clicking away
+                    await page.mouse.click(10, 10);
+                    await page.waitForTimeout(200);
+                  }
+                }
+              }
+            } catch { /* skip */ }
+          }
+        }
+
+        // 6. Links: hover only (don't navigate)
+        if (hasTimeBudget() && interactiveElements.links > 0) {
+          const links = await page.$$('#storybook-root a');
+          for (const link of links.slice(0, 2)) {
+            if (!hasTimeBudget()) break;
+            try {
+              if (await moveCursorToElement(link)) {
+                await page.waitForTimeout(500);
+              }
+            } catch { /* skip */ }
+          }
+        }
+
+        // 7. Scrollable overflow: scroll down and back up
+        if (hasTimeBudget() && interactiveElements.scrollable > 0) {
+          try {
+            await page.evaluate(() => {
+              const root = document.querySelector('#storybook-root');
+              if (root) root.scrollTop = root.scrollHeight / 2;
+            });
+            await page.waitForTimeout(500);
+            await page.evaluate(() => {
+              const root = document.querySelector('#storybook-root');
+              if (root) root.scrollTop = 0;
+            });
+            await page.waitForTimeout(300);
+          } catch { /* skip */ }
         }
 
         // Move cursor away and wait
