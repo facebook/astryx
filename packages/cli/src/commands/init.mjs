@@ -160,7 +160,5 @@ export function registerInit(program) {
       console.log("    2. Import components: import { XDSButton } from '@xds/core'");
       console.log('    3. npx xds --help for all commands');
       console.log('');
-      console.log('  LLM prompt: "Help me initialize this xds project with npx xds init"');
-      console.log('');
     });
 }

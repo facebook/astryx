@@ -22,7 +22,7 @@ const XDS_MARKER_END = '<!-- XDS:END -->';
 function generateCompressedIndex(version) {
   return `${XDS_MARKER_START}
 [XDS v${version}]|IMPORTANT: Prefer retrieval-led reasoning. Run CLI to read docs before generating code.
-|npx xds component <Name> --compact   Component API (props, usage, features)
+|npx xds component <Name> --compact|--source   Docs (props, usage) or source code
 |npx xds component --list             All components by category
 |npx xds docs principles              Design rules, anti-patterns, StyleX patterns
 |npx xds docs tokens                  Token reference (spacing, color, radius, type)
