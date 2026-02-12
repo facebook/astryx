@@ -15,7 +15,7 @@ const ROOT = path.resolve(__dirname, '..');
 const CORE_DIR = path.join(ROOT, 'packages', 'core');
 const SRC_DIR = path.join(CORE_DIR, 'src');
 const DIST_DIR = path.join(ROOT, 'dist-source');
-const AGENT_TOOLS_DIR = path.join(ROOT, 'packages', 'agent-tools');
+const AGENT_TOOLS_DIR = path.join(ROOT, 'packages', 'cli');
 const PKG = require(path.join(CORE_DIR, 'package.json'));
 
 // Files/patterns to exclude from distribution
@@ -301,11 +301,11 @@ async function main() {
     }
 
     // Run agents-md script
-    const agentsMdPath = path.join(__dirname, 'agent-tools', 'bin', 'agents-md.mjs');
+    const agentsMdPath = path.join(__dirname, 'cli', 'bin', 'xds.mjs');
     if (fs.existsSync(agentsMdPath)) {
       const { execSync } = await import('node:child_process');
       try {
-        execSync(\`node "\${agentsMdPath}"\`, {
+        execSync(\`node "\${agentsMdPath}" agent-docs\`, {
           cwd: projectRoot,
           stdio: 'inherit'
         });
@@ -313,7 +313,7 @@ async function main() {
         console.error('Failed to install AGENTS.md:', e.message);
       }
     } else {
-      console.log('⚠️  Agent tools not found at:', agentsMdPath);
+      console.log('⚠️  CLI not found at:', agentsMdPath);
     }
   } else {
     console.log('\\nSkipped AGENTS.md setup.');
@@ -329,10 +329,10 @@ main();
 }
 
 function copyAgentTools(dest) {
-  const agentToolsDest = path.join(dest, 'agent-tools');
+  const agentToolsDest = path.join(dest, 'cli');
 
   if (!fs.existsSync(AGENT_TOOLS_DIR)) {
-    console.log('  Warning: agent-tools not found, skipping');
+    console.log('  Warning: cli package not found, skipping');
     return;
   }
 
@@ -345,7 +345,7 @@ function copyAgentTools(dest) {
     fs.mkdirSync(binDest, { recursive: true });
     for (const file of fs.readdirSync(binSrc)) {
       fs.copyFileSync(path.join(binSrc, file), path.join(binDest, file));
-      console.log(`  Copied: agent-tools/bin/${file}`);
+      console.log(`  Copied: cli/bin/${file}`);
     }
   }
 
@@ -356,7 +356,7 @@ function copyAgentTools(dest) {
     fs.mkdirSync(docsDest, { recursive: true });
     for (const file of fs.readdirSync(docsSrc)) {
       fs.copyFileSync(path.join(docsSrc, file), path.join(docsDest, file));
-      console.log(`  Copied: agent-tools/docs/${file}`);
+      console.log(`  Copied: cli/docs/${file}`);
     }
   }
 }
@@ -396,8 +396,8 @@ function main() {
     createSetupScript()
   );
 
-  // Copy agent-tools
-  console.log('\nCopying agent-tools...');
+  // Copy CLI tools
+  console.log('\nCopying CLI tools...');
   copyAgentTools(DIST_DIR);
 
   // Create tarball

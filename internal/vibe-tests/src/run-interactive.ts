@@ -66,9 +66,9 @@ TIMING: Record the current timestamp as startTime NOW before doing anything else
 
 Read task file at: ${taskPath}
 
-XDS AGENTS.md is auto-injected and provides guidance on XDS components and which docs to read.
+XDS AGENTS.md is auto-injected and provides guidance on XDS components and CLI commands for reading docs.
 
-IMPORTANT: Track which docs you read. Keep a list of doc filenames (e.g., ['AGENTS.md', 'Button.md', 'tokens.md']).
+IMPORTANT: Track which docs you read. Keep a list of doc names (e.g., ['AGENTS.md', 'Button', 'tokens']).
 
 Generate code for: \\"${task.prompt}\\"
 Expected components: ${task.expectedComponents.join(', ')}
