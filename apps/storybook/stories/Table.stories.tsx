@@ -2,8 +2,8 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {
   XDSTable,
   XDSBaseTable,
-  XDSBaseTableRow,
-  XDSBaseTableCell,
+  XDSTableRow,
+  XDSTableCell,
   proportional,
   pixel,
 } from '@xds/core/Table';
@@ -224,28 +224,28 @@ export const CustomCellRenderer: Story = {
 
 export const ChildrenMode: Story = {
   render: () => (
-    <XDSBaseTable>
-      <XDSBaseTableRow>
-        <XDSBaseTableCell>Alice</XDSBaseTableCell>
-        <XDSBaseTableCell>alice@example.com</XDSBaseTableCell>
-        <XDSBaseTableCell>Engineer</XDSBaseTableCell>
-      </XDSBaseTableRow>
-      <XDSBaseTableRow>
-        <XDSBaseTableCell>Bob</XDSBaseTableCell>
-        <XDSBaseTableCell>bob@example.com</XDSBaseTableCell>
-        <XDSBaseTableCell>Designer</XDSBaseTableCell>
-      </XDSBaseTableRow>
-      <XDSBaseTableRow>
-        <XDSBaseTableCell>Charlie</XDSBaseTableCell>
-        <XDSBaseTableCell>charlie@example.com</XDSBaseTableCell>
-        <XDSBaseTableCell>PM</XDSBaseTableCell>
-      </XDSBaseTableRow>
-      <XDSBaseTableRow>
-        <XDSBaseTableCell>Diana</XDSBaseTableCell>
-        <XDSBaseTableCell>diana@example.com</XDSBaseTableCell>
-        <XDSBaseTableCell>Engineer</XDSBaseTableCell>
-      </XDSBaseTableRow>
-    </XDSBaseTable>
+    <XDSTable density="balanced" dividers="rows" striped hover>
+      <XDSTableRow>
+        <XDSTableCell>Alice</XDSTableCell>
+        <XDSTableCell>alice@example.com</XDSTableCell>
+        <XDSTableCell>Engineer</XDSTableCell>
+      </XDSTableRow>
+      <XDSTableRow>
+        <XDSTableCell>Bob</XDSTableCell>
+        <XDSTableCell>bob@example.com</XDSTableCell>
+        <XDSTableCell>Designer</XDSTableCell>
+      </XDSTableRow>
+      <XDSTableRow>
+        <XDSTableCell>Charlie</XDSTableCell>
+        <XDSTableCell>charlie@example.com</XDSTableCell>
+        <XDSTableCell>PM</XDSTableCell>
+      </XDSTableRow>
+      <XDSTableRow>
+        <XDSTableCell>Diana</XDSTableCell>
+        <XDSTableCell>diana@example.com</XDSTableCell>
+        <XDSTableCell>Engineer</XDSTableCell>
+      </XDSTableRow>
+    </XDSTable>
   ),
 };
 

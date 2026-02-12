@@ -11,8 +11,8 @@ import {describe, it, expect, vi} from 'vitest';
 import {render, screen, within} from '@testing-library/react';
 import {XDSBaseTable} from './XDSBaseTable';
 import {XDSTable} from './XDSTable';
-import {XDSBaseTableRow} from './XDSBaseTableRow';
-import {XDSBaseTableCell} from './XDSBaseTableCell';
+import {XDSTableRow} from './XDSTableRow';
+import {XDSTableCell} from './XDSTableCell';
 import {
   proportional,
   pixel,
@@ -545,18 +545,18 @@ describe('XDSTable', () => {
     expect(screen.getByTestId('after-xds')).toBeInTheDocument();
   });
 
-  it('renders children mode with XDSBaseTableRow and XDSBaseTableCell', () => {
+  it('renders children mode with XDSTableRow and XDSTableCell', () => {
     render(
-      <XDSBaseTable>
-        <XDSBaseTableRow>
-          <XDSBaseTableCell>Streamed A</XDSBaseTableCell>
-          <XDSBaseTableCell>Streamed B</XDSBaseTableCell>
-        </XDSBaseTableRow>
-        <XDSBaseTableRow>
-          <XDSBaseTableCell>Streamed C</XDSBaseTableCell>
-          <XDSBaseTableCell>Streamed D</XDSBaseTableCell>
-        </XDSBaseTableRow>
-      </XDSBaseTable>,
+      <XDSTable density="balanced" dividers="rows">
+        <XDSTableRow>
+          <XDSTableCell>Streamed A</XDSTableCell>
+          <XDSTableCell>Streamed B</XDSTableCell>
+        </XDSTableRow>
+        <XDSTableRow>
+          <XDSTableCell>Streamed C</XDSTableCell>
+          <XDSTableCell>Streamed D</XDSTableCell>
+        </XDSTableRow>
+      </XDSTable>,
     );
     expect(screen.getByText('Streamed A')).toBeInTheDocument();
     expect(screen.getByText('Streamed D')).toBeInTheDocument();
@@ -580,17 +580,17 @@ describe('XDSTable', () => {
 });
 
 // =============================================================================
-// XDSBaseTableRow Tests
+// XDSTableRow Tests
 // =============================================================================
 
-describe('XDSBaseTableRow', () => {
+describe('XDSTableRow', () => {
   it('renders a tr element', () => {
     render(
       <table>
         <tbody>
-          <XDSBaseTableRow data-testid="test-row">
+          <XDSTableRow data-testid="test-row">
             <td>Cell</td>
-          </XDSBaseTableRow>
+          </XDSTableRow>
         </tbody>
       </table>,
     );
@@ -601,10 +601,10 @@ describe('XDSBaseTableRow', () => {
     render(
       <table>
         <tbody>
-          <XDSBaseTableRow>
+          <XDSTableRow>
             <td>First</td>
             <td>Second</td>
-          </XDSBaseTableRow>
+          </XDSTableRow>
         </tbody>
       </table>,
     );
@@ -617,9 +617,9 @@ describe('XDSBaseTableRow', () => {
     render(
       <table>
         <tbody>
-          <XDSBaseTableRow ref={ref}>
+          <XDSTableRow ref={ref}>
             <td>Cell</td>
-          </XDSBaseTableRow>
+          </XDSTableRow>
         </tbody>
       </table>,
     );
@@ -630,9 +630,9 @@ describe('XDSBaseTableRow', () => {
     render(
       <table>
         <tbody>
-          <XDSBaseTableRow className="custom" data-testid="row">
+          <XDSTableRow className="custom" data-testid="row">
             <td>Cell</td>
-          </XDSBaseTableRow>
+          </XDSTableRow>
         </tbody>
       </table>,
     );
@@ -641,16 +641,16 @@ describe('XDSBaseTableRow', () => {
 });
 
 // =============================================================================
-// XDSBaseTableCell Tests
+// XDSTableCell Tests
 // =============================================================================
 
-describe('XDSBaseTableCell', () => {
+describe('XDSTableCell', () => {
   it('renders a td element', () => {
     render(
       <table>
         <tbody>
           <tr>
-            <XDSBaseTableCell data-testid="test-cell">Content</XDSBaseTableCell>
+            <XDSTableCell data-testid="test-cell">Content</XDSTableCell>
           </tr>
         </tbody>
       </table>,
@@ -663,9 +663,9 @@ describe('XDSBaseTableCell', () => {
       <table>
         <tbody>
           <tr>
-            <XDSBaseTableCell>
+            <XDSTableCell>
               <span>Nested content</span>
-            </XDSBaseTableCell>
+            </XDSTableCell>
           </tr>
         </tbody>
       </table>,
@@ -678,7 +678,7 @@ describe('XDSBaseTableCell', () => {
       <table>
         <tbody>
           <tr>
-            <XDSBaseTableCell data-testid="empty-cell" />
+            <XDSTableCell data-testid="empty-cell" />
           </tr>
         </tbody>
       </table>,
@@ -692,7 +692,7 @@ describe('XDSBaseTableCell', () => {
       <table>
         <tbody>
           <tr>
-            <XDSBaseTableCell ref={ref}>Cell</XDSBaseTableCell>
+            <XDSTableCell ref={ref}>Cell</XDSTableCell>
           </tr>
         </tbody>
       </table>,
@@ -705,9 +705,9 @@ describe('XDSBaseTableCell', () => {
       <table>
         <tbody>
           <tr>
-            <XDSBaseTableCell colSpan={3} data-testid="span-cell">
+            <XDSTableCell colSpan={3} data-testid="span-cell">
               Spanning
-            </XDSBaseTableCell>
+            </XDSTableCell>
           </tr>
         </tbody>
       </table>,
@@ -720,9 +720,9 @@ describe('XDSBaseTableCell', () => {
       <table>
         <tbody>
           <tr>
-            <XDSBaseTableCell rowSpan={2} data-testid="rowspan-cell">
+            <XDSTableCell rowSpan={2} data-testid="rowspan-cell">
               Spanning
-            </XDSBaseTableCell>
+            </XDSTableCell>
           </tr>
         </tbody>
       </table>,

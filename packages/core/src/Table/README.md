@@ -6,12 +6,12 @@ Table components for the XDS design system.
 
 ## Components
 
-| File                   | Export             | Purpose                                                      |
-| ---------------------- | ------------------ | ------------------------------------------------------------ |
-| `XDSTable.tsx`         | `XDSTable`         | Styled, data-driven table with density, dividers, and hover  |
-| `XDSBaseTable.tsx`     | `XDSBaseTable`     | Unstyled table with colgroup, plugin pipeline, children mode |
-| `XDSBaseTableRow.tsx`  | `XDSBaseTableRow`  | Thin `<tr>` wrapper for XDSBaseTable children/streaming mode |
-| `XDSBaseTableCell.tsx` | `XDSBaseTableCell` | Thin `<td>` wrapper for XDSBaseTable children/streaming mode |
+| File               | Export         | Purpose                                                      |
+| ------------------ | -------------- | ------------------------------------------------------------ |
+| `XDSTable.tsx`     | `XDSTable`     | Styled, data-driven table with density, dividers, and hover  |
+| `XDSBaseTable.tsx` | `XDSBaseTable` | Unstyled table with colgroup, plugin pipeline, children mode |
+| `XDSTableRow.tsx`  | `XDSTableRow`  | Thin `<tr>` wrapper for XDSTable children/streaming mode     |
+| `XDSTableCell.tsx` | `XDSTableCell` | Thin `<td>` wrapper for XDSTable children/streaming mode     |
 
 ## Utilities
 
@@ -56,15 +56,15 @@ Table components for the XDS design system.
 <XDSTable data={users} striped />
 ```
 
-### Children mode (XDSBaseTable only)
+### Children mode
 
 ```tsx
-<XDSBaseTable>
-  <XDSBaseTableRow>
-    <XDSBaseTableCell>Alice</XDSBaseTableCell>
-    <XDSBaseTableCell>30</XDSBaseTableCell>
-  </XDSBaseTableRow>
-</XDSBaseTable>
+<XDSTable density="balanced" dividers="rows" striped hover>
+  <XDSTableRow>
+    <XDSTableCell>Alice</XDSTableCell>
+    <XDSTableCell>30</XDSTableCell>
+  </XDSTableRow>
+</XDSTable>
 ```
 
 ### Custom plugin

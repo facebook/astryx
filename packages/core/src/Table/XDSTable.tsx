@@ -18,7 +18,6 @@ import {
   spacingVars,
   textSizeVars,
   fontWeightVars,
-  transitionVars,
 } from '../theme/tokens.stylex';
 import {XDSBaseTable} from './XDSBaseTable';
 import {TableContext} from './TableContext';
@@ -27,8 +26,6 @@ import type {
   TablePlugin,
   TableRenderProps,
   HeaderCellRenderProps,
-  BodyRowRenderProps,
-  BodyCellRenderProps,
 } from './types';
 
 // =============================================================================
@@ -43,14 +40,13 @@ export type XDSTableDividers = 'rows' | 'columns' | 'grid' | 'none';
 
 /**
  * Props for the styled XDSTable component.
- * Data-driven only — does not support children mode.
+ * Supports both data-driven mode and children mode with XDSTableRow/Cell.
  *
  * @template T - The row data type
  */
-export interface XDSTableProps<T extends Record<string, unknown>> extends Omit<
-  XDSBaseTableProps<T>,
-  'children'
-> {
+export interface XDSTableProps<
+  T extends Record<string, unknown>,
+> extends XDSBaseTableProps<T> {
   /** Row density. @default 'balanced' */
   density?: XDSTableDensity;
   /** Divider style. @default 'rows' */
@@ -72,7 +68,7 @@ const tableStyles = stylex.create({
   },
 });
 
-// Density: padding + font size for cells
+// Density: padding + font size for header cells
 const densityStyles = stylex.create({
   compact: {
     paddingBlock: spacingVars['--spacing-1'],
@@ -100,15 +96,7 @@ const headerStyles = stylex.create({
   },
 });
 
-// Divider styles — applied to cells
-const dividerRowStyles = stylex.create({
-  cell: {
-    borderBottomWidth: '1px',
-    borderBottomStyle: 'solid',
-    borderBottomColor: colorVars['--color-divider'],
-  },
-});
-
+// Column divider styles for headers
 const dividerColumnStyles = stylex.create({
   cell: {
     borderRightWidth: {
@@ -117,61 +105,6 @@ const dividerColumnStyles = stylex.create({
     },
     borderRightStyle: 'solid',
     borderRightColor: colorVars['--color-divider'],
-  },
-});
-
-const dividerGridStyles = stylex.create({
-  cell: {
-    borderBottomWidth: '1px',
-    borderBottomStyle: 'solid',
-    borderBottomColor: colorVars['--color-divider'],
-    borderRightWidth: {
-      default: '1px',
-      ':last-child': '0',
-    },
-    borderRightStyle: 'solid',
-    borderRightColor: colorVars['--color-divider'],
-  },
-});
-
-// Striped row styles
-const stripedStyles = stylex.create({
-  evenRow: {
-    backgroundColor: colorVars['--color-wash'],
-  },
-});
-
-// Striped + hover combined (wash default, overlay on hover)
-const stripedHoverStyles = stylex.create({
-  evenRow: {
-    backgroundColor: {
-      default: colorVars['--color-wash'],
-      ':hover': colorVars['--color-hover-overlay'],
-    },
-    transitionProperty: 'background-color',
-    transitionDuration: transitionVars['--transition-fast'],
-  },
-});
-
-// Last body row — override bottom border via 'hidden' (wins in border-collapse)
-const lastBodyRowStyles = stylex.create({
-  row: {
-    borderBottomStyle: {
-      default: null,
-      ':last-child': 'hidden',
-    },
-  },
-});
-
-// Hover row styles
-const hoverStyles = stylex.create({
-  row: {
-    backgroundColor: {
-      default: null,
-      ':hover': colorVars['--color-hover-overlay'],
-    },
-    transitionProperty: 'background-color',
-    transitionDuration: transitionVars['--transition-fast'],
   },
 });
 
@@ -191,8 +124,6 @@ const headerDividerStyles = stylex.create({
 function buildXDSStylePlugin<T extends Record<string, unknown>>(
   density: XDSTableDensity,
   dividers: XDSTableDividers,
-  striped: boolean,
-  hover: boolean,
 ): TablePlugin<T> {
   return {
     transformTable(props: TableRenderProps): TableRenderProps {
@@ -221,51 +152,7 @@ function buildXDSStylePlugin<T extends Record<string, unknown>>(
       return {...props, styles: cellStyles};
     },
 
-    transformBodyRow(
-      props: BodyRowRenderProps,
-      _item: T,
-      index: number,
-    ): BodyRowRenderProps {
-      const rowStyles = [...props.styles];
-
-      // Handle striped + hover combination to avoid backgroundColor conflicts
-      if (striped && hover && index % 2 === 1) {
-        rowStyles.push(stripedHoverStyles.evenRow);
-      } else if (striped && index % 2 === 1) {
-        rowStyles.push(stripedStyles.evenRow);
-      } else if (hover) {
-        rowStyles.push(hoverStyles.row);
-      }
-
-      // Hover transition for non-striped rows when both are active
-      if (striped && hover && index % 2 === 0) {
-        rowStyles.push(hoverStyles.row);
-      }
-
-      // Hide bottom border on last body row
-      if (dividers === 'rows' || dividers === 'grid') {
-        rowStyles.push(lastBodyRowStyles.row);
-      }
-
-      return {...props, styles: rowStyles};
-    },
-
-    transformBodyCell(
-      props: BodyCellRenderProps,
-      _column,
-    ): BodyCellRenderProps {
-      const cellStyles = [...props.styles, densityStyles[density]];
-
-      if (dividers === 'rows' || dividers === 'grid') {
-        cellStyles.push(dividerRowStyles.cell);
-      }
-
-      if (dividers === 'columns' || dividers === 'grid') {
-        cellStyles.push(dividerColumnStyles.cell);
-      }
-
-      return {...props, styles: cellStyles};
-    },
+    // Body row/cell styling handled by XDSTableRow/Cell via context
   };
 }
 
@@ -292,10 +179,10 @@ function XDSTableInner<T extends Record<string, unknown>>(
   // Use stable empty array when no plugins provided
   const stableUserPlugins = userPlugins ?? (EMPTY_PLUGINS as TablePlugin<T>[]);
 
-  // Build the internal XDS styling plugin
+  // Build the internal XDS styling plugin (table + header styling only)
   const xdsPlugin = useMemo(
-    () => buildXDSStylePlugin<T>(density, dividers, striped, hover),
-    [density, dividers, striped, hover],
+    () => buildXDSStylePlugin<T>(density, dividers),
+    [density, dividers],
   );
 
   // XDS plugin runs first, user plugins can override/extend

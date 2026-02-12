@@ -27,6 +27,8 @@ import {
   defaultCellRenderer,
   columnWidthToCSS,
 } from './columnUtils';
+import {XDSTableRow} from './XDSTableRow';
+import {XDSTableCell} from './XDSTableCell';
 
 const styles = stylex.create({
   table: {
@@ -84,6 +86,7 @@ interface TableRowProps<T extends Record<string, unknown>> {
 /**
  * Memoized table row component.
  * Only re-renders when the specific row's data changes.
+ * Uses XDSTableRow/Cell for context-based styling, with plugin support.
  */
 function TableRowInner<T extends Record<string, unknown>>({
   item,
@@ -92,6 +95,7 @@ function TableRowInner<T extends Record<string, unknown>>({
   columns,
   plugins,
 }: TableRowProps<T>): ReactElement {
+  // Apply plugin transforms for row
   const rowRenderProps = applyPlugins(
     plugins,
     p => p.transformBodyRow,
@@ -101,11 +105,12 @@ function TableRowInner<T extends Record<string, unknown>>({
   );
 
   return (
-    <tr
+    <XDSTableRow
       key={rowKey}
       {...rowRenderProps.htmlProps}
       {...stylex.props(...rowRenderProps.styles)}>
       {columns.map(col => {
+        // Apply plugin transforms for cell
         const cellRenderProps = applyPlugins(
           plugins,
           p => p.transformBodyCell,
@@ -119,15 +124,15 @@ function TableRowInner<T extends Record<string, unknown>>({
           : defaultCellRenderer(item, col.key);
 
         return (
-          <td
+          <XDSTableCell
             key={col.key}
             {...cellRenderProps.htmlProps}
             {...stylex.props(...cellRenderProps.styles)}>
             {content}
-          </td>
+          </XDSTableCell>
         );
       })}
-    </tr>
+    </XDSTableRow>
   );
 }
 
@@ -139,8 +144,8 @@ function areRowPropsEqual<T extends Record<string, unknown>>(
   prevProps: TableRowProps<T>,
   nextProps: TableRowProps<T>,
 ): boolean {
-  // Different row index means different styling (striped rows)
-  if (prevProps.rowIndex !== nextProps.rowIndex) return false;
+  // Row index affects CSS :nth-child styling, but not React re-render
+  // We don't compare rowIndex as it's handled by CSS
   if (prevProps.rowKey !== nextProps.rowKey) return false;
 
   // If columns or plugins change, need to re-render all rows
