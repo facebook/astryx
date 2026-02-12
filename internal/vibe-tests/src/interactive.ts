@@ -676,21 +676,11 @@ Style with className to match the content being loaded.
 }
 
 /**
- * Install AGENTS.md and .xds-docs for agent documentation
+ * Install AGENTS.md for agent documentation
  */
 function installAgentsDocs(): void {
   const vibeTestsDir = path.join(__dirname, '..');
   const agentsMdPath = path.join(vibeTestsDir, 'AGENTS.md');
-  const agentsScript = path.join(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    'packages',
-    'agent-tools',
-    'bin',
-    'agents-md.mjs',
-  );
 
   // Check if AGENTS.md already exists and is recent (within last hour)
   if (fs.existsSync(agentsMdPath)) {
@@ -702,17 +692,15 @@ function installAgentsDocs(): void {
     }
   }
 
-  // Run the agents-md script
-  if (fs.existsSync(agentsScript)) {
-    try {
-      execSync(`node ${agentsScript}`, {
-        cwd: vibeTestsDir,
-        stdio: 'pipe',
-      });
-      console.log('✓ Generated AGENTS.md and .xds-docs/');
-    } catch (_error) {
-      console.warn('⚠ Failed to generate AGENTS.md, continuing without it');
-    }
+  // Run xds agent-docs via CLI
+  try {
+    execSync('npx xds agent-docs', {
+      cwd: vibeTestsDir,
+      stdio: 'pipe',
+    });
+    console.log('✓ Generated AGENTS.md');
+  } catch (_error) {
+    console.warn('⚠ Failed to generate AGENTS.md, continuing without it');
   }
 }
 
@@ -751,10 +739,7 @@ Reference Tailwind, baseline, Bootstrap patterns in your request.`,
   // Always use AGENTS.md - Claude Code auto-injects it from cwd
   const skillDocSection = `## Component Documentation
 
-XDS documentation is auto-loaded via AGENTS.md.
-
-Before generating code, read \`.xds-docs/tokens.md\` for valid CSS variable names.
-Valid patterns: \`--color-*\`, \`--spacing-*\`, \`--radius-*\`, \`--elevation-*\`, \`--text-*\`, \`--font-body\`, \`--font-code\`, \`--font-heading\``;
+XDS documentation is auto-loaded via AGENTS.md.`;
 
   return `# Vibe Test Task
 
@@ -780,7 +765,7 @@ Expected Components: ${task.expectedComponents.join(', ')}
    - Did you hallucinate any props that don't exist?
    - Did you use redundant CSS for things components already handle?
    - Did you use acceptable supplemental CSS for gaps?
-   - **CSS Variables**: Did you use valid XDS tokens? Check .xds-docs/tokens.md for the complete list of valid variable names.
+   - **CSS Variables**: Did you use valid XDS design tokens?
 
 3. **Output JSON** in this exact format:
 \`\`\`json

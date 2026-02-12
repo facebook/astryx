@@ -12,12 +12,11 @@
 
 import * as p from '@clack/prompts';
 import * as path from 'node:path';
-import {execSync} from 'node:child_process';
 import * as fs from 'node:fs';
-import {findCoreDir, findAgentToolsDir} from '../utils/paths.mjs';
+import {findCoreDir, CLI_ROOT} from '../utils/paths.mjs';
+import {installAgentDocs} from './agent-docs.mjs';
 import {discoverThemes, writeThemeConfig} from './theme.mjs';
 import {listTemplates} from './template.mjs';
-import {CLI_ROOT} from '../utils/paths.mjs';
 
 function isCancel(value) {
   if (p.isCancel(value)) {
@@ -41,32 +40,24 @@ export function registerInit(program) {
       );
 
       // Step 2: Agent Docs
-      const agentToolsDir = findAgentToolsDir(process.cwd());
+      const shouldInstallAgentDocs = isCancel(
+        await p.confirm({
+          message: 'Install AGENTS.md for AI coding agent support?',
+          initialValue: true,
+        }),
+      );
 
-      if (agentToolsDir) {
-        const installAgentDocs = isCancel(
-          await p.confirm({
-            message: 'Install AGENTS.md for AI coding agent support?',
-            initialValue: true,
-          }),
-        );
-
-        if (installAgentDocs) {
-          const s = p.spinner();
-          s.start('Installing agent docs');
-          try {
-            const scriptPath = path.join(agentToolsDir, 'bin', 'agents-md.mjs');
-            execSync(`node ${scriptPath}`, {
-              cwd: process.cwd(),
-              stdio: 'pipe',
-            });
-            s.stop('Agent docs installed');
-          } catch {
-            s.stop('Agent docs installation failed');
-            p.log.warning(
-              'Could not install agent docs. Run `xds agent-docs` later to retry.',
-            );
-          }
+      if (shouldInstallAgentDocs) {
+        const s = p.spinner();
+        s.start('Installing agent docs');
+        try {
+          installAgentDocs(process.cwd());
+          s.stop('Agent docs installed');
+        } catch {
+          s.stop('Agent docs installation failed');
+          p.log.warning(
+            'Could not install agent docs. Run `npx xds agent-docs` later to retry.',
+          );
         }
       }
 
@@ -167,9 +158,9 @@ export function registerInit(program) {
       console.log('  Next steps:');
       console.log('    1. Wrap your app with <XDSTheme theme={defaultTheme}>');
       console.log("    2. Import components: import { XDSButton } from '@xds/core'");
-      console.log('    3. npx xds help for all commands');
+      console.log('    3. npx xds --help for all commands');
       console.log('');
-      console.log('  LLM prompt: "Help me initialize this xds project with xds init"');
+      console.log('  LLM prompt: "Help me initialize this xds project with npx xds init"');
       console.log('');
     });
 }

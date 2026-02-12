@@ -1,13 +1,15 @@
 /**
  * @file XDS CLI — Commander program setup
  *
- * Registers all commands: init, swizzle, agent-docs, template, theme.
+ * Registers all commands: init, swizzle, agent-docs, component, docs, template, theme.
  */
 
 import {Command} from 'commander';
 import {registerInit} from './commands/init.mjs';
 import {registerSwizzle} from './commands/swizzle.mjs';
 import {registerAgentDocs} from './commands/agent-docs.mjs';
+import {registerComponent} from './commands/component.mjs';
+import {registerDocs} from './commands/docs.mjs';
 import {registerTemplate} from './commands/template.mjs';
 import {registerTheme} from './commands/theme.mjs';
 
@@ -20,6 +22,8 @@ program
   .addHelpCommand('help', 'Show all commands');
 
 registerInit(program);
+registerComponent(program);
+registerDocs(program);
 registerSwizzle(program);
 registerAgentDocs(program);
 registerTemplate(program);
@@ -30,20 +34,20 @@ program
   .command('postinstall', {hidden: true})
   .action(() => {
     console.log(`
-  ╭───────────────────────────────────────────────╮
-  │                                               │
-  │   XDS design system installed!                │
-  │                                               │
-  │   Get started:                                │
-  │     xds init          Interactive setup        │
-  │     xds --help        See all commands         │
-  │                                               │
-  │   Or run directly:                            │
-  │     xds agent-docs    Install AI agent docs    │
-  │     xds theme         Apply a theme            │
-  │     xds swizzle       Customize a component    │
-  │     xds template      Add a page template      │
-  │                                               │
-  ╰───────────────────────────────────────────────╯
+  ╭───────────────────────────────────────────────────╮
+  │                                                   │
+  │   XDS design system installed!                    │
+  │                                                   │
+  │   Get started:                                    │
+  │     npx xds init          Interactive setup       │
+  │     npx xds --help        See all commands        │
+  │                                                   │
+  │   Or run directly:                                │
+  │     npx xds agent-docs    Install AI agent docs   │
+  │     npx xds theme         Apply a theme           │
+  │     npx xds swizzle       Customize a component   │
+  │     npx xds template      Add a page template     │
+  │                                                   │
+  ╰───────────────────────────────────────────────────╯
 `);
   });

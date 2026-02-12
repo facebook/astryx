@@ -68,26 +68,6 @@ export function findProjectRoot(startDir = process.cwd()) {
 }
 
 /**
- * Find the agent-tools package directory.
- */
-export function findAgentToolsDir(startDir = process.cwd()) {
-  let dir = startDir;
-
-  for (let i = 0; i < 5; i++) {
-    const candidate = path.join(dir, 'packages', 'agent-tools');
-    if (fs.existsSync(candidate)) {
-      return candidate;
-    }
-
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-
-  return null;
-}
-
-/**
  * List available component directories in packages/core/src.
  * Returns directory names that contain XDS*.tsx files.
  */
