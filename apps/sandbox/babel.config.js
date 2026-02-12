@@ -1,3 +1,4 @@
+/* global module, process, __dirname */
 module.exports = {
   presets: [
     [

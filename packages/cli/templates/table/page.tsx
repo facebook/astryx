@@ -5,7 +5,7 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSLayout, XDSLayoutHeader, XDSLayoutContent} from '@xds/core';
 import {XDSText} from '@xds/core';
 import {XDSButton} from '@xds/core';
-import {XDSHStack, XDSVStack} from '@xds/core';
+import {XDSHStack} from '@xds/core';
 
 const styles = stylex.create({
   header: {
