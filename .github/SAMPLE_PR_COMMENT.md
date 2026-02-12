@@ -29,23 +29,6 @@ This is an example of what the PR enrichment workflow will post as a comment on 
 
 </details>
 
-<details>
-<summary><strong>TimePicker</strong> 🟡</summary>
-
-| Metric | Value |
-|--------|-------|
-| Bundle Size (ESM) | 3.1KB ➡️ |
-| Bundle Size (CJS) | 3.5KB ➡️ |
-| Lines of Code | 180 ➡️ |
-| Source Files | 3 |
-| Complexity | Low (8) ⬇️ |
-| Exports | XDSTimePicker |
-| Props Count | 8 ➡️ |
-| Has Tests | No ❌ |
-| Has Stories | Yes ✅ |
-
-</details>
-
 ### Modified Components
 
 <details>
@@ -56,17 +39,6 @@ This is an example of what the PR enrichment workflow will post as a comment on 
 | Bundle Size (ESM) | 2.2KB | 2.4KB ➡️ | +200B ➡️ |
 | Lines of Code | 130 | 150 ➡️ | - |
 | Complexity | Low | Low (6) ⬇️ | - |
-
-</details>
-
-<details>
-<summary><strong>TextInput</strong> 🟡</summary>
-
-| Metric | Before | After | Delta |
-|--------|--------|-------|-------|
-| Bundle Size (ESM) | 2.9KB | 3.0KB ➡️ | +130B ➡️ |
-| Lines of Code | 190 | 210 ➡️ | - |
-| Complexity | High | Very High (31) ⬆️ | - |
 
 </details>
 
@@ -83,7 +55,7 @@ This is an example of what the PR enrichment workflow will post as a comment on 
 **Status:** 1 accessibility violation(s) found.
 
 <details>
-<summary><strong>TimePicker</strong> - 1 issue(s)</summary>
+<summary><strong>DatePicker</strong> - 1 issue(s)</summary>
 
 - **critical**: Form elements must have labels
   - Rule: `label`
@@ -101,13 +73,30 @@ _Includes interactive previews._
 
 **Screenshot:**
 
-![Default](https://example.com/screenshots/datepicker-default.png)
+![Default](https://example.com/screenshots/core-xdsdatepicker--default.png)
 
 **Interaction Preview:**
 
-<video src="https://example.com/screenshots/datepicker-default.mp4" autoplay loop muted playsinline width="400"></video>
+<video src="https://example.com/screenshots/core-xdsdatepicker--default.mp4" autoplay loop muted playsinline width="400"></video>
 
 [View in Storybook](https://xds-storybook.example.com?path=/story/core-xdsdatepicker--default)
+
+</details>
+
+#### XDSButton
+
+<details>
+<summary><strong>Primary</strong></summary>
+
+**Screenshot:**
+
+![Primary](https://example.com/screenshots/core-xdsbutton--primary.png)
+
+**Interaction Preview:**
+
+![Primary interaction](https://example.com/screenshots/core-xdsbutton--primary.gif)
+
+[View in Storybook](https://xds-storybook.example.com?path=/story/core-xdsbutton--primary)
 
 </details>
 
