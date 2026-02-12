@@ -1,9 +1,0 @@
-{
-  "name": "@xds/docs",
-  "version": "0.0.1",
-  "private": true,
-  "scripts": {
-    "dev": "echo 'Docs site placeholder - install your preferred docs framework'",
-    "build": "echo 'Docs build placeholder'"
-  }
-}
