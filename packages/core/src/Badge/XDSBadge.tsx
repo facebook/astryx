@@ -47,6 +47,19 @@ const styles = stylex.create({
   },
 });
 
+const sizes = stylex.create({
+  sm: {
+    fontSize: textSizeVars['--text-xsm'],
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+  },
+  md: {
+    fontSize: textSizeVars['--text-sm'],
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
+  },
+});
+
 /**
  * Variant styles for different badge appearances
  */
@@ -77,6 +90,7 @@ const variants = stylex.create({
  * Badge variant type derived from the variants StyleX object
  */
 export type XDSBadgeVariant = keyof typeof variants;
+export type XDSBadgeSize = keyof typeof sizes;
 
 export interface XDSBadgeProps extends HTMLAttributes<HTMLSpanElement> {
   /**
@@ -84,6 +98,11 @@ export interface XDSBadgeProps extends HTMLAttributes<HTMLSpanElement> {
    * @default 'neutral'
    */
   variant?: XDSBadgeVariant;
+  /**
+   * The size of the badge.
+   * @default 'sm'
+   */
+  size?: XDSBadgeSize;
   /**
    * The content to display in the badge.
    * If omitted, renders as a small dot indicator.
@@ -110,13 +129,18 @@ export interface XDSBadgeProps extends HTMLAttributes<HTMLSpanElement> {
  * ```
  */
 export const XDSBadge = forwardRef<HTMLSpanElement, XDSBadgeProps>(
-  ({variant = 'neutral', children, icon, ...props}, ref) => {
+  ({variant = 'neutral', size = 'sm', children, icon, ...props}, ref) => {
     const isDot = children == null && icon == null;
 
     return (
       <span
         ref={ref}
-        {...stylex.props(styles.base, variants[variant], isDot && styles.dot)}
+        {...stylex.props(
+          styles.base,
+          sizes[size],
+          variants[variant],
+          isDot && styles.dot,
+        )}
         {...props}>
         {icon}
         {children}

@@ -13,6 +13,7 @@ export * from './Avatar';
 export * from './Badge';
 export * from './Button';
 export * from './Calendar';
+export * from './Chip';
 export * from './Center';
 export * from './CheckboxInput';
 export * from './Divider';
