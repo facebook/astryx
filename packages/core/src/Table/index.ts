@@ -9,8 +9,8 @@
 
 export {XDSBaseTable} from './XDSBaseTable';
 export {XDSTable} from './XDSTable';
-export {XDSTableRow} from './XDSTableRow';
-export {XDSTableCell} from './XDSTableCell';
+export {XDSBaseTableRow} from './XDSBaseTableRow';
+export {XDSBaseTableCell} from './XDSBaseTableCell';
 export {TableContext} from './TableContext';
 export {
   proportional,
@@ -36,6 +36,6 @@ export type {
   XDSTableDensity,
   XDSTableDividers,
 } from './XDSTable';
-export type {XDSTableRowProps} from './XDSTableRow';
-export type {XDSTableCellProps} from './XDSTableCell';
+export type {XDSBaseTableRowProps} from './XDSBaseTableRow';
+export type {XDSBaseTableCellProps} from './XDSBaseTableCell';
 export type {TableContextValue} from './TableContext';

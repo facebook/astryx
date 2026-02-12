@@ -1,8 +1,8 @@
 /**
- * @file XDSTableCell.tsx
+ * @file XDSBaseTableCell.tsx
  * @input React, StyleX, TableContext, theme tokens
- * @output Exports XDSTableCell component, XDSTableCellProps
- * @position Sub-component; used inside XDSTable children mode
+ * @output Exports XDSBaseTableCell component, XDSBaseTableCellProps
+ * @position Sub-component; used inside XDSBaseTable children mode
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Table/README.md
@@ -20,8 +20,8 @@ import {colorVars, spacingVars, textSizeVars} from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
 import {TableContext} from './TableContext';
 
-/** Props for XDSTableCell — thin `<td>` wrapper */
-export interface XDSTableCellProps extends TdHTMLAttributes<HTMLTableCellElement> {
+/** Props for XDSBaseTableCell — thin `<td>` wrapper */
+export interface XDSBaseTableCellProps extends TdHTMLAttributes<HTMLTableCellElement> {
   children?: ReactNode;
 }
 
@@ -63,47 +63,48 @@ const dividerColumnStyles = stylex.create({
 });
 
 /**
- * XDSTableCell — a `<td>` wrapper for children/streaming mode.
+ * XDSBaseTableCell — a `<td>` wrapper for children/streaming mode.
  *
- * When used inside `<XDSTable>`, inherits styling from the table context
+ * When used inside `<XDSBaseTable>`, inherits styling from the table context
  * (density padding, divider borders). When used standalone, renders a plain `<td>`.
  *
  * @example
  * ```tsx
- * <XDSTableRow>
- *   <XDSTableCell>Alice</XDSTableCell>
- *   <XDSTableCell>30</XDSTableCell>
- * </XDSTableRow>
+ * <XDSBaseTableRow>
+ *   <XDSBaseTableCell>Alice</XDSBaseTableCell>
+ *   <XDSBaseTableCell>30</XDSBaseTableCell>
+ * </XDSBaseTableRow>
  * ```
  */
-export const XDSTableCell = forwardRef<HTMLTableCellElement, XDSTableCellProps>(
-  ({children, ...props}, ref) => {
-    const ctx = useContext(TableContext);
+export const XDSBaseTableCell = forwardRef<
+  HTMLTableCellElement,
+  XDSBaseTableCellProps
+>(({children, ...props}, ref) => {
+  const ctx = useContext(TableContext);
 
-    if (!ctx) {
-      return (
-        <td ref={ref} {...props}>
-          {children}
-        </td>
-      );
-    }
-
-    const cellStyles: StyleXStyles[] = [densityStyles[ctx.density]];
-
-    if (ctx.dividers === 'rows' || ctx.dividers === 'grid') {
-      cellStyles.push(dividerRowStyles.cell);
-    }
-
-    if (ctx.dividers === 'columns' || ctx.dividers === 'grid') {
-      cellStyles.push(dividerColumnStyles.cell);
-    }
-
+  if (!ctx) {
     return (
-      <td ref={ref} {...props} {...stylex.props(...cellStyles)}>
+      <td ref={ref} {...props}>
         {children}
       </td>
     );
-  },
-);
+  }
 
-XDSTableCell.displayName = 'XDSTableCell';
+  const cellStyles: StyleXStyles[] = [densityStyles[ctx.density]];
+
+  if (ctx.dividers === 'rows' || ctx.dividers === 'grid') {
+    cellStyles.push(dividerRowStyles.cell);
+  }
+
+  if (ctx.dividers === 'columns' || ctx.dividers === 'grid') {
+    cellStyles.push(dividerColumnStyles.cell);
+  }
+
+  return (
+    <td ref={ref} {...props} {...stylex.props(...cellStyles)}>
+      {children}
+    </td>
+  );
+});
+
+XDSBaseTableCell.displayName = 'XDSBaseTableCell';

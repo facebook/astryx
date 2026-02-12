@@ -10,11 +10,12 @@
  * - /packages/core/src/Table/index.ts (exports if types change)
  */
 
-import {forwardRef, type ReactElement, type Ref} from 'react';
+import {forwardRef, memo, type ReactElement, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {
   XDSBaseTableProps,
   XDSTableColumn,
+  TablePlugin,
   TableRenderProps,
   HeaderRowRenderProps,
   HeaderCellRenderProps,
@@ -65,6 +66,113 @@ function getTotalProportional<T extends Record<string, unknown>>(
   }, 0);
 }
 
+// =============================================================================
+// Memoized Table Row Component
+// =============================================================================
+
+// Stable empty array to avoid creating new reference on each render
+const EMPTY_PLUGINS: TablePlugin<Record<string, unknown>>[] = [];
+
+interface TableRowProps<T extends Record<string, unknown>> {
+  item: T;
+  rowIndex: number;
+  rowKey: string | number;
+  columns: XDSTableColumn<T>[];
+  plugins: TablePlugin<T>[];
+}
+
+/**
+ * Memoized table row component.
+ * Only re-renders when the specific row's data changes.
+ */
+function TableRowInner<T extends Record<string, unknown>>({
+  item,
+  rowIndex,
+  rowKey,
+  columns,
+  plugins,
+}: TableRowProps<T>): ReactElement {
+  const rowRenderProps = applyPlugins(
+    plugins,
+    p => p.transformBodyRow,
+    {htmlProps: {}, styles: []} as BodyRowRenderProps,
+    item,
+    rowIndex,
+  );
+
+  return (
+    <tr
+      key={rowKey}
+      {...rowRenderProps.htmlProps}
+      {...stylex.props(...rowRenderProps.styles)}>
+      {columns.map(col => {
+        const cellRenderProps = applyPlugins(
+          plugins,
+          p => p.transformBodyCell,
+          {htmlProps: {}, styles: []} as BodyCellRenderProps,
+          col,
+          item,
+        );
+
+        const content = col.renderCell
+          ? col.renderCell(item)
+          : defaultCellRenderer(item, col.key);
+
+        return (
+          <td
+            key={col.key}
+            {...cellRenderProps.htmlProps}
+            {...stylex.props(...cellRenderProps.styles)}>
+            {content}
+          </td>
+        );
+      })}
+    </tr>
+  );
+}
+
+/**
+ * Compares TableRowProps to determine if re-render is needed.
+ * Shallow compares the item object and checks if columns/plugins references changed.
+ */
+function areRowPropsEqual<T extends Record<string, unknown>>(
+  prevProps: TableRowProps<T>,
+  nextProps: TableRowProps<T>,
+): boolean {
+  // Different row index means different styling (striped rows)
+  if (prevProps.rowIndex !== nextProps.rowIndex) return false;
+  if (prevProps.rowKey !== nextProps.rowKey) return false;
+
+  // If columns or plugins change, need to re-render all rows
+  if (prevProps.columns !== nextProps.columns) return false;
+  if (prevProps.plugins !== nextProps.plugins) return false;
+
+  // Shallow compare the item - if same reference, skip re-render
+  if (prevProps.item === nextProps.item) return true;
+
+  // Different object reference - compare values
+  const prevItem = prevProps.item;
+  const nextItem = nextProps.item;
+  const keys = Object.keys(nextItem);
+
+  for (const key of keys) {
+    if (prevItem[key] !== nextItem[key]) return false;
+  }
+
+  return true;
+}
+
+// Create the memoized component
+const MemoizedTableRow = memo(TableRowInner, areRowPropsEqual) as <
+  T extends Record<string, unknown>,
+>(
+  props: TableRowProps<T>,
+) => ReactElement;
+
+// =============================================================================
+// XDSBaseTable Component
+// =============================================================================
+
 /**
  * Inner XDSBaseTable implementation (generic-preserving).
  */
@@ -73,12 +181,15 @@ function XDSBaseTableInner<T extends Record<string, unknown>>(
     data,
     columns: columnsProp,
     idKey,
-    plugins = [],
+    plugins: pluginsProp,
     children,
     tableProps: userTableProps,
   }: XDSBaseTableProps<T>,
   ref: Ref<HTMLTableElement>,
 ): ReactElement {
+  // Use stable empty array when no plugins provided
+  const plugins = pluginsProp ?? (EMPTY_PLUGINS as TablePlugin<T>[]);
+
   // Resolve columns: explicit > auto-generated from data
   const resolvedColumns: XDSTableColumn<T>[] =
     columnsProp ?? (data ? generateColumns(data) : []);
@@ -162,42 +273,15 @@ function XDSBaseTableInner<T extends Record<string, unknown>>(
                     ? idKey(item)
                     : String(item[idKey]);
 
-              const rowRenderProps = applyPlugins(
-                plugins,
-                p => p.transformBodyRow,
-                {htmlProps: {}, styles: []} as BodyRowRenderProps,
-                item,
-                rowIndex,
-              );
-
               return (
-                <tr
+                <MemoizedTableRow<T>
                   key={rowKey}
-                  {...rowRenderProps.htmlProps}
-                  {...stylex.props(...rowRenderProps.styles)}>
-                  {resolvedColumns.map(col => {
-                    const cellRenderProps = applyPlugins(
-                      plugins,
-                      p => p.transformBodyCell,
-                      {htmlProps: {}, styles: []} as BodyCellRenderProps,
-                      col,
-                      item,
-                    );
-
-                    const content = col.renderCell
-                      ? col.renderCell(item)
-                      : defaultCellRenderer(item, col.key);
-
-                    return (
-                      <td
-                        key={col.key}
-                        {...cellRenderProps.htmlProps}
-                        {...stylex.props(...cellRenderProps.styles)}>
-                        {content}
-                      </td>
-                    );
-                  })}
-                </tr>
+                  item={item}
+                  rowIndex={rowIndex}
+                  rowKey={rowKey}
+                  columns={resolvedColumns}
+                  plugins={plugins}
+                />
               );
             })}
       </tbody>

@@ -1,8 +1,8 @@
 /**
- * @file XDSTableRow.tsx
+ * @file XDSBaseTableRow.tsx
  * @input React, StyleX, TableContext, theme tokens
- * @output Exports XDSTableRow component, XDSTableRowProps
- * @position Sub-component; used inside XDSTable children mode
+ * @output Exports XDSBaseTableRow component, XDSBaseTableRowProps
+ * @position Sub-component; used inside XDSBaseTable children mode
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Table/README.md
@@ -20,8 +20,8 @@ import {colorVars, transitionVars} from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
 import {TableContext} from './TableContext';
 
-/** Props for XDSTableRow — thin `<tr>` wrapper */
-export interface XDSTableRowProps extends HTMLAttributes<HTMLTableRowElement> {
+/** Props for XDSBaseTableRow — thin `<tr>` wrapper */
+export interface XDSBaseTableRowProps extends HTMLAttributes<HTMLTableRowElement> {
   children: ReactNode;
 }
 
@@ -67,54 +67,55 @@ const lastBodyRowStyles = stylex.create({
 });
 
 /**
- * XDSTableRow — a `<tr>` wrapper for children/streaming mode.
+ * XDSBaseTableRow — a `<tr>` wrapper for children/streaming mode.
  *
- * When used inside `<XDSTable>`, inherits styling from the table context
+ * When used inside `<XDSBaseTable>`, inherits styling from the table context
  * (striped, hover, divider overrides). When used standalone, renders a plain `<tr>`.
  *
  * @example
  * ```tsx
- * <XDSTable>
- *   <XDSTableRow>
- *     <XDSTableCell>Alice</XDSTableCell>
- *     <XDSTableCell>30</XDSTableCell>
- *   </XDSTableRow>
- * </XDSTable>
+ * <XDSBaseTable>
+ *   <XDSBaseTableRow>
+ *     <XDSBaseTableCell>Alice</XDSBaseTableCell>
+ *     <XDSBaseTableCell>30</XDSBaseTableCell>
+ *   </XDSBaseTableRow>
+ * </XDSBaseTable>
  * ```
  */
-export const XDSTableRow = forwardRef<HTMLTableRowElement, XDSTableRowProps>(
-  ({children, ...props}, ref) => {
-    const ctx = useContext(TableContext);
+export const XDSBaseTableRow = forwardRef<
+  HTMLTableRowElement,
+  XDSBaseTableRowProps
+>(({children, ...props}, ref) => {
+  const ctx = useContext(TableContext);
 
-    if (!ctx) {
-      return (
-        <tr ref={ref} {...props}>
-          {children}
-        </tr>
-      );
-    }
-
-    const rowStyles: StyleXStyles[] = [];
-
-    // Handle striped + hover combination to avoid backgroundColor conflicts
-    if (ctx.striped && ctx.hover) {
-      rowStyles.push(stripedHoverRowStyles.row);
-    } else if (ctx.striped) {
-      rowStyles.push(stripedRowStyles.row);
-    } else if (ctx.hover) {
-      rowStyles.push(hoverRowStyles.row);
-    }
-
-    if (ctx.dividers === 'rows' || ctx.dividers === 'grid') {
-      rowStyles.push(lastBodyRowStyles.row);
-    }
-
+  if (!ctx) {
     return (
-      <tr ref={ref} {...props} {...stylex.props(...rowStyles)}>
+      <tr ref={ref} {...props}>
         {children}
       </tr>
     );
-  },
-);
+  }
 
-XDSTableRow.displayName = 'XDSTableRow';
+  const rowStyles: StyleXStyles[] = [];
+
+  // Handle striped + hover combination to avoid backgroundColor conflicts
+  if (ctx.striped && ctx.hover) {
+    rowStyles.push(stripedHoverRowStyles.row);
+  } else if (ctx.striped) {
+    rowStyles.push(stripedRowStyles.row);
+  } else if (ctx.hover) {
+    rowStyles.push(hoverRowStyles.row);
+  }
+
+  if (ctx.dividers === 'rows' || ctx.dividers === 'grid') {
+    rowStyles.push(lastBodyRowStyles.row);
+  }
+
+  return (
+    <tr ref={ref} {...props} {...stylex.props(...rowStyles)}>
+      {children}
+    </tr>
+  );
+});
+
+XDSBaseTableRow.displayName = 'XDSBaseTableRow';

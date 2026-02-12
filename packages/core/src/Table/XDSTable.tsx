@@ -43,13 +43,14 @@ export type XDSTableDividers = 'rows' | 'columns' | 'grid' | 'none';
 
 /**
  * Props for the styled XDSTable component.
- * Extends XDSBaseTableProps with appearance configuration.
+ * Data-driven only — does not support children mode.
  *
  * @template T - The row data type
  */
-export interface XDSTableProps<
-  T extends Record<string, unknown>,
-> extends XDSBaseTableProps<T> {
+export interface XDSTableProps<T extends Record<string, unknown>> extends Omit<
+  XDSBaseTableProps<T>,
+  'children'
+> {
   /** Row density. @default 'balanced' */
   density?: XDSTableDensity;
   /** Divider style. @default 'rows' */
@@ -272,19 +273,25 @@ function buildXDSStylePlugin<T extends Record<string, unknown>>(
 // XDSTable Component
 // =============================================================================
 
+// Stable empty array to avoid creating new reference on each render
+const EMPTY_PLUGINS: TablePlugin<Record<string, unknown>>[] = [];
+
 function XDSTableInner<T extends Record<string, unknown>>(
   {
     density = 'balanced',
     dividers = 'rows',
     striped = false,
     hover = false,
-    plugins: userPlugins = [],
+    plugins: userPlugins,
     columns,
     data,
     ...rest
   }: XDSTableProps<T>,
   ref: Ref<HTMLTableElement>,
 ): ReactElement {
+  // Use stable empty array when no plugins provided
+  const stableUserPlugins = userPlugins ?? (EMPTY_PLUGINS as TablePlugin<T>[]);
+
   // Build the internal XDS styling plugin
   const xdsPlugin = useMemo(
     () => buildXDSStylePlugin<T>(density, dividers, striped, hover),
@@ -293,8 +300,8 @@ function XDSTableInner<T extends Record<string, unknown>>(
 
   // XDS plugin runs first, user plugins can override/extend
   const mergedPlugins = useMemo(
-    () => [xdsPlugin, ...userPlugins],
-    [xdsPlugin, userPlugins],
+    () => [xdsPlugin, ...stableUserPlugins],
+    [xdsPlugin, stableUserPlugins],
   );
 
   const contextValue = useMemo(

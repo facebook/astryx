@@ -2,12 +2,12 @@
  * @file TableContext.ts
  * @input React
  * @output Exports TableContext and TableContextValue
- * @position Context layer; connects XDSTable styling to sub-components (XDSTableRow, XDSTableCell)
+ * @position Context layer; connects XDSTable styling to sub-components (XDSBaseTableRow, XDSBaseTableCell)
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Table/XDSTable.tsx (provider)
- * - /packages/core/src/Table/XDSTableRow.tsx (consumer)
- * - /packages/core/src/Table/XDSTableCell.tsx (consumer)
+ * - /packages/core/src/Table/XDSBaseTableRow.tsx (consumer)
+ * - /packages/core/src/Table/XDSBaseTableCell.tsx (consumer)
  * - /packages/core/src/Table/index.ts (exports if types change)
  */
 
