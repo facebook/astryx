@@ -50,7 +50,7 @@ const styles = stylex.create({
     color: 'inherit',
     opacity: 0.6,
     fontSize: textSizeVars['--text-xsm'],
-    lineHeight: 1,
+    lineHeight: lineHeightVars['--leading-normal'],
   },
 });
 
