@@ -11,7 +11,7 @@ export {XDSBaseTable} from './XDSBaseTable';
 export {XDSTable} from './XDSTable';
 export {XDSTableRow} from './XDSTableRow';
 export {XDSTableCell} from './XDSTableCell';
-export {TableContext} from './TableContext';
+export {XDSTableContext} from './XDSTableContext';
 export {
   proportional,
   pixel,
@@ -38,4 +38,4 @@ export type {
 } from './XDSTable';
 export type {XDSTableRowProps} from './XDSTableRow';
 export type {XDSTableCellProps} from './XDSTableCell';
-export type {TableContextValue} from './TableContext';
+export type {XDSTableContextValue} from './XDSTableContext';

@@ -1,6 +1,6 @@
 /**
  * @file XDSTableRow.tsx
- * @input React, StyleX, TableContext, theme tokens
+ * @input React, StyleX, XDSTableContext, theme tokens
  * @output Exports XDSTableRow component, XDSTableRowProps
  * @position Sub-component; used inside XDSTable children mode
  *
@@ -18,7 +18,7 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, transitionVars} from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
-import {TableContext} from './TableContext';
+import {XDSTableContext} from './XDSTableContext';
 
 /** Props for XDSTableRow — thin `<tr>` wrapper */
 export interface XDSTableRowProps extends HTMLAttributes<HTMLTableRowElement> {
@@ -84,7 +84,7 @@ const lastBodyRowStyles = stylex.create({
  */
 export const XDSTableRow = forwardRef<HTMLTableRowElement, XDSTableRowProps>(
   ({children, ...props}, ref) => {
-    const ctx = useContext(TableContext);
+    const ctx = useContext(XDSTableContext);
 
     if (!ctx) {
       return (

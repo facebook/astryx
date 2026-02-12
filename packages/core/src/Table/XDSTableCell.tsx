@@ -1,6 +1,6 @@
 /**
  * @file XDSTableCell.tsx
- * @input React, StyleX, TableContext, theme tokens
+ * @input React, StyleX, XDSTableContext, theme tokens
  * @output Exports XDSTableCell component, XDSTableCellProps
  * @position Sub-component; used inside XDSTable children mode
  *
@@ -18,7 +18,7 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, textSizeVars} from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
-import {TableContext} from './TableContext';
+import {XDSTableContext} from './XDSTableContext';
 
 /** Props for XDSTableCell — thin `<td>` wrapper */
 export interface XDSTableCellProps extends TdHTMLAttributes<HTMLTableCellElement> {
@@ -78,7 +78,7 @@ const dividerColumnStyles = stylex.create({
  */
 export const XDSTableCell = forwardRef<HTMLTableCellElement, XDSTableCellProps>(
   ({children, ...props}, ref) => {
-    const ctx = useContext(TableContext);
+    const ctx = useContext(XDSTableContext);
 
     if (!ctx) {
       return (

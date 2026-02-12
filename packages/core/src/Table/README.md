@@ -6,12 +6,13 @@ Table components for the XDS design system.
 
 ## Components
 
-| File               | Export         | Purpose                                                      |
-| ------------------ | -------------- | ------------------------------------------------------------ |
-| `XDSTable.tsx`     | `XDSTable`     | Styled, data-driven table with density, dividers, and hover  |
-| `XDSBaseTable.tsx` | `XDSBaseTable` | Unstyled table with colgroup, plugin pipeline, children mode |
-| `XDSTableRow.tsx`  | `XDSTableRow`  | Thin `<tr>` wrapper for XDSTable children/streaming mode     |
-| `XDSTableCell.tsx` | `XDSTableCell` | Thin `<td>` wrapper for XDSTable children/streaming mode     |
+| File                 | Export            | Purpose                                                      |
+| -------------------- | ----------------- | ------------------------------------------------------------ |
+| `XDSTable.tsx`       | `XDSTable`        | Styled, data-driven table with density, dividers, and hover  |
+| `XDSBaseTable.tsx`   | `XDSBaseTable`    | Unstyled table with colgroup, plugin pipeline, children mode |
+| `XDSTableRow.tsx`    | `XDSTableRow`     | Thin `<tr>` wrapper for XDSTable children/streaming mode     |
+| `XDSTableCell.tsx`   | `XDSTableCell`    | Thin `<td>` wrapper for XDSTable children/streaming mode     |
+| `XDSTableContext.ts` | `XDSTableContext` | Context for passing styling props to row/cell components     |
 
 ## Utilities
 

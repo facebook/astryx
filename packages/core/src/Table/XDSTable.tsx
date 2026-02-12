@@ -20,7 +20,7 @@ import {
   fontWeightVars,
 } from '../theme/tokens.stylex';
 import {XDSBaseTable} from './XDSBaseTable';
-import {TableContext} from './TableContext';
+import {XDSTableContext} from './XDSTableContext';
 import type {
   XDSBaseTableProps,
   TablePlugin,
@@ -197,7 +197,7 @@ function XDSTableInner<T extends Record<string, unknown>>(
   );
 
   return (
-    <TableContext.Provider value={contextValue}>
+    <XDSTableContext.Provider value={contextValue}>
       <XDSBaseTable<T>
         ref={ref}
         data={data}
@@ -205,7 +205,7 @@ function XDSTableInner<T extends Record<string, unknown>>(
         plugins={mergedPlugins}
         {...rest}
       />
-    </TableContext.Provider>
+    </XDSTableContext.Provider>
   );
 }
 

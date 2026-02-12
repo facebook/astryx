@@ -1,7 +1,7 @@
 /**
- * @file TableContext.ts
+ * @file XDSTableContext.ts
  * @input React
- * @output Exports TableContext and TableContextValue
+ * @output Exports XDSTableContext and XDSTableContextValue
  * @position Context layer; connects XDSTable styling to sub-components (XDSTableRow, XDSTableCell)
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -13,11 +13,11 @@
 
 import {createContext} from 'react';
 
-export interface TableContextValue {
+export interface XDSTableContextValue {
   density: 'compact' | 'balanced' | 'spacious';
   dividers: 'rows' | 'columns' | 'grid' | 'none';
   striped: boolean;
   hover: boolean;
 }
 
-export const TableContext = createContext<TableContextValue | null>(null);
+export const XDSTableContext = createContext<XDSTableContextValue | null>(null);
