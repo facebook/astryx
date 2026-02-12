@@ -10,9 +10,9 @@
  * 3. Non-memoized columns/data don't cause excessive re-renders
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
 import {render, screen, act} from '@testing-library/react';
-import {useState, useCallback, useRef, useEffect, useMemo} from 'react';
+import {useState} from 'react';
 import {XDSTable} from './XDSTable';
 import type {XDSTableColumn} from './types';
 

@@ -8,7 +8,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, within} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import {XDSBaseTable} from './XDSBaseTable';
 import {XDSTable} from './XDSTable';
 import {XDSTableRow} from './XDSTableRow';

@@ -135,7 +135,7 @@ function buildXDSStylePlugin<T extends Record<string, unknown>>(
 
     transformHeaderCell(
       props: HeaderCellRenderProps,
-      column,
+      _column,
     ): HeaderCellRenderProps {
       const cellStyles = [
         ...props.styles,

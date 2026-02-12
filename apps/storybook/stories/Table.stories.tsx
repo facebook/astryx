@@ -1,13 +1,12 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {
   XDSTable,
-  XDSBaseTable,
   XDSTableRow,
   XDSTableCell,
   proportional,
   pixel,
 } from '@xds/core/Table';
-import type {XDSTableColumn, TablePlugin} from '@xds/core/Table';
+import type {XDSTableColumn} from '@xds/core/Table';
 import {colorRaw, spacingRaw, radiusRaw, textSizeRaw} from '@xds/core/theme';
 
 // =============================================================================
