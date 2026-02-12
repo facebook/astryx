@@ -75,9 +75,9 @@ _Includes interactive previews._
 
 ![Default](https://example.com/screenshots/core-xdsdatepicker--default.png)
 
-**Interaction Preview:**
+**Interaction Preview:** ([view mp4](https://example.com/screenshots/core-xdsdatepicker--default.mp4))
 
-<video src="https://example.com/screenshots/core-xdsdatepicker--default.mp4" autoplay loop muted playsinline width="400"></video>
+![Default interaction](https://example.com/screenshots/core-xdsdatepicker--default.gif)
 
 [View in Storybook](https://xds-storybook.example.com?path=/story/core-xdsdatepicker--default)
 

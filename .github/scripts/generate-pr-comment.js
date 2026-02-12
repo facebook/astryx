@@ -254,15 +254,15 @@ if (hasAffectedComponents && screenshots.length > 0) {
         }
 
         if (videoUrl) {
+          screenshotSection += `**Interaction Preview:**`;
           if (mp4Url) {
-            screenshotSection += `**Interaction Preview:**\n\n<video src="${mp4Url}" autoplay loop muted playsinline width="400"></video>\n\n`;
-          } else {
-            screenshotSection += `**Interaction Preview:**\n\n![${storyName} interaction](${videoUrl})\n\n`;
+            screenshotSection += ` ([view mp4](${mp4Url}))`;
           }
+          screenshotSection += `\n\n![${storyName} interaction](${videoUrl})\n\n`;
         }
 
         if (storybookUrl) {
-          const baseUrl = storybookUrl.replace(/\/+$/, '');
+          const baseUrl = storybookUrl.endsWith('/') ? storybookUrl : storybookUrl + '/';
           screenshotSection += `[View in Storybook](${baseUrl}?path=/story/${shot.storyId})\n\n`;
         } else {
           screenshotSection += `Run \`yarn storybook\` and navigate to: \`${shot.storyId}\`\n\n`;
