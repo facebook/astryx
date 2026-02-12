@@ -15,6 +15,7 @@ export * from './Button';
 export * from './Calendar';
 export * from './Center';
 export * from './CheckboxInput';
+export * from './CloseButton';
 export * from './Divider';
 export * from './Link';
 export * from './Switch';

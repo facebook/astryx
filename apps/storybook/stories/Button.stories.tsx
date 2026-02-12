@@ -25,7 +25,7 @@ const meta: Meta<typeof XDSButton> = {
       control: 'boolean',
       description: 'Loading state',
     },
-    disabled: {
+    isDisabled: {
       control: 'boolean',
       description: 'Disabled state',
     },
@@ -75,7 +75,7 @@ export const Disabled: Story = {
   args: {
     label: 'Disabled',
     variant: 'primary',
-    disabled: true,
+    isDisabled: true,
   },
 };
 
@@ -147,10 +147,10 @@ export const AllVariants: Story = {
         <XDSButton label="Loading..." variant="destructive" loading />
       </div>
       <div style={{display: 'flex', gap: '12px'}}>
-        <XDSButton label="Disabled" variant="primary" disabled />
-        <XDSButton label="Disabled" variant="secondary" disabled />
-        <XDSButton label="Disabled" variant="ghost" disabled />
-        <XDSButton label="Disabled" variant="destructive" disabled />
+        <XDSButton label="Disabled" variant="primary" isDisabled />
+        <XDSButton label="Disabled" variant="secondary" isDisabled />
+        <XDSButton label="Disabled" variant="ghost" isDisabled />
+        <XDSButton label="Disabled" variant="destructive" isDisabled />
       </div>
       <div style={{display: 'flex', gap: '12px'}}>
         <XDSButton

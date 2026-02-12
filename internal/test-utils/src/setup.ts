@@ -9,3 +9,13 @@
 
 /// <reference types="@testing-library/jest-dom" />
 import '@testing-library/jest-dom/vitest';
+
+// Polyfill for Popover API (not supported in jsdom)
+// This prevents errors when testing components that use XDSTooltip
+if (typeof HTMLElement.prototype.showPopover === 'undefined') {
+  HTMLElement.prototype.showPopover = function () {};
+  HTMLElement.prototype.hidePopover = function () {};
+  HTMLElement.prototype.togglePopover = function () {
+    return false;
+  };
+}

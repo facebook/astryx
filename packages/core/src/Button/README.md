@@ -32,15 +32,16 @@ import { XDSButton } from '@xds/core/Button';
 
 ## Props
 
-| Prop       | Type                                                   | Default       | Description                 |
-| ---------- | ------------------------------------------------------ | ------------- | --------------------------- |
-| `label`    | `string`                                               | —             | Accessible label (required) |
-| `variant`  | `'primary' \| 'secondary' \| 'ghost' \| 'destructive'` | `'secondary'` | Visual style variant        |
-| `size`     | `'sm' \| 'md' \| 'lg'`                                 | `'md'`        | Size variant                |
-| `loading`  | `boolean`                                              | `false`       | Shows loading spinner       |
-| `disabled` | `boolean`                                              | `false`       | Disables the button         |
-| `icon`     | `ReactNode`                                            | —             | Icon element                |
-| `children` | `ReactNode`                                            | —             | Button content              |
+| Prop         | Type                                                   | Default       | Description                 |
+| ------------ | ------------------------------------------------------ | ------------- | --------------------------- |
+| `label`      | `string`                                               | —             | Accessible label (required) |
+| `variant`    | `'primary' \| 'secondary' \| 'ghost' \| 'destructive'` | `'secondary'` | Visual style variant        |
+| `size`       | `'sm' \| 'md' \| 'lg'`                                 | `'md'`        | Size variant                |
+| `loading`    | `boolean`                                              | `false`       | Shows loading spinner       |
+| `isDisabled` | `boolean`                                              | `false`       | Disables the button         |
+| `icon`       | `ReactNode`                                            | —             | Icon element                |
+| `children`   | `ReactNode`                                            | —             | Button content              |
+| `tooltip`    | `string`                                               | —             | Tooltip text shown on hover |
 
 ## Files
 

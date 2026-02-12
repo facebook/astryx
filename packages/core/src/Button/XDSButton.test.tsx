@@ -78,7 +78,7 @@ describe('XDSButton', () => {
   it('does not fire click when disabled', async () => {
     const user = userEvent.setup();
     const handleClick = vi.fn();
-    render(<XDSButton label="Click me" disabled onClick={handleClick} />);
+    render(<XDSButton label="Click me" isDisabled onClick={handleClick} />);
 
     await user.click(screen.getByRole('button'));
     expect(handleClick).not.toHaveBeenCalled();

@@ -15,6 +15,7 @@ import {
   forwardRef,
   useContext,
   type ButtonHTMLAttributes,
+  type ReactElement,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -29,6 +30,7 @@ import {
   lineHeightVars,
 } from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
+import {XDSTooltip} from '../Layer/XDSTooltip';
 
 /**
  * Base button styles
@@ -188,7 +190,7 @@ declare module '../theme/types' {
 
 export interface XDSButtonProps extends Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
-  'children'
+  'children' | 'disabled'
 > {
   /**
    * Accessible label for the button (required for accessibility).
@@ -206,6 +208,11 @@ export interface XDSButtonProps extends Omit<
    */
   size?: XDSButtonSize;
   /**
+   * Whether the button is disabled.
+   * @default false
+   */
+  isDisabled?: boolean;
+  /**
    * Whether the button is in a loading state.
    * @default false
    */
@@ -220,6 +227,10 @@ export interface XDSButtonProps extends Omit<
    * button becomes icon-only with label used as aria-label.
    */
   children?: ReactNode;
+  /**
+   * Tooltip text shown on hover.
+   */
+  tooltip?: string;
 }
 
 /**
@@ -281,15 +292,16 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
       label,
       variant = 'secondary',
       size = 'md',
+      isDisabled = false,
       loading = false,
       icon,
-      disabled,
       children,
+      tooltip,
       ...props
     },
     ref,
-  ) => {
-    const isDisabled = disabled || loading;
+  ): ReactElement => {
+    const buttonDisabled = isDisabled || loading;
     const useLightSpinner = variant === 'primary' || variant === 'destructive';
     const isIconOnly = icon != null && children == null;
 
@@ -298,10 +310,10 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
     const themeVariantOverride =
       themeContext?.theme.components?.button?.variants?.[variant];
 
-    return (
+    const button = (
       <button
         ref={ref}
-        disabled={isDisabled}
+        disabled={buttonDisabled}
         aria-label={isIconOnly ? label : undefined}
         {...stylex.props(
           styles.base,
@@ -309,7 +321,7 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
           variants[variant],
           themeVariantOverride,
           isIconOnly && styles.iconOnly,
-          isDisabled && styles.disabled,
+          buttonDisabled && styles.disabled,
           loading && loadingStyles.loading,
         )}
         {...props}>
@@ -327,6 +339,16 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
         {children ?? (isIconOnly ? null : label)}
       </button>
     );
+
+    if (tooltip) {
+      return (
+        <XDSTooltip content={tooltip} placement="above">
+          {button}
+        </XDSTooltip>
+      );
+    }
+
+    return button;
   },
 );
 

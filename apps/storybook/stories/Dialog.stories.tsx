@@ -9,6 +9,7 @@ import {
   XDSHStack,
 } from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
+import {XDSCloseButton} from '@xds/core/CloseButton';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 
 const meta: Meta<typeof XDSDialog> = {
@@ -61,7 +62,10 @@ function BasicModalExample() {
         <XDSLayout
           header={
             <XDSLayoutHeader hasDivider>
-              <XDSHeading level={2}>Modal Title</XDSHeading>
+              <XDSHStack hAlign="between" vAlign="center">
+                <XDSHeading level={2}>Modal Title</XDSHeading>
+                <XDSCloseButton onClick={() => setIsShown(false)} />
+              </XDSHStack>
             </XDSLayoutHeader>
           }
           content={
@@ -116,7 +120,10 @@ function WideModalExample() {
         <XDSLayout
           header={
             <XDSLayoutHeader hasDivider>
-              <XDSHeading level={2}>Wide Modal</XDSHeading>
+              <XDSHStack hAlign="between" vAlign="center">
+                <XDSHeading level={2}>Wide Modal</XDSHeading>
+                <XDSCloseButton onClick={() => setIsShown(false)} />
+              </XDSHStack>
             </XDSLayoutHeader>
           }
           content={
@@ -167,7 +174,10 @@ function FullscreenModalExample() {
         <XDSLayout
           header={
             <XDSLayoutHeader hasDivider>
-              <XDSHeading level={2}>Fullscreen Modal</XDSHeading>
+              <XDSHStack hAlign="between" vAlign="center">
+                <XDSHeading level={2}>Fullscreen Modal</XDSHeading>
+                <XDSCloseButton onClick={() => setIsShown(false)} />
+              </XDSHStack>
             </XDSLayoutHeader>
           }
           content={
@@ -283,7 +293,10 @@ function FormModalExample() {
         <XDSLayout
           header={
             <XDSLayoutHeader hasDivider>
-              <XDSHeading level={2}>Edit Profile</XDSHeading>
+              <XDSHStack hAlign="between" vAlign="center">
+                <XDSHeading level={2}>Edit Profile</XDSHeading>
+                <XDSCloseButton onClick={() => setIsShown(false)} />
+              </XDSHStack>
             </XDSLayoutHeader>
           }
           content={
@@ -341,7 +354,10 @@ function InfoModalExample() {
         <XDSLayout
           header={
             <XDSLayoutHeader hasDivider>
-              <XDSHeading level={2}>Information</XDSHeading>
+              <XDSHStack hAlign="between" vAlign="center">
+                <XDSHeading level={2}>Information</XDSHeading>
+                <XDSCloseButton onClick={() => setIsShown(false)} />
+              </XDSHStack>
             </XDSLayoutHeader>
           }
           content={
@@ -395,7 +411,10 @@ function PositionedModalExample() {
         <XDSLayout
           header={
             <XDSLayoutHeader hasDivider>
-              <XDSHeading level={2}>Positioned Modal</XDSHeading>
+              <XDSHStack hAlign="between" vAlign="center">
+                <XDSHeading level={2}>Positioned Modal</XDSHeading>
+                <XDSCloseButton onClick={() => setIsShown(false)} />
+              </XDSHStack>
             </XDSLayoutHeader>
           }
           content={
@@ -447,7 +466,10 @@ function ScrollingModalExample() {
         <XDSLayout
           header={
             <XDSLayoutHeader hasDivider>
-              <XDSHeading level={2}>Terms and Conditions</XDSHeading>
+              <XDSHStack hAlign="between" vAlign="center">
+                <XDSHeading level={2}>Terms and Conditions</XDSHeading>
+                <XDSCloseButton onClick={() => setIsShown(false)} />
+              </XDSHStack>
             </XDSLayoutHeader>
           }
           content={
@@ -523,7 +545,10 @@ function ConfirmationModalExample() {
         <XDSLayout
           header={
             <XDSLayoutHeader hasDivider>
-              <XDSHeading level={2}>Confirm Delete</XDSHeading>
+              <XDSHStack hAlign="between" vAlign="center">
+                <XDSHeading level={2}>Confirm Delete</XDSHeading>
+                <XDSCloseButton onClick={() => setIsShown(false)} />
+              </XDSHStack>
             </XDSLayoutHeader>
           }
           content={
