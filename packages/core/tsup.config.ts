@@ -30,7 +30,7 @@ export default defineConfig({
             '@stylexjs/babel-plugin',
             {
               dev: false,
-              runtimeInjection: true,
+              runtimeInjection: false,
               genConditionalClasses: true,
               treeshakeCompensation: true,
               unstable_moduleResolution: {
