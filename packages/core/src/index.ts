@@ -31,6 +31,7 @@ export * from './TimeInput';
 export * from './NumberInput';
 export * from './Table';
 export * from './Dialog';
+export * from './TopNav';
 
 // Layout utilities and components (includes XDSHStack, XDSVStack)
 export * from './Layout';
