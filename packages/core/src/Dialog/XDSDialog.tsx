@@ -211,7 +211,7 @@ export interface XDSDialogProps extends Omit<
  *
  * <XDSDialog isShown={isShown} onHide={() => setIsShown(false)}>
  *   <XDSLayout
- *     header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
+ *     header={<XDSDialogHeader title="Title" onHide={() => setIsShown(false)} />}
  *     content={<XDSLayoutContent>Content</XDSLayoutContent>}
  *     footer={<XDSLayoutFooter hasDivider>Actions</XDSLayoutFooter>}
  *   />
