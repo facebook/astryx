@@ -22,7 +22,9 @@ export type EscapeHatchType =
   | 'hardcoded_size' // Acceptable: explicit sizes are often needed
   | 'custom_animation' // Gap: missing animation support
   | 'layout_workaround' // Gap: missing layout primitive
-  | 'a11y_click_handler'; // Anti-pattern: onClick on non-interactive element
+  | 'a11y_click_handler' // Anti-pattern: onClick on non-interactive element
+  | 'hardcoded_typography' // Anti-pattern: raw fontSize/fontWeight/lineHeight/fontFamily instead of tokens
+  | 'hallucinated_typography_token'; // Hallucination: invalid CSS variable like --font-size-*, --font-family-*
 
 export type EscapeHatchSeverity = 'critical' | 'acceptable';
 
@@ -215,7 +217,11 @@ export interface AccessibilityIssue {
 
 export interface DesignSystemIssue {
   severity: 'critical' | 'moderate' | 'minor';
-  category: 'component-usage' | 'token-usage' | 'pattern-violation';
+  category:
+    | 'component-usage'
+    | 'token-usage'
+    | 'pattern-violation'
+    | 'typography-violation';
   issue: string;
   recommendation: string;
   codeSnippet?: string;

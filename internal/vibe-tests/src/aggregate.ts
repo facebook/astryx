@@ -339,6 +339,7 @@ const ANTI_PATTERN_HATCHES: EscapeHatchType[] = [
   'hardcoded_spacing',
   'inline_style', // Should use StyleX instead
   'a11y_click_handler', // Accessibility issue: use button instead
+  'hardcoded_typography', // Should use XDSText/XDSHeading type system
 ];
 
 interface TierCounts {
@@ -766,6 +767,88 @@ function detectEscapeHatches(
         }
       }
     }
+  }
+
+  // Check for hardcoded typography values (fontSize, fontWeight, lineHeight, fontFamily)
+  // These should use XDSText/XDSHeading type system or design tokens
+  if (target === 'xds') {
+    // Hardcoded fontSize (raw px/rem/em values, not via var(--text-*))
+    const hardcodedFontSizeRegex =
+      /fontSize\s*:\s*['"]?\d+(?:\.\d+)?(?:px|rem|em)['"]?/gi;
+    while ((match = hardcodedFontSizeRegex.exec(code)) !== null) {
+      if (!match[0].includes('var(')) {
+        hatches.push({
+          type: 'hardcoded_typography',
+          severity: 'acceptable',
+          detail:
+            'Hardcoded fontSize instead of using XDSText/XDSHeading type system or --text-* tokens',
+          codeSnippet: match[0],
+        });
+      }
+    }
+
+    // Hardcoded fontWeight (raw numeric values, not via var(--font-weight-*))
+    const hardcodedFontWeightRegex =
+      /fontWeight\s*:\s*['"]?(?:100|200|300|400|500|600|700|800|900)['"]?/gi;
+    while ((match = hardcodedFontWeightRegex.exec(code)) !== null) {
+      if (!match[0].includes('var(')) {
+        hatches.push({
+          type: 'hardcoded_typography',
+          severity: 'acceptable',
+          detail:
+            'Hardcoded fontWeight instead of using XDSText weight prop or --font-weight-* tokens',
+          codeSnippet: match[0],
+        });
+      }
+    }
+
+    // Hardcoded lineHeight (raw numeric/px/rem values, not via var(--leading-*))
+    const hardcodedLineHeightRegex =
+      /lineHeight\s*:\s*['"]?\d+(?:\.\d+)?(?:px|rem|em)?['"]?/gi;
+    while ((match = hardcodedLineHeightRegex.exec(code)) !== null) {
+      if (!match[0].includes('var(')) {
+        hatches.push({
+          type: 'hardcoded_typography',
+          severity: 'acceptable',
+          detail:
+            'Hardcoded lineHeight instead of using XDSText/XDSHeading type system or --leading-* tokens',
+          codeSnippet: match[0],
+        });
+      }
+    }
+
+    // Hardcoded fontFamily (raw font stack instead of var(--font-*))
+    const hardcodedFontFamilyRegex =
+      /fontFamily\s*:\s*['"][^'"]*(?:sans-serif|serif|monospace|Arial|Helvetica|Roboto|Geist)[^'"]*['"]/gi;
+    while ((match = hardcodedFontFamilyRegex.exec(code)) !== null) {
+      if (!match[0].includes('var(')) {
+        hatches.push({
+          type: 'hardcoded_typography',
+          severity: 'acceptable',
+          detail:
+            'Hardcoded fontFamily instead of using --font-body, --font-heading, or --font-code tokens',
+          codeSnippet: match[0],
+        });
+      }
+    }
+
+    // Hallucinated typography CSS variables
+    const hallucinatedTypographyTokenRegex =
+      /var\(\s*--(?:font-size-\w+|font-family-\w+|xds-font-\w+|xds-text-\w+|xds-heading-\w+|text-size-\w+|line-height-\w+)\s*\)/gi;
+    while ((match = hallucinatedTypographyTokenRegex.exec(code)) !== null) {
+      hatches.push({
+        type: 'hallucinated_typography_token',
+        severity: 'critical',
+        detail:
+          'Hallucinated typography CSS variable. Valid tokens: --text-*, --font-body, --font-code, --font-heading, --font-weight-*, --leading-*',
+        codeSnippet: match[0],
+      });
+    }
+
+    // Note: Raw HTML heading/paragraph elements (<h1>-<h6>, <p>) are acceptable
+    // in XDS because global typography styles handle them correctly.
+    // We still prefer XDSHeading/XDSText for structured UI (props like weight,
+    // maxLines, variant) but don't flag raw HTML as an escape hatch.
   }
 
   return hatches;
