@@ -800,27 +800,34 @@ function loadResults(resultsDir: string): (TestResult & {target?: string})[] {
       throw new Error(`No result files found in ${individualResultsDir}`);
     }
 
-    // Process JSON files (legacy format)
+    // Process JSON files (legacy format or degradation arrays)
     for (const file of files) {
       try {
         const resultPath = path.join(individualResultsDir, file);
         const content = fs.readFileSync(resultPath, 'utf-8');
-        const result = JSON.parse(content) as TestResult;
+        const parsed = JSON.parse(content);
 
-        // Infer timing from file timestamps if durationMs is 0 or missing
-        if (!result.durationMs || result.durationMs === 0) {
-          const taskPath = path.join(tasksDir, file);
-          if (fs.existsSync(taskPath)) {
-            const taskStat = fs.statSync(taskPath);
-            const resultStat = fs.statSync(resultPath);
-            const inferredDurationMs = resultStat.mtimeMs - taskStat.mtimeMs;
-            if (inferredDurationMs > 0) {
-              result.durationMs = Math.round(inferredDurationMs);
+        // Handle degradation results stored as arrays
+        const resultEntries: TestResult[] = Array.isArray(parsed)
+          ? parsed
+          : [parsed];
+
+        for (const result of resultEntries) {
+          // Infer timing from file timestamps if durationMs is 0 or missing
+          if (!result.durationMs || result.durationMs === 0) {
+            const taskPath = path.join(tasksDir, file);
+            if (fs.existsSync(taskPath)) {
+              const taskStat = fs.statSync(taskPath);
+              const resultStat = fs.statSync(resultPath);
+              const inferredDurationMs = resultStat.mtimeMs - taskStat.mtimeMs;
+              if (inferredDurationMs > 0) {
+                result.durationMs = Math.round(inferredDurationMs);
+              }
             }
           }
-        }
 
-        results.push(result);
+          results.push(result);
+        }
       } catch (e) {
         console.warn(`Warning: Failed to parse ${file}: ${e}`);
       }
