@@ -46,7 +46,7 @@ const SKIP_DIRS = new Set(['theme', 'hooks', 'utils', '__tests__', 'node_modules
  * Auto-discover components by scanning for XDS*.tsx files in core/src/.
  * Groups them by category using the DIR_TO_CATEGORY mapping.
  */
-function discoverComponents(coreDir) {
+export function discoverComponents(coreDir) {
   const srcDir = path.join(coreDir, 'src');
   const categories = {};
 
@@ -105,7 +105,7 @@ function discoverComponents(coreDir) {
  * Minimal cleanup for full docs (default mode).
  * Strips SYNC comments, rewrites title, collapses blank lines.
  */
-function cleanReadme(content, componentName) {
+export function cleanReadme(content, componentName) {
   const displayName = componentName.startsWith('XDS')
     ? componentName
     : componentName.charAt(0).toUpperCase() + componentName.slice(1);
@@ -158,7 +158,7 @@ const MAX_EXAMPLES = 3;
  * Keeps: title, description, Features, Usage (limited examples), Props, Implementation Notes.
  * Drops: Files, RTL Support, Related, ASCII art, overflow code blocks.
  */
-function extractCompact(content, componentName) {
+export function extractCompact(content, componentName) {
   const lines = content.split('\n');
   const output = [];
   let inSkipSection = false;
@@ -263,7 +263,7 @@ function extractCompact(content, componentName) {
  * and nested directories. Falls back to finding the directory
  * containing XDS{name}.tsx and returning its nearest README.
  */
-function findComponentReadme(coreDir, name) {
+export function findComponentReadme(coreDir, name) {
   const srcDir = path.join(coreDir, 'src');
 
   // Direct match: src/{name}/README.md
@@ -299,7 +299,7 @@ function findComponentReadme(coreDir, name) {
  * For "Layout" finds src/Layout/XDSLayout/XDSLayout.tsx
  * For "Card" finds src/Layout/Container/XDSCard.tsx (deep search fallback)
  */
-function findComponentSource(coreDir, name) {
+export function findComponentSource(coreDir, name) {
   const srcDir = path.join(coreDir, 'src');
   const xdsName = `XDS${name}.tsx`;
 

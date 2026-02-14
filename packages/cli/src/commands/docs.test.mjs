@@ -1,0 +1,51 @@
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as os from 'node:os';
+import {Command} from 'commander';
+import {registerDocs} from './docs.mjs';
+
+let tmpDir;
+
+beforeEach(() => {
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-docs-test-'));
+  vi.spyOn(console, 'log').mockImplementation(() => {});
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+});
+
+afterEach(() => {
+  fs.rmSync(tmpDir, {recursive: true, force: true});
+  vi.restoreAllMocks();
+});
+
+function createProgram() {
+  const program = new Command();
+  program.exitOverride(); // Throw instead of calling process.exit
+  registerDocs(program);
+  return program;
+}
+
+describe('registerDocs', () => {
+  it('lists available topics when no topic given', async () => {
+    const program = createProgram();
+    await program.parseAsync(['node', 'xds', 'docs']);
+
+    const output = console.log.mock.calls.map(c => c[0]).join('\n');
+    expect(output).toContain('principles');
+    expect(output).toContain('tokens');
+  });
+
+  it('errors for unknown topic', async () => {
+    const program = createProgram();
+    vi.spyOn(process, 'exit').mockImplementation(code => {
+      throw new Error(`exit ${code}`);
+    });
+
+    await expect(
+      program.parseAsync(['node', 'xds', 'docs', 'nonexistent']),
+    ).rejects.toThrow('exit 1');
+
+    const errorOutput = console.error.mock.calls.map(c => c[0]).join('\n');
+    expect(errorOutput).toContain('Unknown topic');
+  });
+});
