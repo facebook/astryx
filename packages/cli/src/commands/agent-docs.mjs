@@ -29,6 +29,9 @@ function generateCompressedIndex(version) {
 |npx xds swizzle <Name>               Copy component source for customization
 |npx xds theme <preset>               Apply theme (default, neutral)
 |npx xds template <name> [path]       Scaffold page (blank, table, login)
+|npx xds swizzle <Name> --gap "<reason>"  Swizzle + file gap report
+|npx xds gap-report --component <Name> --category <cat> --reason "<why>"  File gap without swizzle
+|RULE: When swizzling to unblock yourself, ALWAYS use --gap to explain what capability was missing.
 ${XDS_MARKER_END}`;
 }
 
