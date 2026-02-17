@@ -19,6 +19,7 @@ export * from './RadioList';
 export * from './CloseButton';
 export * from './Divider';
 export * from './Link';
+export * from './Slider';
 export * from './Switch';
 export * from './DateInput';
 export * from './Field';
