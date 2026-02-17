@@ -529,7 +529,7 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
         : label;
 
       const useTooltip = valueDisplay === 'tooltip';
-      const tooltipPlacement = isHorizontal ? 'above' : 'before';
+      const tooltipPlacement = isHorizontal ? 'above' : 'start';
 
       const thumbElement = (
         <div
