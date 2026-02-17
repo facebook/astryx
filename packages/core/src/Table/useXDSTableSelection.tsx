@@ -138,7 +138,8 @@ const selectedRowStyles = stylex.create({
 
 const selectionCellStyles = stylex.create({
   base: {
-    width: '48px',
+    width: '36px',
+    maxWidth: '36px',
     boxSizing: 'border-box',
   },
 });
