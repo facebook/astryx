@@ -356,7 +356,7 @@ export const AsyncAction: Story = {
     const [value, setValue] = useState<ISOTimeString | undefined>();
 
     // Simulate server sync (e.g., saving time to API)
-    const simulateServerSync = async (newValue: ISOTimeString | undefined) => {
+    const simulateServerAction = async (newValue: ISOTimeString | undefined) => {
       setValue(newValue);
       await new Promise<void>(resolve => {
         setTimeout(resolve, 1500);
@@ -373,7 +373,7 @@ export const AsyncAction: Story = {
           label="Meeting time"
           description="Changes are saved automatically"
           value={value}
-          onChangeAction={simulateServerSync}
+          onChangeAction={simulateServerAction}
           placeholder="Select a meeting time"
         />
       </XDSVStack>

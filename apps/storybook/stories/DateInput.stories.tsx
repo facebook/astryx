@@ -309,7 +309,7 @@ export const AsyncAction: Story = {
     const [value, setValue] = useState<ISODateString | undefined>();
 
     // Simulate server sync (e.g., saving date to API)
-    const simulateServerSync = async (newValue: ISODateString | undefined) => {
+    const simulateServerAction = async (newValue: ISODateString | undefined) => {
       setValue(newValue);
       await new Promise<void>(resolve => {
         setTimeout(resolve, 1500);
@@ -326,7 +326,7 @@ export const AsyncAction: Story = {
           label="Event date"
           description="Changes are saved automatically"
           value={value}
-          onChangeAction={simulateServerSync}
+          onChangeAction={simulateServerAction}
           placeholder="Select an event date"
         />
       </XDSVStack>

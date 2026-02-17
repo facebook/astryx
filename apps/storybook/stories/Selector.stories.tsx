@@ -456,7 +456,7 @@ export const AsyncAction: Story = {
     const [value, setValue] = useState<string | undefined>();
 
     // Simulate server sync (e.g., saving preference to API)
-    const simulateServerSync = async (newValue: string) => {
+    const simulateServerAction = async (newValue: string) => {
       setValue(newValue);
       await new Promise<void>(resolve => {
         setTimeout(resolve, 1500);
@@ -479,7 +479,7 @@ export const AsyncAction: Story = {
             {value: 'urgent', label: 'Urgent'},
           ]}
           value={value}
-          onChangeAction={simulateServerSync}
+          onChangeAction={simulateServerAction}
           placeholder="Select priority..."
         />
       </XDSVStack>

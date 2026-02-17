@@ -555,7 +555,7 @@ export const AsyncAction: Story = {
     const [value, setValue] = useState('');
 
     // Simulate server sync (e.g., auto-save to API)
-    const simulateServerSync = async (newValue: string) => {
+    const simulateServerAction = async (newValue: string) => {
       setValue(newValue);
       await new Promise<void>(resolve => {
         setTimeout(resolve, 1500);
@@ -572,7 +572,7 @@ export const AsyncAction: Story = {
           label="Notes"
           description="Changes are saved automatically"
           value={value}
-          onChangeAction={simulateServerSync}
+          onChangeAction={simulateServerAction}
           placeholder="Start typing to auto-save..."
           rows={4}
         />

@@ -374,7 +374,7 @@ export const AsyncAction: Story = {
     const [value, setValue] = useState<boolean | 'indeterminate'>(false);
 
     // Simulate server sync (e.g., saving preference to API)
-    const simulateServerSync = async (checked: boolean) => {
+    const simulateServerAction = async (checked: boolean) => {
       setValue(checked);
       await new Promise<void>(resolve => {
         setTimeout(resolve, 1500);
@@ -391,7 +391,7 @@ export const AsyncAction: Story = {
           label="Sync preferences"
           description="Changes are saved automatically to your account"
           value={value}
-          onChangeAction={simulateServerSync}
+          onChangeAction={simulateServerAction}
           startIcon={CloudArrowUpIcon}
         />
       </XDSVStack>
