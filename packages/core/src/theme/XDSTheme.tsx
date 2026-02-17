@@ -98,6 +98,7 @@ export function XDSTheme({
     colorSchemeStyle,
     theme.styles.colors,
     theme.styles.spacing,
+    theme.styles.size,
     theme.styles.radius,
     theme.styles.elevation,
     theme.styles.transition,

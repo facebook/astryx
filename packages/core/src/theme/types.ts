@@ -172,6 +172,8 @@ export interface ThemeRaw {
   colors: Record<string, string>;
   /** Raw spacing values (e.g., '8px') */
   spacing: Record<string, string>;
+  /** Raw size values (e.g., '32px') */
+  size: Record<string, string>;
   /** Raw radius values (e.g., '12px') */
   radius: Record<string, string>;
   /** Raw elevation values (e.g., '0px 2px 4px rgba(0,0,0,0.1)') */
@@ -196,6 +198,8 @@ export interface ThemeStyles {
   colors: StyleXStyles;
   /** Spacing CSS variables */
   spacing: StyleXStyles;
+  /** Size CSS variables (component heights: sm, md, lg) */
+  size: StyleXStyles;
   /** Radius CSS variables */
   radius: StyleXStyles;
   /** Elevation CSS variables */

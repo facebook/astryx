@@ -18,6 +18,7 @@ import type {Theme} from './types';
 import {
   colorVars,
   spacingVars,
+  sizeVars,
   radiusVars,
   elevationVars,
   transitionVars,
@@ -29,6 +30,7 @@ import {
 import type {
   ColorVarName,
   SpacingVarName,
+  SizeVarName,
   RadiusVarName,
   ElevationVarName,
   TransitionVarName,
@@ -38,6 +40,7 @@ import type {
   FontWeightVarName,
   BaseColorRaw,
   BaseSpacingRaw,
+  BaseSizeRaw,
   BaseRadiusRaw,
   BaseElevationRaw,
   BaseTransitionRaw,
@@ -223,6 +226,12 @@ const spacingRaw = {
   '--spacing-7': '32px',
 } as const satisfies Record<SpacingVarName, string>;
 
+const sizeRaw = {
+  '--size-sm': '28px',
+  '--size-md': '32px',
+  '--size-lg': '36px',
+} as const satisfies Record<SizeVarName, string>;
+
 const radiusRaw = {
   '--radius-rounded': '9999px',
   '--radius-container': '0.75rem',
@@ -298,6 +307,11 @@ const colorTheme = stylex.createTheme(
 const spacingTheme = stylex.createTheme(
   spacingVars,
   spacingRaw as unknown as BaseSpacingRaw,
+);
+
+const sizeTheme = stylex.createTheme(
+  sizeVars,
+  sizeRaw as unknown as BaseSizeRaw,
 );
 
 const radiusTheme = stylex.createTheme(
@@ -544,6 +558,7 @@ export const neutralTheme: Theme = {
   styles: {
     colors: colorTheme,
     spacing: spacingTheme,
+    size: sizeTheme,
     radius: radiusTheme,
     elevation: elevationTheme,
     transition: transitionTheme,
@@ -555,6 +570,7 @@ export const neutralTheme: Theme = {
   raw: {
     colors: colorRaw,
     spacing: spacingRaw,
+    size: sizeRaw,
     radius: radiusRaw,
     elevation: elevationRaw,
     transition: transitionRaw,
