@@ -12,6 +12,7 @@ import {registerComponent} from './commands/component.mjs';
 import {registerDocs} from './commands/docs.mjs';
 import {registerTemplate} from './commands/template.mjs';
 import {registerTheme} from './commands/theme.mjs';
+import {registerGapReport} from './commands/gap-report.mjs';
 
 export const program = new Command();
 
@@ -28,6 +29,7 @@ registerSwizzle(program);
 registerAgentDocs(program);
 registerTemplate(program);
 registerTheme(program);
+registerGapReport(program);
 
 // Hidden command used by package.json postinstall scripts
 program
