@@ -15,7 +15,6 @@ import {
   useId,
   useRef,
   useCallback,
-  useState,
   type KeyboardEvent,
   type PointerEvent,
 } from 'react';
@@ -32,6 +31,7 @@ import {
 } from '../theme/tokens.stylex';
 import {XDSFieldLabel} from '../Field/XDSFieldLabel';
 import {XDSFieldStatus} from '../Field/XDSFieldStatus';
+import {XDSTooltip} from '../Layer/XDSTooltip';
 import type {XDSInputStatus} from '../Field/types';
 
 // =============================================================================
@@ -223,32 +223,6 @@ const styles = stylex.create({
   thumbActive: {
     cursor: 'grabbing',
   },
-  tooltip: {
-    position: 'absolute',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    bottom: '100%',
-    marginBottom: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-0-5'],
-    paddingInline: spacingVars['--spacing-2'],
-    backgroundColor: colorVars['--color-text-primary'],
-    color: colorVars['--color-text-on-media'],
-    fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-xsm'],
-    borderRadius: radiusVars['--radius-content'],
-    whiteSpace: 'nowrap',
-    pointerEvents: 'none',
-    zIndex: 2,
-  },
-  tooltipVertical: {
-    left: 'auto',
-    top: '50%',
-    transform: 'translateY(-50%)',
-    bottom: 'auto',
-    right: '100%',
-    marginBottom: 0,
-    marginRight: spacingVars['--spacing-2'],
-  },
   textValue: {
     fontFamily: typographyVars['--font-body'],
     fontSize: textSizeVars['--text-base'],
@@ -375,29 +349,6 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
     const trackRef = useRef<HTMLDivElement>(null);
     const draggingThumbRef = useRef<number | null>(null);
 
-    // Track hover/focus/active per thumb for tooltip visibility
-    const [thumbStates, setThumbStates] = useState<
-      Array<{hover: boolean; focus: boolean; active: boolean}>
-    >(
-      isRange
-        ? [
-            {hover: false, focus: false, active: false},
-            {hover: false, focus: false, active: false},
-          ]
-        : [{hover: false, focus: false, active: false}],
-    );
-
-    const updateThumbState = useCallback(
-      (index: number, key: 'hover' | 'focus' | 'active', val: boolean) => {
-        setThumbStates(prev => {
-          const next = [...prev];
-          next[index] = {...next[index], [key]: val};
-          return next;
-        });
-      },
-      [],
-    );
-
     // Build aria-describedby
     const describedByParts: string[] = [];
     if (description) describedByParts.push(descriptionID);
@@ -505,7 +456,6 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
         const thumbIndex = getClosestThumb(newVal);
         draggingThumbRef.current = thumbIndex;
         updateValue(thumbIndex, newVal);
-        updateThumbState(thumbIndex, 'active', true);
         if (
           typeof (e.currentTarget as HTMLElement).setPointerCapture ===
           'function'
@@ -513,13 +463,7 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
           (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
         }
       },
-      [
-        isDisabled,
-        getValueFromPosition,
-        getClosestThumb,
-        updateValue,
-        updateThumbState,
-      ],
+      [isDisabled, getValueFromPosition, getClosestThumb, updateValue],
     );
 
     const handlePointerMove = useCallback(
@@ -534,12 +478,11 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
     const handlePointerUp = useCallback(
       (_e: PointerEvent<HTMLDivElement>) => {
         if (draggingThumbRef.current !== null) {
-          updateThumbState(draggingThumbRef.current, 'active', false);
           draggingThumbRef.current = null;
           fireChangeEnd();
         }
       },
-      [updateThumbState, fireChangeEnd],
+      [fireChangeEnd],
     );
 
     // Keyboard handler
@@ -590,14 +533,6 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
     const renderThumb = (thumbIndex: number) => {
       const val = values[thumbIndex];
       const percent = getPercent(val, min, max);
-      const state = thumbStates[thumbIndex] ?? {
-        hover: false,
-        focus: false,
-        active: false,
-      };
-      const showTooltip =
-        valueDisplay === 'tooltip' &&
-        (state.hover || state.focus || state.active);
 
       const positionStyle = isHorizontal
         ? {left: `${percent}%`}
@@ -609,7 +544,10 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
           : 'Maximum value'
         : label;
 
-      return (
+      const useTooltip = valueDisplay === 'tooltip';
+      const tooltipPlacement = isHorizontal ? 'above' : 'before';
+
+      const thumbElement = (
         <div
           key={thumbIndex}
           role="slider"
@@ -625,29 +563,29 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
           aria-describedby={ariaDescribedBy}
           style={positionStyle}
           onKeyDown={e => handleKeyDown(thumbIndex, e)}
-          onFocus={() => updateThumbState(thumbIndex, 'focus', true)}
-          onBlur={() => updateThumbState(thumbIndex, 'focus', false)}
-          onPointerEnter={() => updateThumbState(thumbIndex, 'hover', true)}
-          onPointerLeave={() => updateThumbState(thumbIndex, 'hover', false)}
           {...stylex.props(
             styles.thumb,
             isHorizontal ? styles.thumbHorizontal : styles.thumbVertical,
             !isDisabled && styles.thumbHover,
-            state.focus && styles.thumbFocus,
             isDisabled && styles.thumbDisabled,
-            state.active && styles.thumbActive,
-          )}>
-          {showTooltip && (
-            <div
-              {...stylex.props(
-                styles.tooltip,
-                !isHorizontal && styles.tooltipVertical,
-              )}>
-              {displayValue(val)}
-            </div>
           )}
-        </div>
+        />
       );
+
+      if (useTooltip) {
+        return (
+          <XDSTooltip
+            key={thumbIndex}
+            content={displayValue(val)}
+            placement={tooltipPlacement}
+            delay={0}
+            focusTrigger="always">
+            {thumbElement}
+          </XDSTooltip>
+        );
+      }
+
+      return thumbElement;
     };
 
     // Filled track position
