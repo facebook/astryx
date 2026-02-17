@@ -239,8 +239,6 @@ initialIsOpen?: boolean;    // not defaultOpen (keeps `is` prefix)
 initialHasSelection?: boolean;
 ```
 
-> **TODO:** Build a lint rule to enforce boolean prefix conventions (`is`/`has`/`initialIs`/`initialHas`).
-
 ### onChange Signature
 
 The `onChange` signature varies by input type:
