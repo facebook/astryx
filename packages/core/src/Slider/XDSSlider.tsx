@@ -192,9 +192,6 @@ const styles = stylex.create({
     height: THUMB_SIZE,
     borderRadius: radiusVars['--radius-rounded'],
     backgroundColor: colorVars['--color-accent'],
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
     transform: 'translate(-50%, -50%)',
     transitionProperty: 'background-color, box-shadow',
     transitionDuration: transitionVars['--transition-fast'],
@@ -202,17 +199,12 @@ const styles = stylex.create({
     cursor: 'grab',
     zIndex: 1,
   },
-  thumbInnerDot: {
-    width: THUMB_SIZE - 8,
-    height: THUMB_SIZE - 8,
-    borderRadius: radiusVars['--radius-rounded'],
-    backgroundColor: colorVars['--color-surface'],
-  },
   thumbHorizontal: {
     top: '50%',
   },
   thumbVertical: {
     left: '50%',
+    transform: 'translate(-50%, 50%)',
   },
   thumbHover: {
     backgroundColor: {
@@ -580,9 +572,8 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
             !isDisabled && styles.thumbHover,
             !isDisabled && styles.thumbFocusWithin,
             isDisabled && styles.thumbDisabled,
-          )}>
-          <div {...stylex.props(styles.thumbInnerDot)} />
-        </div>
+          )}
+        />
       );
 
       if (useTooltip) {
