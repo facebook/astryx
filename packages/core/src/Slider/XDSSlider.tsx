@@ -225,6 +225,7 @@ const styles = stylex.create({
   },
   tooltip: {
     position: 'absolute',
+    left: '50%',
     transform: 'translateX(-50%)',
     bottom: '100%',
     marginBottom: spacingVars['--spacing-2'],
@@ -240,7 +241,9 @@ const styles = stylex.create({
     zIndex: 2,
   },
   tooltipVertical: {
-    transform: 'translateY(50%)',
+    left: 'auto',
+    top: '50%',
+    transform: 'translateY(-50%)',
     bottom: 'auto',
     right: '100%',
     marginBottom: 0,
