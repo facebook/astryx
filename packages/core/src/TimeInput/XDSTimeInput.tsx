@@ -131,6 +131,25 @@ const styles = stylex.create({
   },
 });
 
+const busyStyles = stylex.create({
+  spinner: {
+    width: 12,
+    height: 12,
+    flexShrink: 0,
+    borderWidth: '2px',
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-text-secondary'],
+    borderRightColor: 'transparent',
+    borderRadius: '50%',
+    animationName: stylex.keyframes({
+      to: {transform: 'rotate(360deg)'},
+    }),
+    animationDuration: '0.6s',
+    animationTimingFunction: 'linear',
+    animationIterationCount: 'infinite',
+  },
+});
+
 const sizeStyles = stylex.create({
   sm: {
     height: 18,
@@ -530,7 +549,7 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
         <div
           {...stylex.props(
             styles.wrapper,
-            (isDisabled || isBusy) && styles.wrapperDisabled,
+            isDisabled && styles.wrapperDisabled,
             status && statusBorderStyles[status.type],
           )}>
           <div {...stylex.props(styles.icon)}>
@@ -554,10 +573,11 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
             {...stylex.props(
               styles.input,
               sizeStyles[size],
-              (isDisabled || isBusy) && styles.inputDisabled,
+              isDisabled && styles.inputDisabled,
               !isInputValid && styles.inputInvalid,
             )}
           />
+          {isBusy && <span {...stylex.props(busyStyles.spinner)} />}
           {hasClear && value && !isDisabled && (
             <button
               type="button"

@@ -205,6 +205,25 @@ const sizeStyles = stylex.create({
   },
 });
 
+const busyStyles = stylex.create({
+  spinner: {
+    width: 12,
+    height: 12,
+    flexShrink: 0,
+    borderWidth: '2px',
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-text-secondary'],
+    borderRightColor: 'transparent',
+    borderRadius: '50%',
+    animationName: stylex.keyframes({
+      to: {transform: 'rotate(360deg)'},
+    }),
+    animationDuration: '0.6s',
+    animationTimingFunction: 'linear',
+    animationIterationCount: 'infinite',
+  },
+});
+
 const statusBorderStyles = stylex.create({
   warning: {
     borderColor: colorVars['--color-warning'],
@@ -612,11 +631,12 @@ export function XDSSelector<T extends XDSSelectorOption>({
         {...stylex.props(
           styles.trigger,
           sizeStyles[size],
-          (isDisabled || isBusy) && styles.triggerDisabled,
+          isDisabled && styles.triggerDisabled,
           !selectedItem && styles.triggerPlaceholder,
           status && statusBorderStyles[status.type],
         )}>
         <span>{selectedItem?.label ?? placeholder}</span>
+        {isBusy && <span {...stylex.props(busyStyles.spinner)} />}
         <span
           {...stylex.props(
             styles.triggerIcon,

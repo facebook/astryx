@@ -1686,25 +1686,25 @@
     loupe "^3.1.1"
     tinyrainbow "^1.2.0"
 
-"@xds/cli@*", "@xds/cli@file:/tmp/xds-spinner1/packages/cli":
+"@xds/cli@*", "@xds/cli@file:/tmp/xds-spinner2/packages/cli":
   version "0.0.1"
   resolved "file:packages/cli"
   dependencies:
     "@clack/prompts" "^0.9.1"
     commander "^12.1.0"
 
-"@xds/core@*", "@xds/core@file:/tmp/xds-spinner1/packages/core":
+"@xds/core@*", "@xds/core@file:/tmp/xds-spinner2/packages/core":
   version "0.0.1"
   resolved "file:packages/core"
   dependencies:
     "@heroicons/react" "^2.2.0"
     "@stylexjs/stylex" "^0.17.4"
 
-"@xds/eslint-plugin@file:/tmp/xds-spinner1/internal/eslint-plugin-xds":
+"@xds/eslint-plugin@file:/tmp/xds-spinner2/internal/eslint-plugin-xds":
   version "0.0.1"
   resolved "file:internal/eslint-plugin-xds"
 
-"@xds/sandbox@file:/tmp/xds-spinner1/apps/sandbox":
+"@xds/sandbox@file:/tmp/xds-spinner2/apps/sandbox":
   version "0.0.1"
   resolved "file:apps/sandbox"
   dependencies:
@@ -1715,7 +1715,7 @@
     react "^18.3.0"
     react-dom "^18.3.0"
 
-"@xds/storybook@file:/tmp/xds-spinner1/apps/storybook":
+"@xds/storybook@file:/tmp/xds-spinner2/apps/storybook":
   version "0.0.1"
   resolved "file:apps/storybook"
   dependencies:
@@ -1723,7 +1723,7 @@
     react "^19.0.0"
     react-dom "^19.0.0"
 
-"@xds/test-utils@file:/tmp/xds-spinner1/internal/test-utils":
+"@xds/test-utils@file:/tmp/xds-spinner2/internal/test-utils":
   version "0.0.1"
   resolved "file:internal/test-utils"
   dependencies:
@@ -1731,7 +1731,7 @@
     "@testing-library/react" "^16.0.0"
     "@testing-library/user-event" "^14.5.0"
 
-"@xds/vibe-tests@file:/tmp/xds-spinner1/internal/vibe-tests":
+"@xds/vibe-tests@file:/tmp/xds-spinner2/internal/vibe-tests":
   version "0.0.1"
   resolved "file:internal/vibe-tests"
   dependencies:

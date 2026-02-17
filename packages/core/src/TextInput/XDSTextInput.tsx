@@ -103,6 +103,25 @@ const sizeStyles = stylex.create({
   },
 });
 
+const busyStyles = stylex.create({
+  spinner: {
+    width: 12,
+    height: 12,
+    flexShrink: 0,
+    borderWidth: '2px',
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-text-secondary'],
+    borderRightColor: 'transparent',
+    borderRadius: '50%',
+    animationName: stylex.keyframes({
+      to: {transform: 'rotate(360deg)'},
+    }),
+    animationDuration: '0.6s',
+    animationTimingFunction: 'linear',
+    animationIterationCount: 'infinite',
+  },
+});
+
 const statusBorderStyles = stylex.create({
   warning: {
     borderColor: colorVars['--color-warning'],
@@ -315,7 +334,7 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
           {...stylex.props(
             styles.wrapper,
             sizeStyles[size],
-            (isDisabled || isBusy) && styles.wrapperDisabled,
+            isDisabled && styles.wrapperDisabled,
             status && statusBorderStyles[status.type],
           )}>
           {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
@@ -333,11 +352,9 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
             aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
-            {...stylex.props(
-              styles.input,
-              (isDisabled || isBusy) && styles.inputDisabled,
-            )}
+            {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
           />
+          {isBusy && <span {...stylex.props(busyStyles.spinner)} />}
           {status && (
             <XDSIcon
               icon={statusIconMap[status.type]}

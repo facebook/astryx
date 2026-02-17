@@ -104,6 +104,25 @@ const styles = stylex.create({
   },
 });
 
+const busyStyles = stylex.create({
+  spinner: {
+    width: 12,
+    height: 12,
+    flexShrink: 0,
+    borderWidth: '2px',
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-text-secondary'],
+    borderRightColor: 'transparent',
+    borderRadius: '50%',
+    animationName: stylex.keyframes({
+      to: {transform: 'rotate(360deg)'},
+    }),
+    animationDuration: '0.6s',
+    animationTimingFunction: 'linear',
+    animationIterationCount: 'infinite',
+  },
+});
+
 const statusBorderStyles = stylex.create({
   warning: {
     borderColor: colorVars['--color-warning'],
@@ -335,7 +354,7 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
         <div
           {...stylex.props(
             styles.wrapper,
-            (isDisabled || isBusy) && styles.wrapperDisabled,
+            isDisabled && styles.wrapperDisabled,
             status && statusBorderStyles[status.type],
           )}>
           {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
@@ -358,9 +377,10 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
             {...stylex.props(
               styles.textarea,
-              (isDisabled || isBusy) && styles.textareaDisabled,
+              isDisabled && styles.textareaDisabled,
             )}
           />
+          {isBusy && <span {...stylex.props(busyStyles.spinner)} />}
           {status && (
             <XDSIcon
               icon={statusIconMap[status.type]}

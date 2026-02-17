@@ -130,6 +130,25 @@ const styles = stylex.create({
   },
 });
 
+const busyStyles = stylex.create({
+  spinner: {
+    width: 12,
+    height: 12,
+    flexShrink: 0,
+    borderWidth: '2px',
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-text-secondary'],
+    borderRightColor: 'transparent',
+    borderRadius: '50%',
+    animationName: stylex.keyframes({
+      to: {transform: 'rotate(360deg)'},
+    }),
+    animationDuration: '0.6s',
+    animationTimingFunction: 'linear',
+    animationIterationCount: 'infinite',
+  },
+});
+
 const sizeStyles = stylex.create({
   sm: {
     height: 18,
@@ -493,7 +512,7 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
           ref={popover.triggerRef}
           {...stylex.props(
             styles.wrapper,
-            (isDisabled || isBusy) && styles.wrapperDisabled,
+            isDisabled && styles.wrapperDisabled,
             status && statusBorderStyles[status.type],
           )}>
           <button
@@ -504,7 +523,7 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
             {...popover.triggerProps}
             {...stylex.props(
               styles.iconButton,
-              (isDisabled || isBusy) && styles.iconButtonDisabled,
+              isDisabled && styles.iconButtonDisabled,
             )}>
             <XDSIcon icon={CalendarDaysIcon} size="sm" color="secondary" />
           </button>
@@ -526,10 +545,11 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
             {...stylex.props(
               styles.input,
               sizeStyles[size],
-              (isDisabled || isBusy) && styles.inputDisabled,
+              isDisabled && styles.inputDisabled,
               !isInputValid && styles.inputInvalid,
             )}
           />
+          {isBusy && <span {...stylex.props(busyStyles.spinner)} />}
           {status && (
             <XDSIcon
               icon={statusIconMap[status.type]}
