@@ -278,7 +278,10 @@ describe('XDSRadioList', () => {
     const label = screen.getByText('Hidden label');
     expect(label).toBeInTheDocument();
     // The radiogroup should still be labeled
-    expect(screen.getByRole('radiogroup')).toHaveAttribute('aria-labelledby');
+    expect(screen.getByRole('radiogroup')).toHaveAttribute(
+      'aria-label',
+      'Hidden label',
+    );
   });
 
   it('renders description on items', () => {

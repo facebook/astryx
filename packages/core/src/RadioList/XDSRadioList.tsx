@@ -1,6 +1,6 @@
 /**
  * @file XDSRadioList.tsx
- * @input Uses React useId, createContext, ReactNode, XDSFieldLabel, XDSFieldStatus, XDSInputStatus
+ * @input Uses React useId, createContext, ReactNode, XDSField, XDSInputStatus
  * @output Exports XDSRadioList component, XDSRadioListProps, RadioListContext
  * @position Core implementation; consumed by index.ts, tested by XDSRadioList.test.tsx
  *
@@ -13,14 +13,8 @@
 import {createContext, useId, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {
-  colorVars,
-  spacingVars,
-  textSizeVars,
-  typographyVars,
-  fontWeightVars,
-} from '../theme/tokens.stylex';
-import {XDSFieldStatus} from '../Field/XDSFieldStatus';
+import {spacingVars} from '../theme/tokens.stylex';
+import {XDSField} from '../Field/XDSField';
 import type {XDSInputStatus} from '../Field/types';
 
 /**
@@ -43,48 +37,6 @@ export const RadioListContext = createContext<RadioListContextValue | null>(
 );
 
 const styles = stylex.create({
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: spacingVars['--spacing-1'],
-  },
-  label: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
-    fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-base'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
-    color: colorVars['--color-text-primary'],
-  },
-  labelDisabled: {
-    color: colorVars['--color-text-disabled'],
-  },
-  labelHidden: {
-    borderStyle: 'none',
-    clip: 'rect(0, 0, 0, 0)',
-    height: 1,
-    left: 0,
-    margin: -1,
-    overflow: 'hidden',
-    padding: 0,
-    pointerEvents: 'none',
-    position: 'absolute',
-    top: 0,
-    userSelect: 'none',
-    whiteSpace: 'nowrap',
-    width: 1,
-  },
-  optionalRequired: {
-    fontWeight: fontWeightVars['--font-weight-normal'],
-    fontSize: textSizeVars['--text-xsm'],
-    color: colorVars['--color-text-secondary'],
-  },
-  description: {
-    fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-xsm'],
-    color: colorVars['--color-text-secondary'],
-  },
   radiogroup: {
     display: 'flex',
     gap: spacingVars['--spacing-2'],
@@ -197,17 +149,15 @@ export function XDSRadioList({
   isOptional = false,
   size = 'md',
   status,
-  labelTooltip: _labelTooltip,
+  labelTooltip,
   xstyle,
   'data-testid': dataTestId,
   children,
 }: XDSRadioListProps) {
   const name = useId();
-  const labelID = useId();
+  const inputID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
-
-  const statusText = isOptional ? 'Optional' : isRequired ? 'Required' : null;
 
   const contextValue: RadioListContextValue = {
     name,
@@ -220,30 +170,29 @@ export function XDSRadioList({
   };
 
   return (
-    <div data-testid={dataTestId} {...stylex.props(styles.container, xstyle)}>
-      <span
-        id={labelID}
-        {...stylex.props(
-          styles.label,
-          isDisabled && styles.labelDisabled,
-          isLabelHidden && styles.labelHidden,
-        )}>
-        {label}
-        {statusText && (
-          <span {...stylex.props(styles.optionalRequired)}>
-            {' '}
-            ∙ {statusText}
-          </span>
-        )}
-      </span>
-      {description && (
-        <span id={descriptionID} {...stylex.props(styles.description)}>
-          {description}
-        </span>
-      )}
+    <XDSField
+      data-testid={dataTestId}
+      label={label}
+      isLabelHidden={isLabelHidden}
+      description={description}
+      inputID={inputID}
+      descriptionID={description ? descriptionID : undefined}
+      isOptional={isOptional}
+      isRequired={isRequired}
+      status={
+        status
+          ? {
+              type: status.type,
+              message: status.message,
+              messageID: status.message ? statusMessageID : undefined,
+            }
+          : undefined
+      }
+      labelTooltip={labelTooltip}
+      {...stylex.props(xstyle)}>
       <div
         role="radiogroup"
-        aria-labelledby={labelID}
+        aria-label={label}
         aria-describedby={
           [
             description ? descriptionID : null,
@@ -262,15 +211,7 @@ export function XDSRadioList({
           {children}
         </RadioListContext.Provider>
       </div>
-      {status?.message && (
-        <XDSFieldStatus
-          type={status.type}
-          message={status.message}
-          id={statusMessageID}
-          variant="detached"
-        />
-      )}
-    </div>
+    </XDSField>
   );
 }
 
