@@ -1,5 +1,7 @@
 # API Guidance
 
+<!-- Referenced from CLAUDE.md for discoverability -->
+
 Consolidated reference for XDS component API conventions. This is a decision doc — it states what the conventions **are**.
 
 For detailed patterns on specific topics, see:
@@ -20,8 +22,8 @@ For detailed patterns on specific topics, see:
 | Segment     | Required | Example         | Notes                                      |
 | ----------- | -------- | --------------- | ------------------------------------------ |
 | System      | ✓        | `XDS`           | Always `XDS` for this design system        |
-| Namespace   |          | `Text`          | Groups related components                  |
-| Variant     |          | `Compact`       | Distinguishes visual/behavioral variants   |
+| Namespace   |          | `Layout`        | Groups related components (e.g. `XDSLayoutHeader`, `XDSLayoutPanel`) |
+| Variant     |          | `Icon`          | Distinguishes visual/behavioral variants (use sparingly — prefer concise APIs) |
 | Type        | ✓        | `Input`, `Button` | The component's role                     |
 | Postfixes   |          | `Item`, `Group` | Compositional parts                        |
 
@@ -35,25 +37,29 @@ Files match export names (prefixed). This is the LLM-friendly default — no re-
 packages/core/src/Button/
 ├── XDSButton.tsx          → exports XDSButton
 ├── XDSButton.test.tsx
-├── XDSButton.stories.tsx
 ├── README.md
 └── index.ts               → re-exports from XDSButton.tsx
+
+apps/storybook/stories/
+└── Button.stories.tsx     → Storybook stories (separate from core)
 ```
+
+> **Tip:** A `create-component` CLI command exists to scaffold this structure, though it may need manual adjustments.
 
 ### File Structure
 
-Each component lives in its own directory under `packages/core/src/`:
+Component source lives in `packages/core/src/`, stories live in `apps/storybook/stories/`:
 
-| File                        | Purpose                          |
-| --------------------------- | -------------------------------- |
-| `XDS<Name>.tsx`             | Component implementation         |
-| `XDS<Name>.test.tsx`        | Colocated unit tests             |
-| `XDS<Name>.stories.tsx`     | Storybook stories                |
-| `index.ts`                  | Public exports                   |
-| `README.md`                 | Component documentation          |
-| `types.ts`                  | Shared types (if needed)         |
-| `utils.ts`                  | Internal helpers (if needed)     |
-| `hooks.ts`                  | Internal hooks (if needed)       |
+| File                                      | Purpose                          |
+| ----------------------------------------- | -------------------------------- |
+| `packages/core/src/<Name>/XDS<Name>.tsx`   | Component implementation         |
+| `packages/core/src/<Name>/XDS<Name>.test.tsx` | Colocated unit tests          |
+| `packages/core/src/<Name>/index.ts`        | Public exports                   |
+| `packages/core/src/<Name>/README.md`       | Component documentation          |
+| `packages/core/src/<Name>/types.ts`        | Shared types (if needed)         |
+| `packages/core/src/<Name>/utils.ts`        | Internal helpers (if needed)     |
+| `packages/core/src/<Name>/hooks.ts`        | Internal hooks (if needed)       |
+| `apps/storybook/stories/<Name>.stories.tsx` | Storybook stories               |
 
 ### File Header
 
@@ -105,6 +111,17 @@ variant?: 'primary' | 'secondary' | 'ghost' | 'destructive';
 size?: 'sm' | 'md' | 'lg';
 ```
 
+### Common Enum Values
+
+Enum values should align with CSS token names where applicable:
+
+| Prop       | Values                 | Matches Token          |
+| ---------- | ---------------------- | ---------------------- |
+| `size`     | `'sm' \| 'md' \| 'lg'` | `--size-sm`, `--size-md`, `--size-lg` |
+| `padding`  | `'sm' \| 'md' \| 'lg'` | `--spacing-*` tokens   |
+| `margin`   | `'sm' \| 'md' \| 'lg'` | `--spacing-*` tokens   |
+| `variant`  | component-specific     | —                      |
+
 ### Directional Props
 
 Use `start`/`end` instead of `left`/`right` for RTL support:
@@ -113,7 +130,7 @@ Use `start`/`end` instead of `left`/`right` for RTL support:
 | -------------- | --------------- |
 | `startIcon`    | `leftIcon`      |
 | `paddingEnd`   | `paddingRight`  |
-| `endAdornment` | `rightAdornment`|
+| `endContent`   | `rightContent`  |
 
 ### HTML Attribute Collisions
 
@@ -130,9 +147,9 @@ htmlFor?: string;    // maps to <label htmlFor="...">
 
 | Prop Category        | Required? | Rationale                                 |
 | -------------------- | --------- | ----------------------------------------- |
-| `label`              | ✓         | Accessibility — every component needs one  |
+| `label` (interactive elements) | ✓ | Accessibility — buttons and inputs need labels. Not required for display components (e.g. `XDSText`, `XDSLink` where content *is* the label). |
 | `value` / `onChange`  | ✓         | Controlled components need both            |
-| `children`           | ✓         | When component is meaningless without it   |
+| `children`           | ✓         | When the component has no meaningful output without content (e.g. `XDSButton` needs a label or children) |
 | Visual variants      | Optional  | Safe defaults exist (`variant='secondary'`, `size='md'`) |
 | Boolean flags        | Optional  | Default to `false`                         |
 | Event handlers       | Optional  | Not all uses need them                     |
@@ -214,12 +231,15 @@ All input components are controlled — they require `value` and `onChange`/`onC
 
 ### Uncontrolled Defaults
 
-When supporting uncontrolled mode, prefix default values with `initial`:
+When supporting uncontrolled mode, prefix default values with `initial`. For booleans, maintain the `is`/`has` prefix convention:
 
 ```ts
-initialValue?: string;    // not defaultValue
-initialIsOpen?: boolean;  // not defaultOpen
+initialValue?: string;      // not defaultValue
+initialIsOpen?: boolean;    // not defaultOpen (keeps `is` prefix)
+initialHasSelection?: boolean;
 ```
+
+> **TODO:** Build a lint rule to enforce boolean prefix conventions (`is`/`has`/`initialIs`/`initialHas`).
 
 ### onChange Signature
 

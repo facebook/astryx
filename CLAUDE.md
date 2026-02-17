@@ -51,6 +51,7 @@ Probes at turns 0, 6, 8, 10 to measure quality degradation. Results show a line 
 For architectural context and decisions, see `.context/`:
 
 - `.context/decisions/` — Architecture Decision Records
+  - **[API Guidance](/.context/decisions/api-guidance.md)** — Component API conventions (naming, props, styling, state, async actions)
 - `.context/explorations/` — Research and brainstorms
 - `.context/proposals/` — Feature proposals
 
