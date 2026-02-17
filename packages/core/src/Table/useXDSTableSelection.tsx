@@ -17,7 +17,7 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars} from '../theme/tokens.stylex';
+import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {XDSCheckboxInput} from '../CheckboxInput';
 import {XDSTableCell} from './XDSTableCell';
 import {XDSTableHeaderCell} from './XDSTableHeaderCell';
@@ -138,9 +138,12 @@ const selectedRowStyles = stylex.create({
 
 const selectionCellStyles = stylex.create({
   base: {
-    width: '36px',
-    maxWidth: '36px',
+    width: '40px',
+    minWidth: '40px',
+    maxWidth: '40px',
+    paddingInline: spacingVars['--spacing-2'],
     boxSizing: 'border-box',
+    textAlign: 'center',
   },
 });
 
