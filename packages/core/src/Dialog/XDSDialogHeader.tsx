@@ -1,0 +1,143 @@
+/**
+ * @file XDSDialogHeader.tsx
+ * @input Uses React forwardRef, useEffect, useRef, XDSLayoutHeader, XDSHeading, XDSText
+ * @output Exports XDSDialogHeader component and XDSDialogHeaderProps
+ * @position Dialog header component; used with XDSDialog and XDSLayout
+ *
+ * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/Dialog/README.md
+ * - /packages/core/src/Dialog/XDSDialogHeader.test.tsx
+ * - /packages/core/src/Dialog/index.ts
+ * - /apps/storybook/stories/Dialog.stories.tsx
+ */
+
+import {forwardRef, useEffect, useRef, type ReactNode} from 'react';
+import * as stylex from '@stylexjs/stylex';
+import {spacingVars} from '../theme/tokens.stylex';
+import {XDSLayoutHeader} from '../Layout/XDSLayout/XDSLayoutHeader';
+import {XDSCloseButton} from '../CloseButton';
+import {XDSHeading} from '../Text/XDSHeading';
+import {XDSText} from '../Text/XDSText';
+
+const styles = stylex.create({
+  container: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacingVars['--spacing-3'],
+  },
+  titleWrapper: {
+    flex: 1,
+    minWidth: 0,
+  },
+  titleFocusable: {
+    outline: 'none',
+  },
+  actions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+    flexShrink: 0,
+  },
+});
+
+export interface XDSDialogHeaderProps {
+  /**
+   * The title of the dialog.
+   * This title receives focus when the dialog opens for screen reader accessibility.
+   */
+  title: string;
+
+  /**
+   * Optional subtitle displayed below the title in smaller, secondary text.
+   */
+  subtitle?: string;
+
+  /**
+   * Callback fired when the close button is clicked.
+   * If not provided, no close button will be rendered.
+   */
+  onHide?: () => unknown;
+
+  /**
+   * Content to render before the title (e.g., a back button).
+   */
+  startContent?: ReactNode;
+
+  /**
+   * Content to render after the title, before the close button (e.g., action buttons).
+   */
+  endContent?: ReactNode;
+
+  /**
+   * Adds a themed border at the bottom edge.
+   * When false, spacing collapse is applied automatically for seamless visual flow.
+   * @default true
+   */
+  hasDivider?: boolean;
+}
+
+/**
+ * Header component designed specifically for XDSDialog.
+ *
+ * Renders a title that receives focus when the dialog opens (for screen reader accessibility)
+ * and an optional close button. The title is an h2 element with tabIndex={-1} so it can be
+ * programmatically focused but doesn't appear in the tab order.
+ *
+ * Uses XDSLayoutHeader internally for consistent styling with other layout headers.
+ *
+ * @example
+ * ```tsx
+ * <XDSDialog isShown={isShown} onHide={() => setIsShown(false)}>
+ *   <XDSLayout
+ *     header={<XDSDialogHeader title="Modal Title" onHide={() => setIsShown(false)} />}
+ *     content={<XDSLayoutContent>Content</XDSLayoutContent>}
+ *     footer={<XDSLayoutFooter hasDivider>Actions</XDSLayoutFooter>}
+ *   />
+ * </XDSDialog>
+ * ```
+ */
+export const XDSDialogHeader = forwardRef<HTMLElement, XDSDialogHeaderProps>(
+  function XDSDialogHeader(
+    {title, subtitle, onHide, startContent, endContent, hasDivider = true},
+    ref,
+  ) {
+    const titleRef = useRef<HTMLHeadingElement>(null);
+
+    // Auto-focus the title when mounted for screen reader accessibility
+    useEffect(() => {
+      if (titleRef.current) {
+        titleRef.current.tabIndex = -1;
+        titleRef.current.focus();
+      }
+    }, []);
+
+    return (
+      <XDSLayoutHeader ref={ref} hasDivider={hasDivider}>
+        <div {...stylex.props(styles.container)}>
+          {startContent && (
+            <div {...stylex.props(styles.actions)}>{startContent}</div>
+          )}
+          <div {...stylex.props(styles.titleWrapper)}>
+            <XDSHeading ref={titleRef} level={2} xstyle={styles.titleFocusable}>
+              {title}
+            </XDSHeading>
+            {subtitle && (
+              <XDSText type="body" size="sm" color="secondary">
+                {subtitle}
+              </XDSText>
+            )}
+          </div>
+          {(endContent || onHide) && (
+            <div {...stylex.props(styles.actions)}>
+              {endContent}
+              {onHide && <XDSCloseButton onClick={onHide} />}
+            </div>
+          )}
+        </div>
+      </XDSLayoutHeader>
+    );
+  },
+);
+
+XDSDialogHeader.displayName = 'XDSDialogHeader';

@@ -339,6 +339,7 @@ const ANTI_PATTERN_HATCHES: EscapeHatchType[] = [
   'hardcoded_spacing',
   'inline_style', // Should use StyleX instead
   'a11y_click_handler', // Accessibility issue: use button instead
+  'hardcoded_typography', // Should use XDSText/XDSHeading type system
 ];
 
 interface TierCounts {
@@ -768,6 +769,88 @@ function detectEscapeHatches(
     }
   }
 
+  // Check for hardcoded typography values (fontSize, fontWeight, lineHeight, fontFamily)
+  // These should use XDSText/XDSHeading type system or design tokens
+  if (target === 'xds') {
+    // Hardcoded fontSize (raw px/rem/em values, not via var(--text-*))
+    const hardcodedFontSizeRegex =
+      /fontSize\s*:\s*['"]?\d+(?:\.\d+)?(?:px|rem|em)['"]?/gi;
+    while ((match = hardcodedFontSizeRegex.exec(code)) !== null) {
+      if (!match[0].includes('var(')) {
+        hatches.push({
+          type: 'hardcoded_typography',
+          severity: 'acceptable',
+          detail:
+            'Hardcoded fontSize instead of using XDSText/XDSHeading type system or --text-* tokens',
+          codeSnippet: match[0],
+        });
+      }
+    }
+
+    // Hardcoded fontWeight (raw numeric values, not via var(--font-weight-*))
+    const hardcodedFontWeightRegex =
+      /fontWeight\s*:\s*['"]?(?:100|200|300|400|500|600|700|800|900)['"]?/gi;
+    while ((match = hardcodedFontWeightRegex.exec(code)) !== null) {
+      if (!match[0].includes('var(')) {
+        hatches.push({
+          type: 'hardcoded_typography',
+          severity: 'acceptable',
+          detail:
+            'Hardcoded fontWeight instead of using XDSText weight prop or --font-weight-* tokens',
+          codeSnippet: match[0],
+        });
+      }
+    }
+
+    // Hardcoded lineHeight (raw numeric/px/rem values, not via var(--leading-*))
+    const hardcodedLineHeightRegex =
+      /lineHeight\s*:\s*['"]?\d+(?:\.\d+)?(?:px|rem|em)?['"]?/gi;
+    while ((match = hardcodedLineHeightRegex.exec(code)) !== null) {
+      if (!match[0].includes('var(')) {
+        hatches.push({
+          type: 'hardcoded_typography',
+          severity: 'acceptable',
+          detail:
+            'Hardcoded lineHeight instead of using XDSText/XDSHeading type system or --leading-* tokens',
+          codeSnippet: match[0],
+        });
+      }
+    }
+
+    // Hardcoded fontFamily (raw font stack instead of var(--font-*))
+    const hardcodedFontFamilyRegex =
+      /fontFamily\s*:\s*['"][^'"]*(?:sans-serif|serif|monospace|Arial|Helvetica|Roboto|Geist)[^'"]*['"]/gi;
+    while ((match = hardcodedFontFamilyRegex.exec(code)) !== null) {
+      if (!match[0].includes('var(')) {
+        hatches.push({
+          type: 'hardcoded_typography',
+          severity: 'acceptable',
+          detail:
+            'Hardcoded fontFamily instead of using --font-body, --font-heading, or --font-code tokens',
+          codeSnippet: match[0],
+        });
+      }
+    }
+
+    // Hallucinated typography CSS variables
+    const hallucinatedTypographyTokenRegex =
+      /var\(\s*--(?:font-size-\w+|font-family-\w+|xds-font-\w+|xds-text-\w+|xds-heading-\w+|text-size-\w+|line-height-\w+)\s*\)/gi;
+    while ((match = hallucinatedTypographyTokenRegex.exec(code)) !== null) {
+      hatches.push({
+        type: 'hallucinated_typography_token',
+        severity: 'critical',
+        detail:
+          'Hallucinated typography CSS variable. Valid tokens: --text-*, --font-body, --font-code, --font-heading, --font-weight-*, --leading-*',
+        codeSnippet: match[0],
+      });
+    }
+
+    // Note: Raw HTML heading/paragraph elements (<h1>-<h6>, <p>) are acceptable
+    // in XDS because global typography styles handle them correctly.
+    // We still prefer XDSHeading/XDSText for structured UI (props like weight,
+    // maxLines, variant) but don't flag raw HTML as an escape hatch.
+  }
+
   return hatches;
 }
 
@@ -800,27 +883,34 @@ function loadResults(resultsDir: string): (TestResult & {target?: string})[] {
       throw new Error(`No result files found in ${individualResultsDir}`);
     }
 
-    // Process JSON files (legacy format)
+    // Process JSON files (legacy format or degradation arrays)
     for (const file of files) {
       try {
         const resultPath = path.join(individualResultsDir, file);
         const content = fs.readFileSync(resultPath, 'utf-8');
-        const result = JSON.parse(content) as TestResult;
+        const parsed = JSON.parse(content);
 
-        // Infer timing from file timestamps if durationMs is 0 or missing
-        if (!result.durationMs || result.durationMs === 0) {
-          const taskPath = path.join(tasksDir, file);
-          if (fs.existsSync(taskPath)) {
-            const taskStat = fs.statSync(taskPath);
-            const resultStat = fs.statSync(resultPath);
-            const inferredDurationMs = resultStat.mtimeMs - taskStat.mtimeMs;
-            if (inferredDurationMs > 0) {
-              result.durationMs = Math.round(inferredDurationMs);
+        // Handle degradation results stored as arrays
+        const resultEntries: TestResult[] = Array.isArray(parsed)
+          ? parsed
+          : [parsed];
+
+        for (const result of resultEntries) {
+          // Infer timing from file timestamps if durationMs is 0 or missing
+          if (!result.durationMs || result.durationMs === 0) {
+            const taskPath = path.join(tasksDir, file);
+            if (fs.existsSync(taskPath)) {
+              const taskStat = fs.statSync(taskPath);
+              const resultStat = fs.statSync(resultPath);
+              const inferredDurationMs = resultStat.mtimeMs - taskStat.mtimeMs;
+              if (inferredDurationMs > 0) {
+                result.durationMs = Math.round(inferredDurationMs);
+              }
             }
           }
-        }
 
-        results.push(result);
+          results.push(result);
+        }
       } catch (e) {
         console.warn(`Warning: Failed to parse ${file}: ${e}`);
       }

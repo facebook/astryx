@@ -35,7 +35,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    include: ['packages/**/src/**/*.test.{ts,tsx}'],
+    include: ['packages/**/src/**/*.test.{ts,tsx,mjs}'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

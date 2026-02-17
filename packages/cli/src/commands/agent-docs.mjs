@@ -19,7 +19,7 @@ const XDS_MARKER_END = '<!-- XDS:END -->';
  * Compressed index for AGENTS.md.
  * Directs agents to use CLI commands for retrieval.
  */
-function generateCompressedIndex(version) {
+export function generateCompressedIndex(version) {
   return `${XDS_MARKER_START}
 [XDS v${version}]|IMPORTANT: Prefer retrieval-led reasoning. Run CLI to read docs before generating code.
 |npx xds component <Name> --compact|--source   Docs (props, usage) or source code
@@ -35,7 +35,7 @@ ${XDS_MARKER_END}`;
 /**
  * Get XDS version from core package.
  */
-function getXdsVersion(coreDir) {
+export function getXdsVersion(coreDir) {
   if (coreDir) {
     const pkgPath = path.join(coreDir, 'package.json');
     if (fs.existsSync(pkgPath)) {
@@ -51,7 +51,7 @@ function getXdsVersion(coreDir) {
 /**
  * Inject or update XDS section in AGENTS.md.
  */
-function injectAgentsMd(targetDir, version) {
+export function injectAgentsMd(targetDir, version) {
   const agentsPath = path.join(targetDir, AGENTS_MD);
   const compressedIndex = generateCompressedIndex(version);
 
@@ -86,7 +86,7 @@ ${compressedIndex}
 /**
  * Remove XDS section from AGENTS.md.
  */
-function removeAgentDocs(targetDir) {
+export function removeAgentDocs(targetDir) {
   const agentsPath = path.join(targetDir, AGENTS_MD);
 
   if (fs.existsSync(agentsPath)) {

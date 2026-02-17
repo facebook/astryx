@@ -1,0 +1,157 @@
+/**
+ * @file XDSTopNavItem.tsx
+ * @input Uses React forwardRef, AnchorHTMLAttributes, ReactNode
+ * @output Exports XDSTopNavItem component and XDSTopNavItemProps
+ * @position Navigation item component for XDSTopNav startContent
+ *
+ * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/TopNav/README.md
+ * - /packages/core/src/TopNav/XDSTopNav.test.tsx
+ * - /packages/core/src/TopNav/index.ts
+ * - /apps/storybook/stories/TopNav.stories.tsx
+ */
+
+import {forwardRef, type AnchorHTMLAttributes, type ReactNode} from 'react';
+import * as stylex from '@stylexjs/stylex';
+import {
+  colorVars,
+  spacingVars,
+  radiusVars,
+  transitionVars,
+  textSizeVars,
+  fontWeightVars,
+  lineHeightVars,
+} from '../theme/tokens.stylex';
+
+/**
+ * NavItem styles with hover/selected states
+ */
+const styles = stylex.create({
+  base: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
+    borderRadius: radiusVars['--radius-element'],
+    fontSize: textSizeVars['--text-base'],
+    lineHeight: lineHeightVars['--leading-base'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    color: colorVars['--color-text-secondary'],
+    textDecoration: 'none',
+    cursor: 'pointer',
+    transitionProperty: 'background-color, color',
+    transitionDuration: transitionVars['--transition-fast'],
+    backgroundColor: {
+      default: 'transparent',
+      ':hover': colorVars['--color-hover-overlay'],
+      ':active': colorVars['--color-pressed-overlay'],
+    },
+    outline: {
+      default: null,
+      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': '2px',
+    },
+  },
+  selected: {
+    color: colorVars['--color-accent-text'],
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    backgroundColor: {
+      default: colorVars['--color-accent-deemphasized'],
+      ':hover': colorVars['--color-accent-deemphasized'],
+      ':active': colorVars['--color-accent-deemphasized'],
+    },
+  },
+  disabled: {
+    color: colorVars['--color-text-disabled'],
+    cursor: 'not-allowed',
+    pointerEvents: 'none',
+  },
+  iconOnly: {
+    paddingInline: spacingVars['--spacing-2'],
+  },
+});
+
+export interface XDSTopNavItemProps extends Omit<
+  AnchorHTMLAttributes<HTMLAnchorElement>,
+  'style' | 'className'
+> {
+  /**
+   * The accessible label for the nav item.
+   * Used as visible text, or as aria-label for icon-only items.
+   */
+  label: string;
+  /**
+   * Whether this nav item is currently selected/highlighted.
+   * @default false
+   */
+  isSelected?: boolean;
+  /**
+   * Whether the nav item is disabled.
+   * @default false
+   */
+  isDisabled?: boolean;
+  /**
+   * Optional icon to display before the label.
+   * If provided without children, item becomes icon-only.
+   */
+  icon?: ReactNode;
+  /**
+   * Optional content to render instead of the label.
+   * If omitted and icon is provided, item becomes icon-only.
+   */
+  children?: ReactNode;
+}
+
+/**
+ * A navigation item for use within XDSTopNav startContent.
+ *
+ * Renders as an anchor element with hover/selected states.
+ * Supports icons and selected state indication with highlighted appearance.
+ *
+ * @example
+ * ```tsx
+ * <XDSTopNav
+ *   startContent={
+ *     <>
+ *       <XDSTopNavItem label="Home" href="/" isSelected />
+ *       <XDSTopNavItem label="Products" href="/products" />
+ *       <XDSTopNavItem label="Settings" href="/settings" icon={<GearIcon />} />
+ *     </>
+ *   }
+ * />
+ * ```
+ */
+export const XDSTopNavItem = forwardRef<HTMLAnchorElement, XDSTopNavItemProps>(
+  function XDSTopNavItem(
+    {label, isSelected = false, isDisabled = false, icon, children, ...props},
+    ref,
+  ) {
+    const isIconOnly = icon != null && children == null && !label;
+    const showLabel = !isIconOnly;
+
+    return (
+      <a
+        ref={ref}
+        aria-label={isIconOnly ? label : undefined}
+        aria-current={isSelected ? 'page' : undefined}
+        aria-disabled={isDisabled || undefined}
+        tabIndex={isDisabled ? -1 : undefined}
+        {...stylex.props(
+          styles.base,
+          isSelected && styles.selected,
+          isDisabled && styles.disabled,
+          isIconOnly && styles.iconOnly,
+        )}
+        {...props}>
+        {icon}
+        {showLabel && (children ?? label)}
+      </a>
+    );
+  },
+);
+
+XDSTopNavItem.displayName = 'XDSTopNavItem';

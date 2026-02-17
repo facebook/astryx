@@ -1,16 +1,14 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSDialog} from '@xds/core/Dialog';
+import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
 import {
   XDSLayout,
-  XDSLayoutHeader,
   XDSLayoutContent,
   XDSLayoutFooter,
   XDSHStack,
 } from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
-import {XDSCloseButton} from '@xds/core/CloseButton';
-import {XDSHeading, XDSText} from '@xds/core/Text';
+import {XDSText} from '@xds/core/Text';
 
 const meta: Meta<typeof XDSDialog> = {
   title: 'Core/XDSDialog',
@@ -46,7 +44,7 @@ export default meta;
 type Story = StoryObj<typeof XDSDialog>;
 
 /**
- * Basic modal example with XDSLayout
+ * Basic modal example with XDSDialogHeader
  */
 function BasicModalExample() {
   const [isShown, setIsShown] = useState(false);
@@ -61,12 +59,10 @@ function BasicModalExample() {
       <XDSDialog isShown={isShown} onHide={() => setIsShown(false)}>
         <XDSLayout
           header={
-            <XDSLayoutHeader hasDivider>
-              <XDSHStack hAlign="between" vAlign="center">
-                <XDSHeading level={2}>Modal Title</XDSHeading>
-                <XDSCloseButton onClick={() => setIsShown(false)} />
-              </XDSHStack>
-            </XDSLayoutHeader>
+            <XDSDialogHeader
+              title="Modal Title"
+              onHide={() => setIsShown(false)}
+            />
           }
           content={
             <XDSLayoutContent>
@@ -104,6 +100,62 @@ export const Default: Story = {
 };
 
 /**
+ * Dialog with subtitle example
+ */
+function SubtitleModalExample() {
+  const [isShown, setIsShown] = useState(false);
+
+  return (
+    <>
+      <XDSButton
+        label="Open Modal with Subtitle"
+        variant="secondary"
+        onClick={() => setIsShown(true)}
+      />
+      <XDSDialog isShown={isShown} onHide={() => setIsShown(false)}>
+        <XDSLayout
+          header={
+            <XDSDialogHeader
+              title="Edit User Profile"
+              subtitle="Make changes to your account settings"
+              onHide={() => setIsShown(false)}
+            />
+          }
+          content={
+            <XDSLayoutContent>
+              <XDSText type="body">
+                The subtitle appears below the title in smaller, secondary text.
+                It provides additional context about the dialog&apos;s purpose.
+              </XDSText>
+            </XDSLayoutContent>
+          }
+          footer={
+            <XDSLayoutFooter hasDivider>
+              <XDSHStack gap="space2" hAlign="end">
+                <XDSButton
+                  label="Cancel"
+                  variant="secondary"
+                  onClick={() => setIsShown(false)}
+                />
+                <XDSButton
+                  label="Save Changes"
+                  variant="primary"
+                  onClick={() => setIsShown(false)}
+                />
+              </XDSHStack>
+            </XDSLayoutFooter>
+          }
+        />
+      </XDSDialog>
+    </>
+  );
+}
+
+export const WithSubtitle: Story = {
+  render: () => <SubtitleModalExample />,
+};
+
+/**
  * Custom width example
  */
 function WideModalExample() {
@@ -119,12 +171,10 @@ function WideModalExample() {
       <XDSDialog isShown={isShown} onHide={() => setIsShown(false)} width={600}>
         <XDSLayout
           header={
-            <XDSLayoutHeader hasDivider>
-              <XDSHStack hAlign="between" vAlign="center">
-                <XDSHeading level={2}>Wide Modal</XDSHeading>
-                <XDSCloseButton onClick={() => setIsShown(false)} />
-              </XDSHStack>
-            </XDSLayoutHeader>
+            <XDSDialogHeader
+              title="Wide Modal"
+              onHide={() => setIsShown(false)}
+            />
           }
           content={
             <XDSLayoutContent>
@@ -173,12 +223,10 @@ function FullscreenModalExample() {
         variant="fullscreen">
         <XDSLayout
           header={
-            <XDSLayoutHeader hasDivider>
-              <XDSHStack hAlign="between" vAlign="center">
-                <XDSHeading level={2}>Fullscreen Modal</XDSHeading>
-                <XDSCloseButton onClick={() => setIsShown(false)} />
-              </XDSHStack>
-            </XDSLayoutHeader>
+            <XDSDialogHeader
+              title="Fullscreen Modal"
+              onHide={() => setIsShown(false)}
+            />
           }
           content={
             <XDSLayoutContent>
@@ -238,11 +286,7 @@ function RequiredModalExample() {
         onHide={() => setIsShown(false)}
         purpose="required">
         <XDSLayout
-          header={
-            <XDSLayoutHeader hasDivider>
-              <XDSHeading level={2}>Accept Terms</XDSHeading>
-            </XDSLayoutHeader>
-          }
+          header={<XDSDialogHeader title="Accept Terms" />}
           content={
             <XDSLayoutContent>
               <XDSText type="body">
@@ -292,12 +336,10 @@ function FormModalExample() {
         width={500}>
         <XDSLayout
           header={
-            <XDSLayoutHeader hasDivider>
-              <XDSHStack hAlign="between" vAlign="center">
-                <XDSHeading level={2}>Edit Profile</XDSHeading>
-                <XDSCloseButton onClick={() => setIsShown(false)} />
-              </XDSHStack>
-            </XDSLayoutHeader>
+            <XDSDialogHeader
+              title="Edit Profile"
+              onHide={() => setIsShown(false)}
+            />
           }
           content={
             <XDSLayoutContent>
@@ -353,12 +395,10 @@ function InfoModalExample() {
         purpose="info">
         <XDSLayout
           header={
-            <XDSLayoutHeader hasDivider>
-              <XDSHStack hAlign="between" vAlign="center">
-                <XDSHeading level={2}>Information</XDSHeading>
-                <XDSCloseButton onClick={() => setIsShown(false)} />
-              </XDSHStack>
-            </XDSLayoutHeader>
+            <XDSDialogHeader
+              title="Information"
+              onHide={() => setIsShown(false)}
+            />
           }
           content={
             <XDSLayoutContent>
@@ -410,12 +450,10 @@ function PositionedModalExample() {
         width={350}>
         <XDSLayout
           header={
-            <XDSLayoutHeader hasDivider>
-              <XDSHStack hAlign="between" vAlign="center">
-                <XDSHeading level={2}>Positioned Modal</XDSHeading>
-                <XDSCloseButton onClick={() => setIsShown(false)} />
-              </XDSHStack>
-            </XDSLayoutHeader>
+            <XDSDialogHeader
+              title="Positioned Modal"
+              onHide={() => setIsShown(false)}
+            />
           }
           content={
             <XDSLayoutContent>
@@ -465,12 +503,10 @@ function ScrollingModalExample() {
         maxHeight="50vh">
         <XDSLayout
           header={
-            <XDSLayoutHeader hasDivider>
-              <XDSHStack hAlign="between" vAlign="center">
-                <XDSHeading level={2}>Terms and Conditions</XDSHeading>
-                <XDSCloseButton onClick={() => setIsShown(false)} />
-              </XDSHStack>
-            </XDSLayoutHeader>
+            <XDSDialogHeader
+              title="Terms and Conditions"
+              onHide={() => setIsShown(false)}
+            />
           }
           content={
             <XDSLayoutContent>
@@ -544,12 +580,10 @@ function ConfirmationModalExample() {
         purpose="form">
         <XDSLayout
           header={
-            <XDSLayoutHeader hasDivider>
-              <XDSHStack hAlign="between" vAlign="center">
-                <XDSHeading level={2}>Confirm Delete</XDSHeading>
-                <XDSCloseButton onClick={() => setIsShown(false)} />
-              </XDSHStack>
-            </XDSLayoutHeader>
+            <XDSDialogHeader
+              title="Confirm Delete"
+              onHide={() => setIsShown(false)}
+            />
           }
           content={
             <XDSLayoutContent>

@@ -275,6 +275,116 @@
         "Add breadcrumbs below the header",
         "Add a footer with version info and links"
       ]
+    },
+    {
+      "id": "ty-1",
+      "category": "typography",
+      "prompt": "Show a page title with a short description underneath",
+      "expectedComponents": ["XDSHeading", "XDSText"],
+      "complexity": "simple",
+      "followUps": [
+        "Make the title use the larger editorial scale",
+        "Add a label above the title that says 'Getting Started'"
+      ]
+    },
+    {
+      "id": "ty-2",
+      "category": "typography",
+      "prompt": "Create a blog post header with a big editorial headline, a publication date in small text, and an author name",
+      "expectedComponents": ["XDSHeading", "XDSText"],
+      "complexity": "moderate",
+      "followUps": [
+        "Add a reading time estimate next to the date in the same small style",
+        "Make the author name semibold"
+      ]
+    },
+    {
+      "id": "ty-3",
+      "category": "typography",
+      "prompt": "Build a metrics dashboard card that shows a label like 'Total Revenue', a large numeric value like '$12,340.56', and a small supporting line that says '+12% from last month'",
+      "expectedComponents": ["XDSCard", "XDSText"],
+      "complexity": "moderate",
+      "followUps": [
+        "Make the numeric value use tabular numbers so digits align across cards",
+        "Add a second metric card next to it and ensure the numbers line up vertically"
+      ]
+    },
+    {
+      "id": "ty-4",
+      "category": "typography",
+      "prompt": "Create a settings page with 3 sections. Each section needs a heading, a brief description, and some form controls. Use different heading levels for the page title vs section titles.",
+      "expectedComponents": ["XDSHeading", "XDSText", "XDSTextInput"],
+      "complexity": "moderate",
+      "followUps": [
+        "Add helper text below each input using the appropriate supporting text style",
+        "Make the section headings visually smaller than the page title"
+      ]
+    },
+    {
+      "id": "ty-5",
+      "category": "typography",
+      "prompt": "Build a landing page hero with a large display heading that says 'Build faster with XDS', a subheading paragraph, and a CTA button",
+      "expectedComponents": ["XDSHeading", "XDSText", "XDSButton"],
+      "complexity": "simple",
+      "followUps": [
+        "The heading should use the editorial display scale for maximum visual impact",
+        "Add a secondary tagline below the heading in a lighter color"
+      ]
+    },
+    {
+      "id": "ty-6",
+      "category": "typography",
+      "prompt": "Display a code example with a label that says 'Installation' above it, the code snippet 'yarn add @xds/core', and a note below in small text",
+      "expectedComponents": ["XDSText"],
+      "complexity": "simple",
+      "followUps": [
+        "Add a copy button next to the code",
+        "Add a second code example for npm below the yarn one"
+      ]
+    },
+    {
+      "id": "ty-7",
+      "category": "typography",
+      "prompt": "Render a markdown-formatted changelog that includes headings, paragraphs, bullet lists, and inline code. The content should use proper typography styling.",
+      "expectedComponents": ["XDSHeading", "XDSText"],
+      "complexity": "complex",
+      "followUps": [
+        "Make the changelog use the editorial heading scale",
+        "Add a table of contents at the top with links to each section"
+      ]
+    },
+    {
+      "id": "ty-8",
+      "category": "typography",
+      "prompt": "Create a profile card with the user's name as a heading, their role as a label, their bio as body text, and their join date in small supporting text",
+      "expectedComponents": ["XDSCard", "XDSHeading", "XDSText"],
+      "complexity": "simple",
+      "followUps": [
+        "Add an email address that truncates with an ellipsis if it's too long",
+        "Make the role text medium weight"
+      ]
+    },
+    {
+      "id": "ty-9",
+      "category": "typography",
+      "prompt": "Build a comparison table header where each column has a plan name heading and a price. The 'Enterprise' plan should have visually larger display-style typography compared to the other plans.",
+      "expectedComponents": ["XDSHeading", "XDSText"],
+      "complexity": "complex",
+      "followUps": [
+        "Add a 'Most Popular' label badge on the Pro plan using label-style text",
+        "Make all prices use tabular numbers so they align across columns"
+      ]
+    },
+    {
+      "id": "ty-10",
+      "category": "typography",
+      "prompt": "Create an article page with a full editorial-style header (large title, subtitle, author info) and a body section that renders rich text content with proper heading hierarchy, paragraphs, code blocks, and lists",
+      "expectedComponents": ["XDSHeading", "XDSText"],
+      "complexity": "complex",
+      "followUps": [
+        "Add a 'Table of Contents' sidebar that lists all the section headings",
+        "Make the body text use the large text type for better readability"
+      ]
     }
   ],
   "holdout": [
@@ -353,6 +463,28 @@
       "followUps": [
         "Add recent searches that show before typing",
         "Add result categories with headers (Users, Posts, etc.)"
+      ]
+    },
+    {
+      "id": "ho-ty-1",
+      "category": "typography",
+      "prompt": "Create a documentation page header with a breadcrumb trail in small text, a large editorial heading, and a description paragraph",
+      "expectedComponents": ["XDSHeading", "XDSText"],
+      "complexity": "moderate",
+      "followUps": [
+        "Add a 'Last updated' timestamp in supporting text style",
+        "Optically align the heading text with the content below it"
+      ]
+    },
+    {
+      "id": "ho-ty-2",
+      "category": "typography",
+      "prompt": "Build a notification detail view with a bold title, a timestamp in supporting text, and a body that may contain formatted markdown content",
+      "expectedComponents": ["XDSHeading", "XDSText"],
+      "complexity": "moderate",
+      "followUps": [
+        "Truncate the title to a single line with a tooltip showing the full text",
+        "Add a secondary text line showing who triggered the notification"
       ]
     }
   ],

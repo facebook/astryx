@@ -191,7 +191,16 @@ The code should use:
 - StyleX for styling with CSS variable tokens (var(--spacing-*), var(--color-*))
 - XDSTextInput should use \`status\` prop for validation errors (not manual border styling)
 - Interactive elements should use Button components, not clickable divs/spans
-- Layout should use XDSVStack, XDSHStack, XDSStackItem when appropriate`
+- Layout should use XDSVStack, XDSHStack, XDSStackItem when appropriate
+
+### Typography Requirements
+- **XDSHeading** for all heading text (h1-h6), with \`level\` prop for semantic level and \`variant="editorial"\` for display-scale headings
+- **XDSText** for all non-heading text, with \`type\` prop: \`body\`, \`large\`, \`label\`, \`supporting\`, or \`code\`
+- **XDSFontWrapper** is a global provider that styles native HTML elements with proper typography — raw HTML is acceptable for prose/markdown content rendered within it
+- For structured UI (cards, forms, dashboards), prefer XDSHeading/XDSText over raw HTML for access to props like \`weight\`, \`maxLines\`, \`variant\`, \`hasTabularNumbers\`
+- Never hardcode fontSize, fontWeight, lineHeight, or fontFamily — use the component type system or design tokens
+- Valid typography tokens: \`--text-*\` (sizes), \`--font-weight-*\` (weights), \`--leading-*\` (line heights), \`--font-body\`, \`--font-code\`, \`--font-heading\` (font families)
+- Common hallucinated tokens to flag: \`--font-size-*\`, \`--font-family-*\`, \`--xds-font-*\` (these don't exist)`
       : `
 ## Design System Context (shadcn/Tailwind)
 
@@ -237,7 +246,7 @@ Review this code and provide a quality assessment. Return your findings as a JSO
     "issues": [
       {
         "severity": "critical|moderate|minor",
-        "category": "component-usage|token-usage|pattern-violation",
+        "category": "component-usage|token-usage|pattern-violation|typography-violation",
         "issue": "<description of the issue>",
         "recommendation": "<how to fix it>",
         "codeSnippet": "<optional relevant code>"

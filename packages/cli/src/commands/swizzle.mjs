@@ -17,7 +17,7 @@ import {findCoreDir, listComponents} from '../utils/paths.mjs';
  * e.g. '../theme/tokens.stylex' → '@xds/core/theme'
  *      '../utils/mergeProps'     → '@xds/core/utils'
  */
-function rewriteImports(content) {
+export function rewriteImports(content) {
   // Match import/export from statements with relative paths going up
   return content.replace(
     /(from\s+['"])(\.\.\/.+?)(['"])/g,
