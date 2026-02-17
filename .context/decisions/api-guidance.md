@@ -333,13 +333,12 @@ const handleClick = (e) => {
 
 ### Disabled vs Busy
 
-| State        | Interaction | Focus    | Visual                    |
-| ------------ | ----------- | -------- | ------------------------- |
-| `isDisabled` | Blocked     | Lost     | 50% opacity, `not-allowed` cursor |
-| `isBusy` (inputs) | Allowed | Kept | Reduced opacity, `aria-busy` |
-| `isBusy` (buttons) | Blocked | Lost  | Spinner, `aria-busy`       |
+| State        | Interaction    | Focus    | `disabled` attr | Visual                    |
+| ------------ | -------------- | -------- | --------------- | ------------------------- |
+| `isDisabled` | Blocked        | Lost     | ✓               | 50% opacity, `not-allowed` cursor |
+| `isBusy`     | Guarded in handler | Kept | ✗               | Reduced opacity, spinner (buttons), `aria-busy` |
 
-**Key rule:** Inputs stay interactive during async operations to prevent focus loss. Buttons disable because they don't hold focus during typing.
+**Key rule:** Neither inputs nor buttons use native `disabled` for busy state. Busy is visual-only (`aria-busy`, `aria-disabled`, opacity). Buttons guard against re-triggering in the click handler. This prevents focus loss during async operations.
 
 ---
 
