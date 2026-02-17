@@ -22,7 +22,7 @@ import {XDSCenter} from '@xds/core/Center';
 </XDSCenter>
 
 // Inline centering for icons
-<XDSCenter inline>
+<XDSCenter isInline>
   <XDSIcon icon={StarIcon} />
 </XDSCenter>
 ```

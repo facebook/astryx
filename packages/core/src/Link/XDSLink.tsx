@@ -127,7 +127,7 @@ export interface XDSLinkProps extends Omit<
    * Applies base font sizing when true.
    * @default false
    */
-  standalone?: boolean;
+  isStandalone?: boolean;
   /**
    * Semantic text type for XDSText. Determines base typography.
    * @default 'body'
@@ -194,7 +194,7 @@ export const XDSLink = forwardRef<HTMLAnchorElement, XDSLinkProps>(
       target,
       onClick,
       tooltip,
-      standalone = false,
+      isStandalone = false,
       type = 'body',
       size,
       weight,
@@ -228,7 +228,7 @@ export const XDSLink = forwardRef<HTMLAnchorElement, XDSLinkProps>(
         {...stylex.props(
           styles.base,
           hasUnderline && styles.hasUnderline,
-          standalone && styles.standalone,
+          isStandalone && styles.standalone,
           isDisabled && styles.disabled,
         )}
         {...props}>

@@ -490,15 +490,15 @@ describe('XDSTable', () => {
   });
 
   describe('striped', () => {
-    it('renders with striped rows', () => {
-      render(<XDSTable data={users} columns={columns} striped />);
+    it('renders with isStriped rows', () => {
+      render(<XDSTable data={users} columns={columns} isStriped />);
       expect(screen.getAllByRole('row')).toHaveLength(4);
     });
   });
 
   describe('hover', () => {
-    it('renders with hover enabled', () => {
-      render(<XDSTable data={users} columns={columns} hover />);
+    it('renders with hasHover enabled', () => {
+      render(<XDSTable data={users} columns={columns} hasHover />);
       expect(screen.getAllByRole('row')).toHaveLength(4);
     });
   });
@@ -510,8 +510,8 @@ describe('XDSTable', () => {
         columns={columns}
         density="compact"
         dividers="grid"
-        striped
-        hover
+        isStriped
+        hasHover
       />,
     );
     expect(screen.getByRole('table')).toBeInTheDocument();

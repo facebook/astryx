@@ -1,6 +1,6 @@
 # /packages/core/src/Button
 
-XDSButton component with multiple variants, sizes, and loading state support.
+XDSButton component with multiple variants, sizes, and isLoading state support.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
@@ -23,8 +23,8 @@ import { XDSButton } from '@xds/core/Button';
 // With size
 <XDSButton label="Large button" variant="primary" size="lg" />
 
-// With loading state
-<XDSButton label="Saving..." variant="primary" loading />
+// With isLoading state
+<XDSButton label="Saving..." variant="primary" isLoading />
 
 // Destructive action
 <XDSButton label="Delete" variant="destructive" />
@@ -37,7 +37,7 @@ import { XDSButton } from '@xds/core/Button';
 | `label`      | `string`                                               | —             | Accessible label (required) |
 | `variant`    | `'primary' \| 'secondary' \| 'ghost' \| 'destructive'` | `'secondary'` | Visual style variant        |
 | `size`       | `'sm' \| 'md' \| 'lg'`                                 | `'md'`        | Size variant                |
-| `loading`    | `boolean`                                              | `false`       | Shows loading spinner       |
+| `isLoading`  | `boolean`                                              | `false`       | Shows isLoading spinner     |
 | `isDisabled` | `boolean`                                              | `false`       | Disables the button         |
 | `icon`       | `ReactNode`                                            | —             | Icon element                |
 | `children`   | `ReactNode`                                            | —             | Button content              |

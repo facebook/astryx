@@ -80,9 +80,9 @@ describe('XDSCenter', () => {
     expect(element).toBeInTheDocument();
   });
 
-  it('renders as inline-flex when inline is true', () => {
+  it('renders as inline-flex when isInline is true', () => {
     render(
-      <XDSCenter inline data-testid="center">
+      <XDSCenter isInline data-testid="center">
         <div>Inline Content</div>
       </XDSCenter>,
     );

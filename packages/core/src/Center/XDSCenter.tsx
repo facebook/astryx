@@ -69,7 +69,7 @@ export interface XDSCenterProps extends Omit<
    * Whether to make the container inline-flex (useful for text/icons).
    * @default false
    */
-  inline?: boolean;
+  isInline?: boolean;
 
   /**
    * Content to render inside the center container.
@@ -97,11 +97,19 @@ export interface XDSCenterProps extends Omit<
  */
 export const XDSCenter = forwardRef<HTMLDivElement, XDSCenterProps>(
   function XDSCenter(
-    {axis = 'both', width, height, inline = false, children, xstyle, ...props},
+    {
+      axis = 'both',
+      width,
+      height,
+      isInline = false,
+      children,
+      xstyle,
+      ...props
+    },
     ref,
   ) {
     const stylexProps = stylex.props(
-      inline ? styles.inline : styles.base,
+      isInline ? styles.inline : styles.base,
       (axis === 'both' || axis === 'vertical') && styles.alignItemsCenter,
       (axis === 'both' || axis === 'horizontal') && styles.justifyContentCenter,
       dynamicStyles.sizing(width ?? null, height ?? null),

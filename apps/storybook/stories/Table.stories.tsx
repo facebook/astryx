@@ -85,11 +85,11 @@ const meta: Meta<typeof XDSTable> = {
       options: ['rows', 'columns', 'grid', 'none'],
       description: 'Divider style between cells',
     },
-    striped: {
+    isStriped: {
       control: 'boolean',
       description: 'Alternate row background color',
     },
-    hover: {
+    hasHover: {
       control: 'boolean',
       description: 'Highlight rows on hover',
     },
@@ -134,8 +134,8 @@ export const StripedWithHover: Story = {
     data: users,
     columns,
     idKey: 'id',
-    striped: true,
-    hover: true,
+    isStriped: true,
+    hasHover: true,
   },
 };
 
@@ -173,7 +173,7 @@ export const AutoColumns: Story = {
         {name: 'Alice', role: 'Engineer', status: 'Active'},
         {name: 'Bob', role: 'Designer', status: 'Away'},
       ]}
-      hover
+      hasHover
     />
   ),
 };
@@ -217,13 +217,13 @@ export const CustomCellRenderer: Story = {
       {key: 'age', header: 'Age', width: pixel(80)},
     ];
 
-    return <XDSTable data={users} columns={cols} idKey="id" hover />;
+    return <XDSTable data={users} columns={cols} idKey="id" hasHover />;
   },
 };
 
 export const ChildrenMode: Story = {
   render: () => (
-    <XDSTable density="balanced" dividers="rows" striped hover>
+    <XDSTable density="balanced" dividers="rows" isStriped hasHover>
       <XDSTableRow>
         <XDSTableCell>Alice</XDSTableCell>
         <XDSTableCell>alice@example.com</XDSTableCell>
@@ -289,7 +289,7 @@ export const KitchenSink: Story = {
     idKey: 'id',
     density: 'compact',
     dividers: 'grid',
-    striped: true,
-    hover: true,
+    isStriped: true,
+    hasHover: true,
   },
 };
