@@ -1,11 +1,17 @@
 /**
  * @file ESLint plugin for XDS design system
- * @description Enforces usage of design tokens instead of hardcoded values in StyleX
+ * @description Enforces usage of design tokens and XDS conventions
+ *
+ * Rules:
+ * - no-hardcoded-styles: Enforces usage of design tokens instead of hardcoded values in StyleX
+ * - boolean-prop-naming: Enforces is/has prefix on boolean props in *Props interfaces
  *
  * Philosophy: Strict for agents (CI), lenient for humans (local dev)
  * - "strict" config: All rules as errors - use in CI/agent environments
  * - "recommended" config: All rules as warnings - use for human development
  */
+
+import booleanPropNamingRule from './boolean-prop-naming.js';
 
 // =============================================================================
 // Rule: no-hardcoded-styles
@@ -206,6 +212,7 @@ const plugin = {
   },
   rules: {
     'no-hardcoded-styles': noHardcodedStylesRule,
+    'boolean-prop-naming': booleanPropNamingRule,
   },
   configs: {},
 };
@@ -217,6 +224,7 @@ plugin.configs.strict = {
   },
   rules: {
     '@xds/no-hardcoded-styles': 'error',
+    '@xds/boolean-prop-naming': 'error',
   },
 };
 
@@ -227,6 +235,7 @@ plugin.configs.recommended = {
   },
   rules: {
     '@xds/no-hardcoded-styles': 'warn',
+    '@xds/boolean-prop-naming': 'warn',
   },
 };
 

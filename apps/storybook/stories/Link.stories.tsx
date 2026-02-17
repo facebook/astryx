@@ -43,7 +43,7 @@ const meta: Meta<typeof XDSLink> = {
       control: 'text',
       description: 'Tooltip text on hover',
     },
-    standalone: {
+    isStandalone: {
       control: 'boolean',
       description: 'Standalone (applies base font sizing)',
     },
@@ -119,7 +119,7 @@ export const Standalone: Story = {
   args: {
     label: 'Standalone Link',
     href: '/standalone',
-    standalone: true,
+    isStandalone: true,
     children: 'Standalone Link',
   },
 };
@@ -146,20 +146,20 @@ export const AllVariants: Story = {
         maxWidth: '600px',
       }}>
       <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-        <XDSLink label="Active (default)" href="/active" standalone>
+        <XDSLink label="Active (default)" href="/active" isStandalone>
           Active (default)
         </XDSLink>
-        <XDSLink label="Primary" href="/primary" color="primary" standalone>
+        <XDSLink label="Primary" href="/primary" color="primary" isStandalone>
           Primary
         </XDSLink>
         <XDSLink
           label="Secondary"
           href="/secondary"
           color="secondary"
-          standalone>
+          isStandalone>
           Secondary
         </XDSLink>
-        <XDSLink label="Inherit" href="/inherit" color="inherit" standalone>
+        <XDSLink label="Inherit" href="/inherit" color="inherit" isStandalone>
           Inherit
         </XDSLink>
       </div>
@@ -168,26 +168,30 @@ export const AllVariants: Story = {
           label="With underline"
           href="/underlined"
           hasUnderline
-          standalone>
+          isStandalone>
           With underline
         </XDSLink>
         <XDSLink
           label="External"
           href="https://example.com"
           isExternalLink
-          standalone>
+          isStandalone>
           External
         </XDSLink>
         <XDSLink
           label="With tooltip"
           href="/tooltip"
           tooltip="Helpful info"
-          standalone>
+          isStandalone>
           With tooltip
         </XDSLink>
       </div>
       <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-        <XDSLink label="Disabled active" href="/disabled" isDisabled standalone>
+        <XDSLink
+          label="Disabled active"
+          href="/disabled"
+          isDisabled
+          isStandalone>
           Disabled active
         </XDSLink>
         <XDSLink
@@ -195,7 +199,7 @@ export const AllVariants: Story = {
           href="/disabled"
           color="secondary"
           isDisabled
-          standalone>
+          isStandalone>
           Disabled secondary
         </XDSLink>
       </div>
@@ -215,14 +219,14 @@ export const ExternalLinks: Story = {
         label="GitHub"
         href="https://github.com"
         isExternalLink
-        standalone>
+        isStandalone>
         GitHub
       </XDSLink>
       <XDSLink
         label="MDN Web Docs"
         href="https://developer.mozilla.org"
         isExternalLink
-        standalone>
+        isStandalone>
         MDN Web Docs
       </XDSLink>
       <XDSLink
@@ -230,7 +234,7 @@ export const ExternalLinks: Story = {
         href="https://react.dev"
         isExternalLink
         hasUnderline
-        standalone>
+        isStandalone>
         React Documentation
       </XDSLink>
     </div>
@@ -244,14 +248,14 @@ export const LinksWithTooltips: Story = {
         label="Settings"
         href="/settings"
         tooltip="Configure your account settings"
-        standalone>
+        isStandalone>
         Settings
       </XDSLink>
       <XDSLink
         label="Profile"
         href="/profile"
         tooltip="View and edit your profile"
-        standalone>
+        isStandalone>
         Profile
       </XDSLink>
       <XDSLink
@@ -259,7 +263,7 @@ export const LinksWithTooltips: Story = {
         href="/help"
         tooltip="Get help and support"
         color="secondary"
-        standalone>
+        isStandalone>
         Help
       </XDSLink>
     </div>

@@ -38,7 +38,7 @@ import { XDSLink } from '@xds/core/Link';
 <XDSText>Read the <XDSLink label="docs" href="/docs">documentation</XDSLink> for more info.</XDSText>
 
 // Standalone link
-<XDSLink label="Settings" href="/settings" standalone>Settings</XDSLink>
+<XDSLink label="Settings" href="/settings" isStandalone>Settings</XDSLink>
 
 // Subtle variant
 <XDSLink label="Privacy" href="/privacy" variant="subtle">Privacy Policy</XDSLink>
@@ -60,7 +60,7 @@ import { XDSLink } from '@xds/core/Link';
 | `target`         | `string`                             | —           | Where to open linked document       |
 | `onClick`        | `MouseEventHandler`                  | —           | Click event handler                 |
 | `tooltip`        | `string`                             | —           | Tooltip text displayed on hover     |
-| `standalone`     | `boolean`                            | `false`     | Applies base font sizing            |
+| `isStandalone`   | `boolean`                            | `false`     | Applies base font sizing            |
 | `children`       | `ReactNode`                          | —           | Link content (required)             |
 
 ## Files
@@ -75,7 +75,7 @@ import { XDSLink } from '@xds/core/Link';
 
 - `XDSLinkVariant` type is derived from the `variants` StyleX object using `keyof typeof variants`
 - By default, links inherit font family, size, line-height, and weight from parent elements
-- Use `standalone` prop when the link is not inline within other text content
+- Use `isStandalone` prop when the link is not inline within other text content
 - `isExternalLink` automatically sets `target="_blank"` and `rel="noopener noreferrer"` for security
 - Disabled state uses `aria-disabled` and `pointer-events: none` for accessibility
 - Tooltip wraps the link in `XDSTooltip` component when provided

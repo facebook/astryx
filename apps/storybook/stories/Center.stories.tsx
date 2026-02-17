@@ -61,7 +61,7 @@ const meta: Meta<typeof XDSCenter> = {
       description:
         'Height of the container (number for px, string for any unit)',
     },
-    inline: {
+    isInline: {
       control: 'boolean',
       description: 'Whether to render as inline-flex',
     },
@@ -135,7 +135,7 @@ export const FullSize: Story = {
 
 export const Inline: Story = {
   args: {
-    inline: true,
+    isInline: true,
     children: null,
   },
   render: args => (

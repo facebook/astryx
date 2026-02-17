@@ -52,9 +52,9 @@ export interface XDSTableProps<
   /** Divider style. @default 'rows' */
   dividers?: XDSTableDividers;
   /** Striped even rows. @default false */
-  striped?: boolean;
+  isStriped?: boolean;
   /** Hover highlight on rows. @default false */
-  hover?: boolean;
+  hasHover?: boolean;
 }
 
 // =============================================================================
@@ -167,8 +167,8 @@ function XDSTableInner<T extends Record<string, unknown>>(
   {
     density = 'balanced',
     dividers = 'rows',
-    striped = false,
-    hover = false,
+    isStriped = false,
+    hasHover = false,
     plugins: userPlugins,
     columns,
     data,
@@ -192,8 +192,8 @@ function XDSTableInner<T extends Record<string, unknown>>(
   );
 
   const contextValue = useMemo(
-    () => ({density, dividers, striped, hover}),
-    [density, dividers, striped, hover],
+    () => ({density, dividers, isStriped, hasHover}),
+    [density, dividers, isStriped, hasHover],
   );
 
   return (
@@ -225,8 +225,8 @@ function XDSTableInner<T extends Record<string, unknown>>(
  *   ]}
  *   density="compact"
  *   dividers="grid"
- *   striped
- *   hover
+ *   isStriped
+ *   hasHover
  * />
  * ```
  */

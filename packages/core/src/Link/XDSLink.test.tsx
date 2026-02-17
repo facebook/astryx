@@ -148,7 +148,7 @@ describe('XDSLink', () => {
 
   it('renders standalone link', () => {
     render(
-      <XDSLink label="Standalone Link" href="/standalone" standalone>
+      <XDSLink label="Standalone Link" href="/standalone" isStandalone>
         Standalone Link
       </XDSLink>,
     );

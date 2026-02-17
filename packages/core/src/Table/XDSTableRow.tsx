@@ -97,11 +97,11 @@ export const XDSTableRow = forwardRef<HTMLTableRowElement, XDSTableRowProps>(
     const rowStyles: StyleXStyles[] = [];
 
     // Handle striped + hover combination to avoid backgroundColor conflicts
-    if (ctx.striped && ctx.hover) {
+    if (ctx.isStriped && ctx.hasHover) {
       rowStyles.push(stripedHoverRowStyles.row);
-    } else if (ctx.striped) {
+    } else if (ctx.isStriped) {
       rowStyles.push(stripedRowStyles.row);
-    } else if (ctx.hover) {
+    } else if (ctx.hasHover) {
       rowStyles.push(hoverRowStyles.row);
     }
 

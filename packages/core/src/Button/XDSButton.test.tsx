@@ -59,8 +59,8 @@ describe('XDSButton', () => {
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
 
-  it('shows loading state with spinner', () => {
-    render(<XDSButton label="Submit" loading />);
+  it('shows isLoading state with spinner', () => {
+    render(<XDSButton label="Submit" isLoading />);
     const button = screen.getByRole('button');
     // Button should be disabled when loading
     expect(button).toBeDisabled();
@@ -87,7 +87,7 @@ describe('XDSButton', () => {
   it('does not fire click when loading', async () => {
     const user = userEvent.setup();
     const handleClick = vi.fn();
-    render(<XDSButton label="Click me" loading onClick={handleClick} />);
+    render(<XDSButton label="Click me" isLoading onClick={handleClick} />);
 
     await user.click(screen.getByRole('button'));
     expect(handleClick).not.toHaveBeenCalled();

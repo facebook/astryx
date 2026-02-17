@@ -16,8 +16,8 @@ import {createContext} from 'react';
 export interface XDSTableContextValue {
   density: 'compact' | 'balanced' | 'spacious';
   dividers: 'rows' | 'columns' | 'grid' | 'none';
-  striped: boolean;
-  hover: boolean;
+  isStriped: boolean;
+  hasHover: boolean;
 }
 
 export const XDSTableContext = createContext<XDSTableContextValue | null>(null);

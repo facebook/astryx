@@ -6,13 +6,13 @@ Table components for the XDS design system.
 
 ## Components
 
-| File                 | Export            | Purpose                                                      |
-| -------------------- | ----------------- | ------------------------------------------------------------ |
-| `XDSTable.tsx`       | `XDSTable`        | Styled, data-driven table with density, dividers, and hover  |
-| `XDSBaseTable.tsx`   | `XDSBaseTable`    | Unstyled table with colgroup, plugin pipeline, children mode |
-| `XDSTableRow.tsx`    | `XDSTableRow`     | Thin `<tr>` wrapper for XDSTable children/streaming mode     |
-| `XDSTableCell.tsx`   | `XDSTableCell`    | Thin `<td>` wrapper for XDSTable children/streaming mode     |
-| `XDSTableContext.ts` | `XDSTableContext` | Context for passing styling props to row/cell components     |
+| File                 | Export            | Purpose                                                        |
+| -------------------- | ----------------- | -------------------------------------------------------------- |
+| `XDSTable.tsx`       | `XDSTable`        | Styled, data-driven table with density, dividers, and hasHover |
+| `XDSBaseTable.tsx`   | `XDSBaseTable`    | Unstyled table with colgroup, plugin pipeline, children mode   |
+| `XDSTableRow.tsx`    | `XDSTableRow`     | Thin `<tr>` wrapper for XDSTable children/streaming mode       |
+| `XDSTableCell.tsx`   | `XDSTableCell`    | Thin `<td>` wrapper for XDSTable children/streaming mode       |
+| `XDSTableContext.ts` | `XDSTableContext` | Context for passing styling props to row/cell components       |
 
 ## Utilities
 
@@ -46,7 +46,7 @@ Table components for the XDS design system.
   ]}
   density="balanced"
   dividers="rows"
-  hover
+  hasHover
 />
 ```
 
@@ -54,13 +54,13 @@ Table components for the XDS design system.
 
 ```tsx
 // Columns auto-generated from data keys with capitalized headers
-<XDSTable data={users} striped />
+<XDSTable data={users} isStriped />
 ```
 
 ### Children mode
 
 ```tsx
-<XDSTable density="balanced" dividers="rows" striped hover>
+<XDSTable density="balanced" dividers="rows" isStriped hasHover>
   <XDSTableRow>
     <XDSTableCell>Alice</XDSTableCell>
     <XDSTableCell>30</XDSTableCell>
@@ -85,7 +85,7 @@ const highlightPlugin: TablePlugin<User> = {
 
 ## Architecture
 
-Two-layer design: **XDSBaseTable** provides unstyled structure and the plugin pipeline. **XDSTable** wraps it and injects a styling plugin built from appearance props (`density`, `dividers`, `striped`, `hover`). This validates the plugin API by dogfooding it.
+Two-layer design: **XDSBaseTable** provides unstyled structure and the plugin pipeline. **XDSTable** wraps it and injects a styling plugin built from appearance props (`density`, `dividers`, `isStriped`, `hasHover`). This validates the plugin API by dogfooding it.
 
 ## Related Files
 

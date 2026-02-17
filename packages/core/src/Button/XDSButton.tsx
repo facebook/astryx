@@ -216,7 +216,7 @@ export interface XDSButtonProps extends Omit<
    * Whether the button is in a loading state.
    * @default false
    */
-  loading?: boolean;
+  isLoading?: boolean;
   /**
    * Icon element to render in the button.
    * If provided without children, button becomes icon-only (square).
@@ -293,7 +293,7 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
       variant = 'secondary',
       size = 'md',
       isDisabled = false,
-      loading = false,
+      isLoading = false,
       icon,
       children,
       tooltip,
@@ -301,7 +301,7 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
     },
     ref,
   ): ReactElement => {
-    const buttonDisabled = isDisabled || loading;
+    const buttonDisabled = isDisabled || isLoading;
     const useLightSpinner = variant === 'primary' || variant === 'destructive';
     const isIconOnly = icon != null && children == null;
 
@@ -322,10 +322,10 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
           themeVariantOverride,
           isIconOnly && styles.iconOnly,
           buttonDisabled && styles.disabled,
-          loading && loadingStyles.loading,
+          isLoading && loadingStyles.loading,
         )}
         {...props}>
-        {loading && (
+        {isLoading && (
           <span
             {...stylex.props(
               loadingStyles.spinner,
