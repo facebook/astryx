@@ -1,6 +1,6 @@
 /**
  * @file XDSSlider.tsx
- * @input Uses React forwardRef, useId, useRef, useCallback, XDSField, XDSTooltip
+ * @input Uses React forwardRef, useId, useRef, useCallback, XDSFieldLabel, XDSFieldStatus, XDSTooltip
  * @output Exports XDSSlider component, XDSSliderProps, XDSSliderSingleProps, XDSSliderRangeProps, XDSSliderBaseProps
  * @position Core implementation; consumed by index.ts, tested by XDSSlider.test.tsx
  *
@@ -28,7 +28,8 @@ import {
   typographyVars,
   textSizeVars,
 } from '../theme/tokens.stylex';
-import {XDSField} from '../Field/XDSField';
+import {XDSFieldLabel} from '../Field/XDSFieldLabel';
+import {XDSFieldStatus} from '../Field/XDSFieldStatus';
 import {XDSTooltip} from '../Layer/XDSTooltip';
 import type {XDSInputStatus} from '../Field/types';
 
@@ -107,6 +108,21 @@ const THUMB_SIZE = 20;
 // =============================================================================
 
 const styles = stylex.create({
+  root: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-1'],
+  },
+  labelWrapper: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-0-5'],
+  },
+  description: {
+    fontFamily: typographyVars['--font-body'],
+    fontSize: textSizeVars['--text-xsm'],
+    color: colorVars['--color-text-secondary'],
+  },
   sliderRow: {
     display: 'flex',
     alignItems: 'center',
@@ -614,26 +630,24 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
       ) : null;
 
     return (
-      <XDSField
-        data-testid={testId}
-        label={label}
-        isLabelHidden={isLabelHidden}
-        description={description}
-        inputID={id}
-        descriptionID={description ? descriptionID : undefined}
-        isOptional={isOptional}
-        isRequired={isRequired}
-        status={
-          status
-            ? {
-                type: status.type,
-                message: status.message,
-                messageID: status.message ? statusMessageID : undefined,
-              }
-            : undefined
-        }
-        labelTooltip={labelTooltip}
-        {...stylex.props(xstyle)}>
+      <div data-testid={testId} {...stylex.props(styles.root, xstyle)}>
+        <div {...stylex.props(styles.labelWrapper)}>
+          <XDSFieldLabel
+            label={label}
+            inputID={id}
+            isLabelHidden={isLabelHidden}
+            isDisabled={isDisabled}
+            isOptional={isOptional}
+            isRequired={isRequired}
+            tooltip={labelTooltip}
+          />
+          {description && (
+            <span id={descriptionID} {...stylex.props(styles.description)}>
+              {description}
+            </span>
+          )}
+        </div>
+
         <div {...stylex.props(styles.sliderRow)}>
           <div
             ref={node => {
@@ -728,7 +742,16 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
 
           {textDisplay}
         </div>
-      </XDSField>
+
+        {status?.message && (
+          <XDSFieldStatus
+            type={status.type}
+            message={status.message}
+            id={statusMessageID}
+            variant="detached"
+          />
+        )}
+      </div>
     );
   },
 );
