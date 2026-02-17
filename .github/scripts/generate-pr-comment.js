@@ -21,6 +21,7 @@ const screenshotUrlsFile = getArg('screenshot-urls') || 'screenshot-urls.json';
 const runUrl = getArg('run-url') || '';
 const prNumber = getArg('pr-number') || '';
 const storybookUrl = getArg('storybook-url') || '';
+const sandboxUrl = getArg('sandbox-url') || '';
 
 // Read analysis results
 let analysis = { newComponents: [], modifiedComponents: [], componentStats: {}, totalBundle: {} };
@@ -196,16 +197,27 @@ if (storybookUrl) {
 `;
 }
 
+// Build sandbox link section
+let sandboxSection = '';
+if (sandboxUrl) {
+  sandboxSection = `### 🎨 Sandbox Preview
+
+**[Open Sandbox](${sandboxUrl})**
+
+`;
+}
+
 // Build footer with links
 let footerLinks = [];
 if (storybookUrl) footerLinks.push(`[Storybook](${storybookUrl})`);
+if (sandboxUrl) footerLinks.push(`[Sandbox](${sandboxUrl})`);
 if (runUrl) footerLinks.push(`[View full report](${runUrl})`);
 const footerLinksStr = footerLinks.length > 0 ? ` | ${footerLinks.join(' | ')}` : '';
 
 // Build the full comment
 const body = `## PR Analysis Report
 
-${storybookSection}${componentSection || '_No new or modified components detected._\n\n'}
+${storybookSection}${sandboxSection}${componentSection || '_No new or modified components detected._\n\n'}
 ${bundleSection}
 ${a11ySection}
 ${screenshotSection}

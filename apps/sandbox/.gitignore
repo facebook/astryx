@@ -1,4 +1,6 @@
 node_modules
 AGENTS.md
 xds.config.mjs
-pages
+out
+# Ignore Next.js Pages Router directory (we use App Router instead)
+/pages

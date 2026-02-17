@@ -2,7 +2,11 @@ import stylexPlugin from '@stylexjs/nextjs-plugin';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'export',
   transpilePackages: ['@xds/core'],
+  // Base path for GitHub Pages deployment (set via env var in CI)
+  basePath: process.env.SANDBOX_BASE_PATH || '',
+  images: {unoptimized: true},
 };
 
 export default stylexPlugin({
