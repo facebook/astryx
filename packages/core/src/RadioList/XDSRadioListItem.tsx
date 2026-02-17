@@ -81,9 +81,16 @@ const styles = stylex.create({
         `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
     },
   },
-  radioFocused: {
-    outline: `2px solid ${colorVars['--color-focus-outline']}`,
-    outlineOffset: 2,
+  radioWrapperFocus: {
+    outline: {
+      default: 'none',
+      ':focus-within': `2px solid ${colorVars['--color-focus-outline']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':focus-within': '2px',
+    },
+    borderRadius: '50%',
   },
   radioDisabled: {
     opacity: 0.5,
@@ -249,7 +256,12 @@ export function XDSRadioListItem({
       {startContent && (
         <div {...stylex.props(styles.startContent)}>{startContent}</div>
       )}
-      <div {...stylex.props(styles.radioWrapper, wrapperSizeStyles[size])}>
+      <div
+        {...stylex.props(
+          styles.radioWrapper,
+          wrapperSizeStyles[size],
+          !isDisabled && styles.radioWrapperFocus,
+        )}>
         <input
           id={id}
           type="radio"
