@@ -23,6 +23,7 @@ import {XDSTableContext} from './XDSTableContext';
 /** Props for XDSTableRow — thin `<tr>` wrapper */
 export interface XDSTableRowProps extends HTMLAttributes<HTMLTableRowElement> {
   children: ReactNode;
+  extraStyles?: StyleXStyles[];
 }
 
 const stripedRowStyles = stylex.create({
@@ -83,12 +84,12 @@ const lastBodyRowStyles = stylex.create({
  * ```
  */
 export const XDSTableRow = forwardRef<HTMLTableRowElement, XDSTableRowProps>(
-  ({children, ...props}, ref) => {
+  ({children, extraStyles, ...props}, ref) => {
     const ctx = useContext(XDSTableContext);
 
     if (!ctx) {
       return (
-        <tr ref={ref} {...props}>
+        <tr ref={ref} {...props} {...stylex.props(...(extraStyles ?? []))}>
           {children}
         </tr>
       );
@@ -107,6 +108,10 @@ export const XDSTableRow = forwardRef<HTMLTableRowElement, XDSTableRowProps>(
 
     if (ctx.dividers === 'rows' || ctx.dividers === 'grid') {
       rowStyles.push(lastBodyRowStyles.row);
+    }
+
+    if (extraStyles) {
+      rowStyles.push(...extraStyles);
     }
 
     return (

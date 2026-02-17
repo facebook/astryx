@@ -10,6 +10,7 @@
  */
 
 import type {
+  ComponentType,
   HTMLAttributes,
   TdHTMLAttributes,
   ThHTMLAttributes,
@@ -79,6 +80,7 @@ export interface TableRenderProps {
 export interface HeaderRowRenderProps {
   htmlProps: HTMLAttributes<HTMLTableRowElement>;
   styles: StyleXStyles[];
+  children: ReactNode;
 }
 
 /** Props passed through the plugin pipeline for each `<th>` */
@@ -91,6 +93,7 @@ export interface HeaderCellRenderProps {
 export interface BodyRowRenderProps {
   htmlProps: HTMLAttributes<HTMLTableRowElement>;
   styles: StyleXStyles[];
+  children: ReactNode;
 }
 
 /** Props passed through the plugin pipeline for each body `<td>` */
@@ -131,6 +134,30 @@ export interface TablePlugin<
     column: XDSTableColumn<T>,
     item: T,
   ) => BodyCellRenderProps;
+  /** Wrap the table output in context providers */
+  transformTableContext?: (children: ReactNode) => ReactNode;
+}
+
+// =============================================================================
+// Component Interfaces (for components prop)
+// =============================================================================
+
+/** Props for row components used in the components prop */
+export interface TableRowComponentProps extends HTMLAttributes<HTMLTableRowElement> {
+  children: ReactNode;
+  extraStyles?: StyleXStyles[];
+}
+
+/** Props for cell components used in the components prop */
+export interface TableCellComponentProps extends TdHTMLAttributes<HTMLTableCellElement> {
+  children?: ReactNode;
+  extraStyles?: StyleXStyles[];
+}
+
+/** Props for header cell components used in the components prop */
+export interface TableHeaderCellComponentProps extends ThHTMLAttributes<HTMLTableCellElement> {
+  children?: ReactNode;
+  extraStyles?: StyleXStyles[];
 }
 
 // =============================================================================
@@ -156,6 +183,16 @@ export interface XDSBaseTableProps<T extends Record<string, unknown>> {
   idKey?: (keyof T & string) | ((item: T) => string | number);
   /** Plugins to transform render props at each level */
   plugins?: TablePlugin<T>[];
+  /**
+   * Component overrides for table elements.
+   * When provided, these components are rendered instead of raw HTML elements.
+   * Components receive `extraStyles` from plugin transforms.
+   */
+  components?: {
+    Row?: ComponentType<TableRowComponentProps>;
+    Cell?: ComponentType<TableCellComponentProps>;
+    HeaderCell?: ComponentType<TableHeaderCellComponentProps>;
+  };
   /** Children mode — render `<tr>`/`<td>` directly instead of data-driven */
   children?: ReactNode;
   /** Additional HTML attributes for the `<table>` element */

@@ -10,7 +10,13 @@
  * - /packages/core/src/Table/index.ts (exports if types change)
  */
 
-import {forwardRef, memo, type ReactElement, type Ref} from 'react';
+import {
+  forwardRef,
+  memo,
+  type ReactElement,
+  type ReactNode,
+  type Ref,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {
   XDSBaseTableProps,
@@ -21,6 +27,9 @@ import type {
   HeaderCellRenderProps,
   BodyRowRenderProps,
   BodyCellRenderProps,
+  TableRowComponentProps,
+  TableCellComponentProps,
+  TableHeaderCellComponentProps,
 } from './types';
 import {
   generateColumns,
@@ -29,6 +38,7 @@ import {
 } from './columnUtils';
 import {XDSTableRow} from './XDSTableRow';
 import {XDSTableCell} from './XDSTableCell';
+import {XDSTableHeaderCell} from './XDSTableHeaderCell';
 
 const styles = stylex.create({
   table: {
@@ -81,12 +91,14 @@ interface TableRowProps<T extends Record<string, unknown>> {
   rowKey: string | number;
   columns: XDSTableColumn<T>[];
   plugins: TablePlugin<T>[];
+  RowComponent: React.ComponentType<TableRowComponentProps>;
+  CellComponent: React.ComponentType<TableCellComponentProps>;
 }
 
 /**
  * Memoized table row component.
  * Only re-renders when the specific row's data changes.
- * Uses XDSTableRow/Cell for context-based styling, with plugin support.
+ * Uses component props for context-based styling, with plugin support.
  */
 function TableRowInner<T extends Record<string, unknown>>({
   item,
@@ -94,45 +106,49 @@ function TableRowInner<T extends Record<string, unknown>>({
   rowKey,
   columns,
   plugins,
+  RowComponent,
+  CellComponent,
 }: TableRowProps<T>): ReactElement {
-  // Apply plugin transforms for row
+  // Build cells first
+  const cells = columns.map(col => {
+    const cellRenderProps = applyPlugins(
+      plugins,
+      p => p.transformBodyCell,
+      {htmlProps: {}, styles: []} as BodyCellRenderProps,
+      col,
+      item,
+    );
+
+    const content = col.renderCell
+      ? col.renderCell(item)
+      : defaultCellRenderer(item, col.key);
+
+    return (
+      <CellComponent
+        key={col.key}
+        {...cellRenderProps.htmlProps}
+        extraStyles={cellRenderProps.styles}>
+        {content}
+      </CellComponent>
+    );
+  });
+
+  // Apply plugin transforms for row (with pre-rendered children)
   const rowRenderProps = applyPlugins(
     plugins,
     p => p.transformBodyRow,
-    {htmlProps: {}, styles: []} as BodyRowRenderProps,
+    {htmlProps: {}, styles: [], children: <>{cells}</>} as BodyRowRenderProps,
     item,
     rowIndex,
   );
 
   return (
-    <XDSTableRow
+    <RowComponent
       key={rowKey}
       {...rowRenderProps.htmlProps}
-      {...stylex.props(...rowRenderProps.styles)}>
-      {columns.map(col => {
-        // Apply plugin transforms for cell
-        const cellRenderProps = applyPlugins(
-          plugins,
-          p => p.transformBodyCell,
-          {htmlProps: {}, styles: []} as BodyCellRenderProps,
-          col,
-          item,
-        );
-
-        const content = col.renderCell
-          ? col.renderCell(item)
-          : defaultCellRenderer(item, col.key);
-
-        return (
-          <XDSTableCell
-            key={col.key}
-            {...cellRenderProps.htmlProps}
-            {...stylex.props(...cellRenderProps.styles)}>
-            {content}
-          </XDSTableCell>
-        );
-      })}
-    </XDSTableRow>
+      extraStyles={rowRenderProps.styles}>
+      {rowRenderProps.children}
+    </RowComponent>
   );
 }
 
@@ -148,9 +164,11 @@ function areRowPropsEqual<T extends Record<string, unknown>>(
   // We don't compare rowIndex as it's handled by CSS
   if (prevProps.rowKey !== nextProps.rowKey) return false;
 
-  // If columns or plugins change, need to re-render all rows
+  // If columns, plugins, or components change, need to re-render all rows
   if (prevProps.columns !== nextProps.columns) return false;
   if (prevProps.plugins !== nextProps.plugins) return false;
+  if (prevProps.RowComponent !== nextProps.RowComponent) return false;
+  if (prevProps.CellComponent !== nextProps.CellComponent) return false;
 
   // Shallow compare the item - if same reference, skip re-render
   if (prevProps.item === nextProps.item) return true;
@@ -187,6 +205,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>(
     columns: columnsProp,
     idKey,
     plugins: pluginsProp,
+    components,
     children,
     tableProps: userTableProps,
   }: XDSBaseTableProps<T>,
@@ -194,6 +213,10 @@ function XDSBaseTableInner<T extends Record<string, unknown>>(
 ): ReactElement {
   // Use stable empty array when no plugins provided
   const plugins = pluginsProp ?? (EMPTY_PLUGINS as TablePlugin<T>[]);
+
+  const RowComponent = components?.Row ?? XDSTableRow;
+  const CellComponent = components?.Cell ?? XDSTableCell;
+  const HeaderCellComponent = components?.HeaderCell ?? XDSTableHeaderCell;
 
   // Resolve columns: explicit > auto-generated from data
   const resolvedColumns: XDSTableColumn<T>[] =
@@ -207,18 +230,41 @@ function XDSBaseTableInner<T extends Record<string, unknown>>(
     styles: [styles.table],
   } as TableRenderProps);
 
+  // --- Plugin pipeline: header cells ---
+  const headerCells = resolvedColumns.map(col => {
+    const cellRenderProps = applyPlugins(
+      plugins,
+      p => p.transformHeaderCell,
+      {htmlProps: {}, styles: []} as HeaderCellRenderProps,
+      col,
+    );
+
+    return (
+      <HeaderCellComponent
+        key={col.key}
+        {...cellRenderProps.htmlProps}
+        extraStyles={cellRenderProps.styles}>
+        {col.header ?? col.key}
+      </HeaderCellComponent>
+    );
+  });
+
   // --- Plugin pipeline: header row ---
   const headerRowRenderProps = applyPlugins(
     plugins,
     p => p.transformHeaderRow,
-    {htmlProps: {}, styles: []} as HeaderRowRenderProps,
+    {
+      htmlProps: {},
+      styles: [],
+      children: <>{headerCells}</>,
+    } as HeaderRowRenderProps,
   );
 
   // --- Render ---
   const hasData = data != null && data.length > 0;
   const hasColumns = resolvedColumns.length > 0;
 
-  return (
+  let tableElement: ReactNode = (
     <table
       ref={ref}
       {...tableRenderProps.htmlProps}
@@ -241,27 +287,11 @@ function XDSBaseTableInner<T extends Record<string, unknown>>(
       {/* thead */}
       {hasColumns && (
         <thead>
-          <tr
+          <RowComponent
             {...headerRowRenderProps.htmlProps}
-            {...stylex.props(...headerRowRenderProps.styles)}>
-            {resolvedColumns.map(col => {
-              const cellRenderProps = applyPlugins(
-                plugins,
-                p => p.transformHeaderCell,
-                {htmlProps: {}, styles: []} as HeaderCellRenderProps,
-                col,
-              );
-
-              return (
-                <th
-                  key={col.key}
-                  {...cellRenderProps.htmlProps}
-                  {...stylex.props(...cellRenderProps.styles)}>
-                  {col.header ?? col.key}
-                </th>
-              );
-            })}
-          </tr>
+            extraStyles={headerRowRenderProps.styles}>
+            {headerRowRenderProps.children}
+          </RowComponent>
         </thead>
       )}
 
@@ -286,12 +316,23 @@ function XDSBaseTableInner<T extends Record<string, unknown>>(
                   rowKey={rowKey}
                   columns={resolvedColumns}
                   plugins={plugins}
+                  RowComponent={RowComponent}
+                  CellComponent={CellComponent}
                 />
               );
             })}
       </tbody>
     </table>
   );
+
+  // Apply transformTableContext from each plugin (outermost-first)
+  for (const plugin of plugins) {
+    if (plugin.transformTableContext) {
+      tableElement = plugin.transformTableContext(tableElement);
+    }
+  }
+
+  return tableElement as ReactElement;
 }
 
 /**
@@ -299,6 +340,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>(
  *
  * Supports data-driven rendering (via `data` + `columns`) and children mode.
  * Applies plugins as a transform pipeline over render props.
+ * Accepts a `components` prop to render styled components instead of raw elements.
  *
  * @example
  * ```tsx

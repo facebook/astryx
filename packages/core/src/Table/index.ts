@@ -11,7 +11,9 @@ export {XDSBaseTable} from './XDSBaseTable';
 export {XDSTable} from './XDSTable';
 export {XDSTableRow} from './XDSTableRow';
 export {XDSTableCell} from './XDSTableCell';
+export {XDSTableHeaderCell} from './XDSTableHeaderCell';
 export {XDSTableContext} from './XDSTableContext';
+export {useXDSTableSelection} from './useXDSTableSelection';
 export {
   proportional,
   pixel,
@@ -30,6 +32,9 @@ export type {
   BodyRowRenderProps,
   BodyCellRenderProps,
   XDSBaseTableProps,
+  TableRowComponentProps,
+  TableCellComponentProps,
+  TableHeaderCellComponentProps,
 } from './types';
 export type {
   XDSTableProps,
@@ -38,4 +43,6 @@ export type {
 } from './XDSTable';
 export type {XDSTableRowProps} from './XDSTableRow';
 export type {XDSTableCellProps} from './XDSTableCell';
+export type {XDSTableHeaderCellProps} from './XDSTableHeaderCell';
 export type {XDSTableContextValue} from './XDSTableContext';
+export type {UseXDSTableSelectionConfig} from './useXDSTableSelection';

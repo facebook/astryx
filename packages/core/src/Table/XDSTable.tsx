@@ -1,6 +1,6 @@
 /**
  * @file XDSTable.tsx
- * @input React, StyleX, XDSBaseTable, theme tokens, types
+ * @input React, StyleX, XDSBaseTable, theme tokens, types, components
  * @output Exports XDSTable component, XDSTableProps, XDSTableDensity, XDSTableDividers types
  * @position Styled wrapper; the primary table API for consumers
  *
@@ -13,20 +13,13 @@
 
 import {forwardRef, useMemo, type ReactElement, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  colorVars,
-  spacingVars,
-  textSizeVars,
-  fontWeightVars,
-} from '../theme/tokens.stylex';
+import {colorVars} from '../theme/tokens.stylex';
 import {XDSBaseTable} from './XDSBaseTable';
+import {XDSTableRow} from './XDSTableRow';
+import {XDSTableCell} from './XDSTableCell';
+import {XDSTableHeaderCell} from './XDSTableHeaderCell';
 import {XDSTableContext} from './XDSTableContext';
-import type {
-  XDSBaseTableProps,
-  TablePlugin,
-  TableRenderProps,
-  HeaderCellRenderProps,
-} from './types';
+import type {XDSBaseTableProps, TablePlugin, TableRenderProps} from './types';
 
 // =============================================================================
 // XDSTable Types
@@ -44,9 +37,10 @@ export type XDSTableDividers = 'rows' | 'columns' | 'grid' | 'none';
  *
  * @template T - The row data type
  */
-export interface XDSTableProps<
-  T extends Record<string, unknown>,
-> extends XDSBaseTableProps<T> {
+export interface XDSTableProps<T extends Record<string, unknown>> extends Omit<
+  XDSBaseTableProps<T>,
+  'plugins' | 'components'
+> {
   /** Row density. @default 'balanced' */
   density?: XDSTableDensity;
   /** Divider style. @default 'rows' */
@@ -55,10 +49,12 @@ export interface XDSTableProps<
   isStriped?: boolean;
   /** Hover highlight on rows. @default false */
   hasHover?: boolean;
+  /** Named plugins to extend table behavior */
+  plugins?: Record<string, TablePlugin<T>>;
 }
 
 // =============================================================================
-// StyleX Styles
+// StyleX Styles (table-level only; cell/row/header styles owned by components)
 // =============================================================================
 
 const tableStyles = stylex.create({
@@ -68,63 +64,13 @@ const tableStyles = stylex.create({
   },
 });
 
-// Density: padding + font size for header cells
-const densityStyles = stylex.create({
-  compact: {
-    paddingBlock: spacingVars['--spacing-1'],
-    paddingInline: spacingVars['--spacing-2'],
-    fontSize: textSizeVars['--text-xsm'],
-  },
-  balanced: {
-    paddingBlock: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-3'],
-    fontSize: textSizeVars['--text-sm'],
-  },
-  spacious: {
-    paddingBlock: spacingVars['--spacing-3'],
-    paddingInline: spacingVars['--spacing-4'],
-    fontSize: textSizeVars['--text-base'],
-  },
-});
-
-// Header cell styles
-const headerStyles = stylex.create({
-  cell: {
-    fontWeight: fontWeightVars['--font-weight-semibold'],
-    color: colorVars['--color-text-secondary'],
-    textAlign: 'start',
-  },
-});
-
-// Column divider styles for headers
-const dividerColumnStyles = stylex.create({
-  cell: {
-    borderRightWidth: {
-      default: '1px',
-      ':last-child': '0',
-    },
-    borderRightStyle: 'solid',
-    borderRightColor: colorVars['--color-divider'],
-  },
-});
-
-// Header divider (bottom border on header row)
-const headerDividerStyles = stylex.create({
-  cell: {
-    borderBottomWidth: '1px',
-    borderBottomStyle: 'solid',
-    borderBottomColor: colorVars['--color-divider'],
-  },
-});
-
 // =============================================================================
-// Build XDS Styling Plugin
+// Table-level styling plugin (only transforms the <table> element)
 // =============================================================================
 
-function buildXDSStylePlugin<T extends Record<string, unknown>>(
-  density: XDSTableDensity,
-  dividers: XDSTableDividers,
-): TablePlugin<T> {
+function buildTableStylePlugin<
+  T extends Record<string, unknown>,
+>(): TablePlugin<T> {
   return {
     transformTable(props: TableRenderProps): TableRenderProps {
       return {
@@ -132,36 +78,22 @@ function buildXDSStylePlugin<T extends Record<string, unknown>>(
         styles: [...props.styles, tableStyles.base],
       };
     },
-
-    transformHeaderCell(
-      props: HeaderCellRenderProps,
-      _column,
-    ): HeaderCellRenderProps {
-      const cellStyles = [
-        ...props.styles,
-        headerStyles.cell,
-        densityStyles[density],
-        headerDividerStyles.cell,
-      ];
-
-      // Column dividers on header cells
-      if (dividers === 'columns' || dividers === 'grid') {
-        cellStyles.push(dividerColumnStyles.cell);
-      }
-
-      return {...props, styles: cellStyles};
-    },
-
-    // Body row/cell styling handled by XDSTableRow/Cell via context
   };
 }
+
+// Stable component references for the components prop
+const xdsComponents = {
+  Row: XDSTableRow,
+  Cell: XDSTableCell,
+  HeaderCell: XDSTableHeaderCell,
+};
 
 // =============================================================================
 // XDSTable Component
 // =============================================================================
 
-// Stable empty array to avoid creating new reference on each render
-const EMPTY_PLUGINS: TablePlugin<Record<string, unknown>>[] = [];
+// Stable empty record to avoid creating new reference on each render
+const EMPTY_PLUGINS: Record<string, TablePlugin<Record<string, unknown>>> = {};
 
 function XDSTableInner<T extends Record<string, unknown>>(
   {
@@ -176,19 +108,17 @@ function XDSTableInner<T extends Record<string, unknown>>(
   }: XDSTableProps<T>,
   ref: Ref<HTMLTableElement>,
 ): ReactElement {
-  // Use stable empty array when no plugins provided
-  const stableUserPlugins = userPlugins ?? (EMPTY_PLUGINS as TablePlugin<T>[]);
+  // Use stable empty record when no plugins provided
+  const stableUserPlugins =
+    userPlugins ?? (EMPTY_PLUGINS as Record<string, TablePlugin<T>>);
 
-  // Build the internal XDS styling plugin (table + header styling only)
-  const xdsPlugin = useMemo(
-    () => buildXDSStylePlugin<T>(density, dividers),
-    [density, dividers],
-  );
+  // Table-level styling plugin (just adds font/color to <table>)
+  const tablePlugin = useMemo(() => buildTableStylePlugin<T>(), []);
 
-  // XDS plugin runs first, user plugins can override/extend
+  // User plugins only — no XDS style plugin needed (components handle styling)
   const mergedPlugins = useMemo(
-    () => [xdsPlugin, ...stableUserPlugins],
-    [xdsPlugin, stableUserPlugins],
+    () => [tablePlugin, ...Object.values(stableUserPlugins)],
+    [tablePlugin, stableUserPlugins],
   );
 
   const contextValue = useMemo(
@@ -203,6 +133,7 @@ function XDSTableInner<T extends Record<string, unknown>>(
         data={data}
         columns={columns}
         plugins={mergedPlugins}
+        components={xdsComponents}
         {...rest}
       />
     </XDSTableContext.Provider>
@@ -212,8 +143,10 @@ function XDSTableInner<T extends Record<string, unknown>>(
 /**
  * XDSTable — a styled, data-driven table component.
  *
- * Wraps XDSBaseTable with an XDS styling plugin that applies density,
- * dividers, striped rows, and hover effects using design tokens.
+ * Wraps XDSBaseTable with styled components (XDSTableRow, XDSTableCell,
+ * XDSTableHeaderCell) that read appearance configuration from XDSTableContext.
+ * Density, dividers, striped rows, and hover effects are applied via
+ * design tokens in the component styles.
  *
  * @example
  * ```tsx

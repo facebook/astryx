@@ -23,6 +23,7 @@ import {XDSTableContext} from './XDSTableContext';
 /** Props for XDSTableCell — thin `<td>` wrapper */
 export interface XDSTableCellProps extends TdHTMLAttributes<HTMLTableCellElement> {
   children?: ReactNode;
+  extraStyles?: StyleXStyles[];
 }
 
 const densityStyles = stylex.create({
@@ -77,12 +78,12 @@ const dividerColumnStyles = stylex.create({
  * ```
  */
 export const XDSTableCell = forwardRef<HTMLTableCellElement, XDSTableCellProps>(
-  ({children, ...props}, ref) => {
+  ({children, extraStyles, ...props}, ref) => {
     const ctx = useContext(XDSTableContext);
 
     if (!ctx) {
       return (
-        <td ref={ref} {...props}>
+        <td ref={ref} {...props} {...stylex.props(...(extraStyles ?? []))}>
           {children}
         </td>
       );
@@ -96,6 +97,10 @@ export const XDSTableCell = forwardRef<HTMLTableCellElement, XDSTableCellProps>(
 
     if (ctx.dividers === 'columns' || ctx.dividers === 'grid') {
       cellStyles.push(dividerColumnStyles.cell);
+    }
+
+    if (extraStyles) {
+      cellStyles.push(...extraStyles);
     }
 
     return (
