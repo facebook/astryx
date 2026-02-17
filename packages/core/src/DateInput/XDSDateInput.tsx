@@ -11,7 +11,16 @@
  * - /apps/storybook/stories/DateInput.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useId, useState, useCallback, useRef, useMemo} from 'react';
+import {
+  forwardRef,
+  useId,
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+  useOptimistic,
+  startTransition,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {CalendarDaysIcon} from '@heroicons/react/24/outline';
 import {
@@ -21,7 +30,6 @@ import {
 } from '@heroicons/react/24/solid';
 import {
   colorVars,
-  sizeVars,
   spacingVars,
   radiusVars,
   transitionVars,
@@ -124,13 +132,10 @@ const styles = stylex.create({
 
 const sizeStyles = stylex.create({
   sm: {
-    height: sizeVars['--size-sm'],
+    height: 18,
   },
   md: {
-    height: sizeVars['--size-md'],
-  },
-  lg: {
-    height: sizeVars['--size-lg'],
+    height: 26,
   },
 });
 
@@ -197,8 +202,23 @@ export interface XDSDateInputProps {
   /**
    * Callback fired when the date changes.
    * Called with undefined when input is cleared.
+   * Either onChange or onChangeAction must be provided.
    */
-  onChange: (value: ISODateString | undefined) => void;
+  onChange?: (value: ISODateString | undefined) => void;
+
+  /**
+   * Async action to perform on change. Wrapped in React transition.
+   * Replaces onChange when provided - handle state updates inside this action.
+   * Receives the same arguments as onChange.
+   */
+  onChangeAction?: (value: ISODateString | undefined) => void | Promise<void>;
+
+  /**
+   * Whether the input is in a loading state.
+   * Shows disabled state during async operations.
+   * @default false
+   */
+  isLoading?: boolean;
 
   /**
    * Minimum selectable date in ISO format.
@@ -264,8 +284,10 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
       isOptional = false,
       isRequired = false,
       isDisabled = false,
+      isLoading = false,
       value,
       onChange,
+      onChangeAction,
       min,
       max,
       dateConstraints,
@@ -281,6 +303,27 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
     const statusMessageID = useId();
     const inputRef = useRef<HTMLInputElement | null>(null);
     const calendarRef = useRef<XDSCalendarHandle | null>(null);
+
+    // Track optimistic value for async actions
+    const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+    // isBusy is for visual feedback only (reduced opacity, aria-busy)
+    const isBusy = isLoading || optimisticValue !== value;
+
+    // Helper to handle value changes with action support
+    const handleValueChange = useCallback(
+      (newValue: ISODateString | undefined) => {
+        if (onChangeAction) {
+          // Use action - wraps in transition for async support
+          startTransition(() => {
+            setOptimisticValue(newValue);
+            onChangeAction(newValue);
+          });
+        } else if (onChange) {
+          onChange(newValue);
+        }
+      },
+      [onChange, onChangeAction, setOptimisticValue],
+    );
 
     // Status icon mapping
     const statusIconMap: Record<XDSInputStatusType, typeof CalendarDaysIcon> = {
@@ -354,11 +397,11 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
     // Handle date selection from calendar
     const handleDateSelect = useCallback(
       (selectedDate: ISODateString) => {
-        onChange(selectedDate);
+        handleValueChange(selectedDate);
         setPendingInput(null);
         popover.hide();
       },
-      [onChange, popover],
+      [handleValueChange, popover],
     );
 
     // Handle input text change - update immediately if valid
@@ -370,12 +413,12 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
         // If the input is valid, update immediately (don't wait for blur)
         const parsed = parseDateInput(newValue);
         if (parsed && parsed !== value) {
-          onChange(parsed);
+          handleValueChange(parsed);
           // Navigate calendar to show the parsed date's month
           calendarRef.current?.navigateTo(parsed);
         }
       },
-      [value, onChange],
+      [value, handleValueChange],
     );
 
     // Handle blur - validate and clear pending input
@@ -387,7 +430,7 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
       if (!pendingInput.trim()) {
         // Empty input clears the value
         if (value !== undefined) {
-          onChange(undefined);
+          handleValueChange(undefined);
         }
         setPendingInput(null);
         return;
@@ -397,12 +440,12 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
       if (parsed) {
         // Valid date - update if different
         if (parsed !== value) {
-          onChange(parsed);
+          handleValueChange(parsed);
         }
       }
       // Clear pending input - display will revert to formatted value
       setPendingInput(null);
-    }, [pendingInput, value, onChange]);
+    }, [pendingInput, value, handleValueChange]);
 
     // Handle keyboard events on input
     const handleInputKeyDown = useCallback(
@@ -450,8 +493,7 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
           ref={popover.triggerRef}
           {...stylex.props(
             styles.wrapper,
-            sizeStyles[size],
-            isDisabled && styles.wrapperDisabled,
+            (isDisabled || isBusy) && styles.wrapperDisabled,
             status && statusBorderStyles[status.type],
           )}>
           <button
@@ -462,7 +504,7 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
             {...popover.triggerProps}
             {...stylex.props(
               styles.iconButton,
-              isDisabled && styles.iconButtonDisabled,
+              (isDisabled || isBusy) && styles.iconButtonDisabled,
             )}>
             <XDSIcon icon={CalendarDaysIcon} size="sm" color="secondary" />
           </button>
@@ -477,12 +519,14 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
             onKeyDown={handleInputKeyDown}
             placeholder={placeholder}
             disabled={isDisabled}
+            aria-busy={isBusy || undefined}
             aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
             {...stylex.props(
               styles.input,
-              isDisabled && styles.inputDisabled,
+              sizeStyles[size],
+              (isDisabled || isBusy) && styles.inputDisabled,
               !isInputValid && styles.inputInvalid,
             )}
           />

@@ -16,8 +16,8 @@ interface UseSelectedItemOffsetOptions {
   isOpen: boolean;
   selectedItemIndex: number;
   listboxId: string;
-  listboxRef: RefObject<HTMLDivElement>;
-  triggerRef: RefObject<HTMLButtonElement>;
+  listboxRef: RefObject<HTMLDivElement | null>;
+  triggerRef: RefObject<HTMLButtonElement | null>;
 }
 
 interface UseSelectedItemOffsetResult {
@@ -128,7 +128,9 @@ export function useCombobox({
 }: UseComboboxOptions): UseComboboxResult {
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
   const [typeahead, setTypeahead] = useState('');
-  const typeaheadTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const typeaheadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   const getItemId = useCallback(
     (index: number) => `${listboxId}-item-${index}`,

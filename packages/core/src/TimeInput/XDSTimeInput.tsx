@@ -18,6 +18,8 @@ import {
   useCallback,
   useRef,
   useMemo,
+  useOptimistic,
+  startTransition,
   type KeyboardEvent,
   type FocusEvent,
 } from 'react';
@@ -30,7 +32,6 @@ import {
 } from '@heroicons/react/24/solid';
 import {
   colorVars,
-  sizeVars,
   spacingVars,
   radiusVars,
   transitionVars,
@@ -132,13 +133,10 @@ const styles = stylex.create({
 
 const sizeStyles = stylex.create({
   sm: {
-    height: sizeVars['--size-sm'],
+    height: 18,
   },
   md: {
-    height: sizeVars['--size-md'],
-  },
-  lg: {
-    height: sizeVars['--size-lg'],
+    height: 26,
   },
 });
 
@@ -206,8 +204,23 @@ export interface XDSTimeInputProps {
   /**
    * Callback fired when the time changes.
    * Called with undefined when input is cleared.
+   * Either onChange or onChangeAction must be provided.
    */
-  onChange: (value: ISOTimeString | undefined) => void;
+  onChange?: (value: ISOTimeString | undefined) => void;
+
+  /**
+   * Async action to perform on change. Wrapped in React transition.
+   * Replaces onChange when provided - handle state updates inside this action.
+   * Receives the same arguments as onChange.
+   */
+  onChangeAction?: (value: ISOTimeString | undefined) => void | Promise<void>;
+
+  /**
+   * Whether the input is in a loading state.
+   * Shows disabled state during async operations.
+   * @default false
+   */
+  isLoading?: boolean;
 
   /**
    * Minimum selectable time in ISO format.
@@ -290,8 +303,10 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
       isOptional = false,
       isRequired = false,
       isDisabled = false,
+      isLoading = false,
       value,
       onChange,
+      onChangeAction,
       min,
       max,
       hasSeconds = false,
@@ -308,6 +323,27 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
     const descriptionID = useId();
     const statusMessageID = useId();
     const inputRef = useRef<HTMLInputElement | null>(null);
+
+    // Track optimistic value for async actions
+    const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+    // isBusy is for visual feedback only (reduced opacity, aria-busy)
+    const isBusy = isLoading || optimisticValue !== value;
+
+    // Helper to handle value changes with action support
+    const handleValueChange = useCallback(
+      (newValue: ISOTimeString | undefined) => {
+        if (onChangeAction) {
+          // Use action - wraps in transition for async support
+          startTransition(() => {
+            setOptimisticValue(newValue);
+            onChangeAction(newValue);
+          });
+        } else if (onChange) {
+          onChange(newValue);
+        }
+      },
+      [onChange, onChangeAction, setOptimisticValue],
+    );
 
     // Status icon mapping
     const statusIconMap: Record<XDSInputStatusType, typeof XCircleIcon> = {
@@ -380,10 +416,10 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
         // If the input is valid, update immediately (don't wait for blur)
         const parsed = parseTimeInput(newValue, hasSeconds);
         if (parsed && isTimeInRange(parsed, min, max) && parsed !== value) {
-          onChange(parsed);
+          handleValueChange(parsed);
         }
       },
-      [hasSeconds, min, max, value, onChange],
+      [hasSeconds, min, max, value, handleValueChange],
     );
 
     // Handle focus
@@ -403,7 +439,7 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
         if (!pendingInput.trim()) {
           // Empty input clears the value
           if (value !== undefined) {
-            onChange(undefined);
+            handleValueChange(undefined);
           }
           setPendingInput(null);
           return;
@@ -413,13 +449,13 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
         if (parsed && isTimeInRange(parsed, min, max)) {
           // Valid time - update if different
           if (parsed !== value) {
-            onChange(parsed);
+            handleValueChange(parsed);
           }
         }
         // Clear pending input - display will revert to formatted value
         setPendingInput(null);
       },
-      [pendingInput, value, onChange, hasSeconds, min, max],
+      [pendingInput, value, handleValueChange, hasSeconds, min, max],
     );
 
     // Handle keyboard navigation on input
@@ -447,18 +483,18 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
 
           // Check if within range
           if (isTimeInRange(newTime, min, max)) {
-            onChange(newTime);
+            handleValueChange(newTime);
           }
         }
       },
-      [value, hasSeconds, increment, min, max, onChange],
+      [value, hasSeconds, increment, min, max, handleValueChange],
     );
 
     // Handle clear button click
     const handleClear = useCallback(() => {
-      onChange(undefined);
+      handleValueChange(undefined);
       inputRef.current?.focus();
-    }, [onChange]);
+    }, [handleValueChange]);
 
     // Combine refs
     const setRefs = useCallback(
@@ -494,8 +530,7 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
         <div
           {...stylex.props(
             styles.wrapper,
-            sizeStyles[size],
-            isDisabled && styles.wrapperDisabled,
+            (isDisabled || isBusy) && styles.wrapperDisabled,
             status && statusBorderStyles[status.type],
           )}>
           <div {...stylex.props(styles.icon)}>
@@ -512,12 +547,14 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
             onKeyDown={handleInputKeyDown}
             placeholder={displayPlaceholder}
             disabled={isDisabled}
+            aria-busy={isBusy || undefined}
             aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
             {...stylex.props(
               styles.input,
-              isDisabled && styles.inputDisabled,
+              sizeStyles[size],
+              (isDisabled || isBusy) && styles.inputDisabled,
               !isInputValid && styles.inputInvalid,
             )}
           />

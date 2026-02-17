@@ -1,6 +1,8 @@
-import {useState} from 'react';
+import {useState, useRef} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSTextInput} from '@xds/core/TextInput';
+import {XDSVStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 import {
   MagnifyingGlassIcon,
   EnvelopeIcon,
@@ -451,5 +453,81 @@ export const TooltipWithOptional: Story = {
     placeholder: 'https://example.com/webhook',
     labelTooltip: 'The URL where we will send event notifications.',
     isOptional: true,
+  },
+};
+
+/**
+ * Demonstrates async actions using onChangeAction.
+ * The input automatically shows loading state while validating with the server,
+ * then updates the status based on the validation result.
+ * Uses a request ID pattern to ignore stale validation responses.
+ */
+export const AsyncAction: Story = {
+  render: () => {
+    const [value, setValue] = useState('');
+    const [status, setStatus] = useState<
+      {type: 'error' | 'warning' | 'success'; message?: string} | undefined
+    >(undefined);
+
+    // Track the latest request to ignore stale responses
+    const latestRequestRef = useRef(0);
+
+    // Simulate server-side validation (e.g., checking username availability)
+    const takenUsernames = ['admin', 'user', 'test', 'root'];
+    const reservedUsernames = ['support', 'help', 'info'];
+
+    const validateUsername = async (newValue: string) => {
+      // Update state immediately
+      setValue(newValue);
+
+      // Increment request ID and capture it for this request
+      const requestId = ++latestRequestRef.current;
+
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Ignore stale responses - a newer request has started
+      if (requestId !== latestRequestRef.current) {
+        return;
+      }
+
+      const username = newValue.toLowerCase();
+
+      if (username.length < 3) {
+        setStatus({
+          type: 'error',
+          message: 'Username must be at least 3 characters',
+        });
+      } else if (takenUsernames.includes(username)) {
+        setStatus({type: 'error', message: 'This username is already taken'});
+      } else if (reservedUsernames.includes(username)) {
+        setStatus({
+          type: 'warning',
+          message: 'This username is reserved but may be available',
+        });
+      } else if (username.length > 0) {
+        setStatus({type: 'success', message: 'Username is available!'});
+      } else {
+        setStatus(undefined);
+      }
+    };
+
+    return (
+      <XDSVStack gap="space4">
+        <XDSText type="body" color="secondary">
+          Type a username to check availability. Try "admin" (taken), "support"
+          (reserved), or any other name (available).
+        </XDSText>
+        <XDSTextInput
+          label="Username"
+          description="We'll check if this username is available"
+          placeholder="Enter a username"
+          value={value}
+          onChangeAction={validateUsername}
+          status={status}
+          startIcon={UserIcon}
+        />
+      </XDSVStack>
+    );
   },
 };

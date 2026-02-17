@@ -1,6 +1,8 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSSwitch} from '@xds/core/Switch';
+import {XDSVStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 import {
   BellIcon,
   MoonIcon,
@@ -436,104 +438,36 @@ export const SpreadSpacingExample: Story = {
   },
 };
 
-export const WithErrorStatus: Story = {
-  render: args => {
-    const [value, setValue] = useState(args.value ?? false);
-    const {value: _value, onChange: _onChange, ...restArgs} = args;
-    return (
-      <XDSSwitch
-        {...restArgs}
-        value={value}
-        onChange={checked => setValue(checked)}
-      />
-    );
-  },
-  args: {
-    label: 'Accept terms and conditions',
-    isRequired: true,
-    status: {type: 'error', message: 'You must accept the terms to continue'},
-  },
-};
-
-export const WithWarningStatus: Story = {
-  render: args => {
-    const [value, setValue] = useState(args.value ?? true);
-    const {value: _value, onChange: _onChange, ...restArgs} = args;
-    return (
-      <XDSSwitch
-        {...restArgs}
-        value={value}
-        onChange={checked => setValue(checked)}
-      />
-    );
-  },
-  args: {
-    label: 'Share usage data',
-    description: 'Help us improve by sharing anonymous usage statistics',
-    status: {type: 'warning', message: 'This data may be shared with partners'},
-  },
-};
-
-export const WithSuccessStatus: Story = {
-  render: args => {
-    const [value, setValue] = useState(args.value ?? true);
-    const {value: _value, onChange: _onChange, ...restArgs} = args;
-    return (
-      <XDSSwitch
-        {...restArgs}
-        value={value}
-        onChange={checked => setValue(checked)}
-      />
-    );
-  },
-  args: {
-    label: 'Two-factor authentication',
-    labelIcon: ShieldCheckIcon,
-    status: {type: 'success', message: 'Your account is now more secure'},
-  },
-};
-
-export const StatusVariations: Story = {
+/**
+ * Demonstrates async actions using onChangeAction.
+ * The switch automatically shows loading state while syncing with server.
+ */
+export const AsyncAction: Story = {
   render: () => {
-    const [value1, setValue1] = useState(false);
-    const [value2, setValue2] = useState(true);
-    const [value3, setValue3] = useState(true);
+    const [value, setValue] = useState(false);
+
+    // Simulate server sync (e.g., saving preference to API)
+    const simulateServerSync = async (checked: boolean) => {
+      setValue(checked);
+      await new Promise<void>(resolve => {
+        setTimeout(resolve, 1500);
+      });
+    };
+
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '24px',
-          maxWidth: '400px',
-        }}>
+      <XDSVStack gap="space4">
+        <XDSText type="body" color="secondary">
+          Toggle the switch to trigger an async action. The switch will show a
+          busy state for 1.5 seconds while syncing.
+        </XDSText>
         <XDSSwitch
-          label="Accept terms and conditions"
-          value={value1}
-          onChange={setValue1}
-          isRequired
-          status={{
-            type: 'error',
-            message: 'You must accept the terms to continue',
-          }}
+          label="Sync with server"
+          description="Changes are saved automatically"
+          value={value}
+          onChangeAction={simulateServerSync}
+          labelIcon={CloudArrowUpIcon}
         />
-        <XDSSwitch
-          label="Share usage data"
-          description="Help us improve by sharing anonymous usage statistics"
-          value={value2}
-          onChange={setValue2}
-          status={{
-            type: 'warning',
-            message: 'This data may be shared with partners',
-          }}
-        />
-        <XDSSwitch
-          label="Two-factor authentication"
-          value={value3}
-          onChange={setValue3}
-          labelIcon={ShieldCheckIcon}
-          status={{type: 'success', message: 'Your account is now more secure'}}
-        />
-      </div>
+      </XDSVStack>
     );
   },
 };

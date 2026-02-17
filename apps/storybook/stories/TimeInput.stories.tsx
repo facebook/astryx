@@ -2,6 +2,9 @@ import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSTimeInput} from '@xds/core/TimeInput';
 import type {ISOTimeString} from '@xds/core';
+import {XDSVStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
+import {ClockIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSTimeInput> = {
   title: 'Core/XDSTimeInput',
@@ -340,6 +343,40 @@ export const AllVariations: Story = {
           }}
         />
       </div>
+    );
+  },
+};
+
+/**
+ * Demonstrates async actions using onChangeAction.
+ * The time input automatically shows loading state while syncing with server.
+ */
+export const AsyncAction: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISOTimeString | undefined>();
+
+    // Simulate server sync (e.g., saving time to API)
+    const simulateServerSync = async (newValue: ISOTimeString | undefined) => {
+      setValue(newValue);
+      await new Promise<void>(resolve => {
+        setTimeout(resolve, 1500);
+      });
+    };
+
+    return (
+      <XDSVStack gap="space4">
+        <XDSText type="body" color="secondary">
+          Select a time to trigger an async action. The input will show a busy
+          state for 1.5 seconds while syncing.
+        </XDSText>
+        <XDSTimeInput
+          label="Meeting time"
+          description="Changes are saved automatically"
+          value={value}
+          onChangeAction={simulateServerSync}
+          placeholder="Select a meeting time"
+        />
+      </XDSVStack>
     );
   },
 };

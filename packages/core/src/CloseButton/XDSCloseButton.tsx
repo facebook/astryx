@@ -11,9 +11,9 @@
  * - /apps/storybook/stories/CloseButton.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useContext, type ButtonHTMLAttributes} from 'react';
+import React, {forwardRef, useContext} from 'react';
 import {XMarkIcon} from '@heroicons/react/24/outline';
-import {XDSButton, type XDSButtonSize} from '../Button';
+import {XDSButton, type XDSButtonProps, type XDSButtonSize} from '../Button';
 import {XDSIcon, type XDSIconType, type XDSIconSize} from '../Icon';
 import {ThemeContext} from '../theme/ThemeContext';
 
@@ -43,10 +43,7 @@ declare module '../theme/types' {
   }
 }
 
-export interface XDSCloseButtonProps extends Omit<
-  ButtonHTMLAttributes<HTMLButtonElement>,
-  'children' | 'disabled'
-> {
+export interface XDSCloseButtonProps {
   /**
    * The size of the close button.
    * @default 'md'
@@ -62,6 +59,21 @@ export interface XDSCloseButtonProps extends Omit<
    * @default false
    */
   isDisabled?: boolean;
+  /**
+   * Whether the button is in a loading state.
+   * @default false
+   */
+  isLoading?: boolean;
+  /**
+   * Click handler.
+   */
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  /**
+   * Async click action. Wrapped in React transition.
+   */
+  onClickAction?: (
+    e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>,
+  ) => void | Promise<void>;
 }
 
 // =============================================================================
@@ -83,27 +95,42 @@ export interface XDSCloseButtonProps extends Omit<
 export const XDSCloseButton = forwardRef<
   HTMLButtonElement,
   XDSCloseButtonProps
->(({size = 'md', label = 'Close', isDisabled, ...props}, ref) => {
-  // Get theme context for custom icon
-  const themeContext = useContext(ThemeContext);
-  const IconComponent =
-    themeContext?.theme.components?.closeButton?.icon ?? XMarkIcon;
+>(
+  (
+    {
+      size = 'md',
+      label = 'Close',
+      isDisabled,
+      onClick,
+      onClickAction,
+      isLoading,
+      ...props
+    },
+    ref,
+  ) => {
+    // Get theme context for custom icon
+    const themeContext = useContext(ThemeContext);
+    const IconComponent =
+      themeContext?.theme.components?.closeButton?.icon ?? XMarkIcon;
 
-  const iconSize = buttonSizeToIconSize[size];
+    const iconSize = buttonSizeToIconSize[size];
 
-  return (
-    <XDSButton
-      ref={ref}
-      type="button"
-      variant="ghost"
-      size={size}
-      label={label}
-      tooltip={label}
-      isDisabled={isDisabled}
-      icon={<XDSIcon icon={IconComponent} size={iconSize} color="inherit" />}
-      {...props}
-    />
-  );
-});
+    return (
+      <XDSButton
+        ref={ref}
+        type="button"
+        variant="ghost"
+        size={size}
+        label={label}
+        tooltip={label}
+        isDisabled={isDisabled}
+        isLoading={isLoading}
+        onClick={onClick}
+        onClickAction={onClickAction}
+        icon={<XDSIcon icon={IconComponent} size={iconSize} color="inherit" />}
+      />
+    );
+  },
+);
 
 XDSCloseButton.displayName = 'XDSCloseButton';

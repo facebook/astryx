@@ -1,10 +1,13 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
+import {XDSVStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 import {
   BellIcon,
   EnvelopeIcon,
   ShieldCheckIcon,
+  CloudArrowUpIcon,
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSCheckboxInput> = {
@@ -362,106 +365,36 @@ export const StartIconVariations: Story = {
   },
 };
 
-export const WithErrorStatus: Story = {
-  render: args => {
-    const [value, setValue] = useState<boolean | 'indeterminate'>(
-      args.value ?? false,
-    );
-    const {value: _, onChange: __, ...restArgs} = args;
-    return (
-      <XDSCheckboxInput
-        {...restArgs}
-        value={value}
-        onChange={checked => setValue(checked)}
-      />
-    );
-  },
-  args: {
-    label: 'Accept terms and conditions',
-    status: {type: 'error', message: 'You must accept the terms to continue'},
-  },
-};
-
-export const WithWarningStatus: Story = {
-  render: args => {
-    const [value, setValue] = useState<boolean | 'indeterminate'>(
-      args.value ?? true,
-    );
-    const {value: _, onChange: __, ...restArgs} = args;
-    return (
-      <XDSCheckboxInput
-        {...restArgs}
-        value={value}
-        onChange={checked => setValue(checked)}
-      />
-    );
-  },
-  args: {
-    label: 'Share usage data',
-    description: 'Help us improve by sharing anonymous usage statistics',
-    status: {type: 'warning', message: 'This data may be shared with partners'},
-  },
-};
-
-export const WithSuccessStatus: Story = {
-  render: args => {
-    const [value, setValue] = useState<boolean | 'indeterminate'>(
-      args.value ?? true,
-    );
-    const {value: _, onChange: __, ...restArgs} = args;
-    return (
-      <XDSCheckboxInput
-        {...restArgs}
-        value={value}
-        onChange={checked => setValue(checked)}
-      />
-    );
-  },
-  args: {
-    label: 'Email verified',
-    status: {type: 'success', message: 'Your email has been verified'},
-  },
-};
-
-export const StatusVariations: Story = {
+/**
+ * Demonstrates async actions using onChangeAction.
+ * The checkbox automatically shows loading state while syncing with server.
+ */
+export const AsyncAction: Story = {
   render: () => {
-    const [value1, setValue1] = useState<boolean | 'indeterminate'>(false);
-    const [value2, setValue2] = useState<boolean | 'indeterminate'>(true);
-    const [value3, setValue3] = useState<boolean | 'indeterminate'>(true);
+    const [value, setValue] = useState<boolean | 'indeterminate'>(false);
+
+    // Simulate server sync (e.g., saving preference to API)
+    const simulateServerSync = async (checked: boolean) => {
+      setValue(checked);
+      await new Promise<void>(resolve => {
+        setTimeout(resolve, 1500);
+      });
+    };
+
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '24px',
-          maxWidth: '400px',
-        }}>
+      <XDSVStack gap="space4">
+        <XDSText type="body" color="secondary">
+          Toggle the checkbox to trigger an async action. The checkbox will show
+          a busy state for 1.5 seconds while syncing.
+        </XDSText>
         <XDSCheckboxInput
-          label="Accept terms and conditions"
-          value={value1}
-          onChange={setValue1}
-          status={{
-            type: 'error',
-            message: 'You must accept the terms to continue',
-          }}
+          label="Sync preferences"
+          description="Changes are saved automatically to your account"
+          value={value}
+          onChangeAction={simulateServerSync}
+          startIcon={CloudArrowUpIcon}
         />
-        <XDSCheckboxInput
-          label="Share usage data"
-          description="Help us improve by sharing anonymous usage statistics"
-          value={value2}
-          onChange={setValue2}
-          status={{
-            type: 'warning',
-            message: 'This data may be shared with partners',
-          }}
-        />
-        <XDSCheckboxInput
-          label="Email verified"
-          value={value3}
-          onChange={setValue3}
-          status={{type: 'success', message: 'Your email has been verified'}}
-        />
-      </div>
+      </XDSVStack>
     );
   },
 };

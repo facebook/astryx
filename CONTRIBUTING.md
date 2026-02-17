@@ -7,6 +7,7 @@
 Install Node.js v22+ using one of these methods:
 
 **Via nvm (recommended):**
+
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 source ~/.zshrc
@@ -25,6 +26,7 @@ npm install -g yarn
 ```
 
 Verify installation:
+
 ```bash
 node --version   # v22.x.x
 yarn --version   # 1.22.x
@@ -53,6 +55,7 @@ yarn dev
 Storybook loads pre-built packages from `dist/` folders, so you need to build packages before running Storybook.
 
 **First time setup:**
+
 ```bash
 # Build all packages
 yarn build
@@ -62,17 +65,20 @@ yarn workspace @xds/core build
 ```
 
 **Start Storybook:**
+
 ```bash
 cd apps/storybook
 yarn dev
 ```
 
 Storybook will open at http://localhost:6006 with:
+
 - **Theme switcher** - Toggle between Default and Shadcn themes
 - **Mode switcher** - Toggle between Light and Dark modes
 - **Component stories** - Interactive component examples
 
 **If you make changes to `@xds/core`:**
+
 ```bash
 # Rebuild core package
 yarn workspace @xds/core build
@@ -109,15 +115,15 @@ xds/
 
 ### Common Commands
 
-| Command | Description |
-|---------|-------------|
-| `yarn install` | Install all dependencies |
-| `yarn dev` | Start all dev servers |
-| `yarn build` | Build all packages |
-| `yarn test` | Run all tests |
-| `yarn test:watch` | Run tests in watch mode |
-| `yarn storybook` | Start Storybook at localhost:6006 |
-| `yarn lint` | Lint all packages |
+| Command           | Description                       |
+| ----------------- | --------------------------------- |
+| `yarn install`    | Install all dependencies          |
+| `yarn dev`        | Start all dev servers             |
+| `yarn build`      | Build all packages                |
+| `yarn test`       | Run all tests                     |
+| `yarn test:watch` | Run tests in watch mode           |
+| `yarn storybook`  | Start Storybook at localhost:6006 |
+| `yarn lint`       | Lint all packages                 |
 
 ## Adding a New Component
 
@@ -141,13 +147,51 @@ packages/core/src/MyComponent/
 
 ### 3. Component Template
 
-```tsx
+````tsx
 // MyComponent.tsx
-import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
+import {
+  forwardRef,
+  useContext,
+  useOptimistic,
+  startTransition,
+  type HTMLAttributes,
+  type ReactNode,
+} from 'react';
+import * as stylex from '@stylexjs/stylex';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles} from '../theme/types';
+
+// Define component variants
+const variants = stylex.create({
+  default: {
+    // default styles
+  },
+  emphasized: {
+    // emphasized styles
+  },
+});
+
+export type MyComponentVariant = keyof typeof variants;
+
+// =============================================================================
+// Module Augmentation - Register component styles with theme system
+// =============================================================================
+// This allows themes to provide type-safe style overrides for this component
+// without requiring theme/types.ts to import from component (avoiding circular deps)
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    myComponent?: {
+      variants?: Partial<Record<MyComponentVariant, StyleXStyles>>;
+    };
+  }
+}
 
 export interface MyComponentProps extends HTMLAttributes<HTMLDivElement> {
   /** Description for AI-assisted development */
   children: ReactNode;
+  /** Visual style variant */
+  variant?: MyComponentVariant;
 }
 
 /**
@@ -159,25 +203,102 @@ export interface MyComponentProps extends HTMLAttributes<HTMLDivElement> {
  * ```
  */
 export const MyComponent = forwardRef<HTMLDivElement, MyComponentProps>(
-  ({ children, ...props }, ref) => {
+  ({children, variant = 'default', ...props}, ref) => {
+    // Get theme context for component-level overrides (optional)
+    const themeContext = useContext(ThemeContext);
+    const themeVariantOverride =
+      themeContext?.theme.components?.myComponent?.variants?.[variant];
+
     return (
-      <div ref={ref} {...props}>
+      <div
+        ref={ref}
+        {...stylex.props(
+          variants[variant],
+          themeVariantOverride, // Theme override applied last
+        )}
+        {...props}>
         {children}
       </div>
     );
-  }
+  },
 );
 
 MyComponent.displayName = 'MyComponent';
+````
+
+**Theme Extension Pattern:**
+
+1. **Export variant type** - `export type MyComponentVariant = keyof typeof variants`
+2. **Module augmentation** - Extend `ComponentStyles` interface in `theme/types`
+3. **Apply theme override** - Get from `ThemeContext` and apply after base styles
+
+**Creating a theme with component overrides:**
+
+```tsx
+// themes/corporate/index.ts
+import {createTheme} from '@xds/core';
+import * as stylex from '@stylexjs/stylex';
+
+const corporateButtonStyles = stylex.create({
+  primary: {
+    backgroundColor: '#003366',
+    borderRadius: '0px',
+  },
+});
+
+export const corporateTheme = createTheme({
+  name: 'corporate',
+  components: {
+    button: {
+      variants: {
+        primary: corporateButtonStyles.primary,
+      },
+    },
+    myComponent: {
+      variants: {
+        emphasized: customStyles.emphasized,
+      },
+    },
+  },
+});
 ```
 
-### 4. Test Template
+### 4. React Transitions for Async Operations
+
+Components that trigger async operations should use React Transitions for non-blocking updates.
+
+**Key Patterns:**
+
+| Pattern           | Props                              | Use Case                          |
+| ----------------- | ---------------------------------- | --------------------------------- |
+| Button actions    | `onClickAction`, `isBusy`, `href`  | Async submit, link with analytics |
+| Optimistic inputs | `onChangeAction` + `useOptimistic` | Live validation, auto-save        |
+
+**Prop naming convention:**
+
+- `onClick` / `onChange` - Synchronous, immediate
+- `onClickAction` / `onChangeAction` - Async, wrapped in transition
+
+**When to use:**
+
+- Network requests, form submissions
+- Heavy computations, filtering large lists
+- Navigation between views
+
+**Never use for:**
+
+- Focus changes, immediate visual feedback
+- Animations, critical error states
+
+See `.context/explorations/react-transitions.md` for detailed implementation patterns.
+
+### 5. Test Template
 
 ```tsx
 // MyComponent.test.tsx
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { MyComponent } from './MyComponent';
+import {describe, it, expect} from 'vitest';
+import {render, screen} from '@testing-library/react';
+import {MyComponent} from './MyComponent';
 
 describe('MyComponent', () => {
   it('renders children', () => {
@@ -191,8 +312,8 @@ describe('MyComponent', () => {
 
 ```tsx
 // MyComponent.stories.tsx
-import type { Meta, StoryObj } from '@storybook/react';
-import { MyComponent } from './MyComponent';
+import type {Meta, StoryObj} from '@storybook/react';
+import {MyComponent} from './MyComponent';
 
 const meta = {
   title: 'Components/MyComponent',
@@ -225,7 +346,7 @@ export default defineConfig({
   entry: [
     'src/index.ts',
     'src/Button/index.ts',
-    'src/MyComponent/index.ts',  // Add this
+    'src/MyComponent/index.ts', // Add this
   ],
   // ...
 });
@@ -252,6 +373,7 @@ yarn test:coverage
 ### Test Structure
 
 Tests are colocated with components:
+
 ```
 src/Button/
 ├── Button.tsx
@@ -271,6 +393,7 @@ yarn changeset
 ```
 
 Follow the prompts to:
+
 1. Select changed packages
 2. Choose bump type (patch/minor/major)
 3. Write a summary
@@ -303,18 +426,22 @@ This creates a file in `.changeset/` — commit it with your PR.
 ### Storybook Issues
 
 **"Failed to fetch dynamically imported module"**
+
 - Cause: Core package not built or out of date
 - Fix: `yarn workspace @xds/core build` then restart Storybook
 
 **"React is not defined"**
+
 - Cause: Missing React import in preview.tsx
 - Fix: Ensure `import * as React from 'react';` at top of preview.tsx
 
 **"Unexpected 'stylex.defineVars' call at runtime"**
+
 - Cause: StyleX code trying to run without compilation
 - Fix: Storybook should load from `dist/` not `src/`. Check vite.config.ts aliases.
 
 **Changes not appearing in Storybook**
+
 - Rebuild the package: `yarn workspace @xds/core build`
 - Hard refresh browser: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows)
 - Clear Storybook cache: Remove `apps/storybook/node_modules/.cache`

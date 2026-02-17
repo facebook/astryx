@@ -2,6 +2,9 @@ import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSDateInput} from '@xds/core/DateInput';
 import type {ISODateString} from '@xds/core/Calendar';
+import {XDSVStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
+import {CalendarIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSDateInput> = {
   title: 'Core/XDSDateInput',
@@ -293,6 +296,40 @@ export const AllVariations: Story = {
           }}
         />
       </div>
+    );
+  },
+};
+
+/**
+ * Demonstrates async actions using onChangeAction.
+ * The date input automatically shows loading state while syncing with server.
+ */
+export const AsyncAction: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISODateString | undefined>();
+
+    // Simulate server sync (e.g., saving date to API)
+    const simulateServerSync = async (newValue: ISODateString | undefined) => {
+      setValue(newValue);
+      await new Promise<void>(resolve => {
+        setTimeout(resolve, 1500);
+      });
+    };
+
+    return (
+      <XDSVStack gap="space4">
+        <XDSText type="body" color="secondary">
+          Select a date to trigger an async action. The input will show a busy
+          state for 1.5 seconds while syncing.
+        </XDSText>
+        <XDSDateInput
+          label="Event date"
+          description="Changes are saved automatically"
+          value={value}
+          onChangeAction={simulateServerSync}
+          placeholder="Select an event date"
+        />
+      </XDSVStack>
     );
   },
 };

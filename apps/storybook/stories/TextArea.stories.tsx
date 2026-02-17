@@ -1,6 +1,8 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSTextArea} from '@xds/core/TextArea';
+import {XDSVStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 import {
   DocumentTextIcon,
   ChatBubbleLeftIcon,
@@ -540,6 +542,41 @@ export const MaxLengthVariations: Story = {
           maxLength={200}
         />
       </div>
+    );
+  },
+};
+
+/**
+ * Demonstrates async actions using onChangeAction.
+ * The textarea automatically shows loading state while syncing with server.
+ */
+export const AsyncAction: Story = {
+  render: () => {
+    const [value, setValue] = useState('');
+
+    // Simulate server sync (e.g., auto-save to API)
+    const simulateServerSync = async (newValue: string) => {
+      setValue(newValue);
+      await new Promise<void>(resolve => {
+        setTimeout(resolve, 1500);
+      });
+    };
+
+    return (
+      <XDSVStack gap="space4">
+        <XDSText type="body" color="secondary">
+          Type in the textarea to trigger an async action. The input will show a
+          busy state for 1.5 seconds while syncing.
+        </XDSText>
+        <XDSTextArea
+          label="Notes"
+          description="Changes are saved automatically"
+          value={value}
+          onChangeAction={simulateServerSync}
+          placeholder="Start typing to auto-save..."
+          rows={4}
+        />
+      </XDSVStack>
     );
   },
 };

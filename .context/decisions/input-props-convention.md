@@ -42,6 +42,65 @@ All input components that represent a form field should include these props:
   onChange: (checked: boolean, e: ChangeEvent<HTMLInputElement>) => void
   ```
 
+## Async Action Props (React 19 Transitions)
+
+For components that need to support async operations on value changes, use the action pattern:
+
+| Prop             | Type                                 | Default | Description                                             |
+| ---------------- | ------------------------------------ | ------- | ------------------------------------------------------- |
+| `onChangeAction` | `(value, event?) => void \| Promise` | -       | Async action replacing onChange. Wrapped in transition. |
+| `isLoading`      | `boolean`                            | `false` | Manual loading state for external async operations      |
+
+### Action Props Convention
+
+- **onChangeAction replaces onChange**: When `onChangeAction` is provided, it takes the place of `onChange`. State updates should happen inside the action.
+- **Same signature as onChange**: `onChangeAction` receives the same arguments as `onChange` for that component.
+- **Optimistic updates via `useOptimistic`**: Components use React 19's `useOptimistic` to immediately reflect the new value while the action runs. If the action fails, React automatically rolls back.
+- **Busy state derived from optimistic mismatch**: `isBusy = isLoading || (optimisticValue !== value)` — no separate `isPending` needed for inputs.
+- **Visual feedback only**: `isBusy` is used for visual feedback (reduced opacity, `aria-busy`) but does NOT disable the input to prevent focus loss.
+
+### Implementation Pattern
+
+```tsx
+const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+// isBusy from optimistic mismatch + external isLoading
+const isBusy = isLoading || optimisticValue !== value;
+
+const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const newValue = e.target.value;
+
+  if (onChangeAction) {
+    startTransition(() => {
+      setOptimisticValue(newValue); // Immediate UI feedback
+      onChangeAction(newValue, e); // Async action, auto-rollback on failure
+    });
+  } else if (onChange) {
+    onChange(newValue, e);
+  }
+};
+
+// In JSX:
+<input
+  value={optimisticValue} // Render optimistic value
+  disabled={isDisabled} // Never use isBusy here - causes focus loss
+  aria-busy={isBusy || undefined}
+  {...stylex.props(
+    styles.input,
+    (isDisabled || isBusy) && styles.inputDisabled, // Visual feedback only
+  )}
+/>;
+```
+
+### Button Action Props
+
+For buttons, use `onClickAction` instead:
+
+| Prop            | Type                                 | Description                                            |
+| --------------- | ------------------------------------ | ------------------------------------------------------ |
+| `onClickAction` | `(e: MouseEvent) => void \| Promise` | Async action replacing onClick. Wrapped in transition. |
+
+When combined with `href`, navigation is deferred until the action completes.
+
 ## Optional Common Props
 
 | Prop           | Type               | Default | Applicable To              | Description                        |
@@ -84,20 +143,21 @@ Each input component re-exports these types with component-specific aliases for 
 
 ## Current Implementation Status
 
-| Component        | label | isLabelHidden | description | isOptional | isRequired | isDisabled | size | status | placeholder |
-| ---------------- | ----- | ------------- | ----------- | ---------- | ---------- | ---------- | ---- | ------ | ----------- |
-| XDSTextInput     | ✓     | ✓             | ✓           | ✓          | ✓          | ✓          | ✓    | ✓      | ✓           |
-| XDSTextArea      | ✓     | ✓             | ✓           | ✓          | ✓          | ✓          | -    | -      | ✓           |
-| XDSCheckboxInput | ✓     | ✓             | ✓           | -          | ✓          | ✓          | ✓    | -      | -           |
-| XDSDateInput     | ✓     | ✓             | ✓           | ✓          | ✓          | ✓          | ✓    | ✓      | ✓           |
-| XDSTimeInput     | ✓     | ✓             | ✓           | ✓          | ✓          | ✓          | ✓    | ✓      | ✓           |
+| Component        | label | isLabelHidden | description | isOptional | isRequired | isDisabled | size | status | placeholder | onChangeAction |
+| ---------------- | ----- | ------------- | ----------- | ---------- | ---------- | ---------- | ---- | ------ | ----------- | -------------- |
+| XDSTextInput     | ✓     | ✓             | ✓           | ✓          | ✓          | ✓          | ✓    | ✓      | ✓           | ✓              |
+| XDSTextArea      | ✓     | ✓             | ✓           | ✓          | ✓          | ✓          | -    | ✓      | ✓           | ✓              |
+| XDSCheckboxInput | ✓     | ✓             | ✓           | -          | ✓          | ✓          | ✓    | -      | -           | ✓              |
+| XDSDateInput     | ✓     | ✓             | ✓           | ✓          | ✓          | ✓          | ✓    | ✓      | ✓           | ✓              |
+| XDSTimeInput     | ✓     | ✓             | ✓           | ✓          | ✓          | ✓          | ✓    | ✓      | ✓           | ✓              |
+| XDSSwitch        | ✓     | ✓             | ✓           | ✓          | ✓          | ✓          | -    | -      | -           | ✓              |
+| XDSSelector      | ✓     | ✓             | ✓           | ✓          | ✓          | ✓          | ✓    | ✓      | ✓           | ✓              |
 
 ### Gaps to Address
 
-1. **status**: Add to TextArea for validation feedback
-2. **isOptional**: Add to CheckboxInput for consistency
-3. **size**: Add to TextArea for consistency
-4. **labelTooltip**: Consider adding to all field-based inputs
+1. **isOptional**: Add to CheckboxInput for consistency
+2. **size**: Add to TextArea for consistency
+3. **labelTooltip**: Consider adding to all field-based inputs
 
 ## Boolean Prop Naming
 

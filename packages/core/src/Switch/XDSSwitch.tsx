@@ -1,6 +1,6 @@
 /**
  * @file XDSSwitch.tsx
- * @input Uses React forwardRef, useId, ChangeEvent, XDSFieldLabel, XDSFieldStatus, XDSIconType, XDSInputStatus
+ * @input Uses React forwardRef, useId, ChangeEvent, XDSFieldLabel, XDSIconType
  * @output Exports XDSSwitch component, XDSSwitchProps, XDSSwitchLabelPosition, XDSSwitchLabelSpacing
  * @position Core implementation; consumed by index.ts, tested by XDSSwitch.test.tsx
  *
@@ -11,7 +11,14 @@
  * - /apps/storybook/stories/Switch.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useId, type ChangeEvent, type FocusEvent} from 'react';
+import {
+  forwardRef,
+  startTransition,
+  useId,
+  useOptimistic,
+  type ChangeEvent,
+  type FocusEvent,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -23,9 +30,7 @@ import {
   textSizeVars,
 } from '../theme/tokens.stylex';
 import {XDSFieldLabel} from '../Field/XDSFieldLabel';
-import {XDSFieldStatus} from '../Field/XDSFieldStatus';
 import type {XDSIconType} from '../Icon';
-import type {XDSInputStatus} from '../Field/types';
 
 // Fixed dimensions: 40px width, 24px height, 16px thumb (off), 20px thumb (on)
 const SWITCH_WIDTH = 40;
@@ -47,6 +52,30 @@ const styles = stylex.create({
   containerSpread: {
     justifyContent: 'space-between',
     width: '100%',
+  },
+  // Default CSS variables for off state
+  containerOff: {
+    '--xds-switch-track-bg': colorVars['--color-deemphasized'],
+    '--xds-switch-track-border': colorVars['--color-divider-emphasized'],
+  },
+  // Default CSS variables for on state
+  containerOn: {
+    '--xds-switch-track-bg': colorVars['--color-accent'],
+    '--xds-switch-track-border': colorVars['--color-accent'],
+  },
+  // Hover overrides for off state (only applied when not disabled)
+  containerHoverOff: {
+    ':hover': {
+      '--xds-switch-track-bg': `color-mix(in srgb, ${colorVars['--color-deemphasized']}, ${colorVars['--color-hover-tint']} 5%)`,
+      '--xds-switch-track-border': `color-mix(in srgb, ${colorVars['--color-divider-emphasized']}, ${colorVars['--color-hover-tint']} 20%)`,
+    },
+  },
+  // Hover overrides for on state (only applied when not disabled)
+  containerHoverOn: {
+    ':hover': {
+      '--xds-switch-track-bg': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
+      '--xds-switch-track-border': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
+    },
   },
   switchWrapper: {
     position: 'relative',
@@ -77,7 +106,9 @@ const styles = stylex.create({
     padding: TRACK_PADDING,
     borderWidth: 1,
     borderStyle: 'solid',
+    borderColor: 'var(--xds-switch-track-border)',
     borderRadius: radiusVars['--radius-rounded'],
+    backgroundColor: 'var(--xds-switch-track-bg)',
     transitionProperty: 'background-color, border-color',
     transitionDuration: transitionVars['--transition-fast'],
     boxSizing: 'border-box',
@@ -85,31 +116,6 @@ const styles = stylex.create({
   trackFocused: {
     outline: `2px solid ${colorVars['--color-focus-outline']}`,
     outlineOffset: 2,
-  },
-  // State-dependent colors with ancestor hover behavior
-  trackOff: {
-    borderColor: {
-      default: colorVars['--color-divider-emphasized'],
-      [stylex.when.ancestor(':hover')]:
-        `color-mix(in srgb, ${colorVars['--color-divider-emphasized']}, ${colorVars['--color-hover-tint']} 20%)`,
-    },
-    backgroundColor: {
-      default: colorVars['--color-deemphasized'],
-      [stylex.when.ancestor(':hover')]:
-        `color-mix(in srgb, ${colorVars['--color-deemphasized']}, ${colorVars['--color-hover-tint']} 5%)`,
-    },
-  },
-  trackOn: {
-    borderColor: {
-      default: colorVars['--color-accent'],
-      [stylex.when.ancestor(':hover')]:
-        `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
-    },
-    backgroundColor: {
-      default: colorVars['--color-accent'],
-      [stylex.when.ancestor(':hover')]:
-        `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
-    },
   },
   trackDisabled: {
     opacity: 0.5,
@@ -167,8 +173,24 @@ export interface XDSSwitchProps {
   description?: string;
   /**
    * Callback fired when the switch state changes.
+   * Either onChange or onChangeAction must be provided.
    */
-  onChange: (checked: boolean, e: ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (checked: boolean, e: ChangeEvent<HTMLInputElement>) => void;
+  /**
+   * Async action to perform on change. Wrapped in React transition.
+   * Replaces onChange when provided - handle state updates inside this action.
+   * Receives the same arguments as onChange.
+   */
+  onChangeAction?: (
+    checked: boolean,
+    e: ChangeEvent<HTMLInputElement>,
+  ) => void | Promise<void>;
+  /**
+   * Whether the switch is in a loading state.
+   * Shows disabled state during async operations.
+   * @default false
+   */
+  isLoading?: boolean;
   /**
    * Whether the switch is on or off.
    */
@@ -218,11 +240,6 @@ export interface XDSSwitchProps {
    * @default 'default'
    */
   labelSpacing?: XDSSwitchLabelSpacing;
-  /**
-   * Status indicator for the switch.
-   * When set with a message, displays a colored message box below the switch.
-   */
-  status?: XDSInputStatus;
 }
 
 /**
@@ -250,6 +267,8 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
       isLabelHidden = false,
       description,
       onChange,
+      onChangeAction,
+      isLoading = false,
       value,
       isDisabled = false,
       isOptional = false,
@@ -260,22 +279,32 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
       labelTooltip,
       labelPosition = 'end',
       labelSpacing = 'default',
-      status,
     },
     ref,
   ) => {
     const id = useId();
     const descriptionID = useId();
-    const statusMessageID = useId();
 
-    const isOn = value === true;
+    // Optimistic state for instant visual feedback during async actions
+    const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+    // isBusy is for visual feedback only (reduced opacity, aria-busy)
+    const isBusy = isLoading || optimisticValue !== value;
 
-    // Build aria-describedby from description and status message
-    const describedByParts: string[] = [];
-    if (description) describedByParts.push(descriptionID);
-    if (status?.message) describedByParts.push(statusMessageID);
-    const ariaDescribedBy =
-      describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
+    const isOn = optimisticValue === true;
+
+    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+      const newValue = e.target.checked;
+
+      if (onChangeAction) {
+        // Use action - optimistic update with transition for async support
+        startTransition(() => {
+          setOptimisticValue(newValue);
+          onChangeAction(newValue, e);
+        });
+      } else if (onChange) {
+        onChange(newValue, e);
+      }
+    };
 
     const switchElement = (
       <div {...stylex.props(styles.switchWrapper)}>
@@ -287,20 +316,22 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
           checked={isOn}
           disabled={isDisabled}
           required={isRequired}
-          onChange={e => onChange(e.target.checked, e)}
+          onChange={handleChange}
           onFocus={onFocus}
           onBlur={onBlur}
-          aria-describedby={ariaDescribedBy}
-          aria-invalid={status?.type === 'error' ? true : undefined}
-          {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
+          aria-busy={isBusy || undefined}
+          aria-describedby={description ? descriptionID : undefined}
+          {...stylex.props(
+            styles.input,
+            (isDisabled || isBusy) && styles.inputDisabled,
+          )}
         />
         <div
           aria-hidden="true"
           {...stylex.props(
             styles.track,
-            isOn ? styles.trackOn : styles.trackOff,
-            isDisabled && styles.trackDisabled,
-            isDisabled && !isOn && styles.trackDisabledOff,
+            (isDisabled || isBusy) && styles.trackDisabled,
+            (isDisabled || isBusy) && !isOn && styles.trackDisabledOff,
           )}>
           <div
             {...stylex.props(
@@ -333,32 +364,24 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
     );
 
     return (
-      <div>
-        <div
-          {...stylex.props(
-            styles.container,
-            labelSpacing === 'spread' && styles.containerSpread,
-            !isDisabled && stylex.defaultMarker(),
-          )}>
-          {labelPosition === 'start' ? (
-            <>
-              {labelElement}
-              {switchElement}
-            </>
-          ) : (
-            <>
-              {switchElement}
-              {labelElement}
-            </>
-          )}
-        </div>
-        {status?.message && (
-          <XDSFieldStatus
-            type={status.type}
-            message={status.message}
-            id={statusMessageID}
-            variant="detached"
-          />
+      <div
+        {...stylex.props(
+          styles.container,
+          labelSpacing === 'spread' && styles.containerSpread,
+          isOn ? styles.containerOn : styles.containerOff,
+          !(isDisabled || isBusy) &&
+            (isOn ? styles.containerHoverOn : styles.containerHoverOff),
+        )}>
+        {labelPosition === 'start' ? (
+          <>
+            {labelElement}
+            {switchElement}
+          </>
+        ) : (
+          <>
+            {switchElement}
+            {labelElement}
+          </>
         )}
       </div>
     );

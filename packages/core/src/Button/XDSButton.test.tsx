@@ -62,8 +62,10 @@ describe('XDSButton', () => {
   it('shows isLoading state with spinner', () => {
     render(<XDSButton label="Submit" isLoading />);
     const button = screen.getByRole('button');
-    // Button should be disabled when loading
-    expect(button).toBeDisabled();
+    // Button should show busy state but not be natively disabled
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).not.toBeDisabled();
   });
 
   it('handles click events', async () => {

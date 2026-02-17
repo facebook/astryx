@@ -13,7 +13,9 @@ import React, {
   useCallback,
   useId,
   useMemo,
+  useOptimistic,
   useRef,
+  startTransition,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -295,8 +297,23 @@ export interface XDSSelectorProps<
 
   /**
    * Callback when selection changes.
+   * Either onChange or onChangeAction must be provided.
    */
   onChange?: (value: string) => void;
+
+  /**
+   * Async action to perform on selection change. Wrapped in React transition.
+   * Replaces onChange when provided - handle state updates inside this action.
+   * Receives the same arguments as onChange.
+   */
+  onChangeAction?: (value: string) => void | Promise<void>;
+
+  /**
+   * Whether the selector is in a loading state.
+   * Shows disabled state during async operations.
+   * @default false
+   */
+  isLoading?: boolean;
 
   /**
    * Placeholder text when no value is selected.
@@ -364,9 +381,11 @@ export function XDSSelector<T extends XDSSelectorOption>({
   isOptional = false,
   isRequired = false,
   isDisabled = false,
+  isLoading = false,
   items,
   value,
   onChange,
+  onChangeAction,
   placeholder = 'Select...',
   size = 'md',
   status,
@@ -379,6 +398,11 @@ export function XDSSelector<T extends XDSSelectorOption>({
   const descriptionId = useId();
   const statusMessageId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
+
+  // Track optimistic value for async actions
+  const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+  // isBusy is for visual feedback only (reduced opacity, aria-busy)
+  const isBusy = isLoading || optimisticValue !== value;
 
   // Build aria-describedby
   const ariaDescribedBy =
@@ -394,14 +418,30 @@ export function XDSSelector<T extends XDSSelectorOption>({
 
   // Find selected item and its index for positioning
   const selectedItemIndex = useMemo(() => {
-    return selectableItems.findIndex(item => item.value === value);
-  }, [selectableItems, value]);
+    return selectableItems.findIndex(item => item.value === optimisticValue);
+  }, [selectableItems, optimisticValue]);
 
   const selectedItem = useMemo(() => {
     return selectedItemIndex >= 0
       ? selectableItems[selectedItemIndex]
       : undefined;
   }, [selectableItems, selectedItemIndex]);
+
+  // Handler that wraps onChangeAction in a transition
+  const handleSelect = useCallback(
+    (newValue: string) => {
+      if (onChangeAction) {
+        // Use action - wraps in transition for async support
+        startTransition(() => {
+          setOptimisticValue(newValue);
+          onChangeAction(newValue);
+        });
+      } else if (onChange) {
+        onChange(newValue);
+      }
+    },
+    [onChange, onChangeAction, setOptimisticValue],
+  );
 
   // Ref for listbox to measure selected item position
   const listboxRef = useRef<HTMLDivElement>(null);
@@ -436,11 +476,11 @@ export function XDSSelector<T extends XDSSelectorOption>({
   } = useCombobox({
     selectableItems,
     value,
-    isDisabled,
+    isDisabled: isDisabled || isBusy,
     isOpen: layer.isOpen,
     onOpen: layer.show,
     onClose: layer.hide,
-    onSelect: onChange,
+    onSelect: handleSelect,
     listboxId,
   });
 
@@ -448,7 +488,7 @@ export function XDSSelector<T extends XDSSelectorOption>({
   const renderItem = useCallback(
     (item: XDSSelectorItemData, flatIndex: number) => {
       const isHighlighted = flatIndex === highlightedIndex;
-      const isSelected = item.value === value;
+      const isSelected = item.value === optimisticValue;
 
       return (
         <div
@@ -475,7 +515,7 @@ export function XDSSelector<T extends XDSSelectorOption>({
     [
       children,
       highlightedIndex,
-      value,
+      optimisticValue,
       getItemId,
       onItemSelect,
       onItemMouseEnter,
@@ -564,6 +604,7 @@ export function XDSSelector<T extends XDSSelectorOption>({
         aria-describedby={ariaDescribedBy}
         aria-required={isRequired ? 'true' : undefined}
         aria-invalid={status?.type === 'error' ? 'true' : undefined}
+        aria-busy={isBusy || undefined}
         disabled={isDisabled}
         onClick={onTriggerClick}
         onKeyDown={onKeyDown}
@@ -571,7 +612,7 @@ export function XDSSelector<T extends XDSSelectorOption>({
         {...stylex.props(
           styles.trigger,
           sizeStyles[size],
-          isDisabled && styles.triggerDisabled,
+          (isDisabled || isBusy) && styles.triggerDisabled,
           !selectedItem && styles.triggerPlaceholder,
           status && statusBorderStyles[status.type],
         )}>

@@ -11,7 +11,13 @@
  * - /apps/storybook/stories/TextInput.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useId, type ChangeEvent} from 'react';
+import {
+  forwardRef,
+  useId,
+  useOptimistic,
+  startTransition,
+  type ChangeEvent,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   CheckCircleIcon,
@@ -166,8 +172,24 @@ export interface XDSTextInputProps {
   size?: XDSTextInputSize;
   /**
    * Callback fired when the input value changes.
+   * Either onChange or onChangeAction must be provided.
    */
-  onChange: (value: string, e: ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (value: string, e: ChangeEvent<HTMLInputElement>) => void;
+  /**
+   * Async action to perform on change. Wrapped in React transition.
+   * Replaces onChange when provided - handle state updates inside this action.
+   * Receives the same arguments as onChange.
+   */
+  onChangeAction?: (
+    value: string,
+    e: ChangeEvent<HTMLInputElement>,
+  ) => void | Promise<void>;
+  /**
+   * Whether the input is in a loading state.
+   * Shows disabled state during async operations.
+   * @default false
+   */
+  isLoading?: boolean;
   /**
    * The current value of the input.
    */
@@ -210,10 +232,12 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
       isOptional = false,
       isRequired = false,
       isDisabled = false,
+      isLoading = false,
       startIcon,
       status,
       size = 'md',
       onChange,
+      onChangeAction,
       value,
       placeholder,
       labelTooltip,
@@ -225,6 +249,25 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
     const id = useId();
     const descriptionID = useId();
     const statusMessageID = useId();
+
+    // Track optimistic value for async actions
+    const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+    // isBusy is for visual feedback only (reduced opacity, aria-busy)
+    const isBusy = isLoading || optimisticValue !== value;
+
+    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+      const newValue = e.target.value;
+
+      if (onChangeAction) {
+        // Use action - wraps in transition for async support
+        startTransition(() => {
+          setOptimisticValue(newValue);
+          onChangeAction(newValue, e);
+        });
+      } else if (onChange) {
+        onChange(newValue, e);
+      }
+    };
 
     const statusIconMap: Record<XDSInputStatusType, XDSIconType> = {
       warning: ExclamationTriangleIcon,
@@ -272,7 +315,7 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
           {...stylex.props(
             styles.wrapper,
             sizeStyles[size],
-            isDisabled && styles.wrapperDisabled,
+            (isDisabled || isBusy) && styles.wrapperDisabled,
             status && statusBorderStyles[status.type],
           )}>
           {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
@@ -281,15 +324,19 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
             id={id}
             name={htmlName}
             type="text"
-            value={value}
-            onChange={e => onChange(e.target.value, e)}
+            value={optimisticValue}
+            onChange={handleChange}
             placeholder={placeholder}
             disabled={isDisabled}
+            aria-busy={isBusy || undefined}
             autoFocus={hasAutoFocus}
             aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
-            {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
+            {...stylex.props(
+              styles.input,
+              (isDisabled || isBusy) && styles.inputDisabled,
+            )}
           />
           {status && (
             <XDSIcon

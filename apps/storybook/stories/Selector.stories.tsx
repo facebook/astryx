@@ -1,6 +1,8 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
 import {XDSSelector, XDSSelectorItem} from '@xds/core/Selector';
+import {XDSVStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 import {UserIcon, CogIcon, BellIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSSelector> = {
@@ -440,6 +442,47 @@ export const AllVariations: Story = {
           placeholder="Select..."
         />
       </div>
+    );
+  },
+  decorators: [Story => <Story />],
+};
+
+/**
+ * Demonstrates async actions using onChangeAction.
+ * The selector automatically shows loading state while syncing with server.
+ */
+export const AsyncAction: Story = {
+  render: () => {
+    const [value, setValue] = useState<string | undefined>();
+
+    // Simulate server sync (e.g., saving preference to API)
+    const simulateServerSync = async (newValue: string) => {
+      setValue(newValue);
+      await new Promise<void>(resolve => {
+        setTimeout(resolve, 1500);
+      });
+    };
+
+    return (
+      <XDSVStack gap="space4">
+        <XDSText type="body" color="secondary">
+          Select an option to trigger an async action. The selector will show a
+          busy state for 1.5 seconds while syncing.
+        </XDSText>
+        <XDSSelector
+          label="Priority"
+          description="Changes are saved automatically"
+          items={[
+            {value: 'low', label: 'Low'},
+            {value: 'medium', label: 'Medium'},
+            {value: 'high', label: 'High'},
+            {value: 'urgent', label: 'Urgent'},
+          ]}
+          value={value}
+          onChangeAction={simulateServerSync}
+          placeholder="Select priority..."
+        />
+      </XDSVStack>
     );
   },
   decorators: [Story => <Story />],

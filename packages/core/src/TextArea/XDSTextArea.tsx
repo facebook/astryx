@@ -11,7 +11,14 @@
  * - /apps/storybook/stories/TextArea.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useId, type ChangeEvent, type ClipboardEvent} from 'react';
+import {
+  forwardRef,
+  useId,
+  useOptimistic,
+  startTransition,
+  type ChangeEvent,
+  type ClipboardEvent,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   CheckCircleIcon,
@@ -148,8 +155,24 @@ export interface XDSTextAreaProps {
   isRequired?: boolean;
   /**
    * Callback fired when the textarea value changes.
+   * Either onChange or onChangeAction must be provided.
    */
-  onChange: (value: string, e: ChangeEvent<HTMLTextAreaElement>) => void;
+  onChange?: (value: string, e: ChangeEvent<HTMLTextAreaElement>) => void;
+  /**
+   * Async action to perform on change. Wrapped in React transition.
+   * Replaces onChange when provided - handle state updates inside this action.
+   * Receives the same arguments as onChange.
+   */
+  onChangeAction?: (
+    value: string,
+    e: ChangeEvent<HTMLTextAreaElement>,
+  ) => void | Promise<void>;
+  /**
+   * Whether the textarea is in a loading state.
+   * Shows disabled state during async operations.
+   * @default false
+   */
+  isLoading?: boolean;
   /**
    * The current value of the textarea.
    */
@@ -227,6 +250,8 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
       isOptional = false,
       isRequired = false,
       onChange,
+      onChangeAction,
+      isLoading = false,
       value,
       placeholder,
       rows = 3,
@@ -245,6 +270,25 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
     const id = useId();
     const descriptionID = useId();
     const statusMessageID = useId();
+
+    // Track optimistic value for async actions
+    const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+    // isBusy is for visual feedback only (reduced opacity, aria-busy)
+    const isBusy = isLoading || optimisticValue !== value;
+
+    const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+      const newValue = e.target.value;
+
+      if (onChangeAction) {
+        // Use action - wraps in transition for async support
+        startTransition(() => {
+          setOptimisticValue(newValue);
+          onChangeAction(newValue, e);
+        });
+      } else if (onChange) {
+        onChange(newValue, e);
+      }
+    };
 
     const statusIconMap: Record<XDSTextAreaStatusType, XDSIconType> = {
       warning: ExclamationTriangleIcon,
@@ -291,7 +335,7 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
         <div
           {...stylex.props(
             styles.wrapper,
-            isDisabled && styles.wrapperDisabled,
+            (isDisabled || isBusy) && styles.wrapperDisabled,
             status && statusBorderStyles[status.type],
           )}>
           {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
@@ -299,8 +343,8 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
             ref={ref}
             id={id}
             name={htmlName}
-            value={value}
-            onChange={e => onChange(e.target.value, e)}
+            value={optimisticValue}
+            onChange={handleChange}
             onPaste={onPaste}
             placeholder={placeholder}
             rows={rows}
@@ -308,12 +352,13 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
             spellCheck={hasSpellCheck}
             maxLength={maxLength}
             autoFocus={hasAutoFocus}
+            aria-busy={isBusy || undefined}
             aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
             {...stylex.props(
               styles.textarea,
-              isDisabled && styles.textareaDisabled,
+              (isDisabled || isBusy) && styles.textareaDisabled,
             )}
           />
           {status && (

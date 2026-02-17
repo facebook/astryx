@@ -14,11 +14,13 @@
 import {
   forwardRef,
   useContext,
+  useTransition,
   type ButtonHTMLAttributes,
-  type ReactElement,
   type ReactNode,
+  type MouseEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {XDSTooltip} from '../Layer/XDSTooltip';
 import {
   colorVars,
   sizeVars,
@@ -30,7 +32,6 @@ import {
   lineHeightVars,
 } from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
-import {XDSTooltip} from '../Layer/XDSTooltip';
 
 /**
  * Base button styles
@@ -214,9 +215,24 @@ export interface XDSButtonProps extends Omit<
   isDisabled?: boolean;
   /**
    * Whether the button is in a loading state.
+   * Shows a spinner and prevents re-triggering.
    * @default false
    */
   isLoading?: boolean;
+  /**
+   * Async action to perform on click. Wrapped in React transition.
+   * Replaces onClick when provided - handle any click logic inside this action.
+   * Button shows loading state while action is pending.
+   * For links (href), navigation occurs after action completes.
+   */
+  onClickAction?: (
+    e: MouseEvent<HTMLButtonElement | HTMLAnchorElement>,
+  ) => void | Promise<void>;
+  /**
+   * If provided, renders as an anchor element instead of button.
+   * When combined with onClickAction, navigation is deferred until action completes.
+   */
+  href?: string;
   /**
    * Icon element to render in the button.
    * If provided without children, button becomes icon-only (square).
@@ -294,14 +310,19 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
       size = 'md',
       isDisabled = false,
       isLoading = false,
+      onClickAction,
+      href,
       icon,
+      onClick,
       children,
       tooltip,
       ...props
     },
     ref,
-  ): ReactElement => {
-    const buttonDisabled = isDisabled || isLoading;
+  ) => {
+    // Track pending state for async actions
+    const [isPending, startTransition] = useTransition();
+    const isBusy = isLoading || isPending;
     const useLightSpinner = variant === 'primary' || variant === 'destructive';
     const isIconOnly = icon != null && children == null;
 
@@ -310,22 +331,41 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
     const themeVariantOverride =
       themeContext?.theme.components?.button?.variants?.[variant];
 
-    const button = (
-      <button
-        ref={ref}
-        disabled={buttonDisabled}
-        aria-label={isIconOnly ? label : undefined}
-        {...stylex.props(
-          styles.base,
-          sizeStyles[size],
-          variants[variant],
-          themeVariantOverride,
-          isIconOnly && styles.iconOnly,
-          buttonDisabled && styles.disabled,
-          isLoading && loadingStyles.loading,
-        )}
-        {...props}>
-        {isLoading && (
+    const handleClick = (
+      e: MouseEvent<HTMLButtonElement | HTMLAnchorElement>,
+    ) => {
+      // Don't re-trigger while an action is pending
+      if (isBusy) {
+        e.preventDefault();
+        return;
+      }
+
+      // For links with actions, prevent navigation until action completes
+      if (href && onClickAction) {
+        e.preventDefault();
+      }
+
+      if (onClickAction) {
+        // Use action - wraps in transition for async support
+        startTransition(() => {
+          const result = onClickAction(e);
+          // For links, navigate after action completes (if async)
+          if (href && result instanceof Promise) {
+            result.then(() => {
+              window.location.href = href;
+            });
+          } else if (href) {
+            window.location.href = href;
+          }
+        });
+      } else if (onClick) {
+        onClick(e as MouseEvent<HTMLButtonElement>);
+      }
+    };
+
+    const buttonContent = (
+      <>
+        {isBusy && (
           <span
             {...stylex.props(
               loadingStyles.spinner,
@@ -337,8 +377,49 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
         )}
         {icon}
         {children ?? (isIconOnly ? null : label)}
-      </button>
+      </>
     );
+
+    const sharedProps = {
+      'aria-label': isIconOnly ? label : undefined,
+      'aria-busy': isBusy || undefined,
+      'aria-disabled': isDisabled || isBusy || undefined,
+      ...stylex.props(
+        styles.base,
+        sizeStyles[size],
+        variants[variant],
+        themeVariantOverride,
+        isIconOnly && styles.iconOnly,
+        (isDisabled || isBusy) && styles.disabled,
+        isBusy && loadingStyles.loading,
+      ),
+    };
+
+    // Render as anchor if href is provided
+    let button;
+    if (href) {
+      button = (
+        <a
+          ref={ref as React.Ref<HTMLAnchorElement>}
+          href={href}
+          onClick={handleClick}
+          {...sharedProps}
+          {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}>
+          {buttonContent}
+        </a>
+      );
+    } else {
+      button = (
+        <button
+          ref={ref}
+          disabled={isDisabled}
+          onClick={handleClick}
+          {...sharedProps}
+          {...props}>
+          {buttonContent}
+        </button>
+      );
+    }
 
     if (tooltip) {
       return (

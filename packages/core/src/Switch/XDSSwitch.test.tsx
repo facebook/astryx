@@ -201,9 +201,8 @@ describe('XDSSwitch', () => {
         labelPosition="start"
       />,
     );
-    // The outer div wraps the container div which has the label and switch
-    const outerDiv = container.firstChild as HTMLElement;
-    const containerDiv = outerDiv.firstChild as HTMLElement;
+    // The container div has the label and switch as children
+    const containerDiv = container.firstChild as HTMLElement;
     const children = Array.from(containerDiv.children);
     // First child should be label wrapper, second should be switch wrapper
     expect(children.length).toBe(2);
@@ -218,9 +217,8 @@ describe('XDSSwitch', () => {
         labelPosition="end"
       />,
     );
-    // The outer div wraps the container div which has the switch and label
-    const outerDiv = container.firstChild as HTMLElement;
-    const containerDiv = outerDiv.firstChild as HTMLElement;
+    // The container div has the switch and label as children
+    const containerDiv = container.firstChild as HTMLElement;
     const children = Array.from(containerDiv.children);
     // First child should be switch wrapper, second should be label wrapper
     expect(children.length).toBe(2);
