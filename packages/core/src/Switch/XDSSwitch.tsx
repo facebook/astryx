@@ -125,6 +125,9 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-deemphasized'],
   },
   thumb: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: radiusVars['--radius-rounded'],
     backgroundColor: colorVars['--color-surface'],
     boxShadow: elevationVars['--elevation-thumb'],
@@ -150,6 +153,32 @@ const styles = stylex.create({
   description: {
     fontFamily: typographyVars['--font-body'],
     fontSize: textSizeVars['--text-xsm'],
+    color: colorVars['--color-text-secondary'],
+  },
+});
+
+const spinnerKeyframes = stylex.keyframes({
+  to: {transform: 'rotate(360deg)'},
+});
+
+const spinnerStyles = stylex.create({
+  spinner: {
+    width: 10,
+    height: 10,
+    borderWidth: 2,
+    borderStyle: 'solid',
+    borderColor: 'currentColor',
+    borderRightColor: 'transparent',
+    borderRadius: '50%',
+    animationName: spinnerKeyframes,
+    animationDuration: '0.6s',
+    animationTimingFunction: 'linear',
+    animationIterationCount: 'infinite',
+  },
+  spinnerOn: {
+    color: colorVars['--color-accent'],
+  },
+  spinnerOff: {
     color: colorVars['--color-text-secondary'],
   },
 });
@@ -321,24 +350,29 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
           onBlur={onBlur}
           aria-busy={isBusy || undefined}
           aria-describedby={description ? descriptionID : undefined}
-          {...stylex.props(
-            styles.input,
-            (isDisabled || isBusy) && styles.inputDisabled,
-          )}
+          {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
         />
         <div
           aria-hidden="true"
           {...stylex.props(
             styles.track,
-            (isDisabled || isBusy) && styles.trackDisabled,
-            (isDisabled || isBusy) && !isOn && styles.trackDisabledOff,
+            isDisabled && styles.trackDisabled,
+            isDisabled && !isOn && styles.trackDisabledOff,
           )}>
           <div
             {...stylex.props(
               styles.thumb,
               isOn ? styles.thumbOn : styles.thumbOff,
+            )}>
+            {isBusy && (
+              <div
+                {...stylex.props(
+                  spinnerStyles.spinner,
+                  isOn ? spinnerStyles.spinnerOn : spinnerStyles.spinnerOff,
+                )}
+              />
             )}
-          />
+          </div>
         </div>
       </div>
     );
@@ -369,7 +403,7 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
           styles.container,
           labelSpacing === 'spread' && styles.containerSpread,
           isOn ? styles.containerOn : styles.containerOff,
-          !(isDisabled || isBusy) &&
+          !isDisabled &&
             (isOn ? styles.containerHoverOn : styles.containerHoverOff),
         )}>
         {labelPosition === 'start' ? (

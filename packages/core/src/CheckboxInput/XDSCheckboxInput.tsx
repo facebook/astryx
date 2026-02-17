@@ -182,6 +182,30 @@ const labelWrapperSizeStyles = stylex.create({
   },
 });
 
+const spinnerKeyframes = stylex.keyframes({
+  to: {transform: 'rotate(360deg)'},
+});
+
+const spinnerStyles = stylex.create({
+  spinner: {
+    borderWidth: 2,
+    borderStyle: 'solid',
+    borderColor: 'currentColor',
+    borderRightColor: 'transparent',
+    borderRadius: '50%',
+    animationName: spinnerKeyframes,
+    animationDuration: '0.6s',
+    animationTimingFunction: 'linear',
+    animationIterationCount: 'infinite',
+  },
+  spinnerChecked: {
+    color: colorVars['--color-icon-on-media'],
+  },
+  spinnerUnchecked: {
+    color: colorVars['--color-text-secondary'],
+  },
+});
+
 export type XDSCheckboxInputSize = keyof typeof wrapperSizeStyles;
 
 export interface XDSCheckboxInputProps {
@@ -326,7 +350,7 @@ export const XDSCheckboxInput = forwardRef<
           isCheckedOrIndeterminate
             ? styles.containerChecked
             : styles.containerUnchecked,
-          !(isDisabled || isBusy) &&
+          !isDisabled &&
             (isCheckedOrIndeterminate
               ? styles.containerHoverChecked
               : styles.containerHoverUnchecked),
@@ -347,7 +371,7 @@ export const XDSCheckboxInput = forwardRef<
             {...stylex.props(
               styles.input,
               wrapperSizeStyles[size],
-              (isDisabled || isBusy) && styles.inputDisabled,
+              isDisabled && styles.inputDisabled,
             )}
           />
           <div
@@ -355,34 +379,48 @@ export const XDSCheckboxInput = forwardRef<
             {...stylex.props(
               styles.checkbox,
               checkboxSizeStyles[size],
-              (isDisabled || isBusy) && styles.checkboxDisabled,
-              (isDisabled || isBusy) &&
+              isDisabled && styles.checkboxDisabled,
+              isDisabled &&
                 !isCheckedOrIndeterminate &&
                 styles.checkboxDisabledUnchecked,
             )}>
-            <svg
-              viewBox="0 0 10 10"
-              {...stylex.props(
-                styles.checkmark,
-                checkmarkSizeStyles[size],
-                isChecked && styles.checkmarkVisible,
-              )}>
-              <path
-                d="M8.5 2.5L4 7.5L1.5 5"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            {isBusy ? (
+              <div
+                {...stylex.props(
+                  spinnerStyles.spinner,
+                  checkmarkSizeStyles[size],
+                  isCheckedOrIndeterminate
+                    ? spinnerStyles.spinnerChecked
+                    : spinnerStyles.spinnerUnchecked,
+                )}
               />
-            </svg>
-            <div
-              {...stylex.props(
-                styles.indeterminateMark,
-                indeterminateSizeStyles[size],
-                isIndeterminate && styles.indeterminateMarkVisible,
-              )}
-            />
+            ) : (
+              <>
+                <svg
+                  viewBox="0 0 10 10"
+                  {...stylex.props(
+                    styles.checkmark,
+                    checkmarkSizeStyles[size],
+                    isChecked && styles.checkmarkVisible,
+                  )}>
+                  <path
+                    d="M8.5 2.5L4 7.5L1.5 5"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <div
+                  {...stylex.props(
+                    styles.indeterminateMark,
+                    indeterminateSizeStyles[size],
+                    isIndeterminate && styles.indeterminateMarkVisible,
+                  )}
+                />
+              </>
+            )}
           </div>
         </div>
         <div
