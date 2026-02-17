@@ -26,7 +26,6 @@ import {
   radiusVars,
   transitionVars,
   typographyVars,
-  elevationVars,
   textSizeVars,
 } from '../theme/tokens.stylex';
 import {XDSField} from '../Field/XDSField';
@@ -176,14 +175,22 @@ const styles = stylex.create({
     width: THUMB_SIZE,
     height: THUMB_SIZE,
     borderRadius: radiusVars['--radius-rounded'],
-    backgroundColor: colorVars['--color-popover'],
-    boxShadow: elevationVars['--elevation-thumb'],
+    backgroundColor: colorVars['--color-accent'],
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     transform: 'translate(-50%, -50%)',
-    transitionProperty: 'box-shadow',
+    transitionProperty: 'background-color, box-shadow',
     transitionDuration: transitionVars['--transition-fast'],
     outline: 'none',
     cursor: 'grab',
     zIndex: 1,
+  },
+  thumbInnerDot: {
+    width: THUMB_SIZE - 8,
+    height: THUMB_SIZE - 8,
+    borderRadius: radiusVars['--radius-rounded'],
+    backgroundColor: colorVars['--color-surface'],
   },
   thumbHorizontal: {
     top: '50%',
@@ -192,20 +199,24 @@ const styles = stylex.create({
     left: '50%',
   },
   thumbHover: {
-    boxShadow: {
-      default: elevationVars['--elevation-thumb'],
-      ':hover': elevationVars['--elevation-hover'],
+    backgroundColor: {
+      default: colorVars['--color-accent'],
+      ':hover': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
     },
   },
-  thumbFocus: {
-    outline: `2px solid ${colorVars['--color-focus-outline']}`,
-    outlineOffset: 2,
+  thumbFocusWithin: {
+    outline: {
+      default: 'none',
+      ':focus-within': `2px solid ${colorVars['--color-focus-outline']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':focus-within': '2px',
+    },
   },
   thumbDisabled: {
+    backgroundColor: colorVars['--color-deemphasized'],
     cursor: 'not-allowed',
-  },
-  thumbActive: {
-    cursor: 'grabbing',
   },
   textValue: {
     fontFamily: typographyVars['--font-body'],
@@ -551,9 +562,11 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
             styles.thumb,
             isHorizontal ? styles.thumbHorizontal : styles.thumbVertical,
             !isDisabled && styles.thumbHover,
+            !isDisabled && styles.thumbFocusWithin,
             isDisabled && styles.thumbDisabled,
-          )}
-        />
+          )}>
+          <div {...stylex.props(styles.thumbInnerDot)} />
+        </div>
       );
 
       if (useTooltip) {
