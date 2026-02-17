@@ -19,6 +19,7 @@ import {XDSTableRow} from './XDSTableRow';
 import {XDSTableCell} from './XDSTableCell';
 import {XDSTableHeaderCell} from './XDSTableHeaderCell';
 import {XDSTableContext} from './XDSTableContext';
+import {useXDSBaseTablePlugins} from './useXDSBaseTablePlugins';
 import type {XDSBaseTableProps, TablePlugin, TableRenderProps} from './types';
 
 // =============================================================================
@@ -92,9 +93,6 @@ const xdsComponents = {
 // XDSTable Component
 // =============================================================================
 
-// Stable empty record to avoid creating new reference on each render
-const EMPTY_PLUGINS: Record<string, TablePlugin<Record<string, unknown>>> = {};
-
 function XDSTableInner<T extends Record<string, unknown>>(
   {
     density = 'balanced',
@@ -108,18 +106,12 @@ function XDSTableInner<T extends Record<string, unknown>>(
   }: XDSTableProps<T>,
   ref: Ref<HTMLTableElement>,
 ): ReactElement {
-  // Use stable empty record when no plugins provided
-  const stableUserPlugins =
-    userPlugins ?? (EMPTY_PLUGINS as Record<string, TablePlugin<T>>);
-
   // Table-level styling plugin (just adds font/color to <table>)
   const tablePlugin = useMemo(() => buildTableStylePlugin<T>(), []);
+  const basePlugins = useMemo(() => [tablePlugin], [tablePlugin]);
 
-  // User plugins only — no XDS style plugin needed (components handle styling)
-  const mergedPlugins = useMemo(
-    () => [tablePlugin, ...Object.values(stableUserPlugins)],
-    [tablePlugin, stableUserPlugins],
-  );
+  // Convert named plugin record to stable memoized array
+  const mergedPlugins = useXDSBaseTablePlugins<T>(basePlugins, userPlugins);
 
   const contextValue = useMemo(
     () => ({density, dividers, isStriped, hasHover}),

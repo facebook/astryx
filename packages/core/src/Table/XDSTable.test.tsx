@@ -236,7 +236,7 @@ describe('XDSBaseTable', () => {
     expect(screen.getByText('Manual cell')).toBeInTheDocument();
   });
 
-  it('does not render thead or colgroup in children mode without columns', () => {
+  it('does not render thead in children mode without columns', () => {
     const {container} = render(
       <XDSBaseTable>
         <tr>
@@ -245,7 +245,6 @@ describe('XDSBaseTable', () => {
       </XDSBaseTable>,
     );
     expect(container.querySelector('thead')).toBeNull();
-    expect(container.querySelector('colgroup')).toBeNull();
   });
 
   it('renders empty table when data is empty array', () => {
@@ -255,14 +254,9 @@ describe('XDSBaseTable', () => {
     expect(screen.getAllByRole('row')).toHaveLength(1);
   });
 
-  it('renders colgroup with correct column widths', () => {
+  it('does not render colgroup', () => {
     const {container} = render(<XDSBaseTable data={users} columns={columns} />);
-    const cols = container.querySelectorAll('colgroup col');
-    expect(cols).toHaveLength(3);
-    // Column 0: proportional(1) — default, total proportional = 1+2 = 3, so 33.33%
-    // Column 1: pixel(80) — 80px
-    // Column 2: proportional(2) — 2/3 = 66.67%
-    expect(cols[1]).toHaveStyle({width: '80px'});
+    expect(container.querySelector('colgroup')).toBeNull();
   });
 
   it('forwards ref to the table element', () => {

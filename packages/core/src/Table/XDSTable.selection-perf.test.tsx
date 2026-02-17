@@ -6,7 +6,8 @@
  *
  * Tests ensure:
  * 1. Selection with memoized plugins record avoids re-rendering row content
- * 2. Inline plugins record causes re-renders (documents the pitfall)
+ * 2. Inline plugins record with stable plugin values also avoids re-renders
+ *    (useXDSBaseTablePlugins compares by plugin identity)
  * 3. Select-all with memoized plugins doesn't re-render row content
  */
 
@@ -124,7 +125,7 @@ describe('Selection plugin render performance', () => {
     expect(cellRenderCounts['row-4']).toBe(1);
   });
 
-  it('inline plugins record causes all rows to re-render (documents pitfall)', async () => {
+  it('inline plugins record does not cause re-renders when plugin values are stable', async () => {
     const user = userEvent.setup();
     const cellRenderCounts: Record<string, number> = {};
     const data = createTestData(5);
@@ -171,7 +172,9 @@ describe('Selection plugin render performance', () => {
           data={data}
           columns={columns}
           idKey="id"
-          // PITFALL: inline object — new reference every render
+          // Inline object — new reference every render, but
+          // useXDSBaseTablePlugins compares plugin values by identity
+          // so this is safe as long as selectionPlugin is stable (it is).
           plugins={{selection: selectionPlugin}}
         />
       );
@@ -191,14 +194,14 @@ describe('Selection plugin render performance', () => {
       cellRenderCounts,
     );
 
-    // With inline plugins, ALL rows re-render because the plugins
-    // record is a new object on every render, breaking row memoization.
-    // This documents the expected behavior — users should memoize plugins.
-    expect(cellRenderCounts['row-0']).toBe(2);
-    expect(cellRenderCounts['row-1']).toBe(2);
-    expect(cellRenderCounts['row-2']).toBe(2);
-    expect(cellRenderCounts['row-3']).toBe(2);
-    expect(cellRenderCounts['row-4']).toBe(2);
+    // With useXDSBaseTablePlugins, inline plugin records are compared by
+    // plugin value identity. Since selectionPlugin is stable (useRef internally),
+    // the merged array stays the same — no unnecessary row re-renders.
+    expect(cellRenderCounts['row-0']).toBe(1);
+    expect(cellRenderCounts['row-1']).toBe(1);
+    expect(cellRenderCounts['row-2']).toBe(1);
+    expect(cellRenderCounts['row-3']).toBe(1);
+    expect(cellRenderCounts['row-4']).toBe(1);
   });
 
   it('select-all should not re-render row content when plugins are memoized', async () => {

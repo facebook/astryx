@@ -31,11 +31,7 @@ import type {
   TableCellComponentProps,
   TableHeaderCellComponentProps,
 } from './types';
-import {
-  generateColumns,
-  defaultCellRenderer,
-  columnWidthToCSS,
-} from './columnUtils';
+import {generateColumns, defaultCellRenderer} from './columnUtils';
 import {XDSTableRow} from './XDSTableRow';
 import {XDSTableCell} from './XDSTableCell';
 import {XDSTableHeaderCell} from './XDSTableHeaderCell';
@@ -64,18 +60,6 @@ function applyPlugins<TPlugin, TProps, TArgs extends unknown[]>(
     const transform = getter(plugin);
     return transform ? transform(acc, ...args) : acc;
   }, initial);
-}
-
-/**
- * Compute total proportional units for percentage calculation.
- */
-function getTotalProportional<T extends Record<string, unknown>>(
-  columns: XDSTableColumn<T>[],
-): number {
-  return columns.reduce((sum, col) => {
-    const w = col.width ?? {type: 'proportional' as const, value: 1};
-    return w.type === 'proportional' ? sum + w.value : sum;
-  }, 0);
 }
 
 // =============================================================================
@@ -222,8 +206,6 @@ function XDSBaseTableInner<T extends Record<string, unknown>>(
   const resolvedColumns: XDSTableColumn<T>[] =
     columnsProp ?? (data ? generateColumns(data) : []);
 
-  const totalProportional = getTotalProportional(resolvedColumns);
-
   // --- Plugin pipeline: table ---
   const tableRenderProps = applyPlugins(plugins, p => p.transformTable, {
     htmlProps: {...userTableProps},
@@ -269,21 +251,6 @@ function XDSBaseTableInner<T extends Record<string, unknown>>(
       ref={ref}
       {...tableRenderProps.htmlProps}
       {...stylex.props(...tableRenderProps.styles)}>
-      {/* colgroup for column widths */}
-      {hasColumns && (
-        <colgroup>
-          {resolvedColumns.map(col => {
-            const w = col.width ?? {type: 'proportional' as const, value: 1};
-            return (
-              <col
-                key={col.key}
-                style={{width: columnWidthToCSS(w, totalProportional)}}
-              />
-            );
-          })}
-        </colgroup>
-      )}
-
       {/* thead */}
       {hasColumns && (
         <thead>

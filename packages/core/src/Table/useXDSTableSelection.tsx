@@ -9,7 +9,13 @@
  * - /packages/core/src/Table/index.ts (exports)
  */
 
-import {createContext, useContext, useRef, type ReactNode} from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {XDSCheckboxInput} from '../CheckboxInput';
@@ -94,6 +100,32 @@ function SelectionRowCheckbox<T>({item}: {item: T}) {
   );
 }
 
+/**
+ * Reads selection state from context and imperatively applies
+ * `aria-selected` to the parent `<tr>`.
+ * This ensures selection attributes stay reactive even when the
+ * row is memoized and doesn't re-render.
+ */
+function SelectionRowAttributes<T>({item}: {item: T}) {
+  const ctx = useContext(SelectionContext);
+  const ref = useRef<HTMLTableCellElement | null>(null);
+
+  const isSelected = ctx?.getIsItemSelected(item) ?? false;
+
+  useEffect(() => {
+    const tr = ref.current?.parentElement;
+    if (!tr) return;
+    if (isSelected) {
+      tr.setAttribute('aria-selected', 'true');
+    } else {
+      tr.removeAttribute('aria-selected');
+    }
+  }, [isSelected]);
+
+  // Hidden <td> to get a DOM reference for finding the parent <tr>
+  return <td ref={ref} style={{display: 'none'}} aria-hidden="true" />;
+}
+
 // =============================================================================
 // Styles
 // =============================================================================
@@ -150,17 +182,12 @@ export function useXDSTableSelection<T extends Record<string, unknown>>(
       },
 
       transformBodyRow(props: BodyRowRenderProps, item: T) {
-        const isSelected = configRef.current.getIsItemSelected(item);
         return {
-          htmlProps: {
-            ...props.htmlProps,
-            'aria-selected': isSelected || undefined,
-          },
-          styles: isSelected
-            ? [...props.styles, selectedRowStyles.row]
-            : props.styles,
+          htmlProps: props.htmlProps,
+          styles: props.styles,
           children: (
             <>
+              <SelectionRowAttributes item={item} />
               <XDSTableCell {...stylex.props(selectionCellStyles.base)}>
                 <SelectionRowCheckbox item={item} />
               </XDSTableCell>

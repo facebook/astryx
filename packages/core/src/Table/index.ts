@@ -14,6 +14,7 @@ export {XDSTableCell} from './XDSTableCell';
 export {XDSTableHeaderCell} from './XDSTableHeaderCell';
 export {XDSTableContext} from './XDSTableContext';
 export {useXDSTableSelection} from './useXDSTableSelection';
+export {useXDSBaseTablePlugins} from './useXDSBaseTablePlugins';
 export {
   proportional,
   pixel,
