@@ -34,8 +34,6 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    width: 20,
-    height: 20,
   },
   input: {
     position: 'absolute',
@@ -44,8 +42,6 @@ const styles = stylex.create({
     opacity: 0,
     cursor: 'pointer',
     zIndex: 1,
-    width: 20,
-    height: 20,
   },
   inputDisabled: {
     cursor: 'not-allowed',
@@ -54,8 +50,6 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 18,
-    height: 18,
     borderWidth: 1,
     borderStyle: 'solid',
     borderRadius: '50%',
@@ -99,8 +93,6 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-deemphasized'],
   },
   innerDot: {
-    width: 8,
-    height: 8,
     borderRadius: '50%',
     backgroundColor: colorVars['--color-icon-on-media'],
   },
@@ -136,6 +128,49 @@ const styles = stylex.create({
     alignItems: 'center',
     flexShrink: 0,
     marginInlineStart: 'auto',
+  },
+});
+
+// Size styles matching CheckboxInput dimensions
+const wrapperSizeStyles = stylex.create({
+  sm: {
+    width: 20,
+    height: 20,
+  },
+  md: {
+    width: 24,
+    height: 24,
+  },
+});
+
+const radioSizeStyles = stylex.create({
+  sm: {
+    width: 18,
+    height: 18,
+  },
+  md: {
+    width: 22,
+    height: 22,
+  },
+});
+
+const dotSizeStyles = stylex.create({
+  sm: {
+    width: 8,
+    height: 8,
+  },
+  md: {
+    width: 10,
+    height: 10,
+  },
+});
+
+const labelWrapperSizeStyles = stylex.create({
+  sm: {
+    marginTop: 1,
+  },
+  md: {
+    marginTop: 3,
   },
 });
 
@@ -202,6 +237,7 @@ export function XDSRadioListItem({
   const descriptionID = useId();
   const isDisabled = context.isDisabled || isItemDisabled;
   const isChecked = context.value === value;
+  const size = context.size;
 
   return (
     <div
@@ -213,7 +249,7 @@ export function XDSRadioListItem({
       {startContent && (
         <div {...stylex.props(styles.startContent)}>{startContent}</div>
       )}
-      <div {...stylex.props(styles.radioWrapper)}>
+      <div {...stylex.props(styles.radioWrapper, wrapperSizeStyles[size])}>
         <input
           id={id}
           type="radio"
@@ -224,20 +260,27 @@ export function XDSRadioListItem({
           required={context.isRequired}
           onChange={() => context.onChange(value)}
           aria-describedby={description ? descriptionID : undefined}
-          {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
+          {...stylex.props(
+            styles.input,
+            wrapperSizeStyles[size],
+            isDisabled && styles.inputDisabled,
+          )}
         />
         <div
           aria-hidden="true"
           {...stylex.props(
             styles.radio,
+            radioSizeStyles[size],
             isChecked ? styles.radioChecked : styles.radioUnchecked,
             isDisabled && styles.radioDisabled,
             isDisabled && !isChecked && styles.radioDisabledUnchecked,
           )}>
-          {isChecked && <div {...stylex.props(styles.innerDot)} />}
+          {isChecked && (
+            <div {...stylex.props(styles.innerDot, dotSizeStyles[size])} />
+          )}
         </div>
       </div>
-      <div {...stylex.props(styles.labelWrapper)}>
+      <div {...stylex.props(styles.labelWrapper, labelWrapperSizeStyles[size])}>
         <label
           htmlFor={id}
           {...stylex.props(styles.label, isDisabled && styles.labelDisabled)}>

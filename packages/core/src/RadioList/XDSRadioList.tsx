@@ -23,12 +23,18 @@ import {
 import {XDSFieldStatus} from '../Field/XDSFieldStatus';
 import type {XDSInputStatus} from '../Field/types';
 
+/**
+ * Size of the radio controls, matching CheckboxInput sizes.
+ */
+export type XDSRadioListSize = 'sm' | 'md';
+
 export interface RadioListContextValue {
   name: string;
   value: string;
   onChange: (value: string) => void;
   isDisabled: boolean;
   isRequired: boolean;
+  size: XDSRadioListSize;
   status?: XDSInputStatus;
 }
 
@@ -139,6 +145,13 @@ export interface XDSRadioListProps {
    */
   status?: XDSInputStatus;
   /**
+   * The size of the radio controls.
+   * - 'sm': Compact size (18px radio, 20px wrapper)
+   * - 'md': Default size (22px radio, 24px wrapper)
+   * @default 'md'
+   */
+  size?: XDSRadioListSize;
+  /**
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
@@ -182,6 +195,7 @@ export function XDSRadioList({
   isDisabled = false,
   isRequired = false,
   isOptional = false,
+  size = 'md',
   status,
   labelTooltip: _labelTooltip,
   xstyle,
@@ -201,6 +215,7 @@ export function XDSRadioList({
     onChange,
     isDisabled,
     isRequired,
+    size,
     status,
   };
 
