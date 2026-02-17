@@ -1,6 +1,6 @@
 /**
  * @file XDSSlider.tsx
- * @input Uses React forwardRef, useId, useRef, useCallback, useState, XDSFieldLabel, XDSFieldStatus, XDSInputStatus
+ * @input Uses React forwardRef, useId, useRef, useCallback, XDSField, XDSTooltip
  * @output Exports XDSSlider component, XDSSliderProps, XDSSliderSingleProps, XDSSliderRangeProps, XDSSliderBaseProps
  * @position Core implementation; consumed by index.ts, tested by XDSSlider.test.tsx
  *
@@ -29,8 +29,7 @@ import {
   elevationVars,
   textSizeVars,
 } from '../theme/tokens.stylex';
-import {XDSFieldLabel} from '../Field/XDSFieldLabel';
-import {XDSFieldStatus} from '../Field/XDSFieldStatus';
+import {XDSField} from '../Field/XDSField';
 import {XDSTooltip} from '../Layer/XDSTooltip';
 import type {XDSInputStatus} from '../Field/types';
 
@@ -109,21 +108,6 @@ const THUMB_SIZE = 20;
 // =============================================================================
 
 const styles = stylex.create({
-  root: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: spacingVars['--spacing-1'],
-  },
-  labelWrapper: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: spacingVars['--spacing-0-5'],
-  },
-  description: {
-    fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-xsm'],
-    color: colorVars['--color-text-secondary'],
-  },
   sliderRow: {
     display: 'flex',
     alignItems: 'center',
@@ -138,12 +122,12 @@ const styles = stylex.create({
     userSelect: 'none',
   },
   trackContainerHorizontal: {
-    height: THUMB_SIZE + 8,
+    height: THUMB_SIZE,
     width: '100%',
     cursor: 'pointer',
   },
   trackContainerVertical: {
-    width: THUMB_SIZE + 8,
+    width: THUMB_SIZE,
     height: 160,
     flexDirection: 'column',
     justifyContent: 'center',
@@ -192,7 +176,7 @@ const styles = stylex.create({
     width: THUMB_SIZE,
     height: THUMB_SIZE,
     borderRadius: radiusVars['--radius-rounded'],
-    backgroundColor: colorVars['--color-surface'],
+    backgroundColor: colorVars['--color-popover'],
     boxShadow: elevationVars['--elevation-thumb'],
     transform: 'translate(-50%, -50%)',
     transitionProperty: 'box-shadow',
@@ -267,11 +251,11 @@ const styles = stylex.create({
   },
   markLabelHorizontal: {
     transform: 'translateX(-50%)',
-    top: THUMB_SIZE / 2 + 8,
+    top: THUMB_SIZE / 2 + 4,
   },
   markLabelVertical: {
     transform: 'translateY(50%)',
-    left: THUMB_SIZE / 2 + 8,
+    left: THUMB_SIZE / 2 + 4,
   },
 });
 
@@ -617,24 +601,26 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
       ) : null;
 
     return (
-      <div data-testid={testId} {...stylex.props(styles.root, xstyle)}>
-        <div {...stylex.props(styles.labelWrapper)}>
-          <XDSFieldLabel
-            label={label}
-            inputID={id}
-            isLabelHidden={isLabelHidden}
-            isDisabled={isDisabled}
-            isOptional={isOptional}
-            isRequired={isRequired}
-            tooltip={labelTooltip}
-          />
-          {description && (
-            <span id={descriptionID} {...stylex.props(styles.description)}>
-              {description}
-            </span>
-          )}
-        </div>
-
+      <XDSField
+        data-testid={testId}
+        label={label}
+        isLabelHidden={isLabelHidden}
+        description={description}
+        inputID={id}
+        descriptionID={description ? descriptionID : undefined}
+        isOptional={isOptional}
+        isRequired={isRequired}
+        status={
+          status
+            ? {
+                type: status.type,
+                message: status.message,
+                messageID: status.message ? statusMessageID : undefined,
+              }
+            : undefined
+        }
+        labelTooltip={labelTooltip}
+        {...stylex.props(xstyle)}>
         <div {...stylex.props(styles.sliderRow)}>
           <div
             ref={node => {
@@ -729,16 +715,7 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
 
           {textDisplay}
         </div>
-
-        {status?.message && (
-          <XDSFieldStatus
-            type={status.type}
-            message={status.message}
-            id={statusMessageID}
-            variant="detached"
-          />
-        )}
-      </div>
+      </XDSField>
     );
   },
 );
