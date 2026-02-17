@@ -145,19 +145,19 @@ export interface TablePlugin<
 /** Props for row components used in the components prop */
 export interface TableRowComponentProps extends HTMLAttributes<HTMLTableRowElement> {
   children: ReactNode;
-  extraStyles?: StyleXStyles[];
+  additionalXStyles?: StyleXStyles[];
 }
 
 /** Props for cell components used in the components prop */
 export interface TableCellComponentProps extends TdHTMLAttributes<HTMLTableCellElement> {
   children?: ReactNode;
-  extraStyles?: StyleXStyles[];
+  additionalXStyles?: StyleXStyles[];
 }
 
 /** Props for header cell components used in the components prop */
 export interface TableHeaderCellComponentProps extends ThHTMLAttributes<HTMLTableCellElement> {
   children?: ReactNode;
-  extraStyles?: StyleXStyles[];
+  additionalXStyles?: StyleXStyles[];
 }
 
 // =============================================================================
@@ -186,7 +186,7 @@ export interface XDSBaseTableProps<T extends Record<string, unknown>> {
   /**
    * Component overrides for table elements.
    * When provided, these components are rendered instead of raw HTML elements.
-   * Components receive `extraStyles` from plugin transforms.
+   * Components receive `additionalXStyles` from plugin transforms.
    */
   components?: {
     Row?: ComponentType<TableRowComponentProps>;

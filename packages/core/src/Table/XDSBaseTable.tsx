@@ -127,7 +127,7 @@ function TableRowInner<T extends Record<string, unknown>>({
       <CellComponent
         key={col.key}
         {...cellRenderProps.htmlProps}
-        extraStyles={cellRenderProps.styles}>
+        additionalXStyles={cellRenderProps.styles}>
         {content}
       </CellComponent>
     );
@@ -146,7 +146,7 @@ function TableRowInner<T extends Record<string, unknown>>({
     <RowComponent
       key={rowKey}
       {...rowRenderProps.htmlProps}
-      extraStyles={rowRenderProps.styles}>
+      additionalXStyles={rowRenderProps.styles}>
       {rowRenderProps.children}
     </RowComponent>
   );
@@ -243,7 +243,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>(
       <HeaderCellComponent
         key={col.key}
         {...cellRenderProps.htmlProps}
-        extraStyles={cellRenderProps.styles}>
+        additionalXStyles={cellRenderProps.styles}>
         {col.header ?? col.key}
       </HeaderCellComponent>
     );
@@ -289,7 +289,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>(
         <thead>
           <RowComponent
             {...headerRowRenderProps.htmlProps}
-            extraStyles={headerRowRenderProps.styles}>
+            additionalXStyles={headerRowRenderProps.styles}>
             {headerRowRenderProps.children}
           </RowComponent>
         </thead>
