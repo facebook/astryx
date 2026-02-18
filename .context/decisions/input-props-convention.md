@@ -17,12 +17,14 @@ All input components that represent a form field should include these props:
 
 ## Value Props
 
-| Prop       | Type                      | Description                       |
-| ---------- | ------------------------- | --------------------------------- |
-| `value`    | varies                    | The controlled value of the input |
-| `onChange` | `(value, event?) => void` | Callback when value changes       |
+| Prop       | Type                      | Description                                                                     |
+| ---------- | ------------------------- | ------------------------------------------------------------------------------- |
+| `value`    | varies                    | The controlled value of the input                                               |
+| `onChange` | `(value, event?) => void` | Sync handler, always fires first. Not mutually exclusive with `onChangeAction`. |
 
 ### onChange Signature Convention
+
+`onChange` always fires first (sync). For event-based inputs, call `event.preventDefault()` to block `onChangeAction` from firing.
 
 - **Text-based inputs** (TextInput, TextArea): Include the event for access to the DOM element
 
@@ -30,14 +32,14 @@ All input components that represent a form field should include these props:
   onChange: (value: string, e: ChangeEvent<HTMLInputElement>) => void
   ```
 
-- **Parsed value inputs** (DateInput, TimeInput): Event is omitted since value is parsed/transformed
+- **Parsed value inputs** (DateInput, TimeInput): Event is omitted since value is parsed/transformed (no preventDefault support)
 
   ```ts
   onChange: (value: ISODateString | undefined) => void
   onChange: (value: ISOTimeString | undefined) => void
   ```
 
-- **Boolean inputs** (CheckboxInput): Include the event
+- **Boolean inputs** (CheckboxInput, Switch): Include the event
   ```ts
   onChange: (checked: boolean, e: ChangeEvent<HTMLInputElement>) => void
   ```
@@ -46,14 +48,15 @@ All input components that represent a form field should include these props:
 
 For components that need to support async operations on value changes, use the action pattern:
 
-| Prop             | Type                                 | Default | Description                                             |
-| ---------------- | ------------------------------------ | ------- | ------------------------------------------------------- |
-| `onChangeAction` | `(value, event?) => void \| Promise` | -       | Async action replacing onChange. Wrapped in transition. |
-| `isLoading`      | `boolean`                            | `false` | Manual loading state for external async operations      |
+| Prop             | Type                                 | Default | Description                                                |
+| ---------------- | ------------------------------------ | ------- | ---------------------------------------------------------- |
+| `onChangeAction` | `(value, event?) => void \| Promise` | -       | Async action, fires after onChange. Wrapped in transition. |
+| `isLoading`      | `boolean`                            | `false` | Manual loading state for external async operations         |
 
 ### Action Props Convention
 
-- **onChangeAction replaces onChange**: When `onChangeAction` is provided, it takes the place of `onChange`. State updates should happen inside the action.
+- **onChange always fires first**: `onChange` is the sync handler and always fires. It is NOT replaced by `onChangeAction`.
+- **onChangeAction fires after onChange**: For event-based inputs, `onChange` can call `event.preventDefault()` to block `onChangeAction` from firing. For non-event inputs (Selector, DateInput, TimeInput), both always fire.
 - **Same signature as onChange**: `onChangeAction` receives the same arguments as `onChange` for that component.
 - **Optimistic updates via `useOptimistic`**: Components use React 19's `useOptimistic` to immediately reflect the new value while the action runs. If the action fails, React automatically rolls back.
 - **Busy state derived from optimistic mismatch**: `isBusy = isLoading || (optimisticValue !== value)` — no separate `isPending` needed for inputs.
@@ -61,24 +64,39 @@ For components that need to support async operations on value changes, use the a
 
 ### Implementation Pattern
 
+**For components with native events** (TextInput, TextArea, CheckboxInput, Switch):
+
 ```tsx
 const [optimisticValue, setOptimisticValue] = useOptimistic(value);
-// isBusy from optimistic mismatch + external isLoading
 const isBusy = isLoading || optimisticValue !== value;
 
 const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-  const newValue = e.target.value;
-
-  if (onChangeAction) {
-    startTransition(() => {
-      setOptimisticValue(newValue); // Immediate UI feedback
-      onChangeAction(newValue, e); // Async action, auto-rollback on failure
+  const newValue = e.target.value; // or e.target.checked for boolean inputs
+  onChange?.(newValue, e); // Always fires first
+  if (onChangeAction && !e.defaultPrevented) {
+    startTransition(async () => {
+      setOptimisticValue(newValue);
+      await onChangeAction(newValue, e);
     });
-  } else if (onChange) {
-    onChange(newValue, e);
   }
 };
+```
 
+**For components without native events** (Selector, DateInput, TimeInput):
+
+```tsx
+const handleValueChange = (newValue: ValueType) => {
+  onChange?.(newValue); // Always fires first
+  if (onChangeAction) {
+    startTransition(async () => {
+      setOptimisticValue(newValue);
+      await onChangeAction(newValue);
+    });
+  }
+};
+```
+
+```tsx
 // In JSX:
 <input
   value={optimisticValue} // Render optimistic value
@@ -88,7 +106,7 @@ const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     styles.input,
     (isDisabled || isBusy) && styles.inputDisabled, // Visual feedback only
   )}
-/>;
+/>
 ```
 
 ### Button Action Props

@@ -219,16 +219,14 @@ export interface XDSDateInputProps {
   value?: ISODateString;
 
   /**
-   * Callback fired when the date changes.
+   * Sync handler, always fires first when the date changes.
    * Called with undefined when input is cleared.
-   * Either onChange or onChangeAction must be provided.
    */
   onChange?: (value: ISODateString | undefined) => void;
 
   /**
-   * Async action to perform on change. Wrapped in React transition.
-   * Replaces onChange when provided - handle state updates inside this action.
-   * Receives the same arguments as onChange.
+   * Async action, fires after onChange.
+   * Wrapped in React transition with useOptimistic.
    */
   onChangeAction?: (value: ISODateString | undefined) => void | Promise<void>;
 
@@ -328,17 +326,15 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
     // isBusy is for visual feedback only (reduced opacity, aria-busy)
     const isBusy = isLoading || optimisticValue !== value;
 
-    // Helper to handle value changes with action support
+    // Always call onChange first, then action if provided
     const handleValueChange = useCallback(
       (newValue: ISODateString | undefined) => {
+        onChange?.(newValue);
         if (onChangeAction) {
-          // Use action - wraps in transition for async support
-          startTransition(() => {
+          startTransition(async () => {
             setOptimisticValue(newValue);
-            onChangeAction(newValue);
+            await onChangeAction(newValue);
           });
-        } else if (onChange) {
-          onChange(newValue);
         }
       },
       [onChange, onChangeAction, setOptimisticValue],

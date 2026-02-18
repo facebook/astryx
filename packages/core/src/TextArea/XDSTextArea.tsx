@@ -173,14 +173,12 @@ export interface XDSTextAreaProps {
    */
   isRequired?: boolean;
   /**
-   * Callback fired when the textarea value changes.
-   * Either onChange or onChangeAction must be provided.
+   * Sync handler, always fires. Call event.preventDefault() to block the action.
    */
   onChange?: (value: string, e: ChangeEvent<HTMLTextAreaElement>) => void;
   /**
-   * Async action to perform on change. Wrapped in React transition.
-   * Replaces onChange when provided - handle state updates inside this action.
-   * Receives the same arguments as onChange.
+   * Async action, fires after onChange if not prevented.
+   * Wrapped in React transition with useOptimistic.
    */
   onChangeAction?: (
     value: string,
@@ -297,15 +295,12 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
 
     const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
       const newValue = e.target.value;
-
-      if (onChangeAction) {
-        // Use action - wraps in transition for async support
-        startTransition(() => {
+      onChange?.(newValue, e);
+      if (onChangeAction && !e.defaultPrevented) {
+        startTransition(async () => {
           setOptimisticValue(newValue);
-          onChangeAction(newValue, e);
+          await onChangeAction(newValue, e);
         });
-      } else if (onChange) {
-        onChange(newValue, e);
       }
     };
 

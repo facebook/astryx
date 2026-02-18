@@ -223,14 +223,12 @@ export interface XDSCheckboxInputProps {
    */
   description?: string;
   /**
-   * Callback fired when the checkbox state changes.
-   * Either onChange or onChangeAction must be provided.
+   * Sync handler, always fires. Call event.preventDefault() to block the action.
    */
   onChange?: (checked: boolean, e: ChangeEvent<HTMLInputElement>) => void;
   /**
-   * Async action to perform on change. Wrapped in React transition.
-   * Replaces onChange when provided - handle state updates inside this action.
-   * Receives the same arguments as onChange.
+   * Async action, fires after onChange if not prevented.
+   * Wrapped in React transition with useOptimistic.
    */
   onChangeAction?: (
     checked: boolean,
@@ -331,15 +329,12 @@ export const XDSCheckboxInput = forwardRef<
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
       const newValue = e.target.checked;
-
-      if (onChangeAction) {
-        // Use action - optimistic update with transition for async support
-        startTransition(() => {
+      onChange?.(newValue, e);
+      if (onChangeAction && !e.defaultPrevented) {
+        startTransition(async () => {
           setOptimisticValue(newValue);
-          onChangeAction(newValue, e);
+          await onChangeAction(newValue, e);
         });
-      } else if (onChange) {
-        onChange(newValue, e);
       }
     };
 

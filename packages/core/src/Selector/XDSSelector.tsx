@@ -315,15 +315,13 @@ export interface XDSSelectorProps<
   value?: string;
 
   /**
-   * Callback when selection changes.
-   * Either onChange or onChangeAction must be provided.
+   * Sync handler, always fires first on selection change.
    */
   onChange?: (value: string) => void;
 
   /**
-   * Async action to perform on selection change. Wrapped in React transition.
-   * Replaces onChange when provided - handle state updates inside this action.
-   * Receives the same arguments as onChange.
+   * Async action, fires after onChange.
+   * Wrapped in React transition with useOptimistic.
    */
   onChangeAction?: (value: string) => void | Promise<void>;
 
@@ -446,17 +444,15 @@ export function XDSSelector<T extends XDSSelectorOption>({
       : undefined;
   }, [selectableItems, selectedItemIndex]);
 
-  // Handler that wraps onChangeAction in a transition
+  // Handler: always call onChange first, then action if provided
   const handleSelect = useCallback(
     (newValue: string) => {
+      onChange?.(newValue);
       if (onChangeAction) {
-        // Use action - wraps in transition for async support
-        startTransition(() => {
+        startTransition(async () => {
           setOptimisticValue(newValue);
-          onChangeAction(newValue);
+          await onChangeAction(newValue);
         });
-      } else if (onChange) {
-        onChange(newValue);
       }
     },
     [onChange, onChangeAction, setOptimisticValue],
