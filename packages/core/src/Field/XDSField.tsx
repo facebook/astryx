@@ -139,6 +139,13 @@ export interface XDSFieldProps extends Omit<
    */
   labelTooltip?: string;
   /**
+   * How the status message is rendered relative to the input.
+   * - 'attached': Status sits directly below the input (default, for bordered inputs)
+   * - 'detached': Status is a separate element below the field (for checkboxes, switches, sliders)
+   * @default 'attached'
+   */
+  statusVariant?: 'attached' | 'detached';
+  /**
    * The input or control to render inside the field.
    */
   children: ReactNode;
@@ -169,6 +176,7 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
       labelStartIcon,
       status,
       labelTooltip,
+      statusVariant = 'attached',
       children,
       ...props
     },
@@ -190,17 +198,31 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
             {description}
           </span>
         )}
-        <div {...stylex.props(styles.inputStatusWrapper)}>
-          {children}
-          {status?.message && (
-            <XDSFieldStatus
-              type={status.type}
-              message={status.message}
-              id={status.messageID}
-              variant="attached"
-            />
-          )}
-        </div>
+        {statusVariant === 'attached' ? (
+          <div {...stylex.props(styles.inputStatusWrapper)}>
+            {children}
+            {status?.message && (
+              <XDSFieldStatus
+                type={status.type}
+                message={status.message}
+                id={status.messageID}
+                variant="attached"
+              />
+            )}
+          </div>
+        ) : (
+          <>
+            {children}
+            {status?.message && (
+              <XDSFieldStatus
+                type={status.type}
+                message={status.message}
+                id={status.messageID}
+                variant="detached"
+              />
+            )}
+          </>
+        )}
       </div>
     );
   },

@@ -189,6 +189,7 @@ export function XDSRadioList({
           : undefined
       }
       labelTooltip={labelTooltip}
+      statusVariant="detached"
       {...stylex.props(xstyle)}>
       <div
         role="radiogroup"
