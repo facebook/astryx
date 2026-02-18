@@ -13,9 +13,9 @@ import {describe, it, expect} from 'vitest';
 import {render, screen, act} from '@testing-library/react';
 import {useState} from 'react';
 import userEvent from '@testing-library/user-event';
-import {XDSTable} from './XDSTable';
-import {useXDSTableSelection} from './plugins/selection';
-import type {XDSTableColumn} from './types';
+import {XDSTable} from '../../XDSTable';
+import {useXDSTableSelection} from './useXDSTableSelection';
+import type {XDSTableColumn} from '../../types';
 
 // =============================================================================
 // Test Data

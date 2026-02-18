@@ -29,7 +29,6 @@ import type {
   BodyCellRenderProps,
   TableRowComponentProps,
   TableCellComponentProps,
-  TableHeaderCellComponentProps,
 } from './types';
 import {generateColumns, defaultCellRenderer} from './columnUtils';
 import {XDSTableRow} from './XDSTableRow';
