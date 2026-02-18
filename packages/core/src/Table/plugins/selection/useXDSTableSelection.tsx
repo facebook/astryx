@@ -106,11 +106,10 @@ const selectedRowStyles = stylex.create({
 
 const selectionCellStyles = stylex.create({
   base: {
-    width: '40px',
-    minWidth: '40px',
-    maxWidth: '40px',
+    width: '36px',
+    minWidth: '36px',
+    maxWidth: '36px',
     paddingInline: spacingVars['--spacing-2'],
-    boxSizing: 'border-box',
     textAlign: 'center',
   },
 });
@@ -137,7 +136,7 @@ export function useXDSTableSelection<T extends Record<string, unknown>>(
           ...props,
           children: (
             <>
-              <XDSTableHeaderCell {...stylex.props(selectionCellStyles.base)}>
+              <XDSTableHeaderCell xstyle={selectionCellStyles.base}>
                 <SelectAllCheckbox />
               </XDSTableHeaderCell>
               {props.children}
@@ -158,7 +157,7 @@ export function useXDSTableSelection<T extends Record<string, unknown>>(
             : props.styles,
           children: (
             <>
-              <XDSTableCell {...stylex.props(selectionCellStyles.base)}>
+              <XDSTableCell xstyle={selectionCellStyles.base}>
                 <SelectionRowCheckbox item={item} />
               </XDSTableCell>
               {props.children}

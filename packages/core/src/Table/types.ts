@@ -151,13 +151,13 @@ export interface TableRowComponentProps extends HTMLAttributes<HTMLTableRowEleme
 /** Props for cell components used in the components prop */
 export interface TableCellComponentProps extends TdHTMLAttributes<HTMLTableCellElement> {
   children?: ReactNode;
-  xstyle?: StyleXStyles[];
+  xstyle?: StyleXStyles | StyleXStyles[];
 }
 
 /** Props for header cell components used in the components prop */
 export interface TableHeaderCellComponentProps extends ThHTMLAttributes<HTMLTableCellElement> {
   children?: ReactNode;
-  xstyle?: StyleXStyles[];
+  xstyle?: StyleXStyles | StyleXStyles[];
 }
 
 // =============================================================================

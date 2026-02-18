@@ -28,7 +28,7 @@ import {XDSTableContext} from './XDSTableContext';
 /** Props for XDSTableHeaderCell — `<th>` wrapper with context-aware styling */
 export interface XDSTableHeaderCellProps extends ThHTMLAttributes<HTMLTableCellElement> {
   children?: ReactNode;
-  xstyle?: StyleXStyles[];
+  xstyle?: StyleXStyles | StyleXStyles[];
 }
 
 const densityStyles = stylex.create({
@@ -36,16 +36,19 @@ const densityStyles = stylex.create({
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-2'],
     fontSize: textSizeVars['--text-xsm'],
+    boxSizing: 'border-box',
   },
   balanced: {
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
     fontSize: textSizeVars['--text-sm'],
+    boxSizing: 'border-box',
   },
   spacious: {
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
     fontSize: textSizeVars['--text-base'],
+    boxSizing: 'border-box',
   },
 });
 
@@ -120,7 +123,11 @@ export const XDSTableHeaderCell = forwardRef<
   }
 
   if (xstyle) {
-    cellStyles.push(...xstyle);
+    if (Array.isArray(xstyle)) {
+      cellStyles.push(...xstyle);
+    } else {
+      cellStyles.push(xstyle);
+    }
   }
 
   return (

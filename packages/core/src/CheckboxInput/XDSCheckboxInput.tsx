@@ -32,6 +32,9 @@ const styles = stylex.create({
     alignItems: 'flex-start',
     gap: spacingVars['--spacing-2'],
   },
+  containerLabelHidden: {
+    gap: 0,
+  },
   checkboxWrapper: {
     position: 'relative',
     display: 'flex',
@@ -295,6 +298,7 @@ export const XDSCheckboxInput = forwardRef<
         <div
           {...stylex.props(
             styles.container,
+            isLabelHidden && styles.containerLabelHidden,
             !isDisabled && stylex.defaultMarker(),
           )}>
           <div

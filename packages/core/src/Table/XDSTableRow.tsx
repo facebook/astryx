@@ -107,7 +107,8 @@ export const XDSTableRow = forwardRef<HTMLTableRowElement, XDSTableRowProps>(
     }
 
     if (ctx.dividers === 'rows' || ctx.dividers === 'grid') {
-      rowStyles.push(lastBodyRowStyles.row);
+      // Note: last-body-row border removal is handled by XDSTableCell
+      // to avoid affecting the header row in <thead>.
     }
 
     if (xstyle) {
