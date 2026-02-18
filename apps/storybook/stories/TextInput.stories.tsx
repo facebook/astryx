@@ -1,4 +1,4 @@
-import {useState, useRef} from 'react';
+import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSVStack} from '@xds/core/Layout';
@@ -457,80 +457,60 @@ export const TooltipWithOptional: Story = {
 };
 
 /**
- * Demonstrates async actions using onChangeAction.
- * The input automatically shows loading state while validating with the server,
- * then updates the status based on the validation result.
- * Uses a request ID pattern to ignore stale validation responses.
+ * Demonstrates onChangeAction mimicking a search param update.
+ * Similar to how a router would handle search — the input updates a URL
+ * param asynchronously. useOptimistic shows the typed value immediately
+ * while the "route transition" is pending.
  */
 export const AsyncAction: Story = {
   render: () => {
-    const [value, setValue] = useState('');
-    const [status, setStatus] = useState<
-      {type: 'error' | 'warning' | 'success'; message?: string} | undefined
-    >(undefined);
+    // Simulates a URL search param (e.g., ?q=...)
+    const [searchParam, setSearchParam] = useState('');
+    const [resultCount, setResultCount] = useState<number | null>(null);
 
-    // Track the latest request to ignore stale responses
-    const latestRequestRef = useRef(0);
-
-    // Simulate server-side validation (e.g., checking username availability)
-    const takenUsernames = ['admin', 'user', 'test', 'root'];
-    const reservedUsernames = ['support', 'help', 'info'];
-
-    const validateUsername = async (newValue: string) => {
-      // Increment request ID and capture it for this request
-      const requestId = ++latestRequestRef.current;
-
-      // Simulate network delay — useOptimistic shows the typed value immediately
+    // Simulate a route transition that updates the search param
+    const updateSearchParam = async (newValue: string) => {
       await new Promise<void>(resolve => {
         setTimeout(() => {
-          // Ignore stale responses - a newer request has started
-          if (requestId !== latestRequestRef.current) {
-            resolve();
-            return;
-          }
-
-          setValue(newValue);
-
-          const username = newValue.toLowerCase();
-
-          if (username.length < 3) {
-            setStatus({
-              type: 'error',
-              message: 'Username must be at least 3 characters',
-            });
-          } else if (takenUsernames.includes(username)) {
-            setStatus({type: 'error', message: 'This username is already taken'});
-          } else if (reservedUsernames.includes(username)) {
-            setStatus({
-              type: 'warning',
-              message: 'This username is reserved but may be available',
-            });
-          } else if (username.length > 0) {
-            setStatus({type: 'success', message: 'Username is available!'});
-          } else {
-            setStatus(undefined);
-          }
-
+          setSearchParam(newValue);
+          // Simulate search results
+          setResultCount(
+            newValue.length === 0
+              ? null
+              : Math.floor(Math.random() * 50) + 1,
+          );
           resolve();
-        }, 1000);
+        }, 600);
       });
     };
+
+    const displayUrl = searchParam
+      ? `/search?q=${encodeURIComponent(searchParam)}`
+      : '/search';
 
     return (
       <XDSVStack gap="space4">
         <XDSText type="body" color="secondary">
-          Type a username to check availability. Try "admin" (taken), "support"
-          (reserved), or any other name (available).
+          Simulates a search input that updates a URL param. The input shows
+          what you type immediately (optimistic), while the param updates
+          after a server round-trip.
         </XDSText>
         <XDSTextInput
-          label="Username"
-          description="We'll check if this username is available"
-          placeholder="Enter a username"
-          value={value}
-          onChangeAction={validateUsername}
-          status={status}
-          startIcon={UserIcon}
+          label="Search"
+          isLabelHidden
+          placeholder="Search products..."
+          value={searchParam}
+          onChangeAction={updateSearchParam}
+          startIcon={MagnifyingGlassIcon}
         />
+        <XDSText type="code" color="secondary">
+          {displayUrl}
+        </XDSText>
+        {resultCount !== null && (
+          <XDSText type="supporting" color="secondary">
+            {resultCount} results found
+          </XDSText>
+        )}
       </XDSVStack>
     );
   },
