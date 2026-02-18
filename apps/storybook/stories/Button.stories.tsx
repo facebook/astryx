@@ -1,3 +1,4 @@
+import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSButton} from '@xds/core/Button';
 import {Cog6ToothIcon, TrashIcon} from '@heroicons/react/24/outline';
@@ -167,4 +168,52 @@ export const AllVariants: Story = {
       </div>
     </div>
   ),
+};
+
+/**
+ * Demonstrates onClickAction for async button operations.
+ * The button shows a loading spinner while the action is pending,
+ * and prevents re-triggering until the action completes.
+ */
+export const AsyncAction: Story = {
+  render: () => {
+    const [saved, setSaved] = useState(false);
+
+    const handleSave = async () => {
+      await new Promise<void>(resolve => {
+        setTimeout(() => {
+          setSaved(true);
+          resolve();
+        }, 2000);
+      });
+    };
+
+    const handleDelete = async () => {
+      await new Promise<void>(resolve => {
+        setTimeout(() => {
+          resolve();
+        }, 1500);
+      });
+    };
+
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '300px'}}>
+        <div style={{fontSize: '14px', color: '#666'}}>
+          Buttons show a spinner during async actions and prevent re-clicks.
+        </div>
+        <div style={{display: 'flex', gap: '8px'}}>
+          <XDSButton
+            label={saved ? 'Saved!' : 'Save Changes'}
+            variant="primary"
+            onClickAction={handleSave}
+          />
+          <XDSButton
+            label="Delete"
+            variant="destructive"
+            onClickAction={handleDelete}
+          />
+        </div>
+      </div>
+    );
+  },
 };

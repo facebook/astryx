@@ -477,39 +477,43 @@ export const AsyncAction: Story = {
     const reservedUsernames = ['support', 'help', 'info'];
 
     const validateUsername = async (newValue: string) => {
-      // Update state immediately
-      setValue(newValue);
-
       // Increment request ID and capture it for this request
       const requestId = ++latestRequestRef.current;
 
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Simulate network delay — useOptimistic shows the typed value immediately
+      await new Promise<void>(resolve => {
+        setTimeout(() => {
+          // Ignore stale responses - a newer request has started
+          if (requestId !== latestRequestRef.current) {
+            resolve();
+            return;
+          }
 
-      // Ignore stale responses - a newer request has started
-      if (requestId !== latestRequestRef.current) {
-        return;
-      }
+          setValue(newValue);
 
-      const username = newValue.toLowerCase();
+          const username = newValue.toLowerCase();
 
-      if (username.length < 3) {
-        setStatus({
-          type: 'error',
-          message: 'Username must be at least 3 characters',
-        });
-      } else if (takenUsernames.includes(username)) {
-        setStatus({type: 'error', message: 'This username is already taken'});
-      } else if (reservedUsernames.includes(username)) {
-        setStatus({
-          type: 'warning',
-          message: 'This username is reserved but may be available',
-        });
-      } else if (username.length > 0) {
-        setStatus({type: 'success', message: 'Username is available!'});
-      } else {
-        setStatus(undefined);
-      }
+          if (username.length < 3) {
+            setStatus({
+              type: 'error',
+              message: 'Username must be at least 3 characters',
+            });
+          } else if (takenUsernames.includes(username)) {
+            setStatus({type: 'error', message: 'This username is already taken'});
+          } else if (reservedUsernames.includes(username)) {
+            setStatus({
+              type: 'warning',
+              message: 'This username is reserved but may be available',
+            });
+          } else if (username.length > 0) {
+            setStatus({type: 'success', message: 'Username is available!'});
+          } else {
+            setStatus(undefined);
+          }
+
+          resolve();
+        }, 1000);
+      });
     };
 
     return (
@@ -531,3 +535,4 @@ export const AsyncAction: Story = {
     );
   },
 };
+
