@@ -15,7 +15,7 @@ import {XDSBaseTable} from './XDSBaseTable';
 import {XDSTable} from './XDSTable';
 import {XDSTableRow} from './XDSTableRow';
 import {XDSTableCell} from './XDSTableCell';
-import {useXDSTableSelection} from './useXDSTableSelection';
+import {useXDSTableSelection} from './plugins/selection';
 import {
   proportional,
   pixel,

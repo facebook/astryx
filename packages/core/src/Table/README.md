@@ -6,14 +6,14 @@ Table components for the XDS design system.
 
 ## Components
 
-| File                     | Export               | Purpose                                                                |
-| ------------------------ | -------------------- | ---------------------------------------------------------------------- |
-| `XDSTable.tsx`           | `XDSTable`           | Styled, data-driven table with density, dividers, and hover            |
-| `XDSBaseTable.tsx`       | `XDSBaseTable`       | Unstyled table with colgroup, plugin pipeline, children mode           |
-| `XDSTableRow.tsx`        | `XDSTableRow`        | `<tr>` wrapper with context-aware styling + `additionalXStyles`        |
-| `XDSTableCell.tsx`       | `XDSTableCell`       | `<td>` wrapper with context-aware styling + `additionalXStyles`        |
-| `XDSTableHeaderCell.tsx` | `XDSTableHeaderCell` | `<th>` wrapper with context-aware header styling + `additionalXStyles` |
-| `XDSTableContext.ts`     | `XDSTableContext`    | Context for passing styling props to row/cell components               |
+| File                     | Export               | Purpose                                                      |
+| ------------------------ | -------------------- | ------------------------------------------------------------ |
+| `XDSTable.tsx`           | `XDSTable`           | Styled, data-driven table with density, dividers, and hover  |
+| `XDSBaseTable.tsx`       | `XDSBaseTable`       | Unstyled table with colgroup, plugin pipeline, children mode |
+| `XDSTableRow.tsx`        | `XDSTableRow`        | `<tr>` wrapper with context-aware styling + `xstyle`         |
+| `XDSTableCell.tsx`       | `XDSTableCell`       | `<td>` wrapper with context-aware styling + `xstyle`         |
+| `XDSTableHeaderCell.tsx` | `XDSTableHeaderCell` | `<th>` wrapper with context-aware header styling + `xstyle`  |
+| `XDSTableContext.ts`     | `XDSTableContext`    | Context for passing styling props to row/cell components     |
 
 ## Hooks
 
@@ -139,7 +139,7 @@ Styling is owned by components rather than a styling plugin:
 - **XDSTableCell** — reads `XDSTableContext` for density/divider styles
 - **XDSTableHeaderCell** — reads `XDSTableContext` for density/header/divider styles
 
-Each component accepts `additionalXStyles` for additional styles from plugin transforms (e.g., selected row background from the selection plugin).
+Each component accepts `xstyle` for additional styles from plugin transforms (e.g., selected row background from the selection plugin).
 
 ### Plugin System
 

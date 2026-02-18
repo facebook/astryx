@@ -13,7 +13,7 @@ export {XDSTableRow} from './XDSTableRow';
 export {XDSTableCell} from './XDSTableCell';
 export {XDSTableHeaderCell} from './XDSTableHeaderCell';
 export {XDSTableContext} from './XDSTableContext';
-export {useXDSTableSelection} from './useXDSTableSelection';
+export {useXDSTableSelection} from './plugins/selection';
 export {useXDSBaseTablePlugins} from './useXDSBaseTablePlugins';
 export {
   proportional,
@@ -46,4 +46,4 @@ export type {XDSTableRowProps} from './XDSTableRow';
 export type {XDSTableCellProps} from './XDSTableCell';
 export type {XDSTableHeaderCellProps} from './XDSTableHeaderCell';
 export type {XDSTableContextValue} from './XDSTableContext';
-export type {UseXDSTableSelectionConfig} from './useXDSTableSelection';
+export type {UseXDSTableSelectionConfig} from './plugins/selection';

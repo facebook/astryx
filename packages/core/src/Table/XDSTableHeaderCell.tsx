@@ -28,7 +28,7 @@ import {XDSTableContext} from './XDSTableContext';
 /** Props for XDSTableHeaderCell — `<th>` wrapper with context-aware styling */
 export interface XDSTableHeaderCellProps extends ThHTMLAttributes<HTMLTableCellElement> {
   children?: ReactNode;
-  additionalXStyles?: StyleXStyles[];
+  xstyle?: StyleXStyles[];
 }
 
 const densityStyles = stylex.create({
@@ -83,7 +83,7 @@ const dividerColumnStyles = stylex.create({
  * (density padding, header font weight/color, divider borders).
  * When used standalone, renders a plain `<th>`.
  *
- * Accepts `additionalXStyles` for plugin-provided styles that merge on top.
+ * Accepts `xstyle` for plugin-provided styles that merge on top.
  *
  * @example
  * ```tsx
@@ -98,12 +98,12 @@ const dividerColumnStyles = stylex.create({
 export const XDSTableHeaderCell = forwardRef<
   HTMLTableCellElement,
   XDSTableHeaderCellProps
->(({children, additionalXStyles, ...props}, ref) => {
+>(({children, xstyle, ...props}, ref) => {
   const ctx = useContext(XDSTableContext);
 
   if (!ctx) {
     return (
-      <th ref={ref} {...props} {...stylex.props(...(additionalXStyles ?? []))}>
+      <th ref={ref} {...props} {...stylex.props(xstyle)}>
         {children}
       </th>
     );
@@ -119,8 +119,8 @@ export const XDSTableHeaderCell = forwardRef<
     cellStyles.push(dividerColumnStyles.cell);
   }
 
-  if (additionalXStyles) {
-    cellStyles.push(...additionalXStyles);
+  if (xstyle) {
+    cellStyles.push(...xstyle);
   }
 
   return (

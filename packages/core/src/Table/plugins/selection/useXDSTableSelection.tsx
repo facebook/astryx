@@ -1,6 +1,6 @@
 /**
  * @file useXDSTableSelection.tsx
- * @input React, types.ts, XDSCheckboxInput, XDSTableCell, XDSTableHeaderCell, theme tokens
+ * @input React, types, XDSCheckboxInput, XDSTableCell, XDSTableHeaderCell, theme tokens
  * @output Exports useXDSTableSelection hook and UseXDSTableSelectionConfig type
  * @position Selection plugin; consumed by XDSTable via plugins prop
  *
@@ -9,19 +9,13 @@
  * - /packages/core/src/Table/index.ts (exports)
  */
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useRef,
-  type ReactNode,
-} from 'react';
+import {createContext, useContext, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars} from '../theme/tokens.stylex';
-import {XDSCheckboxInput} from '../CheckboxInput';
-import {XDSTableCell} from './XDSTableCell';
-import {XDSTableHeaderCell} from './XDSTableHeaderCell';
-import type {TablePlugin, BodyRowRenderProps} from './types';
+import {colorVars, spacingVars} from '../../../theme/tokens.stylex';
+import {XDSCheckboxInput} from '../../../CheckboxInput';
+import {XDSTableCell} from '../../XDSTableCell';
+import {XDSTableHeaderCell} from '../../XDSTableHeaderCell';
+import type {TablePlugin, BodyRowRenderProps} from '../../types';
 
 // =============================================================================
 // Config Type
@@ -45,7 +39,7 @@ export interface UseXDSTableSelectionConfig<T extends Record<string, unknown>> {
 }
 
 // =============================================================================
-// Selection Context
+// Selection Context (for checkbox components to re-render independently)
 // =============================================================================
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -100,32 +94,6 @@ function SelectionRowCheckbox<T>({item}: {item: T}) {
   );
 }
 
-/**
- * Reads selection state from context and imperatively applies
- * `aria-selected` to the parent `<tr>`.
- * This ensures selection attributes stay reactive even when the
- * row is memoized and doesn't re-render.
- */
-function SelectionRowAttributes<T>({item}: {item: T}) {
-  const ctx = useContext(SelectionContext);
-  const ref = useRef<HTMLTableCellElement | null>(null);
-
-  const isSelected = ctx?.getIsItemSelected(item) ?? false;
-
-  useEffect(() => {
-    const tr = ref.current?.parentElement;
-    if (!tr) return;
-    if (isSelected) {
-      tr.setAttribute('aria-selected', 'true');
-    } else {
-      tr.removeAttribute('aria-selected');
-    }
-  }, [isSelected]);
-
-  // Hidden <td> to get a DOM reference for finding the parent <tr>
-  return <td ref={ref} style={{display: 'none'}} aria-hidden="true" />;
-}
-
 // =============================================================================
 // Styles
 // =============================================================================
@@ -154,18 +122,11 @@ const selectionCellStyles = stylex.create({
 export function useXDSTableSelection<T extends Record<string, unknown>>(
   config: UseXDSTableSelectionConfig<T>,
 ): TablePlugin<T> {
-  const configRef = useRef(config);
-  configRef.current = config;
-
-  // Return a stable plugin object via ref to avoid unnecessary re-renders
-  // of XDSBaseTable when only selection state changes. The plugin functions
-  // read from configRef.current so they always use the latest config.
-  const pluginRef = useRef<TablePlugin<T> | null>(null);
-  if (pluginRef.current == null) {
-    pluginRef.current = {
+  return useMemo(
+    (): TablePlugin<T> => ({
       transformTableContext(children: ReactNode) {
         return (
-          <SelectionContext.Provider value={configRef.current}>
+          <SelectionContext.Provider value={config}>
             {children}
           </SelectionContext.Provider>
         );
@@ -186,12 +147,17 @@ export function useXDSTableSelection<T extends Record<string, unknown>>(
       },
 
       transformBodyRow(props: BodyRowRenderProps, item: T) {
+        const isSelected = config.getIsItemSelected(item);
         return {
-          htmlProps: props.htmlProps,
-          styles: props.styles,
+          htmlProps: {
+            ...props.htmlProps,
+            'aria-selected': isSelected || undefined,
+          },
+          styles: isSelected
+            ? [...props.styles, selectedRowStyles.row]
+            : props.styles,
           children: (
             <>
-              <SelectionRowAttributes item={item} />
               <XDSTableCell {...stylex.props(selectionCellStyles.base)}>
                 <SelectionRowCheckbox item={item} />
               </XDSTableCell>
@@ -200,8 +166,7 @@ export function useXDSTableSelection<T extends Record<string, unknown>>(
           ),
         };
       },
-    };
-  }
-
-  return pluginRef.current;
+    }),
+    [config],
+  );
 }
