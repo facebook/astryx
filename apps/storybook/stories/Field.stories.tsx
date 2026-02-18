@@ -3,7 +3,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {XDSField} from '@xds/core/Field';
 
 const meta: Meta<typeof XDSField> = {
-  title: 'Core/XDSField',
+  title: 'Form/XDSField',
   component: XDSField,
   tags: ['autodocs'],
   argTypes: {

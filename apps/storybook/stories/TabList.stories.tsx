@@ -3,7 +3,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {XDSTabList, XDSTab, XDSTabMenu} from '@xds/core/TabList';
 
 const meta: Meta<typeof XDSTabList> = {
-  title: 'Core/XDSTabList',
+  title: 'Navigation/XDSTabList',
   component: XDSTabList,
   tags: ['autodocs'],
   argTypes: {

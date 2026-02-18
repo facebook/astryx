@@ -16,30 +16,46 @@ import {findCoreDir} from '../utils/paths.mjs';
  * Adding a new component file to an existing directory requires NO changes here.
  */
 const DIR_TO_CATEGORY = {
+  // Layout
   AspectRatio: 'Layout',
   Center: 'Layout',
   Grid: 'Layout',
   Layout: 'Layout',
+  // Display
   Avatar: 'Display',
   Badge: 'Display',
   Divider: 'Display',
   Icon: 'Display',
   Skeleton: 'Display',
+  Table: 'Display',
   Text: 'Display',
+  // Form
   CheckboxInput: 'Form',
   DateInput: 'Form',
   Field: 'Form',
+  NumberInput: 'Form',
+  RadioList: 'Form',
   Selector: 'Form',
+  Slider: 'Form',
   Switch: 'Form',
   TextArea: 'Form',
   TextInput: 'Form',
   TimeInput: 'Form',
+  // Action
   Button: 'Action',
+  CloseButton: 'Action',
+  DropdownMenu: 'Action',
+  Link: 'Action',
+  // Navigation
+  TabList: 'Navigation',
+  TopNav: 'Navigation',
+  // Overlay
   Calendar: 'Overlay',
+  Dialog: 'Overlay',
   Layer: 'Overlay',
 };
 
-const CATEGORY_ORDER = ['Layout', 'Display', 'Form', 'Action', 'Overlay'];
+const CATEGORY_ORDER = ['Layout', 'Display', 'Form', 'Action', 'Navigation', 'Overlay'];
 const SKIP_DIRS = new Set(['theme', 'hooks', 'utils', '__tests__', 'node_modules']);
 
 /**

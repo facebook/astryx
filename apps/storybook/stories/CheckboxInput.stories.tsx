@@ -8,7 +8,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSCheckboxInput> = {
-  title: 'Core/XDSCheckboxInput',
+  title: 'Form/XDSCheckboxInput',
   component: XDSCheckboxInput,
   tags: ['autodocs'],
   argTypes: {

@@ -9,7 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSSwitch> = {
-  title: 'Core/XDSSwitch',
+  title: 'Form/XDSSwitch',
   component: XDSSwitch,
   tags: ['autodocs'],
   argTypes: {
