@@ -46,6 +46,9 @@ export * from './Layer';
 // Skeleton loading placeholder
 export * from './Skeleton';
 
+// Spinner loading indicator
+export * from './Spinner';
+
 // Hooks
 export * from './hooks';
 
