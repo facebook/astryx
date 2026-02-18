@@ -516,3 +516,62 @@ export const AsyncAction: Story = {
   },
 };
 
+
+/**
+ * Demonstrates onChange + onChangeAction working together.
+ * onChange validates synchronously — if invalid, it calls
+ * event.preventDefault() to block the async action.
+ */
+export const AsyncWithValidation: Story = {
+  render: () => {
+    const [searchParam, setSearchParam] = useState('');
+    const [error, setError] = useState<string | undefined>(undefined);
+    const [resultCount, setResultCount] = useState<number | null>(null);
+
+    return (
+      <XDSVStack gap="space4">
+        <XDSText type="body" color="secondary">
+          onChange validates input synchronously. If the query contains special
+          characters, it calls event.preventDefault() to block the search
+          action.
+        </XDSText>
+        <XDSTextInput
+          label="Search"
+          isLabelHidden
+          placeholder="Search (no special chars)..."
+          value={searchParam}
+          onChange={(value, e) => {
+            // Sync validation — block action if invalid
+            if (/[^a-zA-Z0-9\s]/.test(value)) {
+              setError('Special characters are not allowed');
+              e.preventDefault();
+            } else {
+              setError(undefined);
+            }
+          }}
+          onChangeAction={async (newValue) => {
+            // Only fires if onChange didn't preventDefault
+            await new Promise<void>(resolve => {
+              setTimeout(() => {
+                setSearchParam(newValue);
+                setResultCount(
+                  newValue.length === 0
+                    ? null
+                    : Math.floor(Math.random() * 50) + 1,
+                );
+                resolve();
+              }, 600);
+            });
+          }}
+          status={error ? {type: 'error', message: error} : undefined}
+          startIcon={MagnifyingGlassIcon}
+        />
+        {resultCount !== null && (
+          <XDSText type="supporting" color="secondary">
+            {resultCount} results found
+          </XDSText>
+        )}
+      </XDSVStack>
+    );
+  },
+};
