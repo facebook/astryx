@@ -242,7 +242,7 @@ export const MultiLineTruncation: Story = {
 export const TruncationWithoutTooltip: Story = {
   render: () => (
     <div style={{width: '300px', border: '1px solid #ccc', padding: '12px'}}>
-      <XDSText type="body" maxLines={1} truncateTooltip={false}>
+      <XDSText type="body" maxLines={1} hasTruncateTooltip={false}>
         This text is truncated but has no tooltip on hover. Sometimes you don't
         want a tooltip.
       </XDSText>

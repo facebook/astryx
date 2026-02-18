@@ -100,7 +100,7 @@ export interface XDSHeadingProps {
    * - Position value: show tooltip at specific position
    * @default true
    */
-  truncateTooltip?: boolean | LayerPlacement;
+  hasTruncateTooltip?: boolean | LayerPlacement;
 
   /**
    * Word break behavior for truncated text.
@@ -188,7 +188,7 @@ export const XDSHeading = forwardRef<HTMLHeadingElement, XDSHeadingProps>(
       color = 'primary',
       display = 'block',
       maxLines = 0,
-      truncateTooltip = true,
+      hasTruncateTooltip = true,
       wordBreak,
       textWrap,
       hasCapsize = false,
@@ -228,9 +228,9 @@ export const XDSHeading = forwardRef<HTMLHeadingElement, XDSHeadingProps>(
 
     // Tooltip for truncated text
     const tooltipPlacement: LayerPlacement =
-      typeof truncateTooltip === 'string' ? truncateTooltip : 'above';
+      typeof hasTruncateTooltip === 'string' ? hasTruncateTooltip : 'above';
     const tooltipEnabled =
-      maxLines > 0 && truncateTooltip !== false && truncation.isTruncated;
+      maxLines > 0 && hasTruncateTooltip !== false && truncation.isTruncated;
 
     const tooltip = useXDSTooltip({
       placement: tooltipPlacement,
@@ -297,3 +297,5 @@ export const XDSHeading = forwardRef<HTMLHeadingElement, XDSHeadingProps>(
     );
   },
 );
+
+XDSHeading.displayName = 'XDSHeading';

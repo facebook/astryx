@@ -235,3 +235,6 @@ export const XDSTable = forwardRef(XDSTableInner) as <
 >(
   props: XDSTableProps<T> & {ref?: Ref<HTMLTableElement>},
 ) => ReactElement;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(XDSTable as any).displayName = 'XDSTable';

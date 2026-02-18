@@ -174,10 +174,10 @@ describe('XDSHeading', () => {
       expect(screen.getByText('Heading with word break')).toBeInTheDocument();
     });
 
-    it('accepts truncateTooltip=false to disable tooltip', () => {
+    it('accepts hasTruncateTooltip=false to disable tooltip', () => {
       render(
         <XDSTheme theme={defaultTheme}>
-          <XDSHeading level={1} maxLines={1} truncateTooltip={false}>
+          <XDSHeading level={1} maxLines={1} hasTruncateTooltip={false}>
             No tooltip
           </XDSHeading>
         </XDSTheme>,

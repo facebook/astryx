@@ -90,7 +90,7 @@ export interface XDSTextProps {
    * - Position value: show tooltip at specific position
    * @default true
    */
-  truncateTooltip?: boolean | LayerPlacement;
+  hasTruncateTooltip?: boolean | LayerPlacement;
 
   /**
    * Word break behavior for truncated text.
@@ -182,7 +182,7 @@ export const XDSText = forwardRef<HTMLElement, XDSTextProps>(function XDSText(
     weight,
     display = 'inline',
     maxLines = 0,
-    truncateTooltip = true,
+    hasTruncateTooltip = true,
     wordBreak,
     textWrap,
     hasCapsize = false,
@@ -214,9 +214,9 @@ export const XDSText = forwardRef<HTMLElement, XDSTextProps>(function XDSText(
 
   // Tooltip for truncated text
   const tooltipPlacement: LayerPlacement =
-    typeof truncateTooltip === 'string' ? truncateTooltip : 'above';
+    typeof hasTruncateTooltip === 'string' ? hasTruncateTooltip : 'above';
   const tooltipEnabled =
-    maxLines > 0 && truncateTooltip !== false && truncation.isTruncated;
+    maxLines > 0 && hasTruncateTooltip !== false && truncation.isTruncated;
 
   const tooltip = useXDSTooltip({
     placement: tooltipPlacement,
@@ -283,3 +283,5 @@ export const XDSText = forwardRef<HTMLElement, XDSTextProps>(function XDSText(
     </>
   );
 });
+
+XDSText.displayName = 'XDSText';

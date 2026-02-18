@@ -97,6 +97,8 @@ export function XDSFontWrapper({
   );
 }
 
+XDSFontWrapper.displayName = 'XDSFontWrapper';
+
 /**
  * Hook to access font wrapper styles from the current theme.
  * Use this for applying styles to native HTML elements programmatically.

@@ -117,5 +117,7 @@ export function XDSTheme({
   );
 }
 
+XDSTheme.displayName = 'XDSTheme';
+
 /** @deprecated Use XDSTheme instead */
 export const Theme = XDSTheme;

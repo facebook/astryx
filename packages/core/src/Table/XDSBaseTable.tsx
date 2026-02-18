@@ -316,3 +316,6 @@ export const XDSBaseTable = forwardRef(XDSBaseTableInner) as <
 >(
   props: XDSBaseTableProps<T> & {ref?: Ref<HTMLTableElement>},
 ) => ReactElement;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(XDSBaseTable as any).displayName = 'XDSBaseTable';

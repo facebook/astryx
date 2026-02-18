@@ -213,10 +213,10 @@ describe('XDSText', () => {
       expect(screen.getByText('Text with word break')).toBeInTheDocument();
     });
 
-    it('accepts truncateTooltip=false to disable tooltip', () => {
+    it('accepts hasTruncateTooltip=false to disable tooltip', () => {
       render(
         <XDSTheme theme={defaultTheme}>
-          <XDSText type="body" maxLines={1} truncateTooltip={false}>
+          <XDSText type="body" maxLines={1} hasTruncateTooltip={false}>
             No tooltip
           </XDSText>
         </XDSTheme>,

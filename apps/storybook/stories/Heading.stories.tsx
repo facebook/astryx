@@ -301,7 +301,7 @@ export const MultiLineTruncation: Story = {
 export const TruncationWithoutTooltip: Story = {
   render: () => (
     <div style={{width: '300px', border: '1px solid #ccc', padding: '12px'}}>
-      <XDSHeading level={2} maxLines={1} truncateTooltip={false}>
+      <XDSHeading level={2} maxLines={1} hasTruncateTooltip={false}>
         Truncated Heading Without Tooltip On Hover
       </XDSHeading>
     </div>
