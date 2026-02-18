@@ -448,9 +448,11 @@ export const AsyncAction: Story = {
 
     // Simulate server sync (e.g., saving preference to API)
     const simulateServerAction = async (checked: boolean) => {
-      setValue(checked);
       await new Promise<void>(resolve => {
-        setTimeout(resolve, 1500);
+        setTimeout(() => {
+          setValue(checked);
+          resolve();
+        }, 1500);
       });
     };
 

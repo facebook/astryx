@@ -356,10 +356,14 @@ export const AsyncAction: Story = {
     const [value, setValue] = useState<ISOTimeString | undefined>();
 
     // Simulate server sync (e.g., saving time to API)
-    const simulateServerAction = async (newValue: ISOTimeString | undefined) => {
-      setValue(newValue);
+    const simulateServerAction = async (
+      newValue: ISOTimeString | undefined,
+    ) => {
       await new Promise<void>(resolve => {
-        setTimeout(resolve, 1500);
+        setTimeout(() => {
+          setValue(newValue);
+          resolve();
+        }, 1500);
       });
     };
 

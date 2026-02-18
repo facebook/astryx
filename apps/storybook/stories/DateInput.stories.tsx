@@ -309,10 +309,14 @@ export const AsyncAction: Story = {
     const [value, setValue] = useState<ISODateString | undefined>();
 
     // Simulate server sync (e.g., saving date to API)
-    const simulateServerAction = async (newValue: ISODateString | undefined) => {
-      setValue(newValue);
+    const simulateServerAction = async (
+      newValue: ISODateString | undefined,
+    ) => {
       await new Promise<void>(resolve => {
-        setTimeout(resolve, 1500);
+        setTimeout(() => {
+          setValue(newValue);
+          resolve();
+        }, 1500);
       });
     };
 
