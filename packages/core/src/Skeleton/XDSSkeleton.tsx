@@ -108,7 +108,10 @@ export type XDSSkeletonRadius = keyof typeof radiusStyles;
 // Component
 // =============================================================================
 
-export interface XDSSkeletonProps extends HTMLAttributes<HTMLDivElement> {
+export interface XDSSkeletonProps extends Omit<
+  HTMLAttributes<HTMLDivElement>,
+  'className' | 'style'
+> {
   /**
    * Width of the skeleton.
    * Accepts a number (pixels) or string (any CSS value).

@@ -78,7 +78,10 @@ const variants = stylex.create({
  */
 export type XDSBadgeVariant = keyof typeof variants;
 
-export interface XDSBadgeProps extends HTMLAttributes<HTMLSpanElement> {
+export interface XDSBadgeProps extends Omit<
+  HTMLAttributes<HTMLSpanElement>,
+  'className' | 'style'
+> {
   /**
    * The visual style variant of the badge.
    * @default 'neutral'

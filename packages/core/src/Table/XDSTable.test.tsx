@@ -626,17 +626,17 @@ describe('XDSTableRow', () => {
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLTableRowElement));
   });
 
-  it('passes through HTML attributes', () => {
+  it('passes through HTML attributes (excluding className/style)', () => {
     render(
       <table>
         <tbody>
-          <XDSTableRow className="custom" data-testid="row">
+          <XDSTableRow data-testid="row" aria-label="test row">
             <td>Cell</td>
           </XDSTableRow>
         </tbody>
       </table>,
     );
-    expect(screen.getByTestId('row')).toHaveClass('custom');
+    expect(screen.getByTestId('row')).toHaveAttribute('aria-label', 'test row');
   });
 });
 

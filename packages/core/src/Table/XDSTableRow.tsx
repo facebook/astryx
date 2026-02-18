@@ -21,7 +21,10 @@ import type {StyleXStyles} from '../theme/types';
 import {XDSTableContext} from './XDSTableContext';
 
 /** Props for XDSTableRow — thin `<tr>` wrapper */
-export interface XDSTableRowProps extends HTMLAttributes<HTMLTableRowElement> {
+export interface XDSTableRowProps extends Omit<
+  HTMLAttributes<HTMLTableRowElement>,
+  'className' | 'style'
+> {
   children: ReactNode;
 }
 

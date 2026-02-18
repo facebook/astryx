@@ -155,7 +155,7 @@ export const WithDisabledItems: Story = {
       items={[
         {label: 'Edit', onClick: () => console.log('Edit')},
         {label: 'Duplicate', onClick: () => console.log('Duplicate')},
-        {label: 'Delete (disabled)', disabled: true},
+        {label: 'Delete (disabled)', isDisabled: true},
       ]}
     />
   ),

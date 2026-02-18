@@ -122,8 +122,9 @@ export interface XDSDropdownMenuItemData {
 
   /**
    * Whether the item is disabled.
+   * @default false
    */
-  disabled?: boolean;
+  isDisabled?: boolean;
 
   /**
    * Icon to display before the label.
@@ -226,6 +227,8 @@ export interface XDSDropdownMenuProps {
 
   /**
    * Whether the menu is open (controlled mode).
+   * When omitted, the component manages its own open state.
+   * @default undefined
    */
   isMenuOpen?: boolean;
 
@@ -372,7 +375,7 @@ export function XDSDropdownMenu({
   // Handle item click
   const handleItemClick = useCallback(
     (item: XDSDropdownMenuItemData) => {
-      if (item.disabled) return;
+      if (item.isDisabled) return;
       item.onClick?.();
       closeMenu();
     },
@@ -382,7 +385,7 @@ export function XDSDropdownMenu({
   // Handle item mouse enter
   const handleItemMouseEnter = useCallback(
     (item: XDSDropdownMenuItemData, index: number) => {
-      if (item.disabled) return;
+      if (item.isDisabled) return;
       setHighlightedIndex(index);
     },
     [],
@@ -408,7 +411,7 @@ export function XDSDropdownMenu({
             // Skip disabled items
             while (
               next < selectableItems.length &&
-              selectableItems[next].disabled
+              selectableItems[next].isDisabled
             ) {
               next++;
             }
@@ -420,7 +423,7 @@ export function XDSDropdownMenu({
           setHighlightedIndex(prev => {
             let next = prev - 1;
             // Skip disabled items
-            while (next >= 0 && selectableItems[next].disabled) {
+            while (next >= 0 && selectableItems[next].isDisabled) {
               next--;
             }
             return next >= 0 ? next : prev;
@@ -432,7 +435,7 @@ export function XDSDropdownMenu({
             let index = 0;
             while (
               index < selectableItems.length &&
-              selectableItems[index].disabled
+              selectableItems[index].isDisabled
             ) {
               index++;
             }
@@ -443,7 +446,7 @@ export function XDSDropdownMenu({
           e.preventDefault();
           {
             let index = selectableItems.length - 1;
-            while (index >= 0 && selectableItems[index].disabled) {
+            while (index >= 0 && selectableItems[index].isDisabled) {
               index--;
             }
             setHighlightedIndex(index >= 0 ? index : -1);
@@ -479,13 +482,13 @@ export function XDSDropdownMenu({
           id={getItemId(flatIndex)}
           role="menuitem"
           tabIndex={-1}
-          aria-disabled={item.disabled}
+          aria-disabled={item.isDisabled}
           onClick={() => handleItemClick(item)}
           onMouseEnter={() => handleItemMouseEnter(item, flatIndex)}
           {...stylex.props(
             styles.item,
             isHighlighted && styles.itemHighlighted,
-            item.disabled && styles.itemDisabled,
+            item.isDisabled && styles.itemDisabled,
           )}>
           {children ? children(item) : <DefaultItem item={item} />}
         </div>

@@ -190,7 +190,7 @@ describe('XDSDropdownMenu items', () => {
     render(
       <XDSDropdownMenu
         button={{label: 'Actions'}}
-        items={[{label: 'Edit', onClick: handleClick, disabled: true}]}
+        items={[{label: 'Edit', onClick: handleClick, isDisabled: true}]}
       />,
     );
 
@@ -204,7 +204,7 @@ describe('XDSDropdownMenu items', () => {
     render(
       <XDSDropdownMenu
         button={{label: 'Actions'}}
-        items={[{label: 'Edit', disabled: true}]}
+        items={[{label: 'Edit', isDisabled: true}]}
       />,
     );
     expect(
