@@ -1,5 +1,6 @@
 import type {Metadata} from 'next';
-import {XDSTheme, defaultTheme} from '@xds/core/theme';
+import {XDSTheme} from '@xds/core/theme';
+import {defaultTheme} from '@xds/theme/default';
 
 export const metadata: Metadata = {
   title: 'XDS Sandbox',

@@ -1,0 +1,40 @@
+{
+  "name": "@xds/theme",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Optional themes for XDS components",
+  "license": "MIT",
+  "sideEffects": false,
+  "exports": {
+    "./default": {
+      "types": "./dist/default/index.d.ts",
+      "import": "./dist/default/index.mjs",
+      "require": "./dist/default/index.js"
+    },
+    "./neutral": {
+      "types": "./dist/neutral/index.d.ts",
+      "import": "./dist/neutral/index.mjs",
+      "require": "./dist/neutral/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch"
+  },
+  "peerDependencies": {
+    "@stylexjs/stylex": ">=0.10.0",
+    "@xds/core": "workspace:*",
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "tsup": "*",
+    "esbuild-plugin-babel": "*",
+    "@babel/preset-react": "*",
+    "@babel/preset-typescript": "*",
+    "@stylexjs/babel-plugin": "*"
+  }
+}

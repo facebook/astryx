@@ -156,8 +156,10 @@ export function registerInit(program) {
 
       console.log('');
       console.log('  Next steps:');
-      console.log('    1. Wrap your app with <XDSTheme theme={defaultTheme}>');
-      console.log("    2. Import components: import { XDSButton } from '@xds/core'");
+      console.log("    1. Import components: import { XDSButton } from '@xds/core'");
+      console.log('    2. Optionally add a theme:');
+      console.log("       import { defaultTheme } from '@xds/theme/default'");
+      console.log('       <XDSTheme theme={defaultTheme}>...</XDSTheme>');
       console.log('    3. npx xds --help for all commands');
       console.log('');
     });

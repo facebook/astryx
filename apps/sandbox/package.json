@@ -14,7 +14,8 @@
     "@xds/core": "*",
     "next": "^15.0.0",
     "react": "^18.3.0",
-    "react-dom": "^18.3.0"
+    "react-dom": "^18.3.0",
+    "@xds/theme": "workspace:*"
   },
   "devDependencies": {
     "@stylexjs/babel-plugin": "^0.17.4",

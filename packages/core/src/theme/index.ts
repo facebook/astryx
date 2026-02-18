@@ -4,14 +4,14 @@
  * Exports:
  * - XDSTheme: Provider component that applies theme
  * - useXDSTheme: Hook to access current theme
- * - defaultTheme: XDS default theme
- * - neutralTheme: Neutral grayscale theme
  * - Token exports for direct use in StyleX
+ *
+ * Themes (defaultTheme, neutralTheme, etc.) are in @xds/theme:
+ *   import { defaultTheme } from '@xds/theme/default';
+ *   import { neutralTheme } from '@xds/theme/neutral';
  */
 
 export {XDSTheme, useXDSTheme, Theme, useTheme} from './XDSTheme';
-export {defaultTheme} from './defaultTheme.stylex';
-export {neutralTheme} from './neutralTheme.stylex';
 
 // Export tokens for use in custom components
 export {

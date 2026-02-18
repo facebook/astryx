@@ -1,6 +1,8 @@
 import type {Preview, Decorator} from '@storybook/react';
 import * as React from 'react';
-import {XDSTheme, defaultTheme, neutralTheme} from '@xds/core';
+import {XDSTheme} from '@xds/core';
+import {defaultTheme} from '@xds/theme/default';
+import {neutralTheme} from '@xds/theme/neutral';
 
 // Import the pre-built StyleX CSS from the core package
 // Use relative path since @xds/core alias points to source, not dist
@@ -19,12 +21,23 @@ const themes = {
  */
 const withXDSTheme: Decorator = (Story, context) => {
   // Get theme selection from toolbar
-  const themeKey = (context.globals?.xdsTheme ||
-    'default') as keyof typeof themes;
-  const theme = themes[themeKey] || defaultTheme;
-
-  // Get color mode from toolbar
+  const themeKey = (context.globals?.xdsTheme || 'default') as string;
   const mode = context.globals?.colorMode === 'dark' ? 'dark' : 'light';
+
+  // No theme — render with just base defineVars defaults
+  if (themeKey === 'none') {
+    return (
+      <div
+        style={{
+          colorScheme: mode,
+          padding: 16,
+        }}>
+        <Story />
+      </div>
+    );
+  }
+
+  const theme = themes[themeKey as keyof typeof themes] || defaultTheme;
 
   return (
     <XDSTheme theme={theme} mode={mode}>
@@ -59,6 +72,7 @@ const preview: Preview = {
         title: 'Theme',
         icon: 'paintbrush',
         items: [
+          {value: 'none', title: 'None (base tokens)', icon: 'close'},
           {value: 'default', title: 'Default', icon: 'circlehollow'},
           {value: 'neutral', title: 'Neutral', icon: 'circle'},
         ],
