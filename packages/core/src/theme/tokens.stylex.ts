@@ -16,119 +16,120 @@ import * as stylex from '@stylexjs/stylex';
 
 export const colorRaw = {
   // Core semantic
-  '--color-accent': '#0064E0',
-  '--color-accent-deemphasized': '#0082FB33',
-  '--color-accent-text': '#0143B5',
-  '--color-surface': '#FFFFFF',
-  '--color-wash': '#F1F4F7',
-  '--color-overlay': '#01122866',
-  '--color-hover-overlay': '#0536590C',
-  '--color-pressed-overlay': '#05365919',
-  '--color-focus-outline': '#042F97',
-  '--color-deemphasized': '#0536590C',
+  '--color-accent': 'light-dark(#0064E0, #2694FE)',
+  '--color-accent-deemphasized': 'light-dark(#0082FB33, #0082FB3F)',
+  '--color-accent-text': 'light-dark(#0143B5, #4BA9FE)',
+  '--color-surface': 'light-dark(#FFFFFF, #1F1F22)',
+  '--color-wash': 'light-dark(#F1F4F7, #111112)',
+  '--color-overlay': 'light-dark(#01122866, #11111299)',
+  '--color-hover-overlay': 'light-dark(#0536590C, #FFFFFF0C)',
+  '--color-pressed-overlay': 'light-dark(#05365919, #FFFFFF19)',
+  '--color-focus-outline': 'light-dark(#042F97, #AFD7FF)',
+  '--color-deemphasized': 'light-dark(#0536590C, #1111127F)',
 
   // Text
-  '--color-text-primary': '#0A1317',
-  '--color-text-secondary': '#4E606F',
-  '--color-text-disabled': '#A4B0BC',
-  '--color-text-link': '#0064E0',
-  '--color-text-placeholder': '#4E606F',
-  '--color-text-on-media': '#FFFFFF',
+  '--color-text-primary': 'light-dark(#0A1317, #DFE2E5)',
+  '--color-text-secondary': 'light-dark(#4E606F, #AAAFB5)',
+  '--color-text-disabled': 'light-dark(#A4B0BC, #6F747C)',
+  '--color-text-link': 'light-dark(#0064E0, #3E9EFB)',
+  '--color-text-placeholder': 'light-dark(#4E606F, #AAAFB5)',
+  '--color-text-on-media': 'light-dark(#FFFFFF, #FFFFFF)',
 
   // Icon
-  '--color-icon-primary': '#0A1317',
-  '--color-icon-secondary': '#4E606F',
-  '--color-icon-tertiary': '#748695',
-  '--color-icon-disabled': '#A4B0BC',
-  '--color-icon-on-media': '#FFFFFF',
+  '--color-icon-primary': 'light-dark(#0A1317, #DFE2E5)',
+  '--color-icon-secondary': 'light-dark(#4E606F, #AAAFB5)',
+  '--color-icon-tertiary': 'light-dark(#748695, #8C939B)',
+  '--color-icon-disabled': 'light-dark(#A4B0BC, #6F747C)',
+  '--color-icon-on-media': 'light-dark(#FFFFFF, #FFFFFF)',
 
   // Surface variants
-  '--color-card': '#FFFFFF',
-  '--color-popover': '#FFFFFF',
-  '--color-navbar': '#FFFFFF',
+  '--color-card': 'light-dark(#FFFFFF, #1F1F22)',
+  '--color-popover': 'light-dark(#FFFFFF, #28292C)',
+  '--color-navbar': 'light-dark(#FFFFFF, #1F1F22)',
 
   // Status/Sentiment
-  '--color-positive': '#0D8626',
-  '--color-positive-deemphasized': '#0B991F33',
-  '--color-negative': '#E3193B',
-  '--color-negative-deemphasized': '#E3193B33',
-  '--color-warning': '#E9AF08',
-  '--color-warning-deemphasized': '#E2A40033',
-  '--color-educational': '#5B08D8',
-  '--color-educational-deemphasized': '#7952FF33',
+  '--color-positive': 'light-dark(#0D8626, #0D8626)',
+  '--color-positive-deemphasized': 'light-dark(#0B991F33, #0B991F3F)',
+  '--color-negative': 'light-dark(#E3193B, #F5394F)',
+  '--color-negative-deemphasized': 'light-dark(#E3193B33, #F5394F3F)',
+  '--color-warning': 'light-dark(#E9AF08, #F2C00B)',
+  '--color-warning-deemphasized': 'light-dark(#E2A40033, #E2A4003F)',
+  '--color-educational': 'light-dark(#5B08D8, #6B1EFD)',
+  '--color-educational-deemphasized': 'light-dark(#7952FF33, #5B08D83F)',
 
   // Divider
-  '--color-divider': '#05365919',
-  '--color-divider-high-contrast': '#647685',
-  '--color-divider-emphasized': '#CCD3DB',
+  '--color-divider': 'light-dark(#05365919, #F2F4F619)',
+  '--color-divider-high-contrast': 'light-dark(#647685, #6F747C)',
+  '--color-divider-emphasized': 'light-dark(#CCD3DB, #494D53)',
 
   // Disabled/Effects
-  '--color-disabled-overlay': '#FFFFFF7F',
-  '--color-glimmer': '#CCD3DB',
-  '--color-glimmer-high-contrast': '#A4B0BC',
-  '--color-shadow-elevation': 'rgba(5, 54, 89, 0.1)',
+  '--color-disabled-overlay': 'light-dark(#FFFFFF7F, #1F1F227F)',
+  '--color-glimmer': 'light-dark(#CCD3DB, #5A5E66)',
+  '--color-glimmer-high-contrast': 'light-dark(#A4B0BC, #8C939B)',
+  '--color-shadow-elevation':
+    'light-dark(rgba(5, 54, 89, 0.1), rgba(0, 0, 0, 0.3))',
   // Hover tint: black in light mode, white in dark mode - used with color-mix for hover states
-  '--color-hover-tint': 'black',
+  '--color-hover-tint': 'light-dark(black, white)',
 
   // Blue
-  '--color-blue-background': '#0171E333',
-  '--color-blue-border': '#0171E3',
-  '--color-blue-icon': '#0064E0',
-  '--color-blue-text': '#042F97',
+  '--color-blue-background': 'light-dark(#0171E333, #0171E333)',
+  '--color-blue-border': 'light-dark(#0171E3, #4BA9FE)',
+  '--color-blue-icon': 'light-dark(#0064E0, #2694FE)',
+  '--color-blue-text': 'light-dark(#042F97, #AFD7FF)',
 
   // Cyan
-  '--color-cyan-background': '#00BCD433',
-  '--color-cyan-border': '#00BCD4',
-  '--color-cyan-icon': '#00ACC1',
-  '--color-cyan-text': '#006064',
+  '--color-cyan-background': 'light-dark(#00BCD433, #00BCD433)',
+  '--color-cyan-border': 'light-dark(#00BCD4, #4DD0E1)',
+  '--color-cyan-icon': 'light-dark(#00ACC1, #26C6DA)',
+  '--color-cyan-text': 'light-dark(#006064, #B2EBF2)',
 
   // Gray
-  '--color-gray-background': '#0A131733',
-  '--color-gray-border': '#647685',
-  '--color-gray-icon': '#4E606F',
-  '--color-gray-text': '#0A1317',
+  '--color-gray-background': 'light-dark(#0A131733, #666A724C)',
+  '--color-gray-border': 'light-dark(#647685, #8C939B)',
+  '--color-gray-icon': 'light-dark(#4E606F, #AAAFB5)',
+  '--color-gray-text': 'light-dark(#0A1317, #E7EAED)',
 
   // Green
-  '--color-green-background': '#24BB5E33',
-  '--color-green-border': '#24BB5E',
-  '--color-green-icon': '#0D8626',
-  '--color-green-text': '#09441F',
+  '--color-green-background': 'light-dark(#24BB5E33, #24BB5E33)',
+  '--color-green-border': 'light-dark(#24BB5E, #4CD964)',
+  '--color-green-icon': 'light-dark(#0D8626, #26A756)',
+  '--color-green-text': 'light-dark(#09441F, #A5F690)',
 
   // Orange
-  '--color-orange-background': '#F2790233',
-  '--color-orange-border': '#F27902',
-  '--color-orange-icon': '#E9690B',
-  '--color-orange-text': '#6B2203',
+  '--color-orange-background': 'light-dark(#F2790233, #F2790233)',
+  '--color-orange-border': 'light-dark(#F27902, #FFA040)',
+  '--color-orange-icon': 'light-dark(#E9690B, #FB8C00)',
+  '--color-orange-text': 'light-dark(#6B2203, #FDB876)',
 
   // Pink
-  '--color-pink-background': '#E91E6333',
-  '--color-pink-border': '#E91E63',
-  '--color-pink-icon': '#C2185B',
-  '--color-pink-text': '#880E4F',
+  '--color-pink-background': 'light-dark(#E91E6333, #E91E6333)',
+  '--color-pink-border': 'light-dark(#E91E63, #F48FB1)',
+  '--color-pink-icon': 'light-dark(#C2185B, #EC407A)',
+  '--color-pink-text': 'light-dark(#880E4F, #F8BBD0)',
 
   // Purple
-  '--color-purple-background': '#7952FF33',
-  '--color-purple-border': '#7952FF',
-  '--color-purple-icon': '#5B08D8',
-  '--color-purple-text': '#3E0697',
+  '--color-purple-background': 'light-dark(#7952FF33, #7952FF33)',
+  '--color-purple-border': 'light-dark(#7952FF, #9575CD)',
+  '--color-purple-icon': 'light-dark(#5B08D8, #7952FF)',
+  '--color-purple-text': 'light-dark(#3E0697, #B3B0FE)',
 
   // Red
-  '--color-red-background': '#E3193B33',
-  '--color-red-border': '#E3193B',
-  '--color-red-icon': '#D31130',
-  '--color-red-text': '#7B0210',
+  '--color-red-background': 'light-dark(#E3193B33, #E3193B33)',
+  '--color-red-border': 'light-dark(#E3193B, #F5394F)',
+  '--color-red-icon': 'light-dark(#D31130, #E3193B)',
+  '--color-red-text': 'light-dark(#7B0210, #FFB2B8)',
 
   // Teal
-  '--color-teal-background': '#0DB7AF33',
-  '--color-teal-border': '#0DB7AF',
-  '--color-teal-icon': '#009688',
-  '--color-teal-text': '#083943',
+  '--color-teal-background': 'light-dark(#0DB7AF33, #0DB7AF33)',
+  '--color-teal-border': 'light-dark(#0DB7AF, #4DB6AC)',
+  '--color-teal-icon': 'light-dark(#009688, #26A69A)',
+  '--color-teal-text': 'light-dark(#083943, #40DCCD)',
 
   // Yellow
-  '--color-yellow-background': '#FFEB3B33',
-  '--color-yellow-border': '#FFEB3B',
-  '--color-yellow-icon': '#FBC02D',
-  '--color-yellow-text': '#F57F17',
+  '--color-yellow-background': 'light-dark(#FFEB3B33, #FFEB3B33)',
+  '--color-yellow-border': 'light-dark(#FFEB3B, #FFF176)',
+  '--color-yellow-icon': 'light-dark(#FBC02D, #FFEE58)',
+  '--color-yellow-text': 'light-dark(#753F07, #FBCE03)',
 } as const;
 
 export const colorVars = stylex.defineVars(colorRaw);
@@ -182,14 +183,15 @@ export const radiusVars = stylex.defineVars(radiusRaw);
 // =============================================================================
 
 export const elevationRaw = {
-  '--elevation-base': '0px 0px 1px rgba(0, 0, 0, 0.1)',
-  '--elevation-thumb': '0 1px 3px rgba(0, 0, 0, 0.2)',
+  '--elevation-base': '0px 0px 1px light-dark(rgba(0, 0, 0, 0.1), #111112)',
+  '--elevation-thumb':
+    '0 1px 3px light-dark(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.4))',
   '--elevation-dialog':
-    '0px 2px 2px rgba(0, 0, 0, 0.1), 0px 8px 24px rgba(0, 0, 0, 0.1)',
+    '0px 2px 2px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0px 8px 24px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3))',
   '--elevation-hover':
-    '0px 1px 2px rgba(0, 0, 0, 0.1), 0px 2px 12px rgba(0, 0, 0, 0.1)',
+    '0px 1px 2px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0px 2px 12px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2))',
   '--elevation-menu':
-    '0px 1px 1px rgba(0, 0, 0, 0.1), 0px 2px 8px rgba(0, 0, 0, 0.1)',
+    '0px 1px 1px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0px 2px 8px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2))',
 } as const;
 
 export const elevationVars = stylex.defineVars(elevationRaw);
