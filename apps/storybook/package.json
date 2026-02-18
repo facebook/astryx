@@ -10,7 +10,7 @@
     "@xds/core": "*",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "@xds/theme": "workspace:*"
+    "@xds/theme": "*"
   },
   "devDependencies": {
     "@storybook/addon-essentials": "^8.4.0",

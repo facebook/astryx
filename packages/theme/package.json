@@ -27,14 +27,15 @@
   },
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",
-    "@xds/core": "workspace:*",
+    "@xds/core": "*",
     "react": ">=18"
   },
   "devDependencies": {
-    "tsup": "*",
-    "esbuild-plugin-babel": "*",
-    "@babel/preset-react": "*",
-    "@babel/preset-typescript": "*",
-    "@stylexjs/babel-plugin": "*"
+    "@babel/core": "^7.28.5",
+    "@babel/preset-react": "^7.28.5",
+    "@babel/preset-typescript": "^7.28.5",
+    "@stylexjs/babel-plugin": "^0.17.4",
+    "esbuild-plugin-babel": "^0.2.3",
+    "tsup": "^8.3.0"
   }
 }

@@ -4,6 +4,7 @@ import path from 'path';
 
 const rootDir = path.resolve(__dirname, '../../..');
 const coreRoot = path.resolve(__dirname, '../../../packages/core/src');
+const themeRoot = path.resolve(__dirname, '../../../packages/theme/src');
 
 const config: StorybookConfig = {
   stories: [
@@ -48,6 +49,7 @@ const config: StorybookConfig = {
           aliases: {
             '@xds/core/*': [path.join(rootDir, 'packages/core/src/*')],
             '@xds/core': [path.join(rootDir, 'packages/core/src')],
+            '@xds/theme/*': [path.join(rootDir, 'packages/theme/src/*')],
           },
           unstable_moduleResolution: {
             type: 'commonJS',
@@ -60,6 +62,7 @@ const config: StorybookConfig = {
         alias: {
           ...config.resolve?.alias,
           '@xds/core': coreRoot,
+          '@xds/theme': themeRoot,
         },
       },
     };
