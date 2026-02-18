@@ -3,9 +3,11 @@
  * @output Exports XDSDropdownMenuItem component for custom item rendering
  * @position Sub-component; used by XDSDropdownMenu and consumers for custom items
  *
- * SYNC: When modified, update:
+ * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/DropdownMenu/README.md
+ * - /packages/core/src/DropdownMenu/XDSDropdownMenu.test.tsx
  * - /packages/core/src/DropdownMenu/index.ts
+ * - /apps/storybook/stories/DropdownMenu.stories.tsx
  */
 
 import type {ReactNode} from 'react';

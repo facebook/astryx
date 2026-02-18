@@ -5,9 +5,10 @@
  * @position Core implementation; consumed by index.ts, tested by XDSRadioList.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/RadioList/XDSRadioList.test.tsx (tests for new/changed behavior)
- * - /packages/core/src/RadioList/index.ts (exports if types change)
- * - /apps/storybook/stories/RadioList.stories.tsx (storybook stories)
+ * - /packages/core/src/RadioList/README.md
+ * - /packages/core/src/RadioList/XDSRadioList.test.tsx
+ * - /packages/core/src/RadioList/index.ts
+ * - /apps/storybook/stories/RadioList.stories.tsx
  */
 
 import {createContext, useId, type ReactNode} from 'react';

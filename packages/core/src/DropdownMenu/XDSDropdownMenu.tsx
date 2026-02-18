@@ -4,9 +4,11 @@
  * @output Exports XDSDropdownMenu component
  * @position Core implementation; consumed by index.ts
  *
- * SYNC: When modified, update:
+ * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/DropdownMenu/README.md
+ * - /packages/core/src/DropdownMenu/XDSDropdownMenu.test.tsx
  * - /packages/core/src/DropdownMenu/index.ts
+ * - /apps/storybook/stories/DropdownMenu.stories.tsx
  */
 
 import React, {
