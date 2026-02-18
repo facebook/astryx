@@ -6,8 +6,6 @@
 import {render, screen} from '@testing-library/react';
 import {describe, it, expect} from 'vitest';
 import {XDSHeading} from './XDSHeading';
-import {XDSTheme} from '../theme/XDSTheme';
-import {defaultTheme} from '../theme/defaultTheme.stylex';
 
 describe('XDSHeading', () => {
   describe('rendering', () => {
@@ -55,21 +53,15 @@ describe('XDSHeading', () => {
 
   describe('variants', () => {
     it('uses default variant by default', () => {
-      render(
-        <XDSTheme theme={defaultTheme}>
-          <XDSHeading level={1}>Default Heading</XDSHeading>
-        </XDSTheme>,
-      );
+      render(<XDSHeading level={1}>Default Heading</XDSHeading>);
       expect(screen.getByText('Default Heading')).toBeInTheDocument();
     });
 
     it('supports editorial variant', () => {
       render(
-        <XDSTheme theme={defaultTheme}>
-          <XDSHeading level={1} variant="editorial">
-            Editorial Heading
-          </XDSHeading>
-        </XDSTheme>,
+        <XDSHeading level={1} variant="editorial">
+          Editorial Heading
+        </XDSHeading>,
       );
       expect(screen.getByText('Editorial Heading')).toBeInTheDocument();
     });
@@ -97,66 +89,54 @@ describe('XDSHeading', () => {
 
     it('accepts color prop', () => {
       render(
-        <XDSTheme theme={defaultTheme}>
-          <XDSHeading level={1} color="secondary">
-            Secondary heading
-          </XDSHeading>
-        </XDSTheme>,
+        <XDSHeading level={1} color="secondary">
+          Secondary heading
+        </XDSHeading>,
       );
       expect(screen.getByText('Secondary heading')).toBeInTheDocument();
     });
 
     it('accepts display prop', () => {
       render(
-        <XDSTheme theme={defaultTheme}>
-          <XDSHeading level={1} display="inline">
-            Inline heading
-          </XDSHeading>
-        </XDSTheme>,
+        <XDSHeading level={1} display="inline">
+          Inline heading
+        </XDSHeading>,
       );
       expect(screen.getByText('Inline heading')).toBeInTheDocument();
     });
 
     it('accepts hasStrikethrough prop', () => {
       render(
-        <XDSTheme theme={defaultTheme}>
-          <XDSHeading level={1} hasStrikethrough>
-            Strikethrough heading
-          </XDSHeading>
-        </XDSTheme>,
+        <XDSHeading level={1} hasStrikethrough>
+          Strikethrough heading
+        </XDSHeading>,
       );
       expect(screen.getByText('Strikethrough heading')).toBeInTheDocument();
     });
 
     it('accepts hasCapsize prop', () => {
       render(
-        <XDSTheme theme={defaultTheme}>
-          <XDSHeading level={1} hasCapsize>
-            Capsize heading
-          </XDSHeading>
-        </XDSTheme>,
+        <XDSHeading level={1} hasCapsize>
+          Capsize heading
+        </XDSHeading>,
       );
       expect(screen.getByText('Capsize heading')).toBeInTheDocument();
     });
 
     it('accepts textWrap prop', () => {
       render(
-        <XDSTheme theme={defaultTheme}>
-          <XDSHeading level={1} textWrap="balance">
-            Balanced heading
-          </XDSHeading>
-        </XDSTheme>,
+        <XDSHeading level={1} textWrap="balance">
+          Balanced heading
+        </XDSHeading>,
       );
       expect(screen.getByText('Balanced heading')).toBeInTheDocument();
     });
 
     it('accepts maxLines prop', () => {
       render(
-        <XDSTheme theme={defaultTheme}>
-          <XDSHeading level={1} maxLines={1}>
-            Very long heading that should be truncated
-          </XDSHeading>
-        </XDSTheme>,
+        <XDSHeading level={1} maxLines={1}>
+          Very long heading that should be truncated
+        </XDSHeading>,
       );
       expect(
         screen.getByText('Very long heading that should be truncated'),
@@ -165,22 +145,18 @@ describe('XDSHeading', () => {
 
     it('accepts wordBreak prop', () => {
       render(
-        <XDSTheme theme={defaultTheme}>
-          <XDSHeading level={1} maxLines={1} wordBreak="break-word">
-            Heading with word break
-          </XDSHeading>
-        </XDSTheme>,
+        <XDSHeading level={1} maxLines={1} wordBreak="break-word">
+          Heading with word break
+        </XDSHeading>,
       );
       expect(screen.getByText('Heading with word break')).toBeInTheDocument();
     });
 
     it('accepts hasTruncateTooltip=false to disable tooltip', () => {
       render(
-        <XDSTheme theme={defaultTheme}>
-          <XDSHeading level={1} maxLines={1} hasTruncateTooltip={false}>
-            No tooltip
-          </XDSHeading>
-        </XDSTheme>,
+        <XDSHeading level={1} maxLines={1} hasTruncateTooltip={false}>
+          No tooltip
+        </XDSHeading>,
       );
       expect(screen.getByText('No tooltip')).toBeInTheDocument();
     });

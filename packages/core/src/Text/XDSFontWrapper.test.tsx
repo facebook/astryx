@@ -7,17 +7,10 @@
 import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {XDSFontWrapper} from './XDSFontWrapper';
-import {XDSTheme} from '../theme/XDSTheme';
-import {defaultTheme} from '../theme/defaultTheme.stylex';
-
-// Helper to wrap with theme
-function renderWithTheme(ui: React.ReactElement) {
-  return render(<XDSTheme theme={defaultTheme}>{ui}</XDSTheme>);
-}
 
 describe('XDSFontWrapper', () => {
   it('renders children', () => {
-    renderWithTheme(
+    render(
       <XDSFontWrapper>
         <h1>Test Heading</h1>
         <p>Test paragraph</p>
@@ -29,7 +22,7 @@ describe('XDSFontWrapper', () => {
   });
 
   it('applies default variant classes', () => {
-    renderWithTheme(
+    render(
       <XDSFontWrapper data-testid="wrapper">
         <p>Content</p>
       </XDSFontWrapper>,
@@ -42,7 +35,7 @@ describe('XDSFontWrapper', () => {
   });
 
   it('applies editorial variant classes', () => {
-    renderWithTheme(
+    render(
       <XDSFontWrapper variant="editorial" data-testid="wrapper">
         <p>Content</p>
       </XDSFontWrapper>,
@@ -55,7 +48,7 @@ describe('XDSFontWrapper', () => {
   });
 
   it('renders all prose elements', () => {
-    renderWithTheme(
+    render(
       <XDSFontWrapper>
         <h1>Heading 1</h1>
         <h2>Heading 2</h2>
