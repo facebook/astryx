@@ -112,7 +112,7 @@
     "./xds.md": "./xds.md"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "NODE_OPTIONS='--max-old-space-size=4096' tsup",
     "dev": "tsup --watch",
     "test": "vitest run --root ../..",
     "test:watch": "vitest --root ../..",
