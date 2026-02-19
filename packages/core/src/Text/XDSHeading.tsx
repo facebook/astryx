@@ -38,11 +38,14 @@ import {
   textWrapStyles,
   capsizeStyles,
   decorationStyles,
+  truncationTooltipStyles,
 } from './text.stylex';
 import {useTruncation} from './useTruncation';
 import type {LayerPlacement} from '../Layer';
 
-const LazyTruncationTooltip = lazy(() => import('./LazyTruncationTooltip'));
+const LazyXDSTooltip = lazy(() =>
+  import('../Layer/XDSTooltip').then(mod => ({default: mod.XDSTooltip})),
+);
 
 /**
  * Heading level (1-6). Determines both visual styling and semantic HTML element.
@@ -298,9 +301,13 @@ export const XDSHeading = forwardRef<HTMLHeadingElement, XDSHeadingProps>(
         </Component>
         {tooltipEnabled && (
           <Suspense fallback={null}>
-            <LazyTruncationTooltip
+            <LazyXDSTooltip
               anchorRef={headingRef}
-              content={truncation.fullText}
+              content={
+                <span {...stylex.props(truncationTooltipStyles.content)}>
+                  {truncation.fullText}
+                </span>
+              }
               placement={tooltipPlacement}
             />
           </Suspense>

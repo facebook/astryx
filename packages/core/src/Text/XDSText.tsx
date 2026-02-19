@@ -42,11 +42,14 @@ import {
   capsizeStyles,
   decorationStyles,
   tabularNumbersStyle,
+  truncationTooltipStyles,
 } from './text.stylex';
 import {useTruncation} from './useTruncation';
 import type {LayerPlacement} from '../Layer';
 
-const LazyTruncationTooltip = lazy(() => import('./LazyTruncationTooltip'));
+const LazyXDSTooltip = lazy(() =>
+  import('../Layer/XDSTooltip').then(mod => ({default: mod.XDSTooltip})),
+);
 
 export type {XDSTextType, XDSTextSize};
 
@@ -283,9 +286,13 @@ export const XDSText = forwardRef<HTMLElement, XDSTextProps>(function XDSText(
       </Component>
       {tooltipEnabled && (
         <Suspense fallback={null}>
-          <LazyTruncationTooltip
+          <LazyXDSTooltip
             anchorRef={textRef}
-            content={truncation.fullText}
+            content={
+              <span {...stylex.props(truncationTooltipStyles.content)}>
+                {truncation.fullText}
+              </span>
+            }
             placement={tooltipPlacement}
           />
         </Suspense>
