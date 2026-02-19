@@ -359,6 +359,89 @@ export function findComponentSource(coreDir, name) {
   return searchDir(srcDir);
 }
 
+/**
+ * Compute the Levenshtein (edit) distance between two strings.
+ * Used for fuzzy-matching component names. Dependency-free.
+ */
+export function levenshteinDistance(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m + 1}, () => Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i-1] === b[j-1]
+        ? dp[i-1][j-1]
+        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+    }
+  }
+  return dp[m][n];
+}
+
+/**
+ * Find the closest component names to a given (possibly misspelled) name.
+ * Returns matches sorted by distance, filtered to maxDistance.
+ */
+export function findClosestComponents(name, components, maxDistance = 3) {
+  const allNames = Object.values(components).flat();
+  const needle = name.toLowerCase();
+
+  const matches = allNames
+    .map(comp => ({
+      name: comp,
+      distance: levenshteinDistance(needle, comp.toLowerCase()),
+    }))
+    .filter(m => m.distance <= maxDistance)
+    .sort((a, b) => a.distance - b.distance);
+
+  return matches;
+}
+
+/**
+ * Extract only the Props section(s) from a README.
+ * Useful for quick reference and LLM context.
+ */
+export function extractProps(content, componentName) {
+  const lines = content.split('\n');
+  const output = [];
+  let inPropsSection = false;
+  let sectionDepth = 0;
+
+  for (const line of lines) {
+    // Detect Props section (## Props or ### XDSFoo Props)
+    if (/^#{2,3}\s+.*Props/.test(line)) {
+      inPropsSection = true;
+      sectionDepth = line.match(/^(#+)/)[1].length;
+      output.push(line);
+      continue;
+    }
+
+    // Exit props section when hitting another section at same or higher level
+    if (inPropsSection && /^#{2,3}\s+/.test(line) && !line.includes('Props')) {
+      const depth = line.match(/^(#+)/)[1].length;
+      if (depth <= sectionDepth) {
+        inPropsSection = false;
+        continue;
+      }
+    }
+
+    if (inPropsSection) {
+      output.push(line);
+    }
+  }
+
+  if (output.length === 0) {
+    return `No props documentation found for ${componentName}.\n`;
+  }
+
+  // Trim trailing blank lines
+  while (output.length > 0 && output[output.length - 1].trim() === '') {
+    output.pop();
+  }
+
+  return output.join('\n') + '\n';
+}
+
 export function registerComponent(program) {
   program
     .command('component [name]')
@@ -366,6 +449,7 @@ export function registerComponent(program) {
     .option('--list', 'List all components grouped by category')
     .option('--category <category>', 'List components in a specific category')
     .option('--compact', 'Token-optimized output for LLMs')
+    .option('--props', 'Print only the props table')
     .option('--source', 'Print component source code')
     .action((name, options) => {
       const coreDir = findCoreDir(process.cwd());
@@ -428,20 +512,44 @@ export function registerComponent(program) {
         return;
       }
 
-      const readmePath = findComponentReadme(coreDir, dirName);
+      let readmePath = findComponentReadme(coreDir, dirName);
+      let resolvedName = dirName;
 
       if (!readmePath) {
-        console.error(`Error: Component "${name}" not found.`);
-        console.error('Run `npx xds component --list` to see available components.');
-        process.exit(1);
+        // Try fuzzy matching
+        const components = discoverComponents(coreDir);
+        const closest = findClosestComponents(dirName, components);
+
+        if (closest.length === 1) {
+          resolvedName = closest[0].name;
+          readmePath = findComponentReadme(coreDir, resolvedName);
+          if (readmePath) {
+            console.log(`Did you mean ${resolvedName}?\n`);
+          }
+        } else if (closest.length > 1) {
+          console.error(`Component "${name}" not found. Did you mean one of these?\n`);
+          for (const match of closest) {
+            console.error(`  ${match.name}`);
+          }
+          console.error('');
+          process.exit(1);
+        }
+
+        if (!readmePath) {
+          console.error(`Error: Component "${name}" not found.`);
+          console.error('Run `npx xds component --list` to see available components.');
+          process.exit(1);
+        }
       }
 
       const content = fs.readFileSync(readmePath, 'utf-8');
 
-      if (options.compact) {
-        console.log(extractCompact(content, dirName));
+      if (options.props) {
+        console.log(extractProps(content, resolvedName));
+      } else if (options.compact) {
+        console.log(extractCompact(content, resolvedName));
       } else {
-        console.log(cleanReadme(content, dirName));
+        console.log(cleanReadme(content, resolvedName));
       }
     });
 }

@@ -6,8 +6,11 @@ import {
   discoverComponents,
   cleanReadme,
   extractCompact,
+  extractProps,
   findComponentReadme,
   findComponentSource,
+  levenshteinDistance,
+  findClosestComponents,
 } from './component.mjs';
 
 let tmpDir;
@@ -239,5 +242,152 @@ describe('findComponentSource', () => {
     const srcDir = path.join(tmpDir, 'src');
     fs.mkdirSync(srcDir, {recursive: true});
     expect(findComponentSource(tmpDir, 'NonExistent')).toBeNull();
+  });
+});
+
+describe('levenshteinDistance', () => {
+  it('returns 0 for identical strings', () => {
+    expect(levenshteinDistance('button', 'button')).toBe(0);
+  });
+
+  it('returns correct distance for single edit', () => {
+    expect(levenshteinDistance('button', 'buton')).toBe(1);
+  });
+
+  it('returns correct distance for multiple edits', () => {
+    expect(levenshteinDistance('button', 'butan')).toBe(2);
+  });
+
+  it('handles empty strings', () => {
+    expect(levenshteinDistance('', 'abc')).toBe(3);
+    expect(levenshteinDistance('abc', '')).toBe(3);
+    expect(levenshteinDistance('', '')).toBe(0);
+  });
+
+  it('handles completely different strings', () => {
+    expect(levenshteinDistance('abc', 'xyz')).toBe(3);
+  });
+});
+
+describe('findClosestComponents', () => {
+  const components = {
+    Action: ['Button', 'CloseButton', 'Link'],
+    Form: ['TextInput', 'CheckboxInput', 'Switch'],
+    Display: ['Avatar', 'Badge', 'Text'],
+  };
+
+  it('finds exact match (distance 0)', () => {
+    const matches = findClosestComponents('Button', components);
+    expect(matches[0]).toEqual({name: 'Button', distance: 0});
+  });
+
+  it('finds close match for misspelling', () => {
+    const matches = findClosestComponents('buton', components);
+    expect(matches.length).toBeGreaterThan(0);
+    expect(matches[0].name).toBe('Button');
+    expect(matches[0].distance).toBe(1);
+  });
+
+  it('is case-insensitive', () => {
+    const matches = findClosestComponents('BUTTON', components);
+    expect(matches[0]).toEqual({name: 'Button', distance: 0});
+  });
+
+  it('returns empty array for no close matches', () => {
+    const matches = findClosestComponents('zzzzzzzzz', components);
+    expect(matches).toEqual([]);
+  });
+
+  it('returns multiple matches when ambiguous', () => {
+    // "Buttn" is close to both "Button" (distance 1) and could be near others
+    const matches = findClosestComponents('Butten', components);
+    // Should match at least Button
+    expect(matches.length).toBeGreaterThanOrEqual(1);
+    expect(matches[0].name).toBe('Button');
+    // With maxDistance=3, "Badge" (distance 5) won't match,
+    // but let's verify multiple matches with a wider net
+    const wideMatches = findClosestComponents('Butten', components, 5);
+    expect(wideMatches.length).toBeGreaterThan(1);
+  });
+
+  it('respects maxDistance parameter', () => {
+    const matches = findClosestComponents('buton', components, 0);
+    expect(matches).toEqual([]);
+  });
+});
+
+describe('extractProps', () => {
+  it('extracts a Props section from README content', () => {
+    const input = [
+      '# Button',
+      '',
+      '## Description',
+      'A button component.',
+      '',
+      '## Props',
+      '',
+      '| Prop | Type | Default |',
+      '|------|------|---------|',
+      '| size | string | "md" |',
+      '| variant | string | "primary" |',
+      '',
+      '## Examples',
+      'Some examples here.',
+    ].join('\n');
+
+    const result = extractProps(input, 'Button');
+    expect(result).toContain('## Props');
+    expect(result).toContain('| size | string | "md" |');
+    expect(result).toContain('| variant | string | "primary" |');
+    expect(result).not.toContain('## Description');
+    expect(result).not.toContain('## Examples');
+  });
+
+  it('extracts multiple Props sections', () => {
+    const input = [
+      '# Layout',
+      '',
+      '## XDSLayout Props',
+      '| Prop | Type |',
+      '|------|------|',
+      '| gap | number |',
+      '',
+      '## XDSLayoutItem Props',
+      '| Prop | Type |',
+      '|------|------|',
+      '| flex | number |',
+      '',
+      '## Examples',
+      'Some examples.',
+    ].join('\n');
+
+    const result = extractProps(input, 'Layout');
+    expect(result).toContain('## XDSLayout Props');
+    expect(result).toContain('| gap | number |');
+    expect(result).toContain('## XDSLayoutItem Props');
+    expect(result).toContain('| flex | number |');
+    expect(result).not.toContain('## Examples');
+  });
+
+  it('returns fallback message when no Props section found', () => {
+    const input = '# Button\n\n## Description\nA button.\n';
+    const result = extractProps(input, 'Button');
+    expect(result).toBe('No props documentation found for Button.\n');
+  });
+
+  it('trims trailing blank lines', () => {
+    const input = [
+      '## Props',
+      '| Prop | Type |',
+      '|------|------|',
+      '| size | string |',
+      '',
+      '',
+      '',
+    ].join('\n');
+
+    const result = extractProps(input, 'Button');
+    expect(result).not.toMatch(/\n\n$/);
+    expect(result).toMatch(/\n$/);
   });
 });
