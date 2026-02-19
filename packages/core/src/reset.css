@@ -1,0 +1,322 @@
+/**
+ * XDS Reset Stylesheet
+ *
+ * An opinionated CSS reset that provides a clean, predictable base for
+ * XDS applications. Built on the same principles as Tailwind Preflight
+ * and modern-normalize, adapted for the XDS design system.
+ *
+ * This reset:
+ * - Normalizes cross-browser inconsistencies
+ * - Sets box-sizing: border-box universally
+ * - Removes default margins, padding, and list styles
+ * - Makes images block-level and responsive
+ * - Resets form elements to inherit font styles
+ * - Uses :where() for zero specificity (easy to override)
+ *
+ * Usage:
+ *
+ * 1. Import directly (global reset):
+ *    import '@xds/core/reset.css';
+ *
+ * 2. Combine with theme and typography:
+ *    import '@xds/core/reset.css';        // @layer reset  — clean slate
+ *    import '@xds/core/typography.css';    // @layer typography — prose styles
+ *    // XDS components handle their own styles
+ *
+ * Layer order: reset → typography → components
+ * The reset has the lowest priority and can be overridden by any other layer.
+ *
+ * Similar to:
+ * - Tailwind CSS Preflight
+ * - Chakra UI's preflight (v3)
+ * - Bootstrap Reboot
+ * - modern-normalize
+ */
+
+@layer reset {
+
+  /* ===========================================================================
+     Box Model
+     =========================================================================== */
+
+  /*
+   * Use border-box globally. Prevents padding/border from affecting
+   * element dimensions — the single most impactful reset.
+   */
+  :where(*, *::before, *::after) {
+    box-sizing: border-box;
+  }
+
+  /*
+   * Reset borders to 0-width solid. This lets you add a border by just
+   * setting border-width — no need to also specify border-style.
+   */
+  :where(*, *::before, *::after) {
+    border-width: 0;
+    border-style: solid;
+    border-color: currentColor;
+  }
+
+  /* ===========================================================================
+     Document
+     =========================================================================== */
+
+  /*
+   * Consistent line-height, prevent text size adjustment on orientation
+   * change in iOS, and set a readable tab size.
+   */
+  :where(html) {
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+    tab-size: 4;
+  }
+
+  /*
+   * Remove default body margin and set font smoothing for sharper text
+   * rendering on macOS/iOS.
+   */
+  :where(body) {
+    margin: 0;
+    line-height: inherit;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ===========================================================================
+     Typography
+     =========================================================================== */
+
+  /*
+   * Reset headings to inherit size and weight. Headings should be styled
+   * intentionally — not rely on browser defaults that vary across browsers.
+   */
+  :where(h1, h2, h3, h4, h5, h6) {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
+  /*
+   * Remove default margins on all block-level text elements.
+   */
+  :where(h1, h2, h3, h4, h5, h6, p, blockquote, figure, pre, dl, dd) {
+    margin: 0;
+  }
+
+  /*
+   * Links inherit color and text-decoration. Style them intentionally
+   * rather than relying on browser-default blue/purple.
+   */
+  :where(a) {
+    color: inherit;
+    text-decoration: inherit;
+  }
+
+  /*
+   * Correct font-weight rendering in Chrome and Safari.
+   */
+  :where(b, strong) {
+    font-weight: bolder;
+  }
+
+  /*
+   * Use the configured monospace font stack and fix the odd em sizing
+   * that browsers apply to code elements.
+   */
+  :where(code, kbd, samp, pre) {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+      'Liberation Mono', 'Courier New', monospace;
+    font-size: 1em;
+  }
+
+  /*
+   * Correct font-size for small elements.
+   */
+  :where(small) {
+    font-size: 80%;
+  }
+
+  /*
+   * Prevent sub and sup from affecting line-height.
+   */
+  :where(sub, sup) {
+    font-size: 75%;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline;
+  }
+
+  :where(sub) {
+    bottom: -0.25em;
+  }
+
+  :where(sup) {
+    top: -0.5em;
+  }
+
+  /* ===========================================================================
+     Lists
+     =========================================================================== */
+
+  /*
+   * Remove default list styles, margin, and padding. Lists used for
+   * navigation or layout shouldn't carry prose styling by default.
+   * Use typography.css or explicit styles for prose lists.
+   */
+  :where(ol, ul, menu) {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* ===========================================================================
+     Media
+     =========================================================================== */
+
+  /*
+   * Make replaced elements block-level. Eliminates the "mystery gap"
+   * below inline images and aligns with how these elements are
+   * actually used in modern layouts.
+   */
+  :where(img, svg, video, canvas, audio, iframe, embed, object) {
+    display: block;
+    vertical-align: middle;
+  }
+
+  /*
+   * Constrain images and video to their container. Responsive by default.
+   */
+  :where(img, video) {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* ===========================================================================
+     Forms
+     =========================================================================== */
+
+  /*
+   * Form elements should inherit font styles from their parent rather
+   * than using the browser's default font stack.
+   */
+  :where(button, input, optgroup, select, textarea) {
+    font: inherit;
+    color: inherit;
+    margin: 0;
+    padding: 0;
+  }
+
+  /*
+   * Remove default button styling. Buttons should be styled intentionally.
+   */
+  :where(button, [type='button'], [type='reset'], [type='submit']) {
+    -webkit-appearance: button;
+    appearance: button;
+    background-color: transparent;
+    background-image: none;
+  }
+
+  /*
+   * Pointer cursor for interactive elements.
+   */
+  :where(button, [role='button']) {
+    cursor: pointer;
+  }
+
+  /*
+   * Default cursor for disabled elements.
+   */
+  :where(:disabled) {
+    cursor: default;
+  }
+
+  /*
+   * Only allow vertical resizing of textareas to prevent layout breakage.
+   */
+  :where(textarea) {
+    resize: vertical;
+  }
+
+  /*
+   * Normalize placeholder opacity (Firefox renders at reduced opacity)
+   * and set a sensible default color.
+   */
+  :where(input::placeholder, textarea::placeholder) {
+    opacity: 1;
+    color: #9ca3af;
+  }
+
+  /*
+   * Remove the inner padding and cancel buttons in search inputs
+   * for Chrome and Safari.
+   */
+  :where([type='search']::-webkit-search-decoration,
+         [type='search']::-webkit-search-cancel-button) {
+    -webkit-appearance: none;
+  }
+
+  /*
+   * Remove default fieldset styles.
+   */
+  :where(fieldset) {
+    margin: 0;
+    padding: 0;
+  }
+
+  :where(legend) {
+    padding: 0;
+  }
+
+  /* ===========================================================================
+     Tables
+     =========================================================================== */
+
+  /*
+   * Collapse table borders and fix text-indent/border-color inheritance.
+   */
+  :where(table) {
+    text-indent: 0;
+    border-color: inherit;
+    border-collapse: collapse;
+  }
+
+  /* ===========================================================================
+     Misc
+     =========================================================================== */
+
+  /*
+   * Simplify hr to a single border-top line.
+   */
+  :where(hr) {
+    height: 0;
+    color: inherit;
+    border-top-width: 1px;
+  }
+
+  /*
+   * Correct display for summary elements.
+   */
+  :where(summary) {
+    display: list-item;
+  }
+
+  /*
+   * Reset dialog padding.
+   */
+  :where(dialog) {
+    padding: 0;
+  }
+
+  /*
+   * Ensure hidden elements are actually hidden.
+   */
+  :where([hidden]) {
+    display: none;
+  }
+
+  /*
+   * Remove tap highlight on iOS.
+   */
+  :where(html) {
+    -webkit-tap-highlight-color: transparent;
+  }
+}

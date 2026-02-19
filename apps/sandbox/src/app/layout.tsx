@@ -1,4 +1,5 @@
 import type {Metadata} from 'next';
+import '@xds/core/reset.css';
 import {XDSTheme} from '@xds/core/theme';
 import {defaultTheme} from '@xds/theme/default';
 

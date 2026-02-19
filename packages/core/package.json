@@ -18,6 +18,7 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     },
+    "./reset.css": "./src/reset.css",
     "./typography.css": "./src/typography.css",
     "./Avatar": {
       "types": "./dist/Avatar/index.d.ts",
