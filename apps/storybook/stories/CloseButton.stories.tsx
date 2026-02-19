@@ -13,7 +13,7 @@ const meta: Meta<typeof XDSCloseButton> = {
       options: ['sm', 'md', 'lg'],
       description: 'Size of the close button',
     },
-    disabled: {
+    isDisabled: {
       control: 'boolean',
       description: 'Whether the button is disabled',
     },
@@ -59,7 +59,7 @@ export const Sizes: Story = {
  */
 export const Disabled: Story = {
   args: {
-    disabled: true,
+    isDisabled: true,
   },
 };
 

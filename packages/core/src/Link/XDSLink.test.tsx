@@ -43,23 +43,23 @@ describe('XDSLink', () => {
     );
   });
 
-  it('renders with different variants', () => {
+  it('renders with different color values', () => {
     const {rerender} = render(
-      <XDSLink label="Default" href="/test" variant="default">
-        Default
+      <XDSLink label="Active" href="/test" color="active">
+        Active
       </XDSLink>,
     );
     expect(screen.getByRole('link')).toBeInTheDocument();
 
     rerender(
-      <XDSLink label="Subtle" href="/test" variant="subtle">
-        Subtle
+      <XDSLink label="Secondary" href="/test" color="secondary">
+        Secondary
       </XDSLink>,
     );
     expect(screen.getByRole('link')).toBeInTheDocument();
 
     rerender(
-      <XDSLink label="Inherit" href="/test" variant="inherit">
+      <XDSLink label="Inherit" href="/test" color="inherit">
         Inherit
       </XDSLink>,
     );

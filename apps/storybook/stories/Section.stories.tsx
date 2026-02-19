@@ -1,9 +1,19 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSSection, XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSLayout, XDSLayoutHeader, XDSLayoutContent, XDSLayoutFooter, XDSLayoutPanel} from '@xds/core/Layout';
+import {
+  XDSLayout,
+  XDSLayoutHeader,
+  XDSLayoutContent,
+  XDSLayoutFooter,
+  XDSLayoutPanel,
+} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
-import {colorVars, spacingVars, typographyVars} from '@xds/core/theme/tokens.stylex';
+import {
+  colorVars,
+  spacingVars,
+  typographyVars,
+} from '@xds/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   pageWrapper: {
@@ -37,7 +47,7 @@ const meta: Meta<typeof XDSSection> = {
   component: XDSSection,
   tags: ['autodocs'],
   decorators: [
-    (Story) => (
+    Story => (
       <div {...stylex.props(styles.pageWrapper)}>
         <Story />
       </div>
@@ -72,11 +82,11 @@ export const Default: Story = {
     variant: 'section',
     width: 300,
   },
-  render: (args) => (
+  render: args => (
     <XDSSection {...args}>
       <p {...stylex.props(styles.text)}>
-        A section with default padding. Sections are used to define
-        distinct areas within a page.
+        A section with default padding. Sections are used to define distinct
+        areas within a page.
       </p>
     </XDSSection>
   ),
@@ -113,8 +123,8 @@ export const WithSimpleContent: Story = {
       <XDSVStack gap="space2">
         <h3 {...stylex.props(styles.text)}>Section Title</h3>
         <p {...stylex.props(styles.text, styles.textSecondary)}>
-          This section contains simple content without XDSLayout.
-          The container padding is applied automatically.
+          This section contains simple content without XDSLayout. The container
+          padding is applied automatically.
         </p>
       </XDSVStack>
     </XDSSection>
@@ -141,7 +151,9 @@ export const WithInnerLayout: Story = {
         footer={
           <XDSLayoutFooter hasDivider>
             <XDSHStack gap="space2" hAlign="end">
-              <XDSButton variant="primary">Action</XDSButton>
+              <XDSButton label="Action" variant="primary">
+                Action
+              </XDSButton>
             </XDSHStack>
           </XDSLayoutFooter>
         }
@@ -174,8 +186,8 @@ export const PageLayout: Story = {
             <XDSVStack gap="space2">
               <h3 {...stylex.props(styles.text)}>Main Content</h3>
               <p {...stylex.props(styles.text, styles.textSecondary)}>
-                This demonstrates how XDSLayout can be used to create
-                page layouts with header, sidebar, and content areas.
+                This demonstrates how XDSLayout can be used to create page
+                layouts with header, sidebar, and content areas.
               </p>
             </XDSVStack>
           </XDSLayoutContent>

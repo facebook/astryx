@@ -9,6 +9,13 @@ import {
 } from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
+import * as stylex from '@stylexjs/stylex';
+
+const styles = stylex.create({
+  acceptedMessage: {
+    marginTop: 12,
+  },
+});
 
 const meta: Meta<typeof XDSDialog> = {
   title: 'Core/XDSDialog',
@@ -277,7 +284,7 @@ function RequiredModalExample() {
         onClick={() => setIsShown(true)}
       />
       {accepted && (
-        <XDSText type="body" color="primary" xstyle={{marginTop: 12}}>
+        <XDSText type="body" color="primary" xstyle={styles.acceptedMessage}>
           ✓ Terms accepted
         </XDSText>
       )}

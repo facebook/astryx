@@ -35,38 +35,38 @@ export default function LoginPage() {
   };
 
   return (
-    <XDSLayout>
-      <XDSLayoutContent xstyle={styles.container}>
-        <form onSubmit={handleSubmit}>
-          <div {...stylex.props(styles.card)}>
-            <XDSVStack gap="space5">
-              <XDSText type="large" weight="semibold">
-                Sign in
-              </XDSText>
+    <XDSLayout
+      content={
+        <XDSLayoutContent>
+          <div {...stylex.props(styles.container)}>
+            <form onSubmit={handleSubmit}>
+              <div {...stylex.props(styles.card)}>
+                <XDSVStack gap="space5">
+                  <XDSText type="large" weight="semibold">
+                    Sign in
+                  </XDSText>
 
-              <XDSTextInput
-                label="Email"
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="you@example.com"
-              />
+                  <XDSTextInput
+                    label="Email"
+                    value={email}
+                    onChange={setEmail}
+                    placeholder="you@example.com"
+                  />
 
-              <XDSTextInput
-                label="Password"
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Enter your password"
-              />
+                  <XDSTextInput
+                    label="Password"
+                    value={password}
+                    onChange={setPassword}
+                    placeholder="Enter your password"
+                  />
 
-              <XDSButton variant="primary" type="submit">
-                Sign in
-              </XDSButton>
-            </XDSVStack>
+                  <XDSButton label="Sign in" variant="primary" type="submit" />
+                </XDSVStack>
+              </div>
+            </form>
           </div>
-        </form>
-      </XDSLayoutContent>
-    </XDSLayout>
+        </XDSLayoutContent>
+      }
+    />
   );
 }

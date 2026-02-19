@@ -79,7 +79,10 @@ program
     // Escape hatches
     console.log('\n  Critical issues:');
     const criticalHatches = result.results.flatMap(r =>
-      r.evaluation.escapeHatches.filter(h => h.severity === 'critical'),
+      r.evaluation.escapeHatches.filter(
+        (h): h is import('./types.js').EscapeHatch =>
+          typeof h !== 'string' && h.severity === 'critical',
+      ),
     );
     const criticalCounts = countBy(criticalHatches, h => h.type);
     for (const [type, count] of Object.entries(criticalCounts)) {
@@ -88,7 +91,10 @@ program
 
     console.log('\n  Acceptable escape hatches:');
     const acceptableHatches = result.results.flatMap(r =>
-      r.evaluation.escapeHatches.filter(h => h.severity === 'acceptable'),
+      r.evaluation.escapeHatches.filter(
+        (h): h is import('./types.js').EscapeHatch =>
+          typeof h !== 'string' && h.severity === 'acceptable',
+      ),
     );
     const acceptableCounts = countBy(acceptableHatches, h => h.type);
     for (const [type, count] of Object.entries(acceptableCounts)) {

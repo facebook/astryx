@@ -129,6 +129,7 @@ export const AllElements: Story = {
  * Comparison of default vs editorial heading scales
  */
 export const VariantComparison: Story = {
+  args: {children: ''},
   render: () => (
     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32}}>
       <div>
@@ -276,5 +277,6 @@ function Article() {
 }
 
 export const StyleXApproach: Story = {
+  args: {children: ''},
   render: () => <StyleXApproachDemo />,
 };

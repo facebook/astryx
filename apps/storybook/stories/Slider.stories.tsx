@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSSlider} from '@xds/core/Slider';
@@ -51,7 +52,7 @@ type Story = StoryObj<typeof XDSSlider>;
 export const Default: Story = {
   render: args => {
     const [value, setValue] = useState(50);
-    return <XDSSlider {...args} value={value} onChange={setValue} />;
+    return <XDSSlider {...(args as any)} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Volume',
@@ -61,7 +62,7 @@ export const Default: Story = {
 export const Range: Story = {
   render: args => {
     const [value, setValue] = useState<[number, number]>([20, 80]);
-    return <XDSSlider {...args} value={value} onChange={setValue} />;
+    return <XDSSlider {...(args as any)} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Price range',
@@ -71,7 +72,7 @@ export const Range: Story = {
 export const WithMarks: Story = {
   render: args => {
     const [value, setValue] = useState(50);
-    return <XDSSlider {...args} value={value} onChange={setValue} />;
+    return <XDSSlider {...(args as any)} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Volume',
@@ -90,7 +91,7 @@ export const CustomStep: Story = {
     const [value, setValue] = useState(50);
     return (
       <XDSSlider
-        {...args}
+        {...(args as any)}
         value={value}
         onChange={setValue}
         valueDisplay="text"
@@ -110,7 +111,7 @@ export const WithFormatValue: Story = {
     const [value, setValue] = useState(72);
     return (
       <XDSSlider
-        {...args}
+        {...(args as any)}
         value={value}
         onChange={setValue}
         valueDisplay="text"
@@ -128,7 +129,7 @@ export const WithFormatValue: Story = {
 
 export const Disabled: Story = {
   render: args => {
-    return <XDSSlider {...args} />;
+    return <XDSSlider {...(args as any)} />;
   },
   args: {
     label: 'Volume',
@@ -142,7 +143,7 @@ export const VerticalOrientation: Story = {
     const [value, setValue] = useState(50);
     return (
       <div style={{height: 200}}>
-        <XDSSlider {...args} value={value} onChange={setValue} />
+        <XDSSlider {...(args as any)} value={value} onChange={setValue} />
       </div>
     );
   },

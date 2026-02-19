@@ -1,7 +1,7 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { XDSHoverCard, useXDSHoverCard } from '@xds/core/Layer';
-import { XDSButton } from '@xds/core/Button';
-import { XDSVStack, XDSHStack } from '@xds/core/Layout';
+import type {Meta, StoryObj} from '@storybook/react';
+import {XDSHoverCard, useXDSHoverCard} from '@xds/core/Layer';
+import {XDSButton} from '@xds/core/Button';
+import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 
 const meta: Meta<typeof XDSHoverCard> = {
   title: 'Core/XDSHoverCard',
@@ -39,11 +39,11 @@ type Story = StoryObj<typeof XDSHoverCard>;
 // Sample content for hover cards
 function ProfileCard() {
   return (
-    <div style={{ width: 200 }}>
+    <div style={{width: 200}}>
       <XDSVStack gap="space2">
-        <div style={{ fontWeight: 600 }}>Jane Doe</div>
-        <div style={{ fontSize: 14, opacity: 0.7 }}>Software Engineer</div>
-        <div style={{ fontSize: 13 }}>
+        <div style={{fontWeight: 600}}>Jane Doe</div>
+        <div style={{fontSize: 14, opacity: 0.7}}>Software Engineer</div>
+        <div style={{fontSize: 13}}>
           Building great products with great people.
         </div>
       </XDSVStack>
@@ -55,7 +55,7 @@ export const Default: Story = {
   args: {
     placement: 'above',
     content: <ProfileCard />,
-    children: <XDSButton>Hover me</XDSButton>,
+    children: <XDSButton label="Hover me">Hover me</XDSButton>,
   },
 };
 
@@ -63,7 +63,7 @@ export const Below: Story = {
   args: {
     placement: 'below',
     content: <ProfileCard />,
-    children: <XDSButton>Hover me</XDSButton>,
+    children: <XDSButton label="Hover me">Hover me</XDSButton>,
   },
 };
 
@@ -71,7 +71,7 @@ export const Start: Story = {
   args: {
     placement: 'start',
     content: <ProfileCard />,
-    children: <XDSButton>Hover me</XDSButton>,
+    children: <XDSButton label="Hover me">Hover me</XDSButton>,
   },
 };
 
@@ -79,7 +79,7 @@ export const End: Story = {
   args: {
     placement: 'end',
     content: <ProfileCard />,
-    children: <XDSButton>Hover me</XDSButton>,
+    children: <XDSButton label="Hover me">Hover me</XDSButton>,
   },
 };
 
@@ -89,7 +89,9 @@ export const CustomDelay: Story = {
     delay: 500,
     hideDelay: 300,
     content: <ProfileCard />,
-    children: <XDSButton>Slow hover (500ms)</XDSButton>,
+    children: (
+      <XDSButton label="Slow hover (500ms)">Slow hover (500ms)</XDSButton>
+    ),
   },
 };
 
@@ -98,24 +100,24 @@ export const Disabled: Story = {
     placement: 'above',
     isEnabled: false,
     content: <ProfileCard />,
-    children: <XDSButton>Hover disabled</XDSButton>,
+    children: <XDSButton label="Hover disabled">Hover disabled</XDSButton>,
   },
 };
 
 export const AllPlacements: Story = {
   render: () => (
-    <div style={{ padding: 100, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+    <div style={{padding: 100, display: 'flex', gap: 24, flexWrap: 'wrap'}}>
       <XDSHoverCard content={<ProfileCard />} placement="above">
-        <XDSButton>Above</XDSButton>
+        <XDSButton label="Above">Above</XDSButton>
       </XDSHoverCard>
       <XDSHoverCard content={<ProfileCard />} placement="below">
-        <XDSButton>Below</XDSButton>
+        <XDSButton label="Below">Below</XDSButton>
       </XDSHoverCard>
       <XDSHoverCard content={<ProfileCard />} placement="start">
-        <XDSButton>Start</XDSButton>
+        <XDSButton label="Start">Start</XDSButton>
       </XDSHoverCard>
       <XDSHoverCard content={<ProfileCard />} placement="end">
-        <XDSButton>End</XDSButton>
+        <XDSButton label="End">End</XDSButton>
       </XDSHoverCard>
     </div>
   ),
@@ -129,8 +131,11 @@ export const WithHook: Story = {
     });
 
     return (
-      <div style={{ padding: 100 }}>
-        <XDSButton ref={hoverCard.ref} aria-describedby={hoverCard.describedBy}>
+      <div style={{padding: 100}}>
+        <XDSButton
+          label="Using hook directly"
+          ref={hoverCard.ref}
+          aria-describedby={hoverCard.describedBy}>
           Using hook directly
         </XDSButton>
         {hoverCard.renderHoverCard(<ProfileCard />)}
@@ -141,20 +146,23 @@ export const WithHook: Story = {
 
 export const InteractiveContent: Story = {
   render: () => (
-    <div style={{ padding: 100 }}>
+    <div style={{padding: 100}}>
       <XDSHoverCard
         placement="below"
         content={
           <XDSVStack gap="space2">
             <div>Interactive hover card content</div>
             <XDSHStack gap="space2">
-              <XDSButton variant="primary">Follow</XDSButton>
-              <XDSButton>Message</XDSButton>
+              <XDSButton label="Follow" variant="primary">
+                Follow
+              </XDSButton>
+              <XDSButton label="Message">Message</XDSButton>
             </XDSHStack>
           </XDSVStack>
-        }
-      >
-        <XDSButton>Hover for interactive content</XDSButton>
+        }>
+        <XDSButton label="Hover for interactive content">
+          Hover for interactive content
+        </XDSButton>
       </XDSHoverCard>
     </div>
   ),
@@ -162,7 +170,7 @@ export const InteractiveContent: Story = {
 
 export const TextNode: Story = {
   render: () => (
-    <div style={{ padding: 100 }}>
+    <div style={{padding: 100}}>
       <p>
         This feature was created by{' '}
         <XDSHoverCard content={<ProfileCard />} placement="above">
@@ -176,7 +184,7 @@ export const TextNode: Story = {
 
 export const TextNodeMultiple: Story = {
   render: () => (
-    <div style={{ padding: 100 }}>
+    <div style={{padding: 100}}>
       <p>
         The project is maintained by{' '}
         <XDSHoverCard content={<ProfileCard />} placement="above">
@@ -185,15 +193,14 @@ export const TextNodeMultiple: Story = {
         ,{' '}
         <XDSHoverCard
           content={
-            <div style={{ width: 200 }}>
+            <div style={{width: 200}}>
               <XDSVStack gap="space2">
-                <div style={{ fontWeight: 600 }}>John Smith</div>
-                <div style={{ fontSize: 14, opacity: 0.7 }}>Product Manager</div>
+                <div style={{fontWeight: 600}}>John Smith</div>
+                <div style={{fontSize: 14, opacity: 0.7}}>Product Manager</div>
               </XDSVStack>
             </div>
           }
-          placement="above"
-        >
+          placement="above">
           John Smith
         </XDSHoverCard>
         , and others.

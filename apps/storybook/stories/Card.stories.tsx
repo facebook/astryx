@@ -1,9 +1,18 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSCard, XDSSection, XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSLayout, XDSLayoutHeader, XDSLayoutContent, XDSLayoutFooter} from '@xds/core/Layout';
+import {
+  XDSLayout,
+  XDSLayoutHeader,
+  XDSLayoutContent,
+  XDSLayoutFooter,
+} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
-import {colorVars, spacingVars, typographyVars} from '@xds/core/theme/tokens.stylex';
+import {
+  colorVars,
+  spacingVars,
+  typographyVars,
+} from '@xds/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   pageWrapper: {
@@ -37,7 +46,7 @@ const meta: Meta<typeof XDSCard> = {
   component: XDSCard,
   tags: ['autodocs'],
   decorators: [
-    (Story) => (
+    Story => (
       <div {...stylex.props(styles.pageWrapper)}>
         <Story />
       </div>
@@ -74,11 +83,11 @@ export const Default: Story = {
   args: {
     width: 300,
   },
-  render: (args) => (
+  render: args => (
     <XDSCard {...args}>
       <p {...stylex.props(styles.text)}>
-        Simple content inside a card. The card provides default padding via
-        the --container-padding CSS variable.
+        Simple content inside a card. The card provides default padding via the
+        --container-padding CSS variable.
       </p>
     </XDSCard>
   ),
@@ -90,8 +99,8 @@ export const WithSimpleContent: Story = {
       <XDSVStack gap="space2">
         <h3 {...stylex.props(styles.text)}>Card Title</h3>
         <p {...stylex.props(styles.text, styles.textSecondary)}>
-          This card contains simple content without XDSLayout.
-          The container padding is applied automatically.
+          This card contains simple content without XDSLayout. The container
+          padding is applied automatically.
         </p>
       </XDSVStack>
     </XDSCard>
@@ -118,8 +127,12 @@ export const WithInnerLayout: Story = {
         footer={
           <XDSLayoutFooter hasDivider>
             <XDSHStack gap="space2" hAlign="end">
-              <XDSButton variant="secondary">Cancel</XDSButton>
-              <XDSButton variant="primary">Save</XDSButton>
+              <XDSButton label="Cancel" variant="secondary">
+                Cancel
+              </XDSButton>
+              <XDSButton label="Save" variant="primary">
+                Save
+              </XDSButton>
             </XDSHStack>
           </XDSLayoutFooter>
         }
@@ -201,8 +214,8 @@ export const NestedSections: Story = {
         <XDSVStack gap="space2">
           <h3 {...stylex.props(styles.text)}>First Section</h3>
           <p {...stylex.props(styles.text, styles.textSecondary)}>
-            This section escapes the card padding on top and sides because
-            it's the first child.
+            This section escapes the card padding on top and sides because it's
+            the first child.
           </p>
         </XDSVStack>
       </XDSSection>
@@ -210,8 +223,8 @@ export const NestedSections: Story = {
         <XDSVStack gap="space2">
           <h3 {...stylex.props(styles.text)}>Middle Section</h3>
           <p {...stylex.props(styles.text, styles.textSecondary)}>
-            Middle sections only escape horizontal padding, maintaining
-            visual separation from adjacent sections.
+            Middle sections only escape horizontal padding, maintaining visual
+            separation from adjacent sections.
           </p>
         </XDSVStack>
       </XDSSection>
@@ -219,8 +232,8 @@ export const NestedSections: Story = {
         <XDSVStack gap="space2">
           <h3 {...stylex.props(styles.text)}>Last Section</h3>
           <p {...stylex.props(styles.text, styles.textSecondary)}>
-            This section escapes the card padding on bottom and sides
-            because it's the last child.
+            This section escapes the card padding on bottom and sides because
+            it's the last child.
           </p>
         </XDSVStack>
       </XDSSection>
@@ -233,10 +246,12 @@ export const SingleSection: Story = {
     <XDSCard width={350}>
       <XDSSection variant="wash">
         <XDSVStack gap="space2">
-          <h3 {...stylex.props(styles.text)}>Only Section (Full Bleed All Sides)</h3>
+          <h3 {...stylex.props(styles.text)}>
+            Only Section (Full Bleed All Sides)
+          </h3>
           <p {...stylex.props(styles.text, styles.textSecondary)}>
-            When a section is both first and last child, it gets full bleed
-            on all four sides, completely filling the card.
+            When a section is both first and last child, it gets full bleed on
+            all four sides, completely filling the card.
           </p>
         </XDSVStack>
       </XDSSection>

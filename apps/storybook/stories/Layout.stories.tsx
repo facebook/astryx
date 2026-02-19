@@ -407,8 +407,12 @@ export const Playground = {
                 hasDivider={args.footerHasDivider}
                 isFullBleed={args.footerIsFullBleed}>
                 <XDSHStack gap="space2" hAlign="end">
-                  <XDSButton variant="secondary">Cancel</XDSButton>
-                  <XDSButton variant="primary">Save</XDSButton>
+                  <XDSButton label="Cancel" variant="secondary">
+                    Cancel
+                  </XDSButton>
+                  <XDSButton label="Save" variant="primary">
+                    Save
+                  </XDSButton>
                 </XDSHStack>
               </XDSLayoutFooter>
             ) : undefined
@@ -450,8 +454,12 @@ export const BasicCard: Story = {
           footer={
             <XDSLayoutFooter hasDivider>
               <XDSHStack gap="space2" hAlign="end">
-                <XDSButton variant="secondary">Cancel</XDSButton>
-                <XDSButton variant="primary">Save</XDSButton>
+                <XDSButton label="Cancel" variant="secondary">
+                  Cancel
+                </XDSButton>
+                <XDSButton label="Save" variant="primary">
+                  Save
+                </XDSButton>
               </XDSHStack>
             </XDSLayoutFooter>
           }
@@ -494,8 +502,12 @@ export const WithSidebar: Story = {
           footer={
             <XDSLayoutFooter hasDivider>
               <XDSHStack gap="space2" hAlign="end">
-                <XDSButton variant="secondary">Reset</XDSButton>
-                <XDSButton variant="primary">Save Changes</XDSButton>
+                <XDSButton label="Reset" variant="secondary">
+                  Reset
+                </XDSButton>
+                <XDSButton label="Save Changes" variant="primary">
+                  Save Changes
+                </XDSButton>
               </XDSHStack>
             </XDSLayoutFooter>
           }
@@ -568,7 +580,9 @@ export const NoDividers: Story = {
           footer={
             <XDSLayoutFooter>
               <XDSHStack gap="space2" hAlign="end">
-                <XDSButton variant="primary">Continue</XDSButton>
+                <XDSButton label="Continue" variant="primary">
+                  Continue
+                </XDSButton>
               </XDSHStack>
             </XDSLayoutFooter>
           }
@@ -601,7 +615,9 @@ export const FullBleedContent: Story = {
           footer={
             <XDSLayoutFooter hasDivider>
               <XDSHStack gap="space2" hAlign="end">
-                <XDSButton variant="secondary">Close</XDSButton>
+                <XDSButton label="Close" variant="secondary">
+                  Close
+                </XDSButton>
               </XDSHStack>
             </XDSLayoutFooter>
           }
@@ -719,8 +735,12 @@ export const ThemedLayout: Story = {
               footer={
                 <XDSLayoutFooter hasDivider>
                   <XDSHStack gap="space2" hAlign="end">
-                    <XDSButton variant="secondary">Cancel</XDSButton>
-                    <XDSButton variant="primary">Save</XDSButton>
+                    <XDSButton label="Cancel" variant="secondary">
+                      Cancel
+                    </XDSButton>
+                    <XDSButton label="Save" variant="primary">
+                      Save
+                    </XDSButton>
                   </XDSHStack>
                 </XDSLayoutFooter>
               }
@@ -752,8 +772,12 @@ export const ThemedLayout: Story = {
               footer={
                 <XDSLayoutFooter hasDivider>
                   <XDSHStack gap="space2" hAlign="end">
-                    <XDSButton variant="secondary">Cancel</XDSButton>
-                    <XDSButton variant="primary">Save</XDSButton>
+                    <XDSButton label="Cancel" variant="secondary">
+                      Cancel
+                    </XDSButton>
+                    <XDSButton label="Save" variant="primary">
+                      Save
+                    </XDSButton>
                   </XDSHStack>
                 </XDSLayoutFooter>
               }

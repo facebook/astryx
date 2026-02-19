@@ -61,7 +61,7 @@ const stripedHoverRowStyles = stylex.create({
   },
 });
 
-const lastBodyRowStyles = stylex.create({
+const _lastBodyRowStyles = stylex.create({
   row: {
     borderBottomStyle: {
       default: null,

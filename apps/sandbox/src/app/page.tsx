@@ -16,14 +16,14 @@ const styles = stylex.create({
 export default function Home() {
   return (
     <main {...stylex.props(styles.main)}>
-      <XDSVStack gap="space4" align="center">
+      <XDSVStack gap="space4" hAlign="center">
         <XDSText type="large" weight="bold">
           XDS Sandbox
         </XDSText>
-        <XDSText color="secondary">
+        <XDSText type="body" color="secondary">
           A testing ground for XDS components.
         </XDSText>
-        <XDSButton variant="primary">Get Started</XDSButton>
+        <XDSButton label="Get Started" variant="primary" />
       </XDSVStack>
     </main>
   );

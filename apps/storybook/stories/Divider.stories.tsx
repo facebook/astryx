@@ -11,6 +11,9 @@ const styles = stylex.create({
     flexDirection: 'column',
     gap: spacingVars['--spacing-6'],
   },
+  fullHeight: {
+    height: '100%',
+  },
 });
 
 const meta: Meta<typeof XDSDivider> = {
@@ -131,7 +134,7 @@ export const Vertical: Story = {
   render: args => (
     <XDSSection variant="wash">
       <XDSCard height={200}>
-        <XDSHStack gap="space4" xstyle={{height: '100%'}}>
+        <XDSHStack gap="space4" xstyle={styles.fullHeight}>
           <XDSText type="body">Left content</XDSText>
           <XDSDivider {...args} />
           <XDSText type="body">Right content</XDSText>
@@ -149,7 +152,7 @@ export const VerticalWithLabel: Story = {
   render: args => (
     <XDSSection variant="wash">
       <XDSCard height={200}>
-        <XDSHStack gap="space4" xstyle={{height: '100%'}}>
+        <XDSHStack gap="space4" xstyle={styles.fullHeight}>
           <XDSText type="body">Option A</XDSText>
           <XDSDivider {...args} />
           <XDSText type="body">Option B</XDSText>

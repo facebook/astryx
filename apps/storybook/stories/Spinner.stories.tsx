@@ -59,9 +59,11 @@ export const Shades: Story = {
 
 export const InContext: Story = {
   render: () => (
-    <XDSVStack gap="space2" align="center">
+    <XDSVStack gap="space2" hAlign="center">
       <XDSSpinner size="lg" />
-      <XDSText color="secondary">Loading...</XDSText>
+      <XDSText type="body" color="secondary">
+        Loading...
+      </XDSText>
     </XDSVStack>
   ),
 };

@@ -7,6 +7,10 @@
       "@xds/core/*": [
         "../../packages/core/src/*/index.ts",
         "../../packages/core/src/*"
+      ],
+      "@xds/theme/*": [
+        "../../packages/theme/src/*/index.ts",
+        "../../packages/theme/src/*"
       ]
     }
   },
