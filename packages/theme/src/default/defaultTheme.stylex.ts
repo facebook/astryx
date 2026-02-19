@@ -24,7 +24,7 @@ import {
   textSizeVars,
   lineHeightVars,
   fontWeightVars,
-} from '../../../core/src/theme/tokens.stylex';
+} from '@xds/core/theme/tokens.stylex';
 import type {
   ColorVarName,
   SpacingVarName,
@@ -46,7 +46,7 @@ import type {
   BaseTextSizeRaw,
   BaseLineHeightRaw,
   BaseFontWeightRaw,
-} from '../../../core/src/theme/tokens.stylex';
+} from '@xds/core/theme/tokens.stylex';
 
 // =============================================================================
 // Raw Theme Values

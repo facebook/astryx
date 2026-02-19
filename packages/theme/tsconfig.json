@@ -1,7 +1,11 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "paths": {
+      "@xds/core/*": ["../core/src/*"],
+      "@xds/core": ["../core/src"]
+    }
   },
   "include": ["src"]
 }

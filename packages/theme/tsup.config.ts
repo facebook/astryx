@@ -25,6 +25,9 @@ export default defineConfig({
               runtimeInjection: false,
               genConditionalClasses: true,
               treeshakeCompensation: true,
+              aliases: {
+                '@xds/core/*': [path.join(__dirname, '..', 'core', 'src', '*')],
+              },
               unstable_moduleResolution: {
                 type: 'commonJS',
                 rootDir: path.resolve(__dirname, '../..'),

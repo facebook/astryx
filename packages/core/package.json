@@ -104,6 +104,11 @@
       "import": "./dist/theme/index.mjs",
       "require": "./dist/theme/index.js"
     },
+    "./theme/tokens.stylex": {
+      "types": "./dist/theme/tokens.stylex.d.ts",
+      "import": "./dist/theme/tokens.stylex.mjs",
+      "require": "./dist/theme/tokens.stylex.js"
+    },
     "./utils": {
       "types": "./dist/utils/index.d.ts",
       "import": "./dist/utils/index.mjs",
