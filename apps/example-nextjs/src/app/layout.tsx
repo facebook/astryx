@@ -1,4 +1,6 @@
 import type {Metadata} from 'next';
+import '@xds/core/reset.css';
+import '@xds/core/typography.css';
 import './globals.css';
 import {Providers} from './providers';
 
