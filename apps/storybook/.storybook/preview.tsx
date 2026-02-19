@@ -4,6 +4,9 @@ import {XDSTheme} from '@xds/core';
 import {defaultTheme} from '@xds/theme/default';
 import {neutralTheme} from '@xds/theme/neutral';
 
+// Import the base reset stylesheet
+import '@xds/core/reset.css';
+
 // Import the pre-built StyleX CSS from the core package
 // Use relative path since @xds/core alias points to source, not dist
 import '../../../packages/core/dist/index.css';
