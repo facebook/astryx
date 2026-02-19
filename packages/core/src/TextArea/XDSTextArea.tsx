@@ -36,6 +36,7 @@ const styles = stylex.create({
     zIndex: 1,
     display: 'flex',
     alignItems: 'flex-start',
+    boxSizing: 'border-box',
     gap: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],

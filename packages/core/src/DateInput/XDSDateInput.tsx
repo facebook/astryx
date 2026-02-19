@@ -45,6 +45,7 @@ const styles = stylex.create({
     position: 'relative',
     display: 'flex',
     alignItems: 'center',
+    boxSizing: 'border-box',
     gap: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-2'],
