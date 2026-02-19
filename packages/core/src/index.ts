@@ -18,6 +18,7 @@ export * from './CheckboxInput';
 export * from './RadioList';
 export * from './CloseButton';
 export * from './Divider';
+export * from './EmptyState';
 export * from './Link';
 export * from './Slider';
 export * from './Switch';

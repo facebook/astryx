@@ -1,0 +1,174 @@
+/**
+ * @file XDSEmptyState.tsx
+ * @input Uses React forwardRef, HTMLAttributes
+ * @output Exports XDSEmptyState component, XDSEmptyStateProps type
+ * @position Core implementation; consumed by index.ts
+ *
+ * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/EmptyState/README.md (props table, features, implementation notes)
+ * - /packages/core/src/EmptyState/XDSEmptyState.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/EmptyState/index.ts (exports if types change)
+ * - /apps/storybook/stories/EmptyState.stories.tsx (storybook stories)
+ */
+
+import {forwardRef, type ReactNode} from 'react';
+import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
+import {
+  colorVars,
+  spacingVars,
+  textSizeVars,
+  fontWeightVars,
+  lineHeightVars,
+} from '../theme/tokens.stylex';
+
+const styles = stylex.create({
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    textAlign: 'center',
+    gap: spacingVars['--spacing-3'],
+    paddingBlock: spacingVars['--spacing-8'],
+    paddingInline: spacingVars['--spacing-6'],
+  },
+  containerCompact: {
+    gap: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-4'],
+    paddingInline: spacingVars['--spacing-4'],
+  },
+  title: {
+    margin: 0,
+    fontFamily: 'inherit',
+    fontSize: textSizeVars['--text-lg'],
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    lineHeight: lineHeightVars['--leading-snug'],
+    color: colorVars['--color-text-primary'],
+  },
+  titleCompact: {
+    fontSize: textSizeVars['--text-base'],
+  },
+  description: {
+    margin: 0,
+    fontFamily: 'inherit',
+    fontSize: textSizeVars['--text-base'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
+    lineHeight: lineHeightVars['--leading-base'],
+    color: colorVars['--color-text-secondary'],
+    maxWidth: '360px',
+  },
+  descriptionCompact: {
+    fontSize: textSizeVars['--text-sm'],
+  },
+  actions: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+    marginTop: spacingVars['--spacing-1'],
+  },
+  actionsCompact: {
+    flexDirection: 'column',
+  },
+});
+
+export interface XDSEmptyStateProps {
+  /**
+   * The primary message displayed in the empty state.
+   */
+  title: string;
+  /**
+   * Optional secondary text providing additional context.
+   */
+  description?: string;
+  /**
+   * Optional icon or illustration displayed above the title.
+   * Rendered as decorative (aria-hidden="true").
+   */
+  icon?: ReactNode;
+  /**
+   * Optional action buttons displayed below the description.
+   * Laid out horizontally by default, stacked vertically when `isCompact`.
+   */
+  actions?: ReactNode;
+  /**
+   * Use compact variant for constrained spaces with reduced spacing.
+   * @default false
+   */
+  isCompact?: boolean;
+  /**
+   * StyleX override styles applied to the container.
+   */
+  xstyle?: StyleXStyles;
+  /**
+   * Test ID for the container element.
+   */
+  'data-testid'?: string;
+}
+
+/**
+ * An empty state placeholder for content areas with no data.
+ * Displays an icon or illustration, title, optional description, and action buttons.
+ *
+ * Uses `role="status"` to announce content to screen readers.
+ * Styles use XDS theme tokens via StyleX. Wrap your app in <Theme> to apply a theme.
+ *
+ * @example
+ * ```tsx
+ * <XDSEmptyState
+ *   title="No results found"
+ *   description="Try adjusting your search or filters."
+ * />
+ *
+ * <XDSEmptyState
+ *   icon={<XDSIcon icon={InboxIcon} size="lg" />}
+ *   title="No messages"
+ *   description="You're all caught up!"
+ *   actions={<XDSButton label="Compose" variant="primary" />}
+ * />
+ * ```
+ */
+export const XDSEmptyState = forwardRef<HTMLDivElement, XDSEmptyStateProps>(
+  (
+    {title, description, icon, actions, isCompact = false, xstyle, ...props},
+    ref,
+  ) => {
+    return (
+      <div
+        ref={ref}
+        role="status"
+        {...stylex.props(
+          styles.container,
+          isCompact && styles.containerCompact,
+          xstyle,
+        )}
+        {...props}>
+        {icon != null && <div aria-hidden="true">{icon}</div>}
+        <h3 {...stylex.props(styles.title, isCompact && styles.titleCompact)}>
+          {title}
+        </h3>
+        {description != null && (
+          <p
+            {...stylex.props(
+              styles.description,
+              isCompact && styles.descriptionCompact,
+            )}>
+            {description}
+          </p>
+        )}
+        {actions != null && (
+          <div
+            {...stylex.props(
+              styles.actions,
+              isCompact && styles.actionsCompact,
+            )}>
+            {actions}
+          </div>
+        )}
+      </div>
+    );
+  },
+);
+
+XDSEmptyState.displayName = 'XDSEmptyState';
