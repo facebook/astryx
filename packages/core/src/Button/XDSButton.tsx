@@ -31,6 +31,7 @@ import {
 } from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
 import {XDSTooltip} from '../Layer/XDSTooltip';
+import {XDSSpinner} from '../Spinner';
 
 /**
  * Base button styles
@@ -241,34 +242,6 @@ const loadingStyles = stylex.create({
     position: 'relative',
     color: 'transparent',
   },
-  spinner: {
-    position: 'absolute',
-    width: '1em',
-    height: '1em',
-    borderWidth: '2px',
-    borderStyle: 'solid',
-    borderColor: 'currentColor',
-    borderRightColor: 'transparent',
-    borderRadius: '50%',
-    animationName: stylex.keyframes({
-      to: {transform: 'rotate(360deg)'},
-    }),
-    animationDuration: '0.6s',
-    animationTimingFunction: 'linear',
-    animationIterationCount: 'infinite',
-  },
-  spinnerLight: {
-    borderTopColor: colorVars['--color-icon-on-media'],
-    borderLeftColor: colorVars['--color-icon-on-media'],
-    borderBottomColor: colorVars['--color-icon-on-media'],
-    borderRightColor: 'transparent',
-  },
-  spinnerDark: {
-    borderTopColor: colorVars['--color-text-primary'],
-    borderLeftColor: colorVars['--color-text-primary'],
-    borderBottomColor: colorVars['--color-text-primary'],
-    borderRightColor: 'transparent',
-  },
 });
 
 /**
@@ -327,13 +300,21 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
         {...props}>
         {isLoading && (
           <span
-            {...stylex.props(
-              loadingStyles.spinner,
-              useLightSpinner
-                ? loadingStyles.spinnerLight
-                : loadingStyles.spinnerDark,
-            )}
-          />
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+            <XDSSpinner
+              size="sm"
+              shade={useLightSpinner ? 'onMedia' : 'default'}
+            />
+          </span>
         )}
         {icon}
         {children ?? (isIconOnly ? null : label)}
