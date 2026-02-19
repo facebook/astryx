@@ -34,6 +34,7 @@ export default tseslint.config(
       "**/*.test-violations.tsx",
       "apps/example-nextjs/*.js",
       "apps/example-nextjs/next-env.d.ts",
+      "apps/sandbox/*.js",
     ],
   },
   {
