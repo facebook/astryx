@@ -22,7 +22,12 @@ export type SpacingToken =
   | 'spacing4'
   | 'spacing5'
   | 'spacing6'
-  | 'spacing7';
+  | 'spacing7'
+  | 'spacing8'
+  | 'spacing9'
+  | 'spacing10'
+  | 'spacing11'
+  | 'spacing12';
 
 const baseStyles = stylex.create({
   container: {
@@ -46,6 +51,11 @@ const containerPaddingStyles = stylex.create({
   spacing5: {'--container-padding': spacingVars['--spacing-5']},
   spacing6: {'--container-padding': spacingVars['--spacing-6']},
   spacing7: {'--container-padding': spacingVars['--spacing-7']},
+  spacing8: {'--container-padding': spacingVars['--spacing-8']},
+  spacing9: {'--container-padding': spacingVars['--spacing-9']},
+  spacing10: {'--container-padding': spacingVars['--spacing-10']},
+  spacing11: {'--container-padding': spacingVars['--spacing-11']},
+  spacing12: {'--container-padding': spacingVars['--spacing-12']},
 });
 
 const paddingOuterXStyles = stylex.create({
@@ -58,6 +68,11 @@ const paddingOuterXStyles = stylex.create({
   spacing5: {'--layout-padding-outer-x': spacingVars['--spacing-5']},
   spacing6: {'--layout-padding-outer-x': spacingVars['--spacing-6']},
   spacing7: {'--layout-padding-outer-x': spacingVars['--spacing-7']},
+  spacing8: {'--layout-padding-outer-x': spacingVars['--spacing-8']},
+  spacing9: {'--layout-padding-outer-x': spacingVars['--spacing-9']},
+  spacing10: {'--layout-padding-outer-x': spacingVars['--spacing-10']},
+  spacing11: {'--layout-padding-outer-x': spacingVars['--spacing-11']},
+  spacing12: {'--layout-padding-outer-x': spacingVars['--spacing-12']},
 });
 
 const paddingOuterYStyles = stylex.create({
@@ -70,6 +85,11 @@ const paddingOuterYStyles = stylex.create({
   spacing5: {'--layout-padding-outer-y': spacingVars['--spacing-5']},
   spacing6: {'--layout-padding-outer-y': spacingVars['--spacing-6']},
   spacing7: {'--layout-padding-outer-y': spacingVars['--spacing-7']},
+  spacing8: {'--layout-padding-outer-y': spacingVars['--spacing-8']},
+  spacing9: {'--layout-padding-outer-y': spacingVars['--spacing-9']},
+  spacing10: {'--layout-padding-outer-y': spacingVars['--spacing-10']},
+  spacing11: {'--layout-padding-outer-y': spacingVars['--spacing-11']},
+  spacing12: {'--layout-padding-outer-y': spacingVars['--spacing-12']},
 });
 
 const paddingInnerXStyles = stylex.create({
@@ -82,6 +102,11 @@ const paddingInnerXStyles = stylex.create({
   spacing5: {'--layout-padding-inner-x': spacingVars['--spacing-5']},
   spacing6: {'--layout-padding-inner-x': spacingVars['--spacing-6']},
   spacing7: {'--layout-padding-inner-x': spacingVars['--spacing-7']},
+  spacing8: {'--layout-padding-inner-x': spacingVars['--spacing-8']},
+  spacing9: {'--layout-padding-inner-x': spacingVars['--spacing-9']},
+  spacing10: {'--layout-padding-inner-x': spacingVars['--spacing-10']},
+  spacing11: {'--layout-padding-inner-x': spacingVars['--spacing-11']},
+  spacing12: {'--layout-padding-inner-x': spacingVars['--spacing-12']},
 });
 
 const paddingInnerYStyles = stylex.create({
@@ -94,6 +119,11 @@ const paddingInnerYStyles = stylex.create({
   spacing5: {'--layout-padding-inner-y': spacingVars['--spacing-5']},
   spacing6: {'--layout-padding-inner-y': spacingVars['--spacing-6']},
   spacing7: {'--layout-padding-inner-y': spacingVars['--spacing-7']},
+  spacing8: {'--layout-padding-inner-y': spacingVars['--spacing-8']},
+  spacing9: {'--layout-padding-inner-y': spacingVars['--spacing-9']},
+  spacing10: {'--layout-padding-inner-y': spacingVars['--spacing-10']},
+  spacing11: {'--layout-padding-inner-y': spacingVars['--spacing-11']},
+  spacing12: {'--layout-padding-inner-y': spacingVars['--spacing-12']},
 });
 
 export interface ContainerOptions {

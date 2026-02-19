@@ -16,6 +16,7 @@ import {CheckIcon, ChevronDownIcon} from '@heroicons/react/16/solid';
 import {
   colorVars,
   spacingVars,
+  sizeVars,
   radiusVars,
   transitionVars,
   elevationVars,
@@ -136,8 +137,8 @@ const styles = stylex.create({
     pointerEvents: 'none',
   },
   chevron: {
-    width: '16px',
-    height: '16px',
+    width: spacingVars['--spacing-4'],
+    height: spacingVars['--spacing-4'],
     flexShrink: 0,
     transitionProperty: 'transform',
     transitionDuration: transitionVars['--transition-fast'],
@@ -198,9 +199,9 @@ const styles = stylex.create({
 });
 
 const sizeStyles = stylex.create({
-  sm: {height: '28px'},
-  md: {height: '32px'},
-  lg: {height: '36px'},
+  sm: {height: sizeVars['--size-sm']},
+  md: {height: sizeVars['--size-md']},
+  lg: {height: sizeVars['--size-lg']},
 });
 
 /**

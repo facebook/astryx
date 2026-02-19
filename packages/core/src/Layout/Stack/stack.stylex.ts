@@ -143,6 +143,26 @@ const gapStyles = stylex.create({
     columnGap: spacingVars['--spacing-7'],
     rowGap: spacingVars['--spacing-7'],
   },
+  space8: {
+    columnGap: spacingVars['--spacing-8'],
+    rowGap: spacingVars['--spacing-8'],
+  },
+  space9: {
+    columnGap: spacingVars['--spacing-9'],
+    rowGap: spacingVars['--spacing-9'],
+  },
+  space10: {
+    columnGap: spacingVars['--spacing-10'],
+    rowGap: spacingVars['--spacing-10'],
+  },
+  space11: {
+    columnGap: spacingVars['--spacing-11'],
+    rowGap: spacingVars['--spacing-11'],
+  },
+  space12: {
+    columnGap: spacingVars['--spacing-12'],
+    rowGap: spacingVars['--spacing-12'],
+  },
 });
 
 /**

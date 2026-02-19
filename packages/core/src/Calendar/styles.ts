@@ -15,6 +15,7 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
+  sizeVars,
   radiusVars,
   transitionVars,
   textSizeVars,
@@ -50,8 +51,8 @@ export const calendarStyles = stylex.create({
     gap: spacingVars['--spacing-4'],
   },
   navIcon: {
-    width: '16px',
-    height: '16px',
+    width: spacingVars['--spacing-4'],
+    height: spacingVars['--spacing-4'],
   },
 });
 
@@ -72,8 +73,8 @@ export const monthGridStyles = stylex.create({
     gridTemplateColumns: 'auto repeat(7, 1fr)',
   },
   dayName: {
-    width: '32px',
-    height: '32px',
+    width: sizeVars['--size-md'],
+    height: sizeVars['--size-md'],
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -82,7 +83,7 @@ export const monthGridStyles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   weekNumberHeader: {
-    width: '32px',
+    width: sizeVars['--size-md'],
   },
   daysGrid: {
     display: 'grid',
@@ -92,8 +93,8 @@ export const monthGridStyles = stylex.create({
     gridTemplateColumns: 'auto repeat(7, 1fr)',
   },
   weekNumber: {
-    width: '32px',
-    height: '32px',
+    width: sizeVars['--size-md'],
+    height: sizeVars['--size-md'],
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -116,7 +117,7 @@ export const dayCellStyles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    height: '32px',
+    height: sizeVars['--size-md'],
   },
 
   // Range background - structural positioning
@@ -175,8 +176,8 @@ export const dayCellStyles = stylex.create({
 
   // Day button - structural
   day: {
-    width: '28px',
-    height: '28px',
+    width: sizeVars['--size-sm'],
+    height: sizeVars['--size-sm'],
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
