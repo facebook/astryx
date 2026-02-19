@@ -15,6 +15,7 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
+  sizeVars,
   radiusVars,
   transitionVars,
   textSizeVars,
@@ -136,9 +137,9 @@ const styles = stylex.create({
 });
 
 const sizeStyles = stylex.create({
-  sm: {height: '28px'},
-  md: {height: '32px'},
-  lg: {height: '36px'},
+  sm: {height: sizeVars['--size-sm']},
+  md: {height: sizeVars['--size-md']},
+  lg: {height: sizeVars['--size-lg']},
 });
 
 const iconSizeStyles = stylex.create({

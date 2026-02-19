@@ -158,6 +158,21 @@ const gapStyles = stylex.create({
   space7: {
     gap: spacingVars['--spacing-7'],
   },
+  space8: {
+    gap: spacingVars['--spacing-8'],
+  },
+  space9: {
+    gap: spacingVars['--spacing-9'],
+  },
+  space10: {
+    gap: spacingVars['--spacing-10'],
+  },
+  space11: {
+    gap: spacingVars['--spacing-11'],
+  },
+  space12: {
+    gap: spacingVars['--spacing-12'],
+  },
 });
 
 const rowGapStyles = stylex.create({
@@ -187,6 +202,21 @@ const rowGapStyles = stylex.create({
   },
   space7: {
     rowGap: spacingVars['--spacing-7'],
+  },
+  space8: {
+    rowGap: spacingVars['--spacing-8'],
+  },
+  space9: {
+    rowGap: spacingVars['--spacing-9'],
+  },
+  space10: {
+    rowGap: spacingVars['--spacing-10'],
+  },
+  space11: {
+    rowGap: spacingVars['--spacing-11'],
+  },
+  space12: {
+    rowGap: spacingVars['--spacing-12'],
   },
 });
 
@@ -218,6 +248,21 @@ const columnGapStyles = stylex.create({
   space7: {
     columnGap: spacingVars['--spacing-7'],
   },
+  space8: {
+    columnGap: spacingVars['--spacing-8'],
+  },
+  space9: {
+    columnGap: spacingVars['--spacing-9'],
+  },
+  space10: {
+    columnGap: spacingVars['--spacing-10'],
+  },
+  space11: {
+    columnGap: spacingVars['--spacing-11'],
+  },
+  space12: {
+    columnGap: spacingVars['--spacing-12'],
+  },
 });
 
 // Spacing token values in pixels for max-width calculation
@@ -230,7 +275,12 @@ const spacingPixels: Record<SpacingScale, number> = {
   space4: 16,
   space5: 20,
   space6: 24,
-  space7: 32,
+  space7: 28,
+  space8: 32,
+  space9: 36,
+  space10: 40,
+  space11: 44,
+  space12: 48,
 };
 
 /**
