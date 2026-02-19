@@ -33,7 +33,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-2'],
-    borderRadius: radiusVars['--radius-element'],
+    borderRadius: radiusVars['--radius-rounded'],
     fontFamily: 'inherit',
     fontSize: textSizeVars['--text-xsm'],
     lineHeight: lineHeightVars['--leading-snug'],
