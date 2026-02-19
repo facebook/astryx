@@ -9,7 +9,7 @@
     "e2e"
   ],
   "scripts": {
-    "build": "yarn workspace @xds/core build",
+    "build": "yarn workspace @xds/core build && yarn workspace @xds/theme build",
     "dev": "yarn workspace @xds/storybook dev",
     "test": "vitest run",
     "test:watch": "vitest",
