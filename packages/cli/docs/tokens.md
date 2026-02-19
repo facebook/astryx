@@ -14,9 +14,14 @@ All design tokens are defined in `packages/core/src/theme/tokens.stylex.ts`.
 | --spacing-4   | 16px  | Default medium   |
 | --spacing-5   | 20px  | Comfortable      |
 | --spacing-6   | 24px  | Loose            |
-| --spacing-7   | 32px  | Extra loose      |
+| --spacing-7   | 28px  | Semi-loose       |
+| --spacing-8   | 32px  | Extra loose      |
+| --spacing-9   | 36px  | Spacious         |
+| --spacing-10  | 40px  | Extra spacious   |
+| --spacing-11  | 44px  | Ultra spacious   |
+| --spacing-12  | 48px  | Maximum spacing  |
 
-Component gap props use `space0`-`space7` which map to these tokens.
+Component gap props use `space0`-`space12` which map to these tokens.
 
 ## Size Tokens
 

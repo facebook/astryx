@@ -23,7 +23,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     width: '100%',
-    height: '48px',
+    height: spacingVars['--spacing-12'],
     paddingInline: spacingVars['--spacing-4'],
     backgroundColor: colorVars['--color-navbar'],
     borderBlockEnd: `1px solid ${colorVars['--color-divider']}`,
