@@ -1,6 +1,6 @@
 /**
  * @file XDSBreadcrumbs.tsx
- * @input Uses React forwardRef, Children, cloneElement, stylex, theme tokens
+ * @input Uses React forwardRef, Children, createContext, useContext, stylex, theme tokens
  * @output Exports XDSBreadcrumbs, XDSBreadcrumbItem components and their prop types
  * @position Core implementation; consumed by index.ts
  *
@@ -15,7 +15,8 @@ import {
   forwardRef,
   Children,
   isValidElement,
-  cloneElement,
+  createContext,
+  useContext,
   type ReactNode,
   type MouseEvent,
 } from 'react';
@@ -27,6 +28,19 @@ import {
   textSizeVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
+
+// =============================================================================
+// Context for auto-detecting last item
+// =============================================================================
+
+interface BreadcrumbItemContext {
+  /** Whether this item is the last in the list and no explicit isCurrent exists. */
+  isAutoLast: boolean;
+}
+
+const BreadcrumbItemCtx = createContext<BreadcrumbItemContext>({
+  isAutoLast: false,
+});
 
 // =============================================================================
 // Props
@@ -84,10 +98,6 @@ export interface XDSBreadcrumbItemProps {
    * Test ID for the list item.
    */
   'data-testid'?: string;
-  /**
-   * @internal Used by XDSBreadcrumbs to auto-detect the last item.
-   */
-  _isLast?: boolean;
 }
 
 // =============================================================================
@@ -171,10 +181,10 @@ export function XDSBreadcrumbItem({
   isCurrent: isCurrentProp,
   startIcon,
   'data-testid': testId,
-  _isLast,
 }: XDSBreadcrumbItemProps) {
-  // If isCurrent is explicitly set, use it. Otherwise, auto-detect from _isLast.
-  const isCurrent = isCurrentProp ?? _isLast === true;
+  const ctx = useContext(BreadcrumbItemCtx);
+  // If isCurrent is explicitly set, use it. Otherwise, auto-detect from context.
+  const isCurrent = isCurrentProp ?? ctx.isAutoLast;
 
   const content = (
     <>
@@ -203,6 +213,13 @@ export function XDSBreadcrumbItem({
 }
 
 XDSBreadcrumbItem.displayName = 'XDSBreadcrumbItem';
+
+// =============================================================================
+// Context values (stable references)
+// =============================================================================
+
+const AUTO_LAST_CTX: BreadcrumbItemContext = {isAutoLast: true};
+const DEFAULT_CTX: BreadcrumbItemContext = {isAutoLast: false};
 
 // =============================================================================
 // XDSBreadcrumbs
@@ -247,19 +264,27 @@ export const XDSBreadcrumbs = forwardRef<HTMLElement, XDSBreadcrumbsProps>(
     const rendered: ReactNode[] = [];
 
     items.forEach((child, index) => {
-      // Clone the last child with _isLast if no explicit isCurrent exists
-      if (
-        !hasExplicitCurrent &&
-        index === items.length - 1 &&
-        isValidElement<XDSBreadcrumbItemProps>(child)
-      ) {
-        rendered.push(cloneElement(child, {_isLast: true, key: child.key}));
+      const isLast = index === items.length - 1;
+
+      // Wrap the last item in context to auto-detect as current
+      if (!hasExplicitCurrent && isLast) {
+        rendered.push(
+          <BreadcrumbItemCtx.Provider
+            key={`item-${index}`}
+            value={AUTO_LAST_CTX}>
+            {child}
+          </BreadcrumbItemCtx.Provider>,
+        );
       } else {
-        rendered.push(child);
+        rendered.push(
+          <BreadcrumbItemCtx.Provider key={`item-${index}`} value={DEFAULT_CTX}>
+            {child}
+          </BreadcrumbItemCtx.Provider>,
+        );
       }
 
       // Add separator between items (not after the last one)
-      if (index < items.length - 1) {
+      if (!isLast) {
         rendered.push(
           <li
             key={`sep-${index}`}
