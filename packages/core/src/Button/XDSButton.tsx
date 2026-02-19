@@ -14,6 +14,7 @@
 import {
   forwardRef,
   useContext,
+  useTransition,
   type ButtonHTMLAttributes,
   type ReactElement,
   type ReactNode,
@@ -219,6 +220,12 @@ export interface XDSButtonProps extends Omit<
    */
   isLoading?: boolean;
   /**
+   * Async click action. Shows loading state while pending.
+   */
+  onClickAction?: (
+    e: React.MouseEvent<HTMLButtonElement>,
+  ) => void | Promise<void>;
+  /**
    * Icon element to render in the button.
    * If provided without children, button becomes icon-only (square).
    */
@@ -273,6 +280,7 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
       size = 'md',
       isDisabled = false,
       isLoading = false,
+      onClickAction,
       icon,
       children,
       tooltip,
@@ -280,7 +288,9 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
     },
     ref,
   ): ReactElement => {
-    const buttonDisabled = isDisabled || isLoading;
+    const [isPending, startTransition] = useTransition();
+    const isLoadingState = isLoading || isPending;
+    const buttonDisabled = isDisabled || isLoadingState;
     const useLightSpinner = variant === 'primary' || variant === 'destructive';
     const isIconOnly = icon != null && children == null;
 
@@ -289,11 +299,22 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
     const themeVariantOverride =
       themeContext?.theme.components?.button?.variants?.[variant];
 
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (onClickAction) {
+        e.preventDefault();
+        startTransition(async () => {
+          await onClickAction(e);
+        });
+      }
+      props.onClick?.(e);
+    };
+
     const button = (
       <button
         ref={ref}
         disabled={buttonDisabled}
         aria-label={isIconOnly ? label : undefined}
+        aria-busy={isLoadingState || undefined}
         {...stylex.props(
           styles.base,
           sizeStyles[size],
@@ -301,10 +322,11 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
           themeVariantOverride,
           isIconOnly && styles.iconOnly,
           buttonDisabled && styles.disabled,
-          isLoading && loadingStyles.loading,
+          isLoadingState && loadingStyles.loading,
         )}
-        {...props}>
-        {isLoading && (
+        {...props}
+        onClick={handleClick}>
+        {isLoadingState && (
           <span
             style={{
               position: 'absolute',

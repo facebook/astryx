@@ -13,7 +13,9 @@ import React, {
   useCallback,
   useId,
   useMemo,
+  useOptimistic,
   useRef,
+  useTransition,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -22,6 +24,7 @@ import {XDSIcon} from '../Icon';
 import type {XDSIconName} from '../Icon';
 import {XDSField} from '../Field';
 import {XDSDivider} from '../Divider';
+import {XDSSpinner} from '../Spinner';
 import {
   colorVars,
   sizeVars,
@@ -353,6 +356,17 @@ export interface XDSSelectorProps<
   onChange?: (value: string) => void;
 
   /**
+   * Async action on change. Fires after onChange.
+   */
+  onChangeAction?: (value: string) => void | Promise<void>;
+
+  /**
+   * Whether the selector is in a loading state.
+   * @default false
+   */
+  isLoading?: boolean;
+
+  /**
    * Placeholder text when no value is selected.
    * @default 'Select...'
    */
@@ -421,6 +435,8 @@ export function XDSSelector<T extends XDSSelectorOption>({
   items,
   value,
   onChange,
+  onChangeAction,
+  isLoading = false,
   placeholder = 'Select...',
   size = 'md',
   status,
@@ -438,6 +454,10 @@ export function XDSSelector<T extends XDSSelectorOption>({
   const statusMessageId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
 
+  const [, startTransition] = useTransition();
+  const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+  const isBusy = isLoading || optimisticValue !== value;
+
   // Build aria-describedby
   const ariaDescribedBy =
     [
@@ -452,8 +472,8 @@ export function XDSSelector<T extends XDSSelectorOption>({
 
   // Find selected item and its index for positioning
   const selectedItemIndex = useMemo(() => {
-    return selectableItems.findIndex(item => item.value === value);
-  }, [selectableItems, value]);
+    return selectableItems.findIndex(item => item.value === optimisticValue);
+  }, [selectableItems, optimisticValue]);
 
   const selectedItem = useMemo(() => {
     return selectedItemIndex >= 0
@@ -498,7 +518,18 @@ export function XDSSelector<T extends XDSSelectorOption>({
     isOpen: layer.isOpen,
     onOpen: layer.show,
     onClose: layer.hide,
-    onSelect: onChange,
+    onSelect: useCallback(
+      (newValue: string) => {
+        onChange?.(newValue);
+        if (onChangeAction) {
+          startTransition(async () => {
+            setOptimisticValue(newValue);
+            await onChangeAction(newValue);
+          });
+        }
+      },
+      [onChange, onChangeAction, startTransition, setOptimisticValue],
+    ),
     listboxId,
   });
 
@@ -622,6 +653,7 @@ export function XDSSelector<T extends XDSSelectorOption>({
         aria-describedby={ariaDescribedBy}
         aria-required={isRequired ? 'true' : undefined}
         aria-invalid={status?.type === 'error' ? 'true' : undefined}
+        aria-busy={isBusy || undefined}
         disabled={isDisabled}
         onClick={onTriggerClick}
         onKeyDown={onKeyDown}
@@ -636,6 +668,7 @@ export function XDSSelector<T extends XDSSelectorOption>({
           triggerOverride,
         )}>
         <span>{selectedItem?.label ?? placeholder}</span>
+        {isBusy && <XDSSpinner size="sm" />}
         <span
           {...stylex.props(
             styles.triggerIcon,

@@ -19,6 +19,8 @@ import {
   useCallback,
   useRef,
   useMemo,
+  useOptimistic,
+  useTransition,
   type KeyboardEvent,
   type FocusEvent,
 } from 'react';
@@ -37,6 +39,7 @@ import {
 } from '../theme/tokens.stylex';
 import {XDSField, type XDSInputStatus, type XDSInputStatusType} from '../Field';
 import {XDSIcon} from '../Icon';
+import {XDSSpinner} from '../Spinner';
 import {
   type ISOTimeString,
   parseTimeInput,
@@ -263,7 +266,18 @@ export interface XDSTimeInputProps {
    * Callback fired when the time changes.
    * Called with undefined when input is cleared.
    */
-  onChange: (value: ISOTimeString | undefined) => void;
+  onChange?: (value: ISOTimeString | undefined) => void;
+
+  /**
+   * Async action on change. Fires after onChange.
+   */
+  onChangeAction?: (value: ISOTimeString | undefined) => void | Promise<void>;
+
+  /**
+   * Whether the input is in a loading state.
+   * @default false
+   */
+  isLoading?: boolean;
 
   /**
    * Minimum selectable time in ISO format.
@@ -348,6 +362,8 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
       isDisabled = false,
       value,
       onChange,
+      onChangeAction,
+      isLoading = false,
       min,
       max,
       hasSeconds = false,
@@ -368,6 +384,10 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
     const descriptionID = useId();
     const statusMessageID = useId();
     const inputRef = useRef<HTMLInputElement | null>(null);
+
+    const [, startTransition] = useTransition();
+    const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+    const isBusy = isLoading || optimisticValue !== value;
 
     // Status icon mapping
     const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
@@ -401,12 +421,28 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
     const formatDisplayTime =
       hourFormat === '12h' ? formatDisplayTime12h : formatDisplayTime24h;
 
+    // Unified change handler that fires both onChange and onChangeAction
+    const fireChange = useCallback(
+      (newValue: ISOTimeString | undefined) => {
+        onChange?.(newValue);
+        if (onChangeAction) {
+          startTransition(async () => {
+            setOptimisticValue(newValue);
+            await onChangeAction(newValue);
+          });
+        }
+      },
+      [onChange, onChangeAction, startTransition, setOptimisticValue],
+    );
+
     // Display value: pending input if typing, otherwise formatted value
     const displayValue = useMemo(() => {
       if (pendingInput !== null) {
         return pendingInput;
       }
-      return value ? formatDisplayTime(value, hasSeconds) : '';
+      return optimisticValue
+        ? formatDisplayTime(optimisticValue, hasSeconds)
+        : '';
     }, [pendingInput, value, formatDisplayTime, hasSeconds]);
 
     // Check if current input is valid (for styling purposes)
@@ -440,10 +476,10 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
         // If the input is valid, update immediately (don't wait for blur)
         const parsed = parseTimeInput(newValue, hasSeconds);
         if (parsed && isTimeInRange(parsed, min, max) && parsed !== value) {
-          onChange(parsed);
+          fireChange(parsed);
         }
       },
-      [hasSeconds, min, max, value, onChange],
+      [hasSeconds, min, max, value, fireChange],
     );
 
     // Handle focus
@@ -463,7 +499,7 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
         if (!pendingInput.trim()) {
           // Empty input clears the value
           if (value !== undefined) {
-            onChange(undefined);
+            fireChange(undefined);
           }
           setPendingInput(null);
           return;
@@ -473,13 +509,13 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
         if (parsed && isTimeInRange(parsed, min, max)) {
           // Valid time - update if different
           if (parsed !== value) {
-            onChange(parsed);
+            fireChange(parsed);
           }
         }
         // Clear pending input - display will revert to formatted value
         setPendingInput(null);
       },
-      [pendingInput, value, onChange, hasSeconds, min, max],
+      [pendingInput, value, fireChange, hasSeconds, min, max],
     );
 
     // Handle keyboard navigation on input
@@ -507,18 +543,18 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
 
           // Check if within range
           if (isTimeInRange(newTime, min, max)) {
-            onChange(newTime);
+            fireChange(newTime);
           }
         }
       },
-      [value, hasSeconds, increment, min, max, onChange],
+      [value, hasSeconds, increment, min, max, fireChange],
     );
 
     // Handle clear button click
     const handleClear = useCallback(() => {
-      onChange(undefined);
+      fireChange(undefined);
       inputRef.current?.focus();
-    }, [onChange]);
+    }, [fireChange]);
 
     // Combine refs
     const setRefs = useCallback(
@@ -578,6 +614,7 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
             aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
+            aria-busy={isBusy || undefined}
             {...stylex.props(
               styles.input,
               isDisabled && styles.inputDisabled,
@@ -585,6 +622,7 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
               inputOverride,
             )}
           />
+          {isBusy && <XDSSpinner size="sm" />}
           {hasClear && value && !isDisabled && (
             <button
               type="button"

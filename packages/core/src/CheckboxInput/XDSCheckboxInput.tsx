@@ -15,6 +15,8 @@ import {
   forwardRef,
   useContext,
   useId,
+  useOptimistic,
+  useTransition,
   type ChangeEvent,
   type FocusEvent,
 } from 'react';
@@ -33,6 +35,7 @@ import type {XDSIconType} from '../Icon';
 import type {XDSInputStatus} from '../Field/types';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+import {XDSSpinner} from '../Spinner';
 
 const styles = stylex.create({
   container: {
@@ -220,7 +223,19 @@ export interface XDSCheckboxInputProps {
   /**
    * Callback fired when the checkbox state changes.
    */
-  onChange: (checked: boolean, e: ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (checked: boolean, e: ChangeEvent<HTMLInputElement>) => void;
+  /**
+   * Async action on change. Fires after onChange if not prevented.
+   */
+  onChangeAction?: (
+    checked: boolean,
+    e: ChangeEvent<HTMLInputElement>,
+  ) => void | Promise<void>;
+  /**
+   * Whether the checkbox is in a loading state.
+   * @default false
+   */
+  isLoading?: boolean;
   /**
    * Whether the checkbox is checked, unchecked, or indeterminate.
    */
@@ -289,6 +304,8 @@ export const XDSCheckboxInput = forwardRef<
       isLabelHidden = false,
       description,
       onChange,
+      onChangeAction,
+      isLoading = false,
       value,
       isDisabled = false,
       isRequired = false,
@@ -309,8 +326,12 @@ export const XDSCheckboxInput = forwardRef<
     const descriptionID = useId();
     const statusMessageID = useId();
 
-    const isIndeterminate = value === 'indeterminate';
-    const isChecked = value === true;
+    const [, startTransition] = useTransition();
+    const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+    const isBusy = isLoading || optimisticValue !== value;
+
+    const isIndeterminate = optimisticValue === 'indeterminate';
+    const isChecked = optimisticValue === true;
     const isCheckedOrIndeterminate = isChecked || isIndeterminate;
 
     // Build aria-describedby from description and status message
@@ -338,11 +359,21 @@ export const XDSCheckboxInput = forwardRef<
               checked={isChecked}
               disabled={isDisabled}
               required={isRequired}
-              onChange={e => onChange(e.target.checked, e)}
+              onChange={e => {
+                const checked = e.target.checked;
+                onChange?.(checked, e);
+                if (onChangeAction && !e.defaultPrevented) {
+                  startTransition(async () => {
+                    setOptimisticValue(checked);
+                    await onChangeAction(checked, e);
+                  });
+                }
+              }}
               onFocus={onFocus}
               onBlur={onBlur}
               aria-describedby={ariaDescribedBy}
               aria-invalid={status?.type === 'error' ? true : undefined}
+              aria-busy={isBusy || undefined}
               {...stylex.props(
                 styles.input,
                 wrapperSizeStyles[size],
@@ -363,29 +394,35 @@ export const XDSCheckboxInput = forwardRef<
                   !isCheckedOrIndeterminate &&
                   styles.checkboxDisabledUnchecked,
               )}>
-              <svg
-                viewBox="0 0 10 10"
-                {...stylex.props(
-                  styles.checkmark,
-                  checkmarkSizeStyles[size],
-                  isChecked && styles.checkmarkVisible,
-                )}>
-                <path
-                  d="M8.5 2.5L4 7.5L1.5 5"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <div
-                {...stylex.props(
-                  styles.indeterminateMark,
-                  indeterminateSizeStyles[size],
-                  isIndeterminate && styles.indeterminateMarkVisible,
-                )}
-              />
+              {isBusy ? (
+                <XDSSpinner size="sm" />
+              ) : (
+                <>
+                  <svg
+                    viewBox="0 0 10 10"
+                    {...stylex.props(
+                      styles.checkmark,
+                      checkmarkSizeStyles[size],
+                      isChecked && styles.checkmarkVisible,
+                    )}>
+                    <path
+                      d="M8.5 2.5L4 7.5L1.5 5"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <div
+                    {...stylex.props(
+                      styles.indeterminateMark,
+                      indeterminateSizeStyles[size],
+                      isIndeterminate && styles.indeterminateMarkVisible,
+                    )}
+                  />
+                </>
+              )}
             </div>
           </div>
           <div

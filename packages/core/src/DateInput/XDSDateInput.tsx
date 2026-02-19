@@ -19,6 +19,8 @@ import {
   useCallback,
   useRef,
   useMemo,
+  useOptimistic,
+  useTransition,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSIconName} from '../Icon';
@@ -35,6 +37,7 @@ import {
 } from '../theme/tokens.stylex';
 import {XDSField, type XDSInputStatus, type XDSInputStatusType} from '../Field';
 import {XDSIcon} from '../Icon';
+import {XDSSpinner} from '../Spinner';
 import {
   XDSCalendar,
   type ISODateString,
@@ -260,7 +263,18 @@ export interface XDSDateInputProps {
    * Callback fired when the date changes.
    * Called with undefined when input is cleared.
    */
-  onChange: (value: ISODateString | undefined) => void;
+  onChange?: (value: ISODateString | undefined) => void;
+
+  /**
+   * Async action on change. Fires after onChange.
+   */
+  onChangeAction?: (value: ISODateString | undefined) => void | Promise<void>;
+
+  /**
+   * Whether the input is in a loading state.
+   * @default false
+   */
+  isLoading?: boolean;
 
   /**
    * Minimum selectable date in ISO format.
@@ -328,6 +342,8 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
       isDisabled = false,
       value,
       onChange,
+      onChangeAction,
+      isLoading = false,
       min,
       max,
       dateConstraints,
@@ -347,6 +363,10 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
     const statusMessageID = useId();
     const inputRef = useRef<HTMLInputElement | null>(null);
     const calendarRef = useRef<XDSCalendarHandle | null>(null);
+
+    const [, startTransition] = useTransition();
+    const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+    const isBusy = isLoading || optimisticValue !== value;
 
     // Status icon mapping
     const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
@@ -380,8 +400,8 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
       if (pendingInput !== null) {
         return pendingInput;
       }
-      return value ? formatDisplayDate(value) : '';
-    }, [pendingInput, value]);
+      return optimisticValue ? formatDisplayDate(optimisticValue) : '';
+    }, [pendingInput, optimisticValue]);
 
     // Check if current input is valid (for styling purposes)
     const isInputValid = useMemo(() => {
@@ -417,14 +437,28 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
       }
     }, [isDisabled, popover]);
 
+    // Unified change handler that fires both onChange and onChangeAction
+    const fireChange = useCallback(
+      (newValue: ISODateString | undefined) => {
+        onChange?.(newValue);
+        if (onChangeAction) {
+          startTransition(async () => {
+            setOptimisticValue(newValue);
+            await onChangeAction(newValue);
+          });
+        }
+      },
+      [onChange, onChangeAction, startTransition, setOptimisticValue],
+    );
+
     // Handle date selection from calendar
     const handleDateSelect = useCallback(
       (selectedDate: ISODateString) => {
-        onChange(selectedDate);
+        fireChange(selectedDate);
         setPendingInput(null);
         popover.hide();
       },
-      [onChange, popover],
+      [fireChange, popover],
     );
 
     // Handle input text change - update immediately if valid
@@ -436,12 +470,12 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
         // If the input is valid, update immediately (don't wait for blur)
         const parsed = parseDateInput(newValue);
         if (parsed && parsed !== value) {
-          onChange(parsed);
+          fireChange(parsed);
           // Navigate calendar to show the parsed date's month
           calendarRef.current?.navigateTo(parsed);
         }
       },
-      [value, onChange],
+      [value, fireChange],
     );
 
     // Handle blur - validate and clear pending input
@@ -453,7 +487,7 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
       if (!pendingInput.trim()) {
         // Empty input clears the value
         if (value !== undefined) {
-          onChange(undefined);
+          fireChange(undefined);
         }
         setPendingInput(null);
         return;
@@ -463,12 +497,12 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
       if (parsed) {
         // Valid date - update if different
         if (parsed !== value) {
-          onChange(parsed);
+          fireChange(parsed);
         }
       }
       // Clear pending input - display will revert to formatted value
       setPendingInput(null);
-    }, [pendingInput, value, onChange]);
+    }, [pendingInput, value, fireChange]);
 
     // Handle keyboard events on input
     const handleInputKeyDown = useCallback(
@@ -549,6 +583,7 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
             aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
+            aria-busy={isBusy || undefined}
             {...stylex.props(
               styles.input,
               isDisabled && styles.inputDisabled,
@@ -556,6 +591,7 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
               inputOverride,
             )}
           />
+          {isBusy && <XDSSpinner size="sm" />}
           {status && (
             <XDSIcon
               icon={statusIconMap[status.type]}

@@ -15,6 +15,8 @@ import {
   forwardRef,
   useContext,
   useId,
+  useOptimistic,
+  useTransition,
   type ChangeEvent,
   type FocusEvent,
 } from 'react';
@@ -34,6 +36,7 @@ import type {XDSIconType} from '../Icon';
 import type {XDSInputStatus} from '../Field/types';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+import {XDSSpinner} from '../Spinner';
 
 // Fixed dimensions: 40px width, 24px height, 16px thumb (off), 20px thumb (on)
 const SWITCH_WIDTH = 40;
@@ -192,7 +195,19 @@ export interface XDSSwitchProps {
   /**
    * Callback fired when the switch state changes.
    */
-  onChange: (checked: boolean, e: ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (checked: boolean, e: ChangeEvent<HTMLInputElement>) => void;
+  /**
+   * Async action on change. Fires after onChange if not prevented.
+   */
+  onChangeAction?: (
+    checked: boolean,
+    e: ChangeEvent<HTMLInputElement>,
+  ) => void | Promise<void>;
+  /**
+   * Whether the switch is in a loading state.
+   * @default false
+   */
+  isLoading?: boolean;
   /**
    * Whether the switch is on or off.
    */
@@ -274,6 +289,8 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
       isLabelHidden = false,
       description,
       onChange,
+      onChangeAction,
+      isLoading = false,
       value,
       isDisabled = false,
       isOptional = false,
@@ -297,7 +314,11 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
     const descriptionID = useId();
     const statusMessageID = useId();
 
-    const isOn = value === true;
+    const [, startTransition] = useTransition();
+    const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+    const isBusy = isLoading || optimisticValue !== value;
+
+    const isOn = optimisticValue === true;
 
     // Build aria-describedby from description and status message
     const describedByParts: string[] = [];
@@ -316,11 +337,21 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
           checked={isOn}
           disabled={isDisabled}
           required={isRequired}
-          onChange={e => onChange(e.target.checked, e)}
+          onChange={e => {
+            const checked = e.target.checked;
+            onChange?.(checked, e);
+            if (onChangeAction && !e.defaultPrevented) {
+              startTransition(async () => {
+                setOptimisticValue(checked);
+                await onChangeAction(checked, e);
+              });
+            }
+          }}
           onFocus={onFocus}
           onBlur={onBlur}
           aria-describedby={ariaDescribedBy}
           aria-invalid={status?.type === 'error' ? true : undefined}
+          aria-busy={isBusy || undefined}
           {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
         />
         <div
@@ -338,7 +369,13 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
               isOn ? styles.thumbOn : styles.thumbOff,
               thumbOverride,
             )}
-          />
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+            {isBusy && <XDSSpinner size="sm" />}
+          </div>
         </div>
       </div>
     );
