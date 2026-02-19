@@ -28,12 +28,8 @@ export {ThemeContext} from './ThemeContext';
 /**
  * Hook to access current theme
  */
-export function useXDSTheme(): ThemeContextValue {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useXDSTheme must be used within an XDSTheme provider');
-  }
-  return context;
+export function useXDSTheme(): ThemeContextValue | null {
+  return useContext(ThemeContext);
 }
 
 /** @deprecated Use useXDSTheme instead */

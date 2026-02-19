@@ -76,8 +76,8 @@ export function XDSFontWrapper({
   children,
   'data-testid': testId,
 }: XDSFontWrapperProps): React.ReactElement {
-  const {theme} = useTheme();
-  const proseBase = theme.components?.prose?.base;
+  const themeContext = useTheme();
+  const proseBase = themeContext?.theme.components?.prose?.base;
 
   // Combine StyleX base styles with CSS typography class
   const typographyClass =
@@ -110,16 +110,17 @@ XDSFontWrapper.displayName = 'XDSFontWrapper';
  * <p {...stylex.props(proseStyles?.p)}>Paragraph</p>
  */
 export function useXDSFontWrapperStyles() {
-  const {theme} = useTheme();
+  const themeContext = useTheme();
+  const theme = themeContext?.theme;
 
   return {
     /** Base wrapper styles */
-    base: theme.components?.prose?.base,
+    base: theme?.components?.prose?.base,
     /** Default heading styles (h1-h6) */
-    headingStyles: theme.components?.heading?.styles,
+    headingStyles: theme?.components?.heading?.styles,
     /** Editorial heading styles (h1-h6, larger scale) */
-    editorialHeadingStyles: theme.components?.heading?.editorialStyles,
+    editorialHeadingStyles: theme?.components?.heading?.editorialStyles,
     /** Prose element styles (p, ul, ol, li, blockquote, code, pre, hr, etc.) */
-    proseStyles: theme.components?.prose?.styles,
+    proseStyles: theme?.components?.prose?.styles,
   };
 }
