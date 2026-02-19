@@ -11,7 +11,15 @@
  * - /apps/storybook/stories/Text.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useCallback, useContext, type ReactNode} from 'react';
+import {
+  forwardRef,
+  lazy,
+  Suspense,
+  useCallback,
+  useContext,
+  useRef,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {ThemeContext} from '../theme/ThemeContext';
@@ -30,10 +38,11 @@ import {
   textWrapStyles,
   capsizeStyles,
   decorationStyles,
-  truncationTooltipStyles,
 } from './text.stylex';
 import {useTruncation} from './useTruncation';
-import {useXDSTooltip, type LayerPlacement} from '../Layer';
+import type {LayerPlacement} from '../Layer';
+
+const LazyTruncationTooltip = lazy(() => import('./LazyTruncationTooltip'));
 
 /**
  * Heading level (1-6). Determines both visual styling and semantic HTML element.
@@ -232,12 +241,10 @@ export const XDSHeading = forwardRef<HTMLHeadingElement, XDSHeadingProps>(
     const tooltipEnabled =
       maxLines > 0 && hasTruncateTooltip !== false && truncation.isTruncated;
 
-    const tooltip = useXDSTooltip({
-      placement: tooltipPlacement,
-      isEnabled: tooltipEnabled,
-    });
+    // Ref for the heading element (used as tooltip anchor)
+    const headingRef = useRef<HTMLHeadingElement>(null);
 
-    // Merge refs: forwardedRef, truncation.ref, tooltip.ref
+    // Merge refs: forwardedRef, truncation.ref, headingRef
     const mergedRef = useCallback(
       (element: HTMLHeadingElement | null) => {
         // Forward ref
@@ -248,10 +255,12 @@ export const XDSHeading = forwardRef<HTMLHeadingElement, XDSHeadingProps>(
         }
         // Truncation ref
         truncation.ref(element);
-        // Tooltip ref
-        tooltip.ref(element);
+        // Local ref for tooltip anchor
+        (
+          headingRef as React.MutableRefObject<HTMLHeadingElement | null>
+        ).current = element;
       },
-      [forwardedRef, truncation.ref, tooltip.ref],
+      [forwardedRef, truncation.ref],
     );
 
     // Build inline style for -webkit-line-clamp (dynamic value)
@@ -282,17 +291,20 @@ export const XDSHeading = forwardRef<HTMLHeadingElement, XDSHeadingProps>(
             xstyle,
           )}
           style={inlineStyle}
-          aria-describedby={tooltipEnabled ? tooltip.describedBy : undefined}
+          title={tooltipEnabled ? truncation.fullText : undefined}
           {...ariaProps}
           {...props}>
           {children}
         </Component>
-        {tooltipEnabled &&
-          tooltip.renderTooltip(
-            <span {...stylex.props(truncationTooltipStyles.content)}>
-              {truncation.fullText}
-            </span>,
-          )}
+        {tooltipEnabled && (
+          <Suspense fallback={null}>
+            <LazyTruncationTooltip
+              anchorRef={headingRef}
+              content={truncation.fullText}
+              placement={tooltipPlacement}
+            />
+          </Suspense>
+        )}
       </>
     );
   },

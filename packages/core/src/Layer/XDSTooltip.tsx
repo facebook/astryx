@@ -44,8 +44,18 @@ const styles = stylex.create({
 export interface XDSTooltipProps {
   /**
    * The trigger element(s). Children refs are preserved.
+   * When `anchorRef` is provided, children can be omitted and the tooltip
+   * attaches to the external ref element as a sibling.
    */
-  children: ReactNode;
+  children?: ReactNode;
+
+  /**
+   * External ref to use as the tooltip anchor.
+   * When provided (and no children), the tooltip attaches to this element
+   * instead of wrapping children. This enables sibling-mode rendering,
+   * useful for lazy-loaded tooltips that shouldn't remount children.
+   */
+  anchorRef?: React.RefObject<HTMLElement>;
 
   /**
    * Content to display in the tooltip.
@@ -153,6 +163,7 @@ function mergeIds(...ids: (string | undefined | null)[]): string | undefined {
  */
 export function XDSTooltip({
   children,
+  anchorRef,
   content,
   placement = 'above',
   alignment = 'center',
@@ -165,7 +176,7 @@ export function XDSTooltip({
   hasHoverIndication = 'auto',
 }: XDSTooltipProps): ReactElement {
   const wrapperRef = useRef<HTMLElement>(null);
-  const textOnly = isTextOnly(children);
+  const textOnly = children != null ? isTextOnly(children) : false;
 
   // Get theme context for hover indication override
   const themeContext = useContext(ThemeContext);
@@ -188,8 +199,36 @@ export function XDSTooltip({
     onHide,
   });
 
+  // Sibling mode: attach to external anchorRef
+  useLayoutEffect(() => {
+    if (!anchorRef) return;
+
+    const el = anchorRef.current;
+    if (!el) return;
+
+    // Use combined ref for position + interaction
+    tooltip.ref(el);
+
+    // Set aria-describedby, merging with existing
+    const existingDescribedBy = el.getAttribute('aria-describedby');
+    el.setAttribute(
+      'aria-describedby',
+      mergeIds(existingDescribedBy, tooltip.describedBy) ?? '',
+    );
+
+    return () => {
+      tooltip.ref(null);
+      if (existingDescribedBy) {
+        el.setAttribute('aria-describedby', existingDescribedBy);
+      } else {
+        el.removeAttribute('aria-describedby');
+      }
+    };
+  }, [anchorRef, tooltip.ref, tooltip.describedBy]);
+
   // For element children with display:contents, attach ref to first child
   useLayoutEffect(() => {
+    if (anchorRef) return; // Skip if using anchorRef mode
     if (textOnly) return; // Skip for text-only (ref is on wrapper)
 
     const wrapper = wrapperRef.current;
@@ -216,7 +255,12 @@ export function XDSTooltip({
         firstChild.removeAttribute('aria-describedby');
       }
     };
-  }, [textOnly, tooltip.ref, tooltip.describedBy]);
+  }, [anchorRef, textOnly, tooltip.ref, tooltip.describedBy]);
+
+  // Sibling mode: render only the tooltip (no wrapper needed)
+  if (anchorRef && children == null) {
+    return <>{tooltip.renderTooltip(content)}</>;
+  }
 
   // For text-only children: use inline span with ref on wrapper
   if (textOnly) {

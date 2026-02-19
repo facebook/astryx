@@ -11,7 +11,15 @@
  * - /apps/storybook/stories/Text.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useCallback, useContext, type ReactNode} from 'react';
+import {
+  forwardRef,
+  lazy,
+  Suspense,
+  useCallback,
+  useContext,
+  useRef,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {ThemeContext} from '../theme/ThemeContext';
@@ -34,10 +42,11 @@ import {
   capsizeStyles,
   decorationStyles,
   tabularNumbersStyle,
-  truncationTooltipStyles,
 } from './text.stylex';
 import {useTruncation} from './useTruncation';
-import {useXDSTooltip, type LayerPlacement} from '../Layer';
+import type {LayerPlacement} from '../Layer';
+
+const LazyTruncationTooltip = lazy(() => import('./LazyTruncationTooltip'));
 
 export type {XDSTextType, XDSTextSize};
 
@@ -218,12 +227,10 @@ export const XDSText = forwardRef<HTMLElement, XDSTextProps>(function XDSText(
   const tooltipEnabled =
     maxLines > 0 && hasTruncateTooltip !== false && truncation.isTruncated;
 
-  const tooltip = useXDSTooltip({
-    placement: tooltipPlacement,
-    isEnabled: tooltipEnabled,
-  });
+  // Ref for the text element (used as tooltip anchor)
+  const textRef = useRef<HTMLElement>(null);
 
-  // Merge refs: forwardedRef, truncation.ref, tooltip.ref
+  // Merge refs: forwardedRef, truncation.ref, textRef
   const mergedRef = useCallback(
     (element: HTMLElement | null) => {
       // Forward ref
@@ -234,10 +241,10 @@ export const XDSText = forwardRef<HTMLElement, XDSTextProps>(function XDSText(
       }
       // Truncation ref
       truncation.ref(element);
-      // Tooltip ref
-      tooltip.ref(element);
+      // Local ref for tooltip anchor
+      (textRef as React.MutableRefObject<HTMLElement | null>).current = element;
     },
-    [forwardedRef, truncation.ref, tooltip.ref],
+    [forwardedRef, truncation.ref],
   );
 
   // Build inline style for -webkit-line-clamp (dynamic value)
@@ -270,16 +277,19 @@ export const XDSText = forwardRef<HTMLElement, XDSTextProps>(function XDSText(
           xstyle,
         )}
         style={inlineStyle}
-        aria-describedby={tooltipEnabled ? tooltip.describedBy : undefined}
+        title={tooltipEnabled ? truncation.fullText : undefined}
         {...props}>
         {children}
       </Component>
-      {tooltipEnabled &&
-        tooltip.renderTooltip(
-          <span {...stylex.props(truncationTooltipStyles.content)}>
-            {truncation.fullText}
-          </span>,
-        )}
+      {tooltipEnabled && (
+        <Suspense fallback={null}>
+          <LazyTruncationTooltip
+            anchorRef={textRef}
+            content={truncation.fullText}
+            placement={tooltipPlacement}
+          />
+        </Suspense>
+      )}
     </>
   );
 });
