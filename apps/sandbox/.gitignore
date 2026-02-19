@@ -1,4 +1,7 @@
 node_modules
 AGENTS.md
 xds.config.mjs
-pages
+/pages
+out
+.next
+next-env.d.ts

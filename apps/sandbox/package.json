@@ -12,14 +12,16 @@
     "@stylexjs/stylex": "^0.17.4",
     "@xds/cli": "*",
     "@xds/core": "*",
+    "@xds/theme": "*",
     "next": "^15.0.0",
     "react": "^18.3.0",
-    "react-dom": "^18.3.0",
-    "@xds/theme": "*"
+    "react-dom": "^18.3.0"
   },
   "devDependencies": {
+    "@babel/preset-react": "^7.25.0",
+    "@babel/preset-typescript": "^7.25.0",
     "@stylexjs/babel-plugin": "^0.17.4",
-    "@stylexjs/nextjs-plugin": "^0.11.1",
+    "@stylexjs/postcss-plugin": "^0.17.4",
     "@types/node": "^22.0.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",

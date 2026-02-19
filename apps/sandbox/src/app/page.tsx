@@ -1,30 +1,28 @@
+'use client';
+
 import * as stylex from '@stylexjs/stylex';
-import {XDSText} from '@xds/core';
-import {XDSButton} from '@xds/core';
-import {XDSVStack} from '@xds/core';
+import {XDSVStack} from '@xds/core/Layout';
+import {XDSText, XDSHeading} from '@xds/core/Text';
 
 const styles = stylex.create({
-  main: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-    padding: 'var(--spacing-6)',
+  container: {
+    maxWidth: 640,
   },
 });
 
 export default function Home() {
   return (
-    <main {...stylex.props(styles.main)}>
-      <XDSVStack gap="space4" hAlign="center">
-        <XDSText type="large" weight="bold">
-          XDS Sandbox
-        </XDSText>
-        <XDSText type="body" color="secondary">
-          A testing ground for XDS components.
-        </XDSText>
-        <XDSButton label="Get Started" variant="primary" />
+    <div {...stylex.props(styles.container)}>
+      <XDSVStack gap="space6">
+        <XDSVStack gap="space2">
+          <XDSHeading level={1}>XDS Sandbox</XDSHeading>
+          <XDSText color="secondary">
+            A testing ground for XDS components. Use the sidebar to explore
+            example pages, or create new ones under{' '}
+            <XDSText weight="bold">src/app/pages/</XDSText>.
+          </XDSText>
+        </XDSVStack>
       </XDSVStack>
-    </main>
+    </div>
   );
 }
