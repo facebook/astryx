@@ -15,6 +15,8 @@ import {
   forwardRef,
   useContext,
   useId,
+  useOptimistic,
+  useTransition,
   type ChangeEvent,
   type ClipboardEvent,
 } from 'react';
@@ -32,6 +34,7 @@ import {
 } from '../theme/tokens.stylex';
 import {XDSField} from '../Field';
 import {XDSIcon, type XDSIconType} from '../Icon';
+import {XDSSpinner} from '../Spinner';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
@@ -212,7 +215,11 @@ export interface XDSTextAreaProps {
   /**
    * Callback fired when the textarea value changes.
    */
-  onChange: (value: string, e: ChangeEvent<HTMLTextAreaElement>) => void;
+  onChange?: (value: string, e: ChangeEvent<HTMLTextAreaElement>) => void;
+  /** Async action on change. Fires after onChange if not prevented. */
+  onChangeAction?: (value: string, e: ChangeEvent<HTMLTextAreaElement>) => void | Promise<void>;
+  /** Whether the input is in a loading state. @default false */
+  isLoading?: boolean;
   /**
    * The current value of the textarea.
    */
@@ -290,6 +297,8 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
       isOptional = false,
       isRequired = false,
       onChange,
+      onChangeAction,
+      isLoading = false,
       value,
       placeholder,
       rows = 3,
@@ -313,6 +322,10 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
     const descriptionID = useId();
     const statusMessageID = useId();
 
+    const [, startTransition] = useTransition();
+    const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+    const isBusy = isLoading || optimisticValue !== value;
+
     const statusIconMap: Record<XDSTextAreaStatusType, XDSIconName> = {
       warning: 'warning',
       error: 'xCircle',
@@ -335,6 +348,17 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
       ]
         .filter(Boolean)
         .join(' ') || undefined;
+
+    const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+      const newValue = e.target.value;
+      onChange?.(newValue, e);
+      if (onChangeAction && !e.defaultPrevented) {
+        startTransition(async () => {
+          setOptimisticValue(newValue);
+          await onChangeAction(newValue, e);
+        });
+      }
+    };
 
     return (
       <XDSField
@@ -369,8 +393,8 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
             ref={ref}
             id={id}
             name={htmlName}
-            value={value}
-            onChange={e => onChange(e.target.value, e)}
+            value={String(optimisticValue)}
+            onChange={handleChange}
             onPaste={onPaste}
             placeholder={placeholder}
             rows={rows}
@@ -381,12 +405,14 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
             aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
+            aria-busy={isBusy || undefined}
             {...stylex.props(
               styles.textarea,
               isDisabled && styles.textareaDisabled,
               textareaOverride,
             )}
           />
+          {isBusy && <XDSSpinner size="sm" />}
           {status && (
             <XDSIcon
               icon={statusIconMap[status.type]}

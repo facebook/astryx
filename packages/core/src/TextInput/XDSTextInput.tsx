@@ -11,7 +11,7 @@
  * - /apps/storybook/stories/TextInput.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useContext, useId, type ChangeEvent} from 'react';
+import {forwardRef, useContext, useId, useOptimistic, useTransition, type ChangeEvent} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSIconName} from '../Icon';
 import {
@@ -27,6 +27,7 @@ import {
 } from '../theme/tokens.stylex';
 import {XDSField, type XDSInputStatus, type XDSInputStatusType} from '../Field';
 import {XDSIcon, type XDSIconType} from '../Icon';
+import {XDSSpinner} from '../Spinner';
 
 const styles = stylex.create({
   wrapper: {
@@ -225,7 +226,11 @@ export interface XDSTextInputProps {
   /**
    * Callback fired when the input value changes.
    */
-  onChange: (value: string, e: ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (value: string, e: ChangeEvent<HTMLInputElement>) => void;
+  /** Async action on change. Fires after onChange if not prevented. */
+  onChangeAction?: (value: string, e: ChangeEvent<HTMLInputElement>) => void | Promise<void>;
+  /** Whether the input is in a loading state. @default false */
+  isLoading?: boolean;
   /**
    * The current value of the input.
    */
@@ -272,6 +277,8 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
       status,
       size = 'md',
       onChange,
+      onChangeAction,
+      isLoading = false,
       value,
       placeholder,
       labelTooltip,
@@ -287,6 +294,10 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
     const id = useId();
     const descriptionID = useId();
     const statusMessageID = useId();
+
+    const [, startTransition] = useTransition();
+    const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+    const isBusy = isLoading || optimisticValue !== value;
 
     const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
       warning: 'warning',
@@ -310,6 +321,17 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
       ]
         .filter(Boolean)
         .join(' ') || undefined;
+
+    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+      const newValue = e.target.value;
+      onChange?.(newValue, e);
+      if (onChangeAction && !e.defaultPrevented) {
+        startTransition(async () => {
+          setOptimisticValue(newValue);
+          await onChangeAction(newValue, e);
+        });
+      }
+    };
 
     return (
       <XDSField
@@ -346,20 +368,22 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
             id={id}
             name={htmlName}
             type="text"
-            value={value}
-            onChange={e => onChange(e.target.value, e)}
+            value={String(optimisticValue)}
+            onChange={handleChange}
             placeholder={placeholder}
             disabled={isDisabled}
             autoFocus={hasAutoFocus}
             aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
+            aria-busy={isBusy || undefined}
             {...stylex.props(
               styles.input,
               isDisabled && styles.inputDisabled,
               inputOverride,
             )}
           />
+          {isBusy && <XDSSpinner size="sm" />}
           {status && (
             <XDSIcon
               icon={statusIconMap[status.type]}
