@@ -65,6 +65,20 @@ const config: StorybookConfig = {
           '@xds/theme': themeRoot,
         },
       },
+      css: {
+        // Prevent LightningCSS from lowering light-dark() into
+        // --lightningcss-light/--lightningcss-dark polyfill variables.
+        // XDS tokens use native light-dark() which is baseline 2024:
+        // Chrome 123+, Firefox 120+, Safari 17.5+
+        transformer: 'lightningcss',
+        lightningcss: {
+          targets: {
+            chrome: 123 << 16,
+            firefox: 120 << 16,
+            safari: (17 << 16) | (5 << 8),
+          },
+        },
+      },
     };
   },
 };
