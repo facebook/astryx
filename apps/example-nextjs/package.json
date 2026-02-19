@@ -1,0 +1,27 @@
+{
+  "name": "@xds/example-nextjs",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@stylexjs/stylex": "^0.17.4",
+    "@xds/core": "*",
+    "@xds/theme": "*",
+    "next": "^15.0.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0"
+  },
+  "devDependencies": {
+    "@babel/preset-react": "^7.25.0",
+    "@babel/preset-typescript": "^7.25.0",
+    "@stylexjs/babel-plugin": "^0.17.4",
+    "@stylexjs/postcss-plugin": "^0.17.4",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.7.0"
+  }
+}
