@@ -32,6 +32,7 @@ import {XDSIcon, type XDSIconType} from '../Icon';
 
 const styles = stylex.create({
   wrapper: {
+    boxSizing: 'border-box',
     position: 'relative',
     zIndex: 1,
     display: 'flex',
@@ -67,14 +68,15 @@ const styles = stylex.create({
     display: 'block',
     flex: 1,
     minWidth: 0,
-    border: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
     padding: 0,
     fontFamily: typographyVars['--font-body'],
     fontSize: textSizeVars['--text-base'],
     lineHeight: lineHeightVars['--leading-base'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
-    outline: 0,
+    outline: 'none',
     '::placeholder': {
       color: colorVars['--color-text-placeholder'],
     },

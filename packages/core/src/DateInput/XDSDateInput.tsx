@@ -42,6 +42,7 @@ import {parseDateInput, formatDisplayDate} from '../utils';
 
 const styles = stylex.create({
   wrapper: {
+    boxSizing: 'border-box',
     position: 'relative',
     display: 'flex',
     alignItems: 'center',
