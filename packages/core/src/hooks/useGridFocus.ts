@@ -61,7 +61,7 @@ export interface UseGridFocusReturn {
   /**
    * Ref to attach to the grid container element.
    */
-  gridRef: React.RefObject<HTMLElement>;
+  gridRef: React.RefObject<HTMLElement | null>;
 
   /**
    * Key down handler to attach to the grid container.

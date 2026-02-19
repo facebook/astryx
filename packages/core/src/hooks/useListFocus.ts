@@ -39,7 +39,7 @@ export interface UseListFocusReturn {
   /**
    * Ref to attach to the list container element.
    */
-  listRef: React.RefObject<HTMLElement>;
+  listRef: React.RefObject<HTMLElement | null>;
 
   /**
    * Key down handler to attach to the list container.

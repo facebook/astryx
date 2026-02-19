@@ -55,7 +55,7 @@ export interface XDSTooltipProps {
    * instead of wrapping children. This enables sibling-mode rendering,
    * useful for lazy-loaded tooltips that shouldn't remount children.
    */
-  anchorRef?: React.RefObject<HTMLElement>;
+  anchorRef?: React.RefObject<HTMLElement | null>;
 
   /**
    * Content to display in the tooltip.
