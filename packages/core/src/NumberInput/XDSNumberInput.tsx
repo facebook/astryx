@@ -23,11 +23,7 @@ import {
   type KeyboardEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  XCircleIcon,
-} from '@heroicons/react/24/solid';
+import type {XDSIconName} from '../Icon';
 import {
   colorVars,
   sizeVars,
@@ -186,7 +182,7 @@ export interface XDSNumberInputProps {
   isDisabled?: boolean;
   /**
    * Icon to display at the start of the input.
-   * Import from @heroicons/react/24/outline or @heroicons/react/24/solid.
+   * Pass an SVG icon component (e.g. from heroicons, lucide, etc.).
    */
   startIcon?: XDSIconType;
   /**
@@ -369,10 +365,10 @@ export const XDSNumberInput = forwardRef<HTMLInputElement, XDSNumberInputProps>(
     // Pending input while user is typing (null = show formatted value)
     const [pendingInput, setPendingInput] = useState<string | null>(null);
 
-    const statusIconMap: Record<XDSInputStatusType, XDSIconType> = {
-      warning: ExclamationTriangleIcon,
-      error: XCircleIcon,
-      success: CheckCircleIcon,
+    const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
+      warning: 'warning',
+      error: 'xCircle',
+      success: 'checkCircle',
     };
 
     const statusIconColorMap: Record<

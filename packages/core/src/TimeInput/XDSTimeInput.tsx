@@ -23,12 +23,7 @@ import {
   type FocusEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {ClockIcon, XMarkIcon} from '@heroicons/react/24/outline';
-import {
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  XCircleIcon,
-} from '@heroicons/react/24/solid';
+import type {XDSIconName} from '../Icon';
 import {
   colorVars,
   sizeVars,
@@ -332,10 +327,10 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
     const inputRef = useRef<HTMLInputElement | null>(null);
 
     // Status icon mapping
-    const statusIconMap: Record<XDSInputStatusType, typeof XCircleIcon> = {
-      warning: ExclamationTriangleIcon,
-      error: XCircleIcon,
-      success: CheckCircleIcon,
+    const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
+      warning: 'warning',
+      error: 'xCircle',
+      success: 'checkCircle',
     };
 
     const statusIconColorMap: Record<
@@ -522,7 +517,7 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
             wrapperOverride,
           )}>
           <div {...stylex.props(styles.icon)}>
-            <XDSIcon icon={ClockIcon} size="sm" color="secondary" />
+            <XDSIcon icon="clock" size="sm" color="secondary" />
           </div>
           <input
             ref={setRefs}
@@ -551,7 +546,7 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
               onClick={handleClear}
               aria-label="Clear time"
               {...stylex.props(styles.clearButton)}>
-              <XDSIcon icon={XMarkIcon} size="sm" color="secondary" />
+              <XDSIcon icon="close" size="sm" color="secondary" />
             </button>
           )}
           {status && (

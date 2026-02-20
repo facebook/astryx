@@ -11,11 +11,11 @@
  * - /apps/storybook/stories/CloseButton.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useContext, type ButtonHTMLAttributes} from 'react';
-import {XMarkIcon} from '@heroicons/react/24/outline';
+'use client';
+
+import {forwardRef, type ButtonHTMLAttributes} from 'react';
 import {XDSButton, type XDSButtonSize} from '../Button';
-import {XDSIcon, type XDSIconType, type XDSIconSize} from '../Icon';
-import {ThemeContext} from '../theme/ThemeContext';
+import {XDSIcon, type XDSIconSize} from '../Icon';
 
 // =============================================================================
 // Types
@@ -29,19 +29,6 @@ const buttonSizeToIconSize: Record<XDSCloseButtonSize, XDSIconSize> = {
   md: 'md',
   lg: 'lg',
 };
-
-// =============================================================================
-// Module Augmentation - Register CloseButton config with ComponentStyles
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    closeButton?: {
-      /** Custom icon component to use instead of the default XMarkIcon */
-      icon?: XDSIconType;
-    };
-  }
-}
 
 export interface XDSCloseButtonProps extends Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
@@ -69,10 +56,10 @@ export interface XDSCloseButtonProps extends Omit<
 // =============================================================================
 
 /**
- * A close button component with a configurable icon.
+ * A close button component.
  *
- * The icon can be customized via the theme's `components.closeButton.icon` setting.
- * Defaults to the Heroicons XMarkIcon (outline).
+ * The close icon is provided by the theme's icon registry.
+ * Falls back to a built-in lightweight SVG when no theme is present.
  *
  * @example
  * ```tsx
@@ -84,11 +71,6 @@ export const XDSCloseButton = forwardRef<
   HTMLButtonElement,
   XDSCloseButtonProps
 >(({size = 'md', label = 'Close', isDisabled, ...props}, ref) => {
-  // Get theme context for custom icon
-  const themeContext = useContext(ThemeContext);
-  const IconComponent =
-    themeContext?.theme.components?.closeButton?.icon ?? XMarkIcon;
-
   const iconSize = buttonSizeToIconSize[size];
 
   return (
@@ -100,7 +82,7 @@ export const XDSCloseButton = forwardRef<
       label={label}
       tooltip={label}
       isDisabled={isDisabled}
-      icon={<XDSIcon icon={IconComponent} size={iconSize} color="inherit" />}
+      icon={<XDSIcon icon="close" size={iconSize} color="inherit" />}
       {...props}
     />
   );

@@ -19,11 +19,7 @@ import {
   type ClipboardEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  XCircleIcon,
-} from '@heroicons/react/24/solid';
+import type {XDSIconName} from '../Icon';
 import {
   colorVars,
   spacingVars,
@@ -204,7 +200,7 @@ export interface XDSTextAreaProps {
   labelTooltip?: string;
   /**
    * Icon to display at the start of the textarea.
-   * Import from @heroicons/react/24/outline or @heroicons/react/24/solid.
+   * Pass an SVG icon component (e.g. from heroicons, lucide, etc.).
    */
   startIcon?: XDSIconType;
   /**
@@ -274,10 +270,10 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
     const descriptionID = useId();
     const statusMessageID = useId();
 
-    const statusIconMap: Record<XDSTextAreaStatusType, XDSIconType> = {
-      warning: ExclamationTriangleIcon,
-      error: XCircleIcon,
-      success: CheckCircleIcon,
+    const statusIconMap: Record<XDSTextAreaStatusType, XDSIconName> = {
+      warning: 'warning',
+      error: 'xCircle',
+      success: 'checkCircle',
     };
 
     const statusIconColorMap: Record<
