@@ -93,21 +93,19 @@ Layout/
 ### App shell with sidebar
 
 ```tsx
-<XDSCard height="100vh">
-  <XDSLayout
-    header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}
-    start={
-      <XDSLayoutPanel hasDivider width={240} role="navigation">
-        <Navigation />
-      </XDSLayoutPanel>
-    }
-    content={
-      <XDSLayoutContent role="main">
-        <MainContent />
-      </XDSLayoutContent>
-    }
-  />
-</XDSCard>
+<XDSLayout
+  header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}
+  start={
+    <XDSLayoutPanel hasDivider width={240} role="navigation">
+      <Navigation />
+    </XDSLayoutPanel>
+  }
+  content={
+    <XDSLayoutContent role="main">
+      <MainContent />
+    </XDSLayoutContent>
+  }
+/>
 ```
 
 ## Components

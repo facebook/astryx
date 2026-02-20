@@ -46,50 +46,48 @@ import {
 
 ## Usage
 
-XDSLayout must be wrapped in a container component (XDSCard, XDSSection, or XDSLayoutContainer), which provides visual appearance and padding context.
+XDSLayout can be used standalone for page-level layouts, or inside a container
+component (XDSCard, XDSSection) for content-level layouts like cards with
+header/body/footer sections.
 
-### App shell with sidebar navigation
+### Full-page app shell with sidebar
 
 ```tsx
-<XDSCard height="100vh">
-  <XDSLayout
-    header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}
-    start={
-      <XDSLayoutPanel hasDivider width={240} role="navigation">
-        <Navigation />
-      </XDSLayoutPanel>
-    }
-    content={
-      <XDSLayoutContent role="main">
-        <MainContent />
-      </XDSLayoutContent>
-    }
-  />
-</XDSCard>
+<XDSLayout
+  header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}
+  start={
+    <XDSLayoutPanel hasDivider width={240} role="navigation">
+      <Navigation />
+    </XDSLayoutPanel>
+  }
+  content={
+    <XDSLayoutContent role="main">
+      <MainContent />
+    </XDSLayoutContent>
+  }
+/>
 ```
 
 ### Dashboard with sidebar and detail panel
 
 ```tsx
-<XDSCard height="100vh">
-  <XDSLayout
-    header={<XDSLayoutHeader hasDivider>Dashboard</XDSLayoutHeader>}
-    start={
-      <XDSLayoutPanel hasDivider width={200} role="navigation">
-        <Navigation />
-      </XDSLayoutPanel>
-    }
-    content={<XDSLayoutContent>Main content</XDSLayoutContent>}
-    end={
-      <XDSLayoutPanel hasDivider width={300} role="complementary">
-        <DetailPanel />
-      </XDSLayoutPanel>
-    }
-  />
-</XDSCard>
+<XDSLayout
+  header={<XDSLayoutHeader hasDivider>Dashboard</XDSLayoutHeader>}
+  start={
+    <XDSLayoutPanel hasDivider width={200} role="navigation">
+      <Navigation />
+    </XDSLayoutPanel>
+  }
+  content={<XDSLayoutContent>Main content</XDSLayoutContent>}
+  end={
+    <XDSLayoutPanel hasDivider width={300} role="complementary">
+      <DetailPanel />
+    </XDSLayoutPanel>
+  }
+/>
 ```
 
-### Card with header and content
+### Card with structured content
 
 ```tsx
 <XDSCard>

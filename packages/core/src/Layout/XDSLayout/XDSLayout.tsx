@@ -119,7 +119,8 @@ function AreaProvider({
  * Page shell with header, sidebar(s), content, and footer slots.
  * Use this for full-page layouts, app shells, dashboard layouts, or any UI
  * that needs a header bar, side navigation, scrollable content area, or action footer.
- * Must be wrapped in a container (XDSCard, XDSSection).
+ * Can be used standalone for page-level layouts, or inside a container
+ * (XDSCard, XDSSection) for content-level layouts.
  *
  * Handles padding collapse between adjacent slots, scroll containment in the
  * content area, and automatic RTL support via CSS logical properties.
@@ -145,24 +146,22 @@ function AreaProvider({
  *
  * @example
  * ```tsx
- * // App shell with sidebar navigation
- * <XDSCard height="100vh">
- *   <XDSLayout
- *     header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}
- *     start={
- *       <XDSLayoutPanel hasDivider width={240} role="navigation">
- *         <Navigation />
- *       </XDSLayoutPanel>
- *     }
- *     content={
- *       <XDSLayoutContent role="main">
- *         <MainContent />
- *       </XDSLayoutContent>
- *     }
- *   />
- * </XDSCard>
+ * // Full-page app shell with sidebar navigation
+ * <XDSLayout
+ *   header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}
+ *   start={
+ *     <XDSLayoutPanel hasDivider width={240} role="navigation">
+ *       <Navigation />
+ *     </XDSLayoutPanel>
+ *   }
+ *   content={
+ *     <XDSLayoutContent role="main">
+ *       <MainContent />
+ *     </XDSLayoutContent>
+ *   }
+ * />
  *
- * // Simple card with header and content
+ * // Card with structured content
  * <XDSCard>
  *   <XDSLayout
  *     header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
