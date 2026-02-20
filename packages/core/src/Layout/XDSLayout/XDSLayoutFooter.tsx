@@ -94,6 +94,9 @@ export interface XDSLayoutFooterProps extends Omit<
  * Bottom bar / footer for XDSLayout. Use for action bars, pagination, or status bars.
  * Renders in the footer slot with optional divider and padding control.
  *
+ * Already provides its own padding — don't add padding to children.
+ * Use `isFullBleed` if your content manages its own padding.
+ *
  * @example
  * ```tsx
  * <XDSLayoutContainer variant="card">

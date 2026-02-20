@@ -94,6 +94,9 @@ export interface XDSLayoutHeaderProps extends Omit<
  * Top bar / header for XDSLayout. Use for page titles, app bars, or toolbars.
  * Renders in the header slot with optional divider and padding control.
  *
+ * Already provides its own padding — don't add padding to children.
+ * Use `isFullBleed` if your content manages its own padding (e.g. XDSTopNav).
+ *
  * @example
  * ```tsx
  * <XDSLayoutContainer variant="card">

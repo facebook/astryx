@@ -244,6 +244,32 @@ Use `isFullBleed` on XDSLayoutContent to remove internal padding, allowing conte
 
 When `hasDivider` is false, spacing collapse is applied automatically for seamless visual flow.
 
+## Padding and Scroll
+
+Layout slot components (`XDSLayoutContent`, `XDSLayoutPanel`, `XDSLayoutHeader`, `XDSLayoutFooter`) provide their own padding and scroll containment. Don't add padding or overflow styles to their children — it will double up.
+
+```tsx
+// ✅ Correct — let the layout slot handle padding
+<XDSLayoutPanel hasDivider width={320}>
+  <Navigation />
+</XDSLayoutPanel>
+
+// ❌ Wrong — padding doubles up with the panel's built-in padding
+<XDSLayoutPanel hasDivider width={320}>
+  <div style={{ padding: 16, overflow: 'auto' }}>
+    <Navigation />
+  </div>
+</XDSLayoutPanel>
+```
+
+If you need to remove the built-in padding (e.g., for edge-to-edge tables or content that manages its own padding), use `isFullBleed`:
+
+```tsx
+<XDSLayoutContent isFullBleed>
+  <Table />
+</XDSLayoutContent>
+```
+
 ## RTL Support
 
 Uses CSS logical properties (`padding-inline`, `border-inline-start`, etc.) for automatic RTL support. The `start`/`end` naming ensures panels appear on the correct side in both LTR and RTL contexts.

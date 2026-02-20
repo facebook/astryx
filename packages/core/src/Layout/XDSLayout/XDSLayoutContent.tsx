@@ -97,6 +97,9 @@ export interface XDSLayoutContentProps extends Omit<
  * Scrollable main content area for XDSLayout. Wraps the primary body content
  * with automatic scroll containment and context-aware padding.
  *
+ * Already provides its own padding and scroll — don't add padding or
+ * overflow to children. Use `isFullBleed` if you need edge-to-edge content.
+ *
  * @example
  * ```tsx
  * <XDSLayoutContainer variant="card">

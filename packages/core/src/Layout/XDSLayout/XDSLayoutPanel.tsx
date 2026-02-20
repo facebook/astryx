@@ -140,6 +140,9 @@ export interface XDSLayoutPanelProps extends Omit<
  * Renders with optional divider and context-aware padding.
  * Divider position is auto-detected based on which slot the panel is in.
  *
+ * Already provides its own padding and scroll — don't add padding or
+ * overflow to children. Use `isFullBleed` if you need edge-to-edge content.
+ *
  * @example
  * ```tsx
  * <XDSLayoutContainer variant="card">
