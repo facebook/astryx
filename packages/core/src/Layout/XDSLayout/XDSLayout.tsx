@@ -161,6 +161,18 @@ function AreaProvider({
  *   }
  * />
  *
+ * // With XDSTopNav — no wrapper needed, TopNav manages its own chrome
+ * <XDSLayout
+ *   header={
+ *     <XDSTopNav
+ *       label="Main navigation"
+ *       title={<XDSTopNavTitle title="My App" logo={<Logo />} />}
+ *       startContent={<XDSTopNavItem label="Home" href="/" isSelected />}
+ *     />
+ *   }
+ *   content={<XDSLayoutContent role="main">...</XDSLayoutContent>}
+ * />
+ *
  * // Card with structured content
  * <XDSCard>
  *   <XDSLayout

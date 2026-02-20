@@ -113,6 +113,37 @@ import {HomeIcon, BellIcon, UserCircleIcon} from '@heroicons/react/24/outline';
 
 ## Layout Structure
 
+XDSTopNav works directly in XDSLayout's `header` slot — no XDSLayoutHeader
+wrapper needed. TopNav manages its own padding, height, and divider.
+
+```tsx
+import {XDSLayout, XDSLayoutContent, XDSLayoutPanel} from '@xds/core/Layout';
+import {XDSTopNav, XDSTopNavTitle, XDSTopNavItem} from '@xds/core/TopNav';
+
+<XDSLayout
+  header={
+    <XDSTopNav
+      label="Main navigation"
+      title={<XDSTopNavTitle title="My App" logo={<Logo />} />}
+      startContent={
+        <>
+          <XDSTopNavItem label="Home" href="/" isSelected />
+          <XDSTopNavItem label="Settings" href="/settings" />
+        </>
+      }
+      endContent={<Avatar />}
+    />
+  }
+  content={
+    <XDSLayoutContent role="main">
+      <MainContent />
+    </XDSLayoutContent>
+  }
+/>
+```
+
+## Slot Layout Structure
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ [title]  [startContent ...]              [...endContent]    │

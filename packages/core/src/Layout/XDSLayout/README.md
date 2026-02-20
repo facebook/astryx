@@ -68,6 +68,44 @@ header/body/footer sections.
 />
 ```
 
+### App shell with XDSTopNav
+
+XDSLayout slots accept any component — you don't need to wrap in XDSLayoutHeader.
+Components like XDSTopNav that manage their own padding, height, and divider
+can go directly in the `header` slot:
+
+```tsx
+<XDSLayout
+  header={
+    <XDSTopNav
+      label="Main navigation"
+      title={<XDSTopNavTitle title="My App" logo={<Logo />} />}
+      startContent={
+        <>
+          <XDSTopNavItem label="Home" href="/" isSelected />
+          <XDSTopNavItem label="Settings" href="/settings" />
+        </>
+      }
+      endContent={<Avatar />}
+    />
+  }
+  start={
+    <XDSLayoutPanel hasDivider width={240} role="navigation">
+      <SideNav />
+    </XDSLayoutPanel>
+  }
+  content={
+    <XDSLayoutContent role="main">
+      <MainContent />
+    </XDSLayoutContent>
+  }
+/>
+```
+
+Use XDSLayoutHeader when your header is simple content (a heading, buttons, etc.)
+that needs the layout's padding and divider management. Use XDSTopNav or other
+self-contained components directly when they handle their own chrome.
+
 ### Dashboard with sidebar and detail panel
 
 ```tsx
