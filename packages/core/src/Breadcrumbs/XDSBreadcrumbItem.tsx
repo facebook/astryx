@@ -71,7 +71,15 @@ const itemStyles = stylex.create({
   supportingSize: {
     fontSize: textSizeVars['--text-xsm'],
   },
+  contentWrapper: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+  },
   link: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
     textDecoration: {
       default: 'none',
       ':hover': 'underline',
@@ -143,6 +151,7 @@ export function XDSBreadcrumbItem({
         data-testid={testId}>
         <span
           {...stylex.props(
+            itemStyles.contentWrapper,
             itemStyles.current,
             isSupporting
               ? itemStyles.supportingCurrent
