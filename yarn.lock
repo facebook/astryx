@@ -305,7 +305,7 @@
     "@babel/helper-skip-transparent-expression-wrappers" "^7.27.1"
     "@babel/plugin-syntax-typescript" "^7.28.6"
 
-"@babel/preset-react@^7.28.5":
+"@babel/preset-react@^7.25.0", "@babel/preset-react@^7.28.5":
   version "7.28.5"
   resolved "https://registry.yarnpkg.com/@babel/preset-react/-/preset-react-7.28.5.tgz#6fcc0400fa79698433d653092c3919bb4b0878d9"
   integrity sha512-Z3J8vhRq7CeLjdC58jLv4lnZ5RKFUJWqH5emvxmv9Hv3BD1T9R/Im713R4MTKwvFaV74ejZ3sM01LyEKk4ugNQ==
@@ -317,7 +317,7 @@
     "@babel/plugin-transform-react-jsx-development" "^7.27.1"
     "@babel/plugin-transform-react-pure-annotations" "^7.27.1"
 
-"@babel/preset-typescript@^7.28.5":
+"@babel/preset-typescript@^7.25.0", "@babel/preset-typescript@^7.28.5":
   version "7.28.5"
   resolved "https://registry.yarnpkg.com/@babel/preset-typescript/-/preset-typescript-7.28.5.tgz#540359efa3028236958466342967522fd8f2a60c"
   integrity sha512-+bQy5WOI2V6LJZpPVxY+yp66XdZ2yifu0Mc1aP5CQKgjn4QM5IN2i5fAZ4xKop47pr8rpVhiAeu+nDQa12C8+g==
@@ -2009,6 +2009,18 @@
     "@babel/plugin-syntax-typescript" "^7.25.9"
     "@stylexjs/babel-plugin" "0.11.1"
 
+"@stylexjs/postcss-plugin@^0.17.4":
+  version "0.17.5"
+  resolved "https://registry.yarnpkg.com/@stylexjs/postcss-plugin/-/postcss-plugin-0.17.5.tgz#03ecd009409cbcb59e5083cac8a62f591ec38e16"
+  integrity sha512-GeveZXN8aDrXTSRpDM0SvCjmmY7WCfoel+lWcsf47QcJvjz5auGmh3a9LhIFLpwmAgpsVr20RyB8yxX93NaKow==
+  dependencies:
+    "@babel/core" "^7.26.8"
+    "@stylexjs/babel-plugin" "0.17.5"
+    fast-glob "^3.3.2"
+    glob-parent "^6.0.2"
+    is-glob "^4.0.3"
+    postcss "^8.4.49"
+
 "@stylexjs/shared@0.11.1":
   version "0.11.1"
   resolved "https://registry.yarnpkg.com/@stylexjs/shared/-/shared-0.11.1.tgz#c92160f33161f5721f5e1b4a623f99892df5d319"
@@ -3225,7 +3237,7 @@ fast-deep-equal@^3.1.1, fast-deep-equal@^3.1.3:
   resolved "https://registry.yarnpkg.com/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz#3a7d56b559d6cbc3eb512325244e619a65c6c525"
   integrity sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==
 
-fast-glob@^3.2.9:
+fast-glob@^3.2.9, fast-glob@^3.3.2:
   version "3.3.3"
   resolved "https://registry.yarnpkg.com/fast-glob/-/fast-glob-3.3.3.tgz#d06d585ce8dba90a16b0505c543c3ccfb3aeb818"
   integrity sha512-7MptL8U0cqcFdzIzwOTHoilX9x5BrNqye7Z/LuC7kCMRio1EMSyqRK3BEAUD7sXRq4iT4AzTVuZdhgQ2TCvYLg==
@@ -4364,7 +4376,7 @@ postcss@8.4.31:
     picocolors "^1.0.0"
     source-map-js "^1.0.2"
 
-postcss@^8.4.43:
+postcss@^8.4.43, postcss@^8.4.49:
   version "8.5.6"
   resolved "https://registry.yarnpkg.com/postcss/-/postcss-8.5.6.tgz#2825006615a619b4f62a9e7426cc120b349a8f3c"
   integrity sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg==

@@ -11,7 +11,7 @@ import {colorVars} from '../../theme/tokens.stylex';
 import {ThemeContext} from '../../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../../theme/types';
 import {container} from './container.stylex';
-import type {SizeValue} from './XDSCard';
+import type {SizeValue} from '../../Card/XDSCard';
 
 /**
  * Visual variant for the section.
