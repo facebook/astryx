@@ -2,7 +2,10 @@
  * @file XDSLayout.tsx
  * @input Uses React, stack/stackItem utilities, XDSLayoutAreaContext, XDSLayoutSlotsContext
  * @output Exports XDSLayout component and XDSLayoutProps, XDSLayoutHeight types
- * @position Core layout component with named slots
+ * @position Page shell and app layout — use for any page with a header, sidebar, or content area.
+ *   Building a page with a sidebar? Use XDSLayout with start/end slots.
+ *   Need a header + scrollable content? Use XDSLayout with header + content slots.
+ *   Manages padding collapse, scroll containment, and responsive slot sizing automatically.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Layout/XDSLayout/README.md
@@ -113,7 +116,13 @@ function AreaProvider({
 }
 
 /**
- * Arranges sections using named slots. Must be wrapped in XDSLayoutContainer.
+ * Page shell with header, sidebar(s), content, and footer slots.
+ * Use this for full-page layouts, app shells, dashboard layouts, or any UI
+ * that needs a header bar, side navigation, scrollable content area, or action footer.
+ * Must be wrapped in a container (XDSCard, XDSSection).
+ *
+ * Handles padding collapse between adjacent slots, scroll containment in the
+ * content area, and automatic RTL support via CSS logical properties.
  *
  * Structure:
  * ```
@@ -128,14 +137,38 @@ function AreaProvider({
  * └─────────────────────────────────────────┘
  * ```
  *
+ * When to use XDSLayout vs raw flexbox:
+ * - Page with a sidebar → XDSLayout with `start` slot
+ * - Dashboard with header + scrollable body → XDSLayout with `header` + `content`
+ * - Settings page with nav panel → XDSLayout with `start` + `content`
+ * - Simple vertical stack of items → use XDSVStack instead
+ *
  * @example
  * ```tsx
- * <XDSLayoutContainer variant="card">
+ * // App shell with sidebar navigation
+ * <XDSCard height="100vh">
  *   <XDSLayout
- *     header={<XDSLayoutHeader>Title</XDSLayoutHeader>}
+ *     header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}
+ *     start={
+ *       <XDSLayoutPanel hasDivider width={240} role="navigation">
+ *         <Navigation />
+ *       </XDSLayoutPanel>
+ *     }
+ *     content={
+ *       <XDSLayoutContent role="main">
+ *         <MainContent />
+ *       </XDSLayoutContent>
+ *     }
+ *   />
+ * </XDSCard>
+ *
+ * // Simple card with header and content
+ * <XDSCard>
+ *   <XDSLayout
+ *     header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
  *     content={<XDSLayoutContent>Body</XDSLayoutContent>}
  *   />
- * </XDSLayoutContainer>
+ * </XDSCard>
  * ```
  */
 export function XDSLayout({

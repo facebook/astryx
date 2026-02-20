@@ -2,7 +2,8 @@
  * @file XDSLayoutFooter.tsx
  * @input Uses React forwardRef, StyleX
  * @output Exports XDSLayoutFooter component and XDSLayoutFooterProps
- * @position Layout content area component
+ * @position Bottom bar / footer area for XDSLayout. Use for action bars,
+ *   pagination, status bars, or any fixed-height content at the bottom of a layout.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Layout/XDSLayout/README.md
@@ -90,7 +91,7 @@ export interface XDSLayoutFooterProps extends Omit<
 }
 
 /**
- * Footer content area for XDSLayout.
+ * Bottom bar / footer for XDSLayout. Use for action bars, pagination, or status bars.
  * Renders in the footer slot with optional divider and padding control.
  *
  * @example

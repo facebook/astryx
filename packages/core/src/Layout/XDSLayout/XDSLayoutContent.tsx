@@ -2,7 +2,8 @@
  * @file XDSLayoutContent.tsx
  * @input Uses React forwardRef, StyleX, XDSLayoutSlotsContext
  * @output Exports XDSLayoutContent component and XDSLayoutContentProps
- * @position Layout content area component
+ * @position Scrollable main content area for XDSLayout. Wraps the primary body content
+ *   with automatic scroll containment and context-aware padding.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Layout/XDSLayout/README.md
@@ -93,8 +94,8 @@ export interface XDSLayoutContentProps extends Omit<
 }
 
 /**
- * Main content area for XDSLayout.
- * Renders in the content slot with optional scrollable overflow and padding control.
+ * Scrollable main content area for XDSLayout. Wraps the primary body content
+ * with automatic scroll containment and context-aware padding.
  *
  * @example
  * ```tsx
