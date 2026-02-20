@@ -117,6 +117,55 @@ describe('XDSToggleButton', () => {
   });
 
   // =========================================================================
+  // Emphasized text (font-weight shift prevention)
+  // =========================================================================
+
+  it('renders width reservation element for label text', () => {
+    render(
+      <XDSToggleButton
+        label="Bold"
+        isPressed={false}
+        onPressedChange={() => {}}
+      />,
+    );
+    const button = screen.getByRole('button');
+    // The hidden width-reservation span should exist with aria-hidden
+    const hiddenSpan = button.querySelector('[aria-hidden="true"]');
+    expect(hiddenSpan).toBeInTheDocument();
+    expect(hiddenSpan).toHaveTextContent('Bold');
+  });
+
+  it('renders width reservation element for children text', () => {
+    render(
+      <XDSToggleButton
+        label="Toggle bold"
+        isPressed={false}
+        onPressedChange={() => {}}
+        icon={<span data-testid="icon">B</span>}>
+        Bold
+      </XDSToggleButton>,
+    );
+    const button = screen.getByRole('button');
+    const hiddenSpan = button.querySelector('[aria-hidden="true"]');
+    expect(hiddenSpan).toBeInTheDocument();
+    expect(hiddenSpan).toHaveTextContent('Bold');
+  });
+
+  it('does not render width reservation for icon-only buttons', () => {
+    render(
+      <XDSToggleButton
+        label="Bold"
+        isPressed={false}
+        onPressedChange={() => {}}
+        icon={<span data-testid="icon">B</span>}
+      />,
+    );
+    const button = screen.getByRole('button');
+    const hiddenSpan = button.querySelector('[aria-hidden="true"]');
+    expect(hiddenSpan).not.toBeInTheDocument();
+  });
+
+  // =========================================================================
   // aria-pressed
   // =========================================================================
 

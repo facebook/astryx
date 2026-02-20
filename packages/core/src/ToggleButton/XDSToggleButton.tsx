@@ -306,6 +306,39 @@ export interface XDSToggleButtonProps extends Omit<
 // Loading styles
 // =============================================================================
 
+// =============================================================================
+// Label width reservation — prevents layout shift on font-weight change
+// =============================================================================
+
+/**
+ * The label wrapper uses a ::after pseudo-element trick to prevent layout shift
+ * when toggling between medium (unpressed) and semibold (pressed) font weights.
+ *
+ * The ::after renders the same text at semibold weight but is visually hidden
+ * (height: 0, overflow: hidden). This reserves the wider semibold width at all
+ * times, so the button never changes size when toggled.
+ */
+const labelStyles = stylex.create({
+  wrapper: {
+    display: 'inline-flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  widthReservation: {
+    display: 'block',
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    height: 0,
+    overflow: 'hidden',
+    visibility: 'hidden',
+    // Prevent the hidden text from affecting pointer events
+    pointerEvents: 'none',
+  },
+  pressed: {
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+  },
+});
+
 const loadingStyles = stylex.create({
   loading: {
     position: 'relative',
@@ -434,7 +467,29 @@ export const XDSToggleButton = forwardRef<
           </span>
         )}
         {resolvedIcon}
-        {children ?? (isIconOnly ? null : label)}
+        {children != null ? (
+          <span {...stylex.props(labelStyles.wrapper)}>
+            <span {...stylex.props(isPressed && labelStyles.pressed)}>
+              {children}
+            </span>
+            <span
+              {...stylex.props(labelStyles.widthReservation)}
+              aria-hidden="true">
+              {children}
+            </span>
+          </span>
+        ) : isIconOnly ? null : (
+          <span {...stylex.props(labelStyles.wrapper)}>
+            <span {...stylex.props(isPressed && labelStyles.pressed)}>
+              {label}
+            </span>
+            <span
+              {...stylex.props(labelStyles.widthReservation)}
+              aria-hidden="true">
+              {label}
+            </span>
+          </span>
+        )}
       </button>
     );
 

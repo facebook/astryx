@@ -15,6 +15,7 @@ For on/off settings, use XDSSwitch. For regular actions, use XDSButton.
 - **Loading state**: Shows spinner, disables interaction
 - **Icon-only mode**: Square button with `aria-label` and default tooltip
 - **Icon swap**: Optional `pressedIcon` for outline-to-filled icon transitions
+- **Emphasized text**: Label text goes semibold when pressed, with hidden pseudo-element to prevent layout shift
 - **Tooltip**: Automatic for icon-only buttons, opt-in for labeled buttons
 - **Theme overrides**: Supports component-level variant overrides via `theme.components.toggleButton.variants`
 
@@ -98,6 +99,7 @@ const [isBold, setIsBold] = useState(false);
 ## Implementation Notes
 
 - Pressed state uses `--color-pressed-overlay` for background, `--color-icon-primary` / `--color-text-primary` for text/icon color
+- Pressed label text uses `--font-weight-semibold` (vs `--font-weight-medium` unpressed). A hidden `<span>` with semibold weight reserves the wider width to prevent layout shift when toggling — same technique used by Material UI's bottom navigation
 - Outline variant uses `--color-divider-emphasized` for border in all states (default, hover, pressed) — only the fill changes
 - Hover/active states layer overlays via `backgroundImage` (same pattern as XDSButton)
 - `value` prop is reserved for future XDSToggleButtonGroup integration

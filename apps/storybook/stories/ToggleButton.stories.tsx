@@ -374,6 +374,82 @@ export const IconSwap: Story = {
 };
 
 // =============================================================================
+// Emphasized text — font-weight shift on press
+// =============================================================================
+
+export const EmphasizedText: Story = {
+  name: 'Emphasized Text — No Layout Shift',
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        maxWidth: '600px',
+      }}>
+      <div
+        style={{
+          fontSize: 12,
+          color: '#4E606F',
+          marginBottom: 4,
+        }}>
+        Toggle these buttons — the text goes semibold when pressed, but the
+        button width stays constant (no layout shift). A hidden pseudo-element
+        reserves the semibold width at all times.
+      </div>
+      <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+        <ToggleButtonDemo label="Notifications" variant="ghost" />
+        <ToggleButtonDemo label="Following" variant="ghost" defaultPressed />
+        <ToggleButtonDemo label="Mentions" variant="ghost" />
+      </div>
+      <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+        <ToggleButtonDemo label="Active" variant="secondary" defaultPressed />
+        <ToggleButtonDemo label="Pending" variant="secondary" />
+        <ToggleButtonDemo label="Archived" variant="secondary" />
+      </div>
+      <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+        <ToggleButtonDemo label="All" variant="outline" />
+        <ToggleButtonDemo label="Published" variant="outline" defaultPressed />
+        <ToggleButtonDemo label="Drafts" variant="outline" />
+        <ToggleButtonDemo label="Scheduled" variant="outline" />
+      </div>
+      <div
+        style={{
+          fontSize: 12,
+          color: '#4E606F',
+          marginTop: 8,
+        }}>
+        Icon + label combo with both icon swap and emphasized text:
+      </div>
+      <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+        <ToggleButtonDemo
+          label="Favorite"
+          variant="ghost"
+          icon={<HeartIcon style={{width: 16, height: 16}} />}
+          pressedIcon={<HeartIconSolid style={{width: 16, height: 16}} />}>
+          Favorite
+        </ToggleButtonDemo>
+        <ToggleButtonDemo
+          label="Bookmark"
+          variant="ghost"
+          icon={<BookmarkIcon style={{width: 16, height: 16}} />}
+          pressedIcon={<BookmarkIconSolid style={{width: 16, height: 16}} />}
+          defaultPressed>
+          Bookmark
+        </ToggleButtonDemo>
+        <ToggleButtonDemo
+          label="Watch"
+          variant="outline"
+          icon={<EyeIcon style={{width: 16, height: 16}} />}
+          pressedIcon={<EyeIconSolid style={{width: 16, height: 16}} />}>
+          Watch
+        </ToggleButtonDemo>
+      </div>
+    </div>
+  ),
+};
+
+// =============================================================================
 // All variants matrix
 // =============================================================================
 
