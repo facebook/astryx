@@ -10,9 +10,11 @@
  * - /apps/storybook/stories/Skeleton.stories.tsx
  */
 
-import {forwardRef, type HTMLAttributes} from 'react';
+import {forwardRef, useContext, type HTMLAttributes} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
 // =============================================================================
 // Animation Timing Constants
@@ -108,6 +110,18 @@ export type XDSSkeletonRadius = keyof typeof radiusStyles;
 // Component
 // =============================================================================
 
+// =============================================================================
+// Module Augmentation - Register component styles with ComponentStyles
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    skeleton?: {
+      /** Root skeleton styles */
+      root?: ThemeStyleXStyles;
+    };
+  }
+}
 export interface XDSSkeletonProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
   'className' | 'style'
@@ -160,6 +174,8 @@ export const XDSSkeleton = forwardRef<HTMLDivElement, XDSSkeletonProps>(
     },
     ref,
   ) => {
+    const themeContext = useContext(ThemeContext);
+    const rootOverride = themeContext?.theme.components?.skeleton?.root;
     return (
       <div
         ref={ref}
@@ -170,6 +186,7 @@ export const XDSSkeleton = forwardRef<HTMLDivElement, XDSSkeletonProps>(
           radiusStyles[radiusProp],
           dynamicStyles.dimensions(width, height),
           dynamicStyles.animationDelay(index),
+          rootOverride,
         )}
         {...props}
       />

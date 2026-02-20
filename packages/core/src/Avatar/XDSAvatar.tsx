@@ -11,13 +11,21 @@
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useState, type HTMLAttributes, type ReactNode} from 'react';
+import {
+  forwardRef,
+  useContext,
+  useState,
+  type HTMLAttributes,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   typographyVars,
   fontWeightVars,
 } from '../theme/tokens.stylex';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
 /**
  * The offset ratio for positioning elements on a circle's edge at 45°.
@@ -153,6 +161,19 @@ const dynamicStyles = stylex.create({
   }),
 });
 
+// =============================================================================
+// Module Augmentation - Register Avatar's style surfaces with ComponentStyles
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    avatar?: {
+      root?: ThemeStyleXStyles;
+      fallback?: ThemeStyleXStyles;
+    };
+  }
+}
+
 export interface XDSAvatarProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
   'children'
@@ -260,13 +281,18 @@ export const XDSAvatar = forwardRef<HTMLDivElement, XDSAvatarProps>(
     const accessibleName = alt || name || 'Avatar';
     const numericSize = resolveSize(size);
 
+    // Get theme context for component-level overrides (optional)
+    const themeContext = useContext(ThemeContext);
+    const rootOverride = themeContext?.theme.components?.avatar?.root;
+    const fallbackOverride = themeContext?.theme.components?.avatar?.fallback;
+
     return (
       <div
         ref={ref}
         role="img"
         aria-label={accessibleName}
         data-testid={testId}
-        {...stylex.props(styles.wrapper)}
+        {...stylex.props(styles.wrapper, rootOverride)}
         {...props}>
         <div {...stylex.props(styles.content, dynamicStyles.size(numericSize))}>
           {showImage && (
@@ -290,12 +316,13 @@ export const XDSAvatar = forwardRef<HTMLDivElement, XDSAvatarProps>(
               {...stylex.props(
                 styles.fallback,
                 dynamicStyles.fontSize(numericSize),
+                fallbackOverride,
               )}>
               {getInitials(name)}
             </div>
           )}
           {showIcon && (
-            <div {...stylex.props(styles.fallback)}>
+            <div {...stylex.props(styles.fallback, fallbackOverride)}>
               <DefaultIcon size={numericSize} />
             </div>
           )}

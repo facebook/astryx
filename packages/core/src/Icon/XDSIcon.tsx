@@ -11,9 +11,11 @@
  * - /apps/storybook/stories/Icon.stories.tsx (storybook stories)
  */
 
-import {forwardRef, type ComponentType, type SVGProps} from 'react';
+import {forwardRef, useContext, type ComponentType, type SVGProps} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
 // =============================================================================
 // Styles
@@ -87,6 +89,18 @@ export type XDSIconSize = keyof typeof sizeStyles;
  */
 export type XDSIconType = ComponentType<SVGProps<SVGSVGElement>>;
 
+// =============================================================================
+// Module Augmentation - Register Icon's style surfaces with ComponentStyles
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    icon?: {
+      root?: ThemeStyleXStyles;
+    };
+  }
+}
+
 /**
  * Props for XDSIcon component.
  * Extends SVGProps to allow passing additional SVG attributes.
@@ -122,11 +136,20 @@ export interface XDSIconProps extends Omit<
 
 export const XDSIcon = forwardRef<SVGSVGElement, XDSIconProps>(
   ({icon: IconComponent, color = 'primary', size = 'md', ...props}, ref) => {
+    // Get theme context for component-level overrides (optional)
+    const themeContext = useContext(ThemeContext);
+    const rootOverride = themeContext?.theme.components?.icon?.root;
+
     return (
       <IconComponent
         ref={ref}
         aria-hidden="true"
-        {...stylex.props(styles.root, colorStyles[color], sizeStyles[size])}
+        {...stylex.props(
+          styles.root,
+          colorStyles[color],
+          sizeStyles[size],
+          rootOverride,
+        )}
         {...props}
       />
     );

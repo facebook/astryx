@@ -11,9 +11,16 @@
  * - /apps/storybook/stories/TopNav.stories.tsx
  */
 
-import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
+import {
+  forwardRef,
+  useContext,
+  type HTMLAttributes,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
 /**
  * Base TopNav styles
@@ -66,6 +73,18 @@ const styles = stylex.create({
   },
 });
 
+// =============================================================================
+// Module Augmentation - Register component styles with ComponentStyles
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    topNav?: {
+      /** Root nav bar styles */
+      root?: ThemeStyleXStyles;
+    };
+  }
+}
 export interface XDSTopNavProps extends Omit<
   HTMLAttributes<HTMLElement>,
   'style' | 'className' | 'title'
@@ -132,6 +151,9 @@ export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
     {title, startContent, endContent, position = 'static', label, ...props},
     ref,
   ) {
+    const themeContext = useContext(ThemeContext);
+    const rootOverride = themeContext?.theme.components?.topNav?.root;
+
     return (
       <nav
         ref={ref}
@@ -141,6 +163,7 @@ export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
           styles.base,
           position === 'sticky' && styles.sticky,
           position === 'fixed' && styles.fixed,
+          rootOverride,
         )}
         {...props}>
         <div {...stylex.props(styles.leftSection)}>

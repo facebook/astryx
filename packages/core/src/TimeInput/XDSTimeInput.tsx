@@ -13,6 +13,7 @@
 
 import {
   forwardRef,
+  useContext,
   useId,
   useState,
   useCallback,
@@ -163,7 +164,23 @@ export type {
   XDSInputStatus as XDSTimeInputStatus,
   XDSInputStatusType as XDSTimeInputStatusType,
 } from '../Field';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
+// =============================================================================
+// Module Augmentation - Register component styles with ComponentStyles
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    timeInput?: {
+      /** Input wrapper styles */
+      wrapper?: ThemeStyleXStyles;
+      /** Text input styles */
+      input?: ThemeStyleXStyles;
+    };
+  }
+}
 export interface XDSTimeInputProps {
   /**
    * Label text for the input (required for accessibility).
@@ -305,6 +322,10 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
     },
     ref,
   ) => {
+    const themeContext = useContext(ThemeContext);
+    const wrapperOverride = themeContext?.theme.components?.timeInput?.wrapper;
+    const inputOverride = themeContext?.theme.components?.timeInput?.input;
+
     const id = useId();
     const descriptionID = useId();
     const statusMessageID = useId();
@@ -498,6 +519,7 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
             sizeStyles[size],
             isDisabled && styles.wrapperDisabled,
             status && statusBorderStyles[status.type],
+            wrapperOverride,
           )}>
           <div {...stylex.props(styles.icon)}>
             <XDSIcon icon={ClockIcon} size="sm" color="secondary" />
@@ -520,6 +542,7 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
               styles.input,
               isDisabled && styles.inputDisabled,
               !isInputValid && styles.inputInvalid,
+              inputOverride,
             )}
           />
           {hasClear && value && !isDisabled && (

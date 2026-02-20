@@ -10,10 +10,17 @@
  * - /apps/storybook/stories/Center.stories.tsx
  */
 
-import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
+import {
+  forwardRef,
+  useContext,
+  type HTMLAttributes,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {SizeValue} from '../utils/types';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
 const styles = stylex.create({
   base: {
@@ -40,6 +47,18 @@ const dynamicStyles = stylex.create({
 
 export type CenterAxis = 'both' | 'horizontal' | 'vertical';
 
+// =============================================================================
+// Module Augmentation - Register component styles with ComponentStyles
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    center?: {
+      /** Root container styles */
+      root?: ThemeStyleXStyles;
+    };
+  }
+}
 export interface XDSCenterProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
   'style' | 'className'
@@ -108,12 +127,16 @@ export const XDSCenter = forwardRef<HTMLDivElement, XDSCenterProps>(
     },
     ref,
   ) {
+    const themeContext = useContext(ThemeContext);
+    const rootOverride = themeContext?.theme.components?.center?.root;
+
     const stylexProps = stylex.props(
       isInline ? styles.inline : styles.base,
       (axis === 'both' || axis === 'vertical') && styles.alignItemsCenter,
       (axis === 'both' || axis === 'horizontal') && styles.justifyContentCenter,
       dynamicStyles.sizing(width ?? null, height ?? null),
       xstyle,
+      rootOverride,
     );
 
     return (

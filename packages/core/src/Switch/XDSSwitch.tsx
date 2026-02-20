@@ -11,7 +11,13 @@
  * - /apps/storybook/stories/Switch.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useId, type ChangeEvent, type FocusEvent} from 'react';
+import {
+  forwardRef,
+  useContext,
+  useId,
+  type ChangeEvent,
+  type FocusEvent,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -26,6 +32,8 @@ import {XDSFieldLabel} from '../Field/XDSFieldLabel';
 import {XDSFieldStatus} from '../Field/XDSFieldStatus';
 import type {XDSIconType} from '../Icon';
 import type {XDSInputStatus} from '../Field/types';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
 // Fixed dimensions: 40px width, 24px height, 16px thumb (off), 20px thumb (on)
 const SWITCH_WIDTH = 40;
@@ -151,6 +159,22 @@ const styles = stylex.create({
 export type XDSSwitchLabelPosition = 'start' | 'end';
 export type XDSSwitchLabelSpacing = 'default' | 'spread';
 
+// =============================================================================
+// Module Augmentation - Register component styles with ComponentStyles
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    switch?: {
+      /** Root container styles */
+      root?: ThemeStyleXStyles;
+      /** Track styles */
+      track?: ThemeStyleXStyles;
+      /** Thumb styles */
+      thumb?: ThemeStyleXStyles;
+    };
+  }
+}
 export interface XDSSwitchProps {
   /**
    * Label text for the switch (always rendered for accessibility).
@@ -264,6 +288,11 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
     },
     ref,
   ) => {
+    const themeContext = useContext(ThemeContext);
+    const rootOverride = themeContext?.theme.components?.switch?.root;
+    const trackOverride = themeContext?.theme.components?.switch?.track;
+    const thumbOverride = themeContext?.theme.components?.switch?.thumb;
+
     const id = useId();
     const descriptionID = useId();
     const statusMessageID = useId();
@@ -301,11 +330,13 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
             isOn ? styles.trackOn : styles.trackOff,
             isDisabled && styles.trackDisabled,
             isDisabled && !isOn && styles.trackDisabledOff,
+            trackOverride,
           )}>
           <div
             {...stylex.props(
               styles.thumb,
               isOn ? styles.thumbOn : styles.thumbOff,
+              thumbOverride,
             )}
           />
         </div>
@@ -338,6 +369,7 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
           {...stylex.props(
             styles.container,
             labelSpacing === 'spread' && styles.containerSpread,
+            rootOverride,
             !isDisabled && stylex.defaultMarker(),
           )}>
           {labelPosition === 'start' ? (
