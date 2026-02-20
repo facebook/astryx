@@ -19,6 +19,7 @@ export * from './Center';
 export * from './CheckboxInput';
 export * from './RadioList';
 export * from './CloseButton';
+export * from './ToggleButton';
 export * from './Divider';
 export * from './EmptyState';
 export * from './Link';
