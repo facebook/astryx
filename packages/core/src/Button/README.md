@@ -28,7 +28,29 @@ import { XDSButton } from '@xds/core/Button';
 
 // Destructive action
 <XDSButton label="Delete" variant="destructive" />
+
+// Icon-only button (renders as a square)
+// Pass `icon` without `children` — `label` becomes the aria-label
+<XDSButton label="Settings" icon={<GearIcon />} variant="ghost" />
+
+// Icon-only with emoji or text content
+<XDSButton label="Select rocket emoji" icon={<span>🚀</span>} variant="ghost" size="sm" />
+
+// Icon + visible label (pass children to show text alongside icon)
+<XDSButton label="Edit" icon={<PencilIcon />}>Edit</XDSButton>
 ```
+
+### Icon-Only Buttons
+
+When `icon` is provided without `children`, the button becomes **icon-only**:
+
+- Renders as a perfect square (`aspectRatio: 1/1`)
+- `label` is used as `aria-label` for accessibility (not rendered visually)
+- Works with any `ReactNode` as the icon — SVG components, emoji, or text
+
+Use icon-only buttons for toolbars, action grids, compact controls, and anywhere
+you need a small clickable element. Always prefer `XDSButton` over `<div onClick>`
+or `<span onClick>` for accessibility (keyboard navigation, focus management, screen readers).
 
 ## Props
 
