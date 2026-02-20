@@ -41,8 +41,9 @@ export type XDSProgressBarSize = 'sm' | 'md' | 'lg';
 export interface XDSProgressBarProps {
   /**
    * Current value of the progress bar.
+   * Ignored when `isIndeterminate` is true.
    */
-  value: number;
+  value?: number;
   /**
    * Maximum value of the progress bar.
    * @default 100
@@ -60,6 +61,7 @@ export interface XDSProgressBarProps {
   isLabelHidden?: boolean;
   /**
    * When true, displays the formatted value (e.g. "75%") next to the label.
+   * Ignored when `isIndeterminate` is true.
    * @default false
    */
   hasValueLabel?: boolean;
@@ -82,6 +84,14 @@ export interface XDSProgressBarProps {
    */
   size?: XDSProgressBarSize;
   /**
+   * When true, renders an animated indeterminate progress indicator.
+   * Use when the progress amount is unknown (e.g. loading, processing).
+   * The `value` and `hasValueLabel` props are ignored in this mode.
+   * Respects `prefers-reduced-motion` by slowing the animation.
+   * @default false
+   */
+  isIndeterminate?: boolean;
+  /**
    * StyleX styles to apply to the outer container.
    */
   xstyle?: StyleXStyles;
@@ -90,6 +100,23 @@ export interface XDSProgressBarProps {
    */
   'data-testid'?: string;
 }
+
+// =============================================================================
+// Indeterminate animation
+// =============================================================================
+
+const indeterminateSlide = stylex.keyframes({
+  '0%': {
+    transform: 'translateX(-100%)',
+  },
+  '100%': {
+    transform: 'translateX(250%)',
+  },
+});
+
+// =============================================================================
+// Styles
+// =============================================================================
 
 const styles = stylex.create({
   container: {
@@ -138,6 +165,18 @@ const styles = stylex.create({
     transitionProperty: 'width',
     transitionDuration: transitionVars['--transition-normal'],
   },
+  indeterminateFill: {
+    height: '100%',
+    width: '40%',
+    borderRadius: radiusVars['--radius-rounded'],
+    animationName: indeterminateSlide,
+    animationDuration: {
+      default: '1.5s',
+      '@media (prefers-reduced-motion: reduce)': '3s',
+    },
+    animationTimingFunction: 'ease-in-out',
+    animationIterationCount: 'infinite',
+  },
 });
 
 const sizeStyles = stylex.create({
@@ -172,17 +211,24 @@ function defaultFormatValueLabel(value: number, max: number): string {
 }
 
 /**
- * A determinate progress bar for displaying known values within a range.
+ * A progress bar for displaying determinate or indeterminate progress.
  *
- * Displays progress such as upload completion, disk usage, or battery level.
- * Uses `role="meter"` with full ARIA attributes.
+ * In determinate mode, displays a known value within a range (upload progress,
+ * disk usage, etc). In indeterminate mode, shows an animated loading indicator
+ * for unknown progress.
  *
  * Styles use XDS theme tokens via StyleX.
  * Wrap your app in <Theme> to apply a theme.
  *
  * @example
  * ```tsx
+ * // Determinate
  * <XDSProgressBar value={75} label="Upload progress" />
+ *
+ * // Indeterminate
+ * <XDSProgressBar isIndeterminate label="Loading..." />
+ *
+ * // Custom format
  * <XDSProgressBar value={3.2} max={5} label="Disk usage" hasValueLabel
  *   formatValueLabel={(v, m) => `${v} GB / ${m} GB`} />
  * ```
@@ -190,7 +236,7 @@ function defaultFormatValueLabel(value: number, max: number): string {
 export const XDSProgressBar = forwardRef<HTMLDivElement, XDSProgressBarProps>(
   function XDSProgressBar(
     {
-      value,
+      value = 0,
       max = 100,
       label,
       isLabelHidden = false,
@@ -198,6 +244,7 @@ export const XDSProgressBar = forwardRef<HTMLDivElement, XDSProgressBarProps>(
       formatValueLabel = defaultFormatValueLabel,
       variant = 'accent',
       size = 'md',
+      isIndeterminate = false,
       xstyle,
       'data-testid': dataTestId,
     },
@@ -208,13 +255,16 @@ export const XDSProgressBar = forwardRef<HTMLDivElement, XDSProgressBarProps>(
     const percentage = max > 0 ? (clampedValue / max) * 100 : 0;
     const valueText = formatValueLabel(clampedValue, max);
 
+    // In indeterminate mode, don't show value label
+    const showValueLabel = hasValueLabel && !isIndeterminate;
+
     return (
       <div
         ref={ref}
         {...stylex.props(styles.container, xstyle)}
         data-testid={dataTestId}>
         {/* Label row */}
-        {!isLabelHidden || hasValueLabel ? (
+        {!isLabelHidden || showValueLabel ? (
           <div {...stylex.props(styles.header)}>
             <span
               id={labelId}
@@ -224,7 +274,7 @@ export const XDSProgressBar = forwardRef<HTMLDivElement, XDSProgressBarProps>(
               )}>
               {label}
             </span>
-            {hasValueLabel && (
+            {showValueLabel && (
               <span {...stylex.props(styles.valueLabel)}>{valueText}</span>
             )}
           </div>
@@ -236,17 +286,26 @@ export const XDSProgressBar = forwardRef<HTMLDivElement, XDSProgressBarProps>(
 
         {/* Progress track */}
         <div
-          role="meter"
-          aria-valuenow={clampedValue}
-          aria-valuemin={0}
-          aria-valuemax={max}
+          role={isIndeterminate ? 'progressbar' : 'meter'}
+          aria-valuenow={isIndeterminate ? undefined : clampedValue}
+          aria-valuemin={isIndeterminate ? undefined : 0}
+          aria-valuemax={isIndeterminate ? undefined : max}
           aria-labelledby={labelId}
-          aria-valuetext={valueText}
+          aria-valuetext={isIndeterminate ? undefined : valueText}
           {...stylex.props(styles.track, sizeStyles[size])}>
-          <div
-            {...stylex.props(styles.fill, variantStyles[variant])}
-            style={{width: `${percentage}%`}}
-          />
+          {isIndeterminate ? (
+            <div
+              {...stylex.props(
+                styles.indeterminateFill,
+                variantStyles[variant],
+              )}
+            />
+          ) : (
+            <div
+              {...stylex.props(styles.fill, variantStyles[variant])}
+              style={{width: `${percentage}%`}}
+            />
+          )}
         </div>
       </div>
     );

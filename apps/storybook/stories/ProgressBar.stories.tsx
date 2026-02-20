@@ -153,3 +153,51 @@ export const Full: Story = {
     variant: 'positive',
   },
 };
+
+export const Indeterminate: Story = {
+  args: {
+    isIndeterminate: true,
+    label: 'Loading...',
+  },
+};
+
+export const IndeterminateHiddenLabel: Story = {
+  args: {
+    isIndeterminate: true,
+    label: 'Loading',
+    isLabelHidden: true,
+  },
+};
+
+export const IndeterminateVariants: Story = {
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        width: '300px',
+      }}>
+      <XDSProgressBar isIndeterminate label="Accent" variant="accent" />
+      <XDSProgressBar isIndeterminate label="Positive" variant="positive" />
+      <XDSProgressBar isIndeterminate label="Warning" variant="warning" />
+      <XDSProgressBar isIndeterminate label="Negative" variant="negative" />
+    </div>
+  ),
+};
+
+export const IndeterminateSizes: Story = {
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        width: '300px',
+      }}>
+      <XDSProgressBar isIndeterminate label="Small" size="sm" />
+      <XDSProgressBar isIndeterminate label="Medium" size="md" />
+      <XDSProgressBar isIndeterminate label="Large" size="lg" />
+    </div>
+  ),
+};

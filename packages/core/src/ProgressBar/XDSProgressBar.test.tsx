@@ -122,4 +122,56 @@ describe('XDSProgressBar', () => {
     expect(meter).toHaveAttribute('aria-valuenow', '0');
     expect(meter).toHaveAttribute('aria-valuemax', '0');
   });
+
+  // Indeterminate mode tests
+  describe('indeterminate mode', () => {
+    it('renders with role="progressbar" when isIndeterminate', () => {
+      render(<XDSProgressBar isIndeterminate label="Loading" />);
+      const progressbar = screen.getByRole('progressbar');
+      expect(progressbar).toBeInTheDocument();
+    });
+
+    it('does not set aria-valuenow/min/max when indeterminate', () => {
+      render(<XDSProgressBar isIndeterminate label="Loading" />);
+      const progressbar = screen.getByRole('progressbar');
+      expect(progressbar).not.toHaveAttribute('aria-valuenow');
+      expect(progressbar).not.toHaveAttribute('aria-valuemin');
+      expect(progressbar).not.toHaveAttribute('aria-valuemax');
+      expect(progressbar).not.toHaveAttribute('aria-valuetext');
+    });
+
+    it('still renders label when indeterminate', () => {
+      render(<XDSProgressBar isIndeterminate label="Processing" />);
+      expect(screen.getByText('Processing')).toBeInTheDocument();
+    });
+
+    it('hides value label when indeterminate even if hasValueLabel is true', () => {
+      render(
+        <XDSProgressBar
+          isIndeterminate
+          label="Loading"
+          value={50}
+          hasValueLabel
+        />,
+      );
+      expect(screen.queryByText('50%')).not.toBeInTheDocument();
+    });
+
+    it('is labelled via aria-labelledby when indeterminate', () => {
+      render(<XDSProgressBar isIndeterminate label="Loading data" />);
+      const progressbar = screen.getByRole('progressbar');
+      expect(progressbar).toHaveAttribute('aria-labelledby');
+    });
+
+    it('renders with all variants in indeterminate mode', () => {
+      const variants = ['accent', 'positive', 'warning', 'negative'] as const;
+      for (const variant of variants) {
+        const {unmount} = render(
+          <XDSProgressBar isIndeterminate label={variant} variant={variant} />,
+        );
+        expect(screen.getByRole('progressbar')).toBeInTheDocument();
+        unmount();
+      }
+    });
+  });
 });
