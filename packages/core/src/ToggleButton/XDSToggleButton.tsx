@@ -15,6 +15,7 @@ import {
   forwardRef,
   useCallback,
   useContext,
+  useState,
   type ButtonHTMLAttributes,
   type ReactElement,
   type ReactNode,
@@ -69,6 +70,13 @@ const styles = stylex.create({
   disabled: {
     cursor: 'not-allowed',
     opacity: 0.5,
+    transform: {
+      default: null,
+      ':active': null,
+    },
+  },
+  readOnly: {
+    cursor: 'default',
     transform: {
       default: null,
       ':active': null,
@@ -154,6 +162,34 @@ const variants = stylex.create({
 });
 
 // =============================================================================
+// Read-only variant overrides — remove hover/active overlays
+// =============================================================================
+
+const readOnlyVariants = stylex.create({
+  ghost: {
+    backgroundImage: {
+      default: null,
+      ':hover': null,
+      ':active': null,
+    },
+  },
+  secondary: {
+    backgroundImage: {
+      default: null,
+      ':hover': null,
+      ':active': null,
+    },
+  },
+  outline: {
+    backgroundImage: {
+      default: null,
+      ':hover': null,
+      ':active': null,
+    },
+  },
+});
+
+// =============================================================================
 // Pressed state styles — applied on top of variant when isPressed=true
 // =============================================================================
 
@@ -226,8 +262,7 @@ export interface XDSToggleButtonProps extends Omit<
 > {
   /**
    * Accessible label for the button (required for accessibility).
-   * Used as visible text when `isLabelVisible` is true,
-   * or as aria-label for icon-only buttons.
+   * Used as visible text, or as aria-label for icon-only buttons.
    */
   label: string;
 
@@ -240,6 +275,24 @@ export interface XDSToggleButtonProps extends Omit<
    * Called when the pressed state should change.
    */
   onPressedChange: (isPressed: boolean) => void;
+
+  /**
+   * Async action handler for API-backed toggles.
+   * The button shows a loading spinner and is disabled while the promise is pending.
+   *
+   * @example
+   * ```tsx
+   * <XDSToggleButton
+   *   label="Favorite"
+   *   isPressed={isFavorited}
+   *   onPressedChange={setIsFavorited}
+   *   onPressedChangeAction={async (newState) => {
+   *     await api.setFavorite(itemId, newState);
+   *   }}
+   * />
+   * ```
+   */
+  onPressedChangeAction?: (isPressed: boolean) => Promise<void>;
 
   /**
    * The visual style variant of the toggle button.
@@ -266,8 +319,17 @@ export interface XDSToggleButtonProps extends Omit<
   isLoading?: boolean;
 
   /**
+   * Whether the button is read-only.
+   * Shows the current state but prevents interaction.
+   * Visually distinct from disabled — no opacity reduction.
+   * Useful for showing someone else's favorites/bookmarks.
+   * @default false
+   */
+  isReadOnly?: boolean;
+
+  /**
    * Icon element to render in the button.
-   * When provided without children and isLabelVisible is false,
+   * When provided without children,
    * button becomes icon-only (square).
    */
   icon?: ReactNode;
@@ -280,6 +342,22 @@ export interface XDSToggleButtonProps extends Omit<
   pressedIcon?: ReactNode;
 
   /**
+   * Color applied to the icon when pressed.
+   * Use for semantic icon coloring like yellow stars or pink hearts.
+   * Accepts any CSS color value or XDS token.
+   * Only affects the icon, not the label text.
+   *
+   * @example
+   * ```tsx
+   * // Yellow star
+   * <XDSToggleButton pressedIconColor="#F2C00B" ... />
+   * // Pink heart
+   * <XDSToggleButton pressedIconColor="#E91E63" ... />
+   * ```
+   */
+  pressedIconColor?: string;
+
+  /**
    * Optional visible content. If omitted and icon is provided,
    * button becomes icon-only with label used as aria-label.
    */
@@ -289,6 +367,14 @@ export interface XDSToggleButtonProps extends Omit<
    * Tooltip text shown on hover. Defaults to label for icon-only buttons.
    */
   tooltip?: string;
+
+  /**
+   * Whether to show a tooltip on hover/focus.
+   * Defaults to true for icon-only buttons, false for labeled buttons.
+   * Set to false to opt out of the automatic tooltip.
+   * @default undefined (auto — true for icon-only, false for labeled)
+   */
+  hasTooltip?: boolean;
 
   /**
    * Value identifier when used inside XDSToggleButtonGroup.
@@ -303,18 +389,14 @@ export interface XDSToggleButtonProps extends Omit<
 }
 
 // =============================================================================
-// Loading styles
-// =============================================================================
-
-// =============================================================================
 // Label width reservation — prevents layout shift on font-weight change
 // =============================================================================
 
 /**
- * The label wrapper uses a ::after pseudo-element trick to prevent layout shift
+ * The label wrapper uses a hidden span to prevent layout shift
  * when toggling between medium (unpressed) and semibold (pressed) font weights.
  *
- * The ::after renders the same text at semibold weight but is visually hidden
+ * The hidden span renders the same text at semibold weight but is visually hidden
  * (height: 0, overflow: hidden). This reserves the wider semibold width at all
  * times, so the button never changes size when toggled.
  */
@@ -331,7 +413,6 @@ const labelStyles = stylex.create({
     height: 0,
     overflow: 'hidden',
     visibility: 'hidden',
-    // Prevent the hidden text from affecting pointer events
     pointerEvents: 'none',
   },
   pressed: {
@@ -353,13 +434,15 @@ const loadingStyles = stylex.create({
 /**
  * A button that toggles between pressed and unpressed states.
  * Use for toolbar actions, view mode switches, and formatting controls.
+ * Also handles icon toggle patterns (favorite, bookmark, like) with
+ * pressedIcon and pressedIconColor props.
  *
  * For on/off settings, use XDSSwitch instead.
  * For regular actions, use XDSButton instead.
  *
  * @example
  * ```tsx
- * // Icon-only toggle (most common — toolbar usage)
+ * // Icon-only toggle (toolbar)
  * const [isBold, setIsBold] = useState(false);
  * <XDSToggleButton
  *   label="Bold"
@@ -368,24 +451,27 @@ const loadingStyles = stylex.create({
  *   onPressedChange={setIsBold}
  * />
  *
- * // With visible label
+ * // Favorite with icon swap and color
  * <XDSToggleButton
- *   label="Show details"
- *   isPressed={showDetails}
- *   onPressedChange={setShowDetails}
- * >
- *   Show details
- * </XDSToggleButton>
+ *   label="Favorite"
+ *   icon={<StarIcon />}
+ *   pressedIcon={<StarIconSolid />}
+ *   pressedIconColor="#F2C00B"
+ *   isPressed={isFavorited}
+ *   onPressedChange={setIsFavorited}
+ * />
  *
- * // Outline variant
+ * // Async toggle with API call
  * <XDSToggleButton
- *   label="Filter active"
- *   variant="outline"
- *   isPressed={isActive}
- *   onPressedChange={setIsActive}
- * >
- *   Active
- * </XDSToggleButton>
+ *   label="Bookmark"
+ *   icon={<BookmarkIcon />}
+ *   pressedIcon={<BookmarkIconSolid />}
+ *   isPressed={isBookmarked}
+ *   onPressedChange={setIsBookmarked}
+ *   onPressedChangeAction={async (newState) => {
+ *     await api.bookmark(itemId, newState);
+ *   }}
+ * />
  * ```
  */
 export const XDSToggleButton = forwardRef<
@@ -397,26 +483,35 @@ export const XDSToggleButton = forwardRef<
       label,
       isPressed,
       onPressedChange,
+      onPressedChangeAction,
       variant = 'ghost',
       size = 'md',
       isDisabled = false,
       isLoading = false,
+      isReadOnly = false,
       icon,
       pressedIcon,
+      pressedIconColor,
       children,
       tooltip,
+      hasTooltip,
       value: _value,
       onClick,
       ...props
     },
     ref,
   ): ReactElement => {
-    const buttonDisabled = isDisabled || isLoading;
+    const [isPending, setIsPending] = useState(false);
     const isIconOnly = icon != null && children == null;
+    const buttonDisabled = isDisabled || isLoading || isPending;
+    const buttonNonInteractive = buttonDisabled || isReadOnly;
     const resolvedIcon = isPressed && pressedIcon ? pressedIcon : icon;
+    const showLoading = isLoading || isPending;
 
-    // Default tooltip to label for icon-only buttons
-    const resolvedTooltip = tooltip ?? (isIconOnly ? label : undefined);
+    // Tooltip logic: explicit hasTooltip overrides, otherwise auto for icon-only
+    const shouldShowTooltip =
+      hasTooltip !== undefined ? hasTooltip : isIconOnly;
+    const resolvedTooltip = shouldShowTooltip ? (tooltip ?? label) : tooltip;
 
     // Get theme context for component-level overrides (optional)
     const themeContext = useContext(ThemeContext);
@@ -425,12 +520,38 @@ export const XDSToggleButton = forwardRef<
 
     const handleClick = useCallback(
       (e: React.MouseEvent<HTMLButtonElement>) => {
-        if (buttonDisabled) return;
+        if (buttonNonInteractive) return;
         onClick?.(e);
-        onPressedChange(!isPressed);
+        const newState = !isPressed;
+        onPressedChange(newState);
+
+        if (onPressedChangeAction) {
+          setIsPending(true);
+          onPressedChangeAction(newState).finally(() => {
+            setIsPending(false);
+          });
+        }
       },
-      [buttonDisabled, onClick, onPressedChange, isPressed],
+      [
+        buttonNonInteractive,
+        onClick,
+        onPressedChange,
+        onPressedChangeAction,
+        isPressed,
+      ],
     );
+
+    // Render the icon, optionally wrapped with pressedIconColor
+    const iconElement =
+      resolvedIcon != null ? (
+        isPressed && pressedIconColor ? (
+          <span style={{color: pressedIconColor, display: 'inline-flex'}}>
+            {resolvedIcon}
+          </span>
+        ) : (
+          resolvedIcon
+        )
+      ) : null;
 
     const button = (
       <button
@@ -439,6 +560,7 @@ export const XDSToggleButton = forwardRef<
         disabled={buttonDisabled}
         aria-pressed={isPressed}
         aria-label={isIconOnly ? label : undefined}
+        aria-readonly={isReadOnly || undefined}
         onClick={handleClick}
         {...stylex.props(
           styles.base,
@@ -446,12 +568,14 @@ export const XDSToggleButton = forwardRef<
           variants[variant],
           themeVariantOverride,
           isPressed && pressedStyles[variant],
+          isReadOnly && readOnlyVariants[variant],
+          isReadOnly && styles.readOnly,
           isIconOnly && styles.iconOnly,
           buttonDisabled && styles.disabled,
-          isLoading && loadingStyles.loading,
+          showLoading && loadingStyles.loading,
         )}
         {...props}>
-        {isLoading && (
+        {showLoading && (
           <span
             style={{
               position: 'absolute',
@@ -466,7 +590,7 @@ export const XDSToggleButton = forwardRef<
             <XDSSpinner size="sm" shade="default" />
           </span>
         )}
-        {resolvedIcon}
+        {iconElement}
         {children != null ? (
           <span {...stylex.props(labelStyles.wrapper)}>
             <span {...stylex.props(isPressed && labelStyles.pressed)}>

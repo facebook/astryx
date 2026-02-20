@@ -374,6 +374,201 @@ export const IconSwap: Story = {
 };
 
 // =============================================================================
+// Pressed icon color — semantic coloring
+// =============================================================================
+
+export const PressedIconColor: Story = {
+  name: 'Pressed Icon Color — Semantic',
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        maxWidth: '600px',
+      }}>
+      <div style={{fontSize: 12, color: '#4E606F', marginBottom: 4}}>
+        Icons change to semantic colors when pressed — yellow star, pink heart,
+        blue bookmark. The color only affects the icon, not the label text.
+      </div>
+      <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+        <ToggleButtonDemo
+          label="Favorite"
+          icon={<StarIcon style={{width: 16, height: 16}} />}
+          pressedIcon={<StarIconSolid style={{width: 16, height: 16}} />}
+          pressedIconColor="#F2C00B"
+        />
+        <ToggleButtonDemo
+          label="Like"
+          icon={<HeartIcon style={{width: 16, height: 16}} />}
+          pressedIcon={<HeartIconSolid style={{width: 16, height: 16}} />}
+          pressedIconColor="#E91E63"
+        />
+        <ToggleButtonDemo
+          label="Bookmark"
+          icon={<BookmarkIcon style={{width: 16, height: 16}} />}
+          pressedIcon={<BookmarkIconSolid style={{width: 16, height: 16}} />}
+          pressedIconColor="#0064E0"
+        />
+        <ToggleButtonDemo
+          label="Notifications"
+          icon={<BellIcon style={{width: 16, height: 16}} />}
+          pressedIcon={<BellIconSolid style={{width: 16, height: 16}} />}
+          pressedIconColor="#0D8626"
+        />
+      </div>
+      <div style={{fontSize: 12, color: '#4E606F', marginTop: 4}}>
+        With visible labels — icon gets color, text stays default:
+      </div>
+      <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+        <ToggleButtonDemo
+          label="Favorite"
+          icon={<StarIcon style={{width: 16, height: 16}} />}
+          pressedIcon={<StarIconSolid style={{width: 16, height: 16}} />}
+          pressedIconColor="#F2C00B"
+          defaultPressed>
+          Favorite
+        </ToggleButtonDemo>
+        <ToggleButtonDemo
+          label="Like"
+          icon={<HeartIcon style={{width: 16, height: 16}} />}
+          pressedIcon={<HeartIconSolid style={{width: 16, height: 16}} />}
+          pressedIconColor="#E91E63">
+          Like
+        </ToggleButtonDemo>
+      </div>
+    </div>
+  ),
+};
+
+// =============================================================================
+// Read-only state
+// =============================================================================
+
+export const ReadOnly: Story = {
+  name: 'Read-Only State',
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        maxWidth: '600px',
+      }}>
+      <div style={{fontSize: 12, color: '#4E606F', marginBottom: 4}}>
+        Read-only buttons show state but can&apos;t be toggled. No opacity
+        reduction (unlike disabled), no hover/active effects. Useful for viewing
+        someone else&apos;s favorites.
+      </div>
+      <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+        <ToggleButtonDemo
+          label="Favorited by user"
+          icon={<StarIcon style={{width: 16, height: 16}} />}
+          pressedIcon={<StarIconSolid style={{width: 16, height: 16}} />}
+          pressedIconColor="#F2C00B"
+          isReadOnly
+          defaultPressed
+        />
+        <ToggleButtonDemo
+          label="Not bookmarked"
+          icon={<BookmarkIcon style={{width: 16, height: 16}} />}
+          pressedIcon={<BookmarkIconSolid style={{width: 16, height: 16}} />}
+          isReadOnly
+        />
+        <ToggleButtonDemo
+          label="Active"
+          variant="outline"
+          isReadOnly
+          defaultPressed>
+          Active
+        </ToggleButtonDemo>
+        <ToggleButtonDemo label="Archived" variant="outline" isReadOnly>
+          Archived
+        </ToggleButtonDemo>
+      </div>
+      <div style={{fontSize: 12, color: '#4E606F'}}>
+        Compare: disabled (50% opacity) vs read-only (full opacity, no
+        interaction)
+      </div>
+      <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+        <ToggleButtonDemo
+          label="Disabled"
+          icon={<StarIcon style={{width: 16, height: 16}} />}
+          pressedIcon={<StarIconSolid style={{width: 16, height: 16}} />}
+          isDisabled
+          defaultPressed
+        />
+        <ToggleButtonDemo
+          label="Read-only"
+          icon={<StarIcon style={{width: 16, height: 16}} />}
+          pressedIcon={<StarIconSolid style={{width: 16, height: 16}} />}
+          isReadOnly
+          defaultPressed
+        />
+      </div>
+    </div>
+  ),
+};
+
+// =============================================================================
+// Async action
+// =============================================================================
+
+export const AsyncAction: Story = {
+  name: 'Async Action — API Toggle',
+  render: () => {
+    function AsyncToggleDemo() {
+      const [isFavorited, setIsFavorited] = useState(false);
+      const [isBookmarked, setIsBookmarked] = useState(true);
+
+      return (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            maxWidth: '600px',
+          }}>
+          <div style={{fontSize: 12, color: '#4E606F', marginBottom: 4}}>
+            These buttons simulate an API call with a 1.5s delay. The button
+            shows a loading spinner during the transition. Try clicking rapidly
+            — the button is disabled while pending.
+          </div>
+          <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+            <XDSToggleButton
+              label="Favorite"
+              icon={<StarIcon style={{width: 16, height: 16}} />}
+              pressedIcon={<StarIconSolid style={{width: 16, height: 16}} />}
+              pressedIconColor="#F2C00B"
+              isPressed={isFavorited}
+              onPressedChange={setIsFavorited}
+              onPressedChangeAction={async () => {
+                await new Promise(r => setTimeout(r, 1500));
+              }}
+            />
+            <XDSToggleButton
+              label="Bookmark"
+              icon={<BookmarkIcon style={{width: 16, height: 16}} />}
+              pressedIcon={
+                <BookmarkIconSolid style={{width: 16, height: 16}} />
+              }
+              pressedIconColor="#0064E0"
+              isPressed={isBookmarked}
+              onPressedChange={setIsBookmarked}
+              onPressedChangeAction={async () => {
+                await new Promise(r => setTimeout(r, 1500));
+              }}>
+              Bookmark
+            </XDSToggleButton>
+          </div>
+        </div>
+      );
+    }
+    return <AsyncToggleDemo />;
+  },
+};
+
+// =============================================================================
 // Emphasized text — font-weight shift on press
 // =============================================================================
 

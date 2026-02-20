@@ -117,6 +117,40 @@ describe('XDSToggleButton', () => {
   });
 
   // =========================================================================
+  // pressedIconColor
+  // =========================================================================
+
+  it('applies pressedIconColor to icon wrapper when pressed', () => {
+    render(
+      <XDSToggleButton
+        label="Favorite"
+        isPressed={true}
+        onPressedChange={() => {}}
+        icon={<span data-testid="icon">★</span>}
+        pressedIconColor="#F2C00B"
+      />,
+    );
+    const icon = screen.getByTestId('icon');
+    const wrapper = icon.parentElement;
+    expect(wrapper).toHaveStyle({color: '#F2C00B'});
+  });
+
+  it('does not apply pressedIconColor when not pressed', () => {
+    render(
+      <XDSToggleButton
+        label="Favorite"
+        isPressed={false}
+        onPressedChange={() => {}}
+        icon={<span data-testid="icon">☆</span>}
+        pressedIconColor="#F2C00B"
+      />,
+    );
+    const icon = screen.getByTestId('icon');
+    // Icon should not be wrapped in a color span
+    expect(icon.parentElement?.tagName).toBe('BUTTON');
+  });
+
+  // =========================================================================
   // Emphasized text (font-weight shift prevention)
   // =========================================================================
 
@@ -129,7 +163,6 @@ describe('XDSToggleButton', () => {
       />,
     );
     const button = screen.getByRole('button');
-    // The hidden width-reservation span should exist with aria-hidden
     const hiddenSpan = button.querySelector('[aria-hidden="true"]');
     expect(hiddenSpan).toBeInTheDocument();
     expect(hiddenSpan).toHaveTextContent('Bold');
@@ -246,6 +279,28 @@ describe('XDSToggleButton', () => {
   });
 
   // =========================================================================
+  // onPressedChangeAction (async transitions)
+  // =========================================================================
+
+  it('calls onPressedChangeAction with new state', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    const handleAction = vi.fn().mockResolvedValue(undefined);
+    render(
+      <XDSToggleButton
+        label="Favorite"
+        isPressed={false}
+        onPressedChange={handleChange}
+        onPressedChangeAction={handleAction}
+      />,
+    );
+
+    await user.click(screen.getByRole('button'));
+    expect(handleChange).toHaveBeenCalledWith(true);
+    expect(handleAction).toHaveBeenCalledWith(true);
+  });
+
+  // =========================================================================
   // Disabled state
   // =========================================================================
 
@@ -279,6 +334,83 @@ describe('XDSToggleButton', () => {
 
     await user.click(screen.getByRole('button'));
     expect(handleChange).not.toHaveBeenCalled();
+  });
+
+  // =========================================================================
+  // Read-only state
+  // =========================================================================
+
+  it('does not fire events when read-only', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <XDSToggleButton
+        label="Favorite"
+        isPressed={true}
+        onPressedChange={handleChange}
+        isReadOnly
+      />,
+    );
+
+    await user.click(screen.getByRole('button'));
+    expect(handleChange).not.toHaveBeenCalled();
+  });
+
+  it('sets aria-readonly when read-only', () => {
+    render(
+      <XDSToggleButton
+        label="Favorite"
+        isPressed={true}
+        onPressedChange={() => {}}
+        isReadOnly
+      />,
+    );
+    expect(screen.getByRole('button')).toHaveAttribute('aria-readonly', 'true');
+  });
+
+  it('is not disabled when read-only (preserves focusability)', () => {
+    render(
+      <XDSToggleButton
+        label="Favorite"
+        isPressed={true}
+        onPressedChange={() => {}}
+        isReadOnly
+      />,
+    );
+    expect(screen.getByRole('button')).not.toBeDisabled();
+  });
+
+  // =========================================================================
+  // hasTooltip
+  // =========================================================================
+
+  it('does not render tooltip when hasTooltip is false for icon-only', () => {
+    const {container} = render(
+      <XDSToggleButton
+        label="Bold"
+        isPressed={false}
+        onPressedChange={() => {}}
+        icon={<span>B</span>}
+        hasTooltip={false}
+      />,
+    );
+    // Without tooltip, the button should be rendered directly (no tooltip wrapper)
+    const button = screen.getByRole('button');
+    expect(button.parentElement).toBe(container);
+  });
+
+  it('renders tooltip when hasTooltip is true for labeled button', () => {
+    const {container} = render(
+      <XDSToggleButton
+        label="Bold"
+        isPressed={false}
+        onPressedChange={() => {}}
+        hasTooltip={true}
+      />,
+    );
+    // With tooltip, the button should be wrapped
+    const button = screen.getByRole('button');
+    expect(button.parentElement).not.toBe(container);
   });
 
   // =========================================================================
