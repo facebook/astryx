@@ -13,7 +13,7 @@
 import type {AriaRole, HTMLAttributes, ReactNode} from 'react';
 import {forwardRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars} from '../../theme/tokens.stylex';
+import {colorVars, spacingVars} from '../theme/tokens.stylex';
 
 const styles = stylex.create({
   header: {

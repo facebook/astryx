@@ -75,6 +75,11 @@
       "import": "./dist/Selector/index.mjs",
       "require": "./dist/Selector/index.js"
     },
+    "./Stack": {
+      "types": "./dist/Stack/index.d.ts",
+      "import": "./dist/Stack/index.mjs",
+      "require": "./dist/Stack/index.js"
+    },
     "./Layout": {
       "types": "./dist/Layout/index.d.ts",
       "import": "./dist/Layout/index.mjs",

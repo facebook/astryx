@@ -13,7 +13,7 @@
 import type {AriaRole, HTMLAttributes, ReactNode} from 'react';
 import {forwardRef, useContext} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {spacingVars} from '../../theme/tokens.stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 import {XDSLayoutSlotsContext} from './XDSLayoutSlotsContext';
 
 const styles = stylex.create({

@@ -15,7 +15,7 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars, elevationVars} from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
-import {container} from '../Layout/Container/container.stylex';
+import {container} from '../Layout/container.stylex';
 import type {SizeValue} from '../utils/types';
 
 // =============================================================================

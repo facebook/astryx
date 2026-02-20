@@ -8,7 +8,7 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {spacingVars} from '../../theme/tokens.stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 
 const alignItemsStyles = stylex.create({
   center: {

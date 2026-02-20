@@ -14,7 +14,7 @@
 import {forwardRef, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
-import {XDSLayoutHeader} from '../Layout/XDSLayout/XDSLayoutHeader';
+import {XDSLayoutHeader} from '../Layout/XDSLayoutHeader';
 import {XDSCloseButton} from '../CloseButton';
 import {XDSHeading} from '../Text/XDSHeading';
 import {XDSText} from '../Text/XDSText';

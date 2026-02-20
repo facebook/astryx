@@ -23,6 +23,7 @@ export * from './Divider';
 export * from './EmptyState';
 export * from './Link';
 export * from './Slider';
+export * from './Stack';
 export * from './Switch';
 export * from './DateInput';
 export * from './Field';
