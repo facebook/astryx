@@ -273,6 +273,13 @@ export interface XDSToggleButtonProps extends Omit<
   icon?: ReactNode;
 
   /**
+   * Icon element to render when the button is pressed.
+   * Use to swap between outline (unpressed) and filled (pressed) icon styles.
+   * Falls back to `icon` if not provided.
+   */
+  pressedIcon?: ReactNode;
+
+  /**
    * Optional visible content. If omitted and icon is provided,
    * button becomes icon-only with label used as aria-label.
    */
@@ -362,6 +369,7 @@ export const XDSToggleButton = forwardRef<
       isDisabled = false,
       isLoading = false,
       icon,
+      pressedIcon,
       children,
       tooltip,
       value: _value,
@@ -372,6 +380,7 @@ export const XDSToggleButton = forwardRef<
   ): ReactElement => {
     const buttonDisabled = isDisabled || isLoading;
     const isIconOnly = icon != null && children == null;
+    const resolvedIcon = isPressed && pressedIcon ? pressedIcon : icon;
 
     // Default tooltip to label for icon-only buttons
     const resolvedTooltip = tooltip ?? (isIconOnly ? label : undefined);
@@ -424,7 +433,7 @@ export const XDSToggleButton = forwardRef<
             <XDSSpinner size="sm" shade="default" />
           </span>
         )}
-        {icon}
+        {resolvedIcon}
         {children ?? (isIconOnly ? null : label)}
       </button>
     );

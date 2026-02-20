@@ -15,6 +15,16 @@ import {
   BellIcon,
   EyeIcon,
 } from '@heroicons/react/24/outline';
+import {
+  BoldIcon as BoldIconSolid,
+  ItalicIcon as ItalicIconSolid,
+  UnderlineIcon as UnderlineIconSolid,
+  StarIcon as StarIconSolid,
+  BookmarkIcon as BookmarkIconSolid,
+  HeartIcon as HeartIconSolid,
+  BellIcon as BellIconSolid,
+  EyeIcon as EyeIconSolid,
+} from '@heroicons/react/24/solid';
 
 const meta: Meta<typeof XDSToggleButton> = {
   title: 'Core/XDSToggleButton',
@@ -288,15 +298,18 @@ export const FormattingToolbar: Story = {
       <ToggleButtonDemo
         label="Bold"
         icon={<BoldIcon style={{width: 16, height: 16}} />}
+        pressedIcon={<BoldIconSolid style={{width: 16, height: 16}} />}
         defaultPressed
       />
       <ToggleButtonDemo
         label="Italic"
         icon={<ItalicIcon style={{width: 16, height: 16}} />}
+        pressedIcon={<ItalicIconSolid style={{width: 16, height: 16}} />}
       />
       <ToggleButtonDemo
         label="Underline"
         icon={<UnderlineIcon style={{width: 16, height: 16}} />}
+        pressedIcon={<UnderlineIconSolid style={{width: 16, height: 16}} />}
       />
       <div
         style={{
@@ -318,6 +331,43 @@ export const FormattingToolbar: Story = {
       <ToggleButtonDemo
         label="Numbered list"
         icon={<NumberedListIcon style={{width: 16, height: 16}} />}
+      />
+    </div>
+  ),
+};
+
+// =============================================================================
+// Icon swap — outline to filled
+// =============================================================================
+
+export const IconSwap: Story = {
+  name: 'Icon Swap — Outline to Filled',
+  render: () => (
+    <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+      <ToggleButtonDemo
+        label="Favorite"
+        icon={<HeartIcon style={{width: 16, height: 16}} />}
+        pressedIcon={<HeartIconSolid style={{width: 16, height: 16}} />}
+      />
+      <ToggleButtonDemo
+        label="Bookmark"
+        icon={<BookmarkIcon style={{width: 16, height: 16}} />}
+        pressedIcon={<BookmarkIconSolid style={{width: 16, height: 16}} />}
+      />
+      <ToggleButtonDemo
+        label="Star"
+        icon={<StarIcon style={{width: 16, height: 16}} />}
+        pressedIcon={<StarIconSolid style={{width: 16, height: 16}} />}
+      />
+      <ToggleButtonDemo
+        label="Notifications"
+        icon={<BellIcon style={{width: 16, height: 16}} />}
+        pressedIcon={<BellIconSolid style={{width: 16, height: 16}} />}
+      />
+      <ToggleButtonDemo
+        label="Watching"
+        icon={<EyeIcon style={{width: 16, height: 16}} />}
+        pressedIcon={<EyeIconSolid style={{width: 16, height: 16}} />}
       />
     </div>
   ),
@@ -354,11 +404,13 @@ export const AllVariants: Story = {
             label="Icon"
             variant="ghost"
             icon={<EyeIcon style={{width: 16, height: 16}} />}
+            pressedIcon={<EyeIconSolid style={{width: 16, height: 16}} />}
           />
           <ToggleButtonDemo
             label="Icon pressed"
             variant="ghost"
             icon={<EyeIcon style={{width: 16, height: 16}} />}
+            pressedIcon={<EyeIconSolid style={{width: 16, height: 16}} />}
             defaultPressed
           />
         </div>
@@ -385,11 +437,13 @@ export const AllVariants: Story = {
             label="Icon"
             variant="secondary"
             icon={<EyeIcon style={{width: 16, height: 16}} />}
+            pressedIcon={<EyeIconSolid style={{width: 16, height: 16}} />}
           />
           <ToggleButtonDemo
             label="Icon pressed"
             variant="secondary"
             icon={<EyeIcon style={{width: 16, height: 16}} />}
+            pressedIcon={<EyeIconSolid style={{width: 16, height: 16}} />}
             defaultPressed
           />
         </div>
@@ -412,11 +466,13 @@ export const AllVariants: Story = {
             label="Icon"
             variant="outline"
             icon={<EyeIcon style={{width: 16, height: 16}} />}
+            pressedIcon={<EyeIconSolid style={{width: 16, height: 16}} />}
           />
           <ToggleButtonDemo
             label="Icon pressed"
             variant="outline"
             icon={<EyeIcon style={{width: 16, height: 16}} />}
+            pressedIcon={<EyeIconSolid style={{width: 16, height: 16}} />}
             defaultPressed
           />
         </div>

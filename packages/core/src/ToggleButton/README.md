@@ -14,6 +14,7 @@ For on/off settings, use XDSSwitch. For regular actions, use XDSButton.
 - **Pressed state**: Visual indicator with `aria-pressed` for accessibility
 - **Loading state**: Shows spinner, disables interaction
 - **Icon-only mode**: Square button with `aria-label` and default tooltip
+- **Icon swap**: Optional `pressedIcon` for outline-to-filled icon transitions
 - **Tooltip**: Automatic for icon-only buttons, opt-in for labeled buttons
 - **Theme overrides**: Supports component-level variant overrides via `theme.components.toggleButton.variants`
 
@@ -63,6 +64,7 @@ const [isBold, setIsBold] = useState(false);
 | `isDisabled`      | `boolean`                             | `false`   | Disables the button                            |
 | `isLoading`       | `boolean`                             | `false`   | Shows loading spinner                          |
 | `icon`            | `ReactNode`                           | —         | Icon element                                   |
+| `pressedIcon`     | `ReactNode`                           | —         | Icon shown when pressed (outline→filled swap)  |
 | `children`        | `ReactNode`                           | —         | Visible label content                          |
 | `tooltip`         | `string`                              | —         | Tooltip text (defaults to label for icon-only) |
 | `value`           | `string`                              | —         | Value identifier for use in groups             |

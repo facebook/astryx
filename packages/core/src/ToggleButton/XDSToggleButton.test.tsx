@@ -73,6 +73,50 @@ describe('XDSToggleButton', () => {
   });
 
   // =========================================================================
+  // pressedIcon
+  // =========================================================================
+
+  it('renders pressedIcon when pressed', () => {
+    render(
+      <XDSToggleButton
+        label="Favorite"
+        isPressed={true}
+        onPressedChange={() => {}}
+        icon={<span data-testid="outline-icon">♡</span>}
+        pressedIcon={<span data-testid="filled-icon">♥</span>}
+      />,
+    );
+    expect(screen.getByTestId('filled-icon')).toBeInTheDocument();
+    expect(screen.queryByTestId('outline-icon')).not.toBeInTheDocument();
+  });
+
+  it('renders icon when not pressed even if pressedIcon provided', () => {
+    render(
+      <XDSToggleButton
+        label="Favorite"
+        isPressed={false}
+        onPressedChange={() => {}}
+        icon={<span data-testid="outline-icon">♡</span>}
+        pressedIcon={<span data-testid="filled-icon">♥</span>}
+      />,
+    );
+    expect(screen.getByTestId('outline-icon')).toBeInTheDocument();
+    expect(screen.queryByTestId('filled-icon')).not.toBeInTheDocument();
+  });
+
+  it('falls back to icon when pressed and no pressedIcon', () => {
+    render(
+      <XDSToggleButton
+        label="Star"
+        isPressed={true}
+        onPressedChange={() => {}}
+        icon={<span data-testid="default-icon">☆</span>}
+      />,
+    );
+    expect(screen.getByTestId('default-icon')).toBeInTheDocument();
+  });
+
+  // =========================================================================
   // aria-pressed
   // =========================================================================
 
