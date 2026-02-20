@@ -57,6 +57,9 @@ function copyDir(src, dest) {
 /**
  * Transform dist exports to source exports
  * e.g., "./dist/Button/index.mjs" -> "./Button/index.ts"
+ *
+ * Also auto-discovers component directories that have an index.ts
+ * but are missing from the core package.json exports.
  */
 function deriveSourceExports() {
   const sourceExports = {};
@@ -86,6 +89,19 @@ function deriveSourceExports() {
         .replace(/\.js$/, '.ts');
 
       sourceExports[key] = sourcePath;
+    }
+  }
+
+  // Auto-discover component directories with index.ts that aren't in exports
+  const srcEntries = fs.readdirSync(SRC_DIR, { withFileTypes: true });
+  for (const entry of srcEntries) {
+    if (!entry.isDirectory()) continue;
+    const exportKey = './' + entry.name;
+    if (sourceExports[exportKey]) continue;
+
+    const indexPath = path.join(SRC_DIR, entry.name, 'index.ts');
+    if (fs.existsSync(indexPath)) {
+      sourceExports[exportKey] = './' + entry.name + '/index.ts';
     }
   }
 
