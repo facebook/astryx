@@ -26,6 +26,7 @@ export function generateCompressedIndex(version) {
 |npx xds component --list             All components by category
 |npx xds docs principles              Design rules, anti-patterns, StyleX patterns
 |npx xds docs tokens                  Token reference (spacing, color, radius, type)
+|npx xds docs theme                   Theme system: XDSTheme, custom themes, overrides, nesting
 |npx xds swizzle <Name>               Copy component source for customization
 |npx xds theme                         Scaffold a custom theme (interactive)
 |npx xds theme --list                  List existing themes in the project

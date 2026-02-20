@@ -14,6 +14,7 @@ const DOCS_DIR = path.join(CLI_ROOT, 'docs');
 const TOPICS = {
   principles: 'XDS design principles, rules, and anti-patterns',
   tokens: 'Full design token reference (spacing, colors, radius, typography)',
+  theme: 'Theme system: XDSTheme, custom themes, overrides, light/dark mode',
 };
 
 export function registerDocs(program) {
