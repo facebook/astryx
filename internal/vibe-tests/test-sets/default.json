@@ -45,7 +45,7 @@
     {
       "id": "wd-1",
       "category": "workflow-description",
-      "prompt": "Build a checkout flow: cart summary \u2192 shipping \u2192 payment \u2192 confirmation",
+      "prompt": "Build a checkout flow: cart summary → shipping → payment → confirmation",
       "expectedComponents": [
         "XDSCard",
         "XDSButton",
@@ -75,7 +75,7 @@
     {
       "id": "wd-3",
       "category": "workflow-description",
-      "prompt": "Build an onboarding flow: welcome screen \u2192 profile setup \u2192 preferences \u2192 done",
+      "prompt": "Build an onboarding flow: welcome screen → profile setup → preferences → done",
       "expectedComponents": [
         "XDSCard",
         "XDSButton",
@@ -133,7 +133,7 @@
     {
       "id": "sd-1",
       "category": "state-driven",
-      "prompt": "Show a dashboard widget with loading \u2192 error \u2192 data states",
+      "prompt": "Show a dashboard widget with loading → error → data states",
       "expectedComponents": [
         "XDSCard",
         "XDSSkeleton"
@@ -532,7 +532,7 @@
     {
       "id": "tc-3",
       "category": "theme-customization",
-      "prompt": "I need my page background to use the wash color from the theme. Right now wrapping my app in XDSTheme doesn't change the page background \u2014 it stays white.",
+      "prompt": "I need my page background to use the wash color from the theme. Right now wrapping my app in XDSTheme doesn't change the page background — it stays white.",
       "expectedComponents": [
         "XDSTheme",
         "XDSLayout"
@@ -561,7 +561,7 @@
     {
       "id": "tc-5",
       "category": "theme-customization",
-      "prompt": "I want to customize the card component's appearance in my theme \u2014 add a gradient border and increase the border radius. How do I do component-level style overrides in the XDS theme?",
+      "prompt": "I want to customize the card component's appearance in my theme — add a gradient border and increase the border radius. How do I do component-level style overrides in the XDS theme?",
       "expectedComponents": [
         "XDSTheme",
         "XDSCard"
@@ -591,7 +591,7 @@
     {
       "id": "tc-7",
       "category": "theme-customization",
-      "prompt": "I have a section of my app that needs a different theme than the rest \u2014 like a dark sidebar next to a light content area. How do I nest themes in XDS?",
+      "prompt": "I have a section of my app that needs a different theme than the rest — like a dark sidebar next to a light content area. How do I nest themes in XDS?",
       "expectedComponents": [
         "XDSTheme",
         "XDSLayout",
@@ -607,7 +607,7 @@
     {
       "id": "tc-8",
       "category": "theme-customization",
-      "prompt": "Create a brutalist theme for XDS \u2014 zero border radius, high contrast black and white, bold borders, and a hot pink accent color. Wire it up with XDSTheme.",
+      "prompt": "Create a brutalist theme for XDS — zero border radius, high contrast black and white, bold borders, and a hot pink accent color. Wire it up with XDSTheme.",
       "expectedComponents": [
         "XDSTheme"
       ],
@@ -615,6 +615,303 @@
       "followUps": [
         "Override card styles to have a thick 2px black border",
         "Make buttons use uppercase text in this theme"
+      ]
+    },
+    {
+      "id": "fwc-4",
+      "category": "feature-with-constraint",
+      "prompt": "I need a confirmation dialog that asks \"Are you sure you want to delete this item?\" with cancel and delete buttons. The delete button should be destructive-styled.",
+      "expectedComponents": [
+        "XDSDialog",
+        "XDSButton",
+        "XDSLayout"
+      ],
+      "complexity": "simple",
+      "followUps": [
+        "Add a checkbox that says \"Don't ask me again\" and remember the preference",
+        "Show a loading spinner on the delete button while the API call is in progress"
+      ]
+    },
+    {
+      "id": "wd-5",
+      "category": "workflow-description",
+      "prompt": "Build a feedback form that opens in a dialog. It should have a title field, a long-form text area for comments, and a submit button. Show a success state after submission.",
+      "expectedComponents": [
+        "XDSDialog",
+        "XDSTextInput",
+        "XDSTextArea",
+        "XDSButton",
+        "XDSLayout"
+      ],
+      "complexity": "moderate",
+      "followUps": [
+        "Add a rating selector (1-5 stars) above the comment field",
+        "Add form validation — title is required, comment must be at least 20 characters"
+      ]
+    },
+    {
+      "id": "fwc-5",
+      "category": "feature-with-constraint",
+      "prompt": "Create a row actions menu for a table — each row should have a \"...\" button that opens a dropdown with Edit, Duplicate, and Delete options. Delete should be visually distinct.",
+      "expectedComponents": [
+        "XDSDropdownMenu",
+        "XDSButton"
+      ],
+      "complexity": "simple",
+      "followUps": [
+        "Add a confirmation dialog when Delete is clicked",
+        "Group the items into sections: one for editing actions and one for destructive actions"
+      ]
+    },
+    {
+      "id": "fwc-6",
+      "category": "feature-with-constraint",
+      "prompt": "Build a shipping method selector with three options: Standard (free, 5-7 days), Express ($9.99, 2-3 days), and Overnight ($24.99, next day). Only one can be selected.",
+      "expectedComponents": [
+        "XDSRadioList",
+        "XDSCard"
+      ],
+      "complexity": "simple",
+      "followUps": [
+        "Show the estimated delivery date next to each option based on today's date",
+        "Disable the Overnight option on weekends with a tooltip explaining why"
+      ]
+    },
+    {
+      "id": "fwc-7",
+      "category": "feature-with-constraint",
+      "prompt": "Create a price range filter with a slider that lets users set minimum and maximum price. Show the selected range as text above the slider.",
+      "expectedComponents": [
+        "XDSSlider",
+        "XDSText"
+      ],
+      "complexity": "simple",
+      "followUps": [
+        "Add preset buttons for common ranges like \"Under $25\", \"$25-$50\", \"$50-$100\"",
+        "Debounce the slider changes and show a loading indicator while results update"
+      ]
+    },
+    {
+      "id": "io-4",
+      "category": "integration-oriented",
+      "prompt": "Build a quantity selector for a shopping cart item. It should have a number input with increment/decrement, min of 1, max of 99. Changing the quantity should call an update API endpoint.",
+      "expectedComponents": [
+        "XDSNumberInput",
+        "XDSButton"
+      ],
+      "complexity": "simple",
+      "followUps": [
+        "Add a \"Remove item\" button that appears when quantity is set to 0",
+        "Show the updated subtotal price next to the quantity"
+      ]
+    },
+    {
+      "id": "fwc-8",
+      "category": "feature-with-constraint",
+      "prompt": "Create a date range picker for booking a hotel stay. Users should pick check-in and check-out dates. Past dates should be disabled.",
+      "expectedComponents": [
+        "XDSDateInput",
+        "XDSCalendar"
+      ],
+      "complexity": "moderate",
+      "followUps": [
+        "Show the number of nights between check-in and check-out",
+        "Highlight weekends with a different background color in the calendar"
+      ]
+    },
+    {
+      "id": "fwc-9",
+      "category": "feature-with-constraint",
+      "prompt": "Build a meeting scheduler with a date picker and a time input for start time. The meeting duration should default to 30 minutes.",
+      "expectedComponents": [
+        "XDSDateInput",
+        "XDSTimeInput",
+        "XDSButton"
+      ],
+      "complexity": "moderate",
+      "followUps": [
+        "Add a duration selector dropdown with options: 15 min, 30 min, 1 hour, 2 hours",
+        "Show the calculated end time based on start time and duration"
+      ]
+    },
+    {
+      "id": "sd-4",
+      "category": "state-driven",
+      "prompt": "Build a terms and conditions acceptance form. Show a scrollable text area with the terms, then checkboxes for \"I agree to the Terms of Service\" and \"I agree to the Privacy Policy\". The continue button should only enable when both are checked.",
+      "expectedComponents": [
+        "XDSCheckboxInput",
+        "XDSButton",
+        "XDSTextArea"
+      ],
+      "complexity": "simple",
+      "followUps": [
+        "Add a \"Select all\" checkbox that toggles both checkboxes",
+        "Add a third optional checkbox for marketing emails"
+      ]
+    },
+    {
+      "id": "sd-5",
+      "category": "state-driven",
+      "prompt": "Create a notification preferences panel with toggle switches for Email notifications, Push notifications, and SMS alerts. Each switch should show its current state.",
+      "expectedComponents": [
+        "XDSSwitch",
+        "XDSCard"
+      ],
+      "complexity": "simple",
+      "followUps": [
+        "Add a \"Quiet hours\" section with time inputs for start and end time that only shows when notifications are enabled",
+        "Add a master toggle at the top that disables all notifications at once"
+      ]
+    },
+    {
+      "id": "io-5",
+      "category": "integration-oriented",
+      "prompt": "Build a support ticket form with a subject line input, a description text area with character count, and a priority selector. Submit should post to /api/tickets.",
+      "expectedComponents": [
+        "XDSTextInput",
+        "XDSTextArea",
+        "XDSSelector",
+        "XDSButton"
+      ],
+      "complexity": "moderate",
+      "followUps": [
+        "Add file attachment support with a drag-and-drop zone",
+        "Show a preview of the ticket before submitting"
+      ]
+    },
+    {
+      "id": "fwc-10",
+      "category": "feature-with-constraint",
+      "prompt": "Build a user role assignment form. Show a list of team members with a dropdown selector next to each for their role: Viewer, Editor, Admin. Changes should save automatically.",
+      "expectedComponents": [
+        "XDSSelector",
+        "XDSText",
+        "XDSCard"
+      ],
+      "complexity": "moderate",
+      "followUps": [
+        "Add a confirmation dialog when changing someone to Admin",
+        "Show a toast notification after each role change is saved"
+      ]
+    },
+    {
+      "id": "ps-4",
+      "category": "page-setup",
+      "prompt": "Create a product detail page with breadcrumb navigation showing Home > Category > Subcategory > Product Name. The page should have a header, product info section, and a back button.",
+      "expectedComponents": [
+        "XDSBreadcrumbs",
+        "XDSCard",
+        "XDSButton"
+      ],
+      "complexity": "simple",
+      "followUps": [
+        "Make the breadcrumb items clickable links that navigate to each level",
+        "Add a \"Related Products\" section below the product details"
+      ]
+    },
+    {
+      "id": "sd-6",
+      "category": "state-driven",
+      "prompt": "Show a project list page that displays an empty state when there are no projects. The empty state should have an icon, a message saying \"No projects yet\", and a \"Create Project\" button.",
+      "expectedComponents": [
+        "XDSEmptyState",
+        "XDSButton"
+      ],
+      "complexity": "simple",
+      "followUps": [
+        "Add a search bar that shows a different empty state when search returns no results",
+        "Add a loading skeleton state while projects are being fetched"
+      ]
+    },
+    {
+      "id": "sd-7",
+      "category": "state-driven",
+      "prompt": "Build a file upload component that shows a progress bar during upload. Display the filename, file size, and percentage complete. Show a success state when done.",
+      "expectedComponents": [
+        "XDSProgressBar",
+        "XDSText",
+        "XDSButton"
+      ],
+      "complexity": "moderate",
+      "followUps": [
+        "Support multiple file uploads with individual progress bars",
+        "Add a cancel button that aborts the upload in progress"
+      ]
+    },
+    {
+      "id": "dd-4",
+      "category": "data-display",
+      "prompt": "Create a user profile page with tabs for Overview, Activity, and Settings. Each tab should show different content. The Overview tab should be selected by default.",
+      "expectedComponents": [
+        "XDSTabList",
+        "XDSTab",
+        "XDSCard"
+      ],
+      "complexity": "moderate",
+      "followUps": [
+        "Add a badge showing the count of unread items on the Activity tab",
+        "Remember the last selected tab in the URL hash"
+      ]
+    },
+    {
+      "id": "dd-5",
+      "category": "data-display",
+      "prompt": "Build an email inbox view with a table showing sender, subject, date, and a preview snippet. Add row selection with checkboxes and a bulk actions bar that appears when items are selected.",
+      "expectedComponents": [
+        "XDSTable",
+        "XDSCheckboxInput",
+        "XDSDropdownMenu",
+        "XDSButton"
+      ],
+      "complexity": "complex",
+      "followUps": [
+        "Add a \"Select all\" checkbox in the header that selects all visible rows",
+        "Add swipe-to-archive on mobile"
+      ]
+    },
+    {
+      "id": "dd-6",
+      "category": "data-display",
+      "prompt": "Create a team members list where hovering over a member's name shows a hover card with their avatar, role, email, and a \"Message\" button.",
+      "expectedComponents": [
+        "XDSHoverCard",
+        "XDSAvatar",
+        "XDSText",
+        "XDSButton"
+      ],
+      "complexity": "moderate",
+      "followUps": [
+        "Add their recent activity or status to the hover card",
+        "Make the avatar show an online/offline status indicator"
+      ]
+    },
+    {
+      "id": "fwc-11",
+      "category": "feature-with-constraint",
+      "prompt": "Build a toolbar with icon buttons for Bold, Italic, Underline, and Link. Each button should show a tooltip with the action name and keyboard shortcut on hover.",
+      "expectedComponents": [
+        "XDSTooltip",
+        "XDSButton"
+      ],
+      "complexity": "simple",
+      "followUps": [
+        "Add an active/pressed state for buttons when formatting is applied",
+        "Add a color picker button to the toolbar"
+      ]
+    },
+    {
+      "id": "dd-7",
+      "category": "data-display",
+      "prompt": "Display a list of services with their current status. Each service should show a status dot (green for healthy, yellow for degraded, red for down) next to the service name and last checked time.",
+      "expectedComponents": [
+        "XDSStatusDot",
+        "XDSText",
+        "XDSCard"
+      ],
+      "complexity": "simple",
+      "followUps": [
+        "Add a tooltip on the status dot showing the uptime percentage",
+        "Add a \"Refresh\" button that rechecks all service statuses"
       ]
     }
   ],
@@ -636,7 +933,7 @@
     {
       "id": "ho-wd-1",
       "category": "workflow-description",
-      "prompt": "Build a return request flow: select items \u2192 reason \u2192 shipping method \u2192 confirmation",
+      "prompt": "Build a return request flow: select items → reason → shipping method → confirmation",
       "expectedComponents": [
         "XDSCard",
         "XDSButton",
