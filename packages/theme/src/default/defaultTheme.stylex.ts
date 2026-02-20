@@ -47,6 +47,7 @@ import type {
   BaseLineHeightRaw,
   BaseFontWeightRaw,
 } from '@xds/core/theme/tokens.stylex';
+import {defaultIconRegistry} from './icons';
 
 // =============================================================================
 // Raw Theme Values
@@ -586,8 +587,6 @@ const proseElementStyles = stylex.create({
     marginBottom: 0,
   },
 });
-
-import {defaultIconRegistry} from './icons';
 
 // =============================================================================
 // Theme Export

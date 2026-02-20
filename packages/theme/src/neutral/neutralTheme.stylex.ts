@@ -49,6 +49,7 @@ import type {
   BaseLineHeightRaw,
   BaseFontWeightRaw,
 } from '@xds/core/theme/tokens.stylex';
+import {neutralIconRegistry} from './icons';
 
 // =============================================================================
 // Raw Theme Values
@@ -553,8 +554,6 @@ const textStyles = stylex.create({
     margin: 0,
   },
 });
-
-import {neutralIconRegistry} from './icons';
 
 // =============================================================================
 // Theme Export
