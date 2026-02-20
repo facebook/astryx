@@ -2,8 +2,10 @@
  * @file Breadcrumbs component barrel export
  */
 
-export {XDSBreadcrumbs, XDSBreadcrumbItem} from './XDSBreadcrumbs';
+export {XDSBreadcrumbs} from './XDSBreadcrumbs';
 export type {
   XDSBreadcrumbsProps,
-  XDSBreadcrumbItemProps,
+  XDSBreadcrumbsVariant,
 } from './XDSBreadcrumbs';
+export {XDSBreadcrumbItem} from './XDSBreadcrumbItem';
+export type {XDSBreadcrumbItemProps} from './XDSBreadcrumbItem';

@@ -1,14 +1,14 @@
 /**
  * @file XDSBreadcrumbs.tsx
- * @input Uses React forwardRef, Children, createContext, useContext, stylex, theme tokens
- * @output Exports XDSBreadcrumbs, XDSBreadcrumbItem components and their prop types
- * @position Core implementation; consumed by index.ts
+ * @input Uses React forwardRef, Children, createContext, stylex, theme tokens
+ * @output Exports XDSBreadcrumbs component, XDSBreadcrumbsProps, BreadcrumbCtx
+ * @position Core container component; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Breadcrumbs/README.md (props table, features, implementation notes)
- * - /packages/core/src/Breadcrumbs/XDSBreadcrumbs.test.tsx (tests for new/changed behavior)
- * - /packages/core/src/Breadcrumbs/index.ts (exports if types change)
- * - /apps/storybook/stories/Breadcrumbs.stories.tsx (storybook stories)
+ * - /packages/core/src/Breadcrumbs/README.md
+ * - /packages/core/src/Breadcrumbs/XDSBreadcrumbs.test.tsx
+ * - /packages/core/src/Breadcrumbs/index.ts
+ * - /apps/storybook/stories/Breadcrumbs.stories.tsx
  */
 
 import {
@@ -16,9 +16,7 @@ import {
   Children,
   isValidElement,
   createContext,
-  useContext,
   type ReactNode,
-  type MouseEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -28,18 +26,32 @@ import {
   textSizeVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
+import type {XDSBreadcrumbItemProps} from './XDSBreadcrumbItem';
 
 // =============================================================================
-// Context for auto-detecting last item
+// Variant type
 // =============================================================================
 
-interface BreadcrumbItemContext {
-  /** Whether this item is the last in the list and no explicit isCurrent exists. */
+/**
+ * Visual variant for the breadcrumb trail.
+ * - `'default'`: Standard text styling
+ * - `'supporting'`: Smaller, secondary text for supporting context
+ */
+export type XDSBreadcrumbsVariant = 'default' | 'supporting';
+
+// =============================================================================
+// Context shared with XDSBreadcrumbItem
+// =============================================================================
+
+/** @internal Context for passing state from XDSBreadcrumbs to XDSBreadcrumbItem. */
+export interface BreadcrumbContextValue {
   isAutoLast: boolean;
+  variant: XDSBreadcrumbsVariant;
 }
 
-const BreadcrumbItemCtx = createContext<BreadcrumbItemContext>({
+export const BreadcrumbCtx = createContext<BreadcrumbContextValue>({
   isAutoLast: false,
+  variant: 'default',
 });
 
 // =============================================================================
@@ -57,6 +69,13 @@ export interface XDSBreadcrumbsProps {
    */
   separator?: ReactNode;
   /**
+   * Visual variant for the breadcrumb trail.
+   * - `'default'`: Standard text styling
+   * - `'supporting'`: Smaller, secondary text for supporting context
+   * @default 'default'
+   */
+  variant?: XDSBreadcrumbsVariant;
+  /**
    * StyleX styles to apply to the nav container.
    */
   xstyle?: StyleXStyles;
@@ -67,35 +86,6 @@ export interface XDSBreadcrumbsProps {
   label?: string;
   /**
    * Test ID for the nav element.
-   */
-  'data-testid'?: string;
-}
-
-export interface XDSBreadcrumbItemProps {
-  /**
-   * Label content of the breadcrumb item.
-   */
-  children: ReactNode;
-  /**
-   * URL for the breadcrumb link. Omit for the current page.
-   */
-  href?: string;
-  /**
-   * Click handler. Works with or without href.
-   */
-  onClick?: (e: MouseEvent<HTMLElement>) => void;
-  /**
-   * Marks this item as the current page. Renders as a span with aria-current="page".
-   * If not set on any item, the last item is auto-detected as current.
-   * @default false
-   */
-  isCurrent?: boolean;
-  /**
-   * Optional icon rendered before the label.
-   */
-  startIcon?: ReactNode;
-  /**
-   * Test ID for the list item.
    */
   'data-testid'?: string;
 }
@@ -127,102 +117,19 @@ const separatorStyles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     color: colorVars['--color-text-secondary'],
-    fontSize: textSizeVars['--text-sm'],
     lineHeight: lineHeightVars['--leading-snug'],
     userSelect: 'none',
   },
-});
-
-const itemStyles = stylex.create({
-  root: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
+  defaultSize: {
     fontSize: textSizeVars['--text-sm'],
-    lineHeight: lineHeightVars['--leading-snug'],
   },
-  link: {
-    color: colorVars['--color-text-link'],
-    textDecoration: {
-      default: 'none',
-      ':hover': 'underline',
-    },
-    cursor: 'pointer',
-  },
-  current: {
-    color: colorVars['--color-text-primary'],
-    fontWeight: 'inherit',
-  },
-  icon: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    flexShrink: 0,
+  supportingSize: {
+    fontSize: textSizeVars['--text-xsm'],
   },
 });
 
 // =============================================================================
-// XDSBreadcrumbItem
-// =============================================================================
-
-/**
- * An individual breadcrumb item. Renders as a link (`<a>`) or a span
- * depending on whether it represents the current page.
- *
- * @example
- * ```tsx
- * <XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem>
- * <XDSBreadcrumbItem isCurrent>My Project</XDSBreadcrumbItem>
- * ```
- */
-export function XDSBreadcrumbItem({
-  children,
-  href,
-  onClick,
-  isCurrent: isCurrentProp,
-  startIcon,
-  'data-testid': testId,
-}: XDSBreadcrumbItemProps) {
-  const ctx = useContext(BreadcrumbItemCtx);
-  // If isCurrent is explicitly set, use it. Otherwise, auto-detect from context.
-  const isCurrent = isCurrentProp ?? ctx.isAutoLast;
-
-  const content = (
-    <>
-      {startIcon && <span {...stylex.props(itemStyles.icon)}>{startIcon}</span>}
-      {children}
-    </>
-  );
-
-  if (isCurrent) {
-    return (
-      <li {...stylex.props(itemStyles.root)} data-testid={testId}>
-        <span {...stylex.props(itemStyles.current)} aria-current="page">
-          {content}
-        </span>
-      </li>
-    );
-  }
-
-  return (
-    <li {...stylex.props(itemStyles.root)} data-testid={testId}>
-      <a href={href} onClick={onClick} {...stylex.props(itemStyles.link)}>
-        {content}
-      </a>
-    </li>
-  );
-}
-
-XDSBreadcrumbItem.displayName = 'XDSBreadcrumbItem';
-
-// =============================================================================
-// Context values (stable references)
-// =============================================================================
-
-const AUTO_LAST_CTX: BreadcrumbItemContext = {isAutoLast: true};
-const DEFAULT_CTX: BreadcrumbItemContext = {isAutoLast: false};
-
-// =============================================================================
-// XDSBreadcrumbs
+// Component
 // =============================================================================
 
 /**
@@ -246,6 +153,7 @@ export const XDSBreadcrumbs = forwardRef<HTMLElement, XDSBreadcrumbsProps>(
     {
       children,
       separator = '/',
+      variant = 'default',
       xstyle,
       label = 'Breadcrumb',
       'data-testid': testId,
@@ -253,6 +161,7 @@ export const XDSBreadcrumbs = forwardRef<HTMLElement, XDSBreadcrumbsProps>(
     ref,
   ) {
     const items = Children.toArray(children);
+    const isSupporting = variant === 'supporting';
 
     // Check if any child has isCurrent explicitly set
     const hasExplicitCurrent = items.some(
@@ -266,22 +175,16 @@ export const XDSBreadcrumbs = forwardRef<HTMLElement, XDSBreadcrumbsProps>(
     items.forEach((child, index) => {
       const isLast = index === items.length - 1;
 
-      // Wrap the last item in context to auto-detect as current
-      if (!hasExplicitCurrent && isLast) {
-        rendered.push(
-          <BreadcrumbItemCtx.Provider
-            key={`item-${index}`}
-            value={AUTO_LAST_CTX}>
-            {child}
-          </BreadcrumbItemCtx.Provider>,
-        );
-      } else {
-        rendered.push(
-          <BreadcrumbItemCtx.Provider key={`item-${index}`} value={DEFAULT_CTX}>
-            {child}
-          </BreadcrumbItemCtx.Provider>,
-        );
-      }
+      const ctxValue: BreadcrumbContextValue = {
+        isAutoLast: !hasExplicitCurrent && isLast,
+        variant,
+      };
+
+      rendered.push(
+        <BreadcrumbCtx.Provider key={`item-${index}`} value={ctxValue}>
+          {child}
+        </BreadcrumbCtx.Provider>,
+      );
 
       // Add separator between items (not after the last one)
       if (!isLast) {
@@ -290,7 +193,12 @@ export const XDSBreadcrumbs = forwardRef<HTMLElement, XDSBreadcrumbsProps>(
             key={`sep-${index}`}
             role="presentation"
             aria-hidden="true"
-            {...stylex.props(separatorStyles.root)}>
+            {...stylex.props(
+              separatorStyles.root,
+              isSupporting
+                ? separatorStyles.supportingSize
+                : separatorStyles.defaultSize,
+            )}>
             {separator}
           </li>,
         );

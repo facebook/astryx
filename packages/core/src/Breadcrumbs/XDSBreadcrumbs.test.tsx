@@ -1,7 +1,8 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {XDSBreadcrumbs, XDSBreadcrumbItem} from './XDSBreadcrumbs';
+import {XDSBreadcrumbs} from './XDSBreadcrumbs';
+import {XDSBreadcrumbItem} from './XDSBreadcrumbItem';
 
 describe('XDSBreadcrumbs', () => {
   it('renders a nav landmark with aria-label', () => {
@@ -52,13 +53,13 @@ describe('XDSBreadcrumbs', () => {
 
   it('supports custom separator', () => {
     const {container} = render(
-      <XDSBreadcrumbs separator={<span>{'\u203a'}</span>}>
+      <XDSBreadcrumbs separator={<span>›</span>}>
         <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
         <XDSBreadcrumbItem isCurrent>Page</XDSBreadcrumbItem>
       </XDSBreadcrumbs>,
     );
     const separators = container.querySelectorAll('li[aria-hidden="true"]');
-    expect(separators[0].textContent).toBe('\u203a');
+    expect(separators[0].textContent).toBe('›');
   });
 
   it('separators have role="presentation"', () => {
@@ -90,6 +91,41 @@ describe('XDSBreadcrumbs', () => {
       </XDSBreadcrumbs>,
     );
     expect(screen.getByTestId('my-breadcrumbs')).toBeInTheDocument();
+  });
+
+  it('defaults to variant="default"', () => {
+    render(
+      <XDSBreadcrumbs>
+        <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
+        <XDSBreadcrumbItem isCurrent>Current</XDSBreadcrumbItem>
+      </XDSBreadcrumbs>,
+    );
+    expect(screen.getByRole('navigation')).toBeInTheDocument();
+  });
+
+  it('accepts variant="supporting"', () => {
+    render(
+      <XDSBreadcrumbs variant="supporting">
+        <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
+        <XDSBreadcrumbItem isCurrent>Current</XDSBreadcrumbItem>
+      </XDSBreadcrumbs>,
+    );
+    expect(screen.getByRole('navigation')).toBeInTheDocument();
+    expect(screen.getByText('Home')).toBeInTheDocument();
+    expect(screen.getByText('Current')).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('supporting variant renders links and current items', () => {
+    render(
+      <XDSBreadcrumbs variant="supporting">
+        <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
+        <XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem>
+        <XDSBreadcrumbItem isCurrent>Detail</XDSBreadcrumbItem>
+      </XDSBreadcrumbs>,
+    );
+    const link = screen.getByRole('link', {name: 'Home'});
+    expect(link).toHaveAttribute('href', '/');
+    expect(screen.getByText('Detail')).toHaveAttribute('aria-current', 'page');
   });
 });
 
@@ -197,5 +233,17 @@ describe('XDSBreadcrumbItem', () => {
     const item = screen.getByText('Only Item');
     expect(item).toHaveAttribute('aria-current', 'page');
     expect(item.tagName).toBe('SPAN');
+  });
+
+  it('auto-detects last child as current with supporting variant', () => {
+    render(
+      <XDSBreadcrumbs variant="supporting">
+        <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
+        <XDSBreadcrumbItem>Last</XDSBreadcrumbItem>
+      </XDSBreadcrumbs>,
+    );
+    const last = screen.getByText('Last');
+    expect(last).toHaveAttribute('aria-current', 'page');
+    expect(last.tagName).toBe('SPAN');
   });
 });

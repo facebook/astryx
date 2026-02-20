@@ -1,80 +1,79 @@
 # Breadcrumbs
 
-A navigation breadcrumb trail showing the user's location within a hierarchy.
+A navigation breadcrumb trail with semantic HTML.
 
 ## Exports
 
-| Export                   | Type      | Description                 |
-| ------------------------ | --------- | --------------------------- |
-| `XDSBreadcrumbs`         | Component | Container nav + ol wrapper  |
-| `XDSBreadcrumbItem`      | Component | Individual breadcrumb item  |
-| `XDSBreadcrumbsProps`    | Type      | Props for XDSBreadcrumbs    |
-| `XDSBreadcrumbItemProps` | Type      | Props for XDSBreadcrumbItem |
+| Export                   | Type      | Description                |
+| ------------------------ | --------- | -------------------------- |
+| `XDSBreadcrumbs`         | Component | Container with nav + ol    |
+| `XDSBreadcrumbsProps`    | Type      | Container props interface  |
+| `XDSBreadcrumbsVariant`  | Type      | Variant union type         |
+| `XDSBreadcrumbItem`      | Component | Individual breadcrumb item |
+| `XDSBreadcrumbItemProps` | Type      | Item props interface       |
 
-## XDSBreadcrumbs Props
+## Props — XDSBreadcrumbs
 
-| Prop          | Type           | Default        | Description                          |
-| ------------- | -------------- | -------------- | ------------------------------------ |
-| `children`    | `ReactNode`    | —              | XDSBreadcrumbItem elements           |
-| `separator`   | `ReactNode`    | `'/'`          | Separator between items (decorative) |
-| `xstyle`      | `StyleXStyles` | —              | StyleX styles for the nav container  |
-| `label`       | `string`       | `'Breadcrumb'` | aria-label for the nav landmark      |
-| `data-testid` | `string`       | —              | Test ID for the nav element          |
+| Prop          | Type                        | Default        | Description                       |
+| ------------- | --------------------------- | -------------- | --------------------------------- |
+| `children`    | `ReactNode`                 | —              | XDSBreadcrumbItem elements        |
+| `separator`   | `ReactNode`                 | `'/'`          | Separator between items           |
+| `variant`     | `'default' \| 'supporting'` | `'default'`    | Visual variant                    |
+| `xstyle`      | `StyleXStyles`              | —              | StyleX overrides                  |
+| `label`       | `string`                    | `'Breadcrumb'` | Accessible label for nav landmark |
+| `data-testid` | `string`                    | —              | Test ID                           |
 
-## XDSBreadcrumbItem Props
+## Props — XDSBreadcrumbItem
 
-| Prop          | Type                      | Default | Description                                 |
-| ------------- | ------------------------- | ------- | ------------------------------------------- |
-| `children`    | `ReactNode`               | —       | Label content                               |
-| `href`        | `string`                  | —       | URL for the breadcrumb link                 |
-| `onClick`     | `(e: MouseEvent) => void` | —       | Click handler                               |
-| `isCurrent`   | `boolean`                 | `false` | Marks as current page (aria-current="page") |
-| `startIcon`   | `ReactNode`               | —       | Icon rendered before the label              |
-| `data-testid` | `string`                  | —       | Test ID for the list item                   |
+| Prop          | Type                      | Default | Description                          |
+| ------------- | ------------------------- | ------- | ------------------------------------ |
+| `children`    | `ReactNode`               | —       | Item label content                   |
+| `href`        | `string`                  | —       | URL for the breadcrumb link          |
+| `onClick`     | `(e: MouseEvent) => void` | —       | Click handler                        |
+| `isCurrent`   | `boolean`                 | `false` | Marks as current page (aria-current) |
+| `startIcon`   | `ReactNode`               | —       | Icon before the label                |
+| `data-testid` | `string`                  | —       | Test ID                              |
 
 ## Usage
 
 ```tsx
 import {XDSBreadcrumbs, XDSBreadcrumbItem} from '@xds/core/Breadcrumbs';
 
-// Basic usage
+// Basic breadcrumbs
 <XDSBreadcrumbs>
   <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
   <XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem>
   <XDSBreadcrumbItem isCurrent>My Project</XDSBreadcrumbItem>
 </XDSBreadcrumbs>
 
-// Auto-detect current (last item becomes current automatically)
-<XDSBreadcrumbs>
-  <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
-  <XDSBreadcrumbItem>Settings</XDSBreadcrumbItem>
-</XDSBreadcrumbs>
-
-// Custom separator
-<XDSBreadcrumbs separator="›">
+// Supporting variant (smaller, secondary text)
+<XDSBreadcrumbs variant="supporting">
   <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
   <XDSBreadcrumbItem isCurrent>Page</XDSBreadcrumbItem>
 </XDSBreadcrumbs>
 
 // With icons
 <XDSBreadcrumbs>
-  <XDSBreadcrumbItem href="/" startIcon={<HomeIcon />}>Home</XDSBreadcrumbItem>
+  <XDSBreadcrumbItem href="/" startIcon={<XDSIcon icon={HomeIcon} size="sm" />}>
+    Home
+  </XDSBreadcrumbItem>
   <XDSBreadcrumbItem isCurrent>Settings</XDSBreadcrumbItem>
 </XDSBreadcrumbs>
 ```
 
 ## Accessibility
 
-- Outer `<nav>` landmark with `aria-label`
-- Items rendered in an `<ol>` ordered list
-- Current item has `aria-current="page"` and renders as `<span>` (not a link)
-- Separators are `aria-hidden="true"` with `role="presentation"`
-- Auto-detects last child as current if no `isCurrent` is explicitly set
+- Container is `<nav aria-label>` landmark
+- Items in `<ol>` with `<li>` elements
+- Current item has `aria-current="page"`
+- Separators are `aria-hidden="true"`
+- Auto-detects last child as current when no `isCurrent` is set
 
 ## Files
 
-| File                      | Purpose                  |
-| ------------------------- | ------------------------ |
-| `XDSBreadcrumbs.tsx`      | Component implementation |
-| `XDSBreadcrumbs.test.tsx` | Unit tests               |
-| `index.ts`                | Barrel exports           |
+| File                      | Purpose                   |
+| ------------------------- | ------------------------- |
+| `XDSBreadcrumbs.tsx`      | Container component       |
+| `XDSBreadcrumbItem.tsx`   | Individual item component |
+| `XDSBreadcrumbs.test.tsx` | Unit tests                |
+| `index.ts`                | Barrel exports            |

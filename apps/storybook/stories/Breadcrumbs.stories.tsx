@@ -1,5 +1,6 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSBreadcrumbs, XDSBreadcrumbItem} from '@xds/core/Breadcrumbs';
+import {HomeIcon, Cog6ToothIcon, FolderIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSBreadcrumbs> = {
   title: 'Navigation/XDSBreadcrumbs',
@@ -13,6 +14,11 @@ const meta: Meta<typeof XDSBreadcrumbs> = {
     label: {
       control: 'text',
       description: 'Accessible label for the nav landmark',
+    },
+    variant: {
+      control: 'select',
+      options: ['default', 'supporting'],
+      description: 'Visual variant controlling text size and color',
     },
   },
 };
@@ -52,7 +58,7 @@ export const AutoDetectCurrent: Story = {
 
 export const CustomSeparator: Story = {
   render: () => (
-    <XDSBreadcrumbs separator={'\u203a'}>
+    <XDSBreadcrumbs separator={'›'}>
       <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
       <XDSBreadcrumbItem href="/docs">Docs</XDSBreadcrumbItem>
       <XDSBreadcrumbItem isCurrent>API Reference</XDSBreadcrumbItem>
@@ -65,12 +71,12 @@ export const WithIcons: Story = {
     <XDSBreadcrumbs>
       <XDSBreadcrumbItem
         href="/"
-        startIcon={<span aria-hidden="true">{'\ud83c\udfe0'}</span>}>
+        startIcon={<HomeIcon width={16} height={16} aria-hidden="true" />}>
         Home
       </XDSBreadcrumbItem>
       <XDSBreadcrumbItem
         href="/settings"
-        startIcon={<span aria-hidden="true">{'\u2699\ufe0f'}</span>}>
+        startIcon={<Cog6ToothIcon width={16} height={16} aria-hidden="true" />}>
         Settings
       </XDSBreadcrumbItem>
       <XDSBreadcrumbItem isCurrent>Profile</XDSBreadcrumbItem>
@@ -114,6 +120,36 @@ export const DeepHierarchy: Story = {
         Phones
       </XDSBreadcrumbItem>
       <XDSBreadcrumbItem isCurrent>iPhone 15 Pro</XDSBreadcrumbItem>
+    </XDSBreadcrumbs>
+  ),
+};
+
+export const SupportingVariant: Story = {
+  name: 'Supporting Variant',
+  render: () => (
+    <XDSBreadcrumbs variant="supporting">
+      <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
+      <XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem>
+      <XDSBreadcrumbItem isCurrent>My Project</XDSBreadcrumbItem>
+    </XDSBreadcrumbs>
+  ),
+};
+
+export const SupportingWithIcons: Story = {
+  name: 'Supporting Variant with Icons',
+  render: () => (
+    <XDSBreadcrumbs variant="supporting">
+      <XDSBreadcrumbItem
+        href="/"
+        startIcon={<HomeIcon width={14} height={14} aria-hidden="true" />}>
+        Home
+      </XDSBreadcrumbItem>
+      <XDSBreadcrumbItem
+        href="/projects"
+        startIcon={<FolderIcon width={14} height={14} aria-hidden="true" />}>
+        Projects
+      </XDSBreadcrumbItem>
+      <XDSBreadcrumbItem isCurrent>My Project</XDSBreadcrumbItem>
     </XDSBreadcrumbs>
   ),
 };
