@@ -51,6 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       storybook_url: ${{ steps.urls.outputs.storybook_url }}
+      sandbox_url: ${{ steps.urls.outputs.sandbox_url }}
       short_hash: ${{ steps.urls.outputs.short_hash }}
     steps:
       - name: Checkout
@@ -68,24 +69,38 @@ jobs:
       - name: Build core package
         run: yarn build
 
+      - name: Compute short hash
+        id: hash
+        run: |
+          COMMIT_HASH="${{ github.event.pull_request.head.sha || github.sha }}"
+          echo "short_hash=${COMMIT_HASH:0:7}" >> $GITHUB_OUTPUT
+
       - name: Build Storybook
         run: yarn workspace @xds/storybook build
+
+      - name: Build Sandbox
+        run: yarn workspace @xds/sandbox build
+        env:
+          SANDBOX_BASE_PATH: /${{ github.event.repository.name }}/${{ steps.hash.outputs.short_hash }}/sandbox
 
       - name: Prepare versioned deployment
         id: urls
         run: |
-          COMMIT_HASH="${{ github.event.pull_request.head.sha || github.sha }}"
-          SHORT_HASH="${COMMIT_HASH:0:7}"
+          SHORT_HASH="${{ steps.hash.outputs.short_hash }}"
           REPO_NAME="${{ github.event.repository.name }}"
           REPO_OWNER="${{ github.repository_owner }}"
           STORYBOOK_URL="https://${REPO_OWNER}.github.io/${REPO_NAME}/${SHORT_HASH}/"
+          SANDBOX_URL="https://${REPO_OWNER}.github.io/${REPO_NAME}/${SHORT_HASH}/sandbox/"
 
           echo "short_hash=${SHORT_HASH}" >> $GITHUB_OUTPUT
           echo "storybook_url=${STORYBOOK_URL}" >> $GITHUB_OUTPUT
+          echo "sandbox_url=${SANDBOX_URL}" >> $GITHUB_OUTPUT
 
           # Create deployment directory structure
           mkdir -p deploy/${SHORT_HASH}
           cp -r apps/storybook/dist/* deploy/${SHORT_HASH}/
+          mkdir -p deploy/${SHORT_HASH}/sandbox
+          cp -r apps/sandbox/out/* deploy/${SHORT_HASH}/sandbox/
 
           # Create root index.html that redirects to latest build (only for main branch)
           if [ "${{ github.event_name }}" == "push" ]; then
@@ -247,6 +262,7 @@ jobs:
             --screenshots screenshots/screenshots.json \
             --screenshot-urls screenshot-urls.json \
             --storybook-url "${{ needs.deploy.outputs.storybook_url }}" \
+            --sandbox-url "${{ needs.deploy.outputs.sandbox_url }}" \
             --run-url "$RUN_URL" \
             --pr-number "${{ github.event.pull_request.number }}")
 
