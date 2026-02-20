@@ -1,12 +1,22 @@
 # /packages/core/src/Layout/XDSLayout
 
-XDS Layout structure components for arranging sections using named slots.
+Page shell and app layout system with header, sidebar, content, and footer slots.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
+## When to use
+
+- Building a page with a sidebar → XDSLayout with `start` slot
+- Dashboard with header + scrollable body → XDSLayout with `header` + `content`
+- Settings page with nav panel → XDSLayout with `start` + `content`
+- App shell with top bar, side nav, and main area → XDSLayout with all slots
+- Card with header/body/footer sections → XDSLayout inside XDSCard
+
+Don't use XDSLayout for simple vertical/horizontal stacking — use XDSVStack/XDSHStack instead.
+
 ## Overview
 
-The XDSLayout system provides a 5-slot layout structure for building consistent page and component layouts. It follows a **zero styling** principle — no `xstyle` customization props.
+The XDSLayout system provides a 5-slot layout structure for building page shells and structured layouts. It handles padding collapse between adjacent slots, scroll containment, and automatic RTL support. It follows a **zero styling** principle — no `xstyle` customization props.
 
 ```
 ┌─────────────────────────────────────────┐
@@ -36,37 +46,93 @@ import {
 
 ## Usage
 
-XDSLayout must be wrapped in a container component (XDSCard, XDSSection, or XDSLayoutContainer), which provides visual appearance and padding context.
+XDSLayout can be used standalone for page-level layouts, or inside a container
+component (XDSCard, XDSSection) for content-level layouts like cards with
+header/body/footer sections.
 
-### Basic Layout
+### Full-page app shell with sidebar
+
+```tsx
+<XDSLayout
+  header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}
+  start={
+    <XDSLayoutPanel hasDivider width={240} role="navigation">
+      <Navigation />
+    </XDSLayoutPanel>
+  }
+  content={
+    <XDSLayoutContent role="main">
+      <MainContent />
+    </XDSLayoutContent>
+  }
+/>
+```
+
+### App shell with XDSTopNav
+
+XDSLayout slots accept any component — you don't need to wrap in XDSLayoutHeader.
+Components like XDSTopNav that manage their own padding, height, and divider
+can go directly in the `header` slot:
+
+```tsx
+<XDSLayout
+  header={
+    <XDSTopNav
+      label="Main navigation"
+      title={<XDSTopNavTitle title="My App" logo={<Logo />} />}
+      startContent={
+        <>
+          <XDSTopNavItem label="Home" href="/" isSelected />
+          <XDSTopNavItem label="Settings" href="/settings" />
+        </>
+      }
+      endContent={<Avatar />}
+    />
+  }
+  start={
+    <XDSLayoutPanel hasDivider width={240} role="navigation">
+      <SideNav />
+    </XDSLayoutPanel>
+  }
+  content={
+    <XDSLayoutContent role="main">
+      <MainContent />
+    </XDSLayoutContent>
+  }
+/>
+```
+
+Use XDSLayoutHeader when your header is simple content (a heading, buttons, etc.)
+that needs the layout's padding and divider management. Use XDSTopNav or other
+self-contained components directly when they handle their own chrome.
+
+### Dashboard with sidebar and detail panel
+
+```tsx
+<XDSLayout
+  header={<XDSLayoutHeader hasDivider>Dashboard</XDSLayoutHeader>}
+  start={
+    <XDSLayoutPanel hasDivider width={200} role="navigation">
+      <Navigation />
+    </XDSLayoutPanel>
+  }
+  content={<XDSLayoutContent>Main content</XDSLayoutContent>}
+  end={
+    <XDSLayoutPanel hasDivider width={300} role="complementary">
+      <DetailPanel />
+    </XDSLayoutPanel>
+  }
+/>
+```
+
+### Card with structured content
 
 ```tsx
 <XDSCard>
   <XDSLayout
     header={<XDSLayoutHeader hasDivider>Page Title</XDSLayoutHeader>}
     content={<XDSLayoutContent>Main content here</XDSLayoutContent>}
-    footer={<XDSLayoutFooter>Actions</XDSLayoutFooter>}
-  />
-</XDSCard>
-```
-
-### With Sidebars
-
-```tsx
-<XDSCard>
-  <XDSLayout
-    header={<XDSLayoutHeader hasDivider>Dashboard</XDSLayoutHeader>}
-    start={
-      <XDSLayoutPanel hasDivider role="navigation">
-        <Navigation />
-      </XDSLayoutPanel>
-    }
-    content={<XDSLayoutContent>Main content</XDSLayoutContent>}
-    end={
-      <XDSLayoutPanel hasDivider role="complementary">
-        <Sidebar />
-      </XDSLayoutPanel>
-    }
+    footer={<XDSLayoutFooter hasDivider>Actions</XDSLayoutFooter>}
   />
 </XDSCard>
 ```
@@ -101,13 +167,13 @@ Use `isFullBleed` on XDSLayoutContent to remove internal padding, allowing conte
 
 ## Components
 
-| Component          | Description                            | Renders                           |
-| ------------------ | -------------------------------------- | --------------------------------- |
-| `XDSLayout`        | Main layout component with named slots | `<div>`                           |
-| `XDSLayoutHeader`  | Header content area                    | `<div>` (use `role` for landmark) |
-| `XDSLayoutFooter`  | Footer content area                    | `<div>` (use `role` for landmark) |
-| `XDSLayoutContent` | Main content area                      | `<div>` (use `role` for landmark) |
-| `XDSLayoutPanel`   | Side panel for start/end slots         | `<div>` (use `role` for landmark) |
+| Component          | Description                                                               | Renders                           |
+| ------------------ | ------------------------------------------------------------------------- | --------------------------------- |
+| `XDSLayout`        | Page shell with header, sidebar(s), content, and footer slots             | `<div>`                           |
+| `XDSLayoutHeader`  | Top bar — page titles, app bars, toolbars                                 | `<div>` (use `role` for landmark) |
+| `XDSLayoutFooter`  | Bottom bar — action bars, pagination, status bars                         | `<div>` (use `role` for landmark) |
+| `XDSLayoutContent` | Scrollable main content area                                              | `<div>` (use `role` for landmark) |
+| `XDSLayoutPanel`   | Sidebar — navigation panels, settings sidebars, detail/inspector panels   | `<div>` (use `role` for landmark) |
 
 ## Props
 

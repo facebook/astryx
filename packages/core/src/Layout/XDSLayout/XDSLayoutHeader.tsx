@@ -2,7 +2,8 @@
  * @file XDSLayoutHeader.tsx
  * @input Uses React forwardRef, StyleX
  * @output Exports XDSLayoutHeader component and XDSLayoutHeaderProps
- * @position Layout content area component
+ * @position Top bar / header area for XDSLayout. Use for page titles, app bars,
+ *   toolbar areas, or any fixed-height content at the top of a layout.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Layout/XDSLayout/README.md
@@ -90,7 +91,7 @@ export interface XDSLayoutHeaderProps extends Omit<
 }
 
 /**
- * Header content area for XDSLayout.
+ * Top bar / header for XDSLayout. Use for page titles, app bars, or toolbars.
  * Renders in the header slot with optional divider and padding control.
  *
  * @example
