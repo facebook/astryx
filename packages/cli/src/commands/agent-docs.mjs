@@ -27,7 +27,8 @@ export function generateCompressedIndex(version) {
 |npx xds docs principles              Design rules, anti-patterns, StyleX patterns
 |npx xds docs tokens                  Token reference (spacing, color, radius, type)
 |npx xds swizzle <Name>               Copy component source for customization
-|npx xds theme <preset>               Apply theme (default, neutral)
+|npx xds theme                         Scaffold a custom theme (interactive)
+|npx xds theme --list                  List existing themes in the project
 |npx xds template <name> [path]       Scaffold page (blank, table, login)
 |npx xds swizzle <Name> --gap "<reason>"  Swizzle + file gap report
 |npx xds gap-report --component <Name> --category <cat> --reason "<why>"  File gap without swizzle

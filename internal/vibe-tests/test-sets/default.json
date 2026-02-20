@@ -5,7 +5,10 @@
       "id": "fwc-1",
       "category": "feature-with-constraint",
       "prompt": "I need a banner that warns users their trial expires in X days and lets them upgrade",
-      "expectedComponents": ["XDSCard", "XDSButton"],
+      "expectedComponents": [
+        "XDSCard",
+        "XDSButton"
+      ],
       "complexity": "simple",
       "followUps": [
         "Add a dismiss button that hides the banner and remembers the choice",
@@ -16,7 +19,9 @@
       "id": "fwc-2",
       "category": "feature-with-constraint",
       "prompt": "Build a notification that shows unread count, but hides when count is zero",
-      "expectedComponents": ["XDSCard"],
+      "expectedComponents": [
+        "XDSCard"
+      ],
       "complexity": "simple",
       "followUps": [
         "Add a dropdown that shows the list of notifications when clicked",
@@ -27,7 +32,10 @@
       "id": "fwc-3",
       "category": "feature-with-constraint",
       "prompt": "Create a password input that shows strength indicator and has a show/hide toggle",
-      "expectedComponents": ["XDSTextInput", "XDSButton"],
+      "expectedComponents": [
+        "XDSTextInput",
+        "XDSButton"
+      ],
       "complexity": "moderate",
       "followUps": [
         "Add specific requirements that check off as you type (8+ chars, uppercase, number, symbol)",
@@ -37,8 +45,12 @@
     {
       "id": "wd-1",
       "category": "workflow-description",
-      "prompt": "Build a checkout flow: cart summary → shipping → payment → confirmation",
-      "expectedComponents": ["XDSCard", "XDSButton", "XDSTextInput"],
+      "prompt": "Build a checkout flow: cart summary \u2192 shipping \u2192 payment \u2192 confirmation",
+      "expectedComponents": [
+        "XDSCard",
+        "XDSButton",
+        "XDSTextInput"
+      ],
       "complexity": "complex",
       "followUps": [
         "Add form validation with inline error messages for required fields",
@@ -49,7 +61,11 @@
       "id": "wd-2",
       "category": "workflow-description",
       "prompt": "Create a multi-step form wizard with back/next buttons and a progress indicator",
-      "expectedComponents": ["XDSCard", "XDSButton", "XDSVStack"],
+      "expectedComponents": [
+        "XDSCard",
+        "XDSButton",
+        "XDSVStack"
+      ],
       "complexity": "moderate",
       "followUps": [
         "Add validation that prevents going to the next step if required fields are empty",
@@ -59,8 +75,12 @@
     {
       "id": "wd-3",
       "category": "workflow-description",
-      "prompt": "Build an onboarding flow: welcome screen → profile setup → preferences → done",
-      "expectedComponents": ["XDSCard", "XDSButton", "XDSTextInput"],
+      "prompt": "Build an onboarding flow: welcome screen \u2192 profile setup \u2192 preferences \u2192 done",
+      "expectedComponents": [
+        "XDSCard",
+        "XDSButton",
+        "XDSTextInput"
+      ],
       "complexity": "complex",
       "followUps": [
         "Add a skip button that allows skipping optional steps",
@@ -71,7 +91,10 @@
       "id": "cwm-1",
       "category": "clone-with-modification",
       "prompt": "Something like Stripe's pricing table but with monthly/annual toggle",
-      "expectedComponents": ["XDSCard", "XDSButton"],
+      "expectedComponents": [
+        "XDSCard",
+        "XDSButton"
+      ],
       "complexity": "moderate",
       "followUps": [
         "Highlight the most popular plan with a badge",
@@ -82,7 +105,11 @@
       "id": "cwm-2",
       "category": "clone-with-modification",
       "prompt": "A GitHub-style issue label picker with color dots and search",
-      "expectedComponents": ["XDSTextInput", "XDSButton", "XDSCard"],
+      "expectedComponents": [
+        "XDSTextInput",
+        "XDSButton",
+        "XDSCard"
+      ],
       "complexity": "complex",
       "followUps": [
         "Add the ability to create a new label inline with a color picker",
@@ -93,7 +120,10 @@
       "id": "cwm-3",
       "category": "clone-with-modification",
       "prompt": "Like Notion's page header with icon picker and cover image",
-      "expectedComponents": ["XDSCard", "XDSButton"],
+      "expectedComponents": [
+        "XDSCard",
+        "XDSButton"
+      ],
       "complexity": "complex",
       "followUps": [
         "Add the ability to reposition the cover image by dragging",
@@ -103,8 +133,11 @@
     {
       "id": "sd-1",
       "category": "state-driven",
-      "prompt": "Show a dashboard widget with loading → error → data states",
-      "expectedComponents": ["XDSCard", "XDSSkeleton"],
+      "prompt": "Show a dashboard widget with loading \u2192 error \u2192 data states",
+      "expectedComponents": [
+        "XDSCard",
+        "XDSSkeleton"
+      ],
       "complexity": "simple",
       "followUps": [
         "Add a refresh button that reloads the data",
@@ -115,7 +148,9 @@
       "id": "sd-2",
       "category": "state-driven",
       "prompt": "A button that shows loading spinner while submitting, then success checkmark",
-      "expectedComponents": ["XDSButton"],
+      "expectedComponents": [
+        "XDSButton"
+      ],
       "complexity": "simple",
       "followUps": [
         "Add an error state with a red X icon and error message tooltip",
@@ -126,7 +161,10 @@
       "id": "sd-3",
       "category": "state-driven",
       "prompt": "Form that disables submit until all required fields are valid",
-      "expectedComponents": ["XDSTextInput", "XDSButton"],
+      "expectedComponents": [
+        "XDSTextInput",
+        "XDSButton"
+      ],
       "complexity": "moderate",
       "followUps": [
         "Show validation errors inline below each field after blur",
@@ -137,7 +175,9 @@
       "id": "dd-1",
       "category": "data-display",
       "prompt": "A table of users with sortable columns and search",
-      "expectedComponents": ["XDSTextInput"],
+      "expectedComponents": [
+        "XDSTextInput"
+      ],
       "complexity": "complex",
       "followUps": [
         "Add pagination with page size selector (10, 25, 50)",
@@ -148,7 +188,10 @@
       "id": "dd-2",
       "category": "data-display",
       "prompt": "Display a list of transactions with amount, date, and status indicator",
-      "expectedComponents": ["XDSCard", "XDSVStack"],
+      "expectedComponents": [
+        "XDSCard",
+        "XDSVStack"
+      ],
       "complexity": "simple",
       "followUps": [
         "Add filtering by date range and status",
@@ -159,7 +202,10 @@
       "id": "dd-3",
       "category": "data-display",
       "prompt": "Show a grid of product cards with image, title, price, and add to cart button",
-      "expectedComponents": ["XDSCard", "XDSButton"],
+      "expectedComponents": [
+        "XDSCard",
+        "XDSButton"
+      ],
       "complexity": "moderate",
       "followUps": [
         "Add a quantity selector to each card",
@@ -170,7 +216,10 @@
       "id": "rc-1",
       "category": "responsive-context",
       "prompt": "Navigation that collapses to hamburger on mobile",
-      "expectedComponents": ["XDSButton", "XDSHStack"],
+      "expectedComponents": [
+        "XDSButton",
+        "XDSHStack"
+      ],
       "complexity": "moderate",
       "followUps": [
         "Add a dropdown for nav items with children",
@@ -181,7 +230,10 @@
       "id": "rc-2",
       "category": "responsive-context",
       "prompt": "A sidebar that becomes a bottom sheet on mobile",
-      "expectedComponents": ["XDSCard", "XDSLayoutPanel"],
+      "expectedComponents": [
+        "XDSCard",
+        "XDSLayoutPanel"
+      ],
       "complexity": "moderate",
       "followUps": [
         "Add a drag handle to resize the bottom sheet",
@@ -192,7 +244,9 @@
       "id": "rc-3",
       "category": "responsive-context",
       "prompt": "Cards that stack vertically on mobile but show in a grid on desktop",
-      "expectedComponents": ["XDSCard"],
+      "expectedComponents": [
+        "XDSCard"
+      ],
       "complexity": "simple",
       "followUps": [
         "Add a toggle to switch between grid and list view",
@@ -203,7 +257,10 @@
       "id": "io-1",
       "category": "integration-oriented",
       "prompt": "A form that validates email and posts to /api/subscribe",
-      "expectedComponents": ["XDSTextInput", "XDSButton"],
+      "expectedComponents": [
+        "XDSTextInput",
+        "XDSButton"
+      ],
       "complexity": "simple",
       "followUps": [
         "Show a success message with the user's email after subscribing",
@@ -214,7 +271,10 @@
       "id": "io-2",
       "category": "integration-oriented",
       "prompt": "An autocomplete input that fetches suggestions from an API as you type",
-      "expectedComponents": ["XDSTextInput", "XDSCard"],
+      "expectedComponents": [
+        "XDSTextInput",
+        "XDSCard"
+      ],
       "complexity": "moderate",
       "followUps": [
         "Add keyboard navigation (up/down arrows, enter to select)",
@@ -225,7 +285,9 @@
       "id": "io-3",
       "category": "integration-oriented",
       "prompt": "A file upload button that shows progress and calls an upload endpoint",
-      "expectedComponents": ["XDSButton"],
+      "expectedComponents": [
+        "XDSButton"
+      ],
       "complexity": "moderate",
       "followUps": [
         "Add drag-and-drop support with a drop zone",
@@ -236,7 +298,11 @@
       "id": "wd-4",
       "category": "workflow-description",
       "prompt": "Create a new internal tool called TodoTracker. UI Requirements: Display todos in a paginated table (default 25 per page). Columns: Title, Status, Created, Updated. Sortable by: Updated date (default desc), Created date, Title. Add a filter bar that filters by title (substring match) and status. Inline editing for todo title (with save/cancel). Status toggle button (Open <-> Closed). 'Create Todo' button that opens a modal with title input. Delete button with confirmation dialog. UI should update optimistically after any modification. Optimistic updates should be marked as 'pending' until the modification is complete.",
-      "expectedComponents": ["XDSTable", "XDSButton", "XDSTextInput"],
+      "expectedComponents": [
+        "XDSTable",
+        "XDSButton",
+        "XDSTextInput"
+      ],
       "complexity": "complex",
       "followUps": [
         "Add keyboard shortcuts: Ctrl+N for new todo, Delete key to delete selected",
@@ -247,7 +313,13 @@
       "id": "ps-1",
       "category": "page-setup",
       "prompt": "Create a new page for a settings dashboard. It should have a header with the app title, a sidebar for navigation, and a main content area. Use the XDS theme system.",
-      "expectedComponents": ["Theme", "XDSLayout", "XDSLayoutHeader", "XDSLayoutContent", "XDSLayoutPanel"],
+      "expectedComponents": [
+        "Theme",
+        "XDSLayout",
+        "XDSLayoutHeader",
+        "XDSLayoutContent",
+        "XDSLayoutPanel"
+      ],
       "complexity": "moderate",
       "followUps": [
         "Add a user avatar with dropdown menu in the header",
@@ -258,7 +330,13 @@
       "id": "ps-2",
       "category": "page-setup",
       "prompt": "Set up the root layout for a new internal tool. Include proper body styling, theme provider with defaultTheme, and a layout with header and main content area.",
-      "expectedComponents": ["Theme", "defaultTheme", "XDSLayout", "XDSLayoutHeader", "XDSLayoutContent"],
+      "expectedComponents": [
+        "Theme",
+        "defaultTheme",
+        "XDSLayout",
+        "XDSLayoutHeader",
+        "XDSLayoutContent"
+      ],
       "complexity": "simple",
       "followUps": [
         "Add a theme toggle button (light/dark mode)",
@@ -269,7 +347,13 @@
       "id": "ps-3",
       "category": "page-setup",
       "prompt": "Create an admin panel page layout with a fixed header, collapsible left sidebar, main content area, and a right panel for details. Wrap everything in the XDS theme.",
-      "expectedComponents": ["Theme", "XDSLayout", "XDSLayoutHeader", "XDSLayoutContent", "XDSLayoutPanel"],
+      "expectedComponents": [
+        "Theme",
+        "XDSLayout",
+        "XDSLayoutHeader",
+        "XDSLayoutContent",
+        "XDSLayoutPanel"
+      ],
       "complexity": "moderate",
       "followUps": [
         "Add breadcrumbs below the header",
@@ -280,7 +364,10 @@
       "id": "ty-1",
       "category": "typography",
       "prompt": "Show a page title with a short description underneath",
-      "expectedComponents": ["XDSHeading", "XDSText"],
+      "expectedComponents": [
+        "XDSHeading",
+        "XDSText"
+      ],
       "complexity": "simple",
       "followUps": [
         "Make the title use the larger editorial scale",
@@ -291,7 +378,10 @@
       "id": "ty-2",
       "category": "typography",
       "prompt": "Create a blog post header with a big editorial headline, a publication date in small text, and an author name",
-      "expectedComponents": ["XDSHeading", "XDSText"],
+      "expectedComponents": [
+        "XDSHeading",
+        "XDSText"
+      ],
       "complexity": "moderate",
       "followUps": [
         "Add a reading time estimate next to the date in the same small style",
@@ -302,7 +392,10 @@
       "id": "ty-3",
       "category": "typography",
       "prompt": "Build a metrics dashboard card that shows a label like 'Total Revenue', a large numeric value like '$12,340.56', and a small supporting line that says '+12% from last month'",
-      "expectedComponents": ["XDSCard", "XDSText"],
+      "expectedComponents": [
+        "XDSCard",
+        "XDSText"
+      ],
       "complexity": "moderate",
       "followUps": [
         "Make the numeric value use tabular numbers so digits align across cards",
@@ -313,7 +406,11 @@
       "id": "ty-4",
       "category": "typography",
       "prompt": "Create a settings page with 3 sections. Each section needs a heading, a brief description, and some form controls. Use different heading levels for the page title vs section titles.",
-      "expectedComponents": ["XDSHeading", "XDSText", "XDSTextInput"],
+      "expectedComponents": [
+        "XDSHeading",
+        "XDSText",
+        "XDSTextInput"
+      ],
       "complexity": "moderate",
       "followUps": [
         "Add helper text below each input using the appropriate supporting text style",
@@ -324,7 +421,11 @@
       "id": "ty-5",
       "category": "typography",
       "prompt": "Build a landing page hero with a large display heading that says 'Build faster with XDS', a subheading paragraph, and a CTA button",
-      "expectedComponents": ["XDSHeading", "XDSText", "XDSButton"],
+      "expectedComponents": [
+        "XDSHeading",
+        "XDSText",
+        "XDSButton"
+      ],
       "complexity": "simple",
       "followUps": [
         "The heading should use the editorial display scale for maximum visual impact",
@@ -335,7 +436,9 @@
       "id": "ty-6",
       "category": "typography",
       "prompt": "Display a code example with a label that says 'Installation' above it, the code snippet 'yarn add @xds/core', and a note below in small text",
-      "expectedComponents": ["XDSText"],
+      "expectedComponents": [
+        "XDSText"
+      ],
       "complexity": "simple",
       "followUps": [
         "Add a copy button next to the code",
@@ -346,7 +449,10 @@
       "id": "ty-7",
       "category": "typography",
       "prompt": "Render a markdown-formatted changelog that includes headings, paragraphs, bullet lists, and inline code. The content should use proper typography styling.",
-      "expectedComponents": ["XDSHeading", "XDSText"],
+      "expectedComponents": [
+        "XDSHeading",
+        "XDSText"
+      ],
       "complexity": "complex",
       "followUps": [
         "Make the changelog use the editorial heading scale",
@@ -357,7 +463,11 @@
       "id": "ty-8",
       "category": "typography",
       "prompt": "Create a profile card with the user's name as a heading, their role as a label, their bio as body text, and their join date in small supporting text",
-      "expectedComponents": ["XDSCard", "XDSHeading", "XDSText"],
+      "expectedComponents": [
+        "XDSCard",
+        "XDSHeading",
+        "XDSText"
+      ],
       "complexity": "simple",
       "followUps": [
         "Add an email address that truncates with an ellipsis if it's too long",
@@ -368,7 +478,10 @@
       "id": "ty-9",
       "category": "typography",
       "prompt": "Build a comparison table header where each column has a plan name heading and a price. The 'Enterprise' plan should have visually larger display-style typography compared to the other plans.",
-      "expectedComponents": ["XDSHeading", "XDSText"],
+      "expectedComponents": [
+        "XDSHeading",
+        "XDSText"
+      ],
       "complexity": "complex",
       "followUps": [
         "Add a 'Most Popular' label badge on the Pro plan using label-style text",
@@ -379,11 +492,129 @@
       "id": "ty-10",
       "category": "typography",
       "prompt": "Create an article page with a full editorial-style header (large title, subtitle, author info) and a body section that renders rich text content with proper heading hierarchy, paragraphs, code blocks, and lists",
-      "expectedComponents": ["XDSHeading", "XDSText"],
+      "expectedComponents": [
+        "XDSHeading",
+        "XDSText"
+      ],
       "complexity": "complex",
       "followUps": [
         "Add a 'Table of Contents' sidebar that lists all the section headings",
         "Make the body text use the large text type for better readability"
+      ]
+    },
+    {
+      "id": "tc-1",
+      "category": "theme-customization",
+      "prompt": "Set up a dark mode toggle for my app. I want a button that switches between light and dark themes using the XDS theme system.",
+      "expectedComponents": [
+        "XDSTheme",
+        "XDSButton"
+      ],
+      "complexity": "simple",
+      "followUps": [
+        "Persist the user's theme preference to localStorage",
+        "Add a 'system' option that follows the OS preference"
+      ]
+    },
+    {
+      "id": "tc-2",
+      "category": "theme-customization",
+      "prompt": "I want to create a custom brand theme for my app. The primary accent color should be purple (#7B61FF), with a dark surface (#1A1A2E) and light text. Set up a proper XDS theme with these colors.",
+      "expectedComponents": [
+        "XDSTheme"
+      ],
+      "complexity": "moderate",
+      "followUps": [
+        "Add a matching light mode version of the theme",
+        "Override the button styles in this theme to have rounded-full corners"
+      ]
+    },
+    {
+      "id": "tc-3",
+      "category": "theme-customization",
+      "prompt": "I need my page background to use the wash color from the theme. Right now wrapping my app in XDSTheme doesn't change the page background \u2014 it stays white.",
+      "expectedComponents": [
+        "XDSTheme",
+        "XDSLayout"
+      ],
+      "complexity": "simple",
+      "followUps": [
+        "Also set the body background color to match",
+        "Make the content area use the surface color instead"
+      ]
+    },
+    {
+      "id": "tc-4",
+      "category": "theme-customization",
+      "prompt": "Create a theme switcher that lets users pick between three themes: Default, Midnight (dark purple), and Earth (warm brown tones). Show a preview card for each theme.",
+      "expectedComponents": [
+        "XDSTheme",
+        "XDSCard",
+        "XDSButton"
+      ],
+      "complexity": "complex",
+      "followUps": [
+        "Show a live preview of each theme using actual XDS components inside the preview cards",
+        "Save the selected theme to localStorage and restore it on page load"
+      ]
+    },
+    {
+      "id": "tc-5",
+      "category": "theme-customization",
+      "prompt": "I want to customize the card component's appearance in my theme \u2014 add a gradient border and increase the border radius. How do I do component-level style overrides in the XDS theme?",
+      "expectedComponents": [
+        "XDSTheme",
+        "XDSCard"
+      ],
+      "complexity": "moderate",
+      "followUps": [
+        "Also override the button variants to have a shadow on hover",
+        "Make the heading component use a custom font family in this theme"
+      ]
+    },
+    {
+      "id": "tc-6",
+      "category": "theme-customization",
+      "prompt": "Build a settings page where users can customize the app's appearance. Include controls for accent color, border radius, and spacing scale. Changes should apply via the XDS theme system, not inline styles.",
+      "expectedComponents": [
+        "XDSTheme",
+        "XDSTextInput",
+        "XDSCard",
+        "XDSButton"
+      ],
+      "complexity": "complex",
+      "followUps": [
+        "Add a preview section that shows how buttons, cards, and inputs look with the current settings",
+        "Add a reset button that restores the default theme"
+      ]
+    },
+    {
+      "id": "tc-7",
+      "category": "theme-customization",
+      "prompt": "I have a section of my app that needs a different theme than the rest \u2014 like a dark sidebar next to a light content area. How do I nest themes in XDS?",
+      "expectedComponents": [
+        "XDSTheme",
+        "XDSLayout",
+        "XDSLayoutPanel",
+        "XDSLayoutContent"
+      ],
+      "complexity": "moderate",
+      "followUps": [
+        "Make sure the sidebar text and icons use the dark theme's colors",
+        "Add a smooth transition when the sidebar theme changes"
+      ]
+    },
+    {
+      "id": "tc-8",
+      "category": "theme-customization",
+      "prompt": "Create a brutalist theme for XDS \u2014 zero border radius, high contrast black and white, bold borders, and a hot pink accent color. Wire it up with XDSTheme.",
+      "expectedComponents": [
+        "XDSTheme"
+      ],
+      "complexity": "moderate",
+      "followUps": [
+        "Override card styles to have a thick 2px black border",
+        "Make buttons use uppercase text in this theme"
       ]
     }
   ],
@@ -392,7 +623,10 @@
       "id": "ho-fwc-1",
       "category": "feature-with-constraint",
       "prompt": "A cookie consent banner that remembers user choice and has accept/decline buttons",
-      "expectedComponents": ["XDSCard", "XDSButton"],
+      "expectedComponents": [
+        "XDSCard",
+        "XDSButton"
+      ],
       "complexity": "simple",
       "followUps": [
         "Add a 'Manage preferences' link that opens a modal with cookie categories",
@@ -402,8 +636,12 @@
     {
       "id": "ho-wd-1",
       "category": "workflow-description",
-      "prompt": "Build a return request flow: select items → reason → shipping method → confirmation",
-      "expectedComponents": ["XDSCard", "XDSButton", "XDSTextInput"],
+      "prompt": "Build a return request flow: select items \u2192 reason \u2192 shipping method \u2192 confirmation",
+      "expectedComponents": [
+        "XDSCard",
+        "XDSButton",
+        "XDSTextInput"
+      ],
       "complexity": "complex",
       "followUps": [
         "Add a photo upload step for damaged items",
@@ -414,7 +652,10 @@
       "id": "ho-cwm-1",
       "category": "clone-with-modification",
       "prompt": "Like Slack's emoji reaction picker but for status icons",
-      "expectedComponents": ["XDSButton", "XDSHoverCard"],
+      "expectedComponents": [
+        "XDSButton",
+        "XDSHoverCard"
+      ],
       "complexity": "moderate",
       "followUps": [
         "Add a search filter for icons",
@@ -425,7 +666,9 @@
       "id": "ho-sd-1",
       "category": "state-driven",
       "prompt": "A save button that shows 'Saving...' then 'Saved!' then returns to 'Save'",
-      "expectedComponents": ["XDSButton"],
+      "expectedComponents": [
+        "XDSButton"
+      ],
       "complexity": "simple",
       "followUps": [
         "Add an 'Unsaved changes' indicator next to the button",
@@ -436,7 +679,10 @@
       "id": "ho-dd-1",
       "category": "data-display",
       "prompt": "Show a timeline of events with timestamps and icons",
-      "expectedComponents": ["XDSCard", "XDSVStack"],
+      "expectedComponents": [
+        "XDSCard",
+        "XDSVStack"
+      ],
       "complexity": "moderate",
       "followUps": [
         "Add expandable details for each event",
@@ -447,7 +693,10 @@
       "id": "ho-rc-1",
       "category": "responsive-context",
       "prompt": "A pricing comparison that scrolls horizontally on mobile",
-      "expectedComponents": ["XDSCard", "XDSHStack"],
+      "expectedComponents": [
+        "XDSCard",
+        "XDSHStack"
+      ],
       "complexity": "simple",
       "followUps": [
         "Add sticky column headers that stay visible while scrolling",
@@ -458,7 +707,10 @@
       "id": "ho-io-1",
       "category": "integration-oriented",
       "prompt": "A search box that debounces input and shows live results from /api/search",
-      "expectedComponents": ["XDSTextInput", "XDSCard"],
+      "expectedComponents": [
+        "XDSTextInput",
+        "XDSCard"
+      ],
       "complexity": "moderate",
       "followUps": [
         "Add recent searches that show before typing",
@@ -469,7 +721,10 @@
       "id": "ho-ty-1",
       "category": "typography",
       "prompt": "Create a documentation page header with a breadcrumb trail in small text, a large editorial heading, and a description paragraph",
-      "expectedComponents": ["XDSHeading", "XDSText"],
+      "expectedComponents": [
+        "XDSHeading",
+        "XDSText"
+      ],
       "complexity": "moderate",
       "followUps": [
         "Add a 'Last updated' timestamp in supporting text style",
@@ -480,11 +735,43 @@
       "id": "ho-ty-2",
       "category": "typography",
       "prompt": "Build a notification detail view with a bold title, a timestamp in supporting text, and a body that may contain formatted markdown content",
-      "expectedComponents": ["XDSHeading", "XDSText"],
+      "expectedComponents": [
+        "XDSHeading",
+        "XDSText"
+      ],
       "complexity": "moderate",
       "followUps": [
         "Truncate the title to a single line with a tooltip showing the full text",
         "Add a secondary text line showing who triggered the notification"
+      ]
+    },
+    {
+      "id": "ho-tc-1",
+      "category": "theme-customization",
+      "prompt": "I want to use XDS's default theme but just change the accent color to green. What's the minimal way to do that?",
+      "expectedComponents": [
+        "XDSTheme"
+      ],
+      "complexity": "simple",
+      "followUps": [
+        "Also adjust the positive/negative status colors to match the new palette",
+        "Create a second variant with a blue accent for comparison"
+      ]
+    },
+    {
+      "id": "ho-tc-2",
+      "category": "theme-customization",
+      "prompt": "Build a theme editor that shows all the color tokens from the XDS theme and lets you edit them with color pickers. Group them by category (text, surface, status, etc).",
+      "expectedComponents": [
+        "XDSTheme",
+        "XDSCard",
+        "XDSTextInput",
+        "XDSVStack"
+      ],
+      "complexity": "complex",
+      "followUps": [
+        "Add an export button that generates a valid XDS theme file from the current values",
+        "Add a 'derive from palette' mode where picking 3-5 key colors generates the full token set"
       ]
     }
   ],
