@@ -65,6 +65,11 @@
       "import": "./dist/Icon/index.mjs",
       "require": "./dist/Icon/index.js"
     },
+    "./Section": {
+      "types": "./dist/Section/index.d.ts",
+      "import": "./dist/Section/index.mjs",
+      "require": "./dist/Section/index.js"
+    },
     "./Selector": {
       "types": "./dist/Selector/index.d.ts",
       "import": "./dist/Selector/index.mjs",

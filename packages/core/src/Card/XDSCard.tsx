@@ -16,6 +16,7 @@ import {colorVars, radiusVars, elevationVars} from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {container} from '../Layout/Container/container.stylex';
+import type {SizeValue} from '../utils/types';
 
 // =============================================================================
 // Module Augmentation - Register XDSCard's themeable properties
@@ -79,10 +80,7 @@ const dynamicStyles = stylex.create({
   }),
 });
 
-/**
- * Size value type - accepts numbers (treated as pixels) or strings (e.g., '100%', '50vh')
- */
-export type SizeValue = number | string;
+export type {SizeValue} from '../utils/types';
 
 export interface XDSCardProps {
   /**

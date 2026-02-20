@@ -2,16 +2,21 @@
  * @file XDSSection.tsx
  * @input Uses container utility, StyleX, ThemeContext
  * @output Exports XDSSection component and XDSSectionProps
- * @position Higher-order container component for section layouts
+ * @position Core section container component
+ *
+ * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/Section/README.md (props table, features)
+ * - /packages/core/src/Section/index.ts (exports if types change)
+ * - /apps/storybook/stories/Section.stories.tsx (storybook stories)
  */
 
 import {forwardRef, useContext, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars} from '../../theme/tokens.stylex';
-import {ThemeContext} from '../../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../../theme/types';
-import {container} from './container.stylex';
-import type {SizeValue} from '../../Card/XDSCard';
+import {colorVars} from '../theme/tokens.stylex';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+import {container} from '../Layout/Container/container.stylex';
+import type {SizeValue} from '../utils/types';
 
 /**
  * Visual variant for the section.
@@ -22,7 +27,7 @@ export type XDSSectionVariant = 'section' | 'transparent' | 'wash';
 // Module Augmentation - Register XDSSection's themeable properties
 // =============================================================================
 
-declare module '../../theme/types' {
+declare module '../theme/types' {
   interface ComponentStyles {
     section?: {
       /** Outer container styles (positioning, margins) */
@@ -181,6 +186,9 @@ export interface XDSSectionProps {
  *
  * Applies section-specific appearance based on the variant prop
  * and sets CSS variables for child layout components.
+ *
+ * @compositionHint Use inside XDSCard to create visually distinct regions.
+ * Sections automatically escape parent container padding for edge-to-edge fills.
  *
  * @example
  * ```tsx

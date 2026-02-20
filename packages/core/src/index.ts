@@ -27,6 +27,7 @@ export * from './Switch';
 export * from './DateInput';
 export * from './Field';
 export * from './Grid';
+export * from './Section';
 export * from './Selector';
 export * from './Icon';
 export * from './Text';

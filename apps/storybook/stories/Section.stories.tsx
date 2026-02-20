@@ -1,6 +1,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSSection, XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSSection} from '@xds/core/Section';
+import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {
   XDSLayout,
   XDSLayoutHeader,

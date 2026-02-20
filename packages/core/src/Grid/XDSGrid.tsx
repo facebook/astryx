@@ -14,7 +14,8 @@ import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
-import type {SpacingScale, SizeValue} from '../Layout';
+import type {SpacingScale} from '../Layout';
+import type {SizeValue} from '../utils/types';
 
 /**
  * Grid alignment options for align-items and justify-items.
