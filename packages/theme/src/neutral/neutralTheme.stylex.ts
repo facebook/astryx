@@ -554,12 +554,15 @@ const textStyles = stylex.create({
   },
 });
 
+import {neutralIconRegistry} from './icons';
+
 // =============================================================================
 // Theme Export
 // =============================================================================
 
 export const neutralTheme: Theme = {
   name: 'neutral',
+  icons: neutralIconRegistry,
   styles: {
     colors: colorTheme,
     spacing: spacingTheme,

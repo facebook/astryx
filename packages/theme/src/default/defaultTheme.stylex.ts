@@ -587,12 +587,15 @@ const proseElementStyles = stylex.create({
   },
 });
 
+import {defaultIconRegistry} from './icons';
+
 // =============================================================================
 // Theme Export
 // =============================================================================
 
 export const defaultTheme: Theme = {
   name: 'default',
+  icons: defaultIconRegistry,
   styles: {
     colors: colorTheme,
     spacing: spacingTheme,
