@@ -15,3 +15,9 @@ export type {UseGridFocusOptions, UseGridFocusReturn} from './useGridFocus';
 
 export {useListFocus} from './useListFocus';
 export type {UseListFocusOptions, UseListFocusReturn} from './useListFocus';
+
+export {useXDSCollapsible} from './useXDSCollapsible';
+export type {
+  XDSCollapsibleConfig,
+  UseXDSCollapsibleOptions,
+} from './useXDSCollapsible';
