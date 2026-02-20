@@ -1,6 +1,8 @@
 /* global module, process, __dirname */
 const path = require('path');
 
+const rootDir = path.resolve(__dirname, '../..');
+
 module.exports = {
   presets: ['next/babel'],
   plugins: [
@@ -12,12 +14,12 @@ module.exports = {
         genConditionalClasses: true,
         treeshakeCompensation: true,
         aliases: {
-          '@xds/core/*': [path.join(__dirname, 'node_modules/@xds/core/*')],
-          '@xds/core': [path.join(__dirname, 'node_modules/@xds/core')],
+          '@xds/core/*': [path.join(rootDir, 'packages/core/src/*')],
+          '@xds/core': [path.join(rootDir, 'packages/core/src')],
         },
         unstable_moduleResolution: {
           type: 'commonJS',
-          rootDir: __dirname,
+          rootDir,
         },
       },
     ],
