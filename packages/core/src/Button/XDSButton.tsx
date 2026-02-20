@@ -256,7 +256,13 @@ const loadingStyles = stylex.create({
  * <XDSButton label="Click me" />
  * <XDSButton label="Primary action" variant="primary" />
  * <XDSButton label="Delete" variant="destructive" />
- * <XDSButton label="Settings" icon={<GearIcon />} />
+ *
+ * // Icon-only (square) — pass icon without children
+ * <XDSButton label="Settings" icon={<GearIcon />} variant="ghost" />
+ * <XDSButton label="Pick emoji" icon={<span>🚀</span>} variant="ghost" size="sm" />
+ *
+ * // Icon + visible label
+ * <XDSButton label="Edit" icon={<PencilIcon />}>Edit</XDSButton>
  * ```
  */
 export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(

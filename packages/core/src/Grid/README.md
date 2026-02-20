@@ -35,4 +35,14 @@ import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
   <XDSGridSpan span={2}>Wide item</XDSGridSpan>
   <div>Normal item</div>
 </XDSGrid>
+
+// Dense grid (e.g. color swatches, icon grids, compact controls)
+<XDSGrid columns={6} gap="space2">
+  {items.map(item => (
+    <XDSButton key={item.id} label={item.label} icon={item.icon} variant="ghost" size="sm" />
+  ))}
+</XDSGrid>
 ```
+
+Use `XDSGrid` for any grid layout instead of manual CSS grid (`display: 'grid'`,
+`gridTemplateColumns`). It handles gap tokens and works with any column count.
