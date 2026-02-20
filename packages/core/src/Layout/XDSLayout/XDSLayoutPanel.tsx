@@ -2,7 +2,8 @@
  * @file XDSLayoutPanel.tsx
  * @input Uses React forwardRef, StyleX, XDSLayoutAreaContext, XDSLayoutSlotsContext
  * @output Exports XDSLayoutPanel component and XDSLayoutPanelProps
- * @position Layout content area component
+ * @position Sidebar panel for XDSLayout start/end slots. Use for navigation panels,
+ *   settings sidebars, detail panels, or any fixed-width side content.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Layout/XDSLayout/README.md
@@ -134,8 +135,9 @@ export interface XDSLayoutPanelProps extends Omit<
 }
 
 /**
- * Side panel content area for XDSLayout.
- * Renders in the start or end slot with optional divider and padding control.
+ * Sidebar or side panel for XDSLayout. Use in the `start` slot for left navigation
+ * or in the `end` slot for detail/inspector panels.
+ * Renders with optional divider and context-aware padding.
  * Divider position is auto-detected based on which slot the panel is in.
  *
  * @example

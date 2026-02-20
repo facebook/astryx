@@ -45,3 +45,6 @@ internal/vibe-tests/results/
 
 # XDS agent docs (generated)
 .xds-docs/
+apps/sandbox/.next/
+apps/sandbox/out/
+apps/sandbox/next-env.d.ts

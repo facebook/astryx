@@ -90,20 +90,22 @@ Layout/
 </XDSCard>
 ```
 
-### Layout with Sidebar
+### App shell with sidebar
 
 ```tsx
-<XDSCard>
-  <XDSLayout
-    header={<XDSLayoutHeader hasDivider>Settings</XDSLayoutHeader>}
-    start={
-      <XDSLayoutPanel hasDivider role="navigation">
-        <Navigation />
-      </XDSLayoutPanel>
-    }
-    content={<XDSLayoutContent>Main content</XDSLayoutContent>}
-  />
-</XDSCard>
+<XDSLayout
+  header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}
+  start={
+    <XDSLayoutPanel hasDivider width={240} role="navigation">
+      <Navigation />
+    </XDSLayoutPanel>
+  }
+  content={
+    <XDSLayoutContent role="main">
+      <MainContent />
+    </XDSLayoutContent>
+  }
+/>
 ```
 
 ## Components
@@ -120,13 +122,16 @@ See [Container/README.md](./Container/README.md) for full documentation.
 
 ### Layout Structure
 
-| Component          | Description                                                     |
-| ------------------ | --------------------------------------------------------------- |
-| `XDSLayout`        | Arranges content into header, footer, content, start, end slots |
-| `XDSLayoutHeader`  | Header content area with optional divider                       |
-| `XDSLayoutFooter`  | Footer content area with optional divider                       |
-| `XDSLayoutContent` | Scrollable main content area                                    |
-| `XDSLayoutPanel`   | Side panel for start/end slots                                  |
+Use XDSLayout for page shells and app layouts — any UI with a header bar, sidebar navigation,
+scrollable content area, or action footer. Don't use for simple stacking (use XDSVStack/XDSHStack).
+
+| Component          | Description                                                               |
+| ------------------ | ------------------------------------------------------------------------- |
+| `XDSLayout`        | Page shell with header, sidebar(s), content, and footer slots             |
+| `XDSLayoutHeader`  | Top bar — page titles, app bars, toolbars                                 |
+| `XDSLayoutFooter`  | Bottom bar — action bars, pagination, status bars                         |
+| `XDSLayoutContent` | Scrollable main content area                                              |
+| `XDSLayoutPanel`   | Sidebar — navigation panels, settings sidebars, detail/inspector panels   |
 
 See [XDSLayout/README.md](./XDSLayout/README.md) for full documentation.
 
