@@ -14,6 +14,7 @@
  * - Use currentColor for stroke/fill (inherits from parent)
  * - Are aria-hidden (decorative by default)
  * - Use stroke-based rendering with 1.5px stroke width (matching heroicons outline style)
+ * - Status icons (checkCircle, xCircle, warning) use solid fills for better color visibility
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Icon/IconRegistry.tsx (XDSIconName type if names change)
@@ -30,6 +31,21 @@ const svgProps = {
   strokeWidth: 1.5,
   strokeLinecap: 'round' as const,
   strokeLinejoin: 'round' as const,
+  width: '1em',
+  height: '1em',
+  'aria-hidden': true as const,
+};
+
+/**
+ * Props for solid/filled SVG icons.
+ * Status icons (checkCircle, xCircle, warning) use solid fills for better
+ * color visibility at small sizes, matching the heroicons solid style
+ * used by themes.
+ */
+const solidSvgProps = {
+  xmlns: 'http://www.w3.org/2000/svg',
+  viewBox: '0 0 24 24',
+  fill: 'currentColor',
   width: '1em',
   height: '1em',
   'aria-hidden': true as const,
@@ -71,28 +87,36 @@ export const defaultIcons: XDSIconRegistry = {
     </svg>
   ),
 
-  /** ✓ in circle — success */
+  /** ✓ in circle — success (solid fill for status visibility) */
   checkCircle: (
-    <svg {...svgProps}>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M9 12l2 2 4-4" />
+    <svg {...solidSvgProps}>
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M12 3a9 9 0 100 18 9 9 0 000-18zm4.06 6.56a.75.75 0 00-1.12-1l-3.94 4.4-1.94-1.94a.75.75 0 00-1.06 1.06l2.5 2.5a.75.75 0 001.09-.03l4.47-5z"
+      />
     </svg>
   ),
 
-  /** ✕ in circle — error */
+  /** ✕ in circle — error (solid fill for status visibility) */
   xCircle: (
-    <svg {...svgProps}>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M15 9l-6 6M9 9l6 6" />
+    <svg {...solidSvgProps}>
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M12 3a9 9 0 100 18 9 9 0 000-18zm-2.47 5.47a.75.75 0 00-1.06 1.06L10.94 12l-2.47 2.47a.75.75 0 101.06 1.06L12 13.06l2.47 2.47a.75.75 0 101.06-1.06L13.06 12l2.47-2.47a.75.75 0 00-1.06-1.06L12 10.94l-2.47-2.47z"
+      />
     </svg>
   ),
 
-  /** △ with ! — warning */
+  /** △ with ! — warning (solid fill for status visibility) */
   warning: (
-    <svg {...svgProps}>
-      <path d="M12 3L2 21h20L12 3z" />
-      <path d="M12 10v4" />
-      <circle cx="12" cy="17" r="0.5" fill="currentColor" stroke="none" />
+    <svg {...solidSvgProps}>
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M10.29 3.86L2.07 19.05A2 2 0 003.78 22h16.44a2 2 0 001.71-2.95L13.71 3.86a2 2 0 00-3.42 0zM12 9a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0112 9zm0 9a1 1 0 100-2 1 1 0 000 2z"
+      />
     </svg>
   ),
 
