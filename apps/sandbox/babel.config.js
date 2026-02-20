@@ -16,6 +16,7 @@ module.exports = {
         aliases: {
           '@xds/core/*': [path.join(rootDir, 'packages/core/src/*')],
           '@xds/core': [path.join(rootDir, 'packages/core/src')],
+          '@xds/theme/*': [path.join(rootDir, 'packages/theme/src/*')],
         },
         unstable_moduleResolution: {
           type: 'commonJS',

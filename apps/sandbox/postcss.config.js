@@ -1,13 +1,16 @@
-/* global module */
+/* global module, __dirname */
+const path = require('path');
 const babelConfig = require('./babel.config');
+
+const rootDir = path.resolve(__dirname, '../..');
 
 module.exports = {
   plugins: {
     '@stylexjs/postcss-plugin': {
       include: [
         'src/**/*.{js,jsx,ts,tsx}',
-        'node_modules/@xds/core/**/*.{ts,tsx}',
-        '../../packages/theme/src/**/*.{ts,tsx}',
+        path.join(rootDir, 'packages/core/src/**/*.{ts,tsx}'),
+        path.join(rootDir, 'packages/theme/src/**/*.{ts,tsx}'),
       ],
       babelConfig: {
         babelrc: false,
