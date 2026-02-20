@@ -1,7 +1,8 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
-import {XDSCard, XDSSection} from '@xds/core/Layout';
+import {XDSCard} from '@xds/core/Card';
+import {XDSSection} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {
   colorVars,

@@ -1,7 +1,8 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSCenter} from '@xds/core/Center';
-import {XDSCard, XDSSection} from '@xds/core/Layout';
+import {XDSCard} from '@xds/core/Card';
+import {XDSSection} from '@xds/core/Layout';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSText} from '@xds/core/Text';
 import {CheckCircleIcon} from '@heroicons/react/24/outline';

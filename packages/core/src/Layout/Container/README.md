@@ -1,6 +1,6 @@
 # /packages/core/src/Layout/Container
 
-Layout container components: a primitive and higher-order containers for cards and sections.
+Layout container components: a primitive and higher-order containers for sections.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
@@ -9,13 +9,17 @@ Layout container components: a primitive and higher-order containers for cards a
 This folder contains:
 
 - **XDSLayoutContainer** — A primitive that sets CSS variables for padding
-- **XDSCard** — Higher-order component with card styling (elevation, radius)
 - **XDSSection** — Higher-order component with background variants
+- **XDSCard** — Re-exported for backward compatibility (canonical source: `/packages/core/src/Card/`)
 
 ## Import
 
 ```tsx
-import {XDSLayoutContainer, XDSCard, XDSSection} from '@xds/core/Layout';
+// Card — use the direct import
+import {XDSCard} from '@xds/core/Card';
+
+// Section and other layout utilities
+import {XDSLayoutContainer, XDSSection} from '@xds/core/Layout';
 ```
 
 ## Components

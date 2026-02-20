@@ -1,6 +1,7 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { XDSSkeleton } from '@xds/core/Skeleton';
-import { XDSHStack, XDSVStack, XDSCard } from '@xds/core/Layout';
+import type {Meta, StoryObj} from '@storybook/react';
+import {XDSSkeleton} from '@xds/core/Skeleton';
+import {XDSCard} from '@xds/core/Card';
+import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 
 const meta: Meta<typeof XDSSkeleton> = {
   title: 'Core/XDSSkeleton',
@@ -21,7 +22,7 @@ const meta: Meta<typeof XDSSkeleton> = {
       description: 'Border radius using design tokens',
     },
     index: {
-      control: { type: 'number', min: 0, max: 10, step: 1 },
+      control: {type: 'number', min: 0, max: 10, step: 1},
       description: 'Index for staggered animation timing',
     },
   },
@@ -86,7 +87,7 @@ export const CardSkeleton: Story = {
 export const TableRowSkeleton: Story = {
   render: () => (
     <XDSVStack gap="space2">
-      {[0, 1, 2, 3].map((rowIndex) => (
+      {[0, 1, 2, 3].map(rowIndex => (
         <XDSHStack key={rowIndex} gap="space4" vAlign="center">
           <XDSSkeleton width={50} height={16} index={rowIndex * 4} />
           <XDSSkeleton width={180} height={16} index={rowIndex * 4 + 1} />

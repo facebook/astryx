@@ -35,6 +35,11 @@
       "import": "./dist/Button/index.mjs",
       "require": "./dist/Button/index.js"
     },
+    "./Card": {
+      "types": "./dist/Card/index.d.ts",
+      "import": "./dist/Card/index.mjs",
+      "require": "./dist/Card/index.js"
+    },
     "./Calendar": {
       "types": "./dist/Calendar/index.d.ts",
       "import": "./dist/Calendar/index.mjs",
