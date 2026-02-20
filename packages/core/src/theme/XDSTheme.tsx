@@ -21,6 +21,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {Theme as ThemeType, ThemeMode} from './types';
 import {ThemeContext, type ThemeContextValue} from './ThemeContext';
 import {colorVars, typographyVars} from './tokens.stylex';
+import {IconRegistryContext} from '../Icon/IconRegistry';
 
 // Re-export for backwards compatibility
 export {ThemeContext} from './ThemeContext';
@@ -101,13 +102,22 @@ export function XDSTheme({
     theme.styles.typography,
   );
 
+  let content: React.ReactNode = children;
+  if (theme.icons != null) {
+    content = (
+      <IconRegistryContext.Provider value={theme.icons}>
+        {content}
+      </IconRegistryContext.Provider>
+    );
+  }
+
   return (
     <ThemeContext.Provider value={contextValue}>
       <div
         className={stylexProps.className}
         style={stylexProps.style}
         data-theme={mode === 'system' ? undefined : mode}>
-        {children}
+        {content}
       </div>
     </ThemeContext.Provider>
   );
