@@ -28,6 +28,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Detect if any core components changed (lightweight, no install needed)
+  # Runs in parallel with test so it's ready by the time deploy finishes
+  check-components:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      has_components: ${{ steps.check.outputs.has_components }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for component changes
+        id: check
+        run: |
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- packages/core/src/ | grep -v -E '(hooks|theme|utils)/' | head -1)
+          echo "has_components=$( [ -n "$CHANGED" ] && echo true || echo false )" >> $GITHUB_OUTPUT
+
   # Run tests first
   test:
     runs-on: ubuntu-latest
@@ -45,7 +64,8 @@ jobs:
 
       - run: yarn build
 
-  # Build and deploy Storybook
+  # Build, analyze, and deploy Storybook
+  # Analysis runs here to reuse the existing install + build
   deploy:
     needs: test
     runs-on: ubuntu-latest
@@ -56,6 +76,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -126,6 +148,22 @@ jobs:
           path: apps/storybook/dist/
           retention-days: 30
 
+      - name: Analyze components
+        if: github.event_name == 'pull_request'
+        run: |
+          node .github/scripts/analyze-pr.js \
+            --base origin/${{ github.base_ref }} \
+            --head HEAD \
+            --output analysis.json
+
+      - name: Upload analysis artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-analysis
+          path: analysis.json
+          retention-days: 1
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
@@ -134,47 +172,11 @@ jobs:
           keep_files: true
           destination_dir: .
 
-  # PR Analysis - analyze changed components and upload analysis artifact
-  pr-analyze:
-    needs: deploy
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'yarn'
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Build packages
-        run: yarn build
-
-      - name: Analyze components
-        run: |
-          node .github/scripts/analyze-pr.js \
-            --base origin/${{ github.base_ref }} \
-            --head HEAD \
-            --output analysis.json
-
-      - name: Upload analysis artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: pr-analysis
-          path: analysis.json
-          retention-days: 1
-
   # Screenshots - capture component screenshots and videos (runs in parallel with a11y)
+  # Skipped entirely when no components changed. No yarn install needed — scripts use only Node builtins + Playwright.
   pr-screenshots:
-    needs: [deploy, pr-analyze]
-    if: github.event_name == 'pull_request'
+    needs: [deploy, check-components]
+    if: needs.check-components.outputs.has_components == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -184,10 +186,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'yarn'
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
 
       - name: Download analysis artifact
         uses: actions/download-artifact@v4
@@ -270,9 +268,10 @@ jobs:
           retention-days: 30
 
   # Accessibility audit - runs in parallel with screenshots
+  # Skipped entirely when no components changed. No yarn install needed.
   pr-a11y:
-    needs: [deploy, pr-analyze]
-    if: github.event_name == 'pull_request'
+    needs: [deploy, check-components]
+    if: needs.check-components.outputs.has_components == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -282,10 +281,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'yarn'
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
 
       - name: Download analysis artifact
         uses: actions/download-artifact@v4
@@ -317,9 +312,10 @@ jobs:
           retention-days: 1
 
   # PR Comment - combine results and post comment
+  # Runs even when screenshots/a11y are skipped (no components changed)
   pr-comment:
-    needs: [deploy, pr-analyze, pr-screenshots, pr-a11y]
-    if: github.event_name == 'pull_request'
+    needs: [deploy, check-components, pr-screenshots, pr-a11y]
+    if: github.event_name == 'pull_request' && always() && needs.deploy.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -331,17 +327,20 @@ jobs:
           node-version: 22
 
       - name: Download analysis artifact
+        if: needs.deploy.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: pr-analysis
 
       - name: Download screenshots artifact
+        if: needs.pr-screenshots.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: component-screenshots
           path: screenshots-artifact
 
       - name: Download a11y artifact
+        if: needs.pr-a11y.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: a11y-report
@@ -350,11 +349,28 @@ jobs:
         run: |
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
+          # Use empty defaults when artifacts were skipped
+          if [ ! -f analysis.json ]; then
+            echo '{"newComponents":[],"modifiedComponents":[],"componentStats":{},"totalBundle":{}}' > analysis.json
+          fi
+          if [ ! -f a11y-report.json ]; then
+            echo '{"components":{},"summary":{"componentsAudited":0,"totalViolations":0}}' > a11y-report.json
+          fi
+
+          SCREENSHOTS_ARG=""
+          SCREENSHOT_URLS_ARG=""
+          if [ -f screenshots-artifact/screenshots/screenshots.json ]; then
+            SCREENSHOTS_ARG="--screenshots screenshots-artifact/screenshots/screenshots.json"
+          fi
+          if [ -f screenshots-artifact/screenshot-urls.json ]; then
+            SCREENSHOT_URLS_ARG="--screenshot-urls screenshots-artifact/screenshot-urls.json"
+          fi
+
           COMMENT_BODY=$(node .github/scripts/generate-pr-comment.js \
             --analysis analysis.json \
             --a11y a11y-report.json \
-            --screenshots screenshots-artifact/screenshots/screenshots.json \
-            --screenshot-urls screenshots-artifact/screenshot-urls.json \
+            $SCREENSHOTS_ARG \
+            $SCREENSHOT_URLS_ARG \
             --storybook-url "${{ needs.deploy.outputs.storybook_url }}" \
             --sandbox-url "${{ needs.deploy.outputs.sandbox_url }}" \
             --run-url "$RUN_URL" \
