@@ -13,9 +13,9 @@ const nextConfig = {
     unoptimized: true,
   },
   typescript: {
-    // XDS core has a known type issue in Popover internals;
-    // safe to ignore for the sandbox.
-    ignoreBuildErrors: true,
+    // Type errors are caught by the sandbox typecheck script.
+    // Next.js build skips tsc to avoid duplicate checking.
+    ignoreBuildErrors: false,
   },
   webpack: (config) => {
     config.resolve.alias = {
