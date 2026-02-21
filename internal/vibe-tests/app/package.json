@@ -1,0 +1,21 @@
+{
+  "name": "@xds/vibe-tests-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@xds/core": "*",
+    "@xds/theme": "*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@stylexjs/stylex": "*"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.0.0",
+    "@stylexjs/unplugin": "*",
+    "vite": "^5.0.0"
+  }
+}

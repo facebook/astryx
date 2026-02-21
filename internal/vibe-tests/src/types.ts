@@ -255,3 +255,75 @@ export interface QualityAssessment {
   overallScore: QualityScore;
   summary: string;
 }
+
+// ============================================================
+// Universal Evaluation Types (target-neutral)
+// ============================================================
+
+export type UniversalDimension =
+  | 'accessibility'
+  | 'codeQuality'
+  | 'repetition'
+  | 'conciseness'
+  | 'themeAdherence'
+  | 'correctness';
+
+export interface UniversalFinding {
+  rule: string;
+  severity?: 'critical' | 'moderate' | 'minor';
+  detail: string;
+  line?: number;
+  count?: number;
+  example?: string;
+}
+
+export interface ConcisenessMetrics {
+  totalLines: number;
+  codeLines: number;
+  blankLines: number;
+  commentLines: number;
+  importLines: number;
+  typeLines: number;
+  stylingLines: number;
+  logicLines: number;
+  jsxLines: number;
+  stylingRatio: number;
+  boilerplateRatio: number;
+  avgLineLength: number;
+  charsPerLine: number;
+}
+
+export interface DimensionScore<F = UniversalFinding> {
+  score: number;
+  findings?: F[];
+  metrics?: ConcisenessMetrics;
+  darkModeSupport?: boolean;
+}
+
+export interface UniversalScore {
+  accessibility: DimensionScore;
+  codeQuality: DimensionScore;
+  repetition: DimensionScore;
+  conciseness: DimensionScore<never> & { metrics: ConcisenessMetrics };
+  themeAdherence: DimensionScore & { darkModeSupport: boolean };
+  correctness: DimensionScore;
+}
+
+export interface UniversalAggregate {
+  averages: Record<UniversalDimension, number>;
+  overall: number;
+  byPrompt: Record<string, UniversalScore>;
+  byCategory: Record<string, Record<UniversalDimension, number>>;
+  darkModeRate: number;
+}
+
+export interface UniversalComparison {
+  xds: UniversalAggregate;
+  baseline: UniversalAggregate;
+  winners: Record<UniversalDimension, 'xds' | 'baseline' | 'tie'>;
+  byPrompt: Record<string, {
+    xds: UniversalScore;
+    baseline: UniversalScore;
+    winner: 'xds' | 'baseline' | 'tie';
+  }>;
+}
