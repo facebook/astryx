@@ -11,7 +11,7 @@
   "dependencies": {
     "@stylexjs/stylex": "^0.17.4",
     "@xds/core": "*",
-    "@xds/theme": "*",
+    "@xds/theme-default": "*",
     "react": "^18.3.0",
     "react-dom": "^18.3.0"
   },

@@ -3,7 +3,7 @@ import babel from 'esbuild-plugin-babel';
 import path from 'path';
 
 export default defineConfig({
-  entry: ['src/default/index.ts', 'src/neutral/index.ts'],
+  entry: ['src/index.ts'],
   format: ['cjs', 'esm'],
   dts: true,
   splitting: true,
@@ -26,11 +26,13 @@ export default defineConfig({
               genConditionalClasses: true,
               treeshakeCompensation: true,
               aliases: {
-                '@xds/core/*': [path.join(__dirname, '..', 'core', 'src', '*')],
+                '@xds/core/*': [
+                  path.join(__dirname, '..', '..', 'core', 'src', '*'),
+                ],
               },
               unstable_moduleResolution: {
                 type: 'commonJS',
-                rootDir: path.resolve(__dirname, '../..'),
+                rootDir: path.resolve(__dirname, '../../..'),
               },
             },
           ],

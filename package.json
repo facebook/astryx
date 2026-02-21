@@ -5,11 +5,12 @@
   "workspaces": [
     "apps/*",
     "packages/*",
+    "packages/themes/*",
     "internal/*",
     "e2e"
   ],
   "scripts": {
-    "build": "yarn workspace @xds/core build && yarn workspace @xds/theme build",
+    "build": "yarn workspace @xds/core build && yarn workspace @xds/theme-default build && yarn workspace @xds/theme-neutral build",
     "dev": "yarn workspace @xds/storybook dev",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -1,8 +1,8 @@
 import type {Preview, Decorator} from '@storybook/react';
 import * as React from 'react';
 import {XDSTheme} from '@xds/core';
-import {defaultTheme} from '@xds/theme/default';
-import {neutralTheme} from '@xds/theme/neutral';
+import {defaultTheme} from '@xds/theme-default';
+import {neutralTheme} from '@xds/theme-neutral';
 
 // Import the base reset stylesheet
 import '@xds/core/reset.css';
