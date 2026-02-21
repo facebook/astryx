@@ -203,13 +203,19 @@ async function runAccessibilityAudit() {
 
   // Filter stories for relevant components
   const relevantStories = storyIds.filter(id => {
+    // Skip docs pages
+    if (id.endsWith('--docs')) return false;
+
     if (components.length === 0) return true;
     const story = stories[id];
     const title = story.title || '';
-    return components.some(comp =>
-      title.toLowerCase().includes(comp.toLowerCase()) ||
-      id.toLowerCase().includes(comp.toLowerCase())
-    );
+
+    // Titles are like "Core/XDSButton" or "Layout/XDSCard"
+    const titleParts = title.split('/');
+    const componentPart = titleParts.length > 1 ? titleParts[1] : titleParts[0];
+    const normalizedComponent = componentPart.replace(/^XDS/i, '').toLowerCase();
+
+    return components.some(comp => normalizedComponent === comp.toLowerCase());
   });
 
   // Group stories by component
