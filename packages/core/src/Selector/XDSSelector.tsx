@@ -27,6 +27,7 @@ import {
   sizeVars,
   spacingVars,
   radiusVars,
+  elevationVars,
   transitionVars,
   typographyVars,
   textSizeVars,
@@ -70,16 +71,17 @@ const styles = stylex.create({
     lineHeight: lineHeightVars['--leading-base'],
     color: colorVars['--color-text-primary'],
     cursor: 'pointer',
-    transitionProperty: 'border-color, outline',
+    transitionProperty: 'border-color, outline, box-shadow',
     transitionDuration: transitionVars['--transition-fast'],
+    boxShadow: {
+      default: 'none',
+      ':hover': elevationVars['--elevation-input-hover'],
+    },
     outline: {
       default: 'none',
-      ':focus': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus': `1px solid ${colorVars['--color-focus-outline']}`,
     },
-    outlineOffset: {
-      default: '0',
-      ':focus': '1px',
-    },
+    outlineOffset: '0',
   },
   triggerDisabled: {
     cursor: 'not-allowed',
@@ -208,6 +210,48 @@ const statusBorderStyles = stylex.create({
   },
   success: {
     borderColor: colorVars['--color-positive'],
+  },
+});
+
+const statusFocusStyles = stylex.create({
+  warning: {
+    outline: {
+      default: 'none',
+      ':focus': `1px solid ${colorVars['--color-focus-outline-warning']}`,
+    },
+  },
+  error: {
+    outline: {
+      default: 'none',
+      ':focus': `1px solid ${colorVars['--color-focus-outline-error']}`,
+    },
+  },
+  success: {
+    outline: {
+      default: 'none',
+      ':focus': `1px solid ${colorVars['--color-focus-outline-success']}`,
+    },
+  },
+});
+
+const statusHoverShadowStyles = stylex.create({
+  warning: {
+    boxShadow: {
+      default: 'none',
+      ':hover': elevationVars['--elevation-input-hover-warning'],
+    },
+  },
+  error: {
+    boxShadow: {
+      default: 'none',
+      ':hover': elevationVars['--elevation-input-hover-error'],
+    },
+  },
+  success: {
+    boxShadow: {
+      default: 'none',
+      ':hover': elevationVars['--elevation-input-hover-success'],
+    },
   },
 });
 
@@ -588,6 +632,7 @@ export function XDSSelector<T extends XDSSelectorOption>({
           isDisabled && styles.triggerDisabled,
           !selectedItem && styles.triggerPlaceholder,
           status && statusBorderStyles[status.type],
+          status && statusHoverShadowStyles[status.type],
           triggerOverride,
         )}>
         <span>{selectedItem?.label ?? placeholder}</span>

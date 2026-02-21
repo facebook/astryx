@@ -200,6 +200,13 @@ export const elevationRaw = {
     '0px 1px 2px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0px 2px 12px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2))',
   '--elevation-menu':
     '0px 1px 1px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0px 2px 8px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2))',
+  '--elevation-input-hover': 'inset 0px 0px 0px 2px rgba(1, 113, 227, 0.3)',
+  '--elevation-input-hover-success':
+    'inset 0px 0px 0px 2px rgba(38, 167, 86, 0.3)',
+  '--elevation-input-hover-warning':
+    'inset 0px 0px 0px 2px rgba(226, 164, 0, 0.3)',
+  '--elevation-input-hover-error':
+    'inset 0px 0px 0px 2px rgba(227, 25, 59, 0.3)',
 } as const;
 
 export const elevationVars = stylex.defineVars(elevationRaw);
