@@ -192,6 +192,86 @@ export const TitleIconSizes: Story = {
   ),
 };
 
+export const CenteredNavigation: Story = {
+  render: () => (
+    <XDSTopNav
+      label="Main navigation"
+      title={
+        <XDSTopNavTitle
+          title="My App"
+          logo={
+            <XDSTopNavTitleIcon
+              icon={<CubeIcon style={{width: 16, height: 16}} />}
+            />
+          }
+          href="#"
+        />
+      }
+      centerContent={
+        <>
+          <XDSTopNavItem label="Home" href="#" isSelected />
+          <XDSTopNavItem label="Products" href="#" />
+          <XDSTopNavItem label="About" href="#" />
+        </>
+      }
+      endContent={
+        <>
+          <XDSButton
+            label="Search"
+            variant="ghost"
+            icon={<MagnifyingGlassIcon style={{width: 16, height: 16}} />}
+          />
+          <XDSButton
+            label="Profile"
+            variant="ghost"
+            icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+          />
+        </>
+      }
+    />
+  ),
+};
+
+export const CenteredWithStartContent: Story = {
+  render: () => (
+    <XDSTopNav
+      label="Main navigation"
+      title={
+        <XDSTopNavTitle
+          title="Dashboard"
+          logo={
+            <XDSTopNavTitleIcon
+              icon={<ChartBarIcon style={{width: 16, height: 16}} />}
+            />
+          }
+          href="#"
+        />
+      }
+      startContent={
+        <XDSTopNavItem
+          label="Back"
+          href="#"
+          icon={<HomeIcon style={{width: 16, height: 16}} />}
+        />
+      }
+      centerContent={
+        <>
+          <XDSTopNavItem label="Overview" href="#" isSelected />
+          <XDSTopNavItem label="Analytics" href="#" />
+          <XDSTopNavItem label="Reports" href="#" />
+        </>
+      }
+      endContent={
+        <XDSButton
+          label="Profile"
+          variant="ghost"
+          icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+        />
+      }
+    />
+  ),
+};
+
 export const FullExample: Story = {
   render: () => (
     <XDSTopNav

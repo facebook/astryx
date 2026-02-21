@@ -6,7 +6,7 @@ Top navigation bar component for application headers.
 
 ## Features
 
-- **Slot-based layout**: `title`, `startContent`, `endContent` for flexible organization
+- **Slot-based layout**: `title`, `startContent`, `centerContent`, `endContent` for flexible organization
 - **Position modes**: Static, sticky, or fixed positioning
 - **Companion components**: XDSTopNavTitle, XDSTopNavTitleIcon, XDSTopNavItem
 - **Accessible**: Proper ARIA roles and keyboard navigation
@@ -66,13 +66,14 @@ import {HomeIcon, BellIcon, UserCircleIcon} from '@heroicons/react/24/outline';
 
 ### XDSTopNav
 
-| Prop           | Type                              | Default    | Description                                           |
-| -------------- | --------------------------------- | ---------- | ----------------------------------------------------- |
-| `title`        | `ReactNode`                       | —          | Title slot (logo, brand) - left aligned               |
-| `startContent` | `ReactNode`                       | —          | Start content (nav items, breadcrumbs) - left aligned |
-| `endContent`   | `ReactNode`                       | —          | End content (search, icons, profile) - right aligned  |
-| `position`     | `'static' \| 'sticky' \| 'fixed'` | `'static'` | Position behavior                                     |
-| `label`        | `string`                          | —          | Accessible label for navigation landmark              |
+| Prop            | Type                              | Default    | Description                                                        |
+| --------------- | --------------------------------- | ---------- | ------------------------------------------------------------------ |
+| `title`         | `ReactNode`                       | —          | Title slot (logo, brand) - left aligned                            |
+| `startContent`  | `ReactNode`                       | —          | Start content (nav items, breadcrumbs) - left aligned              |
+| `centerContent` | `ReactNode`                       | —          | Center content (nav items) - centered; enables three-column layout |
+| `endContent`    | `ReactNode`                       | —          | End content (search, icons, profile) - right aligned               |
+| `position`      | `'static' \| 'sticky' \| 'fixed'` | `'static'` | Position behavior                                                  |
+| `label`         | `string`                          | —          | Accessible label for navigation landmark                           |
 
 ### XDSTopNavTitle
 
@@ -166,6 +167,8 @@ import {XDSTopNav, XDSTopNavTitle, XDSTopNavItem} from '@xds/core/TopNav';
 
 ## Slot Layout Structure
 
+**Standard layout** (no `centerContent`):
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ [title]  [startContent ...]              [...endContent]    │
@@ -173,10 +176,24 @@ import {XDSTopNav, XDSTopNavTitle, XDSTopNavItem} from '@xds/core/TopNav';
 └─────────────────────────────────────────────────────────────┘
 ```
 
+**Three-column layout** (with `centerContent`):
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ [title] [start...]   [centerContent...]   [...endContent]   │
+│  └─ flex: 1 ──────── centered ──────────── flex: 1 ────────┤
+└─────────────────────────────────────────────────────────────┘
+```
+
+When `centerContent` is provided, the left and right sections flex equally
+(`flex: 1 1 0%`) so the center content stays visually centered regardless
+of how much content is in the start or end slots.
+
 ## Implementation Notes
 
 - XDSTopNav uses `role="navigation"` and accepts `aria-label` via the `label` prop
-- Title and startContent are in a flex container that grows to push endContent right
+- Without `centerContent`: title and startContent grow to push endContent right
+- With `centerContent`: left and right sections use equal flex basis for true centering
 - XDSTopNavItem supports `aria-current="page"` when `isSelected` is true
 - XDSTopNavTitleIcon uses `--color-accent` background with `--color-icon-on-media` for contrast
 - Default height is 48px with 16px horizontal padding

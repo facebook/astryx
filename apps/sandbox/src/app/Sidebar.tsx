@@ -19,6 +19,7 @@ import {usePathname} from 'next/navigation';
 const pages = [
   {name: 'Home', href: '/'},
   {name: 'Example', href: '/pages/example/'},
+  {name: 'Navigation', href: '/pages/navigation/'},
 ];
 
 const styles = stylex.create({

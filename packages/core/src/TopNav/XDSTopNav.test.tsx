@@ -50,7 +50,31 @@ describe('XDSTopNav', () => {
     expect(screen.getByTestId('end-content')).toBeInTheDocument();
   });
 
+  it('renders centerContent slot', () => {
+    render(
+      <XDSTopNav
+        centerContent={<span data-testid="center-content">Center</span>}
+      />,
+    );
+    expect(screen.getByTestId('center-content')).toBeInTheDocument();
+  });
+
   it('renders all slots together', () => {
+    render(
+      <XDSTopNav
+        title={<span data-testid="title">Title</span>}
+        startContent={<span data-testid="start">Start</span>}
+        centerContent={<span data-testid="center">Center</span>}
+        endContent={<span data-testid="end">End</span>}
+      />,
+    );
+    expect(screen.getByTestId('title')).toBeInTheDocument();
+    expect(screen.getByTestId('start')).toBeInTheDocument();
+    expect(screen.getByTestId('center')).toBeInTheDocument();
+    expect(screen.getByTestId('end')).toBeInTheDocument();
+  });
+
+  it('renders without centerContent (backward compatible)', () => {
     render(
       <XDSTopNav
         title={<span data-testid="title">Title</span>}
