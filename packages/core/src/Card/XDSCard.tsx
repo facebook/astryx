@@ -1,8 +1,8 @@
 /**
  * @file XDSCard.tsx
- * @input Uses container utility, StyleX, ThemeContext
- * @output Exports XDSCard component and XDSCardProps
- * @position Core card container component
+ * @input Uses container utility, StyleX, ThemeContext, AccordionContext
+ * @output Exports XDSCard component, XDSCardProps, CollapsibleConfig
+ * @position Core card container component with optional collapsible behavior
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Card/README.md (props table, features)
@@ -10,13 +10,29 @@
  * - /apps/storybook/stories/Card.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useContext, type ReactNode} from 'react';
+'use client';
+
+import {
+  forwardRef,
+  useCallback,
+  useContext,
+  useState,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, radiusVars, elevationVars} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  radiusVars,
+  elevationVars,
+  spacingVars,
+  typographyVars,
+  fontWeightVars,
+} from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {container} from '../Layout/container.stylex';
 import type {SizeValue} from '../utils/types';
+import {AccordionContext} from '../Accordion/XDSAccordionContext';
 
 // =============================================================================
 // Module Augmentation - Register XDSCard's themeable properties
@@ -63,6 +79,55 @@ const styles = stylex.create({
     paddingBlockStart: 0,
     paddingBlockEnd: 0,
   },
+  // Header trigger for collapsible cards
+  headerTrigger: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    border: 'none',
+    background: 'none',
+    cursor: 'pointer',
+    padding: 0,
+    fontFamily: typographyVars['--font-body'],
+    fontSize: 16,
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    color: colorVars['--color-text-primary'],
+    textAlign: 'start',
+  },
+  // Static header (non-collapsible card with title)
+  headerStatic: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    fontFamily: typographyVars['--font-body'],
+    fontSize: 16,
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    color: colorVars['--color-text-primary'],
+  },
+  // Header area wrapper with padding
+  headerArea: {
+    paddingBlockEnd: spacingVars['--spacing-3'],
+  },
+  // Chevron indicator
+  chevron: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    transition: 'transform 150ms ease',
+    color: colorVars['--color-icon-secondary'],
+  },
+  chevronOpen: {
+    transform: 'rotate(0deg)',
+  },
+  chevronClosed: {
+    transform: 'rotate(-90deg)',
+  },
+  // Hidden content when collapsed
+  contentHidden: {
+    display: 'none',
+  },
 });
 
 // Dynamic styles for sizing props
@@ -82,7 +147,25 @@ const dynamicStyles = stylex.create({
 
 export type {SizeValue} from '../utils/types';
 
+/**
+ * Configuration for collapsible behavior.
+ */
+export type CollapsibleConfig = {
+  /** Whether the card starts open. @default true */
+  initialIsOpen?: boolean;
+  /** Controlled open state. */
+  isOpen?: boolean;
+  /** Callback when open state changes. */
+  onOpenChange?: (isOpen: boolean) => void;
+};
+
 export interface XDSCardProps {
+  /**
+   * Title displayed in the card header.
+   * When `isCollapsible` is set, the title becomes the click trigger.
+   */
+  title?: ReactNode;
+
   /**
    * Width of the card.
    * Numbers are treated as pixels, strings are used as-is.
@@ -109,7 +192,7 @@ export interface XDSCardProps {
 
   /**
    * Content to render inside the card.
-   * Should typically be XDSLayout child components.
+   * When `isCollapsible` is set, this content collapses/expands.
    */
   children?: ReactNode;
 
@@ -118,6 +201,57 @@ export interface XDSCardProps {
    * @default false
    */
   isFullBleed?: boolean;
+
+  /**
+   * Makes the card collapsible. Requires `title` to be set.
+   *
+   * - `true` — self-managed, starts open
+   * - `{ initialIsOpen: false }` — self-managed, starts collapsed
+   * - `{ isOpen, onOpenChange }` — controlled externally
+   *
+   * When inside an XDSAccordion with a `value` prop, defers to the accordion.
+   *
+   * @example
+   * ```tsx
+   * <XDSCard title="Details" isCollapsible>
+   *   <p>Collapsible content</p>
+   * </XDSCard>
+   * ```
+   */
+  isCollapsible?: boolean | CollapsibleConfig;
+
+  /**
+   * Unique identifier for this card within an XDSAccordion.
+   * Required when using the card inside an accordion for coordination.
+   */
+  value?: string;
+
+  /**
+   * Test ID for the card element.
+   */
+  'data-testid'?: string;
+}
+
+/**
+ * Chevron icon for collapsible indicator.
+ * Uses the same SVG conventions as defaultIcons.
+ */
+function ChevronIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      width="1em"
+      height="1em"
+      aria-hidden>
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  );
 }
 
 /**
@@ -126,11 +260,18 @@ export interface XDSCardProps {
  * Applies card-specific appearance (background, shadow, border-radius)
  * and sets CSS variables for child layout components.
  *
+ * Supports collapsible behavior via the `isCollapsible` prop. When set,
+ * the card's `title` becomes a click trigger and the `children` content
+ * collapses/expands. Works standalone or coordinated by XDSAccordion.
+ *
  * @compositionHint Use as a top-level container for elevated content.
  * Pair with XDSLayout for structured header/content/footer layouts.
+ * For collapsible cards, set `title` and `isCollapsible`.
+ * For accordion behavior, wrap multiple cards in XDSAccordion.
  *
  * @example
  * ```tsx
+ * // Basic card
  * <XDSCard width={400} height={300}>
  *   <XDSLayout
  *     header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
@@ -138,17 +279,35 @@ export interface XDSCardProps {
  *     footer={<XDSLayoutFooter hasDivider>Actions</XDSLayoutFooter>}
  *   />
  * </XDSCard>
+ *
+ * // Collapsible card
+ * <XDSCard title="Details" isCollapsible>
+ *   <p>This content can be collapsed</p>
+ * </XDSCard>
+ *
+ * // Accordion
+ * <XDSAccordion type="single" defaultValue="general">
+ *   <XDSCard title="General" value="general" isCollapsible>
+ *     <GeneralSettings />
+ *   </XDSCard>
+ *   <XDSCard title="Advanced" value="advanced" isCollapsible>
+ *     <AdvancedSettings />
+ *   </XDSCard>
+ * </XDSAccordion>
  * ```
  */
 export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
   function XDSCard(
     {
+      title,
       width,
       height,
       maxWidth,
       minHeight,
       children,
       isFullBleed = false,
+      isCollapsible,
+      value,
       ...props
     },
     ref,
@@ -157,6 +316,45 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
     const themeContext = useContext(ThemeContext);
     const containerOverride = themeContext?.theme.components?.card?.container;
     const contentOverride = themeContext?.theme.components?.card?.content;
+
+    // Accordion context
+    const accordion = useContext(AccordionContext);
+    const isControlledByAccordion = accordion != null && value != null;
+
+    // Parse collapsible config
+    const collapsibleConfig: CollapsibleConfig | null =
+      isCollapsible === true ? {} : isCollapsible ? isCollapsible : null;
+
+    const isCollapsibleEnabled = collapsibleConfig != null;
+
+    // Internal state for uncontrolled collapsible
+    const [internalIsOpen, setInternalIsOpen] = useState(() => {
+      if (isControlledByAccordion) return true; // accordion manages this
+      if (collapsibleConfig?.isOpen !== undefined)
+        return collapsibleConfig.isOpen;
+      return collapsibleConfig?.initialIsOpen ?? true;
+    });
+
+    // Determine open state
+    let isOpen: boolean;
+    if (isControlledByAccordion) {
+      isOpen = accordion.isOpen(value!);
+    } else if (collapsibleConfig?.isOpen !== undefined) {
+      isOpen = collapsibleConfig.isOpen;
+    } else {
+      isOpen = internalIsOpen;
+    }
+
+    // Toggle handler
+    const handleToggle = useCallback(() => {
+      if (isControlledByAccordion) {
+        accordion!.toggle(value!);
+      } else if (collapsibleConfig?.onOpenChange) {
+        collapsibleConfig.onOpenChange(!isOpen);
+      } else {
+        setInternalIsOpen(prev => !prev);
+      }
+    }, [isControlledByAccordion, accordion, value, collapsibleConfig, isOpen]);
 
     // Only enable scrolling when card has a fixed height (not null/undefined and not "auto")
     const hasFixedHeight = height != null && height !== 'auto';
@@ -188,7 +386,35 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
             isFullBleed && styles.fullBleed,
             contentOverride,
           )}>
-          {children}
+          {title != null && (
+            <div {...stylex.props(styles.headerArea)}>
+              {isCollapsibleEnabled ? (
+                <button
+                  type="button"
+                  onClick={handleToggle}
+                  aria-expanded={isOpen}
+                  {...stylex.props(styles.headerTrigger)}>
+                  <span>{title}</span>
+                  <span
+                    {...stylex.props(
+                      styles.chevron,
+                      isOpen ? styles.chevronOpen : styles.chevronClosed,
+                    )}>
+                    <ChevronIcon />
+                  </span>
+                </button>
+              ) : (
+                <div {...stylex.props(styles.headerStatic)}>{title}</div>
+              )}
+            </div>
+          )}
+          {isCollapsibleEnabled ? (
+            <div {...(isOpen ? {} : stylex.props(styles.contentHidden))}>
+              {children}
+            </div>
+          ) : (
+            children
+          )}
         </div>
       </div>
     );

@@ -8,6 +8,8 @@ Card container component with elevation and themed styling.
 
 XDSCard is a top-level container for elevated content. It provides card-specific appearance (background, shadow, border-radius) and sets CSS variables for child layout components.
 
+Supports collapsible behavior via the `isCollapsible` prop. When set, the card's `title` becomes a click trigger and the `children` content collapses/expands. Works standalone or coordinated by XDSAccordion.
+
 ## Import
 
 ```tsx
@@ -17,6 +19,7 @@ import {XDSCard} from '@xds/core/Card';
 ## Usage
 
 ```tsx
+// Basic card with layout
 <XDSCard width={400} height={300}>
   <XDSLayout
     header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
@@ -24,24 +27,53 @@ import {XDSCard} from '@xds/core/Card';
     footer={<XDSLayoutFooter hasDivider>Actions</XDSLayoutFooter>}
   />
 </XDSCard>
+
+// Card with title
+<XDSCard title="Settings">
+  <p>Card content here</p>
+</XDSCard>
+
+// Collapsible card
+<XDSCard title="Details" isCollapsible>
+  <p>This content can be collapsed</p>
+</XDSCard>
+
+// Starts collapsed
+<XDSCard title="Advanced" isCollapsible={{ initialIsOpen: false }}>
+  <p>Hidden by default</p>
+</XDSCard>
+
+// Inside an accordion
+<XDSAccordion type="single" defaultValue="general">
+  <XDSCard title="General" value="general" isCollapsible>...</XDSCard>
+  <XDSCard title="Advanced" value="advanced" isCollapsible>...</XDSCard>
+</XDSAccordion>
 ```
 
 ## Props
 
-| Prop          | Type        | Default | Description                                       |
-| ------------- | ----------- | ------- | ------------------------------------------------- |
-| `width`       | `SizeValue` | —       | Width (number = pixels, string = as-is)           |
-| `height`      | `SizeValue` | —       | Height (number = pixels, string = as-is)          |
-| `maxWidth`    | `SizeValue` | —       | Maximum width                                     |
-| `minHeight`   | `SizeValue` | —       | Minimum height                                    |
-| `children`    | `ReactNode` | —       | Content (typically XDSLayout)                     |
-| `isFullBleed` | `boolean`   | `false` | Removes internal padding for edge-to-edge content |
+| Prop            | Type                           | Default | Description                                       |
+| --------------- | ------------------------------ | ------- | ------------------------------------------------- |
+| `title`         | `ReactNode`                    | —       | Title displayed in card header                    |
+| `width`         | `SizeValue`                    | —       | Width (number = pixels, string = as-is)           |
+| `height`        | `SizeValue`                    | —       | Height (number = pixels, string = as-is)          |
+| `maxWidth`      | `SizeValue`                    | —       | Maximum width                                     |
+| `minHeight`     | `SizeValue`                    | —       | Minimum height                                    |
+| `children`      | `ReactNode`                    | —       | Content (collapses when isCollapsible is set)     |
+| `isFullBleed`   | `boolean`                      | `false` | Removes internal padding for edge-to-edge content |
+| `isCollapsible` | `boolean \| CollapsibleConfig` | —       | Makes the card collapsible (requires title)       |
+| `value`         | `string`                       | —       | Identifier for accordion coordination             |
 
 ## Types
 
 ```tsx
-// Size value type - accepts numbers (pixels) or strings (CSS values)
 type SizeValue = number | string;
+
+type CollapsibleConfig = {
+  initialIsOpen?: boolean; // default true
+  isOpen?: boolean; // controlled
+  onOpenChange?: (isOpen: boolean) => void;
+};
 ```
 
 ## Theming
