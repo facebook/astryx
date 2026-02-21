@@ -24,6 +24,7 @@ import {
   fontWeightVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
+import {XDSIcon} from '../Icon';
 
 // =============================================================================
 // Types
@@ -162,16 +163,16 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 0,
-    marginInlineStart: spacingVars['--spacing-0-5'],
-    marginInlineEnd: `calc(-1 * ${spacingVars['--spacing-0-5']})`,
+    marginInlineStart: 0,
+    marginInlineEnd: 0,
     borderWidth: 0,
     borderStyle: 'none',
     backgroundColor: 'transparent',
     color: 'inherit',
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-rounded'],
-    width: '20px',
-    height: '20px',
+    width: '16px',
+    height: '16px',
     opacity: {
       default: 0.7,
       ':hover': 1,
@@ -229,28 +230,6 @@ const colorStyles = stylex.create({
     color: colorVars['--color-gray-text'],
   },
 });
-
-// =============================================================================
-// Remove Button SVG
-// =============================================================================
-
-function RemoveIcon() {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 12 12"
-      fill="none"
-      aria-hidden="true">
-      <path
-        d="M3 3L9 9M9 3L3 9"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
 
 // =============================================================================
 // Component
@@ -316,7 +295,7 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
             }}
             aria-disabled={isDisabled || undefined}
             {...stylex.props(styles.removeButton)}>
-            <RemoveIcon />
+            <XDSIcon icon="close" size="xsm" />
           </span>
         )}
       </>
