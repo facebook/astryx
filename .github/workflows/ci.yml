@@ -155,6 +155,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: 'yarn'
 
       - name: Download analysis artifact
         uses: actions/download-artifact@v4
@@ -245,6 +246,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: 'yarn'
 
       - name: Download analysis artifact
         uses: actions/download-artifact@v4
