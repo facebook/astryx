@@ -54,13 +54,29 @@ try {
   console.error('Warning: Could not read screenshot URLs:', e.message);
 }
 
+// Build a Storybook deep link URL for a component
+// Story titles like "Core/XDSButton" become path "/docs/core-xdsbutton--docs"
+function getStorybookLink(storybookBaseUrl, storyTitle) {
+  if (!storybookBaseUrl || !storyTitle) return null;
+  // Storybook converts "Core/XDSButton" to "core-xdsbutton" as the story ID prefix
+  const storyPath = storyTitle.toLowerCase().replace(/\//g, '-');
+  return `${storybookBaseUrl}?path=/docs/${storyPath}--docs`;
+}
+
+// Build an external link that opens in a new tab
+function extLink(text, url) {
+  return `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+}
+
 // Build component stats section
 let componentSection = '';
 if (analysis.newComponents && analysis.newComponents.length > 0) {
   componentSection += `### New Components\n\n`;
   for (const comp of analysis.newComponents) {
     const stats = analysis.componentStats[comp] || {};
-    componentSection += `<details>\n<summary><strong>${comp}</strong></summary>\n\n`;
+    const sbLink = getStorybookLink(storybookUrl, stats.storyTitle);
+    const sbBadge = sbLink ? ` · ${extLink('View in Storybook', sbLink)}` : '';
+    componentSection += `<details>\n<summary><strong>${comp}</strong>${sbBadge}</summary>\n\n`;
     componentSection += `| Metric | Value |\n|--------|-------|\n`;
     componentSection += `| Bundle Size (ESM) | ${stats.esmSize || 'N/A'} |\n`;
     componentSection += `| Bundle Size (CJS) | ${stats.cjsSize || 'N/A'} |\n`;
@@ -80,7 +96,9 @@ if (analysis.modifiedComponents && analysis.modifiedComponents.length > 0) {
   for (const comp of analysis.modifiedComponents) {
     const stats = analysis.componentStats[comp] || {};
     const baseStats = analysis.baseComponentStats?.[comp] || {};
-    componentSection += `<details>\n<summary><strong>${comp}</strong></summary>\n\n`;
+    const sbLink = getStorybookLink(storybookUrl, stats.storyTitle);
+    const sbBadge = sbLink ? ` · ${extLink('View in Storybook', sbLink)}` : '';
+    componentSection += `<details>\n<summary><strong>${comp}</strong>${sbBadge}</summary>\n\n`;
     componentSection += `| Metric | Before | After | Delta |\n|--------|--------|-------|-------|\n`;
 
     const esmDelta = stats.esmBytes && baseStats.esmBytes
@@ -175,10 +193,15 @@ if (hasAffectedComponents && screenshots.length > 0) {
         if (videoUrl) {
           // Link to mp4 if available, otherwise link to gif
           const fullVideoUrl = mp4Url || videoUrl;
-          screenshotSection += `**Interaction Preview:** ([view video](${fullVideoUrl}))\n\n![${storyName} interaction](${videoUrl})\n\n`;
+          screenshotSection += `**Interaction Preview:** (${extLink('view video', fullVideoUrl)})\n\n![${storyName} interaction](${videoUrl})\n\n`;
         }
 
-        screenshotSection += `Run \`yarn storybook\` and navigate to: \`${shot.storyId}\`\n\n`;
+        // Build a direct Storybook link for this specific story
+        const storyLink = storybookUrl ? `${storybookUrl}?path=/story/${shot.storyId}` : null;
+        if (storyLink) {
+          screenshotSection += `${extLink('View in Storybook', storyLink)} · `;
+        }
+        screenshotSection += `\`${shot.storyId}\`\n\n`;
 
         screenshotSection += `</details>\n\n`;
       } else {
@@ -193,7 +216,7 @@ let storybookSection = '';
 if (storybookUrl) {
   storybookSection = `### 📚 Storybook Preview
 
-**[View Storybook for this PR](${storybookUrl})**
+**${extLink('View Storybook for this PR', storybookUrl)}**
 
 `;
 }
@@ -203,16 +226,16 @@ let sandboxSection = '';
 if (sandboxUrl) {
   sandboxSection = `### 🧪 Sandbox Preview
 
-**[View Sandbox for this PR](${sandboxUrl})**
+**${extLink('View Sandbox for this PR', sandboxUrl)}**
 
 `;
 }
 
 // Build footer with links
 let footerLinks = [];
-if (storybookUrl) footerLinks.push(`[Storybook](${storybookUrl})`);
-if (sandboxUrl) footerLinks.push(`[Sandbox](${sandboxUrl})`);
-if (runUrl) footerLinks.push(`[View full report](${runUrl})`);
+if (storybookUrl) footerLinks.push(extLink('Storybook', storybookUrl));
+if (sandboxUrl) footerLinks.push(extLink('Sandbox', sandboxUrl));
+if (runUrl) footerLinks.push(extLink('View full report', runUrl));
 const footerLinksStr = footerLinks.length > 0 ? ` | ${footerLinks.join(' | ')}` : '';
 
 // Build the full comment

@@ -175,6 +175,25 @@ function hasStories(componentName) {
   }
 }
 
+// Get the Storybook story title for a component (e.g., "Core/XDSButton")
+function getStoryTitle(componentName) {
+  const storiesDir = path.join(process.cwd(), STORYBOOK_STORIES);
+  try {
+    const files = fs.readdirSync(storiesDir);
+    const storyFile = files.find(f =>
+      f.toLowerCase().includes(componentName.toLowerCase()) &&
+      f.endsWith('.stories.tsx')
+    );
+    if (!storyFile) return null;
+
+    const content = fs.readFileSync(path.join(storiesDir, storyFile), 'utf8');
+    const titleMatch = content.match(/title:\s*['"]([^'"]+)['"]/);
+    return titleMatch ? titleMatch[1] : null;
+  } catch {
+    return null;
+  }
+}
+
 // Count lines of code in a file (excluding blank lines and comments)
 function countLOC(filePath) {
   try {
@@ -294,6 +313,7 @@ function getComponentStats(componentName) {
     propsCount: getPropsCount(componentName),
     hasTests: hasTests(componentName),
     hasStories: hasStories(componentName),
+    storyTitle: getStoryTitle(componentName),
     linesOfCode: loc.totalLOC,
     fileCount: loc.fileCount,
     complexity: complexity.score,
