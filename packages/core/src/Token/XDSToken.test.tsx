@@ -48,12 +48,12 @@ describe('XDSToken', () => {
     }
   });
 
-  it('renders as a button when onClick is provided', () => {
+  it('renders as a clickable span when onClick is provided', () => {
     const handleClick = vi.fn();
     render(<XDSToken label="Clickable" onClick={handleClick} />);
     const button = screen.getByRole('button', {name: 'Clickable'});
     expect(button).toBeInTheDocument();
-    expect(button.tagName).toBe('BUTTON');
+    expect(button.tagName).toBe('SPAN');
     fireEvent.click(button);
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
@@ -91,7 +91,8 @@ describe('XDSToken', () => {
     const handleClick = vi.fn();
     render(<XDSToken label="Disabled" onClick={handleClick} isDisabled />);
     const button = screen.getByRole('button', {name: 'Disabled'});
-    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button.tagName).toBe('SPAN');
     fireEvent.click(button);
     expect(handleClick).not.toHaveBeenCalled();
   });
@@ -146,10 +147,10 @@ describe('XDSToken', () => {
     expect(ref.current).toBeInstanceOf(HTMLSpanElement);
   });
 
-  it('forwards ref to button when onClick provided', () => {
+  it('forwards ref to span when onClick provided', () => {
     const ref = {current: null as HTMLElement | null};
     render(<XDSToken ref={ref} label="Ref test" onClick={() => {}} />);
-    expect(ref.current).toBeInstanceOf(HTMLButtonElement);
+    expect(ref.current).toBeInstanceOf(HTMLSpanElement);
   });
 
   it('forwards ref to anchor when href provided', () => {

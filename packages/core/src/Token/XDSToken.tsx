@@ -71,7 +71,8 @@ export interface XDSTokenProps {
    */
   onRemove?: (e: React.MouseEvent) => void;
   /**
-   * Click handler. When provided, the token renders as a `<button>`.
+   * Click handler. When provided, the token renders as a clickable `<span>`
+   * with `role="button"` to avoid nested `<button>` elements.
    */
   onClick?: (e: React.MouseEvent) => void;
   /**
@@ -244,8 +245,9 @@ const colorStyles = stylex.create({
 /**
  * A chip/tag component for displaying entities inline.
  *
- * Renders as a `<span>` by default, `<button>` when `onClick` is provided,
- * or `<a>` when `href` is provided.
+ * Renders as a `<span>` by default (with `role="button"` when `onClick` is
+ * provided), or `<a>` when `href` is provided. Uses the clickable container
+ * pattern to avoid nested `<button>` elements when `onRemove` is also present.
  *
  * @example
  * ```tsx
@@ -275,6 +277,19 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
     ref,
   ) => {
     const isInteractive = onClick != null || href != null;
+
+    const handleContainerClick = (e: React.MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('button, a')) return;
+      onClick?.(e);
+    };
+
+    const handleContainerKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onClick?.(e as unknown as React.MouseEvent);
+      }
+    };
 
     const content = (
       <>
@@ -326,14 +341,16 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
 
     if (onClick != null) {
       return (
-        <button
-          ref={ref as React.Ref<HTMLButtonElement>}
-          type="button"
-          onClick={onClick}
-          disabled={isDisabled}
+        <span
+          ref={ref as React.Ref<HTMLSpanElement>}
+          role="button"
+          tabIndex={isDisabled ? -1 : 0}
+          onClick={isDisabled ? undefined : handleContainerClick}
+          onKeyDown={isDisabled ? undefined : handleContainerKeyDown}
+          aria-disabled={isDisabled || undefined}
           {...sharedProps}>
           {content}
-        </button>
+        </span>
       );
     }
 
