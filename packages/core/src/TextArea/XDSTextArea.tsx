@@ -115,6 +115,27 @@ const statusBorderStyles = stylex.create({
   },
 });
 
+const statusFocusStyles = stylex.create({
+  warning: {
+    outline: {
+      default: 'none',
+      ':focus-within': `2px solid ${colorVars['--color-focus-outline-warning']}`,
+    },
+  },
+  error: {
+    outline: {
+      default: 'none',
+      ':focus-within': `2px solid ${colorVars['--color-focus-outline-error']}`,
+    },
+  },
+  success: {
+    outline: {
+      default: 'none',
+      ':focus-within': `2px solid ${colorVars['--color-focus-outline-success']}`,
+    },
+  },
+});
+
 export type XDSTextAreaStatusType = 'warning' | 'error' | 'success';
 
 export interface XDSTextAreaStatus {
@@ -317,6 +338,7 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
             styles.wrapper,
             isDisabled && styles.wrapperDisabled,
             status && statusBorderStyles[status.type],
+            status && statusFocusStyles[status.type],
             wrapperOverride,
           )}>
           {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}

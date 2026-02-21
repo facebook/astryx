@@ -211,6 +211,27 @@ const statusBorderStyles = stylex.create({
   },
 });
 
+const statusFocusStyles = stylex.create({
+  warning: {
+    outline: {
+      default: 'none',
+      ':focus': `2px solid ${colorVars['--color-focus-outline-warning']}`,
+    },
+  },
+  error: {
+    outline: {
+      default: 'none',
+      ':focus': `2px solid ${colorVars['--color-focus-outline-error']}`,
+    },
+  },
+  success: {
+    outline: {
+      default: 'none',
+      ':focus': `2px solid ${colorVars['--color-focus-outline-success']}`,
+    },
+  },
+});
+
 const STATUS_ICON_MAP: Record<XDSSelectorStatusType, XDSIconName> = {
   warning: 'warning',
   error: 'xCircle',
@@ -588,6 +609,7 @@ export function XDSSelector<T extends XDSSelectorOption>({
           isDisabled && styles.triggerDisabled,
           !selectedItem && styles.triggerPlaceholder,
           status && statusBorderStyles[status.type],
+          status && statusFocusStyles[status.type],
           triggerOverride,
         )}>
         <span>{selectedItem?.label ?? placeholder}</span>

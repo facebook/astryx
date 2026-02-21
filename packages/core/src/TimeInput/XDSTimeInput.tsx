@@ -151,6 +151,27 @@ const statusBorderStyles = stylex.create({
   },
 });
 
+const statusFocusStyles = stylex.create({
+  warning: {
+    outline: {
+      default: 'none',
+      ':focus-within': `2px solid ${colorVars['--color-focus-outline-warning']}`,
+    },
+  },
+  error: {
+    outline: {
+      default: 'none',
+      ':focus-within': `2px solid ${colorVars['--color-focus-outline-error']}`,
+    },
+  },
+  success: {
+    outline: {
+      default: 'none',
+      ':focus-within': `2px solid ${colorVars['--color-focus-outline-success']}`,
+    },
+  },
+});
+
 export type XDSTimeInputSize = keyof typeof sizeStyles;
 export type XDSTimeInputHourFormat = '12h' | '24h';
 
@@ -514,6 +535,7 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
             sizeStyles[size],
             isDisabled && styles.wrapperDisabled,
             status && statusBorderStyles[status.type],
+            status && statusFocusStyles[status.type],
             wrapperOverride,
           )}>
           <div {...stylex.props(styles.icon)}>
