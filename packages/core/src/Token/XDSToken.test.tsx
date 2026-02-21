@@ -9,6 +9,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {XDSToken} from './XDSToken';
 
 describe('XDSToken', () => {
@@ -181,5 +182,138 @@ describe('XDSToken', () => {
     const ref = {current: null as HTMLElement | null};
     render(<XDSToken ref={ref} label="Ref test" href="/test" />);
     expect(ref.current).toBeInstanceOf(HTMLAnchorElement);
+  });
+});
+
+describe('XDSToken accessibility', () => {
+  it('does not nest buttons when both onClick and onRemove are provided', () => {
+    render(<XDSToken label="Token" onClick={() => {}} onRemove={() => {}} />);
+    const buttons = screen.getAllByRole('button');
+    // Should have exactly 2: invisible label button + remove button
+    expect(buttons).toHaveLength(2);
+    // No button should contain another button
+    for (const button of buttons) {
+      expect(button.querySelector('button')).toBeNull();
+    }
+  });
+
+  it('allows independent focus on label button and remove button', async () => {
+    const user = userEvent.setup();
+    render(<XDSToken label="Token" onClick={() => {}} onRemove={() => {}} />);
+
+    // Tab to first button (invisible label button)
+    await user.tab();
+    expect(screen.getByRole('button', {name: 'Token'})).toHaveFocus();
+
+    // Tab to second button (remove button)
+    await user.tab();
+    expect(screen.getByRole('button', {name: 'Remove Token'})).toHaveFocus();
+  });
+
+  it('fires onClick when Enter is pressed on the invisible button', async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(<XDSToken label="Token" onClick={handleClick} />);
+
+    await user.tab();
+    await user.keyboard('{Enter}');
+    expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('fires onClick when Space is pressed on the invisible button', async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(<XDSToken label="Token" onClick={handleClick} />);
+
+    await user.tab();
+    await user.keyboard(' ');
+    expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('remove button has accessible name including the token label', () => {
+    render(<XDSToken label="JavaScript" onRemove={() => {}} />);
+    expect(
+      screen.getByRole('button', {name: 'Remove JavaScript'}),
+    ).toBeInTheDocument();
+  });
+
+  it('disables both buttons when isDisabled is true', () => {
+    render(
+      <XDSToken
+        label="Token"
+        onClick={() => {}}
+        onRemove={() => {}}
+        isDisabled
+      />,
+    );
+    const buttons = screen.getAllByRole('button');
+    for (const button of buttons) {
+      expect(button).toBeDisabled();
+    }
+  });
+
+  it('does not fire onClick or onRemove when disabled', () => {
+    const handleClick = vi.fn();
+    const handleRemove = vi.fn();
+    render(
+      <XDSToken
+        label="Token"
+        onClick={handleClick}
+        onRemove={handleRemove}
+        isDisabled
+        data-testid="token"
+      />,
+    );
+
+    // Click on container
+    const container = screen.getByTestId('token');
+    fireEvent.click(container);
+    expect(handleClick).not.toHaveBeenCalled();
+
+    // Try to click remove button (it's disabled)
+    const removeBtn = screen.getByRole('button', {name: 'Remove Token'});
+    fireEvent.click(removeBtn);
+    expect(handleRemove).not.toHaveBeenCalled();
+  });
+
+  it('container click handler does not fire when clicking the remove button', () => {
+    const handleClick = vi.fn();
+    const handleRemove = vi.fn();
+    render(
+      <XDSToken label="Token" onClick={handleClick} onRemove={handleRemove} />,
+    );
+
+    const removeButton = screen.getByRole('button', {name: 'Remove Token'});
+    fireEvent.click(removeButton);
+
+    expect(handleRemove).toHaveBeenCalledTimes(1);
+    expect(handleClick).not.toHaveBeenCalled();
+  });
+
+  it('hidden label is accessible to screen readers', () => {
+    render(<XDSToken label="Hidden Tag" isLabelHidden onClick={() => {}} />);
+    // The invisible button should still be findable by its accessible name
+    expect(
+      screen.getByRole('button', {name: 'Hidden Tag'}),
+    ).toBeInTheDocument();
+  });
+
+  it('link token has correct role and is focusable', async () => {
+    const user = userEvent.setup();
+    render(<XDSToken label="Link Token" href="/test" />);
+
+    const link = screen.getByRole('link', {name: 'Link Token'});
+    expect(link).toHaveAttribute('href', '/test');
+
+    await user.tab();
+    expect(link).toHaveFocus();
+  });
+
+  it('remove button element exists with correct aria-label', () => {
+    const {container} = render(<XDSToken label="Token" onRemove={() => {}} />);
+    const removeButton = container.querySelector(
+      'button[aria-label="Remove Token"]',
+    );
+    expect(removeButton).toBeInTheDocument();
   });
 });
