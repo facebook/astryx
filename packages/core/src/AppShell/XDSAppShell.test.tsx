@@ -91,36 +91,33 @@ describe('XDSAppShell', () => {
     expect(screen.getByRole('main')).toBeInTheDocument();
   });
 
-  it('renders topNav in a header element', () => {
+  it('renders topNav in the header area', () => {
     render(
       <XDSAppShell topNav={<div>Top Nav</div>}>
         <div>Content</div>
       </XDSAppShell>,
     );
     expect(screen.getByText('Top Nav')).toBeInTheDocument();
-    // The topNav is wrapped in a <header>
-    const header = screen.getByText('Top Nav').closest('header');
-    expect(header).toBeInTheDocument();
   });
 
-  it('renders topBanner when provided', () => {
+  it('renders banner when provided', () => {
     render(
-      <XDSAppShell topBanner={<div>System banner</div>}>
+      <XDSAppShell banner={<div>System banner</div>}>
         <div>Content</div>
       </XDSAppShell>,
     );
     expect(screen.getByText('System banner')).toBeInTheDocument();
   });
 
-  it('renders pageNav in a nav element', () => {
+  it('renders sideNav in a nav element', () => {
     render(
-      <XDSAppShell pageNav={<div>Page Nav</div>}>
+      <XDSAppShell sideNav={<div>Side Nav</div>}>
         <div>Content</div>
       </XDSAppShell>,
     );
     const nav = screen.getByRole('navigation');
     expect(nav).toBeInTheDocument();
-    expect(screen.getByText('Page Nav')).toBeInTheDocument();
+    expect(screen.getByText('Side Nav')).toBeInTheDocument();
   });
 
   it('renders without optional slots', () => {
@@ -131,7 +128,6 @@ describe('XDSAppShell', () => {
     );
     expect(screen.getByText('Just content')).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
-    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
   });
 
   it('supports data-testid', () => {
@@ -170,12 +166,12 @@ describe('XDSAppShell', () => {
   });
 
   // ===========================================================================
-  // Sidebar navigation accessibility
+  // SideNav accessibility
   // ===========================================================================
 
-  it('sidebar nav has aria-label', () => {
+  it('sideNav has aria-label', () => {
     render(
-      <XDSAppShell pageNav={<div>Nav</div>}>
+      <XDSAppShell sideNav={<div>Nav</div>}>
         <div>Content</div>
       </XDSAppShell>,
     );
@@ -184,12 +180,12 @@ describe('XDSAppShell', () => {
   });
 
   // ===========================================================================
-  // Sidebar collapse — uncontrolled
+  // SideNav collapse — uncontrolled
   // ===========================================================================
 
-  it('sidebar is visible by default (uncontrolled)', () => {
+  it('sideNav is visible by default (uncontrolled)', () => {
     render(
-      <XDSAppShell pageNav={<div>Nav Items</div>}>
+      <XDSAppShell sideNav={<div>Nav Items</div>}>
         <div>Content</div>
       </XDSAppShell>,
     );
@@ -197,11 +193,11 @@ describe('XDSAppShell', () => {
     expect(screen.getByRole('navigation')).toBeInTheDocument();
   });
 
-  it('sidebar is hidden when initialIsSidebarCollapsed is true', () => {
+  it('sideNav is hidden when initialIsSideNavCollapsed is true', () => {
     render(
       <XDSAppShell
-        pageNav={<div>Nav Items</div>}
-        initialIsSidebarCollapsed={true}>
+        sideNav={<div>Nav Items</div>}
+        initialIsSideNavCollapsed={true}>
         <div>Content</div>
       </XDSAppShell>,
     );
@@ -209,27 +205,27 @@ describe('XDSAppShell', () => {
   });
 
   // ===========================================================================
-  // Sidebar collapse — controlled
+  // SideNav collapse — controlled
   // ===========================================================================
 
-  it('sidebar is hidden when isSidebarCollapsed is true (controlled)', () => {
+  it('sideNav is hidden when isSideNavCollapsed is true (controlled)', () => {
     render(
       <XDSAppShell
-        pageNav={<div>Nav Items</div>}
-        isSidebarCollapsed={true}
-        onSidebarCollapsedChange={() => {}}>
+        sideNav={<div>Nav Items</div>}
+        isSideNavCollapsed={true}
+        onSideNavCollapsedChange={() => {}}>
         <div>Content</div>
       </XDSAppShell>,
     );
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   });
 
-  it('sidebar is visible when isSidebarCollapsed is false (controlled)', () => {
+  it('sideNav is visible when isSideNavCollapsed is false (controlled)', () => {
     render(
       <XDSAppShell
-        pageNav={<div>Nav Items</div>}
-        isSidebarCollapsed={false}
-        onSidebarCollapsedChange={() => {}}>
+        sideNav={<div>Nav Items</div>}
+        isSideNavCollapsed={false}
+        onSideNavCollapsedChange={() => {}}>
         <div>Content</div>
       </XDSAppShell>,
     );
@@ -240,13 +236,13 @@ describe('XDSAppShell', () => {
   // Responsive breakpoint
   // ===========================================================================
 
-  it('auto-collapses sidebar below breakpoint', () => {
+  it('auto-collapses sideNav below breakpoint', () => {
     const onChange = vi.fn();
     render(
       <XDSAppShell
-        pageNav={<div>Nav</div>}
-        sidebarBreakpoint="md"
-        onSidebarCollapsedChange={onChange}>
+        sideNav={<div>Nav</div>}
+        sideNavBreakpoint="md"
+        onSideNavCollapsedChange={onChange}>
         <div>Content</div>
       </XDSAppShell>,
     );
@@ -259,13 +255,13 @@ describe('XDSAppShell', () => {
     expect(onChange).toHaveBeenCalledWith(true);
   });
 
-  it('does not auto-collapse when sidebarBreakpoint is none', () => {
+  it('does not auto-collapse when sideNavBreakpoint is none', () => {
     const onChange = vi.fn();
     render(
       <XDSAppShell
-        pageNav={<div>Nav</div>}
-        sidebarBreakpoint="none"
-        onSidebarCollapsedChange={onChange}>
+        sideNav={<div>Nav</div>}
+        sideNavBreakpoint="none"
+        onSideNavCollapsedChange={onChange}>
         <div>Content</div>
       </XDSAppShell>,
     );
@@ -277,41 +273,41 @@ describe('XDSAppShell', () => {
   // Mobile overlay
   // ===========================================================================
 
-  it('shows overlay sidebar when below breakpoint and not collapsed', () => {
-    // Start below breakpoint with sidebar expanded
+  it('shows overlay sideNav when below breakpoint and not collapsed', () => {
+    // Start below breakpoint with sideNav expanded
     mockMql = createMockMatchMedia(true);
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
 
     render(
       <XDSAppShell
-        pageNav={<div>Nav Items</div>}
-        isSidebarCollapsed={false}
-        onSidebarCollapsedChange={() => {}}>
+        sideNav={<div>Nav Items</div>}
+        isSideNavCollapsed={false}
+        onSideNavCollapsedChange={() => {}}>
         <div>Content</div>
       </XDSAppShell>,
     );
 
     // Should show backdrop
-    expect(screen.getByTestId('sidebar-backdrop')).toBeInTheDocument();
+    expect(screen.getByTestId('sidenav-backdrop')).toBeInTheDocument();
     // Should show nav in overlay
     expect(screen.getByText('Nav Items')).toBeInTheDocument();
   });
 
-  it('clicking backdrop calls onSidebarCollapsedChange', () => {
+  it('clicking backdrop calls onSideNavCollapsedChange', () => {
     mockMql = createMockMatchMedia(true);
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
 
     const onChange = vi.fn();
     render(
       <XDSAppShell
-        pageNav={<div>Nav</div>}
-        isSidebarCollapsed={false}
-        onSidebarCollapsedChange={onChange}>
+        sideNav={<div>Nav</div>}
+        isSideNavCollapsed={false}
+        onSideNavCollapsedChange={onChange}>
         <div>Content</div>
       </XDSAppShell>,
     );
 
-    fireEvent.click(screen.getByTestId('sidebar-backdrop'));
+    fireEvent.click(screen.getByTestId('sidenav-backdrop'));
     expect(onChange).toHaveBeenCalledWith(true);
   });
 
@@ -322,9 +318,9 @@ describe('XDSAppShell', () => {
     const onChange = vi.fn();
     render(
       <XDSAppShell
-        pageNav={<div>Nav</div>}
-        isSidebarCollapsed={false}
-        onSidebarCollapsedChange={onChange}>
+        sideNav={<div>Nav</div>}
+        isSideNavCollapsed={false}
+        onSideNavCollapsedChange={onChange}>
         <div>Content</div>
       </XDSAppShell>,
     );
@@ -356,14 +352,13 @@ describe('XDSAppShell', () => {
     expect(screen.getByTestId('shell')).toBeInTheDocument();
   });
 
-  it('renders header as sticky in auto mode', () => {
+  it('renders topNav in auto mode', () => {
     render(
       <XDSAppShell height="auto" topNav={<div>Nav</div>} data-testid="shell">
         <div>Content</div>
       </XDSAppShell>,
     );
-    const header = screen.getByText('Nav').closest('header');
-    expect(header).toBeInTheDocument();
+    expect(screen.getByText('Nav')).toBeInTheDocument();
   });
 
   // ===========================================================================

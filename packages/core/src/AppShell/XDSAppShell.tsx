@@ -3,8 +3,8 @@
  * @input Uses React, XDSLayout, XDSLayoutHeader, XDSLayoutPanel, XDSLayoutContent, StyleX
  * @output Exports XDSAppShell component and XDSAppShellProps type
  * @position Application-level layout shell — the top-level wrapper for any app.
- *   Composes XDSLayout internally to provide header, sidebar, and main content areas.
- *   Use for any app that needs a top nav, sidebar navigation, and scrollable content.
+ *   Composes XDSLayout internally to provide header, sideNav, and main content areas.
+ *   Use for any app that needs a top nav, side navigation, and scrollable content.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/AppShell/README.md
@@ -17,19 +17,22 @@ import {
   forwardRef,
   useCallback,
   useEffect,
-  useRef,
   useState,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, fontWeightVars, textSizeVars} from '../theme/tokens.stylex';
+import {XDSLayout} from '../Layout/XDSLayout';
+import {XDSLayoutHeader} from '../Layout/XDSLayoutHeader';
+import {XDSLayoutPanel} from '../Layout/XDSLayoutPanel';
+import {XDSLayoutContent} from '../Layout/XDSLayoutContent';
 
 // =============================================================================
 // Constants
 // =============================================================================
 
-const DEFAULT_SIDEBAR_WIDTH = 260;
+const DEFAULT_SIDENAV_WIDTH = 260;
 
 const BREAKPOINT_VALUES: Record<XDSAppShellBreakpoint, number> = {
   sm: 640,
@@ -45,7 +48,7 @@ const MAIN_CONTENT_ID = 'xds-app-shell-main';
 // =============================================================================
 
 /**
- * Sidebar breakpoint options.
+ * SideNav breakpoint options.
  * - `sm`: 640px
  * - `md`: 768px
  * - `lg`: 1024px
@@ -54,6 +57,12 @@ const MAIN_CONTENT_ID = 'xds-app-shell-main';
 export type XDSAppShellBreakpoint = 'sm' | 'md' | 'lg' | 'none';
 
 export interface XDSAppShellProps {
+  /**
+   * Optional banner slot for system-wide announcements.
+   * Renders above the top nav and scrolls away with the page in auto mode.
+   */
+  banner?: ReactNode;
+
   /**
    * Main content area (rendered as `<main>`).
    */
@@ -76,39 +85,34 @@ export interface XDSAppShellProps {
    * Initial collapsed state for uncontrolled usage.
    * @default false
    */
-  initialIsSidebarCollapsed?: boolean;
+  initialIsSideNavCollapsed?: boolean;
 
   /**
-   * Whether the sidebar is collapsed (controlled).
+   * Whether the side nav is collapsed (controlled).
    */
-  isSidebarCollapsed?: boolean;
+  isSideNavCollapsed?: boolean;
 
   /**
-   * Callback when sidebar collapsed state changes.
+   * Callback when side nav collapsed state changes.
    */
-  onSidebarCollapsedChange?: (isCollapsed: boolean) => void;
+  onSideNavCollapsedChange?: (isCollapsed: boolean) => void;
 
   /**
-   * Sidebar navigation — typically an XDSPageNav.
+   * Side navigation — typically an XDSPageNav.
    */
-  pageNav?: ReactNode;
+  sideNav?: ReactNode;
 
   /**
-   * Breakpoint below which sidebar auto-collapses.
+   * Breakpoint below which side nav auto-collapses.
    * @default 'md'
    */
-  sidebarBreakpoint?: XDSAppShellBreakpoint;
+  sideNavBreakpoint?: XDSAppShellBreakpoint;
 
   /**
-   * Width of sidebar when expanded (in pixels).
+   * Width of side nav when expanded (in pixels).
    * @default 260
    */
-  sidebarWidth?: number;
-
-  /**
-   * Optional top banner slot for system-wide announcements.
-   */
-  topBanner?: ReactNode;
+  sideNavWidth?: number;
 
   /**
    * Top navigation — typically an XDSTopNav.
@@ -159,45 +163,7 @@ const styles = stylex.create({
   banner: {
     flexShrink: 0,
   },
-  headerWrapper: {
-    flexShrink: 0,
-    zIndex: 10,
-  },
-  headerWrapperSticky: {
-    position: 'sticky',
-    top: 0,
-  },
-  bodyRow: {
-    display: 'flex',
-    flex: 1,
-    minHeight: 0,
-    position: 'relative',
-  },
-  sidebar: {
-    flexShrink: 0,
-    overflow: 'auto',
-    boxSizing: 'border-box',
-    borderInlineEndWidth: 1,
-    borderInlineEndStyle: 'solid',
-    borderInlineEndColor: colorVars['--color-divider'],
-  },
-  sidebarSticky: {
-    position: 'sticky',
-    alignSelf: 'flex-start',
-  },
-  sidebarFillHeight: {
-    height: '100%',
-  },
-  mainContent: {
-    flex: 1,
-    minWidth: 0,
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  mainContentFill: {
-    overflow: 'auto',
-  },
-  // Mobile overlay sidebar
+  // Mobile overlay sideNav
   overlay: {
     position: 'fixed',
     inset: 0,
@@ -210,7 +176,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-overlay'],
     zIndex: 100,
   },
-  overlaySidebar: {
+  overlaySideNav: {
     position: 'relative',
     zIndex: 101,
     backgroundColor: colorVars['--color-surface'],
@@ -226,36 +192,10 @@ const styles = stylex.create({
 });
 
 const dynamicStyles = stylex.create({
-  sidebarWidth: (width: number) => ({
+  sideNavWidth: (width: number) => ({
     width,
   }),
-  stickyTop: (top: string) => ({
-    top,
-  }),
-  stickyHeight: (height: string) => ({
-    height,
-  }),
 });
-
-// =============================================================================
-// Helpers
-// =============================================================================
-
-/**
- * Attempts to use the View Transitions API if available, otherwise falls back
- * to running the callback directly.
- */
-function withViewTransition(callback: () => void): void {
-  if (
-    typeof document !== 'undefined' &&
-    'startViewTransition' in document &&
-    typeof document.startViewTransition === 'function'
-  ) {
-    document.startViewTransition(callback);
-  } else {
-    callback();
-  }
-}
 
 // =============================================================================
 // Component
@@ -263,30 +203,30 @@ function withViewTransition(callback: () => void): void {
 
 /**
  * Application-level layout shell. Provides the structural frame for an app:
- * header, sidebar navigation, and main content area.
+ * header, side navigation, and main content area.
  *
  * Composes XDSLayout internally. Replaces internal XDSPage + XDSPageLayout pattern.
  *
  * Features:
- * - Slot-based API: `topNav`, `pageNav`, `topBanner`, `children`
+ * - Slot-based API: `topNav`, `sideNav`, `banner`, `children`
  * - Two height modes: `fill` (100dvh, independent scroll) and `auto` (page scroll, sticky navs)
- * - Sidebar collapse: controlled + uncontrolled patterns
- * - Responsive sidebar collapse via breakpoint
- * - Mobile overlay sidebar with backdrop
+ * - SideNav collapse: controlled + uncontrolled patterns
+ * - Responsive sideNav collapse via breakpoint
+ * - Mobile overlay sideNav with backdrop
  * - Skip-to-content link
  * - Semantic HTML: `<header>`, `<nav>`, `<main>`
  *
  * @example
  * ```tsx
- * // Standard app shell — fill mode, sidebar + header
+ * // Standard app shell — fill mode, sideNav + header
  * <XDSAppShell
  *   topNav={<XDSTopNav title="My App" />}
- *   pageNav={<XDSPageNav items={navItems} />}
+ *   sideNav={<XDSPageNav items={navItems} />}
  * >
  *   <DashboardContent />
  * </XDSAppShell>
  *
- * // Header only (no sidebar)
+ * // Header only (no sideNav)
  * <XDSAppShell topNav={<XDSTopNav title="Landing" />}>
  *   <LandingContent />
  * </XDSAppShell>
@@ -294,7 +234,7 @@ function withViewTransition(callback: () => void): void {
  * // Auto-height for content-heavy pages
  * <XDSAppShell
  *   topNav={<XDSTopNav title="Docs" />}
- *   pageNav={<XDSPageNav items={docNav} />}
+ *   sideNav={<XDSPageNav items={docNav} />}
  *   height="auto"
  * >
  *   <LongDocumentContent />
@@ -304,27 +244,27 @@ function withViewTransition(callback: () => void): void {
 export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
   function XDSAppShell(
     {
+      banner,
       children,
       'data-testid': dataTestId,
       height = 'fill',
-      initialIsSidebarCollapsed = false,
-      isSidebarCollapsed: controlledCollapsed,
-      onSidebarCollapsedChange,
-      pageNav,
-      sidebarBreakpoint = 'md',
-      sidebarWidth = DEFAULT_SIDEBAR_WIDTH,
-      topBanner,
+      initialIsSideNavCollapsed = false,
+      isSideNavCollapsed: controlledCollapsed,
+      onSideNavCollapsedChange,
+      sideNav,
+      sideNavBreakpoint = 'md',
+      sideNavWidth = DEFAULT_SIDENAV_WIDTH,
       topNav,
       xstyle,
     },
     ref,
   ) {
     // =========================================================================
-    // Sidebar collapse state (controlled + uncontrolled)
+    // SideNav collapse state (controlled + uncontrolled)
     // =========================================================================
     const isControlled = controlledCollapsed !== undefined;
     const [uncontrolledCollapsed, setUncontrolledCollapsed] = useState(
-      initialIsSidebarCollapsed,
+      initialIsSideNavCollapsed,
     );
     const isCollapsed = isControlled
       ? controlledCollapsed
@@ -333,20 +273,22 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
     // Track whether we're below the breakpoint
     const [isBelowBreakpoint, setIsBelowBreakpoint] = useState(false);
 
-    const headerRef = useRef<HTMLDivElement>(null);
-    const [headerHeight, setHeaderHeight] = useState(0);
-
     const isFill = height === 'fill';
-    const hasPageNav = pageNav != null;
+    const hasSideNav = sideNav != null;
     const hasTopNav = topNav != null;
+    const hasBanner = banner != null;
 
     // =========================================================================
     // Responsive breakpoint handling
+    //
+    // Uses matchMedia which is event-driven — the listener only fires when the
+    // media query match state actually changes, not on every resize. This is
+    // efficient and does not over-trigger.
     // =========================================================================
     useEffect(() => {
-      if (sidebarBreakpoint === 'none' || !hasPageNav) return;
+      if (sideNavBreakpoint === 'none' || !hasSideNav) return;
 
-      const breakpointPx = BREAKPOINT_VALUES[sidebarBreakpoint];
+      const breakpointPx = BREAKPOINT_VALUES[sideNavBreakpoint];
       const mql = window.matchMedia(`(max-width: ${breakpointPx}px)`);
 
       const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
@@ -357,7 +299,7 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
           if (!isControlled) {
             setUncontrolledCollapsed(true);
           }
-          onSidebarCollapsedChange?.(true);
+          onSideNavCollapsedChange?.(true);
         }
       };
 
@@ -366,40 +308,22 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
 
       mql.addEventListener('change', handleChange);
       return () => mql.removeEventListener('change', handleChange);
-    }, [sidebarBreakpoint, hasPageNav, isControlled, onSidebarCollapsedChange]);
+    }, [sideNavBreakpoint, hasSideNav, isControlled, onSideNavCollapsedChange]);
 
     // =========================================================================
-    // Header height measurement (for auto mode sticky offset)
-    // =========================================================================
-    useEffect(() => {
-      if (isFill || !headerRef.current || typeof ResizeObserver === 'undefined')
-        return;
-
-      const observer = new ResizeObserver(entries => {
-        for (const entry of entries) {
-          setHeaderHeight(entry.contentRect.height);
-        }
-      });
-
-      observer.observe(headerRef.current);
-      return () => observer.disconnect();
-    }, [isFill]);
-
-    // =========================================================================
-    // Toggle handler
+    // Toggle handler — snaps open/closed (no transitions for now)
+    // TODO: Add ViewTransitions support with React transition API
     // =========================================================================
     const handleToggleCollapse = useCallback(() => {
       const newValue = !isCollapsed;
-      withViewTransition(() => {
-        if (!isControlled) {
-          setUncontrolledCollapsed(newValue);
-        }
-        onSidebarCollapsedChange?.(newValue);
-      });
-    }, [isCollapsed, isControlled, onSidebarCollapsedChange]);
+      if (!isControlled) {
+        setUncontrolledCollapsed(newValue);
+      }
+      onSideNavCollapsedChange?.(newValue);
+    }, [isCollapsed, isControlled, onSideNavCollapsedChange]);
 
     // =========================================================================
-    // Close mobile sidebar on Escape
+    // Close mobile sideNav on Escape
     // =========================================================================
     useEffect(() => {
       if (!isBelowBreakpoint || isCollapsed) return;
@@ -416,16 +340,55 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
     }, [isBelowBreakpoint, isCollapsed, handleToggleCollapse]);
 
     // =========================================================================
-    // Determine if sidebar should show as overlay (mobile) or inline
+    // Determine if sideNav should show as overlay (mobile) or inline
     // =========================================================================
-    const showSidebarInline = hasPageNav && !isCollapsed && !isBelowBreakpoint;
-    const showSidebarOverlay = hasPageNav && !isCollapsed && isBelowBreakpoint;
+    const showSideNavInline = hasSideNav && !isCollapsed && !isBelowBreakpoint;
+    const showSideNavOverlay = hasSideNav && !isCollapsed && isBelowBreakpoint;
 
-    // Banner height for sticky offset (banner is not sticky, so it scrolls away)
-    const bannerRef = useRef<HTMLDivElement>(null);
+    // =========================================================================
+    // Build header content (topNav + banner)
+    // =========================================================================
+    const headerContent =
+      hasTopNav || hasBanner ? (
+        <XDSLayoutHeader isFullBleed hasDivider={hasTopNav}>
+          {hasBanner && <div {...stylex.props(styles.banner)}>{banner}</div>}
+          {hasTopNav && topNav}
+        </XDSLayoutHeader>
+      ) : undefined;
+
+    // =========================================================================
+    // Build sideNav content
+    // =========================================================================
+    const sideNavContent = showSideNavInline ? (
+      <XDSLayoutPanel
+        isFullBleed
+        hasDivider
+        width={sideNavWidth}
+        role="navigation"
+        label="Application navigation"
+        isScrollable={isFill}>
+        {sideNav}
+      </XDSLayoutPanel>
+    ) : undefined;
+
+    // =========================================================================
+    // Build main content
+    // =========================================================================
+    const mainContent = (
+      <XDSLayoutContent
+        isFullBleed
+        role="main"
+        id={MAIN_CONTENT_ID}
+        isScrollable={isFill}>
+        {children}
+      </XDSLayoutContent>
+    );
 
     // =========================================================================
     // Render
+    //
+    // TODO: Include root providers (ThemeProvider, ProseProvider, LayerProvider)
+    // at the app level once they're available for wrapping.
     // =========================================================================
     return (
       <div
@@ -444,77 +407,30 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
           Skip to content
         </a>
 
-        {/* Top banner */}
-        {topBanner != null && (
-          <div ref={bannerRef} {...stylex.props(styles.banner)}>
-            {topBanner}
-          </div>
-        )}
+        <XDSLayout
+          height={height}
+          isFullBleed
+          header={headerContent}
+          start={sideNavContent}
+          content={mainContent}
+        />
 
-        {/* Header / TopNav */}
-        {hasTopNav && (
-          <header
-            ref={headerRef}
-            {...stylex.props(
-              styles.headerWrapper,
-              !isFill && styles.headerWrapperSticky,
-            )}>
-            {topNav}
-          </header>
-        )}
-
-        {/* Body: sidebar + main content */}
-        <div {...stylex.props(styles.bodyRow)}>
-          {/* Inline sidebar (desktop, expanded) */}
-          {showSidebarInline && (
-            <nav
-              aria-label="Application navigation"
-              {...stylex.props(
-                styles.sidebar,
-                dynamicStyles.sidebarWidth(sidebarWidth),
-                isFill && styles.sidebarFillHeight,
-                !isFill && styles.sidebarSticky,
-                !isFill &&
-                  dynamicStyles.stickyTop(
-                    hasTopNav ? `${headerHeight}px` : '0px',
-                  ),
-                !isFill &&
-                  dynamicStyles.stickyHeight(
-                    hasTopNav ? `calc(100vh - ${headerHeight}px)` : '100vh',
-                  ),
-              )}>
-              {pageNav}
-            </nav>
-          )}
-
-          {/* Main content */}
-          <main
-            id={MAIN_CONTENT_ID}
-            role="main"
-            {...stylex.props(
-              styles.mainContent,
-              isFill && styles.mainContentFill,
-            )}>
-            {children}
-          </main>
-        </div>
-
-        {/* Mobile overlay sidebar */}
-        {showSidebarOverlay && (
+        {/* Mobile overlay sideNav */}
+        {showSideNavOverlay && (
           <>
             <div
               {...stylex.props(styles.backdrop)}
               onClick={handleToggleCollapse}
-              data-testid="sidebar-backdrop"
+              data-testid="sidenav-backdrop"
               aria-hidden="true"
             />
             <nav
               aria-label="Application navigation"
               {...stylex.props(
-                styles.overlaySidebar,
-                dynamicStyles.sidebarWidth(sidebarWidth),
+                styles.overlaySideNav,
+                dynamicStyles.sideNavWidth(sideNavWidth),
               )}>
-              {pageNav}
+              {sideNav}
             </nav>
           </>
         )}

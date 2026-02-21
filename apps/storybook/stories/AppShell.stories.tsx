@@ -3,33 +3,20 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
+import {XDSTopNav, XDSTopNavTitle, XDSTopNavItem} from '@xds/core/TopNav';
 import * as stylex from '@stylexjs/stylex';
+import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 import {
-  colorVars,
-  spacingVars,
-  typographyVars,
-} from '@xds/core/theme/tokens.stylex';
+  HomeIcon,
+  Cog6ToothIcon,
+  ChartBarIcon,
+  UserCircleIcon,
+  Bars3Icon,
+} from '@heroicons/react/24/outline';
 
 const styles = stylex.create({
-  topNav: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    padding: `${spacingVars['--spacing-3']} ${spacingVars['--spacing-4']}`,
-    borderBlockEndWidth: 1,
-    borderBlockEndStyle: 'solid',
-    borderBlockEndColor: colorVars['--color-divider'],
-    backgroundColor: colorVars['--color-surface'],
-    fontFamily: typographyVars['--font-body'],
-  },
-  topNavTitle: {
-    fontWeight: 600,
-    fontSize: 16,
-    color: colorVars['--color-text-primary'],
-  },
   pageNav: {
     padding: spacingVars['--spacing-4'],
-    fontFamily: typographyVars['--font-body'],
   },
   navItem: {
     display: 'block',
@@ -50,14 +37,12 @@ const styles = stylex.create({
   },
   content: {
     padding: spacingVars['--spacing-6'],
-    fontFamily: typographyVars['--font-body'],
   },
   banner: {
     padding: `${spacingVars['--spacing-2']} ${spacingVars['--spacing-4']}`,
     backgroundColor: colorVars['--color-blue-background'],
     color: colorVars['--color-blue-text'],
     fontSize: 13,
-    fontFamily: typographyVars['--font-body'],
   },
   longContent: {
     display: 'flex',
@@ -65,28 +50,6 @@ const styles = stylex.create({
     gap: 16,
   },
 });
-
-function MockTopNav({
-  title,
-  onToggleSidebar,
-}: {
-  title: string;
-  onToggleSidebar?: () => void;
-}) {
-  return (
-    <div {...stylex.props(styles.topNav)}>
-      {onToggleSidebar && (
-        <XDSButton
-          variant="chromeless"
-          size="sm"
-          label="Toggle sidebar"
-          onClick={onToggleSidebar}
-        />
-      )}
-      <span {...stylex.props(styles.topNavTitle)}>{title}</span>
-    </div>
-  );
-}
 
 function MockPageNav() {
   return (
@@ -129,11 +92,11 @@ const meta: Meta<typeof XDSAppShell> = {
       control: 'radio',
       options: ['fill', 'auto'],
     },
-    sidebarBreakpoint: {
+    sideNavBreakpoint: {
       control: 'radio',
       options: ['sm', 'md', 'lg', 'none'],
     },
-    sidebarWidth: {
+    sideNavWidth: {
       control: 'number',
     },
   },
@@ -145,8 +108,26 @@ type Story = StoryObj<typeof XDSAppShell>;
 export const Default: Story = {
   render: () => (
     <XDSAppShell
-      topNav={<MockTopNav title="My App" />}
-      pageNav={<MockPageNav />}>
+      topNav={
+        <XDSTopNav
+          label="Main navigation"
+          title={<XDSTopNavTitle title="My App" />}
+          startContent={
+            <>
+              <XDSTopNavItem label="Home" href="#" isSelected />
+              <XDSTopNavItem label="Products" href="#" />
+            </>
+          }
+          endContent={
+            <XDSButton
+              label="Profile"
+              variant="ghost"
+              icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+            />
+          }
+        />
+      }
+      sideNav={<MockPageNav />}>
       <MockContent />
     </XDSAppShell>
   ),
@@ -154,7 +135,13 @@ export const Default: Story = {
 
 export const HeaderOnly: Story = {
   render: () => (
-    <XDSAppShell topNav={<MockTopNav title="Landing Page" />}>
+    <XDSAppShell
+      topNav={
+        <XDSTopNav
+          label="Main navigation"
+          title={<XDSTopNavTitle title="Landing Page" />}
+        />
+      }>
       <MockContent paragraphs={5} />
     </XDSAppShell>
   ),
@@ -163,9 +150,21 @@ export const HeaderOnly: Story = {
 export const WithBanner: Story = {
   render: () => (
     <XDSAppShell
-      topNav={<MockTopNav title="My App" />}
-      pageNav={<MockPageNav />}
-      topBanner={
+      topNav={
+        <XDSTopNav
+          label="Main navigation"
+          title={<XDSTopNavTitle title="My App" />}
+          startContent={
+            <>
+              <XDSTopNavItem label="Home" href="#" isSelected />
+              <XDSTopNavItem label="Products" href="#" />
+            </>
+          }
+        />
+      }
+      sideNav={<MockPageNav />}
+      banner={
+        // TODO: Replace with <XDSBanner> once the Banner component is available
         <div {...stylex.props(styles.banner)}>
           ℹ️ System maintenance scheduled for tonight at 10pm UTC.
         </div>
@@ -178,28 +177,64 @@ export const WithBanner: Story = {
 export const AutoHeight: Story = {
   render: () => (
     <XDSAppShell
-      topNav={<MockTopNav title="Documentation" />}
-      pageNav={<MockPageNav />}
+      topNav={
+        <XDSTopNav
+          label="Main navigation"
+          title={<XDSTopNavTitle title="Documentation" />}
+          startContent={
+            <>
+              <XDSTopNavItem
+                label="Docs"
+                href="#"
+                isSelected
+                icon={<HomeIcon style={{width: 16, height: 16}} />}
+              />
+              <XDSTopNavItem
+                label="API"
+                href="#"
+                icon={<ChartBarIcon style={{width: 16, height: 16}} />}
+              />
+            </>
+          }
+        />
+      }
+      sideNav={<MockPageNav />}
       height="auto">
       <MockContent paragraphs={20} />
     </XDSAppShell>
   ),
 };
 
+/**
+ * Controlled collapse with external state.
+ *
+ * NOTE: Collapse controls require coordination between the shell and nav —
+ * the toggle button lives in the topNav but the collapse state lives in
+ * AppShell. This is a known design tension. For now, the toggle is passed
+ * as endContent in the topNav.
+ */
 export const ControlledCollapse: Story = {
   render: function ControlledCollapseStory() {
     const [collapsed, setCollapsed] = useState(false);
     return (
       <XDSAppShell
         topNav={
-          <MockTopNav
-            title="Controlled"
-            onToggleSidebar={() => setCollapsed(!collapsed)}
+          <XDSTopNav
+            label="Main navigation"
+            title={<XDSTopNavTitle title="Controlled" />}
+            endContent={
+              <XDSButton
+                label="Toggle sidebar"
+                variant="ghost"
+                icon={<Bars3Icon style={{width: 16, height: 16}} />}
+                onClick={() => setCollapsed(!collapsed)}
+              />
+            }
           />
         }
-        pageNav={<MockPageNav />}
-        isSidebarCollapsed={collapsed}
-        onSidebarCollapsedChange={setCollapsed}>
+        sideNav={<MockPageNav />}
+        isSideNavCollapsed={collapsed}
+        onSideNavCollapsedChange={setCollapsed}>
         <MockContent />
       </XDSAppShell>
     );
@@ -209,20 +244,40 @@ export const ControlledCollapse: Story = {
 export const InitiallyCollapsed: Story = {
   render: () => (
     <XDSAppShell
-      topNav={<MockTopNav title="Collapsed" />}
-      pageNav={<MockPageNav />}
-      initialIsSidebarCollapsed={true}>
+      topNav={
+        <XDSTopNav
+          label="Main navigation"
+          title={<XDSTopNavTitle title="Collapsed" />}
+        />
+      }
+      sideNav={<MockPageNav />}
+      initialIsSideNavCollapsed={true}>
       <MockContent />
     </XDSAppShell>
   ),
 };
 
-export const CustomSidebarWidth: Story = {
+export const CustomSideNavWidth: Story = {
   render: () => (
     <XDSAppShell
-      topNav={<MockTopNav title="Wide Sidebar" />}
-      pageNav={<MockPageNav />}
-      sidebarWidth={320}>
+      topNav={
+        <XDSTopNav
+          label="Main navigation"
+          title={<XDSTopNavTitle title="Wide SideNav" />}
+          startContent={
+            <>
+              <XDSTopNavItem
+                label="Settings"
+                href="#"
+                isSelected
+                icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
+              />
+            </>
+          }
+        />
+      }
+      sideNav={<MockPageNav />}
+      sideNavWidth={320}>
       <MockContent />
     </XDSAppShell>
   ),

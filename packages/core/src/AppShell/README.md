@@ -6,7 +6,7 @@ Application-level layout shell component.
 
 ## Overview
 
-XDSAppShell provides the structural frame for an application: header, sidebar navigation, and main content area. It composes XDSLayout internally and replaces the internal XDSPage + XDSPageLayout pattern.
+XDSAppShell provides the structural frame for an application: header, side navigation, and main content area. It composes XDSLayout internally and replaces the internal XDSPage + XDSPageLayout pattern.
 
 ## Import
 
@@ -17,16 +17,16 @@ import {XDSAppShell} from '@xds/core/AppShell';
 ## Usage
 
 ```tsx
-// Standard app shell — fill mode, sidebar + header
+// Standard app shell — fill mode, sideNav + header
 <XDSAppShell
   topNav={<XDSTopNav title="My App" />}
-  pageNav={<XDSPageNav items={navItems} />}
-  topBanner={<XDSBanner status="info" title="System update" />}
+  sideNav={<XDSPageNav items={navItems} />}
+  banner={<XDSBanner status="info" title="System update" />}
 >
   <DashboardContent />
 </XDSAppShell>
 
-// Header only (no sidebar)
+// Header only (no sideNav)
 <XDSAppShell topNav={<XDSTopNav title="Landing" />}>
   <LandingContent />
 </XDSAppShell>
@@ -34,18 +34,18 @@ import {XDSAppShell} from '@xds/core/AppShell';
 // Auto-height for content-heavy pages
 <XDSAppShell
   topNav={<XDSTopNav title="Docs" />}
-  pageNav={<XDSPageNav items={docNav} />}
+  sideNav={<XDSPageNav items={docNav} />}
   height="auto"
 >
   <LongDocumentContent />
 </XDSAppShell>
 
-// Controlled sidebar collapse
+// Controlled sideNav collapse
 <XDSAppShell
   topNav={<XDSTopNav title="App" />}
-  pageNav={<XDSPageNav items={navItems} />}
-  isSidebarCollapsed={collapsed}
-  onSidebarCollapsedChange={setCollapsed}
+  sideNav={<XDSPageNav items={navItems} />}
+  isSideNavCollapsed={collapsed}
+  onSideNavCollapsedChange={setCollapsed}
 >
   <Content />
 </XDSAppShell>
@@ -53,20 +53,20 @@ import {XDSAppShell} from '@xds/core/AppShell';
 
 ## Props
 
-| Prop                        | Type                             | Default  | Description                                    |
-| --------------------------- | -------------------------------- | -------- | ---------------------------------------------- |
-| `children`                  | `ReactNode`                      | —        | Main content area (rendered as `<main>`)       |
-| `topNav`                    | `ReactNode`                      | —        | Top navigation slot (typically XDSTopNav)      |
-| `pageNav`                   | `ReactNode`                      | —        | Sidebar navigation slot (typically XDSPageNav) |
-| `topBanner`                 | `ReactNode`                      | —        | Top banner slot for system-wide announcements  |
-| `height`                    | `'fill' \| 'auto'`               | `'fill'` | Height behavior                                |
-| `isSidebarCollapsed`        | `boolean`                        | —        | Whether sidebar is collapsed (controlled)      |
-| `initialIsSidebarCollapsed` | `boolean`                        | `false`  | Initial collapsed state (uncontrolled)         |
-| `onSidebarCollapsedChange`  | `(isCollapsed: boolean) => void` | —        | Collapse change callback                       |
-| `sidebarBreakpoint`         | `'sm' \| 'md' \| 'lg' \| 'none'` | `'md'`   | Breakpoint for auto-collapse                   |
-| `sidebarWidth`              | `number`                         | `260`    | Sidebar width in pixels                        |
-| `xstyle`                    | `StyleXStyles`                   | —        | StyleX overrides                               |
-| `data-testid`               | `string`                         | —        | Test ID                                        |
+| Prop                        | Type                             | Default  | Description                                 |
+| --------------------------- | -------------------------------- | -------- | ------------------------------------------- |
+| `children`                  | `ReactNode`                      | —        | Main content area (rendered as `<main>`)    |
+| `topNav`                    | `ReactNode`                      | —        | Top navigation slot (typically XDSTopNav)   |
+| `sideNav`                   | `ReactNode`                      | —        | Side navigation slot (typically XDSPageNav) |
+| `banner`                    | `ReactNode`                      | —        | Banner slot for system-wide announcements   |
+| `height`                    | `'fill' \| 'auto'`               | `'fill'` | Height behavior                             |
+| `isSideNavCollapsed`        | `boolean`                        | —        | Whether sideNav is collapsed (controlled)   |
+| `initialIsSideNavCollapsed` | `boolean`                        | `false`  | Initial collapsed state (uncontrolled)      |
+| `onSideNavCollapsedChange`  | `(isCollapsed: boolean) => void` | —        | Collapse change callback                    |
+| `sideNavBreakpoint`         | `'sm' \| 'md' \| 'lg' \| 'none'` | `'md'`   | Breakpoint for auto-collapse                |
+| `sideNavWidth`              | `number`                         | `260`    | SideNav width in pixels                     |
+| `xstyle`                    | `StyleXStyles`                   | —        | StyleX overrides                            |
+| `data-testid`               | `string`                         | —        | Test ID                                     |
 
 ## Height Modes
 
@@ -74,7 +74,7 @@ import {XDSAppShell} from '@xds/core/AppShell';
 
 - Shell fills viewport (`100dvh`)
 - TopNav is pinned at top
-- PageNav has its own scroll container
+- SideNav has its own scroll container
 - Content area scrolls independently
 - Best for: dashboards, admin panels, tools
 
@@ -82,24 +82,34 @@ import {XDSAppShell} from '@xds/core/AppShell';
 
 - Shell grows with content, page scrolls
 - TopNav gets `position: sticky; top: 0`
-- PageNav gets `position: sticky; top: <header-height>`
+- SideNav gets `position: sticky; top: <header-height>`
 - Best for: docs sites, content-heavy pages
 
-## Sidebar Behavior
+## SideNav Behavior
 
-- **Controlled**: Use `isSidebarCollapsed` + `onSidebarCollapsedChange`
-- **Uncontrolled**: Use `initialIsSidebarCollapsed`
-- **Responsive**: `sidebarBreakpoint` auto-collapses below the specified width
-- **Mobile**: Collapsed sidebar renders as an overlay with backdrop
-- **Animations**: Uses ViewTransitions API when available
+- **Controlled**: Use `isSideNavCollapsed` + `onSideNavCollapsedChange`
+- **Uncontrolled**: Use `initialIsSideNavCollapsed`
+- **Responsive**: `sideNavBreakpoint` auto-collapses below the specified width
+- **Mobile**: Collapsed sideNav renders as an overlay with backdrop
+- **Animations**: Snap open/closed for now; ViewTransitions support planned
+
+## Internal Composition
+
+XDSAppShell composes `XDSLayout` internally with:
+
+- `header` → `XDSLayoutHeader` containing topNav + banner
+- `start` → `XDSLayoutPanel` containing sideNav
+- `content` → `XDSLayoutContent` containing children as `<main>`
+
+This gives automatic padding collapse, scroll containment, and slot awareness.
 
 ## Accessibility
 
-- Semantic HTML: `<header>`, `<nav>`, `<main>`
+- Semantic HTML via XDSLayout slots
 - `<main>` has `role="main"` for landmark navigation
-- Sidebar `<nav>` has `aria-label="Application navigation"`
+- SideNav has `role="navigation"` with `aria-label="Application navigation"`
 - Skip-to-content link (visually hidden, shown on focus)
-- Escape closes mobile sidebar overlay
+- Escape closes mobile sideNav overlay
 
 ## Files
 
