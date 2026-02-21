@@ -64,7 +64,7 @@ const styles = stylex.create({
     transitionDuration: transitionVars['--transition-fast'],
     outline: {
       default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-within': `2px solid ${colorVars['--color-focus-outline']}`,
     },
     outlineOffset: {
       default: '0',
@@ -89,7 +89,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     outline: {
       default: 'none',
-      ':focus-visible': `1px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
     },
     outlineOffset: 1,
   },
@@ -154,19 +154,19 @@ const statusFocusStyles = stylex.create({
   warning: {
     outline: {
       default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline-warning']}`,
+      ':focus-within': `2px solid ${colorVars['--color-focus-outline-warning']}`,
     },
   },
   error: {
     outline: {
       default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline-error']}`,
+      ':focus-within': `2px solid ${colorVars['--color-focus-outline-error']}`,
     },
   },
   success: {
     outline: {
       default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline-success']}`,
+      ':focus-within': `2px solid ${colorVars['--color-focus-outline-success']}`,
     },
   },
 });
