@@ -71,8 +71,8 @@ export interface XDSTokenProps {
    */
   onRemove?: (e: React.MouseEvent) => void;
   /**
-   * Click handler. When provided, the token renders as a clickable `<span>`
-   * with `role="button"` to avoid nested `<button>` elements.
+   * Click handler. When provided, the token renders as a `<span>` container
+   * with an invisible `<button>` inside for accessibility.
    */
   onClick?: (e: React.MouseEvent) => void;
   /**
@@ -158,6 +158,22 @@ const styles = stylex.create({
     clipPath: 'inset(50%)',
     whiteSpace: 'nowrap',
     borderWidth: 0,
+  },
+  invisibleButton: {
+    all: 'unset',
+    cursor: 'inherit',
+    font: 'inherit',
+    color: 'inherit',
+  },
+  focusWithinOutline: {
+    outline: {
+      default: null,
+      ':focus-within': `2px solid ${colorVars['--color-focus-outline']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':focus-within': '2px',
+    },
   },
   removeButton: {
     display: 'inline-flex',
@@ -245,9 +261,11 @@ const colorStyles = stylex.create({
 /**
  * A chip/tag component for displaying entities inline.
  *
- * Renders as a `<span>` by default (with `role="button"` when `onClick` is
- * provided), or `<a>` when `href` is provided. Uses the clickable container
- * pattern to avoid nested `<button>` elements when `onRemove` is also present.
+ * Renders as a `<span>` by default, `<a>` when `href` is provided, or a
+ * `<span>` container with an invisible `<button>` when `onClick` is provided.
+ * The invisible button pattern provides real button semantics for accessibility
+ * while the container uses `:focus-within` to show focus outlines around the
+ * entire token.
  *
  * @example
  * ```tsx
@@ -276,21 +294,6 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
     },
     ref,
   ) => {
-    const isInteractive = onClick != null || href != null;
-
-    const handleContainerClick = (e: React.MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.closest('button, a')) return;
-      onClick?.(e);
-    };
-
-    const handleContainerKeyDown = (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        onClick?.(e as unknown as React.MouseEvent);
-      }
-    };
-
     const content = (
       <>
         {icon}
@@ -318,13 +321,6 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
       'data-testid': testId,
       'aria-label': isLabelHidden ? label : undefined,
       'aria-description': description,
-      ...stylex.props(
-        styles.base,
-        colorStyles[color],
-        isInteractive && styles.interactive,
-        isDisabled && styles.disabled,
-        xstyle,
-      ),
     };
 
     if (href != null) {
@@ -333,29 +329,77 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
           ref={ref as React.Ref<HTMLAnchorElement>}
           href={href}
           aria-disabled={isDisabled || undefined}
-          {...sharedProps}>
+          {...sharedProps}
+          {...stylex.props(
+            styles.base,
+            colorStyles[color],
+            styles.interactive,
+            isDisabled && styles.disabled,
+            xstyle,
+          )}>
           {content}
         </a>
       );
     }
 
     if (onClick != null) {
+      const handleContainerClick = (e: React.MouseEvent) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('button, a')) return;
+        onClick(e);
+      };
+
       return (
         <span
           ref={ref as React.Ref<HTMLSpanElement>}
-          role="button"
-          tabIndex={isDisabled ? -1 : 0}
           onClick={isDisabled ? undefined : handleContainerClick}
-          onKeyDown={isDisabled ? undefined : handleContainerKeyDown}
-          aria-disabled={isDisabled || undefined}
-          {...sharedProps}>
-          {content}
+          {...sharedProps}
+          {...stylex.props(
+            styles.base,
+            colorStyles[color],
+            styles.interactive,
+            styles.focusWithinOutline,
+            isDisabled && styles.disabled,
+            xstyle,
+          )}>
+          {icon}
+          <button
+            type="button"
+            onClick={onClick}
+            disabled={isDisabled}
+            {...stylex.props(styles.invisibleButton)}>
+            <span {...(isLabelHidden ? stylex.props(styles.labelHidden) : {})}>
+              {label}
+            </span>
+          </button>
+          {endContent}
+          {onRemove != null && (
+            <button
+              type="button"
+              aria-label={`Remove ${label}`}
+              onClick={e => {
+                e.stopPropagation();
+                onRemove(e);
+              }}
+              disabled={isDisabled}
+              {...stylex.props(styles.removeButton)}>
+              <XDSIcon icon="close" size="xsm" />
+            </button>
+          )}
         </span>
       );
     }
 
     return (
-      <span ref={ref as React.Ref<HTMLSpanElement>} {...sharedProps}>
+      <span
+        ref={ref as React.Ref<HTMLSpanElement>}
+        {...sharedProps}
+        {...stylex.props(
+          styles.base,
+          colorStyles[color],
+          isDisabled && styles.disabled,
+          xstyle,
+        )}>
         {content}
       </span>
     );

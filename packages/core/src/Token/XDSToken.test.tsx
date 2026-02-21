@@ -48,13 +48,28 @@ describe('XDSToken', () => {
     }
   });
 
-  it('renders as a clickable span when onClick is provided', () => {
+  it('renders as a span with invisible button when onClick is provided', () => {
     const handleClick = vi.fn();
-    render(<XDSToken label="Clickable" onClick={handleClick} />);
+    render(
+      <XDSToken label="Clickable" onClick={handleClick} data-testid="token" />,
+    );
     const button = screen.getByRole('button', {name: 'Clickable'});
     expect(button).toBeInTheDocument();
-    expect(button.tagName).toBe('SPAN');
+    expect(button.tagName).toBe('BUTTON');
+    // Container is a span, not a button
+    const container = screen.getByTestId('token');
+    expect(container.tagName).toBe('SPAN');
     fireEvent.click(button);
+    expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('fires onClick when clicking the container span', () => {
+    const handleClick = vi.fn();
+    render(
+      <XDSToken label="Clickable" onClick={handleClick} data-testid="token" />,
+    );
+    const container = screen.getByTestId('token');
+    fireEvent.click(container);
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
 
@@ -89,11 +104,20 @@ describe('XDSToken', () => {
 
   it('renders disabled state', () => {
     const handleClick = vi.fn();
-    render(<XDSToken label="Disabled" onClick={handleClick} isDisabled />);
+    render(
+      <XDSToken
+        label="Disabled"
+        onClick={handleClick}
+        isDisabled
+        data-testid="token"
+      />,
+    );
     const button = screen.getByRole('button', {name: 'Disabled'});
-    expect(button).toHaveAttribute('aria-disabled', 'true');
-    expect(button.tagName).toBe('SPAN');
-    fireEvent.click(button);
+    expect(button).toBeDisabled();
+    expect(button.tagName).toBe('BUTTON');
+    // Container click is also disabled
+    const container = screen.getByTestId('token');
+    fireEvent.click(container);
     expect(handleClick).not.toHaveBeenCalled();
   });
 
