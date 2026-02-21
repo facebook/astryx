@@ -82,15 +82,22 @@ jobs:
       - name: Build Storybook
         run: yarn workspace @xds/storybook build
 
+      - name: Compute short hash
+        id: hash
+        run: |
+          COMMIT_HASH="${{ github.event.pull_request.head.sha }}"
+          echo "short_hash=${COMMIT_HASH:0:7}" >> $GITHUB_OUTPUT
+
       - name: Build Sandbox
         run: yarn workspace @xds/sandbox build
         continue-on-error: true
+        env:
+          SANDBOX_BASE_PATH: /${{ steps.hash.outputs.short_hash }}/sandbox
 
       - name: Compute URLs
         id: urls
         run: |
-          COMMIT_HASH="${{ github.event.pull_request.head.sha }}"
-          SHORT_HASH="${COMMIT_HASH:0:7}"
+          SHORT_HASH="${{ steps.hash.outputs.short_hash }}"
           REPO_NAME="${{ github.event.repository.name }}"
           REPO_OWNER="${{ github.repository_owner }}"
 

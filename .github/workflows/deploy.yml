@@ -55,9 +55,15 @@ jobs:
       - name: Build Storybook
         run: yarn workspace @xds/storybook build
 
+      - name: Compute short hash
+        id: hash
+        run: echo "short_hash=${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
+
       - name: Build Sandbox
         run: yarn workspace @xds/sandbox build
         continue-on-error: true
+        env:
+          SANDBOX_BASE_PATH: /${{ steps.hash.outputs.short_hash }}/sandbox
 
       - name: Prepare deployment
         run: |
@@ -68,9 +74,9 @@ jobs:
           mkdir -p deploy/${SHORT_HASH}
           cp -r apps/storybook/dist/* deploy/${SHORT_HASH}/
 
-          if [ -d "apps/sandbox/dist" ]; then
+          if [ -d "apps/sandbox/out" ]; then
             mkdir -p deploy/${SHORT_HASH}/sandbox
-            cp -r apps/sandbox/dist/* deploy/${SHORT_HASH}/sandbox/
+            cp -r apps/sandbox/out/* deploy/${SHORT_HASH}/sandbox/
           fi
 
           cat > deploy/index.html << EOF
