@@ -30,16 +30,16 @@ import { XDSAvatar, XDSAvatarStatusDot } from '@xds/core/Avatar';
   src="/user.jpg"
   name="John Doe"
   size="medium"
-  status={<XDSAvatarStatusDot status="online" />}
+  status={<XDSAvatarStatusDot variant="positive" label="Online" />}
 />
 
 // Status dot scales automatically across sizes
 <XDSAvatar name="AB" size="tiny" status={<XDSAvatarStatusDot />} />
 <XDSAvatar name="CD" size="large" status={<XDSAvatarStatusDot />} />
 
-// Different statuses
-<XDSAvatar name="EF" status={<XDSAvatarStatusDot status="busy" />} />
-<XDSAvatar name="GH" status={<XDSAvatarStatusDot status="offline" />} />
+// Different variants for different contexts
+<XDSAvatar name="EF" status={<XDSAvatarStatusDot variant="negative" label="Busy" />} />
+<XDSAvatar name="GH" status={<XDSAvatarStatusDot variant="neutral" label="Away" />} />
 ```
 
 ## Props
@@ -58,9 +58,11 @@ import { XDSAvatar, XDSAvatarStatusDot } from '@xds/core/Avatar';
 
 ### XDSAvatarStatusDot
 
-| Prop     | Type                              | Default    | Description       |
-| -------- | --------------------------------- | ---------- | ----------------- |
-| `status` | `'online' \| 'offline' \| 'busy'` | `'online'` | Status to display |
+| Prop      | Type                                    | Default      | Description                                         |
+| --------- | --------------------------------------- | ------------ | --------------------------------------------------- |
+| `variant` | `'positive' \| 'neutral' \| 'negative'` | `'positive'` | Semantic color variant of the dot                   |
+| `label`   | `string`                                | —            | Accessible label for screen readers                 |
+| `icon`    | `ReactNode`                             | —            | Icon centered inside the dot (hidden at tiny sizes) |
 
 The status dot reads the avatar size from context and uses discrete size tiers:
 

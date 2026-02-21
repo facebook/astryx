@@ -229,19 +229,19 @@ export const WithStatus: Story = {
           src="https://i.pravatar.cc/150?img=20"
           name="Online User"
           size="large"
-          status={<XDSAvatarStatusDot status="online" />}
+          status={<XDSAvatarStatusDot variant="positive" label="Online" />}
         />
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=21"
           name="Offline User"
           size="large"
-          status={<XDSAvatarStatusDot status="offline" />}
+          status={<XDSAvatarStatusDot variant="neutral" label="Offline" />}
         />
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=22"
           name="Busy User"
           size="large"
-          status={<XDSAvatarStatusDot status="busy" />}
+          status={<XDSAvatarStatusDot variant="negative" label="Busy" />}
         />
       </div>
     </div>
@@ -261,27 +261,27 @@ export const StatusAcrossAllSizes: Story = {
         <XDSAvatar
           name="TY"
           size="tiny"
-          status={<XDSAvatarStatusDot status="online" />}
+          status={<XDSAvatarStatusDot variant="positive" />}
         />
         <XDSAvatar
           name="XS"
           size="xsmall"
-          status={<XDSAvatarStatusDot status="online" />}
+          status={<XDSAvatarStatusDot variant="positive" />}
         />
         <XDSAvatar
           name="SM"
           size="small"
-          status={<XDSAvatarStatusDot status="online" />}
+          status={<XDSAvatarStatusDot variant="positive" />}
         />
         <XDSAvatar
           name="MD"
           size="medium"
-          status={<XDSAvatarStatusDot status="online" />}
+          status={<XDSAvatarStatusDot variant="positive" />}
         />
         <XDSAvatar
           name="LG"
           size="large"
-          status={<XDSAvatarStatusDot status="online" />}
+          status={<XDSAvatarStatusDot variant="positive" />}
         />
       </div>
 
@@ -291,59 +291,59 @@ export const StatusAcrossAllSizes: Story = {
           src="https://i.pravatar.cc/150?img=30"
           name="U1"
           size={20}
-          status={<XDSAvatarStatusDot status="online" />}
+          status={<XDSAvatarStatusDot variant="positive" />}
         />
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=31"
           name="U2"
           size={32}
-          status={<XDSAvatarStatusDot status="online" />}
+          status={<XDSAvatarStatusDot variant="positive" />}
         />
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=32"
           name="U3"
           size={48}
-          status={<XDSAvatarStatusDot status="busy" />}
+          status={<XDSAvatarStatusDot variant="negative" />}
         />
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=33"
           name="U4"
           size={72}
-          status={<XDSAvatarStatusDot status="offline" />}
+          status={<XDSAvatarStatusDot variant="neutral" />}
         />
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=34"
           name="U5"
           size={96}
-          status={<XDSAvatarStatusDot status="online" />}
+          status={<XDSAvatarStatusDot variant="positive" />}
         />
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=35"
           name="U6"
           size={128}
-          status={<XDSAvatarStatusDot status="online" />}
+          status={<XDSAvatarStatusDot variant="positive" />}
         />
       </div>
 
-      <h4 {...stylex.props(styles.heading)}>All Statuses at Medium</h4>
+      <h4 {...stylex.props(styles.heading)}>All Colors at Medium</h4>
       <div {...stylex.props(styles.row)}>
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=40"
-          name="Online"
+          name="Positive"
           size="medium"
-          status={<XDSAvatarStatusDot status="online" />}
+          status={<XDSAvatarStatusDot variant="positive" label="Online" />}
         />
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=41"
-          name="Offline"
+          name="Neutral"
           size="medium"
-          status={<XDSAvatarStatusDot status="offline" />}
+          status={<XDSAvatarStatusDot variant="neutral" label="Offline" />}
         />
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=42"
-          name="Busy"
+          name="Negative"
           size="medium"
-          status={<XDSAvatarStatusDot status="busy" />}
+          status={<XDSAvatarStatusDot variant="negative" label="Busy" />}
         />
       </div>
     </div>
