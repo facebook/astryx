@@ -62,6 +62,14 @@ import {HomeIcon, BellIcon, UserCircleIcon} from '@heroicons/react/24/outline';
 />;
 ```
 
+## Components
+
+- **XDSTopNav** — Main navigation container
+- **XDSTopNavTitle** — Title with logo and text
+- **XDSTopNavTitleIcon** — Circular icon container for the title
+- **XDSTopNavItem** — Navigation link item
+- **XDSTopNavMenu** — Navigation item with hover-triggered overflow menu
+
 ## Props
 
 ### XDSTopNav
@@ -100,6 +108,25 @@ import {HomeIcon, BellIcon, UserCircleIcon} from '@heroicons/react/24/outline';
 | `icon`       | `ReactNode` | —       | Optional icon element           |
 | `children`   | `ReactNode` | —       | Custom content instead of label |
 
+### XDSTopNavMenu
+
+| Prop        | Type                      | Default | Description                                 |
+| ----------- | ------------------------- | ------- | ------------------------------------------- |
+| `label`     | `string`                  | —       | Visible label for the trigger (required)    |
+| `items`     | `XDSTopNavMenuItemData[]` | —       | Menu items to display in the hover popover  |
+| `delay`     | `number`                  | `150`   | Delay before showing on hover (ms)          |
+| `hideDelay` | `number`                  | `200`   | Delay before hiding after mouse leaves (ms) |
+
+#### XDSTopNavMenuItemData
+
+| Property      | Type         | Description                      |
+| ------------- | ------------ | -------------------------------- |
+| `title`       | `string`     | Display title (required)         |
+| `description` | `string`     | Optional description below title |
+| `icon`        | `ReactNode`  | Optional icon on the left        |
+| `href`        | `string`     | URL to navigate to               |
+| `onClick`     | `() => void` | Callback on click                |
+
 ## Theming
 
 Themes can override `TopNav` styles via `ComponentStyles`:
@@ -124,14 +151,16 @@ const theme: Theme = {
 
 ## Files
 
-| File                     | Role  | Purpose                      |
-| ------------------------ | ----- | ---------------------------- |
-| `index.ts`               | Entry | Exports components and types |
-| `XDSTopNav.tsx`          | Core  | Main navigation container    |
-| `XDSTopNavTitle.tsx`     | Core  | Title with logo and text     |
-| `XDSTopNavTitleIcon.tsx` | Core  | Circular icon container      |
-| `XDSTopNavItem.tsx`      | Core  | Navigation link item         |
-| `XDSTopNav.test.tsx`     | Test  | Unit tests                   |
+| File                     | Role  | Purpose                           |
+| ------------------------ | ----- | --------------------------------- |
+| `index.ts`               | Entry | Exports components and types      |
+| `XDSTopNav.tsx`          | Core  | Main navigation container         |
+| `XDSTopNavTitle.tsx`     | Core  | Title with logo and text          |
+| `XDSTopNavTitleIcon.tsx` | Core  | Circular icon container           |
+| `XDSTopNavItem.tsx`      | Core  | Navigation link item              |
+| `XDSTopNavMenu.tsx`      | Core  | Nav item with hover overflow menu |
+| `XDSTopNav.test.tsx`     | Test  | Unit tests for TopNav components  |
+| `XDSTopNavMenu.test.tsx` | Test  | Unit tests for XDSTopNavMenu      |
 
 ## Layout Structure
 
