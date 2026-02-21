@@ -54,6 +54,12 @@ export interface XDSAvatarStatusDotProps extends Omit<
    * @default 'online'
    */
   status?: XDSAvatarStatusDotStatus;
+  /**
+   * Accessible label for the status dot.
+   * When omitted, falls back to the `status` value (e.g. "online").
+   * Prefer a descriptive label like "John Doe is online" for better a11y.
+   */
+  label?: string;
 }
 
 const styles = stylex.create({
@@ -100,12 +106,13 @@ const statusStyleMap: Record<XDSAvatarStatusDotStatus, stylex.StyleXStyles> = {
  * <XDSAvatar
  *   name="John Doe"
  *   size="medium"
- *   status={<XDSAvatarStatusDot status="online" />}
+ *   status={<XDSAvatarStatusDot status="online" label="John Doe is online" />}
  * />
  * ```
  */
 export function XDSAvatarStatusDot({
   status = 'online',
+  label,
   ...props
 }: XDSAvatarStatusDotProps) {
   const avatarSize = useContext(XDSAvatarSizeContext);
@@ -113,7 +120,7 @@ export function XDSAvatarStatusDot({
 
   return (
     <div
-      aria-label={status}
+      aria-label={label ?? status}
       {...stylex.props(
         styles.dot,
         statusStyleMap[status],
