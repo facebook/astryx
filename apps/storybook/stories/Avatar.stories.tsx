@@ -1,11 +1,8 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSAvatar} from '@xds/core/Avatar';
-import {
-  colorVars,
-  spacingVars,
-  typographyVars,
-} from '@xds/core/theme/tokens.stylex';
+import {XDSAvatarStatusDot} from '@xds/core/Avatar';
+import {spacingVars, typographyVars} from '@xds/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   storyWrapper: {
@@ -22,37 +19,7 @@ const styles = stylex.create({
     margin: `0 0 ${spacingVars['--spacing-2']} 0`,
     fontFamily: typographyVars['--font-body'],
   },
-  statusDot: {
-    width: 10,
-    height: 10,
-    borderRadius: '50%',
-    backgroundColor: colorVars['--color-positive'],
-    borderWidth: 2,
-    borderStyle: 'solid',
-    borderColor: colorVars['--color-surface'],
-  },
-  statusDotOffline: {
-    backgroundColor: colorVars['--color-text-secondary'],
-  },
-  statusDotBusy: {
-    backgroundColor: colorVars['--color-negative'],
-  },
 });
-
-// Simple status indicator component for demos
-const StatusDot = ({
-  status = 'online',
-}: {
-  status?: 'online' | 'offline' | 'busy';
-}) => (
-  <div
-    {...stylex.props(
-      styles.statusDot,
-      status === 'offline' && styles.statusDotOffline,
-      status === 'busy' && styles.statusDotBusy,
-    )}
-  />
-);
 
 const meta: Meta<typeof XDSAvatar> = {
   title: 'Core/XDSAvatar',
@@ -104,7 +71,7 @@ const meta: Meta<typeof XDSAvatar> = {
       control: 'boolean',
       description: 'Show status indicator dot',
       mapping: {
-        true: <StatusDot />,
+        true: <XDSAvatarStatusDot />,
         false: undefined,
       },
     },
@@ -262,19 +229,121 @@ export const WithStatus: Story = {
           src="https://i.pravatar.cc/150?img=20"
           name="Online User"
           size="large"
-          status={<StatusDot status="online" />}
+          status={<XDSAvatarStatusDot status="online" />}
         />
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=21"
           name="Offline User"
           size="large"
-          status={<StatusDot status="offline" />}
+          status={<XDSAvatarStatusDot status="offline" />}
         />
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=22"
           name="Busy User"
           size="large"
-          status={<StatusDot status="busy" />}
+          status={<XDSAvatarStatusDot status="busy" />}
+        />
+      </div>
+    </div>
+  ),
+};
+
+export const StatusAcrossAllSizes: Story = {
+  name: 'Status Dot Across All Sizes',
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <h4 {...stylex.props(styles.heading)}>
+        Status dot scales proportionally with avatar size
+      </h4>
+
+      <h4 {...stylex.props(styles.heading)}>Named Sizes</h4>
+      <div {...stylex.props(styles.row)}>
+        <XDSAvatar
+          name="TY"
+          size="tiny"
+          status={<XDSAvatarStatusDot status="online" />}
+        />
+        <XDSAvatar
+          name="XS"
+          size="xsmall"
+          status={<XDSAvatarStatusDot status="online" />}
+        />
+        <XDSAvatar
+          name="SM"
+          size="small"
+          status={<XDSAvatarStatusDot status="online" />}
+        />
+        <XDSAvatar
+          name="MD"
+          size="medium"
+          status={<XDSAvatarStatusDot status="online" />}
+        />
+        <XDSAvatar
+          name="LG"
+          size="large"
+          status={<XDSAvatarStatusDot status="online" />}
+        />
+      </div>
+
+      <h4 {...stylex.props(styles.heading)}>Numeric Sizes with Images</h4>
+      <div {...stylex.props(styles.row)}>
+        <XDSAvatar
+          src="https://i.pravatar.cc/150?img=30"
+          name="U1"
+          size={20}
+          status={<XDSAvatarStatusDot status="online" />}
+        />
+        <XDSAvatar
+          src="https://i.pravatar.cc/150?img=31"
+          name="U2"
+          size={32}
+          status={<XDSAvatarStatusDot status="online" />}
+        />
+        <XDSAvatar
+          src="https://i.pravatar.cc/150?img=32"
+          name="U3"
+          size={48}
+          status={<XDSAvatarStatusDot status="busy" />}
+        />
+        <XDSAvatar
+          src="https://i.pravatar.cc/150?img=33"
+          name="U4"
+          size={72}
+          status={<XDSAvatarStatusDot status="offline" />}
+        />
+        <XDSAvatar
+          src="https://i.pravatar.cc/150?img=34"
+          name="U5"
+          size={96}
+          status={<XDSAvatarStatusDot status="online" />}
+        />
+        <XDSAvatar
+          src="https://i.pravatar.cc/150?img=35"
+          name="U6"
+          size={128}
+          status={<XDSAvatarStatusDot status="online" />}
+        />
+      </div>
+
+      <h4 {...stylex.props(styles.heading)}>All Statuses at Medium</h4>
+      <div {...stylex.props(styles.row)}>
+        <XDSAvatar
+          src="https://i.pravatar.cc/150?img=40"
+          name="Online"
+          size="medium"
+          status={<XDSAvatarStatusDot status="online" />}
+        />
+        <XDSAvatar
+          src="https://i.pravatar.cc/150?img=41"
+          name="Offline"
+          size="medium"
+          status={<XDSAvatarStatusDot status="offline" />}
+        />
+        <XDSAvatar
+          src="https://i.pravatar.cc/150?img=42"
+          name="Busy"
+          size="medium"
+          status={<XDSAvatarStatusDot status="busy" />}
         />
       </div>
     </div>
@@ -286,10 +355,10 @@ export const StatusWithSizes: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <h4 {...stylex.props(styles.heading)}>Status with Different Sizes</h4>
       <div {...stylex.props(styles.row)}>
-        <XDSAvatar name="AB" size="small" status={<StatusDot />} />
-        <XDSAvatar name="CD" size="medium" status={<StatusDot />} />
-        <XDSAvatar name="EF" size="large" status={<StatusDot />} />
-        <XDSAvatar name="GH" size={72} status={<StatusDot />} />
+        <XDSAvatar name="AB" size="small" status={<XDSAvatarStatusDot />} />
+        <XDSAvatar name="CD" size="medium" status={<XDSAvatarStatusDot />} />
+        <XDSAvatar name="EF" size="large" status={<XDSAvatarStatusDot />} />
+        <XDSAvatar name="GH" size={72} status={<XDSAvatarStatusDot />} />
       </div>
     </div>
   ),

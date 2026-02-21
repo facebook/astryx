@@ -9,14 +9,15 @@ Avatar component for displaying user profile pictures with fallback support.
 - **Image loading**: Primary and fallback image sources
 - **Initials fallback**: Auto-generates initials from user name
 - **Default icon**: Generic person icon when no image or name provided
-- **Sizes**: xsmall (24px), small (32px), medium (40px), large (56px), xlarge (80px)
+- **Sizes**: tiny (20px), xsmall (24px), small (36px), medium (48px), large (128px), plus numeric pixel values
 - **Status slot**: Corner position for status indicators or badges
+- **Size-aware status dot**: Built-in `XDSAvatarStatusDot` that scales proportionally with avatar size
 - **Accessible**: Proper role and aria-label support
 
 ## Usage
 
 ```tsx
-import { XDSAvatar } from '@xds/core/Avatar';
+import { XDSAvatar, XDSAvatarStatusDot } from '@xds/core/Avatar';
 
 // With image
 <XDSAvatar src="/user.jpg" name="John Doe" />
@@ -24,26 +25,50 @@ import { XDSAvatar } from '@xds/core/Avatar';
 // Initials fallback
 <XDSAvatar name="Jane Smith" size="large" />
 
-// With status indicator
-<XDSAvatar src="/user.jpg" status={<OnlineIndicator />} />
+// With size-aware status indicator
+<XDSAvatar
+  src="/user.jpg"
+  name="John Doe"
+  size="medium"
+  status={<XDSAvatarStatusDot status="online" />}
+/>
 
-// Different sizes
-<XDSAvatar name="AB" size="xsmall" />
-<XDSAvatar name="CD" size="medium" />
-<XDSAvatar name="EF" size="xlarge" />
+// Status dot scales automatically across sizes
+<XDSAvatar name="AB" size="tiny" status={<XDSAvatarStatusDot />} />
+<XDSAvatar name="CD" size="large" status={<XDSAvatarStatusDot />} />
+
+// Different statuses
+<XDSAvatar name="EF" status={<XDSAvatarStatusDot status="busy" />} />
+<XDSAvatar name="GH" status={<XDSAvatarStatusDot status="offline" />} />
 ```
 
 ## Props
 
-| Prop          | Type                                                     | Default   | Description                          |
-| ------------- | -------------------------------------------------------- | --------- | ------------------------------------ |
-| `src`         | `string`                                                 | —         | Primary image source URL             |
-| `fallbackSrc` | `string`                                                 | —         | Fallback image when primary fails    |
-| `name`        | `string`                                                 | —         | User name for initials and alt text  |
-| `alt`         | `string`                                                 | —         | Alt text (falls back to `name`)      |
-| `size`        | `'xsmall' \| 'small' \| 'medium' \| 'large' \| 'xlarge'` | `'small'` | Avatar size                          |
-| `status`      | `ReactNode`                                              | —         | Corner content for status indicators |
-| `data-testid` | `string`                                                 | —         | Test ID for testing                  |
+### XDSAvatar
+
+| Prop          | Type            | Default   | Description                          |
+| ------------- | --------------- | --------- | ------------------------------------ |
+| `src`         | `string`        | —         | Primary image source URL             |
+| `fallbackSrc` | `string`        | —         | Fallback image when primary fails    |
+| `name`        | `string`        | —         | User name for initials and alt text  |
+| `alt`         | `string`        | —         | Alt text (falls back to `name`)      |
+| `size`        | `XDSAvatarSize` | `'small'` | Avatar size (named or numeric)       |
+| `status`      | `ReactNode`     | —         | Corner content for status indicators |
+| `data-testid` | `string`        | —         | Test ID for testing                  |
+
+### XDSAvatarStatusDot
+
+| Prop     | Type                              | Default    | Description       |
+| -------- | --------------------------------- | ---------- | ----------------- |
+| `status` | `'online' \| 'offline' \| 'busy'` | `'online'` | Status to display |
+
+The status dot reads the avatar size from context and uses discrete size tiers:
+
+| Avatar size | Dot size | Border |
+| ----------- | -------- | ------ |
+| ≤ 36px      | 8px      | 1px    |
+| 40–72px     | 16px     | 2px    |
+| ≥ 96px      | 24px     | 4px    |
 
 ## Fallback Cascade
 
@@ -78,15 +103,17 @@ const theme: Theme = {
 
 ## Files
 
-| File                 | Role  | Purpose                     |
-| -------------------- | ----- | --------------------------- |
-| `index.ts`           | Entry | Exports component and types |
-| `XDSAvatar.tsx`      | Core  | Component implementation    |
-| `XDSAvatar.test.tsx` | Test  | Unit tests                  |
+| File                      | Role     | Purpose                                    |
+| ------------------------- | -------- | ------------------------------------------ |
+| `index.ts`                | Entry    | Exports components and types               |
+| `XDSAvatar.tsx`           | Core     | Avatar component implementation            |
+| `XDSAvatarStatusDot.tsx`  | Sub-comp | Size-aware status indicator dot            |
+| `XDSAvatarSizeContext.ts` | Context  | Internal context for passing size to slots |
 
 ## Implementation Notes
 
 - Always circular shape (border-radius: 50%)
-- Size type derived from `keyof typeof sizes`
 - Uses `color.deemphasized` and `color.textSecondary` for fallback background
 - Initials extracted from first and last word of name
+- `XDSAvatarSizeContext` provides the resolved numeric size to sub-components
+- Status dot uses `CIRCLE_EDGE_OFFSET_RATIO` for positioning at the 45° point on the circle edge
