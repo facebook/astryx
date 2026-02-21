@@ -341,6 +341,35 @@ export interface UniversalAggregate {
   byPrompt: Record<string, UniversalScore>;
   byCategory: Record<string, Record<UniversalDimension, number>>;
   darkModeRate: number;
+  /** Cost metrics — timing, tokens, output size */
+  cost?: {
+    /** Total duration across all prompts (ms) */
+    totalDurationMs: number;
+    /** Average duration per prompt (ms) */
+    avgDurationMs: number;
+    /** Average output size in characters */
+    avgOutputChars: number;
+    /** Average output size in lines */
+    avgOutputLines: number;
+    /** Average docs read per prompt */
+    avgDocsRead: number;
+    /** Estimated input tokens (from doc sizes) */
+    estimatedInputTokens: number;
+    /** Estimated output tokens (output chars / 4) */
+    estimatedOutputTokens: number;
+    /** Per-prompt cost breakdown */
+    byPrompt: Record<
+      string,
+      {
+        durationMs: number;
+        outputChars: number;
+        outputLines: number;
+        docsRead: string[];
+        estimatedInputTokens: number;
+        estimatedOutputTokens: number;
+      }
+    >;
+  };
 }
 
 export interface UniversalComparison {

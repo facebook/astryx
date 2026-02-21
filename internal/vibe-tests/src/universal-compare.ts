@@ -215,6 +215,27 @@ async function main() {
     );
   }
 
+  // Cost comparison
+  if (xds.cost && baseline.cost) {
+    console.log(`\n💰 Cost:`);
+    const xAvgMs = xds.cost.avgDurationMs;
+    const bAvgMs = baseline.cost.avgDurationMs;
+    if (xAvgMs > 0 && bAvgMs > 0) {
+      console.log(
+        `   Avg duration:     XDS ${(xAvgMs / 1000).toFixed(1)}s | Baseline ${(bAvgMs / 1000).toFixed(1)}s | ${winnerIcon(winner(bAvgMs, xAvgMs))}`,
+      );
+    }
+    console.log(
+      `   Avg output lines: XDS ${xds.cost.avgOutputLines} | Baseline ${baseline.cost.avgOutputLines} | ${winnerIcon(winner(baseline.cost.avgOutputLines, xds.cost.avgOutputLines))}`,
+    );
+    console.log(
+      `   Avg docs read:    XDS ${xds.cost.avgDocsRead} | Baseline ${baseline.cost.avgDocsRead}`,
+    );
+    console.log(
+      `   Est. tokens:      XDS ~${xds.cost.estimatedInputTokens + xds.cost.estimatedOutputTokens} | Baseline ~${baseline.cost.estimatedInputTokens + baseline.cost.estimatedOutputTokens} | ${winnerIcon(winner(baseline.cost.estimatedInputTokens + baseline.cost.estimatedOutputTokens, xds.cost.estimatedInputTokens + xds.cost.estimatedOutputTokens))}`,
+    );
+  }
+
   // Per-prompt wins
   const promptEntries = Object.entries(byPrompt);
   if (promptEntries.length > 0) {

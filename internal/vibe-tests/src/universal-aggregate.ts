@@ -93,9 +93,32 @@ async function main() {
   > = {};
   let darkModeCount = 0;
 
+  // Cost tracking
+  const costByPrompt: Record<
+    string,
+    {
+      durationMs: number;
+      outputChars: number;
+      outputLines: number;
+      docsRead: string[];
+      estimatedInputTokens: number;
+      estimatedOutputTokens: number;
+    }
+  > = {};
+
+  /** Rough doc size estimates in chars (for input token calculation) */
+  const DOC_CHAR_SIZES: Record<string, number> = {
+    'AGENTS.md': 1200,
+    'AGENTS.baseline.md': 740,
+    'principles.md': 1130,
+    'tokens.md': 3600,
+  };
+  const DEFAULT_DOC_SIZE = 2500; // avg component doc size
+
   for (const file of files) {
     const promptId = path.basename(file, '.tsx');
-    const code = fs.readFileSync(path.join(codeDir, file), 'utf-8');
+    const codePath = path.join(codeDir, file);
+    const code = fs.readFileSync(codePath, 'utf-8');
     const score = evaluate(code, target);
     byPrompt[promptId] = score;
 
@@ -113,6 +136,47 @@ async function main() {
     for (const dim of dimensions) {
       categoryScores[category][dim].push(score[dim].score);
     }
+
+    // --- Cost data ---
+    // Duration: infer from file timestamps (task creation → result write)
+    let durationMs = 0;
+    const taskPath = path.join(iterDir, 'tasks', `${promptId}.json`);
+    if (fs.existsSync(taskPath)) {
+      const taskStat = fs.statSync(taskPath);
+      const resultStat = fs.statSync(codePath);
+      const inferred = resultStat.mtimeMs - taskStat.mtimeMs;
+      if (inferred > 0) durationMs = Math.round(inferred);
+    }
+
+    // Docs read: from companion .json file
+    let docsRead: string[] = [];
+    const jsonPath = path.join(codeDir, `${promptId}.json`);
+    if (fs.existsSync(jsonPath)) {
+      try {
+        const meta = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+        docsRead = meta.docsRead || [];
+      } catch {
+        // ignore parse errors
+      }
+    }
+
+    // Estimate input tokens from docs read
+    let estimatedInputChars = 0;
+    for (const doc of docsRead) {
+      const key = doc.endsWith('.md') ? doc : `${doc}.md`;
+      estimatedInputChars += DOC_CHAR_SIZES[key] || DEFAULT_DOC_SIZE;
+    }
+    // Add prompt overhead (~1500 chars)
+    estimatedInputChars += 1500;
+
+    costByPrompt[promptId] = {
+      durationMs,
+      outputChars: code.length,
+      outputLines: code.split('\n').length,
+      docsRead,
+      estimatedInputTokens: Math.round(estimatedInputChars / 4),
+      estimatedOutputTokens: Math.round(code.length / 4),
+    };
   }
 
   // Compute averages
@@ -143,12 +207,37 @@ async function main() {
 
   const darkModeRate = Math.round((darkModeCount / promptCount) * 100);
 
+  // Compute cost aggregates
+  const costEntries = Object.values(costByPrompt);
+  const totalDurationMs = costEntries.reduce((s, c) => s + c.durationMs, 0);
+  const totalOutputChars = costEntries.reduce((s, c) => s + c.outputChars, 0);
+  const totalOutputLines = costEntries.reduce((s, c) => s + c.outputLines, 0);
+  const totalDocsRead = costEntries.reduce((s, c) => s + c.docsRead.length, 0);
+  const totalInputTokens = costEntries.reduce(
+    (s, c) => s + c.estimatedInputTokens,
+    0,
+  );
+  const totalOutputTokens = costEntries.reduce(
+    (s, c) => s + c.estimatedOutputTokens,
+    0,
+  );
+
   const aggregate: UniversalAggregate = {
     averages,
     overall,
     byPrompt,
     byCategory,
     darkModeRate,
+    cost: {
+      totalDurationMs,
+      avgDurationMs: Math.round(totalDurationMs / promptCount),
+      avgOutputChars: Math.round(totalOutputChars / promptCount),
+      avgOutputLines: Math.round(totalOutputLines / promptCount),
+      avgDocsRead: Math.round((totalDocsRead / promptCount) * 10) / 10,
+      estimatedInputTokens: totalInputTokens,
+      estimatedOutputTokens: totalOutputTokens,
+      byPrompt: costByPrompt,
+    },
   };
 
   // Save
@@ -200,6 +289,22 @@ async function main() {
     console.log(`\n🔧 Maintainability:`);
     console.log(`   Semantic ratio: ${(avgSemantic * 100).toFixed(0)}%`);
     console.log(`   Magic values: ${totalMagic}`);
+  }
+
+  // Cost metrics
+  if (aggregate.cost && aggregate.cost.totalDurationMs > 0) {
+    const c = aggregate.cost;
+    console.log(`\n💰 Cost:`);
+    console.log(
+      `   Duration: ${(c.totalDurationMs / 1000).toFixed(1)}s total, ${(c.avgDurationMs / 1000).toFixed(1)}s avg`,
+    );
+    console.log(
+      `   Output: ${c.avgOutputLines} lines avg (${c.avgOutputChars} chars)`,
+    );
+    console.log(`   Docs read: ${c.avgDocsRead} avg per prompt`);
+    console.log(
+      `   Tokens: ~${c.estimatedInputTokens} input, ~${c.estimatedOutputTokens} output`,
+    );
   }
 
   // Category breakdown
