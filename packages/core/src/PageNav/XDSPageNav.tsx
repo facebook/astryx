@@ -4,7 +4,7 @@
  * @output Exports XDSPageNav component and XDSPageNavProps
  * @position Core implementation; consumed by index.ts, tested by XDSPageNav.test.tsx
  *
- * Sidebar navigation container with five zones: header (sticky), stickyContent (sticky),
+ * Sidebar navigation container with five zones: header (sticky), topContent (sticky),
  * children (scrollable), footer, and footerIcons.
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -48,7 +48,7 @@ const styles = stylex.create({
     zIndex: 1,
     backgroundColor: colorVars['--color-surface'],
   },
-  stickyContent: {
+  topContent: {
     flexShrink: 0,
     position: 'sticky',
     top: 0,
@@ -108,7 +108,7 @@ export interface XDSPageNavProps extends Omit<
   /**
    * Content pinned below header (e.g., create button, top-level items). Sticky.
    */
-  stickyContent?: ReactNode;
+  topContent?: ReactNode;
   /**
    * Navigation sections and items. Scrollable.
    */
@@ -145,7 +145,7 @@ export interface XDSPageNavProps extends Omit<
  * ```tsx
  * <XDSPageNav
  *   header={<XDSPageNavHeader icon={<AppIcon />} title="My App" titleHref="/" />}
- *   stickyContent={<XDSButton label="Create new" variant="primary" />}
+ *   topContent={<XDSButton label="Create new" variant="primary" />}
  *   footerIcons={<XDSButton icon={HelpIcon} variant="ghost" label="Help" />}
  * >
  *   <XDSPageNavSection title="Main">
@@ -159,7 +159,7 @@ export const XDSPageNav = forwardRef<HTMLElement, XDSPageNavProps>(
   function XDSPageNav(
     {
       header,
-      stickyContent,
+      topContent,
       children,
       footer,
       footerIcons,
@@ -181,8 +181,8 @@ export const XDSPageNav = forwardRef<HTMLElement, XDSPageNavProps>(
         {...stylex.props(styles.root, rootOverride, xstyle)}
         {...props}>
         {header && <div {...stylex.props(styles.header)}>{header}</div>}
-        {stickyContent && (
-          <div {...stylex.props(styles.stickyContent)}>{stickyContent}</div>
+        {topContent && (
+          <div {...stylex.props(styles.topContent)}>{topContent}</div>
         )}
         <div {...stylex.props(styles.scrollable)}>{children}</div>
         {footer && <div {...stylex.props(styles.footer)}>{footer}</div>}

@@ -4,7 +4,6 @@ import {
   XDSPageNavHeader,
   XDSPageNavItem,
   XDSPageNavSection,
-  useXDSCollapsible,
 } from '@xds/core/PageNav';
 import {XDSBadge} from '@xds/core/Badge';
 import {
@@ -16,7 +15,6 @@ import {
   BellIcon,
   QuestionMarkCircleIcon,
   DocumentTextIcon,
-  ShieldCheckIcon,
   CubeIcon,
 } from '@heroicons/react/24/outline';
 import {
@@ -149,47 +147,12 @@ export const SuiteHeader: Story = {
 };
 
 // =============================================================================
-// Collapsible Sections
-// =============================================================================
-
-function CollapsibleExample() {
-  const mainCollapsible = useXDSCollapsible(true);
-  const settingsCollapsible = useXDSCollapsible(false);
-
-  return (
-    <XDSPageNav
-      header={
-        <XDSPageNavHeader
-          icon={<CubeIcon style={{width: 24, height: 24}} />}
-          title="My App"
-        />
-      }>
-      <XDSPageNavSection title="Main" collapsible={mainCollapsible}>
-        <XDSPageNavItem label="Dashboard" icon={HomeIcon} isSelected />
-        <XDSPageNavItem label="Projects" icon={FolderIcon} />
-        <XDSPageNavItem label="Analytics" icon={ChartBarIcon} />
-      </XDSPageNavSection>
-      <XDSPageNavSection title="Settings" collapsible={settingsCollapsible}>
-        <XDSPageNavItem label="General" icon={Cog6ToothIcon} />
-        <XDSPageNavItem label="Security" icon={ShieldCheckIcon} />
-      </XDSPageNavSection>
-    </XDSPageNav>
-  );
-}
-
-export const CollapsibleSections: Story = {
-  name: 'Collapsible Sections',
-  render: () => <CollapsibleExample />,
-};
-
-// =============================================================================
 // Nested Items
 // =============================================================================
 
-function NestedItemsExample() {
-  const settingsCollapsible = useXDSCollapsible(true);
-
-  return (
+export const NestedItems: Story = {
+  name: 'Nested Items',
+  render: () => (
     <XDSPageNav
       header={
         <XDSPageNavHeader
@@ -199,10 +162,7 @@ function NestedItemsExample() {
       }>
       <XDSPageNavSection title="Main">
         <XDSPageNavItem label="Dashboard" icon={HomeIcon} isSelected />
-        <XDSPageNavItem
-          label="Settings"
-          icon={Cog6ToothIcon}
-          collapsible={settingsCollapsible}>
+        <XDSPageNavItem label="Settings" icon={Cog6ToothIcon}>
           <XDSPageNavItem label="General" href="/settings/general" />
           <XDSPageNavItem label="Security" href="/settings/security" />
           <XDSPageNavItem
@@ -212,12 +172,7 @@ function NestedItemsExample() {
         </XDSPageNavItem>
       </XDSPageNavSection>
     </XDSPageNav>
-  );
-}
-
-export const NestedItems: Story = {
-  name: 'Nested Items',
-  render: () => <NestedItemsExample />,
+  ),
 };
 
 // =============================================================================

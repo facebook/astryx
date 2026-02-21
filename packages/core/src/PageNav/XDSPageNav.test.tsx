@@ -12,7 +12,7 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSPageNav} from './XDSPageNav';
 import {XDSPageNavHeader} from './XDSPageNavHeader';
-import {XDSPageNavItem, useXDSCollapsible} from './XDSPageNavItem';
+import {XDSPageNavItem} from './XDSPageNavItem';
 import {XDSPageNavSection} from './XDSPageNavSection';
 
 // =============================================================================
@@ -51,9 +51,9 @@ describe('XDSPageNav', () => {
     expect(screen.getByTestId('header')).toBeInTheDocument();
   });
 
-  it('renders stickyContent slot', () => {
+  it('renders topContent slot', () => {
     render(
-      <XDSPageNav stickyContent={<span data-testid="sticky">Sticky</span>}>
+      <XDSPageNav topContent={<span data-testid="sticky">Sticky</span>}>
         Content
       </XDSPageNav>,
     );
@@ -82,7 +82,7 @@ describe('XDSPageNav', () => {
     render(
       <XDSPageNav
         header={<span data-testid="header">Header</span>}
-        stickyContent={<span data-testid="sticky">Sticky</span>}
+        topContent={<span data-testid="sticky">Sticky</span>}
         footer={<span data-testid="footer">Footer</span>}
         footerIcons={<span data-testid="icons">Icons</span>}>
         <span data-testid="content">Content</span>
@@ -291,51 +291,6 @@ describe('XDSPageNavItem', () => {
 });
 
 // =============================================================================
-// XDSPageNavItem collapsible
-// =============================================================================
-
-describe('XDSPageNavItem collapsible', () => {
-  function CollapsibleItem() {
-    const collapsible = useXDSCollapsible(true);
-    return (
-      <XDSPageNavItem label="Settings" collapsible={collapsible}>
-        <XDSPageNavItem label="General" />
-        <XDSPageNavItem label="Security" />
-      </XDSPageNavItem>
-    );
-  }
-
-  it('shows children when collapsible is open', () => {
-    render(<CollapsibleItem />);
-    expect(screen.getByText('General')).toBeInTheDocument();
-  });
-
-  it('sets aria-expanded on collapsible item', () => {
-    render(<CollapsibleItem />);
-    const buttons = screen.getAllByRole('button');
-    const settingsButton = buttons.find(b =>
-      b.textContent?.includes('Settings'),
-    );
-    expect(settingsButton).toHaveAttribute('aria-expanded', 'true');
-  });
-
-  it('toggles children on click', async () => {
-    const user = userEvent.setup();
-    render(<CollapsibleItem />);
-    const buttons = screen.getAllByRole('button');
-    const settingsButton = buttons.find(b =>
-      b.textContent?.includes('Settings'),
-    )!;
-
-    await user.click(settingsButton);
-    expect(screen.queryByText('General')).not.toBeInTheDocument();
-
-    await user.click(settingsButton);
-    expect(screen.getByText('General')).toBeInTheDocument();
-  });
-});
-
-// =============================================================================
 // XDSPageNavSection
 // =============================================================================
 
@@ -402,91 +357,6 @@ describe('XDSPageNavSection', () => {
 });
 
 // =============================================================================
-// XDSPageNavSection collapsible
-// =============================================================================
-
-describe('XDSPageNavSection collapsible', () => {
-  function CollapsibleSection() {
-    const collapsible = useXDSCollapsible(true);
-    return (
-      <XDSPageNavSection title="Settings" collapsible={collapsible}>
-        <XDSPageNavItem label="General" />
-        <XDSPageNavItem label="Security" />
-      </XDSPageNavSection>
-    );
-  }
-
-  it('shows children when collapsible is open', () => {
-    render(<CollapsibleSection />);
-    expect(screen.getByText('General')).toBeInTheDocument();
-  });
-
-  it('sets aria-expanded on collapsible section header', () => {
-    render(<CollapsibleSection />);
-    const buttons = screen.getAllByRole('button');
-    const sectionButton = buttons.find(b =>
-      b.textContent?.includes('Settings'),
-    );
-    expect(sectionButton).toHaveAttribute('aria-expanded', 'true');
-  });
-
-  it('toggles children on click', async () => {
-    const user = userEvent.setup();
-    render(<CollapsibleSection />);
-    const buttons = screen.getAllByRole('button');
-    const sectionButton = buttons.find(b =>
-      b.textContent?.includes('Settings'),
-    )!;
-
-    await user.click(sectionButton);
-    expect(screen.queryByText('General')).not.toBeInTheDocument();
-
-    await user.click(sectionButton);
-    expect(screen.getByText('General')).toBeInTheDocument();
-  });
-});
-
-// =============================================================================
-// useXDSCollapsible
-// =============================================================================
-
-describe('useXDSCollapsible', () => {
-  function TestComponent({initialIsOpen = true}: {initialIsOpen?: boolean}) {
-    const collapsible = useXDSCollapsible(initialIsOpen);
-    return (
-      <div>
-        <button onClick={collapsible.onToggle}>Toggle</button>
-        <span data-testid="state">
-          {collapsible.isOpen ? 'open' : 'closed'}
-        </span>
-      </div>
-    );
-  }
-
-  it('defaults to open', () => {
-    render(<TestComponent />);
-    expect(screen.getByTestId('state')).toHaveTextContent('open');
-  });
-
-  it('can start closed', () => {
-    render(<TestComponent initialIsOpen={false} />);
-    expect(screen.getByTestId('state')).toHaveTextContent('closed');
-  });
-
-  it('toggles state', async () => {
-    const user = userEvent.setup();
-    render(<TestComponent />);
-    expect(screen.getByTestId('state')).toHaveTextContent('open');
-
-    await user.click(screen.getByText('Toggle'));
-    expect(screen.getByTestId('state')).toHaveTextContent('closed');
-
-    await user.click(screen.getByText('Toggle'));
-    expect(screen.getByTestId('state')).toHaveTextContent('open');
-  });
-});
-
-// =============================================================================
 // Integration
 // =============================================================================
 
@@ -495,7 +365,7 @@ describe('PageNav integration', () => {
     render(
       <XDSPageNav
         header={<XDSPageNavHeader title="My App" />}
-        stickyContent={<button>Create</button>}
+        topContent={<button>Create</button>}
         footer={<div data-testid="promo">Promo</div>}
         footerIcons={<button>Help</button>}>
         <XDSPageNavSection title="Main">

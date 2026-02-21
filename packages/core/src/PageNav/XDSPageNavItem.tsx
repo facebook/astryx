@@ -1,10 +1,10 @@
 /**
  * @file XDSPageNavItem.tsx
  * @input Uses React forwardRef, ReactNode, StyleX, XDSIcon, XDSIconType
- * @output Exports XDSPageNavItem component, XDSPageNavItemProps, XDSCollapsibleConfig
+ * @output Exports XDSPageNavItem component and XDSPageNavItemProps
  * @position Core implementation; used inside XDSPageNav children
  *
- * Navigation item with icon, selected state, nesting, and collapsible support.
+ * Navigation item with icon, selected state, and nesting.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/PageNav/README.md
@@ -15,7 +15,7 @@
 
 'use client';
 
-import {forwardRef, useId, useState, type ReactNode} from 'react';
+import {forwardRef, useId, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -27,39 +27,6 @@ import {
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
 import type {XDSIconType} from '../Icon';
-
-// =============================================================================
-// Collapsible Config
-// =============================================================================
-
-/**
- * Configuration for collapsible behavior.
- * When useXDSCollapsible is available, this will be its return type.
- * For now, provides a compatible interface.
- */
-export interface XDSCollapsibleConfig {
-  /** Whether the collapsible section is currently open */
-  isOpen: boolean;
-  /** Toggle the open/closed state */
-  onToggle: () => void;
-}
-
-/**
- * Simple hook to create collapsible state.
- * Placeholder until useXDSCollapsible (#187) is available.
- *
- * @param initialIsOpen - Whether the section starts open
- * @returns XDSCollapsibleConfig
- */
-export function useXDSCollapsible(
-  initialIsOpen: boolean = true,
-): XDSCollapsibleConfig {
-  const [isOpen, setIsOpen] = useState(initialIsOpen);
-  return {
-    isOpen,
-    onToggle: () => setIsOpen(prev => !prev),
-  };
-}
 
 // =============================================================================
 // Styles
@@ -122,22 +89,6 @@ const styles = stylex.create({
   children: {
     paddingInlineStart: spacingVars['--spacing-6'],
   },
-  collapseTrigger: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 16,
-    height: 16,
-    flexShrink: 0,
-    color: colorVars['--color-icon-secondary'],
-    transition: 'transform 150ms ease',
-  },
-  collapseOpen: {
-    transform: 'rotate(90deg)',
-  },
-  collapseClosed: {
-    transform: 'rotate(0deg)',
-  },
 });
 
 // =============================================================================
@@ -184,36 +135,9 @@ export interface XDSPageNavItemProps {
    */
   children?: ReactNode;
   /**
-   * Collapsible config from useXDSCollapsible.
-   */
-  collapsible?: XDSCollapsibleConfig;
-  /**
    * Test ID for the item element.
    */
   'data-testid'?: string;
-}
-
-// =============================================================================
-// Chevron Right SVG (for collapsible)
-// =============================================================================
-
-function ChevronRightIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      aria-hidden="true">
-      <path
-        d="M6 4L10 8L6 12"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
 }
 
 // =============================================================================
@@ -223,8 +147,7 @@ function ChevronRightIcon() {
 /**
  * Navigation item for XDSPageNav.
  *
- * Supports icons, selected state, nesting with collapsible sub-items,
- * and end content like badges or counts.
+ * Supports icons, selected state, nesting, and end content like badges or counts.
  *
  * @example
  * ```tsx
@@ -236,11 +159,7 @@ function ChevronRightIcon() {
  *   href="/dashboard"
  * />
  *
- * <XDSPageNavItem
- *   label="Settings"
- *   icon={CogIcon}
- *   collapsible={useXDSCollapsible()}
- * >
+ * <XDSPageNavItem label="Settings" icon={CogIcon}>
  *   <XDSPageNavItem label="General" href="/settings/general" />
  *   <XDSPageNavItem label="Security" href="/settings/security" />
  * </XDSPageNavItem>
@@ -258,15 +177,12 @@ export const XDSPageNavItem = forwardRef<HTMLElement, XDSPageNavItemProps>(
       onClick,
       endContent,
       children,
-      collapsible,
       'data-testid': testId,
     },
     ref,
   ) {
     const id = useId();
     const hasChildren = !!children;
-    const isCollapsible = !!collapsible && hasChildren;
-    const isOpen = collapsible?.isOpen ?? true;
 
     const displayIcon = isSelected && selectedIcon ? selectedIcon : icon;
 
@@ -275,23 +191,11 @@ export const XDSPageNavItem = forwardRef<HTMLElement, XDSPageNavItemProps>(
         e.preventDefault();
         return;
       }
-      if (isCollapsible) {
-        collapsible!.onToggle();
-      }
       onClick?.(e);
     };
 
     const itemContent = (
       <>
-        {isCollapsible && (
-          <span
-            {...stylex.props(
-              styles.collapseTrigger,
-              isOpen ? styles.collapseOpen : styles.collapseClosed,
-            )}>
-            <ChevronRightIcon />
-          </span>
-        )}
         {displayIcon && (
           <XDSIcon
             icon={displayIcon}
@@ -311,7 +215,6 @@ export const XDSPageNavItem = forwardRef<HTMLElement, XDSPageNavItemProps>(
     const ariaProps = {
       'aria-current': isSelected ? ('page' as const) : undefined,
       'aria-disabled': isDisabled || undefined,
-      'aria-expanded': isCollapsible ? isOpen : undefined,
       'data-testid': testId,
     };
 
@@ -348,7 +251,7 @@ export const XDSPageNavItem = forwardRef<HTMLElement, XDSPageNavItemProps>(
     return (
       <div {...stylex.props(styles.root)}>
         {itemElement}
-        {hasChildren && isOpen && (
+        {hasChildren && (
           <div
             role="group"
             aria-labelledby={`${id}-label`}

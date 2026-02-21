@@ -13,8 +13,8 @@ export type {XDSPageNavProps} from './XDSPageNav';
 export {XDSPageNavHeader} from './XDSPageNavHeader';
 export type {XDSPageNavHeaderProps} from './XDSPageNavHeader';
 
-export {XDSPageNavItem, useXDSCollapsible} from './XDSPageNavItem';
-export type {XDSPageNavItemProps, XDSCollapsibleConfig} from './XDSPageNavItem';
+export {XDSPageNavItem} from './XDSPageNavItem';
+export type {XDSPageNavItemProps} from './XDSPageNavItem';
 
 export {XDSPageNavSection} from './XDSPageNavSection';
 export type {XDSPageNavSectionProps} from './XDSPageNavSection';

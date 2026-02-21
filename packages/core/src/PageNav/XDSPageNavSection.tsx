@@ -1,11 +1,10 @@
 /**
  * @file XDSPageNavSection.tsx
- * @input Uses React, StyleX, XDSCollapsibleConfig
+ * @input Uses React, StyleX
  * @output Exports XDSPageNavSection component and XDSPageNavSectionProps
  * @position Core implementation; used inside XDSPageNav children
  *
- * Section grouping for navigation items with optional title, collapsible behavior,
- * and end content.
+ * Section grouping for navigation items with optional title and end content.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/PageNav/README.md
@@ -25,8 +24,6 @@ import {
   fontWeightVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
-import type {XDSCollapsibleConfig} from './XDSPageNavItem';
-
 // =============================================================================
 // Styles
 // =============================================================================
@@ -46,20 +43,7 @@ const styles = stylex.create({
     cursor: 'default',
     userSelect: 'none',
   },
-  headerCollapsible: {
-    cursor: 'pointer',
-    borderRadius: 0,
-    borderWidth: 0,
-    borderStyle: 'none',
-    backgroundColor: 'transparent',
-    fontFamily: 'inherit',
-    fontSize: 'inherit',
-    textAlign: 'start',
-    width: '100%',
-    ':hover': {
-      backgroundColor: colorVars['--color-hover-overlay'],
-    },
-  },
+
   titleContainer: {
     display: 'flex',
     flexDirection: 'column',
@@ -90,22 +74,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
   },
-  chevron: {
-    flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 16,
-    height: 16,
-    color: colorVars['--color-icon-secondary'],
-    transition: 'transform 150ms ease',
-  },
-  chevronOpen: {
-    transform: 'rotate(180deg)',
-  },
-  chevronClosed: {
-    transform: 'rotate(0deg)',
-  },
+
   items: {
     display: 'flex',
     flexDirection: 'column',
@@ -130,10 +99,6 @@ export interface XDSPageNavSectionProps {
    */
   children: ReactNode;
   /**
-   * Collapsible config from useXDSCollapsible.
-   */
-  collapsible?: XDSCollapsibleConfig;
-  /**
    * Right-side content in the section header.
    */
   endContent?: ReactNode;
@@ -150,36 +115,13 @@ export interface XDSPageNavSectionProps {
 }
 
 // =============================================================================
-// Chevron SVG
-// =============================================================================
-
-function ChevronDownIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      aria-hidden="true">
-      <path
-        d="M4 6L8 10L12 6"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-// =============================================================================
 // Component
 // =============================================================================
 
 /**
  * Section grouping for XDSPageNav items.
  *
- * Renders a labeled group of navigation items with optional collapsible behavior.
+ * Renders a labeled group of navigation items.
  * Uses `role="group"` with `aria-labelledby` for accessibility.
  *
  * @example
@@ -188,26 +130,18 @@ function ChevronDownIcon() {
  *   <XDSPageNavItem label="Dashboard" icon={HomeIcon} isSelected />
  *   <XDSPageNavItem label="Projects" icon={FolderIcon} />
  * </XDSPageNavSection>
- *
- * <XDSPageNavSection title="Settings" collapsible={useXDSCollapsible()}>
- *   <XDSPageNavItem label="General" href="/settings/general" />
- *   <XDSPageNavItem label="Security" href="/settings/security" />
- * </XDSPageNavSection>
  * ```
  */
 export function XDSPageNavSection({
   title,
   subtitle,
   children,
-  collapsible,
   endContent,
   isHeaderHidden = false,
   'data-testid': testId,
 }: XDSPageNavSectionProps) {
   const id = useId();
   const titleId = `${id}-title`;
-  const isCollapsible = !!collapsible;
-  const isOpen = collapsible?.isOpen ?? true;
 
   const headerContent = (
     <>
@@ -219,15 +153,6 @@ export function XDSPageNavSection({
       </span>
       {endContent && (
         <span {...stylex.props(styles.endContent)}>{endContent}</span>
-      )}
-      {isCollapsible && (
-        <span
-          {...stylex.props(
-            styles.chevron,
-            isOpen ? styles.chevronOpen : styles.chevronClosed,
-          )}>
-          <ChevronDownIcon />
-        </span>
       )}
     </>
   );
@@ -252,23 +177,12 @@ export function XDSPageNavSection({
       aria-labelledby={titleId}
       data-testid={testId}
       {...stylex.props(styles.root)}>
-      {isCollapsible ? (
-        <button
-          type="button"
-          onClick={collapsible!.onToggle}
-          aria-expanded={isOpen}
-          style={isHeaderHidden ? visuallyHiddenStyle : undefined}
-          {...stylex.props(styles.header, styles.headerCollapsible)}>
-          {headerContent}
-        </button>
-      ) : (
-        <div
-          style={isHeaderHidden ? visuallyHiddenStyle : undefined}
-          {...stylex.props(styles.header)}>
-          {headerContent}
-        </div>
-      )}
-      {isOpen && <div {...stylex.props(styles.items)}>{children}</div>}
+      <div
+        style={isHeaderHidden ? visuallyHiddenStyle : undefined}
+        {...stylex.props(styles.header)}>
+        {headerContent}
+      </div>
+      <div {...stylex.props(styles.items)}>{children}</div>
     </div>
   );
 }
