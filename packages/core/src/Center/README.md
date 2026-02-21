@@ -26,3 +26,25 @@ import {XDSCenter} from '@xds/core/Center';
   <XDSIcon icon={StarIcon} />
 </XDSCenter>
 ```
+
+## Theming
+
+Themes can override `Center` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    center: {
+      root: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface | Description           |
+| ------- | --------------------- |
+| `root`  | Root container styles |

@@ -11,7 +11,15 @@
  * - /apps/storybook/stories/DateInput.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useId, useState, useCallback, useRef, useMemo} from 'react';
+import {
+  forwardRef,
+  useContext,
+  useId,
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {CalendarDaysIcon} from '@heroicons/react/24/outline';
 import {
@@ -154,7 +162,23 @@ export type {
   XDSInputStatus as XDSDateInputStatus,
   XDSInputStatusType as XDSDateInputStatusType,
 } from '../Field';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
+// =============================================================================
+// Module Augmentation - Register component styles with ComponentStyles
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    dateInput?: {
+      /** Input wrapper styles */
+      wrapper?: ThemeStyleXStyles;
+      /** Text input styles */
+      input?: ThemeStyleXStyles;
+    };
+  }
+}
 export interface XDSDateInputProps {
   /**
    * Label text for the input (required for accessibility).
@@ -277,6 +301,10 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
     },
     ref,
   ) => {
+    const themeContext = useContext(ThemeContext);
+    const wrapperOverride = themeContext?.theme.components?.dateInput?.wrapper;
+    const inputOverride = themeContext?.theme.components?.dateInput?.input;
+
     const id = useId();
     const descriptionID = useId();
     const statusMessageID = useId();
@@ -454,6 +482,7 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
             sizeStyles[size],
             isDisabled && styles.wrapperDisabled,
             status && statusBorderStyles[status.type],
+            wrapperOverride,
           )}>
           <button
             type="button"
@@ -485,6 +514,7 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
               styles.input,
               isDisabled && styles.inputDisabled,
               !isInputValid && styles.inputInvalid,
+              inputOverride,
             )}
           />
           {status && (

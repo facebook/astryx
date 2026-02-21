@@ -86,23 +86,23 @@ import { XDSRadioList, XDSRadioListItem } from '@xds/core/RadioList';
 
 ## XDSRadioList Props
 
-| Prop            | Type                              | Default      | Description                                                         |
-| --------------- | --------------------------------- | ------------ | ------------------------------------------------------------------- |
-| `label`         | `string`                          | —            | Label text for the radio group (always rendered for accessibility)   |
-| `isLabelHidden` | `boolean`                         | `false`      | Whether to visually hide the label                                  |
-| `description`   | `string`                          | —            | Description text displayed below the label                          |
-| `value`         | `string`                          | —            | The currently selected value                                        |
-| `onChange`      | `(value: string) => void`         | —            | Callback fired when the selected value changes                      |
-| `orientation`   | `'vertical' \| 'horizontal'`     | `'vertical'` | Layout direction of the radio items                                 |
-| `isDisabled`    | `boolean`                         | `false`      | Whether all radio items are disabled                                |
-| `isRequired`    | `boolean`                         | `false`      | Whether the radio group is required                                 |
-| `isOptional`    | `boolean`                         | `false`      | Whether the field is optional (mutually exclusive with `isRequired`) |
-| `status`        | `XDSInputStatus`                  | —            | Status indicator (`{ type, message }`)                              |
-| `size`          | `'sm' \| 'md'`                   | `'md'`       | Size of the radio controls                                          |
-| `labelTooltip`  | `string`                          | —            | Tooltip text for an info icon next to the label                     |
-| `xstyle`        | `StyleXStyles`                    | —            | Additional styles for the outer container                           |
-| `data-testid`   | `string`                          | —            | Test ID for the outer container                                     |
-| `children`      | `ReactNode`                       | —            | `XDSRadioListItem` elements                                        |
+| Prop            | Type                         | Default      | Description                                                          |
+| --------------- | ---------------------------- | ------------ | -------------------------------------------------------------------- |
+| `label`         | `string`                     | —            | Label text for the radio group (always rendered for accessibility)   |
+| `isLabelHidden` | `boolean`                    | `false`      | Whether to visually hide the label                                   |
+| `description`   | `string`                     | —            | Description text displayed below the label                           |
+| `value`         | `string`                     | —            | The currently selected value                                         |
+| `onChange`      | `(value: string) => void`    | —            | Callback fired when the selected value changes                       |
+| `orientation`   | `'vertical' \| 'horizontal'` | `'vertical'` | Layout direction of the radio items                                  |
+| `isDisabled`    | `boolean`                    | `false`      | Whether all radio items are disabled                                 |
+| `isRequired`    | `boolean`                    | `false`      | Whether the radio group is required                                  |
+| `isOptional`    | `boolean`                    | `false`      | Whether the field is optional (mutually exclusive with `isRequired`) |
+| `status`        | `XDSInputStatus`             | —            | Status indicator (`{ type, message }`)                               |
+| `size`          | `'sm' \| 'md'`               | `'md'`       | Size of the radio controls                                           |
+| `labelTooltip`  | `string`                     | —            | Tooltip text for an info icon next to the label                      |
+| `xstyle`        | `StyleXStyles`               | —            | Additional styles for the outer container                            |
+| `data-testid`   | `string`                     | —            | Test ID for the outer container                                      |
+| `children`      | `ReactNode`                  | —            | `XDSRadioListItem` elements                                          |
 
 ## XDSRadioListItem Props
 
@@ -116,14 +116,36 @@ import { XDSRadioList, XDSRadioListItem } from '@xds/core/RadioList';
 | `endContent`   | `ReactNode` | —       | Content to render after the label              |
 | `data-testid`  | `string`    | —       | Test ID for the radio item container           |
 
+## Theming
+
+Themes can override `RadioList` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    radioList: {
+      root: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface | Description             |
+| ------- | ----------------------- |
+| `root`  | Root radio group styles |
+
 ## Files
 
-| File                      | Role  | Purpose                                            |
-| ------------------------- | ----- | -------------------------------------------------- |
-| `index.ts`                | Entry | Exports components and types                       |
-| `XDSRadioList.tsx`        | Core  | Radio group container with context provider        |
-| `XDSRadioListItem.tsx`    | Core  | Individual radio item consuming `RadioListContext` |
-| `XDSRadioList.test.tsx`   | Test  | Unit tests                                         |
+| File                    | Role  | Purpose                                            |
+| ----------------------- | ----- | -------------------------------------------------- |
+| `index.ts`              | Entry | Exports components and types                       |
+| `XDSRadioList.tsx`      | Core  | Radio group container with context provider        |
+| `XDSRadioListItem.tsx`  | Core  | Individual radio item consuming `RadioListContext` |
+| `XDSRadioList.test.tsx` | Test  | Unit tests                                         |
 
 ## Implementation Notes
 

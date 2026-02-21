@@ -99,6 +99,30 @@ Configure a static position instead of centering:
 </XDSDialog>
 ```
 
+## Theming
+
+Themes can override `Dialog` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    dialog: {
+      root: myStyles,
+      backdrop: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface    | Description             |
+| ---------- | ----------------------- |
+| `root`     | Dialog element styles   |
+| `backdrop` | Backdrop overlay styles |
+
 ## Files
 
 | File                 | Role  | Purpose                               |

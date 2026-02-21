@@ -49,6 +49,8 @@ import {
 } from './utils';
 import {useCombobox, useSelectedItemOffset} from './hooks';
 import {XDSSelectorItem} from './XDSSelectorItem';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
 const styles = stylex.create({
   // Trigger button
@@ -245,6 +247,20 @@ export interface XDSSelectorStatus {
   message?: string;
 }
 
+// =============================================================================
+// Module Augmentation - Register component styles with ComponentStyles
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    selector?: {
+      /** Trigger button styles */
+      trigger?: ThemeStyleXStyles;
+      /** Dropdown container styles */
+      dropdown?: ThemeStyleXStyles;
+    };
+  }
+}
 export interface XDSSelectorProps<
   T extends XDSSelectorOption = XDSSelectorOption,
 > {
@@ -374,6 +390,10 @@ export function XDSSelector<T extends XDSSelectorOption>({
   children,
   'data-testid': testId,
 }: XDSSelectorProps<T>) {
+  const themeContext = React.useContext(ThemeContext);
+  const triggerOverride = themeContext?.theme.components?.selector?.trigger;
+  const dropdownOverride = themeContext?.theme.components?.selector?.dropdown;
+
   const triggerId = useId();
   const listboxId = useId();
   const descriptionId = useId();
@@ -574,6 +594,7 @@ export function XDSSelector<T extends XDSSelectorOption>({
           isDisabled && styles.triggerDisabled,
           !selectedItem && styles.triggerPlaceholder,
           status && statusBorderStyles[status.type],
+          triggerOverride,
         )}>
         <span>{selectedItem?.label ?? placeholder}</span>
         <span
@@ -604,6 +625,7 @@ export function XDSSelector<T extends XDSSelectorOption>({
             styles.dropdown,
             !isPositioned && styles.dropdownHidden,
             styles.dropdownOffset(-selectedItemOffset),
+            dropdownOverride,
           )}>
           {renderOptions()}
         </div>,

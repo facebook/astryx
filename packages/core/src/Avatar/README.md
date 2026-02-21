@@ -52,6 +52,30 @@ import { XDSAvatar } from '@xds/core/Avatar';
 3. `fallbackSrc` fails/missing → show initials from `name`
 4. No `name` → show generic person icon
 
+## Theming
+
+Themes can override `Avatar` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    avatar: {
+      root: myStyles,
+      fallback: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface    | Description                        |
+| ---------- | ---------------------------------- |
+| `root`     | Root wrapper styles                |
+| `fallback` | Fallback/initials container styles |
+
 ## Files
 
 | File                 | Role  | Purpose                     |

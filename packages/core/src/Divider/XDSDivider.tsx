@@ -10,7 +10,12 @@
  * - /apps/storybook/stories/Divider.stories.tsx
  */
 
-import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
+import {
+  forwardRef,
+  useContext,
+  type HTMLAttributes,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -19,6 +24,22 @@ import {
   textSizeVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+
+// =============================================================================
+// Module Augmentation - Register Divider's style surfaces with ComponentStyles
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    divider?: {
+      root?: ThemeStyleXStyles;
+      line?: ThemeStyleXStyles;
+      label?: ThemeStyleXStyles;
+    };
+  }
+}
 
 export interface XDSDividerProps extends Omit<
   HTMLAttributes<HTMLElement>,
@@ -140,6 +161,12 @@ export const XDSDivider = forwardRef<HTMLElement, XDSDividerProps>(
   ) {
     const isHorizontal = orientation === 'horizontal';
 
+    // Get theme context for component-level overrides (optional)
+    const themeContext = useContext(ThemeContext);
+    const rootOverride = themeContext?.theme.components?.divider?.root;
+    const lineOverride = themeContext?.theme.components?.divider?.line;
+    const labelOverride = themeContext?.theme.components?.divider?.label;
+
     return (
       <div
         ref={ref as React.Ref<HTMLDivElement>}
@@ -151,6 +178,7 @@ export const XDSDivider = forwardRef<HTMLElement, XDSDividerProps>(
             (isHorizontal
               ? fullBleedStyles.horizontal
               : fullBleedStyles.vertical),
+          rootOverride,
           xstyle,
         )}
         {...props}>
@@ -158,6 +186,7 @@ export const XDSDivider = forwardRef<HTMLElement, XDSDividerProps>(
           {...stylex.props(
             isHorizontal ? lineStyles.horizontalLine : lineStyles.verticalLine,
             lineStyles[variant],
+            lineOverride,
           )}
         />
         {label && (
@@ -165,6 +194,7 @@ export const XDSDivider = forwardRef<HTMLElement, XDSDividerProps>(
             {...stylex.props(
               labelStyles.label,
               !isHorizontal && labelStyles.verticalLabel,
+              labelOverride,
             )}>
             {label}
           </div>
@@ -176,6 +206,7 @@ export const XDSDivider = forwardRef<HTMLElement, XDSDividerProps>(
                 ? lineStyles.horizontalLine
                 : lineStyles.verticalLine,
               lineStyles[variant],
+              lineOverride,
             )}
           />
         )}

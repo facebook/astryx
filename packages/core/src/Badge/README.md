@@ -38,6 +38,30 @@ import {XDSBadge} from '@xds/core/Badge';
 <XDSBadge variant="success" />
 ```
 
+## Theming
+
+Themes can override `Badge` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    badge: {
+      root: myStyles,
+      variants: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface    | Description                                                            |
+| ---------- | ---------------------------------------------------------------------- |
+| `root`     | Root badge styles                                                      |
+| `variants` | Per-variant overrides (Partial<Record<XDSBadgeVariant, StyleXStyles>>) |
+
 ## Files
 
 | File                | Purpose                  |

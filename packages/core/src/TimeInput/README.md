@@ -45,3 +45,27 @@ import {XDSTimeInput} from '@xds/core/TimeInput';
   status={{ type: 'error', message: 'Invalid time' }}
 />
 ```
+
+## Theming
+
+Themes can override `TimeInput` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    timeInput: {
+      wrapper: myStyles,
+      input: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface   | Description               |
+| --------- | ------------------------- |
+| `wrapper` | Input wrapper styles      |
+| `input`   | Text input element styles |

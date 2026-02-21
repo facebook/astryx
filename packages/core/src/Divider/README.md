@@ -26,3 +26,29 @@ import {XDSDivider} from '@xds/core/Divider';
 // Full bleed (extends to container edges)
 <XDSDivider isFullBleed />
 ```
+
+## Theming
+
+Themes can override `Divider` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    divider: {
+      root: myStyles,
+      line: myStyles,
+      label: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface | Description           |
+| ------- | --------------------- |
+| `root`  | Root container styles |
+| `line`  | Divider line styles   |
+| `label` | Label text styles     |

@@ -63,6 +63,28 @@ import { XDSLink } from '@xds/core/Link';
 | `isStandalone`   | `boolean`                            | `false`     | Applies base font sizing            |
 | `children`       | `ReactNode`                          | —           | Link content (required)             |
 
+## Theming
+
+Themes can override `Link` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    link: {
+      root: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface | Description                |
+| ------- | -------------------------- |
+| `root`  | Root anchor element styles |
+
 ## Files
 
 | File               | Role  | Purpose                             |

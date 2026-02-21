@@ -82,6 +82,30 @@ const bioDescId = useId();
 | `labelTooltip`   | `string`      | No       | Tooltip text to display in an info icon at the end of the label        |
 | `children`       | `ReactNode`   | Yes      | The input or control to render                                         |
 
+## Theming
+
+Themes can override `Field` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    field: {
+      root: myStyles,
+      description: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface       | Description             |
+| ------------- | ----------------------- |
+| `root`        | Root container styles   |
+| `description` | Description text styles |
+
 ## Files
 
 | File                | Role  | Purpose                     |

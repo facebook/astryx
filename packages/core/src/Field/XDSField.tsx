@@ -11,7 +11,12 @@
  * - /apps/storybook/stories/Field.stories.tsx (storybook stories)
  */
 
-import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
+import {
+  forwardRef,
+  useContext,
+  type HTMLAttributes,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSFieldLabel} from './XDSFieldLabel';
 import {XDSFieldStatus} from './XDSFieldStatus';
@@ -23,6 +28,8 @@ import {
   typographyVars,
 } from '../theme/tokens.stylex';
 import type {XDSIconType} from '../Icon';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
 const styles = stylex.create({
   container: {
@@ -90,6 +97,20 @@ export interface XDSFieldStatus {
   messageID?: string;
 }
 
+// =============================================================================
+// Module Augmentation - Register component styles with ComponentStyles
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    field?: {
+      /** Root container styles */
+      root?: ThemeStyleXStyles;
+      /** Description text styles */
+      description?: ThemeStyleXStyles;
+    };
+  }
+}
 export interface XDSFieldProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
   'children'
@@ -182,8 +203,16 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
     },
     ref,
   ) => {
+    const themeContext = useContext(ThemeContext);
+    const rootOverride = themeContext?.theme.components?.field?.root;
+    const descriptionOverride =
+      themeContext?.theme.components?.field?.description;
+
     return (
-      <div ref={ref} {...stylex.props(styles.container)} {...props}>
+      <div
+        ref={ref}
+        {...stylex.props(styles.container, rootOverride)}
+        {...props}>
         <XDSFieldLabel
           label={label}
           inputID={inputID}
@@ -194,7 +223,9 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
           tooltip={labelTooltip}
         />
         {description && (
-          <span id={descriptionID} {...stylex.props(styles.description)}>
+          <span
+            id={descriptionID}
+            {...stylex.props(styles.description, descriptionOverride)}>
             {description}
           </span>
         )}

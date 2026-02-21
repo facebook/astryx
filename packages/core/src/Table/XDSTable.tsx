@@ -11,7 +11,13 @@
  * - /apps/storybook/stories/Table.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useMemo, type ReactElement, type Ref} from 'react';
+import {
+  forwardRef,
+  useContext,
+  useMemo,
+  type ReactElement,
+  type Ref,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {XDSBaseTable} from './XDSBaseTable';
@@ -21,6 +27,8 @@ import {XDSTableHeaderCell} from './XDSTableHeaderCell';
 import {XDSTableContext} from './XDSTableContext';
 import {useXDSBaseTablePlugins} from './useXDSBaseTablePlugins';
 import type {XDSBaseTableProps, TablePlugin, TableRenderProps} from './types';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
 // =============================================================================
 // XDSTable Types
@@ -38,6 +46,27 @@ export type XDSTableDividers = 'rows' | 'columns' | 'grid' | 'none';
  *
  * @template T - The row data type
  */
+
+// =============================================================================
+// Module Augmentation - Register component styles with ComponentStyles
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    table?: {
+      /** Root table styles */
+      root?: ThemeStyleXStyles;
+      /** Header row styles */
+      headerRow?: ThemeStyleXStyles;
+      /** Body row styles */
+      bodyRow?: ThemeStyleXStyles;
+      /** Header cell styles */
+      headerCell?: ThemeStyleXStyles;
+      /** Body cell styles */
+      bodyCell?: ThemeStyleXStyles;
+    };
+  }
+}
 export interface XDSTableProps<T extends Record<string, unknown>> extends Omit<
   XDSBaseTableProps<T>,
   'plugins' | 'components'
@@ -69,14 +98,18 @@ const tableStyles = stylex.create({
 // Table-level styling plugin (only transforms the <table> element)
 // =============================================================================
 
-function buildTableStylePlugin<
-  T extends Record<string, unknown>,
->(): TablePlugin<T> {
+function buildTableStylePlugin<T extends Record<string, unknown>>(
+  rootOverride?: ThemeStyleXStyles,
+): TablePlugin<T> {
   return {
     transformTable(props: TableRenderProps): TableRenderProps {
       return {
         ...props,
-        styles: [...props.styles, tableStyles.base],
+        styles: [
+          ...props.styles,
+          tableStyles.base,
+          ...(rootOverride ? [rootOverride] : []),
+        ],
       };
     },
   };
@@ -106,8 +139,15 @@ function XDSTableInner<T extends Record<string, unknown>>(
   }: XDSTableProps<T>,
   ref: Ref<HTMLTableElement>,
 ): ReactElement {
+  // Get theme context for component-level overrides
+  const themeContext = useContext(ThemeContext);
+  const rootOverride = themeContext?.theme.components?.table?.root;
+
   // Table-level styling plugin (just adds font/color to <table>)
-  const tablePlugin = useMemo(() => buildTableStylePlugin<T>(), []);
+  const tablePlugin = useMemo(
+    () => buildTableStylePlugin<T>(rootOverride),
+    [rootOverride],
+  );
   const basePlugins = useMemo(() => [tablePlugin], [tablePlugin]);
 
   // Convert named plugin record to stable memoized array
