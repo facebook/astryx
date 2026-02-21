@@ -96,6 +96,38 @@ describe('XDSBanner', () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
+  it('hides banner on dismiss without onDismiss callback', async () => {
+    const user = userEvent.setup();
+    render(
+      <XDSBanner
+        status="info"
+        title="Self Dismissing"
+        isDismissable
+        data-testid="banner"
+      />,
+    );
+    expect(screen.getByTestId('banner')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: 'Dismiss'}));
+    expect(screen.queryByTestId('banner')).not.toBeInTheDocument();
+  });
+
+  it('hides banner on dismiss and calls onDismiss', async () => {
+    const user = userEvent.setup();
+    const onDismiss = vi.fn();
+    render(
+      <XDSBanner
+        status="info"
+        title="Dismissable"
+        isDismissable
+        onDismiss={onDismiss}
+        data-testid="banner"
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Dismiss'}));
+    expect(screen.queryByTestId('banner')).not.toBeInTheDocument();
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
   it('does not render dismiss button when isDismissable is false', () => {
     render(<XDSBanner status="info" title="Not Dismissable" />);
     expect(
@@ -130,14 +162,25 @@ describe('XDSBanner', () => {
     expect(root).toBeInTheDocument();
   });
 
-  it('renders children below description', () => {
-    render(
+  it('renders children in a separate content area below header', () => {
+    const {container} = render(
       <XDSBanner status="info" title="With Children" description="Desc">
         <div data-testid="child-content">Extra content</div>
       </XDSBanner>,
     );
     expect(screen.getByTestId('child-content')).toBeInTheDocument();
     expect(screen.getByText('Extra content')).toBeInTheDocument();
+    // Children should be in a separate div from the header (the content area)
+    const root = container.firstElementChild;
+    // Root should have 2 child divs: header + content area
+    expect(root?.children).toHaveLength(2);
+  });
+
+  it('does not render content area when no children', () => {
+    const {container} = render(<XDSBanner status="info" title="No Children" />);
+    const root = container.firstElementChild;
+    // Root should have only 1 child div: the header
+    expect(root?.children).toHaveLength(1);
   });
 
   it('supports data-testid', () => {

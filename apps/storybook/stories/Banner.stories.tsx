@@ -21,7 +21,8 @@ const meta: Meta<typeof XDSBanner> = {
     },
     isDismissable: {
       control: 'boolean',
-      description: 'Whether the banner can be dismissed',
+      description:
+        'Whether the banner can be dismissed (manages its own hidden state)',
     },
   },
 };
@@ -81,7 +82,15 @@ export const Dismissable: Story = {
     title: 'Your session will expire soon.',
     description: 'Please save your work to avoid losing changes.',
     isDismissable: true,
-    onDismiss: () => alert('Dismissed!'),
+  },
+};
+
+export const DismissableWithCallback: Story = {
+  args: {
+    status: 'info',
+    title: 'This banner dismisses itself and calls onDismiss.',
+    isDismissable: true,
+    onDismiss: () => console.log('Dismissed!'),
   },
 };
 
@@ -95,7 +104,8 @@ export const SectionVariant: Story = {
   },
 };
 
-export const WithChildren: Story = {
+export const WithContentArea: Story = {
+  name: 'With Content Area (Card Background)',
   args: {
     status: 'error',
     title: 'Multiple errors found',
@@ -110,17 +120,46 @@ export const WithChildren: Story = {
   },
 };
 
-export const AllVariations: Story = {
+export const ContentAreaWithAction: Story = {
+  name: 'Content Area + Action Button',
+  args: {
+    status: 'warning',
+    title: 'Configuration changes detected',
+    description: 'Review the changes before they take effect.',
+    endButton: <XDSButton label="Review" variant="secondary" size="sm" />,
+    isDismissable: true,
+    children: (
+      <div style={{fontSize: '13px'}}>
+        <p style={{margin: '0 0 8px'}}>Changed settings:</p>
+        <ul style={{margin: 0, paddingInlineStart: '20px'}}>
+          <li>Authentication method updated</li>
+          <li>Rate limits modified</li>
+        </ul>
+      </div>
+    ),
+  },
+};
+
+export const AllStatuses: Story = {
+  name: 'All Status Variants',
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
       <XDSBanner status="info" title="Info banner" />
       <XDSBanner status="warning" title="Warning banner" />
       <XDSBanner status="error" title="Error banner" />
       <XDSBanner status="success" title="Success banner" />
+    </div>
+  ),
+};
+
+export const AllFeatures: Story = {
+  name: 'All Features Combined',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
       <XDSBanner
         status="info"
-        title="With description"
-        description="This is a description with more details."
+        title="Simple banner"
+        description="Just the colored header area."
       />
       <XDSBanner
         status="info"
@@ -130,16 +169,25 @@ export const AllVariations: Story = {
       <XDSBanner
         status="warning"
         title="Dismissable"
+        description="Click the X to dismiss — works without onDismiss."
         isDismissable
-        onDismiss={() => {}}
       />
       <XDSBanner
         status="info"
-        title="With end button"
+        title="With action button"
         endButton={
           <XDSButton label="Learn more" variant="secondary" size="sm" />
         }
       />
+      <XDSBanner
+        status="error"
+        title="With content area"
+        description="Additional content appears on a card background below.">
+        <div style={{fontSize: '13px'}}>
+          This content sits on a card-colored background, visually distinct from
+          the status header above.
+        </div>
+      </XDSBanner>
       <XDSBanner
         status="error"
         title="Section variant"
