@@ -25,6 +25,9 @@ export const colorRaw = {
   '--color-hover-overlay': 'light-dark(#0536590C, #FFFFFF0C)',
   '--color-pressed-overlay': 'light-dark(#05365919, #FFFFFF19)',
   '--color-focus-outline': 'light-dark(#0171E3, #2694FE)',
+  '--color-focus-outline-error': 'light-dark(#E3193B, #F5394F)',
+  '--color-focus-outline-success': 'light-dark(#0D8626, #0D8626)',
+  '--color-focus-outline-warning': 'light-dark(#F2C00B, #E9AF08)',
   '--color-deemphasized': 'light-dark(#0536590C, #1111127F)',
 
   // Text

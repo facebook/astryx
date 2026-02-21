@@ -107,6 +107,27 @@ const statusBorderStyles = stylex.create({
   },
 });
 
+const statusFocusStyles = stylex.create({
+  warning: {
+    outline: {
+      default: 'none',
+      ':focus-within': `2px solid ${colorVars['--color-focus-outline-warning']}`,
+    },
+  },
+  error: {
+    outline: {
+      default: 'none',
+      ':focus-within': `2px solid ${colorVars['--color-focus-outline-error']}`,
+    },
+  },
+  success: {
+    outline: {
+      default: 'none',
+      ':focus-within': `2px solid ${colorVars['--color-focus-outline-success']}`,
+    },
+  },
+});
+
 export type XDSTextInputSize = keyof typeof sizeStyles;
 
 // Re-export shared types for convenience
@@ -292,6 +313,7 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
             sizeStyles[size],
             isDisabled && styles.wrapperDisabled,
             status && statusBorderStyles[status.type],
+            status && statusFocusStyles[status.type],
             wrapperOverride,
           )}>
           {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
