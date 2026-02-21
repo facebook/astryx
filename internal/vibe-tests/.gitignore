@@ -9,5 +9,8 @@ AGENTS.baseline.md
 # Raw HTML docs (generated)
 AGENTS.html.md
 
+# Generated skill doc (from CLI)
+.generated/
+
 # Test results (generated)
 results/
