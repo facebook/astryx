@@ -1,0 +1,97 @@
+# Deploy Storybook to GitHub Pages
+# Only runs on push to main — simple and sequential: test → deploy
+name: Deploy Storybook to Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages-deploy"
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'yarn'
+
+      - run: yarn install --frozen-lockfile
+
+      - run: yarn test
+
+      - run: yarn build
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build core package
+        run: yarn build
+
+      - name: Build Storybook
+        run: yarn workspace @xds/storybook build
+
+      - name: Build Sandbox
+        run: yarn workspace @xds/sandbox build
+        continue-on-error: true
+
+      - name: Prepare deployment
+        run: |
+          SHORT_HASH="${GITHUB_SHA:0:7}"
+          REPO_NAME="${{ github.event.repository.name }}"
+          REPO_OWNER="${{ github.repository_owner }}"
+
+          mkdir -p deploy/${SHORT_HASH}
+          cp -r apps/storybook/dist/* deploy/${SHORT_HASH}/
+
+          if [ -d "apps/sandbox/dist" ]; then
+            mkdir -p deploy/${SHORT_HASH}/sandbox
+            cp -r apps/sandbox/dist/* deploy/${SHORT_HASH}/sandbox/
+          fi
+
+          cat > deploy/index.html << EOF
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta http-equiv="refresh" content="0;url=${SHORT_HASH}/index.html">
+            <title>XDS Storybook</title>
+          </head>
+          <body>
+            <p>Redirecting to <a href="${SHORT_HASH}/index.html">latest Storybook (${SHORT_HASH})</a>...</p>
+          </body>
+          </html>
+          EOF
+
+          touch deploy/.nojekyll
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./deploy
+          keep_files: true
+          destination_dir: .

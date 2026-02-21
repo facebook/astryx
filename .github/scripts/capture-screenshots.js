@@ -127,23 +127,38 @@ async function captureScreenshots() {
     // Titles are like "Core/XDSButton" or "Layout/XDSCard"
     // Components are folder names like "Button" or "Layout"
     const titleParts = title.split('/');
-    const category = titleParts[0].toLowerCase(); // e.g., "core", "layout", "typography"
     const componentPart = titleParts.length > 1 ? titleParts[1] : titleParts[0];
     // Remove "XDS" prefix if present for matching
     const normalizedComponent = componentPart.replace(/^XDS/i, '').toLowerCase();
 
     return components.some(comp => {
       const compLower = comp.toLowerCase();
-      // Match if:
-      // 1. Component name matches (e.g., "Button" matches "Core/XDSButton")
-      // 2. Category matches (e.g., "Layout" matches "Layout/XDSCard")
-      return normalizedComponent === compLower || category === compLower;
+      // Match only by component name (e.g., "Button" matches "Core/XDSButton")
+      return normalizedComponent === compLower;
     });
   });
 
+  // When video is enabled, only record video for the Default story of each component
+  // to avoid spending ~7s per story on video capture + conversion
+  const defaultStoryIds = new Set();
+  if (captureVideo) {
+    const byComponent = {};
+    for (const storyId of relevantStories) {
+      const story = stories[storyId];
+      const title = story.title || '';
+      if (!byComponent[title]) byComponent[title] = [];
+      byComponent[title].push({ id: storyId, name: story.name || '' });
+    }
+    for (const [, componentStories] of Object.entries(byComponent)) {
+      // Prefer "Default" story, fall back to first story
+      const defaultStory = componentStories.find(s => s.name === 'Default') || componentStories[0];
+      if (defaultStory) defaultStoryIds.add(defaultStory.id);
+    }
+  }
+
   console.log(`Capturing ${relevantStories.length} relevant stories`);
   if (captureVideo) {
-    console.log('Video capture enabled - will record interactions and convert to GIF');
+    console.log(`Video capture enabled for ${defaultStoryIds.size} default stories (screenshots only for the rest)`);
   }
 
   const browser = await chromium.launch();
@@ -153,13 +168,16 @@ async function captureScreenshots() {
   for (const storyId of relevantStories) {
     const story = stories[storyId];
 
-    // Create context with video recording if enabled
+    // Only record video for Default stories to save time
+    const shouldRecordVideo = captureVideo && defaultStoryIds.has(storyId);
+
+    // Create context with video recording if enabled for this story
     const contextOptions = {
       viewport: { width: 800, height: 600 },
       deviceScaleFactor: 2,
     };
 
-    if (captureVideo) {
+    if (shouldRecordVideo) {
       contextOptions.recordVideo = {
         dir: path.join(outputDir, 'videos'),
         size: { width: 800, height: 600 },
@@ -230,7 +248,7 @@ async function captureScreenshots() {
       await page.waitForTimeout(500);
 
       // If capturing video, ensure we have some content recorded
-      if (captureVideo) {
+      if (shouldRecordVideo) {
         // Wait to ensure video has content
         await page.waitForTimeout(500);
       }
@@ -255,7 +273,7 @@ async function captureScreenshots() {
       };
 
       // If capturing video, simulate some interactions with visible cursor
-      if (captureVideo) {
+      if (shouldRecordVideo) {
         // Inject a visible cursor element
         await page.evaluate(() => {
           const cursor = document.createElement('div');
@@ -369,7 +387,7 @@ async function captureScreenshots() {
       await page.close();
 
       let videoPath = null;
-      if (captureVideo) {
+      if (shouldRecordVideo) {
         const video = page.video();
         if (video) {
           // Wait for video to be saved - this resolves when the file is ready
@@ -385,7 +403,7 @@ async function captureScreenshots() {
       await context.close();
 
       // Now process video after context is closed
-      if (captureVideo && videoPath) {
+      if (shouldRecordVideo && videoPath) {
         // Give filesystem time to sync
         await new Promise(r => setTimeout(r, 500));
 
