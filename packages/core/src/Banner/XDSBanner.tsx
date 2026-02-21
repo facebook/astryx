@@ -197,7 +197,6 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     flexShrink: 0,
-    paddingTop: spacingVars['--spacing-0-5'],
   },
   endArea: {
     display: 'flex',
@@ -211,6 +210,19 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-card'],
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
+    borderLeftStyle: 'solid',
+    borderRightStyle: 'solid',
+    borderBottomStyle: 'solid',
+    borderLeftColor: colorVars['--color-divider'],
+    borderRightColor: colorVars['--color-divider'],
+    borderBottomColor: colorVars['--color-divider'],
+  },
+  contentAreaCard: {
+    borderBottomLeftRadius: radiusVars['--radius-container'],
+    borderBottomRightRadius: radiusVars['--radius-container'],
   },
 });
 
@@ -345,7 +357,13 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
         </div>
         {/* Content area: card background for additional content */}
         {children != null && (
-          <div {...stylex.props(styles.contentArea)}>{children}</div>
+          <div
+            {...stylex.props(
+              styles.contentArea,
+              variant === 'card' && styles.contentAreaCard,
+            )}>
+            {children}
+          </div>
         )}
       </div>
     );
