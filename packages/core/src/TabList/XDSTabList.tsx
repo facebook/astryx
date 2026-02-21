@@ -10,12 +10,26 @@
  * - /packages/core/src/TabList/XDSTabList.test.tsx
  */
 
-import {useMemo, type ReactNode} from 'react';
+import {useContext, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {XDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
+// =============================================================================
+// Module Augmentation - Register component styles with ComponentStyles
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    tabList?: {
+      /** Root nav container styles */
+      root?: ThemeStyleXStyles;
+    };
+  }
+}
 export interface XDSTabListProps {
   /**
    * The currently selected tab value.
@@ -77,6 +91,9 @@ export function XDSTabList({
   hasDivider = false,
   children,
 }: XDSTabListProps) {
+  const themeContext = useContext(ThemeContext);
+  const rootOverride = themeContext?.theme.components?.tabList?.root;
+
   const contextValue = useMemo(
     () => ({value, onChange, size}),
     [value, onChange, size],
@@ -86,7 +103,11 @@ export function XDSTabList({
     <XDSTabListContext.Provider value={contextValue}>
       <nav
         aria-label="Tabs"
-        {...stylex.props(styles.nav, hasDivider && styles.divider)}>
+        {...stylex.props(
+          styles.nav,
+          hasDivider && styles.divider,
+          rootOverride,
+        )}>
         {children}
       </nav>
     </XDSTabListContext.Provider>

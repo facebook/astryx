@@ -11,9 +11,11 @@
  * - /apps/storybook/stories/Spinner.stories.tsx
  */
 
-import {forwardRef, useEffect, useRef} from 'react';
+import {forwardRef, useContext, useEffect, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
 // =============================================================================
 // Constants
@@ -66,6 +68,18 @@ const styles = stylex.create({
 export type XDSSpinnerSize = keyof typeof SIZES;
 export type XDSSpinnerShade = 'default' | 'onMedia';
 
+// =============================================================================
+// Module Augmentation - Register component styles with ComponentStyles
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    spinner?: {
+      /** Root spinner styles */
+      root?: ThemeStyleXStyles;
+    };
+  }
+}
 export interface XDSSpinnerProps {
   /**
    * Spinner size.
@@ -106,6 +120,8 @@ export interface XDSSpinnerProps {
  */
 export const XDSSpinner = forwardRef<HTMLSpanElement, XDSSpinnerProps>(
   ({size = 'md', shade = 'default', 'data-testid': testId}, ref) => {
+    const themeContext = useContext(ThemeContext);
+    const rootOverride = themeContext?.theme.components?.spinner?.root;
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
@@ -170,7 +186,7 @@ export const XDSSpinner = forwardRef<HTMLSpanElement, XDSSpinnerProps>(
         role="status"
         aria-label="Loading"
         data-testid={testId}
-        {...stylex.props(styles.spinner)}
+        {...stylex.props(styles.spinner, rootOverride)}
         style={{width: frameSize, height: frameSize}}>
         <canvas ref={canvasRef} {...stylex.props(styles.canvas)} />
       </span>

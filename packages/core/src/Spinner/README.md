@@ -57,6 +57,28 @@ import {XDSText} from '@xds/core/Text';
 | `md` | 20×20px    | 2px          | Default, standalone indicator |
 | `lg` | 28×28px    | 3px          | Full-page or section loading  |
 
+## Theming
+
+Themes can override `Spinner` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    spinner: {
+      root: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface | Description                 |
+| ------- | --------------------------- |
+| `root`  | Root spinner element styles |
+
 ## Files
 
 | File                  | Role  | Purpose                     |

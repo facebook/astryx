@@ -100,50 +100,78 @@ import { XDSSlider } from '@xds/core/Slider';
 
 ## XDSSlider Props (Base)
 
-| Prop            | Type                                            | Default        | Description                                                     |
-| --------------- | ----------------------------------------------- | -------------- | --------------------------------------------------------------- |
-| `label`         | `string`                                        | —              | Label text (always rendered for accessibility)                  |
-| `isLabelHidden` | `boolean`                                       | `false`        | Whether to visually hide the label                              |
-| `description`   | `string`                                        | —              | Description text below the label                                |
-| `isDisabled`    | `boolean`                                       | `false`        | Whether the slider is disabled                                  |
-| `isOptional`    | `boolean`                                       | `false`        | Whether the field is optional                                   |
-| `isRequired`    | `boolean`                                       | `false`        | Whether the field is required                                   |
-| `status`        | `XDSInputStatus`                                | —              | Status indicator (`{ type, message }`)                          |
-| `labelTooltip`  | `string`                                        | —              | Tooltip text for an info icon next to the label                 |
-| `min`           | `number`                                        | `0`            | Minimum value                                                   |
-| `max`           | `number`                                        | `100`          | Maximum value                                                   |
-| `step`          | `number`                                        | `1`            | Step increment                                                  |
-| `orientation`   | `'horizontal' \| 'vertical'`                   | `'horizontal'` | Orientation of the slider                                       |
-| `formatValue`   | `(value: number) => string`                     | —              | Custom value formatting for display and `aria-valuetext`        |
-| `valueDisplay`  | `'tooltip' \| 'text' \| 'none'`                | `'tooltip'`    | How the current value is displayed                              |
-| `marks`         | `Array<{ value: number; label?: string }>`      | —              | Tick marks at specified positions with optional labels           |
-| `xstyle`        | `StyleXStyles`                                  | —              | Additional styles                                               |
-| `data-testid`   | `string`                                        | —              | Test ID for the root element                                    |
+| Prop            | Type                                       | Default        | Description                                              |
+| --------------- | ------------------------------------------ | -------------- | -------------------------------------------------------- |
+| `label`         | `string`                                   | —              | Label text (always rendered for accessibility)           |
+| `isLabelHidden` | `boolean`                                  | `false`        | Whether to visually hide the label                       |
+| `description`   | `string`                                   | —              | Description text below the label                         |
+| `isDisabled`    | `boolean`                                  | `false`        | Whether the slider is disabled                           |
+| `isOptional`    | `boolean`                                  | `false`        | Whether the field is optional                            |
+| `isRequired`    | `boolean`                                  | `false`        | Whether the field is required                            |
+| `status`        | `XDSInputStatus`                           | —              | Status indicator (`{ type, message }`)                   |
+| `labelTooltip`  | `string`                                   | —              | Tooltip text for an info icon next to the label          |
+| `min`           | `number`                                   | `0`            | Minimum value                                            |
+| `max`           | `number`                                   | `100`          | Maximum value                                            |
+| `step`          | `number`                                   | `1`            | Step increment                                           |
+| `orientation`   | `'horizontal' \| 'vertical'`               | `'horizontal'` | Orientation of the slider                                |
+| `formatValue`   | `(value: number) => string`                | —              | Custom value formatting for display and `aria-valuetext` |
+| `valueDisplay`  | `'tooltip' \| 'text' \| 'none'`            | `'tooltip'`    | How the current value is displayed                       |
+| `marks`         | `Array<{ value: number; label?: string }>` | —              | Tick marks at specified positions with optional labels   |
+| `xstyle`        | `StyleXStyles`                             | —              | Additional styles                                        |
+| `data-testid`   | `string`                                   | —              | Test ID for the root element                             |
 
 ### Single Value Mode
 
-| Prop          | Type                         | Description                                    |
-| ------------- | ---------------------------- | ---------------------------------------------- |
-| `value`       | `number`                     | Current value                                  |
-| `onChange`    | `(value: number) => void`    | Callback fired on value change during drag     |
-| `onChangeEnd` | `(value: number) => void`   | Callback fired when drag ends                  |
+| Prop          | Type                      | Description                                |
+| ------------- | ------------------------- | ------------------------------------------ |
+| `value`       | `number`                  | Current value                              |
+| `onChange`    | `(value: number) => void` | Callback fired on value change during drag |
+| `onChangeEnd` | `(value: number) => void` | Callback fired when drag ends              |
 
 ### Range Mode
 
-| Prop                     | Type                                   | Default | Description                              |
-| ------------------------ | -------------------------------------- | ------- | ---------------------------------------- |
-| `value`                  | `[number, number]`                     | —       | Current range `[min, max]`               |
-| `onChange`               | `(value: [number, number]) => void`    | —       | Callback fired on value change           |
-| `onChangeEnd`            | `(value: [number, number]) => void`    | —       | Callback fired when drag ends            |
-| `minStepsBetweenThumbs`  | `number`                               | `0`     | Minimum number of steps between thumbs   |
+| Prop                    | Type                                | Default | Description                            |
+| ----------------------- | ----------------------------------- | ------- | -------------------------------------- |
+| `value`                 | `[number, number]`                  | —       | Current range `[min, max]`             |
+| `onChange`              | `(value: [number, number]) => void` | —       | Callback fired on value change         |
+| `onChangeEnd`           | `(value: [number, number]) => void` | —       | Callback fired when drag ends          |
+| `minStepsBetweenThumbs` | `number`                            | `0`     | Minimum number of steps between thumbs |
+
+## Theming
+
+Themes can override `Slider` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    slider: {
+      root: myStyles,
+      track: myStyles,
+      filledTrack: myStyles,
+      thumb: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface       | Description                |
+| ------------- | -------------------------- |
+| `root`        | Root container styles      |
+| `track`       | Background track styles    |
+| `filledTrack` | Filled/active track styles |
+| `thumb`       | Thumb handle styles        |
 
 ## Files
 
-| File                  | Role  | Purpose                                              |
-| --------------------- | ----- | ---------------------------------------------------- |
-| `index.ts`            | Entry | Exports XDSSlider component and all type variants    |
-| `XDSSlider.tsx`       | Core  | Slider component with single and range mode support  |
-| `XDSSlider.test.tsx`  | Test  | Unit tests                                           |
+| File                 | Role  | Purpose                                             |
+| -------------------- | ----- | --------------------------------------------------- |
+| `index.ts`           | Entry | Exports XDSSlider component and all type variants   |
+| `XDSSlider.tsx`      | Core  | Slider component with single and range mode support |
+| `XDSSlider.test.tsx` | Test  | Unit tests                                          |
 
 ## Implementation Notes
 

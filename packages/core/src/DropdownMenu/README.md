@@ -144,6 +144,30 @@ Helper component for custom item rendering with consistent styling.
 | `title` | `string`                    | —       | Optional section header |
 | `items` | `XDSDropdownMenuItemData[]` | —       | Items in the section    |
 
+## Theming
+
+Themes can override `DropdownMenu` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    dropdownMenu: {
+      root: myStyles,
+      item: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface | Description               |
+| ------- | ------------------------- |
+| `root`  | Dropdown container styles |
+| `item`  | Menu item styles          |
+
 ## Files
 
 | File                       | Role      | Purpose                          |

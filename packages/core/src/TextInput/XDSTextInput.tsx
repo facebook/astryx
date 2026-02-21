@@ -11,7 +11,7 @@
  * - /apps/storybook/stories/TextInput.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useId, type ChangeEvent} from 'react';
+import {forwardRef, useContext, useId, type ChangeEvent} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   CheckCircleIcon,
@@ -118,7 +118,23 @@ export type {
   XDSInputStatus as XDSTextInputStatus,
   XDSInputStatusType as XDSTextInputStatusType,
 } from '../Field';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
+// =============================================================================
+// Module Augmentation - Register component styles with ComponentStyles
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    textInput?: {
+      /** Wrapper container styles */
+      wrapper?: ThemeStyleXStyles;
+      /** Input element styles */
+      input?: ThemeStyleXStyles;
+    };
+  }
+}
 export interface XDSTextInputProps {
   /**
    * Label text for the input (always rendered for accessibility).
@@ -224,6 +240,10 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
     },
     ref,
   ) => {
+    const themeContext = useContext(ThemeContext);
+    const wrapperOverride = themeContext?.theme.components?.textInput?.wrapper;
+    const inputOverride = themeContext?.theme.components?.textInput?.input;
+
     const id = useId();
     const descriptionID = useId();
     const statusMessageID = useId();
@@ -276,6 +296,7 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
             sizeStyles[size],
             isDisabled && styles.wrapperDisabled,
             status && statusBorderStyles[status.type],
+            wrapperOverride,
           )}>
           {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
           <input
@@ -291,7 +312,11 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
             aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
-            {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
+            {...stylex.props(
+              styles.input,
+              isDisabled && styles.inputDisabled,
+              inputOverride,
+            )}
           />
           {status && (
             <XDSIcon

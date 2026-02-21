@@ -10,18 +10,37 @@
  * - /apps/storybook/stories/Grid.stories.tsx
  */
 
-import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
+import {
+  forwardRef,
+  useContext,
+  type HTMLAttributes,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {SpacingScale} from '../Layout';
 import type {SizeValue} from '../utils/types';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
 /**
  * Grid alignment options for align-items and justify-items.
  */
 export type GridAlignment = 'start' | 'center' | 'end' | 'stretch';
 
+// =============================================================================
+// Module Augmentation - Register component styles with ComponentStyles
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    grid?: {
+      /** Root container styles */
+      root?: ThemeStyleXStyles;
+    };
+  }
+}
 export interface XDSGridProps extends Omit<
   HTMLAttributes<HTMLElement>,
   'style' | 'className'
@@ -338,6 +357,9 @@ export const XDSGrid = forwardRef<HTMLElement, XDSGridProps>(function XDSGrid(
   },
   ref,
 ) {
+  const themeContext = useContext(ThemeContext);
+  const rootOverride = themeContext?.theme.components?.grid?.root;
+
   // Determine grid-template-columns value
   let gridTemplateColumns: string;
   let calculatedMaxWidth: number | undefined;
@@ -386,6 +408,7 @@ export const XDSGrid = forwardRef<HTMLElement, XDSGridProps>(function XDSGrid(
         align != null && alignStyles[align],
         justify != null && justifyStyles[justify],
         xstyle,
+        rootOverride,
       )}
       style={inlineStyle}
       {...props}>

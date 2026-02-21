@@ -11,7 +11,13 @@
  * - /apps/storybook/stories/TextArea.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useId, type ChangeEvent, type ClipboardEvent} from 'react';
+import {
+  forwardRef,
+  useContext,
+  useId,
+  type ChangeEvent,
+  type ClipboardEvent,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   CheckCircleIcon,
@@ -29,6 +35,8 @@ import {
 } from '../theme/tokens.stylex';
 import {XDSField} from '../Field';
 import {XDSIcon, type XDSIconType} from '../Icon';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
 const styles = stylex.create({
   wrapper: {
@@ -124,6 +132,20 @@ export interface XDSTextAreaStatus {
   message?: string;
 }
 
+// =============================================================================
+// Module Augmentation - Register component styles with ComponentStyles
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    textArea?: {
+      /** Wrapper container styles */
+      wrapper?: ThemeStyleXStyles;
+      /** Textarea element styles */
+      textarea?: ThemeStyleXStyles;
+    };
+  }
+}
 export interface XDSTextAreaProps {
   /**
    * Label text for the textarea (always rendered for accessibility).
@@ -244,6 +266,10 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
     },
     ref,
   ) => {
+    const themeContext = useContext(ThemeContext);
+    const wrapperOverride = themeContext?.theme.components?.textArea?.wrapper;
+    const textareaOverride = themeContext?.theme.components?.textArea?.textarea;
+
     const id = useId();
     const descriptionID = useId();
     const statusMessageID = useId();
@@ -295,6 +321,7 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
             styles.wrapper,
             isDisabled && styles.wrapperDisabled,
             status && statusBorderStyles[status.type],
+            wrapperOverride,
           )}>
           {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
           <textarea
@@ -316,6 +343,7 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
             {...stylex.props(
               styles.textarea,
               isDisabled && styles.textareaDisabled,
+              textareaOverride,
             )}
           />
           {status && (

@@ -11,9 +11,11 @@
  * - /apps/storybook/stories/RadioList.stories.tsx
  */
 
-import {createContext, useId, type ReactNode} from 'react';
+import {createContext, useContext, useId, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {spacingVars} from '../theme/tokens.stylex';
 import {XDSField} from '../Field/XDSField';
 import type {XDSInputStatus} from '../Field/types';
@@ -36,6 +38,18 @@ export interface RadioListContextValue {
 export const RadioListContext = createContext<RadioListContextValue | null>(
   null,
 );
+
+// =============================================================================
+// Module Augmentation - Register RadioList's themeable properties
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    radioList?: {
+      root?: ThemeStyleXStyles;
+    };
+  }
+}
 
 const styles = stylex.create({
   radiogroup: {
@@ -155,6 +169,10 @@ export function XDSRadioList({
   'data-testid': dataTestId,
   children,
 }: XDSRadioListProps) {
+  // Get theme context for component-level overrides (optional)
+  const themeContext = useContext(ThemeContext);
+  const rootOverride = themeContext?.theme.components?.radioList?.root;
+
   const name = useId();
   const inputID = useId();
   const descriptionID = useId();
@@ -208,6 +226,7 @@ export function XDSRadioList({
         {...stylex.props(
           styles.radiogroup,
           orientation === 'vertical' ? styles.vertical : styles.horizontal,
+          rootOverride,
         )}>
         <RadioListContext.Provider value={contextValue}>
           {children}

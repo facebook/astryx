@@ -46,3 +46,25 @@ import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
 
 Use `XDSGrid` for any grid layout instead of manual CSS grid (`display: 'grid'`,
 `gridTemplateColumns`). It handles gap tokens and works with any column count.
+
+## Theming
+
+Themes can override `Grid` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    grid: {
+      root: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface | Description                |
+| ------- | -------------------------- |
+| `root`  | Root grid container styles |

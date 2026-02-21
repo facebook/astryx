@@ -10,10 +10,29 @@
  * - /apps/storybook/stories/AspectRatio.stories.tsx
  */
 
-import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
+import {
+  forwardRef,
+  useContext,
+  type HTMLAttributes,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
+// =============================================================================
+// Module Augmentation - Register component styles with ComponentStyles
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    aspectRatio?: {
+      /** Root container styles */
+      root?: ThemeStyleXStyles;
+    };
+  }
+}
 export interface XDSAspectRatioProps extends Omit<
   HTMLAttributes<HTMLElement>,
   'style' | 'className'
@@ -65,10 +84,12 @@ const styles = stylex.create({
  */
 export const XDSAspectRatio = forwardRef<HTMLElement, XDSAspectRatioProps>(
   function XDSAspectRatio({ratio, children, xstyle, ...props}, ref) {
+    const themeContext = useContext(ThemeContext);
+    const rootOverride = themeContext?.theme.components?.aspectRatio?.root;
     return (
       <div
         ref={ref as React.Ref<HTMLDivElement>}
-        {...stylex.props(styles.container, xstyle)}
+        {...stylex.props(styles.container, xstyle, rootOverride)}
         style={{aspectRatio: ratio}}
         {...props}>
         <div {...stylex.props(styles.child)}>{children}</div>

@@ -103,6 +103,30 @@ import { XDSNumberInput } from '@xds/core/NumberInput';
 | `onBlur`        | `(e: FocusEvent<HTMLInputElement>) => void`               | No       | Callback fired when the input loses focus                          |
 | `onEnter`       | `() => void`                                              | No       | Callback fired when the user presses the Enter key                 |
 
+## Theming
+
+Themes can override `NumberInput` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    numberInput: {
+      wrapper: myStyles,
+      input: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface   | Description                 |
+| --------- | --------------------------- |
+| `wrapper` | Input wrapper styles        |
+| `input`   | Number input element styles |
+
 ## Files
 
 | File                      | Role  | Purpose                     |

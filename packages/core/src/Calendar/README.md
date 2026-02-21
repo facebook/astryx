@@ -71,6 +71,28 @@ interface DateRange {
 }
 ```
 
+## Theming
+
+Themes can override `Calendar` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    calendar: {
+      root: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface | Description           |
+| ------- | --------------------- |
+| `root`  | Root container styles |
+
 ## Files
 
 | File                 | Role   | Purpose                  |

@@ -13,6 +13,7 @@
 
 import {
   forwardRef,
+  useContext,
   useState,
   useMemo,
   useCallback,
@@ -44,6 +45,8 @@ import {
   getWeekNumber,
   formatAccessibleDate,
 } from './utils';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
 // =============================================================================
 // Types
@@ -156,6 +159,18 @@ interface XDSCalendarRangeProps extends XDSCalendarBaseProps {
   onChange?: (value: DateRange) => void;
 }
 
+// =============================================================================
+// Module Augmentation - Register component styles with ComponentStyles
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    calendar?: {
+      /** Root container styles */
+      root?: ThemeStyleXStyles;
+    };
+  }
+}
 export type XDSCalendarProps = XDSCalendarSingleProps | XDSCalendarRangeProps;
 
 // =============================================================================
@@ -187,6 +202,10 @@ export const XDSCalendar = forwardRef<XDSCalendarHandle, XDSCalendarProps>(
       weekStartsOn = 0,
       ...rest
     } = props;
+
+    // Get theme context for component-level overrides
+    const themeContext = useContext(ThemeContext);
+    const rootOverride = themeContext?.theme.components?.calendar?.root;
 
     // Today's date (memoized)
     const today = useMemo(() => new Date(), []);
@@ -337,7 +356,7 @@ export const XDSCalendar = forwardRef<XDSCalendarHandle, XDSCalendarProps>(
     );
 
     return (
-      <div {...stylex.props(calendarStyles.calendar)} {...rest}>
+      <div {...stylex.props(calendarStyles.calendar, rootOverride)} {...rest}>
         {/* Header with navigation */}
         <div {...stylex.props(calendarStyles.header)}>
           <XDSButton

@@ -96,6 +96,28 @@ import { XDSTabList, XDSTab, XDSTabMenu } from '@xds/core/TabList';
 | `label` | `string`      | Option display label           |
 | `icon`  | `XDSIconType` | Optional icon before the label |
 
+## Theming
+
+Themes can override `TabList` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    tabList: {
+      root: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface | Description               |
+| ------- | ------------------------- |
+| `root`  | Root nav container styles |
+
 ## Files
 
 | File                   | Role    | Purpose                                    |

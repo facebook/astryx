@@ -59,6 +59,30 @@ import { XDSTextArea } from '@xds/core/TextArea';
 | `rows`          | `number`                                                       | No       | Number of visible text rows (default: 3)                           |
 | `isDisabled`    | `boolean`                                                      | No       | Whether the textarea is disabled (default: false)                  |
 
+## Theming
+
+Themes can override `TextArea` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    textArea: {
+      wrapper: myStyles,
+      textarea: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface    | Description              |
+| ---------- | ------------------------ |
+| `wrapper`  | Wrapper container styles |
+| `textarea` | Textarea element styles  |
+
 ## Files
 
 | File                   | Role  | Purpose                     |

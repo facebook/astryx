@@ -11,7 +11,13 @@
  * - /apps/storybook/stories/CheckboxInput.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useId, type ChangeEvent, type FocusEvent} from 'react';
+import {
+  forwardRef,
+  useContext,
+  useId,
+  type ChangeEvent,
+  type FocusEvent,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -25,6 +31,8 @@ import {XDSFieldLabel} from '../Field/XDSFieldLabel';
 import {XDSFieldStatus} from '../Field/XDSFieldStatus';
 import type {XDSIconType} from '../Icon';
 import type {XDSInputStatus} from '../Field/types';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
 const styles = stylex.create({
   container: {
@@ -181,6 +189,20 @@ const labelWrapperSizeStyles = stylex.create({
 
 export type XDSCheckboxInputSize = keyof typeof wrapperSizeStyles;
 
+// =============================================================================
+// Module Augmentation - Register component styles with ComponentStyles
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    checkboxInput?: {
+      /** Root container styles */
+      root?: ThemeStyleXStyles;
+      /** Visual checkbox styles */
+      checkbox?: ThemeStyleXStyles;
+    };
+  }
+}
 export interface XDSCheckboxInputProps {
   /**
    * Label text for the checkbox (always rendered for accessibility).
@@ -278,6 +300,11 @@ export const XDSCheckboxInput = forwardRef<
     },
     ref,
   ) => {
+    const themeContext = useContext(ThemeContext);
+    const rootOverride = themeContext?.theme.components?.checkboxInput?.root;
+    const checkboxOverride =
+      themeContext?.theme.components?.checkboxInput?.checkbox;
+
     const id = useId();
     const descriptionID = useId();
     const statusMessageID = useId();
@@ -299,6 +326,7 @@ export const XDSCheckboxInput = forwardRef<
           {...stylex.props(
             styles.container,
             isLabelHidden && styles.containerLabelHidden,
+            rootOverride,
             !isDisabled && stylex.defaultMarker(),
           )}>
           <div
@@ -326,6 +354,7 @@ export const XDSCheckboxInput = forwardRef<
               {...stylex.props(
                 styles.checkbox,
                 checkboxSizeStyles[size],
+                checkboxOverride,
                 isCheckedOrIndeterminate
                   ? styles.checkboxChecked
                   : styles.checkboxUnchecked,

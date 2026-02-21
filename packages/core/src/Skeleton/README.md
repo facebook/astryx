@@ -65,6 +65,28 @@ The skeleton uses three timing constants:
 
 For element at index `n`, animation starts at: `DELAY_TIME + (STAGGER_TIME × n)`
 
+## Theming
+
+Themes can override `Skeleton` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    skeleton: {
+      root: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface | Description                  |
+| ------- | ---------------------------- |
+| `root`  | Root skeleton element styles |
+
 ## Files
 
 | File              | Role  | Purpose                     |
