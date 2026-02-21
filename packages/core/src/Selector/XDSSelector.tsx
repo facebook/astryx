@@ -76,10 +76,7 @@ const styles = stylex.create({
       default: 'none',
       ':focus': `2px solid ${colorVars['--color-focus-outline']}`,
     },
-    outlineOffset: {
-      default: '0',
-      ':focus': '1px',
-    },
+    outlineOffset: '0',
   },
   triggerDisabled: {
     cursor: 'not-allowed',

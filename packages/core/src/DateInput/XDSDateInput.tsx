@@ -66,10 +66,7 @@ const styles = stylex.create({
       default: 'none',
       ':focus-within': `2px solid ${colorVars['--color-focus-outline']}`,
     },
-    outlineOffset: {
-      default: '0',
-      ':focus-within': '1px',
-    },
+    outlineOffset: '0',
   },
   wrapperDisabled: {
     cursor: 'not-allowed',
