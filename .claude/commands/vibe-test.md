@@ -39,7 +39,7 @@ internal/vibe-tests/results/<iteration>/manifest.json
 For each test prompt, spawn a subagent using the Task tool with:
 
 - `subagent_type`: "general-purpose"
-- Read the skill doc at `packages/core/xds.md`
+- Read the generated skill doc at `internal/vibe-tests/.generated/xds-skill.md` (generate it first with `cd internal/vibe-tests && bash scripts/generate-skill-doc.sh`)
 - Generate code for the prompt using XDS components
 - Self-evaluate the response for:
   - Correct components used

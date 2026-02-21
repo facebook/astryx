@@ -20,6 +20,9 @@ CLI="$REPO_ROOT/packages/cli/bin/xds.mjs"
 OUT_DIR="$VIBE_DIR/.generated"
 OUT_FILE="$OUT_DIR/xds-skill.md"
 
+# No CLI rebuild needed — the CLI uses raw .mjs files and discovers
+# components by scanning packages/core/src/ directly via readdirSync.
+
 mkdir -p "$OUT_DIR"
 
 echo "Generating XDS skill doc from CLI..." >&2
