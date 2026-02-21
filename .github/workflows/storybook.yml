@@ -81,7 +81,7 @@ jobs:
       - name: Build Sandbox
         run: yarn workspace @xds/sandbox build
         env:
-          SANDBOX_BASE_PATH: /${{ github.event.repository.name }}/${{ steps.hash.outputs.short_hash }}/sandbox
+          SANDBOX_BASE_PATH: /${{ steps.hash.outputs.short_hash }}/sandbox
 
       - name: Prepare versioned deployment
         id: urls

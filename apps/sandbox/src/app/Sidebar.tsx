@@ -4,11 +4,21 @@ import * as stylex from '@stylexjs/stylex';
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
 
+/**
+ * Sidebar navigation for the sandbox.
+ *
+ * To add a new page:
+ * 1. Create `src/app/pages/<name>/page.tsx`
+ * 2. Add an entry to the `pages` array below
+ *
+ * Note: hrefs use trailing slashes because the sandbox is a static export
+ * with `trailingSlash: true` in next.config.mjs. Each route becomes a
+ * directory with an `index.html` file (e.g. `/pages/example/index.html`).
+ * Next.js `<Link>` handles the basePath prefix automatically.
+ */
 const pages = [
   {name: 'Home', href: '/'},
-  {name: 'Buttons', href: '/pages/buttons'},
-  {name: 'Form', href: '/pages/form'},
-  {name: 'Typography', href: '/pages/typography'},
+  {name: 'Example', href: '/pages/example/'},
 ];
 
 const styles = stylex.create({
