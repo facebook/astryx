@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSAppShell} from '@xds/core/AppShell';
+import {XDSBanner} from '@xds/core/Banner';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
 import {XDSTopNav, XDSTopNavTitle, XDSTopNavItem} from '@xds/core/TopNav';
@@ -37,12 +38,6 @@ const styles = stylex.create({
   },
   content: {
     padding: spacingVars['--spacing-6'],
-  },
-  banner: {
-    padding: `${spacingVars['--spacing-2']} ${spacingVars['--spacing-4']}`,
-    backgroundColor: colorVars['--color-blue-background'],
-    color: colorVars['--color-blue-text'],
-    fontSize: 13,
   },
   longContent: {
     display: 'flex',
@@ -164,10 +159,13 @@ export const WithBanner: Story = {
       }
       sideNav={<MockPageNav />}
       banner={
-        // TODO: Replace with <XDSBanner> once the Banner component is available
-        <div {...stylex.props(styles.banner)}>
-          ℹ️ System maintenance scheduled for tonight at 10pm UTC.
-        </div>
+        <XDSBanner
+          status="info"
+          variant="section"
+          title="System maintenance scheduled"
+          description="The system will undergo maintenance tonight at 10pm UTC."
+          isDismissable
+        />
       }>
       <MockContent />
     </XDSAppShell>
