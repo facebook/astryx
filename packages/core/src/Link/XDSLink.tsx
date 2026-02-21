@@ -82,6 +82,31 @@ const styles = stylex.create({
   },
 });
 
+/**
+ * Link color styles — applied to the <a> element so the underline
+ * and icon colors match the text color set by XDSText.
+ */
+const linkColorStyles = stylex.create({
+  primary: {
+    color: colorVars['--color-text-primary'],
+  },
+  secondary: {
+    color: colorVars['--color-text-secondary'],
+  },
+  disabled: {
+    color: colorVars['--color-text-disabled'],
+  },
+  placeholder: {
+    color: colorVars['--color-text-placeholder'],
+  },
+  active: {
+    color: colorVars['--color-accent'],
+  },
+  inherit: {
+    color: 'inherit',
+  },
+});
+
 // =============================================================================
 // Module Augmentation - Register Link's style surfaces with ComponentStyles
 // =============================================================================
@@ -246,6 +271,7 @@ export const XDSLink = forwardRef<HTMLAnchorElement, XDSLinkProps>(
         tabIndex={isDisabled ? -1 : undefined}
         {...stylex.props(
           styles.base,
+          linkColorStyles[color],
           hasUnderline && styles.hasUnderline,
           isStandalone && styles.standalone,
           isDisabled && styles.disabled,
