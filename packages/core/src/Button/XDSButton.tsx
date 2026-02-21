@@ -105,7 +105,7 @@ const variants = stylex.create({
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-visible': `1px solid ${colorVars['--color-focus-outline']}`,
     },
     outlineOffset: {
       default: '0',
@@ -122,7 +122,7 @@ const variants = stylex.create({
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-visible': `1px solid ${colorVars['--color-focus-outline']}`,
     },
     outlineOffset: {
       default: '0',
@@ -139,7 +139,7 @@ const variants = stylex.create({
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-visible': `1px solid ${colorVars['--color-focus-outline']}`,
     },
     outlineOffset: {
       default: '0',
@@ -156,7 +156,7 @@ const variants = stylex.create({
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-negative']}`,
+      ':focus-visible': `1px solid ${colorVars['--color-negative']}`,
     },
     outlineOffset: {
       default: '0',

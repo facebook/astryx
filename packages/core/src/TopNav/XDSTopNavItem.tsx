@@ -49,7 +49,7 @@ const styles = stylex.create({
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-visible': `1px solid ${colorVars['--color-focus-outline']}`,
     },
     outlineOffset: {
       default: '0',

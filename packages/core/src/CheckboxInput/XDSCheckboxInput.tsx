@@ -72,7 +72,7 @@ const styles = stylex.create({
     transitionDuration: transitionVars['--transition-fast'],
   },
   checkboxFocused: {
-    outline: `2px solid ${colorVars['--color-focus-outline']}`,
+    outline: `1px solid ${colorVars['--color-focus-outline']}`,
     outlineOffset: 2,
   },
   // State-dependent colors with ancestor hover behavior

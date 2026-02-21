@@ -221,7 +221,7 @@ const styles = stylex.create({
   thumbFocusWithin: {
     outline: {
       default: 'none',
-      ':focus-within': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-within': `1px solid ${colorVars['--color-focus-outline']}`,
     },
     outlineOffset: {
       default: '0',

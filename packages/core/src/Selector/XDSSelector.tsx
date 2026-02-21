@@ -74,7 +74,7 @@ const styles = stylex.create({
     transitionDuration: transitionVars['--transition-fast'],
     outline: {
       default: 'none',
-      ':focus': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus': `1px solid ${colorVars['--color-focus-outline']}`,
     },
     outlineOffset: {
       default: '0',
@@ -215,19 +215,19 @@ const statusFocusStyles = stylex.create({
   warning: {
     outline: {
       default: 'none',
-      ':focus': `2px solid ${colorVars['--color-focus-outline-warning']}`,
+      ':focus': `1px solid ${colorVars['--color-focus-outline-warning']}`,
     },
   },
   error: {
     outline: {
       default: 'none',
-      ':focus': `2px solid ${colorVars['--color-focus-outline-error']}`,
+      ':focus': `1px solid ${colorVars['--color-focus-outline-error']}`,
     },
   },
   success: {
     outline: {
       default: 'none',
-      ':focus': `2px solid ${colorVars['--color-focus-outline-success']}`,
+      ':focus': `1px solid ${colorVars['--color-focus-outline-success']}`,
     },
   },
 });
