@@ -63,6 +63,11 @@ function getStorybookLink(storybookBaseUrl, storyTitle) {
   return `${storybookBaseUrl}?path=/docs/${storyPath}--docs`;
 }
 
+// Build an external link that opens in a new tab
+function extLink(text, url) {
+  return `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+}
+
 // Build component stats section
 let componentSection = '';
 if (analysis.newComponents && analysis.newComponents.length > 0) {
@@ -70,7 +75,7 @@ if (analysis.newComponents && analysis.newComponents.length > 0) {
   for (const comp of analysis.newComponents) {
     const stats = analysis.componentStats[comp] || {};
     const sbLink = getStorybookLink(storybookUrl, stats.storyTitle);
-    const sbBadge = sbLink ? ` · [View in Storybook](${sbLink})` : '';
+    const sbBadge = sbLink ? ` · ${extLink('View in Storybook', sbLink)}` : '';
     componentSection += `<details>\n<summary><strong>${comp}</strong>${sbBadge}</summary>\n\n`;
     componentSection += `| Metric | Value |\n|--------|-------|\n`;
     componentSection += `| Bundle Size (ESM) | ${stats.esmSize || 'N/A'} |\n`;
@@ -92,7 +97,7 @@ if (analysis.modifiedComponents && analysis.modifiedComponents.length > 0) {
     const stats = analysis.componentStats[comp] || {};
     const baseStats = analysis.baseComponentStats?.[comp] || {};
     const sbLink = getStorybookLink(storybookUrl, stats.storyTitle);
-    const sbBadge = sbLink ? ` · [View in Storybook](${sbLink})` : '';
+    const sbBadge = sbLink ? ` · ${extLink('View in Storybook', sbLink)}` : '';
     componentSection += `<details>\n<summary><strong>${comp}</strong>${sbBadge}</summary>\n\n`;
     componentSection += `| Metric | Before | After | Delta |\n|--------|--------|-------|-------|\n`;
 
@@ -188,13 +193,13 @@ if (hasAffectedComponents && screenshots.length > 0) {
         if (videoUrl) {
           // Link to mp4 if available, otherwise link to gif
           const fullVideoUrl = mp4Url || videoUrl;
-          screenshotSection += `**Interaction Preview:** ([view video](${fullVideoUrl}))\n\n![${storyName} interaction](${videoUrl})\n\n`;
+          screenshotSection += `**Interaction Preview:** (${extLink('view video', fullVideoUrl)})\n\n![${storyName} interaction](${videoUrl})\n\n`;
         }
 
         // Build a direct Storybook link for this specific story
         const storyLink = storybookUrl ? `${storybookUrl}?path=/story/${shot.storyId}` : null;
         if (storyLink) {
-          screenshotSection += `[View in Storybook](${storyLink}) · `;
+          screenshotSection += `${extLink('View in Storybook', storyLink)} · `;
         }
         screenshotSection += `\`${shot.storyId}\`\n\n`;
 
@@ -211,7 +216,7 @@ let storybookSection = '';
 if (storybookUrl) {
   storybookSection = `### 📚 Storybook Preview
 
-**[View Storybook for this PR](${storybookUrl})**
+**${extLink('View Storybook for this PR', storybookUrl)}**
 
 `;
 }
@@ -221,16 +226,16 @@ let sandboxSection = '';
 if (sandboxUrl) {
   sandboxSection = `### 🧪 Sandbox Preview
 
-**[View Sandbox for this PR](${sandboxUrl})**
+**${extLink('View Sandbox for this PR', sandboxUrl)}**
 
 `;
 }
 
 // Build footer with links
 let footerLinks = [];
-if (storybookUrl) footerLinks.push(`[Storybook](${storybookUrl})`);
-if (sandboxUrl) footerLinks.push(`[Sandbox](${sandboxUrl})`);
-if (runUrl) footerLinks.push(`[View full report](${runUrl})`);
+if (storybookUrl) footerLinks.push(extLink('Storybook', storybookUrl));
+if (sandboxUrl) footerLinks.push(extLink('Sandbox', sandboxUrl));
+if (runUrl) footerLinks.push(extLink('View full report', runUrl));
 const footerLinksStr = footerLinks.length > 0 ? ` | ${footerLinks.join(' | ')}` : '';
 
 // Build the full comment
