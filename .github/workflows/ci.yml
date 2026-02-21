@@ -168,7 +168,7 @@ jobs:
           path: apps/storybook/dist
 
       - name: Install Playwright
-        run: npm install playwright && npx playwright install chromium
+        run: npm install playwright && npx playwright install --with-deps chromium
 
       - name: Install ffmpeg for video conversion
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
@@ -258,7 +258,7 @@ jobs:
           path: apps/storybook/dist
 
       - name: Install Playwright
-        run: npm install playwright && npx playwright install chromium
+        run: npm install playwright && npx playwright install --with-deps chromium
 
       - name: Run accessibility audit
         run: |

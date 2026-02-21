@@ -1,6 +1,6 @@
 # Deploy Storybook to GitHub Pages
 # Only runs on push to main — simple and sequential: test → deploy
-name: Deploy Storybook to Pages
+name: Deploy
 
 on:
   push:
