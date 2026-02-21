@@ -30,60 +30,127 @@ function clamp(n: number): number {
 // Known component catalogs
 // ============================================================
 
-const KNOWN_XDS_COMPONENTS = new Set([
-  'XDSAspectRatio',
-  'XDSAvatar',
-  'XDSBadge',
-  'XDSBreadcrumbs',
-  'XDSButton',
-  'XDSCalendar',
-  'XDSCard',
-  'XDSCenter',
-  'XDSCheckboxInput',
-  'XDSCloseButton',
-  'XDSDateInput',
-  'XDSDialog',
-  'XDSDivider',
-  'XDSDropdownMenu',
-  'XDSEmptyState',
-  'XDSField',
-  'XDSGrid',
-  'XDSIcon',
-  'XDSLayer',
-  'XDSLayout',
-  'XDSLayoutHeader',
-  'XDSLayoutContent',
-  'XDSLayoutPanel',
-  'XDSLink',
-  'XDSNumberInput',
-  'XDSProgressBar',
-  'XDSRadioList',
-  'XDSSection',
-  'XDSSelector',
-  'XDSSkeleton',
-  'XDSSlider',
-  'XDSSpinner',
-  'XDSStack',
-  'XDSVStack',
-  'XDSHStack',
-  'XDSStackItem',
-  'XDSStatusDot',
-  'XDSSwitch',
-  'XDSTabList',
-  'XDSTab',
-  'XDSTable',
-  'XDSText',
-  'XDSTextArea',
-  'XDSTextInput',
-  'XDSTimeInput',
-  'XDSTopNav',
-  'XDSHeading',
-  'XDSFontWrapper',
-  'XDSTheme',
-  'Theme',
-  'defaultTheme',
-  'darkTheme',
-]);
+/**
+ * Auto-discover XDS components from the core package source.
+ * Falls back to a hardcoded list if the source isn't available.
+ */
+function discoverXDSComponents(): Set<string> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require('node:fs');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const path = require('node:path');
+    const candidates = [
+      path.resolve(import.meta.dirname, '../../../packages/core/src'),
+      path.resolve(import.meta.dirname, '../../../../packages/core/src'),
+    ];
+    for (const srcDir of candidates) {
+      if (fs.existsSync(srcDir)) {
+        const components = new Set<string>();
+        function scan(dir: string) {
+          for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+            if (
+              entry.isDirectory() &&
+              !entry.name.startsWith('_') &&
+              entry.name !== 'node_modules'
+            ) {
+              scan(path.join(dir, entry.name));
+            } else if (
+              /^XDS[A-Z]\w+\.tsx$/.test(entry.name) &&
+              !entry.name.includes('.test.')
+            ) {
+              components.add(entry.name.replace('.tsx', ''));
+            }
+          }
+        }
+        scan(srcDir);
+        components.add('Theme');
+        components.add('defaultTheme');
+        components.add('darkTheme');
+        return components;
+      }
+    }
+  } catch {
+    // Fall through to hardcoded list
+  }
+  return new Set([
+    'XDSAspectRatio',
+    'XDSAvatar',
+    'XDSBadge',
+    'XDSBanner',
+    'XDSBaseTable',
+    'XDSBreadcrumbs',
+    'XDSBreadcrumbItem',
+    'XDSButton',
+    'XDSCalendar',
+    'XDSCard',
+    'XDSCenter',
+    'XDSCheckboxInput',
+    'XDSCloseButton',
+    'XDSDateInput',
+    'XDSDialog',
+    'XDSDialogHeader',
+    'XDSDivider',
+    'XDSDropdownMenu',
+    'XDSDropdownMenuItem',
+    'XDSEmptyState',
+    'XDSField',
+    'XDSFieldLabel',
+    'XDSFieldStatus',
+    'XDSFontWrapper',
+    'XDSGrid',
+    'XDSGridSpan',
+    'XDSHStack',
+    'XDSHeading',
+    'XDSHoverCard',
+    'XDSIcon',
+    'XDSLayer',
+    'XDSLayout',
+    'XDSLayoutContent',
+    'XDSLayoutFooter',
+    'XDSLayoutHeader',
+    'XDSLayoutPanel',
+    'XDSLink',
+    'XDSNumberInput',
+    'XDSProgressBar',
+    'XDSRadioList',
+    'XDSRadioListItem',
+    'XDSSection',
+    'XDSSelector',
+    'XDSSelectorItem',
+    'XDSSkeleton',
+    'XDSSlider',
+    'XDSSpinner',
+    'XDSStack',
+    'XDSStackItem',
+    'XDSStatusDot',
+    'XDSSwitch',
+    'XDSTab',
+    'XDSTabList',
+    'XDSTabMenu',
+    'XDSTable',
+    'XDSTableCell',
+    'XDSTableHeaderCell',
+    'XDSTableRow',
+    'XDSText',
+    'XDSTextArea',
+    'XDSTextInput',
+    'XDSTheme',
+    'XDSTimeInput',
+    'XDSTooltip',
+    'XDSTopNav',
+    'XDSTopNavItem',
+    'XDSTopNavMenu',
+    'XDSTopNavTitle',
+    'XDSTopNavTitleIcon',
+    'XDSVStack',
+    'Theme',
+    'defaultTheme',
+    'darkTheme',
+  ]);
+}
+
+const KNOWN_XDS_COMPONENTS = discoverXDSComponents();
 
 const KNOWN_BASELINE_COMPONENTS = new Set([
   'Button',
