@@ -1,6 +1,6 @@
 /**
  * @file XDSButton.tsx
- * @input Uses React forwardRef, ButtonHTMLAttributes, ReactNode
+ * @input Uses React, forwardRef, ButtonHTMLAttributes, ReactNode
  * @output Exports XDSButton component, XDSButtonProps, XDSButtonVariant types
  * @position Core implementation; consumed by index.ts, tested by XDSButton.test.tsx
  *
