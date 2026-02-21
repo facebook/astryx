@@ -112,9 +112,9 @@ jobs:
           mkdir -p deploy/${SHORT_HASH}
           cp -r apps/storybook/dist/* deploy/${SHORT_HASH}/
 
-          if [ -d "apps/sandbox/dist" ]; then
+          if [ -d "apps/sandbox/out" ]; then
             mkdir -p deploy/${SHORT_HASH}/sandbox
-            cp -r apps/sandbox/dist/* deploy/${SHORT_HASH}/sandbox/
+            cp -r apps/sandbox/out/* deploy/${SHORT_HASH}/sandbox/
           fi
 
           touch deploy/.nojekyll
