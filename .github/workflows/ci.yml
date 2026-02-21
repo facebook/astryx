@@ -179,7 +179,8 @@ jobs:
             --storybook-url "${{ needs.build.outputs.storybook_url }}" \
             --sandbox-url "${{ needs.build.outputs.sandbox_url }}" \
             --run-url "$RUN_URL" \
-            --pr-number "${{ github.event.pull_request.number }}")
+            --pr-number "${{ github.event.pull_request.number }}" \
+            --pending)
 
           echo "$COMMENT_BODY" > pr-comment.md
 

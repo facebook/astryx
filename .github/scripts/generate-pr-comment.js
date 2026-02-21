@@ -2,7 +2,7 @@
 
 /**
  * @description Generates and posts PR comment with analysis results and embedded screenshots
- * @input --analysis <file> --a11y <file> --screenshots <file> --screenshot-urls <file> --storybook-url <url> --run-url <url>
+ * @input --analysis <file> --a11y <file> --screenshots <file> --screenshot-urls <file> --storybook-url <url> --run-url <url> [--pending]
  * @output Formatted markdown comment body to stdout
  */
 
@@ -22,6 +22,7 @@ const runUrl = getArg('run-url') || '';
 const prNumber = getArg('pr-number') || '';
 const storybookUrl = getArg('storybook-url') || '';
 const sandboxUrl = getArg('sandbox-url') || '';
+const pending = args.includes('--pending');
 
 // Read analysis results
 let analysis = { newComponents: [], modifiedComponents: [], componentStats: {}, totalBundle: {} };
@@ -215,9 +216,13 @@ if (runUrl) footerLinks.push(`[View full report](${runUrl})`);
 const footerLinksStr = footerLinks.length > 0 ? ` | ${footerLinks.join(' | ')}` : '';
 
 // Build the full comment
+const pendingNotice = pending
+  ? `> ⏳ Preview links may take up to 1 minute to go live. Screenshots and accessibility audit are still running...\n\n`
+  : '';
+
 const body = `## PR Analysis Report
 
-${storybookSection}${sandboxSection}${componentSection || '_No new or modified components detected._\n\n'}
+${pendingNotice}${storybookSection}${sandboxSection}${componentSection || '_No new or modified components detected._\n\n'}
 ${bundleSection}
 ${a11ySection}
 ${screenshotSection}
