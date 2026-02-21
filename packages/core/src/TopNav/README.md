@@ -7,7 +7,6 @@ Top navigation bar component for application headers.
 ## Features
 
 - **Slot-based layout**: `title`, `startContent`, `endContent` for flexible organization
-- **Position modes**: Static, sticky, or fixed positioning
 - **Companion components**: XDSTopNavTitle, XDSTopNavTitleIcon, XDSTopNavItem
 - **Accessible**: Proper ARIA roles and keyboard navigation
 - **Themeable**: Uses XDS design tokens for styling
@@ -26,7 +25,6 @@ import {HomeIcon, BellIcon, UserCircleIcon} from '@heroicons/react/24/outline';
 
 <XDSTopNav
   label="Main navigation"
-  position="sticky"
   title={
     <XDSTopNavTitle
       title="My App"
@@ -74,13 +72,12 @@ import {HomeIcon, BellIcon, UserCircleIcon} from '@heroicons/react/24/outline';
 
 ### XDSTopNav
 
-| Prop           | Type                              | Default    | Description                                           |
-| -------------- | --------------------------------- | ---------- | ----------------------------------------------------- |
-| `title`        | `ReactNode`                       | —          | Title slot (logo, brand) - left aligned               |
-| `startContent` | `ReactNode`                       | —          | Start content (nav items, breadcrumbs) - left aligned |
-| `endContent`   | `ReactNode`                       | —          | End content (search, icons, profile) - right aligned  |
-| `position`     | `'static' \| 'sticky' \| 'fixed'` | `'static'` | Position behavior                                     |
-| `label`        | `string`                          | —          | Accessible label for navigation landmark              |
+| Prop           | Type        | Default | Description                                           |
+| -------------- | ----------- | ------- | ----------------------------------------------------- |
+| `title`        | `ReactNode` | —       | Title slot (logo, brand) - left aligned               |
+| `startContent` | `ReactNode` | —       | Start content (nav items, breadcrumbs) - left aligned |
+| `endContent`   | `ReactNode` | —       | End content (search, icons, profile) - right aligned  |
+| `label`        | `string`    | —       | Accessible label for navigation landmark              |
 
 ### XDSTopNavTitle
 
@@ -164,8 +161,8 @@ const theme: Theme = {
 
 ## Layout Structure
 
-XDSTopNav works directly in XDSLayout's `header` slot — no XDSLayoutHeader
-wrapper needed. TopNav manages its own padding, height, and divider.
+XDSTopNav works in XDSLayout's `header` slot via XDSLayoutHeader (which handles
+the divider) or directly. TopNav manages its own padding and height.
 
 ```tsx
 import {XDSLayout, XDSLayoutContent, XDSLayoutPanel} from '@xds/core/Layout';
@@ -209,5 +206,6 @@ import {XDSTopNav, XDSTopNavTitle, XDSTopNavItem} from '@xds/core/TopNav';
 - XDSTopNavItem supports `aria-current="page"` when `isSelected` is true
 - XDSTopNavTitleIcon uses `--color-accent` background with `--color-icon-on-media` for contrast
 - Default height is 48px with 16px horizontal padding
-- Always displays a bottom divider using `--color-divider` token
 - Uses `--color-navbar` token for background (defaults to white)
+- Positioning (sticky/fixed) is handled by the layout system (e.g. XDSAppShell), not TopNav itself
+- Dividers are controlled by the layout system (e.g. XDSLayoutHeader's `hasDivider`), not TopNav

@@ -33,20 +33,7 @@ const styles = stylex.create({
     height: spacingVars['--spacing-12'],
     paddingInline: spacingVars['--spacing-4'],
     backgroundColor: colorVars['--color-navbar'],
-    borderBlockEnd: `1px solid ${colorVars['--color-divider']}`,
     boxSizing: 'border-box',
-  },
-  sticky: {
-    position: 'sticky',
-    top: 0,
-    zIndex: 100,
-  },
-  fixed: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
   },
   leftSection: {
     display: 'flex',
@@ -105,14 +92,6 @@ export interface XDSTopNavProps extends Omit<
    */
   endContent?: ReactNode;
   /**
-   * Position behavior of the nav bar.
-   * - `static`: Normal document flow (default)
-   * - `sticky`: Sticks to top on scroll
-   * - `fixed`: Fixed to viewport top
-   * @default 'static'
-   */
-  position?: 'static' | 'sticky' | 'fixed';
-  /**
    * Accessible label for the navigation landmark.
    * Helps screen readers identify the navigation area.
    */
@@ -125,6 +104,9 @@ export interface XDSTopNavProps extends Omit<
  * Uses a slot-based API with `title`, `startContent`, and `endContent` props
  * for flexible layout. Title and startContent are left-aligned, endContent
  * is right-aligned.
+ *
+ * Positioning is handled by the layout system (e.g. XDSAppShell applies sticky
+ * behavior in auto height mode). TopNav itself is a pure content component.
  *
  * @example
  * ```tsx
@@ -147,10 +129,7 @@ export interface XDSTopNavProps extends Omit<
  * ```
  */
 export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
-  function XDSTopNav(
-    {title, startContent, endContent, position = 'static', label, ...props},
-    ref,
-  ) {
+  function XDSTopNav({title, startContent, endContent, label, ...props}, ref) {
     const themeContext = useContext(ThemeContext);
     const rootOverride = themeContext?.theme.components?.topNav?.root;
 
@@ -159,12 +138,7 @@ export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
         ref={ref}
         role="navigation"
         aria-label={label}
-        {...stylex.props(
-          styles.base,
-          position === 'sticky' && styles.sticky,
-          position === 'fixed' && styles.fixed,
-          rootOverride,
-        )}
+        {...stylex.props(styles.base, rootOverride)}
         {...props}>
         <div {...stylex.props(styles.leftSection)}>
           {title && <div {...stylex.props(styles.title)}>{title}</div>}

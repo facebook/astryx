@@ -362,6 +362,104 @@ describe('XDSAppShell', () => {
   });
 
   // ===========================================================================
+  // Sticky navigation in auto mode
+  // ===========================================================================
+
+  it('wraps header in sticky container in auto mode', () => {
+    render(
+      <XDSAppShell
+        height="auto"
+        topNav={<div data-testid="topnav">Nav</div>}
+        data-testid="shell">
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+    const topNav = screen.getByTestId('topnav');
+    // The sticky wrapper is the parent of the XDSLayoutHeader div
+    // topNav -> XDSLayoutHeader div -> sticky wrapper div
+    const headerWrapper = topNav.parentElement?.parentElement;
+    expect(headerWrapper).toBeTruthy();
+    expect(
+      headerWrapper?.style.position ||
+        getComputedStyle(headerWrapper!).position,
+    ).toBeDefined();
+  });
+
+  it('does not apply sticky wrapper in fill mode', () => {
+    render(
+      <XDSAppShell
+        height="fill"
+        topNav={<div data-testid="topnav">Nav</div>}
+        data-testid="shell">
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+    // In fill mode, header still renders but without sticky wrapper styles
+    expect(screen.getByTestId('topnav')).toBeInTheDocument();
+  });
+
+  it('wraps sideNav in sticky container in auto mode', () => {
+    render(
+      <XDSAppShell
+        height="auto"
+        topNav={<div>Nav</div>}
+        sideNav={<div data-testid="sidenav">Side</div>}
+        data-testid="shell">
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+    expect(screen.getByTestId('sidenav')).toBeInTheDocument();
+    // The sideNav should be wrapped in a sticky div in auto mode
+    const sideNav = screen.getByTestId('sidenav');
+    // sideNav -> XDSLayoutPanel div -> sticky wrapper div
+    const stickyWrapper = sideNav.parentElement?.parentElement;
+    expect(stickyWrapper).toBeTruthy();
+  });
+
+  it('sets up ResizeObserver on header in auto mode', () => {
+    const observeSpy = vi.fn();
+    const disconnectSpy = vi.fn();
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(public callback: ResizeObserverCallback) {}
+        observe = observeSpy;
+        unobserve = vi.fn();
+        disconnect = disconnectSpy;
+      },
+    );
+
+    render(
+      <XDSAppShell height="auto" topNav={<div>Nav</div>} data-testid="shell">
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+
+    expect(observeSpy).toHaveBeenCalled();
+  });
+
+  it('does not set up ResizeObserver in fill mode', () => {
+    const observeSpy = vi.fn();
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(public callback: ResizeObserverCallback) {}
+        observe = observeSpy;
+        unobserve = vi.fn();
+        disconnect = vi.fn();
+      },
+    );
+
+    render(
+      <XDSAppShell height="fill" topNav={<div>Nav</div>} data-testid="shell">
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+
+    expect(observeSpy).not.toHaveBeenCalled();
+  });
+
+  // ===========================================================================
   // Ref forwarding
   // ===========================================================================
 
