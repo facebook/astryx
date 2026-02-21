@@ -8,6 +8,7 @@
  */
 
 // Components
+export * from './AppShell';
 export * from './AspectRatio';
 export * from './Avatar';
 export * from './Badge';
