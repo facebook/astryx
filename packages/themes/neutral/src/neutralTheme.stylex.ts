@@ -70,6 +70,9 @@ const colorRaw = {
   '--color-pressed-overlay':
     'light-dark(oklch(0 0 0 / 10%), oklch(1 0 0 / 10%))',
   '--color-focus-outline': 'light-dark(oklch(0.708 0 0), oklch(0.556 0 0))',
+  '--color-focus-outline-error': 'light-dark(#E3193B, #F5394F)',
+  '--color-focus-outline-success': 'light-dark(#0D8626, #0D8626)',
+  '--color-focus-outline-warning': 'light-dark(#F2C00B, #E9AF08)',
   '--color-deemphasized': 'light-dark(oklch(0.97 0 0), oklch(0.269 0 0))',
 
   // Text
