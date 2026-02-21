@@ -25,6 +25,9 @@
     "build": "tsup",
     "dev": "tsup --watch"
   },
+  "dependencies": {
+    "@heroicons/react": "^2.2.0"
+  },
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",
     "@xds/core": "*",

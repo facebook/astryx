@@ -154,7 +154,6 @@
     "esbuild-plugin-babel": "^0.2.3"
   },
   "dependencies": {
-    "@heroicons/react": "^2.2.0",
     "@stylexjs/stylex": "^0.17.4"
   }
 }

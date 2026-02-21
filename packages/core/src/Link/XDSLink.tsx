@@ -19,7 +19,6 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {ArrowTopRightOnSquareIcon} from '@heroicons/react/16/solid';
 
 import {
   colorVars,
@@ -263,11 +262,7 @@ export const XDSLink = forwardRef<HTMLAnchorElement, XDSLinkProps>(
           {children}
         </XDSText>
         {isExternalLink && (
-          <XDSIcon
-            icon={ArrowTopRightOnSquareIcon}
-            size="xsm"
-            color="inherit"
-          />
+          <XDSIcon icon="externalLink" size="xsm" color="inherit" />
         )}
       </a>
     );

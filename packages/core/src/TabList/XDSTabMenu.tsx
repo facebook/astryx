@@ -12,7 +12,8 @@
 
 import React, {useCallback, useId} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {CheckIcon, ChevronDownIcon} from '@heroicons/react/16/solid';
+import {XDSIcon} from '../Icon';
+import type {XDSIconType} from '../Icon';
 import {
   colorVars,
   spacingVars,
@@ -26,8 +27,6 @@ import {
 } from '../theme/tokens.stylex';
 import {useXDSLayer} from '../Layer/useXDSLayer';
 import {useListFocus} from '../hooks/useListFocus';
-import {XDSIcon} from '../Icon';
-import type {XDSIconType} from '../Icon';
 import {XDSDivider} from '../Divider';
 import {useXDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
@@ -272,10 +271,11 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
             <span {...stylex.props(styles.hoverUnderline)} />
           )}
         </span>
-        <ChevronDownIcon
+        <span
           aria-hidden="true"
-          {...stylex.props(styles.chevron, layer.isOpen && styles.chevronOpen)}
-        />
+          {...stylex.props(styles.chevron, layer.isOpen && styles.chevronOpen)}>
+          <XDSIcon icon="chevronDown" size="sm" color="inherit" />
+        </span>
       </button>
       {layer.render(
         <div
@@ -312,7 +312,7 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
                   {option.label}
                 </span>
                 {isSelected && (
-                  <CheckIcon {...stylex.props(styles.itemCheckmark)} />
+                  <XDSIcon icon="check" size="sm" color="accent" />
                 )}
               </div>
             );

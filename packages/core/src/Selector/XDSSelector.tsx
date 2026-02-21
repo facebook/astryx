@@ -19,13 +19,7 @@ import React, {
 import * as stylex from '@stylexjs/stylex';
 import {useXDSLayer} from '../Layer/useXDSLayer';
 import {XDSIcon} from '../Icon';
-import type {XDSIconType} from '../Icon';
-import {CheckIcon, ChevronDownIcon} from '@heroicons/react/16/solid';
-import {
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  XCircleIcon,
-} from '@heroicons/react/24/solid';
+import type {XDSIconName} from '../Icon';
 import {XDSField} from '../Field';
 import {XDSDivider} from '../Divider';
 import {
@@ -217,10 +211,10 @@ const statusBorderStyles = stylex.create({
   },
 });
 
-const STATUS_ICON_MAP: Record<XDSSelectorStatusType, XDSIconType> = {
-  warning: ExclamationTriangleIcon,
-  error: XCircleIcon,
-  success: CheckCircleIcon,
+const STATUS_ICON_MAP: Record<XDSSelectorStatusType, XDSIconName> = {
+  warning: 'warning',
+  error: 'xCircle',
+  success: 'checkCircle',
 };
 
 const STATUS_ICON_COLOR_MAP: Record<
@@ -488,7 +482,7 @@ export function XDSSelector<T extends XDSSelectorOption>({
           <span {...stylex.props(styles.itemContent)}>
             {children ? children(item) : <DefaultItem item={item} />}
           </span>
-          {isSelected && <CheckIcon {...stylex.props(styles.itemCheckmark)} />}
+          {isSelected && <XDSIcon icon="check" size="sm" color="accent" />}
         </div>
       );
     },
@@ -610,7 +604,7 @@ export function XDSSelector<T extends XDSSelectorOption>({
               color={STATUS_ICON_COLOR_MAP[status.type]}
             />
           ) : (
-            <ChevronDownIcon />
+            <XDSIcon icon="chevronDown" size="sm" color="inherit" />
           )}
         </span>
       </button>

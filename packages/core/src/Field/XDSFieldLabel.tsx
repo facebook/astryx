@@ -11,7 +11,7 @@
 
 import {forwardRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {InformationCircleIcon} from '@heroicons/react/24/outline';
+
 import {
   colorVars,
   fontWeightVars,
@@ -152,7 +152,7 @@ export const XDSFieldLabel = forwardRef<HTMLLabelElement, XDSFieldLabelProps>(
         {tooltip && (
           <XDSTooltip content={tooltip} placement="above">
             <XDSIcon
-              icon={InformationCircleIcon}
+              icon="info"
               size="sm"
               color={isDisabled ? 'disabled' : 'secondary'}
             />

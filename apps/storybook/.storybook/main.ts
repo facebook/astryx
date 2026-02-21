@@ -6,6 +6,18 @@ const rootDir = path.resolve(__dirname, '../../..');
 const coreRoot = path.resolve(__dirname, '../../../packages/core/src');
 const themeRoot = path.resolve(__dirname, '../../../packages/theme/src');
 
+/**
+ * Browser targets for lightningcss.
+ * Prevents lowering native light-dark() into --lightningcss-light/--lightningcss-dark
+ * polyfill variables. XDS tokens use native light-dark() which is baseline 2024:
+ * Chrome 123+, Firefox 120+, Safari 17.5+
+ */
+const lightningcssTargets = {
+  chrome: 123 << 16,
+  firefox: 120 << 16,
+  safari: (17 << 16) | (5 << 8),
+};
+
 const config: StorybookConfig = {
   stories: [
     '../stories/**/*.mdx',
@@ -55,6 +67,18 @@ const config: StorybookConfig = {
             type: 'commonJS',
             rootDir: rootDir,
           },
+          // The StyleX unplugin runs its own internal lightningcss transform
+          // with default targets of browserslist('>= 1%') which includes
+          // Chrome 112 — a browser that doesn't support light-dark().
+          // This causes light-dark() token values to be lowered into
+          // --lightningcss-light/--lightningcss-dark polyfill variables,
+          // which only work when a StyleX color-scheme class is applied.
+          // Without XDSTheme (e.g. "none" theme in Storybook, or consumers
+          // using @xds/core without a theme), the polyfill vars are undefined
+          // and colors break. Setting targets here keeps light-dark() native.
+          lightningcssOptions: {
+            targets: lightningcssTargets,
+          },
         }),
       ],
       resolve: {
@@ -66,17 +90,11 @@ const config: StorybookConfig = {
         },
       },
       css: {
-        // Prevent LightningCSS from lowering light-dark() into
-        // --lightningcss-light/--lightningcss-dark polyfill variables.
-        // XDS tokens use native light-dark() which is baseline 2024:
-        // Chrome 123+, Firefox 120+, Safari 17.5+
+        // Also set Vite's own CSS transformer targets to match, so any
+        // non-StyleX CSS (e.g. manual .css imports) also preserves light-dark().
         transformer: 'lightningcss',
         lightningcss: {
-          targets: {
-            chrome: 123 << 16,
-            firefox: 120 << 16,
-            safari: (17 << 16) | (5 << 8),
-          },
+          targets: lightningcssTargets,
         },
       },
     };

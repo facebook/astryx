@@ -25,7 +25,7 @@ import {useXDSLayer} from '../Layer/useXDSLayer';
 import {XDSButton, type XDSButtonProps} from '../Button';
 import {XDSIcon} from '../Icon';
 import type {XDSIconType} from '../Icon';
-import {ChevronDownIcon} from '@heroicons/react/16/solid';
+
 import {XDSDivider} from '../Divider';
 import {XDSDropdownMenuItem} from './XDSDropdownMenuItem';
 import {
@@ -571,7 +571,7 @@ export function XDSDropdownMenu({
   // Build chevron icon - inherits color from button text
   const chevronIcon = (
     <span {...stylex.props(styles.chevronIcon)}>
-      <XDSIcon icon={ChevronDownIcon} size="sm" color="inherit" />
+      <XDSIcon icon="chevronDown" size="sm" color="inherit" />
     </span>
   );
 

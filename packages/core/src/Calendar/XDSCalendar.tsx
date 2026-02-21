@@ -23,7 +23,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSButton} from '../Button';
-import {ChevronLeftIcon, ChevronRightIcon} from '@heroicons/react/24/outline';
+import {XDSIcon} from '../Icon';
 import {useGridFocus} from '../hooks';
 import {
   useCalendarDays,
@@ -362,7 +362,7 @@ export const XDSCalendar = forwardRef<XDSCalendarHandle, XDSCalendarProps>(
           <XDSButton
             label="Previous month"
             variant="ghost"
-            icon={<ChevronLeftIcon {...stylex.props(calendarStyles.navIcon)} />}
+            icon={<XDSIcon icon="chevronLeft" size="sm" color="inherit" />}
             onClick={() => navigateMonth(-1)}
           />
 
@@ -373,9 +373,7 @@ export const XDSCalendar = forwardRef<XDSCalendarHandle, XDSCalendarProps>(
           <XDSButton
             label="Next month"
             variant="ghost"
-            icon={
-              <ChevronRightIcon {...stylex.props(calendarStyles.navIcon)} />
-            }
+            icon={<XDSIcon icon="chevronRight" size="sm" color="inherit" />}
             onClick={() => navigateMonth(1)}
           />
         </div>

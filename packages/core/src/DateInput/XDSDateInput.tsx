@@ -21,12 +21,7 @@ import {
   useMemo,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {CalendarDaysIcon} from '@heroicons/react/24/outline';
-import {
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  XCircleIcon,
-} from '@heroicons/react/24/solid';
+import type {XDSIconName} from '../Icon';
 import {
   colorVars,
   sizeVars,
@@ -312,10 +307,10 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
     const calendarRef = useRef<XDSCalendarHandle | null>(null);
 
     // Status icon mapping
-    const statusIconMap: Record<XDSInputStatusType, typeof CalendarDaysIcon> = {
-      warning: ExclamationTriangleIcon,
-      error: XCircleIcon,
-      success: CheckCircleIcon,
+    const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
+      warning: 'warning',
+      error: 'xCircle',
+      success: 'checkCircle',
     };
 
     const statusIconColorMap: Record<
@@ -494,7 +489,7 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
               styles.iconButton,
               isDisabled && styles.iconButtonDisabled,
             )}>
-            <XDSIcon icon={CalendarDaysIcon} size="sm" color="secondary" />
+            <XDSIcon icon="calendar" size="sm" color="secondary" />
           </button>
           <input
             ref={setRefs}

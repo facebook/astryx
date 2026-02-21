@@ -2,6 +2,8 @@
  * XDS Theme Type Definitions
  */
 
+import type {XDSIconRegistry} from '../Icon/IconRegistry';
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type StyleXStyles = any;
 
@@ -228,4 +230,6 @@ export interface Theme {
   raw: ThemeRaw;
   /** Component-specific style overrides (optional) */
   components?: ComponentStyles;
+  /** Optional icon registry for overriding built-in fallback icons */
+  icons?: Partial<XDSIconRegistry>;
 }

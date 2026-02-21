@@ -47,6 +47,7 @@ import type {
   BaseLineHeightRaw,
   BaseFontWeightRaw,
 } from '@xds/core/theme/tokens.stylex';
+import {defaultIconRegistry} from './icons';
 
 // =============================================================================
 // Raw Theme Values
@@ -593,6 +594,7 @@ const proseElementStyles = stylex.create({
 
 export const defaultTheme: Theme = {
   name: 'default',
+  icons: defaultIconRegistry,
   styles: {
     colors: colorTheme,
     spacing: spacingTheme,
