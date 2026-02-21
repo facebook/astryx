@@ -2,7 +2,7 @@
 
 /**
  * @description Generates and posts PR comment with analysis results and embedded screenshots
- * @input --analysis <file> --a11y <file> --screenshots <file> --screenshot-urls <file> --storybook-url <url> --run-url <url> [--pending]
+ * @input --analysis <file> --a11y <file> --screenshots <file> --screenshot-urls <file> --storybook-url <url> --run-url <url>
  * @output Formatted markdown comment body to stdout
  */
 
@@ -22,7 +22,6 @@ const runUrl = getArg('run-url') || '';
 const prNumber = getArg('pr-number') || '';
 const storybookUrl = getArg('storybook-url') || '';
 const sandboxUrl = getArg('sandbox-url') || '';
-const pending = args.includes('--pending');
 
 // Read analysis results
 let analysis = { newComponents: [], modifiedComponents: [], componentStats: {}, totalBundle: {} };
@@ -217,6 +216,7 @@ if (storybookUrl) {
   storybookSection = `### 📚 Storybook Preview
 
 **${extLink('View Storybook for this PR', storybookUrl)}**
+_GitHub Pages may take up to a minute to hydrate after deploy._
 
 `;
 }
@@ -227,6 +227,7 @@ if (sandboxUrl) {
   sandboxSection = `### 🧪 Sandbox Preview
 
 **${extLink('View Sandbox for this PR', sandboxUrl)}**
+_GitHub Pages may take up to a minute to hydrate after deploy._
 
 `;
 }
@@ -239,13 +240,9 @@ if (runUrl) footerLinks.push(extLink('View full report', runUrl));
 const footerLinksStr = footerLinks.length > 0 ? ` | ${footerLinks.join(' | ')}` : '';
 
 // Build the full comment
-const pendingNotice = pending
-  ? `> ⏳ Preview links may take up to 1 minute to go live. Screenshots and accessibility audit are still running...\n\n`
-  : '';
-
 const body = `## PR Analysis Report
 
-${pendingNotice}${storybookSection}${sandboxSection}${componentSection || '_No new or modified components detected._\n\n'}
+${storybookSection}${sandboxSection}${componentSection || '_No new or modified components detected._\n\n'}
 ${bundleSection}
 ${a11ySection}
 ${screenshotSection}
