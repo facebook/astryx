@@ -144,22 +144,55 @@ const styles = stylex.create({
     minHeight: '100dvh',
   },
   skipLink: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    padding: '8px 16px',
+    // Visually hidden by default, visible on focus (keyboard navigation)
+    position: {
+      default: 'absolute',
+      ':focus': 'fixed',
+    },
+    width: {
+      default: '1px',
+      ':focus': 'auto',
+    },
+    height: {
+      default: '1px',
+      ':focus': 'auto',
+    },
+    padding: {
+      default: 0,
+      ':focus': '8px 16px',
+    },
+    margin: {
+      default: '-1px',
+      ':focus': 0,
+    },
+    overflow: {
+      default: 'hidden',
+      ':focus': 'visible',
+    },
+    clipPath: {
+      default: 'inset(50%)',
+      ':focus': 'none',
+    },
+    whiteSpace: {
+      default: 'nowrap',
+      ':focus': 'normal',
+    },
+    borderWidth: 0,
+    // Focus styles
+    top: {
+      default: 0,
+      ':focus': '8px',
+    },
+    insetInlineStart: {
+      default: 0,
+      ':focus': '8px',
+    },
     backgroundColor: colorVars['--color-surface'],
     color: colorVars['--color-accent-text'],
     zIndex: 9999,
     textDecoration: 'none',
     fontWeight: fontWeightVars['--font-weight-semibold'],
     fontSize: textSizeVars['--text-base'],
-    // Visually hidden by default
-    transform: 'translateY(-100%)',
-    // Show on focus
-    ':focus': {
-      transform: 'translateY(0)',
-    },
   },
   banner: {
     flexShrink: 0,
