@@ -25,3 +25,25 @@ import {XDSAspectRatio} from '@xds/core/AspectRatio';
   <video src="video.mp4" />
 </XDSAspectRatio>
 ```
+
+## Theming
+
+Themes can override `AspectRatio` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    aspectRatio: {
+      root: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface | Description           |
+| ------- | --------------------- |
+| `root`  | Root container styles |

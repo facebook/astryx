@@ -162,3 +162,25 @@ Body rows are memoized via `React.memo` with a custom comparison function. When 
 
 - `/packages/core/src/theme/tokens.stylex.ts` — Design tokens used by table component styling
 - `/packages/core/src/CheckboxInput/` — Checkbox component used by selection plugin
+
+## Theming
+
+Themes can override `Table` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    table: {
+      root: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface | Description       |
+| ------- | ----------------- |
+| `root`  | Root table styles |

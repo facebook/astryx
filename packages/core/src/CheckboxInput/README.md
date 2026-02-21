@@ -68,6 +68,30 @@ import { XDSCheckboxInput } from '@xds/core/CheckboxInput';
 | `onChange`      | `(checked: boolean, e: ChangeEvent) => void` | —       | Callback fired when the checkbox state changes                  |
 | `isDisabled`    | `boolean`                                    | `false` | Whether the checkbox is disabled                                |
 
+## Theming
+
+Themes can override `CheckboxInput` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    checkboxInput: {
+      root: myStyles,
+      checkbox: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface    | Description                    |
+| ---------- | ------------------------------ |
+| `root`     | Root container styles          |
+| `checkbox` | Visual checkbox element styles |
+
 ## Files
 
 | File                        | Role  | Purpose                     |

@@ -100,6 +100,30 @@ The text input accepts various date formats:
 
 Invalid input reverts to the previous valid value on blur.
 
+## Theming
+
+Themes can override `DateInput` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    dateInput: {
+      wrapper: myStyles,
+      input: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface   | Description               |
+| --------- | ------------------------- |
+| `wrapper` | Input wrapper styles      |
+| `input`   | Text input element styles |
+
 ## Files
 
 | File                  | Role   | Purpose                  |

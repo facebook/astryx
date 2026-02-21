@@ -100,6 +100,28 @@ import {HomeIcon, BellIcon, UserCircleIcon} from '@heroicons/react/24/outline';
 | `icon`       | `ReactNode` | —       | Optional icon element           |
 | `children`   | `ReactNode` | —       | Custom content instead of label |
 
+## Theming
+
+Themes can override `TopNav` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    topNav: {
+      root: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface | Description         |
+| ------- | ------------------- |
+| `root`  | Root nav bar styles |
+
 ## Files
 
 | File                     | Role  | Purpose                      |
@@ -139,7 +161,7 @@ import {XDSTopNav, XDSTopNavTitle, XDSTopNavItem} from '@xds/core/TopNav';
       <MainContent />
     </XDSLayoutContent>
   }
-/>
+/>;
 ```
 
 ## Slot Layout Structure

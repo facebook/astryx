@@ -72,6 +72,32 @@ import { XDSSwitch } from '@xds/core/Switch';
 | `labelPosition` | `'start' \| 'end'`                           | `'end'`     | Which side of the switch the label appears on |
 | `labelSpacing`  | `'default' \| 'spread'`                      | `'default'` | Spacing behavior between label and switch     |
 
+## Theming
+
+Themes can override `Switch` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    switch: {
+      root: myStyles,
+      track: myStyles,
+      thumb: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface | Description           |
+| ------- | --------------------- |
+| `root`  | Root container styles |
+| `track` | Switch track styles   |
+| `thumb` | Switch thumb styles   |
+
 ## Files
 
 | File                 | Role  | Purpose                     |

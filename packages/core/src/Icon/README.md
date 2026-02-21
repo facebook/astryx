@@ -82,6 +82,28 @@ import {HomeIcon} from '@heroicons/react/24/solid';
 
 Browse available icons at [heroicons.com](https://heroicons.com).
 
+## Theming
+
+Themes can override `Icon` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    icon: {
+      root: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface | Description             |
+| ------- | ----------------------- |
+| `root`  | Root SVG element styles |
+
 ## Files
 
 | File               | Role  | Purpose                     |

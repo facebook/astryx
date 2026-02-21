@@ -113,3 +113,27 @@ Helper for custom item rendering:
 ## Accessibility
 
 Uses `role="combobox"` trigger, `role="listbox"` dropdown, `role="group"` for sections, `aria-activedescendant` for focus.
+
+## Theming
+
+Themes can override `Selector` styles via `ComponentStyles`:
+
+```tsx
+// In your theme definition
+const theme: Theme = {
+  // ...tokens...
+  components: {
+    selector: {
+      trigger: myStyles,
+      dropdown: myStyles,
+    },
+  },
+};
+```
+
+### Available surfaces
+
+| Surface    | Description               |
+| ---------- | ------------------------- |
+| `trigger`  | Trigger button styles     |
+| `dropdown` | Dropdown container styles |
