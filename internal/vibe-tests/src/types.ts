@@ -260,13 +260,22 @@ export interface QualityAssessment {
 // Universal Evaluation Types (target-neutral)
 // ============================================================
 
+/**
+ * The 5 dimensions measured by universal evaluation.
+ * All scored 0-100, all framework-agnostic.
+ *
+ * 1. Correctness     — Does it work? (hallucinations, valid APIs)
+ * 2. Accessibility    — Is it usable by everyone? (labels, semantics)
+ * 3. Code Quality     — Is the code well-structured? (complexity, patterns)
+ * 4. Efficiency       — How much ceremony vs intent? (merges DRY + conciseness)
+ * 5. Maintainability  — How much breaks on change? (coupling, magic values, locality)
+ */
 export type UniversalDimension =
+  | 'correctness'
   | 'accessibility'
   | 'codeQuality'
-  | 'repetition'
-  | 'conciseness'
-  | 'themeAdherence'
-  | 'correctness';
+  | 'efficiency'
+  | 'maintainability';
 
 export interface UniversalFinding {
   rule: string;
@@ -277,36 +286,53 @@ export interface UniversalFinding {
   example?: string;
 }
 
-export interface ConcisenessMetrics {
+/** Efficiency sub-metrics */
+export interface EfficiencyMetrics {
   totalLines: number;
   codeLines: number;
-  blankLines: number;
-  commentLines: number;
-  importLines: number;
-  typeLines: number;
   stylingLines: number;
+  boilerplateLines: number;
   logicLines: number;
-  jsxLines: number;
+  /** Ratio of styling to total code (lower = more efficient) */
   stylingRatio: number;
+  /** Ratio of boilerplate (imports + types) to total code */
   boilerplateRatio: number;
-  avgLineLength: number;
-  charsPerLine: number;
+  /** Estimated styling decisions per UI element */
+  decisionsPerElement: number;
+  /** Count of unique UI elements rendered */
+  elementCount: number;
+  /** Count of styling decisions (props, classes, style properties) */
+  stylingDecisionCount: number;
+  /** Duplicate code ratio (0-1, lower = more DRY) */
+  duplicateRatio: number;
 }
 
-export interface DimensionScore<F = UniversalFinding> {
+/** Maintainability sub-metrics */
+export interface MaintainabilityMetrics {
+  /** Ratio of semantic tokens to total styling values (0-1, higher = better) */
+  semanticRatio: number;
+  /** Count of magic values (hardcoded colors, spacing, typography) */
+  magicValueCount: number;
+  /** Count of semantic references (tokens, variables, scale values) */
+  semanticValueCount: number;
+  /** Average distance (lines) between state declaration and furthest usage */
+  avgStateSpread: number;
+  /** Whether dark mode is supported */
+  darkModeSupport: boolean;
+}
+
+export interface DimensionScore<M = undefined> {
   score: number;
-  findings?: F[];
-  metrics?: ConcisenessMetrics;
-  darkModeSupport?: boolean;
+  findings: UniversalFinding[];
+  metrics?: M;
 }
 
 export interface UniversalScore {
+  correctness: DimensionScore;
   accessibility: DimensionScore;
   codeQuality: DimensionScore;
-  repetition: DimensionScore;
-  conciseness: DimensionScore<never> & { metrics: ConcisenessMetrics };
-  themeAdherence: DimensionScore & { darkModeSupport: boolean };
-  correctness: DimensionScore;
+  efficiency: DimensionScore<EfficiencyMetrics>;
+  maintainability: DimensionScore<MaintainabilityMetrics>;
 }
 
 export interface UniversalAggregate {
@@ -321,9 +347,12 @@ export interface UniversalComparison {
   xds: UniversalAggregate;
   baseline: UniversalAggregate;
   winners: Record<UniversalDimension, 'xds' | 'baseline' | 'tie'>;
-  byPrompt: Record<string, {
-    xds: UniversalScore;
-    baseline: UniversalScore;
-    winner: 'xds' | 'baseline' | 'tie';
-  }>;
+  byPrompt: Record<
+    string,
+    {
+      xds: UniversalScore;
+      baseline: UniversalScore;
+      winner: 'xds' | 'baseline' | 'tie';
+    }
+  >;
 }

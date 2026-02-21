@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * @file Universal aggregate scoring across 6 dimensions
+ * @file Universal aggregate scoring across 5 dimensions
  *
  * Scores an iteration's results using target-neutral evaluation.
  *
@@ -16,26 +16,16 @@ import type {
   UniversalScore,
   UniversalAggregate,
 } from './types.js';
-import {getResultsDir, readJson, writeJson} from './utils.js';
-import {evaluate} from './universal-eval.js';
+import {getResultsDir, writeJson} from './utils.js';
+import {evaluate, getDimensionNames} from './universal-eval.js';
 
 const DIMENSION_LABELS: Record<UniversalDimension, string> = {
+  correctness: 'Correctness',
   accessibility: 'Accessibility',
   codeQuality: 'Code Quality',
-  repetition: 'DRYness',
-  conciseness: 'Conciseness',
-  themeAdherence: 'Theme Adherence',
-  correctness: 'Correctness',
+  efficiency: 'Efficiency',
+  maintainability: 'Maintainability',
 };
-
-const DIMENSIONS: UniversalDimension[] = [
-  'accessibility',
-  'codeQuality',
-  'repetition',
-  'conciseness',
-  'themeAdherence',
-  'correctness',
-];
 
 function parseArgs(): {iteration: string; json: boolean} {
   const args = process.argv.slice(2);
@@ -52,7 +42,9 @@ function parseArgs(): {iteration: string; json: boolean} {
   }
 
   if (!iteration) {
-    console.error('Usage: tsx src/universal-aggregate.ts --iteration <id> [--json]');
+    console.error(
+      'Usage: tsx src/universal-aggregate.ts --iteration <id> [--json]',
+    );
     process.exit(1);
   }
 
@@ -76,14 +68,13 @@ async function main() {
     process.exit(1);
   }
 
-  const manifest = readJson<{
-    config: {target: string};
-    prompts: Array<{id: string; category: string}>;
-  }>(manifestPath);
-
-  const target = manifest.config.target as 'xds' | 'baseline';
-  const promptMap = new Map(
-    manifest.prompts.map(p => [p.id, p.category]),
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  const target = (manifest.config?.target || 'xds') as string;
+  const promptMap = new Map<string, string>(
+    (manifest.prompts || []).map((p: {id: string; category: string}) => [
+      p.id,
+      p.category,
+    ]),
   );
 
   // Load .tsx files
@@ -94,59 +85,63 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`Evaluating ${files.length} results for iteration ${iteration} (target: ${target})\n`);
-
+  const dimensions = getDimensionNames();
   const byPrompt: Record<string, UniversalScore> = {};
-  const categoryScores: Record<string, Record<UniversalDimension, number>> = {};
+  const categoryScores: Record<
+    string,
+    Record<UniversalDimension, number[]>
+  > = {};
   let darkModeCount = 0;
-  let totalCount = 0;
 
   for (const file of files) {
     const promptId = path.basename(file, '.tsx');
     const code = fs.readFileSync(path.join(codeDir, file), 'utf-8');
     const score = evaluate(code, target);
-
     byPrompt[promptId] = score;
-    totalCount++;
 
-    if (score.themeAdherence.darkModeSupport) {
+    if (score.maintainability.metrics?.darkModeSupport) {
       darkModeCount++;
     }
 
-    // Accumulate category scores
     const category = promptMap.get(promptId) ?? 'unknown';
     if (!categoryScores[category]) {
       categoryScores[category] = {} as Record<UniversalDimension, number[]>;
-      for (const dim of DIMENSIONS) {
+      for (const dim of dimensions) {
         categoryScores[category][dim] = [];
       }
     }
-    for (const dim of DIMENSIONS) {
+    for (const dim of dimensions) {
       categoryScores[category][dim].push(score[dim].score);
     }
   }
 
   // Compute averages
+  const promptCount = Object.keys(byPrompt).length;
   const averages = {} as Record<UniversalDimension, number>;
-  for (const dim of DIMENSIONS) {
-    const allScores = Object.values(byPrompt).map(s => s[dim].score);
-    averages[dim] = allScores.reduce((a, b) => a + b, 0) / allScores.length;
+  for (const dim of dimensions) {
+    const scores = Object.values(byPrompt).map(s => s[dim].score);
+    averages[dim] = Math.round(
+      scores.reduce((a, b) => a + b, 0) / scores.length,
+    );
   }
 
-  const overall =
-    Object.values(averages).reduce((a, b) => a + b, 0) / DIMENSIONS.length;
+  const overall = Math.round(
+    dimensions.reduce((s, d) => s + averages[d], 0) / dimensions.length,
+  );
 
-  // Compute category averages
+  // Category averages
   const byCategory: Record<string, Record<UniversalDimension, number>> = {};
-  for (const [cat, dims] of Object.entries(categoryScores)) {
+  for (const [cat, dimScores] of Object.entries(categoryScores)) {
     byCategory[cat] = {} as Record<UniversalDimension, number>;
-    for (const dim of DIMENSIONS) {
-      const scores = dims[dim];
-      byCategory[cat][dim] = scores.reduce((a, b) => a + b, 0) / scores.length;
+    for (const dim of dimensions) {
+      const scores = dimScores[dim];
+      byCategory[cat][dim] = Math.round(
+        scores.reduce((a, b) => a + b, 0) / scores.length,
+      );
     }
   }
 
-  const darkModeRate = totalCount > 0 ? darkModeCount / totalCount : 0;
+  const darkModeRate = Math.round((darkModeCount / promptCount) * 100);
 
   const aggregate: UniversalAggregate = {
     averages,
@@ -166,33 +161,61 @@ async function main() {
   }
 
   // Print formatted table
-  console.log('┌─────────────────────┬─────────┐');
-  console.log('│ Dimension           │  Score  │');
-  console.log('├─────────────────────┼─────────┤');
-  for (const dim of DIMENSIONS) {
-    const label = DIMENSION_LABELS[dim].padEnd(19);
-    const score = (averages[dim] * 100).toFixed(1).padStart(5) + '%';
-    console.log(`│ ${label} │ ${score}  │`);
-  }
-  console.log('├─────────────────────┼─────────┤');
-  const overallStr = (overall * 100).toFixed(1).padStart(5) + '%';
-  console.log(`│ ${'Overall'.padEnd(19)} │ ${overallStr}  │`);
-  console.log('└─────────────────────┴─────────┘');
+  console.log(`\n📊 Universal Evaluation — Iteration ${iteration}`);
+  console.log(`   ${promptCount} prompts, target: ${target}\n`);
 
-  console.log(`\nDark mode support: ${(darkModeRate * 100).toFixed(0)}% (${darkModeCount}/${totalCount})`);
-  console.log(`Results saved to: ${outputPath}`);
+  console.log('┌─────────────────────┬───────┐');
+  console.log('│ Dimension           │ Score │');
+  console.log('├─────────────────────┼───────┤');
+  for (const dim of dimensions) {
+    const label = DIMENSION_LABELS[dim].padEnd(19);
+    const score = String(averages[dim]).padStart(3);
+    console.log(`│ ${label} │  ${score}  │`);
+  }
+  console.log('├─────────────────────┼───────┤');
+  console.log(`│ ${'Overall'.padEnd(19)} │  ${String(overall).padStart(3)}  │`);
+  console.log('└─────────────────────┴───────┘');
+
+  console.log(`\n🌙 Dark Mode: ${darkModeRate}%`);
+
+  // Efficiency metrics summary
+  const allEfficiency = Object.values(byPrompt).map(s => s.efficiency.metrics!);
+  if (allEfficiency.length > 0) {
+    const avgDecisions =
+      allEfficiency.reduce((s, m) => s + m.decisionsPerElement, 0) /
+      allEfficiency.length;
+    const avgLines =
+      allEfficiency.reduce((s, m) => s + m.codeLines, 0) / allEfficiency.length;
+    console.log(`\n⚡ Efficiency:`);
+    console.log(`   Avg decisions/element: ${avgDecisions.toFixed(1)}`);
+    console.log(`   Avg code lines: ${Math.round(avgLines)}`);
+  }
+
+  // Maintainability metrics summary
+  const allMaint = Object.values(byPrompt).map(s => s.maintainability.metrics!);
+  if (allMaint.length > 0) {
+    const avgSemantic =
+      allMaint.reduce((s, m) => s + m.semanticRatio, 0) / allMaint.length;
+    const totalMagic = allMaint.reduce((s, m) => s + m.magicValueCount, 0);
+    console.log(`\n🔧 Maintainability:`);
+    console.log(`   Semantic ratio: ${(avgSemantic * 100).toFixed(0)}%`);
+    console.log(`   Magic values: ${totalMagic}`);
+  }
 
   // Category breakdown
   const categories = Object.keys(byCategory).sort();
   if (categories.length > 1) {
-    console.log('\nBy Category:');
+    console.log('\n📂 By Category:');
     for (const cat of categories) {
-      const catAvg =
-        Object.values(byCategory[cat]).reduce((a, b) => a + b, 0) /
-        DIMENSIONS.length;
-      console.log(`  ${cat}: ${(catAvg * 100).toFixed(1)}%`);
+      const catOverall = Math.round(
+        dimensions.reduce((s, d) => s + byCategory[cat][d], 0) /
+          dimensions.length,
+      );
+      console.log(`   ${cat.padEnd(25)} ${catOverall}`);
     }
   }
+
+  console.log(`\nSaved: ${outputPath}\n`);
 }
 
 main().catch(err => {

@@ -1,801 +1,34 @@
 /**
- * @file Universal evaluation engine for XDS vibe tests.
+ * @file Universal Evaluation — target-neutral static analysis
  *
- * Scores generated code across 6 dimensions (0-100 each) using pure static
- * analysis — no LLM calls, no network, no AST parser dependencies.
+ * Scores generated code across 5 dimensions on a 0-100 scale.
+ * All analyzers are pure functions: (code, target) → score.
+ * No LLM calls — deterministic and fast.
  *
- * The same rubric is applied to both "xds" and "baseline" targets so the
- * comparison is symmetric and fair.
+ * Dimensions:
+ *   1. Correctness      — Does it work? (hallucinations, valid APIs)
+ *   2. Accessibility     — Is it usable by everyone? (labels, semantics)
+ *   3. Code Quality      — Is the code well-structured? (complexity, patterns)
+ *   4. Efficiency        — How much ceremony vs intent? (DRY + conciseness + decisions/element)
+ *   5. Maintainability   — How much breaks on change? (coupling, magic values, locality)
  */
 
 import type {
   UniversalScore,
   UniversalDimension,
   UniversalFinding,
-  ConcisenessMetrics,
   DimensionScore,
+  EfficiencyMetrics,
+  MaintainabilityMetrics,
 } from './types.js';
 
-// ────────────────────────────────────────────────────────────
-// Public API
-// ────────────────────────────────────────────────────────────
-
-export function evaluate(code: string, target: string): UniversalScore {
-  return {
-    accessibility: analyzeAccessibility(code),
-    codeQuality: analyzeCodeQuality(code),
-    repetition: analyzeRepetition(code),
-    conciseness: analyzeConciseness(code, target),
-    themeAdherence: analyzeThemeAdherence(code, target),
-    correctness: analyzeCorrectness(code, target),
-  };
+function clamp(n: number): number {
+  return Math.max(0, Math.min(100, Math.round(n)));
 }
 
-export function getDimensionNames(): UniversalDimension[] {
-  return [
-    'accessibility',
-    'codeQuality',
-    'repetition',
-    'conciseness',
-    'themeAdherence',
-    'correctness',
-  ];
-}
-
-export function getDimensionScore(
-  score: UniversalScore,
-  dimension: UniversalDimension,
-): number {
-  return score[dimension].score;
-}
-
-export function getAverageScore(score: UniversalScore): number {
-  const dims = getDimensionNames();
-  const total = dims.reduce((sum, d) => sum + score[d].score, 0);
-  return Math.round((total / dims.length) * 100) / 100;
-}
-
-// ────────────────────────────────────────────────────────────
-// Helpers
-// ────────────────────────────────────────────────────────────
-
-function clamp(n: number, lo = 0, hi = 100): number {
-  return Math.max(lo, Math.min(hi, n));
-}
-
-function penalize(
-  base: number,
-  findings: UniversalFinding[],
-): number {
-  let penalty = 0;
-  for (const f of findings) {
-    const count = f.count ?? 1;
-    switch (f.severity) {
-      case 'critical':
-        penalty += 15 * count;
-        break;
-      case 'moderate':
-        penalty += 8 * count;
-        break;
-      case 'minor':
-        penalty += 3 * count;
-        break;
-    }
-  }
-  return clamp(base - penalty);
-}
-
-// ────────────────────────────────────────────────────────────
-// 1. Accessibility
-// ────────────────────────────────────────────────────────────
-
-function analyzeAccessibility(code: string): DimensionScore {
-  const findings: UniversalFinding[] = [];
-  const lines = code.split('\n');
-
-  // onClick on non-interactive elements
-  const nonInteractive = /\b(span|div|p|td|tr|li|img|svg)\b/;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (/onClick/.test(line)) {
-      // Check if the element is non-interactive
-      const tagMatch = line.match(/<(\w+)\s/);
-      if (tagMatch && nonInteractive.test(tagMatch[1])) {
-        // Check surrounding lines for role or tabIndex
-        const context = lines.slice(Math.max(0, i - 1), i + 3).join(' ');
-        if (!/role\s*=/.test(context) && !/tabIndex/.test(context)) {
-          findings.push({
-            rule: 'click-non-interactive',
-            severity: 'critical',
-            detail: `onClick on <${tagMatch[1]}> without role or tabIndex`,
-            line: i + 1,
-          });
-        }
-      }
-    }
-  }
-
-  // Icon-only buttons
-  const iconBtnRe = /<(button|Button|XDSButton)\b([^>]*?)\/?>([^<]*)</g;
-  let m: RegExpExecArray | null;
-  while ((m = iconBtnRe.exec(code)) !== null) {
-    const attrs = m[2];
-    const textContent = m[3].trim();
-    const hasIcon =
-      /icon/i.test(attrs) || /Icon/.test(attrs);
-    if (hasIcon && !textContent) {
-      if (
-        !/aria-label/.test(attrs) &&
-        !/label\s*=/.test(attrs)
-      ) {
-        const lineNum = code.slice(0, m.index).split('\n').length;
-        findings.push({
-          rule: 'icon-only-button',
-          severity: 'critical',
-          detail: `Icon-only <${m[1]}> without aria-label`,
-          line: lineNum,
-        });
-      }
-    }
-  }
-
-  // Form inputs without labels (skip XDS inputs with built-in labels)
-  const builtInLabelInputs = /XDS(TextInput|NumberInput|DateInput|TimeInput)/;
-  const inputRe = /<(input|Input)\b([^>]*?)\/?>/g;
-  while ((m = inputRe.exec(code)) !== null) {
-    const attrs = m[2];
-    if (/type\s*=\s*["']hidden["']/.test(attrs)) continue;
-    // Check context for label
-    const pos = m.index;
-    const contextStart = Math.max(0, pos - 200);
-    const contextEnd = Math.min(code.length, pos + 200);
-    const context = code.slice(contextStart, contextEnd);
-    if (
-      !/label/i.test(context) &&
-      !/Label/.test(context) &&
-      !/aria-label/.test(context)
-    ) {
-      const lineNum = code.slice(0, pos).split('\n').length;
-      findings.push({
-        rule: 'input-no-label',
-        severity: 'critical',
-        detail: `<${m[1]}> without associated label or aria-label`,
-        line: lineNum,
-      });
-    }
-  }
-
-  // Check for XDS inputs that DON'T need labels (skip them — they have built-in labels)
-  // Already skipped by only matching <input|Input>
-
-  // Images without alt
-  const imgRe = /<img\b([^>]*?)\/?>/g;
-  while ((m = imgRe.exec(code)) !== null) {
-    if (!/alt\s*=/.test(m[1])) {
-      const lineNum = code.slice(0, m.index).split('\n').length;
-      findings.push({
-        rule: 'img-no-alt',
-        severity: 'moderate',
-        detail: '<img> without alt text',
-        line: lineNum,
-      });
-    }
-  }
-
-  // Textarea without label (skip XDSTextArea)
-  const textareaRe = /<(textarea|Textarea)\b([^>]*?)\/?>/gi;
-  while ((m = textareaRe.exec(code)) !== null) {
-    if (/XDSTextArea/.test(code.slice(Math.max(0, m.index - 5), m.index + m[0].length + 5))) continue;
-    const pos = m.index;
-    const contextStart = Math.max(0, pos - 200);
-    const contextEnd = Math.min(code.length, pos + 200);
-    const context = code.slice(contextStart, contextEnd);
-    if (
-      !/label/i.test(context) &&
-      !/Label/.test(context) &&
-      !/aria-label/.test(context)
-    ) {
-      const lineNum = code.slice(0, pos).split('\n').length;
-      findings.push({
-        rule: 'textarea-no-label',
-        severity: 'moderate',
-        detail: '<textarea> without associated label',
-        line: lineNum,
-      });
-    }
-  }
-
-  // Heading hierarchy
-  const headingLevels: number[] = [];
-  const htmlHeadingRe = /<h([1-6])\b/g;
-  while ((m = htmlHeadingRe.exec(code)) !== null) {
-    headingLevels.push(parseInt(m[1], 10));
-  }
-  const xdsHeadingRe = /<XDSHeading[^>]*level\s*=\s*\{?\s*(\d)/g;
-  while ((m = xdsHeadingRe.exec(code)) !== null) {
-    headingLevels.push(parseInt(m[1], 10));
-  }
-  for (let i = 1; i < headingLevels.length; i++) {
-    if (headingLevels[i] - headingLevels[i - 1] > 1) {
-      findings.push({
-        rule: 'heading-skip',
-        severity: 'minor',
-        detail: `Heading level skips from h${headingLevels[i - 1]} to h${headingLevels[i]}`,
-      });
-    }
-  }
-
-  return { score: penalize(100, findings), findings };
-}
-
-// ────────────────────────────────────────────────────────────
-// 2. Code Quality
-// ────────────────────────────────────────────────────────────
-
-function analyzeCodeQuality(code: string): DimensionScore {
-  const findings: UniversalFinding[] = [];
-  const lines = code.split('\n');
-
-  // Nesting depth
-  let depth = 0;
-  let maxDepth = 0;
-  for (const line of lines) {
-    for (const ch of line) {
-      if (ch === '{') depth++;
-      if (ch === '}') depth = Math.max(0, depth - 1);
-    }
-    if (depth > maxDepth) maxDepth = depth;
-  }
-  if (maxDepth > 6) {
-    findings.push({
-      rule: 'deep-nesting',
-      severity: 'moderate',
-      detail: `Maximum nesting depth ${maxDepth} (threshold: 6)`,
-    });
-  }
-
-  // Function length
-  let funcStart = -1;
-  let braceCount = 0;
-  let inFunc = false;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (
-      !inFunc &&
-      (/^\s*(export\s+)?(default\s+)?function\b/.test(line) ||
-        /^\s*(export\s+)?(const|let)\s+\w+\s*=\s*(\([^)]*\)|[^=])*=>/.test(line))
-    ) {
-      funcStart = i;
-      inFunc = true;
-      braceCount = 0;
-    }
-    if (inFunc) {
-      for (const ch of line) {
-        if (ch === '{') braceCount++;
-        if (ch === '}') braceCount--;
-      }
-      if (braceCount <= 0 && funcStart >= 0) {
-        const len = i - funcStart + 1;
-        if (len > 100) {
-          findings.push({
-            rule: 'long-function',
-            severity: 'moderate',
-            detail: `Function starting at line ${funcStart + 1} is ${len} lines (threshold: 100)`,
-            line: funcStart + 1,
-          });
-        }
-        inFunc = false;
-        funcStart = -1;
-      }
-    }
-  }
-
-  // Cyclomatic complexity (rough)
-  let branches = 0;
-  for (const line of lines) {
-    if (/\bif\s*\(/.test(line)) branches++;
-    if (/\belse\s+if\s*\(/.test(line)) branches++;
-    if (/\belse\s*\{/.test(line)) branches++;
-    if (/\bcase\s+/.test(line)) branches++;
-    if (/\bcatch\s*\(/.test(line)) branches++;
-    // Ternary
-    const ternaryCount = (line.match(/\?[^?]/g) || []).length;
-    branches += ternaryCount;
-  }
-  if (branches > 15) {
-    findings.push({
-      rule: 'high-complexity',
-      severity: 'moderate',
-      detail: `${branches} branches detected (threshold: 15)`,
-    });
-  }
-
-  // TypeScript `any`
-  const anyMatches = code.match(/:\s*any\b|as\s+any\b/g);
-  if (anyMatches) {
-    findings.push({
-      rule: 'typescript-any',
-      severity: 'minor',
-      detail: `${anyMatches.length} uses of \`any\` type`,
-      count: anyMatches.length,
-    });
-  }
-
-  // console.log
-  const consoleMatches = code.match(/console\.log\(/g);
-  if (consoleMatches) {
-    findings.push({
-      rule: 'console-log',
-      severity: 'minor',
-      detail: `${consoleMatches.length} console.log statements`,
-      count: consoleMatches.length,
-    });
-  }
-
-  // .map() without key
-  for (let i = 0; i < lines.length; i++) {
-    if (/\.map\s*\(/.test(lines[i])) {
-      const chunk = lines.slice(i, Math.min(i + 6, lines.length)).join('\n');
-      if (/<\w/.test(chunk) && !/key\s*=/.test(chunk)) {
-        findings.push({
-          rule: 'map-no-key',
-          severity: 'moderate',
-          detail: '.map() renders JSX without key prop',
-          line: i + 1,
-        });
-      }
-    }
-  }
-
-  // Index as key
-  const indexKeyRe = /key\s*=\s*\{(index|i|idx)\}/g;
-  while (indexKeyRe.exec(code)) {
-    findings.push({
-      rule: 'index-as-key',
-      severity: 'minor',
-      detail: 'Array index used as key',
-    });
-  }
-
-  // ESLint suppression in useEffect
-  const eslintEffectRe = /eslint-disable.*useEffect|useEffect.*eslint-disable/g;
-  if (eslintEffectRe.test(code)) {
-    findings.push({
-      rule: 'eslint-suppress-effect',
-      severity: 'minor',
-      detail: 'ESLint suppression in useEffect',
-    });
-  }
-
-  return { score: penalize(100, findings), findings };
-}
-
-// ────────────────────────────────────────────────────────────
-// 3. Repetition
-// ────────────────────────────────────────────────────────────
-
-function normalizeLine(line: string): string {
-  return line
-    .replace(/(["'`])(?:(?!\1).)*\1/g, '"_"')
-    .replace(/\b\d+(\.\d+)?\b/g, 'N')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function analyzeRepetition(code: string): DimensionScore {
-  const findings: UniversalFinding[] = [];
-  const lines = code.split('\n');
-  const normalizedLines = lines.map(normalizeLine);
-
-  // Duplicate normalized lines
-  const lineCounts = new Map<string, number>();
-  for (const nl of normalizedLines) {
-    if (nl.length > 20) {
-      lineCounts.set(nl, (lineCounts.get(nl) || 0) + 1);
-    }
-  }
-  let duplicateLineCount = 0;
-  for (const [line, count] of lineCounts) {
-    if (count >= 3) {
-      duplicateLineCount += count;
-      findings.push({
-        rule: 'duplicate-lines',
-        severity: 'moderate',
-        detail: `Line repeated ${count} times`,
-        count,
-        example: line.slice(0, 80),
-      });
-    }
-  }
-
-  // Repeated string literals
-  const stringRe = /(["'`])([^"'`]{6,}?)\1/g;
-  const stringCounts = new Map<string, number>();
-  let sm: RegExpExecArray | null;
-  while ((sm = stringRe.exec(code)) !== null) {
-    const val = sm[2];
-    // Skip import paths and @-prefixed
-    if (/^[.\/]|^@/.test(val)) continue;
-    stringCounts.set(val, (stringCounts.get(val) || 0) + 1);
-  }
-  for (const [str, count] of stringCounts) {
-    if (count >= 3) {
-      findings.push({
-        rule: 'repeated-string',
-        severity: 'minor',
-        detail: `String "${str.slice(0, 40)}" repeated ${count} times`,
-        count,
-        example: str.slice(0, 60),
-      });
-    }
-  }
-
-  // Repeated className patterns
-  const classRe = /className\s*=\s*["']([^"']{20,})["']/g;
-  const classCounts = new Map<string, number>();
-  while ((sm = classRe.exec(code)) !== null) {
-    classCounts.set(sm[1], (classCounts.get(sm[1]) || 0) + 1);
-  }
-  for (const [cls, count] of classCounts) {
-    if (count >= 3) {
-      findings.push({
-        rule: 'repeated-classname',
-        severity: 'moderate',
-        detail: `className pattern repeated ${count} times`,
-        count,
-        example: cls.slice(0, 60),
-      });
-    }
-  }
-
-  // Duplicate 3-line blocks
-  const blockCounts = new Map<string, number>();
-  for (let i = 0; i < normalizedLines.length - 2; i++) {
-    const block = normalizedLines.slice(i, i + 3).join('\n');
-    if (block.length > 50) {
-      blockCounts.set(block, (blockCounts.get(block) || 0) + 1);
-    }
-  }
-  for (const [block, count] of blockCounts) {
-    if (count >= 2) {
-      findings.push({
-        rule: 'duplicate-block',
-        severity: 'moderate',
-        detail: `3-line block repeated ${count} times`,
-        count,
-        example: block.split('\n')[0].slice(0, 60),
-      });
-    }
-  }
-
-  // Score: based on duplicate ratio
-  const totalLines = normalizedLines.filter((l) => l.length > 0).length || 1;
-  const duplicateRatio = duplicateLineCount / totalLines;
-  const findingPenalty = findings.reduce((sum, f) => {
-    switch (f.severity) {
-      case 'critical':
-        return sum + 15;
-      case 'moderate':
-        return sum + 8;
-      case 'minor':
-        return sum + 3;
-      default:
-        return sum;
-    }
-  }, 0);
-  const score = clamp(100 - duplicateRatio * 60 - findingPenalty);
-
-  return { score, findings };
-}
-
-// ────────────────────────────────────────────────────────────
-// 4. Conciseness
-// ────────────────────────────────────────────────────────────
-
-function analyzeConciseness(
-  code: string,
-  target: string,
-): DimensionScore<never> & { metrics: ConcisenessMetrics } {
-  const lines = code.split('\n');
-  let blankLines = 0;
-  let commentLines = 0;
-  let importLines = 0;
-  let typeLines = 0;
-  let stylingLines = 0;
-  let jsxLines = 0;
-  let logicLines = 0;
-
-  let inBlockComment = false;
-  let inTypeBlock = false;
-  let typeBraceDepth = 0;
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-
-    if (!trimmed) {
-      blankLines++;
-      continue;
-    }
-
-    // Block comments
-    if (inBlockComment) {
-      commentLines++;
-      if (/\*\//.test(trimmed)) inBlockComment = false;
-      continue;
-    }
-    if (/^\/\*/.test(trimmed)) {
-      commentLines++;
-      if (!/\*\//.test(trimmed)) inBlockComment = true;
-      continue;
-    }
-    if (/^\/\//.test(trimmed)) {
-      commentLines++;
-      continue;
-    }
-
-    // Imports
-    if (/^import\s/.test(trimmed) || /^from\s/.test(trimmed)) {
-      importLines++;
-      continue;
-    }
-
-    // Type definitions
-    if (
-      /^(export\s+)?(type|interface)\s/.test(trimmed) ||
-      inTypeBlock
-    ) {
-      typeLines++;
-      if (!inTypeBlock && /\{/.test(trimmed) && !/\}/.test(trimmed)) {
-        inTypeBlock = true;
-        typeBraceDepth = 1;
-      } else if (inTypeBlock) {
-        for (const ch of trimmed) {
-          if (ch === '{') typeBraceDepth++;
-          if (ch === '}') typeBraceDepth--;
-        }
-        if (typeBraceDepth <= 0) inTypeBlock = false;
-      }
-      continue;
-    }
-
-    // Styling
-    if (target === 'xds') {
-      // StyleX blocks
-      if (
-        /stylex\.create/.test(trimmed) ||
-        /styles\.\w+/.test(trimmed) ||
-        /\{[^}]*(?:backgroundColor|color|padding|margin|fontSize|fontWeight|display|flexDirection|alignItems|justifyContent)\s*:/.test(trimmed)
-      ) {
-        stylingLines++;
-        continue;
-      }
-    } else {
-      // className lines for baseline
-      if (/className/.test(trimmed)) {
-        stylingLines++;
-        continue;
-      }
-    }
-
-    // JSX
-    if (/^\s*</.test(trimmed) || /^\s*\/>/.test(trimmed) || /^\s*<\//.test(trimmed)) {
-      jsxLines++;
-      continue;
-    }
-    if (/<\w/.test(trimmed) && /\/>|>/.test(trimmed)) {
-      jsxLines++;
-      continue;
-    }
-
-    // Everything else is logic
-    logicLines++;
-  }
-
-  const totalLines = lines.length;
-  const codeLines = totalLines - blankLines - commentLines;
-  const nonBlankLines = lines.filter((l) => l.trim().length > 0);
-  const totalChars = nonBlankLines.reduce((s, l) => s + l.trim().length, 0);
-  const avgLineLength = nonBlankLines.length
-    ? Math.round(totalChars / nonBlankLines.length)
-    : 0;
-
-  const stylingRatio = codeLines > 0 ? stylingLines / codeLines : 0;
-  const boilerplateRatio =
-    codeLines > 0 ? (importLines + typeLines) / codeLines : 0;
-
-  const metrics: ConcisenessMetrics = {
-    totalLines,
-    codeLines,
-    blankLines,
-    commentLines,
-    importLines,
-    typeLines,
-    stylingLines,
-    logicLines,
-    jsxLines,
-    stylingRatio: Math.round(stylingRatio * 1000) / 1000,
-    boilerplateRatio: Math.round(boilerplateRatio * 1000) / 1000,
-    avgLineLength,
-    charsPerLine: avgLineLength,
-  };
-
-  // Score: penalize ceremony and excessive length
-  const ceremonyRatio =
-    codeLines > 0
-      ? (importLines + typeLines + commentLines) / codeLines
-      : 0;
-  const linePenalty = codeLines > 150 ? (codeLines - 150) * 0.1 : 0;
-  const score = clamp(Math.round(100 - ceremonyRatio * 80 - linePenalty));
-
-  return { score, metrics };
-}
-
-// ────────────────────────────────────────────────────────────
-// 5. Theme Adherence
-// ────────────────────────────────────────────────────────────
-
-function analyzeThemeAdherence(
-  code: string,
-  target: string,
-): DimensionScore & { darkModeSupport: boolean } {
-  const findings: UniversalFinding[] = [];
-  let tokenUsage = 0;
-  let totalStyleRefs = 0;
-
-  if (target === 'xds') {
-    // Good: var(--*) usage
-    const varMatches = code.match(/var\(--[\w-]+\)/g);
-    if (varMatches) {
-      tokenUsage += varMatches.length;
-      totalStyleRefs += varMatches.length;
-    }
-
-    // Bad: hardcoded colors in style properties
-    const colorPropRe =
-      /(backgroundColor|borderColor|color|fill|stroke)\s*:\s*['"]?(#[0-9a-fA-F]{3,8}|rgba?\([^)]+\)|hsla?\([^)]+\))['"]?/g;
-    let cm: RegExpExecArray | null;
-    while ((cm = colorPropRe.exec(code)) !== null) {
-      // Skip if inside a data object (rough heuristic: check if we're in JSX or style context)
-      const before = code.slice(Math.max(0, cm.index - 100), cm.index);
-      if (/data\s*[:=]/.test(before) || /const\s+data/.test(before)) continue;
-      totalStyleRefs++;
-      const lineNum = code.slice(0, cm.index).split('\n').length;
-      findings.push({
-        rule: 'hardcoded-color',
-        severity: 'moderate',
-        detail: `Hardcoded color in ${cm[1]}: ${cm[2]}`,
-        line: lineNum,
-      });
-    }
-
-    // Bad: hardcoded spacing
-    const spacingRe =
-      /(padding|margin|gap)\s*:\s*['"]?\d+px['"]?/g;
-    while ((cm = spacingRe.exec(code)) !== null) {
-      // Skip if inside var()
-      const context = code.slice(Math.max(0, cm.index - 10), cm.index + cm.length + 5);
-      if (/var\(/.test(context)) continue;
-      totalStyleRefs++;
-      const lineNum = code.slice(0, cm.index).split('\n').length;
-      findings.push({
-        rule: 'hardcoded-spacing',
-        severity: 'minor',
-        detail: `Hardcoded spacing: ${cm[0].trim()}`,
-        line: lineNum,
-      });
-    }
-
-    // Bad: hardcoded typography
-    const typoRe = /fontSize\s*:\s*['"]?\d+(px|rem|em)['"]?/g;
-    while ((cm = typoRe.exec(code)) !== null) {
-      const context = code.slice(Math.max(0, cm.index - 10), cm.index + cm[0].length + 5);
-      if (/var\(/.test(context)) continue;
-      totalStyleRefs++;
-      const lineNum = code.slice(0, cm.index).split('\n').length;
-      findings.push({
-        rule: 'hardcoded-typography',
-        severity: 'minor',
-        detail: `Hardcoded fontSize: ${cm[0].trim()}`,
-        line: lineNum,
-      });
-    }
-  } else {
-    // Baseline
-
-    // Good: semantic Tailwind tokens
-    const semanticTw =
-      /\b(bg-primary|bg-secondary|bg-muted|bg-accent|bg-destructive|bg-popover|bg-card|bg-background|text-primary|text-secondary|text-muted-foreground|text-accent-foreground|text-destructive|text-popover-foreground|text-card-foreground|text-foreground|border-border|border-input|ring-ring)\b/g;
-    const twMatches = code.match(semanticTw);
-    if (twMatches) {
-      tokenUsage += twMatches.length;
-      totalStyleRefs += twMatches.length;
-    }
-
-    // Good: var(--*) usage
-    const varMatches = code.match(/var\(--[\w-]+\)/g);
-    if (varMatches) {
-      tokenUsage += varMatches.length;
-      totalStyleRefs += varMatches.length;
-    }
-
-    // Bad: arbitrary color values
-    const arbColorRe = /\b(bg|text|border)-\[#[0-9a-fA-F]+\]/g;
-    let bm: RegExpExecArray | null;
-    while ((bm = arbColorRe.exec(code)) !== null) {
-      totalStyleRefs++;
-      const lineNum = code.slice(0, bm.index).split('\n').length;
-      findings.push({
-        rule: 'arbitrary-color',
-        severity: 'moderate',
-        detail: `Arbitrary color value: ${bm[0]}`,
-        line: lineNum,
-      });
-    }
-
-    // Bad: arbitrary spacing
-    const arbSpacingRe = /\b(p|m|px|py|mx|my|gap)-\[\d+px\]/g;
-    while ((bm = arbSpacingRe.exec(code)) !== null) {
-      totalStyleRefs++;
-      const lineNum = code.slice(0, bm.index).split('\n').length;
-      findings.push({
-        rule: 'arbitrary-spacing',
-        severity: 'minor',
-        detail: `Arbitrary spacing: ${bm[0]}`,
-        line: lineNum,
-      });
-    }
-
-    // Bad: hardcoded colors in inline styles
-    const inlineColorRe =
-      /style\s*=\s*\{\{[^}]*(backgroundColor|borderColor|color|fill|stroke)\s*:\s*['"]?(#[0-9a-fA-F]{3,8}|rgba?\([^)]+\)|hsla?\([^)]+\))/g;
-    while ((bm = inlineColorRe.exec(code)) !== null) {
-      totalStyleRefs++;
-      const lineNum = code.slice(0, bm.index).split('\n').length;
-      findings.push({
-        rule: 'inline-hardcoded-color',
-        severity: 'moderate',
-        detail: `Hardcoded color in inline style`,
-        line: lineNum,
-      });
-    }
-  }
-
-  // Dark mode support
-  let darkModeSupport = false;
-  if (target === 'xds') {
-    darkModeSupport =
-      /darkTheme|dark.*Theme|Theme|theme/i.test(code);
-  } else {
-    darkModeSupport =
-      /\bdark:/.test(code) ||
-      /dark-mode/.test(code) ||
-      /useTheme/.test(code) ||
-      /ThemeProvider/.test(code);
-  }
-
-  // Score
-  const tokenRatio =
-    totalStyleRefs > 0 ? tokenUsage / totalStyleRefs : 1;
-  const findingPenalty = findings.reduce((sum, f) => {
-    switch (f.severity) {
-      case 'critical':
-        return sum + 15;
-      case 'moderate':
-        return sum + 8;
-      case 'minor':
-        return sum + 3;
-      default:
-        return sum;
-    }
-  }, 0);
-  const score = clamp(Math.round(tokenRatio * 70 + 30 - findingPenalty));
-
-  return { score, findings, darkModeSupport };
-}
-
-// ────────────────────────────────────────────────────────────
-// 6. Correctness
-// ────────────────────────────────────────────────────────────
+// ============================================================
+// Known component catalogs
+// ============================================================
 
 const KNOWN_XDS_COMPONENTS = new Set([
   'XDSAspectRatio',
@@ -846,6 +79,7 @@ const KNOWN_XDS_COMPONENTS = new Set([
   'XDSTopNav',
   'XDSHeading',
   'XDSFontWrapper',
+  'XDSTheme',
   'Theme',
   'defaultTheme',
   'darkTheme',
@@ -926,110 +160,71 @@ const KNOWN_BASELINE_COMPONENTS = new Set([
   'CollapsibleContent',
 ]);
 
-function analyzeCorrectness(
-  code: string,
-  target: string,
-): DimensionScore {
+// ============================================================
+// 1. Correctness
+// ============================================================
+
+function analyzeCorrectness(code: string, target: string): DimensionScore {
   const findings: UniversalFinding[] = [];
 
   if (target === 'xds') {
     // Flag unknown XDS components
-    const xdsCompRe = /\bXDS\w+/g;
     const seen = new Set<string>();
-    let xm: RegExpExecArray | null;
-    while ((xm = xdsCompRe.exec(code)) !== null) {
-      const name = xm[0];
+    const xdsRe = /\bXDS\w+/g;
+    let m: RegExpExecArray | null;
+    while ((m = xdsRe.exec(code)) !== null) {
+      const name = m[0];
       if (!seen.has(name) && !KNOWN_XDS_COMPONENTS.has(name)) {
         seen.add(name);
-        const lineNum = code.slice(0, xm.index).split('\n').length;
         findings.push({
-          rule: 'unknown-xds-component',
+          rule: 'unknown-component',
           severity: 'critical',
           detail: `Unknown XDS component: ${name}`,
-          line: lineNum,
+          line: code.slice(0, m.index).split('\n').length,
         });
       }
     }
 
     // Flag hallucinated CSS variables
-    const hallucinatedVarRe =
+    const hallVarRe =
       /var\((--xds-[\w-]+|--font-size-[\w-]+|--font-family-[\w-]+|--border-[\w-]+|--shadow-[\w-]+)\)/g;
     const seenVars = new Set<string>();
-    while ((xm = hallucinatedVarRe.exec(code)) !== null) {
-      const varName = xm[1];
-      if (!seenVars.has(varName)) {
-        seenVars.add(varName);
-        const lineNum = code.slice(0, xm.index).split('\n').length;
+    while ((m = hallVarRe.exec(code)) !== null) {
+      if (!seenVars.has(m[1])) {
+        seenVars.add(m[1]);
         findings.push({
-          rule: 'hallucinated-css-var',
+          rule: 'hallucinated-token',
           severity: 'critical',
-          detail: `Hallucinated CSS variable: ${varName}`,
-          line: lineNum,
+          detail: `Hallucinated CSS variable: ${m[1]}`,
+          line: code.slice(0, m.index).split('\n').length,
         });
       }
     }
-  } else {
-    // Baseline: flag unknown components from @/components/ui/
+  } else if (target === 'baseline') {
+    // Flag unknown baseline components
     const uiImportRe =
       /import\s*\{([^}]+)\}\s*from\s*['"]@\/components\/ui\/[^'"]+['"]/g;
-    let im: RegExpExecArray | null;
-    while ((im = uiImportRe.exec(code)) !== null) {
-      const names = im[1].split(',').map((s) => s.trim()).filter(Boolean);
+    let m: RegExpExecArray | null;
+    while ((m = uiImportRe.exec(code)) !== null) {
+      const names = m[1]
+        .split(',')
+        .map(s => s.replace(/\s+as\s+\w+/, '').trim())
+        .filter(Boolean);
       for (const name of names) {
-        const cleanName = name.replace(/\s+as\s+\w+/, '').trim();
-        if (
-          cleanName &&
-          !KNOWN_BASELINE_COMPONENTS.has(cleanName)
-        ) {
-          const lineNum = code.slice(0, im.index).split('\n').length;
+        if (!KNOWN_BASELINE_COMPONENTS.has(name)) {
           findings.push({
-            rule: 'unknown-baseline-component',
+            rule: 'unknown-component',
             severity: 'critical',
-            detail: `Unknown component from @/components/ui/: ${cleanName}`,
-            line: lineNum,
+            detail: `Unknown baseline component: ${name}`,
+            line: code.slice(0, m.index).split('\n').length,
           });
         }
       }
     }
   }
 
-  // Rough unmatched JSX tag check
-  const openTags: string[] = [];
-  const closeTags: string[] = [];
-  const openRe = /<([A-Z]\w+)\b[^/]*(?<!\/)\s*>/g;
-  let tm: RegExpExecArray | null;
-  while ((tm = openRe.exec(code)) !== null) {
-    openTags.push(tm[1]);
-  }
-  const closeRe = /<\/([A-Z]\w+)\s*>/g;
-  while ((tm = closeRe.exec(code)) !== null) {
-    closeTags.push(tm[1]);
-  }
-  // Count unmatched
-  const tagBalance = new Map<string, number>();
-  for (const t of openTags) {
-    tagBalance.set(t, (tagBalance.get(t) || 0) + 1);
-  }
-  for (const t of closeTags) {
-    tagBalance.set(t, (tagBalance.get(t) || 0) - 1);
-  }
-  let unmatched = 0;
-  for (const count of tagBalance.values()) {
-    unmatched += Math.abs(count);
-  }
-  if (unmatched > 3) {
-    findings.push({
-      rule: 'unmatched-jsx-tags',
-      severity: 'moderate',
-      detail: `${unmatched} unmatched JSX tags detected`,
-      count: unmatched,
-    });
-  }
-
   // Missing export
-  if (
-    !/export\s+(default|function|const|class)/.test(code)
-  ) {
+  if (!/export\s+(default|function|const|class)/.test(code)) {
     findings.push({
       rule: 'missing-export',
       severity: 'minor',
@@ -1037,22 +232,798 @@ function analyzeCorrectness(
     });
   }
 
-  // Score with custom penalty for critical correctness issues (-20 per critical)
+  // Score
   let score = 100;
   for (const f of findings) {
-    const count = f.count ?? 1;
     switch (f.severity) {
       case 'critical':
-        score -= 20 * count;
+        score -= 20;
         break;
       case 'moderate':
-        score -= 8 * count;
+        score -= 8;
         break;
       case 'minor':
-        score -= 3 * count;
+        score -= 3;
         break;
     }
   }
 
-  return { score: clamp(score), findings };
+  return {score: clamp(score), findings};
+}
+
+// ============================================================
+// 2. Accessibility
+// ============================================================
+
+function analyzeAccessibility(code: string): DimensionScore {
+  const findings: UniversalFinding[] = [];
+  const lines = code.split('\n');
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const lineNum = i + 1;
+    const nearby = lines
+      .slice(Math.max(0, i - 2), Math.min(i + 4, lines.length))
+      .join(' ');
+
+    // onClick on non-interactive elements without role/tabIndex
+    const clickMatch = line.match(
+      /<(span|div|p|td|tr|li|img|svg)\b[^>]*\bonClick\b/i,
+    );
+    if (clickMatch) {
+      if (
+        !nearby.includes('role="button"') &&
+        !nearby.includes("role='button'") &&
+        !nearby.includes('tabIndex')
+      ) {
+        findings.push({
+          rule: 'click-non-interactive',
+          severity: 'critical',
+          detail: `onClick on <${clickMatch[1]}> without role="button" or tabIndex`,
+          line: lineNum,
+        });
+      }
+    }
+
+    // Icon-only buttons missing aria-label
+    if (line.match(/<(button|Button|XDSButton)\b/)) {
+      const btnContext = lines
+        .slice(i, Math.min(i + 5, lines.length))
+        .join(' ');
+      const hasIcon = /(<svg|Icon|icon)/.test(btnContext);
+      const hasLabel = /(aria-label|ariaLabel|label=)/.test(btnContext);
+      const hasText = />[^<]*\w{2,}[^<]*</.test(btnContext);
+      if (hasIcon && !hasLabel && !hasText) {
+        findings.push({
+          rule: 'icon-button-no-label',
+          severity: 'critical',
+          detail: 'Icon-only button missing aria-label',
+          line: lineNum,
+        });
+      }
+    }
+
+    // Form inputs without labels (skip XDS inputs with built-in labels)
+    if (line.match(/<(input|Input)\b/) && !line.includes('type="hidden"')) {
+      const isXdsInput = /XDS(TextInput|NumberInput|DateInput|TimeInput)/.test(
+        nearby,
+      );
+      if (!isXdsInput) {
+        const hasLabel = /(label|Label|aria-label|ariaLabel)/.test(nearby);
+        if (!hasLabel) {
+          findings.push({
+            rule: 'input-no-label',
+            severity: 'critical',
+            detail: 'Form input without associated label',
+            line: lineNum,
+          });
+        }
+      }
+    }
+
+    // Images without alt
+    if (line.includes('<img') && !line.includes('alt=')) {
+      findings.push({
+        rule: 'img-no-alt',
+        severity: 'moderate',
+        detail: 'Image without alt text',
+        line: lineNum,
+      });
+    }
+  }
+
+  // Heading hierarchy
+  const headingLevels: number[] = [];
+  for (const line of lines) {
+    const h = line.match(/<h([1-6])\b/i);
+    if (h) headingLevels.push(parseInt(h[1]));
+    const xh = line.match(/level\s*=\s*\{?\s*(\d)\s*\}?/);
+    if (xh && line.includes('Heading')) headingLevels.push(parseInt(xh[1]));
+  }
+  for (let i = 1; i < headingLevels.length; i++) {
+    if (headingLevels[i] > headingLevels[i - 1] + 1) {
+      findings.push({
+        rule: 'heading-skip',
+        severity: 'minor',
+        detail: `Heading level skipped: h${headingLevels[i - 1]} → h${headingLevels[i]}`,
+      });
+    }
+  }
+
+  let score = 100;
+  for (const f of findings) {
+    switch (f.severity) {
+      case 'critical':
+        score -= 15;
+        break;
+      case 'moderate':
+        score -= 8;
+        break;
+      case 'minor':
+        score -= 3;
+        break;
+    }
+  }
+
+  return {score: clamp(score), findings};
+}
+
+// ============================================================
+// 3. Code Quality
+// ============================================================
+
+function analyzeCodeQuality(code: string): DimensionScore {
+  const findings: UniversalFinding[] = [];
+  const lines = code.split('\n');
+
+  let maxNesting = 0;
+  let currentNesting = 0;
+  let branchCount = 0;
+  let inFunction = false;
+  let functionStart = 0;
+  let functionNesting = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const stripped = line.trim();
+    const lineNum = i + 1;
+
+    // Nesting
+    currentNesting +=
+      (line.match(/\{/g) || []).length - (line.match(/\}/g) || []).length;
+    maxNesting = Math.max(maxNesting, currentNesting);
+
+    // Function tracking
+    if (
+      stripped.match(
+        /^(export\s+)?(default\s+)?function\s|^(export\s+)?const\s+\w+\s*=.*=>/,
+      )
+    ) {
+      inFunction = true;
+      functionStart = i;
+      functionNesting = currentNesting;
+    }
+    if (inFunction && currentNesting < functionNesting) {
+      const len = i - functionStart;
+      if (len > 100) {
+        findings.push({
+          rule: 'long-function',
+          severity: 'moderate',
+          detail: `Function is ${len} lines`,
+          line: functionStart + 1,
+        });
+      }
+      inFunction = false;
+    }
+
+    // Branches
+    if (stripped.match(/^(if|else if|else|case|catch)\b/)) branchCount++;
+    branchCount += (line.match(/\?[^?:]/g) || []).length; // ternaries
+
+    // TypeScript any
+    if (stripped.match(/:\s*any\b/) || stripped.match(/as\s+any\b/)) {
+      findings.push({
+        rule: 'typescript-any',
+        severity: 'minor',
+        detail: 'Use of `any` type',
+        line: lineNum,
+      });
+    }
+
+    // console.log
+    if (stripped.includes('console.log(')) {
+      findings.push({
+        rule: 'console-log',
+        severity: 'minor',
+        detail: 'console.log left in code',
+        line: lineNum,
+      });
+    }
+
+    // Missing key in .map()
+    if (line.includes('.map(')) {
+      const mapCtx = lines.slice(i, Math.min(i + 5, lines.length)).join(' ');
+      if (
+        !mapCtx.includes('key=') &&
+        !mapCtx.includes('key:') &&
+        mapCtx.includes('<')
+      ) {
+        findings.push({
+          rule: 'missing-key',
+          severity: 'moderate',
+          detail: 'Array .map() without key prop',
+          line: lineNum,
+        });
+      }
+    }
+
+    // Index as key
+    if (line.match(/key\s*=\s*\{?\s*(index|i|idx)\s*\}?/)) {
+      findings.push({
+        rule: 'index-key',
+        severity: 'minor',
+        detail: 'Array index as key',
+        line: lineNum,
+      });
+    }
+  }
+
+  if (maxNesting > 6) {
+    findings.push({
+      rule: 'deep-nesting',
+      severity: 'moderate',
+      detail: `Max nesting depth: ${maxNesting}`,
+    });
+  }
+  if (branchCount > 15) {
+    findings.push({
+      rule: 'high-complexity',
+      severity: 'moderate',
+      detail: `Cyclomatic complexity: ${branchCount}`,
+    });
+  }
+
+  let score = 100;
+  for (const f of findings) {
+    switch (f.severity) {
+      case 'critical':
+        score -= 15;
+        break;
+      case 'moderate':
+        score -= 8;
+        break;
+      case 'minor':
+        score -= 3;
+        break;
+    }
+  }
+
+  return {score: clamp(score), findings};
+}
+
+// ============================================================
+// 4. Efficiency (merges DRYness + Conciseness + decisions/element)
+// ============================================================
+
+/**
+ * Check if a normalized line is component/prop usage (not real duplication).
+ */
+function isComponentUsageLine(normalizedLine: string): boolean {
+  if (/^<\/?[A-Z]\w*/.test(normalizedLine)) return true;
+  if (/^<\/[A-Z]\w*>$/.test(normalizedLine)) return true;
+  if (/^<[A-Z]\w*\s.*\/>$/.test(normalizedLine)) return true;
+  if (/^\w+=/.test(normalizedLine) && normalizedLine.length < 40) return true;
+  if (/^\w+:\s*\w+Vars\[/.test(normalizedLine)) return true;
+  return false;
+}
+
+function normalizeLine(line: string): string {
+  return line
+    .replace(/(["'`])(?:(?!\1).)*\1/g, '"_"')
+    .replace(/\b\d+(\.\d+)?\b/g, 'N')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Count unique UI elements in the code (JSX tags that render visible output).
+ */
+function countElements(code: string): number {
+  const elements = new Set<string>();
+  // Match opening JSX tags (both component and HTML)
+  const tagRe = /<([A-Za-z]\w*)[\s>]/g;
+  let m: RegExpExecArray | null;
+  while ((m = tagRe.exec(code)) !== null) {
+    const tag = m[1];
+    // Skip non-visual tags
+    if (
+      ['React', 'Fragment', 'StrictMode', 'Suspense', 'ErrorBoundary'].includes(
+        tag,
+      )
+    )
+      continue;
+    // Skip wrapper/provider tags
+    if (/(Provider|Context|Theme|Wrapper)$/.test(tag)) continue;
+    elements.add(`${tag}-${m.index}`); // unique by position
+  }
+  return elements.size;
+}
+
+/**
+ * Count styling decisions — individual props, className tokens, or style properties
+ * that determine visual appearance.
+ */
+function countStylingDecisions(code: string, target: string): number {
+  let count = 0;
+
+  if (target === 'xds') {
+    // Component props that are styling decisions: variant, size, gap, color, type
+    count += (
+      code.match(
+        /\b(variant|size|gap|color|type|level|weight|crossAlign|mainAlign)\s*=\s*/g,
+      ) || []
+    ).length;
+    // StyleX properties (each key: value in stylex.create)
+    const stylexBlocks = code.match(/stylex\.create\(\{[\s\S]*?\}\)/g) || [];
+    for (const block of stylexBlocks) {
+      count += (block.match(/\w+\s*:/g) || []).length;
+    }
+  } else if (target === 'baseline') {
+    // Tailwind classes — each utility class is a decision
+    const classNames = code.match(/className\s*=\s*["']([^"']+)["']/g) || [];
+    for (const cn of classNames) {
+      const classes = cn
+        .replace(/className\s*=\s*["']/, '')
+        .replace(/["']$/, '');
+      count += classes.split(/\s+/).filter(Boolean).length;
+    }
+    // cn() calls
+    const cnCalls = code.match(/cn\([^)]+\)/g) || [];
+    for (const call of cnCalls) {
+      count += (call.match(/["'][^"']+["']/g) || []).length;
+    }
+    // Component variant/size props
+    count += (code.match(/\b(variant|size)\s*=\s*/g) || []).length;
+  } else {
+    // Raw HTML — inline style properties
+    const styleBlocks = code.match(/style\s*=\s*\{\{([^}]+)\}\}/g) || [];
+    for (const block of styleBlocks) {
+      count += (block.match(/\w+\s*:/g) || []).length;
+    }
+    // CSS class assignments
+    count += (code.match(/className\s*=\s*/g) || []).length;
+  }
+
+  return count;
+}
+
+function analyzeEfficiency(
+  code: string,
+  target: string,
+): DimensionScore<EfficiencyMetrics> {
+  const findings: UniversalFinding[] = [];
+  const lines = code.split('\n');
+  const normalizedLines = lines.map(normalizeLine);
+
+  // --- Line categorization ---
+  let blankLines = 0;
+  let commentLines = 0;
+  let importLines = 0;
+  let typeLines = 0;
+  let stylingLines = 0;
+  let logicLines = 0;
+  let inTypeBlock = false;
+  let inStyleBlock = false;
+  let inComment = false;
+
+  for (const line of lines) {
+    const stripped = line.trim();
+    if (stripped === '') {
+      blankLines++;
+      continue;
+    }
+    if (
+      stripped.startsWith('//') ||
+      stripped.startsWith('/*') ||
+      stripped.startsWith('*')
+    ) {
+      commentLines++;
+      if (stripped.startsWith('/*')) inComment = true;
+      if (stripped.includes('*/')) inComment = false;
+      continue;
+    }
+    if (inComment) {
+      commentLines++;
+      if (stripped.includes('*/')) inComment = false;
+      continue;
+    }
+    if (stripped.startsWith('import ')) {
+      importLines++;
+      continue;
+    }
+    if (/^(export\s+)?(type|interface)\s/.test(stripped)) inTypeBlock = true;
+    if (inTypeBlock) {
+      typeLines++;
+      if (stripped === '}' || stripped === '};') inTypeBlock = false;
+      continue;
+    }
+    if (target === 'xds' && stripped.includes('stylex.create'))
+      inStyleBlock = true;
+    if (inStyleBlock) {
+      stylingLines++;
+      if (stripped === '});') inStyleBlock = false;
+      continue;
+    }
+    if (target === 'baseline' && stripped.includes('className=')) {
+      stylingLines++;
+      continue;
+    }
+    if (target === 'html' && /style\s*=/.test(stripped)) {
+      stylingLines++;
+      continue;
+    }
+    logicLines++;
+  }
+
+  const totalLines = lines.length;
+  const codeLines = totalLines - blankLines - commentLines;
+  const boilerplateLines = importLines + typeLines;
+  const stylingRatio = codeLines > 0 ? stylingLines / codeLines : 0;
+  const boilerplateRatio = codeLines > 0 ? boilerplateLines / codeLines : 0;
+
+  // --- Duplicate detection (excluding component usage) ---
+  const lineCounts = new Map<string, number>();
+  for (const nl of normalizedLines) {
+    if (nl.length > 20 && !isComponentUsageLine(nl)) {
+      lineCounts.set(nl, (lineCounts.get(nl) || 0) + 1);
+    }
+  }
+  let duplicateLineCount = 0;
+  for (const [line, count] of lineCounts) {
+    if (count >= 3) {
+      duplicateLineCount += count;
+      findings.push({
+        rule: 'duplicate-lines',
+        severity: 'moderate',
+        detail: `Line repeated ${count} times`,
+        count,
+        example: line.slice(0, 80),
+      });
+    }
+  }
+  const duplicateRatio = codeLines > 0 ? duplicateLineCount / codeLines : 0;
+
+  // --- Repeated className patterns ---
+  const classRe = /className\s*=\s*["']([^"']{20,})["']/g;
+  const classCounts = new Map<string, number>();
+  let sm: RegExpExecArray | null;
+  while ((sm = classRe.exec(code)) !== null) {
+    classCounts.set(sm[1], (classCounts.get(sm[1]) || 0) + 1);
+  }
+  for (const [cls, count] of classCounts) {
+    if (count >= 3) {
+      findings.push({
+        rule: 'repeated-classname',
+        severity: 'moderate',
+        detail: `className pattern repeated ${count} times`,
+        count,
+        example: cls.slice(0, 60),
+      });
+    }
+  }
+
+  // --- Decisions per element ---
+  const elementCount = Math.max(1, countElements(code));
+  const stylingDecisionCount = countStylingDecisions(code, target);
+  const decisionsPerElement = stylingDecisionCount / elementCount;
+
+  const metrics: EfficiencyMetrics = {
+    totalLines,
+    codeLines,
+    stylingLines,
+    boilerplateLines,
+    logicLines,
+    stylingRatio,
+    boilerplateRatio,
+    decisionsPerElement: Math.round(decisionsPerElement * 10) / 10,
+    elementCount,
+    stylingDecisionCount,
+    duplicateRatio: Math.round(duplicateRatio * 100) / 100,
+  };
+
+  // Score: penalize high ceremony ratio, high duplication, high decisions/element
+  const ceremonyPenalty = (stylingRatio + boilerplateRatio) * 40;
+  const duplicationPenalty = duplicateRatio * 30;
+  // decisionsPerElement: 3 is ideal, 10+ is bad, 20+ is terrible
+  const decisionPenalty = Math.max(0, (decisionsPerElement - 3) * 3);
+  const findingPenalty = findings.reduce(
+    (s, f) => s + (f.severity === 'moderate' ? 5 : 2),
+    0,
+  );
+
+  const score =
+    100 -
+    ceremonyPenalty -
+    duplicationPenalty -
+    decisionPenalty -
+    findingPenalty;
+
+  return {score: clamp(score), findings, metrics};
+}
+
+// ============================================================
+// 5. Maintainability (coupling, magic values, locality)
+// ============================================================
+
+/**
+ * Detect magic values — raw literals in styling contexts that have no
+ * semantic meaning. Works for any target.
+ */
+function countMagicAndSemanticValues(
+  code: string,
+  target: string,
+): {magic: number; semantic: number} {
+  let magic = 0;
+  let semantic = 0;
+
+  // --- Semantic references (all targets) ---
+  // CSS variables
+  semantic += (code.match(/var\(--[\w-]+\)/g) || []).length;
+
+  if (target === 'xds') {
+    // StyleX token references: spacingVars["--spacing-4"], colorVars["--color-*"]
+    semantic += (code.match(/\w+Vars\[["']--[\w-]+["']\]/g) || []).length;
+    // Component props that delegate styling: variant=, size=, gap=, color=, type=
+    semantic += (
+      code.match(/\b(variant|size|gap|color|type|level)\s*=\s*["']/g) || []
+    ).length;
+  } else if (target === 'baseline') {
+    // Tailwind semantic tokens: bg-primary, text-muted-foreground, etc.
+    semantic += (
+      code.match(
+        /(?:bg|text|border|ring)-(?:primary|secondary|destructive|muted|accent|popover|card|foreground|background)[\w-]*/g,
+      ) || []
+    ).length;
+    // Tailwind scale values: p-4, gap-2, text-sm, rounded-lg (non-arbitrary)
+    semantic += (
+      code.match(
+        /(?:^|\s)(?:p|m|gap|space|text|rounded|font|w|h)-(?:\d+|xs|sm|md|lg|xl|2xl|3xl|full|auto)(?:\s|["']|$)/g,
+      ) || []
+    ).length;
+    // Component variant/size props
+    semantic += (code.match(/\b(variant|size)\s*=\s*["']/g) || []).length;
+  }
+
+  // --- Magic values (all targets) ---
+  const lines = code.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Skip data arrays, comments, imports
+    if (
+      line.trim().startsWith('//') ||
+      line.trim().startsWith('import') ||
+      line.trim().startsWith('*')
+    )
+      continue;
+
+    // Hardcoded colors in style contexts
+    const colorMatches = line.match(
+      /(?:backgroundColor|borderColor|color|fill|stroke)\s*:\s*['"]?(#[0-9a-fA-F]{3,8}|rgb\(|hsl\(|rgba\(|hsla\()/gi,
+    );
+    if (colorMatches) {
+      // Skip if in data objects
+      const ctx = lines.slice(Math.max(0, i - 2), i + 1).join(' ');
+      if (
+        !ctx.includes('name:') &&
+        !ctx.includes('id:') &&
+        !ctx.includes('label:')
+      ) {
+        magic += colorMatches.length;
+      }
+    }
+
+    // Hardcoded spacing in style contexts
+    const spacingMatches = line.match(
+      /(?:padding|margin|gap)\w*\s*:\s*['"]?\d+px/gi,
+    );
+    if (spacingMatches && !line.includes('var(')) {
+      magic += spacingMatches.length;
+    }
+
+    // Hardcoded typography
+    const typoMatches = line.match(
+      /fontSize\s*:\s*['"]?\d+(?:\.\d+)?(?:px|rem|em)/gi,
+    );
+    if (typoMatches && !line.includes('var(')) {
+      magic += typoMatches.length;
+    }
+
+    // Tailwind arbitrary values (magic)
+    const arbitraryMatches = line.match(
+      /(?:bg|text|border|p|m|gap|w|h)-\[#?[\w.]+(?:px|rem|em|%)?\]/g,
+    );
+    if (arbitraryMatches) {
+      magic += arbitraryMatches.length;
+    }
+
+    // Inline hardcoded colors in style={{}}
+    const inlineColorMatches = line.match(
+      /(?:backgroundColor|color|borderColor)\s*:\s*['"]#[0-9a-fA-F]{3,8}['"]/gi,
+    );
+    if (inlineColorMatches) {
+      magic += inlineColorMatches.length;
+    }
+  }
+
+  return {magic, semantic};
+}
+
+/**
+ * Measure state variable spread — how far apart are declarations and usages?
+ */
+function measureStateSpread(code: string): number {
+  const lines = code.split('\n');
+  const spreads: number[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    // Find useState declarations
+    const stateMatch = lines[i].match(
+      /\[\s*(\w+)\s*,\s*set\w+\s*\]\s*=\s*use[A-Z]/,
+    );
+    if (stateMatch) {
+      const varName = stateMatch[1];
+      // Find furthest usage of this variable
+      let furthest = i;
+      for (let j = i + 1; j < lines.length; j++) {
+        if (lines[j].includes(varName)) {
+          furthest = j;
+        }
+      }
+      spreads.push(furthest - i);
+    }
+  }
+
+  if (spreads.length === 0) return 0;
+  return Math.round(spreads.reduce((a, b) => a + b, 0) / spreads.length);
+}
+
+function analyzeMaintainability(
+  code: string,
+  target: string,
+): DimensionScore<MaintainabilityMetrics> {
+  const findings: UniversalFinding[] = [];
+
+  // --- Magic values vs semantic references ---
+  const {magic, semantic} = countMagicAndSemanticValues(code, target);
+  const totalValues = magic + semantic;
+  const semanticRatio = totalValues > 0 ? semantic / totalValues : 1;
+
+  if (magic > 0) {
+    findings.push({
+      rule: 'magic-values',
+      severity: magic > 5 ? 'moderate' : 'minor',
+      detail: `${magic} magic value${magic > 1 ? 's' : ''} (hardcoded colors, spacing, or typography)`,
+      count: magic,
+    });
+  }
+
+  // --- Dark mode support ---
+  let darkModeSupport = false;
+  if (target === 'xds') {
+    darkModeSupport = /dark(Theme|Mode|_mode)|mode\s*=\s*["']dark/i.test(code);
+  } else if (target === 'baseline') {
+    darkModeSupport = /\bdark:|\buseTheme\b|ThemeProvider|data-theme/i.test(
+      code,
+    );
+  } else {
+    darkModeSupport = /prefers-color-scheme|dark-mode|data-theme/i.test(code);
+  }
+
+  // --- State spread (locality) ---
+  const avgStateSpread = measureStateSpread(code);
+
+  if (avgStateSpread > 80) {
+    findings.push({
+      rule: 'high-state-spread',
+      severity: 'moderate',
+      detail: `Average state variable spread: ${avgStateSpread} lines`,
+    });
+  } else if (avgStateSpread > 50) {
+    findings.push({
+      rule: 'moderate-state-spread',
+      severity: 'minor',
+      detail: `Average state variable spread: ${avgStateSpread} lines`,
+    });
+  }
+
+  const metrics: MaintainabilityMetrics = {
+    semanticRatio: Math.round(semanticRatio * 100) / 100,
+    magicValueCount: magic,
+    semanticValueCount: semantic,
+    avgStateSpread,
+    darkModeSupport,
+  };
+
+  // Score: semantic ratio is the primary signal (0-60 points),
+  // locality adds up to 20, dark mode adds 10, findings subtract
+  const semanticScore = semanticRatio * 60;
+  const localityScore =
+    avgStateSpread < 30
+      ? 20
+      : avgStateSpread < 60
+        ? 12
+        : avgStateSpread < 100
+          ? 6
+          : 0;
+  const darkModeScore = darkModeSupport ? 10 : 0;
+  const baseScore = semanticScore + localityScore + darkModeScore + 10; // 10 free points
+
+  const findingPenalty = findings.reduce((s, f) => {
+    switch (f.severity) {
+      case 'critical':
+        return s + 15;
+      case 'moderate':
+        return s + 8;
+      case 'minor':
+        return s + 3;
+      default:
+        return s;
+    }
+  }, 0);
+
+  return {
+    score: clamp(baseScore - findingPenalty),
+    findings,
+    metrics,
+  };
+}
+
+// ============================================================
+// Main exports
+// ============================================================
+
+/**
+ * Run all 5 dimension analyzers on a code sample.
+ */
+export function evaluate(code: string, target: string): UniversalScore {
+  return {
+    correctness: analyzeCorrectness(code, target),
+    accessibility: analyzeAccessibility(code),
+    codeQuality: analyzeCodeQuality(code),
+    efficiency: analyzeEfficiency(code, target),
+    maintainability: analyzeMaintainability(code, target),
+  };
+}
+
+/**
+ * Get the list of dimension names.
+ */
+export function getDimensionNames(): UniversalDimension[] {
+  return [
+    'correctness',
+    'accessibility',
+    'codeQuality',
+    'efficiency',
+    'maintainability',
+  ];
+}
+
+/**
+ * Get the score for a specific dimension.
+ */
+export function getDimensionScore(
+  score: UniversalScore,
+  dimension: UniversalDimension,
+): number {
+  return score[dimension].score;
+}
+
+/**
+ * Calculate an average score across all dimensions (unweighted).
+ */
+export function getAverageScore(score: UniversalScore): number {
+  const dims = getDimensionNames();
+  const total = dims.reduce((sum, d) => sum + score[d].score, 0);
+  return Math.round(total / dims.length);
 }
