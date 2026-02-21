@@ -51,8 +51,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       storybook_url: ${{ steps.urls.outputs.storybook_url }}
-      sandbox_url: ${{ steps.urls.outputs.sandbox_url }}
       short_hash: ${{ steps.urls.outputs.short_hash }}
+      sandbox_url: ${{ steps.urls.outputs.sandbox_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -69,24 +69,18 @@ jobs:
       - name: Build core package
         run: yarn build
 
-      - name: Compute short hash
-        id: hash
-        run: |
-          COMMIT_HASH="${{ github.event.pull_request.head.sha || github.sha }}"
-          echo "short_hash=${COMMIT_HASH:0:7}" >> $GITHUB_OUTPUT
-
       - name: Build Storybook
         run: yarn workspace @xds/storybook build
 
       - name: Build Sandbox
         run: yarn workspace @xds/sandbox build
-        env:
-          SANDBOX_BASE_PATH: /${{ steps.hash.outputs.short_hash }}/sandbox
+        continue-on-error: true
 
       - name: Prepare versioned deployment
         id: urls
         run: |
-          SHORT_HASH="${{ steps.hash.outputs.short_hash }}"
+          COMMIT_HASH="${{ github.event.pull_request.head.sha || github.sha }}"
+          SHORT_HASH="${COMMIT_HASH:0:7}"
           REPO_NAME="${{ github.event.repository.name }}"
           REPO_OWNER="${{ github.repository_owner }}"
           STORYBOOK_URL="https://${REPO_OWNER}.github.io/${REPO_NAME}/${SHORT_HASH}/"
@@ -99,8 +93,12 @@ jobs:
           # Create deployment directory structure
           mkdir -p deploy/${SHORT_HASH}
           cp -r apps/storybook/dist/* deploy/${SHORT_HASH}/
-          mkdir -p deploy/${SHORT_HASH}/sandbox
-          cp -r apps/sandbox/out/* deploy/${SHORT_HASH}/sandbox/
+
+          # Copy sandbox build if it exists
+          if [ -d "apps/sandbox/dist" ]; then
+            mkdir -p deploy/${SHORT_HASH}/sandbox
+            cp -r apps/sandbox/dist/* deploy/${SHORT_HASH}/sandbox/
+          fi
 
           # Create root index.html that redirects to latest build (only for main branch)
           if [ "${{ github.event_name }}" == "push" ]; then
@@ -136,8 +134,8 @@ jobs:
           keep_files: true
           destination_dir: .
 
-  # PR Enrichment - only runs on pull requests
-  pr-enrichment:
+  # PR Analysis - analyze changed components and upload analysis artifact
+  pr-analyze:
     needs: deploy
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -160,12 +158,41 @@ jobs:
         run: yarn build
 
       - name: Analyze components
-        id: analyze
         run: |
           node .github/scripts/analyze-pr.js \
             --base origin/${{ github.base_ref }} \
             --head HEAD \
             --output analysis.json
+
+      - name: Upload analysis artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-analysis
+          path: analysis.json
+          retention-days: 1
+
+  # Screenshots - capture component screenshots and videos (runs in parallel with a11y)
+  pr-screenshots:
+    needs: [deploy, pr-analyze]
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Download analysis artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-analysis
 
       - name: Download Storybook artifact
         uses: actions/download-artifact@v4
@@ -180,7 +207,6 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
       - name: Capture component screenshots and videos
-        id: screenshots
         run: |
           COMPONENTS=$(cat analysis.json | jq -r '(.newComponents + .modifiedComponents) | join(",")')
           node .github/scripts/capture-screenshots.js \
@@ -190,7 +216,6 @@ jobs:
             --video
 
       - name: Upload screenshots and videos to GitHub
-        id: upload_screenshots
         env:
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -235,8 +260,48 @@ jobs:
 
           cat screenshot-urls.json
 
+      - name: Upload screenshots artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: component-screenshots
+          path: |
+            screenshots/
+            screenshot-urls.json
+          retention-days: 30
+
+  # Accessibility audit - runs in parallel with screenshots
+  pr-a11y:
+    needs: [deploy, pr-analyze]
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Download analysis artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-analysis
+
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: storybook-${{ needs.deploy.outputs.short_hash }}
+          path: apps/storybook/dist
+
+      - name: Install Playwright
+        run: npx playwright install chromium
+
       - name: Run accessibility audit
-        id: a11y
         run: |
           COMPONENTS=$(cat analysis.json | jq -r '(.newComponents + .modifiedComponents) | join(",")')
           node .github/scripts/accessibility-audit.js \
@@ -244,23 +309,52 @@ jobs:
             --output a11y-report.json \
             --components "$COMPONENTS"
 
-      - name: Upload screenshots artifact
+      - name: Upload a11y artifact
         uses: actions/upload-artifact@v4
         with:
+          name: a11y-report
+          path: a11y-report.json
+          retention-days: 1
+
+  # PR Comment - combine results and post comment
+  pr-comment:
+    needs: [deploy, pr-analyze, pr-screenshots, pr-a11y]
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Download analysis artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-analysis
+
+      - name: Download screenshots artifact
+        uses: actions/download-artifact@v4
+        with:
           name: component-screenshots
-          path: screenshots/
-          retention-days: 30
+          path: screenshots-artifact
+
+      - name: Download a11y artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: a11y-report
 
       - name: Generate PR comment
-        id: comment
         run: |
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
           COMMENT_BODY=$(node .github/scripts/generate-pr-comment.js \
             --analysis analysis.json \
             --a11y a11y-report.json \
-            --screenshots screenshots/screenshots.json \
-            --screenshot-urls screenshot-urls.json \
+            --screenshots screenshots-artifact/screenshots/screenshots.json \
+            --screenshot-urls screenshots-artifact/screenshot-urls.json \
             --storybook-url "${{ needs.deploy.outputs.storybook_url }}" \
             --sandbox-url "${{ needs.deploy.outputs.sandbox_url }}" \
             --run-url "$RUN_URL" \
