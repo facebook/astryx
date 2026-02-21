@@ -21,8 +21,8 @@ import {
   elevationVars,
 } from '@xds/core/theme/tokens.stylex';
 import {XDSTheme} from '@xds/core';
-import {defaultTheme} from '@xds/theme/default';
-import {neutralTheme} from '@xds/theme/neutral';
+import {defaultTheme} from '@xds/theme-default';
+import {neutralTheme} from '@xds/theme-neutral';
 
 const styles = stylex.create({
   // Story wrapper styles

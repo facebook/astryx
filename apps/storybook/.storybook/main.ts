@@ -4,7 +4,14 @@ import path from 'path';
 
 const rootDir = path.resolve(__dirname, '../../..');
 const coreRoot = path.resolve(__dirname, '../../../packages/core/src');
-const themeRoot = path.resolve(__dirname, '../../../packages/theme/src');
+const themeDefaultRoot = path.resolve(
+  __dirname,
+  '../../../packages/themes/default/src',
+);
+const themeNeutralRoot = path.resolve(
+  __dirname,
+  '../../../packages/themes/neutral/src',
+);
 
 /**
  * Browser targets for lightningcss.
@@ -61,7 +68,12 @@ const config: StorybookConfig = {
           aliases: {
             '@xds/core/*': [path.join(rootDir, 'packages/core/src/*')],
             '@xds/core': [path.join(rootDir, 'packages/core/src')],
-            '@xds/theme/*': [path.join(rootDir, 'packages/theme/src/*')],
+            '@xds/theme-default/*': [
+              path.join(rootDir, 'packages/themes/default/src/*'),
+            ],
+            '@xds/theme-neutral/*': [
+              path.join(rootDir, 'packages/themes/neutral/src/*'),
+            ],
           },
           unstable_moduleResolution: {
             type: 'commonJS',
@@ -86,7 +98,8 @@ const config: StorybookConfig = {
         alias: {
           ...config.resolve?.alias,
           '@xds/core': coreRoot,
-          '@xds/theme': themeRoot,
+          '@xds/theme-default': themeDefaultRoot,
+          '@xds/theme-neutral': themeNeutralRoot,
         },
       },
       css: {

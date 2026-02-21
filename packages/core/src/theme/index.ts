@@ -6,9 +6,9 @@
  * - useXDSTheme: Hook to access current theme
  * - Token exports for direct use in StyleX
  *
- * Themes (defaultTheme, neutralTheme, etc.) are in @xds/theme:
- *   import { defaultTheme } from '@xds/theme/default';
- *   import { neutralTheme } from '@xds/theme/neutral';
+ * Themes are in separate packages:
+ *   import { defaultTheme } from '@xds/theme-default';
+ *   import { neutralTheme } from '@xds/theme-neutral';
  */
 
 export {XDSTheme, useXDSTheme, Theme, useTheme} from './XDSTheme';
