@@ -27,7 +27,11 @@ import {
   lineHeightVars,
   radiusVars,
 } from '../theme/tokens.stylex';
+// TODO(#264): Lazy-load useXDSPopover so the popover/layer bundle is not
+// eagerly imported when `menu` is not provided. See XDSText for an example
+// of lazy loading layer resources.
 import {useXDSPopover} from '../Layer/useXDSPopover';
+import {XDSLink} from '../Link';
 
 // =============================================================================
 // Styles
@@ -82,13 +86,6 @@ const styles = stylex.create({
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
-  supertitleLink: {
-    color: colorVars['--color-text-secondary'],
-    textDecoration: 'none',
-    ':hover': {
-      textDecoration: 'underline',
-    },
-  },
   title: {
     fontSize: textSizeVars['--text-base'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
@@ -99,13 +96,6 @@ const styles = stylex.create({
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
-  titleLink: {
-    color: colorVars['--color-text-primary'],
-    textDecoration: 'none',
-    ':hover': {
-      textDecoration: 'underline',
-    },
-  },
   subtitle: {
     fontSize: textSizeVars['--text-xsm'],
     lineHeight: lineHeightVars['--leading-snug'],
@@ -114,13 +104,6 @@ const styles = stylex.create({
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
-  },
-  subtitleLink: {
-    color: colorVars['--color-text-secondary'],
-    textDecoration: 'none',
-    ':hover': {
-      textDecoration: 'underline',
-    },
   },
   chevron: {
     flexShrink: 0,
@@ -170,13 +153,9 @@ export interface XDSPageNavHeaderProps {
    */
   subtitleHref?: string;
   /**
-   * Show dropdown chevron indicator.
-   * Automatically shown when `menu` is provided. Can be set explicitly.
-   */
-  hasChevron?: boolean;
-  /**
    * Menu content shown in a popover. When provided, the header composes
-   * useXDSPopover internally. The trigger boundary is determined automatically:
+   * useXDSPopover internally and shows a dropdown chevron. The trigger
+   * boundary is determined automatically:
    * - No hrefs → whole header is the trigger
    * - With hrefs → links are independent, chevron/remaining area is the trigger
    */
@@ -227,6 +206,8 @@ function ChevronDownIcon() {
  * - titleHref + supertitleHref, no menu → each is an independent link
  * - menu + hrefs → links are independent, chevron/remaining area is the trigger
  *
+ * The chevron indicator is automatically shown when `menu` is provided.
+ *
  * @example
  * ```tsx
  * // Single product
@@ -263,7 +244,6 @@ export const XDSPageNavHeader = forwardRef<
     supertitleHref,
     subtitle,
     subtitleHref,
-    hasChevron: hasChevronProp,
     menu,
     xstyle,
     'data-testid': testId,
@@ -277,7 +257,7 @@ export const XDSPageNavHeader = forwardRef<
     dialogLabel: 'Navigation menu',
   });
 
-  const showChevron = hasChevronProp ?? !!menu;
+  const showChevron = !!menu;
   const hasAnyHref = !!(titleHref || supertitleHref || subtitleHref);
 
   // Determine interaction mode
@@ -310,28 +290,36 @@ export const XDSPageNavHeader = forwardRef<
     <span {...stylex.props(styles.textContainer)}>
       {supertitle &&
         (hasAnyHref && supertitleHref && menu ? (
-          <a
+          <XDSLink
+            label={supertitle}
             href={supertitleHref}
-            {...stylex.props(styles.supertitle, styles.supertitleLink)}>
+            color="secondary"
+            size="xsm">
             {supertitle}
-          </a>
+          </XDSLink>
         ) : (
           <span {...stylex.props(styles.supertitle)}>{supertitle}</span>
         ))}
       {hasAnyHref && titleHref && menu ? (
-        <a href={titleHref} {...stylex.props(styles.title, styles.titleLink)}>
+        <XDSLink
+          label={title}
+          href={titleHref}
+          color="primary"
+          weight="semibold">
           {title}
-        </a>
+        </XDSLink>
       ) : (
         <span {...stylex.props(styles.title)}>{title}</span>
       )}
       {subtitle &&
         (hasAnyHref && subtitleHref && menu ? (
-          <a
+          <XDSLink
+            label={subtitle}
             href={subtitleHref}
-            {...stylex.props(styles.subtitle, styles.subtitleLink)}>
+            color="secondary"
+            size="xsm">
             {subtitle}
-          </a>
+          </XDSLink>
         ) : (
           <span {...stylex.props(styles.subtitle)}>{subtitle}</span>
         ))}
@@ -433,30 +421,36 @@ export const XDSPageNavHeader = forwardRef<
         <span {...stylex.props(styles.textContainer)}>
           {supertitle &&
             (supertitleHref ? (
-              <a
+              <XDSLink
+                label={supertitle}
                 href={supertitleHref}
-                {...stylex.props(styles.supertitle, styles.supertitleLink)}>
+                color="secondary"
+                size="xsm">
                 {supertitle}
-              </a>
+              </XDSLink>
             ) : (
               <span {...stylex.props(styles.supertitle)}>{supertitle}</span>
             ))}
           {titleHref ? (
-            <a
+            <XDSLink
+              label={title}
               href={titleHref}
-              {...stylex.props(styles.title, styles.titleLink)}>
+              color="primary"
+              weight="semibold">
               {title}
-            </a>
+            </XDSLink>
           ) : (
             <span {...stylex.props(styles.title)}>{title}</span>
           )}
           {subtitle &&
             (subtitleHref ? (
-              <a
+              <XDSLink
+                label={subtitle}
                 href={subtitleHref}
-                {...stylex.props(styles.subtitle, styles.subtitleLink)}>
+                color="secondary"
+                size="xsm">
                 {subtitle}
-              </a>
+              </XDSLink>
             ) : (
               <span {...stylex.props(styles.subtitle)}>{subtitle}</span>
             ))}

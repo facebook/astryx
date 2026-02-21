@@ -166,10 +166,10 @@ describe('XDSPageNavHeader', () => {
     expect(button).toBeInTheDocument();
   });
 
-  it('shows chevron when hasChevron is explicitly set', () => {
-    const {container} = render(<XDSPageNavHeader title="My App" hasChevron />);
+  it('does not show chevron without menu', () => {
+    const {container} = render(<XDSPageNavHeader title="My App" />);
     const svg = container.querySelector('svg');
-    expect(svg).toBeInTheDocument();
+    expect(svg).not.toBeInTheDocument();
   });
 
   it('whole header is popover trigger when menu provided without hrefs', () => {

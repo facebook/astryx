@@ -4,8 +4,8 @@
  * @output Exports XDSPageNav component and XDSPageNavProps
  * @position Core implementation; consumed by index.ts, tested by XDSPageNav.test.tsx
  *
- * Sidebar navigation container with five zones: header (sticky), topContent (sticky),
- * children (scrollable), footer, and footerIcons.
+ * Sidebar navigation container with five zones: header + topContent (sticky together),
+ * children (scrollable), footer, and footerIcons (sticky bottom).
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/PageNav/README.md
@@ -41,7 +41,7 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     overflow: 'hidden',
   },
-  header: {
+  stickyTop: {
     flexShrink: 0,
     position: 'sticky',
     top: 0,
@@ -49,11 +49,6 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-surface'],
   },
   topContent: {
-    flexShrink: 0,
-    position: 'sticky',
-    top: 0,
-    zIndex: 1,
-    backgroundColor: colorVars['--color-surface'],
     paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-1'],
   },
@@ -64,13 +59,18 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-1'],
   },
-  footer: {
+  stickyBottom: {
     flexShrink: 0,
+    marginTop: 'auto',
+    position: 'sticky',
+    bottom: 0,
+    backgroundColor: colorVars['--color-surface'],
+  },
+  footer: {
     paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-2'],
   },
   footerIcons: {
-    flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
@@ -138,8 +138,8 @@ export interface XDSPageNavProps extends Omit<
 /**
  * Sidebar navigation container for application pages.
  *
- * Provides five zones stacked vertically: a sticky header, sticky action area,
- * scrollable nav content, footer, and footer icon bar.
+ * Provides five zones stacked vertically: a sticky header + action area (stuck together),
+ * scrollable nav content, and a sticky bottom footer + footer icon bar.
  *
  * @example
  * ```tsx
@@ -172,6 +172,9 @@ export const XDSPageNav = forwardRef<HTMLElement, XDSPageNavProps>(
     const themeContext = useContext(ThemeContext);
     const rootOverride = themeContext?.theme.components?.pageNav?.root;
 
+    const hasStickyTop = !!(header || topContent);
+    const hasStickyBottom = !!(footer || footerIcons);
+
     return (
       <nav
         ref={ref}
@@ -180,14 +183,22 @@ export const XDSPageNav = forwardRef<HTMLElement, XDSPageNavProps>(
         data-testid={testId}
         {...stylex.props(styles.root, rootOverride, xstyle)}
         {...props}>
-        {header && <div {...stylex.props(styles.header)}>{header}</div>}
-        {topContent && (
-          <div {...stylex.props(styles.topContent)}>{topContent}</div>
+        {hasStickyTop && (
+          <div {...stylex.props(styles.stickyTop)}>
+            {header}
+            {topContent && (
+              <div {...stylex.props(styles.topContent)}>{topContent}</div>
+            )}
+          </div>
         )}
         <div {...stylex.props(styles.scrollable)}>{children}</div>
-        {footer && <div {...stylex.props(styles.footer)}>{footer}</div>}
-        {footerIcons && (
-          <div {...stylex.props(styles.footerIcons)}>{footerIcons}</div>
+        {hasStickyBottom && (
+          <div {...stylex.props(styles.stickyBottom)}>
+            {footer && <div {...stylex.props(styles.footer)}>{footer}</div>}
+            {footerIcons && (
+              <div {...stylex.props(styles.footerIcons)}>{footerIcons}</div>
+            )}
+          </div>
         )}
       </nav>
     );

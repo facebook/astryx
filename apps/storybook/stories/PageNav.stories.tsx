@@ -6,6 +6,8 @@ import {
   XDSPageNavSection,
 } from '@xds/core/PageNav';
 import {XDSBadge} from '@xds/core/Badge';
+import {XDSButton} from '@xds/core/Button';
+import {XDSIcon} from '@xds/core/Icon';
 import {
   HomeIcon,
   FolderIcon,
@@ -50,7 +52,7 @@ export const Default: Story = {
     <XDSPageNav
       header={
         <XDSPageNavHeader
-          icon={<CubeIcon style={{width: 24, height: 24}} />}
+          icon={<XDSIcon icon={CubeIcon} size="lg" />}
           title="My App"
           titleHref="/"
         />
@@ -98,7 +100,7 @@ export const WithHeaderMenu: Story = {
     <XDSPageNav
       header={
         <XDSPageNavHeader
-          icon={<CubeIcon style={{width: 24, height: 24}} />}
+          icon={<XDSIcon icon={CubeIcon} size="lg" />}
           title="Product Name"
           subtitle="Business Account"
           menu={
@@ -126,7 +128,7 @@ export const SuiteHeader: Story = {
     <XDSPageNav
       header={
         <XDSPageNavHeader
-          icon={<CubeIcon style={{width: 24, height: 24}} />}
+          icon={<XDSIcon icon={CubeIcon} size="lg" />}
           supertitle="Suite Name"
           supertitleHref="/suite"
           title="Product Name"
@@ -156,7 +158,7 @@ export const NestedItems: Story = {
     <XDSPageNav
       header={
         <XDSPageNavHeader
-          icon={<CubeIcon style={{width: 24, height: 24}} />}
+          icon={<XDSIcon icon={CubeIcon} size="lg" />}
           title="My App"
         />
       }>
@@ -185,34 +187,24 @@ export const WithFooter: Story = {
     <XDSPageNav
       header={
         <XDSPageNavHeader
-          icon={<CubeIcon style={{width: 24, height: 24}} />}
+          icon={<XDSIcon icon={CubeIcon} size="lg" />}
           title="My App"
         />
       }
       footerIcons={
         <>
-          <button
-            type="button"
-            aria-label="Help"
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 8,
-            }}>
-            <QuestionMarkCircleIcon style={{width: 20, height: 20}} />
-          </button>
-          <button
-            type="button"
-            aria-label="Notifications"
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 8,
-            }}>
-            <BellIcon style={{width: 20, height: 20}} />
-          </button>
+          <XDSButton
+            label="Help"
+            icon={<XDSIcon icon={QuestionMarkCircleIcon} size="md" />}
+            variant="ghost"
+            size="sm"
+          />
+          <XDSButton
+            label="Notifications"
+            icon={<XDSIcon icon={BellIcon} size="md" />}
+            variant="ghost"
+            size="sm"
+          />
         </>
       }>
       <XDSPageNavSection title="Main">
@@ -233,7 +225,7 @@ export const DisabledItem: Story = {
     <XDSPageNav
       header={
         <XDSPageNavHeader
-          icon={<CubeIcon style={{width: 24, height: 24}} />}
+          icon={<XDSIcon icon={CubeIcon} size="lg" />}
           title="My App"
         />
       }>
@@ -260,7 +252,7 @@ export const HiddenSectionHeader: Story = {
     <XDSPageNav
       header={
         <XDSPageNavHeader
-          icon={<CubeIcon style={{width: 24, height: 24}} />}
+          icon={<XDSIcon icon={CubeIcon} size="lg" />}
           title="My App"
         />
       }>
