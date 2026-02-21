@@ -21,3 +21,6 @@ export type {
 
 export {XDSTopNavItem} from './XDSTopNavItem';
 export type {XDSTopNavItemProps} from './XDSTopNavItem';
+
+export {XDSTopNavMenu} from './XDSTopNavMenu';
+export type {XDSTopNavMenuProps, XDSTopNavMenuItemData} from './XDSTopNavMenu';
