@@ -69,7 +69,7 @@ export interface XDSTokenProps {
    * Callback when the remove (X) button is clicked.
    * When provided, a remove button is rendered.
    */
-  onRemove?: (e: React.MouseEvent | React.KeyboardEvent) => void;
+  onRemove?: (e: React.MouseEvent) => void;
   /**
    * Click handler. When provided, the token renders as a `<button>`.
    */
@@ -162,6 +162,7 @@ const styles = stylex.create({
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
     padding: 0,
     marginInlineStart: 0,
     marginInlineEnd: 0,
@@ -180,6 +181,11 @@ const styles = stylex.create({
     outline: {
       default: null,
       ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+    },
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      inset: '-14px',
     },
   },
 });
@@ -278,25 +284,17 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
         </span>
         {endContent}
         {onRemove != null && (
-          <span
-            role="button"
-            tabIndex={isDisabled ? -1 : 0}
+          <button
+            type="button"
             aria-label={`Remove ${label}`}
             onClick={e => {
               e.stopPropagation();
               onRemove(e);
             }}
-            onKeyDown={e => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.stopPropagation();
-                e.preventDefault();
-                onRemove(e);
-              }
-            }}
-            aria-disabled={isDisabled || undefined}
+            disabled={isDisabled}
             {...stylex.props(styles.removeButton)}>
             <XDSIcon icon="close" size="xsm" />
-          </span>
+          </button>
         )}
       </>
     );
