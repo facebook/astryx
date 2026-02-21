@@ -58,6 +58,12 @@ const styles = stylex.create({
     minWidth: 'anchor-size(width)',
   },
 
+  // Gap between button and popover
+  popoverGap: {
+    marginBlockStart: spacingVars['--spacing-1'],
+    marginBlockEnd: spacingVars['--spacing-1'],
+  },
+
   // Custom width popover
   popoverCustomWidth: (width: string | number) => ({
     minWidth: typeof width === 'number' ? `${width}px` : width,
@@ -615,7 +621,7 @@ export function XDSDropdownMenu({
         {
           placement: 'below',
           alignment: 'start',
-          xstyle: popoverXstyle,
+          xstyle: [popoverXstyle, styles.popoverGap],
         },
       )}
     </>
