@@ -141,8 +141,78 @@ jobs:
           path: analysis.json
           retention-days: 1
 
+  # Post PR comment with preview links + analysis as soon as build finishes
+  # Does NOT wait for test, screenshots, or a11y — those update the comment later
+  pr-comment:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Download analysis artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-analysis
+
+      - name: Generate PR comment
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          echo '{"components":{},"summary":{"componentsAudited":0,"totalViolations":0}}' > a11y-report.json
+
+          COMMENT_BODY=$(node .github/scripts/generate-pr-comment.js \
+            --analysis analysis.json \
+            --a11y a11y-report.json \
+            --storybook-url "${{ needs.build.outputs.storybook_url }}" \
+            --sandbox-url "${{ needs.build.outputs.sandbox_url }}" \
+            --run-url "$RUN_URL" \
+            --pr-number "${{ github.event.pull_request.number }}")
+
+          echo "$COMMENT_BODY" > pr-comment.md
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('pr-comment.md', 'utf8');
+            const prNumber = ${{ github.event.pull_request.number }};
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('PR Analysis Report')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body
+              });
+            }
+
   # Capture component screenshots and videos (parallel with a11y)
-  # Skipped when no components changed. No yarn install needed.
+  # Skipped when no components changed.
   pr-screenshots:
     needs: [build, check-components]
     if: needs.check-components.outputs.has_components == 'true'
@@ -233,7 +303,7 @@ jobs:
           retention-days: 30
 
   # Accessibility audit (parallel with screenshots)
-  # Skipped when no components changed. No yarn install needed.
+  # Skipped when no components changed.
   pr-a11y:
     needs: [build, check-components]
     if: needs.check-components.outputs.has_components == 'true'
@@ -277,11 +347,10 @@ jobs:
           path: a11y-report.json
           retention-days: 1
 
-  # Post PR comment with results
-  # Waits for test to pass. Runs even when screenshots/a11y are skipped.
-  pr-comment:
-    needs: [test, build, check-components, pr-screenshots, pr-a11y]
-    if: always() && needs.test.result == 'success' && needs.build.result == 'success'
+  # Update PR comment with screenshots + a11y results once they're ready
+  pr-comment-update:
+    needs: [build, check-components, pr-screenshots, pr-a11y]
+    if: always() && needs.build.result == 'success' && needs.check-components.outputs.has_components == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -310,7 +379,7 @@ jobs:
         with:
           name: a11y-report
 
-      - name: Generate PR comment
+      - name: Generate updated PR comment
         run: |
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
@@ -339,7 +408,7 @@ jobs:
 
           echo "$COMMENT_BODY" > pr-comment.md
 
-      - name: Comment on PR
+      - name: Update PR comment
         uses: actions/github-script@v7
         with:
           script: |
