@@ -16,10 +16,13 @@ export default function Home() {
       <XDSVStack gap="space6">
         <XDSVStack gap="space2">
           <XDSHeading level={1}>XDS Sandbox</XDSHeading>
-          <XDSText color="secondary">
+          <XDSText type="body" color="secondary">
             A testing ground for XDS components. Use the sidebar to explore
             example pages, or create new ones under{' '}
-            <XDSText weight="bold">src/app/pages/</XDSText>.
+            <XDSText type="body" weight="bold">
+              src/app/pages/
+            </XDSText>
+            .
           </XDSText>
         </XDSVStack>
       </XDSVStack>

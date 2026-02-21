@@ -1,5 +1,6 @@
 'use client';
 
+import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
@@ -23,12 +24,17 @@ const styles = stylex.create({
  * 2. Add an entry to the `pages` array in `src/app/Sidebar.tsx`
  */
 export default function ExamplePage() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [notifications, setNotifications] = useState(false);
+  const [updates, setUpdates] = useState(false);
+
   return (
     <div {...stylex.props(styles.container)}>
       <XDSVStack gap="space6">
         <XDSVStack gap="space2">
           <XDSHeading level={1}>Example Page</XDSHeading>
-          <XDSText color="secondary">
+          <XDSText type="body" color="secondary">
             A scaffold showing common XDS components. Copy this file to create
             new pages.
           </XDSText>
@@ -39,15 +45,15 @@ export default function ExamplePage() {
         {/* Buttons */}
         <XDSVStack gap="space3">
           <XDSHeading level={2}>Buttons</XDSHeading>
-          <XDSHStack gap="space3" align="center">
-            <XDSButton variant="primary">Primary</XDSButton>
-            <XDSButton variant="secondary">Secondary</XDSButton>
-            <XDSButton variant="ghost">Ghost</XDSButton>
+          <XDSHStack gap="space3" vAlign="center">
+            <XDSButton label="Primary" variant="primary" />
+            <XDSButton label="Secondary" variant="secondary" />
+            <XDSButton label="Ghost" variant="ghost" />
           </XDSHStack>
-          <XDSHStack gap="space3" align="center">
-            <XDSButton size="small">Small</XDSButton>
-            <XDSButton size="medium">Medium</XDSButton>
-            <XDSButton size="large">Large</XDSButton>
+          <XDSHStack gap="space3" vAlign="center">
+            <XDSButton label="Small" size="sm" />
+            <XDSButton label="Medium" size="md" />
+            <XDSButton label="Large" size="lg" />
           </XDSHStack>
         </XDSVStack>
 
@@ -56,7 +62,7 @@ export default function ExamplePage() {
         {/* Badges */}
         <XDSVStack gap="space3">
           <XDSHeading level={2}>Badges</XDSHeading>
-          <XDSHStack gap="space3" align="center">
+          <XDSHStack gap="space3" vAlign="center">
             <XDSBadge variant="info">Info</XDSBadge>
             <XDSBadge variant="success">Success</XDSBadge>
             <XDSBadge variant="warning">Warning</XDSBadge>
@@ -73,9 +79,9 @@ export default function ExamplePage() {
           <XDSText type="large" weight="bold">
             Large bold text
           </XDSText>
-          <XDSText>Default body text</XDSText>
-          <XDSText type="detail" color="secondary">
-            Detail text in secondary color
+          <XDSText type="body">Default body text</XDSText>
+          <XDSText type="supporting" color="secondary">
+            Supporting text in secondary color
           </XDSText>
         </XDSVStack>
 
@@ -84,14 +90,28 @@ export default function ExamplePage() {
         {/* Form Controls */}
         <XDSVStack gap="space3">
           <XDSHeading level={2}>Form Controls</XDSHeading>
-          <XDSTextInput label="Name" placeholder="Enter your name" />
+          <XDSTextInput
+            label="Name"
+            placeholder="Enter your name"
+            value={name}
+            onChange={setName}
+          />
           <XDSTextInput
             label="Email"
             placeholder="you@example.com"
-            type="email"
+            value={email}
+            onChange={setEmail}
           />
-          <XDSCheckboxInput label="Enable notifications" />
-          <XDSCheckboxInput label="Subscribe to updates" />
+          <XDSCheckboxInput
+            label="Enable notifications"
+            value={notifications}
+            onChange={setNotifications}
+          />
+          <XDSCheckboxInput
+            label="Subscribe to updates"
+            value={updates}
+            onChange={setUpdates}
+          />
         </XDSVStack>
       </XDSVStack>
     </div>
