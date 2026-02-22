@@ -27,13 +27,14 @@ const styles = stylex.create({
   },
   scoreGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+    gridTemplateColumns: 'repeat(3, 1fr)',
     gap: spacingVars['--spacing-2'],
   },
   scoreItem: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
+    whiteSpace: 'nowrap',
   },
   scoresRow: {
     display: 'grid',
@@ -47,10 +48,12 @@ const styles = stylex.create({
   },
   scoreBlock: {
     minWidth: 0,
+    overflow: 'hidden',
   },
-  findingRow: {
-    display: 'flex',
-    gap: spacingVars['--spacing-2'],
+  findingsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'auto 1fr',
+    gap: `${spacingVars['--spacing-1']} ${spacingVars['--spacing-2']}`,
     alignItems: 'baseline',
   },
   section: {
@@ -114,10 +117,11 @@ function Findings({score}: {score: UniversalScore}) {
   }
 
   return (
-    <XDSVStack gap="space1">
+    <div {...stylex.props(styles.findingsGrid)}>
       {allFindings.map((f, i) => (
-        <div key={i} {...stylex.props(styles.findingRow)}>
+        <>
           <XDSBadge
+            key={`badge-${i}`}
             variant={
               f.severity === 'critical'
                 ? 'error'
@@ -127,12 +131,12 @@ function Findings({score}: {score: UniversalScore}) {
             }>
             {f.severity ?? 'info'}
           </XDSBadge>
-          <XDSText type="body">
+          <XDSText key={`text-${i}`} type="body">
             <strong>{f.dimension}</strong> — {f.detail}
           </XDSText>
-        </div>
+        </>
       ))}
-    </XDSVStack>
+    </div>
   );
 }
 
