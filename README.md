@@ -25,37 +25,44 @@ npm install @xds/core
 yarn add @xds/core
 ```
 
-### 1. Set Up the Theme Provider
+### 1. Import Base Styles
 
-Wrap your application with the `Theme` component. This sets up CSS custom properties used by all XDS components.
+Import the reset and typography stylesheets at the root of your application. These provide a clean cross-browser baseline and prose styles for native HTML elements.
 
 ```tsx
-import {Theme, defaultTheme} from '@xds/core';
+// In your root layout or entry point
+import '@xds/core/reset.css'; // Base reset — box-sizing, margins, etc.
+import '@xds/core/typography.css'; // Prose styles — headings, lists, code, etc.
+```
+
+The reset uses `@layer reset` and typography uses `@layer typography`, so they won't conflict with component styles.
+
+### 2. Set Up the Theme Provider
+
+Wrap your application with the `XDSTheme` component. This sets up CSS custom properties used by all XDS components and typography styles.
+
+```tsx
+import {XDSTheme} from '@xds/core';
+import {defaultTheme} from '@xds/theme-default';
 
 function App() {
   return (
-    <Theme theme={defaultTheme}>
+    <XDSTheme theme={defaultTheme}>
       <YourApp />
-    </Theme>
+    </XDSTheme>
   );
 }
 ```
 
-### 2. Import Typography Styles (Optional)
+### 3. Apply Typography (Optional)
 
-For styling native HTML elements (h1-h6, p, lists, code blocks, etc.), import the typography stylesheet:
-
-```tsx
-import '@xds/core/typography.css';
-```
-
-Apply to your document body or use `XDSFontWrapper` for scoped sections:
+Typography styles activate via the `xds-typography` class or the `XDSFontWrapper` component. Choose one:
 
 ```tsx
-// Option A: Global - apply to body
+// Option A: Global — apply to body
 <body className="xds-typography">
 
-// Option B: Scoped - wrap specific content
+// Option B: Scoped — wrap specific content
 import { XDSFontWrapper } from '@xds/core';
 
 <XDSFontWrapper>
@@ -75,7 +82,7 @@ The typography styles support two heading scales:
 </XDSFontWrapper>
 ```
 
-### 3. Use Components
+### 4. Use Components
 
 ```tsx
 import {XDSButton, XDSText, XDSHeading} from '@xds/core';

@@ -4,8 +4,9 @@ import {XDSTheme} from '@xds/core';
 import {defaultTheme} from '@xds/theme-default';
 import {neutralTheme} from '@xds/theme-neutral';
 
-// Import the base reset stylesheet
+// Import the base reset and typography stylesheets
 import '@xds/core/reset.css';
+import '@xds/core/typography.css';
 
 // Import the pre-built StyleX CSS from the core package
 // Use relative path since @xds/core alias points to source, not dist
@@ -31,6 +32,7 @@ const withXDSTheme: Decorator = (Story, context) => {
   if (themeKey === 'none') {
     return (
       <div
+        className="xds-typography"
         style={{
           colorScheme: mode,
           padding: 16,
@@ -45,6 +47,7 @@ const withXDSTheme: Decorator = (Story, context) => {
   return (
     <XDSTheme theme={theme} mode={mode}>
       <div
+        className="xds-typography"
         style={{
           backgroundColor: 'var(--color-surface)',
           padding: 16,
