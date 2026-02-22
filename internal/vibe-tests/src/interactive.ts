@@ -904,7 +904,7 @@ function createTaskManifest(
       resultsDir,
     );
 
-    const task: AgentTask & {subagentPrompt: string} = {
+    const task: AgentTask & {subagentPrompt: string; createdAt: string} = {
       promptId: prompt.id,
       category: prompt.category,
       prompt: prompt.prompt,
@@ -914,6 +914,7 @@ function createTaskManifest(
       degradation: config.degradation,
       target: config.target,
       subagentPrompt,
+      createdAt: new Date().toISOString(),
     };
     writeJson(path.join(tasksDir, `${prompt.id}.json`), task);
   }
@@ -1023,7 +1024,8 @@ For each test, the subagent should:
 5. Track which doc files were read during the task
 6. Write result to individual file: ${resultsDir}/results/{promptId}.json
    - Include a "docsRead" array listing all doc files read (e.g., ["AGENTS.md", "Button.md", "tokens.md"])
-   - This is required for accurate token usage tracking
+   - Include "completedAt" with the current ISO timestamp (new Date().toISOString())
+   - These are required for accurate cost tracking
    (Use individual files to avoid parallel write conflicts)
 
 ### After All Tests Complete

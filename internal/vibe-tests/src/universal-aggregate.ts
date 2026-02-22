@@ -138,25 +138,42 @@ async function main() {
     }
 
     // --- Cost data ---
-    // Duration: infer from file timestamps (task creation → result write)
     let durationMs = 0;
-    const taskPath = path.join(iterDir, 'tasks', `${promptId}.json`);
-    if (fs.existsSync(taskPath)) {
-      const taskStat = fs.statSync(taskPath);
-      const resultStat = fs.statSync(codePath);
-      const inferred = resultStat.mtimeMs - taskStat.mtimeMs;
-      if (inferred > 0) durationMs = Math.round(inferred);
-    }
-
-    // Docs read: from companion .json file
     let docsRead: string[] = [];
+
+    // Read result metadata (docsRead, completedAt)
     const jsonPath = path.join(codeDir, `${promptId}.json`);
+    let completedAt: string | undefined;
     if (fs.existsSync(jsonPath)) {
       try {
         const meta = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
         docsRead = meta.docsRead || [];
+        completedAt = meta.completedAt;
       } catch {
         // ignore parse errors
+      }
+    }
+
+    // Duration: prefer createdAt/completedAt timestamps, fall back to file mtimes
+    const taskPath = path.join(iterDir, 'tasks', `${promptId}.json`);
+    if (fs.existsSync(taskPath)) {
+      try {
+        const taskMeta = JSON.parse(fs.readFileSync(taskPath, 'utf-8'));
+        if (taskMeta.createdAt && completedAt) {
+          const start = new Date(taskMeta.createdAt).getTime();
+          const end = new Date(completedAt).getTime();
+          if (end > start) durationMs = Math.round(end - start);
+        }
+      } catch {
+        // ignore
+      }
+
+      // Fall back to file timestamps if no explicit timestamps
+      if (durationMs === 0) {
+        const taskStat = fs.statSync(taskPath);
+        const resultStat = fs.statSync(codePath);
+        const inferred = resultStat.mtimeMs - taskStat.mtimeMs;
+        if (inferred > 0) durationMs = Math.round(inferred);
       }
     }
 
