@@ -28,6 +28,9 @@ export interface ReportData {
   screenshots?: Record<string, string>;
   sourceCode?: Record<string, string>;
   baselineSourceCode?: Record<string, string>;
+  htmlSourceCode?: Record<string, string>;
+  /** Map of promptId → { target → relative URL } */
+  previews?: Record<string, Record<string, string>>;
   iterationId?: string;
   target?: string;
 }

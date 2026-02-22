@@ -198,7 +198,7 @@ export function Report() {
   const [activeTab, setActiveTab] = useState('overview');
   const [codeModal, setCodeModal] = useState<{
     promptId: string;
-    target: 'xds' | 'baseline';
+    target: 'xds' | 'baseline' | 'html';
   } | null>(null);
 
   const data: ReportData | undefined = window.__REPORT_DATA__;
@@ -326,7 +326,9 @@ export function Report() {
                         baselineScore={comparison?.baseline.byPrompt[promptId]}
                         hasXdsCode={!!data.sourceCode?.[promptId]}
                         hasBaselineCode={!!data.baselineSourceCode?.[promptId]}
+                        hasHtmlCode={!!data.htmlSourceCode?.[promptId]}
                         onViewCode={target => setCodeModal({promptId, target})}
+                        previewUrls={data.previews?.[promptId]}
                       />
                     ))}
                   </XDSVStack>
@@ -339,7 +341,9 @@ export function Report() {
                   const code =
                     codeModal.target === 'xds'
                       ? data.sourceCode?.[codeModal.promptId]
-                      : data.baselineSourceCode?.[codeModal.promptId];
+                      : codeModal.target === 'baseline'
+                        ? data.baselineSourceCode?.[codeModal.promptId]
+                        : data.htmlSourceCode?.[codeModal.promptId];
                   return code ? (
                     <CodeModal
                       isShown
