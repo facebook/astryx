@@ -1,5 +1,5 @@
 # Deploy Storybook to GitHub Pages
-# Only runs on push to main — simple and sequential: test → deploy
+# Only runs on push to main — simple and sequential: sync → test → deploy
 name: Deploy
 
 on:
@@ -17,10 +17,36 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  test:
+  # Sync package.json exports with src/ and commit if changed.
+  # Runs first so test and deploy always see correct exports.
+  sync-exports:
+    # Skip runs triggered by our own auto-commits to avoid loops
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Sync package.json exports
+        run: node scripts/sync-exports.js
+
+      - name: Commit and push if changed
+        run: |
+          git diff --quiet packages/core/package.json && exit 0
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add packages/core/package.json
+          git commit -m "chore: sync package.json exports [skip ci]"
+          git push
+
+  test:
+    needs: sync-exports
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - uses: actions/setup-node@v4
         with:
@@ -39,6 +65,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
