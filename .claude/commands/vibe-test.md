@@ -12,6 +12,16 @@ If no argument provided, default to 5 samples.
 
 Run interactive vibe tests using parallel subagents:
 
+### Step 0: Generate skill doc
+
+Generate the skill doc from the CLI (auto-discovers components from source):
+
+```bash
+cd internal/vibe-tests && bash scripts/generate-skill-doc.sh
+```
+
+This creates `.generated/xds-skill.md` reflecting all components on the current branch.
+
 ### Step 1: Setup the test iteration
 
 Run the interactive setup command:
@@ -39,7 +49,7 @@ internal/vibe-tests/results/<iteration>/manifest.json
 For each test prompt, spawn a subagent using the Task tool with:
 
 - `subagent_type`: "general-purpose"
-- Read the generated skill doc at `internal/vibe-tests/.generated/xds-skill.md` (generate it first with `cd internal/vibe-tests && bash scripts/generate-skill-doc.sh`)
+- Read the generated skill doc at `internal/vibe-tests/.generated/xds-skill.md`
 - Generate code for the prompt using XDS components
 - Self-evaluate the response for:
   - Correct components used
