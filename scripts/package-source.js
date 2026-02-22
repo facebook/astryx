@@ -55,11 +55,14 @@ function copyDir(src, dest) {
 }
 
 /**
- * Transform dist exports to source exports
- * e.g., "./dist/Button/index.mjs" -> "./Button/index.ts"
+ * Derive source exports from the "source" condition in package.json exports.
  *
- * Also auto-discovers component directories that have an index.ts
- * but are missing from the core package.json exports.
+ * The canonical exports map is maintained by scripts/sync-exports.js, which
+ * adds a "source" condition pointing to the TypeScript source for each entry.
+ * This function reads those "source" paths and strips the "src/" prefix
+ * (since the source distribution root IS the src/ directory).
+ *
+ * Falls back to auto-discovery if "source" conditions are missing.
  */
 function deriveSourceExports() {
   const sourceExports = {};
@@ -67,7 +70,6 @@ function deriveSourceExports() {
   for (const [key, value] of Object.entries(PKG.exports)) {
     // Handle string exports (e.g., "./typography.css": "./src/typography.css")
     if (typeof value === 'string') {
-      // Convert src paths, keep as-is for non-dist paths
       if (value.startsWith('./src/')) {
         sourceExports[key] = value.replace('./src/', './');
       } else if (!value.includes('/dist/')) {
@@ -76,19 +78,21 @@ function deriveSourceExports() {
       continue;
     }
 
-    // Handle object exports with types/import/require
+    // Handle object exports — prefer the "source" condition
     if (typeof value === 'object' && value !== null) {
-      // Get the import path and transform it
-      const importPath = value.import || value.require || value.types;
-      if (!importPath) continue;
-
-      // Transform ./dist/Button/index.mjs -> ./Button/index.ts
-      const sourcePath = importPath
-        .replace('./dist/', './')
-        .replace(/\.mjs$/, '.ts')
-        .replace(/\.js$/, '.ts');
-
-      sourceExports[key] = sourcePath;
+      if (value.source) {
+        // Strip ./src/ prefix since the tarball root is src/
+        sourceExports[key] = value.source.replace('./src/', './');
+      } else {
+        // Fallback: derive from import/require path
+        const importPath = value.import || value.require || value.types;
+        if (!importPath) continue;
+        const sourcePath = importPath
+          .replace('./dist/', './')
+          .replace(/\.mjs$/, '.ts')
+          .replace(/\.js$/, '.ts');
+        sourceExports[key] = sourcePath;
+      }
     }
   }
 

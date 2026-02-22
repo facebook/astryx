@@ -21,6 +21,8 @@
     "storybook": "yarn workspace @xds/storybook dev",
     "storybook:build": "yarn workspace @xds/storybook build",
     "docs": "yarn workspace @xds/docs dev",
+    "sync:exports": "node scripts/sync-exports.js",
+    "sync:exports:check": "node scripts/sync-exports.js --check",
     "package:source": "node scripts/package-source.js",
     "changeset": "changeset",
     "version-packages": "changeset version",
