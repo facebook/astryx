@@ -1,7 +1,7 @@
 /**
  * @file XDSCard.tsx
- * @input Uses container utility, StyleX, ThemeContext, CollapsibleGroupContext
- * @output Exports XDSCard component, XDSCardProps, CollapsibleConfig
+ * @input Uses container utility, StyleX, ThemeContext, useCollapsible hook, useXDSIcon
+ * @output Exports XDSCard component, XDSCardProps
  * @position Core card container component with optional collapsible behavior
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -12,13 +12,7 @@
 
 'use client';
 
-import {
-  forwardRef,
-  useCallback,
-  useContext,
-  useState,
-  type ReactNode,
-} from 'react';
+import {forwardRef, useContext, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -32,7 +26,9 @@ import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {container} from '../Layout/container.stylex';
 import type {SizeValue} from '../utils/types';
-import {CollapsibleGroupContext} from '../CollapsibleGroup/XDSCollapsibleGroupContext';
+import {useCollapsible} from '../CollapsibleGroup/useCollapsible';
+import type {CollapsibleConfig} from '../CollapsibleGroup/useCollapsible';
+import {useXDSIcon} from '../Icon/IconRegistry';
 
 // =============================================================================
 // Module Augmentation - Register XDSCard's themeable properties
@@ -105,8 +101,10 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-primary'],
   },
-  // Header area wrapper with padding
+  // Header area wrapper with padding — rendered outside cardInner
   headerArea: {
+    paddingInline: spacingVars['--spacing-4'],
+    paddingBlockStart: spacingVars['--spacing-4'],
     paddingBlockEnd: spacingVars['--spacing-3'],
   },
   // Chevron indicator
@@ -128,6 +126,10 @@ const styles = stylex.create({
   contentHidden: {
     display: 'none',
   },
+  // When header is present, inner wrapper should not add top padding (header handles it)
+  cardInnerWithHeader: {
+    paddingBlockStart: '0 !important' as unknown as 0,
+  },
 });
 
 // Dynamic styles for sizing props
@@ -146,18 +148,7 @@ const dynamicStyles = stylex.create({
 });
 
 export type {SizeValue} from '../utils/types';
-
-/**
- * Configuration for collapsible behavior.
- */
-export type CollapsibleConfig = {
-  /** Whether the card starts open. @default true */
-  initialIsOpen?: boolean;
-  /** Controlled open state. */
-  isOpen?: boolean;
-  /** Callback when open state changes. */
-  onOpenChange?: (isOpen: boolean) => void;
-};
+export type {CollapsibleConfig} from '../CollapsibleGroup/useCollapsible';
 
 export interface XDSCardProps {
   /**
@@ -233,28 +224,6 @@ export interface XDSCardProps {
 }
 
 /**
- * Chevron icon for collapsible indicator.
- * Uses the same SVG conventions as defaultIcons.
- */
-function ChevronIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      width="1em"
-      height="1em"
-      aria-hidden>
-      <path d="M6 9l6 6 6-6" />
-    </svg>
-  );
-}
-
-/**
  * A card container with elevation and themed styling.
  *
  * Applies card-specific appearance (background, shadow, border-radius)
@@ -317,53 +286,19 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
     const containerOverride = themeContext?.theme.components?.card?.container;
     const contentOverride = themeContext?.theme.components?.card?.content;
 
-    // Collapsible group context
-    const collapsibleGroup = useContext(CollapsibleGroupContext);
-    const isControlledByGroup = collapsibleGroup != null && value != null;
-
-    // Parse collapsible config
-    const collapsibleConfig: CollapsibleConfig | null =
-      isCollapsible === true ? {} : isCollapsible ? isCollapsible : null;
-
-    const isCollapsibleEnabled = collapsibleConfig != null;
-
-    // Internal state for uncontrolled collapsible
-    const [internalIsOpen, setInternalIsOpen] = useState(() => {
-      if (isControlledByGroup) return true; // group manages this
-      if (collapsibleConfig?.isOpen !== undefined)
-        return collapsibleConfig.isOpen;
-      return collapsibleConfig?.initialIsOpen ?? true;
-    });
-
-    // Determine open state
-    let isOpen: boolean;
-    if (isControlledByGroup) {
-      isOpen = collapsibleGroup.isOpen(value!);
-    } else if (collapsibleConfig?.isOpen !== undefined) {
-      isOpen = collapsibleConfig.isOpen;
-    } else {
-      isOpen = internalIsOpen;
-    }
-
-    // Toggle handler
-    const handleToggle = useCallback(() => {
-      if (isControlledByGroup) {
-        collapsibleGroup!.toggle(value!);
-      } else if (collapsibleConfig?.onOpenChange) {
-        collapsibleConfig.onOpenChange(!isOpen);
-      } else {
-        setInternalIsOpen(prev => !prev);
-      }
-    }, [
-      isControlledByGroup,
-      collapsibleGroup,
-      value,
-      collapsibleConfig,
+    // Collapsible state management (extracted hook)
+    const {
+      isEnabled: isCollapsibleEnabled,
       isOpen,
-    ]);
+      toggle: handleToggle,
+    } = useCollapsible({isCollapsible, value});
+
+    // Icon from registry
+    const chevronIcon = useXDSIcon('chevronDown');
 
     // Only enable scrolling when card has a fixed height (not null/undefined and not "auto")
     const hasFixedHeight = height != null && height !== 'auto';
+    const hasTitle = title != null;
 
     return (
       <div
@@ -379,6 +314,30 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
           ),
         )}
         {...props}>
+        {/* Title header — rendered outside cardInner to avoid breaking Layout composition */}
+        {hasTitle && (
+          <div {...stylex.props(styles.headerArea)}>
+            {isCollapsibleEnabled ? (
+              <button
+                type="button"
+                onClick={handleToggle}
+                aria-expanded={isOpen}
+                {...stylex.props(styles.headerTrigger)}>
+                <span>{title}</span>
+                <span
+                  {...stylex.props(
+                    styles.chevron,
+                    isOpen ? styles.chevronOpen : styles.chevronClosed,
+                  )}>
+                  {chevronIcon}
+                </span>
+              </button>
+            ) : (
+              <div {...stylex.props(styles.headerStatic)}>{title}</div>
+            )}
+          </div>
+        )}
+        {/* Inner content wrapper — unchanged when no title is provided */}
         <div
           {...stylex.props(
             styles.cardInner,
@@ -389,31 +348,10 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
               paddingOuterX: 'spacing4',
               paddingOuterY: 'spacing4',
             }),
+            hasTitle && styles.cardInnerWithHeader,
             isFullBleed && styles.fullBleed,
             contentOverride,
           )}>
-          {title != null && (
-            <div {...stylex.props(styles.headerArea)}>
-              {isCollapsibleEnabled ? (
-                <button
-                  type="button"
-                  onClick={handleToggle}
-                  aria-expanded={isOpen}
-                  {...stylex.props(styles.headerTrigger)}>
-                  <span>{title}</span>
-                  <span
-                    {...stylex.props(
-                      styles.chevron,
-                      isOpen ? styles.chevronOpen : styles.chevronClosed,
-                    )}>
-                    <ChevronIcon />
-                  </span>
-                </button>
-              ) : (
-                <div {...stylex.props(styles.headerStatic)}>{title}</div>
-              )}
-            </div>
-          )}
           {isCollapsibleEnabled ? (
             <div {...(isOpen ? {} : stylex.props(styles.contentHidden))}>
               {children}
