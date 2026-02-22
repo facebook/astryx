@@ -217,19 +217,10 @@ export const Default: Story = {
 export * from './MyComponent';
 ```
 
-### 7. Update tsup Entry (if tree-shaking needed)
-
-```ts
-// packages/core/tsup.config.ts
-export default defineConfig({
-  entry: [
-    'src/index.ts',
-    'src/Button/index.ts',
-    'src/MyComponent/index.ts',  // Add this
-  ],
-  // ...
-});
-```
+> **Note:** Do not manually edit the `"exports"` field in `packages/core/package.json`.
+> It is auto-generated from the `src/` directory by `scripts/sync-exports.js` and
+> committed automatically when changes land on `main`. If you need to verify your
+> component will be included, run `yarn sync:exports:check`.
 
 ## Testing
 
