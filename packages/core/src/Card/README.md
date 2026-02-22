@@ -45,8 +45,10 @@ import {XDSCard} from '@xds/core/Card';
 
 // Inside a collapsible group
 <XDSCollapsibleGroup type="single" defaultValue="general">
-  <XDSCard title="General" value="general" isCollapsible>...</XDSCard>
-  <XDSCard title="Advanced" value="advanced" isCollapsible>...</XDSCard>
+  <XDSVStack gap="sm">
+    <XDSCard title="General" value="general" isCollapsible>...</XDSCard>
+    <XDSCard title="Advanced" value="advanced" isCollapsible>...</XDSCard>
+  </XDSVStack>
 </XDSCollapsibleGroup>
 ```
 
