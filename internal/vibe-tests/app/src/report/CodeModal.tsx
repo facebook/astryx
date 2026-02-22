@@ -35,7 +35,7 @@ interface CodeModalProps {
   isShown: boolean;
   onHide: () => void;
   promptId: string;
-  target: 'xds' | 'baseline';
+  target: 'xds' | 'baseline' | 'html';
   code: string;
 }
 
@@ -46,7 +46,8 @@ export function CodeModal({
   target,
   code,
 }: CodeModalProps) {
-  const targetLabel = target === 'xds' ? 'XDS' : 'Baseline';
+  const targetLabel =
+    target === 'xds' ? 'XDS' : target === 'baseline' ? 'Baseline' : 'HTML';
   const lineCount = code.split('\n').length;
 
   return (

@@ -24,12 +24,14 @@ const APP_DIR = path.join(import.meta.dirname, '..', 'app');
 function parseArgs(): {
   iteration: string;
   baseline?: string;
+  html?: string;
   withScreenshots: boolean;
   dev: boolean;
 } {
   const args = process.argv.slice(2);
   let iteration = '';
   let baseline: string | undefined;
+  let html: string | undefined;
   let withScreenshots = false;
   let dev = false;
 
@@ -39,6 +41,9 @@ function parseArgs(): {
       i++;
     } else if (args[i] === '--baseline' && args[i + 1]) {
       baseline = args[i + 1];
+      i++;
+    } else if (args[i] === '--html' && args[i + 1]) {
+      html = args[i + 1];
       i++;
     } else if (args[i] === '--with-screenshots') {
       withScreenshots = true;
@@ -106,6 +111,8 @@ function buildDataScript(opts: {
   manifest: unknown;
   sourceCode?: Record<string, string>;
   baselineSourceCode?: Record<string, string>;
+  htmlSourceCode?: Record<string, string>;
+  previews?: Record<string, Record<string, string>>;
 }): string {
   const reportData = {
     universal: opts.iterationData,
@@ -114,6 +121,8 @@ function buildDataScript(opts: {
     target: (opts.manifest as {config?: {target?: string}})?.config?.target,
     sourceCode: opts.sourceCode,
     baselineSourceCode: opts.baselineSourceCode,
+    htmlSourceCode: opts.htmlSourceCode,
+    previews: opts.previews,
   };
 
   return `<script>window.__REPORT_DATA__=${JSON.stringify(reportData)};</script>`;
@@ -156,7 +165,7 @@ function inlineCss(htmlPath: string, distDir: string): void {
 }
 
 async function main() {
-  const {iteration, baseline, withScreenshots, dev} = parseArgs();
+  const {iteration, baseline, html, withScreenshots, dev} = parseArgs();
   const resultsDir = getResultsDir();
   const iterDir = path.join(resultsDir, iteration);
   const manifestPath = path.join(iterDir, 'manifest.json');
@@ -210,6 +219,33 @@ async function main() {
     }
   }
 
+  let htmlSourceCode: Record<string, string> | undefined;
+  if (html) {
+    htmlSourceCode = {};
+    const htmlCodeDir = path.join(resultsDir, html, 'results');
+    if (fs.existsSync(htmlCodeDir)) {
+      for (const file of fs
+        .readdirSync(htmlCodeDir)
+        .filter(f => f.endsWith('.tsx'))) {
+        const promptId = path.basename(file, '.tsx');
+        htmlSourceCode[promptId] = fs.readFileSync(
+          path.join(htmlCodeDir, file),
+          'utf-8',
+        );
+      }
+    }
+  }
+
+  // Load preview manifest if available
+  const previewManifestPath = path.join(iterDir, 'previews', 'manifest.json');
+  let previews: Record<string, Record<string, string>> | undefined;
+  if (fs.existsSync(previewManifestPath)) {
+    previews = JSON.parse(fs.readFileSync(previewManifestPath, 'utf-8'));
+    console.log(
+      `  ✓ Preview manifest loaded (${Object.keys(previews!).length} prompts)`,
+    );
+  }
+
   // Step 4: Build the data script
   const dataScript = buildDataScript({
     iteration,
@@ -219,6 +255,8 @@ async function main() {
     manifest,
     sourceCode,
     baselineSourceCode,
+    htmlSourceCode,
+    previews,
   });
   console.log(`  ✓ ${(dataScript.length / 1024).toFixed(0)} KB of report data`);
 

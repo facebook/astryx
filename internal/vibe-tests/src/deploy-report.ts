@@ -22,31 +22,39 @@ const VIBE_DIR = path.resolve(import.meta.dirname, '..');
 function parseArgs(): {
   iteration: string;
   baseline?: string;
+  html?: string;
   dryRun: boolean;
+  skipPreviews: boolean;
 } {
   const args = process.argv.slice(2);
   let iteration = '';
   let baseline: string | undefined;
+  let html: string | undefined;
   let dryRun = false;
+  let skipPreviews = false;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--iteration' && args[i + 1]) {
       iteration = args[++i];
     } else if (args[i] === '--baseline' && args[i + 1]) {
       baseline = args[++i];
+    } else if (args[i] === '--html' && args[i + 1]) {
+      html = args[++i];
     } else if (args[i] === '--dry-run') {
       dryRun = true;
+    } else if (args[i] === '--skip-previews') {
+      skipPreviews = true;
     }
   }
 
   if (!iteration) {
     console.error(
-      'Usage: tsx src/deploy-report.ts --iteration <id> [--baseline <id>] [--dry-run]',
+      'Usage: tsx src/deploy-report.ts --iteration <id> [--baseline <id>] [--html <id>] [--dry-run] [--skip-previews]',
     );
     process.exit(1);
   }
 
-  return {iteration, baseline, dryRun};
+  return {iteration, baseline, html, dryRun, skipPreviews};
 }
 
 function run(cmd: string, opts?: {cwd?: string; silent?: boolean}): string {
@@ -60,7 +68,7 @@ function runSilent(cmd: string, opts?: {cwd?: string}): string {
 }
 
 async function main() {
-  const {iteration, baseline, dryRun} = parseArgs();
+  const {iteration, baseline, html, dryRun, skipPreviews} = parseArgs();
 
   const deployPath = `reports/${iteration}`;
 
@@ -71,10 +79,41 @@ async function main() {
   if (dryRun) console.log(`   ⚠️  DRY RUN — will build but not push`);
   console.log('');
 
-  // Step 1: Build the report
-  console.log('🏗️  Step 1: Building report...');
+  // Step 1: Build previews if .tsx result files exist
+  if (!skipPreviews) {
+    const iterationsWithCode: string[] = [];
+    for (const id of [iteration, baseline, html].filter(Boolean) as string[]) {
+      const codeDir = path.join(VIBE_DIR, 'results', id, 'results');
+      if (
+        fs.existsSync(codeDir) &&
+        fs.readdirSync(codeDir).some(f => f.endsWith('.tsx'))
+      ) {
+        iterationsWithCode.push(id);
+      }
+    }
+
+    if (iterationsWithCode.length > 0) {
+      const previewsOut = path.join(VIBE_DIR, 'results', iteration, 'previews');
+      console.log('🖼️  Step 1: Building preview pages...');
+      try {
+        run(
+          `npx tsx src/build-previews.ts --iterations ${iterationsWithCode.join(',')} --out ${previewsOut}`,
+          {cwd: VIBE_DIR},
+        );
+      } catch {
+        console.warn(
+          '   ⚠️  Preview build had errors (continuing without some previews)',
+        );
+      }
+      console.log('');
+    }
+  }
+
+  // Step 2: Build the report
+  console.log('🏗️  Step 2: Building report...');
   const buildArgs = [`--iteration ${iteration}`];
   if (baseline) buildArgs.push(`--baseline ${baseline}`);
+  if (html) buildArgs.push(`--html ${html}`);
 
   run(`npx tsx src/build-report.ts ${buildArgs.join(' ')}`, {cwd: VIBE_DIR});
 
@@ -93,8 +132,8 @@ async function main() {
     return;
   }
 
-  // Step 2: Deploy to gh-pages
-  console.log('🚀 Step 2: Deploying to gh-pages...');
+  // Step 3: Deploy to gh-pages
+  console.log('🚀 Step 3: Deploying to gh-pages...');
 
   const tmpDir = path.join(REPO_ROOT, '.deploy-tmp');
   if (fs.existsSync(tmpDir)) {
@@ -113,6 +152,15 @@ async function main() {
     const targetDir = path.join(tmpDir, deployPath);
     fs.mkdirSync(targetDir, {recursive: true});
     fs.copyFileSync(reportHtml, path.join(targetDir, 'index.html'));
+
+    // Deploy previews if they exist
+    const previewsDir = path.join(VIBE_DIR, 'results', iteration, 'previews');
+    if (fs.existsSync(previewsDir)) {
+      const targetPreviewsDir = path.join(targetDir, 'previews');
+      copyDirRecursive(previewsDir, targetPreviewsDir);
+      const previewCount = countFiles(targetPreviewsDir, '.html');
+      console.log(`   ✓ ${previewCount} preview pages copied`);
+    }
 
     updateReportsIndex(tmpDir);
 
@@ -141,6 +189,32 @@ async function main() {
   } finally {
     fs.rmSync(tmpDir, {recursive: true, force: true});
   }
+}
+
+function copyDirRecursive(src: string, dest: string): void {
+  fs.mkdirSync(dest, {recursive: true});
+  for (const entry of fs.readdirSync(src, {withFileTypes: true})) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      copyDirRecursive(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+function countFiles(dir: string, ext: string): number {
+  let count = 0;
+  if (!fs.existsSync(dir)) return 0;
+  for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+    if (entry.isDirectory()) {
+      count += countFiles(path.join(dir, entry.name), ext);
+    } else if (entry.name.endsWith(ext)) {
+      count++;
+    }
+  }
+  return count;
 }
 
 function updateReportsIndex(ghPagesDir: string): void {

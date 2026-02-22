@@ -146,7 +146,10 @@ interface PromptDetailCardProps {
   baselineScore?: UniversalScore;
   hasXdsCode: boolean;
   hasBaselineCode: boolean;
-  onViewCode: (target: 'xds' | 'baseline') => void;
+  hasHtmlCode: boolean;
+  onViewCode: (target: 'xds' | 'baseline' | 'html') => void;
+  /** Relative preview URLs keyed by target (e.g. { xds: "previews/sd-1/xds.html" }) */
+  previewUrls?: Record<string, string>;
 }
 
 export function PromptDetailCard({
@@ -155,9 +158,14 @@ export function PromptDetailCard({
   baselineScore,
   hasXdsCode,
   hasBaselineCode,
+  hasHtmlCode,
   onViewCode,
+  previewUrls,
 }: PromptDetailCardProps) {
   const hasBoth = !!(xdsScore && baselineScore);
+  const hasAnyPreview =
+    previewUrls?.xds || previewUrls?.baseline || previewUrls?.html;
+  const hasAnyCode = hasXdsCode || hasBaselineCode || hasHtmlCode;
 
   return (
     <XDSCard>
@@ -166,22 +174,54 @@ export function PromptDetailCard({
           {/* Header: prompt ID on its own line, buttons below */}
           <div {...stylex.props(styles.header)}>
             <XDSHeading level={4}>{promptId}</XDSHeading>
-            {(hasXdsCode || hasBaselineCode) && (
+            {(hasAnyPreview || hasAnyCode) && (
               <div {...stylex.props(styles.buttonRow)}>
-                {hasXdsCode && (
+                {previewUrls?.xds && (
                   <XDSButton
                     variant="secondary"
                     size="sm"
+                    onClick={() => window.open(previewUrls.xds, '_blank')}>
+                    XDS Preview
+                  </XDSButton>
+                )}
+                {previewUrls?.baseline && (
+                  <XDSButton
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => window.open(previewUrls.baseline, '_blank')}>
+                    Baseline Preview
+                  </XDSButton>
+                )}
+                {previewUrls?.html && (
+                  <XDSButton
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => window.open(previewUrls.html, '_blank')}>
+                    HTML Preview
+                  </XDSButton>
+                )}
+                {hasXdsCode && (
+                  <XDSButton
+                    variant="ghost"
+                    size="sm"
                     onClick={() => onViewCode('xds')}>
-                    View XDS Code
+                    XDS Code
                   </XDSButton>
                 )}
                 {hasBaselineCode && (
                   <XDSButton
-                    variant="secondary"
+                    variant="ghost"
                     size="sm"
                     onClick={() => onViewCode('baseline')}>
-                    View Baseline Code
+                    Baseline Code
+                  </XDSButton>
+                )}
+                {hasHtmlCode && (
+                  <XDSButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onViewCode('html')}>
+                    HTML Code
                   </XDSButton>
                 )}
               </div>
