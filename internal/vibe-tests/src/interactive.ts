@@ -676,6 +676,53 @@ Style with className to match the content being loaded.
 }
 
 /**
+ * Install AGENTS.html.md for raw HTML/CSS target
+ */
+function installHtmlDocs(): void {
+  const vibeTestsDir = path.join(__dirname, '..');
+  const agentsMdPath = path.join(vibeTestsDir, 'AGENTS.html.md');
+
+  if (fs.existsSync(agentsMdPath)) {
+    const stats = fs.statSync(agentsMdPath);
+    const ageMs = Date.now() - stats.mtimeMs;
+    if (ageMs < 60 * 60 * 1000) return;
+  }
+
+  const agentsMd = `# AGENTS.md
+
+Project-specific guidance for AI coding agents.
+
+## Raw HTML/CSS — No Component Library
+
+You are writing React components using ONLY:
+- Plain HTML elements (div, span, p, h1-h6, button, input, etc.)
+- Inline styles via the \`style\` prop (style={{ ... }})
+- Standard React hooks (useState, useEffect, etc.)
+
+### Rules
+
+1. Do NOT import any component library (no shadcn, no MUI, no XDS, no Radix)
+2. Do NOT use Tailwind CSS or any CSS framework
+3. Do NOT use CSS modules, styled-components, or CSS-in-JS libraries
+4. Use inline \`style={{}}\` for ALL styling
+5. Use semantic HTML elements where appropriate (button, nav, main, etc.)
+6. Handle accessibility yourself (aria-labels, roles, keyboard events)
+7. Export a default function component
+
+### Styling Guidelines
+
+- Use reasonable defaults: system font stack, 16px base, #333 text
+- Use consistent spacing: 4/8/12/16/24/32px scale
+- Use a neutral color palette: grays for backgrounds, blue for accent
+- Add border-radius for interactive elements
+- Include hover/focus states on interactive elements
+`;
+
+  fs.writeFileSync(agentsMdPath, agentsMd);
+  console.log('✓ Generated AGENTS.html.md');
+}
+
+/**
  * Install AGENTS.md for agent documentation
  */
 function installAgentsDocs(): void {
@@ -709,7 +756,7 @@ interface InteractiveConfig {
   holdout?: boolean;
   persona: 'naive' | 'experienced' | 'adversarial';
   degradation?: boolean; // Enable degradation curve testing
-  target: 'xds' | 'baseline'; // Target design system
+  target: 'xds' | 'baseline' | 'html'; // Target design system
 }
 
 interface AgentTask {
@@ -857,7 +904,7 @@ function createTaskManifest(
       resultsDir,
     );
 
-    const task: AgentTask & {subagentPrompt: string} = {
+    const task: AgentTask & {subagentPrompt: string; createdAt: string} = {
       promptId: prompt.id,
       category: prompt.category,
       prompt: prompt.prompt,
@@ -867,6 +914,7 @@ function createTaskManifest(
       degradation: config.degradation,
       target: config.target,
       subagentPrompt,
+      createdAt: new Date().toISOString(),
     };
     writeJson(path.join(tasksDir, `${prompt.id}.json`), task);
   }
@@ -890,7 +938,11 @@ function generateSubagentPrompt(
 
   // Target-specific AGENTS.md file
   const agentsMdFile =
-    config.target === 'baseline' ? 'AGENTS.baseline.md' : 'AGENTS.md';
+    config.target === 'baseline'
+      ? 'AGENTS.baseline.md'
+      : config.target === 'html'
+        ? 'AGENTS.html.md'
+        : 'AGENTS.md';
 
   // Persona-specific framing to simulate different user types
   const personaFraming: Record<string, Record<string, string>> = {
@@ -903,6 +955,11 @@ function generateSubagentPrompt(
       naive: '', // No special framing
       experienced: `Use baseline/ui components. `,
       adversarial: `I'm used to Material UI patterns but need to use your design system. `,
+    },
+    html: {
+      naive: '', // No special framing
+      experienced: `Use only plain HTML elements and inline CSS. `,
+      adversarial: `I know React component libraries exist but I want raw HTML/CSS. `,
     },
   };
 
@@ -967,7 +1024,8 @@ For each test, the subagent should:
 5. Track which doc files were read during the task
 6. Write result to individual file: ${resultsDir}/results/{promptId}.json
    - Include a "docsRead" array listing all doc files read (e.g., ["AGENTS.md", "Button.md", "tokens.md"])
-   - This is required for accurate token usage tracking
+   - Include "completedAt" with the current ISO timestamp (new Date().toISOString())
+   - These are required for accurate cost tracking
    (Use individual files to avoid parallel write conflicts)
 
 ### After All Tests Complete
@@ -996,7 +1054,9 @@ async function main() {
   const degradation = args.includes('--degradation');
   const targetIndex = args.indexOf('--target');
   const target =
-    targetIndex !== -1 ? (args[targetIndex + 1] as 'xds' | 'baseline') : 'xds';
+    targetIndex !== -1
+      ? (args[targetIndex + 1] as 'xds' | 'baseline' | 'html')
+      : 'xds';
   const promptsIndex = args.indexOf('--prompts');
   const promptIds =
     promptsIndex !== -1 ? args[promptsIndex + 1].split(',') : undefined;
@@ -1014,6 +1074,8 @@ async function main() {
     installAgentsDocs();
   } else if (target === 'baseline') {
     installBaselineDocs();
+  } else if (target === 'html') {
+    installHtmlDocs();
   }
 
   // Load test set
@@ -1049,7 +1111,7 @@ async function main() {
   console.log(`Target: ${target.toUpperCase()}`);
   console.log(`Persona: ${persona}`);
   console.log(
-    `Mode: ${target === 'xds' ? 'AGENTS.md' : 'AGENTS.baseline.md'} (retrieval-led)`,
+    `Mode: ${target === 'xds' ? 'AGENTS.md' : target === 'baseline' ? 'AGENTS.baseline.md' : 'AGENTS.html.md'} (retrieval-led)`,
   );
   console.log(
     `Protocol: ${degradation ? 'Degradation (10-turn curve)' : 'One-shot'}`,

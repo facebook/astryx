@@ -419,6 +419,10 @@ const fontWeightRaw = {
 // =============================================================================
 // createTheme calls
 // =============================================================================
+// ⚠️ StyleX CONSTRAINT: Each createTheme() call MUST receive an inline object
+// literal. Do NOT extract values into a shared variable and reference it here —
+// StyleX's Babel plugin cannot statically analyze variable references.
+// If you need multiple themes with the same tokens, duplicate the inline values.
 
 const colorTheme = stylex.createTheme(colorVars, colorRaw as unknown as BaseColorRaw);
 const spacingTheme = stylex.createTheme(spacingVars, spacingRaw as unknown as BaseSpacingRaw);

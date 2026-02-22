@@ -20,6 +20,7 @@ const pages = [
   {name: 'Home', href: '/'},
   {name: 'Example', href: '/pages/example/'},
   {name: 'Navigation', href: '/pages/navigation/'},
+  {name: 'TopNav Menu', href: '/pages/topnav-menu/'},
 ];
 
 const styles = stylex.create({

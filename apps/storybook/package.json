@@ -10,7 +10,8 @@
     "@xds/core": "*",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "@xds/theme": "*"
+    "@xds/theme-default": "*",
+    "@xds/theme-neutral": "*"
   },
   "devDependencies": {
     "@storybook/addon-essentials": "^8.4.0",

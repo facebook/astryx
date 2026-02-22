@@ -25,11 +25,6 @@ const meta: Meta<typeof XDSTopNav> = {
     layout: 'fullscreen',
   },
   argTypes: {
-    position: {
-      control: 'select',
-      options: ['static', 'sticky', 'fixed'],
-      description: 'Position behavior',
-    },
     label: {
       control: 'text',
       description: 'Accessible label for navigation landmark',
@@ -276,7 +271,6 @@ export const FullExample: Story = {
   render: () => (
     <XDSTopNav
       label="Main navigation"
-      position="sticky"
       title={
         <XDSTopNavTitle
           title="Enterprise Dashboard"

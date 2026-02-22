@@ -10,7 +10,8 @@ module.exports = {
       include: [
         'src/**/*.{js,jsx,ts,tsx}',
         path.join(rootDir, 'packages/core/src/**/*.{ts,tsx}'),
-        path.join(rootDir, 'packages/theme/src/**/*.{ts,tsx}'),
+        path.join(rootDir, 'packages/themes/default/src/**/*.{ts,tsx}'),
+        path.join(rootDir, 'packages/themes/neutral/src/**/*.{ts,tsx}'),
       ],
       babelConfig: {
         babelrc: false,

@@ -1,20 +1,18 @@
 {
-  "name": "@xds/theme",
+  "name": "@xds/theme-neutral",
   "version": "0.0.1",
   "private": true,
-  "description": "Optional themes for XDS components",
+  "description": "Neutral theme for XDS components (Lucide icons)",
   "license": "MIT",
   "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
   "exports": {
-    "./default": {
-      "types": "./dist/default/index.d.ts",
-      "import": "./dist/default/index.mjs",
-      "require": "./dist/default/index.js"
-    },
-    "./neutral": {
-      "types": "./dist/neutral/index.d.ts",
-      "import": "./dist/neutral/index.mjs",
-      "require": "./dist/neutral/index.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     }
   },
   "files": [
@@ -26,7 +24,7 @@
     "dev": "tsup --watch"
   },
   "dependencies": {
-    "@heroicons/react": "^2.2.0"
+    "lucide-react": "^0.575.0"
   },
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",

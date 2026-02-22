@@ -40,6 +40,11 @@
       "import": "./dist/Card/index.mjs",
       "require": "./dist/Card/index.js"
     },
+    "./CollapsibleGroup": {
+      "types": "./dist/CollapsibleGroup/index.d.ts",
+      "import": "./dist/CollapsibleGroup/index.mjs",
+      "require": "./dist/CollapsibleGroup/index.js"
+    },
     "./Calendar": {
       "types": "./dist/Calendar/index.d.ts",
       "import": "./dist/Calendar/index.mjs",

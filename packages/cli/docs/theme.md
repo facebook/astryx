@@ -88,6 +88,68 @@ The `styles` field uses `stylex.createTheme()` for each token group. The `raw` f
 **Token groups** (all required in both `styles` and `raw`):
 colors, spacing, size, radius, elevation, transition, typography, textSize, lineHeight, fontWeight
 
+### ⚠️ Static Analysis Constraint
+
+StyleX's Babel plugin requires that **all values passed to `stylex.createTheme()` are inline object literals** — not variable references, spread expressions, or function return values. This is a compile-time constraint.
+
+```tsx
+// ❌ BROKEN — StyleX cannot statically analyze variable references
+const sharedSpacing = {
+  '--spacing-1': '4px',
+  '--spacing-2': '8px',
+};
+const spacingTheme = stylex.createTheme(spacingVars, sharedSpacing);
+// Error: "Only static values are allowed inside of a createTheme() call"
+
+// ❌ BROKEN — spread also fails
+const spacingTheme = stylex.createTheme(spacingVars, {...sharedSpacing});
+
+// ✅ WORKS — inline object literal
+const spacingTheme = stylex.createTheme(spacingVars, {
+  '--spacing-1': '4px',
+  '--spacing-2': '8px',
+});
+```
+
+### Sharing values across multiple themes
+
+When creating multiple themes that share token groups (e.g., same spacing, different colors), you **must duplicate the inline values** in each `createTheme()` call. This is required by StyleX's static analysis — there is no way to DRY up `createTheme` arguments.
+
+```tsx
+// ✅ Correct: each theme has its own inline createTheme calls
+// (values can be identical — that's fine, they must just be inline literals)
+
+// --- ocean theme ---
+const oceanSpacingTheme = stylex.createTheme(spacingVars, {
+  '--spacing-1': '4px',
+  '--spacing-2': '8px',
+  // ... same values, written inline
+} as unknown as BaseSpacingRaw);
+
+// --- sunset theme ---
+const sunsetSpacingTheme = stylex.createTheme(spacingVars, {
+  '--spacing-1': '4px',
+  '--spacing-2': '8px',
+  // ... same values, written inline
+} as unknown as BaseSpacingRaw);
+```
+
+The `raw` field (plain objects, not passed to StyleX) _can_ use shared variables:
+
+```tsx
+// ✅ raw values can be shared — they're not processed by StyleX
+const sharedSpacingRaw = {
+  '--spacing-1': '4px',
+  '--spacing-2': '8px',
+};
+
+export const oceanTheme: Theme = {
+  name: 'ocean',
+  styles: {spacing: oceanSpacingTheme /* ... */},
+  raw: {spacing: sharedSpacingRaw /* ... */}, // ✅ OK — not a createTheme call
+};
+```
+
 ## Light/Dark Mode
 
 ### Automatic (recommended)

@@ -255,3 +255,103 @@ export interface QualityAssessment {
   overallScore: QualityScore;
   summary: string;
 }
+
+// ============================================================
+// Universal Evaluation Types (target-neutral, 5 dimensions)
+// ============================================================
+
+export type UniversalDimension =
+  | 'correctness'
+  | 'accessibility'
+  | 'codeQuality'
+  | 'efficiency'
+  | 'maintainability';
+
+export interface UniversalFinding {
+  rule: string;
+  severity?: 'critical' | 'moderate' | 'minor';
+  detail: string;
+  line?: number;
+  count?: number;
+  example?: string;
+}
+
+export interface EfficiencyMetrics {
+  totalLines: number;
+  codeLines: number;
+  stylingLines: number;
+  boilerplateLines: number;
+  logicLines: number;
+  stylingRatio: number;
+  boilerplateRatio: number;
+  decisionsPerElement: number;
+  elementCount: number;
+  stylingDecisionCount: number;
+  duplicateRatio: number;
+}
+
+export interface MaintainabilityMetrics {
+  semanticRatio: number;
+  magicValueCount: number;
+  semanticValueCount: number;
+  avgStateSpread: number;
+  darkModeSupport: boolean;
+}
+
+export interface DimensionScore<M = undefined> {
+  score: number;
+  findings?: UniversalFinding[];
+  metrics?: M;
+}
+
+export interface UniversalScore {
+  correctness: DimensionScore;
+  accessibility: DimensionScore;
+  codeQuality: DimensionScore;
+  efficiency: DimensionScore<EfficiencyMetrics>;
+  maintainability: DimensionScore<MaintainabilityMetrics>;
+}
+
+export interface CostMetrics {
+  totalDurationMs: number;
+  avgDurationMs: number;
+  avgOutputChars: number;
+  avgOutputLines: number;
+  avgDocsRead: number;
+  estimatedInputTokens: number;
+  estimatedOutputTokens: number;
+  byPrompt: Record<
+    string,
+    {
+      durationMs: number;
+      outputChars: number;
+      outputLines: number;
+      docsRead: string[];
+      estimatedInputTokens: number;
+      estimatedOutputTokens: number;
+    }
+  >;
+}
+
+export interface UniversalAggregate {
+  averages: Record<UniversalDimension, number>;
+  overall: number;
+  byPrompt: Record<string, UniversalScore>;
+  byCategory: Record<string, Record<UniversalDimension, number>>;
+  darkModeRate: number;
+  cost?: CostMetrics;
+}
+
+export interface UniversalComparison {
+  xds: UniversalAggregate;
+  baseline: UniversalAggregate;
+  winners: Record<UniversalDimension, 'xds' | 'baseline' | 'tie'>;
+  byPrompt: Record<
+    string,
+    {
+      xds: UniversalScore;
+      baseline: UniversalScore;
+      winner: 'xds' | 'baseline' | 'tie';
+    }
+  >;
+}

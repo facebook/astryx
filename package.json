@@ -5,11 +5,12 @@
   "workspaces": [
     "apps/*",
     "packages/*",
+    "packages/themes/*",
     "internal/*",
     "e2e"
   ],
   "scripts": {
-    "build": "yarn workspace @xds/core build && yarn workspace @xds/theme build",
+    "build": "yarn workspace @xds/core build && yarn workspace @xds/theme-default build && yarn workspace @xds/theme-neutral build",
     "dev": "yarn workspace @xds/storybook dev",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -45,6 +46,7 @@
     "tsup": "^8.3.0",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.53.1",
+    "vite-plugin-singlefile": "^2.3.0",
     "vitest": "^2.1.0"
   },
   "resolutions": {

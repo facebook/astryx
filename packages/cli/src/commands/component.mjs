@@ -19,8 +19,10 @@ const DIR_TO_CATEGORY = {
   // Layout
   AspectRatio: 'Layout',
   Center: 'Layout',
+  CollapsibleGroup: 'Layout',
   Grid: 'Layout',
   Layout: 'Layout',
+  Stack: 'Layout',
   // Display
   Avatar: 'Display',
   Badge: 'Display',
@@ -75,7 +77,8 @@ export function discoverComponents(coreDir) {
         results.push(...collectXDSFiles(path.join(dirPath, entry.name)));
       } else if (
         /^XDS[A-Z]\w+\.tsx$/.test(entry.name) &&
-        !entry.name.includes('.test.')
+        !entry.name.includes('.test.') &&
+        !entry.name.includes('Context.')
       ) {
         results.push(entry.name);
       }
@@ -398,6 +401,229 @@ export function findClosestComponents(name, components, maxDistance = 3) {
 }
 
 /**
+ * Extract a brief, LLM-optimized summary from a README.
+ *
+ * Format: component signature + key props + one usage example.
+ * Targets ~200-400 chars per component (vs ~2-3KB for --compact).
+ *
+ * Example output:
+ *   Button(variant: primary|secondary|ghost|destructive, size: sm|md|lg)
+ *     label: string (required) · isLoading isDisabled icon tooltip children
+ *     <XDSButton variant="primary" onClick={fn}>Save</XDSButton>
+ */
+export function extractBrief(content, componentName) {
+  const displayName = componentName.startsWith('XDS')
+    ? componentName
+    : `XDS${componentName}`;
+
+  const lines = content.split('\n');
+
+  // 1. Extract first paragraph as description
+  let description = '';
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line.startsWith('#')) continue;
+    if (line === '') continue;
+    if (line.startsWith('|') || line.startsWith('```')) break;
+    description = line;
+    break;
+  }
+
+  // 2. Extract props from the Props table
+  //    Supports two README layouts:
+  //    a) Single-component: `## Props` section with a table
+  //    b) Multi-component: `### XDSComponentName` subsection with a table
+  const props = [];
+  let inPropsTable = false;
+  let headerParsed = false;
+  let inComponentSection = false;
+
+  // For multi-component READMEs, find the section for this specific component
+  const componentSectionRe = new RegExp(
+    `^###\\s+${displayName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`
+  );
+
+  for (const line of lines) {
+    // Detect `## Props` (single-component layout)
+    if (/^#{2,3}\s+Props/.test(line)) {
+      inPropsTable = true;
+      headerParsed = false;
+      continue;
+    }
+
+    // Detect `### XDSComponentName` (multi-component layout)
+    if (componentSectionRe.test(line)) {
+      inComponentSection = true;
+      continue;
+    }
+
+    // Exit component section when hitting another ### heading
+    if (inComponentSection && /^###\s+/.test(line) && !componentSectionRe.test(line)) {
+      inComponentSection = false;
+      if (inPropsTable) inPropsTable = false;
+      continue;
+    }
+
+    // Within a component section, a pipe-delimited table is a props table
+    if (inComponentSection && !inPropsTable && /^\|\s*`?Prop/.test(line)) {
+      inPropsTable = true;
+      headerParsed = false;
+      // Don't continue — let the header row logic below handle it
+    }
+
+    if (inPropsTable && /^#{2,3}\s+/.test(line) && !/Props/.test(line) && !inComponentSection) {
+      inPropsTable = false;
+      continue;
+    }
+    if (!inPropsTable) continue;
+
+    // Skip table header separator
+    if (/^\|\s*-/.test(line)) {
+      headerParsed = true;
+      continue;
+    }
+    // Skip the header row itself
+    if (!headerParsed && /^\|\s*`?Prop/.test(line)) continue;
+
+    // Parse prop row: | `name` | `type` | `default` | description |
+    const cells = line
+      .split('|')
+      .map(c => c.trim().replace(/`/g, ''))
+      .filter(Boolean);
+    if (cells.length >= 3) {
+      const name = cells[0];
+      const type = cells[1];
+      const defaultVal = cells[2] || '';
+      const desc = cells[3] || '';
+
+      // Skip internal/style props
+      if (['xstyle', 'data-testid', 'className', 'style'].includes(name))
+        continue;
+
+      props.push({name, type, defaultVal, desc});
+    }
+  }
+
+  // 3. Build signature line from variant/size/type/level props
+  const signatureProps = [];
+  const otherProps = [];
+
+  for (const prop of props) {
+    // Props with union types go in the signature
+    if (prop.type.includes('|') && !prop.type.includes('ReactNode')) {
+      const values = prop.type
+        .replace(/['"]/g, '')
+        .split('|')
+        .map(v => v.trim())
+        .join('|');
+      signatureProps.push(`${prop.name}: ${values}`);
+    } else if (prop.desc.includes('required') || prop.defaultVal === '—' || prop.defaultVal === '-') {
+      otherProps.unshift(`${prop.name}: ${prop.type.split('|')[0].trim()}`);
+    } else {
+      otherProps.push(prop.name);
+    }
+  }
+
+  // 4. Extract first code example
+  //    For multi-component READMEs, prefer examples from the component's section
+  let example = '';
+  let fallbackExample = '';
+  let inCode = false;
+  let inCompSection = false;
+
+  for (const line of lines) {
+    // Track whether we're in this component's subsection
+    if (componentSectionRe.test(line)) {
+      inCompSection = true;
+      continue;
+    }
+    if (inCompSection && /^###\s+/.test(line) && !componentSectionRe.test(line)) {
+      inCompSection = false;
+    }
+
+    if (line.startsWith('```tsx') || line.startsWith('```jsx')) {
+      inCode = true;
+      continue;
+    }
+    if (inCode && line.startsWith('```')) {
+      inCode = false;
+      continue;
+    }
+    if (inCode) {
+      const trimmed = line.trim();
+      // Take the first substantial JSX line
+      if (trimmed.startsWith('<XDS') || trimmed.startsWith('<')) {
+        if (inCompSection && !example) {
+          // Prefer example from this component's section
+          example = trimmed;
+        } else if (!fallbackExample) {
+          // Fallback: first example from anywhere in the README
+          fallbackExample = trimmed;
+        }
+        if (example) break; // Found one in the right section, done
+      }
+    }
+  }
+  // Use component-section example if found, otherwise fallback
+  if (!example) example = fallbackExample;
+
+  // 5. Build output
+  const output = [];
+
+  // Signature line
+  const sigStr =
+    signatureProps.length > 0
+      ? `${displayName}(${signatureProps.join(', ')})`
+      : displayName;
+  output.push(sigStr);
+
+  // Description (shortened)
+  if (description) {
+    const shortDesc =
+      description.length > 80
+        ? description.slice(0, 77) + '...'
+        : description;
+    output.push(`  ${shortDesc}`);
+  }
+
+  // Other props
+  if (otherProps.length > 0) {
+    output.push(`  ${otherProps.join(' · ')}`);
+  }
+
+  // Example
+  if (example) {
+    output.push(`  ${example}`);
+  }
+
+  return output.join('\n') + '\n';
+}
+
+/**
+ * Extract brief summaries for ALL components in one output.
+ * One read, zero round-trips — the LLM gets enough to use any component.
+ */
+export function extractBriefAll(coreDir) {
+  const components = discoverComponents(coreDir);
+  const output = [];
+
+  for (const [category, comps] of Object.entries(components)) {
+    output.push(`## ${category}\n`);
+    for (const comp of comps) {
+      const readmePath = findComponentReadme(coreDir, comp);
+      if (readmePath) {
+        const content = fs.readFileSync(readmePath, 'utf-8');
+        output.push(extractBrief(content, comp));
+      } else {
+        output.push(`XDS${comp}\n  (no docs)\n`);
+      }
+    }
+  }
+
+  return output.join('\n');
+}
+
+/**
  * Extract only the Props section(s) from a README.
  * Useful for quick reference and LLM context.
  */
@@ -449,6 +675,8 @@ export function registerComponent(program) {
     .option('--list', 'List all components grouped by category')
     .option('--category <category>', 'List components in a specific category')
     .option('--compact', 'Token-optimized output for LLMs')
+    .option('--brief', 'Minimal LLM output: signature + props + one example (~200 chars)')
+    .option('--brief-all', 'Brief summaries of ALL components in one output')
     .option('--props', 'Print only the props table')
     .option('--source', 'Print component source code')
     .action((name, options) => {
@@ -460,6 +688,11 @@ export function registerComponent(program) {
             'Make sure you are inside the XDS monorepo or have @xds/core installed.',
         );
         process.exit(1);
+      }
+
+      if (options.briefAll) {
+        console.log(extractBriefAll(coreDir));
+        return;
       }
 
       if (options.category || options.list || !name) {
@@ -546,6 +779,8 @@ export function registerComponent(program) {
 
       if (options.props) {
         console.log(extractProps(content, resolvedName));
+      } else if (options.brief) {
+        console.log(extractBrief(content, resolvedName));
       } else if (options.compact) {
         console.log(extractCompact(content, resolvedName));
       } else {

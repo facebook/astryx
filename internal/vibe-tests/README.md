@@ -2,15 +2,15 @@
 
 Vibeability test harness for measuring how well LLMs can use the XDS component system.
 
-## Quick Start - Interactive Mode (Claude Code)
+## Quick Start - Interactive Mode (Navi / Claude Code)
 
-Run vibe tests directly in Claude Code without an API key:
+Run vibe tests interactively through Navi (the AI assistant) using sub-agents — no API key needed. The skill doc is auto-generated from the CLI before each run, so it always reflects the current branch's components.
 
 ```
 /vibe-test 5
 ```
 
-Or ask Claude Code:
+Or ask Navi:
 
 ```
 "Run a vibe test with 5 samples"
@@ -18,10 +18,25 @@ Or ask Claude Code:
 
 This will:
 
-1. Set up a test iteration
-2. Spawn parallel subagents to run each test
-3. Write results to runs.jsonl
-4. Aggregate and show results
+1. Generate the skill doc from source (auto-discovers components)
+2. Set up a test iteration
+3. Spawn parallel sub-agents to run each test
+4. Write results to runs.jsonl
+5. Aggregate and show results
+
+### How It Works (Interactive)
+
+When running interactively through Navi:
+
+1. **Generate skill doc** — Runs `bash scripts/generate-skill-doc.sh` which uses the XDS CLI to auto-discover components from source and generate `.generated/xds-skill.md`
+2. **Setup iteration** — Creates task files and manifest in `results/<iteration>/`
+3. **Spawn sub-agents** — Each test prompt is run by a parallel sub-agent that:
+   - Reads the generated skill doc as context
+   - Generates code for the prompt using XDS components
+   - Self-evaluates the response
+4. **Aggregate** — Results are written to `runs.jsonl` and aggregated into a report
+
+The skill doc is generated fresh each time, so it always reflects the current branch's components. No manual maintenance of component lists needed.
 
 ## Quick Start - API Mode
 

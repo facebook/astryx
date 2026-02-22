@@ -17,6 +17,7 @@ import {XDSCard} from '@xds/core/Card';
 ## Usage
 
 ```tsx
+// Basic card with layout
 <XDSCard width={400} height={300}>
   <XDSLayout
     header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
@@ -24,6 +25,34 @@ import {XDSCard} from '@xds/core/Card';
     footer={<XDSLayoutFooter hasDivider>Actions</XDSLayoutFooter>}
   />
 </XDSCard>
+
+// Simple content
+<XDSCard>
+  <p>Card content with default padding</p>
+</XDSCard>
+
+// Collapsible card — compose XDSCollapsible inside
+<XDSCard>
+  <XDSCollapsible trigger="Details">
+    <p>This content can be collapsed</p>
+  </XDSCollapsible>
+</XDSCard>
+
+// Accordion of cards
+<XDSCollapsibleGroup type="single" defaultValue="general">
+  <XDSVStack gap="space2">
+    <XDSCard>
+      <XDSCollapsible trigger="General" value="general">
+        <GeneralSettings />
+      </XDSCollapsible>
+    </XDSCard>
+    <XDSCard>
+      <XDSCollapsible trigger="Advanced" value="advanced">
+        <AdvancedSettings />
+      </XDSCollapsible>
+    </XDSCard>
+  </XDSVStack>
+</XDSCollapsibleGroup>
 ```
 
 ## Props
@@ -34,15 +63,8 @@ import {XDSCard} from '@xds/core/Card';
 | `height`      | `SizeValue` | —       | Height (number = pixels, string = as-is)          |
 | `maxWidth`    | `SizeValue` | —       | Maximum width                                     |
 | `minHeight`   | `SizeValue` | —       | Minimum height                                    |
-| `children`    | `ReactNode` | —       | Content (typically XDSLayout)                     |
+| `children`    | `ReactNode` | —       | Content to render inside the card                 |
 | `isFullBleed` | `boolean`   | `false` | Removes internal padding for edge-to-edge content |
-
-## Types
-
-```tsx
-// Size value type - accepts numbers (pixels) or strings (CSS values)
-type SizeValue = number | string;
-```
 
 ## Theming
 

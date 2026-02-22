@@ -8,9 +8,12 @@
  */
 
 // Components
+export * from './CollapsibleGroup';
+export * from './AppShell';
 export * from './AspectRatio';
 export * from './Avatar';
 export * from './Badge';
+export * from './Banner';
 export * from './Breadcrumbs';
 export * from './Button';
 export * from './Card';
@@ -38,9 +41,11 @@ export * from './TextArea';
 export * from './TimeInput';
 export * from './NumberInput';
 export * from './Table';
+export * from './Token';
 export * from './Dialog';
 export * from './DropdownMenu';
 export * from './TopNav';
+export * from './PageNav';
 export * from './ProgressBar';
 
 // Layout utilities and components (includes XDSHStack, XDSVStack)

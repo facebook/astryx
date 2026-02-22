@@ -2010,18 +2010,6 @@
     is-glob "^4.0.3"
     postcss "^8.4.49"
 
-"@stylexjs/postcss-plugin@^0.17.4":
-  version "0.17.5"
-  resolved "https://registry.yarnpkg.com/@stylexjs/postcss-plugin/-/postcss-plugin-0.17.5.tgz#03ecd009409cbcb59e5083cac8a62f591ec38e16"
-  integrity sha512-GeveZXN8aDrXTSRpDM0SvCjmmY7WCfoel+lWcsf47QcJvjz5auGmh3a9LhIFLpwmAgpsVr20RyB8yxX93NaKow==
-  dependencies:
-    "@babel/core" "^7.26.8"
-    "@stylexjs/babel-plugin" "0.17.5"
-    fast-glob "^3.3.2"
-    glob-parent "^6.0.2"
-    is-glob "^4.0.3"
-    postcss "^8.4.49"
-
 "@stylexjs/shared@0.11.1":
   version "0.11.1"
   resolved "https://registry.yarnpkg.com/@stylexjs/shared/-/shared-0.11.1.tgz#c92160f33161f5721f5e1b4a623f99892df5d319"
@@ -3987,6 +3975,11 @@ lru-cache@^5.1.1:
   dependencies:
     yallist "^3.0.2"
 
+lucide-react@^0.575.0:
+  version "0.575.0"
+  resolved "https://registry.yarnpkg.com/lucide-react/-/lucide-react-0.575.0.tgz#90feaa4c140e9693e4ee9426d9927a6b833267ac"
+  integrity sha512-VuXgKZrk0uiDlWjGGXmKV6MSk9Yy4l10qgVvzGn2AWBx1Ylt0iBexKOAoA6I7JO3m+M9oeovJd3yYENfkUbOeg==
+
 lz-string@^1.5.0:
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/lz-string/-/lz-string-1.5.0.tgz#c1ab50f77887b712621201ba9fd4e3a6ed099941"
@@ -5122,6 +5115,13 @@ vite-node@2.1.9:
     es-module-lexer "^1.5.4"
     pathe "^1.1.2"
     vite "^5.0.0"
+
+vite-plugin-singlefile@^2.3.0:
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/vite-plugin-singlefile/-/vite-plugin-singlefile-2.3.0.tgz#71f7d8f8958cc019295e159355284ca3ecca97f1"
+  integrity sha512-DAcHzYypM0CasNLSz/WG0VdKOCxGHErfrjOoyIPiNxTPTGmO6rRD/te93n1YL/s+miXq66ipF1brMBikf99c6A==
+  dependencies:
+    micromatch "^4.0.8"
 
 vite@^5.0.0, vite@^5.4.0:
   version "5.4.21"

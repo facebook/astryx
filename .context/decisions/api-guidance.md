@@ -19,13 +19,13 @@ For detailed patterns on specific topics, see:
 <System><Namespace><Variant><Type><Postfixes>
 ```
 
-| Segment     | Required | Example         | Notes                                      |
-| ----------- | -------- | --------------- | ------------------------------------------ |
-| System      | ✓        | `XDS`           | Always `XDS` for this design system        |
-| Namespace   |          | `Layout`        | Groups related components (e.g. `XDSLayoutHeader`, `XDSLayoutPanel`) |
-| Variant     |          | `Icon`          | Distinguishes visual/behavioral variants (use sparingly — prefer concise APIs) |
-| Type        | ✓        | `Input`, `Button` | The component's role                     |
-| Postfixes   |          | `Item`, `Group` | Compositional parts                        |
+| Segment   | Required | Example           | Notes                                                                          |
+| --------- | -------- | ----------------- | ------------------------------------------------------------------------------ |
+| System    | ✓        | `XDS`             | Always `XDS` for this design system                                            |
+| Namespace |          | `Layout`          | Groups related components (e.g. `XDSLayoutHeader`, `XDSLayoutPanel`)           |
+| Variant   |          | `Icon`            | Distinguishes visual/behavioral variants (use sparingly — prefer concise APIs) |
+| Type      | ✓        | `Input`, `Button` | The component's role                                                           |
+| Postfixes |          | `Item`, `Group`   | Compositional parts                                                            |
 
 **Examples:** `XDSButton`, `XDSTextInput`, `XDSSelector`, `XDSCheckboxInput`, `XDSVStack`
 
@@ -50,16 +50,16 @@ apps/storybook/stories/
 
 Component source lives in `packages/core/src/`, stories live in `apps/storybook/stories/`:
 
-| File                                      | Purpose                          |
-| ----------------------------------------- | -------------------------------- |
-| `packages/core/src/<Name>/XDS<Name>.tsx`   | Component implementation         |
-| `packages/core/src/<Name>/XDS<Name>.test.tsx` | Colocated unit tests          |
-| `packages/core/src/<Name>/index.ts`        | Public exports                   |
-| `packages/core/src/<Name>/README.md`       | Component documentation          |
-| `packages/core/src/<Name>/types.ts`        | Shared types (if needed)         |
-| `packages/core/src/<Name>/utils.ts`        | Internal helpers (if needed)     |
-| `packages/core/src/<Name>/hooks.ts`        | Internal hooks (if needed)       |
-| `apps/storybook/stories/<Name>.stories.tsx` | Storybook stories               |
+| File                                          | Purpose                      |
+| --------------------------------------------- | ---------------------------- |
+| `packages/core/src/<Name>/XDS<Name>.tsx`      | Component implementation     |
+| `packages/core/src/<Name>/XDS<Name>.test.tsx` | Colocated unit tests         |
+| `packages/core/src/<Name>/index.ts`           | Public exports               |
+| `packages/core/src/<Name>/README.md`          | Component documentation      |
+| `packages/core/src/<Name>/types.ts`           | Shared types (if needed)     |
+| `packages/core/src/<Name>/utils.ts`           | Internal helpers (if needed) |
+| `packages/core/src/<Name>/hooks.ts`           | Internal hooks (if needed)   |
+| `apps/storybook/stories/<Name>.stories.tsx`   | Storybook stories            |
 
 ### File Header
 
@@ -88,19 +88,24 @@ Every component file includes a structured header for traceability:
 
 Always prefix with `is` or `has`.
 
-| Prefix | Meaning              | Examples                                       |
-| ------ | -------------------- | ---------------------------------------------- |
-| `is`   | State or condition   | `isDisabled`, `isRequired`, `isOptional`, `isLabelHidden`, `isLoading` |
-| `has`  | Feature toggle       | `hasAutoFocus`, `hasClear`, `hasSeconds`       |
+| Prefix | Meaning            | Examples                                                               |
+| ------ | ------------------ | ---------------------------------------------------------------------- |
+| `is`   | State or condition | `isDisabled`, `isRequired`, `isOptional`, `isLabelHidden`, `isLoading` |
+| `has`  | Feature toggle     | `hasAutoFocus`, `hasClear`, `hasSeconds`                               |
 
 ### Callbacks
 
-Pattern: `on{Verb}{Scope}`
+Pattern: `on{Verb}{Scope?}`
 
-| Type         | Pattern             | Examples                        |
-| ------------ | ------------------- | ------------------------------- |
-| Sync handler | `on{Verb}`          | `onClick`, `onChange`, `onBlur` |
-| Async action | `on{Verb}Action`    | `onClickAction`, `onChangeAction` |
+Scope is optional — use it when a component has multiple parts that could apply to the same verb, to disambiguate. When there's only one thing the verb could apply to, omit the scope.
+
+| Type           | Pattern           | Examples                                         |
+| -------------- | ----------------- | ------------------------------------------------ |
+| Sync handler   | `on{Verb}`        | `onClick`, `onChange`, `onBlur`, `onToggle`      |
+| Scoped handler | `on{Verb}{Scope}` | `onSidebarCollapsedChange`, `onVisibilityChange` |
+| Async action   | `on{Verb}Action`  | `onClickAction`, `onChangeAction`                |
+
+**When to add scope:** If a component has multiple things that could toggle, change, or collapse, add scope to clarify which one. For example, `XDSAppShell` has `onSidebarCollapsedChange` because the shell could have multiple collapsible areas. But `XDSPopover` uses `onToggle` because there's only one thing toggling.
 
 ### Enums / String Unions
 
@@ -115,22 +120,22 @@ size?: 'sm' | 'md' | 'lg';
 
 Enum values should align with CSS token names where applicable:
 
-| Prop       | Values                 | Matches Token          |
-| ---------- | ---------------------- | ---------------------- |
-| `size`     | `'sm' \| 'md' \| 'lg'` | `--size-sm`, `--size-md`, `--size-lg` |
-| `padding`  | `'sm' \| 'md' \| 'lg'` | `--spacing-*` tokens   |
-| `margin`   | `'sm' \| 'md' \| 'lg'` | `--spacing-*` tokens   |
-| `variant`  | component-specific     | —                      |
+| Prop      | Values                 | Matches Token                         |
+| --------- | ---------------------- | ------------------------------------- |
+| `size`    | `'sm' \| 'md' \| 'lg'` | `--size-sm`, `--size-md`, `--size-lg` |
+| `padding` | `'sm' \| 'md' \| 'lg'` | `--spacing-*` tokens                  |
+| `margin`  | `'sm' \| 'md' \| 'lg'` | `--spacing-*` tokens                  |
+| `variant` | component-specific     | —                                     |
 
 ### Directional Props
 
 Use `start`/`end` instead of `left`/`right` for RTL support:
 
-| ✅ Do          | ❌ Don't        |
-| -------------- | --------------- |
-| `startIcon`    | `leftIcon`      |
-| `paddingEnd`   | `paddingRight`  |
-| `endContent`   | `rightContent`  |
+| ✅ Do        | ❌ Don't       |
+| ------------ | -------------- |
+| `startIcon`  | `leftIcon`     |
+| `paddingEnd` | `paddingRight` |
+| `endContent` | `rightContent` |
 
 ### HTML Attribute Collisions
 
@@ -145,14 +150,14 @@ htmlFor?: string;    // maps to <label htmlFor="...">
 
 ## Required vs Optional Props
 
-| Prop Category        | Required? | Rationale                                 |
-| -------------------- | --------- | ----------------------------------------- |
-| `label` (interactive elements) | ✓ | Accessibility — buttons and inputs need labels. Not required for display components (e.g. `XDSText`, `XDSLink` where content *is* the label). |
-| `value` / `onChange`  | ✓         | Controlled components need both            |
-| `children`           | ✓         | When the component has no meaningful output without content (e.g. `XDSButton` needs a label or children) |
-| Visual variants      | Optional  | Safe defaults exist (`variant='secondary'`, `size='md'`) |
-| Boolean flags        | Optional  | Default to `false`                         |
-| Event handlers       | Optional  | Not all uses need them                     |
+| Prop Category                  | Required? | Rationale                                                                                                                                     |
+| ------------------------------ | --------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `label` (interactive elements) | ✓         | Accessibility — buttons and inputs need labels. Not required for display components (e.g. `XDSText`, `XDSLink` where content _is_ the label). |
+| `value` / `onChange`           | ✓         | Controlled components need both                                                                                                               |
+| `children`                     | ✓         | When the component has no meaningful output without content (e.g. `XDSButton` needs a label or children)                                      |
+| Visual variants                | Optional  | Safe defaults exist (`variant='secondary'`, `size='md'`)                                                                                      |
+| Boolean flags                  | Optional  | Default to `false`                                                                                                                            |
+| Event handlers                 | Optional  | Not all uses need them                                                                                                                        |
 
 **Principle:** Make behavioral/structural props required. Make presentation props optional with sensible defaults.
 
@@ -160,10 +165,10 @@ htmlFor?: string;    // maps to <label htmlFor="...">
 
 ## Composition vs Config
 
-| Use Composition When                      | Use Config (Props) When                   |
-| ----------------------------------------- | ----------------------------------------- |
-| Content is arbitrary/user-defined         | Options are finite and well-known         |
-| Children need access to parent context    | Prop controls a single visual attribute   |
+| Use Composition When                        | Use Config (Props) When                   |
+| ------------------------------------------- | ----------------------------------------- |
+| Content is arbitrary/user-defined           | Options are finite and well-known         |
+| Children need access to parent context      | Prop controls a single visual attribute   |
 | Flexibility is needed for unknown use cases | Consistency matters more than flexibility |
 
 **Examples:**
@@ -201,7 +206,7 @@ interface Props {
 }
 
 // Apply xstyle last so consumer styles override defaults
-<div {...stylex.props(styles.base, xstyle)} />
+<div {...stylex.props(styles.base, xstyle)} />;
 ```
 
 ### Theme Overrides
@@ -222,12 +227,12 @@ const themeOverride = themeContext?.theme.components?.button?.variants?.[variant
 
 All input components are controlled — they require `value` and `onChange`/`onChangeAction`.
 
-| Prop             | Type                            | Description                    |
-| ---------------- | ------------------------------- | ------------------------------ |
-| `value`          | varies                          | Current value (source of truth)|
-| `onChange`        | `(value, event?) => void`       | Sync change handler            |
-| `onChangeAction` | `(value, event?) => Promise`    | Async action (replaces onChange)|
-| `isLoading`      | `boolean`                       | External loading state         |
+| Prop             | Type                         | Description                      |
+| ---------------- | ---------------------------- | -------------------------------- |
+| `value`          | varies                       | Current value (source of truth)  |
+| `onChange`       | `(value, event?) => void`    | Sync change handler              |
+| `onChangeAction` | `(value, event?) => Promise` | Async action (replaces onChange) |
+| `isLoading`      | `boolean`                    | External loading state           |
 
 ### Uncontrolled Defaults
 
@@ -243,12 +248,12 @@ initialHasSelection?: boolean;
 
 The `onChange` signature varies by input type:
 
-| Input Type       | Signature                                          |
-| ---------------- | -------------------------------------------------- |
-| Text-based       | `(value: string, e: ChangeEvent) => void`          |
-| Boolean          | `(checked: boolean, e: ChangeEvent) => void`       |
-| Parsed value     | `(value: T \| undefined) => void` (no event)       |
-| Selection        | `(value: string) => void`                          |
+| Input Type   | Signature                                    |
+| ------------ | -------------------------------------------- |
+| Text-based   | `(value: string, e: ChangeEvent) => void`    |
+| Boolean      | `(checked: boolean, e: ChangeEvent) => void` |
+| Parsed value | `(value: T \| undefined) => void` (no event) |
+| Selection    | `(value: string) => void`                    |
 
 **Convention:** Include the event when the raw DOM element is useful. Omit it when the value is parsed/transformed.
 
@@ -260,10 +265,10 @@ See [React Transitions exploration](../explorations/react-transitions.md) for fu
 
 ### Two Patterns
 
-| Pattern          | Prop              | Hook              | Used By         |
-| ---------------- | ----------------- | ----------------- | --------------- |
-| Button actions   | `onClickAction`   | `useTransition`   | XDSButton       |
-| Input actions    | `onChangeAction`  | `useOptimistic`   | All inputs      |
+| Pattern        | Prop             | Hook            | Used By    |
+| -------------- | ---------------- | --------------- | ---------- |
+| Button actions | `onClickAction`  | `useTransition` | XDSButton  |
+| Input actions  | `onChangeAction` | `useOptimistic` | All inputs |
 
 ### Input Pattern: `onChangeAction` + `useOptimistic`
 
@@ -271,12 +276,12 @@ See [React Transitions exploration](../explorations/react-transitions.md) for fu
 const [optimisticValue, setOptimisticValue] = useOptimistic(value);
 const isBusy = isLoading || optimisticValue !== value;
 
-const handleChange = (e) => {
+const handleChange = e => {
   const newValue = e.target.value;
   if (onChangeAction) {
     startTransition(() => {
-      setOptimisticValue(newValue);   // Immediate UI feedback
-      onChangeAction(newValue, e);    // Async — auto-rollback on failure
+      setOptimisticValue(newValue); // Immediate UI feedback
+      onChangeAction(newValue, e); // Async — auto-rollback on failure
     });
   } else if (onChange) {
     onChange(newValue, e);
@@ -294,7 +299,7 @@ const handleChange = (e) => {
 const [isPending, startTransition] = useTransition();
 const isBusy = isLoading || isPending;
 
-const handleClick = (e) => {
+const handleClick = e => {
   if (onClickAction) {
     startTransition(() => {
       onClickAction(e);
@@ -320,23 +325,23 @@ const handleClick = (e) => {
 
 ### Required Patterns
 
-| Requirement          | Implementation                                           |
-| -------------------- | -------------------------------------------------------- |
-| Label                | `label` prop → `<label htmlFor={id}>` or `aria-label`   |
-| Hidden label         | `isLabelHidden` — visually hidden, still in DOM          |
-| Description          | `aria-describedby` linking to description element        |
-| Required state       | `aria-required="true"` when `isRequired`                 |
-| Invalid state        | `aria-invalid="true"` when `status.type === 'error'`    |
-| Disabled state       | Native `disabled` attribute (correct semantics)          |
-| Busy state           | `aria-busy="true"` during async operations               |
-| Icon-only buttons    | `label` used as `aria-label` when no visible text        |
+| Requirement       | Implementation                                        |
+| ----------------- | ----------------------------------------------------- |
+| Label             | `label` prop → `<label htmlFor={id}>` or `aria-label` |
+| Hidden label      | `isLabelHidden` — visually hidden, still in DOM       |
+| Description       | `aria-describedby` linking to description element     |
+| Required state    | `aria-required="true"` when `isRequired`              |
+| Invalid state     | `aria-invalid="true"` when `status.type === 'error'`  |
+| Disabled state    | Native `disabled` attribute (correct semantics)       |
+| Busy state        | `aria-busy="true"` during async operations            |
+| Icon-only buttons | `label` used as `aria-label` when no visible text     |
 
 ### Disabled vs Busy
 
-| State        | Interaction    | Focus    | `disabled` attr | Visual                    |
-| ------------ | -------------- | -------- | --------------- | ------------------------- |
-| `isDisabled` | Blocked        | Lost     | ✓               | 50% opacity, `not-allowed` cursor |
-| `isBusy`     | Guarded in handler | Kept | ✗               | Reduced opacity, spinner (buttons), `aria-busy` |
+| State        | Interaction        | Focus | `disabled` attr | Visual                                          |
+| ------------ | ------------------ | ----- | --------------- | ----------------------------------------------- |
+| `isDisabled` | Blocked            | Lost  | ✓               | 50% opacity, `not-allowed` cursor               |
+| `isBusy`     | Guarded in handler | Kept  | ✗               | Reduced opacity, spinner (buttons), `aria-busy` |
 
 **Key rule:** Neither inputs nor buttons use native `disabled` for busy state. Busy is visual-only (`aria-busy`, `aria-disabled`, opacity). Buttons guard against re-triggering in the click handler. This prevents focus loss during async operations.
 
@@ -362,12 +367,12 @@ XDSButton.displayName = 'XDSButton';
 
 ### Ref Types
 
-| Component Type | Ref Target           |
-| -------------- | -------------------- |
-| Button         | `HTMLButtonElement`   |
-| Text input     | `HTMLInputElement`    |
-| Container      | `HTMLDivElement`      |
-| Link button    | `HTMLAnchorElement`   |
+| Component Type | Ref Target          |
+| -------------- | ------------------- |
+| Button         | `HTMLButtonElement` |
+| Text input     | `HTMLInputElement`  |
+| Container      | `HTMLDivElement`    |
+| Link button    | `HTMLAnchorElement` |
 
 ### Generic Components
 
@@ -434,7 +439,7 @@ interface Props {
 }
 
 // In JSX
-<button data-testid={testId} />
+<button data-testid={testId} />;
 ```
 
 Pass through to the primary interactive element (the button, input, or trigger — not a wrapper div).
@@ -465,7 +470,11 @@ Export the component, its props type, and any variant/status types:
 
 ```ts
 export {XDSButton} from './XDSButton';
-export type {XDSButtonProps, XDSButtonVariant, XDSButtonSize} from './XDSButton';
+export type {
+  XDSButtonProps,
+  XDSButtonVariant,
+  XDSButtonSize,
+} from './XDSButton';
 ```
 
 ### From Package `src/index.ts`
@@ -495,7 +504,7 @@ entry: [
 
 All exported props and components should have JSDoc comments. These serve both human developers and LLM code generation:
 
-```tsx
+````tsx
 /**
  * A text input component for collecting user input.
  *
@@ -505,7 +514,7 @@ All exported props and components should have JSDoc comments. These serve both h
  * ```
  */
 export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
-```
+````
 
 For props, describe what it does, not how:
 

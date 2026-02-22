@@ -70,6 +70,9 @@ const colorRaw = {
   '--color-pressed-overlay':
     'light-dark(oklch(0 0 0 / 10%), oklch(1 0 0 / 10%))',
   '--color-focus-outline': 'light-dark(oklch(0.708 0 0), oklch(0.556 0 0))',
+  '--color-focus-outline-error': 'light-dark(#E3193B, #F5394F)',
+  '--color-focus-outline-success': 'light-dark(#0D8626, #0D8626)',
+  '--color-focus-outline-warning': 'light-dark(#F2C00B, #E9AF08)',
   '--color-deemphasized': 'light-dark(oklch(0.97 0 0), oklch(0.269 0 0))',
 
   // Text
@@ -257,6 +260,13 @@ const elevationRaw = {
     '0 2px 4px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 15%)), 0 4px 12px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 20%))',
   '--elevation-menu':
     '0 2px 4px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 15%)), 0 4px 8px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 20%))',
+  '--elevation-input-hover': 'inset 0px 0px 0px 2px rgba(1, 113, 227, 0.3)',
+  '--elevation-input-hover-success':
+    'inset 0px 0px 0px 2px rgba(38, 167, 86, 0.3)',
+  '--elevation-input-hover-warning':
+    'inset 0px 0px 0px 2px rgba(226, 164, 0, 0.3)',
+  '--elevation-input-hover-error':
+    'inset 0px 0px 0px 2px rgba(227, 25, 59, 0.3)',
 } as const satisfies Record<ElevationVarName, string>;
 
 const transitionRaw = {

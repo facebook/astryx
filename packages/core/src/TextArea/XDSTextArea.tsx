@@ -24,6 +24,7 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
+  elevationVars,
   transitionVars,
   typographyVars,
   textSizeVars,
@@ -52,16 +53,17 @@ const styles = stylex.create({
     },
     borderRadius: radiusVars['--radius-element'],
     backgroundColor: colorVars['--color-surface'],
-    transitionProperty: 'border-color, outline',
+    transitionProperty: 'border-color, outline, box-shadow',
     transitionDuration: transitionVars['--transition-fast'],
+    boxShadow: {
+      default: 'none',
+      ':hover': elevationVars['--elevation-input-hover'],
+    },
     outline: {
       default: 'none',
-      ':focus-within': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-within': `1px solid ${colorVars['--color-focus-outline']}`,
     },
-    outlineOffset: {
-      default: '0',
-      ':focus-within': '1px',
-    },
+    outlineOffset: '0',
   },
   wrapperDisabled: {
     cursor: 'not-allowed',
@@ -112,6 +114,47 @@ const statusBorderStyles = stylex.create({
   },
   success: {
     borderColor: colorVars['--color-positive'],
+  },
+});
+
+const statusFocusStyles = stylex.create({
+  warning: {
+    outline: {
+      default: 'none',
+      ':focus-within': `1px solid ${colorVars['--color-focus-outline-warning']}`,
+    },
+  },
+  error: {
+    outline: {
+      default: 'none',
+      ':focus-within': `1px solid ${colorVars['--color-focus-outline-error']}`,
+    },
+  },
+  success: {
+    outline: {
+      default: 'none',
+      ':focus-within': `1px solid ${colorVars['--color-focus-outline-success']}`,
+    },
+  },
+});
+const statusHoverShadowStyles = stylex.create({
+  warning: {
+    boxShadow: {
+      default: 'none',
+      ':hover': elevationVars['--elevation-input-hover-warning'],
+    },
+  },
+  error: {
+    boxShadow: {
+      default: 'none',
+      ':hover': elevationVars['--elevation-input-hover-error'],
+    },
+  },
+  success: {
+    boxShadow: {
+      default: 'none',
+      ':hover': elevationVars['--elevation-input-hover-success'],
+    },
   },
 });
 
@@ -317,6 +360,8 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
             styles.wrapper,
             isDisabled && styles.wrapperDisabled,
             status && statusBorderStyles[status.type],
+            status && statusHoverShadowStyles[status.type],
+            status && statusFocusStyles[status.type],
             wrapperOverride,
           )}>
           {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}

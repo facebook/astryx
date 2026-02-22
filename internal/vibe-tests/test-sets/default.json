@@ -618,6 +618,19 @@
       ]
     },
     {
+      "id": "tc-9",
+      "category": "theme-customization",
+      "prompt": "Create two custom XDS themes that share the same spacing and typography tokens but have different color palettes. The first theme ('ocean') should use blue tones (#0077B6 accent) and the second ('sunset') should use warm orange tones (#E76F51 accent). Keep it DRY — don't duplicate the shared token values.",
+      "expectedComponents": [
+        "XDSTheme"
+      ],
+      "complexity": "complex",
+      "followUps": [
+        "Add a theme switcher that lets the user toggle between the two themes",
+        "Add a third theme that shares colors with ocean but uses different spacing"
+      ]
+    },
+    {
       "id": "fwc-4",
       "category": "feature-with-constraint",
       "prompt": "I need a confirmation dialog that asks \"Are you sure you want to delete this item?\" with cancel and delete buttons. The delete button should be destructive-styled.",

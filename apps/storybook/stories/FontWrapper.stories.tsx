@@ -183,7 +183,7 @@ export const MarkdownContent: Story = {
         </p>
         <pre>
           <code>{`import { XDSTheme, XDSButton } from '@xds/core';
-import { defaultTheme } from '@xds/theme/default';
+import { defaultTheme } from '@xds/theme-default';
 
 function App() {
   return (
