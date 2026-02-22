@@ -12,16 +12,13 @@ import type {UniversalComparison, UniversalDimension} from './types';
 import {ALL_DIMENSIONS, DIMENSION_LABELS, formatScore} from './utils';
 
 const styles = stylex.create({
-  section: {
-    padding: spacingVars['--spacing-4'],
-  },
   summaryGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: spacingVars['--spacing-4'],
+    gap: spacingVars['--spacing-3'],
   },
   winCard: {
-    padding: spacingVars['--spacing-4'],
+    padding: spacingVars['--spacing-3'],
     textAlign: 'center',
   },
   positive: {
@@ -59,7 +56,6 @@ interface CatRow extends Record<string, unknown> {
 export function CompareView({comparison}: CompareViewProps) {
   const {xds, baseline, winners} = comparison;
 
-  // Count wins
   let xdsWins = 0;
   let baselineWins = 0;
   let ties = 0;
@@ -70,7 +66,6 @@ export function CompareView({comparison}: CompareViewProps) {
     else ties++;
   }
 
-  // Dimension comparison rows
   const dimData: DimRow[] = ALL_DIMENSIONS.map(dim => ({
     id: dim,
     dimension: DIMENSION_LABELS[dim],
@@ -136,7 +131,6 @@ export function CompareView({comparison}: CompareViewProps) {
     },
   ];
 
-  // Category breakdown
   const allCategories = new Set([
     ...Object.keys(xds.byCategory),
     ...Object.keys(baseline.byCategory),
@@ -201,7 +195,7 @@ export function CompareView({comparison}: CompareViewProps) {
   ];
 
   return (
-    <XDSVStack gap="space6">
+    <XDSVStack gap="space4">
       <div {...stylex.props(styles.summaryGrid)}>
         <XDSCard>
           <div {...stylex.props(styles.winCard)}>

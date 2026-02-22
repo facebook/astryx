@@ -23,7 +23,12 @@
     "analyze": "tsx src/cli.ts analyze",
     "quality": "tsx src/quality.ts",
     "compare": "tsx src/compare.ts",
-    "generate-a11y-manifest": "tsx src/generate-a11y-manifest.ts"
+    "generate-a11y-manifest": "tsx src/generate-a11y-manifest.ts",
+    "universal": "tsx src/universal-aggregate.ts",
+    "universal:compare": "tsx src/universal-compare.ts",
+    "report:build": "tsx src/build-report.ts",
+    "report:dev": "tsx src/build-report.ts --dev",
+    "report:deploy": "tsx src/deploy-report.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0",

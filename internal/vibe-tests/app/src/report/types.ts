@@ -3,7 +3,9 @@ import type {
   UniversalAggregate,
   UniversalComparison,
   UniversalDimension,
-  ConcisenessMetrics,
+  EfficiencyMetrics,
+  MaintainabilityMetrics,
+  CostMetrics,
   DimensionScore,
   UniversalFinding,
 } from '../../../src/types';
@@ -13,7 +15,9 @@ export type {
   UniversalAggregate,
   UniversalComparison,
   UniversalDimension,
-  ConcisenessMetrics,
+  EfficiencyMetrics,
+  MaintainabilityMetrics,
+  CostMetrics,
   DimensionScore,
   UniversalFinding,
 };

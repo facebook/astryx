@@ -1,21 +1,19 @@
 import type {UniversalDimension, UniversalScore} from './types';
 
 export const ALL_DIMENSIONS: UniversalDimension[] = [
+  'correctness',
   'accessibility',
   'codeQuality',
-  'repetition',
-  'conciseness',
-  'themeAdherence',
-  'correctness',
+  'efficiency',
+  'maintainability',
 ];
 
 export const DIMENSION_LABELS: Record<UniversalDimension, string> = {
+  correctness: 'Correctness',
   accessibility: 'Accessibility',
   codeQuality: 'Code Quality',
-  repetition: 'DRYness',
-  conciseness: 'Conciseness',
-  themeAdherence: 'Theme Adherence',
-  correctness: 'Correctness',
+  efficiency: 'Efficiency',
+  maintainability: 'Maintainability',
 };
 
 export function scoreToStatusVariant(
@@ -37,10 +35,10 @@ export function scoreToProgressVariant(
 }
 
 export function computeOverall(score: UniversalScore): number {
-  const values = ALL_DIMENSIONS.map(d => score[d].score);
-  return values.reduce((sum, v) => sum + v, 0) / values.length;
+  const total = ALL_DIMENSIONS.reduce((sum, d) => sum + score[d].score, 0);
+  return Math.round(total / ALL_DIMENSIONS.length);
 }
 
 export function formatScore(n: number): string {
-  return n.toFixed(1);
+  return String(Math.round(n));
 }

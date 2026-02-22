@@ -1,4 +1,4 @@
-import {useState, useMemo} from 'react';
+import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSTheme} from '@xds/core/theme';
 import {XDSVStack} from '@xds/core/Stack';
@@ -12,7 +12,7 @@ import {XDSButton} from '@xds/core/Button';
 import {defaultTheme} from '@xds/theme/default';
 import {spacingVars, colorVars} from '@xds/core/theme/tokens.stylex';
 import type {ReportData} from './types';
-import {ALL_DIMENSIONS, DIMENSION_LABELS, formatScore} from './utils';
+import {ALL_DIMENSIONS, DIMENSION_LABELS} from './utils';
 import {ScoreCard} from './ScoreCard';
 import {DimensionTable} from './DimensionTable';
 import {CompareView} from './CompareView';
@@ -26,18 +26,18 @@ const styles = stylex.create({
   container: {
     maxWidth: '1200px',
     marginInline: 'auto',
-    padding: spacingVars['--spacing-6'],
+    padding: spacingVars['--spacing-5'],
   },
   header: {
-    paddingBlock: spacingVars['--spacing-4'],
+    paddingBlock: spacingVars['--spacing-3'],
   },
   scoreGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-    gap: spacingVars['--spacing-4'],
+    gap: spacingVars['--spacing-3'],
   },
   metricsCard: {
-    padding: spacingVars['--spacing-4'],
+    padding: spacingVars['--spacing-3'],
   },
   metricsGrid: {
     display: 'grid',
@@ -48,7 +48,7 @@ const styles = stylex.create({
     textAlign: 'center',
   },
   tabContent: {
-    paddingBlock: spacingVars['--spacing-6'],
+    paddingBlockStart: spacingVars['--spacing-3'],
   },
   emptyState: {
     padding: spacingVars['--spacing-8'],
@@ -56,68 +56,128 @@ const styles = stylex.create({
   },
 });
 
-function ConcisenessMetricsCard({
+function MetricValue({label, value}: {label: string; value: string}) {
+  return (
+    <div {...stylex.props(styles.metricItem)}>
+      <XDSVStack gap="space1">
+        <XDSText type="label">{label}</XDSText>
+        <XDSHeading level={3}>{value}</XDSHeading>
+      </XDSVStack>
+    </div>
+  );
+}
+
+function EfficiencyMetricsCard({
   byPrompt,
 }: {
   byPrompt: ReportData['universal']['byPrompt'];
 }) {
-  // Aggregate conciseness metrics across prompts
   const entries = Object.values(byPrompt);
   if (entries.length === 0) return null;
 
-  const totals = entries.reduce(
-    (acc, score) => {
-      const m = score.conciseness.metrics;
-      return {
-        totalLines: acc.totalLines + m.totalLines,
-        codeLines: acc.codeLines + m.codeLines,
-        stylingRatio: acc.stylingRatio + m.stylingRatio,
-        boilerplateRatio: acc.boilerplateRatio + m.boilerplateRatio,
-        count: acc.count + 1,
-      };
-    },
-    {
-      totalLines: 0,
-      codeLines: 0,
-      stylingRatio: 0,
-      boilerplateRatio: 0,
-      count: 0,
-    },
-  );
+  const metrics = entries.map(s => s.efficiency.metrics).filter(Boolean);
+  if (metrics.length === 0) return null;
 
-  const avgStyling = (totals.stylingRatio / totals.count) * 100;
-  const avgBoilerplate = (totals.boilerplateRatio / totals.count) * 100;
+  const avgDecisions =
+    metrics.reduce((s, m) => s + (m?.decisionsPerElement ?? 0), 0) /
+    metrics.length;
+  const avgLines =
+    metrics.reduce((s, m) => s + (m?.codeLines ?? 0), 0) / metrics.length;
+  const avgStylingRatio =
+    metrics.reduce((s, m) => s + (m?.stylingRatio ?? 0), 0) / metrics.length;
+  const avgBoilerplate =
+    metrics.reduce((s, m) => s + (m?.boilerplateRatio ?? 0), 0) /
+    metrics.length;
 
   return (
     <XDSCard>
       <div {...stylex.props(styles.metricsCard)}>
-        <XDSVStack gap="space3">
-          <XDSHeading level={4}>Conciseness Metrics</XDSHeading>
+        <XDSVStack gap="space2">
+          <XDSHeading level={4}>Efficiency Metrics</XDSHeading>
           <div {...stylex.props(styles.metricsGrid)}>
-            <div {...stylex.props(styles.metricItem)}>
-              <XDSVStack gap="space1">
-                <XDSText type="label">Total Lines</XDSText>
-                <XDSHeading level={3}>{totals.totalLines}</XDSHeading>
-              </XDSVStack>
-            </div>
-            <div {...stylex.props(styles.metricItem)}>
-              <XDSVStack gap="space1">
-                <XDSText type="label">Code Lines</XDSText>
-                <XDSHeading level={3}>{totals.codeLines}</XDSHeading>
-              </XDSVStack>
-            </div>
-            <div {...stylex.props(styles.metricItem)}>
-              <XDSVStack gap="space1">
-                <XDSText type="label">Styling Ratio</XDSText>
-                <XDSHeading level={3}>{avgStyling.toFixed(1)}%</XDSHeading>
-              </XDSVStack>
-            </div>
-            <div {...stylex.props(styles.metricItem)}>
-              <XDSVStack gap="space1">
-                <XDSText type="label">Boilerplate Ratio</XDSText>
-                <XDSHeading level={3}>{avgBoilerplate.toFixed(1)}%</XDSHeading>
-              </XDSVStack>
-            </div>
+            <MetricValue
+              label="Decisions / Element"
+              value={avgDecisions.toFixed(1)}
+            />
+            <MetricValue
+              label="Avg Code Lines"
+              value={String(Math.round(avgLines))}
+            />
+            <MetricValue
+              label="Styling Ratio"
+              value={`${(avgStylingRatio * 100).toFixed(1)}%`}
+            />
+            <MetricValue
+              label="Boilerplate"
+              value={`${(avgBoilerplate * 100).toFixed(1)}%`}
+            />
+          </div>
+        </XDSVStack>
+      </div>
+    </XDSCard>
+  );
+}
+
+function MaintainabilityMetricsCard({
+  byPrompt,
+}: {
+  byPrompt: ReportData['universal']['byPrompt'];
+}) {
+  const entries = Object.values(byPrompt);
+  if (entries.length === 0) return null;
+
+  const metrics = entries.map(s => s.maintainability.metrics).filter(Boolean);
+  if (metrics.length === 0) return null;
+
+  const avgSemantic =
+    metrics.reduce((s, m) => s + (m?.semanticRatio ?? 0), 0) / metrics.length;
+  const totalMagic = metrics.reduce((s, m) => s + (m?.magicValueCount ?? 0), 0);
+  const darkModeCount = metrics.filter(m => m?.darkModeSupport).length;
+
+  return (
+    <XDSCard>
+      <div {...stylex.props(styles.metricsCard)}>
+        <XDSVStack gap="space2">
+          <XDSHeading level={4}>Maintainability Metrics</XDSHeading>
+          <div {...stylex.props(styles.metricsGrid)}>
+            <MetricValue
+              label="Semantic Ratio"
+              value={`${(avgSemantic * 100).toFixed(0)}%`}
+            />
+            <MetricValue label="Magic Values" value={String(totalMagic)} />
+            <MetricValue
+              label="Dark Mode"
+              value={`${darkModeCount}/${entries.length}`}
+            />
+          </div>
+        </XDSVStack>
+      </div>
+    </XDSCard>
+  );
+}
+
+function CostMetricsCard({cost}: {cost: ReportData['universal']['cost']}) {
+  if (!cost || cost.totalDurationMs === 0) return null;
+
+  return (
+    <XDSCard>
+      <div {...stylex.props(styles.metricsCard)}>
+        <XDSVStack gap="space2">
+          <XDSHeading level={4}>Cost</XDSHeading>
+          <div {...stylex.props(styles.metricsGrid)}>
+            <MetricValue
+              label="Avg Duration"
+              value={`${(cost.avgDurationMs / 1000).toFixed(1)}s`}
+            />
+            <MetricValue
+              label="Avg Output"
+              value={`${cost.avgOutputLines} lines`}
+            />
+            <MetricValue label="Docs Read" value={String(cost.avgDocsRead)} />
+            <MetricValue
+              label="Est. Tokens"
+              value={`~${cost.estimatedInputTokens + cost.estimatedOutputTokens}`}
+            />
           </div>
         </XDSVStack>
       </div>
@@ -133,10 +193,6 @@ export function Report() {
 
   const hasScreenshots =
     data?.screenshots && Object.keys(data.screenshots).length > 0;
-
-  const toggleTheme = () => {
-    setThemeMode(m => (m === 'light' ? 'dark' : 'light'));
-  };
 
   if (!data) {
     return (
@@ -164,7 +220,7 @@ export function Report() {
     <XDSTheme theme={defaultTheme} mode={themeMode}>
       <div {...stylex.props(styles.root)}>
         <div {...stylex.props(styles.container)}>
-          <XDSVStack gap="space6">
+          <XDSVStack gap="space5">
             {/* Header */}
             <div {...stylex.props(styles.header)}>
               <XDSHStack gap="space4" hAlign="between" vAlign="center">
@@ -179,7 +235,11 @@ export function Report() {
                     </XDSText>
                   )}
                 </XDSVStack>
-                <XDSButton variant="secondary" onClick={toggleTheme}>
+                <XDSButton
+                  variant="secondary"
+                  onClick={() =>
+                    setThemeMode(m => (m === 'light' ? 'dark' : 'light'))
+                  }>
                   {themeMode === 'light' ? '🌙 Dark' : '☀️ Light'}
                 </XDSButton>
               </XDSHStack>
@@ -197,7 +257,7 @@ export function Report() {
             {/* Tab Content */}
             <div {...stylex.props(styles.tabContent)}>
               {activeTab === 'overview' && (
-                <XDSVStack gap="space6">
+                <XDSVStack gap="space4">
                   {/* Overall score */}
                   <ScoreCard
                     label="Overall Score"
@@ -222,20 +282,10 @@ export function Report() {
                     </div>
                   </XDSVStack>
 
-                  {/* Dark mode rate */}
-                  <XDSCard>
-                    <div {...stylex.props(styles.metricsCard)}>
-                      <XDSHStack gap="space4" hAlign="center">
-                        <XDSText type="label">Dark Mode Support Rate</XDSText>
-                        <XDSHeading level={3}>
-                          {(universal.darkModeRate * 100).toFixed(0)}%
-                        </XDSHeading>
-                      </XDSHStack>
-                    </div>
-                  </XDSCard>
-
-                  {/* Conciseness metrics */}
-                  <ConcisenessMetricsCard byPrompt={universal.byPrompt} />
+                  {/* Sub-metrics */}
+                  <EfficiencyMetricsCard byPrompt={universal.byPrompt} />
+                  <MaintainabilityMetricsCard byPrompt={universal.byPrompt} />
+                  <CostMetricsCard cost={universal.cost} />
 
                   {/* Comparison view */}
                   {comparison && (
@@ -250,25 +300,7 @@ export function Report() {
               )}
 
               {activeTab === 'byPrompt' && (
-                <DimensionTable
-                  byPrompt={universal.byPrompt}
-                  categories={
-                    Object.keys(universal.byCategory).length > 0
-                      ? Object.entries(universal.byPrompt).reduce(
-                          (acc, [promptId]) => {
-                            // Find category for this prompt by checking byCategory
-                            for (const [cat, dims] of Object.entries(
-                              universal.byCategory,
-                            )) {
-                              acc[promptId] = acc[promptId] ?? cat;
-                            }
-                            return acc;
-                          },
-                          {} as Record<string, string>,
-                        )
-                      : undefined
-                  }
-                />
+                <DimensionTable byPrompt={universal.byPrompt} />
               )}
 
               {activeTab === 'screenshots' && screenshots && (

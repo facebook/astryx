@@ -10,7 +10,7 @@ import {formatScore, scoreToProgressVariant} from './utils';
 
 const styles = stylex.create({
   card: {
-    padding: spacingVars['--spacing-4'],
+    padding: spacingVars['--spacing-3'],
   },
   deltaPositive: {
     color: colorVars['--color-positive'],

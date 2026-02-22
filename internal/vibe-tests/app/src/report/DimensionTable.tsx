@@ -21,12 +21,11 @@ interface RowData extends Record<string, unknown> {
   id: string;
   promptId: string;
   category: string;
+  correctness: number;
   accessibility: number;
   codeQuality: number;
-  repetition: number;
-  conciseness: number;
-  themeAdherence: number;
-  correctness: number;
+  efficiency: number;
+  maintainability: number;
   overall: number;
 }
 
@@ -48,12 +47,11 @@ export function DimensionTable({byPrompt, categories}: DimensionTableProps) {
     id: promptId,
     promptId,
     category: categories?.[promptId] ?? '—',
+    correctness: score.correctness.score,
     accessibility: score.accessibility.score,
     codeQuality: score.codeQuality.score,
-    repetition: score.repetition.score,
-    conciseness: score.conciseness.score,
-    themeAdherence: score.themeAdherence.score,
-    correctness: score.correctness.score,
+    efficiency: score.efficiency.score,
+    maintainability: score.maintainability.score,
     overall: computeOverall(score),
   }));
 
