@@ -51,13 +51,13 @@ Horizontal stack for arranging items left-to-right. Supports polymorphic renderi
 </XDSHStack>
 ```
 
-| Prop       | Type                                        | Default     | Description                 |
-| ---------- | ------------------------------------------- | ----------- | --------------------------- |
-| `gap`      | `SpacingScale`                              | —           | Spacing token between items |
-| `vAlign`   | `'start' \| 'center' \| 'end' \| 'stretch'` | `'stretch'` | Vertical alignment          |
-| `wrap`     | `'nowrap' \| 'wrap' \| 'wrap-reverse'`      | `'nowrap'`  | Flex wrap behavior          |
-| `element`  | `ElementType`                               | `'div'`     | HTML element to render      |
-| `children` | `ReactNode`                                 | —           | Stack content               |
+| Prop       | Type                                        | Default     | Description                                                              |
+| ---------- | ------------------------------------------- | ----------- | ------------------------------------------------------------------------ |
+| `gap`      | `SpacingScale`                              | —           | Spacing token: `space0` `space1` `space2` `space3` `space4` `space5` ... |
+| `vAlign`   | `'start' \| 'center' \| 'end' \| 'stretch'` | `'stretch'` | Vertical alignment                                                       |
+| `wrap`     | `'nowrap' \| 'wrap' \| 'wrap-reverse'`      | `'nowrap'`  | Flex wrap behavior                                                       |
+| `element`  | `ElementType`                               | `'div'`     | HTML element to render                                                   |
+| `children` | `ReactNode`                                 | —           | Stack content                                                            |
 
 ### XDSVStack
 
@@ -83,13 +83,13 @@ Vertical stack for arranging items top-to-bottom. Supports polymorphic rendering
 </XDSVStack>
 ```
 
-| Prop       | Type                                        | Default     | Description                 |
-| ---------- | ------------------------------------------- | ----------- | --------------------------- |
-| `gap`      | `SpacingScale`                              | —           | Spacing token between items |
-| `hAlign`   | `'start' \| 'center' \| 'end' \| 'stretch'` | `'stretch'` | Horizontal alignment        |
-| `wrap`     | `'nowrap' \| 'wrap' \| 'wrap-reverse'`      | `'nowrap'`  | Flex wrap behavior          |
-| `element`  | `ElementType`                               | `'div'`     | HTML element to render      |
-| `children` | `ReactNode`                                 | —           | Stack content               |
+| Prop       | Type                                        | Default     | Description                                                              |
+| ---------- | ------------------------------------------- | ----------- | ------------------------------------------------------------------------ |
+| `gap`      | `SpacingScale`                              | —           | Spacing token: `space0` `space1` `space2` `space3` `space4` `space5` ... |
+| `hAlign`   | `'start' \| 'center' \| 'end' \| 'stretch'` | `'stretch'` | Horizontal alignment                                                     |
+| `wrap`     | `'nowrap' \| 'wrap' \| 'wrap-reverse'`      | `'nowrap'`  | Flex wrap behavior                                                       |
+| `element`  | `ElementType`                               | `'div'`     | HTML element to render                                                   |
+| `children` | `ReactNode`                                 | —           | Stack content                                                            |
 
 ### XDSStackItem
 
@@ -140,12 +140,12 @@ import * as stylex from '@stylexjs/stylex';
 </div>;
 ```
 
-| Option       | Type                                        | Default    | Description                 |
-| ------------ | ------------------------------------------- | ---------- | --------------------------- |
-| `direction`  | `'horizontal' \| 'vertical'`                | Required   | Stack direction             |
-| `gap`        | `SpacingScale`                              | —          | Spacing token between items |
-| `crossAlign` | `'start' \| 'center' \| 'end' \| 'stretch'` | —          | Cross-axis alignment        |
-| `wrap`       | `'nowrap' \| 'wrap' \| 'wrap-reverse'`      | `'nowrap'` | Flex wrap behavior          |
+| Option       | Type                                        | Default    | Description                                                              |
+| ------------ | ------------------------------------------- | ---------- | ------------------------------------------------------------------------ |
+| `direction`  | `'horizontal' \| 'vertical'`                | Required   | Stack direction                                                          |
+| `gap`        | `SpacingScale`                              | —          | Spacing token: `space0` `space1` `space2` `space3` `space4` `space5` ... |
+| `crossAlign` | `'start' \| 'center' \| 'end' \| 'stretch'` | —          | Cross-axis alignment                                                     |
+| `wrap`       | `'nowrap' \| 'wrap' \| 'wrap-reverse'`      | `'nowrap'` | Flex wrap behavior                                                       |
 
 ### stackItem
 
