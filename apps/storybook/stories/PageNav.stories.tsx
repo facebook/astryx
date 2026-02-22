@@ -111,7 +111,12 @@ export const WithHeaderMenu: Story = {
         />
       }>
       <XDSPageNavSection title="Navigation">
-        <XDSPageNavItem label="Dashboard" icon={HomeIcon} isSelected />
+        <XDSPageNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          selectedIcon={HomeIconSolid}
+          isSelected
+        />
         <XDSPageNavItem label="Settings" icon={Cog6ToothIcon} />
       </XDSPageNavSection>
     </XDSPageNav>
@@ -141,7 +146,12 @@ export const SuiteHeader: Story = {
         />
       }>
       <XDSPageNavSection title="Main">
-        <XDSPageNavItem label="Dashboard" icon={HomeIcon} isSelected />
+        <XDSPageNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          selectedIcon={HomeIconSolid}
+          isSelected
+        />
         <XDSPageNavItem label="Projects" icon={FolderIcon} />
       </XDSPageNavSection>
     </XDSPageNav>
@@ -163,7 +173,12 @@ export const NestedItems: Story = {
         />
       }>
       <XDSPageNavSection title="Main">
-        <XDSPageNavItem label="Dashboard" icon={HomeIcon} isSelected />
+        <XDSPageNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          selectedIcon={HomeIconSolid}
+          isSelected
+        />
         <XDSPageNavItem label="Settings" icon={Cog6ToothIcon}>
           <XDSPageNavItem label="General" href="/settings/general" />
           <XDSPageNavItem label="Security" href="/settings/security" />
@@ -208,7 +223,12 @@ export const WithFooter: Story = {
         </>
       }>
       <XDSPageNavSection title="Main">
-        <XDSPageNavItem label="Dashboard" icon={HomeIcon} isSelected />
+        <XDSPageNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          selectedIcon={HomeIconSolid}
+          isSelected
+        />
         <XDSPageNavItem label="Projects" icon={FolderIcon} />
       </XDSPageNavSection>
     </XDSPageNav>
@@ -230,7 +250,12 @@ export const DisabledItem: Story = {
         />
       }>
       <XDSPageNavSection title="Main">
-        <XDSPageNavItem label="Dashboard" icon={HomeIcon} isSelected />
+        <XDSPageNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          selectedIcon={HomeIconSolid}
+          isSelected
+        />
         <XDSPageNavItem label="Projects" icon={FolderIcon} />
         <XDSPageNavItem
           label="Analytics (Coming Soon)"
@@ -257,7 +282,12 @@ export const HiddenSectionHeader: Story = {
         />
       }>
       <XDSPageNavSection title="Main navigation" isHeaderHidden>
-        <XDSPageNavItem label="Dashboard" icon={HomeIcon} isSelected />
+        <XDSPageNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          selectedIcon={HomeIconSolid}
+          isSelected
+        />
         <XDSPageNavItem label="Projects" icon={FolderIcon} />
         <XDSPageNavItem label="Analytics" icon={ChartBarIcon} />
       </XDSPageNavSection>

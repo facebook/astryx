@@ -63,6 +63,10 @@ const styles = stylex.create({
       backgroundColor: colorVars['--color-hover-overlay'],
     },
   },
+  interactiveInset: {
+    marginInline: spacingVars['--spacing-1'],
+    marginBlock: spacingVars['--spacing-1'],
+  },
   icon: {
     flexShrink: 0,
     display: 'flex',
@@ -269,7 +273,9 @@ export const XDSPageNavHeader = forwardRef<
     popover.toggle();
   }, [popover]);
 
-  // Combine refs
+  // Combine refs — always anchor popover to the full header element
+  // so the popover appears in the same position regardless of whether
+  // links are present (mixed mode) or not (whole-header trigger mode).
   const setRef = useCallback(
     (el: HTMLDivElement | null) => {
       (rootRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
@@ -278,11 +284,11 @@ export const XDSPageNavHeader = forwardRef<
       } else if (ref) {
         (ref as React.MutableRefObject<HTMLDivElement | null>).current = el;
       }
-      if (isWholeHeaderTrigger) {
+      if (menu) {
         popover.triggerRef(el);
       }
     },
-    [ref, popover, isWholeHeaderTrigger],
+    [ref, popover, menu],
   );
 
   // Render text content
@@ -339,7 +345,12 @@ export const XDSPageNavHeader = forwardRef<
         ref={ref as React.Ref<HTMLAnchorElement>}
         href={titleHref}
         data-testid={testId}
-        {...stylex.props(styles.root, styles.interactive, xstyle)}
+        {...stylex.props(
+          styles.root,
+          styles.interactive,
+          styles.interactiveInset,
+          xstyle,
+        )}
         {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}>
         {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
         {renderTextContent()}
@@ -358,7 +369,12 @@ export const XDSPageNavHeader = forwardRef<
           onClick={handleToggle}
           data-testid={testId}
           {...popover.triggerProps}
-          {...stylex.props(styles.root, styles.interactive, xstyle)}>
+          {...stylex.props(
+            styles.root,
+            styles.interactive,
+            styles.interactiveInset,
+            xstyle,
+          )}>
           {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
           {renderTextContent()}
           {chevronElement}
@@ -369,6 +385,8 @@ export const XDSPageNavHeader = forwardRef<
   }
 
   // Mixed mode: independent links + chevron trigger for menu
+  // Popover anchors to the full header div, not the chevron, so it
+  // appears in the same position as the no-links case.
   if (menu && hasAnyHref) {
     return (
       <>
@@ -387,7 +405,6 @@ export const XDSPageNavHeader = forwardRef<
           {renderTextContent()}
           {showChevron && (
             <button
-              ref={popover.triggerRef as React.Ref<HTMLButtonElement>}
               type="button"
               onClick={handleToggle}
               aria-label="Open menu"

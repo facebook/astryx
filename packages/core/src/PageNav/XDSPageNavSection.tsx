@@ -55,8 +55,6 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-semibold'],
     lineHeight: lineHeightVars['--leading-snug'],
     color: colorVars['--color-text-secondary'],
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.05em',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
