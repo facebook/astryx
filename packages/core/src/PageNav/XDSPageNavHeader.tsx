@@ -118,7 +118,14 @@ const styles = stylex.create({
     color: colorVars['--color-icon-secondary'],
   },
   popoverContent: {
-    minWidth: 'var(--page-nav-header-width)',
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-surface'],
+    boxShadow: `0 4px 12px ${colorVars['--color-shadow-elevation']}`,
+    overflow: 'hidden',
+  },
+  popover: {
+    minWidth: 'anchor-size(width)',
+    marginBlockStart: spacingVars['--spacing-1'],
   },
 });
 
@@ -378,7 +385,10 @@ export const XDSPageNavHeader = forwardRef<
           {renderTextContent()}
           {chevronElement}
         </button>
-        {popover.render(menu, {placement: 'below', alignment: 'start'})}
+        {popover.render(
+          <div {...stylex.props(styles.popoverContent)}>{menu}</div>,
+          {placement: 'below', alignment: 'start', xstyle: styles.popover},
+        )}
       </>
     );
   }
@@ -413,7 +423,10 @@ export const XDSPageNavHeader = forwardRef<
             </button>
           )}
         </div>
-        {popover.render(menu, {placement: 'below', alignment: 'start'})}
+        {popover.render(
+          <div {...stylex.props(styles.popoverContent)}>{menu}</div>,
+          {placement: 'below', alignment: 'start', xstyle: styles.popover},
+        )}
       </>
     );
   }
