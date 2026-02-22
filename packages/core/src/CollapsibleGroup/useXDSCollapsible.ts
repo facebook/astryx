@@ -1,7 +1,7 @@
 /**
- * @file useCollapsible.ts
+ * @file useXDSCollapsible.ts
  * @input Uses React useState/useContext, CollapsibleGroupContext
- * @output Exports useCollapsible hook, CollapsibleConfig, UseCollapsibleOptions, UseCollapsibleReturn types
+ * @output Exports useXDSCollapsible hook, CollapsibleConfig, UseXDSCollapsibleOptions, UseXDSCollapsibleReturn types
  * @position Reusable hook for collapsible behavior — used by XDSCard, XDSSection, etc.
  *
  * Encapsulates the full collapsible state machine:
@@ -13,6 +13,8 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/CollapsibleGroup/index.ts (exports)
  * - /packages/core/src/CollapsibleGroup/README.md
+ *
+ * NOTE: Public hooks use the `useXDS` prefix per XDS naming conventions.
  */
 
 import {useState, useContext} from 'react';
@@ -30,7 +32,7 @@ export type CollapsibleConfig = {
   onOpenChange?: (isOpen: boolean) => void;
 };
 
-export interface UseCollapsibleOptions {
+export interface UseXDSCollapsibleOptions {
   /**
    * Whether the component is collapsible.
    * - `true` — self-managed, starts open
@@ -45,7 +47,7 @@ export interface UseCollapsibleOptions {
   value?: string;
 }
 
-export interface UseCollapsibleReturn {
+export interface UseXDSCollapsibleReturn {
   /** Whether collapsible behavior is enabled. */
   isEnabled: boolean;
   /** Whether the content is currently open/expanded. */
@@ -64,15 +66,15 @@ export interface UseCollapsibleReturn {
  *
  * @example
  * ```tsx
- * const {isEnabled, isOpen, toggle} = useCollapsible({
+ * const {isEnabled, isOpen, toggle} = useXDSCollapsible({
  *   isCollapsible: true,
  *   value: 'section-1',
  * });
  * ```
  */
-export function useCollapsible(
-  options: UseCollapsibleOptions,
-): UseCollapsibleReturn {
+export function useXDSCollapsible(
+  options: UseXDSCollapsibleOptions,
+): UseXDSCollapsibleReturn {
   const {isCollapsible, value} = options;
 
   // Check for CollapsibleGroup context

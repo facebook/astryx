@@ -1,6 +1,6 @@
 /**
  * @file XDSCard.tsx
- * @input Uses container utility, StyleX, ThemeContext, useCollapsible hook, useXDSIcon
+ * @input Uses container utility, StyleX, ThemeContext, useXDSCollapsible hook, useXDSIcon
  * @output Exports XDSCard component, XDSCardProps
  * @position Core card container component with optional collapsible behavior
  *
@@ -26,8 +26,8 @@ import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {container} from '../Layout/container.stylex';
 import type {SizeValue} from '../utils/types';
-import {useCollapsible} from '../CollapsibleGroup/useCollapsible';
-import type {CollapsibleConfig} from '../CollapsibleGroup/useCollapsible';
+import {useXDSCollapsible} from '../CollapsibleGroup/useXDSCollapsible';
+import type {CollapsibleConfig} from '../CollapsibleGroup/useXDSCollapsible';
 import {useXDSIcon} from '../Icon/IconRegistry';
 
 // =============================================================================
@@ -148,7 +148,7 @@ const dynamicStyles = stylex.create({
 });
 
 export type {SizeValue} from '../utils/types';
-export type {CollapsibleConfig} from '../CollapsibleGroup/useCollapsible';
+export type {CollapsibleConfig} from '../CollapsibleGroup/useXDSCollapsible';
 
 export interface XDSCardProps {
   /**
@@ -291,7 +291,7 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
       isEnabled: isCollapsibleEnabled,
       isOpen,
       toggle: handleToggle,
-    } = useCollapsible({isCollapsible, value});
+    } = useXDSCollapsible({isCollapsible, value});
 
     // Icon from registry
     const chevronIcon = useXDSIcon('chevronDown');

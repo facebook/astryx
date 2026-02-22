@@ -9,4 +9,4 @@
 
 export {XDSCard} from './XDSCard';
 export type {XDSCardProps, SizeValue} from './XDSCard';
-export type {CollapsibleConfig} from '../CollapsibleGroup/useCollapsible';
+export type {CollapsibleConfig} from '../CollapsibleGroup/useXDSCollapsible';

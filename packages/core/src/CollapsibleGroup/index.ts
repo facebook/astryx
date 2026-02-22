@@ -1,7 +1,7 @@
 /**
  * @file index.ts
- * @input Imports XDSCollapsibleGroup component and useCollapsible hook
- * @output Exports XDSCollapsibleGroup component, useCollapsible hook, and types
+ * @input Imports XDSCollapsibleGroup component and useXDSCollapsible hook
+ * @output Exports XDSCollapsibleGroup component, useXDSCollapsible hook, and types
  * @position Entry point for @xds/core/CollapsibleGroup module
  *
  * SYNC: When modified, update /packages/core/src/CollapsibleGroup/README.md
@@ -10,9 +10,9 @@
 export {XDSCollapsibleGroup} from './XDSCollapsibleGroup';
 export type {XDSCollapsibleGroupProps} from './XDSCollapsibleGroup';
 
-export {useCollapsible} from './useCollapsible';
+export {useXDSCollapsible} from './useXDSCollapsible';
 export type {
   CollapsibleConfig,
-  UseCollapsibleOptions,
-  UseCollapsibleReturn,
-} from './useCollapsible';
+  UseXDSCollapsibleOptions,
+  UseXDSCollapsibleReturn,
+} from './useXDSCollapsible';

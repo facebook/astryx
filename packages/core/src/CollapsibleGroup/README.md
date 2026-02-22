@@ -67,10 +67,11 @@ const [open, setOpen] = useState("section1");
 
 ## Files
 
-| File                             | Role      | Purpose                     |
-| -------------------------------- | --------- | --------------------------- |
-| `index.ts`                       | Entry     | Exports component and types |
-| `XDSCollapsibleGroup.tsx`        | Component | Collapsible group provider  |
-| `XDSCollapsibleGroupContext.tsx` | Context   | React context definition    |
-| `XDSCollapsibleGroup.test.tsx`   | Tests     | Unit tests                  |
-| `README.md`                      | Docs      | This documentation          |
+| File                             | Role      | Purpose                        |
+| -------------------------------- | --------- | ------------------------------ |
+| `index.ts`                       | Entry     | Exports component, hook, types |
+| `XDSCollapsibleGroup.tsx`        | Component | Collapsible group provider     |
+| `XDSCollapsibleGroupContext.tsx` | Context   | React context definition       |
+| `useXDSCollapsible.ts`           | Hook      | Collapsible state management   |
+| `XDSCollapsibleGroup.test.tsx`   | Tests     | Unit tests                     |
+| `README.md`                      | Docs      | This documentation             |
