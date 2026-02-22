@@ -370,14 +370,25 @@ export const StatusWithIcon: Story = {
   render: () => (
     <div {...stylex.props(styles.storyWrapper)}>
       <h4 {...stylex.props(styles.heading)}>
-        Icon inside status dot (hidden at tiny sizes)
+        Icon inside status dot (hidden at tiny sizes where there isn't room)
       </h4>
 
-      <h4 {...stylex.props(styles.heading)}>Verified Badge</h4>
+      <h4 {...stylex.props(styles.heading)}>Named Sizes</h4>
       <div {...stylex.props(styles.row)}>
         <XDSAvatar
           name="TY"
           size="tiny"
+          status={
+            <XDSAvatarStatusDot
+              variant="positive"
+              label="Verified"
+              icon={<CheckIcon />}
+            />
+          }
+        />
+        <XDSAvatar
+          name="XS"
+          size="xsmall"
           status={
             <XDSAvatarStatusDot
               variant="positive"
@@ -423,7 +434,83 @@ export const StatusWithIcon: Story = {
         />
       </div>
 
-      <h4 {...stylex.props(styles.heading)}>Different Variants with Icons</h4>
+      <h4 {...stylex.props(styles.heading)}>Numeric Sizes with Images</h4>
+      <div {...stylex.props(styles.row)}>
+        <XDSAvatar
+          src="https://i.pravatar.cc/150?img=30"
+          name="U1"
+          size={20}
+          status={
+            <XDSAvatarStatusDot
+              variant="positive"
+              label="Verified"
+              icon={<CheckIcon />}
+            />
+          }
+        />
+        <XDSAvatar
+          src="https://i.pravatar.cc/150?img=31"
+          name="U2"
+          size={32}
+          status={
+            <XDSAvatarStatusDot
+              variant="positive"
+              label="Verified"
+              icon={<CheckIcon />}
+            />
+          }
+        />
+        <XDSAvatar
+          src="https://i.pravatar.cc/150?img=32"
+          name="U3"
+          size={48}
+          status={
+            <XDSAvatarStatusDot
+              variant="positive"
+              label="Verified"
+              icon={<CheckIcon />}
+            />
+          }
+        />
+        <XDSAvatar
+          src="https://i.pravatar.cc/150?img=33"
+          name="U4"
+          size={72}
+          status={
+            <XDSAvatarStatusDot
+              variant="positive"
+              label="Verified"
+              icon={<CheckIcon />}
+            />
+          }
+        />
+        <XDSAvatar
+          src="https://i.pravatar.cc/150?img=34"
+          name="U5"
+          size={96}
+          status={
+            <XDSAvatarStatusDot
+              variant="positive"
+              label="Verified"
+              icon={<CheckIcon />}
+            />
+          }
+        />
+        <XDSAvatar
+          src="https://i.pravatar.cc/150?img=35"
+          name="U6"
+          size={128}
+          status={
+            <XDSAvatarStatusDot
+              variant="positive"
+              label="Verified"
+              icon={<CheckIcon />}
+            />
+          }
+        />
+      </div>
+
+      <h4 {...stylex.props(styles.heading)}>All Variants with Icons</h4>
       <div {...stylex.props(styles.row)}>
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=52"
