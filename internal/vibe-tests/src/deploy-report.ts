@@ -3,16 +3,12 @@
  * @file Deploy report to GitHub Pages
  *
  * Builds a static report HTML and pushes it to the gh-pages branch
- * under reports/{iteration-hash}/ (or a custom slug).
- *
- * The gh-pages branch is shared with Storybook deploys (at /{hash}/).
- * Reports live under /reports/ to avoid collisions. The CI deploy
- * workflow uses `keep_files: true`, so our reports persist.
+ * under reports/{iteration-id}/. The path is always the iteration hash —
+ * no overrides, no custom slugs.
  *
  * Usage:
  *   tsx src/deploy-report.ts --iteration <id>
  *   tsx src/deploy-report.ts --iteration <id> --baseline <id>
- *   tsx src/deploy-report.ts --iteration <id> --slug custom-name
  *   tsx src/deploy-report.ts --iteration <id> --dry-run
  */
 
@@ -23,18 +19,14 @@ import {execSync} from 'node:child_process';
 const REPO_ROOT = path.resolve(import.meta.dirname, '../../..');
 const VIBE_DIR = path.resolve(import.meta.dirname, '..');
 
-interface DeployArgs {
+function parseArgs(): {
   iteration: string;
   baseline?: string;
-  slug?: string;
   dryRun: boolean;
-}
-
-function parseArgs(): DeployArgs {
+} {
   const args = process.argv.slice(2);
   let iteration = '';
   let baseline: string | undefined;
-  let slug: string | undefined;
   let dryRun = false;
 
   for (let i = 0; i < args.length; i++) {
@@ -42,8 +34,6 @@ function parseArgs(): DeployArgs {
       iteration = args[++i];
     } else if (args[i] === '--baseline' && args[i + 1]) {
       baseline = args[++i];
-    } else if (args[i] === '--slug' && args[i + 1]) {
-      slug = args[++i];
     } else if (args[i] === '--dry-run') {
       dryRun = true;
     }
@@ -51,12 +41,12 @@ function parseArgs(): DeployArgs {
 
   if (!iteration) {
     console.error(
-      'Usage: tsx src/deploy-report.ts --iteration <id> [--baseline <id>] [--slug <name>] [--dry-run]',
+      'Usage: tsx src/deploy-report.ts --iteration <id> [--baseline <id>] [--dry-run]',
     );
     process.exit(1);
   }
 
-  return {iteration, baseline, slug, dryRun};
+  return {iteration, baseline, dryRun};
 }
 
 function run(cmd: string, opts?: {cwd?: string; silent?: boolean}): string {
@@ -70,11 +60,9 @@ function runSilent(cmd: string, opts?: {cwd?: string}): string {
 }
 
 async function main() {
-  const {iteration, baseline, slug, dryRun} = parseArgs();
+  const {iteration, baseline, dryRun} = parseArgs();
 
-  // Default slug is the iteration hash
-  const deploySlug = slug ?? iteration;
-  const deployPath = `reports/${deploySlug}`;
+  const deployPath = `reports/${iteration}`;
 
   console.log(`\n📦 Deploy Report Pipeline`);
   console.log(`   Iteration: ${iteration}`);
@@ -90,7 +78,6 @@ async function main() {
 
   run(`npx tsx src/build-report.ts ${buildArgs.join(' ')}`, {cwd: VIBE_DIR});
 
-  // Verify the report was built
   const reportHtml = path.join(VIBE_DIR, 'results', iteration, 'report.html');
   if (!fs.existsSync(reportHtml)) {
     console.error('❌ Report build failed — no report.html found');
@@ -138,8 +125,8 @@ async function main() {
     }
 
     const commitMsg = baseline
-      ? `report: ${deploySlug} (${iteration} vs ${baseline})`
-      : `report: ${deploySlug} (${iteration})`;
+      ? `report: ${iteration} (vs ${baseline})`
+      : `report: ${iteration}`;
 
     run(`git commit -m "${commitMsg}"`, {cwd: tmpDir});
     run('git push origin gh-pages', {cwd: tmpDir});

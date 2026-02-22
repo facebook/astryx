@@ -157,7 +157,7 @@ function MaintainabilityMetricsCard({
 }
 
 function CostMetricsCard({cost}: {cost: ReportData['universal']['cost']}) {
-  if (!cost || cost.totalDurationMs === 0) return null;
+  if (!cost) return null;
 
   return (
     <XDSCard>
@@ -165,18 +165,24 @@ function CostMetricsCard({cost}: {cost: ReportData['universal']['cost']}) {
         <XDSVStack gap="space2">
           <XDSHeading level={4}>Cost</XDSHeading>
           <div {...stylex.props(styles.metricsGrid)}>
-            <MetricValue
-              label="Avg Duration"
-              value={`${(cost.avgDurationMs / 1000).toFixed(1)}s`}
-            />
+            {cost.avgDurationMs > 0 && (
+              <MetricValue
+                label="Avg Duration"
+                value={`${(cost.avgDurationMs / 1000).toFixed(1)}s`}
+              />
+            )}
             <MetricValue
               label="Avg Output"
               value={`${cost.avgOutputLines} lines`}
             />
             <MetricValue label="Docs Read" value={String(cost.avgDocsRead)} />
             <MetricValue
-              label="Est. Tokens"
-              value={`~${cost.estimatedInputTokens + cost.estimatedOutputTokens}`}
+              label="Input Tokens"
+              value={`~${cost.estimatedInputTokens.toLocaleString()}`}
+            />
+            <MetricValue
+              label="Output Tokens"
+              value={`~${cost.estimatedOutputTokens.toLocaleString()}`}
             />
           </div>
         </XDSVStack>

@@ -8,7 +8,11 @@ import {XDSBadge} from '@xds/core/Badge';
 import {XDSTable} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table/types';
 import {spacingVars, colorVars} from '@xds/core/theme/tokens.stylex';
-import type {UniversalComparison, UniversalDimension, CostMetrics} from './types';
+import type {
+  UniversalComparison,
+  UniversalDimension,
+  CostMetrics,
+} from './types';
 import {ALL_DIMENSIONS, DIMENSION_LABELS, formatScore} from './utils';
 
 const styles = stylex.create({
@@ -94,18 +98,25 @@ function CostComparisonSection({
   xdsCost: CostMetrics;
   baselineCost: CostMetrics;
 }) {
+  const hasDuration =
+    xdsCost.avgDurationMs > 0 || baselineCost.avgDurationMs > 0;
+
   const costData: CostRow[] = [
-    {
-      id: 'duration',
-      metric: 'Avg Duration',
-      xds: `${(xdsCost.avgDurationMs / 1000).toFixed(1)}s`,
-      baseline: `${(baselineCost.avgDurationMs / 1000).toFixed(1)}s`,
-      winner: costWinner(
-        xdsCost.avgDurationMs,
-        baselineCost.avgDurationMs,
-        true,
-      ),
-    },
+    ...(hasDuration
+      ? [
+          {
+            id: 'duration',
+            metric: 'Avg Duration',
+            xds: `${(xdsCost.avgDurationMs / 1000).toFixed(1)}s`,
+            baseline: `${(baselineCost.avgDurationMs / 1000).toFixed(1)}s`,
+            winner: costWinner(
+              xdsCost.avgDurationMs,
+              baselineCost.avgDurationMs,
+              true,
+            ),
+          },
+        ]
+      : []),
     {
       id: 'input-tokens',
       metric: 'Input Tokens',
