@@ -26,6 +26,7 @@ import {
 } from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+import {XDSAvatarSizeContext} from './XDSAvatarSizeContext';
 
 /**
  * The offset ratio for positioning elements on a circle's edge at 45°.
@@ -287,56 +288,59 @@ export const XDSAvatar = forwardRef<HTMLDivElement, XDSAvatarProps>(
     const fallbackOverride = themeContext?.theme.components?.avatar?.fallback;
 
     return (
-      <div
-        ref={ref}
-        role="img"
-        aria-label={accessibleName}
-        data-testid={testId}
-        {...stylex.props(styles.wrapper, rootOverride)}
-        {...props}>
-        <div {...stylex.props(styles.content, dynamicStyles.size(numericSize))}>
-          {showImage && (
-            <img
-              src={src}
-              alt={accessibleName}
-              onError={() => setImageError(true)}
-              {...stylex.props(styles.image)}
-            />
-          )}
-          {showFallbackImage && (
-            <img
-              src={fallbackSrc}
-              alt={accessibleName}
-              onError={() => setFallbackError(true)}
-              {...stylex.props(styles.image)}
-            />
-          )}
-          {showInitials && (
+      <XDSAvatarSizeContext.Provider value={numericSize}>
+        <div
+          ref={ref}
+          role="img"
+          aria-label={accessibleName}
+          data-testid={testId}
+          {...stylex.props(styles.wrapper, rootOverride)}
+          {...props}>
+          <div
+            {...stylex.props(styles.content, dynamicStyles.size(numericSize))}>
+            {showImage && (
+              <img
+                src={src}
+                alt={accessibleName}
+                onError={() => setImageError(true)}
+                {...stylex.props(styles.image)}
+              />
+            )}
+            {showFallbackImage && (
+              <img
+                src={fallbackSrc}
+                alt={accessibleName}
+                onError={() => setFallbackError(true)}
+                {...stylex.props(styles.image)}
+              />
+            )}
+            {showInitials && (
+              <div
+                {...stylex.props(
+                  styles.fallback,
+                  dynamicStyles.fontSize(numericSize),
+                  fallbackOverride,
+                )}>
+                {getInitials(name)}
+              </div>
+            )}
+            {showIcon && (
+              <div {...stylex.props(styles.fallback, fallbackOverride)}>
+                <DefaultIcon size={numericSize} />
+              </div>
+            )}
+          </div>
+          {status && (
             <div
               {...stylex.props(
-                styles.fallback,
-                dynamicStyles.fontSize(numericSize),
-                fallbackOverride,
+                styles.status,
+                dynamicStyles.statusPosition(numericSize),
               )}>
-              {getInitials(name)}
-            </div>
-          )}
-          {showIcon && (
-            <div {...stylex.props(styles.fallback, fallbackOverride)}>
-              <DefaultIcon size={numericSize} />
+              {status}
             </div>
           )}
         </div>
-        {status && (
-          <div
-            {...stylex.props(
-              styles.status,
-              dynamicStyles.statusPosition(numericSize),
-            )}>
-            {status}
-          </div>
-        )}
-      </div>
+      </XDSAvatarSizeContext.Provider>
     );
   },
 );
