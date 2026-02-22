@@ -22,6 +22,9 @@ import type {
   MaintainabilityMetrics,
 } from './types.js';
 
+import * as _fs from 'node:fs';
+import * as _path from 'node:path';
+
 function clamp(n: number): number {
   return Math.max(0, Math.min(100, Math.round(n)));
 }
@@ -36,25 +39,21 @@ function clamp(n: number): number {
  */
 function discoverXDSComponents(): Set<string> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const fs = require('node:fs');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const path = require('node:path');
     const candidates = [
-      path.resolve(import.meta.dirname, '../../../packages/core/src'),
-      path.resolve(import.meta.dirname, '../../../../packages/core/src'),
+      _path.resolve(import.meta.dirname, '../../../packages/core/src'),
+      _path.resolve(import.meta.dirname, '../../../../packages/core/src'),
     ];
     for (const srcDir of candidates) {
-      if (fs.existsSync(srcDir)) {
+      if (_fs.existsSync(srcDir)) {
         const components = new Set<string>();
         function scan(dir: string) {
-          for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+          for (const entry of _fs.readdirSync(dir, {withFileTypes: true})) {
             if (
               entry.isDirectory() &&
               !entry.name.startsWith('_') &&
               entry.name !== 'node_modules'
             ) {
-              scan(path.join(dir, entry.name));
+              scan(_path.join(dir, entry.name));
             } else if (
               /^XDS[A-Z]\w+\.tsx$/.test(entry.name) &&
               !entry.name.includes('.test.')
