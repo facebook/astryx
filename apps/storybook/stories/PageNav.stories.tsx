@@ -7,7 +7,10 @@ import {
 } from '@xds/core/PageNav';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
+import {XDSDivider} from '@xds/core/Divider';
 import {XDSIcon} from '@xds/core/Icon';
+import {XDSText} from '@xds/core/Text';
+import {XDSVStack} from '@xds/core/Stack';
 import {
   HomeIcon,
   FolderIcon,
@@ -18,6 +21,10 @@ import {
   QuestionMarkCircleIcon,
   DocumentTextIcon,
   CubeIcon,
+  BuildingOfficeIcon,
+  UserIcon,
+  PlusIcon,
+  ArrowRightStartOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
@@ -104,8 +111,39 @@ export const WithHeaderMenu: Story = {
           title="Product Name"
           subtitle="Business Account"
           menu={
-            <div style={{padding: 16}}>
-              <p>Account switcher menu</p>
+            <div style={{padding: 12}}>
+              <XDSVStack gap="space2">
+                <XDSText type="supporting" color="secondary">
+                  Switch account
+                </XDSText>
+                <XDSButton
+                  label="Personal Account"
+                  icon={<XDSIcon icon={UserIcon} size="sm" />}
+                  variant="ghost"
+                  size="sm"
+                />
+                <XDSButton
+                  label="Acme Corp"
+                  icon={<XDSIcon icon={BuildingOfficeIcon} size="sm" />}
+                  variant="ghost"
+                  size="sm"
+                />
+                <XDSDivider />
+                <XDSButton
+                  label="Add account"
+                  icon={<XDSIcon icon={PlusIcon} size="sm" />}
+                  variant="ghost"
+                  size="sm"
+                />
+                <XDSButton
+                  label="Sign out"
+                  icon={
+                    <XDSIcon icon={ArrowRightStartOnRectangleIcon} size="sm" />
+                  }
+                  variant="ghost"
+                  size="sm"
+                />
+              </XDSVStack>
             </div>
           }
         />
@@ -139,8 +177,30 @@ export const SuiteHeader: Story = {
           title="Product Name"
           titleHref="/product"
           menu={
-            <div style={{padding: 16}}>
-              <p>Product switcher</p>
+            <div style={{padding: 12}}>
+              <XDSVStack gap="space1">
+                <XDSText type="supporting" color="secondary">
+                  Switch product
+                </XDSText>
+                <XDSButton
+                  label="Analytics"
+                  icon={<XDSIcon icon={ChartBarIcon} size="sm" />}
+                  variant="ghost"
+                  size="sm"
+                />
+                <XDSButton
+                  label="Commerce"
+                  icon={<XDSIcon icon={CubeIcon} size="sm" />}
+                  variant="ghost"
+                  size="sm"
+                />
+                <XDSButton
+                  label="Team Hub"
+                  icon={<XDSIcon icon={UserGroupIcon} size="sm" />}
+                  variant="ghost"
+                  size="sm"
+                />
+              </XDSVStack>
             </div>
           }
         />

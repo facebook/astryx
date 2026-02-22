@@ -42,6 +42,8 @@ const styles = stylex.create({
     overflow: 'hidden',
   },
   stickyTop: {
+    display: 'flex',
+    flexDirection: 'column',
     flexShrink: 0,
     position: 'sticky',
     top: 0,
