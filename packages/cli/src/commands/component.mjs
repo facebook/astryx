@@ -21,6 +21,7 @@ const DIR_TO_CATEGORY = {
   Center: 'Layout',
   Grid: 'Layout',
   Layout: 'Layout',
+  Stack: 'Layout',
   // Display
   Avatar: 'Display',
   Badge: 'Display',
@@ -427,17 +428,48 @@ export function extractBrief(content, componentName) {
   }
 
   // 2. Extract props from the Props table
+  //    Supports two README layouts:
+  //    a) Single-component: `## Props` section with a table
+  //    b) Multi-component: `### XDSComponentName` subsection with a table
   const props = [];
   let inPropsTable = false;
   let headerParsed = false;
+  let inComponentSection = false;
+
+  // For multi-component READMEs, find the section for this specific component
+  const componentSectionRe = new RegExp(
+    `^###\\s+${displayName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`
+  );
 
   for (const line of lines) {
+    // Detect `## Props` (single-component layout)
     if (/^#{2,3}\s+Props/.test(line)) {
       inPropsTable = true;
       headerParsed = false;
       continue;
     }
-    if (inPropsTable && /^#{2,3}\s+/.test(line) && !/Props/.test(line)) {
+
+    // Detect `### XDSComponentName` (multi-component layout)
+    if (componentSectionRe.test(line)) {
+      inComponentSection = true;
+      continue;
+    }
+
+    // Exit component section when hitting another ### heading
+    if (inComponentSection && /^###\s+/.test(line) && !componentSectionRe.test(line)) {
+      inComponentSection = false;
+      if (inPropsTable) inPropsTable = false;
+      continue;
+    }
+
+    // Within a component section, a pipe-delimited table is a props table
+    if (inComponentSection && !inPropsTable && /^\|\s*`?Prop/.test(line)) {
+      inPropsTable = true;
+      headerParsed = false;
+      // Don't continue — let the header row logic below handle it
+    }
+
+    if (inPropsTable && /^#{2,3}\s+/.test(line) && !/Props/.test(line) && !inComponentSection) {
       inPropsTable = false;
       continue;
     }
@@ -449,7 +481,7 @@ export function extractBrief(content, componentName) {
       continue;
     }
     // Skip the header row itself
-    if (!headerParsed && /^\|\s*Prop/.test(line)) continue;
+    if (!headerParsed && /^\|\s*`?Prop/.test(line)) continue;
 
     // Parse prop row: | `name` | `type` | `default` | description |
     const cells = line
@@ -491,30 +523,47 @@ export function extractBrief(content, componentName) {
   }
 
   // 4. Extract first code example
+  //    For multi-component READMEs, prefer examples from the component's section
   let example = '';
+  let fallbackExample = '';
   let inCode = false;
+  let inCompSection = false;
+
   for (const line of lines) {
+    // Track whether we're in this component's subsection
+    if (componentSectionRe.test(line)) {
+      inCompSection = true;
+      continue;
+    }
+    if (inCompSection && /^###\s+/.test(line) && !componentSectionRe.test(line)) {
+      inCompSection = false;
+    }
+
     if (line.startsWith('```tsx') || line.startsWith('```jsx')) {
       inCode = true;
       continue;
     }
     if (inCode && line.startsWith('```')) {
-      break;
+      inCode = false;
+      continue;
     }
     if (inCode) {
       const trimmed = line.trim();
       // Take the first substantial JSX line
       if (trimmed.startsWith('<XDS') || trimmed.startsWith('<')) {
-        // Collect multi-line JSX
-        example = trimmed;
-        if (!trimmed.includes('/>') && !trimmed.includes('</')) {
-          // Multi-line — just take the opening tag
+        if (inCompSection && !example) {
+          // Prefer example from this component's section
           example = trimmed;
+        } else if (!fallbackExample) {
+          // Fallback: first example from anywhere in the README
+          fallbackExample = trimmed;
         }
-        break;
+        if (example) break; // Found one in the right section, done
       }
     }
   }
+  // Use component-section example if found, otherwise fallback
+  if (!example) example = fallbackExample;
 
   // 5. Build output
   const output = [];
