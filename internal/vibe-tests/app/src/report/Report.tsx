@@ -15,6 +15,8 @@ import type {ReportData} from './types';
 import {ALL_DIMENSIONS, DIMENSION_LABELS} from './utils';
 import {ScoreCard} from './ScoreCard';
 import {DimensionTable} from './DimensionTable';
+import {PromptDetailCard} from './PromptDetailCard';
+import {CodeModal} from './CodeModal';
 import {CompareView} from './CompareView';
 import {ScreenshotGallery} from './ScreenshotGallery';
 
@@ -194,6 +196,10 @@ function CostMetricsCard({cost}: {cost: ReportData['universal']['cost']}) {
 export function Report() {
   const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light');
   const [activeTab, setActiveTab] = useState('overview');
+  const [codeModal, setCodeModal] = useState<{
+    promptId: string;
+    target: 'xds' | 'baseline';
+  } | null>(null);
 
   const data: ReportData | undefined = window.__REPORT_DATA__;
 
@@ -306,13 +312,44 @@ export function Report() {
               )}
 
               {activeTab === 'byPrompt' && (
-                <DimensionTable
-                  byPrompt={universal.byPrompt}
-                  sourceCode={data.sourceCode}
-                  baselineSourceCode={data.baselineSourceCode}
-                  baselineByPrompt={comparison?.baseline.byPrompt}
-                />
+                <XDSVStack gap="space4">
+                  <DimensionTable byPrompt={universal.byPrompt} />
+
+                  {/* Per-prompt detail cards */}
+                  <XDSVStack gap="space3">
+                    <XDSHeading level={3}>Prompt Details</XDSHeading>
+                    {Object.keys(universal.byPrompt).map(promptId => (
+                      <PromptDetailCard
+                        key={promptId}
+                        promptId={promptId}
+                        xdsScore={universal.byPrompt[promptId]}
+                        baselineScore={comparison?.baseline.byPrompt[promptId]}
+                        hasXdsCode={!!data.sourceCode?.[promptId]}
+                        hasBaselineCode={!!data.baselineSourceCode?.[promptId]}
+                        onViewCode={target => setCodeModal({promptId, target})}
+                      />
+                    ))}
+                  </XDSVStack>
+                </XDSVStack>
               )}
+
+              {/* Code modal */}
+              {codeModal &&
+                (() => {
+                  const code =
+                    codeModal.target === 'xds'
+                      ? data.sourceCode?.[codeModal.promptId]
+                      : data.baselineSourceCode?.[codeModal.promptId];
+                  return code ? (
+                    <CodeModal
+                      isShown
+                      onHide={() => setCodeModal(null)}
+                      promptId={codeModal.promptId}
+                      target={codeModal.target}
+                      code={code}
+                    />
+                  ) : null;
+                })()}
 
               {activeTab === 'screenshots' && screenshots && (
                 <ScreenshotGallery screenshots={screenshots} />
