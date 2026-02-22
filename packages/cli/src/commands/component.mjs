@@ -19,6 +19,7 @@ const DIR_TO_CATEGORY = {
   // Layout
   AspectRatio: 'Layout',
   Center: 'Layout',
+  CollapsibleGroup: 'Layout',
   Grid: 'Layout',
   Layout: 'Layout',
   Stack: 'Layout',
@@ -76,7 +77,8 @@ export function discoverComponents(coreDir) {
         results.push(...collectXDSFiles(path.join(dirPath, entry.name)));
       } else if (
         /^XDS[A-Z]\w+\.tsx$/.test(entry.name) &&
-        !entry.name.includes('.test.')
+        !entry.name.includes('.test.') &&
+        !entry.name.includes('Context.')
       ) {
         results.push(entry.name);
       }

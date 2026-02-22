@@ -1,45 +1,45 @@
-# /packages/core/src/Accordion
+# /packages/core/src/CollapsibleGroup
 
-Coordination context for collapsible components. Renders no wrapper DOM.
+Groups collapsible components with coordinated open/close behavior. Renders no wrapper DOM.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
 ## Overview
 
-XDSAccordion coordinates multiple collapsible components (XDSCard, XDSSection, etc.) via React context. It renders only `{children}` — no wrapper DOM element. Any component that supports `isCollapsible` and `value` props can participate.
+XDSCollapsibleGroup coordinates multiple collapsible components (XDSCard, XDSSection, etc.) via React context. It renders only `{children}` — no wrapper DOM element. Any component that supports `isCollapsible` and `value` props can participate.
 
 In "single" mode (default), only one item can be open at a time. In "multiple" mode, any number of items can be open simultaneously.
 
 ## Import
 
 ```tsx
-import {XDSAccordion} from '@xds/core/Accordion';
+import {XDSCollapsibleGroup} from '@xds/core/CollapsibleGroup';
 ```
 
 ## Usage
 
 ```tsx
 // Single mode — only one open at a time
-<XDSAccordion type="single" defaultValue="general">
+<XDSCollapsibleGroup type="single" defaultValue="general">
   <XDSCard title="General Settings" value="general" isCollapsible>
     <GeneralContent />
   </XDSCard>
   <XDSCard title="Advanced Settings" value="advanced" isCollapsible>
     <AdvancedContent />
   </XDSCard>
-</XDSAccordion>
+</XDSCollapsibleGroup>
 
 // Multiple mode — any number open
-<XDSAccordion type="multiple" defaultValue={["s1", "s2"]}>
+<XDSCollapsibleGroup type="multiple" defaultValue={["s1", "s2"]}>
   <XDSCard title="Section 1" value="s1" isCollapsible>...</XDSCard>
   <XDSCard title="Section 2" value="s2" isCollapsible>...</XDSCard>
-</XDSAccordion>
+</XDSCollapsibleGroup>
 
 // Controlled
 const [open, setOpen] = useState("section1");
-<XDSAccordion type="single" value={open} onValueChange={setOpen}>
+<XDSCollapsibleGroup type="single" value={open} onValueChange={setOpen}>
   ...
-</XDSAccordion>
+</XDSCollapsibleGroup>
 ```
 
 ## Props
@@ -54,17 +54,17 @@ const [open, setOpen] = useState("section1");
 
 ## How It Works
 
-1. `XDSAccordion` provides `AccordionContext` with `isOpen(value)` and `toggle(value)` methods
+1. `XDSCollapsibleGroup` provides `CollapsibleGroupContext` with `isOpen(value)` and `toggle(value)` methods
 2. Each collapsible component (e.g. XDSCard) checks for this context
-3. If context exists and the component has a `value` prop, it defers to the accordion
+3. If context exists and the component has a `value` prop, it defers to the group
 4. If no context, the component manages its own collapse state
 
 ## Files
 
-| File                      | Role      | Purpose                     |
-| ------------------------- | --------- | --------------------------- |
-| `index.ts`                | Entry     | Exports component and types |
-| `XDSAccordion.tsx`        | Component | Accordion context provider  |
-| `XDSAccordionContext.tsx` | Context   | React context definition    |
-| `XDSAccordion.test.tsx`   | Tests     | Unit tests                  |
-| `README.md`               | Docs      | This documentation          |
+| File                             | Role      | Purpose                     |
+| -------------------------------- | --------- | --------------------------- |
+| `index.ts`                       | Entry     | Exports component and types |
+| `XDSCollapsibleGroup.tsx`        | Component | Collapsible group provider  |
+| `XDSCollapsibleGroupContext.tsx` | Context   | React context definition    |
+| `XDSCollapsibleGroup.test.tsx`   | Tests     | Unit tests                  |
+| `README.md`                      | Docs      | This documentation          |

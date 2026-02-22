@@ -8,7 +8,7 @@ Card container component with elevation and themed styling.
 
 XDSCard is a top-level container for elevated content. It provides card-specific appearance (background, shadow, border-radius) and sets CSS variables for child layout components.
 
-Supports collapsible behavior via the `isCollapsible` prop. When set, the card's `title` becomes a click trigger and the `children` content collapses/expands. Works standalone or coordinated by XDSAccordion.
+Supports collapsible behavior via the `isCollapsible` prop. When set, the card's `title` becomes a click trigger and the `children` content collapses/expands. Works standalone or coordinated by XDSCollapsibleGroup.
 
 ## Import
 
@@ -43,11 +43,11 @@ import {XDSCard} from '@xds/core/Card';
   <p>Hidden by default</p>
 </XDSCard>
 
-// Inside an accordion
-<XDSAccordion type="single" defaultValue="general">
+// Inside a collapsible group
+<XDSCollapsibleGroup type="single" defaultValue="general">
   <XDSCard title="General" value="general" isCollapsible>...</XDSCard>
   <XDSCard title="Advanced" value="advanced" isCollapsible>...</XDSCard>
-</XDSAccordion>
+</XDSCollapsibleGroup>
 ```
 
 ## Props
@@ -62,7 +62,7 @@ import {XDSCard} from '@xds/core/Card';
 | `children`      | `ReactNode`                    | —       | Content (collapses when isCollapsible is set)     |
 | `isFullBleed`   | `boolean`                      | `false` | Removes internal padding for edge-to-edge content |
 | `isCollapsible` | `boolean \| CollapsibleConfig` | —       | Makes the card collapsible (requires title)       |
-| `value`         | `string`                       | —       | Identifier for accordion coordination             |
+| `value`         | `string`                       | —       | Identifier for collapsible group coordination     |
 
 ## Types
 

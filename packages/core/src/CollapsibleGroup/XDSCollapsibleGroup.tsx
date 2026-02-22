@@ -1,29 +1,30 @@
 /**
- * @file XDSAccordion.tsx
- * @input Uses React useState, useCallback, AccordionContext
- * @output Exports XDSAccordion component and XDSAccordionProps
- * @position Core accordion coordination provider — renders no wrapper DOM
+ * @file XDSCollapsibleGroup.tsx
+ * @input Uses React useState, useCallback, CollapsibleGroupContext
+ * @output Exports XDSCollapsibleGroup component and XDSCollapsibleGroupProps
+ * @position Core collapsible group coordination provider — renders no wrapper DOM
  *
- * XDSAccordion coordinates multiple collapsible components (XDSCard, etc.)
- * via context. It renders only `{children}` — no wrapper DOM element.
+ * XDSCollapsibleGroup groups collapsible components (XDSCard, etc.) with
+ * coordinated open/close behavior. It renders only `{children}` — no wrapper
+ * DOM element.
  *
  * In "single" mode (default), only one item can be open at a time.
  * In "multiple" mode, any number of items can be open simultaneously.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Accordion/XDSAccordionContext.tsx (context type)
- * - /packages/core/src/Accordion/README.md
- * - /packages/core/src/Accordion/index.ts (exports)
- * - /apps/storybook/stories/Accordion.stories.tsx
+ * - /packages/core/src/CollapsibleGroup/XDSCollapsibleGroupContext.tsx (context type)
+ * - /packages/core/src/CollapsibleGroup/README.md
+ * - /packages/core/src/CollapsibleGroup/index.ts (exports)
+ * - /apps/storybook/stories/CollapsibleGroup.stories.tsx
  */
 
 'use client';
 
 import {useCallback, useMemo, useState, type ReactNode} from 'react';
-import {AccordionContext} from './XDSAccordionContext';
-import type {AccordionContextValue} from './XDSAccordionContext';
+import {CollapsibleGroupContext} from './XDSCollapsibleGroupContext';
+import type {CollapsibleGroupContextValue} from './XDSCollapsibleGroupContext';
 
-export interface XDSAccordionProps {
+export interface XDSCollapsibleGroupProps {
   /**
    * Whether only one item can be open at a time, or multiple.
    * @default "single"
@@ -38,7 +39,7 @@ export interface XDSAccordionProps {
 
   /**
    * Controlled open item(s).
-   * When provided, the accordion is fully controlled externally.
+   * When provided, the group is fully controlled externally.
    */
   value?: string | string[];
 
@@ -55,14 +56,14 @@ export interface XDSAccordionProps {
    *
    * @example
    * ```tsx
-   * <XDSAccordion type="single" defaultValue="general">
+   * <XDSCollapsibleGroup type="single" defaultValue="general">
    *   <XDSCard title="General" value="general" isCollapsible>
    *     <p>General settings content</p>
    *   </XDSCard>
    *   <XDSCard title="Advanced" value="advanced" isCollapsible>
    *     <p>Advanced settings content</p>
    *   </XDSCard>
-   * </XDSAccordion>
+   * </XDSCollapsibleGroup>
    * ```
    */
   children: ReactNode;
@@ -74,33 +75,34 @@ function normalizeToArray(value: string | string[] | undefined): string[] {
 }
 
 /**
- * Coordination context for collapsible components. Renders no wrapper DOM.
+ * Groups collapsible components with coordinated open/close behavior.
+ * Renders no wrapper DOM.
  *
  * In "single" mode (default), opening one item closes the others.
  * In "multiple" mode, items toggle independently.
  *
  * @compositionHint Wrap collapsible components (XDSCard, etc.) that have
- * `value` and `isCollapsible` props. The accordion coordinates their state.
+ * `value` and `isCollapsible` props. The group coordinates their state.
  *
  * @example
  * ```tsx
- * <XDSAccordion type="single" defaultValue="faq1">
+ * <XDSCollapsibleGroup type="single" defaultValue="faq1">
  *   <XDSCard title="What is XDS?" value="faq1" isCollapsible>
  *     XDS is a design system for building internal tools.
  *   </XDSCard>
  *   <XDSCard title="How do I start?" value="faq2" isCollapsible>
  *     Install the package and import components.
  *   </XDSCard>
- * </XDSAccordion>
+ * </XDSCollapsibleGroup>
  * ```
  */
-export function XDSAccordion({
+export function XDSCollapsibleGroup({
   type = 'single',
   defaultValue,
   value: controlledValue,
   onValueChange,
   children,
-}: XDSAccordionProps) {
+}: XDSCollapsibleGroupProps) {
   const isControlled = controlledValue !== undefined;
   const [internalValue, setInternalValue] = useState<string[]>(() =>
     normalizeToArray(defaultValue),
@@ -145,16 +147,16 @@ export function XDSAccordion({
     [type, openValues, isControlled, onValueChange],
   );
 
-  const contextValue = useMemo<AccordionContextValue>(
+  const contextValue = useMemo<CollapsibleGroupContextValue>(
     () => ({isOpen, toggle}),
     [isOpen, toggle],
   );
 
   return (
-    <AccordionContext.Provider value={contextValue}>
+    <CollapsibleGroupContext.Provider value={contextValue}>
       {children}
-    </AccordionContext.Provider>
+    </CollapsibleGroupContext.Provider>
   );
 }
 
-XDSAccordion.displayName = 'XDSAccordion';
+XDSCollapsibleGroup.displayName = 'XDSCollapsibleGroup';

@@ -1,7 +1,7 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSAccordion} from '@xds/core/Accordion';
+import {XDSCollapsibleGroup} from '@xds/core/CollapsibleGroup';
 import {XDSCard} from '@xds/core/Card';
 import {XDSVStack} from '@xds/core/Layout';
 import {
@@ -28,9 +28,9 @@ const styles = stylex.create({
   },
 });
 
-const meta: Meta<typeof XDSAccordion> = {
-  title: 'Components/XDSAccordion',
-  component: XDSAccordion,
+const meta: Meta<typeof XDSCollapsibleGroup> = {
+  title: 'Components/XDSCollapsibleGroup',
+  component: XDSCollapsibleGroup,
   tags: ['autodocs'],
   decorators: [
     Story => (
@@ -42,12 +42,12 @@ const meta: Meta<typeof XDSAccordion> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSAccordion>;
+type Story = StoryObj<typeof XDSCollapsibleGroup>;
 
 export const SingleMode: Story = {
   name: 'Single Mode (default)',
   render: () => (
-    <XDSAccordion type="single" defaultValue="general">
+    <XDSCollapsibleGroup type="single" defaultValue="general">
       <XDSVStack gap="sm">
         <XDSCard title="General Settings" value="general" isCollapsible>
           <p {...stylex.props(styles.text)}>
@@ -69,14 +69,14 @@ export const SingleMode: Story = {
           </p>
         </XDSCard>
       </XDSVStack>
-    </XDSAccordion>
+    </XDSCollapsibleGroup>
   ),
 };
 
 export const MultipleMode: Story = {
   name: 'Multiple Mode',
   render: () => (
-    <XDSAccordion type="multiple" defaultValue={['faq1', 'faq3']}>
+    <XDSCollapsibleGroup type="multiple" defaultValue={['faq1', 'faq3']}>
       <XDSVStack gap="sm">
         <XDSCard title="What is XDS?" value="faq1" isCollapsible>
           <p {...stylex.props(styles.text)}>
@@ -94,7 +94,7 @@ export const MultipleMode: Story = {
           </p>
         </XDSCard>
       </XDSVStack>
-    </XDSAccordion>
+    </XDSCollapsibleGroup>
   ),
 };
 
@@ -107,7 +107,7 @@ export const Controlled: Story = {
         <p {...stylex.props(styles.textSecondary)}>
           Currently open: <strong>{String(open) || '(none)'}</strong>
         </p>
-        <XDSAccordion type="single" value={open} onValueChange={setOpen}>
+        <XDSCollapsibleGroup type="single" value={open} onValueChange={setOpen}>
           <XDSVStack gap="sm">
             <XDSCard title="Section 1" value="section1" isCollapsible>
               <p {...stylex.props(styles.text)}>Content for section 1.</p>
@@ -119,7 +119,7 @@ export const Controlled: Story = {
               <p {...stylex.props(styles.text)}>Content for section 3.</p>
             </XDSCard>
           </XDSVStack>
-        </XDSAccordion>
+        </XDSCollapsibleGroup>
       </div>
     );
   },
@@ -146,7 +146,7 @@ export const StandaloneCollapsibleCard: Story = {
 export const FAQ: Story = {
   name: 'FAQ Page',
   render: () => (
-    <XDSAccordion type="single">
+    <XDSCollapsibleGroup type="single">
       <XDSVStack gap="sm">
         <XDSCard title="How do I reset my password?" value="q1" isCollapsible>
           <p {...stylex.props(styles.text)}>
@@ -175,6 +175,6 @@ export const FAQ: Story = {
           </p>
         </XDSCard>
       </XDSVStack>
-    </XDSAccordion>
+    </XDSCollapsibleGroup>
   ),
 };

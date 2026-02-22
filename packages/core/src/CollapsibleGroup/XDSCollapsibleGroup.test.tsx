@@ -1,20 +1,20 @@
 /**
- * @file XDSAccordion.test.tsx
- * @input Uses vitest, @testing-library/react, XDSCard, XDSAccordion
- * @output Unit tests for XDSAccordion and XDSCard isCollapsible behavior
- * @position Testing; validates accordion coordination and card collapsible behavior
+ * @file XDSCollapsibleGroup.test.tsx
+ * @input Uses vitest, @testing-library/react, XDSCard, XDSCollapsibleGroup
+ * @output Unit tests for XDSCollapsibleGroup and XDSCard isCollapsible behavior
+ * @position Testing; validates collapsible group coordination and card collapsible behavior
  *
- * SYNC: When XDSAccordion.tsx or XDSCard.tsx changes, update tests to match
+ * SYNC: When XDSCollapsibleGroup.tsx or XDSCard.tsx changes, update tests to match
  */
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSCard} from '../Card/XDSCard';
-import {XDSAccordion} from './XDSAccordion';
+import {XDSCollapsibleGroup} from './XDSCollapsibleGroup';
 
 // =============================================================================
-// XDSCard — isCollapsible behavior (standalone, no accordion)
+// XDSCard — isCollapsible behavior (standalone, no collapsible group)
 // =============================================================================
 
 describe('XDSCard isCollapsible', () => {
@@ -138,20 +138,20 @@ describe('XDSCard isCollapsible', () => {
 });
 
 // =============================================================================
-// XDSAccordion — coordination context
+// XDSCollapsibleGroup — coordination context
 // =============================================================================
 
-describe('XDSAccordion', () => {
+describe('XDSCollapsibleGroup', () => {
   it('renders children without wrapper DOM', () => {
     render(
-      <XDSAccordion>
+      <XDSCollapsibleGroup>
         <XDSCard title="Item 1" value="1" isCollapsible>
           <p>Content 1</p>
         </XDSCard>
-      </XDSAccordion>,
+      </XDSCollapsibleGroup>,
     );
 
-    // AccordionContext.Provider doesn't render wrapper DOM
+    // CollapsibleGroupContext.Provider doesn't render wrapper DOM
     expect(screen.getByText('Content 1')).toBeInTheDocument();
   });
 
@@ -159,7 +159,7 @@ describe('XDSAccordion', () => {
     it('only allows one card open at a time', async () => {
       const user = userEvent.setup();
       render(
-        <XDSAccordion type="single" defaultValue="a">
+        <XDSCollapsibleGroup type="single" defaultValue="a">
           <XDSCard title="Card A" value="a" isCollapsible>
             <p>Content A</p>
           </XDSCard>
@@ -169,7 +169,7 @@ describe('XDSAccordion', () => {
           <XDSCard title="Card C" value="c" isCollapsible>
             <p>Content C</p>
           </XDSCard>
-        </XDSAccordion>,
+        </XDSCollapsibleGroup>,
       );
 
       // A starts open
@@ -193,11 +193,11 @@ describe('XDSAccordion', () => {
     it('closes the open item when clicking it again', async () => {
       const user = userEvent.setup();
       render(
-        <XDSAccordion type="single" defaultValue="a">
+        <XDSCollapsibleGroup type="single" defaultValue="a">
           <XDSCard title="Card A" value="a" isCollapsible>
             <p>Content A</p>
           </XDSCard>
-        </XDSAccordion>,
+        </XDSCollapsibleGroup>,
       );
 
       expect(screen.getByText('Content A')).toBeVisible();
@@ -210,14 +210,14 @@ describe('XDSAccordion', () => {
     it('allows multiple cards to be open simultaneously', async () => {
       const user = userEvent.setup();
       render(
-        <XDSAccordion type="multiple" defaultValue={['a']}>
+        <XDSCollapsibleGroup type="multiple" defaultValue={['a']}>
           <XDSCard title="Card A" value="a" isCollapsible>
             <p>Content A</p>
           </XDSCard>
           <XDSCard title="Card B" value="b" isCollapsible>
             <p>Content B</p>
           </XDSCard>
-        </XDSAccordion>,
+        </XDSCollapsibleGroup>,
       );
 
       expect(screen.getByText('Content A')).toBeVisible();
@@ -241,14 +241,17 @@ describe('XDSAccordion', () => {
       const user = userEvent.setup();
 
       const {rerender} = render(
-        <XDSAccordion type="single" value="a" onValueChange={onValueChange}>
+        <XDSCollapsibleGroup
+          type="single"
+          value="a"
+          onValueChange={onValueChange}>
           <XDSCard title="Card A" value="a" isCollapsible>
             <p>Content A</p>
           </XDSCard>
           <XDSCard title="Card B" value="b" isCollapsible>
             <p>Content B</p>
           </XDSCard>
-        </XDSAccordion>,
+        </XDSCollapsibleGroup>,
       );
 
       expect(screen.getByText('Content A')).toBeVisible();
@@ -260,14 +263,17 @@ describe('XDSAccordion', () => {
 
       // Rerender with new value
       rerender(
-        <XDSAccordion type="single" value="b" onValueChange={onValueChange}>
+        <XDSCollapsibleGroup
+          type="single"
+          value="b"
+          onValueChange={onValueChange}>
           <XDSCard title="Card A" value="a" isCollapsible>
             <p>Content A</p>
           </XDSCard>
           <XDSCard title="Card B" value="b" isCollapsible>
             <p>Content B</p>
           </XDSCard>
-        </XDSAccordion>,
+        </XDSCollapsibleGroup>,
       );
       expect(screen.getByText('Content A')).not.toBeVisible();
       expect(screen.getByText('Content B')).toBeVisible();
@@ -277,14 +283,14 @@ describe('XDSAccordion', () => {
   describe('defaultValue', () => {
     it('opens the specified item by default', () => {
       render(
-        <XDSAccordion defaultValue="b">
+        <XDSCollapsibleGroup defaultValue="b">
           <XDSCard title="Card A" value="a" isCollapsible>
             <p>Content A</p>
           </XDSCard>
           <XDSCard title="Card B" value="b" isCollapsible>
             <p>Content B</p>
           </XDSCard>
-        </XDSAccordion>,
+        </XDSCollapsibleGroup>,
       );
 
       expect(screen.getByText('Content A')).not.toBeVisible();
@@ -293,7 +299,7 @@ describe('XDSAccordion', () => {
 
     it('opens multiple items by default in multiple mode', () => {
       render(
-        <XDSAccordion type="multiple" defaultValue={['a', 'c']}>
+        <XDSCollapsibleGroup type="multiple" defaultValue={['a', 'c']}>
           <XDSCard title="Card A" value="a" isCollapsible>
             <p>Content A</p>
           </XDSCard>
@@ -303,7 +309,7 @@ describe('XDSAccordion', () => {
           <XDSCard title="Card C" value="c" isCollapsible>
             <p>Content C</p>
           </XDSCard>
-        </XDSAccordion>,
+        </XDSCollapsibleGroup>,
       );
 
       expect(screen.getByText('Content A')).toBeVisible();
@@ -312,27 +318,27 @@ describe('XDSAccordion', () => {
     });
   });
 
-  describe('card inside vs outside accordion', () => {
-    it('card inside accordion defers to accordion context', async () => {
+  describe('card inside vs outside collapsible group', () => {
+    it('card inside group defers to group context', async () => {
       const user = userEvent.setup();
       render(
-        <XDSAccordion type="single" defaultValue="a">
+        <XDSCollapsibleGroup type="single" defaultValue="a">
           <XDSCard title="Card A" value="a" isCollapsible>
             <p>Content A</p>
           </XDSCard>
           <XDSCard title="Card B" value="b" isCollapsible>
             <p>Content B</p>
           </XDSCard>
-        </XDSAccordion>,
+        </XDSCollapsibleGroup>,
       );
 
-      // Opening B should close A (accordion coordinates)
+      // Opening B should close A (group coordinates)
       await user.click(screen.getByRole('button', {name: /Card B/}));
       expect(screen.getByText('Content A')).not.toBeVisible();
       expect(screen.getByText('Content B')).toBeVisible();
     });
 
-    it('card outside accordion manages its own state', async () => {
+    it('card outside group manages its own state', async () => {
       const user = userEvent.setup();
       render(
         <>
@@ -356,14 +362,14 @@ describe('XDSAccordion', () => {
   describe('accessibility', () => {
     it('sets aria-expanded on triggers', () => {
       render(
-        <XDSAccordion type="single" defaultValue="a">
+        <XDSCollapsibleGroup type="single" defaultValue="a">
           <XDSCard title="Card A" value="a" isCollapsible>
             <p>Content A</p>
           </XDSCard>
           <XDSCard title="Card B" value="b" isCollapsible>
             <p>Content B</p>
           </XDSCard>
-        </XDSAccordion>,
+        </XDSCollapsibleGroup>,
       );
 
       expect(screen.getByRole('button', {name: /Card A/})).toHaveAttribute(
@@ -379,11 +385,11 @@ describe('XDSAccordion', () => {
     it('supports keyboard activation', async () => {
       const user = userEvent.setup();
       render(
-        <XDSAccordion type="single">
+        <XDSCollapsibleGroup type="single">
           <XDSCard title="Card A" value="a" isCollapsible>
             <p>Content A</p>
           </XDSCard>
-        </XDSAccordion>,
+        </XDSCollapsibleGroup>,
       );
 
       const trigger = screen.getByRole('button', {name: /Card A/});

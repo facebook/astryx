@@ -1,6 +1,6 @@
 /**
  * @file XDSCard.tsx
- * @input Uses container utility, StyleX, ThemeContext, AccordionContext
+ * @input Uses container utility, StyleX, ThemeContext, CollapsibleGroupContext
  * @output Exports XDSCard component, XDSCardProps, CollapsibleConfig
  * @position Core card container component with optional collapsible behavior
  *
@@ -32,7 +32,7 @@ import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {container} from '../Layout/container.stylex';
 import type {SizeValue} from '../utils/types';
-import {AccordionContext} from '../Accordion/XDSAccordionContext';
+import {CollapsibleGroupContext} from '../CollapsibleGroup/XDSCollapsibleGroupContext';
 
 // =============================================================================
 // Module Augmentation - Register XDSCard's themeable properties
@@ -209,7 +209,7 @@ export interface XDSCardProps {
    * - `{ initialIsOpen: false }` — self-managed, starts collapsed
    * - `{ isOpen, onOpenChange }` — controlled externally
    *
-   * When inside an XDSAccordion with a `value` prop, defers to the accordion.
+   * When inside an XDSCollapsibleGroup with a `value` prop, defers to the group.
    *
    * @example
    * ```tsx
@@ -221,8 +221,8 @@ export interface XDSCardProps {
   isCollapsible?: boolean | CollapsibleConfig;
 
   /**
-   * Unique identifier for this card within an XDSAccordion.
-   * Required when using the card inside an accordion for coordination.
+   * Unique identifier for this card within an XDSCollapsibleGroup.
+   * Required when using the card inside a collapsible group for coordination.
    */
   value?: string;
 
@@ -262,12 +262,12 @@ function ChevronIcon() {
  *
  * Supports collapsible behavior via the `isCollapsible` prop. When set,
  * the card's `title` becomes a click trigger and the `children` content
- * collapses/expands. Works standalone or coordinated by XDSAccordion.
+ * collapses/expands. Works standalone or coordinated by XDSCollapsibleGroup.
  *
  * @compositionHint Use as a top-level container for elevated content.
  * Pair with XDSLayout for structured header/content/footer layouts.
  * For collapsible cards, set `title` and `isCollapsible`.
- * For accordion behavior, wrap multiple cards in XDSAccordion.
+ * For coordinated collapsible behavior, wrap multiple cards in XDSCollapsibleGroup.
  *
  * @example
  * ```tsx
@@ -285,15 +285,15 @@ function ChevronIcon() {
  *   <p>This content can be collapsed</p>
  * </XDSCard>
  *
- * // Accordion
- * <XDSAccordion type="single" defaultValue="general">
+ * // Collapsible group (accordion behavior)
+ * <XDSCollapsibleGroup type="single" defaultValue="general">
  *   <XDSCard title="General" value="general" isCollapsible>
  *     <GeneralSettings />
  *   </XDSCard>
  *   <XDSCard title="Advanced" value="advanced" isCollapsible>
  *     <AdvancedSettings />
  *   </XDSCard>
- * </XDSAccordion>
+ * </XDSCollapsibleGroup>
  * ```
  */
 export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
@@ -317,9 +317,9 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
     const containerOverride = themeContext?.theme.components?.card?.container;
     const contentOverride = themeContext?.theme.components?.card?.content;
 
-    // Accordion context
-    const accordion = useContext(AccordionContext);
-    const isControlledByAccordion = accordion != null && value != null;
+    // Collapsible group context
+    const collapsibleGroup = useContext(CollapsibleGroupContext);
+    const isControlledByGroup = collapsibleGroup != null && value != null;
 
     // Parse collapsible config
     const collapsibleConfig: CollapsibleConfig | null =
@@ -329,7 +329,7 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
 
     // Internal state for uncontrolled collapsible
     const [internalIsOpen, setInternalIsOpen] = useState(() => {
-      if (isControlledByAccordion) return true; // accordion manages this
+      if (isControlledByGroup) return true; // group manages this
       if (collapsibleConfig?.isOpen !== undefined)
         return collapsibleConfig.isOpen;
       return collapsibleConfig?.initialIsOpen ?? true;
@@ -337,8 +337,8 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
 
     // Determine open state
     let isOpen: boolean;
-    if (isControlledByAccordion) {
-      isOpen = accordion.isOpen(value!);
+    if (isControlledByGroup) {
+      isOpen = collapsibleGroup.isOpen(value!);
     } else if (collapsibleConfig?.isOpen !== undefined) {
       isOpen = collapsibleConfig.isOpen;
     } else {
@@ -347,14 +347,20 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
 
     // Toggle handler
     const handleToggle = useCallback(() => {
-      if (isControlledByAccordion) {
-        accordion!.toggle(value!);
+      if (isControlledByGroup) {
+        collapsibleGroup!.toggle(value!);
       } else if (collapsibleConfig?.onOpenChange) {
         collapsibleConfig.onOpenChange(!isOpen);
       } else {
         setInternalIsOpen(prev => !prev);
       }
-    }, [isControlledByAccordion, accordion, value, collapsibleConfig, isOpen]);
+    }, [
+      isControlledByGroup,
+      collapsibleGroup,
+      value,
+      collapsibleConfig,
+      isOpen,
+    ]);
 
     // Only enable scrolling when card has a fixed height (not null/undefined and not "auto")
     const hasFixedHeight = height != null && height !== 'auto';
