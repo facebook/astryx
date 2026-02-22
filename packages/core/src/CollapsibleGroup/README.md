@@ -1,4 +1,4 @@
-# /packages/core/src/CollapsibleGroup
+# /packages/core/src/Collapsible
 
 Collapsible content primitive and group coordination.
 
