@@ -8,8 +8,6 @@ Card container component with elevation and themed styling.
 
 XDSCard is a top-level container for elevated content. It provides card-specific appearance (background, shadow, border-radius) and sets CSS variables for child layout components.
 
-Supports collapsible behavior via the `isCollapsible` prop. When set, the card's `title` becomes a click trigger and the `children` content collapses/expands. Works standalone or coordinated by XDSCollapsibleGroup.
-
 ## Import
 
 ```tsx
@@ -28,55 +26,45 @@ import {XDSCard} from '@xds/core/Card';
   />
 </XDSCard>
 
-// Card with title
-<XDSCard title="Settings">
-  <p>Card content here</p>
+// Simple content
+<XDSCard>
+  <p>Card content with default padding</p>
 </XDSCard>
 
-// Collapsible card
-<XDSCard title="Details" isCollapsible>
-  <p>This content can be collapsed</p>
+// Collapsible card — compose XDSCollapsible inside
+<XDSCard>
+  <XDSCollapsible trigger="Details">
+    <p>This content can be collapsed</p>
+  </XDSCollapsible>
 </XDSCard>
 
-// Starts collapsed
-<XDSCard title="Advanced" isCollapsible={{ initialIsOpen: false }}>
-  <p>Hidden by default</p>
-</XDSCard>
-
-// Inside a collapsible group
+// Accordion of cards
 <XDSCollapsibleGroup type="single" defaultValue="general">
   <XDSVStack gap="space2">
-    <XDSCard title="General" value="general" isCollapsible>...</XDSCard>
-    <XDSCard title="Advanced" value="advanced" isCollapsible>...</XDSCard>
+    <XDSCard>
+      <XDSCollapsible trigger="General" value="general">
+        <GeneralSettings />
+      </XDSCollapsible>
+    </XDSCard>
+    <XDSCard>
+      <XDSCollapsible trigger="Advanced" value="advanced">
+        <AdvancedSettings />
+      </XDSCollapsible>
+    </XDSCard>
   </XDSVStack>
 </XDSCollapsibleGroup>
 ```
 
 ## Props
 
-| Prop            | Type                           | Default | Description                                       |
-| --------------- | ------------------------------ | ------- | ------------------------------------------------- |
-| `title`         | `ReactNode`                    | —       | Title displayed in card header                    |
-| `width`         | `SizeValue`                    | —       | Width (number = pixels, string = as-is)           |
-| `height`        | `SizeValue`                    | —       | Height (number = pixels, string = as-is)          |
-| `maxWidth`      | `SizeValue`                    | —       | Maximum width                                     |
-| `minHeight`     | `SizeValue`                    | —       | Minimum height                                    |
-| `children`      | `ReactNode`                    | —       | Content (collapses when isCollapsible is set)     |
-| `isFullBleed`   | `boolean`                      | `false` | Removes internal padding for edge-to-edge content |
-| `isCollapsible` | `boolean \| CollapsibleConfig` | —       | Makes the card collapsible (requires title)       |
-| `value`         | `string`                       | —       | Identifier for collapsible group coordination     |
-
-## Types
-
-```tsx
-type SizeValue = number | string;
-
-type CollapsibleConfig = {
-  initialIsOpen?: boolean; // default true
-  isOpen?: boolean; // controlled
-  onOpenChange?: (isOpen: boolean) => void;
-};
-```
+| Prop          | Type        | Default | Description                                       |
+| ------------- | ----------- | ------- | ------------------------------------------------- |
+| `width`       | `SizeValue` | —       | Width (number = pixels, string = as-is)           |
+| `height`      | `SizeValue` | —       | Height (number = pixels, string = as-is)          |
+| `maxWidth`    | `SizeValue` | —       | Maximum width                                     |
+| `minHeight`   | `SizeValue` | —       | Minimum height                                    |
+| `children`    | `ReactNode` | —       | Content to render inside the card                 |
+| `isFullBleed` | `boolean`   | `false` | Removes internal padding for edge-to-edge content |
 
 ## Theming
 

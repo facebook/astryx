@@ -51,18 +51,24 @@ export interface XDSCollapsibleGroupProps {
   /**
    * Children — any components that support isCollapsible + value.
    *
-   * @compositionHint Wrap XDSCard, XDSSection, or other collapsible components.
-   * Each child needs `value` and `isCollapsible` props to participate.
+   * @compositionHint Wrap XDSCollapsible instances (typically inside XDSCard).
+   * Each XDSCollapsible needs a `value` prop to participate in the group.
    *
    * @example
    * ```tsx
    * <XDSCollapsibleGroup type="single" defaultValue="general">
-   *   <XDSCard title="General" value="general" isCollapsible>
-   *     <p>General settings content</p>
-   *   </XDSCard>
-   *   <XDSCard title="Advanced" value="advanced" isCollapsible>
-   *     <p>Advanced settings content</p>
-   *   </XDSCard>
+   *   <XDSVStack gap="space2">
+   *     <XDSCard>
+   *       <XDSCollapsible trigger="General" value="general">
+   *         <p>General settings content</p>
+   *       </XDSCollapsible>
+   *     </XDSCard>
+   *     <XDSCard>
+   *       <XDSCollapsible trigger="Advanced" value="advanced">
+   *         <p>Advanced settings content</p>
+   *       </XDSCollapsible>
+   *     </XDSCard>
+   *   </XDSVStack>
    * </XDSCollapsibleGroup>
    * ```
    */
@@ -81,18 +87,24 @@ function normalizeToArray(value: string | string[] | undefined): string[] {
  * In "single" mode (default), opening one item closes the others.
  * In "multiple" mode, items toggle independently.
  *
- * @compositionHint Wrap collapsible components (XDSCard, etc.) that have
- * `value` and `isCollapsible` props. The group coordinates their state.
+ * @compositionHint Wrap XDSCollapsible instances to coordinate their open/close state.
+ * Each XDSCollapsible needs a `value` prop to participate.
  *
  * @example
  * ```tsx
  * <XDSCollapsibleGroup type="single" defaultValue="faq1">
- *   <XDSCard title="What is XDS?" value="faq1" isCollapsible>
- *     XDS is a design system for building internal tools.
- *   </XDSCard>
- *   <XDSCard title="How do I start?" value="faq2" isCollapsible>
- *     Install the package and import components.
- *   </XDSCard>
+ *   <XDSVStack gap="space2">
+ *     <XDSCard>
+ *       <XDSCollapsible trigger="What is XDS?" value="faq1">
+ *         XDS is a design system for building internal tools.
+ *       </XDSCollapsible>
+ *     </XDSCard>
+ *     <XDSCard>
+ *       <XDSCollapsible trigger="How do I start?" value="faq2">
+ *         Install the package and import components.
+ *       </XDSCollapsible>
+ *     </XDSCard>
+ *   </XDSVStack>
  * </XDSCollapsibleGroup>
  * ```
  */

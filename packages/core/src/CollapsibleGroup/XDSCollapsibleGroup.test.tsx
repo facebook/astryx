@@ -1,54 +1,54 @@
 /**
  * @file XDSCollapsibleGroup.test.tsx
- * @input Uses vitest, @testing-library/react, XDSCard, XDSCollapsibleGroup
- * @output Unit tests for XDSCollapsibleGroup and XDSCard isCollapsible behavior
- * @position Testing; validates collapsible group coordination and card collapsible behavior
+ * @input Uses vitest, @testing-library/react, XDSCollapsible, XDSCollapsibleGroup
+ * @output Unit tests for XDSCollapsible and XDSCollapsibleGroup
+ * @position Testing; validates collapsible primitive and group coordination
  *
- * SYNC: When XDSCollapsibleGroup.tsx or XDSCard.tsx changes, update tests to match
+ * SYNC: When XDSCollapsible.tsx or XDSCollapsibleGroup.tsx changes, update tests
  */
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {XDSCard} from '../Card/XDSCard';
+import {XDSCollapsible} from './XDSCollapsible';
 import {XDSCollapsibleGroup} from './XDSCollapsibleGroup';
 
 // =============================================================================
-// XDSCard — isCollapsible behavior (standalone, no collapsible group)
+// XDSCollapsible — standalone behavior
 // =============================================================================
 
-describe('XDSCard isCollapsible', () => {
-  it('renders title and children when not collapsible', () => {
+describe('XDSCollapsible', () => {
+  it('renders trigger and children', () => {
     render(
-      <XDSCard title="My Card">
-        <p>Card content</p>
-      </XDSCard>,
+      <XDSCollapsible trigger="My Trigger">
+        <p>Content</p>
+      </XDSCollapsible>,
     );
-    expect(screen.getByText('My Card')).toBeInTheDocument();
-    expect(screen.getByText('Card content')).toBeInTheDocument();
-    // No button trigger when not collapsible
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.getByText('My Trigger')).toBeInTheDocument();
+    expect(screen.getByText('Content')).toBeInTheDocument();
   });
 
-  it('renders without title (backwards compatible)', () => {
+  it('starts open by default', () => {
     render(
-      <XDSCard>
-        <p>Just content</p>
-      </XDSCard>,
-    );
-    expect(screen.getByText('Just content')).toBeInTheDocument();
-  });
-
-  it('toggles content on click when isCollapsible={true}', async () => {
-    const user = userEvent.setup();
-    render(
-      <XDSCard title="Details" isCollapsible>
-        <p>Collapsible content</p>
-      </XDSCard>,
+      <XDSCollapsible trigger="Details">
+        <p>Visible content</p>
+      </XDSCollapsible>,
     );
 
     const trigger = screen.getByRole('button', {name: /Details/});
-    expect(trigger).toBeInTheDocument();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Visible content')).toBeVisible();
+  });
+
+  it('toggles content on click', async () => {
+    const user = userEvent.setup();
+    render(
+      <XDSCollapsible trigger="Details">
+        <p>Collapsible content</p>
+      </XDSCollapsible>,
+    );
+
+    const trigger = screen.getByRole('button', {name: /Details/});
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText('Collapsible content')).toBeVisible();
 
@@ -65,9 +65,9 @@ describe('XDSCard isCollapsible', () => {
 
   it('starts collapsed when initialIsOpen is false', () => {
     render(
-      <XDSCard title="Details" isCollapsible={{initialIsOpen: false}}>
+      <XDSCollapsible trigger="Details" initialIsOpen={false}>
         <p>Hidden content</p>
-      </XDSCard>,
+      </XDSCollapsible>,
     );
 
     const trigger = screen.getByRole('button', {name: /Details/});
@@ -80,9 +80,12 @@ describe('XDSCard isCollapsible', () => {
     const user = userEvent.setup();
 
     const {rerender} = render(
-      <XDSCard title="Controlled" isCollapsible={{isOpen: true, onOpenChange}}>
+      <XDSCollapsible
+        trigger="Controlled"
+        isOpen={true}
+        onOpenChange={onOpenChange}>
         <p>Controlled content</p>
-      </XDSCard>,
+      </XDSCollapsible>,
     );
 
     const trigger = screen.getByRole('button', {name: /Controlled/});
@@ -95,19 +98,22 @@ describe('XDSCard isCollapsible', () => {
 
     // Rerender with isOpen=false to actually close
     rerender(
-      <XDSCard title="Controlled" isCollapsible={{isOpen: false, onOpenChange}}>
+      <XDSCollapsible
+        trigger="Controlled"
+        isOpen={false}
+        onOpenChange={onOpenChange}>
         <p>Controlled content</p>
-      </XDSCard>,
+      </XDSCollapsible>,
     );
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     expect(screen.getByText('Controlled content')).not.toBeVisible();
   });
 
-  it('renders chevron indicator that rotates', () => {
+  it('renders chevron indicator', () => {
     render(
-      <XDSCard title="With Chevron" isCollapsible>
+      <XDSCollapsible trigger="With Chevron">
         <p>Content</p>
-      </XDSCard>,
+      </XDSCollapsible>,
     );
 
     const trigger = screen.getByRole('button', {name: /With Chevron/});
@@ -119,9 +125,9 @@ describe('XDSCard isCollapsible', () => {
   it('activates via keyboard (Enter and Space)', async () => {
     const user = userEvent.setup();
     render(
-      <XDSCard title="Keyboard" isCollapsible>
+      <XDSCollapsible trigger="Keyboard">
         <p>Content</p>
-      </XDSCard>,
+      </XDSCollapsible>,
     );
 
     const trigger = screen.getByRole('button', {name: /Keyboard/});
@@ -145,30 +151,29 @@ describe('XDSCollapsibleGroup', () => {
   it('renders children without wrapper DOM', () => {
     render(
       <XDSCollapsibleGroup>
-        <XDSCard title="Item 1" value="1" isCollapsible>
+        <XDSCollapsible trigger="Item 1" value="1">
           <p>Content 1</p>
-        </XDSCard>
+        </XDSCollapsible>
       </XDSCollapsibleGroup>,
     );
 
-    // CollapsibleGroupContext.Provider doesn't render wrapper DOM
     expect(screen.getByText('Content 1')).toBeInTheDocument();
   });
 
   describe('single mode', () => {
-    it('only allows one card open at a time', async () => {
+    it('only allows one item open at a time', async () => {
       const user = userEvent.setup();
       render(
         <XDSCollapsibleGroup type="single" defaultValue="a">
-          <XDSCard title="Card A" value="a" isCollapsible>
+          <XDSCollapsible trigger="Item A" value="a">
             <p>Content A</p>
-          </XDSCard>
-          <XDSCard title="Card B" value="b" isCollapsible>
+          </XDSCollapsible>
+          <XDSCollapsible trigger="Item B" value="b">
             <p>Content B</p>
-          </XDSCard>
-          <XDSCard title="Card C" value="c" isCollapsible>
+          </XDSCollapsible>
+          <XDSCollapsible trigger="Item C" value="c">
             <p>Content C</p>
-          </XDSCard>
+          </XDSCollapsible>
         </XDSCollapsibleGroup>,
       );
 
@@ -178,13 +183,13 @@ describe('XDSCollapsibleGroup', () => {
       expect(screen.getByText('Content C')).not.toBeVisible();
 
       // Open B — A should close
-      await user.click(screen.getByRole('button', {name: /Card B/}));
+      await user.click(screen.getByRole('button', {name: /Item B/}));
       expect(screen.getByText('Content A')).not.toBeVisible();
       expect(screen.getByText('Content B')).toBeVisible();
       expect(screen.getByText('Content C')).not.toBeVisible();
 
       // Open C — B should close
-      await user.click(screen.getByRole('button', {name: /Card C/}));
+      await user.click(screen.getByRole('button', {name: /Item C/}));
       expect(screen.getByText('Content A')).not.toBeVisible();
       expect(screen.getByText('Content B')).not.toBeVisible();
       expect(screen.getByText('Content C')).toBeVisible();
@@ -194,29 +199,29 @@ describe('XDSCollapsibleGroup', () => {
       const user = userEvent.setup();
       render(
         <XDSCollapsibleGroup type="single" defaultValue="a">
-          <XDSCard title="Card A" value="a" isCollapsible>
+          <XDSCollapsible trigger="Item A" value="a">
             <p>Content A</p>
-          </XDSCard>
+          </XDSCollapsible>
         </XDSCollapsibleGroup>,
       );
 
       expect(screen.getByText('Content A')).toBeVisible();
-      await user.click(screen.getByRole('button', {name: /Card A/}));
+      await user.click(screen.getByRole('button', {name: /Item A/}));
       expect(screen.getByText('Content A')).not.toBeVisible();
     });
   });
 
   describe('multiple mode', () => {
-    it('allows multiple cards to be open simultaneously', async () => {
+    it('allows multiple items to be open simultaneously', async () => {
       const user = userEvent.setup();
       render(
         <XDSCollapsibleGroup type="multiple" defaultValue={['a']}>
-          <XDSCard title="Card A" value="a" isCollapsible>
+          <XDSCollapsible trigger="Item A" value="a">
             <p>Content A</p>
-          </XDSCard>
-          <XDSCard title="Card B" value="b" isCollapsible>
+          </XDSCollapsible>
+          <XDSCollapsible trigger="Item B" value="b">
             <p>Content B</p>
-          </XDSCard>
+          </XDSCollapsible>
         </XDSCollapsibleGroup>,
       );
 
@@ -224,12 +229,12 @@ describe('XDSCollapsibleGroup', () => {
       expect(screen.getByText('Content B')).not.toBeVisible();
 
       // Open B — A should stay open
-      await user.click(screen.getByRole('button', {name: /Card B/}));
+      await user.click(screen.getByRole('button', {name: /Item B/}));
       expect(screen.getByText('Content A')).toBeVisible();
       expect(screen.getByText('Content B')).toBeVisible();
 
       // Close A — B should stay open
-      await user.click(screen.getByRole('button', {name: /Card A/}));
+      await user.click(screen.getByRole('button', {name: /Item A/}));
       expect(screen.getByText('Content A')).not.toBeVisible();
       expect(screen.getByText('Content B')).toBeVisible();
     });
@@ -245,12 +250,12 @@ describe('XDSCollapsibleGroup', () => {
           type="single"
           value="a"
           onValueChange={onValueChange}>
-          <XDSCard title="Card A" value="a" isCollapsible>
+          <XDSCollapsible trigger="Item A" value="a">
             <p>Content A</p>
-          </XDSCard>
-          <XDSCard title="Card B" value="b" isCollapsible>
+          </XDSCollapsible>
+          <XDSCollapsible trigger="Item B" value="b">
             <p>Content B</p>
-          </XDSCard>
+          </XDSCollapsible>
         </XDSCollapsibleGroup>,
       );
 
@@ -258,7 +263,7 @@ describe('XDSCollapsibleGroup', () => {
       expect(screen.getByText('Content B')).not.toBeVisible();
 
       // Click B — should call onValueChange
-      await user.click(screen.getByRole('button', {name: /Card B/}));
+      await user.click(screen.getByRole('button', {name: /Item B/}));
       expect(onValueChange).toHaveBeenCalledWith('b');
 
       // Rerender with new value
@@ -267,12 +272,12 @@ describe('XDSCollapsibleGroup', () => {
           type="single"
           value="b"
           onValueChange={onValueChange}>
-          <XDSCard title="Card A" value="a" isCollapsible>
+          <XDSCollapsible trigger="Item A" value="a">
             <p>Content A</p>
-          </XDSCard>
-          <XDSCard title="Card B" value="b" isCollapsible>
+          </XDSCollapsible>
+          <XDSCollapsible trigger="Item B" value="b">
             <p>Content B</p>
-          </XDSCard>
+          </XDSCollapsible>
         </XDSCollapsibleGroup>,
       );
       expect(screen.getByText('Content A')).not.toBeVisible();
@@ -284,12 +289,12 @@ describe('XDSCollapsibleGroup', () => {
     it('opens the specified item by default', () => {
       render(
         <XDSCollapsibleGroup defaultValue="b">
-          <XDSCard title="Card A" value="a" isCollapsible>
+          <XDSCollapsible trigger="Item A" value="a">
             <p>Content A</p>
-          </XDSCard>
-          <XDSCard title="Card B" value="b" isCollapsible>
+          </XDSCollapsible>
+          <XDSCollapsible trigger="Item B" value="b">
             <p>Content B</p>
-          </XDSCard>
+          </XDSCollapsible>
         </XDSCollapsibleGroup>,
       );
 
@@ -300,15 +305,15 @@ describe('XDSCollapsibleGroup', () => {
     it('opens multiple items by default in multiple mode', () => {
       render(
         <XDSCollapsibleGroup type="multiple" defaultValue={['a', 'c']}>
-          <XDSCard title="Card A" value="a" isCollapsible>
+          <XDSCollapsible trigger="Item A" value="a">
             <p>Content A</p>
-          </XDSCard>
-          <XDSCard title="Card B" value="b" isCollapsible>
+          </XDSCollapsible>
+          <XDSCollapsible trigger="Item B" value="b">
             <p>Content B</p>
-          </XDSCard>
-          <XDSCard title="Card C" value="c" isCollapsible>
+          </XDSCollapsible>
+          <XDSCollapsible trigger="Item C" value="c">
             <p>Content C</p>
-          </XDSCard>
+          </XDSCollapsible>
         </XDSCollapsibleGroup>,
       );
 
@@ -318,34 +323,32 @@ describe('XDSCollapsibleGroup', () => {
     });
   });
 
-  describe('card inside vs outside collapsible group', () => {
-    it('card inside group defers to group context', async () => {
+  describe('standalone vs group', () => {
+    it('collapsible inside group defers to group context', async () => {
       const user = userEvent.setup();
       render(
         <XDSCollapsibleGroup type="single" defaultValue="a">
-          <XDSCard title="Card A" value="a" isCollapsible>
+          <XDSCollapsible trigger="Item A" value="a">
             <p>Content A</p>
-          </XDSCard>
-          <XDSCard title="Card B" value="b" isCollapsible>
+          </XDSCollapsible>
+          <XDSCollapsible trigger="Item B" value="b">
             <p>Content B</p>
-          </XDSCard>
+          </XDSCollapsible>
         </XDSCollapsibleGroup>,
       );
 
       // Opening B should close A (group coordinates)
-      await user.click(screen.getByRole('button', {name: /Card B/}));
+      await user.click(screen.getByRole('button', {name: /Item B/}));
       expect(screen.getByText('Content A')).not.toBeVisible();
       expect(screen.getByText('Content B')).toBeVisible();
     });
 
-    it('card outside group manages its own state', async () => {
+    it('collapsible outside group manages its own state', async () => {
       const user = userEvent.setup();
       render(
-        <>
-          <XDSCard title="Standalone" isCollapsible>
-            <p>Standalone content</p>
-          </XDSCard>
-        </>,
+        <XDSCollapsible trigger="Standalone">
+          <p>Standalone content</p>
+        </XDSCollapsible>,
       );
 
       const trigger = screen.getByRole('button', {name: /Standalone/});
@@ -363,20 +366,20 @@ describe('XDSCollapsibleGroup', () => {
     it('sets aria-expanded on triggers', () => {
       render(
         <XDSCollapsibleGroup type="single" defaultValue="a">
-          <XDSCard title="Card A" value="a" isCollapsible>
+          <XDSCollapsible trigger="Item A" value="a">
             <p>Content A</p>
-          </XDSCard>
-          <XDSCard title="Card B" value="b" isCollapsible>
+          </XDSCollapsible>
+          <XDSCollapsible trigger="Item B" value="b">
             <p>Content B</p>
-          </XDSCard>
+          </XDSCollapsible>
         </XDSCollapsibleGroup>,
       );
 
-      expect(screen.getByRole('button', {name: /Card A/})).toHaveAttribute(
+      expect(screen.getByRole('button', {name: /Item A/})).toHaveAttribute(
         'aria-expanded',
         'true',
       );
-      expect(screen.getByRole('button', {name: /Card B/})).toHaveAttribute(
+      expect(screen.getByRole('button', {name: /Item B/})).toHaveAttribute(
         'aria-expanded',
         'false',
       );
@@ -386,13 +389,13 @@ describe('XDSCollapsibleGroup', () => {
       const user = userEvent.setup();
       render(
         <XDSCollapsibleGroup type="single">
-          <XDSCard title="Card A" value="a" isCollapsible>
+          <XDSCollapsible trigger="Item A" value="a">
             <p>Content A</p>
-          </XDSCard>
+          </XDSCollapsible>
         </XDSCollapsibleGroup>,
       );
 
-      const trigger = screen.getByRole('button', {name: /Card A/});
+      const trigger = screen.getByRole('button', {name: /Item A/});
       trigger.focus();
       await user.keyboard('{Enter}');
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
