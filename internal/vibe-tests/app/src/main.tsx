@@ -1,5 +1,6 @@
 import React, {Suspense, lazy} from 'react';
 import {createRoot} from 'react-dom/client';
+import '@xds/core/reset.css';
 
 const params = new URLSearchParams(window.location.search);
 const mode = params.get('mode') ?? 'report';
