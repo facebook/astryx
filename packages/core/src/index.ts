@@ -41,6 +41,8 @@ export * from './TimeInput';
 export * from './NumberInput';
 export * from './Table';
 export * from './Token';
+export * from './Typeahead';
+export * from './Tokenizer';
 export * from './Dialog';
 export * from './DropdownMenu';
 export * from './TopNav';
