@@ -131,7 +131,7 @@ function Findings({score}: {score: UniversalScore}) {
             }>
             {f.severity ?? 'info'}
           </XDSBadge>
-          <XDSText key={`text-${i}`} type="supporting">
+          <XDSText key={`text-${i}`} type="body">
             <strong>{f.dimension}</strong> — {f.detail}
           </XDSText>
         </>
