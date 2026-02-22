@@ -48,7 +48,7 @@ export const SingleMode: Story = {
   name: 'Single Mode (default)',
   render: () => (
     <XDSCollapsibleGroup type="single" defaultValue="general">
-      <XDSVStack gap="sm">
+      <XDSVStack gap="space2">
         <XDSCard title="General Settings" value="general" isCollapsible>
           <p {...stylex.props(styles.text)}>
             Configure your general preferences including language, timezone, and
@@ -77,7 +77,7 @@ export const MultipleMode: Story = {
   name: 'Multiple Mode',
   render: () => (
     <XDSCollapsibleGroup type="multiple" defaultValue={['faq1', 'faq3']}>
-      <XDSVStack gap="sm">
+      <XDSVStack gap="space2">
         <XDSCard title="What is XDS?" value="faq1" isCollapsible>
           <p {...stylex.props(styles.text)}>
             XDS is a design system for building internal tools and products.
@@ -108,7 +108,7 @@ export const Controlled: Story = {
           Currently open: <strong>{String(open) || '(none)'}</strong>
         </p>
         <XDSCollapsibleGroup type="single" value={open} onValueChange={setOpen}>
-          <XDSVStack gap="sm">
+          <XDSVStack gap="space2">
             <XDSCard title="Section 1" value="section1" isCollapsible>
               <p {...stylex.props(styles.text)}>Content for section 1.</p>
             </XDSCard>
@@ -128,7 +128,7 @@ export const Controlled: Story = {
 export const StandaloneCollapsibleCard: Story = {
   name: 'Standalone Collapsible Card',
   render: () => (
-    <XDSVStack gap="sm">
+    <XDSVStack gap="space2">
       <XDSCard title="Collapsible (starts open)" isCollapsible>
         <p {...stylex.props(styles.text)}>
           This card manages its own state. Click the header to toggle.
@@ -147,7 +147,7 @@ export const FAQ: Story = {
   name: 'FAQ Page',
   render: () => (
     <XDSCollapsibleGroup type="single">
-      <XDSVStack gap="sm">
+      <XDSVStack gap="space2">
         <XDSCard title="How do I reset my password?" value="q1" isCollapsible>
           <p {...stylex.props(styles.text)}>
             Go to Settings → Security → Change Password. You'll receive a

@@ -21,7 +21,7 @@ import {XDSCollapsibleGroup} from '@xds/core/CollapsibleGroup';
 ```tsx
 // Single mode — only one open at a time
 <XDSCollapsibleGroup type="single" defaultValue="general">
-  <XDSVStack gap="sm">
+  <XDSVStack gap="space2">
     <XDSCard title="General Settings" value="general" isCollapsible>
       <GeneralContent />
     </XDSCard>
@@ -33,7 +33,7 @@ import {XDSCollapsibleGroup} from '@xds/core/CollapsibleGroup';
 
 // Multiple mode — any number open
 <XDSCollapsibleGroup type="multiple" defaultValue={["s1", "s2"]}>
-  <XDSVStack gap="sm">
+  <XDSVStack gap="space2">
     <XDSCard title="Section 1" value="s1" isCollapsible>...</XDSCard>
     <XDSCard title="Section 2" value="s2" isCollapsible>...</XDSCard>
   </XDSVStack>
@@ -42,7 +42,7 @@ import {XDSCollapsibleGroup} from '@xds/core/CollapsibleGroup';
 // Controlled
 const [open, setOpen] = useState("section1");
 <XDSCollapsibleGroup type="single" value={open} onValueChange={setOpen}>
-  <XDSVStack gap="sm">
+  <XDSVStack gap="space2">
     ...
   </XDSVStack>
 </XDSCollapsibleGroup>
