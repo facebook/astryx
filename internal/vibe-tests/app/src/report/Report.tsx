@@ -306,7 +306,12 @@ export function Report() {
               )}
 
               {activeTab === 'byPrompt' && (
-                <DimensionTable byPrompt={universal.byPrompt} />
+                <DimensionTable
+                  byPrompt={universal.byPrompt}
+                  sourceCode={data.sourceCode}
+                  baselineSourceCode={data.baselineSourceCode}
+                  baselineByPrompt={comparison?.baseline.byPrompt}
+                />
               )}
 
               {activeTab === 'screenshots' && screenshots && (

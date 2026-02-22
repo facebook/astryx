@@ -104,12 +104,16 @@ function buildDataScript(opts: {
   baseline?: string;
   comparison?: UniversalComparison;
   manifest: unknown;
+  sourceCode?: Record<string, string>;
+  baselineSourceCode?: Record<string, string>;
 }): string {
   const reportData = {
     universal: opts.iterationData,
     comparison: opts.comparison ?? undefined,
     iterationId: opts.iteration,
     target: (opts.manifest as {config?: {target?: string}})?.config?.target,
+    sourceCode: opts.sourceCode,
+    baselineSourceCode: opts.baselineSourceCode,
   };
 
   return `<script>window.__REPORT_DATA__=${JSON.stringify(reportData)};</script>`;
@@ -176,18 +180,49 @@ async function main() {
     comparison = ensureComparison(iteration, baseline);
   }
 
-  // Step 3: Build the data script
+  // Step 3: Load source code for per-prompt inspection
   console.log('📝 Step 3: Preparing report data...');
+  const sourceCode: Record<string, string> = {};
+  const codeDir = path.join(iterDir, 'results');
+  if (fs.existsSync(codeDir)) {
+    for (const file of fs
+      .readdirSync(codeDir)
+      .filter(f => f.endsWith('.tsx'))) {
+      const promptId = path.basename(file, '.tsx');
+      sourceCode[promptId] = fs.readFileSync(path.join(codeDir, file), 'utf-8');
+    }
+  }
+
+  let baselineSourceCode: Record<string, string> | undefined;
+  if (baseline) {
+    baselineSourceCode = {};
+    const baseCodeDir = path.join(resultsDir, baseline, 'results');
+    if (fs.existsSync(baseCodeDir)) {
+      for (const file of fs
+        .readdirSync(baseCodeDir)
+        .filter(f => f.endsWith('.tsx'))) {
+        const promptId = path.basename(file, '.tsx');
+        baselineSourceCode[promptId] = fs.readFileSync(
+          path.join(baseCodeDir, file),
+          'utf-8',
+        );
+      }
+    }
+  }
+
+  // Step 4: Build the data script
   const dataScript = buildDataScript({
     iteration,
     iterationData,
     baseline,
     comparison,
     manifest,
+    sourceCode,
+    baselineSourceCode,
   });
   console.log(`  ✓ ${(dataScript.length / 1024).toFixed(0)} KB of report data`);
 
-  // Step 4: Dev mode or build
+  // Step 5: Dev mode or build
   if (dev) {
     // For dev mode, write data to a module file so Vite can serve it
     const dataDir = path.join(APP_DIR, 'src', 'data');
@@ -214,7 +249,7 @@ async function main() {
     console.log('\nOpen http://localhost:5173?mode=report to view the report.');
     console.log('Press Ctrl+C to stop.\n');
   } else {
-    console.log('\n🏗️  Step 4: Building static report...');
+    console.log('\n🏗️  Step 5: Building static report...');
     execSync('npx vite build', {
       cwd: APP_DIR,
       stdio: 'inherit',
@@ -224,7 +259,7 @@ async function main() {
     const distDir = path.join(APP_DIR, 'dist');
     const reportHtml = path.join(distDir, 'index.html');
     if (fs.existsSync(reportHtml)) {
-      console.log('💉 Step 5: Injecting report data and styles...');
+      console.log('💉 Step 6: Injecting report data and styles...');
       injectDataIntoHtml(reportHtml, dataScript);
       inlineCss(reportHtml, distDir);
 

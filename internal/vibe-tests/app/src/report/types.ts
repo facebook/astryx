@@ -26,6 +26,8 @@ export interface ReportData {
   universal: UniversalAggregate;
   comparison?: UniversalComparison;
   screenshots?: Record<string, string>;
+  sourceCode?: Record<string, string>;
+  baselineSourceCode?: Record<string, string>;
   iterationId?: string;
   target?: string;
 }
