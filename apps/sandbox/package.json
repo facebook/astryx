@@ -14,8 +14,8 @@
     "@xds/core": "*",
     "@xds/theme-default": "*",
     "next": "^15.0.0",
-    "react": "^18.3.0",
-    "react-dom": "^18.3.0"
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
   },
   "devDependencies": {
     "@babel/preset-react": "^7.25.0",
@@ -23,8 +23,8 @@
     "@stylexjs/babel-plugin": "^0.17.4",
     "@stylexjs/postcss-plugin": "^0.17.4",
     "@types/node": "^22.0.0",
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "typescript": "^5.7.0"
   }
 }
