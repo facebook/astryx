@@ -5,8 +5,8 @@
  * @position Context definition for collapsible group coordination
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/CollapsibleGroup/XDSCollapsibleGroup.tsx (provider)
- * - /packages/core/src/CollapsibleGroup/README.md
+ * - /packages/core/src/Collapsible/XDSCollapsibleGroup.tsx (provider)
+ * - /packages/core/src/Collapsible/README.md
  */
 
 import {createContext} from 'react';

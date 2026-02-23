@@ -11,9 +11,9 @@
  * Works standalone or coordinated by XDSCollapsibleGroup via the `value` prop.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/CollapsibleGroup/index.ts (exports)
- * - /packages/core/src/CollapsibleGroup/README.md
- * - /apps/storybook/stories/CollapsibleGroup.stories.tsx
+ * - /packages/core/src/Collapsible/index.ts (exports)
+ * - /packages/core/src/Collapsible/README.md
+ * - /apps/storybook/stories/Collapsible.stories.tsx
  */
 
 'use client';

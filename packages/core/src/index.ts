@@ -8,7 +8,7 @@
  */
 
 // Components
-export * from './CollapsibleGroup';
+export * from './Collapsible';
 export * from './AppShell';
 export * from './AspectRatio';
 export * from './Avatar';
@@ -21,7 +21,6 @@ export * from './Calendar';
 export * from './Center';
 export * from './CheckboxInput';
 export * from './RadioList';
-export * from './CloseButton';
 export * from './Divider';
 export * from './EmptyState';
 export * from './Link';

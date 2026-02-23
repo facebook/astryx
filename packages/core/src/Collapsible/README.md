@@ -13,7 +13,7 @@ XDSCollapsibleGroup coordinates multiple XDSCollapsible instances so only one (o
 ## Import
 
 ```tsx
-import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/CollapsibleGroup';
+import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
 ```
 
 ## Usage

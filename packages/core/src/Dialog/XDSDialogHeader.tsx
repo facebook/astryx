@@ -1,6 +1,6 @@
 /**
  * @file XDSDialogHeader.tsx
- * @input Uses React forwardRef, useEffect, useRef, XDSLayoutHeader, XDSHeading, XDSText
+ * @input Uses React forwardRef, useEffect, useRef, XDSLayoutHeader, XDSButton, XDSIcon, XDSHeading, XDSText
  * @output Exports XDSDialogHeader component and XDSDialogHeaderProps
  * @position Dialog header component; used with XDSDialog and XDSLayout
  *
@@ -15,7 +15,8 @@ import {forwardRef, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {XDSLayoutHeader} from '../Layout/XDSLayoutHeader';
-import {XDSCloseButton} from '../CloseButton';
+import {XDSButton} from '../Button';
+import {XDSIcon} from '../Icon';
 import {XDSHeading} from '../Text/XDSHeading';
 import {XDSText} from '../Text/XDSText';
 
@@ -131,7 +132,15 @@ export const XDSDialogHeader = forwardRef<HTMLElement, XDSDialogHeaderProps>(
           {(endContent || onHide) && (
             <div {...stylex.props(styles.actions)}>
               {endContent}
-              {onHide && <XDSCloseButton onClick={onHide} />}
+              {onHide && (
+                <XDSButton
+                  variant="ghost"
+                  label="Close"
+                  tooltip="Close"
+                  icon={<XDSIcon icon="close" color="inherit" />}
+                  onClick={onHide}
+                />
+              )}
             </div>
           )}
         </div>

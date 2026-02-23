@@ -2,9 +2,9 @@
  * @file index.ts
  * @input Imports XDSCollapsible, XDSCollapsibleGroup, and useXDSCollapsible
  * @output Exports components, hook, and types
- * @position Entry point for @xds/core/CollapsibleGroup module
+ * @position Entry point for @xds/core/Collapsible module
  *
- * SYNC: When modified, update /packages/core/src/CollapsibleGroup/README.md
+ * SYNC: When modified, update /packages/core/src/Collapsible/README.md
  */
 
 export {XDSCollapsible} from './XDSCollapsible';

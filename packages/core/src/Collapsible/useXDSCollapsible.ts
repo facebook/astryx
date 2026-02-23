@@ -11,8 +11,8 @@
  * - Providing a unified toggle handler
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/CollapsibleGroup/index.ts (exports)
- * - /packages/core/src/CollapsibleGroup/README.md
+ * - /packages/core/src/Collapsible/index.ts (exports)
+ * - /packages/core/src/Collapsible/README.md
  *
  * NOTE: Public hooks use the `useXDS` prefix per XDS naming conventions.
  */
