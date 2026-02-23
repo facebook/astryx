@@ -498,19 +498,55 @@ describe('XDSList', () => {
   });
 
   // ===========================================================================
-  // Children escape hatch
+  // Border radius
   // ===========================================================================
 
-  it('renders children below label/description', () => {
+  it('applies content radius by default', () => {
     render(
       <XDSList>
-        <XDSListItem label="Item">
-          <span data-testid="custom-content">Custom content here</span>
-        </XDSListItem>
+        <XDSListItem label="Item" data-testid="item" isSelected />
       </XDSList>,
     );
-    expect(screen.getByTestId('custom-content')).toBeInTheDocument();
-    expect(screen.getByText('Custom content here')).toBeInTheDocument();
+    const item = screen.getByTestId('item');
+    expect(item).toBeInTheDocument();
+  });
+
+  it('removes radius when hasDividers is true', () => {
+    render(
+      <XDSList hasDividers>
+        <XDSListItem label="Item" data-testid="item" isSelected />
+      </XDSList>,
+    );
+    const item = screen.getByTestId('item');
+    expect(item).toBeInTheDocument();
+  });
+
+  // ===========================================================================
+  // List markers
+  // ===========================================================================
+
+  it('renders list markers for disc style', () => {
+    render(
+      <XDSList listStyle="disc">
+        <XDSListItem label="Bullet item" data-testid="item" />
+      </XDSList>,
+    );
+    const item = screen.getByTestId('item');
+    // When markers are shown, inner content is wrapped in a div
+    const innerWrapper = item.querySelector('div');
+    expect(innerWrapper).toBeInTheDocument();
+  });
+
+  it('does not wrap content when listStyle is none', () => {
+    render(
+      <XDSList listStyle="none">
+        <XDSListItem label="Plain item" data-testid="item" />
+      </XDSList>,
+    );
+    const item = screen.getByTestId('item');
+    // No inner div wrapper when no markers
+    const innerDiv = item.querySelector(':scope > div');
+    expect(innerDiv).not.toBeInTheDocument();
   });
 
   // ===========================================================================

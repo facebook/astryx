@@ -153,7 +153,10 @@ export const XDSList = forwardRef<
     const hasMarkers = listStyle !== 'none';
     const Tag = isOrdered ? 'ol' : 'ul';
 
-    const contextValue = useMemo(() => ({density}), [density]);
+    const contextValue = useMemo(
+      () => ({density, hasDividers, hasMarkers}),
+      [density, hasDividers, hasMarkers],
+    );
 
     // Interleave dividers between children when hasDividers is true
     let renderedChildren = children;

@@ -217,16 +217,3 @@ export const WithMedia: Story = {
     </XDSList>
   ),
 };
-
-export const WithChildren: Story = {
-  render: args => (
-    <XDSList {...args}>
-      <XDSListItem label="Custom Content">
-        <div style={{padding: '8px 0', color: '#666'}}>
-          This is custom rich content rendered via the children escape hatch.
-        </div>
-      </XDSListItem>
-      <XDSListItem label="Another Item" description="Standard item" />
-    </XDSList>
-  ),
-};

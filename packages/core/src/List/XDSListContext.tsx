@@ -11,6 +11,8 @@ export type XDSListDensity = 'compact' | 'balanced' | 'spacious';
 
 export interface XDSListContextValue {
   density: XDSListDensity;
+  hasDividers: boolean;
+  hasMarkers: boolean;
 }
 
 export const XDSListContext = createContext<XDSListContextValue | null>(null);

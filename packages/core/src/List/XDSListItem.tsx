@@ -16,6 +16,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
+  radiusVars,
   spacingVars,
   textSizeVars,
   lineHeightVars,
@@ -79,12 +80,6 @@ export interface XDSListItemProps {
   isSelected?: boolean;
 
   /**
-   * Additional content rendered below label/description.
-   * Use for rich content that doesn't fit the label/description pattern.
-   */
-  children?: ReactNode;
-
-  /**
    * StyleX styles to apply to the list item.
    */
   xstyle?: StyleXStyles;
@@ -100,12 +95,34 @@ export interface XDSListItemProps {
 // =============================================================================
 
 const styles = stylex.create({
+  // Default layout: <li> is the flex container
   item: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-3'],
     position: 'relative',
     boxSizing: 'border-box',
+    textAlign: 'start',
+  },
+  // When list has markers (disc/decimal/circle), <li> must be list-item
+  // so the browser renders the ::marker. Flex layout moves to inner wrapper.
+  itemWithMarker: {
+    display: 'list-item',
+    position: 'relative',
+    boxSizing: 'border-box',
+    textAlign: 'start',
+  },
+  // Inner flex wrapper used when markers are shown
+  innerWrapper: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-3'],
+  },
+  withRadius: {
+    borderRadius: radiusVars['--radius-content'],
+  },
+  noRadius: {
+    borderRadius: 0,
   },
   interactive: {
     cursor: 'pointer',
@@ -176,9 +193,6 @@ const styles = stylex.create({
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
-  },
-  childrenArea: {
-    marginTop: spacingVars['--spacing-1'],
   },
   startContent: {
     flexShrink: 0,
@@ -259,7 +273,6 @@ export const XDSListItem = forwardRef<HTMLLIElement, XDSListItemProps>(
       target,
       isDisabled = false,
       isSelected = false,
-      children,
       xstyle,
       'data-testid': testId,
     },
@@ -267,6 +280,8 @@ export const XDSListItem = forwardRef<HTMLLIElement, XDSListItemProps>(
   ) => {
     const ctx = useContext(XDSListContext);
     const density = ctx?.density ?? 'balanced';
+    const hasDividers = ctx?.hasDividers ?? false;
+    const hasMarkers = ctx?.hasMarkers ?? false;
     const isInteractive = onClick != null || href != null;
 
     const labelAndDescription = (
@@ -292,22 +307,8 @@ export const XDSListItem = forwardRef<HTMLLIElement, XDSListItemProps>(
       onClick?.(e);
     };
 
-    return (
-      <li
-        ref={ref}
-        data-testid={testId}
-        aria-selected={isSelected || undefined}
-        aria-disabled={isDisabled || undefined}
-        {...stylex.props(
-          styles.item,
-          densityStyles[density],
-          isInteractive && styles.interactive,
-          isInteractive && styles.focusWithinOutline,
-          isDisabled && styles.disabled,
-          isSelected && styles.selected,
-          xstyle,
-        )}
-        onClick={isInteractive ? handleContainerClick : undefined}>
+    const innerContent = (
+      <>
         {startContent != null && (
           <span {...stylex.props(styles.startContent)}>{startContent}</span>
         )}
@@ -336,9 +337,30 @@ export const XDSListItem = forwardRef<HTMLLIElement, XDSListItemProps>(
         {endContent != null && (
           <span {...stylex.props(styles.endContent)}>{endContent}</span>
         )}
+      </>
+    );
 
-        {children != null && (
-          <div {...stylex.props(styles.childrenArea)}>{children}</div>
+    return (
+      <li
+        ref={ref}
+        data-testid={testId}
+        aria-selected={isSelected || undefined}
+        aria-disabled={isDisabled || undefined}
+        {...stylex.props(
+          hasMarkers ? styles.itemWithMarker : styles.item,
+          densityStyles[density],
+          hasDividers ? styles.noRadius : styles.withRadius,
+          isInteractive && styles.interactive,
+          isInteractive && styles.focusWithinOutline,
+          isDisabled && styles.disabled,
+          isSelected && styles.selected,
+          xstyle,
+        )}
+        onClick={isInteractive ? handleContainerClick : undefined}>
+        {hasMarkers ? (
+          <div {...stylex.props(styles.innerWrapper)}>{innerContent}</div>
+        ) : (
+          innerContent
         )}
       </li>
     );

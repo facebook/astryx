@@ -78,7 +78,6 @@ import {XDSList, XDSListItem} from '@xds/core';
 | `target`       | `string`                  | —       | Link target (only with `href`)                   |
 | `isDisabled`   | `boolean`                 | `false` | Disabled state                                   |
 | `isSelected`   | `boolean`                 | `false` | Selected state (`aria-selected`)                 |
-| `children`     | `ReactNode`               | —       | Rich content below label/description             |
 | `xstyle`       | `StyleXStyles`            | —       | Style overrides                                  |
 | `data-testid`  | `string`                  | —       | Test ID                                          |
 
