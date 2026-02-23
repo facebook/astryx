@@ -24,6 +24,7 @@ export * from './RadioList';
 export * from './Divider';
 export * from './EmptyState';
 export * from './Link';
+export * from './List';
 export * from './Slider';
 export * from './Stack';
 export * from './Switch';
