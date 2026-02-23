@@ -48,3 +48,7 @@ export type {
 
 export {XDSTooltip} from './XDSTooltip';
 export type {XDSTooltipProps} from './XDSTooltip';
+
+// Popover component
+export {XDSPopover} from './XDSPopover';
+export type {XDSPopoverProps, XDSPopoverTrigger} from './XDSPopover';
