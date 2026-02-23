@@ -69,8 +69,8 @@ const styles = stylex.create({
     borderStyle: 'none',
     borderRadius: radiusVars['--radius-element'],
     fontFamily: 'inherit',
-    fontSize: textSizeVars['--text-base'],
-    lineHeight: lineHeightVars['--leading-base'],
+    fontStyle: 'normal',
+    fontVariant: 'normal',
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
     cursor: 'pointer',
@@ -86,15 +86,13 @@ const styles = stylex.create({
       ':focus-visible': '2px',
     },
   },
-  triggerSelected: {
+  labelSelected: {
     color: colorVars['--color-accent-text'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
   },
   triggerLabel: {
-    position: 'relative',
     display: 'inline-grid',
     alignItems: 'center',
-    alignSelf: 'stretch',
   },
   triggerLabelText: {
     gridRowStart: 1,
@@ -120,20 +118,24 @@ const styles = stylex.create({
     },
   },
   hoverUnderline: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '2px',
-    backgroundColor: colorVars['--color-divider'],
-    borderRadius: radiusVars['--radius-rounded'],
-    opacity: {
-      default: 0,
-      [stylex.when.ancestor(':hover')]: 1,
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: '2px',
+      backgroundColor: colorVars['--color-divider'],
+      borderRadius: radiusVars['--radius-rounded'],
+      opacity: {
+        default: 0,
+        ':hover': 1,
+        [stylex.when.ancestor(':hover')]: 1,
+      },
+      transitionProperty: 'opacity',
+      transitionDuration: transitionVars['--transition-fast'],
+      pointerEvents: 'none',
     },
-    transitionProperty: 'opacity',
-    transitionDuration: transitionVars['--transition-fast'],
-    pointerEvents: 'none',
   },
   chevron: {
     width: spacingVars['--spacing-4'],
@@ -144,6 +146,9 @@ const styles = stylex.create({
   },
   chevronOpen: {
     transform: 'rotate(180deg)',
+  },
+  chevronSelected: {
+    color: colorVars['--color-accent-text'],
   },
   dropdown: {
     display: 'flex',
@@ -198,9 +203,30 @@ const styles = stylex.create({
 });
 
 const sizeStyles = stylex.create({
-  sm: {height: sizeVars['--size-sm']},
-  md: {height: sizeVars['--size-md']},
-  lg: {height: sizeVars['--size-lg']},
+  sm: {
+    height: sizeVars['--size-sm'],
+  },
+  md: {
+    height: sizeVars['--size-md'],
+  },
+  lg: {
+    height: sizeVars['--size-lg'],
+  },
+});
+
+const fontSizeStyles = stylex.create({
+  sm: {
+    fontSize: textSizeVars['--text-sm'],
+    lineHeight: lineHeightVars['--leading-base'],
+  },
+  md: {
+    fontSize: textSizeVars['--text-base'],
+    lineHeight: lineHeightVars['--leading-base'],
+  },
+  lg: {
+    fontSize: textSizeVars['--text-lg'],
+    lineHeight: lineHeightVars['--leading-normal'],
+  },
 });
 
 /**
@@ -255,25 +281,27 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
         {...stylex.props(
           styles.trigger,
           sizeStyles[size],
-          hasSelectedOption && styles.triggerSelected,
-          !hasSelectedOption && stylex.defaultMarker(),
+          hasSelectedOption && styles.underline,
+          !hasSelectedOption && styles.hoverUnderline,
         )}>
         <span
           {...stylex.props(
             styles.triggerLabel,
-            hasSelectedOption && styles.underline,
+            fontSizeStyles[size],
+            hasSelectedOption && styles.labelSelected,
           )}>
           <span {...stylex.props(styles.triggerLabelText)}>{triggerLabel}</span>
           <span aria-hidden="true" {...stylex.props(styles.triggerLabelSizer)}>
             {triggerLabel}
           </span>
-          {!hasSelectedOption && (
-            <span {...stylex.props(styles.hoverUnderline)} />
-          )}
         </span>
         <span
           aria-hidden="true"
-          {...stylex.props(styles.chevron, layer.isOpen && styles.chevronOpen)}>
+          {...stylex.props(
+            styles.chevron,
+            layer.isOpen && styles.chevronOpen,
+            hasSelectedOption && styles.chevronSelected,
+          )}>
           <XDSIcon icon="chevronDown" size="sm" color="inherit" />
         </span>
       </button>

@@ -59,7 +59,7 @@ const styles = stylex.create({
   nav: {
     display: 'flex',
     alignItems: 'stretch',
-    gap: spacingVars['--spacing-0-5'],
+    gap: spacingVars['--spacing-2'],
   },
   divider: {
     borderBottomWidth: '1px',

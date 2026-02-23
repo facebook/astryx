@@ -65,8 +65,8 @@ const styles = stylex.create({
     borderStyle: 'none',
     borderRadius: radiusVars['--radius-element'],
     fontFamily: 'inherit',
-    fontSize: textSizeVars['--text-base'],
-    lineHeight: lineHeightVars['--leading-base'],
+    fontStyle: 'normal',
+    fontVariant: 'normal',
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
     cursor: 'pointer',
@@ -82,7 +82,7 @@ const styles = stylex.create({
       ':focus-visible': '2px',
     },
   },
-  selected: {
+  labelSelected: {
     color: colorVars['--color-accent-text'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
   },
@@ -91,28 +91,27 @@ const styles = stylex.create({
       content: '""',
       position: 'absolute',
       bottom: 0,
-      left: spacingVars['--spacing-3'],
-      right: spacingVars['--spacing-3'],
+      left: 0,
+      right: 0,
       height: '2px',
       backgroundColor: colorVars['--color-accent'],
       borderRadius: radiusVars['--radius-rounded'],
     },
   },
   hoverUnderline: {
-    position: 'absolute',
-    bottom: 0,
-    left: spacingVars['--spacing-3'],
-    right: spacingVars['--spacing-3'],
-    height: '2px',
-    backgroundColor: colorVars['--color-divider'],
-    borderRadius: radiusVars['--radius-rounded'],
-    opacity: {
-      default: 0,
-      [stylex.when.ancestor(':hover')]: 1,
+    ':hover::after': {
+      content: '""',
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: '2px',
+      backgroundColor: colorVars['--color-divider'],
+      borderRadius: radiusVars['--radius-rounded'],
+      transitionProperty: 'opacity',
+      transitionDuration: transitionVars['--transition-fast'],
+      pointerEvents: 'none',
     },
-    transitionProperty: 'opacity',
-    transitionDuration: transitionVars['--transition-fast'],
-    pointerEvents: 'none',
   },
   icon: {
     display: 'inline-flex',
@@ -120,8 +119,12 @@ const styles = stylex.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
+  iconSelected: {
+    color: colorVars['--color-accent-text'],
+  },
   labelContainer: {
     display: 'inline-grid',
+    alignItems: 'center',
   },
   labelText: {
     gridRowStart: 1,
@@ -137,9 +140,30 @@ const styles = stylex.create({
 });
 
 const sizeStyles = stylex.create({
-  sm: {height: sizeVars['--size-sm']},
-  md: {height: sizeVars['--size-md']},
-  lg: {height: sizeVars['--size-lg']},
+  sm: {
+    height: sizeVars['--size-sm'],
+  },
+  md: {
+    height: sizeVars['--size-md'],
+  },
+  lg: {
+    height: sizeVars['--size-lg'],
+  },
+});
+
+const fontSizeStyles = stylex.create({
+  sm: {
+    fontSize: textSizeVars['--text-sm'],
+    lineHeight: lineHeightVars['--leading-base'],
+  },
+  md: {
+    fontSize: textSizeVars['--text-base'],
+    lineHeight: lineHeightVars['--leading-base'],
+  },
+  lg: {
+    fontSize: textSizeVars['--text-lg'],
+    lineHeight: lineHeightVars['--leading-normal'],
+  },
 });
 
 const iconSizeStyles = stylex.create({
@@ -164,7 +188,12 @@ export function XDSTab({value, label, href, icon, selectedIcon}: XDSTabProps) {
   }, [tabListCtx, value]);
 
   const iconElement = displayIcon ? (
-    <span {...stylex.props(styles.icon, iconSizeStyles[size])}>
+    <span
+      {...stylex.props(
+        styles.icon,
+        iconSizeStyles[size],
+        isSelected && styles.iconSelected,
+      )}>
       {displayIcon}
     </span>
   ) : null;
@@ -174,18 +203,18 @@ export function XDSTab({value, label, href, icon, selectedIcon}: XDSTabProps) {
     ...stylex.props(
       styles.base,
       sizeStyles[size],
-      isSelected && styles.selected,
       isSelected && styles.underlineSelected,
-      !isSelected && stylex.defaultMarker(),
+      !isSelected && styles.hoverUnderline,
     ),
   };
 
-  const hoverUnderlineElement = !isSelected ? (
-    <span {...stylex.props(styles.hoverUnderline)} />
-  ) : null;
-
   const labelElement = (
-    <span {...stylex.props(styles.labelContainer)}>
+    <span
+      {...stylex.props(
+        styles.labelContainer,
+        fontSizeStyles[size],
+        isSelected && styles.labelSelected,
+      )}>
       <span {...stylex.props(styles.labelText)}>{label}</span>
       <span aria-hidden="true" {...stylex.props(styles.labelSizer)}>
         {label}
@@ -198,7 +227,6 @@ export function XDSTab({value, label, href, icon, selectedIcon}: XDSTabProps) {
       <a href={href} onClick={handleSelect} {...sharedProps}>
         {iconElement}
         {labelElement}
-        {hoverUnderlineElement}
       </a>
     );
   }
@@ -207,7 +235,6 @@ export function XDSTab({value, label, href, icon, selectedIcon}: XDSTabProps) {
     <button type="button" onClick={handleSelect} {...sharedProps}>
       {iconElement}
       {labelElement}
-      {hoverUnderlineElement}
     </button>
   );
 }
