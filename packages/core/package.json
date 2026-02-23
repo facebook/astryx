@@ -100,11 +100,11 @@
       "import": "./dist/CloseButton/index.mjs",
       "require": "./dist/CloseButton/index.js"
     },
-    "./CollapsibleGroup": {
-      "source": "./src/CollapsibleGroup/index.ts",
-      "types": "./dist/CollapsibleGroup/index.d.ts",
-      "import": "./dist/CollapsibleGroup/index.mjs",
-      "require": "./dist/CollapsibleGroup/index.js"
+    "./Collapsible": {
+      "source": "./src/Collapsible/index.ts",
+      "types": "./dist/Collapsible/index.d.ts",
+      "import": "./dist/Collapsible/index.mjs",
+      "require": "./dist/Collapsible/index.js"
     },
     "./DateInput": {
       "source": "./src/DateInput/index.ts",

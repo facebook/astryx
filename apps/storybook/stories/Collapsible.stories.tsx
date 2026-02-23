@@ -1,7 +1,7 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/CollapsibleGroup';
+import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
 import {XDSCard} from '@xds/core/Card';
 import {XDSVStack} from '@xds/core/Layout';
 import {

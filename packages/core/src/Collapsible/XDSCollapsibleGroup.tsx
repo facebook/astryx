@@ -12,10 +12,10 @@
  * In "multiple" mode, any number of items can be open simultaneously.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/CollapsibleGroup/XDSCollapsibleGroupContext.tsx (context type)
- * - /packages/core/src/CollapsibleGroup/README.md
- * - /packages/core/src/CollapsibleGroup/index.ts (exports)
- * - /apps/storybook/stories/CollapsibleGroup.stories.tsx
+ * - /packages/core/src/Collapsible/XDSCollapsibleGroupContext.tsx (context type)
+ * - /packages/core/src/Collapsible/README.md
+ * - /packages/core/src/Collapsible/index.ts (exports)
+ * - /apps/storybook/stories/Collapsible.stories.tsx
  */
 
 'use client';
