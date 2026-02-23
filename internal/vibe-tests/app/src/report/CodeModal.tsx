@@ -3,7 +3,8 @@ import {XDSDialog} from '@xds/core/Dialog';
 import {XDSVStack} from '@xds/core/Stack';
 import {XDSText} from '@xds/core/Text';
 import {XDSHeading} from '@xds/core/Text';
-import {XDSCloseButton} from '@xds/core/CloseButton';
+import {XDSButton} from '@xds/core/Button';
+import {XDSIcon} from '@xds/core/Icon';
 import {spacingVars, colorVars} from '@xds/core/theme/tokens.stylex';
 
 const styles = stylex.create({
@@ -64,7 +65,13 @@ export function CodeModal({
           </XDSHeading>
           <XDSText type="supporting">{lineCount} lines</XDSText>
         </XDSVStack>
-        <XDSCloseButton onClick={onHide} />
+        <XDSButton
+          variant="ghost"
+          label="Close"
+          tooltip="Close"
+          icon={<XDSIcon icon="close" color="inherit" />}
+          onClick={onHide}
+        />
       </div>
       <div {...stylex.props(styles.content)}>
         <div {...stylex.props(styles.codeBlock)}>{code}</div>

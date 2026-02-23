@@ -85,7 +85,6 @@ function discoverXDSComponents(): Set<string> {
     'XDSCard',
     'XDSCenter',
     'XDSCheckboxInput',
-    'XDSCloseButton',
     'XDSDateInput',
     'XDSDialog',
     'XDSDialogHeader',

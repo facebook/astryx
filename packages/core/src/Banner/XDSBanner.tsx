@@ -1,6 +1,6 @@
 /**
  * @file XDSBanner.tsx
- * @input Uses React forwardRef/useState, @heroicons/react/24/solid icons, XDSCloseButton, StyleX
+ * @input Uses React forwardRef/useState, @heroicons/react/24/solid icons, XDSButton, XDSIcon, StyleX
  * @output Exports XDSBanner component, XDSBannerProps, XDSBannerStatus, XDSBannerVariant types
  * @position Core implementation; consumed by index.ts, tested by XDSBanner.test.tsx
  *
@@ -25,7 +25,7 @@ import {
   XCircleIcon,
   CheckCircleIcon,
 } from '@heroicons/react/24/solid';
-import {XDSCloseButton} from '../CloseButton';
+import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
 import {
   colorVars,
@@ -346,9 +346,12 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
             <div {...stylex.props(styles.endArea)}>
               {endButton}
               {isDismissable && (
-                <XDSCloseButton
-                  label="Dismiss"
+                <XDSButton
+                  variant="ghost"
                   size="sm"
+                  label="Dismiss"
+                  tooltip="Dismiss"
+                  icon={<XDSIcon icon="close" size="sm" color="inherit" />}
                   onClick={handleDismiss}
                 />
               )}

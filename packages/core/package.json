@@ -94,12 +94,6 @@
       "import": "./dist/CheckboxInput/index.mjs",
       "require": "./dist/CheckboxInput/index.js"
     },
-    "./CloseButton": {
-      "source": "./src/CloseButton/index.ts",
-      "types": "./dist/CloseButton/index.d.ts",
-      "import": "./dist/CloseButton/index.mjs",
-      "require": "./dist/CloseButton/index.js"
-    },
     "./Collapsible": {
       "source": "./src/Collapsible/index.ts",
       "types": "./dist/Collapsible/index.d.ts",
