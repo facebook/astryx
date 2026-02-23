@@ -144,6 +144,7 @@ const styles = stylex.create({
     flexDirection: 'column',
     flex: 1,
     minWidth: 0,
+    textAlign: 'start',
   },
   invisibleAnchor: {
     all: 'unset',
@@ -154,6 +155,7 @@ const styles = stylex.create({
     flexDirection: 'column',
     flex: 1,
     minWidth: 0,
+    textAlign: 'start',
     textDecoration: 'none',
   },
   content: {
@@ -161,6 +163,7 @@ const styles = stylex.create({
     flexDirection: 'column',
     flex: 1,
     minWidth: 0,
+    textAlign: 'start',
   },
   label: {
     color: colorVars['--color-text-primary'],

@@ -1,5 +1,6 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSIcon} from '@xds/core/Icon';
 import {
@@ -186,6 +187,33 @@ export const DisabledItems: Story = {
       <XDSListItem label="Available" onClick={() => {}} />
       <XDSListItem label="Unavailable" onClick={() => {}} isDisabled />
       <XDSListItem label="Also Available" onClick={() => {}} />
+    </XDSList>
+  ),
+};
+
+export const WithMedia: Story = {
+  render: args => (
+    <XDSList hasDividers {...args}>
+      <XDSListItem
+        label="Alex Johnson"
+        description="Hey, are we still on for lunch tomorrow?"
+        startContent={<XDSAvatar name="Alex Johnson" size="md" />}
+        onClick={() => {}}
+        endContent={<XDSBadge label="2" />}
+      />
+      <XDSListItem
+        label="Sam Rivera"
+        description="I pushed the latest changes to the repo"
+        startContent={<XDSAvatar name="Sam Rivera" size="md" />}
+        onClick={() => {}}
+      />
+      <XDSListItem
+        label="Jordan Lee"
+        description="Can you review the design spec when you get a chance?"
+        startContent={<XDSAvatar name="Jordan Lee" size="md" />}
+        onClick={() => {}}
+        endContent={<XDSBadge label="5" />}
+      />
     </XDSList>
   ),
 };
