@@ -153,6 +153,31 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-surface'],
     borderRadius: radiusVars['--radius-element'],
     boxShadow: `0 4px 12px ${colorVars['--color-shadow-elevation']}`,
+    // Animation: closed state (default) and open state
+    opacity: {
+      default: 0,
+      ':popover-open': 1,
+    },
+    transform: {
+      default: 'scale(0.95)',
+      ':popover-open': 'scale(1)',
+    },
+    // Transitions with allow-discrete for display/overlay
+    transitionProperty: 'opacity, transform, overlay, display',
+    transitionDuration: '0.15s',
+    transitionTimingFunction: 'ease',
+    transitionBehavior: 'allow-discrete',
+    // Entry animation starting state
+    '@starting-style': {
+      opacity: 0,
+      transform: 'scale(0.95)',
+    },
+  },
+  contentPadding: {
+    paddingBlockStart: spacingVars['--spacing-3'],
+    paddingBlockEnd: spacingVars['--spacing-3'],
+    paddingInlineStart: spacingVars['--spacing-3'],
+    paddingInlineEnd: spacingVars['--spacing-3'],
   },
   gap: {
     marginBlockStart: spacingVars['--spacing-1'],
@@ -373,7 +398,9 @@ function ClickPopover({
         {children}
       </div>
       {popover.render(
-        <div data-testid={testId} {...stylex.props(styles.container, xstyle)}>
+        <div
+          data-testid={testId}
+          {...stylex.props(styles.container, styles.contentPadding, xstyle)}>
           {content}
         </div>,
         {

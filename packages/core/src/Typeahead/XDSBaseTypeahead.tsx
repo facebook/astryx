@@ -26,6 +26,7 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {useXDSLayer} from '../Layer/useXDSLayer';
 import {XDSTypeaheadItem} from './XDSTypeaheadItem';
 import {XDSIcon} from '../Icon';
+import {XDSToken} from '../Token';
 import {
   colorVars,
   spacingVars,
@@ -33,6 +34,7 @@ import {
   textSizeVars,
   lineHeightVars,
   typographyVars,
+  fontWeightVars,
   sizeVars,
   transitionVars,
   elevationVars,
@@ -165,6 +167,11 @@ export interface XDSBaseTypeaheadProps<T extends XDSSearchableItem> {
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 
   /**
+   * Validation status type for border styling.
+   */
+  statusType?: 'warning' | 'error' | 'success';
+
+  /**
    * Test ID.
    */
   'data-testid'?: string;
@@ -237,6 +244,9 @@ const styles = stylex.create({
   inputDisabled: {
     cursor: 'not-allowed',
   },
+  inputUnselected: {
+    color: colorVars['--color-text-secondary'],
+  },
   dropdown: {
     boxSizing: 'border-box',
     maxHeight: '300px',
@@ -274,7 +284,12 @@ const styles = stylex.create({
     cursor: 'not-allowed',
   },
   itemSelected: {
-    backgroundColor: colorVars['--color-deemphasized'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+  },
+  itemContent: {
+    display: 'flex',
+    flex: 1,
+    minWidth: 0,
   },
   emptyState: {
     padding: spacingVars['--spacing-3'],
@@ -307,6 +322,60 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacingVars['--spacing-1'],
+  },
+});
+
+const statusBorderStyles = stylex.create({
+  warning: {
+    borderColor: colorVars['--color-warning'],
+  },
+  error: {
+    borderColor: colorVars['--color-negative'],
+  },
+  success: {
+    borderColor: colorVars['--color-positive'],
+  },
+});
+
+const statusHoverShadowStyles = stylex.create({
+  warning: {
+    boxShadow: {
+      default: 'none',
+      ':hover': elevationVars['--elevation-input-hover-warning'],
+    },
+  },
+  error: {
+    boxShadow: {
+      default: 'none',
+      ':hover': elevationVars['--elevation-input-hover-error'],
+    },
+  },
+  success: {
+    boxShadow: {
+      default: 'none',
+      ':hover': elevationVars['--elevation-input-hover-success'],
+    },
+  },
+});
+
+const statusFocusStyles = stylex.create({
+  warning: {
+    outline: {
+      default: 'none',
+      ':focus-within': `1px solid ${colorVars['--color-focus-outline-warning']}`,
+    },
+  },
+  error: {
+    outline: {
+      default: 'none',
+      ':focus-within': `1px solid ${colorVars['--color-focus-outline-error']}`,
+    },
+  },
+  success: {
+    outline: {
+      default: 'none',
+      ':focus-within': `1px solid ${colorVars['--color-focus-outline-success']}`,
+    },
   },
 });
 
@@ -355,6 +424,7 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
     startContent,
     isEmbedded = false,
     onKeyDown: externalOnKeyDown,
+    statusType,
     'data-testid': testId,
   }: XDSBaseTypeaheadProps<T>,
   ref: React.ForwardedRef<HTMLInputElement>,
@@ -371,6 +441,7 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   // Debounce ref
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -383,6 +454,7 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
     onHide: () => {
       onOpenChange?.(false);
       setHighlightedIndex(-1);
+      setIsEditing(false);
     },
   });
 
@@ -481,6 +553,7 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
   // Handle input change
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
+      setIsEditing(true);
       handleQueryChange(e.target.value);
     },
     [handleQueryChange],
@@ -489,6 +562,7 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
   // Handle item selection
   const handleSelect = useCallback(
     (item: T) => {
+      setIsEditing(false);
       onChange(item);
       setQuery('');
       setResults([]);
@@ -500,6 +574,7 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
 
   // Handle clear
   const handleClear = useCallback(() => {
+    setIsEditing(false);
     onChange(null);
     setQuery('');
     setResults([]);
@@ -608,8 +683,9 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
     };
   }, []);
 
-  // Display value: show selected item label when not actively searching
-  const displayValue = query || (value && !layer.isOpen ? value.label : '');
+  // Display value: when editing show query, when value selected show token instead,
+  // otherwise show query (which may be empty)
+  const displayValue = isEditing ? query : value ? '' : query;
 
   const sizeStyle = size === 'sm' ? styles.sizeSmWrapper : styles.sizeMdWrapper;
 
@@ -623,9 +699,19 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
           !isEmbedded && sizeStyle,
           isDisabled && styles.wrapperDisabled,
           isEmbedded && styles.wrapperEmbedded,
+          !isEmbedded && statusType && statusBorderStyles[statusType],
+          !isEmbedded && statusType && statusHoverShadowStyles[statusType],
+          !isEmbedded && statusType && statusFocusStyles[statusType],
           wrapperXstyle,
         )}>
         {startContent}
+        {value && !isEditing && (
+          <XDSToken
+            label={value.label}
+            onRemove={hasClear && !isDisabled ? handleClear : undefined}
+            isDisabled={isDisabled}
+          />
+        )}
         <input
           ref={setInputRef}
           id={inputId}
@@ -651,6 +737,7 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
           {...stylex.props(
             styles.input,
             isDisabled && styles.inputDisabled,
+            isEditing && query.length > 0 && !value && styles.inputUnselected,
             inputXstyle,
           )}
         />
@@ -662,7 +749,7 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
             <XDSIcon icon="clock" size="sm" color="secondary" />
           </span>
         )}
-        {hasClear && value && !isDisabled && (
+        {hasClear && value && !isDisabled && isEditing && (
           <button
             type="button"
             aria-label="Clear selection"
@@ -698,10 +785,15 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
                   index === highlightedIndex && styles.itemHighlighted,
                   value?.id === item.id && styles.itemSelected,
                 )}>
-                {renderItem ? (
-                  renderItem(item)
-                ) : (
-                  <XDSTypeaheadItem item={item} />
+                <span {...stylex.props(styles.itemContent)}>
+                  {renderItem ? (
+                    renderItem(item)
+                  ) : (
+                    <XDSTypeaheadItem item={item} />
+                  )}
+                </span>
+                {value?.id === item.id && (
+                  <XDSIcon icon="check" size="sm" color="accent" />
                 )}
               </div>
             ))

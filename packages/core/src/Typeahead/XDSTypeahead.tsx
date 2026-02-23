@@ -177,6 +177,7 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
         ariaDescribedBy={ariaDescribedBy}
         onChangeQuery={onChangeQuery}
         onOpenChange={onOpenChange}
+        statusType={status?.type}
         data-testid={testId}
       />
     </XDSField>

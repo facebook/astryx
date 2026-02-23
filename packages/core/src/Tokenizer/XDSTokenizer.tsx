@@ -170,6 +170,73 @@ const styles = stylex.create({
   sizeMd: {
     minHeight: sizeVars['--size-md'],
   },
+  inputAtMax: {
+    width: 0,
+    minWidth: 0,
+    flex: '0 0 0',
+    padding: 0,
+    opacity: 0,
+    position: 'absolute',
+  },
+  inputCompact: {
+    minWidth: '40px',
+    flex: '0 1 auto',
+    width: '40px',
+  },
+});
+
+const statusBorderStyles = stylex.create({
+  warning: {
+    borderColor: colorVars['--color-warning'],
+  },
+  error: {
+    borderColor: colorVars['--color-negative'],
+  },
+  success: {
+    borderColor: colorVars['--color-positive'],
+  },
+});
+
+const statusHoverShadowStyles = stylex.create({
+  warning: {
+    boxShadow: {
+      default: 'none',
+      ':hover': elevationVars['--elevation-input-hover-warning'],
+    },
+  },
+  error: {
+    boxShadow: {
+      default: 'none',
+      ':hover': elevationVars['--elevation-input-hover-error'],
+    },
+  },
+  success: {
+    boxShadow: {
+      default: 'none',
+      ':hover': elevationVars['--elevation-input-hover-success'],
+    },
+  },
+});
+
+const statusFocusStyles = stylex.create({
+  warning: {
+    outline: {
+      default: 'none',
+      ':focus-within': `1px solid ${colorVars['--color-focus-outline-warning']}`,
+    },
+  },
+  error: {
+    outline: {
+      default: 'none',
+      ':focus-within': `1px solid ${colorVars['--color-focus-outline-error']}`,
+    },
+  },
+  success: {
+    outline: {
+      default: 'none',
+      ':focus-within': `1px solid ${colorVars['--color-focus-outline-success']}`,
+    },
+  },
 });
 
 // =============================================================================
@@ -267,6 +334,14 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
       },
     }),
     [searchSource, selectedIds],
+  );
+
+  const emptySource: XDSSearchSource<T> = useMemo(
+    () => ({
+      search: async () => [],
+      bootstrap: async () => [],
+    }),
+    [],
   );
 
   // Handle adding an item
@@ -384,33 +459,43 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
           styles.wrapper,
           sizeStyle,
           isDisabled && styles.wrapperDisabled,
+          status && statusBorderStyles[status.type],
+          status && statusHoverShadowStyles[status.type],
+          status && statusFocusStyles[status.type],
           xstyle,
         )}>
         {tokens.length > 0 && (
           <div {...stylex.props(styles.tokenContainer)}>{tokens}</div>
         )}
-        {!isAtMax && (
-          <XDSBaseTypeahead
-            ref={inputRef}
-            searchSource={filteredSource}
-            value={null}
-            onChange={handleAdd}
-            renderItem={renderItem}
-            placeholder={value.length === 0 ? placeholder : undefined}
-            hasEntriesOnFocus={hasEntriesOnFocus}
-            maxMenuItems={maxMenuItems}
-            emptySearchResultsText={emptySearchResultsText}
-            isDisabled={isDisabled}
-            hasClear={false}
-            hasAutoFocus={hasAutoFocus}
-            size={size}
-            inputId={inputId}
-            ariaDescribedBy={ariaDescribedBy}
-            onChangeQuery={onChangeQuery}
-            onKeyDown={handleKeyDown}
-            isEmbedded
-          />
-        )}
+        <XDSBaseTypeahead
+          ref={inputRef}
+          searchSource={isAtMax ? emptySource : filteredSource}
+          value={null}
+          onChange={handleAdd}
+          renderItem={renderItem}
+          placeholder={
+            value.length === 0 ? placeholder : isAtMax ? '' : undefined
+          }
+          hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
+          maxMenuItems={maxMenuItems}
+          emptySearchResultsText={emptySearchResultsText}
+          isDisabled={isDisabled}
+          hasClear={false}
+          hasAutoFocus={hasAutoFocus}
+          size={size}
+          inputId={inputId}
+          ariaDescribedBy={ariaDescribedBy}
+          onChangeQuery={onChangeQuery}
+          onKeyDown={handleKeyDown}
+          inputXstyle={
+            isAtMax
+              ? styles.inputAtMax
+              : value.length > 0
+                ? styles.inputCompact
+                : undefined
+          }
+          isEmbedded
+        />
         {hasClear && value.length > 0 && !isDisabled && (
           <button
             type="button"

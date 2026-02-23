@@ -85,7 +85,7 @@ describe('XDSBaseTypeahead', () => {
     expect(screen.getByPlaceholderText('Pick a fruit...')).toBeInTheDocument();
   });
 
-  it('shows clear button when value is selected', () => {
+  it('shows selected value as a token with remove button', () => {
     render(
       <XDSBaseTypeahead
         searchSource={fruitSource}
@@ -93,8 +93,9 @@ describe('XDSBaseTypeahead', () => {
         onChange={() => {}}
       />,
     );
+    // Selected value renders as a Token with a remove button
     expect(
-      screen.getByRole('button', {name: 'Clear selection'}),
+      screen.getByRole('button', {name: `Remove ${fruits[0].label}`}),
     ).toBeInTheDocument();
   });
 
@@ -112,7 +113,7 @@ describe('XDSBaseTypeahead', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('calls onChange with null when clear is clicked', () => {
+  it('calls onChange with null when token remove is clicked', () => {
     const onChange = vi.fn();
     render(
       <XDSBaseTypeahead
@@ -121,7 +122,10 @@ describe('XDSBaseTypeahead', () => {
         onChange={onChange}
       />,
     );
-    fireEvent.click(screen.getByRole('button', {name: 'Clear selection'}));
+    // Selected value shows as a Token; clicking its remove button clears
+    fireEvent.click(
+      screen.getByRole('button', {name: `Remove ${fruits[0].label}`}),
+    );
     expect(onChange).toHaveBeenCalledWith(null);
   });
 

@@ -89,6 +89,20 @@ export const WithError: Story = {
   ),
 };
 
+export const WithWarning: Story = {
+  render: () => (
+    <TypeaheadExample
+      status={{type: 'warning', message: 'This fruit may be out of season'}}
+    />
+  ),
+};
+
+export const WithSuccess: Story = {
+  render: () => (
+    <TypeaheadExample status={{type: 'success', message: 'Great choice!'}} />
+  ),
+};
+
 export const Disabled: Story = {
   render: () => <TypeaheadExample isDisabled />,
 };

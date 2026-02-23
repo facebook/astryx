@@ -142,7 +142,7 @@ describe('XDSTokenizer', () => {
     });
   });
 
-  it('hides input when maxEntries is reached', () => {
+  it('visually hides input when maxEntries is reached but preserves it for keyboard access', () => {
     render(
       <XDSTokenizer
         label="Members"
@@ -152,7 +152,10 @@ describe('XDSTokenizer', () => {
         maxEntries={2}
       />,
     );
-    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+    // Input stays in the DOM for keyboard accessibility (backspace to remove)
+    // but is visually hidden
+    const input = screen.getByRole('combobox');
+    expect(input).toBeInTheDocument();
   });
 
   it('shows input when under maxEntries', () => {

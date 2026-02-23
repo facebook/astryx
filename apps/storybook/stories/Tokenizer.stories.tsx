@@ -108,6 +108,20 @@ export const WithError: Story = {
   ),
 };
 
+export const WithWarning: Story = {
+  render: () => (
+    <TokenizerExample
+      status={{type: 'warning', message: 'Some members may not have access'}}
+    />
+  ),
+};
+
+export const WithSuccess: Story = {
+  render: () => (
+    <TokenizerExample status={{type: 'success', message: 'Team is ready!'}} />
+  ),
+};
+
 export const Disabled: Story = {
   render: () => {
     const [value] = useState([users[0], users[1]]);

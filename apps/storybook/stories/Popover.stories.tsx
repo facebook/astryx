@@ -36,7 +36,9 @@ type Story = StoryObj<typeof XDSPopover>;
 function PopoverContent() {
   return (
     <XDSVStack gap="space2">
-      <div style={{fontWeight: 600}}>Popover Title</div>
+      <div style={{fontWeight: 600}} tabIndex={-1}>
+        Popover Title
+      </div>
       <div style={{fontSize: 14}}>
         This is some popover content. It can contain any React elements.
       </div>
