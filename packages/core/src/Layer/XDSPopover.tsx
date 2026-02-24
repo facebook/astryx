@@ -134,12 +134,10 @@ const styles = stylex.create({
   wrapperContents: {
     display: 'contents',
   },
-  container: {
-    backgroundColor: colorVars['--color-surface'],
-    color: colorVars['--color-text-primary'],
-    borderRadius: radiusVars['--radius-element'],
-    boxShadow: elevationVars['--elevation-menu'],
-    // Animation: closed state (default) and open state
+  // Animation styles for the popover element (the one with [popover] attribute).
+  // :popover-open only matches the element with the popover attribute,
+  // so these MUST be applied via xstyle to useXDSLayer's render wrapper.
+  popoverAnimation: {
     opacity: {
       default: 0,
       ':popover-open': 1,
@@ -148,16 +146,21 @@ const styles = stylex.create({
       default: 'scale(0.95)',
       ':popover-open': 'scale(1)',
     },
-    // Transitions with allow-discrete for display/overlay
     transitionProperty: 'opacity, transform, overlay, display',
     transitionDuration: '0.15s',
     transitionTimingFunction: 'ease',
     transitionBehavior: 'allow-discrete',
-    // Entry animation starting state
     '@starting-style': {
       opacity: 0,
       transform: 'scale(0.95)',
     },
+  },
+  // Visual styles for the inner content container
+  container: {
+    backgroundColor: colorVars['--color-surface'],
+    color: colorVars['--color-text-primary'],
+    borderRadius: radiusVars['--radius-element'],
+    boxShadow: elevationVars['--elevation-menu'],
   },
   contentPadding: {
     paddingBlockStart: spacingVars['--spacing-3'],
@@ -356,7 +359,7 @@ export function XDSPopover({
           {
             placement,
             alignment,
-            xstyle: [popoverXstyle, styles.gap],
+            xstyle: [popoverXstyle, styles.gap, styles.popoverAnimation],
           },
         )}
       </>
@@ -379,7 +382,7 @@ export function XDSPopover({
         {
           placement,
           alignment,
-          xstyle: [popoverXstyle, styles.gap],
+          xstyle: [popoverXstyle, styles.gap, styles.popoverAnimation],
         },
       )}
     </>
