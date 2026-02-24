@@ -2,40 +2,53 @@ import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSBanner} from '@xds/core/Banner';
+import {XDSBadge} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
+import {XDSIcon} from '@xds/core/Icon';
 import {XDSText} from '@xds/core/Text';
-import {XDSTopNav, XDSTopNavTitle, XDSTopNavItem} from '@xds/core/TopNav';
+import {
+  XDSTopNav,
+  XDSTopNavTitle,
+  XDSTopNavTitleIcon,
+  XDSTopNavItem,
+} from '@xds/core/TopNav';
+import {
+  XDSPageNav,
+  XDSPageNavHeader,
+  XDSPageNavItem,
+  XDSPageNavSection,
+} from '@xds/core/PageNav';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
+import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {
   HomeIcon,
   Cog6ToothIcon,
   ChartBarIcon,
+  UserGroupIcon,
+  FolderIcon,
+  BellIcon,
+  QuestionMarkCircleIcon,
   UserCircleIcon,
   Bars3Icon,
+  CubeIcon,
+  DocumentTextIcon,
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
+import {
+  HomeIcon as HomeIconSolid,
+  ChartBarIcon as ChartBarIconSolid,
+  Cog6ToothIcon as Cog6ToothIconSolid,
+  UserGroupIcon as UserGroupIconSolid,
+  FolderIcon as FolderIconSolid,
+  DocumentTextIcon as DocumentTextIconSolid,
+  ShieldCheckIcon as ShieldCheckIconSolid,
+} from '@heroicons/react/24/solid';
+
+// =============================================================================
+// Styles
+// =============================================================================
 
 const styles = stylex.create({
-  pageNav: {
-    padding: spacingVars['--spacing-4'],
-  },
-  navItem: {
-    display: 'block',
-    padding: `${spacingVars['--spacing-2']} ${spacingVars['--spacing-3']}`,
-    borderRadius: 6,
-    cursor: 'pointer',
-    color: colorVars['--color-text-primary'],
-    fontSize: 14,
-    textDecoration: 'none',
-    backgroundColor: {
-      default: 'transparent',
-      ':hover': colorVars['--color-hover-overlay'],
-    },
-  },
-  navItemActive: {
-    backgroundColor: colorVars['--color-accent-deemphasized'],
-    color: colorVars['--color-accent-text'],
-  },
   content: {
     padding: spacingVars['--spacing-6'],
   },
@@ -46,17 +59,9 @@ const styles = stylex.create({
   },
 });
 
-function MockPageNav() {
-  return (
-    <div {...stylex.props(styles.pageNav)}>
-      <a {...stylex.props(styles.navItem, styles.navItemActive)}>Dashboard</a>
-      <a {...stylex.props(styles.navItem)}>Analytics</a>
-      <a {...stylex.props(styles.navItem)}>Settings</a>
-      <a {...stylex.props(styles.navItem)}>Users</a>
-      <a {...stylex.props(styles.navItem)}>Reports</a>
-    </div>
-  );
-}
+// =============================================================================
+// Helpers
+// =============================================================================
 
 function MockContent({paragraphs = 3}: {paragraphs?: number}) {
   return (
@@ -64,7 +69,7 @@ function MockContent({paragraphs = 3}: {paragraphs?: number}) {
       <XDSText type="large">Page Content</XDSText>
       <div {...stylex.props(styles.longContent)}>
         {Array.from({length: paragraphs}, (_, i) => (
-          <XDSText key={i}>
+          <XDSText type="body" key={i}>
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
             eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim
             ad minim veniam, quis nostrud exercitation ullamco laboris.
@@ -74,6 +79,154 @@ function MockContent({paragraphs = 3}: {paragraphs?: number}) {
     </div>
   );
 }
+
+// =============================================================================
+// Shared nav elements
+// =============================================================================
+
+/**
+ * Standard TopNav used across multiple stories.
+ * Provides app identity (logo + title) and top-level navigation.
+ */
+function AppTopNav({endContent}: {endContent?: React.ReactNode}) {
+  return (
+    <XDSTopNav
+      label="Main navigation"
+      title={
+        <XDSTopNavTitle
+          title="Acme App"
+          logo={
+            <XDSTopNavTitleIcon
+              icon={<CubeIcon style={{width: 16, height: 16}} />}
+            />
+          }
+        />
+      }
+      startContent={
+        <>
+          <XDSTopNavItem label="Home" href="#" isSelected />
+          <XDSTopNavItem label="Products" href="#" />
+          <XDSTopNavItem label="Docs" href="#" />
+        </>
+      }
+      endContent={
+        endContent ?? (
+          <XDSButton
+            label="Profile"
+            variant="ghost"
+            icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+          />
+        )
+      }
+    />
+  );
+}
+
+/**
+ * PageNav WITHOUT header — for use alongside a TopNav.
+ * The TopNav already displays the app name, so the PageNav omits its header
+ * to avoid doubling the identity.
+ */
+function SideNavWithoutHeader() {
+  return (
+    <XDSPageNav>
+      <XDSPageNavSection title="Main" isHeaderHidden>
+        <XDSPageNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          selectedIcon={HomeIconSolid}
+          isSelected
+          href="#"
+        />
+        <XDSPageNavItem
+          label="Analytics"
+          icon={ChartBarIcon}
+          selectedIcon={ChartBarIconSolid}
+          href="#"
+        />
+        <XDSPageNavItem
+          label="Projects"
+          icon={FolderIcon}
+          selectedIcon={FolderIconSolid}
+          href="#"
+          endContent={<XDSBadge>12</XDSBadge>}
+        />
+      </XDSPageNavSection>
+      <XDSPageNavSection title="Organization">
+        <XDSPageNavItem
+          label="Team"
+          icon={UserGroupIcon}
+          selectedIcon={UserGroupIconSolid}
+          href="#"
+        />
+        <XDSPageNavItem
+          label="Settings"
+          icon={Cog6ToothIcon}
+          selectedIcon={Cog6ToothIconSolid}
+          href="#"
+        />
+      </XDSPageNavSection>
+    </XDSPageNav>
+  );
+}
+
+/**
+ * PageNav WITH header — for standalone use without a TopNav.
+ * The header provides app identity (icon + title) since there's no TopNav.
+ */
+function SideNavWithHeader() {
+  return (
+    <XDSPageNav
+      header={
+        <XDSPageNavHeader
+          icon={<XDSIcon icon={CubeIcon} size="lg" />}
+          title="Acme App"
+          titleHref="#"
+        />
+      }>
+      <XDSPageNavSection title="Main" isHeaderHidden>
+        <XDSPageNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          selectedIcon={HomeIconSolid}
+          isSelected
+          href="#"
+        />
+        <XDSPageNavItem
+          label="Analytics"
+          icon={ChartBarIcon}
+          selectedIcon={ChartBarIconSolid}
+          href="#"
+        />
+        <XDSPageNavItem
+          label="Projects"
+          icon={FolderIcon}
+          selectedIcon={FolderIconSolid}
+          href="#"
+          endContent={<XDSBadge>12</XDSBadge>}
+        />
+      </XDSPageNavSection>
+      <XDSPageNavSection title="Organization">
+        <XDSPageNavItem
+          label="Team"
+          icon={UserGroupIcon}
+          selectedIcon={UserGroupIconSolid}
+          href="#"
+        />
+        <XDSPageNavItem
+          label="Settings"
+          icon={Cog6ToothIcon}
+          selectedIcon={Cog6ToothIconSolid}
+          href="#"
+        />
+      </XDSPageNavSection>
+    </XDSPageNav>
+  );
+}
+
+// =============================================================================
+// Meta
+// =============================================================================
 
 const meta: Meta<typeof XDSAppShell> = {
   title: 'Core/XDSAppShell',
@@ -100,64 +253,140 @@ const meta: Meta<typeof XDSAppShell> = {
 export default meta;
 type Story = StoryObj<typeof XDSAppShell>;
 
-export const Default: Story = {
+// =============================================================================
+// Stories
+// =============================================================================
+
+/**
+ * The most common layout: TopNav provides app identity, PageNav provides
+ * page-level navigation. The PageNav omits its header to avoid doubling
+ * the app name that's already in the TopNav.
+ */
+export const TopNavWithPageNav: Story = {
   render: () => (
-    <XDSAppShell
-      topNav={
-        <XDSTopNav
-          label="Main navigation"
-          title={<XDSTopNavTitle title="My App" />}
-          startContent={
-            <>
-              <XDSTopNavItem label="Home" href="#" isSelected />
-              <XDSTopNavItem label="Products" href="#" />
-            </>
-          }
-          endContent={
-            <XDSButton
-              label="Profile"
-              variant="ghost"
-              icon={<UserCircleIcon style={{width: 16, height: 16}} />}
-            />
-          }
-        />
-      }
-      sideNav={<MockPageNav />}>
+    <XDSAppShell topNav={<AppTopNav />} sideNav={<SideNavWithoutHeader />}>
       <MockContent />
     </XDSAppShell>
   ),
 };
 
-export const HeaderOnly: Story = {
+/**
+ * PageNav with its own header (icon + title) and no TopNav.
+ * Use this layout for simpler apps where a full top bar isn't needed.
+ * The PageNav header provides the app identity instead.
+ */
+export const PageNavOnly: Story = {
   render: () => (
-    <XDSAppShell
-      topNav={
-        <XDSTopNav
-          label="Main navigation"
-          title={<XDSTopNavTitle title="Landing Page" />}
-        />
-      }>
+    <XDSAppShell sideNav={<SideNavWithHeader />}>
+      <MockContent />
+    </XDSAppShell>
+  ),
+};
+
+/**
+ * TopNav with no side navigation. Suitable for landing pages,
+ * simple apps, or pages that don't need secondary navigation.
+ */
+export const TopNavOnly: Story = {
+  render: () => (
+    <XDSAppShell topNav={<AppTopNav />}>
       <MockContent paragraphs={5} />
     </XDSAppShell>
   ),
 };
 
-export const WithBanner: Story = {
+/**
+ * Kitchen sink: TopNav + PageNav with sections, nested items, badges,
+ * footer icons, and a banner. Demonstrates all AppShell zones working
+ * together.
+ *
+ * Note: The PageNav has no header because the TopNav already shows
+ * the app identity.
+ */
+export const FullFeatured: Story = {
   render: () => (
     <XDSAppShell
-      topNav={
-        <XDSTopNav
-          label="Main navigation"
-          title={<XDSTopNavTitle title="My App" />}
-          startContent={
+      topNav={<AppTopNav />}
+      sideNav={
+        <XDSPageNav
+          footerIcons={
             <>
-              <XDSTopNavItem label="Home" href="#" isSelected />
-              <XDSTopNavItem label="Products" href="#" />
+              <XDSButton
+                label="Help"
+                variant="ghost"
+                icon={
+                  <QuestionMarkCircleIcon style={{width: 16, height: 16}} />
+                }
+              />
+              <XDSButton
+                label="Notifications"
+                variant="ghost"
+                icon={<BellIcon style={{width: 16, height: 16}} />}
+              />
+              <XDSButton
+                label="Profile"
+                variant="ghost"
+                icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+              />
             </>
-          }
-        />
+          }>
+          <XDSPageNavSection title="Main" isHeaderHidden>
+            <XDSPageNavItem
+              label="Dashboard"
+              icon={HomeIcon}
+              selectedIcon={HomeIconSolid}
+              isSelected
+              href="#"
+            />
+            <XDSPageNavItem
+              label="Analytics"
+              icon={ChartBarIcon}
+              selectedIcon={ChartBarIconSolid}
+              href="#"
+              endContent={<XDSBadge variant="info">New</XDSBadge>}
+            />
+            <XDSPageNavItem
+              label="Projects"
+              icon={FolderIcon}
+              selectedIcon={FolderIconSolid}
+              href="#"
+              endContent={<XDSBadge>12</XDSBadge>}
+            />
+          </XDSPageNavSection>
+          <XDSPageNavSection title="Organization">
+            <XDSPageNavItem
+              label="Team"
+              icon={UserGroupIcon}
+              selectedIcon={UserGroupIconSolid}
+              href="#"
+            />
+            <XDSPageNavItem
+              label="Settings"
+              icon={Cog6ToothIcon}
+              selectedIcon={Cog6ToothIconSolid}
+              href="#">
+              <XDSPageNavItem label="General" href="#" />
+              <XDSPageNavItem label="Security" href="#" />
+              <XDSPageNavItem label="Integrations" href="#" />
+            </XDSPageNavItem>
+          </XDSPageNavSection>
+          <XDSPageNavSection title="Resources">
+            <XDSPageNavItem
+              label="Documentation"
+              icon={DocumentTextIcon}
+              selectedIcon={DocumentTextIconSolid}
+              href="#"
+            />
+            <XDSPageNavItem
+              label="Compliance"
+              icon={ShieldCheckIcon}
+              selectedIcon={ShieldCheckIconSolid}
+              href="#"
+              isDisabled
+            />
+          </XDSPageNavSection>
+        </XDSPageNav>
       }
-      sideNav={<MockPageNav />}
       banner={
         <XDSBanner
           status="info"
@@ -172,31 +401,15 @@ export const WithBanner: Story = {
   ),
 };
 
+/**
+ * Auto height mode — the shell grows with content instead of filling
+ * the viewport. Uses TopNav + PageNav (no PageNav header).
+ */
 export const AutoHeight: Story = {
   render: () => (
     <XDSAppShell
-      topNav={
-        <XDSTopNav
-          label="Main navigation"
-          title={<XDSTopNavTitle title="Documentation" />}
-          startContent={
-            <>
-              <XDSTopNavItem
-                label="Docs"
-                href="#"
-                isSelected
-                icon={<HomeIcon style={{width: 16, height: 16}} />}
-              />
-              <XDSTopNavItem
-                label="API"
-                href="#"
-                icon={<ChartBarIcon style={{width: 16, height: 16}} />}
-              />
-            </>
-          }
-        />
-      }
-      sideNav={<MockPageNav />}
+      topNav={<AppTopNav />}
+      sideNav={<SideNavWithoutHeader />}
       height="auto">
       <MockContent paragraphs={20} />
     </XDSAppShell>
@@ -206,10 +419,9 @@ export const AutoHeight: Story = {
 /**
  * Controlled collapse with external state.
  *
- * NOTE: Collapse controls require coordination between the shell and nav —
- * the toggle button lives in the topNav but the collapse state lives in
- * AppShell. This is a known design tension. For now, the toggle is passed
- * as endContent in the topNav.
+ * The toggle button lives in the TopNav but the collapse state lives in
+ * AppShell. Pass `isSideNavCollapsed` and `onSideNavCollapsedChange` to
+ * control the sidebar programmatically.
  */
 export const ControlledCollapse: Story = {
   render: function ControlledCollapseStory() {
@@ -219,7 +431,7 @@ export const ControlledCollapse: Story = {
         topNav={
           <XDSTopNav
             label="Main navigation"
-            title={<XDSTopNavTitle title="Controlled" />}
+            title={<XDSTopNavTitle title="Acme App" />}
             endContent={
               <XDSButton
                 label="Toggle sidebar"
@@ -230,7 +442,7 @@ export const ControlledCollapse: Story = {
             }
           />
         }
-        sideNav={<MockPageNav />}
+        sideNav={<SideNavWithoutHeader />}
         isSideNavCollapsed={collapsed}
         onSideNavCollapsedChange={setCollapsed}>
         <MockContent />
@@ -239,52 +451,37 @@ export const ControlledCollapse: Story = {
   },
 };
 
-export const InitiallyCollapsed: Story = {
-  render: () => (
-    <XDSAppShell
-      topNav={
-        <XDSTopNav
-          label="Main navigation"
-          title={<XDSTopNavTitle title="Collapsed" />}
-        />
-      }
-      sideNav={<MockPageNav />}
-      initialIsSideNavCollapsed={true}>
-      <MockContent />
-    </XDSAppShell>
-  ),
-};
-
-export const CustomSideNavWidth: Story = {
-  render: () => (
-    <XDSAppShell
-      topNav={
-        <XDSTopNav
-          label="Main navigation"
-          title={<XDSTopNavTitle title="Wide SideNav" />}
-          startContent={
-            <>
-              <XDSTopNavItem
-                label="Settings"
-                href="#"
-                isSelected
-                icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
-              />
-            </>
-          }
-        />
-      }
-      sideNav={<MockPageNav />}
-      sideNavWidth={320}>
-      <MockContent />
-    </XDSAppShell>
-  ),
-};
-
+/**
+ * No navigation at all — just content. Useful for full-bleed pages,
+ * auth screens, or embedded views.
+ */
 export const ContentOnly: Story = {
   render: () => (
     <XDSAppShell>
       <MockContent paragraphs={5} />
+    </XDSAppShell>
+  ),
+};
+
+/**
+ * Banner with TopNav + PageNav. Shows how the banner sits between
+ * the TopNav and the content/sidenav area.
+ */
+export const WithBanner: Story = {
+  render: () => (
+    <XDSAppShell
+      topNav={<AppTopNav />}
+      sideNav={<SideNavWithoutHeader />}
+      banner={
+        <XDSBanner
+          status="info"
+          variant="section"
+          title="System maintenance scheduled"
+          description="The system will undergo maintenance tonight at 10pm UTC."
+          isDismissable
+        />
+      }>
+      <MockContent />
     </XDSAppShell>
   ),
 };
