@@ -238,11 +238,11 @@
 
   /*
    * Normalize placeholder opacity (Firefox renders at reduced opacity)
-   * and set a sensible default color.
+   * and set a sensible default color using the XDS text-placeholder token.
    */
   :where(input::placeholder, textarea::placeholder) {
     opacity: 1;
-    color: #9ca3af;
+    color: var(--color-text-placeholder, #9ca3af);
   }
 
   /*
