@@ -279,7 +279,7 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
       </button>
       {layer.render(
         <div
-          ref={listRef as React.RefObject<HTMLDivElement>}
+          ref={listRef as React.RefObject<HTMLDivElement | null>}
           id={menuId}
           role="menu"
           aria-label={label}

@@ -349,7 +349,7 @@ export function useXDSPopover(
     (children: ReactNode, props?: ContextRenderProps) => {
       return layer.render(
         <div
-          ref={contentRef as React.RefObject<HTMLDivElement>}
+          ref={contentRef as React.RefObject<HTMLDivElement | null>}
           role="dialog"
           aria-modal="true"
           aria-label={dialogLabel}

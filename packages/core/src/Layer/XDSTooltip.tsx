@@ -286,7 +286,7 @@ export function XDSTooltip({
   return (
     <>
       <div
-        ref={wrapperRef as React.RefObject<HTMLDivElement>}
+        ref={wrapperRef as React.RefObject<HTMLDivElement | null>}
         {...stylex.props(styles.wrapperContents)}>
         {children}
       </div>

@@ -645,7 +645,7 @@ function MonthGrid({
 
       {/* Days grid */}
       <div
-        ref={gridRef as React.RefObject<HTMLDivElement>}
+        ref={gridRef as React.RefObject<HTMLDivElement | null>}
         role="grid"
         aria-label={monthLabel}
         onKeyDown={handleGridKeyDown}
