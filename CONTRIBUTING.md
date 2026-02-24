@@ -7,6 +7,7 @@
 Install Node.js v22+ using one of these methods:
 
 **Via nvm (recommended):**
+
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 source ~/.zshrc
@@ -25,6 +26,7 @@ npm install -g yarn
 ```
 
 Verify installation:
+
 ```bash
 node --version   # v22.x.x
 yarn --version   # 1.22.x
@@ -53,6 +55,7 @@ yarn dev
 Storybook loads pre-built packages from `dist/` folders, so you need to build packages before running Storybook.
 
 **First time setup:**
+
 ```bash
 # Build all packages
 yarn build
@@ -62,17 +65,20 @@ yarn workspace @xds/core build
 ```
 
 **Start Storybook:**
+
 ```bash
 cd apps/storybook
 yarn dev
 ```
 
 Storybook will open at http://localhost:6006 with:
+
 - **Theme switcher** - Toggle between Default and Shadcn themes
 - **Mode switcher** - Toggle between Light and Dark modes
 - **Component stories** - Interactive component examples
 
 **If you make changes to `@xds/core`:**
+
 ```bash
 # Rebuild core package
 yarn workspace @xds/core build
@@ -109,15 +115,15 @@ xds/
 
 ### Common Commands
 
-| Command | Description |
-|---------|-------------|
-| `yarn install` | Install all dependencies |
-| `yarn dev` | Start all dev servers |
-| `yarn build` | Build all packages |
-| `yarn test` | Run all tests |
-| `yarn test:watch` | Run tests in watch mode |
-| `yarn storybook` | Start Storybook at localhost:6006 |
-| `yarn lint` | Lint all packages |
+| Command           | Description                       |
+| ----------------- | --------------------------------- |
+| `yarn install`    | Install all dependencies          |
+| `yarn dev`        | Start all dev servers             |
+| `yarn build`      | Build all packages                |
+| `yarn test`       | Run all tests                     |
+| `yarn test:watch` | Run tests in watch mode           |
+| `yarn storybook`  | Start Storybook at localhost:6006 |
+| `yarn lint`       | Lint all packages                 |
 
 ## Adding a New Component
 
@@ -141,9 +147,9 @@ packages/core/src/MyComponent/
 
 ### 3. Component Template
 
-```tsx
+````tsx
 // MyComponent.tsx
-import { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
+import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
 
 export interface MyComponentProps extends HTMLAttributes<HTMLDivElement> {
   /** Description for AI-assisted development */
@@ -159,25 +165,25 @@ export interface MyComponentProps extends HTMLAttributes<HTMLDivElement> {
  * ```
  */
 export const MyComponent = forwardRef<HTMLDivElement, MyComponentProps>(
-  ({ children, ...props }, ref) => {
+  ({children, ...props}, ref) => {
     return (
       <div ref={ref} {...props}>
         {children}
       </div>
     );
-  }
+  },
 );
 
 MyComponent.displayName = 'MyComponent';
-```
+````
 
 ### 4. Test Template
 
 ```tsx
 // MyComponent.test.tsx
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { MyComponent } from './MyComponent';
+import {describe, it, expect} from 'vitest';
+import {render, screen} from '@testing-library/react';
+import {MyComponent} from './MyComponent';
 
 describe('MyComponent', () => {
   it('renders children', () => {
@@ -191,8 +197,8 @@ describe('MyComponent', () => {
 
 ```tsx
 // MyComponent.stories.tsx
-import type { Meta, StoryObj } from '@storybook/react';
-import { MyComponent } from './MyComponent';
+import type {Meta, StoryObj} from '@storybook/react';
+import {MyComponent} from './MyComponent';
 
 const meta = {
   title: 'Components/MyComponent',
@@ -222,6 +228,17 @@ export * from './MyComponent';
 > committed automatically when changes land on `main`. If you need to verify your
 > component will be included, run `yarn sync:exports:check`.
 
+### 7. Generate screenshot test snapshots
+
+If adding a new component or adding new examples to existing:
+
+```
+yarn storybook:build
+npx playwright test --update-snapshots --grep "XDSButton"`
+```
+
+Snapshots will be stored in e2e/visual-regression.spec.ts-snapshots/ and _must be committed_ to the repo.
+
 ## Testing
 
 ### Run Tests
@@ -238,11 +255,15 @@ yarn workspace @xds/core test
 
 # With coverage
 yarn test:coverage
+
+# Screenshot tests
+yarn test:screenshots
 ```
 
 ### Test Structure
 
 Tests are colocated with components:
+
 ```
 src/Button/
 ├── Button.tsx
@@ -262,6 +283,7 @@ yarn changeset
 ```
 
 Follow the prompts to:
+
 1. Select changed packages
 2. Choose bump type (patch/minor/major)
 3. Write a summary
@@ -294,18 +316,22 @@ This creates a file in `.changeset/` — commit it with your PR.
 ### Storybook Issues
 
 **"Failed to fetch dynamically imported module"**
+
 - Cause: Core package not built or out of date
 - Fix: `yarn workspace @xds/core build` then restart Storybook
 
 **"React is not defined"**
+
 - Cause: Missing React import in preview.tsx
 - Fix: Ensure `import * as React from 'react';` at top of preview.tsx
 
 **"Unexpected 'stylex.defineVars' call at runtime"**
+
 - Cause: StyleX code trying to run without compilation
 - Fix: Storybook should load from `dist/` not `src/`. Check vite.config.ts aliases.
 
 **Changes not appearing in Storybook**
+
 - Rebuild the package: `yarn workspace @xds/core build`
 - Hard refresh browser: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows)
 - Clear Storybook cache: Remove `apps/storybook/node_modules/.cache`

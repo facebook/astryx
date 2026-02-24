@@ -33,6 +33,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # Playwright
+test-results/
+playwright-report/
 e2e/test-results/
 e2e/playwright-report/
 e2e/playwright/.cache/

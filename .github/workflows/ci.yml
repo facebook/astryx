@@ -456,3 +456,54 @@ jobs:
                 body: body
               });
             }
+
+  # Visual regression tests — compares screenshots against committed baselines
+  # Blocks PRs when component visuals change without updating baselines
+  # Only runs for stories of changed components
+  visual-regression:
+    needs: [build, check-components]
+    if: needs.check-components.outputs.has_components == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: storybook-${{ needs.build.outputs.short_hash }}
+          path: apps/storybook/dist
+
+      - name: Download analysis artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-analysis
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+
+      - name: Run visual regression tests
+        run: |
+          COMPONENTS=$(cat analysis.json | jq -r '(.newComponents + .modifiedComponents) | map("XDS" + .) | join("|")')
+          if [ -z "$COMPONENTS" ] || [ "$COMPONENTS" = "" ]; then
+            echo "No components changed, skipping visual regression"
+            exit 0
+          fi
+          npx playwright test --grep "$COMPONENTS"
+
+      - name: Upload diff artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-diffs
+          path: test-results/
+          retention-days: 30
