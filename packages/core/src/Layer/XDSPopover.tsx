@@ -1,8 +1,10 @@
 /**
  * @file XDSPopover.tsx
- * @input Uses React, useXDSPopover hook, XDSHoverCard
- * @output Exports XDSPopover component for click/hover triggered popovers
+ * @input Uses React, useXDSPopover hook
+ * @output Exports XDSPopover component for click-triggered popovers
  * @position Layer component; declarative wrapper around useXDSPopover hook
+ *
+ * For hover-triggered overlays, use XDSHoverCard instead.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Layer/README.md
@@ -13,7 +15,6 @@
 
 import React, {
   useCallback,
-  useEffect,
   useLayoutEffect,
   useRef,
   type ReactElement,
@@ -22,14 +23,8 @@ import React, {
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {useXDSPopover} from './useXDSPopover';
-import {XDSHoverCard} from './XDSHoverCard';
 import type {LayerAlignment, LayerPlacement} from './useXDSLayer';
-import {
-  colorVars,
-  spacingVars,
-  radiusVars,
-  elevationVars,
-} from '../theme/tokens.stylex';
+import {colorVars, spacingVars, radiusVars} from '../theme/tokens.stylex';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
 // =============================================================================
@@ -48,18 +43,23 @@ declare module '../theme/types' {
 // Types
 // =============================================================================
 
-/**
- * How the popover is triggered.
- */
-export type XDSPopoverTrigger = 'click' | 'hover';
-
 export interface XDSPopoverProps {
   /**
    * The trigger element. Must accept a ref.
-   * For click trigger: receives onClick, aria-expanded, aria-haspopup, aria-controls.
-   * For hover trigger: delegates to XDSHoverCard behavior.
+   * Receives onClick, aria-expanded, aria-haspopup, aria-controls.
+   *
+   * When `anchorRef` is provided, children can be omitted and the popover
+   * attaches to the external ref element as a sibling.
    */
-  children: ReactNode;
+  children?: ReactNode;
+
+  /**
+   * External ref to use as the popover anchor.
+   * When provided (and no children), the popover attaches to this element
+   * instead of wrapping children. This enables sibling-mode rendering,
+   * useful when the trigger element is managed externally.
+   */
+  anchorRef?: React.RefObject<HTMLElement>;
 
   /**
    * Content to display inside the popover.
@@ -80,35 +80,15 @@ export interface XDSPopoverProps {
   alignment?: LayerAlignment;
 
   /**
-   * How the popover is triggered.
-   * - click: Opens on click, closes on click outside or Escape
-   * - hover: Opens on hover/focus, closes on mouse leave (delegates to XDSHoverCard)
-   * @default 'click'
-   */
-  trigger?: XDSPopoverTrigger;
-
-  /**
    * Whether the popover is shown (controlled mode).
    * Omit for uncontrolled behavior.
    */
   isShown?: boolean;
 
   /**
-   * Default shown state for uncontrolled mode.
-   * @default false
-   */
-  initialIsShown?: boolean;
-
-  /**
    * Callback fired when the popover visibility changes.
    */
   onToggle?: (isShown: boolean) => void;
-
-  /**
-   * Whether to trap focus inside the popover when open.
-   * @default true for click trigger, false for hover trigger
-   */
-  hasFocusTrap?: boolean;
 
   /**
    * Whether the popover is enabled.
@@ -126,7 +106,7 @@ export interface XDSPopoverProps {
 
   /**
    * Accessible label for the popover dialog.
-   * Recommended for click-triggered popovers (which use role="dialog").
+   * Recommended for accessibility (used as aria-label on the dialog).
    */
   label?: string;
 
@@ -151,6 +131,7 @@ const styles = stylex.create({
   },
   container: {
     backgroundColor: colorVars['--color-surface'],
+    color: colorVars['--color-text-primary'],
     borderRadius: radiusVars['--radius-element'],
     boxShadow: `0 4px 12px ${colorVars['--color-shadow-elevation']}`,
     // Animation: closed state (default) and open state
@@ -196,26 +177,19 @@ const styles = stylex.create({
 // =============================================================================
 
 /**
- * A popover component for displaying interactive content anchored to a trigger.
+ * A click-triggered popover for displaying interactive content anchored to a trigger.
  *
  * Uses a display:contents wrapper so children refs are preserved.
- * For click trigger, uses useXDSPopover with focus trap and light dismiss.
- * For hover trigger, delegates to XDSHoverCard.
+ * Focus is trapped inside the popover when open.
+ * Supports light dismiss (click outside or Escape to close).
+ *
+ * For hover-triggered overlays, use {@link XDSHoverCard} instead.
  *
  * @example
  * ```tsx
- * // Click-triggered popover
- * <XDSPopover
- *   label="Settings"
- *   content={<SettingsPanel />}
- *   placement="below"
- * >
+ * // Basic popover
+ * <XDSPopover label="Settings" content={<SettingsPanel />} placement="below">
  *   <XDSButton label="Settings" />
- * </XDSPopover>
- *
- * // Hover-triggered popover (delegates to HoverCard)
- * <XDSPopover trigger="hover" content={<UserCard />}>
- *   <XDSAvatar src={avatar} label={name} />
  * </XDSPopover>
  *
  * // Controlled popover
@@ -227,98 +201,32 @@ const styles = stylex.create({
  * >
  *   <XDSButton label="Filter" />
  * </XDSPopover>
+ *
+ * // Sibling mode with anchorRef
+ * <XDSPopover
+ *   anchorRef={myButtonRef}
+ *   label="Actions"
+ *   content={<ActionMenu />}
+ *   placement="below"
+ * />
  * ```
  */
 export function XDSPopover({
   children,
+  anchorRef,
   content,
   placement = 'below',
   alignment = 'center',
-  trigger = 'click',
   isShown,
-  initialIsShown = false,
   onToggle,
-  hasFocusTrap,
   isEnabled = true,
   width,
   label,
   xstyle,
   'data-testid': testId,
 }: XDSPopoverProps): ReactElement {
-  // Hover trigger delegates to XDSHoverCard
-  if (trigger === 'hover') {
-    return (
-      <XDSHoverCard
-        content={content}
-        placement={placement}
-        alignment={alignment}
-        isEnabled={isEnabled}
-        onShow={() => onToggle?.(true)}
-        onHide={() => onToggle?.(false)}>
-        {children}
-      </XDSHoverCard>
-    );
-  }
-
-  // Click trigger uses useXDSPopover
-  return (
-    <ClickPopover
-      content={content}
-      placement={placement}
-      alignment={alignment}
-      isShown={isShown}
-      initialIsShown={initialIsShown}
-      onToggle={onToggle}
-      isEnabled={isEnabled}
-      width={width}
-      label={label}
-      xstyle={xstyle}
-      data-testid={testId}>
-      {children}
-    </ClickPopover>
-  );
-}
-
-// =============================================================================
-// Click Popover (internal)
-// =============================================================================
-
-interface ClickPopoverProps {
-  children: ReactNode;
-  content: ReactNode;
-  placement: LayerPlacement;
-  alignment: LayerAlignment;
-  isShown?: boolean;
-  initialIsShown: boolean;
-  onToggle?: (isShown: boolean) => void;
-  isEnabled: boolean;
-  width?: number | string;
-  label?: string;
-  xstyle?: StyleXStyles;
-  'data-testid'?: string;
-}
-
-/**
- * Internal click-triggered popover implementation.
- * Extracted to a separate component so hooks are called unconditionally.
- */
-function ClickPopover({
-  children,
-  content,
-  placement,
-  alignment,
-  isShown,
-  initialIsShown,
-  onToggle,
-  isEnabled,
-  width,
-  label,
-  xstyle,
-  'data-testid': testId,
-}: ClickPopoverProps): ReactElement {
   const wrapperRef = useRef<HTMLElement>(null);
   const isControlled = isShown !== undefined;
-  const initializedRef = useRef(false);
 
   const popover = useXDSPopover({
     dialogLabel: label,
@@ -327,40 +235,52 @@ function ClickPopover({
     onHide: () => onToggle?.(false),
   });
 
-  // Sync controlled state
-  useEffect(() => {
-    if (!isControlled) return;
-    if (isShown && !popover.isOpen) {
-      popover.show();
-    } else if (!isShown && popover.isOpen) {
-      popover.hide();
-    }
-  }, [isShown, isControlled, popover]);
-
-  // Handle initialIsShown
-  useEffect(() => {
-    if (!isControlled && initialIsShown && !initializedRef.current) {
-      initializedRef.current = true;
-      popover.show();
-    }
-  }, [initialIsShown, isControlled, popover]);
-
-  // Handle click on trigger
+  // Handle click on trigger — delegates to hook's toggle.
+  // In controlled mode, the useLayoutEffect below syncs isShown → hook state,
+  // and the hook's onShow/onHide callbacks propagate back to onToggle.
   const handleClick = useCallback(
     (e: MouseEvent) => {
       if (!isEnabled) return;
       e.preventDefault();
-      if (isControlled) {
-        onToggle?.(!isShown);
-      } else {
-        popover.toggle();
-      }
+      popover.toggle();
     },
-    [isEnabled, isControlled, isShown, onToggle, popover],
+    [isEnabled, popover],
   );
 
-  // Attach click handler and popover ref to first child element
+  // Sibling mode: attach to external anchorRef
   useLayoutEffect(() => {
+    if (!anchorRef) return;
+
+    const el = anchorRef.current;
+    if (!el) return;
+
+    // Set up anchor positioning
+    popover.triggerRef(el);
+
+    // Set ARIA attributes
+    el.setAttribute('aria-haspopup', popover.triggerProps['aria-haspopup']);
+    el.setAttribute(
+      'aria-expanded',
+      String(popover.triggerProps['aria-expanded']),
+    );
+    el.setAttribute('aria-controls', popover.triggerProps['aria-controls']);
+
+    // Add click handler
+    el.addEventListener('click', handleClick);
+
+    return () => {
+      popover.triggerRef(null);
+      el.removeAttribute('aria-haspopup');
+      el.removeAttribute('aria-expanded');
+      el.removeAttribute('aria-controls');
+      el.removeEventListener('click', handleClick);
+    };
+  }, [anchorRef, popover, handleClick]);
+
+  // Children mode: attach to first child element via display:contents wrapper
+  useLayoutEffect(() => {
+    if (anchorRef) return; // Skip if using anchorRef mode
+
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
 
@@ -371,9 +291,18 @@ function ClickPopover({
     popover.triggerRef(firstChild);
 
     // Set ARIA attributes
-    firstChild.setAttribute('aria-haspopup', 'dialog');
-    firstChild.setAttribute('aria-expanded', String(popover.isOpen));
-    firstChild.setAttribute('aria-controls', popover.id);
+    firstChild.setAttribute(
+      'aria-haspopup',
+      popover.triggerProps['aria-haspopup'],
+    );
+    firstChild.setAttribute(
+      'aria-expanded',
+      String(popover.triggerProps['aria-expanded']),
+    );
+    firstChild.setAttribute(
+      'aria-controls',
+      popover.triggerProps['aria-controls'],
+    );
 
     // Add click handler
     firstChild.addEventListener('click', handleClick);
@@ -385,10 +314,40 @@ function ClickPopover({
       firstChild.removeAttribute('aria-controls');
       firstChild.removeEventListener('click', handleClick);
     };
-  }, [popover, handleClick]);
+  }, [anchorRef, popover, handleClick]);
+
+  // Sync controlled state
+  useLayoutEffect(() => {
+    if (!isControlled) return;
+    if (isShown && !popover.isOpen) {
+      popover.show();
+    } else if (!isShown && popover.isOpen) {
+      popover.hide();
+    }
+  }, [isShown, isControlled, popover]);
 
   // Determine popover xstyle
   const popoverXstyle = width ? styles.customWidth(width) : styles.matchTrigger;
+
+  // Sibling mode: render only the popover (no wrapper needed)
+  if (anchorRef && children == null) {
+    return (
+      <>
+        {popover.render(
+          <div
+            data-testid={testId}
+            {...stylex.props(styles.container, styles.contentPadding, xstyle)}>
+            {content}
+          </div>,
+          {
+            placement,
+            alignment,
+            xstyle: [popoverXstyle, styles.gap],
+          },
+        )}
+      </>
+    );
+  }
 
   return (
     <>

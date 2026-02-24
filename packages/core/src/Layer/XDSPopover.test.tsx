@@ -9,6 +9,7 @@
 
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
+import React from 'react';
 import {XDSPopover} from './XDSPopover';
 
 // Store original matches to restore later
@@ -140,13 +141,23 @@ describe('XDSPopover', () => {
     expect(screen.getByTestId('my-popover')).toBeInTheDocument();
   });
 
-  it('renders hover trigger as HoverCard', () => {
-    render(
-      <XDSPopover trigger="hover" content={<span>Hover content</span>}>
-        <button>Hover me</button>
-      </XDSPopover>,
-    );
-    // Hover trigger should render the trigger element
-    expect(screen.getByRole('button', {name: 'Hover me'})).toBeInTheDocument();
+  it('supports anchorRef sibling mode', () => {
+    function AnchorRefTest() {
+      const ref = React.useRef<HTMLButtonElement>(null);
+      return (
+        <>
+          <button ref={ref}>Anchor</button>
+          <XDSPopover
+            anchorRef={ref as React.RefObject<HTMLElement>}
+            content={<span>Sibling content</span>}
+            label="Sibling"
+          />
+        </>
+      );
+    }
+    render(<AnchorRefTest />);
+    const anchor = screen.getByRole('button', {name: 'Anchor'});
+    expect(anchor).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(anchor).toHaveAttribute('aria-expanded', 'false');
   });
 });

@@ -13,11 +13,6 @@ const meta: Meta<typeof XDSPopover> = {
   component: XDSPopover,
   tags: ['autodocs'],
   argTypes: {
-    trigger: {
-      control: 'select',
-      options: ['click', 'hover'],
-      description: 'How the popover is triggered',
-    },
     placement: {
       control: 'select',
       options: ['above', 'below', 'start', 'end'],
@@ -49,7 +44,9 @@ function SettingsContent() {
 
   return (
     <XDSVStack gap="space3">
-      <XDSHeading level={4}>Settings</XDSHeading>
+      <XDSHeading level={4} tabIndex={-1}>
+        Settings
+      </XDSHeading>
       <XDSDivider />
       <XDSSwitch
         label="Notifications"
@@ -75,7 +72,6 @@ function SettingsContent() {
 
 export const Default: Story = {
   args: {
-    trigger: 'click',
     placement: 'below',
     label: 'Settings',
     width: 280,
@@ -101,7 +97,9 @@ function FilterContent({onApply}: {onApply?: () => void}) {
 
   return (
     <XDSVStack gap="space3">
-      <XDSHeading level={4}>Filter by status</XDSHeading>
+      <XDSHeading level={4} tabIndex={-1}>
+        Filter by status
+      </XDSHeading>
       <XDSDivider />
       <XDSCheckboxInput
         label="Active"
@@ -151,7 +149,6 @@ export const FilterPanel: Story = {
     const [isShown, setIsShown] = React.useState(false);
     return (
       <XDSPopover
-        trigger="click"
         placement="below"
         alignment="start"
         label="Filter"
@@ -178,7 +175,9 @@ function ConfirmContent({
 }) {
   return (
     <XDSVStack gap="space3">
-      <XDSHeading level={4}>Delete project?</XDSHeading>
+      <XDSHeading level={4} tabIndex={-1}>
+        Delete project?
+      </XDSHeading>
       <XDSText type="body">
         This will permanently delete the project and all its data. This action
         cannot be undone.
@@ -200,7 +199,6 @@ export const Confirmation: Story = {
     const [isShown, setIsShown] = React.useState(false);
     return (
       <XDSPopover
-        trigger="click"
         placement="below"
         label="Confirm deletion"
         width={300}
@@ -221,34 +219,36 @@ export const Confirmation: Story = {
 };
 
 // =============================================================================
-// Hover Profile Card
+// Sibling Mode (anchorRef)
 // =============================================================================
 
-function ProfileContent() {
-  return (
-    <XDSVStack gap="space2">
-      <XDSHeading level={4}>Jane Doe</XDSHeading>
-      <XDSText type="supporting" color="secondary">
-        Software Engineer · Design Systems
-      </XDSText>
-      <XDSText type="body">
-        Building great products with great people. Based in Menlo Park, CA.
-      </XDSText>
-    </XDSVStack>
-  );
-}
-
-export const HoverTrigger: Story = {
-  args: {
-    trigger: 'hover',
-    placement: 'below',
-    width: 260,
-    content: <ProfileContent />,
-    children: (
-      <XDSButton label="Jane Doe" variant="ghost">
-        Jane Doe
-      </XDSButton>
-    ),
+export const AnchorRef: Story = {
+  render: function AnchorRefStory() {
+    const buttonRef = React.useRef<HTMLButtonElement>(null);
+    return (
+      <>
+        <XDSButton ref={buttonRef} label="Anchor button">
+          Anchor button
+        </XDSButton>
+        <XDSPopover
+          anchorRef={buttonRef as React.RefObject<HTMLElement>}
+          label="Sibling popover"
+          width={260}
+          placement="below"
+          content={
+            <XDSVStack gap="space2">
+              <XDSHeading level={4} tabIndex={-1}>
+                Sibling mode
+              </XDSHeading>
+              <XDSText type="body">
+                This popover uses anchorRef to attach to the button as a
+                sibling, without wrapping it.
+              </XDSText>
+            </XDSVStack>
+          }
+        />
+      </>
+    );
   },
 };
 
@@ -260,13 +260,14 @@ export const Above: Story = {
   render: () => (
     <div style={{paddingTop: 200}}>
       <XDSPopover
-        trigger="click"
         placement="above"
         label="Info"
         width={260}
         content={
           <XDSVStack gap="space2">
-            <XDSHeading level={4}>Keyboard shortcuts</XDSHeading>
+            <XDSHeading level={4} tabIndex={-1}>
+              Keyboard shortcuts
+            </XDSHeading>
             <XDSDivider />
             <XDSHStack gap="space3">
               <XDSText type="body" weight="bold">
@@ -300,7 +301,6 @@ export const Above: Story = {
 
 export const Disabled: Story = {
   args: {
-    trigger: 'click',
     placement: 'below',
     label: 'Disabled popover',
     isEnabled: false,
