@@ -24,7 +24,12 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {useXDSPopover} from './useXDSPopover';
 import type {LayerAlignment, LayerPlacement} from './useXDSLayer';
-import {colorVars, spacingVars, radiusVars} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  spacingVars,
+  radiusVars,
+  elevationVars,
+} from '../theme/tokens.stylex';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
 // =============================================================================
@@ -75,7 +80,7 @@ export interface XDSPopoverProps {
 
   /**
    * Alignment along the placement axis.
-   * @default 'center'
+   * @default 'start'
    */
   alignment?: LayerAlignment;
 
@@ -133,7 +138,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-surface'],
     color: colorVars['--color-text-primary'],
     borderRadius: radiusVars['--radius-element'],
-    boxShadow: `0 4px 12px ${colorVars['--color-shadow-elevation']}`,
+    boxShadow: elevationVars['--elevation-menu'],
     // Animation: closed state (default) and open state
     opacity: {
       default: 0,
@@ -216,7 +221,7 @@ export function XDSPopover({
   anchorRef,
   content,
   placement = 'below',
-  alignment = 'center',
+  alignment = 'start',
   isShown,
   onToggle,
   isEnabled = true,
@@ -227,12 +232,18 @@ export function XDSPopover({
 }: XDSPopoverProps): ReactElement {
   const wrapperRef = useRef<HTMLElement>(null);
   const isControlled = isShown !== undefined;
+  // Track when the popover was last hidden by light dismiss to prevent
+  // the trigger click from immediately re-opening it.
+  const lastHideTimeRef = useRef(0);
 
   const popover = useXDSPopover({
     dialogLabel: label,
     hasLightDismiss: true,
     onShow: () => onToggle?.(true),
-    onHide: () => onToggle?.(false),
+    onHide: () => {
+      lastHideTimeRef.current = Date.now();
+      onToggle?.(false);
+    },
   });
 
   // Handle click on trigger — delegates to hook's toggle.
@@ -242,6 +253,9 @@ export function XDSPopover({
     (e: MouseEvent) => {
       if (!isEnabled) return;
       e.preventDefault();
+      // If the popover was just closed by light dismiss (clicking outside),
+      // the trigger click fires in the same event — skip re-opening.
+      if (Date.now() - lastHideTimeRef.current < 50) return;
       popover.toggle();
     },
     [isEnabled, popover],

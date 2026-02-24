@@ -150,7 +150,6 @@ export const FilterPanel: Story = {
     return (
       <XDSPopover
         placement="below"
-        alignment="start"
         label="Filter"
         width={240}
         isShown={isShown}
