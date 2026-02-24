@@ -265,26 +265,44 @@ const dynamicStyles = stylex.create({
  *
  * @example
  * ```tsx
- * // Standard app shell — fill mode, sideNav + header
+ * // TopNav + PageNav — the most common pattern.
+ * // PageNav omits its header because TopNav provides app identity.
  * <XDSAppShell
- *   topNav={<XDSTopNav title="My App" />}
- *   sideNav={<XDSPageNav items={navItems} />}
+ *   topNav={
+ *     <XDSTopNav
+ *       label="Main navigation"
+ *       title={<XDSTopNavTitle title="My App" logo={<Logo />} />}
+ *       startContent={<XDSTopNavItem label="Home" href="/" isSelected />}
+ *     />
+ *   }
+ *   sideNav={
+ *     <XDSPageNav>
+ *       <XDSPageNavSection title="Main" isHeaderHidden>
+ *         <XDSPageNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
+ *         <XDSPageNavItem label="Analytics" icon={ChartBarIcon} href="/analytics" />
+ *       </XDSPageNavSection>
+ *     </XDSPageNav>
+ *   }
  * >
  *   <DashboardContent />
  * </XDSAppShell>
  *
- * // Header only (no sideNav)
- * <XDSAppShell topNav={<XDSTopNav title="Landing" />}>
- *   <LandingContent />
+ * // PageNav only — header provides app identity when there's no TopNav
+ * <XDSAppShell
+ *   sideNav={
+ *     <XDSPageNav header={<XDSPageNavHeader title="My App" titleHref="/" />}>
+ *       <XDSPageNavSection title="Main" isHeaderHidden>
+ *         <XDSPageNavItem label="Dashboard" icon={HomeIcon} isSelected />
+ *       </XDSPageNavSection>
+ *     </XDSPageNav>
+ *   }
+ * >
+ *   <DashboardContent />
  * </XDSAppShell>
  *
- * // Auto-height for content-heavy pages
- * <XDSAppShell
- *   topNav={<XDSTopNav title="Docs" />}
- *   sideNav={<XDSPageNav items={docNav} />}
- *   height="auto"
- * >
- *   <LongDocumentContent />
+ * // TopNav only (no sideNav)
+ * <XDSAppShell topNav={<XDSTopNav title="Landing" />}>
+ *   <LandingContent />
  * </XDSAppShell>
  * ```
  */

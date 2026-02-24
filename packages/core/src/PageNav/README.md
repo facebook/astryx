@@ -31,32 +31,71 @@ import {
   XDSPageNavItem,
   XDSPageNavSection,
 } from '@xds/core/PageNav';
+```
 
-<XDSPageNav
-  header={<XDSPageNavHeader icon={<AppIcon />} title="My App" titleHref="/" />}
-  topContent={<XDSButton label="Create new" variant="primary" />}
-  footerIcons={<XDSButton icon={HelpIcon} variant="ghost" label="Help" />}>
-  <XDSPageNavSection title="Main">
-    <XDSPageNavItem
-      label="Dashboard"
-      icon={HomeIcon}
-      selectedIcon={HomeIconSolid}
-      isSelected
-      href="/dashboard"
-    />
-    <XDSPageNavItem
-      label="Projects"
-      icon={FolderIcon}
-      href="/projects"
-      endContent={<XDSBadge label="3" />}
-    />
-  </XDSPageNavSection>
+### With XDSAppShell + TopNav
 
-  <XDSPageNavSection title="Settings">
-    <XDSPageNavItem label="General" href="/settings/general" />
-    <XDSPageNavItem label="Security" href="/settings/security" />
-  </XDSPageNavSection>
-</XDSPageNav>;
+When used inside `XDSAppShell` alongside a `XDSTopNav`, **omit the header** — the TopNav already provides the app name and logo. Including `XDSPageNavHeader` would double the identity.
+
+```tsx
+// TopNav provides identity → PageNav has no header
+<XDSAppShell
+  topNav={<XDSTopNav title={<XDSTopNavTitle title="My App" />} />}
+  sideNav={
+    <XDSPageNav>
+      <XDSPageNavSection title="Main" isHeaderHidden>
+        <XDSPageNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          isSelected
+          href="/dashboard"
+        />
+        <XDSPageNavItem label="Projects" icon={FolderIcon} href="/projects" />
+      </XDSPageNavSection>
+    </XDSPageNav>
+  }>
+  <Content />
+</XDSAppShell>
+```
+
+### Standalone (no TopNav)
+
+Without a TopNav, include `XDSPageNavHeader` to provide app identity.
+
+```tsx
+// No TopNav → PageNav header provides identity
+<XDSAppShell
+  sideNav={
+    <XDSPageNav
+      header={
+        <XDSPageNavHeader icon={<AppIcon />} title="My App" titleHref="/" />
+      }
+      topContent={<XDSButton label="Create new" variant="primary" />}
+      footerIcons={<XDSButton icon={HelpIcon} variant="ghost" label="Help" />}>
+      <XDSPageNavSection title="Main">
+        <XDSPageNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          selectedIcon={HomeIconSolid}
+          isSelected
+          href="/dashboard"
+        />
+        <XDSPageNavItem
+          label="Projects"
+          icon={FolderIcon}
+          href="/projects"
+          endContent={<XDSBadge>3</XDSBadge>}
+        />
+      </XDSPageNavSection>
+
+      <XDSPageNavSection title="Settings">
+        <XDSPageNavItem label="General" href="/settings/general" />
+        <XDSPageNavItem label="Security" href="/settings/security" />
+      </XDSPageNavSection>
+    </XDSPageNav>
+  }>
+  <Content />
+</XDSAppShell>
 ```
 
 ## Header Interaction Model
