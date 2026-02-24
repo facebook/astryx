@@ -131,8 +131,13 @@ export interface XDSPopoverProps {
 // =============================================================================
 
 const styles = stylex.create({
-  wrapperContents: {
-    display: 'contents',
+  // Stable anchor wrapper — uses inline-flex to generate a box for CSS
+  // anchor positioning without affecting layout. The trigger element (e.g.
+  // XDSButton) renders inside this wrapper. Because the wrapper itself is
+  // the anchor, pressed-state transforms on the child (e.g. :active scale)
+  // don't shift the anchor position and cause popover jitter.
+  anchorWrapper: {
+    display: 'inline-flex',
   },
   // Animation styles for the popover element (the one with [popover] attribute).
   // :popover-open only matches the element with the popover attribute,
@@ -187,7 +192,9 @@ const styles = stylex.create({
 /**
  * A click-triggered popover for displaying interactive content anchored to a trigger.
  *
- * Uses a display:contents wrapper so children refs are preserved.
+ * Uses an inline-flex wrapper as the CSS anchor. This wrapper is stable —
+ * it doesn't receive pressed-state transforms (e.g. `:active { scale(0.98) }`)
+ * that the child trigger element may have, preventing popover position jitter.
  * Focus is trapped inside the popover when open.
  * Supports light dismiss (click outside or Escape to close).
  *
@@ -294,20 +301,23 @@ export function XDSPopover({
     };
   }, [anchorRef, popover, handleClick]);
 
-  // Children mode: attach to first child element via display:contents wrapper
+  // Children mode: use wrapper as anchor, attach ARIA + click to child.
+  // The wrapper is the CSS anchor (stable, no transforms), while the child
+  // element (e.g. XDSButton) gets the ARIA attributes and click handler.
   useLayoutEffect(() => {
     if (anchorRef) return; // Skip if using anchorRef mode
 
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
 
+    // Use the wrapper itself as the anchor — it doesn't receive
+    // pressed-state transforms, so the anchor position stays stable.
+    popover.triggerRef(wrapper);
+
     const firstChild = wrapper.firstElementChild as HTMLElement | null;
     if (!firstChild) return;
 
-    // Set up anchor positioning
-    popover.triggerRef(firstChild);
-
-    // Set ARIA attributes
+    // ARIA attributes go on the interactive child element
     firstChild.setAttribute(
       'aria-haspopup',
       popover.triggerProps['aria-haspopup'],
@@ -321,7 +331,7 @@ export function XDSPopover({
       popover.triggerProps['aria-controls'],
     );
 
-    // Add click handler
+    // Click handler goes on the interactive child element
     firstChild.addEventListener('click', handleClick);
 
     return () => {
@@ -370,7 +380,7 @@ export function XDSPopover({
     <>
       <div
         ref={wrapperRef as React.RefObject<HTMLDivElement>}
-        {...stylex.props(styles.wrapperContents)}>
+        {...stylex.props(styles.anchorWrapper)}>
         {children}
       </div>
       {popover.render(
