@@ -1,7 +1,12 @@
+import React from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSPopover} from '@xds/core/Layer';
 import {XDSButton} from '@xds/core/Button';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSText, XDSHeading} from '@xds/core/Text';
+import {XDSSwitch} from '@xds/core/Switch';
+import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
+import {XDSDivider} from '@xds/core/Divider';
 
 const meta: Meta<typeof XDSPopover> = {
   title: 'Core/XDSPopover',
@@ -33,15 +38,37 @@ const meta: Meta<typeof XDSPopover> = {
 export default meta;
 type Story = StoryObj<typeof XDSPopover>;
 
-function PopoverContent() {
+// =============================================================================
+// Settings Panel
+// =============================================================================
+
+function SettingsContent() {
+  const [notifications, setNotifications] = React.useState(true);
+  const [darkMode, setDarkMode] = React.useState(false);
+  const [sounds, setSounds] = React.useState(true);
+
   return (
-    <XDSVStack gap="space2">
-      <div style={{fontWeight: 600}} tabIndex={-1}>
-        Popover Title
-      </div>
-      <div style={{fontSize: 14}}>
-        This is some popover content. It can contain any React elements.
-      </div>
+    <XDSVStack gap="space3">
+      <XDSHeading level={4}>Settings</XDSHeading>
+      <XDSDivider />
+      <XDSSwitch
+        label="Notifications"
+        description="Receive push notifications"
+        value={notifications}
+        onChange={setNotifications}
+      />
+      <XDSSwitch
+        label="Dark mode"
+        description="Use dark color theme"
+        value={darkMode}
+        onChange={setDarkMode}
+      />
+      <XDSSwitch
+        label="Sounds"
+        description="Play sounds for actions"
+        value={sounds}
+        onChange={setSounds}
+      />
     </XDSVStack>
   );
 }
@@ -50,11 +77,184 @@ export const Default: Story = {
   args: {
     trigger: 'click',
     placement: 'below',
-    label: 'Example popover',
-    content: <PopoverContent />,
-    children: <XDSButton label="Open popover">Open popover</XDSButton>,
+    label: 'Settings',
+    width: 280,
+    content: <SettingsContent />,
+    children: <XDSButton label="Settings">Settings</XDSButton>,
   },
 };
+
+// =============================================================================
+// Filter Panel
+// =============================================================================
+
+function FilterContent({onApply}: {onApply?: () => void}) {
+  const [filters, setFilters] = React.useState({
+    active: true,
+    archived: false,
+    drafts: true,
+    shared: false,
+  });
+
+  const toggle = (key: keyof typeof filters) =>
+    setFilters(prev => ({...prev, [key]: !prev[key]}));
+
+  return (
+    <XDSVStack gap="space3">
+      <XDSHeading level={4}>Filter by status</XDSHeading>
+      <XDSDivider />
+      <XDSCheckboxInput
+        label="Active"
+        value={filters.active}
+        onChange={() => toggle('active')}
+      />
+      <XDSCheckboxInput
+        label="Archived"
+        value={filters.archived}
+        onChange={() => toggle('archived')}
+      />
+      <XDSCheckboxInput
+        label="Drafts"
+        value={filters.drafts}
+        onChange={() => toggle('drafts')}
+      />
+      <XDSCheckboxInput
+        label="Shared with me"
+        value={filters.shared}
+        onChange={() => toggle('shared')}
+      />
+      <XDSDivider />
+      <XDSHStack gap="space2">
+        <XDSButton label="Apply" variant="primary" onClick={onApply}>
+          Apply
+        </XDSButton>
+        <XDSButton
+          label="Reset"
+          variant="ghost"
+          onClick={() =>
+            setFilters({
+              active: true,
+              archived: false,
+              drafts: true,
+              shared: false,
+            })
+          }>
+          Reset
+        </XDSButton>
+      </XDSHStack>
+    </XDSVStack>
+  );
+}
+
+export const FilterPanel: Story = {
+  render: function FilterPanelStory() {
+    const [isShown, setIsShown] = React.useState(false);
+    return (
+      <XDSPopover
+        trigger="click"
+        placement="below"
+        alignment="start"
+        label="Filter"
+        width={240}
+        isShown={isShown}
+        onToggle={setIsShown}
+        content={<FilterContent onApply={() => setIsShown(false)} />}>
+        <XDSButton label="Filter">Filter</XDSButton>
+      </XDSPopover>
+    );
+  },
+};
+
+// =============================================================================
+// Confirmation
+// =============================================================================
+
+function ConfirmContent({
+  onConfirm,
+  onCancel,
+}: {
+  onConfirm?: () => void;
+  onCancel?: () => void;
+}) {
+  return (
+    <XDSVStack gap="space3">
+      <XDSHeading level={4}>Delete project?</XDSHeading>
+      <XDSText type="body">
+        This will permanently delete the project and all its data. This action
+        cannot be undone.
+      </XDSText>
+      <XDSHStack gap="space2">
+        <XDSButton label="Delete" variant="destructive" onClick={onConfirm}>
+          Delete
+        </XDSButton>
+        <XDSButton label="Cancel" variant="ghost" onClick={onCancel}>
+          Cancel
+        </XDSButton>
+      </XDSHStack>
+    </XDSVStack>
+  );
+}
+
+export const Confirmation: Story = {
+  render: function ConfirmationStory() {
+    const [isShown, setIsShown] = React.useState(false);
+    return (
+      <XDSPopover
+        trigger="click"
+        placement="below"
+        label="Confirm deletion"
+        width={300}
+        isShown={isShown}
+        onToggle={setIsShown}
+        content={
+          <ConfirmContent
+            onConfirm={() => setIsShown(false)}
+            onCancel={() => setIsShown(false)}
+          />
+        }>
+        <XDSButton label="Delete project" variant="destructive">
+          Delete project
+        </XDSButton>
+      </XDSPopover>
+    );
+  },
+};
+
+// =============================================================================
+// Hover Profile Card
+// =============================================================================
+
+function ProfileContent() {
+  return (
+    <XDSVStack gap="space2">
+      <XDSHeading level={4}>Jane Doe</XDSHeading>
+      <XDSText type="supporting" color="secondary">
+        Software Engineer · Design Systems
+      </XDSText>
+      <XDSText type="body">
+        Building great products with great people. Based in Menlo Park, CA.
+      </XDSText>
+    </XDSVStack>
+  );
+}
+
+export const HoverTrigger: Story = {
+  args: {
+    trigger: 'hover',
+    placement: 'below',
+    width: 260,
+    content: <ProfileContent />,
+    children: (
+      <XDSButton label="Jane Doe" variant="ghost">
+        Jane Doe
+      </XDSButton>
+    ),
+  },
+};
+
+// =============================================================================
+// Placement: Above
+// =============================================================================
 
 export const Above: Story = {
   render: () => (
@@ -62,53 +262,41 @@ export const Above: Story = {
       <XDSPopover
         trigger="click"
         placement="above"
-        label="Above popover"
-        content={<PopoverContent />}>
-        <XDSButton label="Above">Above</XDSButton>
+        label="Info"
+        width={260}
+        content={
+          <XDSVStack gap="space2">
+            <XDSHeading level={4}>Keyboard shortcuts</XDSHeading>
+            <XDSDivider />
+            <XDSHStack gap="space3">
+              <XDSText type="body" weight="bold">
+                ⌘K
+              </XDSText>
+              <XDSText type="body">Command palette</XDSText>
+            </XDSHStack>
+            <XDSHStack gap="space3">
+              <XDSText type="body" weight="bold">
+                ⌘/
+              </XDSText>
+              <XDSText type="body">Toggle sidebar</XDSText>
+            </XDSHStack>
+            <XDSHStack gap="space3">
+              <XDSText type="body" weight="bold">
+                ⌘.
+              </XDSText>
+              <XDSText type="body">Quick actions</XDSText>
+            </XDSHStack>
+          </XDSVStack>
+        }>
+        <XDSButton label="Shortcuts">Shortcuts</XDSButton>
       </XDSPopover>
     </div>
   ),
 };
 
-export const HoverTrigger: Story = {
-  args: {
-    trigger: 'hover',
-    placement: 'below',
-    content: <PopoverContent />,
-    children: <XDSButton label="Hover me">Hover me</XDSButton>,
-  },
-};
-
-export const Controlled: Story = {
-  render: function ControlledExample() {
-    const [isShown, setIsShown] = React.useState(false);
-    return (
-      <div style={{padding: 100}}>
-        <XDSPopover
-          trigger="click"
-          placement="below"
-          label="Controlled popover"
-          isShown={isShown}
-          onToggle={setIsShown}
-          content={
-            <XDSVStack gap="space2">
-              <div>Controlled popover</div>
-              <XDSButton
-                label="Close"
-                variant="primary"
-                onClick={() => setIsShown(false)}>
-                Close
-              </XDSButton>
-            </XDSVStack>
-          }>
-          <XDSButton label="Toggle" onClick={() => setIsShown(!isShown)}>
-            {isShown ? 'Close' : 'Open'}
-          </XDSButton>
-        </XDSPopover>
-      </div>
-    );
-  },
-};
+// =============================================================================
+// Disabled
+// =============================================================================
 
 export const Disabled: Story = {
   args: {
@@ -116,10 +304,7 @@ export const Disabled: Story = {
     placement: 'below',
     label: 'Disabled popover',
     isEnabled: false,
-    content: <PopoverContent />,
-    children: <XDSButton label="Disabled popover">Disabled popover</XDSButton>,
+    content: <XDSText type="body">This should not appear.</XDSText>,
+    children: <XDSButton label="Disabled popover">Disabled</XDSButton>,
   },
 };
-
-// Need React import for Controlled story
-import React from 'react';
