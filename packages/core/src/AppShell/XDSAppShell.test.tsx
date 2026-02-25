@@ -460,6 +460,72 @@ describe('XDSAppShell', () => {
   });
 
   // ===========================================================================
+  // Mobile nav slot
+  // ===========================================================================
+
+  it('renders XDSMobileNav when mobileNav is provided and open', () => {
+    render(
+      <XDSAppShell
+        sideNav={<div>Side Nav</div>}
+        mobileNav={<div>Mobile Nav Content</div>}
+        mobileNavTitle="Test App"
+        isMobileNavOpen={true}
+        onMobileNavOpenChange={() => {}}>
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+    expect(screen.getByTestId('appshell-mobile-nav')).toBeInTheDocument();
+    expect(screen.getByText('Mobile Nav Content')).toBeInTheDocument();
+  });
+
+  it('does not render XDSMobileNav when mobileNav is not provided', () => {
+    render(
+      <XDSAppShell sideNav={<div>Side Nav</div>}>
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+    expect(screen.queryByTestId('appshell-mobile-nav')).not.toBeInTheDocument();
+  });
+
+  it('suppresses raw overlay when mobileNav is provided', () => {
+    mockMql = createMockMatchMedia(true);
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
+
+    render(
+      <XDSAppShell
+        sideNav={<div>Side Nav</div>}
+        mobileNav={<div>Mobile Nav</div>}
+        isSideNavCollapsed={false}
+        onSideNavCollapsedChange={() => {}}>
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+    // Raw overlay backdrop should NOT appear
+    expect(screen.queryByTestId('sidenav-backdrop')).not.toBeInTheDocument();
+    // XDSMobileNav should be rendered instead
+    expect(screen.getByTestId('appshell-mobile-nav')).toBeInTheDocument();
+  });
+
+  it('calls onMobileNavOpenChange(false) when mobile nav closes', () => {
+    const onOpenChange = vi.fn();
+    render(
+      <XDSAppShell
+        sideNav={<div>Side Nav</div>}
+        mobileNav={<div>Mobile Nav</div>}
+        isMobileNavOpen={true}
+        onMobileNavOpenChange={onOpenChange}>
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+    // Click the close button inside XDSMobileNav
+    const closeButton = screen.getByRole('button', {
+      name: /close/i,
+    });
+    fireEvent.click(closeButton);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  // ===========================================================================
   // Ref forwarding
   // ===========================================================================
 

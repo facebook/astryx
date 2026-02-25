@@ -28,6 +28,7 @@ import {XDSLayout} from '../Layout/XDSLayout';
 import {XDSLayoutHeader} from '../Layout/XDSLayoutHeader';
 import {XDSLayoutPanel} from '../Layout/XDSLayoutPanel';
 import {XDSLayoutContent} from '../Layout/XDSLayoutContent';
+import {XDSMobileNav} from '../MobileNav';
 
 // =============================================================================
 // Constants
@@ -97,9 +98,38 @@ export interface XDSAppShellProps {
   initialIsSideNavCollapsed?: boolean;
 
   /**
+   * Whether the mobile nav drawer is open (controlled).
+   * Only used when `mobileNav` is provided.
+   */
+  isMobileNavOpen?: boolean;
+
+  /**
+   * Mobile navigation content — rendered inside an XDSMobileNav drawer.
+   *
+   * When provided, the sideNav is hidden below the breakpoint and this
+   * content is shown in an XDSMobileNav drawer instead. Use with
+   * `isMobileNavOpen` and `onMobileNavOpenChange` to control the drawer.
+   *
+   * Typically receives the same SideNavSection/SideNavItem children as sideNav.
+   */
+  mobileNav?: ReactNode;
+
+  /**
+   * Title shown at the top of the mobile navigation drawer.
+   * Only used when `mobileNav` is provided.
+   */
+  mobileNavTitle?: string;
+
+  /**
    * Whether the side nav is collapsed (controlled).
    */
   isSideNavCollapsed?: boolean;
+
+  /**
+   * Callback when the mobile nav drawer open state changes.
+   * Only used when `mobileNav` is provided.
+   */
+  onMobileNavOpenChange?: (isOpen: boolean) => void;
 
   /**
    * Callback when side nav collapsed state changes.
@@ -285,6 +315,36 @@ const dynamicStyles = stylex.create({
  * >
  *   <DashboardContent />
  * </XDSAppShell>
+ *
+ * // SideNav only — header provides app identity when there's no TopNav
+ * <XDSAppShell
+ *   sideNav={
+ *     <XDSSideNav header={<XDSSideNavHeader title="My App" titleHref="/" />}>
+ *       <XDSSideNavSection title="Main" isHeaderHidden>
+ *         <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected />
+ *       </XDSSideNavSection>
+ *     </XDSSideNav>
+ *   }
+ * >
+ *   <DashboardContent />
+ * </XDSAppShell>
+ *
+ * // TopNav only (no sideNav)
+ * <XDSAppShell topNav={<XDSTopNav title="Landing" />}>
+ *   <LandingContent />
+ * </XDSAppShell>
+ *
+ * // Responsive: SideNav on desktop, MobileNav drawer on mobile
+ * <XDSAppShell
+ *   topNav={<XDSTopNav ... />}
+ *   sideNav={<XDSSideNav>...</XDSSideNav>}
+ *   mobileNav={navSections}
+ *   mobileNavTitle="My App"
+ *   isMobileNavOpen={mobileOpen}
+ *   onMobileNavOpenChange={setMobileOpen}
+ * >
+ *   <Content />
+ * </XDSAppShell>
  * ```
  */
 export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
@@ -296,7 +356,11 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
       'data-testid': dataTestId,
       height = 'fill',
       initialIsSideNavCollapsed = false,
+      isMobileNavOpen = false,
       isSideNavCollapsed: controlledCollapsed,
+      mobileNav,
+      mobileNavTitle,
+      onMobileNavOpenChange,
       onSideNavCollapsedChange,
       sideNav,
       sideNavBreakpoint = 'md',
@@ -323,6 +387,7 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
     const isFill = height === 'fill';
     const isAuto = height === 'auto';
     const hasSideNav = sideNav != null;
+    const hasMobileNav = mobileNav != null;
     const hasTopNav = topNav != null;
     const hasBanner = banner != null;
 
@@ -426,10 +491,19 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
     }, [isBelowBreakpoint, isCollapsed, handleToggleCollapse]);
 
     // =========================================================================
+    // Mobile nav close handler
+    // =========================================================================
+    const handleMobileNavClose = useCallback(() => {
+      onMobileNavOpenChange?.(false);
+    }, [onMobileNavOpenChange]);
+
+    // =========================================================================
     // Determine if sideNav should show as overlay (mobile) or inline
     // =========================================================================
     const showSideNavInline = hasSideNav && !isCollapsed && !isBelowBreakpoint;
-    const showSideNavOverlay = hasSideNav && !isCollapsed && isBelowBreakpoint;
+    // Only show the raw overlay if mobileNav is NOT provided
+    const showSideNavOverlay =
+      hasSideNav && !hasMobileNav && !isCollapsed && isBelowBreakpoint;
 
     // =========================================================================
     // Build header content (topNav + banner)
@@ -525,7 +599,7 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
           content={mainContent}
         />
 
-        {/* Mobile overlay sideNav */}
+        {/* Mobile overlay sideNav (legacy — used when mobileNav is not provided) */}
         {showSideNavOverlay && (
           <>
             <div
@@ -543,6 +617,18 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
               {sideNav}
             </nav>
           </>
+        )}
+
+        {/* Mobile nav drawer — replaces overlay when mobileNav is provided */}
+        {hasMobileNav && (
+          <XDSMobileNav
+            isOpen={isMobileNavOpen}
+            onClose={handleMobileNavClose}
+            title={mobileNavTitle}
+            width={sideNavWidth}
+            data-testid="appshell-mobile-nav">
+            {mobileNav}
+          </XDSMobileNav>
         )}
       </div>
     );
