@@ -30,6 +30,7 @@
     "prepare": "husky install"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.1",
     "@changesets/cli": "^2.27.0",
     "@eslint/js": "^9.39.2",
     "@playwright/test": "^1.48.0",

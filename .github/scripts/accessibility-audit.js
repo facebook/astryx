@@ -7,6 +7,7 @@
  */
 
 const { chromium } = require('playwright');
+const { AxeBuilder } = require('@axe-core/playwright');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
@@ -22,12 +23,29 @@ const outputFile = getArg('output') || 'a11y-report.json';
 const componentsArg = getArg('components') || '';
 const components = componentsArg.split(',').filter(Boolean);
 
+// Rules to disable — these are Storybook-context false positives, not component issues
+const DISABLED_RULES = [
+  'html-has-lang',        // Storybook controls <html>, not the component
+  'document-title',       // iframe has no <title>, irrelevant for components
+  'landmark-one-main',    // component stories are fragments, not full pages
+  'page-has-heading-one', // same — not a full page
+  'region',               // content doesn't need to be in landmarks in story isolation
+];
+
 // Simple static file server
 function createServer(dir, port) {
   return new Promise((resolve) => {
     const server = http.createServer((req, res) => {
       let filePath = path.join(dir, req.url === '/' ? 'index.html' : req.url);
       filePath = filePath.split('?')[0];
+
+      // Prevent path traversal — ensure resolved path stays within served directory
+      const resolved = path.resolve(filePath);
+      if (!resolved.startsWith(path.resolve(dir))) {
+        res.writeHead(403);
+        res.end('Forbidden');
+        return;
+      }
 
       const ext = path.extname(filePath);
       const contentTypes = {
@@ -71,109 +89,6 @@ async function getStories(storybookPath) {
   }
 }
 
-// axe-core script to inject
-const AXE_SCRIPT = `
-// Minimal axe-core implementation for accessibility testing
-window.runAxe = async function() {
-  const violations = [];
-
-  // Check for images without alt text
-  document.querySelectorAll('img:not([alt])').forEach(el => {
-    violations.push({
-      id: 'image-alt',
-      impact: 'critical',
-      description: 'Images must have alternate text',
-      nodes: [{ html: el.outerHTML.substring(0, 100) }]
-    });
-  });
-
-  // Check for buttons without accessible names
-  document.querySelectorAll('button').forEach(el => {
-    const hasText = el.textContent.trim();
-    const hasAriaLabel = el.getAttribute('aria-label');
-    const hasAriaLabelledBy = el.getAttribute('aria-labelledby');
-    const hasTitle = el.getAttribute('title');
-
-    if (!hasText && !hasAriaLabel && !hasAriaLabelledBy && !hasTitle) {
-      violations.push({
-        id: 'button-name',
-        impact: 'critical',
-        description: 'Buttons must have discernible text',
-        nodes: [{ html: el.outerHTML.substring(0, 100) }]
-      });
-    }
-  });
-
-  // Check for form inputs without labels
-  document.querySelectorAll('input:not([type="hidden"]):not([type="submit"]):not([type="button"])').forEach(el => {
-    const id = el.getAttribute('id');
-    const hasLabel = id && document.querySelector(\`label[for="\${id}"]\`);
-    const hasAriaLabel = el.getAttribute('aria-label');
-    const hasAriaLabelledBy = el.getAttribute('aria-labelledby');
-    const hasTitle = el.getAttribute('title');
-    const hasPlaceholder = el.getAttribute('placeholder');
-
-    if (!hasLabel && !hasAriaLabel && !hasAriaLabelledBy && !hasTitle && !hasPlaceholder) {
-      violations.push({
-        id: 'label',
-        impact: 'critical',
-        description: 'Form elements must have labels',
-        nodes: [{ html: el.outerHTML.substring(0, 100) }]
-      });
-    }
-  });
-
-  // Check for low color contrast (basic check)
-  // This is a simplified check - real axe-core does much more
-
-  // Check for missing lang attribute
-  if (!document.documentElement.getAttribute('lang')) {
-    violations.push({
-      id: 'html-has-lang',
-      impact: 'serious',
-      description: '<html> element must have a lang attribute',
-      nodes: [{ html: '<html>' }]
-    });
-  }
-
-  // Check for missing main landmark
-  if (!document.querySelector('main, [role="main"]')) {
-    // Don't flag this for component stories - they're fragments
-  }
-
-  // Check for empty links
-  document.querySelectorAll('a').forEach(el => {
-    const hasText = el.textContent.trim();
-    const hasAriaLabel = el.getAttribute('aria-label');
-    const hasImage = el.querySelector('img[alt]');
-
-    if (!hasText && !hasAriaLabel && !hasImage) {
-      violations.push({
-        id: 'link-name',
-        impact: 'serious',
-        description: 'Links must have discernible text',
-        nodes: [{ html: el.outerHTML.substring(0, 100) }]
-      });
-    }
-  });
-
-  // Check for positive tabindex
-  document.querySelectorAll('[tabindex]').forEach(el => {
-    const tabindex = parseInt(el.getAttribute('tabindex'), 10);
-    if (tabindex > 0) {
-      violations.push({
-        id: 'tabindex',
-        impact: 'serious',
-        description: 'Elements should not have tabindex greater than zero',
-        nodes: [{ html: el.outerHTML.substring(0, 100) }]
-      });
-    }
-  });
-
-  return { violations };
-};
-`;
-
 async function runAccessibilityAudit() {
   console.log('Starting accessibility audit...');
   console.log(`Components to audit: ${components.length > 0 ? components.join(', ') : 'all affected'}`);
@@ -185,7 +100,7 @@ async function runAccessibilityAudit() {
     const report = {
       error: 'Storybook not built',
       components: {},
-      summary: { total: 0, violations: 0 }
+      summary: { total: 0, violations: 0 },
     };
     fs.writeFileSync(outputFile, JSON.stringify(report, null, 2));
     return;
@@ -202,7 +117,7 @@ async function runAccessibilityAudit() {
   console.log(`Found ${storyIds.length} stories`);
 
   // Filter stories for relevant components
-  const relevantStories = storyIds.filter(id => {
+  const relevantStories = storyIds.filter((id) => {
     // Skip docs pages
     if (id.endsWith('--docs')) return false;
 
@@ -215,7 +130,9 @@ async function runAccessibilityAudit() {
     const componentPart = titleParts.length > 1 ? titleParts[1] : titleParts[0];
     const normalizedComponent = componentPart.replace(/^XDS/i, '').toLowerCase();
 
-    return components.some(comp => normalizedComponent === comp.toLowerCase());
+    return components.some(
+      (comp) => normalizedComponent === comp.toLowerCase()
+    );
   });
 
   // Group stories by component
@@ -232,66 +149,101 @@ async function runAccessibilityAudit() {
   console.log(`Auditing ${Object.keys(storyGroups).length} components`);
 
   const browser = await chromium.launch();
-  const context = await browser.newContext({
-    viewport: { width: 1280, height: 720 },
-  });
-
   const componentResults = {};
   let totalViolations = 0;
 
-  for (const [component, componentStories] of Object.entries(storyGroups)) {
-    const componentViolations = [];
+  try {
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 720 },
+    });
 
-    for (const story of componentStories) {
-      const page = await context.newPage();
+    for (const [component, componentStories] of Object.entries(storyGroups)) {
+      const componentViolations = [];
 
-      try {
-        const url = `http://localhost:${port}/iframe.html?id=${story.id}&viewMode=story`;
-        await page.goto(url, { waitUntil: 'networkidle', timeout: 10000 });
-        await page.waitForTimeout(300);
+      for (const story of componentStories) {
+        const page = await context.newPage();
 
-        // Inject and run accessibility check
-        await page.addScriptTag({ content: AXE_SCRIPT });
-        const results = await page.evaluate(() => window.runAxe());
+        try {
+          const url = `http://localhost:${port}/iframe.html?id=${story.id}&viewMode=story`;
+          // Higher timeout to accommodate axe-core's heavier DOM analysis
+          await page.goto(url, { waitUntil: 'networkidle', timeout: 15000 });
+          // Brief wait for any post-load rendering before axe-core scans the DOM
+          await page.waitForTimeout(500);
 
-        if (results.violations.length > 0) {
+          // Run axe-core accessibility analysis
+          const results = await new AxeBuilder({ page })
+            .disableRules(DISABLED_RULES)
+            .analyze();
+
+          if (results.violations.length > 0) {
+            componentViolations.push({
+              story: story.name || story.id,
+              violations: results.violations,
+            });
+            totalViolations += results.violations.length;
+          }
+
+          console.log(
+            `✓ Audited: ${component} / ${story.name} - ${results.violations.length} issues`
+          );
+        } catch (e) {
+          console.error(`✗ Failed: ${story.id} - ${e.message}`);
+          // Record the failure but continue
           componentViolations.push({
             story: story.name || story.id,
-            violations: results.violations,
+            error: e.message,
+            violations: [],
           });
-          totalViolations += results.violations.length;
-        }
-
-        console.log(`✓ Audited: ${component} / ${story.name} - ${results.violations.length} issues`);
-      } catch (e) {
-        console.error(`✗ Failed: ${story.id} - ${e.message}`);
-      } finally {
-        await page.close();
-      }
-    }
-
-    // Aggregate violations for component
-    const uniqueViolations = [];
-    const seenIds = new Set();
-
-    for (const storyResult of componentViolations) {
-      for (const violation of storyResult.violations) {
-        if (!seenIds.has(violation.id)) {
-          seenIds.add(violation.id);
-          uniqueViolations.push(violation);
+        } finally {
+          await page.close();
         }
       }
-    }
 
-    componentResults[component] = {
-      storiesAudited: componentStories.length,
-      violations: uniqueViolations,
-      storyDetails: componentViolations,
-    };
+      // Aggregate violations for component — preserve counts and story context
+      const violationMap = new Map();
+
+      for (const storyResult of componentViolations) {
+        for (const violation of storyResult.violations) {
+          if (!violationMap.has(violation.id)) {
+            violationMap.set(violation.id, {
+              id: violation.id,
+              impact: violation.impact,
+              description: violation.description,
+              help: violation.help,
+              helpUrl: violation.helpUrl,
+              tags: violation.tags,
+              storyCount: 0,
+              totalNodes: 0,
+              stories: [],
+              nodes: [],
+            });
+          }
+          const agg = violationMap.get(violation.id);
+          agg.storyCount++;
+          agg.totalNodes += violation.nodes.length;
+          agg.stories.push(storyResult.story);
+          // Keep first 3 nodes for display (cap to avoid bloat)
+          if (agg.nodes.length < 3) {
+            agg.nodes.push(
+              ...violation.nodes.slice(0, 3 - agg.nodes.length).map((n) => ({
+                html: n.html.substring(0, 200),
+                target: n.target,
+              }))
+            );
+          }
+        }
+      }
+
+      componentResults[component] = {
+        storiesAudited: componentStories.length,
+        violations: Array.from(violationMap.values()),
+        storyDetails: componentViolations,
+      };
+    }
+  } finally {
+    await browser.close();
+    server.close();
   }
-
-  await browser.close();
-  server.close();
 
   const report = {
     components: componentResults,
@@ -307,7 +259,7 @@ async function runAccessibilityAudit() {
   console.log(`Report written to ${outputFile}`);
 }
 
-runAccessibilityAudit().catch(e => {
+runAccessibilityAudit().catch((e) => {
   console.error('Accessibility audit failed:', e);
   process.exit(1);
 });
