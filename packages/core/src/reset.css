@@ -300,10 +300,11 @@
   }
 
   /*
-   * Reset dialog padding.
+   * Reset dialog padding and outline.
    */
   :where(dialog) {
     padding: 0;
+    outline: none;
   }
 
   /*
