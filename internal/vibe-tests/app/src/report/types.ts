@@ -31,6 +31,8 @@ export interface ReportData {
   htmlSourceCode?: Record<string, string>;
   /** Map of promptId → { target → relative URL } */
   previews?: Record<string, Record<string, string>>;
+  /** Map of promptId → prompt text */
+  prompts?: Record<string, string>;
   iterationId?: string;
   target?: string;
 }

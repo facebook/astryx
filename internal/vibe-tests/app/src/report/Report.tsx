@@ -322,6 +322,7 @@ export function Report() {
                       <PromptDetailCard
                         key={promptId}
                         promptId={promptId}
+                        promptText={data.prompts?.[promptId]}
                         xdsScore={universal.byPrompt[promptId]}
                         baselineScore={comparison?.baseline.byPrompt[promptId]}
                         hasXdsCode={!!data.sourceCode?.[promptId]}
