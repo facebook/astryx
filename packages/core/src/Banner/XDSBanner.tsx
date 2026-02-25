@@ -165,15 +165,19 @@ const styles = stylex.create({
   header: {
     display: 'flex',
     alignItems: 'flex-start',
-    gap: spacingVars['--spacing-3'],
+    gap: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
+  },
+  // When there's only a title (no description) and actions, center everything vertically
+  headerCentered: {
+    alignItems: 'center',
   },
   // Text content area within the header
   headerContent: {
     display: 'flex',
     flexDirection: 'column',
-    gap: spacingVars['--spacing-1'],
+    gap: 0,
     flex: 1,
     minWidth: 0,
   },
@@ -204,6 +208,9 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     flexShrink: 0,
     marginInlineStart: 'auto',
+  },
+  dismissButton: {
+    margin: `calc(-1 * ${spacingVars['--spacing-2']})`,
   },
   // Content area — card background for additional content below the header
   contentArea: {
@@ -316,6 +323,11 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
       onDismiss?.();
     };
 
+    // Center items vertically when there's only a title (no description)
+    // and the banner has action buttons
+    const hasActions = endButton != null || isDismissable;
+    const isSingleLine = description == null && hasActions;
+
     return (
       <div
         ref={ref}
@@ -328,7 +340,12 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
           xstyle,
         )}>
         {/* Header: colored status background */}
-        <div {...stylex.props(styles.header, statusStyles[status])}>
+        <div
+          {...stylex.props(
+            styles.header,
+            isSingleLine && styles.headerCentered,
+            statusStyles[status],
+          )}>
           <div {...stylex.props(styles.iconWrapper)} aria-hidden="true">
             {icon != null ? (
               icon
@@ -346,14 +363,16 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
             <div {...stylex.props(styles.endArea)}>
               {endButton}
               {isDismissable && (
-                <XDSButton
-                  variant="ghost"
-                  size="sm"
-                  label="Dismiss"
-                  tooltip="Dismiss"
-                  icon={<XDSIcon icon="close" size="sm" color="inherit" />}
-                  onClick={handleDismiss}
-                />
+                <div {...stylex.props(styles.dismissButton)}>
+                  <XDSButton
+                    variant="ghost"
+                    size="sm"
+                    label="Dismiss"
+                    tooltip="Dismiss"
+                    icon={<XDSIcon icon="close" size="sm" color="inherit" />}
+                    onClick={handleDismiss}
+                  />
+                </div>
               )}
             </div>
           )}
