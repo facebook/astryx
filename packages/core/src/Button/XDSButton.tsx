@@ -101,7 +101,9 @@ const variants = stylex.create({
     color: colorVars['--color-text-on-media'],
     backgroundImage: {
       default: null,
-      ':hover': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+      ':hover': {
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+      },
       ':active': `linear-gradient(${colorVars['--color-pressed-overlay']}, ${colorVars['--color-pressed-overlay']})`,
     },
     outline: {
@@ -118,7 +120,9 @@ const variants = stylex.create({
     color: colorVars['--color-text-primary'],
     backgroundImage: {
       default: null,
-      ':hover': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+      ':hover': {
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+      },
       ':active': `linear-gradient(${colorVars['--color-pressed-overlay']}, ${colorVars['--color-pressed-overlay']})`,
     },
     outline: {
@@ -135,7 +139,9 @@ const variants = stylex.create({
     color: colorVars['--color-text-primary'],
     backgroundImage: {
       default: null,
-      ':hover': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+      ':hover': {
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+      },
       ':active': `linear-gradient(${colorVars['--color-pressed-overlay']}, ${colorVars['--color-pressed-overlay']})`,
     },
     outline: {
@@ -152,7 +158,9 @@ const variants = stylex.create({
     color: colorVars['--color-text-on-media'],
     backgroundImage: {
       default: null,
-      ':hover': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+      ':hover': {
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+      },
       ':active': `linear-gradient(${colorVars['--color-pressed-overlay']}, ${colorVars['--color-pressed-overlay']})`,
     },
     outline: {

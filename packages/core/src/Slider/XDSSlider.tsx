@@ -215,7 +215,9 @@ const styles = stylex.create({
   thumbHover: {
     backgroundColor: {
       default: colorVars['--color-accent'],
-      ':hover': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
+      ':hover': {
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
+      },
     },
   },
   thumbFocusWithin: {

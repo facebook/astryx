@@ -102,15 +102,17 @@ const styles = stylex.create({
   trackOff: {
     backgroundColor: {
       default: colorVars['--color-gray-background'],
-      [stylex.when.ancestor(':hover')]:
-        `color-mix(in srgb, ${colorVars['--color-gray-background']}, ${colorVars['--color-hover-tint']} 5%)`,
+      [stylex.when.ancestor(':hover')]: {
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-gray-background']}, ${colorVars['--color-hover-tint']} 5%)`,
+      },
     },
   },
   trackOn: {
     backgroundColor: {
       default: colorVars['--color-accent'],
-      [stylex.when.ancestor(':hover')]:
-        `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
+      [stylex.when.ancestor(':hover')]: {
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
+      },
     },
   },
   trackDisabled: {

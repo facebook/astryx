@@ -61,14 +61,18 @@ const styles = stylex.create({
     textAlign: 'start',
     boxSizing: 'border-box',
     ':hover': {
-      backgroundColor: colorVars['--color-hover-overlay'],
+      '@media (hover: hover)': {
+        backgroundColor: colorVars['--color-hover-overlay'],
+      },
     },
   },
   selected: {
     backgroundColor: colorVars['--color-deemphasized'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     ':hover': {
-      backgroundColor: colorVars['--color-deemphasized'],
+      '@media (hover: hover)': {
+        backgroundColor: colorVars['--color-deemphasized'],
+      },
     },
   },
   disabled: {
