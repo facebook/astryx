@@ -68,9 +68,9 @@ describe('XDSEmptyState', () => {
 
   it('does not render actions wrapper when actions is not provided', () => {
     const {container} = render(<XDSEmptyState title="No results" />);
-    // Only the container div and the heading should be present
+    // Container div + text group div, but no actions wrapper
     const divs = container.querySelectorAll('div');
-    expect(divs).toHaveLength(1); // just the container
+    expect(divs).toHaveLength(2); // container + text group
   });
 
   it('has role="status" on the container', () => {

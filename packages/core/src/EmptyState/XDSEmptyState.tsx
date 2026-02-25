@@ -29,7 +29,7 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     textAlign: 'center',
-    gap: spacingVars['--spacing-3'],
+    gap: spacingVars['--spacing-4'],
     paddingBlock: spacingVars['--spacing-8'],
     paddingInline: spacingVars['--spacing-6'],
   },
@@ -60,6 +60,11 @@ const styles = stylex.create({
   },
   descriptionCompact: {
     fontSize: textSizeVars['--text-sm'],
+  },
+  textGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
   },
   actions: {
     display: 'flex',
@@ -145,18 +150,20 @@ export const XDSEmptyState = forwardRef<HTMLDivElement, XDSEmptyStateProps>(
         )}
         {...props}>
         {icon != null && <div aria-hidden="true">{icon}</div>}
-        <h3 {...stylex.props(styles.title, isCompact && styles.titleCompact)}>
-          {title}
-        </h3>
-        {description != null && (
-          <p
-            {...stylex.props(
-              styles.description,
-              isCompact && styles.descriptionCompact,
-            )}>
-            {description}
-          </p>
-        )}
+        <div {...stylex.props(styles.textGroup)}>
+          <h3 {...stylex.props(styles.title, isCompact && styles.titleCompact)}>
+            {title}
+          </h3>
+          {description != null && (
+            <p
+              {...stylex.props(
+                styles.description,
+                isCompact && styles.descriptionCompact,
+              )}>
+              {description}
+            </p>
+          )}
+        </div>
         {actions != null && (
           <div
             {...stylex.props(
