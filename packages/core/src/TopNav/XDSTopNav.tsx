@@ -27,13 +27,21 @@ import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
  */
 const styles = stylex.create({
   base: {
-    display: 'flex',
     alignItems: 'center',
     width: '100%',
     height: spacingVars['--spacing-12'],
     paddingInline: spacingVars['--spacing-4'],
     backgroundColor: colorVars['--color-navbar'],
     boxSizing: 'border-box',
+  },
+  // Flex layout (default, used when no centerContent)
+  baseFlex: {
+    display: 'flex',
+  },
+  // Grid layout (used when centerContent is present)
+  baseGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr auto 1fr',
   },
   leftSection: {
     display: 'flex',
@@ -57,18 +65,14 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacingVars['--spacing-1'],
-    flexShrink: 0,
   },
-  endContent: {
+  rightSection: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'flex-end',
     gap: spacingVars['--spacing-2'],
-    flex: '1 1 0%',
-    minWidth: 0,
   },
-  // When there's no centerContent, revert to the simpler layout
-  endContentNoCenterContent: {
+  endContent: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
@@ -104,9 +108,10 @@ export interface XDSTopNavProps extends Omit<
    */
   startContent?: ReactNode;
   /**
-   * Center content slot - navigation items or content centered in the nav bar.
-   * When present, the layout switches to a three-column mode where
-   * start and end sections flex equally to keep center content visually centered.
+   * Center content slot - typically tabs, search bar, or primary navigation.
+   * Positioned at the horizontal center of the nav bar.
+   * When provided, the layout switches to a three-column CSS grid to ensure
+   * true centering regardless of start/end content widths.
    */
   centerContent?: ReactNode;
   /**
@@ -129,8 +134,9 @@ export interface XDSTopNavProps extends Omit<
  * left-aligned, centerContent is centered, and endContent is right-aligned.
  *
  * When `centerContent` is provided, the layout switches to a three-column
- * mode where the left and right sections flex equally to keep the center
- * content visually centered in the nav bar.
+ * CSS grid (`1fr auto 1fr`) to ensure the center content is always at the
+ * exact horizontal center of the nav bar, regardless of left/right content
+ * widths.
  *
  * Positioning is handled by the layout system (e.g. XDSAppShell applies sticky
  * behavior in auto height mode). TopNav itself is a pure content component.
@@ -183,7 +189,11 @@ export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
         ref={ref}
         role="navigation"
         aria-label={label}
-        {...stylex.props(styles.base, rootOverride)}
+        {...stylex.props(
+          styles.base,
+          hasCenterContent ? styles.baseGrid : styles.baseFlex,
+          rootOverride,
+        )}
         {...props}>
         <div {...stylex.props(styles.leftSection)}>
           {title && <div {...stylex.props(styles.title)}>{title}</div>}
@@ -194,15 +204,12 @@ export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
         {hasCenterContent && (
           <div {...stylex.props(styles.centerContent)}>{centerContent}</div>
         )}
-        {endContent && (
-          <div
-            {...stylex.props(
-              hasCenterContent
-                ? styles.endContent
-                : styles.endContentNoCenterContent,
-            )}>
-            {endContent}
-          </div>
+        {hasCenterContent ? (
+          <div {...stylex.props(styles.rightSection)}>{endContent}</div>
+        ) : (
+          endContent && (
+            <div {...stylex.props(styles.endContent)}>{endContent}</div>
+          )
         )}
       </nav>
     );

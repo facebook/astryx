@@ -207,19 +207,21 @@ import {XDSTopNav, XDSTopNavTitle, XDSTopNavItem} from '@xds/core/TopNav';
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ [title] [start...]   [centerContent...]   [...endContent]   │
-│  └─ flex: 1 ──────── centered ──────────── flex: 1 ────────┤
+│  └─ 1fr start ──┘   └── auto center ──┘   └── 1fr end ───┤
 └─────────────────────────────────────────────────────────────┘
 ```
 
-When `centerContent` is provided, the left and right sections flex equally
-(`flex: 1 1 0%`) so the center content stays visually centered regardless
-of how much content is in the start or end slots.
+When `centerContent` is provided, the layout switches to a CSS grid with
+`gridTemplateColumns: '1fr auto 1fr'`. This guarantees the center column
+is always at the exact horizontal center of the nav bar, regardless of
+left/right content widths. The right column is always rendered (even when
+`endContent` is absent) to maintain the three-column grid structure.
 
 ## Implementation Notes
 
 - XDSTopNav uses `role="navigation"` and accepts `aria-label` via the `label` prop
 - Without `centerContent`: title and startContent grow to push endContent right
-- With `centerContent`: left and right sections use equal flex basis for true centering
+- With `centerContent`: switches to CSS grid (`1fr auto 1fr`) for true centering
 - XDSTopNavItem supports `aria-current="page"` when `isSelected` is true
 - XDSTopNavTitleIcon uses `--color-accent` background with `--color-icon-on-media` for contrast
 - Default height is 48px with 16px horizontal padding

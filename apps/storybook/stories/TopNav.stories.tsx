@@ -267,6 +267,29 @@ export const CenteredWithStartContent: Story = {
   ),
 };
 
+export const CenterContentWithoutEnd: Story = {
+  args: {
+    label: 'Main navigation',
+    title: (
+      <XDSTopNavTitle
+        title="My App"
+        logo={
+          <XDSTopNavTitleIcon
+            icon={<CubeIcon style={{width: 16, height: 16}} />}
+          />
+        }
+        href="#"
+      />
+    ),
+    centerContent: (
+      <>
+        <XDSTopNavItem label="Home" href="#" isSelected />
+        <XDSTopNavItem label="Products" href="#" />
+      </>
+    ),
+  },
+};
+
 export const FullExample: Story = {
   render: () => (
     <XDSTopNav

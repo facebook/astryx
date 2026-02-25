@@ -87,6 +87,36 @@ describe('XDSTopNav', () => {
     expect(screen.getByTestId('end')).toBeInTheDocument();
   });
 
+  it('renders centerContent without endContent', () => {
+    render(
+      <XDSTopNav
+        title={<span data-testid="title">Title</span>}
+        centerContent={<span data-testid="center">Center</span>}
+      />,
+    );
+    expect(screen.getByTestId('title')).toBeInTheDocument();
+    expect(screen.getByTestId('center')).toBeInTheDocument();
+
+    const nav = screen.getByRole('navigation');
+    // 3 child divs: left section, center section, right section (even without endContent)
+    expect(nav.children).toHaveLength(3);
+  });
+
+  it('renders centerContent without startContent', () => {
+    render(
+      <XDSTopNav
+        centerContent={<span data-testid="center">Center</span>}
+        endContent={<span data-testid="end">End</span>}
+      />,
+    );
+    expect(screen.getByTestId('center')).toBeInTheDocument();
+    expect(screen.getByTestId('end')).toBeInTheDocument();
+
+    const nav = screen.getByRole('navigation');
+    // 3 child divs: left section, center section, right section
+    expect(nav.children).toHaveLength(3);
+  });
+
   it('forwards ref correctly', () => {
     const ref = vi.fn();
     render(<XDSTopNav ref={ref} />);
