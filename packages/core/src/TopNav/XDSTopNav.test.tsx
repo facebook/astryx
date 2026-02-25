@@ -10,10 +10,21 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {forwardRef, type ComponentPropsWithoutRef} from 'react';
 import {XDSTopNav} from './XDSTopNav';
 import {XDSTopNavTitle} from './XDSTopNavTitle';
 import {XDSNavIcon} from '../NavIcon';
 import {XDSTopNavItem} from './XDSTopNavItem';
+import {XDSLinkProvider} from '../Link/XDSLinkProvider';
+
+const CustomLink = forwardRef<HTMLAnchorElement, ComponentPropsWithoutRef<'a'>>(
+  ({children, ...props}, ref) => (
+    <a ref={ref} data-custom-link {...props}>
+      {children}
+    </a>
+  ),
+);
+CustomLink.displayName = 'CustomLink';
 
 describe('XDSTopNav', () => {
   it('renders with navigation role', () => {
@@ -240,5 +251,41 @@ describe('XDSTopNavItem', () => {
     const ref = vi.fn();
     render(<XDSTopNavItem label="Test" ref={ref} />);
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLAnchorElement));
+  });
+
+  it('renders custom component when as is provided', () => {
+    render(<XDSTopNavItem label="Home" href="/" as={CustomLink} />);
+    const link = screen.getByRole('link', {name: 'Home'});
+    expect(link).toHaveAttribute('data-custom-link');
+    expect(link).toHaveAttribute('href', '/');
+  });
+
+  it('renders custom component from XDSLinkProvider', () => {
+    render(
+      <XDSLinkProvider component={CustomLink}>
+        <XDSTopNavItem label="Home" href="/" />
+      </XDSLinkProvider>,
+    );
+    const link = screen.getByRole('link', {name: 'Home'});
+    expect(link).toHaveAttribute('data-custom-link');
+  });
+
+  it('as prop overrides XDSLinkProvider', () => {
+    const AnotherLink = forwardRef<
+      HTMLAnchorElement,
+      ComponentPropsWithoutRef<'a'>
+    >(({children, ...props}, ref) => (
+      <a ref={ref} data-another-link {...props}>
+        {children}
+      </a>
+    ));
+    render(
+      <XDSLinkProvider component={AnotherLink}>
+        <XDSTopNavItem label="Home" href="/" as={CustomLink} />
+      </XDSLinkProvider>,
+    );
+    const link = screen.getByRole('link', {name: 'Home'});
+    expect(link).toHaveAttribute('data-custom-link');
+    expect(link).not.toHaveAttribute('data-another-link');
   });
 });

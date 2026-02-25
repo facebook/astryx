@@ -27,6 +27,8 @@ import {
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
 import type {XDSIconType} from '../Icon';
+import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
+import type {XDSLinkComponentType} from '../Link/types';
 
 // =============================================================================
 // Styles
@@ -96,6 +98,12 @@ const styles = stylex.create({
 // =============================================================================
 
 export interface XDSSideNavItemProps {
+  /**
+   * Custom component to render instead of `<a>` for link items.
+   * Overrides the provider-level default set by XDSLinkProvider.
+   * Only applies when `href` is provided. Must accept href, className, style, and children props.
+   */
+  as?: XDSLinkComponentType;
   /**
    * Item label.
    */
@@ -168,6 +176,7 @@ export interface XDSSideNavItemProps {
 export const XDSSideNavItem = forwardRef<HTMLElement, XDSSideNavItemProps>(
   function XDSSideNavItem(
     {
+      as,
       label,
       icon,
       selectedIcon,
@@ -183,6 +192,7 @@ export const XDSSideNavItem = forwardRef<HTMLElement, XDSSideNavItemProps>(
   ) {
     const id = useId();
     const hasChildren = !!children;
+    const LinkComponent = useXDSLinkComponent(as);
 
     const displayIcon = isSelected && selectedIcon ? selectedIcon : icon;
 
@@ -220,7 +230,7 @@ export const XDSSideNavItem = forwardRef<HTMLElement, XDSSideNavItemProps>(
 
     const itemElement =
       href && !isDisabled ? (
-        <a
+        <LinkComponent
           ref={ref as React.Ref<HTMLAnchorElement>}
           href={href}
           onClick={handleClick}
@@ -231,7 +241,7 @@ export const XDSSideNavItem = forwardRef<HTMLElement, XDSSideNavItemProps>(
             isDisabled && styles.disabled,
           )}>
           {itemContent}
-        </a>
+        </LinkComponent>
       ) : (
         <button
           ref={ref as React.Ref<HTMLButtonElement>}

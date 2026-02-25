@@ -10,6 +10,8 @@
  * - /packages/core/src/TabList/XDSTabList.test.tsx
  */
 
+'use client';
+
 import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -24,8 +26,16 @@ import {
 } from '../theme/tokens.stylex';
 import {useXDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
+import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
+import type {XDSLinkComponentType} from '../Link/types';
 
 export interface XDSTabProps {
+  /**
+   * Custom component to render instead of `<a>` for link tabs.
+   * Overrides the provider-level default set by XDSLinkProvider.
+   * Only applies when `href` is provided. Must accept href, className, style, and children props.
+   */
+  as?: XDSLinkComponentType;
   /**
    * Unique value for this tab. Matched against XDSTabListContext.value.
    */
@@ -152,8 +162,16 @@ const iconSizeStyles = stylex.create({
  * Tab item component. Renders as an anchor when `href` is provided,
  * otherwise as a button.
  */
-export function XDSTab({value, label, href, icon, selectedIcon}: XDSTabProps) {
+export function XDSTab({
+  as,
+  value,
+  label,
+  href,
+  icon,
+  selectedIcon,
+}: XDSTabProps) {
   const tabListCtx = useXDSTabListContext();
+  const LinkComponent = useXDSLinkComponent(as);
 
   const isSelected = tabListCtx.value === value;
   const size: XDSTabListSize = tabListCtx.size;
@@ -195,11 +213,11 @@ export function XDSTab({value, label, href, icon, selectedIcon}: XDSTabProps) {
 
   if (href != null) {
     return (
-      <a href={href} onClick={handleSelect} {...sharedProps}>
+      <LinkComponent href={href} onClick={handleSelect} {...sharedProps}>
         {iconElement}
         {labelElement}
         {hoverUnderlineElement}
-      </a>
+      </LinkComponent>
     );
   }
 
