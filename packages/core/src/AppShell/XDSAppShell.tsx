@@ -59,6 +59,14 @@ export type XDSAppShellBreakpoint = 'sm' | 'md' | 'lg' | 'none';
 
 export interface XDSAppShellProps {
   /**
+   * Background color of the shell.
+   * - `wash`: Page-level background — subtle gray in light, near-black in dark
+   * - `surface`: Card/panel background — white in light, dark gray in dark
+   * @default 'surface'
+   */
+  background?: 'wash' | 'surface';
+
+  /**
    * Optional banner slot for system-wide announcements.
    * Renders above the top nav and scrolls away with the page in auto mode.
    */
@@ -135,6 +143,12 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     position: 'relative',
+  },
+  rootBgWash: {
+    backgroundColor: colorVars['--color-wash'],
+  },
+  rootBgSurface: {
+    backgroundColor: colorVars['--color-surface'],
   },
   rootFill: {
     height: '100dvh',
@@ -309,6 +323,7 @@ const dynamicStyles = stylex.create({
 export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
   function XDSAppShell(
     {
+      background = 'surface',
       banner,
       children,
       'data-testid': dataTestId,
@@ -523,6 +538,7 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
         data-testid={dataTestId}
         {...stylex.props(
           styles.root,
+          background === 'wash' ? styles.rootBgWash : styles.rootBgSurface,
           isFill ? styles.rootFill : styles.rootAuto,
           xstyle,
         )}>
