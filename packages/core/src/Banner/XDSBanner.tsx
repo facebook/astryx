@@ -209,6 +209,9 @@ const styles = stylex.create({
     flexShrink: 0,
     marginInlineStart: 'auto',
   },
+  dismissButton: {
+    margin: '-8px',
+  },
   // Content area — card background for additional content below the header
   contentArea: {
     backgroundColor: colorVars['--color-card'],
@@ -360,14 +363,16 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
             <div {...stylex.props(styles.endArea)}>
               {endButton}
               {isDismissable && (
-                <XDSButton
-                  variant="ghost"
-                  size="sm"
-                  label="Dismiss"
-                  tooltip="Dismiss"
-                  icon={<XDSIcon icon="close" size="sm" color="inherit" />}
-                  onClick={handleDismiss}
-                />
+                <div {...stylex.props(styles.dismissButton)}>
+                  <XDSButton
+                    variant="ghost"
+                    size="sm"
+                    label="Dismiss"
+                    tooltip="Dismiss"
+                    icon={<XDSIcon icon="close" size="sm" color="inherit" />}
+                    onClick={handleDismiss}
+                  />
+                </div>
               )}
             </div>
           )}
