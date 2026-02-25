@@ -159,6 +159,13 @@ export const spacingDefaults = {
   '--spacing-10': '40px',
   '--spacing-11': '44px',
   '--spacing-12': '48px',
+
+  // Negative spacing
+  '--spacing-neg-0-5': '-2px',
+  '--spacing-neg-1': '-4px',
+  '--spacing-neg-2': '-8px',
+  '--spacing-neg-3': '-12px',
+  '--spacing-neg-4': '-16px',
 } as const;
 
 /** @deprecated Use spacingDefaults */

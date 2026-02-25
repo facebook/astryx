@@ -41,8 +41,8 @@ const styles = stylex.create({
     flexShrink: 0,
   },
   closeButton: {
-    marginTop: -8,
-    marginRight: -8,
+    marginTop: spacingVars['--spacing-neg-2'],
+    marginRight: spacingVars['--spacing-neg-2'],
   },
 });
 
