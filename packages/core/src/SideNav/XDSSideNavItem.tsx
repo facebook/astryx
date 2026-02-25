@@ -63,10 +63,10 @@ const styles = stylex.create({
     },
   },
   selected: {
-    backgroundColor: colorVars['--color-accent-deemphasized'],
+    backgroundColor: colorVars['--color-deemphasized'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     ':hover': {
-      backgroundColor: colorVars['--color-accent-deemphasized'],
+      backgroundColor: colorVars['--color-deemphasized'],
     },
   },
   disabled: {

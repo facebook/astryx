@@ -60,9 +60,9 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     backgroundColor: {
-      default: colorVars['--color-accent-deemphasized'],
-      ':hover': colorVars['--color-accent-deemphasized'],
-      ':active': colorVars['--color-accent-deemphasized'],
+      default: colorVars['--color-deemphasized'],
+      ':hover': colorVars['--color-deemphasized'],
+      ':active': colorVars['--color-deemphasized'],
     },
   },
   disabled: {
