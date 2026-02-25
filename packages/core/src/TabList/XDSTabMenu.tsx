@@ -129,7 +129,9 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-rounded'],
     opacity: {
       default: 0,
-      [stylex.when.ancestor(':hover')]: 1,
+      [stylex.when.ancestor(':hover')]: {
+        '@media (hover: hover)': 1,
+      },
     },
     transitionProperty: 'opacity',
     transitionDuration: transitionVars['--transition-fast'],
@@ -174,7 +176,9 @@ const styles = stylex.create({
     transitionDuration: transitionVars['--transition-fast'],
     backgroundColor: {
       default: 'transparent',
-      ':hover': colorVars['--color-hover-overlay'],
+      ':hover': {
+        '@media (hover: hover)': colorVars['--color-hover-overlay'],
+      },
     },
     outline: {
       default: null,

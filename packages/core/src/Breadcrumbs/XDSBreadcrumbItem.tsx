@@ -92,7 +92,9 @@ const itemStyles = stylex.create({
     gap: spacingVars['--spacing-1'],
     textDecoration: {
       default: 'none',
-      ':hover': 'underline',
+      ':hover': {
+        '@media (hover: hover)': 'underline',
+      },
     },
     cursor: 'pointer',
   },

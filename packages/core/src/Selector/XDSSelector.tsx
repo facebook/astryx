@@ -65,7 +65,9 @@ const styles = stylex.create({
     borderStyle: 'solid',
     borderColor: {
       default: colorVars['--color-divider-emphasized'],
-      ':hover': colorVars['--color-divider-high-contrast'],
+      ':hover': {
+        '@media (hover: hover)': colorVars['--color-divider-high-contrast'],
+      },
     },
     borderRadius: radiusVars['--radius-element'],
     backgroundColor: colorVars['--color-surface'],
@@ -78,7 +80,9 @@ const styles = stylex.create({
     transitionDuration: transitionVars['--transition-fast'],
     boxShadow: {
       default: 'none',
-      ':hover': elevationVars['--elevation-input-hover'],
+      ':hover': {
+        '@media (hover: hover)': elevationVars['--elevation-input-hover'],
+      },
     },
     outline: {
       default: 'none',
@@ -241,19 +245,27 @@ const statusHoverShadowStyles = stylex.create({
   warning: {
     boxShadow: {
       default: 'none',
-      ':hover': elevationVars['--elevation-input-hover-warning'],
+      ':hover': {
+        '@media (hover: hover)':
+          elevationVars['--elevation-input-hover-warning'],
+      },
     },
   },
   error: {
     boxShadow: {
       default: 'none',
-      ':hover': elevationVars['--elevation-input-hover-error'],
+      ':hover': {
+        '@media (hover: hover)': elevationVars['--elevation-input-hover-error'],
+      },
     },
   },
   success: {
     boxShadow: {
       default: 'none',
-      ':hover': elevationVars['--elevation-input-hover-success'],
+      ':hover': {
+        '@media (hover: hover)':
+          elevationVars['--elevation-input-hover-success'],
+      },
     },
   },
 });

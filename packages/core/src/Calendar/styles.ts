@@ -236,7 +236,9 @@ export const dayCellTheme = stylex.create({
     backgroundColor: 'transparent',
     backgroundImage: {
       default: null,
-      ':hover': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+      ':hover': {
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+      },
     },
     outline: {
       default: null,
@@ -269,7 +271,9 @@ export const dayCellTheme = stylex.create({
     color: colorVars['--color-text-on-media'],
     backgroundImage: {
       default: null,
-      ':hover': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+      ':hover': {
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+      },
     },
   },
 

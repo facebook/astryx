@@ -56,7 +56,9 @@ const styles = stylex.create({
     fontWeight: 'inherit',
     textDecoration: {
       default: 'none',
-      ':hover': 'underline',
+      ':hover': {
+        '@media (hover: hover)': 'underline',
+      },
     },
     cursor: 'pointer',
     transitionProperty: 'color, text-decoration',
