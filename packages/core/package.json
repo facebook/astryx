@@ -172,6 +172,12 @@
       "import": "./dist/List/index.mjs",
       "require": "./dist/List/index.js"
     },
+    "./NavIcon": {
+      "source": "./src/NavIcon/index.ts",
+      "types": "./dist/NavIcon/index.d.ts",
+      "import": "./dist/NavIcon/index.mjs",
+      "require": "./dist/NavIcon/index.js"
+    },
     "./NumberInput": {
       "source": "./src/NumberInput/index.ts",
       "types": "./dist/NumberInput/index.d.ts",

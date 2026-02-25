@@ -7,10 +7,10 @@ import {
 } from '@xds/core/SideNav';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
-import {XDSDivider} from '@xds/core/Divider';
 import {XDSIcon} from '@xds/core/Icon';
+import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSText} from '@xds/core/Text';
-import {XDSVStack} from '@xds/core/Stack';
 import {
   HomeIcon,
   FolderIcon,
@@ -59,7 +59,9 @@ export const Default: Story = {
     <XDSSideNav
       header={
         <XDSSideNavHeader
-          icon={<XDSIcon icon={CubeIcon} size="lg" />}
+          icon={
+            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+          }
           title="My App"
           titleHref="/"
         />
@@ -98,6 +100,38 @@ export const Default: Story = {
 };
 
 // =============================================================================
+// Title Without Icon
+// =============================================================================
+
+export const TitleWithoutIcon: Story = {
+  name: 'Title Without Icon',
+  render: () => (
+    <XDSSideNav header={<XDSSideNavHeader title="My App" titleHref="/" />}>
+      <XDSSideNavSection title="Main">
+        <XDSSideNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          selectedIcon={HomeIconSolid}
+          isSelected
+          href="/dashboard"
+        />
+        <XDSSideNavItem
+          label="Projects"
+          icon={FolderIcon}
+          selectedIcon={FolderIconSolid}
+          href="/projects"
+        />
+        <XDSSideNavItem
+          label="Analytics"
+          icon={ChartBarIcon}
+          href="/analytics"
+        />
+      </XDSSideNavSection>
+    </XDSSideNav>
+  ),
+};
+
+// =============================================================================
 // With Header Menu
 // =============================================================================
 
@@ -107,44 +141,42 @@ export const WithHeaderMenu: Story = {
     <XDSSideNav
       header={
         <XDSSideNavHeader
-          icon={<XDSIcon icon={CubeIcon} size="lg" />}
+          icon={
+            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+          }
           title="Product Name"
           subtitle="Business Account"
           menu={
-            <div style={{padding: 12}}>
-              <XDSVStack gap="space2">
+            <XDSList
+              density="compact"
+              header={
                 <XDSText type="supporting" color="secondary">
                   Switch account
                 </XDSText>
-                <XDSButton
-                  label="Personal Account"
-                  icon={<XDSIcon icon={UserIcon} size="sm" />}
-                  variant="ghost"
-                  size="sm"
-                />
-                <XDSButton
-                  label="Acme Corp"
-                  icon={<XDSIcon icon={BuildingOfficeIcon} size="sm" />}
-                  variant="ghost"
-                  size="sm"
-                />
-                <XDSDivider />
-                <XDSButton
-                  label="Add account"
-                  icon={<XDSIcon icon={PlusIcon} size="sm" />}
-                  variant="ghost"
-                  size="sm"
-                />
-                <XDSButton
-                  label="Sign out"
-                  icon={
-                    <XDSIcon icon={ArrowRightStartOnRectangleIcon} size="sm" />
-                  }
-                  variant="ghost"
-                  size="sm"
-                />
-              </XDSVStack>
-            </div>
+              }>
+              <XDSListItem
+                label="Personal Account"
+                startContent={<XDSIcon icon={UserIcon} size="sm" />}
+                href="#"
+              />
+              <XDSListItem
+                label="Acme Corp"
+                startContent={<XDSIcon icon={BuildingOfficeIcon} size="sm" />}
+                href="#"
+              />
+              <XDSListItem
+                label="Add account"
+                startContent={<XDSIcon icon={PlusIcon} size="sm" />}
+                href="#"
+              />
+              <XDSListItem
+                label="Sign out"
+                startContent={
+                  <XDSIcon icon={ArrowRightStartOnRectangleIcon} size="sm" />
+                }
+                href="#"
+              />
+            </XDSList>
           }
         />
       }>
@@ -171,37 +203,37 @@ export const SuiteHeader: Story = {
     <XDSSideNav
       header={
         <XDSSideNavHeader
-          icon={<XDSIcon icon={CubeIcon} size="lg" />}
+          icon={
+            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+          }
           supertitle="Suite Name"
           supertitleHref="/suite"
           title="Product Name"
           titleHref="/product"
           menu={
-            <div style={{padding: 12}}>
-              <XDSVStack gap="space1">
+            <XDSList
+              density="compact"
+              header={
                 <XDSText type="supporting" color="secondary">
                   Switch product
                 </XDSText>
-                <XDSButton
-                  label="Analytics"
-                  icon={<XDSIcon icon={ChartBarIcon} size="sm" />}
-                  variant="ghost"
-                  size="sm"
-                />
-                <XDSButton
-                  label="Commerce"
-                  icon={<XDSIcon icon={CubeIcon} size="sm" />}
-                  variant="ghost"
-                  size="sm"
-                />
-                <XDSButton
-                  label="Team Hub"
-                  icon={<XDSIcon icon={UserGroupIcon} size="sm" />}
-                  variant="ghost"
-                  size="sm"
-                />
-              </XDSVStack>
-            </div>
+              }>
+              <XDSListItem
+                label="Analytics"
+                startContent={<XDSIcon icon={ChartBarIcon} size="sm" />}
+                href="#"
+              />
+              <XDSListItem
+                label="Commerce"
+                startContent={<XDSIcon icon={CubeIcon} size="sm" />}
+                href="#"
+              />
+              <XDSListItem
+                label="Team Hub"
+                startContent={<XDSIcon icon={UserGroupIcon} size="sm" />}
+                href="#"
+              />
+            </XDSList>
           }
         />
       }>
@@ -228,7 +260,9 @@ export const NestedItems: Story = {
     <XDSSideNav
       header={
         <XDSSideNavHeader
-          icon={<XDSIcon icon={CubeIcon} size="lg" />}
+          icon={
+            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+          }
           title="My App"
         />
       }>
@@ -262,7 +296,9 @@ export const WithFooter: Story = {
     <XDSSideNav
       header={
         <XDSSideNavHeader
-          icon={<XDSIcon icon={CubeIcon} size="lg" />}
+          icon={
+            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+          }
           title="My App"
         />
       }
@@ -305,7 +341,9 @@ export const DisabledItem: Story = {
     <XDSSideNav
       header={
         <XDSSideNavHeader
-          icon={<XDSIcon icon={CubeIcon} size="lg" />}
+          icon={
+            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+          }
           title="My App"
         />
       }>
@@ -337,7 +375,9 @@ export const HiddenSectionHeader: Story = {
     <XDSSideNav
       header={
         <XDSSideNavHeader
-          icon={<XDSIcon icon={CubeIcon} size="lg" />}
+          icon={
+            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+          }
           title="My App"
         />
       }>

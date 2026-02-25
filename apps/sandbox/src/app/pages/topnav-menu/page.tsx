@@ -7,10 +7,10 @@ import {XDSButton} from '@xds/core/Button';
 import {
   XDSTopNav,
   XDSTopNavTitle,
-  XDSTopNavTitleIcon,
   XDSTopNavItem,
   XDSTopNavMenu,
 } from '@xds/core/TopNav';
+import {XDSNavIcon} from '@xds/core/NavIcon';
 
 const styles = stylex.create({
   container: {
@@ -117,7 +117,7 @@ export default function TopNavMenuPage() {
               title={
                 <XDSTopNavTitle
                   title="Marketing"
-                  logo={<XDSTopNavTitleIcon icon={<LogoIcon />} size="sm" />}
+                  logo={<XDSNavIcon icon={<LogoIcon />} />}
                   href="#"
                 />
               }

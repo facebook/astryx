@@ -12,7 +12,7 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSTopNav} from './XDSTopNav';
 import {XDSTopNavTitle} from './XDSTopNavTitle';
-import {XDSTopNavTitleIcon} from './XDSTopNavTitleIcon';
+import {XDSNavIcon} from '../NavIcon';
 import {XDSTopNavItem} from './XDSTopNavItem';
 
 describe('XDSTopNav', () => {
@@ -164,44 +164,15 @@ describe('XDSTopNavTitle', () => {
   });
 });
 
-describe('XDSTopNavTitleIcon', () => {
+describe('XDSNavIcon', () => {
   it('renders icon content', () => {
-    render(<XDSTopNavTitleIcon icon={<span data-testid="icon">Icon</span>} />);
+    render(<XDSNavIcon icon={<span data-testid="icon">Icon</span>} />);
     expect(screen.getByTestId('icon')).toBeInTheDocument();
-  });
-
-  it('renders with different sizes', () => {
-    const {rerender} = render(
-      <XDSTopNavTitleIcon
-        icon={<span>Icon</span>}
-        size="sm"
-        data-testid="icon-wrapper"
-      />,
-    );
-    expect(screen.getByTestId('icon-wrapper')).toBeInTheDocument();
-
-    rerender(
-      <XDSTopNavTitleIcon
-        icon={<span>Icon</span>}
-        size="md"
-        data-testid="icon-wrapper"
-      />,
-    );
-    expect(screen.getByTestId('icon-wrapper')).toBeInTheDocument();
-
-    rerender(
-      <XDSTopNavTitleIcon
-        icon={<span>Icon</span>}
-        size="lg"
-        data-testid="icon-wrapper"
-      />,
-    );
-    expect(screen.getByTestId('icon-wrapper')).toBeInTheDocument();
   });
 
   it('forwards ref correctly', () => {
     const ref = vi.fn();
-    render(<XDSTopNavTitleIcon icon={<span>Icon</span>} ref={ref} />);
+    render(<XDSNavIcon icon={<span>Icon</span>} ref={ref} />);
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLSpanElement));
   });
 });

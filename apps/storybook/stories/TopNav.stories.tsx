@@ -1,10 +1,6 @@
 import type {Meta, StoryObj} from '@storybook/react';
-import {
-  XDSTopNav,
-  XDSTopNavTitle,
-  XDSTopNavTitleIcon,
-  XDSTopNavItem,
-} from '@xds/core/TopNav';
+import {XDSTopNav, XDSTopNavTitle, XDSTopNavItem} from '@xds/core/TopNav';
+import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSButton} from '@xds/core/Button';
 import {
   HomeIcon,
@@ -75,9 +71,7 @@ export const WithLogo: Story = {
       <XDSTopNavTitle
         title="Dashboard"
         logo={
-          <XDSTopNavTitleIcon
-            icon={<CubeIcon style={{width: 16, height: 16}} />}
-          />
+          <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
         }
         href="#"
       />
@@ -106,10 +100,7 @@ export const TitleOnly: Story = {
       <XDSTopNavTitle
         title="Simple App"
         logo={
-          <XDSTopNavTitleIcon
-            icon={<HomeIcon style={{width: 16, height: 16}} />}
-            size="sm"
-          />
+          <XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />
         }
       />
     ),
@@ -138,55 +129,6 @@ export const NavItemStates: Story = {
   ),
 };
 
-export const TitleIconSizes: Story = {
-  render: () => (
-    <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
-      <XDSTopNav
-        label="Small icon"
-        title={
-          <XDSTopNavTitle
-            title="Small"
-            logo={
-              <XDSTopNavTitleIcon
-                icon={<CubeIcon style={{width: 14, height: 14}} />}
-                size="sm"
-              />
-            }
-          />
-        }
-      />
-      <XDSTopNav
-        label="Medium icon"
-        title={
-          <XDSTopNavTitle
-            title="Medium"
-            logo={
-              <XDSTopNavTitleIcon
-                icon={<CubeIcon style={{width: 16, height: 16}} />}
-                size="md"
-              />
-            }
-          />
-        }
-      />
-      <XDSTopNav
-        label="Large icon"
-        title={
-          <XDSTopNavTitle
-            title="Large"
-            logo={
-              <XDSTopNavTitleIcon
-                icon={<CubeIcon style={{width: 18, height: 18}} />}
-                size="lg"
-              />
-            }
-          />
-        }
-      />
-    </div>
-  ),
-};
-
 export const CenteredNavigation: Story = {
   render: () => (
     <XDSTopNav
@@ -195,9 +137,7 @@ export const CenteredNavigation: Story = {
         <XDSTopNavTitle
           title="My App"
           logo={
-            <XDSTopNavTitleIcon
-              icon={<CubeIcon style={{width: 16, height: 16}} />}
-            />
+            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
           href="#"
         />
@@ -235,7 +175,7 @@ export const CenteredWithStartContent: Story = {
         <XDSTopNavTitle
           title="Dashboard"
           logo={
-            <XDSTopNavTitleIcon
+            <XDSNavIcon
               icon={<ChartBarIcon style={{width: 16, height: 16}} />}
             />
           }
@@ -298,7 +238,7 @@ export const FullExample: Story = {
         <XDSTopNavTitle
           title="Enterprise Dashboard"
           logo={
-            <XDSTopNavTitleIcon
+            <XDSNavIcon
               icon={<ChartBarIcon style={{width: 16, height: 16}} />}
             />
           }

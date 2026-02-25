@@ -57,7 +57,7 @@ const styles = stylex.create({
     },
   },
   selected: {
-    color: colorVars['--color-accent-text'],
+    color: colorVars['--color-text-primary'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     backgroundColor: {
       default: colorVars['--color-accent-deemphasized'],

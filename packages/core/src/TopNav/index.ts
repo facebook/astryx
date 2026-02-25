@@ -13,11 +13,14 @@ export type {XDSTopNavProps} from './XDSTopNav';
 export {XDSTopNavTitle} from './XDSTopNavTitle';
 export type {XDSTopNavTitleProps} from './XDSTopNavTitle';
 
-export {XDSTopNavTitleIcon} from './XDSTopNavTitleIcon';
-export type {
-  XDSTopNavTitleIconProps,
-  XDSTopNavTitleIconSize,
-} from './XDSTopNavTitleIcon';
+/**
+ * @deprecated Use `XDSNavIcon` from `@xds/core/NavIcon` instead.
+ */
+export {XDSNavIcon as XDSTopNavTitleIcon} from '../NavIcon';
+/**
+ * @deprecated Use `XDSNavIconProps` from `@xds/core/NavIcon` instead.
+ */
+export type {XDSNavIconProps as XDSTopNavTitleIconProps} from '../NavIcon';
 
 export {XDSTopNavItem} from './XDSTopNavItem';
 export type {XDSTopNavItemProps} from './XDSTopNavItem';

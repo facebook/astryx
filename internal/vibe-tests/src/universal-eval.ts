@@ -141,6 +141,7 @@ function discoverXDSComponents(): Set<string> {
     'XDSTopNavMenu',
     'XDSTopNavTitle',
     'XDSTopNavTitleIcon',
+    'XDSNavIcon',
     'XDSVStack',
     'Theme',
     'defaultTheme',

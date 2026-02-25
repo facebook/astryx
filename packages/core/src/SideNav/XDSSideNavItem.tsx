@@ -201,7 +201,7 @@ export const XDSSideNavItem = forwardRef<HTMLElement, XDSSideNavItemProps>(
             icon={displayIcon}
             size="sm"
             color={
-              isSelected ? 'accent' : isDisabled ? 'disabled' : 'secondary'
+              isSelected ? 'primary' : isDisabled ? 'disabled' : 'secondary'
             }
           />
         )}
