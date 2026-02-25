@@ -1,16 +1,16 @@
 /**
- * @file XDSPageNavItem.tsx
+ * @file XDSSideNavItem.tsx
  * @input Uses React forwardRef, ReactNode, StyleX, XDSIcon, XDSIconType
- * @output Exports XDSPageNavItem component and XDSPageNavItemProps
- * @position Core implementation; used inside XDSPageNav children
+ * @output Exports XDSSideNavItem component and XDSSideNavItemProps
+ * @position Core implementation; used inside XDSSideNav children
  *
  * Navigation item with icon, selected state, and nesting.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/PageNav/README.md
- * - /packages/core/src/PageNav/XDSPageNav.test.tsx
- * - /packages/core/src/PageNav/index.ts
- * - /apps/storybook/stories/PageNav.stories.tsx
+ * - /packages/core/src/SideNav/README.md
+ * - /packages/core/src/SideNav/XDSSideNav.test.tsx
+ * - /packages/core/src/SideNav/index.ts
+ * - /apps/storybook/stories/SideNav.stories.tsx
  */
 
 'use client';
@@ -95,7 +95,7 @@ const styles = stylex.create({
 // Types
 // =============================================================================
 
-export interface XDSPageNavItemProps {
+export interface XDSSideNavItemProps {
   /**
    * Item label.
    */
@@ -145,13 +145,13 @@ export interface XDSPageNavItemProps {
 // =============================================================================
 
 /**
- * Navigation item for XDSPageNav.
+ * Navigation item for XDSSideNav.
  *
  * Supports icons, selected state, nesting, and end content like badges or counts.
  *
  * @example
  * ```tsx
- * <XDSPageNavItem
+ * <XDSSideNavItem
  *   label="Dashboard"
  *   icon={HomeIcon}
  *   selectedIcon={HomeIconSolid}
@@ -159,14 +159,14 @@ export interface XDSPageNavItemProps {
  *   href="/dashboard"
  * />
  *
- * <XDSPageNavItem label="Settings" icon={CogIcon}>
- *   <XDSPageNavItem label="General" href="/settings/general" />
- *   <XDSPageNavItem label="Security" href="/settings/security" />
- * </XDSPageNavItem>
+ * <XDSSideNavItem label="Settings" icon={CogIcon}>
+ *   <XDSSideNavItem label="General" href="/settings/general" />
+ *   <XDSSideNavItem label="Security" href="/settings/security" />
+ * </XDSSideNavItem>
  * ```
  */
-export const XDSPageNavItem = forwardRef<HTMLElement, XDSPageNavItemProps>(
-  function XDSPageNavItem(
+export const XDSSideNavItem = forwardRef<HTMLElement, XDSSideNavItemProps>(
+  function XDSSideNavItem(
     {
       label,
       icon,
@@ -267,4 +267,4 @@ export const XDSPageNavItem = forwardRef<HTMLElement, XDSPageNavItemProps>(
   },
 );
 
-XDSPageNavItem.displayName = 'XDSPageNavItem';
+XDSSideNavItem.displayName = 'XDSSideNavItem';

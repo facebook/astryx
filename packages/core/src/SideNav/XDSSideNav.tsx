@@ -1,17 +1,17 @@
 /**
- * @file XDSPageNav.tsx
+ * @file XDSSideNav.tsx
  * @input Uses React forwardRef, HTMLAttributes, ReactNode, StyleX
- * @output Exports XDSPageNav component and XDSPageNavProps
- * @position Core implementation; consumed by index.ts, tested by XDSPageNav.test.tsx
+ * @output Exports XDSSideNav component and XDSSideNavProps
+ * @position Core implementation; consumed by index.ts, tested by XDSSideNav.test.tsx
  *
  * Sidebar navigation container with five zones: header + topContent (sticky together),
  * children (scrollable), footer, and footerIcons (sticky bottom).
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/PageNav/README.md
- * - /packages/core/src/PageNav/XDSPageNav.test.tsx
- * - /packages/core/src/PageNav/index.ts
- * - /apps/storybook/stories/PageNav.stories.tsx
+ * - /packages/core/src/SideNav/README.md
+ * - /packages/core/src/SideNav/XDSSideNav.test.tsx
+ * - /packages/core/src/SideNav/index.ts
+ * - /apps/storybook/stories/SideNav.stories.tsx
  */
 
 'use client';
@@ -88,7 +88,7 @@ const styles = stylex.create({
 
 declare module '../theme/types' {
   interface ComponentStyles {
-    pageNav?: {
+    sideNav?: {
       /** Root container styles */
       root?: ThemeStyleXStyles;
     };
@@ -99,12 +99,12 @@ declare module '../theme/types' {
 // Types
 // =============================================================================
 
-export interface XDSPageNavProps extends Omit<
+export interface XDSSideNavProps extends Omit<
   HTMLAttributes<HTMLElement>,
   'style' | 'className'
 > {
   /**
-   * Header area — typically XDSPageNavHeader. Sticky at top.
+   * Header area — typically XDSSideNavHeader. Sticky at top.
    */
   header?: ReactNode;
   /**
@@ -145,20 +145,20 @@ export interface XDSPageNavProps extends Omit<
  *
  * @example
  * ```tsx
- * <XDSPageNav
- *   header={<XDSPageNavHeader icon={<AppIcon />} title="My App" titleHref="/" />}
+ * <XDSSideNav
+ *   header={<XDSSideNavHeader icon={<AppIcon />} title="My App" titleHref="/" />}
  *   topContent={<XDSButton label="Create new" variant="primary" />}
  *   footerIcons={<XDSButton icon={HelpIcon} variant="ghost" label="Help" />}
  * >
- *   <XDSPageNavSection title="Main">
- *     <XDSPageNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
- *     <XDSPageNavItem label="Projects" icon={FolderIcon} href="/projects" />
- *   </XDSPageNavSection>
- * </XDSPageNav>
+ *   <XDSSideNavSection title="Main">
+ *     <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
+ *     <XDSSideNavItem label="Projects" icon={FolderIcon} href="/projects" />
+ *   </XDSSideNavSection>
+ * </XDSSideNav>
  * ```
  */
-export const XDSPageNav = forwardRef<HTMLElement, XDSPageNavProps>(
-  function XDSPageNav(
+export const XDSSideNav = forwardRef<HTMLElement, XDSSideNavProps>(
+  function XDSSideNav(
     {
       header,
       topContent,
@@ -172,7 +172,7 @@ export const XDSPageNav = forwardRef<HTMLElement, XDSPageNavProps>(
     ref,
   ) {
     const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.pageNav?.root;
+    const rootOverride = themeContext?.theme.components?.sideNav?.root;
 
     const hasStickyTop = !!(header || topContent);
     const hasStickyBottom = !!(footer || footerIcons);
@@ -181,7 +181,7 @@ export const XDSPageNav = forwardRef<HTMLElement, XDSPageNavProps>(
       <nav
         ref={ref}
         role="navigation"
-        aria-label="Page navigation"
+        aria-label="Side navigation"
         data-testid={testId}
         {...stylex.props(styles.root, rootOverride, xstyle)}
         {...props}>
@@ -207,4 +207,4 @@ export const XDSPageNav = forwardRef<HTMLElement, XDSPageNavProps>(
   },
 );
 
-XDSPageNav.displayName = 'XDSPageNav';
+XDSSideNav.displayName = 'XDSSideNav';

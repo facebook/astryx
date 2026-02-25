@@ -99,7 +99,7 @@ export interface XDSAppShellProps {
   onSideNavCollapsedChange?: (isCollapsed: boolean) => void;
 
   /**
-   * Side navigation — typically an XDSPageNav.
+   * Side navigation — typically an XDSSideNav.
    */
   sideNav?: ReactNode;
 
@@ -265,8 +265,8 @@ const dynamicStyles = stylex.create({
  *
  * @example
  * ```tsx
- * // TopNav + PageNav — the most common pattern.
- * // PageNav omits its header because TopNav provides app identity.
+ * // TopNav + SideNav — the most common pattern.
+ * // SideNav omits its header because TopNav provides app identity.
  * <XDSAppShell
  *   topNav={
  *     <XDSTopNav
@@ -276,25 +276,25 @@ const dynamicStyles = stylex.create({
  *     />
  *   }
  *   sideNav={
- *     <XDSPageNav>
- *       <XDSPageNavSection title="Main" isHeaderHidden>
- *         <XDSPageNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
- *         <XDSPageNavItem label="Analytics" icon={ChartBarIcon} href="/analytics" />
- *       </XDSPageNavSection>
- *     </XDSPageNav>
+ *     <XDSSideNav>
+ *       <XDSSideNavSection title="Main" isHeaderHidden>
+ *         <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
+ *         <XDSSideNavItem label="Analytics" icon={ChartBarIcon} href="/analytics" />
+ *       </XDSSideNavSection>
+ *     </XDSSideNav>
  *   }
  * >
  *   <DashboardContent />
  * </XDSAppShell>
  *
- * // PageNav only — header provides app identity when there's no TopNav
+ * // SideNav only — header provides app identity when there's no TopNav
  * <XDSAppShell
  *   sideNav={
- *     <XDSPageNav header={<XDSPageNavHeader title="My App" titleHref="/" />}>
- *       <XDSPageNavSection title="Main" isHeaderHidden>
- *         <XDSPageNavItem label="Dashboard" icon={HomeIcon} isSelected />
- *       </XDSPageNavSection>
- *     </XDSPageNav>
+ *     <XDSSideNav header={<XDSSideNavHeader title="My App" titleHref="/" />}>
+ *       <XDSSideNavSection title="Main" isHeaderHidden>
+ *         <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected />
+ *       </XDSSideNavSection>
+ *     </XDSSideNav>
  *   }
  * >
  *   <DashboardContent />

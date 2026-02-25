@@ -178,11 +178,11 @@
       "import": "./dist/NumberInput/index.mjs",
       "require": "./dist/NumberInput/index.js"
     },
-    "./PageNav": {
-      "source": "./src/PageNav/index.ts",
-      "types": "./dist/PageNav/index.d.ts",
-      "import": "./dist/PageNav/index.mjs",
-      "require": "./dist/PageNav/index.js"
+    "./SideNav": {
+      "source": "./src/SideNav/index.ts",
+      "types": "./dist/SideNav/index.d.ts",
+      "import": "./dist/SideNav/index.mjs",
+      "require": "./dist/SideNav/index.js"
     },
     "./ProgressBar": {
       "source": "./src/ProgressBar/index.ts",

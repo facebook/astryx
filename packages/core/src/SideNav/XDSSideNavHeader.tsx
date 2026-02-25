@@ -1,17 +1,17 @@
 /**
- * @file XDSPageNavHeader.tsx
+ * @file XDSSideNavHeader.tsx
  * @input Uses React forwardRef, useRef, useCallback, ReactNode, StyleX, useXDSPopover
- * @output Exports XDSPageNavHeader component and XDSPageNavHeaderProps
- * @position Core implementation; used inside XDSPageNav header slot
+ * @output Exports XDSSideNavHeader component and XDSSideNavHeaderProps
+ * @position Core implementation; used inside XDSSideNav header slot
  *
  * Product/suite/account header with smart interaction boundary logic.
  * Composes useXDSPopover internally when menu prop is provided.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/PageNav/README.md
- * - /packages/core/src/PageNav/XDSPageNav.test.tsx
- * - /packages/core/src/PageNav/index.ts
- * - /apps/storybook/stories/PageNav.stories.tsx
+ * - /packages/core/src/SideNav/README.md
+ * - /packages/core/src/SideNav/XDSSideNav.test.tsx
+ * - /packages/core/src/SideNav/index.ts
+ * - /apps/storybook/stories/SideNav.stories.tsx
  */
 
 'use client';
@@ -133,7 +133,7 @@ const styles = stylex.create({
 // Types
 // =============================================================================
 
-export interface XDSPageNavHeaderProps {
+export interface XDSSideNavHeaderProps {
   /**
    * Product/app icon.
    */
@@ -208,7 +208,7 @@ function ChevronDownIcon() {
 // =============================================================================
 
 /**
- * Product/suite/account header for XDSPageNav.
+ * Product/suite/account header for XDSSideNav.
  *
  * Supports smart interaction boundary logic:
  * - No hrefs + menu → whole header is the popover trigger
@@ -221,10 +221,10 @@ function ChevronDownIcon() {
  * @example
  * ```tsx
  * // Single product
- * <XDSPageNavHeader icon={<AppIcon />} title="My App" titleHref="/" />
+ * <XDSSideNavHeader icon={<AppIcon />} title="My App" titleHref="/" />
  *
  * // Suite with menu
- * <XDSPageNavHeader
+ * <XDSSideNavHeader
  *   icon={<SuiteIcon />}
  *   supertitle="Suite Name"
  *   supertitleHref="/suite"
@@ -234,7 +234,7 @@ function ChevronDownIcon() {
  * />
  *
  * // Account context with menu
- * <XDSPageNavHeader
+ * <XDSSideNavHeader
  *   icon={<AppIcon />}
  *   title="Product Name"
  *   subtitle="Business Account"
@@ -242,10 +242,10 @@ function ChevronDownIcon() {
  * />
  * ```
  */
-export const XDSPageNavHeader = forwardRef<
+export const XDSSideNavHeader = forwardRef<
   HTMLDivElement,
-  XDSPageNavHeaderProps
->(function XDSPageNavHeader(
+  XDSSideNavHeaderProps
+>(function XDSSideNavHeader(
   {
     icon,
     title,
@@ -503,4 +503,4 @@ export const XDSPageNavHeader = forwardRef<
   );
 });
 
-XDSPageNavHeader.displayName = 'XDSPageNavHeader';
+XDSSideNavHeader.displayName = 'XDSSideNavHeader';

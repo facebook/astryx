@@ -1,4 +1,4 @@
-# PageNav
+# SideNav
 
 Sidebar navigation component for application pages. Supports sections, nested items, selected state, icons, and responsive collapse.
 
@@ -6,53 +6,53 @@ Sidebar navigation component for application pages. Supports sections, nested it
 
 | Component           | Description                                                                               |
 | ------------------- | ----------------------------------------------------------------------------------------- |
-| `XDSPageNav`        | Container with five zones: header, topContent, children (scrollable), footer, footerIcons |
-| `XDSPageNavHeader`  | Product/suite/account header with smart interaction boundary logic                        |
-| `XDSPageNavItem`    | Navigation item with icon, selected state, and nesting                                    |
-| `XDSPageNavSection` | Section grouping with optional title and end content                                      |
+| `XDSSideNav`        | Container with five zones: header, topContent, children (scrollable), footer, footerIcons |
+| `XDSSideNavHeader`  | Product/suite/account header with smart interaction boundary logic                        |
+| `XDSSideNavItem`    | Navigation item with icon, selected state, and nesting                                    |
+| `XDSSideNavSection` | Section grouping with optional title and end content                                      |
 
 ## Files
 
 | File                    | Purpose                                    |
 | ----------------------- | ------------------------------------------ |
-| `XDSPageNav.tsx`        | Container component                        |
-| `XDSPageNavHeader.tsx`  | Header component with popover menu support |
-| `XDSPageNavItem.tsx`    | Navigation item component                  |
-| `XDSPageNavSection.tsx` | Section grouping component                 |
-| `XDSPageNav.test.tsx`   | Unit tests                                 |
+| `XDSSideNav.tsx`        | Container component                        |
+| `XDSSideNavHeader.tsx`  | Header component with popover menu support |
+| `XDSSideNavItem.tsx`    | Navigation item component                  |
+| `XDSSideNavSection.tsx` | Section grouping component                 |
+| `XDSSideNav.test.tsx`   | Unit tests                                 |
 | `index.ts`              | Public exports                             |
 
 ## Usage
 
 ```tsx
 import {
-  XDSPageNav,
-  XDSPageNavHeader,
-  XDSPageNavItem,
-  XDSPageNavSection,
-} from '@xds/core/PageNav';
+  XDSSideNav,
+  XDSSideNavHeader,
+  XDSSideNavItem,
+  XDSSideNavSection,
+} from '@xds/core/SideNav';
 ```
 
 ### With XDSAppShell + TopNav
 
-When used inside `XDSAppShell` alongside a `XDSTopNav`, **omit the header** — the TopNav already provides the app name and logo. Including `XDSPageNavHeader` would double the identity.
+When used inside `XDSAppShell` alongside a `XDSTopNav`, **omit the header** — the TopNav already provides the app name and logo. Including `XDSSideNavHeader` would double the identity.
 
 ```tsx
-// TopNav provides identity → PageNav has no header
+// TopNav provides identity → SideNav has no header
 <XDSAppShell
   topNav={<XDSTopNav title={<XDSTopNavTitle title="My App" />} />}
   sideNav={
-    <XDSPageNav>
-      <XDSPageNavSection title="Main" isHeaderHidden>
-        <XDSPageNavItem
+    <XDSSideNav>
+      <XDSSideNavSection title="Main" isHeaderHidden>
+        <XDSSideNavItem
           label="Dashboard"
           icon={HomeIcon}
           isSelected
           href="/dashboard"
         />
-        <XDSPageNavItem label="Projects" icon={FolderIcon} href="/projects" />
-      </XDSPageNavSection>
-    </XDSPageNav>
+        <XDSSideNavItem label="Projects" icon={FolderIcon} href="/projects" />
+      </XDSSideNavSection>
+    </XDSSideNav>
   }>
   <Content />
 </XDSAppShell>
@@ -60,39 +60,39 @@ When used inside `XDSAppShell` alongside a `XDSTopNav`, **omit the header** — 
 
 ### Standalone (no TopNav)
 
-Without a TopNav, include `XDSPageNavHeader` to provide app identity.
+Without a TopNav, include `XDSSideNavHeader` to provide app identity.
 
 ```tsx
-// No TopNav → PageNav header provides identity
+// No TopNav → SideNav header provides identity
 <XDSAppShell
   sideNav={
-    <XDSPageNav
+    <XDSSideNav
       header={
-        <XDSPageNavHeader icon={<AppIcon />} title="My App" titleHref="/" />
+        <XDSSideNavHeader icon={<AppIcon />} title="My App" titleHref="/" />
       }
       topContent={<XDSButton label="Create new" variant="primary" />}
       footerIcons={<XDSButton icon={HelpIcon} variant="ghost" label="Help" />}>
-      <XDSPageNavSection title="Main">
-        <XDSPageNavItem
+      <XDSSideNavSection title="Main">
+        <XDSSideNavItem
           label="Dashboard"
           icon={HomeIcon}
           selectedIcon={HomeIconSolid}
           isSelected
           href="/dashboard"
         />
-        <XDSPageNavItem
+        <XDSSideNavItem
           label="Projects"
           icon={FolderIcon}
           href="/projects"
           endContent={<XDSBadge>3</XDSBadge>}
         />
-      </XDSPageNavSection>
+      </XDSSideNavSection>
 
-      <XDSPageNavSection title="Settings">
-        <XDSPageNavItem label="General" href="/settings/general" />
-        <XDSPageNavItem label="Security" href="/settings/security" />
-      </XDSPageNavSection>
-    </XDSPageNav>
+      <XDSSideNavSection title="Settings">
+        <XDSSideNavItem label="General" href="/settings/general" />
+        <XDSSideNavItem label="Security" href="/settings/security" />
+      </XDSSideNavSection>
+    </XDSSideNav>
   }>
   <Content />
 </XDSAppShell>
@@ -109,7 +109,7 @@ Without a TopNav, include `XDSPageNavHeader` to provide app identity.
 
 ## Accessibility
 
-- `<nav aria-label="Page navigation">`
+- `<nav aria-label="Side navigation">`
 - `aria-current="page"` on selected item
 - Sections: `role="group"` with `aria-labelledby`
 - Keyboard: Tab through items, Enter/Space to activate

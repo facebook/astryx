@@ -1,92 +1,92 @@
 /**
- * @file XDSPageNav.test.tsx
- * @input Uses vitest, @testing-library/react, PageNav components
- * @output Unit tests for XDSPageNav component suite
- * @position Testing; validates PageNav implementations
+ * @file XDSSideNav.test.tsx
+ * @input Uses vitest, @testing-library/react, SideNav components
+ * @output Unit tests for XDSSideNav component suite
+ * @position Testing; validates SideNav implementations
  *
- * SYNC: When PageNav components change, update tests to match new behavior
+ * SYNC: When SideNav components change, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {XDSPageNav} from './XDSPageNav';
-import {XDSPageNavHeader} from './XDSPageNavHeader';
-import {XDSPageNavItem} from './XDSPageNavItem';
-import {XDSPageNavSection} from './XDSPageNavSection';
+import {XDSSideNav} from './XDSSideNav';
+import {XDSSideNavHeader} from './XDSSideNavHeader';
+import {XDSSideNavItem} from './XDSSideNavItem';
+import {XDSSideNavSection} from './XDSSideNavSection';
 
 // =============================================================================
-// XDSPageNav
+// XDSSideNav
 // =============================================================================
 
-describe('XDSPageNav', () => {
+describe('XDSSideNav', () => {
   it('renders with navigation role', () => {
-    render(<XDSPageNav>Content</XDSPageNav>);
+    render(<XDSSideNav>Content</XDSSideNav>);
     expect(screen.getByRole('navigation')).toBeInTheDocument();
   });
 
   it('renders aria-label for page navigation', () => {
-    render(<XDSPageNav>Content</XDSPageNav>);
+    render(<XDSSideNav>Content</XDSSideNav>);
     expect(screen.getByRole('navigation')).toHaveAttribute(
       'aria-label',
-      'Page navigation',
+      'Side navigation',
     );
   });
 
   it('renders children in scrollable area', () => {
     render(
-      <XDSPageNav>
+      <XDSSideNav>
         <span data-testid="nav-content">Nav items</span>
-      </XDSPageNav>,
+      </XDSSideNav>,
     );
     expect(screen.getByTestId('nav-content')).toBeInTheDocument();
   });
 
   it('renders header slot', () => {
     render(
-      <XDSPageNav header={<span data-testid="header">Header</span>}>
+      <XDSSideNav header={<span data-testid="header">Header</span>}>
         Content
-      </XDSPageNav>,
+      </XDSSideNav>,
     );
     expect(screen.getByTestId('header')).toBeInTheDocument();
   });
 
   it('renders topContent slot', () => {
     render(
-      <XDSPageNav topContent={<span data-testid="sticky">Sticky</span>}>
+      <XDSSideNav topContent={<span data-testid="sticky">Sticky</span>}>
         Content
-      </XDSPageNav>,
+      </XDSSideNav>,
     );
     expect(screen.getByTestId('sticky')).toBeInTheDocument();
   });
 
   it('renders footer slot', () => {
     render(
-      <XDSPageNav footer={<span data-testid="footer">Footer</span>}>
+      <XDSSideNav footer={<span data-testid="footer">Footer</span>}>
         Content
-      </XDSPageNav>,
+      </XDSSideNav>,
     );
     expect(screen.getByTestId('footer')).toBeInTheDocument();
   });
 
   it('renders footerIcons slot', () => {
     render(
-      <XDSPageNav footerIcons={<span data-testid="footer-icons">Icons</span>}>
+      <XDSSideNav footerIcons={<span data-testid="footer-icons">Icons</span>}>
         Content
-      </XDSPageNav>,
+      </XDSSideNav>,
     );
     expect(screen.getByTestId('footer-icons')).toBeInTheDocument();
   });
 
   it('renders all slots together', () => {
     render(
-      <XDSPageNav
+      <XDSSideNav
         header={<span data-testid="header">Header</span>}
         topContent={<span data-testid="sticky">Sticky</span>}
         footer={<span data-testid="footer">Footer</span>}
         footerIcons={<span data-testid="icons">Icons</span>}>
         <span data-testid="content">Content</span>
-      </XDSPageNav>,
+      </XDSSideNav>,
     );
     expect(screen.getByTestId('header')).toBeInTheDocument();
     expect(screen.getByTestId('sticky')).toBeInTheDocument();
@@ -97,29 +97,29 @@ describe('XDSPageNav', () => {
 
   it('forwards ref correctly', () => {
     const ref = vi.fn();
-    render(<XDSPageNav ref={ref}>Content</XDSPageNav>);
+    render(<XDSSideNav ref={ref}>Content</XDSSideNav>);
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLElement));
   });
 
   it('passes data-testid to root', () => {
-    render(<XDSPageNav data-testid="page-nav">Content</XDSPageNav>);
+    render(<XDSSideNav data-testid="page-nav">Content</XDSSideNav>);
     expect(screen.getByTestId('page-nav')).toBeInTheDocument();
   });
 });
 
 // =============================================================================
-// XDSPageNavHeader
+// XDSSideNavHeader
 // =============================================================================
 
-describe('XDSPageNavHeader', () => {
+describe('XDSSideNavHeader', () => {
   it('renders title text', () => {
-    render(<XDSPageNavHeader title="My App" />);
+    render(<XDSSideNavHeader title="My App" />);
     expect(screen.getByText('My App')).toBeInTheDocument();
   });
 
   it('renders icon', () => {
     render(
-      <XDSPageNavHeader
+      <XDSSideNavHeader
         title="My App"
         icon={<span data-testid="app-icon">🏠</span>}
       />,
@@ -128,17 +128,17 @@ describe('XDSPageNavHeader', () => {
   });
 
   it('renders supertitle', () => {
-    render(<XDSPageNavHeader title="Product" supertitle="Suite Name" />);
+    render(<XDSSideNavHeader title="Product" supertitle="Suite Name" />);
     expect(screen.getByText('Suite Name')).toBeInTheDocument();
   });
 
   it('renders subtitle', () => {
-    render(<XDSPageNavHeader title="Product" subtitle="Account" />);
+    render(<XDSSideNavHeader title="Product" subtitle="Account" />);
     expect(screen.getByText('Account')).toBeInTheDocument();
   });
 
   it('renders as link when titleHref is provided without menu', () => {
-    render(<XDSPageNavHeader title="My App" titleHref="/home" />);
+    render(<XDSSideNavHeader title="My App" titleHref="/home" />);
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('href', '/home');
     expect(link).toHaveTextContent('My App');
@@ -146,7 +146,7 @@ describe('XDSPageNavHeader', () => {
 
   it('renders independent links when titleHref and supertitleHref are provided', () => {
     render(
-      <XDSPageNavHeader
+      <XDSSideNavHeader
         title="Product"
         titleHref="/product"
         supertitle="Suite"
@@ -160,20 +160,20 @@ describe('XDSPageNavHeader', () => {
   });
 
   it('shows chevron when menu is provided', () => {
-    render(<XDSPageNavHeader title="My App" menu={<div>Menu content</div>} />);
+    render(<XDSSideNavHeader title="My App" menu={<div>Menu content</div>} />);
     // The chevron SVG should be rendered
     const button = screen.getByRole('button');
     expect(button).toBeInTheDocument();
   });
 
   it('does not show chevron without menu', () => {
-    const {container} = render(<XDSPageNavHeader title="My App" />);
+    const {container} = render(<XDSSideNavHeader title="My App" />);
     const svg = container.querySelector('svg');
     expect(svg).not.toBeInTheDocument();
   });
 
   it('whole header is popover trigger when menu provided without hrefs', () => {
-    render(<XDSPageNavHeader title="My App" menu={<div>Menu</div>} />);
+    render(<XDSSideNavHeader title="My App" menu={<div>Menu</div>} />);
     const button = screen.getByRole('button');
     expect(button).toHaveAttribute('aria-haspopup', 'dialog');
     expect(button).toHaveAttribute('aria-expanded', 'false');
@@ -182,7 +182,7 @@ describe('XDSPageNavHeader', () => {
   it('toggles popover on click when menu is provided', async () => {
     const user = userEvent.setup();
     render(
-      <XDSPageNavHeader
+      <XDSSideNavHeader
         title="My App"
         menu={<div data-testid="menu-content">Menu</div>}
       />,
@@ -194,7 +194,7 @@ describe('XDSPageNavHeader', () => {
 
   it('renders chevron as separate trigger when menu and hrefs are provided', () => {
     render(
-      <XDSPageNavHeader
+      <XDSSideNavHeader
         title="Product"
         titleHref="/product"
         menu={<div>Menu</div>}
@@ -205,46 +205,46 @@ describe('XDSPageNavHeader', () => {
   });
 
   it('passes data-testid', () => {
-    render(<XDSPageNavHeader title="My App" data-testid="nav-header" />);
+    render(<XDSSideNavHeader title="My App" data-testid="nav-header" />);
     expect(screen.getByTestId('nav-header')).toBeInTheDocument();
   });
 });
 
 // =============================================================================
-// XDSPageNavItem
+// XDSSideNavItem
 // =============================================================================
 
-describe('XDSPageNavItem', () => {
+describe('XDSSideNavItem', () => {
   it('renders label text', () => {
-    render(<XDSPageNavItem label="Dashboard" />);
+    render(<XDSSideNavItem label="Dashboard" />);
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
   });
 
   it('renders as link when href is provided', () => {
-    render(<XDSPageNavItem label="Dashboard" href="/dashboard" />);
+    render(<XDSSideNavItem label="Dashboard" href="/dashboard" />);
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('href', '/dashboard');
   });
 
   it('renders as button when no href', () => {
-    render(<XDSPageNavItem label="Dashboard" />);
+    render(<XDSSideNavItem label="Dashboard" />);
     expect(screen.getByRole('button')).toBeInTheDocument();
   });
 
   it('sets aria-current="page" when selected', () => {
-    render(<XDSPageNavItem label="Dashboard" isSelected />);
+    render(<XDSSideNavItem label="Dashboard" isSelected />);
     const button = screen.getByRole('button');
     expect(button).toHaveAttribute('aria-current', 'page');
   });
 
   it('does not set aria-current when not selected', () => {
-    render(<XDSPageNavItem label="Dashboard" />);
+    render(<XDSSideNavItem label="Dashboard" />);
     const button = screen.getByRole('button');
     expect(button).not.toHaveAttribute('aria-current');
   });
 
   it('disables the button when isDisabled', () => {
-    render(<XDSPageNavItem label="Dashboard" isDisabled />);
+    render(<XDSSideNavItem label="Dashboard" isDisabled />);
     const button = screen.getByRole('button');
     expect(button).toBeDisabled();
   });
@@ -252,14 +252,14 @@ describe('XDSPageNavItem', () => {
   it('calls onClick handler', async () => {
     const user = userEvent.setup();
     const handleClick = vi.fn();
-    render(<XDSPageNavItem label="Dashboard" onClick={handleClick} />);
+    render(<XDSSideNavItem label="Dashboard" onClick={handleClick} />);
     await user.click(screen.getByRole('button'));
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
 
   it('renders endContent', () => {
     render(
-      <XDSPageNavItem
+      <XDSSideNavItem
         label="Projects"
         endContent={<span data-testid="badge">3</span>}
       />,
@@ -269,55 +269,55 @@ describe('XDSPageNavItem', () => {
 
   it('renders nested children', () => {
     render(
-      <XDSPageNavItem label="Settings">
-        <XDSPageNavItem label="General" />
-        <XDSPageNavItem label="Security" />
-      </XDSPageNavItem>,
+      <XDSSideNavItem label="Settings">
+        <XDSSideNavItem label="General" />
+        <XDSSideNavItem label="Security" />
+      </XDSSideNavItem>,
     );
     expect(screen.getByText('General')).toBeInTheDocument();
     expect(screen.getByText('Security')).toBeInTheDocument();
   });
 
   it('passes data-testid', () => {
-    render(<XDSPageNavItem label="Dashboard" data-testid="nav-item" />);
+    render(<XDSSideNavItem label="Dashboard" data-testid="nav-item" />);
     expect(screen.getByTestId('nav-item')).toBeInTheDocument();
   });
 
   it('renders with selected link', () => {
-    render(<XDSPageNavItem label="Dashboard" href="/dashboard" isSelected />);
+    render(<XDSSideNavItem label="Dashboard" href="/dashboard" isSelected />);
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('aria-current', 'page');
   });
 });
 
 // =============================================================================
-// XDSPageNavSection
+// XDSSideNavSection
 // =============================================================================
 
-describe('XDSPageNavSection', () => {
+describe('XDSSideNavSection', () => {
   it('renders with group role', () => {
     render(
-      <XDSPageNavSection title="Main">
-        <XDSPageNavItem label="Dashboard" />
-      </XDSPageNavSection>,
+      <XDSSideNavSection title="Main">
+        <XDSSideNavItem label="Dashboard" />
+      </XDSSideNavSection>,
     );
     expect(screen.getByRole('group')).toBeInTheDocument();
   });
 
   it('renders title text', () => {
     render(
-      <XDSPageNavSection title="Main">
-        <XDSPageNavItem label="Dashboard" />
-      </XDSPageNavSection>,
+      <XDSSideNavSection title="Main">
+        <XDSSideNavItem label="Dashboard" />
+      </XDSSideNavSection>,
     );
     expect(screen.getByText('Main')).toBeInTheDocument();
   });
 
   it('uses aria-labelledby to link title to group', () => {
     render(
-      <XDSPageNavSection title="Main">
-        <XDSPageNavItem label="Dashboard" />
-      </XDSPageNavSection>,
+      <XDSSideNavSection title="Main">
+        <XDSSideNavItem label="Dashboard" />
+      </XDSSideNavSection>,
     );
     const group = screen.getByRole('group');
     const labelId = group.getAttribute('aria-labelledby');
@@ -328,29 +328,29 @@ describe('XDSPageNavSection', () => {
 
   it('renders subtitle', () => {
     render(
-      <XDSPageNavSection title="Main" subtitle="Primary navigation">
-        <XDSPageNavItem label="Dashboard" />
-      </XDSPageNavSection>,
+      <XDSSideNavSection title="Main" subtitle="Primary navigation">
+        <XDSSideNavItem label="Dashboard" />
+      </XDSSideNavSection>,
     );
     expect(screen.getByText('Primary navigation')).toBeInTheDocument();
   });
 
   it('renders endContent', () => {
     render(
-      <XDSPageNavSection
+      <XDSSideNavSection
         title="Main"
         endContent={<span data-testid="section-action">+</span>}>
-        <XDSPageNavItem label="Dashboard" />
-      </XDSPageNavSection>,
+        <XDSSideNavItem label="Dashboard" />
+      </XDSSideNavSection>,
     );
     expect(screen.getByTestId('section-action')).toBeInTheDocument();
   });
 
   it('passes data-testid', () => {
     render(
-      <XDSPageNavSection title="Main" data-testid="nav-section">
-        <XDSPageNavItem label="Dashboard" />
-      </XDSPageNavSection>,
+      <XDSSideNavSection title="Main" data-testid="nav-section">
+        <XDSSideNavItem label="Dashboard" />
+      </XDSSideNavSection>,
     );
     expect(screen.getByTestId('nav-section')).toBeInTheDocument();
   });
@@ -360,22 +360,22 @@ describe('XDSPageNavSection', () => {
 // Integration
 // =============================================================================
 
-describe('PageNav integration', () => {
+describe('SideNav integration', () => {
   it('renders a complete page nav', () => {
     render(
-      <XDSPageNav
-        header={<XDSPageNavHeader title="My App" />}
+      <XDSSideNav
+        header={<XDSSideNavHeader title="My App" />}
         topContent={<button>Create</button>}
         footer={<div data-testid="promo">Promo</div>}
         footerIcons={<button>Help</button>}>
-        <XDSPageNavSection title="Main">
-          <XDSPageNavItem label="Dashboard" isSelected />
-          <XDSPageNavItem label="Projects" />
-        </XDSPageNavSection>
-        <XDSPageNavSection title="Settings">
-          <XDSPageNavItem label="General" />
-        </XDSPageNavSection>
-      </XDSPageNav>,
+        <XDSSideNavSection title="Main">
+          <XDSSideNavItem label="Dashboard" isSelected />
+          <XDSSideNavItem label="Projects" />
+        </XDSSideNavSection>
+        <XDSSideNavSection title="Settings">
+          <XDSSideNavItem label="General" />
+        </XDSSideNavSection>
+      </XDSSideNav>,
     );
 
     expect(screen.getByRole('navigation')).toBeInTheDocument();

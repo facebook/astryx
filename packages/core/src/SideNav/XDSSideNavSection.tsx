@@ -1,16 +1,16 @@
 /**
- * @file XDSPageNavSection.tsx
+ * @file XDSSideNavSection.tsx
  * @input Uses React, StyleX
- * @output Exports XDSPageNavSection component and XDSPageNavSectionProps
- * @position Core implementation; used inside XDSPageNav children
+ * @output Exports XDSSideNavSection component and XDSSideNavSectionProps
+ * @position Core implementation; used inside XDSSideNav children
  *
  * Section grouping for navigation items with optional title and end content.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/PageNav/README.md
- * - /packages/core/src/PageNav/XDSPageNav.test.tsx
- * - /packages/core/src/PageNav/index.ts
- * - /apps/storybook/stories/PageNav.stories.tsx
+ * - /packages/core/src/SideNav/README.md
+ * - /packages/core/src/SideNav/XDSSideNav.test.tsx
+ * - /packages/core/src/SideNav/index.ts
+ * - /apps/storybook/stories/SideNav.stories.tsx
  */
 
 'use client';
@@ -83,7 +83,7 @@ const styles = stylex.create({
 // Types
 // =============================================================================
 
-export interface XDSPageNavSectionProps {
+export interface XDSSideNavSectionProps {
   /**
    * Section title.
    */
@@ -117,27 +117,27 @@ export interface XDSPageNavSectionProps {
 // =============================================================================
 
 /**
- * Section grouping for XDSPageNav items.
+ * Section grouping for XDSSideNav items.
  *
  * Renders a labeled group of navigation items.
  * Uses `role="group"` with `aria-labelledby` for accessibility.
  *
  * @example
  * ```tsx
- * <XDSPageNavSection title="Main">
- *   <XDSPageNavItem label="Dashboard" icon={HomeIcon} isSelected />
- *   <XDSPageNavItem label="Projects" icon={FolderIcon} />
- * </XDSPageNavSection>
+ * <XDSSideNavSection title="Main">
+ *   <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected />
+ *   <XDSSideNavItem label="Projects" icon={FolderIcon} />
+ * </XDSSideNavSection>
  * ```
  */
-export function XDSPageNavSection({
+export function XDSSideNavSection({
   title,
   subtitle,
   children,
   endContent,
   isHeaderHidden = false,
   'data-testid': testId,
-}: XDSPageNavSectionProps) {
+}: XDSSideNavSectionProps) {
   const id = useId();
   const titleId = `${id}-title`;
 
@@ -185,4 +185,4 @@ export function XDSPageNavSection({
   );
 }
 
-XDSPageNavSection.displayName = 'XDSPageNavSection';
+XDSSideNavSection.displayName = 'XDSSideNavSection';

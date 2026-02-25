@@ -13,11 +13,11 @@ import {
   XDSTopNavItem,
 } from '@xds/core/TopNav';
 import {
-  XDSPageNav,
-  XDSPageNavHeader,
-  XDSPageNavItem,
-  XDSPageNavSection,
-} from '@xds/core/PageNav';
+  XDSSideNav,
+  XDSSideNavHeader,
+  XDSSideNavItem,
+  XDSSideNavSection,
+} from '@xds/core/SideNav';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {
@@ -123,104 +123,104 @@ function AppTopNav({endContent}: {endContent?: React.ReactNode}) {
 }
 
 /**
- * PageNav WITHOUT header — for use alongside a TopNav.
- * The TopNav already displays the app name, so the PageNav omits its header
+ * SideNav WITHOUT header — for use alongside a TopNav.
+ * The TopNav already displays the app name, so the SideNav omits its header
  * to avoid doubling the identity.
  */
 function SideNavWithoutHeader() {
   return (
-    <XDSPageNav>
-      <XDSPageNavSection title="Main" isHeaderHidden>
-        <XDSPageNavItem
+    <XDSSideNav>
+      <XDSSideNavSection title="Main" isHeaderHidden>
+        <XDSSideNavItem
           label="Dashboard"
           icon={HomeIcon}
           selectedIcon={HomeIconSolid}
           isSelected
           href="#"
         />
-        <XDSPageNavItem
+        <XDSSideNavItem
           label="Analytics"
           icon={ChartBarIcon}
           selectedIcon={ChartBarIconSolid}
           href="#"
         />
-        <XDSPageNavItem
+        <XDSSideNavItem
           label="Projects"
           icon={FolderIcon}
           selectedIcon={FolderIconSolid}
           href="#"
           endContent={<XDSBadge>12</XDSBadge>}
         />
-      </XDSPageNavSection>
-      <XDSPageNavSection title="Organization">
-        <XDSPageNavItem
+      </XDSSideNavSection>
+      <XDSSideNavSection title="Organization">
+        <XDSSideNavItem
           label="Team"
           icon={UserGroupIcon}
           selectedIcon={UserGroupIconSolid}
           href="#"
         />
-        <XDSPageNavItem
+        <XDSSideNavItem
           label="Settings"
           icon={Cog6ToothIcon}
           selectedIcon={Cog6ToothIconSolid}
           href="#"
         />
-      </XDSPageNavSection>
-    </XDSPageNav>
+      </XDSSideNavSection>
+    </XDSSideNav>
   );
 }
 
 /**
- * PageNav WITH header — for standalone use without a TopNav.
+ * SideNav WITH header — for standalone use without a TopNav.
  * The header provides app identity (icon + title) since there's no TopNav.
  */
 function SideNavWithHeader() {
   return (
-    <XDSPageNav
+    <XDSSideNav
       header={
-        <XDSPageNavHeader
+        <XDSSideNavHeader
           icon={<XDSIcon icon={CubeIcon} size="lg" />}
           title="Acme App"
           titleHref="#"
         />
       }>
-      <XDSPageNavSection title="Main" isHeaderHidden>
-        <XDSPageNavItem
+      <XDSSideNavSection title="Main" isHeaderHidden>
+        <XDSSideNavItem
           label="Dashboard"
           icon={HomeIcon}
           selectedIcon={HomeIconSolid}
           isSelected
           href="#"
         />
-        <XDSPageNavItem
+        <XDSSideNavItem
           label="Analytics"
           icon={ChartBarIcon}
           selectedIcon={ChartBarIconSolid}
           href="#"
         />
-        <XDSPageNavItem
+        <XDSSideNavItem
           label="Projects"
           icon={FolderIcon}
           selectedIcon={FolderIconSolid}
           href="#"
           endContent={<XDSBadge>12</XDSBadge>}
         />
-      </XDSPageNavSection>
-      <XDSPageNavSection title="Organization">
-        <XDSPageNavItem
+      </XDSSideNavSection>
+      <XDSSideNavSection title="Organization">
+        <XDSSideNavItem
           label="Team"
           icon={UserGroupIcon}
           selectedIcon={UserGroupIconSolid}
           href="#"
         />
-        <XDSPageNavItem
+        <XDSSideNavItem
           label="Settings"
           icon={Cog6ToothIcon}
           selectedIcon={Cog6ToothIconSolid}
           href="#"
         />
-      </XDSPageNavSection>
-    </XDSPageNav>
+      </XDSSideNavSection>
+    </XDSSideNav>
   );
 }
 
@@ -258,11 +258,11 @@ type Story = StoryObj<typeof XDSAppShell>;
 // =============================================================================
 
 /**
- * The most common layout: TopNav provides app identity, PageNav provides
- * page-level navigation. The PageNav omits its header to avoid doubling
+ * The most common layout: TopNav provides app identity, SideNav provides
+ * page-level navigation. The SideNav omits its header to avoid doubling
  * the app name that's already in the TopNav.
  */
-export const TopNavWithPageNav: Story = {
+export const TopNavWithSideNav: Story = {
   render: () => (
     <XDSAppShell topNav={<AppTopNav />} sideNav={<SideNavWithoutHeader />}>
       <MockContent />
@@ -271,11 +271,11 @@ export const TopNavWithPageNav: Story = {
 };
 
 /**
- * PageNav with its own header (icon + title) and no TopNav.
+ * SideNav with its own header (icon + title) and no TopNav.
  * Use this layout for simpler apps where a full top bar isn't needed.
- * The PageNav header provides the app identity instead.
+ * The SideNav header provides the app identity instead.
  */
-export const PageNavOnly: Story = {
+export const SideNavOnly: Story = {
   render: () => (
     <XDSAppShell sideNav={<SideNavWithHeader />}>
       <MockContent />
@@ -296,11 +296,11 @@ export const TopNavOnly: Story = {
 };
 
 /**
- * Kitchen sink: TopNav + PageNav with sections, nested items, badges,
+ * Kitchen sink: TopNav + SideNav with sections, nested items, badges,
  * footer icons, and a banner. Demonstrates all AppShell zones working
  * together.
  *
- * Note: The PageNav has no header because the TopNav already shows
+ * Note: The SideNav has no header because the TopNav already shows
  * the app identity.
  */
 export const FullFeatured: Story = {
@@ -308,7 +308,7 @@ export const FullFeatured: Story = {
     <XDSAppShell
       topNav={<AppTopNav />}
       sideNav={
-        <XDSPageNav
+        <XDSSideNav
           footerIcons={
             <>
               <XDSButton
@@ -330,62 +330,62 @@ export const FullFeatured: Story = {
               />
             </>
           }>
-          <XDSPageNavSection title="Main" isHeaderHidden>
-            <XDSPageNavItem
+          <XDSSideNavSection title="Main" isHeaderHidden>
+            <XDSSideNavItem
               label="Dashboard"
               icon={HomeIcon}
               selectedIcon={HomeIconSolid}
               isSelected
               href="#"
             />
-            <XDSPageNavItem
+            <XDSSideNavItem
               label="Analytics"
               icon={ChartBarIcon}
               selectedIcon={ChartBarIconSolid}
               href="#"
               endContent={<XDSBadge variant="info">New</XDSBadge>}
             />
-            <XDSPageNavItem
+            <XDSSideNavItem
               label="Projects"
               icon={FolderIcon}
               selectedIcon={FolderIconSolid}
               href="#"
               endContent={<XDSBadge>12</XDSBadge>}
             />
-          </XDSPageNavSection>
-          <XDSPageNavSection title="Organization">
-            <XDSPageNavItem
+          </XDSSideNavSection>
+          <XDSSideNavSection title="Organization">
+            <XDSSideNavItem
               label="Team"
               icon={UserGroupIcon}
               selectedIcon={UserGroupIconSolid}
               href="#"
             />
-            <XDSPageNavItem
+            <XDSSideNavItem
               label="Settings"
               icon={Cog6ToothIcon}
               selectedIcon={Cog6ToothIconSolid}
               href="#">
-              <XDSPageNavItem label="General" href="#" />
-              <XDSPageNavItem label="Security" href="#" />
-              <XDSPageNavItem label="Integrations" href="#" />
-            </XDSPageNavItem>
-          </XDSPageNavSection>
-          <XDSPageNavSection title="Resources">
-            <XDSPageNavItem
+              <XDSSideNavItem label="General" href="#" />
+              <XDSSideNavItem label="Security" href="#" />
+              <XDSSideNavItem label="Integrations" href="#" />
+            </XDSSideNavItem>
+          </XDSSideNavSection>
+          <XDSSideNavSection title="Resources">
+            <XDSSideNavItem
               label="Documentation"
               icon={DocumentTextIcon}
               selectedIcon={DocumentTextIconSolid}
               href="#"
             />
-            <XDSPageNavItem
+            <XDSSideNavItem
               label="Compliance"
               icon={ShieldCheckIcon}
               selectedIcon={ShieldCheckIconSolid}
               href="#"
               isDisabled
             />
-          </XDSPageNavSection>
-        </XDSPageNav>
+          </XDSSideNavSection>
+        </XDSSideNav>
       }
       banner={
         <XDSBanner
@@ -403,7 +403,7 @@ export const FullFeatured: Story = {
 
 /**
  * Auto height mode — the shell grows with content instead of filling
- * the viewport. Uses TopNav + PageNav (no PageNav header).
+ * the viewport. Uses TopNav + SideNav (no SideNav header).
  */
 export const AutoHeight: Story = {
   render: () => (
@@ -464,7 +464,7 @@ export const ContentOnly: Story = {
 };
 
 /**
- * Banner with TopNav + PageNav. Shows how the banner sits between
+ * Banner with TopNav + SideNav. Shows how the banner sits between
  * the TopNav and the content/sidenav area.
  */
 export const WithBanner: Story = {

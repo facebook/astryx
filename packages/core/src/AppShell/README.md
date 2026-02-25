@@ -18,9 +18,9 @@ import {XDSAppShell} from '@xds/core/AppShell';
 
 XDSAppShell has two navigation slots: `topNav` (horizontal bar) and `sideNav` (vertical sidebar). How you combine them determines where app identity lives.
 
-### TopNav + PageNav (most common)
+### TopNav + SideNav (most common)
 
-When a TopNav is present, the PageNav should **not** include a header — the TopNav already provides the app name and logo. Adding `XDSPageNavHeader` would double the identity.
+When a TopNav is present, the SideNav should **not** include a header — the TopNav already provides the app name and logo. Adding `XDSSideNavHeader` would double the identity.
 
 ```tsx
 <XDSAppShell
@@ -38,54 +38,54 @@ When a TopNav is present, the PageNav should **not** include a header — the To
   }
   sideNav={
     // No header — TopNav has the app identity
-    <XDSPageNav>
-      <XDSPageNavSection title="Main" isHeaderHidden>
-        <XDSPageNavItem
+    <XDSSideNav>
+      <XDSSideNavSection title="Main" isHeaderHidden>
+        <XDSSideNavItem
           label="Dashboard"
           icon={HomeIcon}
           isSelected
           href="/dashboard"
         />
-        <XDSPageNavItem
+        <XDSSideNavItem
           label="Analytics"
           icon={ChartBarIcon}
           href="/analytics"
         />
-      </XDSPageNavSection>
-      <XDSPageNavSection title="Settings">
-        <XDSPageNavItem label="General" icon={CogIcon} href="/settings" />
-      </XDSPageNavSection>
-    </XDSPageNav>
+      </XDSSideNavSection>
+      <XDSSideNavSection title="Settings">
+        <XDSSideNavItem label="General" icon={CogIcon} href="/settings" />
+      </XDSSideNavSection>
+    </XDSSideNav>
   }>
   <DashboardContent />
 </XDSAppShell>
 ```
 
-### PageNav Only (no TopNav)
+### SideNav Only (no TopNav)
 
-Without a TopNav, the PageNav needs its own header to provide app identity.
+Without a TopNav, the SideNav needs its own header to provide app identity.
 
 ```tsx
 <XDSAppShell
   sideNav={
-    <XDSPageNav
+    <XDSSideNav
       header={
-        <XDSPageNavHeader icon={<AppIcon />} title="My App" titleHref="/" />
+        <XDSSideNavHeader icon={<AppIcon />} title="My App" titleHref="/" />
       }>
-      <XDSPageNavSection title="Main" isHeaderHidden>
-        <XDSPageNavItem
+      <XDSSideNavSection title="Main" isHeaderHidden>
+        <XDSSideNavItem
           label="Dashboard"
           icon={HomeIcon}
           isSelected
           href="/dashboard"
         />
-        <XDSPageNavItem
+        <XDSSideNavItem
           label="Analytics"
           icon={ChartBarIcon}
           href="/analytics"
         />
-      </XDSPageNavSection>
-    </XDSPageNav>
+      </XDSSideNavSection>
+    </XDSSideNav>
   }>
   <DashboardContent />
 </XDSAppShell>
@@ -109,10 +109,10 @@ For landing pages or simple apps that don't need secondary navigation.
 
 ### Pattern Summary
 
-| Layout           | TopNav | PageNav Header | When to use                     |
+| Layout           | TopNav | SideNav Header | When to use                     |
 | ---------------- | ------ | -------------- | ------------------------------- |
-| TopNav + PageNav | ✅     | ❌ Omit        | Dashboards, admin panels, tools |
-| PageNav only     | ❌     | ✅ Include     | Simpler apps, focused tools     |
+| TopNav + SideNav | ✅     | ❌ Omit        | Dashboards, admin panels, tools |
+| SideNav only     | ❌     | ✅ Include     | Simpler apps, focused tools     |
 | TopNav only      | ✅     | N/A            | Landing pages, single-page apps |
 | Neither          | ❌     | N/A            | Auth screens, embedded views    |
 
@@ -122,7 +122,7 @@ For landing pages or simple apps that don't need secondary navigation.
 // Auto-height for content-heavy pages
 <XDSAppShell
   topNav={<XDSTopNav label="Docs" title={<XDSTopNavTitle title="Docs" />} />}
-  sideNav={<XDSPageNav>...</XDSPageNav>}
+  sideNav={<XDSSideNav>...</XDSSideNav>}
   height="auto"
 >
   <LongDocumentContent />
@@ -131,7 +131,7 @@ For landing pages or simple apps that don't need secondary navigation.
 // Controlled sideNav collapse
 <XDSAppShell
   topNav={<XDSTopNav label="App" title={<XDSTopNavTitle title="App" />} />}
-  sideNav={<XDSPageNav>...</XDSPageNav>}
+  sideNav={<XDSSideNav>...</XDSSideNav>}
   isSideNavCollapsed={collapsed}
   onSideNavCollapsedChange={setCollapsed}
 >
@@ -145,7 +145,7 @@ For landing pages or simple apps that don't need secondary navigation.
 | --------------------------- | -------------------------------- | -------- | ------------------------------------------- |
 | `children`                  | `ReactNode`                      | —        | Main content area (rendered as `<main>`)    |
 | `topNav`                    | `ReactNode`                      | —        | Top navigation slot (typically XDSTopNav)   |
-| `sideNav`                   | `ReactNode`                      | —        | Side navigation slot (typically XDSPageNav) |
+| `sideNav`                   | `ReactNode`                      | —        | Side navigation slot (typically XDSSideNav) |
 | `banner`                    | `ReactNode`                      | —        | Banner slot for system-wide announcements   |
 | `height`                    | `'fill' \| 'auto'`               | `'fill'` | Height behavior                             |
 | `isSideNavCollapsed`        | `boolean`                        | —        | Whether sideNav is collapsed (controlled)   |
