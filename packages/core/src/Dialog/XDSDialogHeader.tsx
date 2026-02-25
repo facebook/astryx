@@ -40,6 +40,10 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     flexShrink: 0,
   },
+  closeButton: {
+    marginTop: `calc(-1 * ${spacingVars['--spacing-2']})`,
+    marginRight: `calc(-1 * ${spacingVars['--spacing-2']})`,
+  },
 });
 
 export interface XDSDialogHeaderProps {
@@ -133,13 +137,15 @@ export const XDSDialogHeader = forwardRef<HTMLElement, XDSDialogHeaderProps>(
             <div {...stylex.props(styles.actions)}>
               {endContent}
               {onHide && (
-                <XDSButton
-                  variant="ghost"
-                  label="Close"
-                  tooltip="Close"
-                  icon={<XDSIcon icon="close" color="inherit" />}
-                  onClick={onHide}
-                />
+                <div {...stylex.props(styles.closeButton)}>
+                  <XDSButton
+                    variant="ghost"
+                    label="Close"
+                    tooltip="Close"
+                    icon={<XDSIcon icon="close" color="inherit" />}
+                    onClick={onHide}
+                  />
+                </div>
               )}
             </div>
           )}

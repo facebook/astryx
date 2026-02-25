@@ -29,7 +29,7 @@
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",
     "@xds/core": "*",
-    "react": ">=18"
+    "react": ">=19"
   },
   "devDependencies": {
     "@babel/core": "^7.28.5",
