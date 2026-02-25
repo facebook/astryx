@@ -53,8 +53,8 @@ export const WithActions: Story = {
     description: 'Try adjusting your search or filters.',
     actions: (
       <>
-        <XDSButton label="Clear filters" variant="primary" />
         <XDSButton label="Go back" variant="secondary" />
+        <XDSButton label="Clear filters" variant="primary" />
       </>
     ),
   },
@@ -75,8 +75,8 @@ export const CompactWithActions: Story = {
     description: 'Add some data to get started.',
     actions: (
       <>
-        <XDSButton label="Add item" variant="primary" />
         <XDSButton label="Import" variant="secondary" />
+        <XDSButton label="Add item" variant="primary" />
       </>
     ),
     isCompact: true,
@@ -97,8 +97,8 @@ export const FullExample: Story = {
         description="When you receive notifications, they will appear here. Check back later!"
         actions={
           <>
-            <XDSButton label="Refresh" variant="primary" />
             <XDSButton label="Settings" variant="secondary" />
+            <XDSButton label="Refresh" variant="primary" />
           </>
         }
       />
