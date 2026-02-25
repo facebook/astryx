@@ -165,7 +165,7 @@ const styles = stylex.create({
   header: {
     display: 'flex',
     alignItems: 'flex-start',
-    gap: spacingVars['--spacing-3'],
+    gap: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
   },
