@@ -8,6 +8,50 @@ CSS Grid-based layout with responsive auto-fit support.
 import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
 ```
 
+### XDSGrid
+
+Grid container with fixed or responsive auto-fit columns.
+
+```tsx
+<XDSGrid columns={3} gap="space4">
+  <Item />
+  <Item />
+  <Item />
+</XDSGrid>
+```
+
+| Prop            | Type             | Default     | Description                                    |
+| --------------- | ---------------- | ----------- | ---------------------------------------------- |
+| `columns`       | `number`         | —           | Maximum number of columns                      |
+| `minChildWidth`  | `number`         | —           | Min item width in px (enables auto-fit)        |
+| `width`         | `number \| string` | —         | Container width                                |
+| `height`        | `number \| string` | —         | Container height                               |
+| `gap`           | `SpacingScale`   | —           | Spacing between all items                      |
+| `rowGap`        | `SpacingScale`   | —           | Row spacing (overrides gap)                    |
+| `columnGap`     | `SpacingScale`   | —           | Column spacing (overrides gap)                 |
+| `align`         | `GridAlignment`  | `'stretch'` | Vertical alignment of items                    |
+| `justify`       | `GridAlignment`  | `'stretch'` | Horizontal alignment of items                  |
+| `xstyle`        | `StyleXStyles`   | —           | StyleX overrides                               |
+| `children`      | `ReactNode`      | —           | Grid content                                   |
+
+### XDSGridSpan
+
+Grid item that spans multiple columns or rows.
+
+```tsx
+<XDSGrid columns={3} gap="space4">
+  <XDSGridSpan columns={2}>Wide item</XDSGridSpan>
+  <div>Normal item</div>
+</XDSGrid>
+```
+
+| Prop       | Type                 | Default | Description                              |
+| ---------- | -------------------- | ------- | ---------------------------------------- |
+| `columns`  | `number \| 'full'`   | —       | Columns to span ('full' = entire row)    |
+| `rows`     | `number`             | —       | Rows to span                             |
+| `xstyle`   | `StyleXStyles`       | —       | StyleX overrides                         |
+| `children` | `ReactNode`          | —       | Content                                  |
+
 ## Usage
 
 ```tsx

@@ -48,3 +48,14 @@ const theme: Theme = {
 | Surface | Description           |
 | ------- | --------------------- |
 | `root`  | Root container styles |
+
+## Props
+
+| Prop       | Type                                         | Default  | Description                                        |
+| ---------- | -------------------------------------------- | -------- | -------------------------------------------------- |
+| `axis`     | `'both' \| 'horizontal' \| 'vertical'`       | `'both'` | Which direction(s) to center                       |
+| `width`    | `number \| string`                            | —        | Container width (px or CSS value)                  |
+| `height`   | `number \| string`                            | —        | Container height (px or CSS value)                 |
+| `isInline` | `boolean`                                    | `false`  | Use inline-flex (useful for text/icons)            |
+| `children` | `ReactNode`                                  | —        | Content to center                                  |
+| `xstyle`   | `StyleXStyles`                               | —        | StyleX overrides                                   |

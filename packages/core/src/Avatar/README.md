@@ -46,6 +46,10 @@ import { XDSAvatar, XDSAvatarStatusDot } from '@xds/core/Avatar';
 
 ### XDSAvatar
 
+```tsx
+<XDSAvatar src="/user.jpg" name="John Doe" size="medium" />
+```
+
 | Prop          | Type            | Default   | Description                          |
 | ------------- | --------------- | --------- | ------------------------------------ |
 | `src`         | `string`        | —         | Primary image source URL             |
@@ -57,6 +61,10 @@ import { XDSAvatar, XDSAvatarStatusDot } from '@xds/core/Avatar';
 | `data-testid` | `string`        | —         | Test ID for testing                  |
 
 ### XDSAvatarStatusDot
+
+```tsx
+<XDSAvatarStatusDot variant="positive" label="Online" />
+```
 
 | Prop      | Type                                    | Default      | Description                                         |
 | --------- | --------------------------------------- | ------------ | --------------------------------------------------- |

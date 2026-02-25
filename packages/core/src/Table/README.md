@@ -43,6 +43,102 @@ Table components for the XDS design system.
 | `types.ts`                 | `TableHeaderCellComponentProps` | Props interface for HeaderCell components        |
 | `useXDSTableSelection.tsx` | `UseXDSTableSelectionConfig`    | Config type for the selection hook               |
 
+## Components
+
+### XDSTable
+
+Styled, data-driven table with density, dividers, hover, and plugin support.
+
+```tsx
+<XDSTable
+  data={users}
+  columns={[
+    {key: 'name', header: 'Name'},
+    {key: 'email', header: 'Email', width: proportional(2)},
+  ]}
+  density="balanced"
+  dividers="rows"
+  hasHover
+/>
+```
+
+| Prop        | Type                              | Default      | Description                          |
+| ----------- | --------------------------------- | ------------ | ------------------------------------ |
+| `data`      | `T[]`                             | —            | Array of data items                  |
+| `columns`   | `XDSTableColumn<T>[]`             | —            | Column definitions (auto-generated if omitted) |
+| `idKey`     | `string \| (item: T) => string`   | —            | Row key for React reconciliation     |
+| `density`   | `'compact' \| 'balanced' \| 'spacious'` | `'balanced'` | Row density                   |
+| `dividers`  | `XDSTableDividers`                | `'rows'`     | Divider style                        |
+| `isStriped` | `boolean`                         | `false`      | Striped even rows                    |
+| `hasHover`  | `boolean`                         | `false`      | Hover highlight on rows              |
+| `plugins`   | `Record<string, TablePlugin<T>>`  | —            | Named plugins to extend behavior     |
+| `children`  | `ReactNode`                       | —            | Children mode (manual rows)          |
+
+### XDSBaseTable
+
+Unstyled table with colgroup, plugin pipeline, and components prop for custom rendering.
+
+```tsx
+<XDSBaseTable
+  data={items}
+  columns={columns}
+  plugins={[myPlugin]}
+  components={{ Row: XDSTableRow, Cell: XDSTableCell }}
+/>
+```
+
+| Prop         | Type                       | Default | Description                               |
+| ------------ | -------------------------- | ------- | ----------------------------------------- |
+| `data`       | `T[]`                      | —       | Array of data items                       |
+| `columns`    | `XDSTableColumn<T>[]`      | —       | Column definitions                        |
+| `idKey`      | `string \| (item: T) => string` | —  | Row key for React reconciliation          |
+| `plugins`    | `TablePlugin<T>[]`         | —       | Ordered plugins for transform pipeline    |
+| `components` | `{Row?, Cell?, HeaderCell?}` | —     | Component overrides for table elements    |
+| `children`   | `ReactNode`                | —       | Children mode                             |
+| `tableProps` | `HTMLAttributes`           | —       | Additional attrs for `<table>` element    |
+
+### XDSTableRow
+
+`<tr>` wrapper with context-aware styling and xstyle support.
+
+```tsx
+<XDSTableRow>
+  <XDSTableCell>Alice</XDSTableCell>
+  <XDSTableCell>30</XDSTableCell>
+</XDSTableRow>
+```
+
+| Prop       | Type             | Default | Description     |
+| ---------- | ---------------- | ------- | --------------- |
+| `children` | `ReactNode`      | —       | Row cells       |
+| `xstyle`   | `StyleXStyles[]` | —       | Style overrides |
+
+### XDSTableCell
+
+`<td>` wrapper with context-aware styling and xstyle support.
+
+```tsx
+<XDSTableCell>Cell content</XDSTableCell>
+```
+
+| Prop       | Type                             | Default | Description     |
+| ---------- | -------------------------------- | ------- | --------------- |
+| `children` | `ReactNode`                      | —       | Cell content    |
+| `xstyle`   | `StyleXStyles \| StyleXStyles` | —       | Style overrides |
+
+### XDSTableHeaderCell
+
+`<th>` wrapper with context-aware header styling and xstyle support.
+
+```tsx
+<XDSTableHeaderCell>Name</XDSTableHeaderCell>
+```
+
+| Prop       | Type                             | Default | Description     |
+| ---------- | -------------------------------- | ------- | --------------- |
+| `children` | `ReactNode`                      | —       | Header content  |
+| `xstyle`   | `StyleXStyles \| StyleXStyles[]` | —       | Style overrides |
+
 ## Usage Patterns
 
 ### Data-driven table

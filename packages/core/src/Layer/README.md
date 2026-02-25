@@ -87,6 +87,29 @@ const hoverCard = useXDSHoverCard({placement: 'above'});
 
 ## Components
 
+### XDSTooltip
+
+Component wrapper for tooltip display on hover/focus.
+
+```tsx
+<XDSTooltip content="Save your changes" placement="above">
+  <XDSButton label="Save" variant="primary" />
+</XDSTooltip>
+```
+
+| Prop                 | Type                            | Default   | Description                                        |
+| -------------------- | ------------------------------- | --------- | -------------------------------------------------- |
+| `children`           | `ReactNode`                     | —         | Trigger element(s)                                 |
+| `anchorRef`          | `RefObject<HTMLElement>`        | —         | External anchor ref (sibling mode)                 |
+| `content`            | `ReactNode`                     | —         | Tooltip content (typically short text)             |
+| `placement`          | `LayerPlacement`                | `'above'` | Position relative to anchor                        |
+| `alignment`          | `LayerAlignment`                | `'center'`| Alignment on placement axis                        |
+| `delay`              | `number`                        | `200`     | Show delay in ms                                   |
+| `hideDelay`          | `number`                        | `0`       | Hide delay in ms                                   |
+| `focusTrigger`       | `'auto' \| 'always' \| 'never'` | `'auto'`  | When to trigger on focus                           |
+| `isEnabled`          | `boolean`                       | `true`    | Enable/disable triggers                            |
+| `hasHoverIndication` | `'auto' \| boolean`             | `'auto'`  | Show dashed underline on trigger                   |
+
 ### XDSHoverCard
 
 Component wrapper for simpler hover card usage.

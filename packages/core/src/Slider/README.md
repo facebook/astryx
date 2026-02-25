@@ -98,7 +98,7 @@ import { XDSSlider } from '@xds/core/Slider';
 />
 ```
 
-## XDSSlider Props (Base)
+## Props
 
 | Prop            | Type                                       | Default        | Description                                              |
 | --------------- | ------------------------------------------ | -------------- | -------------------------------------------------------- |

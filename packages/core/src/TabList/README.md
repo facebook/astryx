@@ -63,6 +63,13 @@ import { XDSTabList, XDSTab, XDSTabMenu } from '@xds/core/TabList';
 
 ### XDSTabList
 
+```tsx
+<XDSTabList value={activeTab} onChange={setActiveTab} hasDivider>
+  <XDSTab value="home" label="Home" />
+  <XDSTab value="settings" label="Settings" />
+</XDSTabList>
+```
+
 | Prop         | Type                   | Default | Description                        |
 | ------------ | ---------------------- | ------- | ---------------------------------- |
 | `value`      | `string`               | —       | Active tab value                   |
@@ -73,6 +80,10 @@ import { XDSTabList, XDSTab, XDSTabMenu } from '@xds/core/TabList';
 
 ### XDSTab
 
+```tsx
+<XDSTab value="home" label="Home" href="/home" icon={<HomeIcon />} />
+```
+
 | Prop           | Type        | Default     | Description                               |
 | -------------- | ----------- | ----------- | ----------------------------------------- |
 | `value`        | `string`    | —           | Unique tab value                          |
@@ -82,6 +93,16 @@ import { XDSTabList, XDSTab, XDSTabMenu } from '@xds/core/TabList';
 | `selectedIcon` | `ReactNode` | `undefined` | Icon when selected (falls back to `icon`) |
 
 ### XDSTabMenu
+
+```tsx
+<XDSTabMenu
+  label="More"
+  options={[
+    {value: 'analytics', label: 'Analytics', icon: ChartBarIcon},
+    {value: 'reports', label: 'Reports', icon: DocumentTextIcon},
+  ]}
+/>
+```
 
 | Prop      | Type                 | Default | Description                                               |
 | --------- | -------------------- | ------- | --------------------------------------------------------- |

@@ -47,3 +47,11 @@ const theme: Theme = {
 | Surface | Description           |
 | ------- | --------------------- |
 | `root`  | Root container styles |
+
+## Props
+
+| Prop       | Type           | Default | Description                                       |
+| ---------- | -------------- | ------- | ------------------------------------------------- |
+| `ratio`    | `number`       | —       | Aspect ratio as width/height (e.g., 16/9, 1)     |
+| `children` | `ReactNode`    | —       | Content positioned absolutely to fill container   |
+| `xstyle`   | `StyleXStyles` | —       | StyleX overrides for the container                |

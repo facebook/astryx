@@ -61,7 +61,18 @@ import {XDSSelector, XDSSelectorItem} from '@xds/core/Selector';
 />
 ```
 
-## Props
+### XDSSelector
+
+Dropdown selector for choosing from a list of options.
+
+```tsx
+<XDSSelector
+  label="Fruit"
+  items={['Apple', 'Banana', 'Orange']}
+  value={value}
+  onChange={setValue}
+/>
+```
 
 | Prop                        | Type                                                      | Description                                                         |
 | --------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------- |
@@ -94,17 +105,23 @@ import {XDSSelector, XDSSelectorItem} from '@xds/core/Selector';
 {type: 'section', title: 'Group Name', items: [...]}
 ```
 
-## XDSSelectorItem
+### XDSSelectorItem
 
 Helper for custom item rendering:
 
 ```tsx
 <XDSSelectorItem
-  icon={UserIcon} // Optional XDSIconType
-  label="Primary text" // Required ReactNode
-  description="Secondary" // Optional ReactNode
+  icon={UserIcon}
+  label="Primary text"
+  description="Secondary"
 />
 ```
+
+| Prop          | Type          | Default | Description                       |
+| ------------- | ------------- | ------- | --------------------------------- |
+| `icon`        | `XDSIconType` | —       | Icon before the label             |
+| `label`       | `ReactNode`   | —       | Primary label text (required)     |
+| `description` | `ReactNode`   | —       | Secondary description text        |
 
 ## Keyboard
 

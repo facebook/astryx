@@ -52,3 +52,13 @@ const theme: Theme = {
 | `root`  | Root container styles |
 | `line`  | Divider line styles   |
 | `label` | Label text styles     |
+
+## Props
+
+| Prop          | Type                           | Default        | Description                                     |
+| ------------- | ------------------------------ | -------------- | ----------------------------------------------- |
+| `orientation` | `'horizontal' \| 'vertical'`   | `'horizontal'` | Orientation of the divider                      |
+| `label`       | `ReactNode`                    | —              | Optional label centered on the divider          |
+| `variant`     | `'subtle' \| 'strong'`         | `'subtle'`     | Visual weight of the divider line               |
+| `isFullBleed` | `boolean`                      | `false`        | Extend to container edges with negative margins |
+| `xstyle`      | `StyleXStyles`                 | —              | StyleX overrides                                |

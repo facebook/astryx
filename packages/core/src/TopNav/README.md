@@ -65,6 +65,15 @@ For the circular icon container, use `XDSNavIcon` from `@xds/core/NavIcon`.
 
 ### XDSTopNav
 
+```tsx
+<XDSTopNav
+  label="Main navigation"
+  title={<XDSTopNavTitle title="My App" href="/" />}
+  startContent={<XDSTopNavItem label="Dashboard" href="/dashboard" isSelected />}
+  endContent={<XDSButton label="Profile" variant="ghost" />}
+/>
+```
+
 | Prop           | Type        | Default | Description                                           |
 | -------------- | ----------- | ------- | ----------------------------------------------------- |
 | `title`        | `ReactNode` | —       | Title slot (logo, brand) - left aligned               |
@@ -74,6 +83,10 @@ For the circular icon container, use `XDSNavIcon` from `@xds/core/NavIcon`.
 
 ### XDSTopNavTitle
 
+```tsx
+<XDSTopNavTitle title="My App" logo={<XDSNavIcon icon={<HomeIcon />} />} href="/" />
+```
+
 | Prop    | Type        | Default | Description                      |
 | ------- | ----------- | ------- | -------------------------------- |
 | `title` | `string`    | —       | Title text to display            |
@@ -81,6 +94,10 @@ For the circular icon container, use `XDSNavIcon` from `@xds/core/NavIcon`.
 | `href`  | `string`    | —       | URL to navigate to when clicked  |
 
 ### XDSTopNavItem
+
+```tsx
+<XDSTopNavItem label="Dashboard" href="/dashboard" isSelected icon={<HomeIcon />} />
+```
 
 | Prop         | Type        | Default | Description                     |
 | ------------ | ----------- | ------- | ------------------------------- |
@@ -92,6 +109,16 @@ For the circular icon container, use `XDSNavIcon` from `@xds/core/NavIcon`.
 | `children`   | `ReactNode` | —       | Custom content instead of label |
 
 ### XDSTopNavMenu
+
+```tsx
+<XDSTopNavMenu
+  label="Products"
+  items={[
+    {title: 'Analytics', description: 'View metrics', href: '/analytics'},
+    {title: 'Reports', description: 'Generate reports', href: '/reports'},
+  ]}
+/>
+```
 
 | Prop        | Type                      | Default | Description                                 |
 | ----------- | ------------------------- | ------- | ------------------------------------------- |

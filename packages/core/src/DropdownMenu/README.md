@@ -99,6 +99,16 @@ const [isOpen, setIsOpen] = useState(false);
 
 ### XDSDropdownMenu
 
+```tsx
+<XDSDropdownMenu
+  button={{ label: 'Actions' }}
+  items={[
+    { label: 'Edit', icon: PencilIcon, onClick: () => handleEdit() },
+    { label: 'Delete', icon: TrashIcon, onClick: () => handleDelete() },
+  ]}
+/>
+```
+
 | Prop           | Type                                           | Default             | Description                                                   |
 | -------------- | ---------------------------------------------- | ------------------- | ------------------------------------------------------------- |
 | `button`       | `XDSDropdownMenuButtonProps`                   | `{ label: 'Menu' }` | Props for the trigger button (XDSButton props except onClick) |
@@ -112,6 +122,14 @@ const [isOpen, setIsOpen] = useState(false);
 ### XDSDropdownMenuItem
 
 Helper component for custom item rendering with consistent styling.
+
+```tsx
+<XDSDropdownMenuItem
+  icon={UserIcon}
+  label="Alice Johnson"
+  description="alice@example.com"
+/>
+```
 
 | Prop          | Type           | Default | Description                                    |
 | ------------- | -------------- | ------- | ---------------------------------------------- |

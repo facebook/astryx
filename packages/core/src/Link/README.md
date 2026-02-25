@@ -16,6 +16,46 @@ XDSLink component for styled anchor links with multiple variants and features, p
 - **Focus visible**: Accessible focus outline
 - **Polymorphic link**: Render as a custom component via `as` prop or `XDSLinkProvider`
 
+## Components
+
+### XDSLink
+
+Styled anchor link with variants, external link support, and polymorphic rendering.
+
+```tsx
+<XDSLink label="Documentation" href="/docs">Documentation</XDSLink>
+```
+
+| Prop             | Type                                 | Default     | Description                                 |
+| ---------------- | ------------------------------------ | ----------- | ------------------------------------------- |
+| `as`             | `XDSLinkComponentType`               | —           | Custom component to render instead of `<a>` |
+| `label`          | `string`                             | —           | Accessible label (required)                 |
+| `href`           | `string`                             | —           | Link destination URL                        |
+| `variant`        | `'default' \| 'subtle' \| 'inherit'` | `'default'` | Visual style variant                        |
+| `hasUnderline`   | `boolean`                            | `false`     | Always show underline                       |
+| `isDisabled`     | `boolean`                            | `false`     | Disables the link                           |
+| `isExternalLink` | `boolean`                            | `false`     | Opens in new tab with external icon         |
+| `target`         | `string`                             | —           | Where to open linked document               |
+| `onClick`        | `MouseEventHandler`                  | —           | Click event handler                         |
+| `tooltip`        | `string`                             | —           | Tooltip text displayed on hover             |
+| `isStandalone`   | `boolean`                            | `false`     | Applies base font sizing                    |
+| `children`       | `ReactNode`                          | —           | Link content (required)                     |
+
+### XDSLinkProvider
+
+Provider that sets the default link component for all XDS link components in the subtree.
+
+```tsx
+<XDSLinkProvider component={Link}>
+  <App />
+</XDSLinkProvider>
+```
+
+| Prop        | Type                   | Default | Description                                      |
+| ----------- | ---------------------- | ------- | ------------------------------------------------ |
+| `component` | `XDSLinkComponentType` | —       | Component to use for all link elements (required)|
+| `children`  | `ReactNode`            | —       | Subtree                                          |
+
 ## Usage
 
 ```tsx

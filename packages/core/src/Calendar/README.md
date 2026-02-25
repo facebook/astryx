@@ -40,22 +40,22 @@ import { XDSCalendar } from '@xds/core/Calendar';
 
 ## Props
 
-| Prop                | Type                                 | Default    | Description                    |
-| ------------------- | ------------------------------------ | ---------- | ------------------------------ |
-| mode                | `'single' \| 'range'`                | `'single'` | Selection mode                 |
-| value               | `ISODateString \| DateRange`         | —          | Controlled selected value      |
-| defaultValue        | `ISODateString \| DateRange`         | —          | Uncontrolled default value     |
-| onChange            | `Function`                           | —          | Selection callback             |
-| numberOfMonths      | `1 \| 2`                             | `1`        | Number of months to display    |
-| min                 | `ISODateString`                      | —          | Minimum selectable date        |
-| max                 | `ISODateString`                      | —          | Maximum selectable date        |
-| dateConstraints     | `Array<(date: Date) => boolean>`     | —          | Custom constraint functions    |
-| focusDate           | `ISODateString`                      | —          | Controlled visible month       |
-| onFocusDateChange   | `(focusDate: ISODateString) => void` | —          | Navigation callback            |
-| hasOutsideDays      | `boolean`                            | `true`     | Show days from adjacent months |
-| hasWeekNumbers      | `boolean`                            | `false`    | Show ISO week numbers          |
-| hasVariableRowCount | `boolean`                            | `false`    | Variable vs fixed 6-row grid   |
-| weekStartsOn        | `0-6`                                | `0`        | First day of week (0=Sunday)   |
+| Prop                  | Type                                 | Default    | Description                    |
+| --------------------- | ------------------------------------ | ---------- | ------------------------------ |
+| `mode`                | `'single' \| 'range'`                | `'single'` | Selection mode                 |
+| `value`               | `ISODateString \| DateRange`         | —          | Controlled selected value      |
+| `defaultValue`        | `ISODateString \| DateRange`         | —          | Uncontrolled default value     |
+| `onChange`             | `Function`                           | —          | Selection callback             |
+| `numberOfMonths`      | `1 \| 2`                             | `1`        | Number of months to display    |
+| `min`                 | `ISODateString`                      | —          | Minimum selectable date        |
+| `max`                 | `ISODateString`                      | —          | Maximum selectable date        |
+| `dateConstraints`     | `Array<(date: Date) => boolean>`     | —          | Custom constraint functions    |
+| `focusDate`           | `ISODateString`                      | —          | Controlled visible month       |
+| `onFocusDateChange`   | `(focusDate: ISODateString) => void` | —          | Navigation callback            |
+| `hasOutsideDays`      | `boolean`                            | `true`     | Show days from adjacent months |
+| `hasWeekNumbers`      | `boolean`                            | `false`    | Show ISO week numbers          |
+| `hasVariableRowCount` | `boolean`                            | `false`    | Variable vs fixed 6-row grid   |
+| `weekStartsOn`        | `0-6`                                | `0`        | First day of week (0=Sunday)   |
 
 ## Types
 

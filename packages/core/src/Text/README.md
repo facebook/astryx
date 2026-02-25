@@ -22,25 +22,71 @@ Typography components for the XDS design system.
 
 ## Usage Patterns
 
-### XDSText / XDSHeading
+### XDSText
 
-Use for explicit typography control with full type safety:
+Body text with semantic variants and truncation support.
+
+```tsx
+<XDSText type="body" color="primary">Body text content.</XDSText>
+```
+
+| Prop                 | Type                                    | Default    | Description                                   |
+| -------------------- | --------------------------------------- | ---------- | --------------------------------------------- |
+| `type`               | `XDSTextType`                           | —          | Semantic text type (body, supporting, label)  |
+| `size`               | `XDSTextSize`                           | —          | Explicit font size override                   |
+| `color`              | `XDSTextColor`                          | —          | Text color (defaults vary by type)            |
+| `weight`             | `XDSTextWeight`                         | —          | Font weight override                          |
+| `display`            | `XDSTextDisplay`                        | `'inline'` | Display type                                  |
+| `maxLines`           | `number`                                | `0`        | Max lines before truncation                   |
+| `hasTruncateTooltip` | `boolean \| LayerPlacement`             | `true`     | Tooltip for truncated text                    |
+| `wordBreak`          | `XDSWordBreak`                          | —          | Word break behavior                           |
+| `textWrap`           | `XDSTextWrap`                           | —          | Text wrapping behavior                        |
+| `hasCapsize`         | `boolean`                               | `false`    | Enable optical alignment (text-box-trim)      |
+| `hasStrikethrough`   | `boolean`                               | `false`    | Strikethrough decoration                      |
+| `hasTabularNumbers`  | `boolean`                               | `false`    | Use tabular (monospace) numbers               |
+| `as`                 | `'span' \| 'p' \| 'div' \| 'label'`    | `'span'`   | HTML element to render                        |
+| `xstyle`             | `StyleXStyles`                          | —          | Constrained styles for layout integration     |
+| `children`           | `ReactNode`                             | —          | Text content                                  |
+
+### XDSHeading
+
+Headings with level-based styling and optional accessibility level override.
 
 ```tsx
 <XDSHeading level={1} size="2xl">Page Title</XDSHeading>
-<XDSText type="body" color="primary">Body text content.</XDSText>
-<XDSText type="supporting" color="secondary">Helper text.</XDSText>
 ```
+
+| Prop                 | Type                        | Default     | Description                                    |
+| -------------------- | --------------------------- | ----------- | ---------------------------------------------- |
+| `level`              | `1 \| 2 \| 3 \| 4 \| 5 \| 6` | —        | Visual heading level (required)                |
+| `accessibilityLevel` | `1 \| 2 \| 3 \| 4 \| 5 \| 6` | same as `level` | ARIA level override               |
+| `variant`            | `'default' \| 'editorial'`  | `'default'` | Visual variant (dense vs editorial scale)      |
+| `color`              | `XDSTextColor`              | `'primary'` | Text color                                     |
+| `display`            | `XDSTextDisplay`            | `'block'`   | Display type                                   |
+| `maxLines`           | `number`                    | `0`         | Max lines before truncation                    |
+| `hasTruncateTooltip` | `boolean \| LayerPlacement` | `true`      | Tooltip for truncated text                     |
+| `wordBreak`          | `XDSWordBreak`              | —           | Word break behavior                            |
+| `textWrap`           | `XDSTextWrap`               | —           | Text wrapping behavior                         |
+| `hasCapsize`         | `boolean`                   | `false`     | Enable optical alignment                       |
+| `hasStrikethrough`   | `boolean`                   | `false`     | Strikethrough decoration                       |
+| `xstyle`             | `StyleXStyles`              | —           | Constrained styles for layout integration      |
+| `children`           | `ReactNode`                 | —           | Heading content                                |
 
 ### XDSFontWrapper
 
-Use when rendering user content or markdown where you can't control the elements:
+Wrapper that applies typography styles to native HTML (for user content/markdown).
 
 ```tsx
 <XDSFontWrapper variant="editorial">
   <article dangerouslySetInnerHTML={{__html: markdownContent}} />
 </XDSFontWrapper>
 ```
+
+| Prop          | Type                         | Default     | Description                     |
+| ------------- | ---------------------------- | ----------- | ------------------------------- |
+| `variant`     | `'default' \| 'editorial'`   | `'default'` | Heading scale variant           |
+| `children`    | `ReactNode`                  | —           | Content to style                |
+| `data-testid` | `string`                     | —           | Test ID                         |
 
 ### useXDSFontWrapperStyles
 

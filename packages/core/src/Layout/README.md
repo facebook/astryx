@@ -71,6 +71,105 @@ Layout/
 
 ## Quick Start
 
+### XDSLayout
+
+Page shell with header, sidebar(s), content, and footer slots.
+
+```tsx
+<XDSLayout
+  header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}
+  content={<XDSLayoutContent>Body content</XDSLayoutContent>}
+  footer={<XDSLayoutFooter hasDivider>Footer</XDSLayoutFooter>}
+/>
+```
+
+| Prop          | Type            | Default  | Description                                     |
+| ------------- | --------------- | -------- | ----------------------------------------------- |
+| `content`     | `ReactNode`     | —        | Main content area (center)                      |
+| `header`      | `ReactNode`     | —        | Header slot                                     |
+| `footer`      | `ReactNode`     | —        | Footer slot                                     |
+| `start`       | `ReactNode`     | —        | Start panel (left in LTR)                       |
+| `end`         | `ReactNode`     | —        | End panel (right in LTR)                        |
+| `height`      | `'fill' \| 'auto'` | `'fill'` | Height behavior (fill container vs grow)     |
+| `isFullBleed` | `boolean`       | `false`  | Remove padding at outer edges                   |
+
+### XDSLayoutHeader
+
+Top bar for page titles, app bars, and toolbars.
+
+```tsx
+<XDSLayoutHeader hasDivider role="banner">
+  Page Title
+</XDSLayoutHeader>
+```
+
+| Prop          | Type               | Default | Description                           |
+| ------------- | ------------------ | ------- | ------------------------------------- |
+| `children`    | `ReactNode`        | —       | Header content                        |
+| `hasDivider`  | `boolean`          | `false` | Border at bottom edge                 |
+| `height`      | `number \| string` | —       | Header height                         |
+| `isFullBleed` | `boolean`          | `false` | Remove internal padding               |
+| `label`       | `string`           | —       | Accessible label for landmark         |
+| `role`        | `AriaRole`         | —       | ARIA landmark role                    |
+
+### XDSLayoutContent
+
+Scrollable main content area.
+
+```tsx
+<XDSLayoutContent role="main">
+  <MainContent />
+</XDSLayoutContent>
+```
+
+| Prop           | Type       | Default | Description                           |
+| -------------- | ---------- | ------- | ------------------------------------- |
+| `children`     | `ReactNode`| —       | Content                               |
+| `isFullBleed`  | `boolean`  | `false` | Remove internal padding               |
+| `isScrollable` | `boolean`  | `true`  | Enable scrollable overflow            |
+| `label`        | `string`   | —       | Accessible label for landmark         |
+| `role`         | `AriaRole` | —       | ARIA landmark role                    |
+
+### XDSLayoutFooter
+
+Bottom bar for action bars, pagination, and status bars.
+
+```tsx
+<XDSLayoutFooter hasDivider>
+  <XDSButton label="Save" variant="primary" />
+</XDSLayoutFooter>
+```
+
+| Prop          | Type               | Default | Description                           |
+| ------------- | ------------------ | ------- | ------------------------------------- |
+| `children`    | `ReactNode`        | —       | Footer content                        |
+| `hasDivider`  | `boolean`          | `false` | Border at top edge                    |
+| `height`      | `number \| string` | —       | Footer height                         |
+| `isFullBleed` | `boolean`          | `false` | Remove internal padding               |
+| `label`       | `string`           | —       | Accessible label for landmark         |
+| `role`        | `AriaRole`         | —       | ARIA landmark role                    |
+
+### XDSLayoutPanel
+
+Sidebar for navigation, settings, or inspector panels.
+
+```tsx
+<XDSLayoutPanel hasDivider width={240} role="navigation">
+  <Navigation />
+</XDSLayoutPanel>
+```
+
+| Prop           | Type               | Default | Description                           |
+| -------------- | ------------------ | ------- | ------------------------------------- |
+| `children`     | `ReactNode`        | —       | Panel content                         |
+| `hasDivider`   | `boolean`          | `false` | Border on appropriate edge            |
+| `isFullBleed`  | `boolean`          | `false` | Remove internal padding               |
+| `isScrollable` | `boolean`          | `true`  | Enable scrollable overflow            |
+| `label`        | `string`           | —       | Accessible label for landmark         |
+| `role`         | `AriaRole`         | —       | ARIA landmark role                    |
+
+## Usage Examples
+
 ### Card Layout
 
 ```tsx

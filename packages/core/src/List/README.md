@@ -53,7 +53,16 @@ import {XDSList, XDSListItem} from '@xds/core';
 </XDSList>
 ```
 
-## XDSList Props
+### XDSList
+
+List container with density, dividers, and header support.
+
+```tsx
+<XDSList hasDividers header={<strong>Team Members</strong>}>
+  <XDSListItem label="Alice" description="Engineering" />
+  <XDSListItem label="Bob" description="Design" />
+</XDSList>
+```
 
 | Prop          | Type                                        | Default      | Description                                      |
 | ------------- | ------------------------------------------- | ------------ | ------------------------------------------------ |
@@ -65,7 +74,18 @@ import {XDSList, XDSListItem} from '@xds/core';
 | `xstyle`      | `StyleXStyles`                              | —            | Style overrides                                  |
 | `data-testid` | `string`                                    | —            | Test ID                                          |
 
-## XDSListItem Props
+### XDSListItem
+
+List item with label, description, start/end content slots, and interactive patterns.
+
+```tsx
+<XDSListItem
+  label="Settings"
+  description="Manage your preferences"
+  startContent={<XDSIcon icon={CogIcon} />}
+  onClick={() => navigate('/settings')}
+/>
+```
 
 | Prop           | Type                      | Default | Description                                      |
 | -------------- | ------------------------- | ------- | ------------------------------------------------ |

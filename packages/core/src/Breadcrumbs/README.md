@@ -12,7 +12,17 @@ A navigation breadcrumb trail with semantic HTML.
 | `XDSBreadcrumbItem`      | Component | Individual breadcrumb item |
 | `XDSBreadcrumbItemProps` | Type      | Item props interface       |
 
-## Props — XDSBreadcrumbs
+### XDSBreadcrumbs
+
+Navigation container that renders a `<nav>` with an ordered list of breadcrumb items.
+
+```tsx
+<XDSBreadcrumbs>
+  <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
+  <XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem>
+  <XDSBreadcrumbItem isCurrent>My Project</XDSBreadcrumbItem>
+</XDSBreadcrumbs>
+```
 
 | Prop          | Type                        | Default        | Description                       |
 | ------------- | --------------------------- | -------------- | --------------------------------- |
@@ -23,7 +33,15 @@ A navigation breadcrumb trail with semantic HTML.
 | `label`       | `string`                    | `'Breadcrumb'` | Accessible label for nav landmark |
 | `data-testid` | `string`                    | —              | Test ID                           |
 
-## Props — XDSBreadcrumbItem
+### XDSBreadcrumbItem
+
+Individual breadcrumb item that renders as a link or plain text.
+
+```tsx
+<XDSBreadcrumbItem href="/settings" startIcon={<XDSIcon icon={CogIcon} size="sm" />}>
+  Settings
+</XDSBreadcrumbItem>
+```
 
 | Prop          | Type                      | Default | Description                          |
 | ------------- | ------------------------- | ------- | ------------------------------------ |

@@ -61,6 +61,58 @@ function Example() {
 }
 ```
 
+## Components
+
+### XDSDialog
+
+Modal dialog using the native `<dialog>` element.
+
+```tsx
+<XDSDialog isShown={isShown} onHide={() => setIsShown(false)}>
+  <XDSLayout
+    header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
+    content={<XDSLayoutContent>Content goes here</XDSLayoutContent>}
+    footer={
+      <XDSLayoutFooter hasDivider>
+        <XDSButton label="Confirm" variant="primary" onClick={() => setIsShown(false)} />
+      </XDSLayoutFooter>
+    }
+  />
+</XDSDialog>
+```
+
+| Prop        | Type                             | Default      | Description                                      |
+| ----------- | -------------------------------- | ------------ | ------------------------------------------------ |
+| `isShown`   | `boolean`                        | —            | Whether the dialog is shown (required)           |
+| `onHide`    | `() => unknown`                  | —            | Callback when dialog requests to hide (required) |
+| `width`     | `number \| string`               | `400`        | Width of the dialog (px or CSS value)            |
+| `maxHeight` | `number \| string`               | `'75vh'`     | Maximum height of the dialog                     |
+| `position`  | `XDSDialogPosition`              | —            | Static position (centered by default)            |
+| `variant`   | `'standard' \| 'fullscreen'`     | `'standard'` | Dialog variant                                   |
+| `purpose`   | `'required' \| 'form' \| 'info'` | `'info'`     | Dismissal behavior                               |
+| `children`  | `ReactNode`                      | —            | Dialog content (required)                        |
+
+### XDSDialogHeader
+
+Header for dialogs with title, optional subtitle, close button, and start/end content slots.
+
+```tsx
+<XDSDialogHeader
+  title="Confirm Action"
+  subtitle="This cannot be undone"
+  onHide={() => setIsShown(false)}
+/>
+```
+
+| Prop           | Type             | Default | Description                                          |
+| -------------- | ---------------- | ------- | ---------------------------------------------------- |
+| `title`        | `string`         | —       | Dialog title (receives focus on open)                |
+| `subtitle`     | `string`         | —       | Subtitle below the title                             |
+| `onHide`       | `() => unknown`  | —       | Close button callback (no button if omitted)         |
+| `startContent` | `ReactNode`      | —       | Content before the title (e.g., back button)         |
+| `endContent`   | `ReactNode`      | —       | Content after the title, before close button         |
+| `hasDivider`   | `boolean`        | `true`  | Adds border at the bottom edge                       |
+
 ## Props
 
 | Prop        | Type                             | Default      | Description                                      |

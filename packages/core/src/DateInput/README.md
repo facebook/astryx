@@ -64,23 +64,23 @@ import { XDSDateInput } from '@xds/core/DateInput';
 
 ## Props
 
-| Prop            | Type                                          | Default           | Description                              |
-| --------------- | --------------------------------------------- | ----------------- | ---------------------------------------- |
-| label           | `string`                                      | —                 | Label text (required)                    |
-| isLabelHidden   | `boolean`                                     | `false`           | Visually hide label                      |
-| description     | `string`                                      | —                 | Helper text below label                  |
-| isOptional      | `boolean`                                     | `false`           | Show "(optional)" indicator              |
-| isRequired      | `boolean`                                     | `false`           | Mark field as required                   |
-| isDisabled      | `boolean`                                     | `false`           | Disable input and calendar               |
-| value           | `ISODateString`                               | —                 | Selected date (YYYY-MM-DD)               |
-| onChange        | `(value: ISODateString \| undefined) => void` | —                 | Selection callback                       |
-| min             | `ISODateString`                               | —                 | Minimum selectable date                  |
-| max             | `ISODateString`                               | —                 | Maximum selectable date                  |
-| dateConstraints | `Array<(date: Date) => boolean>`              | —                 | Custom constraint functions              |
-| placeholder     | `string`                                      | `"Select a date"` | Input placeholder text                   |
-| size            | `'sm' \| 'md' \| 'lg'`                        | `'md'`            | Input size                               |
-| status          | `XDSInputStatus`                              | —                 | Status indicator (error/warning/success) |
-| numberOfMonths  | `1 \| 2`                                      | `1`               | Months shown in calendar popover         |
+| Prop              | Type                                          | Default           | Description                              |
+| ----------------- | --------------------------------------------- | ----------------- | ---------------------------------------- |
+| `label`           | `string`                                      | —                 | Label text (required)                    |
+| `isLabelHidden`   | `boolean`                                     | `false`           | Visually hide label                      |
+| `description`     | `string`                                      | —                 | Helper text below label                  |
+| `isOptional`      | `boolean`                                     | `false`           | Show "(optional)" indicator              |
+| `isRequired`      | `boolean`                                     | `false`           | Mark field as required                   |
+| `isDisabled`      | `boolean`                                     | `false`           | Disable input and calendar               |
+| `value`           | `ISODateString`                               | —                 | Selected date (YYYY-MM-DD)               |
+| `onChange`         | `(value: ISODateString \| undefined) => void` | —                 | Selection callback                       |
+| `min`             | `ISODateString`                               | —                 | Minimum selectable date                  |
+| `max`             | `ISODateString`                               | —                 | Maximum selectable date                  |
+| `dateConstraints` | `Array<(date: Date) => boolean>`              | —                 | Custom constraint functions              |
+| `placeholder`     | `string`                                      | `"Select a date"` | Input placeholder text                   |
+| `size`            | `'sm' \| 'md' \| 'lg'`                        | `'md'`            | Input size                               |
+| `status`          | `XDSInputStatus`                              | —                 | Status indicator (error/warning/success) |
+| `numberOfMonths`  | `1 \| 2`                                      | `1`               | Months shown in calendar popover         |
 
 ## Keyboard Navigation
 

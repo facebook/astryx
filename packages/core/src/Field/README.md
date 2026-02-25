@@ -13,6 +13,65 @@ A form field wrapper component that provides label and description.
 - **Accessible**: Label properly associated with input via htmlFor/id
 - **Styled with StyleX**: Uses XDS design tokens for consistent styling
 
+## Components
+
+### XDSField
+
+Form field wrapper that provides label, description, and optional/required indicators.
+
+```tsx
+<XDSField label="Email" inputID={id}>
+  <input id={id} />
+</XDSField>
+```
+
+| Prop             | Type          | Default | Description                                           |
+| ---------------- | ------------- | ------- | ----------------------------------------------------- |
+| `label`          | `string`      | —       | Label text (required for accessibility)               |
+| `isLabelHidden`  | `boolean`     | `false` | Visually hide the label                               |
+| `description`    | `string`      | —       | Description text between label and input              |
+| `inputID`        | `string`      | —       | ID for the input (used for label's htmlFor)           |
+| `descriptionID`  | `string`      | —       | ID for the description (for aria-describedby)         |
+| `isOptional`     | `boolean`     | `false` | Show "Optional" indicator                             |
+| `isRequired`     | `boolean`     | `false` | Show "Required" indicator                             |
+| `labelStartIcon` | `XDSIconType` | —       | Icon before the label text                            |
+| `labelTooltip`   | `string`      | —       | Tooltip text for info icon at end of label            |
+| `children`       | `ReactNode`   | —       | The input or control to render                        |
+
+### XDSFieldLabel
+
+Standalone label component with optional/required indicators and tooltip support.
+
+```tsx
+<XDSFieldLabel label="Username" inputID={id} isRequired />
+```
+
+| Prop             | Type          | Default | Description                                 |
+| ---------------- | ------------- | ------- | ------------------------------------------- |
+| `label`          | `string`      | —       | Label text (required)                       |
+| `inputID`        | `string`      | —       | ID of the input this label is for           |
+| `isLabelHidden`  | `boolean`     | `false` | Visually hide the label                     |
+| `isDisabled`     | `boolean`     | `false` | Whether the associated input is disabled    |
+| `isOptional`     | `boolean`     | `false` | Show "Optional" indicator                   |
+| `isRequired`     | `boolean`     | `false` | Show "Required" indicator                   |
+| `startIcon`      | `XDSIconType` | —       | Icon before the label text                  |
+| `tooltip`        | `string`      | —       | Tooltip text for info icon at end of label  |
+
+### XDSFieldStatus
+
+Status message component for form field validation feedback.
+
+```tsx
+<XDSFieldStatus type="error" message="This field is required" />
+```
+
+| Prop      | Type                                       | Default      | Description                                     |
+| --------- | ------------------------------------------ | ------------ | ----------------------------------------------- |
+| `type`    | `'error' \| 'warning' \| 'success'`        | —            | Status type                                     |
+| `message` | `string`                                   | —            | Status message text                             |
+| `id`      | `string`                                   | —            | ID for aria-describedby association             |
+| `variant` | `'attached' \| 'detached'`                 | `'attached'` | Visual variant (overlaps vs floats below input) |
+
 ## Usage
 
 ```tsx

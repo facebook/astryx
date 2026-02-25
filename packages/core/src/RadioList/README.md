@@ -84,7 +84,16 @@ import { XDSRadioList, XDSRadioListItem } from '@xds/core/RadioList';
 </XDSRadioList>
 ```
 
-## XDSRadioList Props
+### XDSRadioList
+
+Radio group container with field integration for label, description, and status.
+
+```tsx
+<XDSRadioList label="Notification preference" value={selected} onChange={setSelected}>
+  <XDSRadioListItem label="Email" value="email" />
+  <XDSRadioListItem label="SMS" value="sms" />
+</XDSRadioList>
+```
 
 | Prop            | Type                         | Default      | Description                                                          |
 | --------------- | ---------------------------- | ------------ | -------------------------------------------------------------------- |
@@ -104,7 +113,17 @@ import { XDSRadioList, XDSRadioListItem } from '@xds/core/RadioList';
 | `data-testid`   | `string`                     | —            | Test ID for the outer container                                      |
 | `children`      | `ReactNode`                  | —            | `XDSRadioListItem` elements                                          |
 
-## XDSRadioListItem Props
+### XDSRadioListItem
+
+Individual radio item with label, description, and content slots.
+
+```tsx
+<XDSRadioListItem
+  label="Pro"
+  value="pro"
+  description="All features, unlimited usage"
+/>
+```
 
 | Prop           | Type        | Default | Description                                    |
 | -------------- | ----------- | ------- | ---------------------------------------------- |

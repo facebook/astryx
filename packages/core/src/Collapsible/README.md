@@ -97,6 +97,12 @@ import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
 
 ### XDSCollapsible
 
+```tsx
+<XDSCollapsible trigger="Details">
+  <p>This content can be collapsed</p>
+</XDSCollapsible>
+```
+
 | Prop            | Type                        | Default | Description                                        |
 | --------------- | --------------------------- | ------- | -------------------------------------------------- |
 | `trigger`       | `ReactNode`                 | —       | Content shown in the trigger area (always visible) |
@@ -107,6 +113,17 @@ import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
 | `value`         | `string`                    | —       | Identifier for group coordination                  |
 
 ### XDSCollapsibleGroup
+
+```tsx
+<XDSCollapsibleGroup type="single" defaultValue="general">
+  <XDSCollapsible trigger="General" value="general">
+    <p>General settings</p>
+  </XDSCollapsible>
+  <XDSCollapsible trigger="Advanced" value="advanced">
+    <p>Advanced settings</p>
+  </XDSCollapsible>
+</XDSCollapsibleGroup>
+```
 
 | Prop            | Type                                  | Default    | Description                            |
 | --------------- | ------------------------------------- | ---------- | -------------------------------------- |
