@@ -1,0 +1,42 @@
+{
+  "name": "@xds/theme-brutalist",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Techno-brutalist theme for XDS — monospace, neon accents, sharp edges",
+  "license": "MIT",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch"
+  },
+  "dependencies": {
+    "lucide-react": "^0.575.0"
+  },
+  "peerDependencies": {
+    "@stylexjs/stylex": ">=0.10.0",
+    "@xds/core": "*",
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "@babel/preset-react": "^7.28.5",
+    "@babel/preset-typescript": "^7.28.5",
+    "@stylexjs/babel-plugin": "^0.17.4",
+    "esbuild-plugin-babel": "^0.2.3",
+    "tsup": "^8.3.0"
+  }
+}

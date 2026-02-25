@@ -8,6 +8,7 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSBadge} from '@xds/core/Badge';
+import {XDSCard} from '@xds/core/Card';
 import {XDSDivider} from '@xds/core';
 
 const styles = stylex.create({
@@ -83,6 +84,36 @@ export default function ExamplePage() {
           <XDSText type="supporting" color="secondary">
             Supporting text in secondary color
           </XDSText>
+        </XDSVStack>
+
+        <XDSDivider />
+
+        {/* Cards */}
+        <XDSVStack gap="space3">
+          <XDSHeading level={2}>Cards</XDSHeading>
+          <XDSHStack gap="space3">
+            <XDSCard>
+              <XDSVStack gap="space2">
+                <XDSHeading level={3}>Card Title</XDSHeading>
+                <XDSText type="body" color="secondary">
+                  A basic card with some content inside it.
+                </XDSText>
+                <XDSButton label="Action" size="sm" />
+              </XDSVStack>
+            </XDSCard>
+            <XDSCard>
+              <XDSVStack gap="space2">
+                <XDSHeading level={3}>Another Card</XDSHeading>
+                <XDSText type="body" color="secondary">
+                  Cards pick up theme borders and shadows automatically.
+                </XDSText>
+                <XDSHStack gap="space2">
+                  <XDSBadge variant="success">Active</XDSBadge>
+                  <XDSBadge variant="info">v2.0</XDSBadge>
+                </XDSHStack>
+              </XDSVStack>
+            </XDSCard>
+          </XDSHStack>
         </XDSVStack>
 
         <XDSDivider />

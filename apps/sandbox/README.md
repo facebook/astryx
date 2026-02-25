@@ -12,6 +12,22 @@ The sandbox is a Next.js app configured for static export (`output: 'export'`). 
 https://facebookexperimental.github.io/xds/{commit}/sandbox/
 ```
 
+## Adding a new theme package
+
+When you add a new `@xds/theme-*` package, you must also add a StyleX alias
+for it in `babel.config.js`. This is only necessary because the sandbox lives
+inside the monorepo and resolves packages from source — external consumers
+using published packages do not need this.
+
+```js
+// babel.config.js — aliases section
+'@xds/theme-newtheme/*': [path.join(rootDir, 'packages/themes/newtheme/src/*')],
+```
+
+Without this alias, the StyleX babel plugin cannot resolve the `.stylex.ts`
+token files and the sandbox build will fail with
+`"Could not resolve the path to the imported file"`.
+
 ## Adding a new page
 
 1. Create `src/app/pages/<name>/page.tsx`:

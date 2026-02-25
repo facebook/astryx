@@ -8,7 +8,7 @@ const nextConfig = {
   output: 'export',
   trailingSlash: true,
   basePath: process.env.SANDBOX_BASE_PATH || '',
-  transpilePackages: ['@xds/core', '@xds/theme-default'],
+  transpilePackages: ['@xds/core', '@xds/theme-default', '@xds/theme-neutral', '@xds/theme-brutalist'],
   images: {
     unoptimized: true,
   },

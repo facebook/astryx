@@ -15,7 +15,12 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
     <html lang="en">
       <body>
         <Providers>
-          <div style={{display: 'flex', minHeight: '100vh'}}>
+          <div
+            style={{
+              display: 'flex',
+              minHeight: '100vh',
+              backgroundColor: 'var(--color-wash)',
+            }}>
             <Sidebar />
             <main style={{flex: 1, padding: '2rem'}}>{children}</main>
           </div>
