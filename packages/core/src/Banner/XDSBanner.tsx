@@ -6,8 +6,9 @@
  *
  * Visual structure:
  * - Header area: colored status background with icon, title, description, actions, dismiss
- * - Content area (optional): card background below the header for additional content (children)
+ * - Content area (optional): collapsible card background below the header for additional content (children)
  * - No left border accent — color is expressed through the full header background
+ * - When children are provided, a collapse/expand toggle button appears in the end area
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Banner/README.md (props table, features, implementation notes)
@@ -24,6 +25,8 @@ import {
   ExclamationTriangleIcon,
   XCircleIcon,
   CheckCircleIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
 } from '@heroicons/react/24/solid';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
@@ -97,9 +100,15 @@ export interface XDSBannerProps {
    */
   variant?: XDSBannerVariant;
   /**
-   * Extra content rendered below the header in a card-background area.
+   * Whether the content area (children) starts expanded.
+   * Only relevant when children are provided.
+   * @default false
+   */
+  defaultExpanded?: boolean;
+  /**
+   * Extra content rendered below the header in a collapsible card-background area.
    * Use for rich content like lists, links, or detailed information.
-   * Only renders when provided — without children, only the colored header shows.
+   * When provided, a collapse/expand toggle button appears in the header.
    */
   children?: ReactNode;
   /**
@@ -250,7 +259,11 @@ const statusStyles = stylex.create({
  *
  * Two-part visual structure:
  * - Header: colored status background with icon, title, description, and actions
- * - Content (optional): card background area for additional rich content
+ * - Content (optional): collapsible card background area for additional rich content
+ *
+ * When children are provided, a collapse/expand chevron button appears in the
+ * header end area (to the left of the dismiss button if present). Clicking it
+ * toggles the visibility of the content area.
  *
  * Manages its own dismissed state internally — the banner hides on dismiss
  * even if `onDismiss` is not provided, so product teams don't need to wire
@@ -272,16 +285,26 @@ const statusStyles = stylex.create({
  *   onDismiss={() => logDismiss()}
  * />
  *
- * // With extra content in card area below
+ * // With collapsible content area
  * <XDSBanner
  *   status="error"
  *   title="Multiple errors found"
  *   description="The following issues need to be resolved:"
+ *   isDismissable
  * >
  *   <ul>
  *     <li>Email address is invalid</li>
  *     <li>Password must be at least 8 characters</li>
  *   </ul>
+ * </XDSBanner>
+ *
+ * // Content area expanded by default
+ * <XDSBanner
+ *   status="warning"
+ *   title="Configuration changes"
+ *   defaultExpanded
+ * >
+ *   <p>Details here...</p>
  * </XDSBanner>
  * ```
  */
@@ -296,6 +319,7 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
       onDismiss,
       endButton,
       variant = 'card',
+      defaultExpanded = false,
       children,
       xstyle,
       'data-testid': testId,
@@ -303,9 +327,11 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
     ref,
   ) => {
     const [isDismissed, setIsDismissed] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(defaultExpanded);
     const DefaultIcon = defaultIcons[status];
     const role = statusRole[status];
     const iconColor = statusIconColor[status];
+    const hasChildren = children != null;
 
     if (isDismissed) {
       return null;
@@ -315,6 +341,13 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
       setIsDismissed(true);
       onDismiss?.();
     };
+
+    const handleToggleExpand = () => {
+      setIsExpanded(prev => !prev);
+    };
+
+    // Show the end area if there are actions, dismiss, or a collapsible toggle
+    const showEndArea = endButton != null || isDismissable || hasChildren;
 
     return (
       <div
@@ -342,9 +375,26 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
               <p {...stylex.props(styles.description)}>{description}</p>
             )}
           </div>
-          {(endButton != null || isDismissable) && (
+          {showEndArea && (
             <div {...stylex.props(styles.endArea)}>
               {endButton}
+              {hasChildren && (
+                <XDSButton
+                  variant="ghost"
+                  size="sm"
+                  label={isExpanded ? 'Collapse' : 'Expand'}
+                  tooltip={isExpanded ? 'Collapse' : 'Expand'}
+                  icon={
+                    <XDSIcon
+                      icon={isExpanded ? ChevronUpIcon : ChevronDownIcon}
+                      size="sm"
+                      color="inherit"
+                    />
+                  }
+                  onClick={handleToggleExpand}
+                  aria-expanded={isExpanded}
+                />
+              )}
               {isDismissable && (
                 <XDSButton
                   variant="ghost"
@@ -358,8 +408,8 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
             </div>
           )}
         </div>
-        {/* Content area: card background for additional content */}
-        {children != null && (
+        {/* Content area: collapsible card background for additional content */}
+        {hasChildren && isExpanded && (
           <div
             {...stylex.props(
               styles.contentArea,

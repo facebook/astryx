@@ -162,18 +162,92 @@ describe('XDSBanner', () => {
     expect(root).toBeInTheDocument();
   });
 
-  it('renders children in a separate content area below header', () => {
-    const {container} = render(
-      <XDSBanner status="info" title="With Children" description="Desc">
+  // =========================================================================
+  // Collapsible content area
+  // =========================================================================
+
+  it('hides children by default (collapsed)', () => {
+    render(
+      <XDSBanner status="info" title="Collapsible">
+        <div data-testid="child-content">Extra content</div>
+      </XDSBanner>,
+    );
+    expect(screen.queryByTestId('child-content')).not.toBeInTheDocument();
+  });
+
+  it('shows children when defaultExpanded is true', () => {
+    render(
+      <XDSBanner status="info" title="Expanded" defaultExpanded>
         <div data-testid="child-content">Extra content</div>
       </XDSBanner>,
     );
     expect(screen.getByTestId('child-content')).toBeInTheDocument();
-    expect(screen.getByText('Extra content')).toBeInTheDocument();
-    // Children should be in a separate div from the header (the content area)
-    const root = container.firstElementChild;
-    // Root should have 2 child divs: header + content area
-    expect(root?.children).toHaveLength(2);
+  });
+
+  it('shows expand button when children are provided', () => {
+    render(
+      <XDSBanner status="info" title="With Toggle">
+        <div>Content</div>
+      </XDSBanner>,
+    );
+    expect(screen.getByRole('button', {name: 'Expand'})).toBeInTheDocument();
+  });
+
+  it('does not show expand/collapse button when no children', () => {
+    render(<XDSBanner status="info" title="No Children" />);
+    expect(
+      screen.queryByRole('button', {name: 'Expand'}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Collapse'}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('toggles children visibility on expand/collapse click', async () => {
+    const user = userEvent.setup();
+    render(
+      <XDSBanner status="info" title="Toggle Test">
+        <div data-testid="child-content">Extra content</div>
+      </XDSBanner>,
+    );
+
+    // Initially collapsed
+    expect(screen.queryByTestId('child-content')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Expand'})).toBeInTheDocument();
+
+    // Click to expand
+    await user.click(screen.getByRole('button', {name: 'Expand'}));
+    expect(screen.getByTestId('child-content')).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Collapse'})).toBeInTheDocument();
+
+    // Click to collapse
+    await user.click(screen.getByRole('button', {name: 'Collapse'}));
+    expect(screen.queryByTestId('child-content')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Expand'})).toBeInTheDocument();
+  });
+
+  it('shows collapse button when defaultExpanded', () => {
+    render(
+      <XDSBanner status="info" title="Expanded" defaultExpanded>
+        <div>Content</div>
+      </XDSBanner>,
+    );
+    expect(screen.getByRole('button', {name: 'Collapse'})).toBeInTheDocument();
+  });
+
+  it('renders expand button to the left of dismiss button', () => {
+    const {container} = render(
+      <XDSBanner status="info" title="Order Test" isDismissable>
+        <div>Content</div>
+      </XDSBanner>,
+    );
+    const buttons = container.querySelectorAll('button');
+    const buttonNames = Array.from(buttons).map(
+      b => b.getAttribute('aria-label') || b.textContent,
+    );
+    const expandIndex = buttonNames.indexOf('Expand');
+    const dismissIndex = buttonNames.indexOf('Dismiss');
+    expect(expandIndex).toBeLessThan(dismissIndex);
   });
 
   it('does not render content area when no children', () => {

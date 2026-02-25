@@ -24,6 +24,11 @@ const meta: Meta<typeof XDSBanner> = {
       description:
         'Whether the banner can be dismissed (manages its own hidden state)',
     },
+    defaultExpanded: {
+      control: 'boolean',
+      description:
+        'Whether the content area starts expanded (only relevant when children are provided)',
+    },
   },
 };
 
@@ -104,12 +109,58 @@ export const SectionVariant: Story = {
   },
 };
 
+export const CollapsibleContent: Story = {
+  name: 'Collapsible Content (Collapsed)',
+  args: {
+    status: 'info',
+    title: 'Emphasized Text',
+    description: 'Description text',
+    endButton: <XDSButton label="Button" variant="secondary" size="sm" />,
+    isDismissable: true,
+    children: (
+      <div
+        style={{
+          fontSize: '13px',
+          padding: '40px',
+          textAlign: 'center',
+          color: '#999',
+        }}>
+        Flex Slot
+      </div>
+    ),
+  },
+};
+
+export const CollapsibleContentExpanded: Story = {
+  name: 'Collapsible Content (Expanded)',
+  args: {
+    status: 'info',
+    title: 'Emphasized Text',
+    description: 'Description text',
+    defaultExpanded: true,
+    endButton: <XDSButton label="Button" variant="secondary" size="sm" />,
+    isDismissable: true,
+    children: (
+      <div
+        style={{
+          fontSize: '13px',
+          padding: '40px',
+          textAlign: 'center',
+          color: '#999',
+        }}>
+        Flex Slot
+      </div>
+    ),
+  },
+};
+
 export const WithContentArea: Story = {
   name: 'With Content Area (Card Background)',
   args: {
     status: 'error',
     title: 'Multiple errors found',
     description: 'The following issues need to be resolved:',
+    defaultExpanded: true,
     children: (
       <ul style={{margin: 0, paddingInlineStart: '20px', fontSize: '13px'}}>
         <li>Email address is invalid</li>
@@ -128,6 +179,7 @@ export const ContentAreaWithAction: Story = {
     description: 'Review the changes before they take effect.',
     endButton: <XDSButton label="Review" variant="secondary" size="sm" />,
     isDismissable: true,
+    defaultExpanded: true,
     children: (
       <div style={{fontSize: '13px'}}>
         <p style={{margin: '0 0 8px'}}>Changed settings:</p>
@@ -181,11 +233,22 @@ export const AllFeatures: Story = {
       />
       <XDSBanner
         status="error"
-        title="With content area"
-        description="Additional content appears on a card background below.">
+        title="With collapsible content"
+        description="Click the chevron to expand."
+        isDismissable>
         <div style={{fontSize: '13px'}}>
           This content sits on a card-colored background, visually distinct from
           the status header above.
+        </div>
+      </XDSBanner>
+      <XDSBanner
+        status="success"
+        title="Expanded by default"
+        description="This content area starts open."
+        defaultExpanded
+        isDismissable>
+        <div style={{fontSize: '13px'}}>
+          Content is visible immediately because defaultExpanded is true.
         </div>
       </XDSBanner>
       <XDSBanner
