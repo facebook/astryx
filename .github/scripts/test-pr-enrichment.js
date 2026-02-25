@@ -6,6 +6,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { buildA11ySection } = require('./lib/a11y-format');
 
 // Mock analysis data
 const mockAnalysis = {
@@ -74,7 +75,7 @@ const mockAnalysis = {
   analyzedAt: new Date().toISOString(),
 };
 
-// Mock a11y report
+// Mock a11y report — includes new axe-core fields (helpUrl, tags, storyCount, etc.)
 const mockA11y = {
   components: {
     DatePicker: {
@@ -89,14 +90,57 @@ const mockA11y = {
           id: 'label',
           impact: 'critical',
           description: 'Form elements must have labels',
+          help: 'Form elements must have labels',
+          helpUrl: 'https://dequeuniversity.com/rules/axe/4.10/label',
+          tags: ['cat.forms', 'wcag2a', 'wcag412', 'TTv5', 'TT6.a'],
+          storyCount: 2,
+          totalNodes: 3,
+          stories: ['Default', 'WithSeconds'],
+          nodes: [
+            { html: '<input type="text" class="xds-time-input">', target: ['.xds-time-input'] },
+          ],
+        },
+        {
+          id: 'color-contrast',
+          impact: 'serious',
+          description: 'Elements must meet minimum color contrast ratio thresholds',
+          help: 'Elements must have sufficient color contrast',
+          helpUrl: 'https://dequeuniversity.com/rules/axe/4.10/color-contrast',
+          tags: ['cat.color', 'wcag2aa', 'wcag143'],
+          storyCount: 1,
+          totalNodes: 2,
+          stories: ['Disabled'],
+          nodes: [
+            { html: '<span class="xds-time-label">Hours</span>', target: ['.xds-time-label'] },
+          ],
+        },
+      ],
+      storyDetails: [],
+    },
+    Button: {
+      storiesAudited: 5,
+      violations: [
+        {
+          id: 'button-name',
+          impact: 'critical',
+          description: 'Buttons must have discernible text',
+          help: 'Buttons must have discernible text',
+          helpUrl: 'https://dequeuniversity.com/rules/axe/4.10/button-name',
+          tags: ['cat.name-role-value', 'wcag2a', 'wcag412'],
+          storyCount: 3,
+          totalNodes: 5,
+          stories: ['IconOnly', 'Loading', 'Minimal'],
+          nodes: [
+            { html: '<button class="xds-button">', target: ['.xds-button'] },
+          ],
         },
       ],
       storyDetails: [],
     },
   },
   summary: {
-    componentsAudited: 2,
-    totalViolations: 1,
+    componentsAudited: 3,
+    totalViolations: 4,
     auditedAt: new Date().toISOString(),
   },
 };
@@ -166,26 +210,8 @@ if (analysis.modifiedComponents && analysis.modifiedComponents.length > 0) {
   }
 }
 
-// Build accessibility section
-let a11ySection = '### Accessibility Audit\n\n';
-const totalViolations = Object.values(a11yReport.components || {})
-  .reduce((sum, comp) => sum + (comp.violations?.length || 0), 0);
-
-if (totalViolations === 0) {
-  a11ySection += '**Status:** No accessibility violations detected.\n\n';
-} else {
-  a11ySection += `**Status:** ${totalViolations} accessibility violation(s) found.\n\n`;
-  for (const [compName, compReport] of Object.entries(a11yReport.components || {})) {
-    if (compReport.violations?.length > 0) {
-      a11ySection += `<details>\n<summary><strong>${compName}</strong> - ${compReport.violations.length} issue(s)</summary>\n\n`;
-      for (const violation of compReport.violations) {
-        a11ySection += `- **${violation.impact}**: ${violation.description}\n`;
-        a11ySection += `  - Rule: \`${violation.id}\`\n`;
-      }
-      a11ySection += `\n</details>\n\n`;
-    }
-  }
-}
+// Build accessibility section using shared module
+const a11ySection = buildA11ySection(a11yReport);
 
 // Build bundle size section
 let bundleSection = '### Bundle Size Summary\n\n';

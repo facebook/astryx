@@ -7,6 +7,7 @@
  */
 
 const fs = require('fs');
+const { buildA11ySection } = require('./lib/a11y-format');
 
 const args = process.argv.slice(2);
 const getArg = (name) => {
@@ -114,26 +115,8 @@ if (analysis.modifiedComponents && analysis.modifiedComponents.length > 0) {
   }
 }
 
-// Build accessibility section
-let a11ySection = '### Accessibility Audit\n\n';
-const totalViolations = Object.values(a11yReport.components || {})
-  .reduce((sum, comp) => sum + (comp.violations?.length || 0), 0);
-
-if (totalViolations === 0) {
-  a11ySection += '**Status:** No accessibility violations detected.\n\n';
-} else {
-  a11ySection += `**Status:** ${totalViolations} accessibility violation(s) found.\n\n`;
-  for (const [compName, compReport] of Object.entries(a11yReport.components || {})) {
-    if (compReport.violations?.length > 0) {
-      a11ySection += `<details>\n<summary><strong>${compName}</strong> - ${compReport.violations.length} issue(s)</summary>\n\n`;
-      for (const violation of compReport.violations) {
-        a11ySection += `- **${violation.impact}**: ${violation.description}\n`;
-        a11ySection += `  - Rule: \`${violation.id}\`\n`;
-      }
-      a11ySection += `\n</details>\n\n`;
-    }
-  }
-}
+// Build accessibility section using shared module
+const a11ySection = buildA11ySection(a11yReport);
 
 // Build bundle size section
 let bundleSection = '### Bundle Size Summary\n\n';
