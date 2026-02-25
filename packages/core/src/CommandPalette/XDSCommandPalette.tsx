@@ -1,6 +1,6 @@
 /**
  * @file XDSCommandPalette.tsx
- * @input Uses React, StyleX, XDSIcon, XDSSpinner, types
+ * @input Uses React, StyleX, XDSDialog, XDSButton, XDSIcon, XDSDivider, XDSSpinner, types
  * @output Exports XDSCommandPalette component
  * @position Modal UI; rendered by XDSCommandPaletteProvider
  *
@@ -20,13 +20,15 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {XDSDialog} from '../Dialog';
+import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
+import {XDSDivider} from '../Divider';
 import {XDSSpinner} from '../Spinner';
 import {
   colorVars,
   spacingVars,
   radiusVars,
-  elevationVars,
   transitionVars,
   textSizeVars,
   typographyVars,
@@ -59,33 +61,12 @@ declare module '../theme/types' {
 // =============================================================================
 
 const styles = stylex.create({
-  // Fixed overlay: covers viewport, flexbox centers the palette
-  overlay: {
-    position: 'fixed',
-    inset: 0,
-    zIndex: 9999,
-    display: 'flex',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    paddingTop: '15vh',
-    backgroundColor: colorVars['--color-overlay'],
-    backdropFilter: 'blur(2px)',
-  },
-  // The palette panel itself
-  panel: {
-    width: '560px',
-    maxWidth: '90vw',
-    maxHeight: '60vh',
+  // The dialog content container
+  dialogContent: {
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: colorVars['--color-surface'],
-    borderRadius: radiusVars['--radius-container'],
-    boxShadow: elevationVars['--elevation-dialog'],
     overflow: 'hidden',
-    // Open animation
-    opacity: 1,
-    transform: 'scale(1) translateY(0)',
-    transition: `opacity ${transitionVars['--transition-normal']}, transform ${transitionVars['--transition-normal']}`,
+    height: '100%',
   },
   inputWrapper: {
     display: 'flex',
@@ -93,10 +74,6 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     padding: `${spacingVars['--spacing-3']} ${spacingVars['--spacing-4']}`,
     borderBottom: `1px solid ${colorVars['--color-divider']}`,
-  },
-  inputIcon: {
-    flexShrink: 0,
-    color: colorVars['--color-icon-secondary'],
   },
   input: {
     flex: 1,
@@ -123,11 +100,6 @@ const styles = stylex.create({
     fontSize: textSizeVars['--text-xsm'],
     color: colorVars['--color-text-secondary'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
-  },
-  groupDivider: {
-    height: '1px',
-    backgroundColor: colorVars['--color-divider'],
-    margin: `${spacingVars['--spacing-1']} ${spacingVars['--spacing-3']}`,
   },
   item: {
     boxSizing: 'border-box',
@@ -227,7 +199,7 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
-    padding: `${spacingVars['--spacing-1-5']} ${spacingVars['--spacing-3']}`,
+    padding: `${spacingVars['--spacing-1']} ${spacingVars['--spacing-3']}`,
     fontFamily: typographyVars['--font-body'],
     fontSize: textSizeVars['--text-sm'],
     color: colorVars['--color-text-primary'],
@@ -242,20 +214,6 @@ const styles = stylex.create({
     fontSize: textSizeVars['--text-sm'],
     color: colorVars['--color-text-secondary'],
     fontWeight: fontWeightVars['--font-weight-medium'],
-  },
-  backButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    border: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    padding: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-content'],
-    color: colorVars['--color-icon-secondary'],
-    ':hover': {
-      backgroundColor: colorVars['--color-hover-overlay'],
-    },
   },
   recentMeta: {
     display: 'flex',
@@ -281,7 +239,6 @@ const styles = stylex.create({
     padding: `0 ${spacingVars['--spacing-0-5']}`,
     marginLeft: spacingVars['--spacing-0-5'],
     color: colorVars['--color-text-placeholder'],
-    fontSize: textSizeVars['--text-2xs'],
     lineHeight: lineHeightVars['--leading-tight'],
     opacity: 0,
     transition: `opacity ${transitionVars['--transition-fast']}`,
@@ -334,11 +291,9 @@ function renderHighlightedLabel(
 
   for (let i = 0; i < matchRanges.length; i++) {
     const range = matchRanges[i];
-    // Text before this match
     if (range.start > lastIndex) {
       parts.push(label.slice(lastIndex, range.start));
     }
-    // Matched text
     parts.push(
       <mark key={i} {...stylex.props(styles.highlightMark)}>
         {label.slice(range.start, range.end)}
@@ -347,7 +302,6 @@ function renderHighlightedLabel(
     lastIndex = range.end;
   }
 
-  // Text after last match
   if (lastIndex < label.length) {
     parts.push(label.slice(lastIndex));
   }
@@ -369,6 +323,139 @@ function formatRelativeTime(timestamp: number): string {
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
 }
+
+// =============================================================================
+// Sub-components
+// =============================================================================
+
+/**
+ * Renders a single shortcut display row within the shortcuts panel.
+ */
+function CommandPaletteShortcutRow({command}: {command: XDSCommand}) {
+  return (
+    <div
+      {...stylex.props(styles.shortcutRow)}
+      role="option"
+      aria-selected={false}>
+      <span>{command.label}</span>
+      <span {...stylex.props(styles.shortcut)} aria-hidden="true">
+        {command.shortcut!.split('+').map((key, i) => (
+          <kbd key={i} {...stylex.props(styles.kbd)}>
+            {formatShortcutKey(key)}
+          </kbd>
+        ))}
+      </span>
+    </div>
+  );
+}
+
+CommandPaletteShortcutRow.displayName = 'CommandPaletteShortcutRow';
+
+/**
+ * Renders the history metadata (count, relative time, group, clear button)
+ * shown on recently-used command items.
+ */
+function CommandPaletteRecentMeta({
+  command,
+  historyEntry,
+  isHighlighted,
+  onClear,
+}: {
+  command: XDSCommand;
+  historyEntry: HistoryEntry;
+  isHighlighted: boolean;
+  onClear: (id: string) => void;
+}) {
+  return (
+    <span
+      {...stylex.props(styles.recentMeta)}
+      aria-label={`Used ${historyEntry.count} time${historyEntry.count !== 1 ? 's' : ''}`}>
+      {historyEntry.count > 1 && (
+        <>
+          <span>{historyEntry.count}×</span>
+          <span {...stylex.props(styles.recentMetaSeparator)}>·</span>
+        </>
+      )}
+      <span>{formatRelativeTime(historyEntry.timestamp)}</span>
+      {command.group && (
+        <>
+          <span {...stylex.props(styles.recentMetaSeparator)}>·</span>
+          <span>{command.group}</span>
+        </>
+      )}
+      <button
+        type="button"
+        {...stylex.props(
+          styles.clearButton,
+          isHighlighted && styles.itemHoverClearVisible,
+        )}
+        onClick={e => {
+          e.stopPropagation();
+          onClear(command.id);
+        }}
+        aria-label={`Remove ${command.label} from recent`}
+        tabIndex={-1}>
+        <XDSIcon icon="close" size="xsm" color="inherit" />
+      </button>
+    </span>
+  );
+}
+
+CommandPaletteRecentMeta.displayName = 'CommandPaletteRecentMeta';
+
+/**
+ * Renders a single command option row in the palette list.
+ */
+function CommandPaletteItem({
+  command,
+  scored,
+  index,
+  isHighlighted,
+  historyEntry,
+  onSelect,
+  onHighlight,
+  onClearHistory,
+}: {
+  command: XDSCommand;
+  scored: ScoredCommand;
+  index: number;
+  isHighlighted: boolean;
+  historyEntry?: HistoryEntry;
+  onSelect: (command: XDSCommand) => void;
+  onHighlight: (index: number) => void;
+  onClearHistory: (id: string) => void;
+}) {
+  return (
+    <div
+      key={command.id}
+      id={`command-palette-item-${index}`}
+      role="option"
+      aria-selected={isHighlighted}
+      onClick={() => onSelect(command)}
+      onMouseEnter={() => onHighlight(index)}
+      {...stylex.props(styles.item, isHighlighted && styles.itemHighlighted)}>
+      {command.icon && (
+        <XDSIcon icon={command.icon} size="sm" color="secondary" />
+      )}
+      <span {...stylex.props(styles.itemLabel)}>
+        {renderHighlightedLabel(command.label, scored.matchRanges)}
+      </span>
+      {historyEntry && (
+        <CommandPaletteRecentMeta
+          command={command}
+          historyEntry={historyEntry}
+          isHighlighted={isHighlighted}
+          onClear={onClearHistory}
+        />
+      )}
+      {!historyEntry && command.page && (
+        <XDSIcon icon="chevronRight" size="sm" color="tertiary" />
+      )}
+    </div>
+  );
+}
+
+CommandPaletteItem.displayName = 'CommandPaletteItem';
 
 // =============================================================================
 // Props
@@ -401,8 +488,8 @@ interface XDSCommandPaletteProps {
  * The modal UI for the command palette.
  * Rendered internally by XDSCommandPaletteProvider.
  *
- * Uses a fixed overlay with flexbox centering rather than the native
- * <dialog> element, for robust cross-browser positioning.
+ * Uses XDSDialog (native <dialog> element) for overlay, scroll lock,
+ * and backdrop click handling.
  */
 export function XDSCommandPalette({
   isOpen,
@@ -426,7 +513,6 @@ export function XDSCommandPalette({
   const [isShowShortcuts, setIsShowShortcuts] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
 
   const themeContext = useContext(ThemeContext);
   const rootOverride = themeContext?.theme.components?.commandPalette?.root;
@@ -447,10 +533,8 @@ export function XDSCommandPalette({
   let grouped: {group: string | null; items: ScoredCommand[]}[];
 
   if (query.length > 0) {
-    // When searching, don't show groups — flat list
     grouped = [{group: null, items: scoredCommands}];
   } else {
-    // Show "Recent" group first when no query
     const recentIds = new Set(historyEntries.map(h => h.id));
     const recent = scoredCommands.filter(sc => recentIds.has(sc.command.id));
     const rest = scoredCommands.filter(sc => !recentIds.has(sc.command.id));
@@ -461,7 +545,6 @@ export function XDSCommandPalette({
       groups.push({group: 'Recent', items: recent});
     }
 
-    // Group remaining by their group property
     const byGroup = new Map<string | null, ScoredCommand[]>();
     for (const sc of rest) {
       const key = sc.command.group ?? null;
@@ -483,26 +566,15 @@ export function XDSCommandPalette({
   // Flat list for keyboard navigation
   const flatItems = grouped.flatMap(g => g.items);
 
-  // Reset state when opening/closing
+  // Reset state when opening
   useEffect(() => {
     if (isOpen) {
       setHighlightedIndex(0);
       setIsShowShortcuts(false);
-      // Focus input on next frame
       requestAnimationFrame(() => {
         inputRef.current?.focus();
       });
     }
-  }, [isOpen]);
-
-  // Lock body scroll when open
-  useEffect(() => {
-    if (!isOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
   }, [isOpen]);
 
   // Reset highlighted index when results change
@@ -576,14 +648,19 @@ export function XDSCommandPalette({
           }
           break;
         case 'Escape':
-          e.preventDefault();
+          // Layered Escape: shortcuts panel → page stack → close (via XDSDialog)
           if (isShowShortcuts) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.nativeEvent.stopPropagation();
             setIsShowShortcuts(false);
           } else if (pageStack.length > 0) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.nativeEvent.stopPropagation();
             goBack();
-          } else {
-            onClose();
           }
+          // Otherwise let the event bubble to XDSDialog's Escape handler
           break;
       }
     },
@@ -594,69 +671,41 @@ export function XDSCommandPalette({
       query,
       pageStack,
       goBack,
-      onClose,
       isShowShortcuts,
     ],
   );
-
-  // Click on overlay (outside panel) closes palette
-  const handleOverlayClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    },
-    [onClose],
-  );
-
-  if (!isOpen) return null;
 
   // Build flat index for mapping grouped items
   let flatIndex = 0;
 
   return (
-    <div
-      {...stylex.props(styles.overlay)}
-      onClick={handleOverlayClick}
-      data-testid={testId}
-      role="presentation">
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Command palette"
-        {...stylex.props(styles.panel, rootOverride, xstyle)}>
+    <XDSDialog
+      isShown={isOpen}
+      onHide={onClose}
+      width={560}
+      maxHeight="60vh"
+      position={{top: '15vh'}}
+      purpose="info"
+      aria-label="Command palette"
+      data-testid={testId}>
+      <div {...stylex.props(styles.dialogContent, rootOverride, xstyle)}>
         {/* Page header with back button */}
         {currentPage && (
           <div {...stylex.props(styles.pageHeader)}>
-            <button
-              type="button"
+            <XDSButton
+              label="Go back"
+              variant="ghost"
+              size="sm"
+              icon={<XDSIcon icon="chevronLeft" size="sm" color="inherit" />}
               onClick={goBack}
-              {...stylex.props(styles.backButton)}
-              aria-label="Go back">
-              <XDSIcon icon="chevronLeft" size="sm" color="inherit" />
-            </button>
+            />
             {currentPage}
           </div>
         )}
 
         {/* Search input */}
         <div {...stylex.props(styles.inputWrapper)}>
-          <span {...stylex.props(styles.inputIcon)}>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </span>
+          <XDSIcon icon="search" size="sm" color="secondary" />
           <input
             ref={inputRef}
             type="text"
@@ -677,11 +726,11 @@ export function XDSCommandPalette({
           />
         </div>
 
-        {/* Result list */}
+        {/* Result list — always role="listbox" for combobox pattern */}
         <div
           ref={listRef}
           id="command-palette-list"
-          role={isShowShortcuts ? 'list' : 'listbox'}
+          role="listbox"
           aria-label={isShowShortcuts ? 'Keyboard shortcuts' : 'Commands'}
           {...stylex.props(styles.resultList)}>
           {isShowShortcuts ? (
@@ -697,7 +746,6 @@ export function XDSCommandPalette({
                   </div>
                 );
               }
-              // Group by command group
               const groups = new Map<string, typeof withShortcuts>();
               for (const sc of withShortcuts) {
                 const group = sc.command.group ?? '';
@@ -711,31 +759,15 @@ export function XDSCommandPalette({
               let groupIdx = 0;
               return Array.from(groups.entries()).map(([group, items]) => (
                 <div key={group || 'ungrouped'}>
-                  {groupIdx++ > 0 && (
-                    <div
-                      {...stylex.props(styles.groupDivider)}
-                      role="separator"
-                    />
-                  )}
+                  {groupIdx++ > 0 && <XDSDivider />}
                   {group && (
                     <div {...stylex.props(styles.groupLabel)}>{group}</div>
                   )}
                   {items.map(sc => (
-                    <div
+                    <CommandPaletteShortcutRow
                       key={sc.command.id}
-                      {...stylex.props(styles.shortcutRow)}
-                      role="listitem">
-                      <span>{sc.command.label}</span>
-                      <span
-                        {...stylex.props(styles.shortcut)}
-                        aria-hidden="true">
-                        {sc.command.shortcut!.split('+').map((key, i) => (
-                          <kbd key={i} {...stylex.props(styles.kbd)}>
-                            {formatShortcutKey(key)}
-                          </kbd>
-                        ))}
-                      </span>
-                    </div>
+                      command={sc.command}
+                    />
                   ))}
                 </div>
               ));
@@ -756,77 +788,23 @@ export function XDSCommandPalette({
                   : undefined;
 
                 return (
-                  <div
+                  <CommandPaletteItem
                     key={cmd.id}
-                    id={`command-palette-item-${idx}`}
-                    role="option"
-                    aria-selected={isHighlighted}
-                    onClick={() => handleSelect(cmd)}
-                    onMouseEnter={() => setHighlightedIndex(idx)}
-                    {...stylex.props(
-                      styles.item,
-                      isHighlighted && styles.itemHighlighted,
-                    )}>
-                    {cmd.icon && (
-                      <XDSIcon icon={cmd.icon} size="sm" color="secondary" />
-                    )}
-                    <span {...stylex.props(styles.itemLabel)}>
-                      {renderHighlightedLabel(cmd.label, scored.matchRanges)}
-                    </span>
-                    {historyEntry && (
-                      <span
-                        {...stylex.props(styles.recentMeta)}
-                        aria-label={`Used ${historyEntry.count} time${historyEntry.count !== 1 ? 's' : ''}`}>
-                        {historyEntry.count > 1 && (
-                          <>
-                            <span>{historyEntry.count}×</span>
-                            <span {...stylex.props(styles.recentMetaSeparator)}>
-                              ·
-                            </span>
-                          </>
-                        )}
-                        <span>
-                          {formatRelativeTime(historyEntry.timestamp)}
-                        </span>
-                        {cmd.group && (
-                          <>
-                            <span {...stylex.props(styles.recentMetaSeparator)}>
-                              ·
-                            </span>
-                            <span>{cmd.group}</span>
-                          </>
-                        )}
-                        <button
-                          type="button"
-                          {...stylex.props(
-                            styles.clearButton,
-                            isHighlighted && styles.itemHoverClearVisible,
-                          )}
-                          onClick={e => {
-                            e.stopPropagation();
-                            clearHistoryEntry(cmd.id);
-                          }}
-                          aria-label={`Remove ${cmd.label} from recent`}
-                          tabIndex={-1}>
-                          ×
-                        </button>
-                      </span>
-                    )}
-                    {!historyEntry && cmd.page && (
-                      <XDSIcon icon="chevronRight" size="sm" color="tertiary" />
-                    )}
-                  </div>
+                    command={cmd}
+                    scored={scored}
+                    index={idx}
+                    isHighlighted={isHighlighted}
+                    historyEntry={historyEntry}
+                    onSelect={handleSelect}
+                    onHighlight={setHighlightedIndex}
+                    onClearHistory={clearHistoryEntry}
+                  />
                 );
               });
 
               return (
                 <div key={section.group ?? `ungrouped-${sectionIdx}`}>
-                  {sectionIdx > 0 && (
-                    <div
-                      {...stylex.props(styles.groupDivider)}
-                      role="separator"
-                    />
-                  )}
+                  {sectionIdx > 0 && <XDSDivider />}
                   {section.group && (
                     <div {...stylex.props(styles.groupLabel)}>
                       {section.group}
@@ -858,7 +836,7 @@ export function XDSCommandPalette({
           </button>
         </div>
       </div>
-    </div>
+    </XDSDialog>
   );
 }
 

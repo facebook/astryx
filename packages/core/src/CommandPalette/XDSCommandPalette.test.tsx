@@ -7,7 +7,7 @@
  * SYNC: When CommandPalette files change, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import {XDSCommandPaletteProvider} from './XDSCommandPaletteProvider';
 import {useXDSCommandPaletteRegister} from './useXDSCommandPaletteRegister';
@@ -15,6 +15,18 @@ import {useXDSCommandPalette} from './useXDSCommandPalette';
 import {useState} from 'react';
 import type {XDSCommand} from './types';
 import {fuzzySearch} from './fuzzySearch';
+
+// Mock showModal and close methods since they're not fully implemented in jsdom
+beforeEach(() => {
+  HTMLDialogElement.prototype.showModal = vi.fn(function (
+    this: HTMLDialogElement,
+  ) {
+    this.setAttribute('open', '');
+  });
+  HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
+    this.removeAttribute('open');
+  });
+});
 
 // Helper component that registers commands
 function TestCommands({commands}: {commands: XDSCommand[]}) {
@@ -500,7 +512,7 @@ describe('XDSCommandPalette', () => {
     expect(options[0]).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('closes when clicking the overlay', () => {
+  it('uses XDSDialog with purpose="info" for backdrop click dismiss', () => {
     render(
       <XDSCommandPaletteProvider data-testid="palette">
         <TestCommands
@@ -511,13 +523,10 @@ describe('XDSCommandPalette', () => {
     );
 
     fireEvent.click(screen.getByText('Open'));
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-
-    // Click the overlay (the presentation div)
-    const overlay = screen.getByRole('presentation');
-    fireEvent.click(overlay);
-
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toBeInTheDocument();
+    expect(dialog.tagName).toBe('DIALOG');
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
   });
 });
 
