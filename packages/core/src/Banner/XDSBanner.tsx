@@ -177,7 +177,7 @@ const styles = stylex.create({
   headerContent: {
     display: 'flex',
     flexDirection: 'column',
-    gap: spacingVars['--spacing-1'],
+    gap: 0,
     flex: 1,
     minWidth: 0,
   },
