@@ -596,6 +596,16 @@ export function extractBrief(content, componentName, importHint) {
     output.push(`  ${example}`);
   }
 
+  // Warn on stderr when extraction is incomplete (doesn't pollute brief output)
+  if (props.length === 0) {
+    console.warn(
+      `⚠️  No props found for ${displayName}. Ensure README has a '### ${displayName}' section with a props table.`,
+    );
+  }
+  if (!example) {
+    console.warn(`⚠️  No code example found for ${displayName}.`);
+  }
+
   return output.join('\n') + '\n';
 }
 

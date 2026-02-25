@@ -25,6 +25,7 @@
     "docs": "yarn workspace @xds/docs dev",
     "sync:exports": "node scripts/sync-exports.js",
     "sync:exports:check": "node scripts/sync-exports.js --check",
+    "validate-readmes": "node scripts/validate-readmes.mjs",
     "package:source": "node scripts/package-source.js",
     "changeset": "changeset",
     "version-packages": "changeset version",
