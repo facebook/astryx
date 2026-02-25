@@ -21,6 +21,7 @@ const pages = [
   {name: 'Example', href: '/pages/example/'},
   {name: 'Navigation', href: '/pages/navigation/'},
   {name: 'TopNav Menu', href: '/pages/topnav-menu/'},
+  {name: 'Polymorphic Link', href: '/pages/polymorphic-link/'},
 ];
 
 const styles = stylex.create({

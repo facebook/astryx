@@ -10,7 +10,18 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {forwardRef, type ComponentPropsWithoutRef} from 'react';
 import {XDSLink} from './XDSLink';
+import {XDSLinkProvider} from './XDSLinkProvider';
+
+const CustomLink = forwardRef<HTMLAnchorElement, ComponentPropsWithoutRef<'a'>>(
+  ({children, ...props}, ref) => (
+    <a ref={ref} data-custom-link {...props}>
+      {children}
+    </a>
+  ),
+);
+CustomLink.displayName = 'CustomLink';
 
 describe('XDSLink', () => {
   it('renders children as link text', () => {
@@ -163,5 +174,49 @@ describe('XDSLink', () => {
     );
     const link = screen.getByRole('link', {name: 'Settings'});
     expect(link).toBeInTheDocument();
+  });
+
+  it('renders custom component when as is provided', () => {
+    render(
+      <XDSLink label="Custom" href="/custom" as={CustomLink}>
+        Custom Link
+      </XDSLink>,
+    );
+    const link = screen.getByRole('link', {name: 'Custom'});
+    expect(link).toHaveAttribute('data-custom-link');
+    expect(link).toHaveAttribute('href', '/custom');
+  });
+
+  it('renders custom component from XDSLinkProvider', () => {
+    render(
+      <XDSLinkProvider component={CustomLink}>
+        <XDSLink label="Provider" href="/provider">
+          Provider Link
+        </XDSLink>
+      </XDSLinkProvider>,
+    );
+    const link = screen.getByRole('link', {name: 'Provider'});
+    expect(link).toHaveAttribute('data-custom-link');
+  });
+
+  it('as prop overrides XDSLinkProvider', () => {
+    const AnotherLink = forwardRef<
+      HTMLAnchorElement,
+      ComponentPropsWithoutRef<'a'>
+    >(({children, ...props}, ref) => (
+      <a ref={ref} data-another-link {...props}>
+        {children}
+      </a>
+    ));
+    render(
+      <XDSLinkProvider component={AnotherLink}>
+        <XDSLink label="Override" href="/override" as={CustomLink}>
+          Override Link
+        </XDSLink>
+      </XDSLinkProvider>,
+    );
+    const link = screen.getByRole('link', {name: 'Override'});
+    expect(link).toHaveAttribute('data-custom-link');
+    expect(link).not.toHaveAttribute('data-another-link');
   });
 });

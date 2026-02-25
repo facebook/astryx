@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/TopNav.stories.tsx
  */
 
+'use client';
+
 import {forwardRef, type AnchorHTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -22,6 +24,8 @@ import {
   fontWeightVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
+import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
+import type {XDSLinkComponentType} from '../Link/types';
 
 /**
  * NavItem styles with hover/selected states
@@ -80,6 +84,12 @@ export interface XDSTopNavItemProps extends Omit<
   'style' | 'className'
 > {
   /**
+   * Custom component to render instead of `<a>`.
+   * Overrides the provider-level default set by XDSLinkProvider.
+   * Must accept href, className, style, and children props.
+   */
+  as?: XDSLinkComponentType;
+  /**
    * The accessible label for the nav item.
    * Used as visible text, or as aria-label for icon-only items.
    */
@@ -127,14 +137,23 @@ export interface XDSTopNavItemProps extends Omit<
  */
 export const XDSTopNavItem = forwardRef<HTMLAnchorElement, XDSTopNavItemProps>(
   function XDSTopNavItem(
-    {label, isSelected = false, isDisabled = false, icon, children, ...props},
+    {
+      as,
+      label,
+      isSelected = false,
+      isDisabled = false,
+      icon,
+      children,
+      ...props
+    },
     ref,
   ) {
+    const LinkComponent = useXDSLinkComponent(as);
     const isIconOnly = icon != null && children == null && !label;
     const showLabel = !isIconOnly;
 
     return (
-      <a
+      <LinkComponent
         ref={ref}
         aria-label={isIconOnly ? label : undefined}
         aria-current={isSelected ? 'page' : undefined}
@@ -149,7 +168,7 @@ export const XDSTopNavItem = forwardRef<HTMLAnchorElement, XDSTopNavItemProps>(
         {...props}>
         {icon}
         {showLabel && (children ?? label)}
-      </a>
+      </LinkComponent>
     );
   },
 );
