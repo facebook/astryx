@@ -1,4 +1,4 @@
-# /packages/core/src/Icon
+# Icon
 
 Renders icons with XDS design system colors and sizes. Supports both direct SVG icon components and semantic icon names that adapt to the active theme.
 

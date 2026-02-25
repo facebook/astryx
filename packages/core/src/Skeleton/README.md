@@ -1,4 +1,4 @@
-# /packages/core/src/Skeleton
+# Skeleton
 
 A placeholder loading component that displays an animated pulsing effect while content is loading.
 

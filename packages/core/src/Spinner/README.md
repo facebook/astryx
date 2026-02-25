@@ -1,4 +1,4 @@
-# /packages/core/src/Spinner
+# Spinner
 
 A pure spinner component for indicating loading state. No layout, no text — just the spinning indicator.
 

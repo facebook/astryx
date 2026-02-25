@@ -1,4 +1,4 @@
-# /packages/core/src/Slider
+# Slider
 
 A slider component for selecting numeric values or ranges with full keyboard and pointer support.
 

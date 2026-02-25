@@ -1,4 +1,4 @@
-# /packages/core/src/AppShell
+# AppShell
 
 Application-level layout shell component.
 

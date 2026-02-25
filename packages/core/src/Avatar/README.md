@@ -1,4 +1,4 @@
-# /packages/core/src/Avatar
+# Avatar
 
 Avatar component for displaying user profile pictures with fallback support.
 

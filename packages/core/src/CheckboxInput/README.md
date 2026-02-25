@@ -1,4 +1,4 @@
-# /packages/core/src/CheckboxInput
+# CheckboxInput
 
 A checkbox input component for toggling boolean values.
 

@@ -1,4 +1,4 @@
-# /packages/core/src/theme
+# theme
 
 XDS theme provider and design tokens.
 

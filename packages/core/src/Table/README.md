@@ -1,4 +1,4 @@
-# /packages/core/src/Table
+# Table
 
 Table components for the XDS design system.
 
@@ -157,11 +157,6 @@ The selection plugin uses React Context so that `SelectAllCheckbox` and `Selecti
 ### Performance
 
 Body rows are memoized via `React.memo` with a custom comparison function. When a single data item changes, only that row re-renders — unchanged rows are skipped. For this to work optimally, consumers should define `columns` outside the component or memoize them.
-
-## Related Files
-
-- `/packages/core/src/theme/tokens.stylex.ts` — Design tokens used by table component styling
-- `/packages/core/src/CheckboxInput/` — Checkbox component used by selection plugin
 
 ## Theming
 

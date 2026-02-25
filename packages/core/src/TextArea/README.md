@@ -1,4 +1,4 @@
-# /packages/core/src/TextArea
+# TextArea
 
 A multi-line text input component for collecting longer user input.
 

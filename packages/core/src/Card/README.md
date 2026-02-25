@@ -1,4 +1,4 @@
-# /packages/core/src/Card
+# Card
 
 Card container component with elevation and themed styling.
 

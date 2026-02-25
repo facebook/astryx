@@ -411,7 +411,7 @@ export function findClosestComponents(name, components, maxDistance = 3) {
  *     label: string (required) · isLoading isDisabled icon tooltip children
  *     <XDSButton variant="primary" onClick={fn}>Save</XDSButton>
  */
-export function extractBrief(content, componentName) {
+export function extractBrief(content, componentName, importHint) {
   const displayName = componentName.startsWith('XDS')
     ? componentName
     : `XDS${componentName}`;
@@ -575,7 +575,7 @@ export function extractBrief(content, componentName) {
     signatureProps.length > 0
       ? `${displayName}(${signatureProps.join(', ')})`
       : displayName;
-  output.push(sigStr);
+  output.push(importHint ? `${sigStr}  ← from '${importHint}'` : sigStr);
 
   // Description (shortened)
   if (description) {
@@ -613,11 +613,78 @@ export function extractBriefAll(coreDir) {
       const readmePath = findComponentReadme(coreDir, comp);
       if (readmePath) {
         const content = fs.readFileSync(readmePath, 'utf-8');
-        output.push(extractBrief(content, comp));
+        const importPath = resolveImportPath(coreDir, comp);
+        output.push(extractBrief(content, comp, importPath));
       } else {
         output.push(`XDS${comp}\n  (no docs)\n`);
       }
     }
+  }
+
+  return output.join('\n');
+}
+
+/**
+ * Resolve the import path for a component.
+ * Returns e.g. '@xds/core/Table' or '@xds/core' depending on package.json exports.
+ */
+export function resolveImportPath(coreDir, componentName) {
+  const srcDir = path.join(coreDir, 'src');
+  const sourcePath = findComponentSource(coreDir, componentName);
+  if (!sourcePath) return '@xds/core';
+
+  // Get the top-level directory under src/ from the source path
+  const relToSrc = path.relative(srcDir, sourcePath);
+  const topDir = relToSrc.split(path.sep)[0];
+
+  // Check package.json exports for ./${topDir}
+  const pkgPath = path.join(coreDir, 'package.json');
+  if (fs.existsSync(pkgPath)) {
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+    if (pkg.exports && pkg.exports[`./${topDir}`]) {
+      return `@xds/core/${topDir}`;
+    }
+  }
+
+  return '@xds/core';
+}
+
+/**
+ * Ensure compact output includes an import statement.
+ * If the output already contains `from '@xds/core`, returns as-is.
+ * Otherwise, injects an ## Import section after the title/description,
+ * before the first ## section.
+ */
+export function ensureImportStatement(compactOutput, componentName, coreDir) {
+  // Already has an Import section — return as-is
+  if (/^## Import$/m.test(compactOutput)) {
+    return compactOutput;
+  }
+
+  const displayName = componentName.startsWith('XDS')
+    ? componentName
+    : `XDS${componentName}`;
+
+  const importPath = resolveImportPath(coreDir, componentName);
+  const importBlock = `## Import\n\n\`\`\`tsx\nimport { ${displayName} } from '${importPath}';\n\`\`\`\n`;
+
+  // Find the first ## section and inject before it
+  const lines = compactOutput.split('\n');
+  const output = [];
+  let injected = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    if (!injected && lines[i].startsWith('## ')) {
+      output.push(importBlock);
+      injected = true;
+    }
+    output.push(lines[i]);
+  }
+
+  // If no ## section found, append at the end
+  if (!injected) {
+    output.push('');
+    output.push(importBlock);
   }
 
   return output.join('\n');
@@ -782,7 +849,8 @@ export function registerComponent(program) {
       } else if (options.brief) {
         console.log(extractBrief(content, resolvedName));
       } else if (options.compact) {
-        console.log(extractCompact(content, resolvedName));
+        const compact = extractCompact(content, resolvedName);
+        console.log(ensureImportStatement(compact, resolvedName, coreDir));
       } else {
         console.log(cleanReadme(content, resolvedName));
       }

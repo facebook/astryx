@@ -1,4 +1,4 @@
-# /packages/core/src/Text
+# Text
 
 Typography components for the XDS design system.
 
@@ -61,8 +61,3 @@ function Article() {
   );
 }
 ```
-
-## Related Files
-
-- `/packages/core/src/typography.css` — CSS stylesheet for native element styling
-- `/packages/core/src/theme/types.ts` — Type definitions for `ProseElement` and component styles

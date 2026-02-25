@@ -1,4 +1,4 @@
-# /packages/core/src/DateInput
+# DateInput
 
 XDSDateInput component combining a text input with a calendar popover for date selection.
 

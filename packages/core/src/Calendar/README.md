@@ -1,4 +1,4 @@
-# /packages/core/src/Calendar
+# Calendar
 
 XDSCalendar component for date selection with single and range modes.
 

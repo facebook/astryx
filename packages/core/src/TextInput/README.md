@@ -1,4 +1,4 @@
-# /packages/core/src/TextInput
+# TextInput
 
 A text input component for collecting user text input.
 

@@ -1,4 +1,4 @@
-# /packages/core/src/NumberInput
+# NumberInput
 
 A number input component for collecting numeric user input with validation.
 

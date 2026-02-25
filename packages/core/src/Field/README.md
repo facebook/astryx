@@ -1,4 +1,4 @@
-# /packages/core/src/Field
+# Field
 
 A form field wrapper component that provides label and description.
 

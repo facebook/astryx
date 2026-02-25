@@ -1,4 +1,4 @@
-# /packages/core/src/Link
+# Link
 
 XDSLink component for styled anchor links with multiple variants and features.
 

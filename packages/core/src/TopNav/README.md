@@ -1,4 +1,4 @@
-# /packages/core/src/TopNav
+# TopNav
 
 Top navigation bar component for application headers.
 

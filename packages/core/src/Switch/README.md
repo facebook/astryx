@@ -1,4 +1,4 @@
-# /packages/core/src/Switch
+# Switch
 
 A toggle switch component for boolean values with integrated label support.
 

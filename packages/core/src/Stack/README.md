@@ -1,4 +1,4 @@
-# /packages/core/src/Layout/Stack
+# Stack
 
 Stack layout primitives for arranging items in horizontal or vertical sequences.
 

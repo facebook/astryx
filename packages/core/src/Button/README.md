@@ -1,4 +1,4 @@
-# /packages/core/src/Button
+# Button
 
 XDSButton component with multiple variants, sizes, and isLoading state support.
 

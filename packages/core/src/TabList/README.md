@@ -1,4 +1,4 @@
-# /packages/core/src/TabList
+# TabList
 
 XDSTabList component for tab navigation with overflow menu support.
 

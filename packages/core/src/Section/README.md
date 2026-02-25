@@ -1,4 +1,4 @@
-# /packages/core/src/Section
+# Section
 
 Section container component with background variants.
 

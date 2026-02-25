@@ -1,4 +1,4 @@
-# /packages/core/src/Layout
+# Layout
 
 XDS Layout System - composable utilities and components for building structured layouts.
 
@@ -125,13 +125,13 @@ See [Container/README.md](./Container/README.md) for full documentation.
 Use XDSLayout for page shells and app layouts — any UI with a header bar, sidebar navigation,
 scrollable content area, or action footer. Don't use for simple stacking (use XDSVStack/XDSHStack).
 
-| Component          | Description                                                               |
-| ------------------ | ------------------------------------------------------------------------- |
-| `XDSLayout`        | Page shell with header, sidebar(s), content, and footer slots             |
-| `XDSLayoutHeader`  | Top bar — page titles, app bars, toolbars                                 |
-| `XDSLayoutFooter`  | Bottom bar — action bars, pagination, status bars                         |
-| `XDSLayoutContent` | Scrollable main content area                                              |
-| `XDSLayoutPanel`   | Sidebar — navigation panels, settings sidebars, detail/inspector panels   |
+| Component          | Description                                                             |
+| ------------------ | ----------------------------------------------------------------------- |
+| `XDSLayout`        | Page shell with header, sidebar(s), content, and footer slots           |
+| `XDSLayoutHeader`  | Top bar — page titles, app bars, toolbars                               |
+| `XDSLayoutFooter`  | Bottom bar — action bars, pagination, status bars                       |
+| `XDSLayoutContent` | Scrollable main content area                                            |
+| `XDSLayoutPanel`   | Sidebar — navigation panels, settings sidebars, detail/inspector panels |
 
 See [XDSLayout/README.md](./XDSLayout/README.md) for full documentation.
 

@@ -1,4 +1,4 @@
-# /packages/core/src/Layer
+# Layer
 
 Layer components for overlay content using modern browser APIs.
 

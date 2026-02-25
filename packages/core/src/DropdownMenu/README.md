@@ -1,4 +1,4 @@
-# /packages/core/src/DropdownMenu
+# DropdownMenu
 
 A dropdown menu component for displaying actionable items in a popup menu.
 

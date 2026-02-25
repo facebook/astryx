@@ -1,4 +1,4 @@
-# /packages/core/src/RadioList
+# RadioList
 
 A radio group component for single-value selection from a list of options.
 

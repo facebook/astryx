@@ -1,4 +1,4 @@
-# /packages/core/src/Dialog
+# Dialog
 
 XDSDialog component using the native `<dialog>` element for modal dialogs.
 
