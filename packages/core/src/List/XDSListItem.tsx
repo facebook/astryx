@@ -130,7 +130,9 @@ const styles = stylex.create({
     transitionDuration: transitionVars['--transition-fast'],
     backgroundImage: {
       default: null,
-      ':hover': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+      ':hover': {
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+      },
       ':active': `linear-gradient(${colorVars['--color-pressed-overlay']}, ${colorVars['--color-pressed-overlay']})`,
     },
   },

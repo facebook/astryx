@@ -48,7 +48,9 @@ const styles = stylex.create({
     transitionDuration: transitionVars['--transition-fast'],
     backgroundColor: {
       default: 'transparent',
-      ':hover': colorVars['--color-hover-overlay'],
+      ':hover': {
+        '@media (hover: hover)': colorVars['--color-hover-overlay'],
+      },
       ':active': colorVars['--color-pressed-overlay'],
     },
     outline: {
@@ -65,7 +67,9 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-semibold'],
     backgroundColor: {
       default: colorVars['--color-deemphasized'],
-      ':hover': colorVars['--color-deemphasized'],
+      ':hover': {
+        '@media (hover: hover)': colorVars['--color-deemphasized'],
+      },
       ':active': colorVars['--color-deemphasized'],
     },
   },

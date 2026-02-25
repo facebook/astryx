@@ -59,7 +59,9 @@ const styles = stylex.create({
     fontSize: 'inherit',
     textAlign: 'start',
     ':hover': {
-      backgroundColor: colorVars['--color-hover-overlay'],
+      '@media (hover: hover)': {
+        backgroundColor: colorVars['--color-hover-overlay'],
+      },
     },
   },
   interactiveInset: {
