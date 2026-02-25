@@ -50,19 +50,19 @@ export default function NavigationPage() {
             label="Left"
             variant={alignment === 'start' ? 'primary' : 'secondary'}
             size="sm"
-            onPress={() => setAlignment('start')}
+            onClick={() => setAlignment('start')}
           />
           <XDSButton
             label="Center"
             variant={alignment === 'center' ? 'primary' : 'secondary'}
             size="sm"
-            onPress={() => setAlignment('center')}
+            onClick={() => setAlignment('center')}
           />
           <XDSButton
             label="Right"
             variant={alignment === 'end' ? 'primary' : 'secondary'}
             size="sm"
-            onPress={() => setAlignment('end')}
+            onClick={() => setAlignment('end')}
           />
         </XDSHStack>
 
