@@ -188,10 +188,6 @@ const styles = stylex.create({
     width: '16px',
     height: '16px',
     color: 'inherit',
-    opacity: {
-      default: 0.7,
-      ':hover': 1,
-    },
     outline: {
       default: null,
       ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
@@ -308,7 +304,7 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
             }}
             disabled={isDisabled}
             {...stylex.props(styles.removeButton)}>
-            <XDSIcon icon="close" size="xsm" />
+            <XDSIcon icon="close" size="xsm" color="inherit" />
           </button>
         )}
       </>
@@ -380,7 +376,7 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
               }}
               disabled={isDisabled}
               {...stylex.props(styles.removeButton)}>
-              <XDSIcon icon="close" size="xsm" />
+              <XDSIcon icon="close" size="xsm" color="inherit" />
             </button>
           )}
         </span>
