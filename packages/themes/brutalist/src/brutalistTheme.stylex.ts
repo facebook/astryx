@@ -33,7 +33,7 @@ import {brutalistIconRegistry} from './icons';
 const colorOverrides = {
   // Core semantic — neon green accent
   '--color-accent': 'light-dark(#0A0A0A, #39FF14)',
-  '--color-accent-deemphasized': 'light-dark(#0A0A0A1A, #39FF1426)',
+  '--color-accent-deemphasized': 'light-dark(#0A0A0A1A, #39FF1440)',
   '--color-accent-text': 'light-dark(#0A0A0A, #39FF14)',
   '--color-surface': 'light-dark(#F5F5F5, #0A0A0A)',
   '--color-wash': 'light-dark(#E8E8E8, #000000)',
@@ -68,34 +68,34 @@ const colorOverrides = {
 
   // Status — vivid neon tones
   '--color-positive': 'light-dark(#00CC66, #39FF14)',
-  '--color-positive-deemphasized': 'light-dark(#00CC6626, #39FF1426)',
-  '--color-negative': 'light-dark(#FF003C, #FF003C)',
-  '--color-negative-deemphasized': 'light-dark(#FF003C26, #FF003C26)',
+  '--color-positive-deemphasized': 'light-dark(#00CC6640, #39FF1440)',
+  '--color-negative': 'light-dark(#FF003C, #FF2D5C)',
+  '--color-negative-deemphasized': 'light-dark(#FF003C40, #FF003C40)',
   '--color-warning': 'light-dark(#FFE600, #FFE600)',
-  '--color-warning-deemphasized': 'light-dark(#FFE60026, #FFE60026)',
+  '--color-warning-deemphasized': 'light-dark(#FFE60040, #FFE60040)',
   '--color-educational': 'light-dark(#BF00FF, #E040FB)',
-  '--color-educational-deemphasized': 'light-dark(#BF00FF26, #E040FB26)',
+  '--color-educational-deemphasized': 'light-dark(#BF00FF40, #E040FB40)',
 
   // Divider — neon-tinted borders
-  '--color-divider': 'light-dark(#0A0A0A1A, #39FF1426)',
+  '--color-divider': 'light-dark(#0A0A0A1A, #39FF1440)',
   '--color-divider-high-contrast': 'light-dark(#0A0A0A, #39FF14)',
-  '--color-divider-emphasized': 'light-dark(#0A0A0A33, #39FF1433)',
+  '--color-divider-emphasized': 'light-dark(#0A0A0A33, #39FF1466)',
 
   // Disabled/Effects
   '--color-disabled-overlay': 'light-dark(#F5F5F580, #0A0A0A80)',
   '--color-glimmer': 'light-dark(#CCCCCC, #333333)',
   '--color-glimmer-high-contrast': 'light-dark(#999999, #555555)',
   '--color-shadow-elevation':
-    'light-dark(rgba(0, 0, 0, 0.2), rgba(57, 255, 20, 0.15))',
+    'light-dark(rgba(0, 0, 0, 0.25), rgba(57, 255, 20, 0.3))',
   '--color-hover-tint': 'light-dark(black, white)',
 
   // Literal colors — neon palette
-  '--color-blue-background': 'light-dark(#00D4FF26, #00D4FF26)',
+  '--color-blue-background': 'light-dark(#00D4FF33, #00D4FF33)',
   '--color-blue-border': 'light-dark(#00D4FF, #00D4FF)',
   '--color-blue-icon': 'light-dark(#00AACC, #00D4FF)',
   '--color-blue-text': 'light-dark(#005566, #66EEFF)',
 
-  '--color-cyan-background': 'light-dark(#00FFFF26, #00FFFF26)',
+  '--color-cyan-background': 'light-dark(#00FFFF33, #00FFFF33)',
   '--color-cyan-border': 'light-dark(#00CCCC, #00FFFF)',
   '--color-cyan-icon': 'light-dark(#009999, #00FFFF)',
   '--color-cyan-text': 'light-dark(#006666, #66FFFF)',
@@ -105,37 +105,37 @@ const colorOverrides = {
   '--color-gray-icon': 'light-dark(#555555, #999999)',
   '--color-gray-text': 'light-dark(#0A0A0A, #F0F0F0)',
 
-  '--color-green-background': 'light-dark(#39FF1426, #39FF1426)',
+  '--color-green-background': 'light-dark(#39FF1433, #39FF1433)',
   '--color-green-border': 'light-dark(#00CC66, #39FF14)',
   '--color-green-icon': 'light-dark(#00AA44, #39FF14)',
   '--color-green-text': 'light-dark(#005522, #88FF66)',
 
-  '--color-orange-background': 'light-dark(#FF660026, #FF660026)',
+  '--color-orange-background': 'light-dark(#FF660033, #FF660033)',
   '--color-orange-border': 'light-dark(#FF6600, #FF8800)',
   '--color-orange-icon': 'light-dark(#CC5500, #FF8800)',
   '--color-orange-text': 'light-dark(#663300, #FFAA44)',
 
-  '--color-pink-background': 'light-dark(#FF00FF26, #FF00FF26)',
+  '--color-pink-background': 'light-dark(#FF00FF33, #FF00FF33)',
   '--color-pink-border': 'light-dark(#FF00FF, #FF44FF)',
   '--color-pink-icon': 'light-dark(#CC00CC, #FF44FF)',
   '--color-pink-text': 'light-dark(#660066, #FF88FF)',
 
-  '--color-purple-background': 'light-dark(#BF00FF26, #E040FB26)',
+  '--color-purple-background': 'light-dark(#BF00FF33, #E040FB33)',
   '--color-purple-border': 'light-dark(#BF00FF, #E040FB)',
   '--color-purple-icon': 'light-dark(#9900CC, #E040FB)',
   '--color-purple-text': 'light-dark(#4D0066, #EE88FF)',
 
-  '--color-red-background': 'light-dark(#FF003C26, #FF003C26)',
+  '--color-red-background': 'light-dark(#FF003C33, #FF003C33)',
   '--color-red-border': 'light-dark(#FF003C, #FF003C)',
   '--color-red-icon': 'light-dark(#CC0030, #FF003C)',
   '--color-red-text': 'light-dark(#660018, #FF6688)',
 
-  '--color-teal-background': 'light-dark(#00FFCC26, #00FFCC26)',
+  '--color-teal-background': 'light-dark(#00FFCC33, #00FFCC33)',
   '--color-teal-border': 'light-dark(#00CCAA, #00FFCC)',
   '--color-teal-icon': 'light-dark(#009977, #00FFCC)',
   '--color-teal-text': 'light-dark(#004D3D, #66FFE0)',
 
-  '--color-yellow-background': 'light-dark(#FFE60026, #FFE60026)',
+  '--color-yellow-background': 'light-dark(#FFE60033, #FFE60033)',
   '--color-yellow-border': 'light-dark(#FFE600, #FFE600)',
   '--color-yellow-icon': 'light-dark(#CCBB00, #FFE600)',
   '--color-yellow-text': 'light-dark(#665C00, #FFF066)',
@@ -172,23 +172,23 @@ const radiusOverrides = {
 
 const elevationOverrides = {
   '--elevation-base':
-    'light-dark(2px 2px 0px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(57, 255, 20, 0.2))',
+    'light-dark(3px 3px 0px rgba(0, 0, 0, 0.2), 0 0 8px rgba(57, 255, 20, 0.25), 0 0 0 1px rgba(57, 255, 20, 0.3))',
   '--elevation-thumb':
-    'light-dark(2px 2px 0px rgba(0, 0, 0, 0.25), 0 0 4px rgba(57, 255, 20, 0.3))',
+    'light-dark(2px 2px 0px rgba(0, 0, 0, 0.3), 0 0 10px rgba(57, 255, 20, 0.4), 0 0 2px rgba(57, 255, 20, 0.6))',
   '--elevation-dialog':
-    'light-dark(4px 4px 0px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(57, 255, 20, 0.3))',
+    'light-dark(6px 6px 0px rgba(0, 0, 0, 0.25), 0 0 20px rgba(57, 255, 20, 0.3), 0 0 0 1px rgba(57, 255, 20, 0.5))',
   '--elevation-hover':
-    'light-dark(3px 3px 0px rgba(0, 0, 0, 0.15), 0 0 8px rgba(57, 255, 20, 0.2))',
+    'light-dark(4px 4px 0px rgba(0, 0, 0, 0.2), 0 0 16px rgba(57, 255, 20, 0.35), 0 0 4px rgba(57, 255, 20, 0.5))',
   '--elevation-menu':
-    'light-dark(3px 3px 0px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(57, 255, 20, 0.25))',
+    'light-dark(4px 4px 0px rgba(0, 0, 0, 0.2), 0 0 12px rgba(57, 255, 20, 0.3), 0 0 0 1px rgba(57, 255, 20, 0.4))',
   '--elevation-input-hover':
-    'light-dark(inset 0 0 0 2px rgba(10, 10, 10, 0.3), inset 0 0 0 2px rgba(57, 255, 20, 0.4))',
+    'light-dark(inset 0 0 0 2px rgba(10, 10, 10, 0.4), inset 0 0 0 2px rgba(57, 255, 20, 0.6), 0 0 8px rgba(57, 255, 20, 0.2))',
   '--elevation-input-hover-success':
-    'light-dark(inset 0 0 0 2px rgba(0, 204, 102, 0.4), inset 0 0 0 2px rgba(57, 255, 20, 0.5))',
+    'light-dark(inset 0 0 0 2px rgba(0, 204, 102, 0.5), inset 0 0 0 2px rgba(57, 255, 20, 0.7), 0 0 8px rgba(57, 255, 20, 0.25))',
   '--elevation-input-hover-warning':
-    'light-dark(inset 0 0 0 2px rgba(255, 230, 0, 0.4), inset 0 0 0 2px rgba(255, 230, 0, 0.5))',
+    'light-dark(inset 0 0 0 2px rgba(255, 230, 0, 0.5), inset 0 0 0 2px rgba(255, 230, 0, 0.6), 0 0 8px rgba(255, 230, 0, 0.2))',
   '--elevation-input-hover-error':
-    'light-dark(inset 0 0 0 2px rgba(255, 0, 60, 0.4), inset 0 0 0 2px rgba(255, 0, 60, 0.5))',
+    'light-dark(inset 0 0 0 2px rgba(255, 0, 60, 0.5), inset 0 0 0 2px rgba(255, 0, 60, 0.6), 0 0 8px rgba(255, 0, 60, 0.2))',
 } as const;
 
 // =============================================================================
@@ -220,11 +220,13 @@ const elevationTheme = stylex.createTheme(
 // =============================================================================
 
 const buttonVariants = stylex.create({
-  // Primary: neon accent bg, dark text
+  // Primary: neon accent bg, dark text, glow on dark mode
   primary: {
     color: 'light-dark(#FFFFFF, #0A0A0A)',
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
+    boxShadow:
+      'light-dark(3px 3px 0px rgba(0, 0, 0, 0.2), 0 0 12px rgba(57, 255, 20, 0.4), 0 0 4px rgba(57, 255, 20, 0.6))',
   },
   // Secondary: bordered with neon accent
   secondary: {
@@ -233,6 +235,8 @@ const buttonVariants = stylex.create({
     borderColor: colorVars['--color-divider-high-contrast'],
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
+    boxShadow:
+      'light-dark(2px 2px 0px rgba(0, 0, 0, 0.15), 0 0 6px rgba(57, 255, 20, 0.2))',
   },
 });
 
@@ -242,13 +246,17 @@ const cardStyles = stylex.create({
     borderWidth: '1px',
     borderStyle: 'solid',
     borderColor: colorVars['--color-divider-emphasized'],
+    boxShadow:
+      'light-dark(3px 3px 0px rgba(0, 0, 0, 0.12), 0 0 10px rgba(57, 255, 20, 0.15), 0 0 2px rgba(57, 255, 20, 0.3))',
   },
 });
 
-// Text input: neon border
+// Text input: neon border + glow on focus
 const textInputStyles = stylex.create({
   wrapper: {
     borderColor: colorVars['--color-divider-emphasized'],
+    boxShadow:
+      'light-dark(2px 2px 0px rgba(0, 0, 0, 0.08), 0 0 6px rgba(57, 255, 20, 0.1))',
   },
 });
 
