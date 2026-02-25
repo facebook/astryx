@@ -10,9 +10,20 @@
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {forwardRef, type ComponentPropsWithoutRef} from 'react';
 import {XDSTabList} from './XDSTabList';
 import {XDSTab} from './XDSTab';
 import {XDSTabMenu} from './XDSTabMenu';
+import {XDSLinkProvider} from '../Link/XDSLinkProvider';
+
+const CustomLink = forwardRef<HTMLAnchorElement, ComponentPropsWithoutRef<'a'>>(
+  ({children, ...props}, ref) => (
+    <a ref={ref} data-custom-link {...props}>
+      {children}
+    </a>
+  ),
+);
+CustomLink.displayName = 'CustomLink';
 
 // Store original matches to restore later
 const originalMatches = HTMLElement.prototype.matches;
@@ -177,6 +188,42 @@ describe('XDSTabList', () => {
 
     expect(screen.getByTestId('icon')).toBeInTheDocument();
     expect(screen.queryByTestId('selected-icon')).not.toBeInTheDocument();
+  });
+});
+
+describe('XDSTab polymorphic link', () => {
+  it('renders custom component when href and as are provided', () => {
+    render(
+      <XDSTabList value="home" onChange={() => {}}>
+        <XDSTab value="home" label="Home" href="/home" as={CustomLink} />
+      </XDSTabList>,
+    );
+    const link = screen.getByRole('link', {name: 'Home'});
+    expect(link).toHaveAttribute('data-custom-link');
+    expect(link).toHaveAttribute('href', '/home');
+  });
+
+  it('still renders button without href even with as prop', () => {
+    render(
+      <XDSTabList value="home" onChange={() => {}}>
+        <XDSTab value="home" label="Home" as={CustomLink} />
+      </XDSTabList>,
+    );
+    const button = screen.getByRole('button', {name: 'Home'});
+    expect(button).toBeInTheDocument();
+    expect(button).not.toHaveAttribute('data-custom-link');
+  });
+
+  it('renders custom component from XDSLinkProvider when href is provided', () => {
+    render(
+      <XDSLinkProvider component={CustomLink}>
+        <XDSTabList value="home" onChange={() => {}}>
+          <XDSTab value="home" label="Home" href="/home" />
+        </XDSTabList>
+      </XDSLinkProvider>,
+    );
+    const link = screen.getByRole('link', {name: 'Home'});
+    expect(link).toHaveAttribute('data-custom-link');
   });
 });
 

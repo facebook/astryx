@@ -10,10 +10,21 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {forwardRef, type ComponentPropsWithoutRef} from 'react';
 import {XDSSideNav} from './XDSSideNav';
 import {XDSSideNavHeader} from './XDSSideNavHeader';
 import {XDSSideNavItem} from './XDSSideNavItem';
 import {XDSSideNavSection} from './XDSSideNavSection';
+import {XDSLinkProvider} from '../Link/XDSLinkProvider';
+
+const CustomLink = forwardRef<HTMLAnchorElement, ComponentPropsWithoutRef<'a'>>(
+  ({children, ...props}, ref) => (
+    <a ref={ref} data-custom-link {...props}>
+      {children}
+    </a>
+  ),
+);
+CustomLink.displayName = 'CustomLink';
 
 // =============================================================================
 // XDSSideNav
@@ -287,6 +298,32 @@ describe('XDSSideNavItem', () => {
     render(<XDSSideNavItem label="Dashboard" href="/dashboard" isSelected />);
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('renders custom component when as and href are provided', () => {
+    render(
+      <XDSSideNavItem label="Dashboard" href="/dashboard" as={CustomLink} />,
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('data-custom-link');
+    expect(link).toHaveAttribute('href', '/dashboard');
+  });
+
+  it('still renders button when no href even with as prop', () => {
+    render(<XDSSideNavItem label="Dashboard" as={CustomLink} />);
+    const button = screen.getByRole('button');
+    expect(button).toBeInTheDocument();
+    expect(button).not.toHaveAttribute('data-custom-link');
+  });
+
+  it('renders custom component from XDSLinkProvider when href is provided', () => {
+    render(
+      <XDSLinkProvider component={CustomLink}>
+        <XDSSideNavItem label="Dashboard" href="/dashboard" />
+      </XDSLinkProvider>,
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('data-custom-link');
   });
 });
 

@@ -39,6 +39,8 @@ import type {
   XDSTextWeight,
   XDSTextDisplay,
 } from '../theme/types';
+import {useXDSLinkComponent} from './useXDSLinkComponent';
+import type {XDSLinkComponentType} from './types';
 
 /**
  * Base link styles
@@ -123,6 +125,12 @@ export interface XDSLinkProps extends Omit<
   AnchorHTMLAttributes<HTMLAnchorElement>,
   'children'
 > {
+  /**
+   * Custom component to render instead of `<a>`.
+   * Overrides the provider-level default set by XDSLinkProvider.
+   * Must accept href, className, style, and children props.
+   */
+  as?: XDSLinkComponentType;
   /**
    * Accessible label for the link (required for accessibility).
    * Used as aria-label when content is not self-descriptive.
@@ -226,6 +234,7 @@ export interface XDSLinkProps extends Omit<
 export const XDSLink = forwardRef<HTMLAnchorElement, XDSLinkProps>(
   (
     {
+      as,
       label,
       href,
       hasUnderline = false,
@@ -247,6 +256,7 @@ export const XDSLink = forwardRef<HTMLAnchorElement, XDSLinkProps>(
     },
     ref,
   ) => {
+    const LinkComponent = useXDSLinkComponent(as);
     // Determine target and rel based on isExternalLink
     const computedTarget = isExternalLink ? '_blank' : target;
     const computedRel = isExternalLink
@@ -260,7 +270,7 @@ export const XDSLink = forwardRef<HTMLAnchorElement, XDSLinkProps>(
     const rootOverride = themeContext?.theme.components?.link?.root;
 
     const linkElement = (
-      <a
+      <LinkComponent
         ref={ref}
         href={href}
         target={computedTarget}
@@ -290,7 +300,7 @@ export const XDSLink = forwardRef<HTMLAnchorElement, XDSLinkProps>(
         {isExternalLink && (
           <XDSIcon icon="externalLink" size="xsm" color="inherit" />
         )}
-      </a>
+      </LinkComponent>
     );
 
     // Wrap with tooltip if provided

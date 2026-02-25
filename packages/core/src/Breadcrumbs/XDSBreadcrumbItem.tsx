@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/Breadcrumbs.stories.tsx
  */
 
+'use client';
+
 import {useContext, type ReactNode, type MouseEvent} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -20,12 +22,20 @@ import {
   lineHeightVars,
 } from '../theme/tokens.stylex';
 import {BreadcrumbCtx} from './XDSBreadcrumbs';
+import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
+import type {XDSLinkComponentType} from '../Link/types';
 
 // =============================================================================
 // Props
 // =============================================================================
 
 export interface XDSBreadcrumbItemProps {
+  /**
+   * Custom component to render instead of `<a>` for breadcrumb links.
+   * Overrides the provider-level default set by XDSLinkProvider.
+   * Only applies for non-current items. Must accept href, className, style, and children props.
+   */
+  as?: XDSLinkComponentType;
   /**
    * Label content of the breadcrumb item.
    */
@@ -123,6 +133,7 @@ const itemStyles = stylex.create({
  * ```
  */
 export function XDSBreadcrumbItem({
+  as,
   children,
   href,
   onClick,
@@ -132,6 +143,7 @@ export function XDSBreadcrumbItem({
 }: XDSBreadcrumbItemProps) {
   const ctx = useContext(BreadcrumbCtx);
   const isCurrent = isCurrentProp ?? ctx.isAutoLast;
+  const LinkComponent = useXDSLinkComponent(as);
   const isSupporting = ctx.variant === 'supporting';
 
   const content = (
@@ -171,7 +183,7 @@ export function XDSBreadcrumbItem({
         isSupporting ? itemStyles.supportingSize : itemStyles.defaultSize,
       )}
       data-testid={testId}>
-      <a
+      <LinkComponent
         href={href}
         onClick={onClick}
         {...stylex.props(
@@ -179,7 +191,7 @@ export function XDSBreadcrumbItem({
           isSupporting ? itemStyles.supportingLink : itemStyles.defaultLink,
         )}>
         {content}
-      </a>
+      </LinkComponent>
     </li>
   );
 }
