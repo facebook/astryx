@@ -186,7 +186,7 @@ This package contains the raw TypeScript source files for XDS components.
 
 - **TypeScript** >= 5.0
 - **StyleX Babel Plugin** - \`@stylexjs/babel-plugin\`
-- **React** >= 18.0.0
+- **React** >= 19.0.0
 
 ## StyleX Configuration
 
