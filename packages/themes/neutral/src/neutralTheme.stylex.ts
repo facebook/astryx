@@ -4,60 +4,35 @@
  * A grayscale theme with neutral colors and modern aesthetics.
  * Uses oklch color space for perceptually uniform colors.
  *
- * Inspired by shadcn/ui's default color scheme.
- *
- * To create a custom theme:
- * 1. Copy this file
- * 2. Rename it (e.g., myBrandTheme.stylex.ts)
- * 3. Update the color values with your brand colors
- * 4. Export from index.ts
+ * Only overrides token groups that differ from the defaults:
+ * colors, radius, elevation, and typography.
+ * Spacing, size, textSize, lineHeight, fontWeight, and transition
+ * use the defineVars defaults automatically.
  */
 
 import * as stylex from '@stylexjs/stylex';
 import type {ThemeType as Theme} from '@xds/core/theme';
 import {
   colorVars,
-  spacingVars,
-  sizeVars,
   radiusVars,
   elevationVars,
-  transitionVars,
   typographyVars,
   textSizeVars,
   lineHeightVars,
   fontWeightVars,
-} from '@xds/core/theme/tokens.stylex';
-import type {
-  ColorVarName,
-  SpacingVarName,
-  SizeVarName,
-  RadiusVarName,
-  ElevationVarName,
-  TransitionVarName,
-  TypographyVarName,
-  TextSizeVarName,
-  LineHeightVarName,
-  FontWeightVarName,
-  BaseColorRaw,
-  BaseSpacingRaw,
-  BaseSizeRaw,
-  BaseRadiusRaw,
-  BaseElevationRaw,
-  BaseTransitionRaw,
-  BaseTypographyRaw,
-  BaseTextSizeRaw,
-  BaseLineHeightRaw,
-  BaseFontWeightRaw,
+  spacingVars,
+  colorDefaults,
+  radiusDefaults,
+  elevationDefaults,
+  typographyDefaults,
 } from '@xds/core/theme/tokens.stylex';
 import {neutralIconRegistry} from './icons';
 
 // =============================================================================
-// Raw Theme Values
+// Theme Overrides — only token groups that differ from defaults
 // =============================================================================
-// Define raw values as plain objects first, then use in createTheme
-// This allows programmatic access to values (e.g., parsing light-dark())
 
-const colorRaw = {
+const colorOverrides = {
   // Core semantic - neutral grayscale palette
   '--color-accent': 'light-dark(oklch(0.205 0 0), oklch(0.922 0 0))',
   '--color-accent-deemphasized':
@@ -126,7 +101,6 @@ const colorRaw = {
     'light-dark(oklch(0.85 0 0), oklch(0.439 0 0))',
   '--color-shadow-elevation':
     'light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 30%))',
-  // Hover tint: black in light mode, white in dark mode - used with color-mix for hover states
   '--color-hover-tint': 'light-dark(black, white)',
 
   // Literal color sets - Blue
@@ -216,40 +190,17 @@ const colorRaw = {
   '--color-yellow-icon':
     'light-dark(oklch(0.828 0.189 84.429), oklch(0.769 0.188 70.08))',
   '--color-yellow-text': 'light-dark(oklch(0.6 0.15 84), oklch(0.9 0.15 70))',
-} as const satisfies Record<ColorVarName, string>;
+} as const;
 
-const spacingRaw = {
-  '--spacing-0': '0px',
-  '--spacing-0-5': '2px',
-  '--spacing-1': '4px',
-  '--spacing-2': '8px',
-  '--spacing-3': '12px',
-  '--spacing-4': '16px',
-  '--spacing-5': '20px',
-  '--spacing-6': '24px',
-  '--spacing-7': '28px',
-  '--spacing-8': '32px',
-  '--spacing-9': '36px',
-  '--spacing-10': '40px',
-  '--spacing-11': '44px',
-  '--spacing-12': '48px',
-} as const satisfies Record<SpacingVarName, string>;
-
-const sizeRaw = {
-  '--size-sm': '28px',
-  '--size-md': '32px',
-  '--size-lg': '36px',
-} as const satisfies Record<SizeVarName, string>;
-
-const radiusRaw = {
+const radiusOverrides = {
   '--radius-rounded': '9999px',
   '--radius-container': '0.75rem',
   '--radius-element': '0.625rem',
   '--radius-content': '0.375rem',
   '--radius-inner': '0.25rem',
-} as const satisfies Record<RadiusVarName, string>;
+} as const;
 
-const elevationRaw = {
+const elevationOverrides = {
   '--elevation-base':
     '0 1px 2px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 20%))',
   '--elevation-thumb':
@@ -267,117 +218,48 @@ const elevationRaw = {
     'inset 0px 0px 0px 2px rgba(226, 164, 0, 0.3)',
   '--elevation-input-hover-error':
     'inset 0px 0px 0px 2px rgba(227, 25, 59, 0.3)',
-} as const satisfies Record<ElevationVarName, string>;
+} as const;
 
-const transitionRaw = {
-  '--transition-fast': '0.15s ease',
-  '--transition-normal': '0.2s ease',
-} as const satisfies Record<TransitionVarName, string>;
-
-const typographyRaw = {
+const typographyOverrides = {
   '--font-body':
     'Geist, "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   '--font-code': '"Geist Mono", "SF Mono", Monaco, Consolas, monospace',
   '--font-heading':
     'Geist, "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-} as const satisfies Record<TypographyVarName, string>;
-
-const textSizeRaw = {
-  '--text-4xs': '0.5rem', // 8px - citation
-  '--text-3xs': '0.625rem', // 10px - micro
-  '--text-2xs': '0.6875rem', // 11px - small micro
-  '--text-xsm': '0.75rem', // 12px - supporting, badge
-  '--text-sm': '0.8125rem', // 13px - secondary text
-  '--text-base': '0.875rem', // 14px - body text (XDS default)
-  '--text-lg': '1rem', // 16px - large body
-  '--text-xl': '1.125rem', // 18px - h2
-  '--text-2xl': '1.25rem', // 20px - h1
-  '--text-3xl': '1.5rem', // 24px - editorial h2
-  '--text-4xl': '2rem', // 32px - editorial h1, data viz
-} as const satisfies Record<TextSizeVarName, string>;
-
-const lineHeightRaw = {
-  '--leading-tight': '1.25', // Display text, headings
-  '--leading-snug': '1.375', // Compact body text, headings
-  '--leading-base': '1.4285714285714286', // Body text with --text-base (20px line / 14px font)
-  '--leading-normal': '1.5', // Body text, large body
-  '--leading-relaxed': '1.625', // Editorial body, reading text
-} as const satisfies Record<LineHeightVarName, string>;
-
-const fontWeightRaw = {
-  '--font-weight-normal': '400', // body, captions, code
-  '--font-weight-medium': '500', // subheadlines, data viz
-  '--font-weight-semibold': '600', // emphasized body, titles
-  '--font-weight-bold': '700', // strong emphasis, headings
-} as const satisfies Record<FontWeightVarName, string>;
+} as const;
 
 // =============================================================================
-// Theme Overrides using createTheme
+// createTheme calls — only for overridden token groups
 // =============================================================================
 
 const colorTheme = stylex.createTheme(
   colorVars,
-  colorRaw as unknown as BaseColorRaw,
-);
-
-const spacingTheme = stylex.createTheme(
-  spacingVars,
-  spacingRaw as unknown as BaseSpacingRaw,
-);
-
-const sizeTheme = stylex.createTheme(
-  sizeVars,
-  sizeRaw as unknown as BaseSizeRaw,
+  colorOverrides as unknown as typeof colorDefaults,
 );
 
 const radiusTheme = stylex.createTheme(
   radiusVars,
-  radiusRaw as unknown as BaseRadiusRaw,
+  radiusOverrides as unknown as typeof radiusDefaults,
 );
 
 const elevationTheme = stylex.createTheme(
   elevationVars,
-  elevationRaw as unknown as BaseElevationRaw,
-);
-
-const transitionTheme = stylex.createTheme(
-  transitionVars,
-  transitionRaw as unknown as BaseTransitionRaw,
+  elevationOverrides as unknown as typeof elevationDefaults,
 );
 
 const typographyTheme = stylex.createTheme(
   typographyVars,
-  typographyRaw as unknown as BaseTypographyRaw,
-);
-
-const textSizeTheme = stylex.createTheme(
-  textSizeVars,
-  textSizeRaw as unknown as BaseTextSizeRaw,
-);
-
-const lineHeightTheme = stylex.createTheme(
-  lineHeightVars,
-  lineHeightRaw as unknown as BaseLineHeightRaw,
-);
-
-const fontWeightTheme = stylex.createTheme(
-  fontWeightVars,
-  fontWeightRaw as unknown as BaseFontWeightRaw,
+  typographyOverrides as unknown as typeof typographyDefaults,
 );
 
 // =============================================================================
 // Component Style Overrides
 // =============================================================================
-// Theme-specific component customizations using stylex.create()
-// These styles are applied on top of default component variants
 
 const buttonVariants = stylex.create({
-  // Primary button text needs to contrast with accent color
-  // In dark mode, accent is light so text should be dark
   primary: {
     color: 'light-dark(white, oklch(0.145 0 0))',
   },
-  // Add border to secondary button for shadcn-style appearance
   secondary: {
     borderWidth: '1px',
     borderStyle: 'solid',
@@ -386,7 +268,6 @@ const buttonVariants = stylex.create({
 });
 
 const cardStyles = stylex.create({
-  // Override card default padding to 12px for tighter layout
   content: {
     '--layout-padding-inner-x': spacingVars['--spacing-3'],
     '--layout-padding-inner-y': spacingVars['--spacing-3'],
@@ -396,7 +277,6 @@ const cardStyles = stylex.create({
 });
 
 const sectionStyles = stylex.create({
-  // Override section default padding to 12px for tighter layout
   content: {
     '--layout-padding-inner-x': spacingVars['--spacing-3'],
     '--layout-padding-inner-y': spacingVars['--spacing-3'],
@@ -405,161 +285,146 @@ const sectionStyles = stylex.create({
   },
 });
 
-/**
- * Semantic heading styles (h1-h6) - default variant
- * Uses XDS dense scale for internal tools
- */
 const headingStyles = stylex.create({
   h1: {
     fontFamily: typographyVars['--font-heading'],
-    fontSize: textSizeVars['--text-2xl'], // 20px
+    fontSize: textSizeVars['--text-2xl'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    lineHeight: 1.2, // 24px
+    lineHeight: 1.2,
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
   h2: {
     fontFamily: typographyVars['--font-heading'],
-    fontSize: textSizeVars['--text-xl'], // 18px
+    fontSize: textSizeVars['--text-xl'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    lineHeight: 1.3333333333333333, // 24px
+    lineHeight: 1.3333333333333333,
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
   h3: {
     fontFamily: typographyVars['--font-heading'],
-    fontSize: textSizeVars['--text-lg'], // 16px
+    fontSize: textSizeVars['--text-lg'],
     fontWeight: fontWeightVars['--font-weight-bold'],
-    lineHeight: 1.25, // 20px
+    lineHeight: 1.25,
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
   h4: {
     fontFamily: typographyVars['--font-heading'],
-    fontSize: textSizeVars['--text-base'], // 14px
+    fontSize: textSizeVars['--text-base'],
     fontWeight: fontWeightVars['--font-weight-bold'],
-    lineHeight: lineHeightVars['--leading-base'], // 20px
+    lineHeight: lineHeightVars['--leading-base'],
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
   h5: {
     fontFamily: typographyVars['--font-heading'],
-    fontSize: textSizeVars['--text-base'], // 14px (same as h4)
+    fontSize: textSizeVars['--text-base'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    lineHeight: lineHeightVars['--leading-base'], // 20px
+    lineHeight: lineHeightVars['--leading-base'],
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
   h6: {
     fontFamily: typographyVars['--font-heading'],
-    fontSize: textSizeVars['--text-xsm'], // 12px
+    fontSize: textSizeVars['--text-xsm'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    lineHeight: 1.3333333333333333, // 16px
+    lineHeight: 1.3333333333333333,
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
 });
 
-/**
- * Editorial heading styles (h1-h4) - larger scale for content-heavy pages
- */
 const headingEditorialStyles = stylex.create({
   h1: {
     fontFamily: typographyVars['--font-heading'],
-    fontSize: textSizeVars['--text-4xl'], // 32px
+    fontSize: textSizeVars['--text-4xl'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    lineHeight: 1.5, // 48px
+    lineHeight: 1.5,
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
   h2: {
     fontFamily: typographyVars['--font-heading'],
-    fontSize: textSizeVars['--text-3xl'], // 24px
+    fontSize: textSizeVars['--text-3xl'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    lineHeight: 1.3333333333333333, // 32px
+    lineHeight: 1.3333333333333333,
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
   h3: {
     fontFamily: typographyVars['--font-heading'],
-    fontSize: textSizeVars['--text-2xl'], // 20px
+    fontSize: textSizeVars['--text-2xl'],
     fontWeight: fontWeightVars['--font-weight-bold'],
-    lineHeight: 1.4, // 28px
+    lineHeight: 1.4,
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
   h4: {
     fontFamily: typographyVars['--font-heading'],
-    fontSize: textSizeVars['--text-lg'], // 16px
+    fontSize: textSizeVars['--text-lg'],
     fontWeight: fontWeightVars['--font-weight-bold'],
-    lineHeight: 1.5, // 24px
+    lineHeight: 1.5,
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
   h5: {
     fontFamily: typographyVars['--font-heading'],
-    fontSize: textSizeVars['--text-base'], // 14px
+    fontSize: textSizeVars['--text-base'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    lineHeight: lineHeightVars['--leading-base'], // 20px
+    lineHeight: lineHeightVars['--leading-base'],
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
   h6: {
     fontFamily: typographyVars['--font-heading'],
-    fontSize: textSizeVars['--text-xsm'], // 12px
+    fontSize: textSizeVars['--text-xsm'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    lineHeight: 1.3333333333333333, // 16px
+    lineHeight: 1.3333333333333333,
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
 });
 
-/**
- * Semantic text styles for body content
- */
 const textStyles = stylex.create({
-  /** Body text (14px, regular) - The bulk of content */
   body: {
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-base'], // 14px
+    fontSize: textSizeVars['--text-base'],
     fontWeight: fontWeightVars['--font-weight-normal'],
-    lineHeight: lineHeightVars['--leading-base'], // 20px
+    lineHeight: lineHeightVars['--leading-base'],
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
-  /** Large body text (16px, regular) - Emphasized content, quotes */
   large: {
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-lg'], // 16px
+    fontSize: textSizeVars['--text-lg'],
     fontWeight: fontWeightVars['--font-weight-normal'],
-    lineHeight: 1.5, // 24px
+    lineHeight: 1.5,
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
-  /** Emphasized text (14px, medium) - Labels for form/chart/table columns */
   label: {
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-base'], // 14px
+    fontSize: textSizeVars['--text-base'],
     fontWeight: fontWeightVars['--font-weight-medium'],
-    lineHeight: lineHeightVars['--leading-base'], // 20px
+    lineHeight: lineHeightVars['--leading-base'],
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
-  /** Supporting/helper text (12px, regular) - Supplemental info */
   supporting: {
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-xsm'], // 12px
+    fontSize: textSizeVars['--text-xsm'],
     fontWeight: fontWeightVars['--font-weight-normal'],
-    lineHeight: 1.3333333333333333, // 16px
+    lineHeight: 1.3333333333333333,
     color: colorVars['--color-text-secondary'],
     margin: 0,
   },
-  /** Code/monospace text (14px, regular) */
   code: {
     fontFamily: typographyVars['--font-code'],
-    fontSize: textSizeVars['--text-base'], // 14px
+    fontSize: textSizeVars['--text-base'],
     fontWeight: fontWeightVars['--font-weight-normal'],
-    lineHeight: lineHeightVars['--leading-base'], // 20px
+    lineHeight: lineHeightVars['--leading-base'],
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
@@ -574,32 +439,16 @@ export const neutralTheme: Theme = {
   icons: neutralIconRegistry,
   styles: {
     colors: colorTheme,
-    spacing: spacingTheme,
-    size: sizeTheme,
     radius: radiusTheme,
     elevation: elevationTheme,
-    transition: transitionTheme,
     typography: typographyTheme,
-    textSize: textSizeTheme,
-    lineHeight: lineHeightTheme,
-    fontWeight: fontWeightTheme,
   },
   raw: {
-    colors: colorRaw,
-    spacing: spacingRaw,
-    size: sizeRaw,
-    radius: radiusRaw,
-    elevation: elevationRaw,
-    transition: transitionRaw,
-    typography: typographyRaw,
-    textSize: textSizeRaw,
-    lineHeight: lineHeightRaw,
-    fontWeight: fontWeightRaw,
+    colors: colorOverrides,
+    radius: radiusOverrides,
+    elevation: elevationOverrides,
+    typography: typographyOverrides,
   },
-  // Component style overrides — typed loosely here because ComponentStyles
-  // is augmented by individual components via `declare module`. The theme
-  // package doesn't import those components, so the augmentations aren't
-  // visible at compile time. The types are enforced at the consumer site.
   components: {
     button: {
       variants: buttonVariants,

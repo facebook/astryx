@@ -166,56 +166,49 @@ export interface ComponentStyles {
 }
 
 /**
- * Raw theme values - plain objects with the actual CSS values
- * Useful for programmatic access (e.g., parsing light-dark() values)
- */
-export interface ThemeRaw {
-  /** Raw color values (e.g., 'light-dark(#0064E0, #2694FE)') */
-  colors: Record<string, string>;
-  /** Raw spacing values (e.g., '8px') */
-  spacing: Record<string, string>;
-  /** Raw size values (e.g., '32px') */
-  size: Record<string, string>;
-  /** Raw radius values (e.g., '12px') */
-  radius: Record<string, string>;
-  /** Raw elevation values (e.g., '0px 2px 4px rgba(0,0,0,0.1)') */
-  elevation: Record<string, string>;
-  /** Raw transition values (e.g., '0.2s ease') */
-  transition: Record<string, string>;
-  /** Raw typography values (e.g., font family strings) */
-  typography: Record<string, string>;
-  /** Raw text size values (e.g., '1rem') */
-  textSize: Record<string, string>;
-  /** Raw line height values (e.g., '1.5') */
-  lineHeight: Record<string, string>;
-  /** Raw font weight values (e.g., '400') */
-  fontWeight: Record<string, string>;
-}
-
-/**
- * Theme styles - StyleX styles that set CSS variables
+ * Theme styles - StyleX styles that set CSS variables.
+ * All fields are optional — omitted groups use the defineVars defaults
+ * from tokens.stylex.ts, enabling partial theme overrides.
  */
 export interface ThemeStyles {
   /** Color CSS variables */
-  colors: StyleXStyles;
+  colors?: StyleXStyles;
   /** Spacing CSS variables */
-  spacing: StyleXStyles;
+  spacing?: StyleXStyles;
   /** Size CSS variables (component heights: sm, md, lg) */
-  size: StyleXStyles;
+  size?: StyleXStyles;
   /** Radius CSS variables */
-  radius: StyleXStyles;
+  radius?: StyleXStyles;
   /** Elevation CSS variables */
-  elevation: StyleXStyles;
+  elevation?: StyleXStyles;
   /** Transition CSS variables */
-  transition: StyleXStyles;
+  transition?: StyleXStyles;
   /** Typography (font family) CSS variables */
-  typography: StyleXStyles;
+  typography?: StyleXStyles;
   /** Text size CSS variables */
-  textSize: StyleXStyles;
+  textSize?: StyleXStyles;
   /** Line height CSS variables */
-  lineHeight: StyleXStyles;
+  lineHeight?: StyleXStyles;
   /** Font weight CSS variables */
-  fontWeight: StyleXStyles;
+  fontWeight?: StyleXStyles;
+}
+
+/**
+ * Raw token values for programmatic access.
+ * Useful for charting libraries, theme editors, or parsing light-dark() values.
+ * All fields are optional — partial themes only include overridden groups.
+ */
+export interface ThemeRaw {
+  colors?: Record<string, string>;
+  spacing?: Record<string, string>;
+  size?: Record<string, string>;
+  radius?: Record<string, string>;
+  elevation?: Record<string, string>;
+  transition?: Record<string, string>;
+  typography?: Record<string, string>;
+  textSize?: Record<string, string>;
+  lineHeight?: Record<string, string>;
+  fontWeight?: Record<string, string>;
 }
 
 /**
@@ -226,10 +219,10 @@ export interface Theme {
   name: string;
   /** StyleX styles containing CSS variable definitions */
   styles: ThemeStyles;
-  /** Raw CSS values for programmatic access */
-  raw: ThemeRaw;
   /** Component-specific style overrides (optional) */
   components?: ComponentStyles;
   /** Optional icon registry for overriding built-in fallback icons */
   icons?: Partial<XDSIconRegistry>;
+  /** Raw token values for programmatic access (optional) */
+  raw?: ThemeRaw;
 }

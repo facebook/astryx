@@ -2,7 +2,7 @@
  * XDS Design Tokens
  *
  * Defines all design tokens using StyleX defineVars.
- * - *Raw: Plain objects with default values (can be reused by themes)
+ * - *Defaults: Plain objects with default values (used by defineVars and themes)
  * - *Vars: CSS custom properties that themes can override via createTheme
  *
  * SYNC: When modified, update /packages/agent-tools/docs/tokens.md
@@ -14,7 +14,7 @@ import * as stylex from '@stylexjs/stylex';
 // Color Tokens
 // =============================================================================
 
-export const colorRaw = {
+export const colorDefaults = {
   // Core semantic
   '--color-accent': 'light-dark(#0064E0, #2694FE)',
   '--color-accent-deemphasized': 'light-dark(#0082FB33, #0082FB3F)',
@@ -135,13 +135,16 @@ export const colorRaw = {
   '--color-yellow-text': 'light-dark(#753F07, #FBCE03)',
 } as const;
 
-export const colorVars = stylex.defineVars(colorRaw);
+/** @deprecated Use colorDefaults */
+export const colorRaw = colorDefaults;
+
+export const colorVars = stylex.defineVars(colorDefaults);
 
 // =============================================================================
 // Spacing Tokens
 // =============================================================================
 
-export const spacingRaw = {
+export const spacingDefaults = {
   '--spacing-0': '0px',
   '--spacing-0-5': '2px',
   '--spacing-1': '4px',
@@ -158,25 +161,31 @@ export const spacingRaw = {
   '--spacing-12': '48px',
 } as const;
 
-export const spacingVars = stylex.defineVars(spacingRaw);
+/** @deprecated Use spacingDefaults */
+export const spacingRaw = spacingDefaults;
+
+export const spacingVars = stylex.defineVars(spacingDefaults);
 
 // =============================================================================
 // Size Tokens
 // =============================================================================
 
-export const sizeRaw = {
+export const sizeDefaults = {
   '--size-sm': '28px',
   '--size-md': '32px',
   '--size-lg': '36px',
 } as const;
 
-export const sizeVars = stylex.defineVars(sizeRaw);
+/** @deprecated Use sizeDefaults */
+export const sizeRaw = sizeDefaults;
+
+export const sizeVars = stylex.defineVars(sizeDefaults);
 
 // =============================================================================
 // Radius Tokens
 // =============================================================================
 
-export const radiusRaw = {
+export const radiusDefaults = {
   '--radius-rounded': '9999px',
   '--radius-container': '12px',
   '--radius-element': '8px',
@@ -184,13 +193,16 @@ export const radiusRaw = {
   '--radius-inner': '0px',
 } as const;
 
-export const radiusVars = stylex.defineVars(radiusRaw);
+/** @deprecated Use radiusDefaults */
+export const radiusRaw = radiusDefaults;
+
+export const radiusVars = stylex.defineVars(radiusDefaults);
 
 // =============================================================================
 // Elevation Tokens
 // =============================================================================
 
-export const elevationRaw = {
+export const elevationDefaults = {
   '--elevation-base': '0px 0px 1px light-dark(rgba(0, 0, 0, 0.1), #111112)',
   '--elevation-thumb':
     '0 1px 3px light-dark(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.4))',
@@ -209,24 +221,30 @@ export const elevationRaw = {
     'inset 0px 0px 0px 2px rgba(227, 25, 59, 0.3)',
 } as const;
 
-export const elevationVars = stylex.defineVars(elevationRaw);
+/** @deprecated Use elevationDefaults */
+export const elevationRaw = elevationDefaults;
+
+export const elevationVars = stylex.defineVars(elevationDefaults);
 
 // =============================================================================
 // Transition Tokens
 // =============================================================================
 
-export const transitionRaw = {
+export const transitionDefaults = {
   '--transition-fast': '0.15s ease',
   '--transition-normal': '0.2s ease',
 } as const;
 
-export const transitionVars = stylex.defineVars(transitionRaw);
+/** @deprecated Use transitionDefaults */
+export const transitionRaw = transitionDefaults;
+
+export const transitionVars = stylex.defineVars(transitionDefaults);
 
 // =============================================================================
 // Typography Tokens - Font Families
 // =============================================================================
 
-export const typographyRaw = {
+export const typographyDefaults = {
   '--font-body':
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   '--font-code': '"SF Mono", Monaco, Consolas, monospace',
@@ -234,13 +252,16 @@ export const typographyRaw = {
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
 } as const;
 
-export const typographyVars = stylex.defineVars(typographyRaw);
+/** @deprecated Use typographyDefaults */
+export const typographyRaw = typographyDefaults;
+
+export const typographyVars = stylex.defineVars(typographyDefaults);
 
 // =============================================================================
 // Typography Tokens - Text Sizes
 // =============================================================================
 
-export const textSizeRaw = {
+export const textSizeDefaults = {
   '--text-4xs': '0.5rem', // 8px - citation
   '--text-3xs': '0.625rem', // 10px - micro
   '--text-2xs': '0.6875rem', // 11px - small micro
@@ -254,13 +275,16 @@ export const textSizeRaw = {
   '--text-4xl': '2rem', // 32px - editorial h1, data viz
 } as const;
 
-export const textSizeVars = stylex.defineVars(textSizeRaw);
+/** @deprecated Use textSizeDefaults */
+export const textSizeRaw = textSizeDefaults;
+
+export const textSizeVars = stylex.defineVars(textSizeDefaults);
 
 // =============================================================================
 // Typography Tokens - Line Heights
 // =============================================================================
 
-export const lineHeightRaw = {
+export const lineHeightDefaults = {
   '--leading-tight': '1.25', // Display text, headings
   '--leading-snug': '1.375', // Compact body text, headings
   '--leading-base': '1.4285714285714286', // Body text with --text-base (20px line / 14px font)
@@ -268,47 +292,38 @@ export const lineHeightRaw = {
   '--leading-relaxed': '1.625', // Editorial body, reading text
 } as const;
 
-export const lineHeightVars = stylex.defineVars(lineHeightRaw);
+/** @deprecated Use lineHeightDefaults */
+export const lineHeightRaw = lineHeightDefaults;
+
+export const lineHeightVars = stylex.defineVars(lineHeightDefaults);
 
 // =============================================================================
 // Typography Tokens - Font Weights
 // =============================================================================
 
-export const fontWeightRaw = {
+export const fontWeightDefaults = {
   '--font-weight-normal': '400', // body, captions, code
   '--font-weight-medium': '500', // subheadlines, data viz
   '--font-weight-semibold': '600', // emphasized body, titles
   '--font-weight-bold': '700', // strong emphasis, headings
 } as const;
 
-export const fontWeightVars = stylex.defineVars(fontWeightRaw);
+/** @deprecated Use fontWeightDefaults */
+export const fontWeightRaw = fontWeightDefaults;
+
+export const fontWeightVars = stylex.defineVars(fontWeightDefaults);
 
 // =============================================================================
 // Token Types
 // =============================================================================
 
-export type ColorVarName = keyof typeof colorRaw;
-export type SpacingVarName = keyof typeof spacingRaw;
-export type SizeVarName = keyof typeof sizeRaw;
-export type RadiusVarName = keyof typeof radiusRaw;
-export type ElevationVarName = keyof typeof elevationRaw;
-export type TransitionVarName = keyof typeof transitionRaw;
-export type TypographyVarName = keyof typeof typographyRaw;
-export type TextSizeVarName = keyof typeof textSizeRaw;
-export type LineHeightVarName = keyof typeof lineHeightRaw;
-export type FontWeightVarName = keyof typeof fontWeightRaw;
-
-// Base raw types for createTheme casting
-// StyleX's createTheme requires exact literal types from defineVars.
-// Theme overrides have different values, so we cast through these types.
-// Type safety is maintained via `as const satisfies Record<*VarName, string>`.
-export type BaseColorRaw = typeof colorRaw;
-export type BaseSpacingRaw = typeof spacingRaw;
-export type BaseSizeRaw = typeof sizeRaw;
-export type BaseRadiusRaw = typeof radiusRaw;
-export type BaseElevationRaw = typeof elevationRaw;
-export type BaseTransitionRaw = typeof transitionRaw;
-export type BaseTypographyRaw = typeof typographyRaw;
-export type BaseTextSizeRaw = typeof textSizeRaw;
-export type BaseLineHeightRaw = typeof lineHeightRaw;
-export type BaseFontWeightRaw = typeof fontWeightRaw;
+export type ColorVarName = keyof typeof colorDefaults;
+export type SpacingVarName = keyof typeof spacingDefaults;
+export type SizeVarName = keyof typeof sizeDefaults;
+export type RadiusVarName = keyof typeof radiusDefaults;
+export type ElevationVarName = keyof typeof elevationDefaults;
+export type TransitionVarName = keyof typeof transitionDefaults;
+export type TypographyVarName = keyof typeof typographyDefaults;
+export type TextSizeVarName = keyof typeof textSizeDefaults;
+export type LineHeightVarName = keyof typeof lineHeightDefaults;
+export type FontWeightVarName = keyof typeof fontWeightDefaults;

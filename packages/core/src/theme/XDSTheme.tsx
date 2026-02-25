@@ -90,6 +90,7 @@ export function XDSTheme({
         : wrapperStyles.system;
 
   // Get StyleX props for all theme styles
+  // Optional/undefined groups are skipped gracefully by stylex.props
   const stylexProps = stylex.props(
     wrapperStyles.base,
     colorSchemeStyle,
@@ -100,6 +101,9 @@ export function XDSTheme({
     theme.styles.elevation,
     theme.styles.transition,
     theme.styles.typography,
+    theme.styles.textSize,
+    theme.styles.lineHeight,
+    theme.styles.fontWeight,
   );
 
   let content: React.ReactNode = children;

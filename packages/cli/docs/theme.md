@@ -40,53 +40,48 @@ Run `npx xds theme --list` to see themes in your project.
 npx xds theme
 ```
 
-Interactive wizard that generates a complete `.stylex.ts` theme file with your brand colors.
+Interactive wizard that generates a `.stylex.ts` theme file with your brand colors.
 
 ### Manual creation
 
-A theme is an object with `name`, `styles`, and `raw`:
+A theme is an object with `name` and `styles`. Only override token groups that differ from the defaults — omitted groups automatically use the `defineVars` defaults from `@xds/core`.
 
 ```tsx
 import * as stylex from '@stylexjs/stylex';
 import type {ThemeType as Theme} from '@xds/core/theme';
-import {
-  colorVars,
-  spacingVars,
-  sizeVars,
-  radiusVars,
-  elevationVars,
-  transitionVars,
-  typographyVars,
-  textSizeVars,
-  lineHeightVars,
-  fontWeightVars,
-} from '@xds/core/theme/tokens.stylex';
+import {colorVars, colorDefaults} from '@xds/core/theme/tokens.stylex';
 
-// 1. Define raw values
-const colorRaw = {
+// 1. Define your color overrides
+const colorOverrides = {
   '--color-accent': 'light-dark(#7B61FF, #9B85FF)',
   '--color-surface': 'light-dark(#FFFFFF, #1A1A2E)',
   // ... all ~60 color tokens (see npx xds docs tokens)
-};
+} as const;
 
-// 2. Create StyleX theme overrides
+// 2. Create StyleX theme override
 const colorTheme = stylex.createTheme(
   colorVars,
-  colorRaw as unknown as BaseColorRaw,
+  colorOverrides as unknown as typeof colorDefaults,
 );
 
-// 3. Export the theme
+// 3. Export the theme — only include overridden groups
 export const myTheme: Theme = {
   name: 'my-theme',
-  styles: {colors: colorTheme, spacing: spacingTheme /* ... all 10 */},
-  raw: {colors: colorRaw, spacing: spacingRaw /* ... all 10 */},
+  styles: {
+    colors: colorTheme,
+    // spacing, radius, etc. omitted — uses defaults
+  },
+  raw: {
+    colors: colorOverrides,
+    // Include raw values for programmatic access (charting libs, theme editors)
+  },
 };
 ```
 
-The `styles` field uses `stylex.createTheme()` for each token group. The `raw` field has the same values as plain objects for programmatic access.
-
-**Token groups** (all required in both `styles` and `raw`):
+**Token groups** (all optional in `styles`):
 colors, spacing, size, radius, elevation, transition, typography, textSize, lineHeight, fontWeight
+
+Omitted groups use the `defineVars` defaults from `tokens.stylex.ts`.
 
 ### ⚠️ Static Analysis Constraint
 
@@ -111,42 +106,19 @@ const spacingTheme = stylex.createTheme(spacingVars, {
 });
 ```
 
-### Sharing values across multiple themes
+### Partial overrides
 
-When creating multiple themes that share token groups (e.g., same spacing, different colors), you **must duplicate the inline values** in each `createTheme()` call. This is required by StyleX's static analysis — there is no way to DRY up `createTheme` arguments.
-
-```tsx
-// ✅ Correct: each theme has its own inline createTheme calls
-// (values can be identical — that's fine, they must just be inline literals)
-
-// --- ocean theme ---
-const oceanSpacingTheme = stylex.createTheme(spacingVars, {
-  '--spacing-1': '4px',
-  '--spacing-2': '8px',
-  // ... same values, written inline
-} as unknown as BaseSpacingRaw);
-
-// --- sunset theme ---
-const sunsetSpacingTheme = stylex.createTheme(spacingVars, {
-  '--spacing-1': '4px',
-  '--spacing-2': '8px',
-  // ... same values, written inline
-} as unknown as BaseSpacingRaw);
-```
-
-The `raw` field (plain objects, not passed to StyleX) _can_ use shared variables:
+You only need to create `stylex.createTheme()` calls for token groups you want to change. For example, if your theme only changes colors and radius:
 
 ```tsx
-// ✅ raw values can be shared — they're not processed by StyleX
-const sharedSpacingRaw = {
-  '--spacing-1': '4px',
-  '--spacing-2': '8px',
-};
-
-export const oceanTheme: Theme = {
-  name: 'ocean',
-  styles: {spacing: oceanSpacingTheme /* ... */},
-  raw: {spacing: sharedSpacingRaw /* ... */}, // ✅ OK — not a createTheme call
+export const myTheme: Theme = {
+  name: 'my-theme',
+  styles: {
+    colors: colorTheme,
+    radius: radiusTheme,
+    // All other groups (spacing, size, elevation, transition,
+    // typography, textSize, lineHeight, fontWeight) use defaults
+  },
 };
 ```
 
@@ -261,10 +233,7 @@ const cardOverrides = stylex.create({
 export const myTheme: Theme = {
   name: 'my-theme',
   styles: {
-    /* ... */
-  },
-  raw: {
-    /* ... */
+    colors: colorTheme,
   },
   components: {
     card: {
