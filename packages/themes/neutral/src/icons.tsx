@@ -24,6 +24,7 @@ import {
   Calendar,
   Clock,
   ExternalLink,
+  Search,
 } from 'lucide-react';
 
 const iconProps = {
@@ -44,4 +45,5 @@ export const neutralIconRegistry: XDSIconRegistry = {
   calendar: <Calendar {...iconProps} />,
   clock: <Clock {...iconProps} />,
   externalLink: <ExternalLink {...iconProps} />,
+  search: <Search {...iconProps} />,
 };
