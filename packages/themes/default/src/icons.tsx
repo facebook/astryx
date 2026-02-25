@@ -20,6 +20,7 @@ import {
   CalendarDaysIcon,
   ClockIcon,
   InformationCircleIcon,
+  Bars3Icon,
 } from '@heroicons/react/24/outline';
 
 import {
@@ -48,4 +49,5 @@ export const defaultIconRegistry: XDSIconRegistry = {
   calendar: <CalendarDaysIcon {...iconProps} />,
   clock: <ClockIcon {...iconProps} />,
   externalLink: <ArrowTopRightOnSquareIcon {...iconProps} />,
+  menu: <Bars3Icon {...iconProps} />,
 };

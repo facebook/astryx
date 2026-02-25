@@ -153,4 +153,11 @@ export const defaultIcons: XDSIconRegistry = {
       <path d="M10 14L21 3" />
     </svg>
   ),
+
+  /** ☰ — hamburger menu (three horizontal lines) */
+  menu: (
+    <svg {...svgProps} strokeWidth={2}>
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  ),
 };

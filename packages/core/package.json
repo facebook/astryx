@@ -172,6 +172,12 @@
       "import": "./dist/List/index.mjs",
       "require": "./dist/List/index.js"
     },
+    "./MobileNav": {
+      "source": "./src/MobileNav/index.ts",
+      "types": "./dist/MobileNav/index.d.ts",
+      "import": "./dist/MobileNav/index.mjs",
+      "require": "./dist/MobileNav/index.js"
+    },
     "./NavIcon": {
       "source": "./src/NavIcon/index.ts",
       "types": "./dist/NavIcon/index.d.ts",
