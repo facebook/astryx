@@ -27,7 +27,6 @@ import {
   radiusVars,
   transitionVars,
   typographyVars,
-  elevationVars,
   textSizeVars,
 } from '../theme/tokens.stylex';
 import {XDSFieldLabel} from '../Field/XDSFieldLabel';
@@ -44,10 +43,11 @@ const SWITCH_HEIGHT = 24;
 const THUMB_SIZE_OFF = 16;
 const THUMB_SIZE_ON = 20;
 const TRACK_PADDING = 4;
-const BORDER_WIDTH = 1;
-// Travel distance for on state: accounts for larger thumb with tighter right padding
+// Padding between thumb right edge and track inner edge when on
+const ON_RIGHT_PADDING = 2;
+// Travel distance for on state: positions thumb with ON_RIGHT_PADDING from right edge
 const THUMB_TRAVEL_ON =
-  SWITCH_WIDTH - TRACK_PADDING * 2 - BORDER_WIDTH * 2 - THUMB_SIZE_ON + 2;
+  SWITCH_WIDTH - TRACK_PADDING - THUMB_SIZE_ON - ON_RIGHT_PADDING;
 
 const styles = stylex.create({
   container: {
@@ -58,6 +58,9 @@ const styles = stylex.create({
   containerSpread: {
     justifyContent: 'space-between',
     width: '100%',
+  },
+  statusGap: {
+    marginTop: spacingVars['--spacing-2'],
   },
   switchWrapper: {
     position: 'relative',
@@ -86,10 +89,8 @@ const styles = stylex.create({
     width: SWITCH_WIDTH,
     height: SWITCH_HEIGHT,
     padding: TRACK_PADDING,
-    borderWidth: 1,
-    borderStyle: 'solid',
     borderRadius: radiusVars['--radius-rounded'],
-    transitionProperty: 'background-color, border-color',
+    transitionProperty: 'background-color',
     transitionDuration: transitionVars['--transition-fast'],
     boxSizing: 'border-box',
   },
@@ -99,23 +100,13 @@ const styles = stylex.create({
   },
   // State-dependent colors with ancestor hover behavior
   trackOff: {
-    borderColor: {
-      default: colorVars['--color-divider-emphasized'],
-      [stylex.when.ancestor(':hover')]:
-        `color-mix(in srgb, ${colorVars['--color-divider-emphasized']}, ${colorVars['--color-hover-tint']} 20%)`,
-    },
     backgroundColor: {
-      default: colorVars['--color-deemphasized'],
+      default: colorVars['--color-gray-background'],
       [stylex.when.ancestor(':hover')]:
-        `color-mix(in srgb, ${colorVars['--color-deemphasized']}, ${colorVars['--color-hover-tint']} 5%)`,
+        `color-mix(in srgb, ${colorVars['--color-gray-background']}, ${colorVars['--color-hover-tint']} 5%)`,
     },
   },
   trackOn: {
-    borderColor: {
-      default: colorVars['--color-accent'],
-      [stylex.when.ancestor(':hover')]:
-        `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
-    },
     backgroundColor: {
       default: colorVars['--color-accent'],
       [stylex.when.ancestor(':hover')]:
@@ -124,15 +115,13 @@ const styles = stylex.create({
   },
   trackDisabled: {
     opacity: 0.5,
-    borderColor: colorVars['--color-divider'],
   },
   trackDisabledOff: {
-    backgroundColor: colorVars['--color-deemphasized'],
+    backgroundColor: colorVars['--color-gray-background'],
   },
   thumb: {
     borderRadius: radiusVars['--radius-rounded'],
     backgroundColor: colorVars['--color-surface'],
-    boxShadow: elevationVars['--elevation-thumb'],
     transitionProperty: 'transform, width, height',
     transitionDuration: transitionVars['--transition-fast'],
   },
@@ -422,12 +411,14 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
           )}
         </div>
         {status?.message && (
-          <XDSFieldStatus
-            type={status.type}
-            message={status.message}
-            id={statusMessageID}
-            variant="detached"
-          />
+          <div {...stylex.props(styles.statusGap)}>
+            <XDSFieldStatus
+              type={status.type}
+              message={status.message}
+              id={statusMessageID}
+              variant="detached"
+            />
+          </div>
         )}
       </div>
     );
