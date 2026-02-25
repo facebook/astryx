@@ -6,6 +6,7 @@ import {XDSBadge} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSText} from '@xds/core/Text';
+import {XDSMobileNav} from '@xds/core/MobileNav';
 import {XDSTopNav, XDSTopNavTitle, XDSTopNavItem} from '@xds/core/TopNav';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {
@@ -591,10 +592,14 @@ export const WithMobileNav: Story = {
           />
         }
         sideNav={<XDSSideNav>{navSections}</XDSSideNav>}
-        mobileNav={navSections}
-        mobileNavTitle="Acme App"
-        isMobileNavOpen={mobileNavOpen}
-        onMobileNavOpenChange={setMobileNavOpen}>
+        mobileNav={
+          <XDSMobileNav
+            isOpen={mobileNavOpen}
+            onClose={() => setMobileNavOpen(false)}
+            title="Acme App">
+            {navSections}
+          </XDSMobileNav>
+        }>
         <MockContent />
       </XDSAppShell>
     );

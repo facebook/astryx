@@ -28,7 +28,6 @@ import {XDSLayout} from '../Layout/XDSLayout';
 import {XDSLayoutHeader} from '../Layout/XDSLayoutHeader';
 import {XDSLayoutPanel} from '../Layout/XDSLayoutPanel';
 import {XDSLayoutContent} from '../Layout/XDSLayoutContent';
-import {XDSMobileNav} from '../MobileNav';
 
 // =============================================================================
 // Constants
@@ -98,38 +97,18 @@ export interface XDSAppShellProps {
   initialIsSideNavCollapsed?: boolean;
 
   /**
-   * Whether the mobile nav drawer is open (controlled).
-   * Only used when `mobileNav` is provided.
-   */
-  isMobileNavOpen?: boolean;
-
-  /**
-   * Mobile navigation content — rendered inside an XDSMobileNav drawer.
-   *
-   * When provided, the sideNav is hidden below the breakpoint and this
-   * content is shown in an XDSMobileNav drawer instead. Use with
-   * `isMobileNavOpen` and `onMobileNavOpenChange` to control the drawer.
-   *
-   * Typically receives the same SideNavSection/SideNavItem children as sideNav.
-   */
-  mobileNav?: ReactNode;
-
-  /**
-   * Title shown at the top of the mobile navigation drawer.
-   * Only used when `mobileNav` is provided.
-   */
-  mobileNavTitle?: string;
-
-  /**
    * Whether the side nav is collapsed (controlled).
    */
   isSideNavCollapsed?: boolean;
 
   /**
-   * Callback when the mobile nav drawer open state changes.
-   * Only used when `mobileNav` is provided.
+   * Mobile navigation — typically an XDSMobileNav.
+   *
+   * When provided, the built-in mobile overlay for sideNav is suppressed
+   * below the breakpoint. The consumer owns the XDSMobileNav element and
+   * its open/close state, just like topNav and sideNav.
    */
-  onMobileNavOpenChange?: (isOpen: boolean) => void;
+  mobileNav?: ReactNode;
 
   /**
    * Callback when side nav collapsed state changes.
@@ -338,10 +317,15 @@ const dynamicStyles = stylex.create({
  * <XDSAppShell
  *   topNav={<XDSTopNav ... />}
  *   sideNav={<XDSSideNav>...</XDSSideNav>}
- *   mobileNav={navSections}
- *   mobileNavTitle="My App"
- *   isMobileNavOpen={mobileOpen}
- *   onMobileNavOpenChange={setMobileOpen}
+ *   mobileNav={
+ *     <XDSMobileNav
+ *       isOpen={mobileOpen}
+ *       onClose={() => setMobileOpen(false)}
+ *       title="My App"
+ *     >
+ *       {navSections}
+ *     </XDSMobileNav>
+ *   }
  * >
  *   <Content />
  * </XDSAppShell>
@@ -356,11 +340,8 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
       'data-testid': dataTestId,
       height = 'fill',
       initialIsSideNavCollapsed = false,
-      isMobileNavOpen = false,
       isSideNavCollapsed: controlledCollapsed,
       mobileNav,
-      mobileNavTitle,
-      onMobileNavOpenChange,
       onSideNavCollapsedChange,
       sideNav,
       sideNavBreakpoint = 'md',
@@ -491,13 +472,6 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
     }, [isBelowBreakpoint, isCollapsed, handleToggleCollapse]);
 
     // =========================================================================
-    // Mobile nav close handler
-    // =========================================================================
-    const handleMobileNavClose = useCallback(() => {
-      onMobileNavOpenChange?.(false);
-    }, [onMobileNavOpenChange]);
-
-    // =========================================================================
     // Determine if sideNav should show as overlay (mobile) or inline
     // =========================================================================
     const showSideNavInline = hasSideNav && !isCollapsed && !isBelowBreakpoint;
@@ -620,16 +594,7 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
         )}
 
         {/* Mobile nav drawer — replaces overlay when mobileNav is provided */}
-        {hasMobileNav && (
-          <XDSMobileNav
-            isOpen={isMobileNavOpen}
-            onClose={handleMobileNavClose}
-            title={mobileNavTitle}
-            width={sideNavWidth}
-            data-testid="appshell-mobile-nav">
-            {mobileNav}
-          </XDSMobileNav>
-        )}
+        {mobileNav}
       </div>
     );
   },

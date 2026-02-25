@@ -111,9 +111,11 @@ For landing pages or simple apps that don't need secondary navigation.
 
 For apps that need both desktop and mobile layouts, use the `mobileNav` slot.
 On desktop the SideNav renders inline; on mobile AppShell hides the SideNav
-(via `sideNavBreakpoint`) and renders the `mobileNav` content inside an
-XDSMobileNav drawer. You control the drawer with `isMobileNavOpen` /
-`onMobileNavOpenChange`.
+(via `sideNavBreakpoint`) and the consumer shows an XDSMobileNav drawer instead.
+
+Pass a fully composed `<XDSMobileNav>` — AppShell just renders it, same as
+every other slot. All drawer props (`isOpen`, `onClose`, `title`) stay on
+XDSMobileNav where they belong.
 
 ```tsx
 const [mobileOpen, setMobileOpen] = useState(false);
@@ -139,10 +141,14 @@ const isMobile = useMediaQuery('(max-width: 768px)');
     />
   }
   sideNav={<XDSSideNav>{navSections}</XDSSideNav>}
-  mobileNav={navSections}
-  mobileNavTitle="My App"
-  isMobileNavOpen={mobileOpen}
-  onMobileNavOpenChange={setMobileOpen}>
+  mobileNav={
+    <XDSMobileNav
+      isOpen={mobileOpen}
+      onClose={() => setMobileOpen(false)}
+      title="My App">
+      {navSections}
+    </XDSMobileNav>
+  }>
   <Content />
 </XDSAppShell>;
 ```
@@ -188,12 +194,9 @@ const isMobile = useMediaQuery('(max-width: 768px)');
 | `sideNav`                   | `ReactNode`                      | —        | Side navigation slot (typically XDSSideNav) |
 | `banner`                    | `ReactNode`                      | —        | Banner slot for system-wide announcements   |
 | `height`                    | `'fill' \| 'auto'`               | `'fill'` | Height behavior                             |
-| `isMobileNavOpen`           | `boolean`                        | `false`  | Whether the mobile nav drawer is open       |
 | `isSideNavCollapsed`        | `boolean`                        | —        | Whether sideNav is collapsed (controlled)   |
 | `initialIsSideNavCollapsed` | `boolean`                        | `false`  | Initial collapsed state (uncontrolled)      |
-| `mobileNav`                 | `ReactNode`                      | —        | Mobile nav drawer content                   |
-| `mobileNavTitle`            | `string`                         | —        | Title for the mobile nav drawer             |
-| `onMobileNavOpenChange`     | `(isOpen: boolean) => void`      | —        | Mobile nav open/close callback              |
+| `mobileNav`                 | `ReactNode`                      | —        | Mobile navigation (typically XDSMobileNav)  |
 | `onSideNavCollapsedChange`  | `(isCollapsed: boolean) => void` | —        | Collapse change callback                    |
 | `sideNavBreakpoint`         | `'sm' \| 'md' \| 'lg' \| 'none'` | `'md'`   | Breakpoint for auto-collapse                |
 | `sideNavWidth`              | `number`                         | `260`    | SideNav width in pixels                     |

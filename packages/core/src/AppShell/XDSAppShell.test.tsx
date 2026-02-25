@@ -10,6 +10,7 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, act} from '@testing-library/react';
 import {XDSAppShell} from './XDSAppShell';
+import {XDSMobileNav} from '../MobileNav';
 
 // Mock ResizeObserver
 class MockResizeObserver {
@@ -463,14 +464,19 @@ describe('XDSAppShell', () => {
   // Mobile nav slot
   // ===========================================================================
 
-  it('renders XDSMobileNav when mobileNav is provided and open', () => {
+  it('renders mobileNav slot content', () => {
     render(
       <XDSAppShell
         sideNav={<div>Side Nav</div>}
-        mobileNav={<div>Mobile Nav Content</div>}
-        mobileNavTitle="Test App"
-        isMobileNavOpen={true}
-        onMobileNavOpenChange={() => {}}>
+        mobileNav={
+          <XDSMobileNav
+            isOpen={true}
+            onClose={() => {}}
+            title="Test App"
+            data-testid="appshell-mobile-nav">
+            <div>Mobile Nav Content</div>
+          </XDSMobileNav>
+        }>
         <div>Content</div>
       </XDSAppShell>,
     );
@@ -478,7 +484,7 @@ describe('XDSAppShell', () => {
     expect(screen.getByText('Mobile Nav Content')).toBeInTheDocument();
   });
 
-  it('does not render XDSMobileNav when mobileNav is not provided', () => {
+  it('does not render mobileNav when not provided', () => {
     render(
       <XDSAppShell sideNav={<div>Side Nav</div>}>
         <div>Content</div>
@@ -494,7 +500,14 @@ describe('XDSAppShell', () => {
     render(
       <XDSAppShell
         sideNav={<div>Side Nav</div>}
-        mobileNav={<div>Mobile Nav</div>}
+        mobileNav={
+          <XDSMobileNav
+            isOpen={false}
+            onClose={() => {}}
+            data-testid="appshell-mobile-nav">
+            <div>Mobile Nav</div>
+          </XDSMobileNav>
+        }
         isSideNavCollapsed={false}
         onSideNavCollapsedChange={() => {}}>
         <div>Content</div>
@@ -502,27 +515,28 @@ describe('XDSAppShell', () => {
     );
     // Raw overlay backdrop should NOT appear
     expect(screen.queryByTestId('sidenav-backdrop')).not.toBeInTheDocument();
-    // XDSMobileNav should be rendered instead
+    // mobileNav slot should be rendered
     expect(screen.getByTestId('appshell-mobile-nav')).toBeInTheDocument();
   });
 
-  it('calls onMobileNavOpenChange(false) when mobile nav closes', () => {
-    const onOpenChange = vi.fn();
+  it('mobileNav onClose is called when close button is clicked', () => {
+    const onClose = vi.fn();
     render(
       <XDSAppShell
         sideNav={<div>Side Nav</div>}
-        mobileNav={<div>Mobile Nav</div>}
-        isMobileNavOpen={true}
-        onMobileNavOpenChange={onOpenChange}>
+        mobileNav={
+          <XDSMobileNav isOpen={true} onClose={onClose} title="Nav">
+            <div>Mobile Nav</div>
+          </XDSMobileNav>
+        }>
         <div>Content</div>
       </XDSAppShell>,
     );
-    // Click the close button inside XDSMobileNav
     const closeButton = screen.getByRole('button', {
       name: /close/i,
     });
     fireEvent.click(closeButton);
-    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(onClose).toHaveBeenCalled();
   });
 
   // ===========================================================================
