@@ -7,7 +7,7 @@ import {XDSStatusDot} from '@xds/core/StatusDot';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
 import {XDSDivider} from '@xds/core/Divider';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
+import {spacingVars, colorVars} from '@xds/core/theme/tokens.stylex';
 import type {UniversalScore} from './types';
 import {
   ALL_DIMENSIONS,
@@ -24,6 +24,9 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-2'],
+  },
+  promptText: {
+    color: colorVars['--color-text-secondary'],
   },
   scoreGrid: {
     display: 'grid',
@@ -142,6 +145,8 @@ function Findings({score}: {score: UniversalScore}) {
 
 interface PromptDetailCardProps {
   promptId: string;
+  /** The actual prompt text shown to the agent */
+  promptText?: string;
   xdsScore?: UniversalScore;
   baselineScore?: UniversalScore;
   hasXdsCode: boolean;
@@ -154,6 +159,7 @@ interface PromptDetailCardProps {
 
 export function PromptDetailCard({
   promptId,
+  promptText,
   xdsScore,
   baselineScore,
   hasXdsCode,
@@ -171,9 +177,14 @@ export function PromptDetailCard({
     <XDSCard>
       <div {...stylex.props(styles.card)}>
         <XDSVStack gap="space3">
-          {/* Header: prompt ID on its own line, buttons below */}
+          {/* Header: prompt ID, prompt text, and buttons */}
           <div {...stylex.props(styles.header)}>
             <XDSHeading level={4}>{promptId}</XDSHeading>
+            {promptText && (
+              <XDSText type="body" xstyle={styles.promptText}>
+                {promptText}
+              </XDSText>
+            )}
             {(hasAnyPreview || hasAnyCode) && (
               <div {...stylex.props(styles.buttonRow)}>
                 {previewUrls?.xds && (

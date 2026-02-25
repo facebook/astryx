@@ -99,6 +99,23 @@ function ensureComparison(
 }
 
 /**
+ * Extract prompt text from the manifest's prompts array.
+ * Returns a map of promptId → prompt text.
+ */
+function extractPrompts(manifest: unknown): Record<string, string> {
+  const prompts: Record<string, string> = {};
+  const m = manifest as {prompts?: Array<{id: string; prompt: string}>};
+  if (m.prompts && Array.isArray(m.prompts)) {
+    for (const p of m.prompts) {
+      if (p.id && p.prompt) {
+        prompts[p.id] = p.prompt;
+      }
+    }
+  }
+  return prompts;
+}
+
+/**
  * Build the report data as a <script> tag to inject into the HTML.
  * This runs before the app bundle, so window.__REPORT_DATA__ is
  * guaranteed to exist when React renders.
@@ -113,6 +130,7 @@ function buildDataScript(opts: {
   baselineSourceCode?: Record<string, string>;
   htmlSourceCode?: Record<string, string>;
   previews?: Record<string, Record<string, string>>;
+  prompts?: Record<string, string>;
 }): string {
   const reportData = {
     universal: opts.iterationData,
@@ -123,6 +141,7 @@ function buildDataScript(opts: {
     baselineSourceCode: opts.baselineSourceCode,
     htmlSourceCode: opts.htmlSourceCode,
     previews: opts.previews,
+    prompts: opts.prompts,
   };
 
   return `<script>window.__REPORT_DATA__=${JSON.stringify(reportData)};</script>`;
@@ -246,6 +265,14 @@ async function main() {
     );
   }
 
+  // Extract prompt text from manifest
+  const prompts = extractPrompts(manifest);
+  if (Object.keys(prompts).length > 0) {
+    console.log(
+      `  ✓ Prompt text loaded (${Object.keys(prompts).length} prompts)`,
+    );
+  }
+
   // Step 4: Build the data script
   const dataScript = buildDataScript({
     iteration,
@@ -257,6 +284,7 @@ async function main() {
     baselineSourceCode,
     htmlSourceCode,
     previews,
+    prompts,
   });
   console.log(`  ✓ ${(dataScript.length / 1024).toFixed(0)} KB of report data`);
 
@@ -270,6 +298,7 @@ async function main() {
       comparison: comparison ?? undefined,
       iterationId: iteration,
       target: (manifest as {config?: {target?: string}})?.config?.target,
+      prompts,
     };
     fs.writeFileSync(
       path.join(dataDir, 'report-data.ts'),
