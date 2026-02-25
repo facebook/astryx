@@ -6,6 +6,7 @@ import {XDSBadge} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSText} from '@xds/core/Text';
+import {XDSMobileNav} from '@xds/core/MobileNav';
 import {XDSTopNav, XDSTopNavTitle, XDSTopNavItem} from '@xds/core/TopNav';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {
@@ -14,6 +15,7 @@ import {
   XDSSideNavItem,
   XDSSideNavSection,
 } from '@xds/core/SideNav';
+import {useMediaQuery} from '@xds/core/hooks';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {
@@ -478,4 +480,132 @@ export const WithBanner: Story = {
       <MockContent />
     </XDSAppShell>
   ),
+};
+
+/**
+ * Responsive layout with XDSMobileNav. Shows the recommended pattern
+ * for apps that need to work across desktop and mobile:
+ *
+ * - Desktop (>768px): Standard AppShell with TopNav + inline SideNav
+ * - Mobile (≤768px): TopNav shows a hamburger menu that opens an
+ *   XDSMobileNav drawer with the same navigation sections
+ *
+ * The nav sections are defined once and shared between both layouts.
+ * `useMediaQuery` drives the switch. `sideNavBreakpoint="none"` prevents
+ * AppShell's built-in collapse from conflicting with the manual toggle.
+ *
+ * Resize the viewport or use Storybook's viewport addon to see the
+ * transition between layouts.
+ */
+export const WithMobileNav: Story = {
+  name: 'With Mobile Nav',
+  render: function WithMobileNavStory() {
+    const isMobile = useMediaQuery('(max-width: 768px)');
+    const [drawerOpen, setDrawerOpen] = useState(false);
+
+    const navSections = (
+      <>
+        <XDSSideNavSection title="Main" isHeaderHidden>
+          <XDSSideNavItem
+            label="Dashboard"
+            icon={HomeIcon}
+            selectedIcon={HomeIconSolid}
+            isSelected
+            href="#"
+          />
+          <XDSSideNavItem
+            label="Analytics"
+            icon={ChartBarIcon}
+            selectedIcon={ChartBarIconSolid}
+            href="#"
+          />
+          <XDSSideNavItem
+            label="Projects"
+            icon={FolderIcon}
+            selectedIcon={FolderIconSolid}
+            href="#"
+            endContent={<XDSBadge>12</XDSBadge>}
+          />
+        </XDSSideNavSection>
+        <XDSSideNavSection title="Organization">
+          <XDSSideNavItem
+            label="Team"
+            icon={UserGroupIcon}
+            selectedIcon={UserGroupIconSolid}
+            href="#"
+          />
+          <XDSSideNavItem
+            label="Settings"
+            icon={Cog6ToothIcon}
+            selectedIcon={Cog6ToothIconSolid}
+            href="#"
+          />
+        </XDSSideNavSection>
+      </>
+    );
+
+    return (
+      <>
+        <XDSAppShell
+          topNav={
+            <XDSTopNav
+              label="Main navigation"
+              title={
+                <XDSTopNavTitle
+                  title="Acme App"
+                  logo={
+                    <XDSNavIcon
+                      icon={<CubeIcon style={{width: 16, height: 16}} />}
+                    />
+                  }
+                />
+              }
+              startContent={
+                isMobile ? (
+                  <XDSButton
+                    label="Menu"
+                    variant="ghost"
+                    icon={<XDSIcon icon="menu" color="inherit" />}
+                    onClick={() => setDrawerOpen(true)}
+                  />
+                ) : (
+                  <>
+                    <XDSTopNavItem label="Home" href="#" isSelected />
+                    <XDSTopNavItem label="Products" href="#" />
+                    <XDSTopNavItem label="Docs" href="#" />
+                  </>
+                )
+              }
+              endContent={
+                <>
+                  <XDSButton
+                    label="Notifications"
+                    variant="ghost"
+                    icon={<BellIcon style={{width: 16, height: 16}} />}
+                  />
+                  <XDSButton
+                    label="Profile"
+                    variant="ghost"
+                    icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+                  />
+                </>
+              }
+            />
+          }
+          sideNav={
+            isMobile ? undefined : <XDSSideNav>{navSections}</XDSSideNav>
+          }
+          sideNavBreakpoint="none">
+          <MockContent />
+        </XDSAppShell>
+
+        <XDSMobileNav
+          isOpen={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          title="Acme App">
+          {navSections}
+        </XDSMobileNav>
+      </>
+    );
+  },
 };
