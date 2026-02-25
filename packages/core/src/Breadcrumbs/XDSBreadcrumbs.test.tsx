@@ -1,8 +1,19 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {forwardRef, type ComponentPropsWithoutRef} from 'react';
 import {XDSBreadcrumbs} from './XDSBreadcrumbs';
 import {XDSBreadcrumbItem} from './XDSBreadcrumbItem';
+import {XDSLinkProvider} from '../Link/XDSLinkProvider';
+
+const CustomLink = forwardRef<HTMLAnchorElement, ComponentPropsWithoutRef<'a'>>(
+  ({children, ...props}, ref) => (
+    <a ref={ref} data-custom-link {...props}>
+      {children}
+    </a>
+  ),
+);
+CustomLink.displayName = 'CustomLink';
 
 describe('XDSBreadcrumbs', () => {
   it('renders a nav landmark with aria-label', () => {
@@ -245,5 +256,52 @@ describe('XDSBreadcrumbItem', () => {
     const last = screen.getByText('Last');
     expect(last).toHaveAttribute('aria-current', 'page');
     expect(last.tagName).toBe('SPAN');
+  });
+
+  it('renders custom component for non-current items when as is provided', () => {
+    render(
+      <XDSBreadcrumbs>
+        <XDSBreadcrumbItem href="/" as={CustomLink}>
+          Home
+        </XDSBreadcrumbItem>
+        <XDSBreadcrumbItem isCurrent>Current</XDSBreadcrumbItem>
+      </XDSBreadcrumbs>,
+    );
+    const link = screen.getByRole('link', {name: 'Home'});
+    expect(link).toHaveAttribute('data-custom-link');
+    expect(link).toHaveAttribute('href', '/');
+  });
+
+  it('does not apply as to current item (renders as span)', () => {
+    render(
+      <XDSBreadcrumbs>
+        <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
+        <XDSBreadcrumbItem isCurrent as={CustomLink}>
+          Current
+        </XDSBreadcrumbItem>
+      </XDSBreadcrumbs>,
+    );
+    const current = screen.getByText('Current');
+    expect(current.tagName).toBe('SPAN');
+    expect(current).not.toHaveAttribute('data-custom-link');
+  });
+
+  it('renders custom component from XDSLinkProvider for non-current items', () => {
+    render(
+      <XDSLinkProvider component={CustomLink}>
+        <XDSBreadcrumbs>
+          <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
+          <XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem>
+          <XDSBreadcrumbItem isCurrent>Current</XDSBreadcrumbItem>
+        </XDSBreadcrumbs>
+      </XDSLinkProvider>,
+    );
+    const homeLink = screen.getByRole('link', {name: 'Home'});
+    expect(homeLink).toHaveAttribute('data-custom-link');
+    const projectsLink = screen.getByRole('link', {name: 'Projects'});
+    expect(projectsLink).toHaveAttribute('data-custom-link');
+    // Current item is still a span
+    const current = screen.getByText('Current');
+    expect(current.tagName).toBe('SPAN');
   });
 });
