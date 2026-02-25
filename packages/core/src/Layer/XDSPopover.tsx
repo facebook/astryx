@@ -50,8 +50,10 @@ declare module '../theme/types' {
 
 export interface XDSPopoverProps {
   /**
-   * The trigger element. Must accept a ref.
-   * Receives onClick, aria-expanded, aria-haspopup, aria-controls.
+   * The trigger element. Rendered inside an anchor wrapper that handles
+   * click interactions and CSS anchor positioning. Click events from
+   * children bubble up to the wrapper, so buttons work naturally with
+   * both mouse and keyboard (Enter/Space).
    *
    * When `anchorRef` is provided, children can be omitted and the popover
    * attaches to the external ref element as a sibling.
@@ -136,6 +138,10 @@ const styles = stylex.create({
   // XDSButton) renders inside this wrapper. Because the wrapper itself is
   // the anchor, pressed-state transforms on the child (e.g. :active scale)
   // don't shift the anchor position and cause popover jitter.
+  //
+  // Click events from children bubble up to this wrapper, so keyboard
+  // interactions (Enter/Space on buttons) work naturally without needing
+  // imperative addEventListener on child DOM elements.
   anchorWrapper: {
     display: 'inline-flex',
   },
@@ -192,9 +198,12 @@ const styles = stylex.create({
 /**
  * A click-triggered popover for displaying interactive content anchored to a trigger.
  *
- * Uses an inline-flex wrapper as the CSS anchor. This wrapper is stable —
- * it doesn't receive pressed-state transforms (e.g. `:active { scale(0.98) }`)
- * that the child trigger element may have, preventing popover position jitter.
+ * Uses an inline-flex wrapper as the CSS anchor. The wrapper serves two purposes:
+ * 1. Stable anchor — doesn't receive pressed-state transforms (e.g. `:active { scale(0.98) }`)
+ *    that the child trigger element may have, preventing popover position jitter.
+ * 2. Click target — handles click events via React's event system (bubbled from children),
+ *    so keyboard interactions (Enter/Space on buttons) work naturally.
+ *
  * Focus is trapped inside the popover when open.
  * Supports light dismiss (click outside or Escape to close).
  *
@@ -240,7 +249,7 @@ export function XDSPopover({
   xstyle,
   'data-testid': testId,
 }: XDSPopoverProps): ReactElement {
-  const wrapperRef = useRef<HTMLElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const isControlled = isShown !== undefined;
   // Track when the popover was last hidden by light dismiss to prevent
   // the trigger click from immediately re-opening it.
@@ -256,13 +265,12 @@ export function XDSPopover({
     },
   });
 
-  // Handle click on trigger — delegates to hook's toggle.
-  // In controlled mode, the useLayoutEffect below syncs isShown → hook state,
-  // and the hook's onShow/onHide callbacks propagate back to onToggle.
+  // Handle click on the anchor wrapper. Click events from children (e.g.
+  // XDSButton) bubble up here, including keyboard-synthesized clicks
+  // (Enter/Space on native buttons). No imperative addEventListener needed.
   const handleClick = useCallback(
-    (e: MouseEvent) => {
+    (_e: React.MouseEvent) => {
       if (!isEnabled) return;
-      e.preventDefault();
       // If the popover was just closed by light dismiss (clicking outside),
       // the trigger click fires in the same event — skip re-opening.
       if (Date.now() - lastHideTimeRef.current < 50) return;
@@ -289,35 +297,42 @@ export function XDSPopover({
     );
     el.setAttribute('aria-controls', popover.triggerProps['aria-controls']);
 
-    // Add click handler
-    el.addEventListener('click', handleClick);
+    // Add click handler (imperative for sibling mode since we don't wrap)
+    const handleSiblingClick = () => {
+      if (!isEnabled) return;
+      if (Date.now() - lastHideTimeRef.current < 50) return;
+      popover.toggle();
+    };
+    el.addEventListener('click', handleSiblingClick);
 
     return () => {
       popover.triggerRef(null);
       el.removeAttribute('aria-haspopup');
       el.removeAttribute('aria-expanded');
       el.removeAttribute('aria-controls');
-      el.removeEventListener('click', handleClick);
+      el.removeEventListener('click', handleSiblingClick);
     };
-  }, [anchorRef, popover, handleClick]);
+  }, [anchorRef, popover, isEnabled]);
 
-  // Children mode: use wrapper as anchor, attach ARIA + click to child.
-  // The wrapper is the CSS anchor (stable, no transforms), while the child
-  // element (e.g. XDSButton) gets the ARIA attributes and click handler.
+  // Children mode: set up the wrapper as the CSS anchor and apply ARIA
+  // attributes to the first child (the interactive trigger element).
+  // Click handling is on the wrapper via React onClick — no imperative
+  // event listeners needed.
   useLayoutEffect(() => {
     if (anchorRef) return; // Skip if using anchorRef mode
 
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
 
-    // Use the wrapper itself as the anchor — it doesn't receive
-    // pressed-state transforms, so the anchor position stays stable.
+    // Use the wrapper as the anchor — it doesn't receive pressed-state
+    // transforms, so the anchor position stays stable.
     popover.triggerRef(wrapper);
 
+    // ARIA attributes go on the interactive child element (the button),
+    // not the wrapper, for correct screen reader announcements.
     const firstChild = wrapper.firstElementChild as HTMLElement | null;
     if (!firstChild) return;
 
-    // ARIA attributes go on the interactive child element
     firstChild.setAttribute(
       'aria-haspopup',
       popover.triggerProps['aria-haspopup'],
@@ -331,17 +346,13 @@ export function XDSPopover({
       popover.triggerProps['aria-controls'],
     );
 
-    // Click handler goes on the interactive child element
-    firstChild.addEventListener('click', handleClick);
-
     return () => {
       popover.triggerRef(null);
       firstChild.removeAttribute('aria-haspopup');
       firstChild.removeAttribute('aria-expanded');
       firstChild.removeAttribute('aria-controls');
-      firstChild.removeEventListener('click', handleClick);
     };
-  }, [anchorRef, popover, handleClick]);
+  }, [anchorRef, popover]);
 
   // Sync controlled state
   useLayoutEffect(() => {
@@ -379,7 +390,8 @@ export function XDSPopover({
   return (
     <>
       <div
-        ref={wrapperRef as React.RefObject<HTMLDivElement>}
+        ref={wrapperRef}
+        onClick={handleClick}
         {...stylex.props(styles.anchorWrapper)}>
         {children}
       </div>
