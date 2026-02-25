@@ -135,6 +135,7 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     position: 'relative',
+    backgroundColor: colorVars['--color-wash'],
   },
   rootFill: {
     height: '100dvh',
