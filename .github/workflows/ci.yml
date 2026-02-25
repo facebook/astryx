@@ -1,10 +1,14 @@
 # PR CI: test, build, analyze, screenshot, a11y audit, and comment
 # Everything runs in parallel where possible
+#
+# Merge queue: test + build also run on merge_group events so the
+# merge queue can gate on them before landing a PR.
 name: CI
 
 on:
   pull_request:
     branches: ["main"]
+  merge_group:
 
 permissions:
   contents: write
@@ -14,13 +18,14 @@ permissions:
   actions: read
 
 concurrency:
-  group: "ci-${{ github.head_ref }}"
+  group: "ci-${{ github.event.merge_group.head_sha || github.head_ref }}"
   cancel-in-progress: true
 
 jobs:
   # Lightweight check — does the PR touch any core components?
   # Gates pr-screenshots and pr-a11y to avoid unnecessary work
   check-components:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     outputs:
       has_components: ${{ steps.check.outputs.has_components }}
@@ -151,6 +156,7 @@ jobs:
   # Post PR comment with preview links + analysis as soon as build finishes
   # Does NOT wait for test, screenshots, or a11y — those update the comment later
   pr-comment:
+    if: github.event_name == 'pull_request'
     needs: [build]
     runs-on: ubuntu-latest
     steps:
@@ -223,7 +229,7 @@ jobs:
   # Skipped when no components changed.
   pr-screenshots:
     needs: [build, check-components]
-    if: needs.check-components.outputs.has_components == 'true'
+    if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -314,7 +320,7 @@ jobs:
   # Skipped when no components changed.
   pr-a11y:
     needs: [build, check-components]
-    if: needs.check-components.outputs.has_components == 'true'
+    if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -358,7 +364,7 @@ jobs:
   # Update PR comment with screenshots + a11y results once they're ready
   pr-comment-update:
     needs: [build, check-components, pr-screenshots, pr-a11y]
-    if: always() && needs.build.result == 'success' && needs.check-components.outputs.has_components == 'true'
+    if: always() && github.event_name == 'pull_request' && needs.build.result == 'success' && needs.check-components.outputs.has_components == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
