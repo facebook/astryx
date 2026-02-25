@@ -210,7 +210,7 @@ const styles = stylex.create({
     marginInlineStart: 'auto',
   },
   dismissButton: {
-    margin: '-8px',
+    margin: `calc(-1 * ${spacingVars['--spacing-2']})`,
   },
   // Content area — card background for additional content below the header
   contentArea: {
