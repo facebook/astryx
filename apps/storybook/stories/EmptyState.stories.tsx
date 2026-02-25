@@ -1,5 +1,6 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSEmptyState} from '@xds/core/EmptyState';
+import {XDSButton} from '@xds/core/Button';
 
 const meta: Meta<typeof XDSEmptyState> = {
   title: 'Core/XDSEmptyState',
@@ -52,8 +53,8 @@ export const WithActions: Story = {
     description: 'Try adjusting your search or filters.',
     actions: (
       <>
-        <button>Clear filters</button>
-        <button>Go back</button>
+        <XDSButton label="Clear filters" variant="primary" />
+        <XDSButton label="Go back" variant="secondary" />
       </>
     ),
   },
@@ -74,8 +75,8 @@ export const CompactWithActions: Story = {
     description: 'Add some data to get started.',
     actions: (
       <>
-        <button>Add item</button>
-        <button>Import</button>
+        <XDSButton label="Add item" variant="primary" />
+        <XDSButton label="Import" variant="secondary" />
       </>
     ),
     isCompact: true,
@@ -96,8 +97,8 @@ export const FullExample: Story = {
         description="When you receive notifications, they will appear here. Check back later!"
         actions={
           <>
-            <button>Refresh</button>
-            <button>Settings</button>
+            <XDSButton label="Refresh" variant="primary" />
+            <XDSButton label="Settings" variant="secondary" />
           </>
         }
       />
