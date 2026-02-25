@@ -6,20 +6,16 @@ Top navigation bar component for application headers.
 
 ## Features
 
-- **Slot-based layout**: `title`, `startContent`, `centerContent`, `endContent` for flexible organization
-- **Companion components**: XDSTopNavTitle, XDSTopNavTitleIcon, XDSTopNavItem
+- **Slot-based layout**: `title`, `startContent`, `endContent` for flexible organization
+- **Companion components**: XDSTopNavTitle, XDSTopNavItem
 - **Accessible**: Proper ARIA roles and keyboard navigation
 - **Themeable**: Uses XDS design tokens for styling
 
 ## Usage
 
 ```tsx
-import {
-  XDSTopNav,
-  XDSTopNavTitle,
-  XDSTopNavTitleIcon,
-  XDSTopNavItem,
-} from '@xds/core/TopNav';
+import {XDSTopNav, XDSTopNavTitle, XDSTopNavItem} from '@xds/core/TopNav';
+import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSButton} from '@xds/core/Button';
 import {HomeIcon, BellIcon, UserCircleIcon} from '@heroicons/react/24/outline';
 
@@ -28,11 +24,7 @@ import {HomeIcon, BellIcon, UserCircleIcon} from '@heroicons/react/24/outline';
   title={
     <XDSTopNavTitle
       title="My App"
-      logo={
-        <XDSTopNavTitleIcon
-          icon={<HomeIcon style={{width: 16, height: 16}} />}
-        />
-      }
+      logo={<XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />}
       href="/"
     />
   }
@@ -64,36 +56,29 @@ import {HomeIcon, BellIcon, UserCircleIcon} from '@heroicons/react/24/outline';
 
 - **XDSTopNav** — Main navigation container
 - **XDSTopNavTitle** — Title with logo and text
-- **XDSTopNavTitleIcon** — Circular icon container for the title
 - **XDSTopNavItem** — Navigation link item
 - **XDSTopNavMenu** — Navigation item with hover-triggered overflow menu
+
+For the circular icon container, use `XDSNavIcon` from `@xds/core/NavIcon`.
 
 ## Props
 
 ### XDSTopNav
 
-| Prop            | Type        | Default | Description                                                        |
-| --------------- | ----------- | ------- | ------------------------------------------------------------------ |
-| `title`         | `ReactNode` | —       | Title slot (logo, brand) - left aligned                            |
-| `startContent`  | `ReactNode` | —       | Start content (nav items, breadcrumbs) - left aligned              |
-| `centerContent` | `ReactNode` | —       | Center content (nav items) - centered; enables three-column layout |
-| `endContent`    | `ReactNode` | —       | End content (search, icons, profile) - right aligned               |
-| `label`         | `string`    | —       | Accessible label for navigation landmark                           |
+| Prop           | Type        | Default | Description                                           |
+| -------------- | ----------- | ------- | ----------------------------------------------------- |
+| `title`        | `ReactNode` | —       | Title slot (logo, brand) - left aligned               |
+| `startContent` | `ReactNode` | —       | Start content (nav items, breadcrumbs) - left aligned |
+| `endContent`   | `ReactNode` | —       | End content (search, icons, profile) - right aligned  |
+| `label`        | `string`    | —       | Accessible label for navigation landmark              |
 
 ### XDSTopNavTitle
 
-| Prop    | Type        | Default | Description                              |
-| ------- | ----------- | ------- | ---------------------------------------- |
-| `title` | `string`    | —       | Title text to display                    |
-| `logo`  | `ReactNode` | —       | Logo element (image, XDSTopNavTitleIcon) |
-| `href`  | `string`    | —       | URL to navigate to when clicked          |
-
-### XDSTopNavTitleIcon
-
-| Prop   | Type                   | Default | Description                |
-| ------ | ---------------------- | ------- | -------------------------- |
-| `icon` | `ReactNode`            | —       | Icon element (required)    |
-| `size` | `'sm' \| 'md' \| 'lg'` | `'md'`  | Size of circular container |
+| Prop    | Type        | Default | Description                      |
+| ------- | ----------- | ------- | -------------------------------- |
+| `title` | `string`    | —       | Title text to display            |
+| `logo`  | `ReactNode` | —       | Logo element (image, XDSNavIcon) |
+| `href`  | `string`    | —       | URL to navigate to when clicked  |
 
 ### XDSTopNavItem
 
@@ -125,6 +110,14 @@ import {HomeIcon, BellIcon, UserCircleIcon} from '@heroicons/react/24/outline';
 | `href`        | `string`     | URL to navigate to               |
 | `onClick`     | `() => void` | Callback on click                |
 
+## Selected State
+
+When `isSelected` is true, nav items show:
+
+- **Background**: `--color-accent-deemphasized` (subtle accent tint)
+- **Text**: `--color-text-primary` with semibold weight
+- **Icon**: Primary color; use `selectedIcon` for filled variants
+
 ## Theming
 
 Themes can override `TopNav` styles via `ComponentStyles`:
@@ -154,7 +147,6 @@ const theme: Theme = {
 | `index.ts`               | Entry | Exports components and types      |
 | `XDSTopNav.tsx`          | Core  | Main navigation container         |
 | `XDSTopNavTitle.tsx`     | Core  | Title with logo and text          |
-| `XDSTopNavTitleIcon.tsx` | Core  | Circular icon container           |
 | `XDSTopNavItem.tsx`      | Core  | Navigation link item              |
 | `XDSTopNavMenu.tsx`      | Core  | Nav item with hover overflow menu |
 | `XDSTopNav.test.tsx`     | Test  | Unit tests for TopNav components  |
@@ -193,8 +185,6 @@ import {XDSTopNav, XDSTopNavTitle, XDSTopNavItem} from '@xds/core/TopNav';
 
 ## Slot Layout Structure
 
-**Standard layout** (no `centerContent`):
-
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ [title]  [startContent ...]              [...endContent]    │
@@ -223,8 +213,17 @@ left/right content widths. The right column is always rendered (even when
 - Without `centerContent`: title and startContent grow to push endContent right
 - With `centerContent`: switches to CSS grid (`1fr auto 1fr`) for true centering
 - XDSTopNavItem supports `aria-current="page"` when `isSelected` is true
-- XDSTopNavTitleIcon uses `--color-accent` background with `--color-icon-on-media` for contrast
 - Default height is 48px with 16px horizontal padding
 - Uses `--color-navbar` token for background (defaults to white)
 - Positioning (sticky/fixed) is handled by the layout system (e.g. XDSAppShell), not TopNav itself
 - Dividers are controlled by the layout system (e.g. XDSLayoutHeader's `hasDivider`), not TopNav
+
+## Migration
+
+`XDSTopNavTitleIcon` has been renamed to `XDSNavIcon` and moved to its own module.
+The old name is still exported from `@xds/core/TopNav` as a deprecated alias.
+
+```diff
+- import {XDSTopNavTitleIcon} from '@xds/core/TopNav';
++ import {XDSNavIcon} from '@xds/core/NavIcon';
+```

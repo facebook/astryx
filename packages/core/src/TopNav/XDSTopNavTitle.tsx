@@ -59,7 +59,7 @@ export interface XDSTopNavTitleProps extends Omit<
   title?: string;
   /**
    * Logo element to display before the title.
-   * Can be an image, XDSTopNavTitleIcon, or any ReactNode.
+   * Can be an image, XDSNavIcon, or any ReactNode.
    */
   logo?: ReactNode;
   /**
@@ -73,7 +73,7 @@ export interface XDSTopNavTitleProps extends Omit<
  * Title component for XDSTopNav.
  *
  * Displays a logo and/or title text, optionally as a clickable link.
- * Use with XDSTopNavTitleIcon to create a circular icon background.
+ * Use with XDSNavIcon to create a circular icon background.
  *
  * @example
  * ```tsx
@@ -87,7 +87,7 @@ export interface XDSTopNavTitleProps extends Omit<
  * // With circular icon
  * <XDSTopNavTitle
  *   title="Dashboard"
- *   logo={<XDSTopNavTitleIcon icon={<HomeIcon />} />}
+ *   logo={<XDSNavIcon icon={<HomeIcon />} />}
  * />
  *
  * // Logo only
