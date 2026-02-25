@@ -82,6 +82,19 @@ Every component file includes a structured header for traceability:
 
 ---
 
+## Hook Naming
+
+Public hooks use the `useXDS` prefix:
+
+| Prefix | Scope | Examples |
+|--------|-------|---------|
+| `useXDS` | Public API | `useXDSCollapsible`, `useXDSPopover`, `useXDSTheme` |
+| `use` (no prefix) | Internal only | `useFocusTrap`, `useControllableState` |
+
+Utility hooks that can be generally applied and have no strict connection to XDS concepts can skip the prefix (e.g., `useGridFocus`, `useListFocus`).
+
+---
+
 ## Prop Naming
 
 ### Booleans
