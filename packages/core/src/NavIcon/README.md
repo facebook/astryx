@@ -48,18 +48,3 @@ import {CubeIcon} from '@heroicons/react/24/solid';
 | `index.ts`            | Entry | Exports component and types |
 | `XDSNavIcon.tsx`      | Core  | Circular icon container     |
 | `XDSNavIcon.test.tsx` | Test  | Unit tests                  |
-
-## Migration from XDSTopNavTitleIcon
-
-`XDSNavIcon` replaces `XDSTopNavTitleIcon`. The old component is still
-exported from `@xds/core/TopNav` as a deprecated alias.
-
-```diff
-- import {XDSTopNavTitleIcon} from '@xds/core/TopNav';
-+ import {XDSNavIcon} from '@xds/core/NavIcon';
-
-- <XDSTopNavTitleIcon icon={<MyIcon />} size="md" />
-+ <XDSNavIcon icon={<MyIcon />} />
-```
-
-The `size` prop has been removed — `XDSNavIcon` always renders at medium size.

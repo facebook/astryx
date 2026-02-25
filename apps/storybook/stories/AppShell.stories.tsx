@@ -6,12 +6,8 @@ import {XDSBadge} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSText} from '@xds/core/Text';
-import {
-  XDSTopNav,
-  XDSTopNavTitle,
-  XDSTopNavTitleIcon,
-  XDSTopNavItem,
-} from '@xds/core/TopNav';
+import {XDSTopNav, XDSTopNavTitle, XDSTopNavItem} from '@xds/core/TopNav';
+import {XDSNavIcon} from '@xds/core/NavIcon';
 import {
   XDSSideNav,
   XDSSideNavHeader,
@@ -96,9 +92,7 @@ function AppTopNav({endContent}: {endContent?: React.ReactNode}) {
         <XDSTopNavTitle
           title="Acme App"
           logo={
-            <XDSTopNavTitleIcon
-              icon={<CubeIcon style={{width: 16, height: 16}} />}
-            />
+            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
         />
       }
