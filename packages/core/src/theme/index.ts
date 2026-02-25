@@ -13,19 +13,21 @@
 
 export {XDSTheme, useXDSTheme, Theme, useTheme} from './XDSTheme';
 
-// Export tokens for use in custom components
+// Export token defaults and vars for use in custom components and themes
 export {
-  colorRaw,
-  spacingRaw,
-  radiusRaw,
-  elevationRaw,
-  transitionRaw,
-  typographyRaw,
-  textSizeRaw,
-  lineHeightRaw,
-  fontWeightRaw,
+  colorDefaults,
+  spacingDefaults,
+  sizeDefaults,
+  radiusDefaults,
+  elevationDefaults,
+  transitionDefaults,
+  typographyDefaults,
+  textSizeDefaults,
+  lineHeightDefaults,
+  fontWeightDefaults,
   colorVars,
   spacingVars,
+  sizeVars,
   radiusVars,
   elevationVars,
   transitionVars,
@@ -35,10 +37,25 @@ export {
   fontWeightVars,
 } from './tokens.stylex';
 
+// Deprecated re-exports — use *Defaults instead
+export {
+  colorRaw,
+  spacingRaw,
+  sizeRaw,
+  radiusRaw,
+  elevationRaw,
+  transitionRaw,
+  typographyRaw,
+  textSizeRaw,
+  lineHeightRaw,
+  fontWeightRaw,
+} from './tokens.stylex';
+
 // Export token key types for theme authoring
 export type {
   ColorVarName,
   SpacingVarName,
+  SizeVarName,
   RadiusVarName,
   ElevationVarName,
   TransitionVarName,
@@ -46,21 +63,12 @@ export type {
   TextSizeVarName,
   LineHeightVarName,
   FontWeightVarName,
-  BaseColorRaw,
-  BaseSpacingRaw,
-  BaseRadiusRaw,
-  BaseElevationRaw,
-  BaseTransitionRaw,
-  BaseTypographyRaw,
-  BaseTextSizeRaw,
-  BaseLineHeightRaw,
-  BaseFontWeightRaw,
 } from './tokens.stylex';
 
 export type {
   Theme as ThemeType,
-  ThemeMode,
   ThemeRaw,
+  ThemeMode,
   ComponentStyles,
   ThemeStyles,
   HeadingLevel,

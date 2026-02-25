@@ -49,12 +49,16 @@ A theme provides:
 ```ts
 interface Theme {
   name: string;
-  styles: ThemeStyles; // StyleX CSS variable overrides
-  raw: ThemeRaw; // Raw CSS values for programmatic access
+  styles: ThemeStyles; // StyleX CSS variable overrides (all fields optional)
   components?: ComponentStyles; // Component-level style overrides
   icons?: Partial<XDSIconRegistry>; // Icon overrides for XDSIcon semantic names
+  raw?: ThemeRaw; // Raw token values for programmatic access
 }
 ```
+
+The optional `raw` field provides actual token values (not CSS variable references) for programmatic access — useful for charting libraries, theme editors, or parsing `light-dark()` values.
+
+All fields in `ThemeStyles` are optional — omitted token groups use the `defineVars` defaults from `tokens.stylex.ts`. This enables partial theme overrides (e.g., only override colors and radius).
 
 ### Icons
 
@@ -93,8 +97,7 @@ const myTheme: Theme = {
     chevronDown: <MyChevronIcon width="1em" height="1em" aria-hidden />,
     // ... provide as many or as few as needed
   },
-  styles: { /* ... */ },
-  raw: { /* ... */ },
+  styles: { /* ... only overridden token groups */ },
 };
 ```
 
