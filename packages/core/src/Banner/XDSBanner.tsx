@@ -169,6 +169,10 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
   },
+  // When there's only a title (no description) and actions, center everything vertically
+  headerCentered: {
+    alignItems: 'center',
+  },
   // Text content area within the header
   headerContent: {
     display: 'flex',
@@ -316,6 +320,11 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
       onDismiss?.();
     };
 
+    // Center items vertically when there's only a title (no description)
+    // and the banner has action buttons
+    const hasActions = endButton != null || isDismissable;
+    const isSingleLine = description == null && hasActions;
+
     return (
       <div
         ref={ref}
@@ -328,7 +337,12 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
           xstyle,
         )}>
         {/* Header: colored status background */}
-        <div {...stylex.props(styles.header, statusStyles[status])}>
+        <div
+          {...stylex.props(
+            styles.header,
+            isSingleLine && styles.headerCentered,
+            statusStyles[status],
+          )}>
           <div {...stylex.props(styles.iconWrapper)} aria-hidden="true">
             {icon != null ? (
               icon
