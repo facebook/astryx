@@ -214,9 +214,7 @@ export const CenterContentWithoutEnd: Story = {
       <XDSTopNavTitle
         title="My App"
         logo={
-          <XDSTopNavTitleIcon
-            icon={<CubeIcon style={{width: 16, height: 16}} />}
-          />
+          <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
         }
         href="#"
       />
