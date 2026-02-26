@@ -18,3 +18,10 @@ export type {XDSTopNavItemProps} from './XDSTopNavItem';
 
 export {XDSTopNavMenu} from './XDSTopNavMenu';
 export type {XDSTopNavMenuProps, XDSTopNavMenuItemData} from './XDSTopNavMenu';
+
+export {XDSTopNavMegaMenu} from './XDSTopNavMegaMenu';
+export type {
+  XDSTopNavMegaMenuProps,
+  XDSTopNavMegaMenuItemData,
+  XDSTopNavMegaMenuFeatured,
+} from './XDSTopNavMegaMenu';
