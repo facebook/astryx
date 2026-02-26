@@ -22,6 +22,7 @@ const pages = [
   {name: 'Navigation', href: '/pages/navigation/'},
   {name: 'TopNav Menu', href: '/pages/topnav-menu/'},
   {name: 'Polymorphic Link', href: '/pages/polymorphic-link/'},
+  {name: 'Table Overview', href: '/pages/table-overview/'},
 ];
 
 const styles = stylex.create({
