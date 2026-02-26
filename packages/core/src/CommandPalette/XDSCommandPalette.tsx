@@ -177,22 +177,6 @@ const styles = stylex.create({
     fontSize: textSizeVars['--text-xsm'],
     color: colorVars['--color-text-secondary'],
   },
-  footerButton: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
-    border: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    padding: `${spacingVars['--spacing-0-5']} ${spacingVars['--spacing-1']}`,
-    borderRadius: radiusVars['--radius-content'],
-    fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-2xs'],
-    color: colorVars['--color-text-placeholder'],
-    ':hover': {
-      color: colorVars['--color-text-secondary'],
-    },
-  },
   shortcutRow: {
     boxSizing: 'border-box',
     display: 'flex',
@@ -230,19 +214,8 @@ const styles = stylex.create({
     opacity: 0.5,
   },
   clearButton: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    border: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    padding: `0 ${spacingVars['--spacing-0-5']}`,
-    marginLeft: spacingVars['--spacing-0-5'],
-    color: colorVars['--color-text-placeholder'],
-    lineHeight: lineHeightVars['--leading-tight'],
     opacity: 0,
     transition: `opacity ${transitionVars['--transition-fast']}`,
-    borderRadius: radiusVars['--radius-content'],
   },
   // Show clear button when hovering its parent item
   itemHoverClearVisible: {
@@ -383,20 +356,23 @@ function CommandPaletteRecentMeta({
           <span>{command.group}</span>
         </>
       )}
-      <button
-        type="button"
+      <span
         {...stylex.props(
           styles.clearButton,
           isHighlighted && styles.itemHoverClearVisible,
-        )}
-        onClick={e => {
-          e.stopPropagation();
-          onClear(command.id);
-        }}
-        aria-label={`Remove ${command.label} from recent`}
-        tabIndex={-1}>
-        <XDSIcon icon="close" size="xsm" color="inherit" />
-      </button>
+        )}>
+        <XDSButton
+          label={`Remove ${command.label} from recent`}
+          variant="ghost"
+          size="sm"
+          icon={<XDSIcon icon="close" size="xsm" color="inherit" />}
+          onClick={e => {
+            e.stopPropagation();
+            onClear(command.id);
+          }}
+          tabIndex={-1}
+        />
+      </span>
     </span>
   );
 }
@@ -827,13 +803,13 @@ export function XDSCommandPalette({
         {/* Footer */}
         <div {...stylex.props(styles.footer)}>
           <div>{footer}</div>
-          <button
-            type="button"
-            {...stylex.props(styles.footerButton)}
+          <XDSButton
+            label={isShowShortcuts ? 'Back to commands' : 'Keyboard shortcuts'}
+            variant="ghost"
+            size="sm"
             onClick={() => setIsShowShortcuts(prev => !prev)}
-            tabIndex={-1}>
-            {isShowShortcuts ? 'Back to commands' : 'Keyboard shortcuts'}
-          </button>
+            tabIndex={-1}
+          />
         </div>
       </div>
     </XDSDialog>
