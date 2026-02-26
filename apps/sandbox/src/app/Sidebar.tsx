@@ -21,6 +21,7 @@ const pages = [
   {name: 'Example', href: '/pages/example/'},
   {name: 'Navigation', href: '/pages/navigation/'},
   {name: 'TopNav Menu', href: '/pages/topnav-menu/'},
+  {name: 'Mega Menu', href: '/pages/mega-menu/'},
   {name: 'Polymorphic Link', href: '/pages/polymorphic-link/'},
 ];
 
