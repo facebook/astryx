@@ -11,8 +11,9 @@ This document is read by Navi on an hourly schedule during off-hours. Each run p
 1. **Don't block humans.** The goal is that when maintainers arrive in the morning, everything is green and every issue is actionable.
 2. **Fix what's broken.** If CI is red on a Navi-authored PR, fix it. Don't wait.
 3. **Triage, don't decide.** For issues filed by others, add context and ask clarifying questions — don't unilaterally close or implement without maintainer sign-off.
-4. **Small, safe changes only.** After-hours fixes should be scoped to what CI is complaining about: type errors, lint failures, test regressions, missing exports. No feature work, no refactors.
+4. **Ship well-specified work.** If an issue has a complete spec (API sketch, props, usage examples, >2000 chars), implement it. Open as a draft PR for team review.
 5. **Leave a trail.** Every action taken gets logged in the run summary. Maintainers should be able to see exactly what happened overnight.
+6. **Cap at 5 PRs per night.** Quality over quantity. Track with the `night-manager` label.
 
 ---
 
@@ -140,7 +141,70 @@ Once per night (not every hour), check for:
   ```
 - Outdated dependencies with known vulnerabilities (if `yarn audit` is available)
 
-### 6. Stale Branch Cleanup
+### 6. Implement Well-Specified Issues
+
+After CI triage is complete, check if there's capacity to implement an issue. This phase is **capped at 5 PRs per night shift** (tracked via the `night-manager` label).
+
+**Eligibility criteria — ALL must be true:**
+
+- [ ] Labeled `enhancement` or `bug`
+- [ ] Unassigned (no one is working on it)
+- [ ] Body > 2000 chars (well-specified)
+- [ ] Not labeled `discussion` or `design`
+- [ ] Not authored by `thedjpetersen` (DJ drives his own issues)
+- [ ] Night shift hasn't hit 5 PRs yet tonight
+
+**Check tonight's PR count:**
+```bash
+# Count night-manager PRs created today
+gh pr list --repo facebookexperimental/xds --state open --label night-manager \
+  --json createdAt --jq '[. | select(.createdAt > "YYYY-MM-DDT00:00:00Z")] | length'
+```
+
+**Priority order:**
+1. Bug fixes with clear root cause + file locations
+2. Small utility components with full API specs
+3. Feature additions to existing components with clear before/after
+
+**Implementation checklist:**
+
+1. **Self-assign the issue** before starting (prevents duplicate work):
+   ```bash
+   gh issue edit {number} --repo facebookexperimental/xds --add-assignee "@me"
+   ```
+
+2. **Match the team's code style** (see Style Guide below)
+
+3. **Open as a draft PR** with the `night-manager` label:
+   ```bash
+   gh pr create --repo facebookexperimental/xds \
+     --title "{type}({scope}): {description}" \
+     --draft \
+     --label "night-manager" \
+     --body "## Summary
+   {one-sentence what + why}
+
+   ## API
+   {code examples showing usage}
+
+   ## Design decisions
+   {explicit reasoning for choices made}
+
+   ## What's included
+   - Component/fix implementation
+   - Tests (vitest + @testing-library/react)
+   - Storybook stories
+   - README documentation
+
+   Closes #{issue_number}
+
+   ---
+   *Crafted with care by Navi (night manager shift)*"
+   ```
+
+4. **Verify CI passes** before moving on. If it fails, fix it in the same shift.
+
+### 7. Stale Branch Cleanup
 
 Identify merged branches that haven't been deleted:
 ```bash
@@ -153,13 +217,86 @@ Don't delete branches — just note them in the summary for maintainers.
 
 ## What NOT to Do
 
-- ❌ **Don't merge PRs.** Only maintainers merge.
+- ❌ **Don't merge PRs.** Only maintainers merge. Open as draft.
 - ❌ **Don't close issues.** Flag them, don't close them.
-- ❌ **Don't implement features.** After-hours is for health, not velocity.
 - ❌ **Don't push to `main`.** All changes go through PR branches.
 - ❌ **Don't push to other people's branches.** Comment with suggestions instead.
 - ❌ **Don't re-comment on issues you've already triaged.** Check for existing triage comments first.
 - ❌ **Don't refactor passing code.** If it's green, leave it alone.
+- ❌ **Don't exceed 5 PRs per night shift.** Quality over quantity.
+- ❌ **Don't implement DJ's issues** (#279, #280, #278, #302, etc.). He drives those.
+- ❌ **Don't implement under-specified issues.** Body must be >2000 chars with API sketch or clear fix description.
+
+---
+
+## Style Guide — Matching the Team
+
+All night-manager PRs must match the existing codebase conventions:
+
+### PR Body Template
+
+```markdown
+## Summary
+{One-sentence what + why. No filler.}
+
+## API
+{Code examples showing usage — show the API before explaining internals}
+
+## Design decisions
+{Explicit reasoning: "composition over configuration", "trigger prop, not sub-component", etc.}
+
+## What's included
+- {Component} — {what it does}
+- {N} tests covering {scenarios}
+- {N} stories: {list}
+- Updated docs for {READMEs}
+
+Closes #{issue_number}
+
+---
+*Crafted with care by Navi (night manager shift)*
+```
+
+### Code Conventions
+
+1. **File headers** — Every file gets a JSDoc block:
+   ```typescript
+   /**
+    * @file XDSTimestamp.tsx
+    * @input Uses React, StyleX, theme tokens, Intl.RelativeTimeFormat
+    * @output Exports XDSTimestamp component and XDSTimestampProps
+    * @position Formatted timestamp display — relative or absolute
+    */
+   ```
+
+2. **SYNC comments** — Mark coupled files:
+   ```typescript
+   // SYNC: When XDSTimestamp.tsx changes, update tests and README
+   ```
+
+3. **StyleX only** — All styles via `stylex.create()`, theme tokens via `colorVars`/`spacingVars`/etc. Never hardcoded colors or spacing values.
+
+4. **Naming** — `XDS` prefix on all components, `useXDS` prefix on hooks.
+
+5. **Context pattern** — Separate context file from provider:
+   - `XDSFooContext.ts` — just the `createContext()` call
+   - `XDSFooProvider.tsx` — the provider component
+
+6. **Tests** — vitest + @testing-library/react + userEvent. Ship with every component.
+
+7. **Stories** — Storybook stories ship with every component. Use `pageWrapper` decorator with wash background:
+   ```typescript
+   const styles = stylex.create({
+     pageWrapper: {
+       backgroundColor: colorVars['--color-wash'],
+       padding: spacingVars['--spacing-6'],
+     },
+   });
+   ```
+
+8. **Composition over configuration** — Primitives you compose, not mega-components with 50 props.
+
+9. **LLM-friendliness** — Simple prop names, flat APIs, no Radix-style nested sub-components that cause hallucinations.
 
 ---
 
