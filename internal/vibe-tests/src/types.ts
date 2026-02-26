@@ -345,13 +345,15 @@ export interface UniversalAggregate {
 export interface UniversalComparison {
   xds: UniversalAggregate;
   baseline: UniversalAggregate;
-  winners: Record<UniversalDimension, 'xds' | 'baseline' | 'tie'>;
+  html?: UniversalAggregate;
+  winners: Record<UniversalDimension, 'xds' | 'baseline' | 'html' | 'tie'>;
   byPrompt: Record<
     string,
     {
       xds: UniversalScore;
       baseline: UniversalScore;
-      winner: 'xds' | 'baseline' | 'tie';
+      html?: UniversalScore;
+      winner: 'xds' | 'baseline' | 'html' | 'tie';
     }
   >;
 }

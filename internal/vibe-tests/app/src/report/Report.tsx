@@ -277,6 +277,14 @@ export function Report() {
                     compareScore={comparison?.baseline.overall}
                     compareLabel="Baseline"
                   />
+                  {comparison?.html && (
+                    <ScoreCard
+                      label="Overall Score vs HTML"
+                      score={universal.overall}
+                      compareScore={comparison.html.overall}
+                      compareLabel="HTML"
+                    />
+                  )}
 
                   {/* Dimension scores grid */}
                   <XDSVStack gap="space3">
@@ -303,7 +311,9 @@ export function Report() {
                   {comparison && (
                     <XDSVStack gap="space3">
                       <XDSHeading level={3}>
-                        XDS vs Baseline Comparison
+                        {comparison.html
+                          ? 'XDS vs Baseline vs HTML Comparison'
+                          : 'XDS vs Baseline Comparison'}
                       </XDSHeading>
                       <CompareView comparison={comparison} />
                     </XDSVStack>
@@ -325,6 +335,7 @@ export function Report() {
                         promptText={data.prompts?.[promptId]}
                         xdsScore={universal.byPrompt[promptId]}
                         baselineScore={comparison?.baseline.byPrompt[promptId]}
+                        htmlScore={comparison?.html?.byPrompt[promptId]}
                         hasXdsCode={!!data.sourceCode?.[promptId]}
                         hasBaselineCode={!!data.baselineSourceCode?.[promptId]}
                         hasHtmlCode={!!data.htmlSourceCode?.[promptId]}

@@ -44,6 +44,11 @@ const styles = stylex.create({
     gridTemplateColumns: '1fr 1fr',
     gap: spacingVars['--spacing-3'],
   },
+  scoresRow3: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr 1fr',
+    gap: spacingVars['--spacing-3'],
+  },
   scoresRowSingle: {
     display: 'grid',
     gridTemplateColumns: '1fr',
@@ -149,6 +154,7 @@ interface PromptDetailCardProps {
   promptText?: string;
   xdsScore?: UniversalScore;
   baselineScore?: UniversalScore;
+  htmlScore?: UniversalScore;
   hasXdsCode: boolean;
   hasBaselineCode: boolean;
   hasHtmlCode: boolean;
@@ -162,6 +168,7 @@ export function PromptDetailCard({
   promptText,
   xdsScore,
   baselineScore,
+  htmlScore,
   hasXdsCode,
   hasBaselineCode,
   hasHtmlCode,
@@ -169,9 +176,16 @@ export function PromptDetailCard({
   previewUrls,
 }: PromptDetailCardProps) {
   const hasBoth = !!(xdsScore && baselineScore);
+  const hasAll = !!(xdsScore && baselineScore && htmlScore);
   const hasAnyPreview =
     previewUrls?.xds || previewUrls?.baseline || previewUrls?.html;
   const hasAnyCode = hasXdsCode || hasBaselineCode || hasHtmlCode;
+
+  const scoresStyle = hasAll
+    ? styles.scoresRow3
+    : hasBoth
+      ? styles.scoresRow
+      : styles.scoresRowSingle;
 
   return (
     <XDSCard>
@@ -240,15 +254,13 @@ export function PromptDetailCard({
           </div>
 
           {/* Score summaries in constrained grid */}
-          {(xdsScore || baselineScore) && (
-            <div
-              {...stylex.props(
-                hasBoth ? styles.scoresRow : styles.scoresRowSingle,
-              )}>
+          {(xdsScore || baselineScore || htmlScore) && (
+            <div {...stylex.props(scoresStyle)}>
               {xdsScore && <ScoreSummary label="XDS" score={xdsScore} />}
               {baselineScore && (
                 <ScoreSummary label="Baseline" score={baselineScore} />
               )}
+              {htmlScore && <ScoreSummary label="HTML" score={htmlScore} />}
             </div>
           )}
 
@@ -273,6 +285,18 @@ export function PromptDetailCard({
                   <XDSText type="label">Baseline Findings</XDSText>
                 </div>
                 <Findings score={baselineScore} />
+              </div>
+            </>
+          )}
+
+          {htmlScore && (
+            <>
+              <XDSDivider />
+              <div {...stylex.props(styles.section)}>
+                <div {...stylex.props(styles.sectionLabel)}>
+                  <XDSText type="label">HTML Findings</XDSText>
+                </div>
+                <Findings score={htmlScore} />
               </div>
             </>
           )}
