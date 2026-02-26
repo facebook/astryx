@@ -310,7 +310,7 @@ export default function MegaMenuPage() {
                         href: '#api',
                       },
                     ]}
-                    singleColumn
+                    isSingleColumn
                   />
                   <XDSTopNavItem label="Pricing" href="#" />
                 </>

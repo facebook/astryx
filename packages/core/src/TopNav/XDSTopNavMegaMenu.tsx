@@ -278,8 +278,8 @@ export interface XDSTopNavMegaMenuProps {
   delay?: number;
   /** Delay before hiding the menu after mouse leaves (ms). @default 250 */
   hideDelay?: number;
-  /** Whether to use single column layout for items. @default false */
-  singleColumn?: boolean;
+  /** Whether to use single-column layout for items. @default false */
+  isSingleColumn?: boolean;
 }
 
 // =============================================================================
@@ -346,7 +346,7 @@ export function XDSTopNavMegaMenu({
   featured,
   delay = 150,
   hideDelay = 250,
-  singleColumn = false,
+  isSingleColumn = false,
 }: XDSTopNavMegaMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -429,7 +429,7 @@ export function XDSTopNavMegaMenu({
           <div
             {...stylex.props(
               styles.menuSection,
-              singleColumn && styles.menuSectionSingle,
+              isSingleColumn && styles.menuSectionSingle,
             )}>
             {items.map((item, index) => {
               const Element = item.href ? 'a' : 'div';
