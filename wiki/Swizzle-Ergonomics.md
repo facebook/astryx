@@ -1,5 +1,7 @@
 # Swizzle Layer Ergonomics
 
+> **Status: Not yet implemented.** This is a design exploration for the future swizzle system. The dual-path architecture (theme extension + functional override) and Tailwind format option described here are forward-looking designs, not current features.
+
 *Exploration — January 2026*
 
 ## Context
@@ -53,7 +55,7 @@ The swizzle layer has competing tensions:
 │  SWIZZLE PATH A: STYLING CUSTOMIZATION                         │
 │  Target: DS teams, styling-focused                             │
 │                                                                 │
-│  npx xds customize XDSButton --theme=myTheme                      │
+│  npx xds customize XDSButton --theme=myTheme                   │
 │  → Generates theme extension (AI-friendly)                     │
 │                                                                 │
 │  Format: Theme config (JSON-like)                              │
@@ -63,7 +65,7 @@ The swizzle layer has competing tensions:
 │  SWIZZLE PATH B: FUNCTIONAL OVERRIDE                           │
 │  Target: Regular builders, functionality-focused               │
 │                                                                 │
-│  npx xds swizzle XDSButton                                        │
+│  npx xds swizzle XDSButton                                     │
 │  → Copies component source with AI-friendly annotations        │
 │                                                                 │
 │  Format: Full source (StyleX + detailed comments)              │
@@ -287,7 +289,7 @@ export function Button({ variant = 'primary', children, onClick }: ButtonProps) 
 
 **Build**: AI-specific helpers
 - `npx xds customize XDSButton --with-ai-context` — generates extra context file
-- `.xds/ai-context.md` — component customization guide for AI
+- Component customization guide for AI consumption
 - Cursor/Claude rules for XDS patterns
 
 ---
@@ -511,9 +513,7 @@ The Tailwind preset maps XDS tokens:
 
 ## Related
 
-- `stylex-vs-tailwind.md` — Complex selectors ergonomics gap
-- `xds-architecture.md` — Swizzle API section
-- `ai-design-system-gaps.md` — Why constraints beat suggestions
+- [[AI and Design Systems|AI-and-Design-Systems]] — Why constraints beat suggestions
 
 ---
 

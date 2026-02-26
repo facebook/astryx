@@ -1,17 +1,12 @@
 # StyleX Distribution Pattern
 
-## Status
-
-**Implemented** - See `scripts/package-source.js` for tarball generation.
-
 ## Context
 
 XDS is a component library that uses StyleX for styling. We needed to decide how to distribute the library to consuming applications (Next.js, Vite, etc.).
 
-The StyleX team recommended a specific pattern based on their example:
-https://github.com/facebook/stylex/tree/main/examples/example-nextjs
+The StyleX team recommended a specific pattern based on their [Next.js example](https://github.com/facebook/stylex/tree/main/examples/example-nextjs).
 
-## Proposal
+## The Pattern
 
 **Ship source code with StyleX runtime only. Consumer apps run the StyleX build plugins.**
 
@@ -63,19 +58,20 @@ stylexPlugin({
 
 ### Benefits
 
-1. **No pre-compilation needed** - Library doesn't need a complex build step for styles
-2. **Consumer controls CSS output** - Apps can configure CSS layers, extraction, etc.
-3. **Tree-shaking works naturally** - Consumer's bundler handles dead code elimination
-4. **Simpler library packaging** - Just ship TypeScript source
-5. **Theme tokens resolve correctly** - CSS variables are processed in app context
+1. **No pre-compilation needed** — Library doesn't need a complex build step for styles
+2. **Consumer controls CSS output** — Apps can configure CSS layers, extraction, etc.
+3. **Tree-shaking works naturally** — Consumer's bundler handles dead code elimination
+4. **Simpler library packaging** — Just ship TypeScript source
+5. **Theme tokens resolve correctly** — CSS variables are processed in app context
 
 ### Tradeoffs
 
-1. **Consumer must configure StyleX** - Apps need babel + postcss plugins set up
-2. **Include paths required** - PostCSS config must explicitly include `@xds/core` paths
-3. **Build time at consumer** - StyleX processing happens during app build, not library build
+1. **Consumer must configure StyleX** — Apps need babel + postcss plugins set up
+2. **Include paths required** — PostCSS config must explicitly include `@xds/core` paths
+3. **Build time at consumer** — StyleX processing happens during app build, not library build
 
 ## References
 
-- StyleX Next.js example: https://github.com/facebook/stylex/tree/main/examples/example-nextjs
-- StyleX Storybook example: https://github.com/facebook/stylex/tree/main/examples/example-storybook
+- [StyleX Next.js example](https://github.com/facebook/stylex/tree/main/examples/example-nextjs)
+- [StyleX Storybook example](https://github.com/facebook/stylex/tree/main/examples/example-storybook)
+- [[Why StyleX]] — Rationale for choosing StyleX over Tailwind

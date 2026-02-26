@@ -48,12 +48,14 @@ Probes at turns 0, 6, 8, 10 to measure quality degradation. Results show a line 
 
 ## AI Context
 
-For architectural context and decisions, see `.context/`:
+For architectural context, decisions, and research, see the **[GitHub Wiki](../../wiki)**:
 
-- `.context/decisions/` — Architecture Decision Records
-  - **[API Guidance](/.context/decisions/api-guidance.md)** — Component API conventions (naming, props, styling, state, async actions)
-- `.context/explorations/` — Research and brainstorms
-- `.context/proposals/` — Feature proposals
+- **Decisions** — API Conventions, Why StyleX, StyleX Distribution
+- **Architecture** — System Architecture, Component Authoring Guide
+- **Research** — AI + Design Systems, AI Model Trajectory, Swizzle Ergonomics
+- **Future** — Animation System, RSC Utilities, Distribution Strategy
+
+For component-specific documentation, see the `README.md` in each component directory under `packages/core/src/`.
 
 ## Documentation Standard
 

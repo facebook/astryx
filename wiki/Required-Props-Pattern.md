@@ -97,15 +97,14 @@ More important than required-vs-optional is error quality:
 ## Open Questions
 
 - How do we measure "error actionability" for LLMs?
-- ~~Should XDS provide an `llms.txt` with component examples for each prop combination?~~ **Answered**: No — no AI system currently reads llms.txt. Not worth investment. See `ai-trajectory-predictions.md`.
+- ~~Should XDS provide an `llms.txt` with component examples for each prop combination?~~ **Answered**: No — no AI system currently reads llms.txt. Not worth investment. See [[AI Model Trajectory|AI-Model-Trajectory]].
 - Can we A/B test required vs optional props with AI coding assistants?
 
 ---
 
 ## Related
 
-- `ai-design-system-gaps.md` — Strategy 4: Typed Component APIs
-- `zero-styling-architecture.md` — Zero styling = nothing optional anyway
+- [[AI and Design Systems|AI-and-Design-Systems]] — Strategy 4: Typed Component APIs
 
 ---
 

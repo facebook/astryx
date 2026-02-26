@@ -1,13 +1,10 @@
-# API Guidance
-
-<!-- Referenced from CLAUDE.md for discoverability -->
+# API Conventions
 
 Consolidated reference for XDS component API conventions. This is a decision doc — it states what the conventions **are**.
 
-For detailed patterns on specific topics, see:
-
-- [Input Props Convention](./input-props-convention.md) — standard props for all input components
-- [React Transitions](../explorations/react-transitions.md) — async action patterns with `useOptimistic`
+For related decisions, see:
+- [[Why StyleX]] — Styling architecture rationale
+- [[StyleX Distribution]] — How components are packaged
 
 ---
 
@@ -234,6 +231,40 @@ const themeOverride = themeContext?.theme.components?.button?.variants?.[variant
 
 ---
 
+## Input Component Props
+
+All input components that represent a form field implement a standard set of props for consistency.
+
+### Core Field Props
+
+| Prop            | Type      | Default | Required | Description                                                        |
+| --------------- | --------- | ------- | -------- | ------------------------------------------------------------------ |
+| `label`         | `string`  | -       | ✓        | Accessible label text (always rendered for screen readers)         |
+| `isLabelHidden` | `boolean` | `false` |          | Visually hide the label while keeping it accessible                |
+| `description`   | `string`  | -       |          | Helper text displayed between label and input                      |
+| `isOptional`    | `boolean` | `false` |          | Shows "(Optional)" indicator. Mutually exclusive with `isRequired` |
+| `isRequired`    | `boolean` | `false` |          | Marks field as required. Mutually exclusive with `isOptional`      |
+| `isDisabled`    | `boolean` | `false` |          | Disables the input                                                 |
+
+### Optional Common Props
+
+| Prop           | Type               | Default | Applicable To              | Description                        |
+| -------------- | ------------------ | ------- | -------------------------- | ---------------------------------- |
+| `placeholder`  | `string`           | varies  | Text-based inputs          | Placeholder text when empty        |
+| `size`         | `'sm' \| 'md'`     | `'md'`  | Most inputs                | Size variant                       |
+| `status`       | `{type, message?}` | -       | Inputs with validation     | Error/warning/success state        |
+| `labelTooltip` | `string`           | -       | Inputs needing explanation | Tooltip on info icon next to label |
+| `startIcon`    | `XDSIconType`      | -       | Inputs with icon support   | Icon at start of input             |
+
+### Size Variants
+
+| Size | Input Height | Use Case                         |
+| ---- | ------------ | -------------------------------- |
+| `sm` | 18px         | Compact UIs, tables, dense forms |
+| `md` | 26px         | Default, most forms              |
+
+---
+
 ## State Management
 
 ### Controlled Components
@@ -273,8 +304,6 @@ The `onChange` signature varies by input type:
 ---
 
 ## Async Actions (React Transitions)
-
-See [React Transitions exploration](../explorations/react-transitions.md) for full implementation details.
 
 ### Two Patterns
 
@@ -330,7 +359,7 @@ const handleClick = e => {
 
 - `onClick` / `onChange` — synchronous, immediate
 - `onClickAction` / `onChangeAction` — async, wrapped in transition
-- `isLoading` — external loading state (consolidated from `loading`, `isBusy`)
+- `isLoading` — external loading state
 
 ---
 
@@ -352,9 +381,9 @@ const handleClick = e => {
 ### Disabled vs Busy
 
 | State        | Interaction        | Focus | `disabled` attr | Visual                                          |
-| ------------ | ------------------ | ----- | --------------- | ----------------------------------------------- |
-| `isDisabled` | Blocked            | Lost  | ✓               | 50% opacity, `not-allowed` cursor               |
-| `isBusy`     | Guarded in handler | Kept  | ✗               | Reduced opacity, spinner (buttons), `aria-busy` |
+| ------------ | ------------------ | ----- | ---------------- | ----------------------------------------------- |
+| `isDisabled` | Blocked            | Lost  | ✓                | 50% opacity, `not-allowed` cursor               |
+| `isBusy`     | Guarded in handler | Kept  | ✗                | Reduced opacity, spinner (buttons), `aria-busy` |
 
 **Key rule:** Neither inputs nor buttons use native `disabled` for busy state. Busy is visual-only (`aria-busy`, `aria-disabled`, opacity). Buttons guard against re-triggering in the click handler. This prevents focus loss during async operations.
 

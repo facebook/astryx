@@ -1,4 +1,4 @@
-# AI + Design Systems: Gaps in Current Stack
+# AI + Design Systems: Why Typed APIs Win
 
 *Exploration — January 2026*
 
@@ -192,4 +192,4 @@ These gaps suggest opportunities for differentiation:
 - How constrained should the API be vs flexibility for edge cases?
 - ~~What JSDoc patterns work best for LLM consumption?~~ **Answered**: JSDoc doesn't reliably work — types beat comments. See Strategy 5.
 - How do we measure "design system adherence" in AI-generated code?
-- ~~Should XDS ship an `llms.txt` for AI-friendly documentation?~~ **Answered**: No — no AI system currently reads llms.txt. See `ai-trajectory-predictions.md`.
+- ~~Should XDS ship an `llms.txt` for AI-friendly documentation?~~ **Answered**: No — no AI system currently reads llms.txt. See [[AI Model Trajectory|AI-Model-Trajectory]].

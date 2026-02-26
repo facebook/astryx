@@ -273,4 +273,4 @@ yarn workspace @xds/vibe-tests aggregate --iteration abc123 --ci
 
 ## For More Details
 
-See the full spec in `.context/proposals/vibeability-test-harness.md`
+See the source code and CLI help (`yarn workspace @xds/vibe-tests --help`) for the current test harness spec.
