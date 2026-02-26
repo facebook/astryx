@@ -238,12 +238,16 @@ const columns: XDSTableColumn<ReviewRow>[] = [
           name={item.authorName}
           size="small"
         />
-        <XDSVStack gap="space1">
-          <span {...stylex.props(styles.titleLink)}>{item.title}</span>
-          <XDSText type="supporting" color="secondary">
-            {item.diffId} · {item.lines} lines {item.reviewTime}
-          </XDSText>
-        </XDSVStack>
+        <div {...stylex.props(styles.authorInfo)}>
+          <XDSVStack gap="space1">
+            <span {...stylex.props(styles.titleLink)}>{item.title}</span>
+            <span {...stylex.props(styles.supportingLine)}>
+              <XDSText type="supporting" color="secondary">
+                {item.diffId} · {item.lines} lines {item.reviewTime}
+              </XDSText>
+            </span>
+          </XDSVStack>
+        </div>
       </XDSHStack>
     ),
   },
@@ -331,6 +335,18 @@ const styles = stylex.create({
     fontWeight: 600,
     fontSize: '0.875rem',
     cursor: 'pointer',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  authorInfo: {
+    overflow: 'hidden',
+    minWidth: 0,
+  },
+  supportingLine: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   avatarGroup: {
     display: 'flex',
