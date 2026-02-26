@@ -55,11 +55,16 @@ const styles = stylex.create({
 });
 
 /**
- * Variant styles for different badge appearances
+ * Variant styles for different badge appearances.
+ *
+ * Semantic variants use solid backgrounds with on-media text.
+ * Non-semantic variants use tinted backgrounds with colored text
+ * for softer categorization (tags, labels, filters).
  */
 const variants = stylex.create({
+  // Semantic variants
   neutral: {
-    backgroundColor: colorVars['--color-deemphasized'],
+    backgroundColor: colorVars['--color-gray-background'],
     color: colorVars['--color-text-primary'],
   },
   info: {
@@ -77,6 +82,48 @@ const variants = stylex.create({
   error: {
     backgroundColor: colorVars['--color-negative'],
     color: colorVars['--color-text-on-media'],
+  },
+
+  // Non-semantic color variants
+  blue: {
+    backgroundColor: colorVars['--color-blue-background'],
+    color: colorVars['--color-blue-text'],
+  },
+  cyan: {
+    backgroundColor: colorVars['--color-cyan-background'],
+    color: colorVars['--color-cyan-text'],
+  },
+  gray: {
+    backgroundColor: colorVars['--color-gray-background'],
+    color: colorVars['--color-gray-text'],
+  },
+  green: {
+    backgroundColor: colorVars['--color-green-background'],
+    color: colorVars['--color-green-text'],
+  },
+  orange: {
+    backgroundColor: colorVars['--color-orange-background'],
+    color: colorVars['--color-orange-text'],
+  },
+  pink: {
+    backgroundColor: colorVars['--color-pink-background'],
+    color: colorVars['--color-pink-text'],
+  },
+  purple: {
+    backgroundColor: colorVars['--color-purple-background'],
+    color: colorVars['--color-purple-text'],
+  },
+  red: {
+    backgroundColor: colorVars['--color-red-background'],
+    color: colorVars['--color-red-text'],
+  },
+  teal: {
+    backgroundColor: colorVars['--color-teal-background'],
+    color: colorVars['--color-teal-text'],
+  },
+  yellow: {
+    backgroundColor: colorVars['--color-yellow-background'],
+    color: colorVars['--color-yellow-text'],
   },
 });
 

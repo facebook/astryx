@@ -8,7 +8,7 @@ describe('XDSBadge', () => {
     expect(screen.getByText('Default')).toBeInTheDocument();
   });
 
-  it('renders with different variants', () => {
+  it('renders with semantic variants', () => {
     const {rerender} = render(<XDSBadge variant="success">Success</XDSBadge>);
     expect(screen.getByText('Success')).toBeInTheDocument();
 
@@ -20,6 +20,31 @@ describe('XDSBadge', () => {
 
     rerender(<XDSBadge variant="info">Info</XDSBadge>);
     expect(screen.getByText('Info')).toBeInTheDocument();
+  });
+
+  it('renders with non-semantic color variants', () => {
+    const colors = [
+      'blue',
+      'cyan',
+      'gray',
+      'green',
+      'orange',
+      'pink',
+      'purple',
+      'red',
+      'teal',
+      'yellow',
+    ] as const;
+
+    const {rerender} = render(
+      <XDSBadge variant={colors[0]}>{colors[0]}</XDSBadge>,
+    );
+    expect(screen.getByText(colors[0])).toBeInTheDocument();
+
+    for (const color of colors.slice(1)) {
+      rerender(<XDSBadge variant={color}>{color}</XDSBadge>);
+      expect(screen.getByText(color)).toBeInTheDocument();
+    }
   });
 
   it('renders as dot when no children provided', () => {
