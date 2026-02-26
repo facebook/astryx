@@ -355,7 +355,7 @@ export function XDSPopover({
     if (!el) return;
 
     const button = findTriggerButton(el);
-    if (process.env.NODE_ENV !== 'production' && !button) {
+    if (!button) {
       console.warn(
         'XDSPopover: anchorRef must reference a <button> or [role="button"] element. ' +
           'The popover trigger implements the button + dialog ARIA pattern.',
@@ -389,7 +389,7 @@ export function XDSPopover({
 
     // Find the button inside the wrapper
     const button = findTriggerButton(wrapper);
-    if (process.env.NODE_ENV !== 'production' && !button) {
+    if (!button) {
       console.warn(
         'XDSPopover: children must contain a <button> or [role="button"] element. ' +
           'The popover trigger implements the button + dialog ARIA pattern.',
