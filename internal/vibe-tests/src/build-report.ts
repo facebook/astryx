@@ -188,7 +188,13 @@ function inlineCss(htmlPath: string, distDir: string): void {
 }
 
 async function main() {
-  const {iteration, baseline, html, withScreenshots, dev} = parseArgs();
+  const {
+    iteration,
+    baseline,
+    html,
+    withScreenshots: _withScreenshots,
+    dev,
+  } = parseArgs();
   const resultsDir = getResultsDir();
   const iterDir = path.join(resultsDir, iteration);
   const manifestPath = path.join(iterDir, 'manifest.json');
