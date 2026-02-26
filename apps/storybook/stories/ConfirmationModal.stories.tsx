@@ -5,7 +5,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
 import {XDSVStack} from '@xds/core/Layout';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars} from '@xds/core/theme';
+import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   pageWrapper: {
