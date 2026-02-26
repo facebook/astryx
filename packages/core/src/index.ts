@@ -43,6 +43,7 @@ export * from './TimeInput';
 export * from './NumberInput';
 export * from './Table';
 export * from './Token';
+export * from './ConfirmationModal';
 export * from './Dialog';
 export * from './DropdownMenu';
 export * from './TopNav';
