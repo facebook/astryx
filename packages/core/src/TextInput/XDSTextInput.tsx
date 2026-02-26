@@ -32,7 +32,15 @@ import {
   textSizeVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
-import {XDSField, type XDSInputStatus, type XDSInputStatusType} from '../Field';
+import {
+  XDSField,
+  type XDSInputStatus,
+  type XDSInputStatusType,
+  statusBorderStyles,
+  statusFocusStyles,
+  statusHoverShadowStyles,
+  inputDisabledStyles,
+} from '../Field';
 import {XDSIcon, type XDSIconType} from '../Icon';
 import {XDSSpinner} from '../Spinner';
 
@@ -70,11 +78,6 @@ const styles = stylex.create({
     },
     outlineOffset: '0',
   },
-  wrapperDisabled: {
-    cursor: 'not-allowed',
-    opacity: 0.5,
-    borderColor: colorVars['--color-divider-emphasized'],
-  },
   input: {
     display: 'block',
     flex: 1,
@@ -106,68 +109,6 @@ const sizeStyles = stylex.create({
   },
   lg: {
     height: sizeVars['--size-lg'],
-  },
-});
-
-const statusBorderStyles = stylex.create({
-  warning: {
-    borderColor: colorVars['--color-warning'],
-  },
-  error: {
-    borderColor: colorVars['--color-negative'],
-  },
-  success: {
-    borderColor: colorVars['--color-positive'],
-  },
-});
-
-const statusHoverShadowStyles = stylex.create({
-  warning: {
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)':
-          elevationVars['--elevation-input-hover-warning'],
-      },
-    },
-  },
-  error: {
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)': elevationVars['--elevation-input-hover-error'],
-      },
-    },
-  },
-  success: {
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)':
-          elevationVars['--elevation-input-hover-success'],
-      },
-    },
-  },
-});
-
-const statusFocusStyles = stylex.create({
-  warning: {
-    outline: {
-      default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline-warning']}`,
-    },
-  },
-  error: {
-    outline: {
-      default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline-error']}`,
-    },
-  },
-  success: {
-    outline: {
-      default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline-success']}`,
-    },
   },
 });
 
@@ -378,7 +319,7 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
           {...stylex.props(
             styles.wrapper,
             sizeStyles[size],
-            isDisabled && styles.wrapperDisabled,
+            isDisabled && inputDisabledStyles.wrapper,
             status && statusBorderStyles[status.type],
             status && statusHoverShadowStyles[status.type],
             status && statusFocusStyles[status.type],
