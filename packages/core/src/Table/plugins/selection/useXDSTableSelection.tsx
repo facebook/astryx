@@ -70,7 +70,7 @@ export interface UseXDSTableSelectionConfig<T extends Record<string, unknown>> {
  * notified but only components whose snapshot actually changed will re-render
  * (thanks to useSyncExternalStore's built-in equality check on the snapshot).
  */
-interface SelectionStore<T> {
+interface SelectionStore<T extends Record<string, unknown>> {
   subscribe: (listener: () => void) => () => void;
   notify: () => void;
   getConfig: () => UseXDSTableSelectionConfig<T>;
@@ -113,7 +113,10 @@ const SelectionStoreContext = createContext<SelectionStore<any> | null>(null);
  * Subscribe to whether a specific item is selected.
  * Only triggers re-render when this item's selected state changes.
  */
-function useIsItemSelected<T>(store: SelectionStore<T>, item: T): boolean {
+function useIsItemSelected<T extends Record<string, unknown>>(
+  store: SelectionStore<T>,
+  item: T,
+): boolean {
   const getSnapshot = useCallback(
     () => store.getConfig().getIsItemSelected(item),
     [store, item],
@@ -159,7 +162,7 @@ function SelectAllCheckbox() {
  * Handles the checkbox cell, aria-selected attribute, and selected row styling.
  * Only re-renders when this specific item's selection state changes.
  */
-function SelectionRowContent<T>({
+function SelectionRowContent<T extends Record<string, unknown>>({
   item,
   children,
 }: {
