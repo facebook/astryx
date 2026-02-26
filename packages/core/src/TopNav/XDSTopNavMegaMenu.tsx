@@ -79,6 +79,28 @@ const styles = stylex.create({
   chevronOpen: {
     transform: 'rotate(180deg)',
   },
+  // Backdrop covers the entire positioned ancestor (nav + panel area).
+  // It provides the unified card appearance: shared shadow, rounded corners,
+  // and surface background so the nav bar and panel look like one popover.
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 99,
+    borderRadius: radiusVars['--radius-container'],
+    backgroundColor: colorVars['--color-surface'],
+    boxShadow: elevationVars['--elevation-hover'],
+    opacity: 0,
+    transitionProperty: 'opacity',
+    transitionDuration: '0.2s',
+    transitionTimingFunction: 'ease-out',
+    pointerEvents: 'none',
+  },
+  backdropOpen: {
+    opacity: 1,
+  },
   panel: {
     position: 'absolute',
     top: '100%',
@@ -86,9 +108,11 @@ const styles = stylex.create({
     right: 0,
     zIndex: 100,
     backgroundColor: colorVars['--color-surface'],
-    boxShadow: elevationVars['--elevation-menu'],
+    // No separate shadow or border — the backdrop provides the unified
+    // card shadow, and the panel flows seamlessly from the nav bar.
     borderBottomLeftRadius: radiusVars['--radius-container'],
     borderBottomRightRadius: radiusVars['--radius-container'],
+    boxShadow: elevationVars['--elevation-hover'],
     overflow: 'hidden',
     opacity: 0,
     transform: 'translateY(-4px)',
@@ -280,6 +304,11 @@ export interface XDSTopNavMegaMenuProps {
   hideDelay?: number;
   /** Whether to use single-column layout for items. @default false */
   isSingleColumn?: boolean;
+  /**
+   * Callback fired when the mega menu opens or closes.
+   * Useful for coordinating wrapper styles (e.g. hiding other shadows).
+   */
+  onOpenChange?: (isOpen: boolean) => void;
 }
 
 // =============================================================================
@@ -347,11 +376,20 @@ export function XDSTopNavMegaMenu({
   delay = 150,
   hideDelay = 250,
   isSingleColumn = false,
+  onOpenChange,
 }: XDSTopNavMegaMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
+
+  const setOpen = useCallback(
+    (open: boolean) => {
+      setIsOpen(open);
+      onOpenChange?.(open);
+    },
+    [onOpenChange],
+  );
 
   const clearTimeouts = useCallback(() => {
     if (showTimeoutRef.current) {
@@ -367,16 +405,16 @@ export function XDSTopNavMegaMenu({
   const scheduleShow = useCallback(() => {
     clearTimeouts();
     showTimeoutRef.current = setTimeout(() => {
-      setIsOpen(true);
+      setOpen(true);
     }, delay);
-  }, [clearTimeouts, delay]);
+  }, [clearTimeouts, setOpen, delay]);
 
   const scheduleHide = useCallback(() => {
     clearTimeouts();
     hideTimeoutRef.current = setTimeout(() => {
-      setIsOpen(false);
+      setOpen(false);
     }, hideDelay);
-  }, [clearTimeouts, hideDelay]);
+  }, [clearTimeouts, setOpen, hideDelay]);
 
   const handleMouseEnter = useCallback(() => {
     scheduleShow();
@@ -391,10 +429,10 @@ export function XDSTopNavMegaMenu({
       if (e.key === 'Escape') {
         e.stopPropagation();
         clearTimeouts();
-        setIsOpen(false);
+        setOpen(false);
       }
     },
-    [clearTimeouts],
+    [clearTimeouts, setOpen],
   );
 
   useEffect(() => {
@@ -420,6 +458,12 @@ export function XDSTopNavMegaMenu({
           <ChevronDown />
         </span>
       </button>
+      {/* Backdrop: covers the entire positioned ancestor to create a unified
+          card appearance (shared shadow + rounded corners) for nav + panel */}
+      <div
+        aria-hidden="true"
+        {...stylex.props(styles.backdrop, isOpen && styles.backdropOpen)}
+      />
       <div
         role="menu"
         aria-label={label}

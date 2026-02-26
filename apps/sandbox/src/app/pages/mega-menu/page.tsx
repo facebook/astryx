@@ -1,5 +1,6 @@
 'use client';
 
+import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
@@ -21,6 +22,13 @@ const styles = stylex.create({
     borderRadius: 12,
     overflow: 'visible',
     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+    transitionProperty: 'box-shadow',
+    transitionDuration: '0.2s',
+  },
+  // Hide wrapper shadow when mega menu is open so the backdrop's
+  // unified card shadow takes over seamlessly.
+  navWrapperMenuOpen: {
+    boxShadow: 'none',
   },
 });
 
@@ -212,6 +220,12 @@ const solutionItems = [
  * Demo page for XDSTopNavMegaMenu — a nav item with a full-width mega menu.
  */
 export default function MegaMenuPage() {
+  const [menuOpen1, setMenuOpen1] = useState(false);
+  const [menuOpen2, setMenuOpen2] = useState(false);
+  const [menuOpen3, setMenuOpen3] = useState(false);
+
+  const isAnyOpen1 = menuOpen1 || menuOpen2;
+
   return (
     <div {...stylex.props(styles.container)}>
       <XDSVStack gap="space6">
@@ -219,16 +233,19 @@ export default function MegaMenuPage() {
           <XDSHeading level={1}>Mega Menu</XDSHeading>
           <XDSText type="body" color="secondary">
             A top nav variation with a full-width mega menu that appears on
-            hover. Hover over &quot;Products&quot; or &quot;Solutions&quot; to
-            see the dropdown panel with categorized items and a featured content
-            area.
+            hover. The nav bar and dropdown panel appear as one unified card.
+            Hover over &quot;Products&quot; or &quot;Solutions&quot; to see it.
           </XDSText>
         </XDSVStack>
 
         {/* Full mega menu with featured content */}
         <XDSVStack gap="space3">
           <XDSHeading level={2}>With Featured Content</XDSHeading>
-          <div {...stylex.props(styles.navWrapper)}>
+          <div
+            {...stylex.props(
+              styles.navWrapper,
+              isAnyOpen1 && styles.navWrapperMenuOpen,
+            )}>
             <XDSTopNav
               label="Marketing navigation"
               title={
@@ -243,6 +260,7 @@ export default function MegaMenuPage() {
                   <XDSTopNavMegaMenu
                     label="Products"
                     items={productItems}
+                    onOpenChange={setMenuOpen1}
                     featured={{
                       image:
                         'https://images.unsplash.com/photo-1551434678-e076c223a692?w=560&h=280&fit=crop',
@@ -257,6 +275,7 @@ export default function MegaMenuPage() {
                   <XDSTopNavMegaMenu
                     label="Solutions"
                     items={solutionItems}
+                    onOpenChange={setMenuOpen2}
                     featured={{
                       title: 'Customer Stories',
                       description:
@@ -281,7 +300,11 @@ export default function MegaMenuPage() {
         {/* Without featured content */}
         <XDSVStack gap="space3">
           <XDSHeading level={2}>Without Featured Content</XDSHeading>
-          <div {...stylex.props(styles.navWrapper)}>
+          <div
+            {...stylex.props(
+              styles.navWrapper,
+              menuOpen3 && styles.navWrapperMenuOpen,
+            )}>
             <XDSTopNav
               label="Simple navigation"
               title={<XDSTopNavTitle title="App" href="#" />}
@@ -311,6 +334,7 @@ export default function MegaMenuPage() {
                       },
                     ]}
                     isSingleColumn
+                    onOpenChange={setMenuOpen3}
                   />
                   <XDSTopNavItem label="Pricing" href="#" />
                 </>
