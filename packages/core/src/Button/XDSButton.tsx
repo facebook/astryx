@@ -9,6 +9,8 @@
  * - /packages/core/src/Button/XDSButton.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Button/index.ts (exports if types change)
  * - /apps/storybook/stories/Button.stories.tsx (storybook stories)
+ *
+ * Last synced props: label, variant, size, isDisabled, isLoading, onClickAction, icon, children, tooltip, endSlot
  */
 
 import {
@@ -33,6 +35,8 @@ import {
 import {ThemeContext} from '../theme/ThemeContext';
 import {XDSTooltip} from '../Layer/XDSTooltip';
 import {XDSSpinner} from '../Spinner';
+import type {XDSIconProps} from '../Icon/XDSIcon';
+import type {XDSBadgeProps} from '../Badge/XDSBadge';
 
 /**
  * Base button styles
@@ -74,6 +78,11 @@ const styles = stylex.create({
   iconOnly: {
     aspectRatio: '1 / 1',
     paddingInline: spacingVars['--spacing-2'],
+  },
+  endSlotWrapper: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    color: 'inherit',
   },
 });
 
@@ -244,6 +253,17 @@ export interface XDSButtonProps extends Omit<
    */
   children?: ReactNode;
   /**
+   * Content rendered after the label text.
+   * Only accepts `<XDSIcon>` or `<XDSBadge>` elements.
+   * Ignored for icon-only buttons to preserve square aspect ratio.
+   *
+   * The endSlot is wrapped in a container that inherits the button's text
+   * color, so `<XDSIcon>` elements will match the button variant's color
+   * (e.g., white on primary/destructive) without needing an explicit
+   * `color` prop.
+   */
+  endSlot?: ReactElement<XDSIconProps> | ReactElement<XDSBadgeProps>;
+  /**
    * Tooltip text shown on hover.
    */
   tooltip?: string;
@@ -278,6 +298,10 @@ const loadingStyles = stylex.create({
  *
  * // Icon + visible label
  * <XDSButton label="Edit" icon={<PencilIcon />}>Edit</XDSButton>
+ *
+ * // With endSlot (badge or icon)
+ * <XDSButton label="Messages" endSlot={<XDSBadge>3</XDSBadge>} />
+ * <XDSButton label="Edit" icon={<PencilIcon />} endSlot={<XDSBadge>New</XDSBadge>}>Edit</XDSButton>
  * ```
  */
 export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
@@ -291,6 +315,7 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
       onClickAction,
       icon,
       children,
+      endSlot,
       tooltip,
       ...props
     },
@@ -354,6 +379,9 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
         )}
         {icon}
         {children ?? (isIconOnly ? null : label)}
+        {!isIconOnly && endSlot && (
+          <span {...stylex.props(styles.endSlotWrapper)}>{endSlot}</span>
+        )}
       </button>
     );
 

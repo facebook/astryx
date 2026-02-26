@@ -1,5 +1,6 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSButton} from '@xds/core/Button';
+import {XDSBadge} from '@xds/core/Badge';
 import {Cog6ToothIcon, TrashIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSButton> = {
@@ -28,6 +29,10 @@ const meta: Meta<typeof XDSButton> = {
     isDisabled: {
       control: 'boolean',
       description: 'Disabled state',
+    },
+    endSlot: {
+      control: false,
+      description: 'Content rendered after the label (e.g. icon, badge)',
     },
   },
 };
@@ -119,6 +124,44 @@ export const IconWithText: Story = {
         label="Delete"
         variant="destructive"
         icon={<TrashIcon style={{width: 16, height: 16}} />}>
+        Delete
+      </XDSButton>
+    </div>
+  ),
+};
+
+export const WithEndSlot: Story = {
+  render: () => (
+    <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+      <XDSButton
+        label="Messages"
+        variant="primary"
+        endSlot={<XDSBadge variant="info">3</XDSBadge>}
+      />
+      <XDSButton
+        label="Notifications"
+        variant="secondary"
+        endSlot={<XDSBadge variant="neutral">New</XDSBadge>}
+      />
+    </div>
+  ),
+};
+
+export const IconAndEndSlot: Story = {
+  render: () => (
+    <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+      <XDSButton
+        label="Settings"
+        variant="secondary"
+        icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
+        endSlot={<XDSBadge variant="info">New</XDSBadge>}>
+        Settings
+      </XDSButton>
+      <XDSButton
+        label="Delete"
+        variant="destructive"
+        icon={<TrashIcon style={{width: 16, height: 16}} />}
+        endSlot={<XDSBadge variant="error">5</XDSBadge>}>
         Delete
       </XDSButton>
     </div>

@@ -38,6 +38,10 @@ import { XDSButton } from '@xds/core/Button';
 
 // Icon + visible label (pass children to show text alongside icon)
 <XDSButton label="Edit" icon={<PencilIcon />}>Edit</XDSButton>
+
+// With endSlot — badge or trailing icon after the label
+<XDSButton label="Messages" endSlot={<XDSBadge>3</XDSBadge>} />
+<XDSButton label="Edit" icon={<PencilIcon />} endSlot={<XDSBadge>New</XDSBadge>}>Edit</XDSButton>
 ```
 
 ### Icon-Only Buttons
@@ -54,16 +58,17 @@ or `<span onClick>` for accessibility (keyboard navigation, focus management, sc
 
 ## Props
 
-| Prop         | Type                                                   | Default       | Description                 |
-| ------------ | ------------------------------------------------------ | ------------- | --------------------------- |
-| `label`      | `string`                                               | —             | Accessible label (required) |
-| `variant`    | `'primary' \| 'secondary' \| 'ghost' \| 'destructive'` | `'secondary'` | Visual style variant        |
-| `size`       | `'sm' \| 'md' \| 'lg'`                                 | `'md'`        | Size variant                |
-| `isLoading`  | `boolean`                                              | `false`       | Shows isLoading spinner     |
-| `isDisabled` | `boolean`                                              | `false`       | Disables the button         |
-| `icon`       | `ReactNode`                                            | —             | Icon element                |
-| `children`   | `ReactNode`                                            | —             | Button content              |
-| `tooltip`    | `string`                                               | —             | Tooltip text shown on hover |
+| Prop         | Type                                                        | Default       | Description                                                                                                                                          |
+| ------------ | ----------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `label`      | `string`                                                    | —             | Accessible label (required)                                                                                                                          |
+| `variant`    | `'primary' \| 'secondary' \| 'ghost' \| 'destructive'`      | `'secondary'` | Visual style variant                                                                                                                                 |
+| `size`       | `'sm' \| 'md' \| 'lg'`                                      | `'md'`        | Size variant                                                                                                                                         |
+| `isLoading`  | `boolean`                                                   | `false`       | Shows isLoading spinner                                                                                                                              |
+| `isDisabled` | `boolean`                                                   | `false`       | Disables the button                                                                                                                                  |
+| `icon`       | `ReactNode`                                                 | —             | Icon element                                                                                                                                         |
+| `children`   | `ReactNode`                                                 | —             | Button content                                                                                                                                       |
+| `endSlot`    | `ReactElement<XDSIconProps> \| ReactElement<XDSBadgeProps>` | —             | Trailing icon or badge after the label. Only accepts `<XDSIcon>` or `<XDSBadge>`. Ignored for icon-only. Color is inherited from the button variant. |
+| `tooltip`    | `string`                                                    | —             | Tooltip text shown on hover                                                                                                                          |
 
 ## Files
 
@@ -73,8 +78,25 @@ or `<span onClick>` for accessibility (keyboard navigation, focus management, sc
 | `XDSButton.tsx`      | Core  | XDSButton component implementation    |
 | `XDSButton.test.tsx` | Test  | Unit tests for XDSButton component    |
 
+### endSlot
+
+The `endSlot` prop renders an `<XDSIcon>` or `<XDSBadge>` after the label text:
+
+```tsx
+// Counter badge
+<XDSButton label="Messages" endSlot={<XDSBadge>3</XDSBadge>} />
+
+// Icon + label + endSlot
+<XDSButton label="Settings" icon={<GearIcon />} endSlot={<XDSBadge>New</XDSBadge>}>
+  Settings
+</XDSButton>
+```
+
+`endSlot` is ignored for icon-only buttons (when `icon` is provided without `children`) to preserve the square aspect ratio. The endSlot is wrapped in a container that inherits the button's text color (`color: inherit`), so `<XDSIcon>` elements will automatically match the button variant's color (e.g., white text on `primary`/`destructive` variants) without needing an explicit `color` prop.
+
 ## Implementation Notes
 
 - `XDSButtonVariant` type is derived from the `variants` StyleX object using `keyof typeof variants`
 - Hover/active states use `backgroundImage` with `linear-gradient` to layer overlay colors on top of the base background
 - Destructive variant uses `colorTokens.negative` for its focus outline color
+- `endSlot` is wrapped in a `<span>` with `color: inherit` so icons/badges match the button's text color across all variants
