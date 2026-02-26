@@ -1,7 +1,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSBadge} from '@xds/core/Badge';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars} from '@xds/core/theme';
+import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 
 const pageStyles = stylex.create({
   pageWrapper: {
