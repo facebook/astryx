@@ -275,4 +275,4 @@ XDSLayoutContainer sets these CSS variables that child components read:
 
 ## Related
 
-- See the [System Architecture](../../wiki/System-Architecture) wiki page for the broader layout philosophy
+- See the [System Architecture](https://github.com/facebookexperimental/xds/wiki/System-Architecture) wiki page for the broader layout philosophy

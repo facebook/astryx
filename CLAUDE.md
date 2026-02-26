@@ -48,7 +48,7 @@ Probes at turns 0, 6, 8, 10 to measure quality degradation. Results show a line 
 
 ## AI Context
 
-For architectural context, decisions, and research, see the **[GitHub Wiki](../../wiki)**:
+For architectural context, decisions, and research, see the **[GitHub Wiki](https://github.com/facebookexperimental/xds/wiki)**:
 
 - **Decisions** — API Conventions, Why StyleX, StyleX Distribution
 - **Architecture** — System Architecture, Component Authoring Guide
