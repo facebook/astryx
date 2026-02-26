@@ -67,7 +67,7 @@ const SimulatedNextLink = forwardRef<
       href={href}
       onClick={e => {
         e.preventDefault();
-         
+
         console.log(`[SimulatedNextLink] Client-side navigate to: ${href}`);
         onClick?.(e);
       }}
@@ -92,7 +92,7 @@ const GreenLink = forwardRef<
       href={href}
       onClick={e => {
         e.preventDefault();
-         
+
         console.log(`[GreenLink] Navigate to: ${href}`);
         onClick?.(e);
       }}
@@ -196,7 +196,7 @@ export default function PolymorphicLinkPage() {
                   XDSSideNav
                 </XDSText>
                 <div {...stylex.props(styles.sidenavWrapper)}>
-                  <XDSSideNav label="Provider sidenav">
+                  <XDSSideNav aria-label="Provider sidenav">
                     <XDSSideNavItem
                       label="Dashboard"
                       href="/dashboard"
