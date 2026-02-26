@@ -47,6 +47,7 @@ export * from './Dialog';
 export * from './DropdownMenu';
 export * from './TopNav';
 export * from './SideNav';
+export * from './Pagination';
 export * from './ProgressBar';
 
 // Layout utilities and components (includes XDSHStack, XDSVStack)

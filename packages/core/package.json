@@ -184,6 +184,12 @@
       "import": "./dist/NumberInput/index.mjs",
       "require": "./dist/NumberInput/index.js"
     },
+    "./Pagination": {
+      "source": "./src/Pagination/index.ts",
+      "types": "./dist/Pagination/index.d.ts",
+      "import": "./dist/Pagination/index.mjs",
+      "require": "./dist/Pagination/index.js"
+    },
     "./ProgressBar": {
       "source": "./src/ProgressBar/index.ts",
       "types": "./dist/ProgressBar/index.d.ts",
