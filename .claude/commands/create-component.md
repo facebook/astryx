@@ -180,7 +180,7 @@ Available tokens from `tokens.stylex`:
 
 ## Reference
 
-See `.context/explorations/component-reference.md` for the complete Button implementation with advanced patterns like loading states and hover overlays.
+See the [Component Authoring Guide](https://github.com/facebookexperimental/xds/wiki/Component-Authoring-Guide) on the wiki for the complete Button implementation with advanced patterns like loading states and hover overlays.
 
 ## After Creation
 
