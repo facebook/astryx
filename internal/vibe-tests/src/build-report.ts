@@ -59,7 +59,7 @@ function parseArgs(): {
     process.exit(1);
   }
 
-  return {iteration, baseline, withScreenshots, dev};
+  return {iteration, baseline, html, withScreenshots, dev};
 }
 
 function ensureUniversalJson(iteration: string): UniversalAggregate {
@@ -80,17 +80,21 @@ function ensureUniversalJson(iteration: string): UniversalAggregate {
 function ensureComparison(
   xdsId: string,
   baselineId: string,
+  htmlId?: string,
 ): UniversalComparison {
   const resultsDir = getResultsDir();
-  const comparisonPath = path.join(
-    resultsDir,
-    `comparison-${xdsId}-${baselineId}.json`,
-  );
+  const comparisonFilename = htmlId
+    ? `comparison-${xdsId}-${baselineId}-${htmlId}.json`
+    : `comparison-${xdsId}-${baselineId}.json`;
+  const comparisonPath = path.join(resultsDir, comparisonFilename);
 
   if (!fs.existsSync(comparisonPath)) {
-    console.log(`Generating comparison for ${xdsId} vs ${baselineId}...`);
+    const htmlFlag = htmlId ? ` --html ${htmlId}` : '';
+    console.log(
+      `Generating comparison for ${xdsId} vs ${baselineId}${htmlId ? ` vs ${htmlId}` : ''}...`,
+    );
     execSync(
-      `tsx ${path.join(import.meta.dirname, 'universal-compare.ts')} --xds ${xdsId} --baseline ${baselineId}`,
+      `tsx ${path.join(import.meta.dirname, 'universal-compare.ts')} --xds ${xdsId} --baseline ${baselineId}${htmlFlag}`,
       {cwd: path.join(import.meta.dirname, '..'), stdio: 'inherit'},
     );
   }
@@ -184,7 +188,13 @@ function inlineCss(htmlPath: string, distDir: string): void {
 }
 
 async function main() {
-  const {iteration, baseline, html, withScreenshots, dev} = parseArgs();
+  const {
+    iteration,
+    baseline,
+    html,
+    withScreenshots: _withScreenshots,
+    dev,
+  } = parseArgs();
   const resultsDir = getResultsDir();
   const iterDir = path.join(resultsDir, iteration);
   const manifestPath = path.join(iterDir, 'manifest.json');
@@ -205,7 +215,10 @@ async function main() {
   if (baseline) {
     console.log('📊 Step 2: Ensuring comparison data...');
     ensureUniversalJson(baseline);
-    comparison = ensureComparison(iteration, baseline);
+    if (html) {
+      ensureUniversalJson(html);
+    }
+    comparison = ensureComparison(iteration, baseline, html);
   }
 
   // Step 3: Load source code for per-prompt inspection
