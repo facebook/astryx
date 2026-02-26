@@ -19,15 +19,6 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     },
-    "./reset.css": "./src/reset.css",
-    "./typography.css": "./src/typography.css",
-    "./theme/tokens.stylex": {
-      "source": "./src/theme/tokens.stylex.ts",
-      "types": "./dist/theme/tokens.stylex.d.ts",
-      "import": "./dist/theme/tokens.stylex.mjs",
-      "require": "./dist/theme/tokens.stylex.js"
-    },
-    "./xds.md": "./xds.md",
     "./AppShell": {
       "source": "./src/AppShell/index.ts",
       "types": "./dist/AppShell/index.d.ts",
@@ -196,6 +187,12 @@
       "import": "./dist/RadioList/index.mjs",
       "require": "./dist/RadioList/index.js"
     },
+    "./ScrollableArea": {
+      "source": "./src/ScrollableArea/index.ts",
+      "types": "./dist/ScrollableArea/index.d.ts",
+      "import": "./dist/ScrollableArea/index.mjs",
+      "require": "./dist/ScrollableArea/index.js"
+    },
     "./Section": {
       "source": "./src/Section/index.ts",
       "types": "./dist/Section/index.d.ts",
@@ -304,18 +301,27 @@
       "import": "./dist/hooks/index.mjs",
       "require": "./dist/hooks/index.js"
     },
+    "./reset.css": "./src/reset.css",
     "./theme": {
       "source": "./src/theme/index.ts",
       "types": "./dist/theme/index.d.ts",
       "import": "./dist/theme/index.mjs",
       "require": "./dist/theme/index.js"
     },
+    "./theme/tokens.stylex": {
+      "source": "./src/theme/tokens.stylex.ts",
+      "types": "./dist/theme/tokens.stylex.d.ts",
+      "import": "./dist/theme/tokens.stylex.mjs",
+      "require": "./dist/theme/tokens.stylex.js"
+    },
+    "./typography.css": "./src/typography.css",
     "./utils": {
       "source": "./src/utils/index.ts",
       "types": "./dist/utils/index.d.ts",
       "import": "./dist/utils/index.mjs",
       "require": "./dist/utils/index.js"
-    }
+    },
+    "./xds.md": "./xds.md"
   },
   "scripts": {
     "build": "NODE_OPTIONS='--max-old-space-size=4096' tsup",

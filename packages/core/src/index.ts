@@ -64,6 +64,9 @@ export * from './StatusDot';
 // Spinner loading indicator
 export * from './Spinner';
 
+// Scrollable area container
+export * from './ScrollableArea';
+
 // Hooks
 export * from './hooks';
 
