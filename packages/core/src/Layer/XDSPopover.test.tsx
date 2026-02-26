@@ -160,4 +160,69 @@ describe('XDSPopover', () => {
     expect(anchor).toHaveAttribute('aria-haspopup', 'dialog');
     expect(anchor).toHaveAttribute('aria-expanded', 'false');
   });
+
+  it('finds button inside wrapper and attaches ARIA', () => {
+    render(
+      <XDSPopover content={<span>Content</span>} label="Test">
+        <div>
+          <button>Nested button</button>
+        </div>
+      </XDSPopover>,
+    );
+    const button = screen.getByRole('button', {name: 'Nested button'});
+    expect(button).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('finds role="button" elements and attaches ARIA', () => {
+    render(
+      <XDSPopover content={<span>Content</span>} label="Test">
+        <div role="button" tabIndex={0}>
+          Custom trigger
+        </div>
+      </XDSPopover>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Custom trigger'});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('opens on click for role="button" elements', () => {
+    render(
+      <XDSPopover content={<span>Content</span>} label="Test">
+        <div role="button" tabIndex={0}>
+          Custom trigger
+        </div>
+      </XDSPopover>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Custom trigger'});
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('opens on Enter/Space for role="button" elements', () => {
+    render(
+      <XDSPopover content={<span>Content</span>} label="Test">
+        <div role="button" tabIndex={0}>
+          Custom trigger
+        </div>
+      </XDSPopover>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Custom trigger'});
+    fireEvent.keyDown(trigger, {key: 'Enter'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('warns in dev when children have no button', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <XDSPopover content={<span>Content</span>} label="Test">
+        <span>Not a button</span>
+      </XDSPopover>,
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('must contain a <button> or [role="button"]'),
+    );
+    warnSpy.mockRestore();
+  });
 });

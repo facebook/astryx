@@ -45,15 +45,34 @@ declare module '../theme/types' {
 }
 
 // =============================================================================
+// Helpers
+// =============================================================================
+
+const BUTTON_SELECTOR = 'button, [role="button"]';
+
+/**
+ * Find the trigger button inside a container element.
+ * Looks for `<button>` or `[role="button"]` — either the element itself
+ * or the first matching descendant.
+ */
+function findTriggerButton(el: HTMLElement): HTMLElement | null {
+  if (el.matches(BUTTON_SELECTOR)) return el;
+  return el.querySelector<HTMLElement>(BUTTON_SELECTOR);
+}
+
+// =============================================================================
 // Types
 // =============================================================================
 
 export interface XDSPopoverProps {
   /**
-   * The trigger element. Rendered inside an anchor wrapper that handles
-   * click interactions and CSS anchor positioning. Click events from
-   * children bubble up to the wrapper, so buttons work naturally with
-   * both mouse and keyboard (Enter/Space).
+   * The trigger element. Must contain a `<button>` or `[role="button"]`
+   * element — the popover locates it and applies click/keydown handlers
+   * and ARIA attributes (`aria-haspopup`, `aria-expanded`, `aria-controls`).
+   *
+   * The trigger is rendered inside an anchor wrapper used for CSS anchor
+   * positioning. The wrapper is stable (no pressed-state transforms),
+   * preventing popover position jitter.
    *
    * When `anchorRef` is provided, children can be omitted and the popover
    * attaches to the external ref element as a sibling.
@@ -63,8 +82,9 @@ export interface XDSPopoverProps {
   /**
    * External ref to use as the popover anchor.
    * When provided (and no children), the popover attaches to this element
-   * instead of wrapping children. This enables sibling-mode rendering,
-   * useful when the trigger element is managed externally.
+   * instead of wrapping children. The referenced element must be a
+   * `<button>` or `[role="button"]` — the popover applies click/keydown
+   * handlers and ARIA attributes to it directly.
    */
   anchorRef?: React.RefObject<HTMLElement>;
 
@@ -138,10 +158,6 @@ const styles = stylex.create({
   // XDSButton) renders inside this wrapper. Because the wrapper itself is
   // the anchor, pressed-state transforms on the child (e.g. :active scale)
   // don't shift the anchor position and cause popover jitter.
-  //
-  // Click events from children bubble up to this wrapper, so keyboard
-  // interactions (Enter/Space on buttons) work naturally without needing
-  // imperative addEventListener on child DOM elements.
   anchorWrapper: {
     display: 'inline-flex',
   },
@@ -198,11 +214,12 @@ const styles = stylex.create({
 /**
  * A click-triggered popover for displaying interactive content anchored to a trigger.
  *
- * Uses an inline-flex wrapper as the CSS anchor. The wrapper serves two purposes:
- * 1. Stable anchor — doesn't receive pressed-state transforms (e.g. `:active { scale(0.98) }`)
- *    that the child trigger element may have, preventing popover position jitter.
- * 2. Click target — handles click events via React's event system (bubbled from children),
- *    so keyboard interactions (Enter/Space on buttons) work naturally.
+ * Implements the button + dialog ARIA pattern. The trigger must contain a
+ * `<button>` or `[role="button"]` element — the popover finds it and applies
+ * click/keydown handlers and ARIA attributes automatically.
+ *
+ * Uses an inline-flex wrapper as the CSS anchor for stable positioning
+ * (immune to pressed-state transforms like `:active { scale(0.98) }`).
  *
  * Focus is trapped inside the popover when open.
  * Supports light dismiss (click outside or Escape to close).
@@ -265,18 +282,69 @@ export function XDSPopover({
     },
   });
 
-  // Handle click on the anchor wrapper. Click events from children (e.g.
-  // XDSButton) bubble up here, including keyboard-synthesized clicks
-  // (Enter/Space on native buttons). No imperative addEventListener needed.
-  const handleClick = useCallback(
-    (_e: React.MouseEvent) => {
-      if (!isEnabled) return;
-      // If the popover was just closed by light dismiss (clicking outside),
-      // the trigger click fires in the same event — skip re-opening.
-      if (Date.now() - lastHideTimeRef.current < 50) return;
-      popover.toggle();
+  // Shared handler for click events on the trigger button.
+  const handleTriggerClick = useCallback(() => {
+    if (!isEnabled) return;
+    // If the popover was just closed by light dismiss (clicking outside),
+    // the trigger click fires in the same event — skip re-opening.
+    if (Date.now() - lastHideTimeRef.current < 50) return;
+    popover.toggle();
+  }, [isEnabled, popover]);
+
+  // Shared handler for keydown events on role="button" elements.
+  // Native <button> synthesizes click on Enter/Space, but role="button"
+  // does not — we need to handle it explicitly.
+  const handleTriggerKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleTriggerClick();
+      }
     },
-    [isEnabled, popover],
+    [handleTriggerClick],
+  );
+
+  /**
+   * Attach click/keydown handlers and ARIA attributes to a trigger button.
+   * Used by both sibling mode and children mode.
+   */
+  const attachTrigger = useCallback(
+    (button: HTMLElement) => {
+      // ARIA attributes
+      button.setAttribute(
+        'aria-haspopup',
+        popover.triggerProps['aria-haspopup'],
+      );
+      button.setAttribute(
+        'aria-expanded',
+        String(popover.triggerProps['aria-expanded']),
+      );
+      button.setAttribute(
+        'aria-controls',
+        popover.triggerProps['aria-controls'],
+      );
+
+      // Event handlers
+      button.addEventListener('click', handleTriggerClick);
+      // Only add keydown for role="button" — native <button> already
+      // synthesizes click events for Enter/Space.
+      const needsKeyDown =
+        button.tagName !== 'BUTTON' && button.getAttribute('role') === 'button';
+      if (needsKeyDown) {
+        button.addEventListener('keydown', handleTriggerKeyDown);
+      }
+
+      return () => {
+        button.removeAttribute('aria-haspopup');
+        button.removeAttribute('aria-expanded');
+        button.removeAttribute('aria-controls');
+        button.removeEventListener('click', handleTriggerClick);
+        if (needsKeyDown) {
+          button.removeEventListener('keydown', handleTriggerKeyDown);
+        }
+      };
+    },
+    [popover, handleTriggerClick, handleTriggerKeyDown],
   );
 
   // Sibling mode: attach to external anchorRef
@@ -286,73 +354,56 @@ export function XDSPopover({
     const el = anchorRef.current;
     if (!el) return;
 
-    // Set up anchor positioning
+    const button = findTriggerButton(el);
+    if (process.env.NODE_ENV !== 'production' && !button) {
+      console.warn(
+        'XDSPopover: anchorRef must reference a <button> or [role="button"] element. ' +
+          'The popover trigger implements the button + dialog ARIA pattern.',
+      );
+    }
+    if (!button) return;
+
+    // Set up anchor positioning on the anchorRef element itself
     popover.triggerRef(el);
 
-    // Set ARIA attributes
-    el.setAttribute('aria-haspopup', popover.triggerProps['aria-haspopup']);
-    el.setAttribute(
-      'aria-expanded',
-      String(popover.triggerProps['aria-expanded']),
-    );
-    el.setAttribute('aria-controls', popover.triggerProps['aria-controls']);
-
-    // Add click handler (imperative for sibling mode since we don't wrap)
-    const handleSiblingClick = () => {
-      if (!isEnabled) return;
-      if (Date.now() - lastHideTimeRef.current < 50) return;
-      popover.toggle();
-    };
-    el.addEventListener('click', handleSiblingClick);
+    // Attach handlers + ARIA to the button
+    const detach = attachTrigger(button);
 
     return () => {
       popover.triggerRef(null);
-      el.removeAttribute('aria-haspopup');
-      el.removeAttribute('aria-expanded');
-      el.removeAttribute('aria-controls');
-      el.removeEventListener('click', handleSiblingClick);
+      detach();
     };
-  }, [anchorRef, popover, isEnabled]);
+  }, [anchorRef, popover, attachTrigger]);
 
-  // Children mode: set up the wrapper as the CSS anchor and apply ARIA
-  // attributes to the first child (the interactive trigger element).
-  // Click handling is on the wrapper via React onClick — no imperative
-  // event listeners needed.
+  // Children mode: use wrapper as CSS anchor, find button inside for
+  // ARIA + event handlers.
   useLayoutEffect(() => {
     if (anchorRef) return; // Skip if using anchorRef mode
 
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
 
-    // Use the wrapper as the anchor — it doesn't receive pressed-state
+    // Use the wrapper as the CSS anchor — it doesn't receive pressed-state
     // transforms, so the anchor position stays stable.
     popover.triggerRef(wrapper);
 
-    // ARIA attributes go on the interactive child element (the button),
-    // not the wrapper, for correct screen reader announcements.
-    const firstChild = wrapper.firstElementChild as HTMLElement | null;
-    if (!firstChild) return;
+    // Find the button inside the wrapper
+    const button = findTriggerButton(wrapper);
+    if (process.env.NODE_ENV !== 'production' && !button) {
+      console.warn(
+        'XDSPopover: children must contain a <button> or [role="button"] element. ' +
+          'The popover trigger implements the button + dialog ARIA pattern.',
+      );
+    }
+    if (!button) return;
 
-    firstChild.setAttribute(
-      'aria-haspopup',
-      popover.triggerProps['aria-haspopup'],
-    );
-    firstChild.setAttribute(
-      'aria-expanded',
-      String(popover.triggerProps['aria-expanded']),
-    );
-    firstChild.setAttribute(
-      'aria-controls',
-      popover.triggerProps['aria-controls'],
-    );
+    const detach = attachTrigger(button);
 
     return () => {
       popover.triggerRef(null);
-      firstChild.removeAttribute('aria-haspopup');
-      firstChild.removeAttribute('aria-expanded');
-      firstChild.removeAttribute('aria-controls');
+      detach();
     };
-  }, [anchorRef, popover]);
+  }, [anchorRef, popover, attachTrigger]);
 
   // Sync controlled state
   useLayoutEffect(() => {
@@ -389,10 +440,7 @@ export function XDSPopover({
 
   return (
     <>
-      <div
-        ref={wrapperRef}
-        onClick={handleClick}
-        {...stylex.props(styles.anchorWrapper)}>
+      <div ref={wrapperRef} {...stylex.props(styles.anchorWrapper)}>
         {children}
       </div>
       {popover.render(
