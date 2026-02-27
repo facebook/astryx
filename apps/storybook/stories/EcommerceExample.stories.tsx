@@ -127,7 +127,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
     border: `1px solid ${colorVars['--color-divider']}`,
     borderRadius: radiusVars['--radius-element'],
-    padding: `${spacingVars['--spacing-0.5']} ${spacingVars['--spacing-1']}`,
+    padding: `${spacingVars['--spacing-0-5']} ${spacingVars['--spacing-1']}`,
   },
   quantityValue: {
     minWidth: '32px',
