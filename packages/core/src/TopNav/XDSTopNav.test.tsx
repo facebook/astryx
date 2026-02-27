@@ -134,12 +134,23 @@ describe('XDSTopNav', () => {
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLElement));
   });
 
-  it('creates a stacking context above mega menu backdrop', () => {
-    render(<XDSTopNav label="Main navigation" />);
+  it('creates a stacking context on content sections above mega menu backdrop', () => {
+    render(
+      <XDSTopNav
+        label="Main navigation"
+        startContent={<span>Start</span>}
+        endContent={<span>End</span>}
+      />,
+    );
     const nav = screen.getByRole('navigation');
-    expect(nav).toHaveStyle({position: 'relative'});
-    const zIndex = Number(getComputedStyle(nav).zIndex);
-    expect(zIndex).toBeGreaterThanOrEqual(100);
+    // Nav itself should NOT have position: relative (backdrop needs outer wrapper as ancestor)
+    expect(nav).not.toHaveStyle({position: 'relative'});
+    // Content section divs should have position: relative for stacking context
+    const sections = nav.querySelectorAll(':scope > div');
+    expect(sections.length).toBeGreaterThanOrEqual(1);
+    sections.forEach(section => {
+      expect(section).toHaveStyle({position: 'relative'});
+    });
   });
 });
 
