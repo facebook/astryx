@@ -47,17 +47,17 @@ export const Default: Story = {
         <XDSButton
           label="Search"
           variant="ghost"
-          icon={<MagnifyingGlassIcon style={{width: 16, height: 16}} />}
+          icon={<MagnifyingGlassIcon />}
         />
         <XDSButton
           label="Notifications"
           variant="ghost"
-          icon={<BellIcon style={{width: 16, height: 16}} />}
+          icon={<BellIcon />}
         />
         <XDSButton
           label="Profile"
           variant="ghost"
-          icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+          icon={<UserCircleIcon />}
         />
       </>
     ),
@@ -71,7 +71,7 @@ export const WithLogo: Story = {
       <XDSTopNavTitle
         title="Dashboard"
         logo={
-          <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+          <XDSNavIcon icon={<CubeIcon />} />
         }
         href="#"
       />
@@ -87,7 +87,7 @@ export const WithLogo: Story = {
       <XDSButton
         label="Profile"
         variant="ghost"
-        icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+        icon={<UserCircleIcon />}
       />
     ),
   },
@@ -100,7 +100,7 @@ export const TitleOnly: Story = {
       <XDSTopNavTitle
         title="Simple App"
         logo={
-          <XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />
+          <XDSNavIcon icon={<HomeIcon />} />
         }
       />
     ),
@@ -121,7 +121,7 @@ export const NavItemStates: Story = {
           <XDSTopNavItem
             label="With Icon"
             href="#"
-            icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
+            icon={<Cog6ToothIcon />}
           />
         </>
       }
@@ -137,7 +137,7 @@ export const CenteredNavigation: Story = {
         <XDSTopNavTitle
           title="My App"
           logo={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <XDSNavIcon icon={<CubeIcon />} />
           }
           href="#"
         />
@@ -154,12 +154,12 @@ export const CenteredNavigation: Story = {
           <XDSButton
             label="Search"
             variant="ghost"
-            icon={<MagnifyingGlassIcon style={{width: 16, height: 16}} />}
+            icon={<MagnifyingGlassIcon />}
           />
           <XDSButton
             label="Profile"
             variant="ghost"
-            icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+            icon={<UserCircleIcon />}
           />
         </>
       }
@@ -176,7 +176,7 @@ export const CenteredWithStartContent: Story = {
           title="Dashboard"
           logo={
             <XDSNavIcon
-              icon={<ChartBarIcon style={{width: 16, height: 16}} />}
+              icon={<ChartBarIcon />}
             />
           }
           href="#"
@@ -186,7 +186,7 @@ export const CenteredWithStartContent: Story = {
         <XDSTopNavItem
           label="Back"
           href="#"
-          icon={<HomeIcon style={{width: 16, height: 16}} />}
+          icon={<HomeIcon />}
         />
       }
       centerContent={
@@ -200,7 +200,7 @@ export const CenteredWithStartContent: Story = {
         <XDSButton
           label="Profile"
           variant="ghost"
-          icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+          icon={<UserCircleIcon />}
         />
       }
     />
@@ -214,7 +214,7 @@ export const CenterContentWithoutEnd: Story = {
       <XDSTopNavTitle
         title="My App"
         logo={
-          <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+          <XDSNavIcon icon={<CubeIcon />} />
         }
         href="#"
       />
@@ -237,7 +237,7 @@ export const FullExample: Story = {
           title="Enterprise Dashboard"
           logo={
             <XDSNavIcon
-              icon={<ChartBarIcon style={{width: 16, height: 16}} />}
+              icon={<ChartBarIcon />}
             />
           }
           href="#"
@@ -249,22 +249,22 @@ export const FullExample: Story = {
             label="Dashboard"
             href="#"
             isSelected
-            icon={<HomeIcon style={{width: 16, height: 16}} />}
+            icon={<HomeIcon />}
           />
           <XDSTopNavItem
             label="Reports"
             href="#"
-            icon={<DocumentTextIcon style={{width: 16, height: 16}} />}
+            icon={<DocumentTextIcon />}
           />
           <XDSTopNavItem
             label="Analytics"
             href="#"
-            icon={<ChartBarIcon style={{width: 16, height: 16}} />}
+            icon={<ChartBarIcon />}
           />
           <XDSTopNavItem
             label="Settings"
             href="#"
-            icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
+            icon={<Cog6ToothIcon />}
           />
         </>
       }
@@ -273,12 +273,12 @@ export const FullExample: Story = {
           <XDSButton
             label="Search"
             variant="ghost"
-            icon={<MagnifyingGlassIcon style={{width: 16, height: 16}} />}
+            icon={<MagnifyingGlassIcon />}
           />
           <XDSButton
             label="Notifications"
             variant="ghost"
-            icon={<BellIcon style={{width: 16, height: 16}} />}
+            icon={<BellIcon />}
           />
           <XDSButton label="Upgrade" variant="primary" />
         </>

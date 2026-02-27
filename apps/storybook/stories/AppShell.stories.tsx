@@ -92,7 +92,7 @@ function AppTopNav({endContent}: {endContent?: React.ReactNode}) {
         <XDSTopNavTitle
           title="Acme App"
           logo={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <XDSNavIcon icon={<CubeIcon />} />
           }
         />
       }
@@ -108,7 +108,7 @@ function AppTopNav({endContent}: {endContent?: React.ReactNode}) {
           <XDSButton
             label="Profile"
             variant="ghost"
-            icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+            icon={<UserCircleIcon />}
           />
         )
       }
@@ -315,12 +315,12 @@ export const FullFeatured: Story = {
               <XDSButton
                 label="Notifications"
                 variant="ghost"
-                icon={<BellIcon style={{width: 16, height: 16}} />}
+                icon={<BellIcon />}
               />
               <XDSButton
                 label="Profile"
                 variant="ghost"
-                icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+                icon={<UserCircleIcon />}
               />
             </>
           }>
@@ -430,7 +430,7 @@ export const ControlledCollapse: Story = {
               <XDSButton
                 label="Toggle sidebar"
                 variant="ghost"
-                icon={<Bars3Icon style={{width: 16, height: 16}} />}
+                icon={<Bars3Icon />}
                 onClick={() => setCollapsed(!collapsed)}
               />
             }

@@ -60,7 +60,7 @@ export const Default: Story = {
       header={
         <XDSSideNavHeader
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <XDSNavIcon icon={<CubeIcon />} />
           }
           title="My App"
           titleHref="/"
@@ -142,7 +142,7 @@ export const WithHeaderMenu: Story = {
       header={
         <XDSSideNavHeader
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <XDSNavIcon icon={<CubeIcon />} />
           }
           title="Product Name"
           subtitle="Business Account"
@@ -204,7 +204,7 @@ export const SuiteHeader: Story = {
       header={
         <XDSSideNavHeader
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <XDSNavIcon icon={<CubeIcon />} />
           }
           supertitle="Suite Name"
           supertitleHref="/suite"
@@ -261,7 +261,7 @@ export const NestedItems: Story = {
       header={
         <XDSSideNavHeader
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <XDSNavIcon icon={<CubeIcon />} />
           }
           title="My App"
         />
@@ -297,7 +297,7 @@ export const WithFooter: Story = {
       header={
         <XDSSideNavHeader
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <XDSNavIcon icon={<CubeIcon />} />
           }
           title="My App"
         />
@@ -342,7 +342,7 @@ export const DisabledItem: Story = {
       header={
         <XDSSideNavHeader
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <XDSNavIcon icon={<CubeIcon />} />
           }
           title="My App"
         />
@@ -376,7 +376,7 @@ export const HiddenSectionHeader: Story = {
       header={
         <XDSSideNavHeader
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <XDSNavIcon icon={<CubeIcon />} />
           }
           title="My App"
         />

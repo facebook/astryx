@@ -27,4 +27,23 @@ describe('XDSNavIcon', () => {
     render(<XDSNavIcon icon={<span>Icon</span>} data-testid="nav-icon" />);
     expect(screen.getByTestId('nav-icon')).toBeInTheDocument();
   });
+
+  it('defaults to circle variant', () => {
+    render(
+      <XDSNavIcon icon={<span>Icon</span>} data-testid="nav-icon" />,
+    );
+    expect(screen.getByTestId('nav-icon')).toBeInTheDocument();
+  });
+
+  it('renders with icon variant', () => {
+    render(
+      <XDSNavIcon
+        icon={<span data-testid="icon">Icon</span>}
+        variant="icon"
+        data-testid="nav-icon"
+      />,
+    );
+    expect(screen.getByTestId('nav-icon')).toBeInTheDocument();
+    expect(screen.getByTestId('icon')).toBeInTheDocument();
+  });
 });
