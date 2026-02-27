@@ -275,7 +275,7 @@ export interface XDSNumberInputProps {
   /**
    * Tooltip text to display in an info icon at the end of the label.
    */
-  tooltip?: string;
+  labelTooltip?: string;
   /**
    * Whether to automatically focus the input on mount.
    * @default false
@@ -392,7 +392,7 @@ export const XDSNumberInput = forwardRef<HTMLInputElement, XDSNumberInputProps>(
       onChange,
       value,
       placeholder,
-      tooltip,
+      labelTooltip,
       hasAutoFocus = false,
       htmlName,
       autoComplete,
@@ -550,7 +550,7 @@ export const XDSNumberInput = forwardRef<HTMLInputElement, XDSNumberInputProps>(
         descriptionID={description ? descriptionID : undefined}
         isOptional={isOptional}
         isRequired={isRequired}
-        labelStartIcon={labelIcon}
+        labelIcon={labelIcon}
         status={
           status
             ? {
@@ -560,7 +560,7 @@ export const XDSNumberInput = forwardRef<HTMLInputElement, XDSNumberInputProps>(
               }
             : undefined
         }
-        labelTooltip={tooltip}>
+        labelTooltip={labelTooltip}>
         <div
           {...stylex.props(
             styles.wrapper,

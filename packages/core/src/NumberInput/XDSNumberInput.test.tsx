@@ -495,19 +495,19 @@ describe('XDSNumberInput', () => {
     });
   });
 
-  it('renders tooltip info icon when tooltip is provided', () => {
+  it('renders tooltip info icon when labelTooltip is provided', () => {
     render(
       <XDSNumberInput
         label="Help"
         value={null}
         onChange={() => {}}
-        tooltip="Helpful info"
+        labelTooltip="Helpful info"
       />,
     );
     expect(document.querySelector('svg')).toBeInTheDocument();
   });
 
-  it('does not render tooltip icon when tooltip is not provided', () => {
+  it('does not render tooltip icon when labelTooltip is not provided', () => {
     render(
       <XDSNumberInput label="Quantity" value={null} onChange={() => {}} />,
     );

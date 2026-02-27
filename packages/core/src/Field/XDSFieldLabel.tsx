@@ -93,11 +93,11 @@ export interface XDSFieldLabelProps {
   /**
    * Icon to display before the label text.
    */
-  startIcon?: XDSIconType;
+  labelIcon?: XDSIconType;
   /**
    * Tooltip text to display in an info icon at the end of the label.
    */
-  tooltip?: string;
+  labelTooltip?: string;
 }
 
 /**
@@ -118,8 +118,8 @@ export const XDSFieldLabel = forwardRef<HTMLLabelElement, XDSFieldLabelProps>(
       isDisabled = false,
       isOptional = false,
       isRequired = false,
-      startIcon,
-      tooltip,
+      labelIcon,
+      labelTooltip,
     },
     ref,
   ) => {
@@ -135,9 +135,9 @@ export const XDSFieldLabel = forwardRef<HTMLLabelElement, XDSFieldLabelProps>(
           isDisabled && styles.labelDisabled,
           isLabelHidden && styles.labelHidden,
         )}>
-        {startIcon && (
+        {labelIcon && (
           <XDSIcon
-            icon={startIcon}
+            icon={labelIcon}
             size="sm"
             color={isDisabled ? 'disabled' : 'primary'}
           />
@@ -149,8 +149,8 @@ export const XDSFieldLabel = forwardRef<HTMLLabelElement, XDSFieldLabelProps>(
             ∙ {statusText}
           </span>
         )}
-        {tooltip && (
-          <XDSTooltip content={tooltip} placement="above">
+        {labelTooltip && (
+          <XDSTooltip content={labelTooltip} placement="above">
             <XDSIcon
               icon="info"
               size="sm"

@@ -347,6 +347,11 @@ export interface XDSTimeInputProps {
    * If message is provided, displays below the input.
    */
   status?: XDSInputStatus;
+
+  /**
+   * Tooltip text to display in an info icon at the end of the label.
+   */
+  labelTooltip?: string;
 }
 
 /**
@@ -385,6 +390,7 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
       placeholder = 'Select a time',
       size = 'md',
       status,
+      labelTooltip,
     },
     ref,
   ) => {
@@ -598,7 +604,8 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
                 messageID: status.message ? statusMessageID : undefined,
               }
             : undefined
-        }>
+        }
+        labelTooltip={labelTooltip}>
         <div
           {...stylex.props(
             styles.wrapper,

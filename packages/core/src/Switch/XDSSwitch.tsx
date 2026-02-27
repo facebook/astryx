@@ -380,10 +380,10 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
           isDisabled={isDisabled}
           isOptional={isOptional}
           isRequired={isRequired}
-          startIcon={labelIcon}
-          tooltip={labelTooltip}
+          labelIcon={labelIcon}
+          labelTooltip={labelTooltip}
         />
-        {description && (
+        {description && !isLabelHidden && (
           <span id={descriptionID} {...stylex.props(styles.description)}>
             {description}
           </span>

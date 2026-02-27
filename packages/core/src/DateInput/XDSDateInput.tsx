@@ -325,6 +325,11 @@ export interface XDSDateInputProps {
   status?: XDSInputStatus;
 
   /**
+   * Tooltip text to display in an info icon at the end of the label.
+   */
+  labelTooltip?: string;
+
+  /**
    * Number of months to display in the calendar popover.
    * @default 1
    */
@@ -362,6 +367,7 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
       placeholder = 'Select a date',
       size = 'md',
       status,
+      labelTooltip,
       numberOfMonths = 1,
     },
     ref,
@@ -557,7 +563,8 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
                 messageID: status.message ? statusMessageID : undefined,
               }
             : undefined
-        }>
+        }
+        labelTooltip={labelTooltip}>
         <div
           ref={popover.triggerRef}
           {...stylex.props(

@@ -42,12 +42,12 @@ describe('XDSFieldLabel', () => {
     expect(screen.queryByText(/Required/)).not.toBeInTheDocument();
   });
 
-  it('renders startIcon when provided', () => {
+  it('renders labelIcon when provided', () => {
     render(
       <XDSFieldLabel
         label="Starred"
         inputID="starred-input"
-        startIcon={StarIcon}
+        labelIcon={StarIcon}
       />,
     );
     const svg = document.querySelector('svg');
@@ -60,12 +60,12 @@ describe('XDSFieldLabel', () => {
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLLabelElement));
   });
 
-  it('renders tooltip info icon when tooltip prop is provided', () => {
+  it('renders tooltip info icon when labelTooltip prop is provided', () => {
     render(
       <XDSFieldLabel
         label="Help"
         inputID="help-input"
-        tooltip="This is helpful information"
+        labelTooltip="This is helpful information"
       />,
     );
     // Two SVGs: the info icon is wrapped in tooltip
@@ -73,19 +73,19 @@ describe('XDSFieldLabel', () => {
     expect(svgs.length).toBeGreaterThan(0);
   });
 
-  it('does not render extra icon when tooltip is not provided', () => {
+  it('does not render extra icon when labelTooltip is not provided', () => {
     render(<XDSFieldLabel label="Name" inputID="name-input" />);
     // No SVGs should be present when no icons are provided
     expect(document.querySelector('svg')).not.toBeInTheDocument();
   });
 
-  it('renders tooltip with Optional indicator together', () => {
+  it('renders labelTooltip with Optional indicator together', () => {
     render(
       <XDSFieldLabel
         label="Field"
         inputID="field-input"
         isOptional
-        tooltip="Help text"
+        labelTooltip="Help text"
       />,
     );
     expect(screen.getByText(/Optional/)).toBeInTheDocument();

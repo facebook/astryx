@@ -120,12 +120,13 @@ export interface XDSFieldProps extends Omit<
    */
   label: string;
   /**
-   * Whether to visually hide the label (still accessible to screen readers).
+   * Whether to visually hide the label and description (still accessible to screen readers).
    * @default false
    */
   isLabelHidden?: boolean;
   /**
    * Description text displayed between the label and input.
+   * Hidden when isLabelHidden is true.
    */
   description?: string;
   /**
@@ -149,7 +150,7 @@ export interface XDSFieldProps extends Omit<
   /**
    * Icon to display before the label text.
    */
-  labelStartIcon?: XDSIconType;
+  labelIcon?: XDSIconType;
   /**
    * Status indicator for the field.
    * When set with a message, displays a colored message box below the input.
@@ -194,7 +195,7 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
       descriptionID,
       isOptional = false,
       isRequired = false,
-      labelStartIcon,
+      labelIcon,
       status,
       labelTooltip,
       statusVariant = 'attached',
@@ -219,10 +220,10 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
           isLabelHidden={isLabelHidden}
           isOptional={isOptional}
           isRequired={isRequired}
-          startIcon={labelStartIcon}
-          tooltip={labelTooltip}
+          labelIcon={labelIcon}
+          labelTooltip={labelTooltip}
         />
-        {description && (
+        {description && !isLabelHidden && (
           <span
             id={descriptionID}
             {...stylex.props(styles.description, descriptionOverride)}>

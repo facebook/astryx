@@ -62,6 +62,20 @@ describe('XDSField', () => {
     expect(screen.getByLabelText('Search')).toBeInTheDocument();
   });
 
+  it('hides description when isLabelHidden is true', () => {
+    render(
+      <XDSField
+        label="Search"
+        isLabelHidden
+        description="Search for items"
+        inputID="search-input"
+        descriptionID="search-desc">
+        <input id="search-input" />
+      </XDSField>,
+    );
+    expect(screen.queryByText('Search for items')).not.toBeInTheDocument();
+  });
+
   it('shows label visually by default', () => {
     render(
       <XDSField label="Email" inputID="email-input">

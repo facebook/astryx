@@ -340,21 +340,21 @@ export const StartIconVariations: Story = {
           description="Receive updates via email"
           value={value1}
           onChange={setValue1}
-          startIcon={EnvelopeIcon}
+          labelIcon={EnvelopeIcon}
         />
         <XDSCheckboxInput
           label="Push notifications"
           description="Get instant alerts on your device"
           value={value2}
           onChange={setValue2}
-          startIcon={BellIcon}
+          labelIcon={BellIcon}
         />
         <XDSCheckboxInput
           label="Two-factor authentication"
           description="Add an extra layer of security"
           value={value3}
           onChange={setValue3}
-          startIcon={ShieldCheckIcon}
+          labelIcon={ShieldCheckIcon}
           isDisabled
         />
       </div>

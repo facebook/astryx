@@ -250,7 +250,12 @@ export interface XDSCheckboxInputProps {
    */
   isDisabled?: boolean;
   /**
-   * Whether the checkbox is required.
+   * Whether the field is optional. Mutually exclusive with isRequired.
+   * @default false
+   */
+  isOptional?: boolean;
+  /**
+   * Whether the checkbox is required. Mutually exclusive with isOptional.
    * @default false
    */
   isRequired?: boolean;
@@ -272,7 +277,7 @@ export interface XDSCheckboxInputProps {
   /**
    * Icon to display before the label text.
    */
-  startIcon?: XDSIconType;
+  labelIcon?: XDSIconType;
   /**
    * Status indicator for the checkbox.
    * When set with a message, displays a colored message box below the checkbox.
@@ -312,11 +317,12 @@ export const XDSCheckboxInput = forwardRef<
       isLoading = false,
       value,
       isDisabled = false,
+      isOptional = false,
       isRequired = false,
       size = 'md',
       onFocus,
       onBlur,
-      startIcon,
+      labelIcon,
       status,
     },
     ref,
@@ -439,9 +445,11 @@ export const XDSCheckboxInput = forwardRef<
               inputID={id}
               isLabelHidden={isLabelHidden}
               isDisabled={isDisabled}
-              startIcon={startIcon}
+              isOptional={isOptional}
+              isRequired={isRequired}
+              labelIcon={labelIcon}
             />
-            {description && (
+            {description && !isLabelHidden && (
               <span id={descriptionID} {...stylex.props(styles.description)}>
                 {description}
               </span>
