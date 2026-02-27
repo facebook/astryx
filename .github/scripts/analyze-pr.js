@@ -62,6 +62,28 @@ function componentExistsInBase(componentName) {
   }
 }
 
+// Get exports from the base branch for a component (to detect new exports in modified dirs)
+function getBaseExports(componentName) {
+  try {
+    const content = execSync(
+      `git show ${baseBranch}:${CORE_SRC}/${componentName}/index.ts`,
+      { encoding: 'utf8', stdio: 'pipe' }
+    );
+    const exportMatches = content.match(/export\s+{\s*([^}]+)\s*}/g) || [];
+    const exports = [];
+    for (const match of exportMatches) {
+      const inner = match.replace(/export\s*{\s*/, '').replace(/\s*}/, '');
+      exports.push(...inner.split(',').map(e => e.trim().split(' ')[0]));
+    }
+    if (content.includes('export default')) {
+      exports.push('default');
+    }
+    return exports.filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
 // Get file size in human readable format
 function getFileSize(filePath) {
   try {
@@ -401,6 +423,27 @@ function analyze() {
     componentStats[comp] = getComponentStats(comp);
   }
 
+  // For modified directories, detect new exports (components that exist in HEAD
+  // but not in the base branch). A directory like Layer/ may be "modified" but
+  // contain brand-new exports like XDSPopover alongside existing ones.
+  const newExports = [];
+  for (const comp of modifiedComponents) {
+    const headExports = componentStats[comp]?.exports || [];
+    const baseExports = getBaseExports(comp);
+    const added = headExports.filter(e => e.startsWith('XDS') && !baseExports.includes(e));
+    newExports.push(...added);
+  }
+
+  // Also include all XDS exports from truly new directories
+  for (const comp of newComponents) {
+    const exports = componentStats[comp]?.exports || [];
+    newExports.push(...exports.filter(e => e.startsWith('XDS')));
+  }
+
+  if (newExports.length > 0) {
+    console.log(`New exports: ${newExports.join(', ')}`);
+  }
+
   // Build visual regression grep pattern from actual exported component names
   // (not directory names — e.g., Layer/ exports XDSPopover, XDSTooltip, etc.)
   const vrtComponents = [...new Set(
@@ -411,6 +454,7 @@ function analyze() {
   const result = {
     newComponents,
     modifiedComponents,
+    newExports,
     vrtComponents,
     componentStats,
     totalBundle: getTotalBundleStats(),
