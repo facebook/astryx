@@ -141,20 +141,21 @@ For landing pages or simple apps that don't need secondary navigation.
 
 ## Props
 
-| Prop                        | Type                             | Default  | Description                                 |
-| --------------------------- | -------------------------------- | -------- | ------------------------------------------- |
-| `children`                  | `ReactNode`                      | —        | Main content area (rendered as `<main>`)    |
-| `topNav`                    | `ReactNode`                      | —        | Top navigation slot (typically XDSTopNav)   |
-| `sideNav`                   | `ReactNode`                      | —        | Side navigation slot (typically XDSSideNav) |
-| `banner`                    | `ReactNode`                      | —        | Banner slot for system-wide announcements   |
-| `height`                    | `'fill' \| 'auto'`               | `'fill'` | Height behavior                             |
-| `isSideNavCollapsed`        | `boolean`                        | —        | Whether sideNav is collapsed (controlled)   |
-| `initialIsSideNavCollapsed` | `boolean`                        | `false`  | Initial collapsed state (uncontrolled)      |
-| `onSideNavCollapsedChange`  | `(isCollapsed: boolean) => void` | —        | Collapse change callback                    |
-| `sideNavBreakpoint`         | `'sm' \| 'md' \| 'lg' \| 'none'` | `'md'`   | Breakpoint for auto-collapse                |
-| `sideNavWidth`              | `number`                         | `260`    | SideNav width in pixels                     |
-| `xstyle`                    | `StyleXStyles`                   | —        | StyleX overrides                            |
-| `data-testid`               | `string`                         | —        | Test ID                                     |
+| Prop                        | Type                                 | Default     | Description                                 |
+| --------------------------- | ------------------------------------ | ----------- | ------------------------------------------- |
+| `background`                | `'wash' \| 'wash-gray' \| 'surface'` | `'surface'` | Background color of the shell               |
+| `children`                  | `ReactNode`                          | —           | Main content area (rendered as `<main>`)    |
+| `topNav`                    | `ReactNode`                          | —           | Top navigation slot (typically XDSTopNav)   |
+| `sideNav`                   | `ReactNode`                          | —           | Side navigation slot (typically XDSSideNav) |
+| `banner`                    | `ReactNode`                          | —           | Banner slot for system-wide announcements   |
+| `height`                    | `'fill' \| 'auto'`                   | `'fill'`    | Height behavior                             |
+| `isSideNavCollapsed`        | `boolean`                            | —           | Whether sideNav is collapsed (controlled)   |
+| `initialIsSideNavCollapsed` | `boolean`                            | `false`     | Initial collapsed state (uncontrolled)      |
+| `onSideNavCollapsedChange`  | `(isCollapsed: boolean) => void`     | —           | Collapse change callback                    |
+| `sideNavBreakpoint`         | `'sm' \| 'md' \| 'lg' \| 'none'`     | `'md'`      | Breakpoint for auto-collapse                |
+| `sideNavWidth`              | `number`                             | `260`       | SideNav width in pixels                     |
+| `xstyle`                    | `StyleXStyles`                       | —           | StyleX overrides                            |
+| `data-testid`               | `string`                             | —           | Test ID                                     |
 
 ## Height Modes
 

@@ -139,6 +139,15 @@ describe('XDSAppShell', () => {
     expect(screen.getByTestId('my-shell')).toBeInTheDocument();
   });
 
+  it('renders with wash-gray background', () => {
+    render(
+      <XDSAppShell background="wash-gray" data-testid="shell">
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+    expect(screen.getByTestId('shell')).toBeInTheDocument();
+  });
+
   // ===========================================================================
   // Skip-to-content link
   // ===========================================================================

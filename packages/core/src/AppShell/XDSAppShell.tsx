@@ -60,11 +60,12 @@ export type XDSAppShellBreakpoint = 'sm' | 'md' | 'lg' | 'none';
 export interface XDSAppShellProps {
   /**
    * Background color of the shell.
-   * - `wash`: Page-level background — subtle gray in light, near-black in dark
+   * - `wash`: Page-level background — subtle blue-gray in light, near-black in dark
+   * - `wash-gray`: Neutral gray wash — translucent gray for a softer, neutral feel
    * - `surface`: Card/panel background — white in light, dark gray in dark
    * @default 'surface'
    */
-  background?: 'wash' | 'surface';
+  background?: 'wash' | 'wash-gray' | 'surface';
 
   /**
    * Optional banner slot for system-wide announcements.
@@ -146,6 +147,9 @@ const styles = stylex.create({
   },
   rootBgWash: {
     backgroundColor: colorVars['--color-wash'],
+  },
+  rootBgWashGray: {
+    backgroundColor: colorVars['--color-gray-background'],
   },
   rootBgSurface: {
     backgroundColor: colorVars['--color-surface'],
@@ -538,7 +542,9 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
         data-testid={dataTestId}
         {...stylex.props(
           styles.root,
-          background === 'wash' ? styles.rootBgWash : styles.rootBgSurface,
+          background === 'wash' && styles.rootBgWash,
+          background === 'wash-gray' && styles.rootBgWashGray,
+          background === 'surface' && styles.rootBgSurface,
           isFill ? styles.rootFill : styles.rootAuto,
           xstyle,
         )}>

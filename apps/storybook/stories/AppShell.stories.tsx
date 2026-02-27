@@ -458,6 +458,21 @@ export const ContentOnly: Story = {
 };
 
 /**
+ * Wash-gray background — uses a neutral translucent gray instead of the
+ * blue-tinted wash. Creates a softer, more neutral page feel.
+ */
+export const WashGrayBackground: Story = {
+  render: () => (
+    <XDSAppShell
+      background="wash-gray"
+      topNav={<AppTopNav />}
+      sideNav={<SideNavWithoutHeader />}>
+      <MockContent />
+    </XDSAppShell>
+  ),
+};
+
+/**
  * Banner with TopNav + SideNav. Shows how the banner sits between
  * the TopNav and the content/sidenav area.
  */
