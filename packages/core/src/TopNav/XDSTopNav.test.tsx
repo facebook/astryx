@@ -134,7 +134,7 @@ describe('XDSTopNav', () => {
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLElement));
   });
 
-  it('creates a stacking context on content sections above mega menu backdrop', () => {
+  it('does not create a stacking context on nav element', () => {
     render(
       <XDSTopNav
         label="Main navigation"
@@ -143,14 +143,9 @@ describe('XDSTopNav', () => {
       />,
     );
     const nav = screen.getByRole('navigation');
-    // Nav itself should NOT have position: relative (backdrop needs outer wrapper as ancestor)
+    // Nav itself should NOT have position: relative — the wrapper provides
+    // positioning context for the mega menu panel.
     expect(nav).not.toHaveStyle({position: 'relative'});
-    // Content section divs should have position: relative for stacking context
-    const sections = nav.querySelectorAll(':scope > div');
-    expect(sections.length).toBeGreaterThanOrEqual(1);
-    sections.forEach(section => {
-      expect(section).toHaveStyle({position: 'relative'});
-    });
   });
 });
 

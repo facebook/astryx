@@ -21,7 +21,6 @@ import {
   textSizeVars,
   fontWeightVars,
   lineHeightVars,
-  elevationVars,
 } from '../theme/tokens.stylex';
 
 // =============================================================================
@@ -79,28 +78,6 @@ const styles = stylex.create({
   chevronOpen: {
     transform: 'rotate(180deg)',
   },
-  // Backdrop covers the entire positioned ancestor (nav + panel area).
-  // It provides the unified card appearance: shared shadow, rounded corners,
-  // and surface background so the nav bar and panel look like one popover.
-  backdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 99,
-    borderRadius: radiusVars['--radius-container'],
-    backgroundColor: colorVars['--color-surface'],
-    boxShadow: elevationVars['--elevation-hover'],
-    opacity: 0,
-    transitionProperty: 'opacity',
-    transitionDuration: '0.2s',
-    transitionTimingFunction: 'ease-out',
-    pointerEvents: 'none',
-  },
-  backdropOpen: {
-    opacity: 1,
-  },
   panel: {
     position: 'absolute',
     top: '100%',
@@ -108,11 +85,16 @@ const styles = stylex.create({
     right: 0,
     zIndex: 100,
     backgroundColor: colorVars['--color-surface'],
-    // No separate shadow or border — the backdrop provides the unified
-    // card shadow, and the panel flows seamlessly from the nav bar.
+    // Top border provides a subtle divider between the nav bar and panel
+    // while keeping them visually connected as one card.
+    borderTop: `1px solid ${colorVars['--color-divider']}`,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
     borderBottomLeftRadius: radiusVars['--radius-container'],
     borderBottomRightRadius: radiusVars['--radius-container'],
-    boxShadow: elevationVars['--elevation-hover'],
+    // Shadow wraps the panel; the wrapper handles the nav bar's card chrome.
+    // Together they create a unified card appearance without a backdrop overlay.
+    boxShadow: `0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)`,
     overflow: 'hidden',
     opacity: 0,
     transform: 'translateY(-4px)',
@@ -458,12 +440,6 @@ export function XDSTopNavMegaMenu({
           <ChevronDown />
         </span>
       </button>
-      {/* Backdrop: covers the entire positioned ancestor to create a unified
-          card appearance (shared shadow + rounded corners) for nav + panel */}
-      <div
-        aria-hidden="true"
-        {...stylex.props(styles.backdrop, isOpen && styles.backdropOpen)}
-      />
       <div
         role="menu"
         aria-label={label}

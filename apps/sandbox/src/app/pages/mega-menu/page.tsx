@@ -21,14 +21,21 @@ const styles = stylex.create({
     position: 'relative',
     borderRadius: 12,
     overflow: 'visible',
+    backgroundColor: 'var(--color-surface, #fff)',
     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
-    transitionProperty: 'box-shadow',
+    transitionProperty: 'border-radius, box-shadow',
     transitionDuration: '0.2s',
+    transitionTimingFunction: 'ease-out',
   },
-  // Hide wrapper shadow when mega menu is open so the backdrop's
-  // unified card shadow takes over seamlessly.
+  // When the mega menu opens, the wrapper becomes the top half of the
+  // unified card: drop the bottom radius so it flows seamlessly into the
+  // panel, and remove the wrapper shadow (the panel provides its own
+  // shadow that visually wraps the dropdown area).
   navWrapperMenuOpen: {
-    boxShadow: 'none',
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    boxShadow:
+      '0 -1px 3px rgba(0, 0, 0, 0.06), -1px 0 3px rgba(0, 0, 0, 0.04), 1px 0 3px rgba(0, 0, 0, 0.04)',
   },
 });
 
