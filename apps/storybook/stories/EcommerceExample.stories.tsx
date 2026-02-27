@@ -14,7 +14,10 @@ import {XDSDivider} from '@xds/core/Divider';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {
   colorVars,
+  fontWeightVars,
+  radiusVars,
   spacingVars,
+  textSizeVars,
   typographyVars,
 } from '@xds/core/theme/tokens.stylex';
 
@@ -27,7 +30,6 @@ import {
   cartSummary,
   storeSummary,
   formatPrice,
-
   type Product,
   type Order,
   type Customer,
@@ -56,13 +58,13 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-4'],
   },
   statValue: {
-    fontSize: '28px',
-    fontWeight: '700',
+    fontSize: textSizeVars['--text-4xl'],
+    fontWeight: fontWeightVars['--font-weight-bold'],
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
   statLabel: {
-    fontSize: '13px',
+    fontSize: textSizeVars['--text-sm'],
     color: colorVars['--color-text-secondary'],
     margin: 0,
   },
@@ -70,28 +72,28 @@ const styles = stylex.create({
     width: '100%',
     height: '180px',
     objectFit: 'cover',
-    borderRadius: '8px 8px 0 0',
+    borderRadius: `${radiusVars['--radius-element']} ${radiusVars['--radius-element']} 0 0`,
   },
   productMeta: {
-    fontSize: '13px',
+    fontSize: textSizeVars['--text-sm'],
     color: colorVars['--color-text-secondary'],
     margin: 0,
   },
   price: {
-    fontSize: '18px',
-    fontWeight: '600',
+    fontSize: textSizeVars['--text-xl'],
+    fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
   comparePrice: {
-    fontSize: '14px',
+    fontSize: textSizeVars['--text-base'],
     color: colorVars['--color-text-secondary'],
     textDecoration: 'line-through',
     margin: 0,
   },
   sectionTitle: {
-    fontSize: '20px',
-    fontWeight: '600',
+    fontSize: textSizeVars['--text-2xl'],
+    fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
@@ -99,7 +101,7 @@ const styles = stylex.create({
     width: '56px',
     height: '56px',
     objectFit: 'cover',
-    borderRadius: '8px',
+    borderRadius: radiusVars['--radius-element'],
   },
   summaryRow: {
     display: 'flex',
@@ -107,25 +109,25 @@ const styles = stylex.create({
     alignItems: 'center',
   },
   summaryLabel: {
-    fontSize: '14px',
+    fontSize: textSizeVars['--text-base'],
     color: colorVars['--color-text-secondary'],
     margin: 0,
   },
   summaryValue: {
-    fontSize: '14px',
+    fontSize: textSizeVars['--text-base'],
     color: colorVars['--color-text-primary'],
-    fontWeight: '500',
+    fontWeight: fontWeightVars['--font-weight-medium'],
     margin: 0,
   },
   summaryTotal: {
-    fontSize: '16px',
-    fontWeight: '700',
+    fontSize: textSizeVars['--text-lg'],
+    fontWeight: fontWeightVars['--font-weight-bold'],
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
   stars: {
-    color: '#f59e0b',
-    fontSize: '14px',
+    color: colorVars['--color-warning'],
+    fontSize: textSizeVars['--text-base'],
   },
   barContainer: {
     display: 'flex',
@@ -133,18 +135,24 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
   },
   barLabel: {
-    fontSize: '13px',
+    fontSize: textSizeVars['--text-sm'],
     color: colorVars['--color-text-secondary'],
     minWidth: '80px',
     margin: 0,
   },
   barValue: {
-    fontSize: '13px',
+    fontSize: textSizeVars['--text-sm'],
     color: colorVars['--color-text-primary'],
-    fontWeight: '500',
+    fontWeight: fontWeightVars['--font-weight-medium'],
     minWidth: '60px',
     textAlign: 'right' as const,
     margin: 0,
+  },
+  productCardBody: {
+    paddingTop: 0,
+    paddingRight: spacingVars['--spacing-4'],
+    paddingBottom: spacingVars['--spacing-4'],
+    paddingLeft: spacingVars['--spacing-4'],
   },
 });
 
@@ -209,7 +217,10 @@ export const Dashboard: Story = {
       {label: 'Total Revenue', value: formatPrice(storeSummary.totalRevenue)},
       {label: 'Orders', value: storeSummary.totalOrders.toString()},
       {label: 'Customers', value: storeSummary.totalCustomers.toString()},
-      {label: 'Avg Order Value', value: formatPrice(storeSummary.averageOrderValue)},
+      {
+        label: 'Avg Order Value',
+        value: formatPrice(storeSummary.averageOrderValue),
+      },
     ];
 
     const maxRevenue = Math.max(
@@ -245,9 +256,7 @@ export const Dashboard: Story = {
                     max={100}
                   />
                 </div>
-                <p {...stylex.props(styles.barValue)}>
-                  {formatPrice(revenue)}
-                </p>
+                <p {...stylex.props(styles.barValue)}>{formatPrice(revenue)}</p>
               </div>
             ))}
           </XDSVStack>
@@ -340,9 +349,7 @@ export const ProductCatalog: Story = {
       <XDSHStack gap="space2" vAlign="center" hAlign="between">
         <p {...stylex.props(styles.sectionTitle)}>Products</p>
         <XDSHStack gap="space2">
-          <XDSBadge variant="neutral">
-            {products.length} products
-          </XDSBadge>
+          <XDSBadge variant="neutral">{products.length} products</XDSBadge>
           <XDSButton variant="primary" label="Add Product">
             Add Product
           </XDSButton>
@@ -358,7 +365,7 @@ export const ProductCatalog: Story = {
                 alt={product.name}
                 {...stylex.props(styles.productImage)}
               />
-              <div style={{padding: '0 16px 16px'}}>
+              <div {...stylex.props(styles.productCardBody)}>
                 <XDSVStack gap="space2">
                   <XDSHStack gap="space2" vAlign="center" hAlign="between">
                     <XDSBadge variant="neutral">{product.category}</XDSBadge>
