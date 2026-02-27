@@ -93,6 +93,39 @@ export const WithLogo: Story = {
   },
 };
 
+/**
+ * Icon-only logo — no circular background. Uses primary icon color.
+ * Lighter feel for apps that don't need the accent circle.
+ */
+export const WithIconOnlyLogo: Story = {
+  args: {
+    label: 'Main navigation',
+    title: (
+      <XDSTopNavTitle
+        title="Dashboard"
+        logo={
+          <XDSNavIcon icon={<CubeIcon />} variant="icon" />
+        }
+        href="#"
+      />
+    ),
+    startContent: (
+      <>
+        <XDSTopNavItem label="Overview" href="#" isSelected />
+        <XDSTopNavItem label="Analytics" href="#" />
+        <XDSTopNavItem label="Reports" href="#" />
+      </>
+    ),
+    endContent: (
+      <XDSButton
+        label="Profile"
+        variant="ghost"
+        icon={<UserCircleIcon />}
+      />
+    ),
+  },
+};
+
 export const TitleOnly: Story = {
   args: {
     label: 'Main navigation',
