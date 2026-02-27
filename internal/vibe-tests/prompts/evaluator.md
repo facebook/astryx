@@ -58,8 +58,24 @@ A response can be successful AND have acceptable escape hatches.
 **Acceptable** (noted but does NOT count against success):
 
 - `supplemental_css` — CSS for things the component system doesn't cover (layout gaps, responsive breakpoints, animations, decoration)
-- `wrapper_div` — Structural HTML needed to compose components
+- `wrapper_div` — Structural HTML needed to compose components *when no XDS layout component exists for the purpose*
 - `inline_style` — Minor inline styles for things without a component prop
+
+### Raw Div Detection
+
+Raw `<div>` elements should be flagged as escape hatches. Severity depends on whether an XDS component covers the use case:
+
+**Critical `wrapper_div`** — A `<div>` used where an XDS component exists:
+- `<div>` for vertical/horizontal stacking → should be `XDSVStack` / `XDSHStack`
+- `<div>` for grid layout → should be `XDSGrid`
+- `<div>` for centering → should be `XDSCenter`
+- `<div>` for page structure → should be `XDSLayout` / `XDSLayoutContent`
+- `<div>` for content grouping → should be `XDSSection` or `XDSCard`
+- `<div>` for text → should be `XDSText`
+- `<div>` for list items → should be `XDSList` / `XDSListItem`
+- `<div onClick>` → should be `XDSButton` or `XDSLink`
+
+**Acceptable `wrapper_div`** — A `<div>` for something XDS doesn't cover (e.g., portal target, third-party library container, or a genuinely novel structural need with no matching component).
 
 ### Key Rules
 

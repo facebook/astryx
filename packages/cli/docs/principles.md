@@ -16,6 +16,26 @@ React design system for internal tools. Components use `XDS` prefix.
 ❌ Hardcoded colors (#fff) → Use var(--color-_)
 ❌ Hardcoded spacing (16px) → Use spacing tokens or var(--spacing-_)
 ❌ Inventing props → Read component docs first
+❌ Raw `<div>` elements → Use XDS layout components (see below)
+
+## No Raw Divs
+
+Prefer XDS components over raw `<div>` elements. The design system covers virtually all layout needs:
+
+| Instead of…                        | Use…                                    |
+| ---------------------------------- | --------------------------------------- |
+| `<div>` for vertical stacking      | `XDSVStack`                             |
+| `<div>` for horizontal layout      | `XDSHStack`                             |
+| `<div>` for grid layout            | `XDSGrid`                               |
+| `<div>` for centering              | `XDSCenter`                             |
+| `<div>` for page structure         | `XDSLayout` / `XDSLayoutContent`        |
+| `<div>` for grouping content       | `XDSSection` or `XDSCard`               |
+| `<div>` for text wrapping          | `XDSText`                               |
+| `<div>` for list items             | `XDSList` / `XDSListItem`              |
+| `<div onClick>` for interactions   | `XDSButton` or `XDSLink`               |
+| `<hr>` / `<div>` for separators    | `XDSDivider`                            |
+
+A raw `<div>` is acceptable *only* when no XDS component exists for the purpose (e.g., a portal target, a ref container for a third-party library). When you must use one, add a comment explaining why.
 
 ## StyleX Usage
 
@@ -30,7 +50,7 @@ const styles = stylex.create({
   },
 });
 
-<div {...stylex.props(styles.container)}>
+<XDSSection xstyle={styles.container}>
 ```
 
 ## Quick Token Reference

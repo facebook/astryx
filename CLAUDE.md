@@ -73,6 +73,10 @@ This project uses **Fractal Documentation** — a self-referential pattern where
 
 Look for `<!-- SYNC: ... -->` comments and `SYNC:` in file headers as reminders.
 
+## Key Rules
+
+- **No raw `<div>` elements.** Use XDS layout components (`XDSVStack`, `XDSHStack`, `XDSGrid`, `XDSCenter`, `XDSSection`, `XDSCard`, `XDSText`, etc.) instead. See `npx xds docs principles` for the full mapping. A raw `<div>` is only acceptable when no XDS component covers the use case.
+
 ## Quick Reference
 
 - **Package manager**: Yarn 1 (Classic)
