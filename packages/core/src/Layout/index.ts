@@ -30,8 +30,14 @@ export type {
 } from '../Stack/stackItem.stylex';
 
 // Stack components (re-exported from Stack module)
-export {XDSHStack, XDSVStack, XDSStackItem} from '../Stack';
-export type {XDSHStackProps, XDSVStackProps, XDSStackItemProps} from '../Stack';
+export {XDSStack, XDSHStack, XDSVStack, XDSStackItem} from '../Stack';
+export type {
+  XDSStackProps,
+  StackAlignment,
+  XDSHStackProps,
+  XDSVStackProps,
+  XDSStackItemProps,
+} from '../Stack';
 
 // Container components (re-exported from their own modules)
 export {XDSCard} from '../Card';
