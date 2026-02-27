@@ -211,7 +211,10 @@ function getStoryTitle(componentName) {
       return titleMatch ? titleMatch[1] : null;
     }).filter(Boolean);
 
-    return titles.length === 1 ? titles[0] : titles.length > 0 ? titles : null;
+    // Always return a single string (first match) or null — never an array.
+    // Multiple story files may match (e.g. Popover.stories.tsx + PopoverFilter.stories.tsx),
+    // but downstream code expects a string for Storybook link generation.
+    return titles.length > 0 ? titles[0] : null;
   } catch {
     return null;
   }

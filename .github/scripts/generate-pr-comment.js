@@ -57,7 +57,7 @@ try {
 // Build a Storybook deep link URL for a component
 // Story titles like "Core/XDSButton" become path "/docs/core-xdsbutton--docs"
 function getStorybookLink(storybookBaseUrl, storyTitle) {
-  if (!storybookBaseUrl || !storyTitle) return null;
+  if (!storybookBaseUrl || !storyTitle || typeof storyTitle !== 'string') return null;
   // Storybook converts "Core/XDSButton" to "core-xdsbutton" as the story ID prefix
   const storyPath = storyTitle.toLowerCase().replace(/\//g, '-');
   return `${storybookBaseUrl}?path=/docs/${storyPath}--docs`;
