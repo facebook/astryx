@@ -24,7 +24,6 @@ import {
   radiusVars,
   textSizeVars,
   fontWeightVars,
-  lineHeightVars,
 } from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
@@ -43,7 +42,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-rounded'],
     fontFamily: 'inherit',
     fontSize: textSizeVars['--text-xsm'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: '1',
     fontWeight: fontWeightVars['--font-weight-medium'],
     letterSpacing: '-0.24px',
     whiteSpace: 'nowrap',
