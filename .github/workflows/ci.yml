@@ -519,7 +519,7 @@ jobs:
           NEW_COMPONENTS=$(cat analysis.json | jq -r '
             if .vrtComponents and (.vrtComponents | length > 0)
             then [.newComponents[] as $dir |
-              .componentStats[$dir].exports? // empty |
+              .componentStats[$dir].exports[]? // empty |
               select(startswith("XDS"))] | unique | join("|")
             else .newComponents | map("XDS" + .) | join("|")
             end')
