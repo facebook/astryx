@@ -264,59 +264,26 @@ const dynamicStyles = stylex.create({
 
 /**
  * Application-level layout shell. Provides the structural frame for an app:
- * header, side navigation, and main content area.
+ * top navigation, side navigation, and main content area.
  *
- * Composes XDSLayout internally. Replaces internal XDSPage + XDSPageLayout pattern.
- *
- * Features:
- * - Slot-based API: `topNav`, `sideNav`, `banner`, `children`
- * - Two height modes: `fill` (100dvh, independent scroll) and `auto` (page scroll, sticky navs)
- * - SideNav collapse: controlled + uncontrolled patterns
- * - Responsive sideNav collapse via breakpoint
- * - Mobile overlay sideNav with backdrop
- * - Skip-to-content link
- * - Semantic HTML: `<header>`, `<nav>`, `<main>`
+ * Slot-based API with `topNav`, `sideNav`, `banner`, and `children`.
+ * Supports two height modes (`fill` and `auto`), responsive side nav
+ * collapse, and mobile overlay with backdrop.
  *
  * @example
  * ```tsx
- * // TopNav + SideNav — the most common pattern.
- * // SideNav omits its header because TopNav provides app identity.
  * <XDSAppShell
- *   topNav={
- *     <XDSTopNav
- *       label="Main navigation"
- *       title={<XDSTopNavTitle title="My App" logo={<Logo />} />}
- *       startContent={<XDSTopNavItem label="Home" href="/" isSelected />}
- *     />
- *   }
+ *   topNav={<XDSTopNav label="Navigation" title={<XDSTopNavTitle title="My App" />} />}
  *   sideNav={
  *     <XDSSideNav>
  *       <XDSSideNavSection title="Main" isHeaderHidden>
- *         <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
- *         <XDSSideNavItem label="Analytics" icon={ChartBarIcon} href="/analytics" />
+ *         <XDSSideNavItem label="Dashboard" isSelected href="/dashboard" />
+ *         <XDSSideNavItem label="Analytics" href="/analytics" />
  *       </XDSSideNavSection>
  *     </XDSSideNav>
  *   }
  * >
  *   <DashboardContent />
- * </XDSAppShell>
- *
- * // SideNav only — header provides app identity when there's no TopNav
- * <XDSAppShell
- *   sideNav={
- *     <XDSSideNav header={<XDSSideNavHeader title="My App" titleHref="/" />}>
- *       <XDSSideNavSection title="Main" isHeaderHidden>
- *         <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected />
- *       </XDSSideNavSection>
- *     </XDSSideNav>
- *   }
- * >
- *   <DashboardContent />
- * </XDSAppShell>
- *
- * // TopNav only (no sideNav)
- * <XDSAppShell topNav={<XDSTopNav title="Landing" />}>
- *   <LandingContent />
  * </XDSAppShell>
  * ```
  */

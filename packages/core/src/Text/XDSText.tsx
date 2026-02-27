@@ -166,23 +166,16 @@ const defaultColorByType: Record<XDSTextType, XDSTextColor> = {
 };
 
 /**
- * XDSText - Semantic text component
- *
- * Renders text with semantic styling from the theme.
+ * Semantic text component. Renders text with type-based styling from the theme.
  *
  * @example
  * ```tsx
  * <XDSText type="body">Body text</XDSText>
  * <XDSText type="large">Large body text</XDSText>
  * <XDSText type="label">Form label</XDSText>
- * <XDSText type="large-label">Empty state label</XDSText>
  * <XDSText type="supporting">Helper text</XDSText>
- * <XDSText type="code">const x = 1;</XDSText>
- *
- * // With truncation
- * <XDSText type="body" maxLines={2}>Long text that will be clamped...</XDSText>
- *
- * // With color and weight
+ * <XDSText type="code">{'const x = 1;'}</XDSText>
+ * <XDSText type="body" maxLines={2}>Clamped text</XDSText>
  * <XDSText type="body" color="secondary" weight="bold">Styled text</XDSText>
  * ```
  */

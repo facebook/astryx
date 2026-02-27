@@ -118,24 +118,21 @@ export interface XDSCollapsibleProps {
  * Handles its own state by default, or defers to XDSCollapsibleGroup
  * when a `value` prop is provided and a group is present.
  *
- * @compositionHint Use inside XDSCard for elevated collapsible sections.
+ * Use inside XDSCard for elevated collapsible sections.
  * Wrap multiple instances in XDSCollapsibleGroup for accordion behavior.
  *
  * @example
  * ```tsx
- * // Standalone
  * <XDSCollapsible trigger="Details">
- *   <p>Collapsible content</p>
+ *   <XDSText type="body">Collapsible content</XDSText>
  * </XDSCollapsible>
  *
- * // Inside a card
  * <XDSCard>
  *   <XDSCollapsible trigger="Settings">
  *     <SettingsForm />
  *   </XDSCollapsible>
  * </XDSCard>
  *
- * // Accordion (coordinated group)
  * <XDSCollapsibleGroup type="single" defaultValue="general">
  *   <XDSVStack gap="space2">
  *     <XDSCard>

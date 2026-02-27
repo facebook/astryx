@@ -140,19 +140,18 @@ export interface XDSSideNavProps extends Omit<
 /**
  * Sidebar navigation container for application pages.
  *
- * Provides five zones stacked vertically: a sticky header + action area (stuck together),
- * scrollable nav content, and a sticky bottom footer + footer icon bar.
+ * Five vertical zones: sticky header + action area at top,
+ * scrollable nav content in the middle, and sticky footer + icon bar at bottom.
  *
  * @example
  * ```tsx
  * <XDSSideNav
- *   header={<XDSSideNavHeader icon={<AppIcon />} title="My App" titleHref="/" />}
+ *   header={<XDSSideNavHeader title="My App" titleHref="/" />}
  *   topContent={<XDSButton label="Create new" variant="primary" />}
- *   footerIcons={<XDSButton icon={HelpIcon} variant="ghost" label="Help" />}
  * >
  *   <XDSSideNavSection title="Main">
- *     <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
- *     <XDSSideNavItem label="Projects" icon={FolderIcon} href="/projects" />
+ *     <XDSSideNavItem label="Dashboard" isSelected href="/dashboard" />
+ *     <XDSSideNavItem label="Projects" href="/projects" />
  *   </XDSSideNavSection>
  * </XDSSideNav>
  * ```

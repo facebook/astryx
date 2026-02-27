@@ -162,6 +162,19 @@ export interface XDSSkeletonProps extends Omit<
   'data-testid'?: string;
 }
 
+/**
+ * A placeholder shape that indicates content is loading.
+ * Renders a pulsing block with configurable width, height, and border radius.
+ * Use the `index` prop to stagger animation timing across multiple skeletons.
+ *
+ * @example
+ * ```tsx
+ * <XDSSkeleton width={200} height={20} />
+ * <XDSSkeleton width={40} height={40} radius="rounded" />
+ * <XDSSkeleton width={300} height={16} index={0} />
+ * <XDSSkeleton width={280} height={16} index={1} />
+ * ```
+ */
 export const XDSSkeleton = forwardRef<HTMLDivElement, XDSSkeletonProps>(
   (
     {

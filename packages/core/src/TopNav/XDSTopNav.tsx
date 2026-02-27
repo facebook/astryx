@@ -127,51 +127,19 @@ export interface XDSTopNavProps extends Omit<
 }
 
 /**
- * Top navigation bar component for application headers.
+ * Top navigation bar for application headers.
  *
- * Uses a slot-based API with `title`, `startContent`, `centerContent`, and
- * `endContent` props for flexible layout. Title and startContent are
- * left-aligned, centerContent is centered, and endContent is right-aligned.
- *
- * When `centerContent` is provided, the layout switches to a three-column
- * CSS grid (`1fr auto 1fr`) to ensure the center content is always at the
- * exact horizontal center of the nav bar, regardless of left/right content
- * widths.
- *
- * Positioning is handled by the layout system (e.g. XDSAppShell applies sticky
- * behavior in auto height mode). TopNav itself is a pure content component.
+ * Slot-based layout with `title`, `startContent`, `centerContent`, and
+ * `endContent`. When `centerContent` is provided, the layout switches to a
+ * three-column CSS grid to keep center content horizontally centered.
  *
  * @example
  * ```tsx
- * // Standard layout (left + right)
  * <XDSTopNav
  *   label="Main navigation"
- *   title={<XDSTopNavTitle title="My App" logo={<Logo />} />}
- *   startContent={
- *     <>
- *       <XDSTopNavItem label="Home" href="/" isSelected />
- *       <XDSTopNavItem label="Products" href="/products" />
- *     </>
- *   }
- *   endContent={
- *     <>
- *       <XDSButton label="Search" icon={<SearchIcon />} variant="ghost" />
- *       <Avatar />
- *     </>
- *   }
- * />
- *
- * // Centered layout (left + center + right)
- * <XDSTopNav
- *   label="Main navigation"
- *   title={<XDSTopNavTitle title="My App" logo={<Logo />} />}
- *   centerContent={
- *     <>
- *       <XDSTopNavItem label="Home" href="/" isSelected />
- *       <XDSTopNavItem label="Products" href="/products" />
- *     </>
- *   }
- *   endContent={<Avatar />}
+ *   title={<XDSTopNavTitle title="My App" />}
+ *   startContent={<XDSTopNavItem label="Home" href="/" isSelected />}
+ *   endContent={<XDSButton label="Search" variant="ghost" />}
  * />
  * ```
  */
