@@ -133,6 +133,14 @@ describe('XDSTopNav', () => {
     render(<XDSTopNav ref={ref} />);
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLElement));
   });
+
+  it('creates a stacking context above mega menu backdrop', () => {
+    render(<XDSTopNav label="Main navigation" />);
+    const nav = screen.getByRole('navigation');
+    expect(nav).toHaveStyle({position: 'relative'});
+    const zIndex = Number(getComputedStyle(nav).zIndex);
+    expect(zIndex).toBeGreaterThanOrEqual(100);
+  });
 });
 
 describe('XDSTopNavTitle', () => {

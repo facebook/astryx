@@ -27,6 +27,9 @@ import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
  */
 const styles = stylex.create({
   base: {
+    // Creates a stacking context above MegaMenu backdrop (z-index: 99)
+    position: 'relative',
+    zIndex: 100,
     alignItems: 'center',
     width: '100%',
     height: spacingVars['--spacing-12'],
