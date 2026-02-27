@@ -427,7 +427,7 @@ function DefaultItem({item}: {item: XDSSelectorItemData}) {
  * A selector/dropdown component for choosing from a list of options.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSSelector
  *   label="Fruit"
  *   items={['Apple', 'Banana', 'Orange']}

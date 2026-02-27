@@ -263,7 +263,7 @@ const colorStyles = stylex.create({
  * entire token.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSToken label="Tag" />
  * <XDSToken label="Status" color="green" />
  * <XDSToken label="Removable" onRemove={() => {}} />

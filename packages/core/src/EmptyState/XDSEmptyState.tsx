@@ -120,7 +120,7 @@ export interface XDSEmptyStateProps {
  * Styles use XDS theme tokens via StyleX. Wrap your app in <Theme> to apply a theme.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSEmptyState
  *   title="No results found"
  *   description="Try adjusting your search or filters."

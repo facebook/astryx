@@ -59,7 +59,7 @@ function dateToISO(date: Date): ISODateString {
  * 2. First enabled day in the month
  *
  * @example
- * ```tsx
+ * ```
  * const {tabbableDate, isTabbable} = useCalendarRovingTabindex({
  *   days,
  *   today: new Date(),

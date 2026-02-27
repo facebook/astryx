@@ -193,7 +193,7 @@ export interface XDSTopNavMenuProps {
  * and optional description.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSTopNav
  *   startContent={
  *     <>

@@ -23,7 +23,7 @@ import type {TablePlugin} from './types';
  * @returns Stable array of plugins suitable for XDSBaseTable
  *
  * @example
- * ```tsx
+ * ```
  * const plugins = useXDSBaseTablePlugins([tablePlugin], userPlugins);
  * <XDSBaseTable plugins={plugins} ... />
  * ```

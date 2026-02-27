@@ -177,7 +177,7 @@ export interface XDSFieldProps extends Omit<
  * A form field wrapper that provides label and description.
  *
  * @example
- * ```tsx
+ * ```
  * const id = useId();
  * const descID = useId();
  * <XDSField label="Email" description="We'll never share your email" inputID={id} descriptionID={descID}>

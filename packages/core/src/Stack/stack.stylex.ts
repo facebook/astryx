@@ -211,7 +211,7 @@ export interface StackOptions {
  * StyleX utility to add stack (flex container) styles to any element.
  *
  * @example
- * ```tsx
+ * ```
  * import { stack } from '@xds/core/Layout';
  * import * as stylex from '@stylexjs/stylex';
  *

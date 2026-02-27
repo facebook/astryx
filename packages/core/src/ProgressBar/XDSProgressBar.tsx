@@ -221,7 +221,7 @@ function defaultFormatValueLabel(value: number, max: number): string {
  * Wrap your app in <Theme> to apply a theme.
  *
  * @example
- * ```tsx
+ * ```
  * // Determinate
  * <XDSProgressBar value={75} label="Upload progress" />
  *

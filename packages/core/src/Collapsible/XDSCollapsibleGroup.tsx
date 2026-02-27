@@ -55,7 +55,7 @@ export interface XDSCollapsibleGroupProps {
    * Each XDSCollapsible needs a `value` prop to participate in the group.
    *
    * @example
-   * ```tsx
+   * ```
    * <XDSCollapsibleGroup type="single" defaultValue="general">
    *   <XDSVStack gap="space2">
    *     <XDSCard>
@@ -91,7 +91,7 @@ function normalizeToArray(value: string | string[] | undefined): string[] {
  * Each XDSCollapsible needs a `value` prop to participate.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSCollapsibleGroup type="single" defaultValue="faq1">
  *   <XDSVStack gap="space2">
  *     <XDSCard>

@@ -140,7 +140,7 @@ const separatorStyles = stylex.create({
  * `isCurrent` explicitly set.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSBreadcrumbs>
  *   <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
  *   <XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem>

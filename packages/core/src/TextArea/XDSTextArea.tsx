@@ -298,7 +298,7 @@ export interface XDSTextAreaProps {
  * A multi-line text input component for collecting longer user input.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSTextArea label="Description" value={description} onChange={setDescription} />
  * <XDSTextArea label="Notes" rows={5} value={notes} onChange={setNotes} />
  * ```

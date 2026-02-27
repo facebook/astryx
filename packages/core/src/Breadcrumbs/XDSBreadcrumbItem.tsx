@@ -129,7 +129,7 @@ const itemStyles = stylex.create({
  * depending on whether it represents the current page.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem>
  * <XDSBreadcrumbItem isCurrent>My Project</XDSBreadcrumbItem>
  * ```

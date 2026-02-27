@@ -169,7 +169,7 @@ const defaultColorByType: Record<XDSTextType, XDSTextColor> = {
  * Semantic text component. Renders text with type-based styling from the theme.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSText type="body">Body text</XDSText>
  * <XDSText type="large">Large body text</XDSText>
  * <XDSText type="label">Form label</XDSText>

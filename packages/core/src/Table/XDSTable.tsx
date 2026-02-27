@@ -181,7 +181,7 @@ function XDSTableInner<T extends Record<string, unknown>>(
  * design tokens in the component styles.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSTable
  *   data={users}
  *   columns={[

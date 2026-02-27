@@ -51,7 +51,7 @@ export interface XDSNavIconProps extends Omit<
  * use as a logo in top navigation or side navigation title areas.
  *
  * @example
- * ```tsx
+ * ```
  * import {HomeIcon} from '@heroicons/react/24/solid';
  *
  * // In XDSTopNavTitle

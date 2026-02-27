@@ -259,7 +259,7 @@ export interface XDSSwitchProps {
  * A toggle switch component for boolean values.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSSwitch
  *   label="Enable notifications"
  *   value={enabled}

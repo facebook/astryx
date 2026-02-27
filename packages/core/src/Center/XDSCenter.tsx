@@ -108,7 +108,7 @@ export interface XDSCenterProps extends Omit<
  * Use the `axis` prop to center on only one axis.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSCenter width={300} height={200}>
  *   <Content />
  * </XDSCenter>

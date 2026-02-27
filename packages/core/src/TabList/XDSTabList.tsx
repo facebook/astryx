@@ -73,7 +73,7 @@ const styles = stylex.create({
  * to XDSTab and XDSTabMenu children.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSTabList value={activeTab} onChange={setActiveTab}>
  *   <XDSTab value="home" label="Home" />
  *   <XDSTab value="settings" label="Settings" />

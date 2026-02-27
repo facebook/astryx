@@ -312,7 +312,7 @@ function getPercent(val: number, min: number, max: number): number {
  * A slider component for selecting numeric values or ranges.
  *
  * @example
- * ```tsx
+ * ```
  * // Single value
  * <XDSSlider label="Volume" value={50} onChange={setValue} />
  *

@@ -59,7 +59,7 @@ const baseStyles = stylex.create({
  * or rows.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSGrid columns={3} gap="space4">
  *   <XDSGridSpan columns={2}>Wide item</XDSGridSpan>
  *   <div>Normal</div>

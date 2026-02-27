@@ -4,7 +4,7 @@
  * Applies StyleX theme and sets color-scheme for light-dark() to work.
  *
  * Usage:
- * ```tsx
+ * ```
  * <XDSTheme theme={myTheme}>
  *   <App />
  * </XDSTheme>

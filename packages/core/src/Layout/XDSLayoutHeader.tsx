@@ -98,7 +98,7 @@ export interface XDSLayoutHeaderProps extends Omit<
  * Use `isFullBleed` if your content manages its own padding (e.g. XDSTopNav).
  *
  * @example
- * ```tsx
+ * ```
  * <XDSLayoutContainer variant="card">
  *   <XDSLayout
  *     header={<XDSLayoutHeader hasDivider>Page Title</XDSLayoutHeader>}

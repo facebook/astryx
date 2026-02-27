@@ -125,7 +125,7 @@ export interface XDSBadgeProps extends Omit<
  * Wrap your app in <Theme> to apply a theme.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSBadge>Default</XDSBadge>
  * <XDSBadge variant="success">Active</XDSBadge>
  * <XDSBadge variant="error">3</XDSBadge>

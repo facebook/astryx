@@ -287,7 +287,7 @@ const loadingStyles = stylex.create({
  * Themes can provide component-level variant overrides via theme.components.button.variants
  *
  * @example
- * ```tsx
+ * ```
  * <XDSButton label="Click me" />
  * <XDSButton label="Primary action" variant="primary" />
  * <XDSButton label="Delete" variant="destructive" />

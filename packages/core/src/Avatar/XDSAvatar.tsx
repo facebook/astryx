@@ -251,7 +251,7 @@ function DefaultIcon({size}: {size: number}) {
  * the name prop, or a generic person icon if neither is provided.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSAvatar src="/user.jpg" name="John Doe" />
  * <XDSAvatar name="Jane Smith" size="large" />
  * <XDSAvatar src="/user.jpg" status={<OnlineIndicator />} />

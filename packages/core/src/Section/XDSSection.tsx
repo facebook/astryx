@@ -191,7 +191,7 @@ export interface XDSSectionProps {
  * Sections automatically escape parent container padding for edge-to-edge fills.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSSection variant="wash" width={300} height={250}>
  *   <XDSLayout
  *     content={<XDSLayoutContent>Content in wash section</XDSLayoutContent>}

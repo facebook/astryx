@@ -281,7 +281,7 @@ export interface XDSTextInputProps {
  * A text input component for collecting user input.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSTextInput label="Name" value={name} onChange={setName} />
  * <XDSTextInput label="Search" isLabelHidden value={query} onChange={setQuery} />
  * ```

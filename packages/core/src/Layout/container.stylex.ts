@@ -173,7 +173,7 @@ export interface ContainerOptions {
  * - `--layout-padding-inner-x`, `--layout-padding-inner-y`
  *
  * @example
- * ```tsx
+ * ```
  * import { container } from '@xds/core/Layout';
  * import * as stylex from '@stylexjs/stylex';
  *

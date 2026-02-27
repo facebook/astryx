@@ -289,7 +289,7 @@ export interface XDSCheckboxInputProps {
  * A checkbox input component for toggling boolean values.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSCheckboxInput
  *   label="Accept terms"
  *   value={accepted}

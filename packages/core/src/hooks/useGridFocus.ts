@@ -96,7 +96,7 @@ export interface UseGridFocusReturn {
  * - Page Up/Down: Custom callbacks (e.g., month navigation)
  *
  * @example
- * ```tsx
+ * ```
  * const {gridRef, handleKeyDown} = useGridFocus({
  *   columns: 7,
  *   onPageUp: () => navigateMonth(-1),

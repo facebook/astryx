@@ -123,7 +123,7 @@ export interface XDSSideNavSectionProps {
  * Uses `role="group"` with `aria-labelledby` for accessibility.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSSideNavSection title="Main">
  *   <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected />
  *   <XDSSideNavItem label="Projects" icon={FolderIcon} />

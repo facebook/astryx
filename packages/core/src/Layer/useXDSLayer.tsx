@@ -231,7 +231,7 @@ function getPositionArea(
  * - `fixed`: Fixed positioning at specified coordinates
  *
  * @example
- * ```tsx
+ * ```
  * // Context mode (anchor positioning)
  * const layer = useXDSLayer({ mode: 'context' });
  *

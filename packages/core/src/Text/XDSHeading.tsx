@@ -178,7 +178,7 @@ const levelToKey: Record<XDSHeadingLevel, HeadingLevel> = {
  * Renders headings with semantic HTML (h1-h6) and themed styling.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSHeading level={1}>Page Title</XDSHeading>
  * <XDSHeading level={2}>Section</XDSHeading>
  * <XDSHeading level={1} variant="editorial">Article Title</XDSHeading>

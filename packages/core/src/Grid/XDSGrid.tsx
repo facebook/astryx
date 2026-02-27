@@ -332,7 +332,7 @@ function calculateMaxWidth(
  * - Both: Auto-fit responsive, capped at max columns
  *
  * @example
- * ```tsx
+ * ```
  * <XDSGrid columns={3} gap="space4">
  *   <Item />
  *   <Item />

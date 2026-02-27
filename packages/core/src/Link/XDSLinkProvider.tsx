@@ -8,7 +8,7 @@
  * Individual components can still override via the `as` prop.
  *
  * @example
- * ```tsx
+ * ```
  * import Link from 'next/link';
  *
  * <XDSLinkProvider component={Link}>
@@ -33,7 +33,7 @@ export interface XDSLinkProviderProps {
    * Must accept href, className, style, and children props.
    *
    * @example
-   * ```tsx
+   * ```
    * import Link from 'next/link';
    * <XDSLinkProvider component={Link}>
    * ```

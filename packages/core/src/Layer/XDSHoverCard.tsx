@@ -143,7 +143,7 @@ function mergeIds(...ids: (string | undefined | null)[]): string | undefined {
  * Uses CSS anchor positioning and the Popover API for optimal performance.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSHoverCard
  *   content={<ProfileCard user={user} />}
  *   placement="above"

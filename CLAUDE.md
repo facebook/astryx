@@ -79,3 +79,8 @@ Look for `<!-- SYNC: ... -->` comments and `SYNC:` in file headers as reminders.
 - **Testing**: Vitest (colocated tests)
 - **Components**: `packages/core/`
 - **Storybook**: `apps/storybook/`
+
+## JSDoc Conventions
+
+- **`@example` code fences must use plain ` ``` `, not ` ```tsx `.**
+  Storybook's autodocs parser doesn't handle language-tagged fences in JSDoc correctly — the code block won't render as a proper code block. Always use untagged fences in `@example` blocks.

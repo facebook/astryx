@@ -109,7 +109,7 @@ export interface XDSSpinnerProps {
  * An animated loading indicator. Available in three sizes and two color shades.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSSpinner />
  * <XDSSpinner size="sm" />
  * <XDSSpinner size="lg" shade="onMedia" />

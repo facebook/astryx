@@ -120,7 +120,7 @@ const listStyleTypes = stylex.create({
  * dividers, marker styles, and an optional header.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSList>
  *   <XDSListItem label="Notifications" description="Manage your alerts" />
  *   <XDSListItem label="Privacy" description="Control your data" />

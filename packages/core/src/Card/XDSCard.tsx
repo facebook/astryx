@@ -130,7 +130,7 @@ export interface XDSCardProps {
  * Pair with XDSLayout for structured header/content/footer layouts.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSCard width={400} height={300}>
  *   <XDSLayout
  *     header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}

@@ -371,7 +371,7 @@ function parseNumberInput(
  * Only calls onChange when the entered value passes validation.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSNumberInput label="Quantity" value={quantity} onChange={setQuantity} />
  * <XDSNumberInput label="Price" value={price} onChange={setPrice} min={0} step={0.01} />
  * ```

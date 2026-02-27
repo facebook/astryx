@@ -104,7 +104,7 @@ export interface XDSFieldLabelProps {
  * A label component for form fields with support for hidden and disabled states.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSFieldLabel label="Email" inputID={inputId} />
  * <XDSFieldLabel label="Hidden label" inputID={inputId} isLabelHidden />
  * ```

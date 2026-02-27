@@ -145,7 +145,7 @@ function AreaProvider({
  * - Simple vertical stack of items → use XDSVStack instead
  *
  * @example
- * ```tsx
+ * ```
  * // Full-page app shell with sidebar navigation
  * <XDSLayout
  *   header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}

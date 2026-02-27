@@ -74,7 +74,7 @@ export interface XDSAvatarStatusDotProps extends Omit<
    * at the smallest avatar sizes where there isn't enough room.
    *
    * @example
-   * ```tsx
+   * ```
    * <XDSAvatarStatusDot variant="positive" label="Verified" icon={<CheckIcon />} />
    * ```
    */
@@ -136,7 +136,7 @@ const variantStyleMap: Record<XDSAvatarStatusDotVariant, stylex.StyleXStyles> =
  * the avatar size from context.
  *
  * @example
- * ```tsx
+ * ```
  * // Presence indicator
  * <XDSAvatar
  *   name="John Doe"

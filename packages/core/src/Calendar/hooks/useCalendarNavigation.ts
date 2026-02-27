@@ -72,7 +72,7 @@ function parseISO(str: ISODateString): Date {
  * navigation, and pending focus for keyboard navigation across months.
  *
  * @example
- * ```tsx
+ * ```
  * const {
  *   visibleMonths,
  *   monthYearLabel,

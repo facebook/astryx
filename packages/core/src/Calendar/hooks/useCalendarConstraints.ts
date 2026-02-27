@@ -53,7 +53,7 @@ function parseISO(str: ISODateString): Date {
  * min/max bounds and custom constraint functions.
  *
  * @example
- * ```tsx
+ * ```
  * const {isDateDisabled} = useCalendarConstraints({
  *   min: '2026-01-01',
  *   max: '2026-12-31',

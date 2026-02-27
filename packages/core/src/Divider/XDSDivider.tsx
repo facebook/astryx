@@ -143,7 +143,7 @@ const fullBleedStyles = stylex.create({
  * Uses XDS design tokens for colors and spacing.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSDivider label="or" />
  * ```
  */

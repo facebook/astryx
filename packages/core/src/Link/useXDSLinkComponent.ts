@@ -26,7 +26,7 @@ import type {XDSLinkComponentType} from './types';
  * @returns The resolved link component.
  *
  * @example
- * ```tsx
+ * ```
  * function MyComponent({ as }: { as?: XDSLinkComponentType }) {
  *   const LinkComponent = useXDSLinkComponent(as);
  *   return <LinkComponent href="/foo">Click me</LinkComponent>;

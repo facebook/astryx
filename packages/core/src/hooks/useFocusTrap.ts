@@ -107,7 +107,7 @@ export interface UseFocusTrapReturn {
  * - Handles both Tab and Shift+Tab navigation
  *
  * @example
- * ```tsx
+ * ```
  * const {containerRef, focusFirst} = useFocusTrap({
  *   isActive: isOpen,
  *   onEscape: () => setIsOpen(false),

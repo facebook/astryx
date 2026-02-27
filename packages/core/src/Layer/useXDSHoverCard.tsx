@@ -213,7 +213,7 @@ function isFocusable(element: HTMLElement): boolean {
  * - Stay-open behavior when mouse/focus moves into the hover card
  *
  * @example
- * ```tsx
+ * ```
  * // Simple case: use combined ref
  * const hoverCard = useXDSHoverCard({ placement: 'above' });
  *

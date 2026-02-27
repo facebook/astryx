@@ -162,7 +162,7 @@ export interface XDSSideNavItemProps {
  * Supports icons, selected state, nesting, and end content like badges or counts.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSSideNavItem
  *   label="Dashboard"
  *   icon={HomeIcon}

@@ -62,7 +62,7 @@ export interface XDSSelectorItemProps {
  * custom item layouts while maintaining design system consistency.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSSelector
  *   label="User"
  *   items={users}

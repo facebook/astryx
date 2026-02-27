@@ -127,7 +127,7 @@ export interface XDSTopNavItemProps extends Omit<
  * Supports icons and selected state indication with highlighted appearance.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSTopNav
  *   startContent={
  *     <>

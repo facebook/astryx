@@ -279,7 +279,7 @@ const statusStyles = stylex.create({
  * Uses `role="alert"` for error/warning and `role="status"` for info/success.
  *
  * @example
- * ```tsx
+ * ```
  * // Simple banner — just the colored header
  * <XDSBanner status="info" title="New update available" />
  *

@@ -221,7 +221,7 @@ export interface XDSDialogProps extends Omit<
  * Uses the browser's built-in modal behavior for optimal accessibility.
  *
  * @example
- * ```tsx
+ * ```
  * const [isShown, setIsShown] = useState(false);
  *
  * <XDSDialog isShown={isShown} onHide={() => setIsShown(false)}>

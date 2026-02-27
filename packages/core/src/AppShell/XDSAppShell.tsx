@@ -271,7 +271,7 @@ const dynamicStyles = stylex.create({
  * collapse, and mobile overlay with backdrop.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSAppShell
  *   topNav={<XDSTopNav label="Navigation" title={<XDSTopNavTitle title="My App" />} />}
  *   sideNav={

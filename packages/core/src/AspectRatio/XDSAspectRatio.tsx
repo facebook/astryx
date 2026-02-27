@@ -76,7 +76,7 @@ const styles = stylex.create({
  * videos, embeds, and placeholders.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSAspectRatio ratio={16 / 9}>
  *   <img src="image.jpg" alt="Widescreen image" style={{objectFit: 'cover'}} />
  * </XDSAspectRatio>

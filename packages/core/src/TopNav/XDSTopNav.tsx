@@ -134,7 +134,7 @@ export interface XDSTopNavProps extends Omit<
  * three-column CSS grid to keep center content horizontally centered.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSTopNav
  *   label="Main navigation"
  *   title={<XDSTopNavTitle title="My App" />}

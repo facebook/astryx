@@ -329,7 +329,7 @@ function ChevronDown() {
  * the XDSTopNav in a container with `position: relative`.
  *
  * @example
- * ```tsx
+ * ```
  * <div style={{ position: 'relative' }}>
  *   <XDSTopNav
  *     startContent={

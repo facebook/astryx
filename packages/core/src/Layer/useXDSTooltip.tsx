@@ -224,7 +224,7 @@ function isFocusable(element: HTMLElement): boolean {
  * - Are typically used for short, non-interactive text
  *
  * @example
- * ```tsx
+ * ```
  * const tooltip = useXDSTooltip({ placement: 'above' });
  *
  * <XDSButton ref={tooltip.ref} aria-describedby={tooltip.describedBy}>

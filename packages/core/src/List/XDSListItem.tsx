@@ -257,7 +257,7 @@ const descriptionSizeStyles = stylex.create({
  * When `href` is provided, uses an invisible anchor pattern.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSListItem label="Settings" description="Manage your preferences" />
  * <XDSListItem label="Profile" onClick={() => navigate('/profile')} />
  * <XDSListItem label="Docs" href="/docs" target="_blank" />

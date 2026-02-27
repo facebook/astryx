@@ -96,7 +96,7 @@ export interface StackItemOptions {
  * direct control over flex behavior.
  *
  * @example
- * ```tsx
+ * ```
  * import { stackItem } from '@xds/core/Layout';
  *
  * <div {...stylex.props(...stackItem({ size: 'fill' }))}>

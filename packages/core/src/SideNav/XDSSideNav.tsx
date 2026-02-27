@@ -144,7 +144,7 @@ export interface XDSSideNavProps extends Omit<
  * scrollable nav content in the middle, and sticky footer + icon bar at bottom.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSSideNav
  *   header={<XDSSideNavHeader title="My App" titleHref="/" />}
  *   topContent={<XDSButton label="Create new" variant="primary" />}

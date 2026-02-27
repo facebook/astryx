@@ -219,7 +219,7 @@ export interface XDSLinkProps extends Omit<
  * Wrap your app in <Theme> to apply a theme.
  *
  * @example
- * ```tsx
+ * ```
  * // Basic link
  * <XDSLink label="Documentation" href="/docs">Documentation</XDSLink>
  *

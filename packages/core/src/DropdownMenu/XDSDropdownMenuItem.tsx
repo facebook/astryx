@@ -68,7 +68,7 @@ export interface XDSDropdownMenuItemProps {
  * custom item layouts while maintaining design system consistency.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSDropdownMenu
  *   button={{ label: 'Actions' }}
  *   items={actions}>

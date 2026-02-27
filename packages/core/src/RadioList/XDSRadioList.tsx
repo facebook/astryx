@@ -140,7 +140,7 @@ export interface XDSRadioListProps {
  * A radio group component for single-value selection.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSRadioList
  *   label="Notification preference"
  *   value={selected}

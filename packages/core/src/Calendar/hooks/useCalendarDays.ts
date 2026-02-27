@@ -70,7 +70,7 @@ function dateToISO(date: Date): ISODateString {
  * days from adjacent months to fill the grid.
  *
  * @example
- * ```tsx
+ * ```
  * const {days, weeks, dayNames} = useCalendarDays({
  *   year: 2026,
  *   month: 0, // January

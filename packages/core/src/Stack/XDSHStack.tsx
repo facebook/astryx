@@ -42,7 +42,7 @@ export interface XDSHStackProps extends Omit<
  * @deprecated Use `XDSStack` with `direction="horizontal"` instead.
  *
  * @example
- * ```tsx
+ * ```
  * // Before
  * <XDSHStack gap="space2">...</XDSHStack>
  *

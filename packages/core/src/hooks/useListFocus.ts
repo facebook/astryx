@@ -73,7 +73,7 @@ export interface UseListFocusReturn {
  * - Escape: Custom callback (e.g., close menu)
  *
  * @example
- * ```tsx
+ * ```
  * const {listRef, handleKeyDown} = useListFocus({
  *   onEscape: () => layer.hide(),
  * });

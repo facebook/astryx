@@ -221,7 +221,7 @@ function ChevronDownIcon() {
  * The chevron indicator is automatically shown when `menu` is provided.
  *
  * @example
- * ```tsx
+ * ```
  * // Single product
  * <XDSSideNavHeader icon={<AppIcon />} title="My App" titleHref="/" />
  *

@@ -76,7 +76,7 @@ const dividerColumnStyles = stylex.create({
  * (density padding, divider borders). When used standalone, renders a plain `<td>`.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSTableRow>
  *   <XDSTableCell>Alice</XDSTableCell>
  *   <XDSTableCell>30</XDSTableCell>

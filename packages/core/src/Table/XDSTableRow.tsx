@@ -81,7 +81,7 @@ const _lastBodyRowStyles = stylex.create({
  * (striped, hover, divider overrides). When used standalone, renders a plain `<tr>`.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSTable>
  *   <XDSTableRow>
  *     <XDSTableCell>Alice</XDSTableCell>

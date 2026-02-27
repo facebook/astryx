@@ -190,7 +190,7 @@ export interface UseXDSPopoverReturn {
    * Automatically wraps content in a focus trap container with a hidden close button.
    *
    * @example
-   * ```tsx
+   * ```
    * {popover.render(
    *   <Calendar />,
    *   { placement: 'below', alignment: 'start' }
@@ -224,7 +224,7 @@ export interface UseXDSPopoverReturn {
  * is visually hidden until focused, then shows a tooltip-like message (default: "Close popover").
  *
  * @example
- * ```tsx
+ * ```
  * function DatePickerExample() {
  *   const inputRef = useRef<HTMLInputElement>(null);
  *   const popover = useXDSPopover({

@@ -76,7 +76,7 @@ export interface XDSTopNavTitleProps extends Omit<
  * Use with XDSNavIcon to create a circular icon background.
  *
  * @example
- * ```tsx
+ * ```
  * // Logo with text
  * <XDSTopNavTitle
  *   title="My App"

@@ -101,7 +101,7 @@ export interface XDSLayoutContentProps extends Omit<
  * overflow to children. Use `isFullBleed` if you need edge-to-edge content.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSLayoutContainer variant="card">
  *   <XDSLayout
  *     header={<XDSLayoutHeader>Title</XDSLayoutHeader>}

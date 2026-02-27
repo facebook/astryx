@@ -358,7 +358,7 @@ export interface XDSTimeInputProps {
  * A time input component with text input and keyboard navigation.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSTimeInput
  *   label="Start time"
  *   value={time}

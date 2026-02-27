@@ -72,7 +72,7 @@ export const IconRegistryContext =
  * 2. Built-in lightweight SVG fallback
  *
  * @example
- * ```tsx
+ * ```
  * const closeIcon = useXDSIcon('close');
  * // Returns the theme's close icon, or the built-in SVG fallback
  * ```

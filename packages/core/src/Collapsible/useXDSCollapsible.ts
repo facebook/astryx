@@ -65,7 +65,7 @@ export interface UseXDSCollapsibleReturn {
  * 3. **Uncontrolled**: Self-managed internal state with optional `initialIsOpen`.
  *
  * @example
- * ```tsx
+ * ```
  * const {isEnabled, isOpen, toggle} = useXDSCollapsible({
  *   isCollapsible: true,
  *   value: 'section-1',

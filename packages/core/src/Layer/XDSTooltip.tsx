@@ -155,7 +155,7 @@ function mergeIds(...ids: (string | undefined | null)[]): string | undefined {
  * Uses CSS anchor positioning and the Popover API for optimal performance.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSTooltip content="Helpful tooltip text" placement="above">
  *   <XDSButton>Hover me</XDSButton>
  * </XDSTooltip>

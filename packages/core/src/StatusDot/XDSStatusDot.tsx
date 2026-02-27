@@ -129,17 +129,14 @@ export interface XDSStatusDotProps {
  * Styles use XDS theme tokens via StyleX. Wrap your app in `<Theme>` to apply a theme.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSStatusDot variant="positive" label="Online" />
  * <XDSStatusDot variant="negative" label="Offline" size="sm" />
  * <XDSStatusDot variant="positive" label="Live" isPulsing />
  * ```
  */
 export const XDSStatusDot = forwardRef<HTMLSpanElement, XDSStatusDotProps>(
-  (
-    {variant, size = 'md', label, isPulsing = false, xstyle, ...props},
-    ref,
-  ) => {
+  ({variant, size = 'md', label, isPulsing = false, xstyle, ...props}, ref) => {
     return (
       <span
         ref={ref}

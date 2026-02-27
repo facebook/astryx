@@ -68,7 +68,7 @@ export interface XDSStackItemProps extends Omit<
  * Supports polymorphic rendering via the `element` prop.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSHStack gap="space2">
  *   <XDSStackItem size="static">Logo</XDSStackItem>
  *   <XDSStackItem size="fill">Content</XDSStackItem>

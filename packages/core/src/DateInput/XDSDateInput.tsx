@@ -340,7 +340,7 @@ export interface XDSDateInputProps {
  * A date picker component combining a text input with a calendar popover.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSDateInput
  *   label="Event date"
  *   value={date}

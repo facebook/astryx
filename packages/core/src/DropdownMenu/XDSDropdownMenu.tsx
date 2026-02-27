@@ -304,7 +304,7 @@ function DefaultItem({item}: {item: XDSDropdownMenuItemData}) {
  * it's purely for displaying a menu of clickable items.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSDropdownMenu
  *   button={{ label: 'Actions' }}
  *   items={[

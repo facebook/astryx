@@ -89,7 +89,7 @@ const dividerColumnStyles = stylex.create({
  * Accepts `xstyle` for plugin-provided styles that merge on top.
  *
  * @example
- * ```tsx
+ * ```
  * <thead>
  *   <tr>
  *     <XDSTableHeaderCell>Name</XDSTableHeaderCell>

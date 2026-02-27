@@ -42,12 +42,12 @@ export interface XDSVStackProps extends Omit<
  * @deprecated Use `XDSStack` with `direction="vertical"` (or omit direction) instead.
  *
  * @example
- * ```tsx
+ * ```
  * // Before
  * <XDSVStack gap="space2">...</XDSVStack>
  *
  * // After
- * <XDSStack gap="space2">...</XDSStack>
+ * <XDSStack direction="vertical" gap="space2">...</XDSStack>
  * ```
  */
 export const XDSVStack = forwardRef<HTMLElement, XDSVStackProps>(

@@ -98,7 +98,7 @@ export interface XDSLayoutFooterProps extends Omit<
  * Use `isFullBleed` if your content manages its own padding.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSLayoutContainer variant="card">
  *   <XDSLayout
  *     content={<XDSLayoutContent>...</XDSLayoutContent>}

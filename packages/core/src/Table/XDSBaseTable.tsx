@@ -309,7 +309,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>(
  * Accepts a `components` prop to render styled components instead of raw elements.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSBaseTable
  *   data={[{ name: 'Alice', age: 30 }]}
  *   columns={[

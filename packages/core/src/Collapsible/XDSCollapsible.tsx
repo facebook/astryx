@@ -122,7 +122,7 @@ export interface XDSCollapsibleProps {
  * Wrap multiple instances in XDSCollapsibleGroup for accordion behavior.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSCollapsible trigger="Details">
  *   <XDSText type="body">Collapsible content</XDSText>
  * </XDSCollapsible>

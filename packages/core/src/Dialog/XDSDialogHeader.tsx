@@ -92,7 +92,7 @@ export interface XDSDialogHeaderProps {
  * Uses XDSLayoutHeader internally for consistent styling with other layout headers.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSDialog isShown={isShown} onHide={() => setIsShown(false)}>
  *   <XDSLayout
  *     header={<XDSDialogHeader title="Modal Title" onHide={() => setIsShown(false)} />}

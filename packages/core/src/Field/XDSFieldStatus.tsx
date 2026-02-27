@@ -85,7 +85,7 @@ export interface XDSFieldStatusProps {
  * A status message component for form fields.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSFieldStatus
  *   type="error"
  *   message="This field is required"

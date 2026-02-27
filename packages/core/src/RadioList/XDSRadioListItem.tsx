@@ -222,7 +222,7 @@ export interface XDSRadioListItemProps {
  * An individual radio item within an XDSRadioList.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSRadioListItem label="Email" value="email" />
  * <XDSRadioListItem
  *   label="SMS"

@@ -168,7 +168,7 @@ export interface XDSSkeletonProps extends Omit<
  * Use the `index` prop to stagger animation timing across multiple skeletons.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSSkeleton width={200} height={20} />
  * <XDSSkeleton width={40} height={40} radius="rounded" />
  * <XDSSkeleton width={300} height={16} index={0} />

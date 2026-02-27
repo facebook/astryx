@@ -43,7 +43,7 @@ export interface UseTruncationReturn {
  * - Multi-line: compares scrollHeight > offsetHeight
  *
  * @example
- * ```tsx
+ * ```
  * const truncation = useTruncation({ maxLines: 2 });
  *
  * <div ref={truncation.ref} style={{ WebkitLineClamp: 2 }}>
