@@ -34,6 +34,9 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-navbar'],
     boxSizing: 'border-box',
   },
+  endContentFlush: {
+    paddingInlineEnd: spacingVars['--spacing-2'],
+  },
   // Flex layout (default, used when no centerContent)
   baseFlex: {
     display: 'flex',
@@ -120,6 +123,14 @@ export interface XDSTopNavProps extends Omit<
    */
   endContent?: ReactNode;
   /**
+   * Reduces the right padding from 16px to 8px, pulling end content closer
+   * to the nav edge. Use when end content contains ghost buttons or icon-only
+   * actions that have their own internal padding — the default 16px creates
+   * too much visual space since ghost buttons already include hit-area padding.
+   * @default false
+   */
+  isEndContentFlush?: boolean;
+  /**
    * Accessible label for the navigation landmark.
    * Helps screen readers identify the navigation area.
    */
@@ -161,6 +172,19 @@ export interface XDSTopNavProps extends Omit<
  *   }
  * />
  *
+ * // Ghost buttons — use isEndContentFlush to reduce right padding
+ * <XDSTopNav
+ *   label="Main navigation"
+ *   title={<XDSTopNavTitle title="My App" logo={<Logo />} />}
+ *   endContent={
+ *     <>
+ *       <XDSButton label="Notifications" icon={<BellIcon />} variant="ghost" />
+ *       <XDSButton label="Profile" icon={<UserIcon />} variant="ghost" />
+ *     </>
+ *   }
+ *   isEndContentFlush
+ * />
+ *
  * // Centered layout (left + center + right)
  * <XDSTopNav
  *   label="Main navigation"
@@ -177,7 +201,7 @@ export interface XDSTopNavProps extends Omit<
  */
 export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
   function XDSTopNav(
-    {title, startContent, centerContent, endContent, label, ...props},
+    {title, startContent, centerContent, endContent, isEndContentFlush = false, label, ...props},
     ref,
   ) {
     const themeContext = useContext(ThemeContext);
@@ -191,6 +215,7 @@ export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
         aria-label={label}
         {...stylex.props(
           styles.base,
+          isEndContentFlush && styles.endContentFlush,
           hasCenterContent ? styles.baseGrid : styles.baseFlex,
           rootOverride,
         )}

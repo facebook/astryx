@@ -147,6 +147,17 @@ describe('XDSTopNav', () => {
     // positioning context for the mega menu panel.
     expect(nav).not.toHaveStyle({position: 'relative'});
   });
+
+  it('renders with isEndContentFlush', () => {
+    render(
+      <XDSTopNav
+        label="Main navigation"
+        endContent={<span data-testid="end">Actions</span>}
+        isEndContentFlush
+      />,
+    );
+    expect(screen.getByTestId('end')).toBeInTheDocument();
+  });
 });
 
 describe('XDSTopNavTitle', () => {

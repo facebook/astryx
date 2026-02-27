@@ -78,8 +78,9 @@ For the circular icon container, use `XDSNavIcon` from `@xds/core/NavIcon`.
 | -------------- | ----------- | ------- | ----------------------------------------------------- |
 | `title`        | `ReactNode` | —       | Title slot (logo, brand) - left aligned               |
 | `startContent` | `ReactNode` | —       | Start content (nav items, breadcrumbs) - left aligned |
-| `endContent`   | `ReactNode` | —       | End content (search, icons, profile) - right aligned  |
-| `label`        | `string`    | —       | Accessible label for navigation landmark              |
+| `endContent`         | `ReactNode` | —       | End content (search, icons, profile) - right aligned             |
+| `isEndContentFlush`  | `boolean`   | `false` | Reduces right padding for ghost buttons / icon-only end content  |
+| `label`              | `string`    | —       | Accessible label for navigation landmark                         |
 
 ### XDSTopNavTitle
 
