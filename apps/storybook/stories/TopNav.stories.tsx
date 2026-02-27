@@ -108,6 +108,84 @@ export const TitleOnly: Story = {
   },
 };
 
+/**
+ * Suite branding — `suiteName` renders above the title in smaller,
+ * secondary text. Use when the app belongs to a product suite.
+ */
+export const WithSuiteName: Story = {
+  args: {
+    label: 'Main navigation',
+    title: (
+      <XDSTopNavTitle
+        suiteName="Acme Suite"
+        title="Analytics"
+        logo={
+          <XDSNavIcon icon={<ChartBarIcon style={{width: 16, height: 16}} />} />
+        }
+        href="#"
+      />
+    ),
+    startContent: (
+      <>
+        <XDSTopNavItem label="Overview" href="#" isSelected />
+        <XDSTopNavItem label="Reports" href="#" />
+      </>
+    ),
+  },
+};
+
+/**
+ * Subtitle context — `subtitle` renders below the title in smaller,
+ * secondary text. Use for account names, workspace context, etc.
+ */
+export const WithSubtitle: Story = {
+  args: {
+    label: 'Main navigation',
+    title: (
+      <XDSTopNavTitle
+        title="Dashboard"
+        subtitle="Business Account"
+        logo={
+          <XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />
+        }
+        href="#"
+      />
+    ),
+    startContent: (
+      <>
+        <XDSTopNavItem label="Overview" href="#" isSelected />
+        <XDSTopNavItem label="Settings" href="#" />
+      </>
+    ),
+  },
+};
+
+/**
+ * Full title stack — suite name, app title, and subtitle all together.
+ */
+export const WithSuiteNameAndSubtitle: Story = {
+  args: {
+    label: 'Main navigation',
+    title: (
+      <XDSTopNavTitle
+        suiteName="Acme Suite"
+        title="Analytics"
+        subtitle="Enterprise Plan"
+        logo={
+          <XDSNavIcon icon={<ChartBarIcon style={{width: 16, height: 16}} />} />
+        }
+        href="#"
+      />
+    ),
+    startContent: (
+      <>
+        <XDSTopNavItem label="Overview" href="#" isSelected />
+        <XDSTopNavItem label="Reports" href="#" />
+      </>
+    ),
+  },
+};
+
 export const NavItemStates: Story = {
   render: () => (
     <XDSTopNav
