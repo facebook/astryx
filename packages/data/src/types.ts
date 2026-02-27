@@ -4,12 +4,13 @@
  * @output Entity type definitions for the XDS mock data system
  * @position Core types; all entity schemas are defined here
  *
- * These types define the shape of each entity in the data system.
- * Templates import these types to get full type safety over mock data.
+ * Two domains are available:
+ * - Ecommerce: products, categories, customers, orders, reviews, cart
+ * - Code: repositories, commits, pull requests, issues, contributors, branches
  */
 
 // =============================================================================
-// Entity Types
+// Ecommerce Entity Types
 // =============================================================================
 
 export interface Category {
@@ -131,6 +132,127 @@ export interface StoreSummary {
 }
 
 // =============================================================================
+// Code Entity Types
+// =============================================================================
+
+export interface Repository extends Record<string, unknown> {
+  id: string;
+  name: string;
+  fullName: string;
+  description: string;
+  language: string;
+  languages: {name: string; percentage: number}[];
+  stars: number;
+  forks: number;
+  openIssues: number;
+  watchers: number;
+  visibility: 'public' | 'private' | 'internal';
+  defaultBranch: string;
+  license: string | null;
+  topics: string[];
+  createdAt: string;
+  updatedAt: string;
+  pushedAt: string;
+}
+
+export interface Commit extends Record<string, unknown> {
+  id: string;
+  sha: string;
+  message: string;
+  description: string | null;
+  authorId: string;
+  authorName: string;
+  authorEmail: string;
+  repositoryId: string;
+  branchId: string;
+  filesChanged: number;
+  additions: number;
+  deletions: number;
+  createdAt: string;
+}
+
+export interface PullRequest extends Record<string, unknown> {
+  id: string;
+  number: number;
+  title: string;
+  body: string;
+  authorId: string;
+  authorName: string;
+  repositoryId: string;
+  sourceBranch: string;
+  targetBranch: string;
+  status: 'open' | 'merged' | 'closed' | 'draft';
+  reviewers: string[];
+  labels: string[];
+  comments: number;
+  additions: number;
+  deletions: number;
+  filesChanged: number;
+  createdAt: string;
+  updatedAt: string;
+  mergedAt: string | null;
+}
+
+export interface Issue extends Record<string, unknown> {
+  id: string;
+  number: number;
+  title: string;
+  body: string;
+  authorId: string;
+  authorName: string;
+  repositoryId: string;
+  assigneeId: string | null;
+  assigneeName: string | null;
+  status: 'open' | 'closed';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  labels: string[];
+  comments: number;
+  createdAt: string;
+  updatedAt: string;
+  closedAt: string | null;
+}
+
+export interface Contributor extends Record<string, unknown> {
+  id: string;
+  username: string;
+  name: string;
+  email: string;
+  avatar: string;
+  role: 'owner' | 'maintainer' | 'contributor' | 'guest';
+  commits: number;
+  pullRequests: number;
+  reviews: number;
+  joinedAt: string;
+}
+
+export interface Branch extends Record<string, unknown> {
+  id: string;
+  name: string;
+  repositoryId: string;
+  isDefault: boolean;
+  isProtected: boolean;
+  lastCommitSha: string;
+  lastCommitMessage: string;
+  lastCommitAuthorId: string;
+  ahead: number;
+  behind: number;
+  updatedAt: string;
+}
+
+export interface CodeSummary {
+  totalRepositories: number;
+  totalCommits: number;
+  totalPullRequests: number;
+  totalIssues: number;
+  totalContributors: number;
+  openPullRequests: number;
+  openIssues: number;
+  mergedPullRequestsThisMonth: number;
+  commitsByMonth: {month: string; commits: number}[];
+  topLanguages: {language: string; repos: number; percentage: number}[];
+}
+
+// =============================================================================
 // Entity Name Registry
 // =============================================================================
 
@@ -141,7 +263,13 @@ export type EntityName =
   | 'Customer'
   | 'Order'
   | 'Review'
-  | 'CartItem';
+  | 'CartItem'
+  | 'Repository'
+  | 'Commit'
+  | 'PullRequest'
+  | 'Issue'
+  | 'Contributor'
+  | 'Branch';
 
 /** Maps entity names to their TypeScript types. */
 export interface EntityMap {
@@ -151,6 +279,12 @@ export interface EntityMap {
   Order: Order;
   Review: Review;
   CartItem: CartItem;
+  Repository: Repository;
+  Commit: Commit;
+  PullRequest: PullRequest;
+  Issue: Issue;
+  Contributor: Contributor;
+  Branch: Branch;
 }
 
 // =============================================================================
@@ -169,15 +303,18 @@ export interface CreateDataConfig {
 export type DataResult<E extends EntityName = EntityName> = {
   [K in E]: EntityMap[K][];
 } & {
-  /** Cart summary (included when CartItem is requested) */
+  /** Cart summary (included when ecommerce entities are requested) */
   cartSummary: CartSummary;
   /** Store-level summary stats */
   storeSummary: StoreSummary;
+  /** Code project summary stats */
+  codeSummary: CodeSummary;
   /** Helpers */
   helpers: DataHelpers;
 };
 
 export interface DataHelpers {
+  // Ecommerce helpers
   formatPrice: (amount: number) => string;
   getProduct: (id: string) => Product | undefined;
   getProductsByCategory: (categoryId: string) => Product[];
@@ -189,4 +326,19 @@ export interface DataHelpers {
   getStockStatusColor: (
     status: Product['status'],
   ) => 'green' | 'yellow' | 'red';
+  // Code helpers
+  getRepository: (id: string) => Repository | undefined;
+  getCommitsByRepo: (repositoryId: string) => Commit[];
+  getPullRequestsByRepo: (repositoryId: string) => PullRequest[];
+  getIssuesByRepo: (repositoryId: string) => Issue[];
+  getBranchesByRepo: (repositoryId: string) => Branch[];
+  getContributor: (id: string) => Contributor | undefined;
+  getPrStatusColor: (
+    status: PullRequest['status'],
+  ) => 'green' | 'blue' | 'yellow' | 'gray';
+  getIssueStatusColor: (status: Issue['status']) => 'green' | 'red';
+  getIssuePriorityColor: (
+    priority: Issue['priority'],
+  ) => 'green' | 'blue' | 'yellow' | 'red';
+  formatSha: (sha: string) => string;
 }

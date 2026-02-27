@@ -7,20 +7,21 @@
  * Usage:
  *   import { createData } from '@xds/data';
  *
- *   // Get everything
+ *   // Ecommerce template
  *   const data = createData({
  *     entities: ['Product', 'Category', 'Order'],
  *   });
  *
- *   // Limit counts
+ *   // Code dashboard template
  *   const data = createData({
- *     entities: ['Product', 'Category', 'Order'],
- *     count: { Product: 6, Order: 3 },
+ *     entities: ['Repository', 'PullRequest', 'Issue', 'Contributor'],
  *   });
  *
- *   data.Product   // Product[]
- *   data.Category  // Category[]
- *   data.helpers.formatPrice(29.99)  // "$29.99"
+ *   // Mix and match — limit counts
+ *   const data = createData({
+ *     entities: ['Product', 'Repository'],
+ *     count: { Product: 6, Repository: 3 },
+ *   });
  */
 
 import type {
@@ -31,6 +32,12 @@ import type {
   DataHelpers,
   Product,
   Order,
+  PullRequest,
+  Issue,
+  Repository,
+  Contributor,
+  Commit,
+  Branch,
 } from './types';
 import {
   categories,
@@ -42,9 +49,18 @@ import {
   cartSummary,
   storeSummary,
 } from './dataset';
+import {
+  repositories,
+  commits,
+  pullRequests,
+  issues,
+  contributors,
+  branches,
+  codeSummary,
+} from './dataset-code';
 
 // =============================================================================
-// Helpers
+// Helpers — Ecommerce
 // =============================================================================
 
 function formatPrice(amount: number): string {
@@ -82,14 +98,69 @@ function getStockStatusColor(
   return map[status];
 }
 
+// =============================================================================
+// Helpers — Code
+// =============================================================================
+
+function getPrStatusColor(
+  status: PullRequest['status'],
+): 'green' | 'blue' | 'yellow' | 'gray' {
+  const map: Record<
+    PullRequest['status'],
+    'green' | 'blue' | 'yellow' | 'gray'
+  > = {
+    merged: 'green',
+    open: 'blue',
+    draft: 'yellow',
+    closed: 'gray',
+  };
+  return map[status];
+}
+
+function getIssueStatusColor(status: Issue['status']): 'green' | 'red' {
+  const map: Record<Issue['status'], 'green' | 'red'> = {
+    open: 'red',
+    closed: 'green',
+  };
+  return map[status];
+}
+
+function getIssuePriorityColor(
+  priority: Issue['priority'],
+): 'green' | 'blue' | 'yellow' | 'red' {
+  const map: Record<Issue['priority'], 'green' | 'blue' | 'yellow' | 'red'> = {
+    low: 'green',
+    medium: 'blue',
+    high: 'yellow',
+    critical: 'red',
+  };
+  return map[priority];
+}
+
+function formatSha(sha: string): string {
+  return sha.slice(0, 7);
+}
+
+// =============================================================================
+// Entity Sources
+// =============================================================================
+
 /** All available entity data, keyed by entity name. */
 const entitySources: {[K in EntityName]: EntityMap[K][]} = {
+  // Ecommerce
   Category: categories,
   Product: products,
   Customer: customers,
   Order: orders,
   Review: reviews,
   CartItem: cartItems,
+  // Code
+  Repository: repositories,
+  Commit: commits,
+  PullRequest: pullRequests,
+  Issue: issues,
+  Contributor: contributors,
+  Branch: branches,
 };
 
 // =============================================================================
@@ -119,8 +190,18 @@ export function createData<E extends EntityName>(
   // Build helpers that operate on the sliced data
   const productData = (result.Product as Product[] | undefined) ?? products;
   const orderData = (result.Order as Order[] | undefined) ?? orders;
+  const repoData =
+    (result.Repository as Repository[] | undefined) ?? repositories;
+  const commitData = (result.Commit as Commit[] | undefined) ?? commits;
+  const prData =
+    (result.PullRequest as PullRequest[] | undefined) ?? pullRequests;
+  const issueData = (result.Issue as Issue[] | undefined) ?? issues;
+  const branchData = (result.Branch as Branch[] | undefined) ?? branches;
+  const contribData =
+    (result.Contributor as Contributor[] | undefined) ?? contributors;
 
   const helpers: DataHelpers = {
+    // Ecommerce
     formatPrice,
     getProduct: (id: string) => productData.find(p => p.id === id),
     getProductsByCategory: (categoryId: string) =>
@@ -134,10 +215,26 @@ export function createData<E extends EntityName>(
     },
     getOrderStatusColor,
     getStockStatusColor,
+    // Code
+    getRepository: (id: string) => repoData.find(r => r.id === id),
+    getCommitsByRepo: (repositoryId: string) =>
+      commitData.filter(c => c.repositoryId === repositoryId),
+    getPullRequestsByRepo: (repositoryId: string) =>
+      prData.filter(p => p.repositoryId === repositoryId),
+    getIssuesByRepo: (repositoryId: string) =>
+      issueData.filter(i => i.repositoryId === repositoryId),
+    getBranchesByRepo: (repositoryId: string) =>
+      branchData.filter(b => b.repositoryId === repositoryId),
+    getContributor: (id: string) => contribData.find(c => c.id === id),
+    getPrStatusColor,
+    getIssueStatusColor,
+    getIssuePriorityColor,
+    formatSha,
   };
 
   result.cartSummary = cartSummary;
   result.storeSummary = storeSummary;
+  result.codeSummary = codeSummary;
   result.helpers = helpers;
 
   return result as DataResult<E>;

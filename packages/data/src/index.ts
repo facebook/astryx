@@ -6,10 +6,10 @@
  *
  * Usage:
  *   import { createData } from '@xds/data';
- *   import type { Product, Order } from '@xds/data';
+ *   import type { Product, Repository, PullRequest } from '@xds/data';
  *
  *   // Or import raw data directly
- *   import { products, orders } from '@xds/data';
+ *   import { products, repositories } from '@xds/data';
  */
 
 // Core API
@@ -17,6 +17,7 @@ export {createData} from './createData';
 
 // Types
 export type {
+  // Ecommerce
   Category,
   Product,
   Customer,
@@ -26,6 +27,15 @@ export type {
   CartItem,
   CartSummary,
   StoreSummary,
+  // Code
+  Repository,
+  Commit,
+  PullRequest,
+  Issue,
+  Contributor,
+  Branch,
+  CodeSummary,
+  // API
   EntityName,
   EntityMap,
   CreateDataConfig,
@@ -33,7 +43,7 @@ export type {
   DataHelpers,
 } from './types';
 
-// Raw data — for direct access when createData() is overkill
+// Raw ecommerce data
 export {
   categories,
   products,
@@ -44,3 +54,14 @@ export {
   cartSummary,
   storeSummary,
 } from './dataset';
+
+// Raw code data
+export {
+  repositories,
+  commits,
+  pullRequests,
+  issues,
+  contributors,
+  branches,
+  codeSummary,
+} from './dataset-code';
