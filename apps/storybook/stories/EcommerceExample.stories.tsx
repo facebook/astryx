@@ -1,4 +1,4 @@
-import {useState, useMemo} from 'react';
+import React, {useState, useMemo} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSCard} from '@xds/core/Card';
@@ -9,7 +9,7 @@ import {XDSBadge} from '@xds/core/Badge';
 import type {XDSBadgeVariant} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
 import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSVStack, XDSHStack, XDSStackItem} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
@@ -94,20 +94,12 @@ const styles = stylex.create({
     objectFit: 'cover',
     borderRadius: radiusVars['--radius-element'],
   },
-  summaryRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+
   stars: {
     color: colorVars['--color-warning'],
     fontSize: textSizeVars['--text-base'],
   },
-  barContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-2'],
-  },
+
   barLabel: {
     minWidth: '80px',
   },
@@ -133,11 +125,7 @@ const styles = stylex.create({
     minWidth: '32px',
     textAlign: 'center' as const,
   },
-  filterBar: {
-    display: 'flex',
-    gap: spacingVars['--spacing-3'],
-    alignItems: 'flex-end',
-  },
+
   strikethrough: {
     textDecoration: 'line-through',
   },
@@ -153,6 +141,16 @@ const styles = stylex.create({
   },
   flex1: {
     flex: '1',
+  },
+  flex2: {
+    flex: '2',
+  },
+  orderSummaryColumn: {
+    minWidth: '260px',
+  },
+  textEnd: {
+    textAlign: 'right' as const,
+    marginLeft: 'auto',
   },
 });
 
@@ -199,7 +197,7 @@ function PageShell({
   breadcrumbs?: React.ReactNode;
 }) {
   return (
-    <div {...stylex.props(styles.page)}>
+    <XDSVStack xstyle={styles.page}>
       <XDSTopNav
         label="Store navigation"
         title={
@@ -243,11 +241,11 @@ function PageShell({
           </>
         }
       />
-      <div {...stylex.props(styles.pageContent)}>
-        {breadcrumbs && <div style={{marginBottom: 16}}>{breadcrumbs}</div>}
+      <XDSVStack gap="space6" xstyle={styles.pageContent}>
+        {breadcrumbs}
         {children}
-      </div>
-    </div>
+      </XDSVStack>
+    </XDSVStack>
   );
 }
 
@@ -337,28 +335,28 @@ export const Dashboard: Story = {
             <XDSVStack gap="space4">
               <XDSHeading level={4}>Revenue by Month</XDSHeading>
               {storeSummary.revenueByMonth.map(({month, revenue}) => (
-                <div key={month} {...stylex.props(styles.barContainer)}>
+                <XDSHStack key={month} gap="space2" vAlign="center">
                   <XDSText
                     type="supporting"
                     color="secondary"
                     xstyle={styles.barLabel}>
                     {month}
                   </XDSText>
-                  <div style={{flex: 1}}>
+                  <XDSStackItem size="fill">
                     <XDSProgressBar
                       label={month}
                       isLabelHidden
                       value={(revenue / maxRevenue) * 100}
                       max={100}
                     />
-                  </div>
+                  </XDSStackItem>
                   <XDSText
                     type="supporting"
                     weight="medium"
                     xstyle={styles.barValue}>
                     {formatPrice(revenue)}
                   </XDSText>
-                </div>
+                </XDSHStack>
               ))}
             </XDSVStack>
           </XDSCard>
@@ -368,28 +366,28 @@ export const Dashboard: Story = {
             <XDSVStack gap="space4">
               <XDSHeading level={4}>Top Categories</XDSHeading>
               {storeSummary.topCategories.map(cat => (
-                <div key={cat.category} {...stylex.props(styles.barContainer)}>
+                <XDSHStack key={cat.category} gap="space2" vAlign="center">
                   <XDSText
                     type="supporting"
                     color="secondary"
                     xstyle={styles.barLabel}>
                     {cat.category}
                   </XDSText>
-                  <div style={{flex: 1}}>
+                  <XDSStackItem size="fill">
                     <XDSProgressBar
                       label={cat.category}
                       isLabelHidden
                       value={(cat.revenue / maxCatRevenue) * 100}
                       max={100}
                     />
-                  </div>
+                  </XDSStackItem>
                   <XDSText
                     type="supporting"
                     weight="medium"
                     xstyle={styles.barValue}>
                     {formatPrice(cat.revenue)}
                   </XDSText>
-                </div>
+                </XDSHStack>
               ))}
             </XDSVStack>
           </XDSCard>
@@ -509,7 +507,7 @@ export const ProductCatalog: Story = {
           </XDSHStack>
 
           {/* Search and filter bar */}
-          <div {...stylex.props(styles.filterBar)}>
+          <XDSHStack gap="space3" vAlign="end">
             <XDSTextInput
               label="Search products"
               isLabelHidden
@@ -526,7 +524,7 @@ export const ProductCatalog: Story = {
               onChange={setCategory}
               placeholder="All Categories"
             />
-          </div>
+          </XDSHStack>
 
           {filtered.length === 0 ? (
             <XDSEmptyState
@@ -1091,7 +1089,7 @@ export const ShoppingCart: Story = {
         }>
         <XDSHStack gap="space6" vAlign="start">
           {/* Cart items */}
-          <div style={{flex: 2}}>
+          <XDSStackItem size="fill" xstyle={styles.flex2}>
             <XDSCard>
               <XDSVStack gap="space4">
                 <XDSHStack gap="space2" vAlign="center" hAlign="between">
@@ -1104,14 +1102,14 @@ export const ShoppingCart: Story = {
                 </XDSHStack>
                 <XDSDivider />
                 {cartItems.map((item, i) => (
-                  <div key={item.id}>
+                  <React.Fragment key={item.id}>
                     <XDSHStack gap="space4" vAlign="center">
                       <img
                         src={item.image}
                         alt={item.productName}
                         {...stylex.props(styles.cartImage)}
                       />
-                      <div style={{flex: 1}}>
+                      <XDSStackItem size="fill">
                         <XDSVStack gap="space1">
                           <XDSLink href="#" label={item.productName}>
                             {item.productName}
@@ -1120,7 +1118,7 @@ export const ShoppingCart: Story = {
                             {formatPrice(item.unitPrice)} each
                           </XDSText>
                         </XDSVStack>
-                      </div>
+                      </XDSStackItem>
                       {/* Quantity controls */}
                       <div {...stylex.props(styles.quantityControl)}>
                         <XDSButton
@@ -1152,57 +1150,57 @@ export const ShoppingCart: Story = {
                       </XDSText>
                     </XDSHStack>
                     {i < cartItems.length - 1 && <XDSDivider />}
-                  </div>
+                  </React.Fragment>
                 ))}
               </XDSVStack>
             </XDSCard>
-          </div>
+          </XDSStackItem>
 
           {/* Order summary */}
-          <div style={{flex: 1, minWidth: 260}}>
+          <XDSStackItem size="fill" xstyle={styles.orderSummaryColumn}>
             <XDSCard>
               <XDSVStack gap="space4">
                 <XDSHeading level={4}>Order Summary</XDSHeading>
                 <XDSDivider />
-                <div {...stylex.props(styles.summaryRow)}>
+                <XDSHStack hAlign="between" vAlign="center">
                   <XDSText type="body" color="secondary">
                     Subtotal
                   </XDSText>
                   <XDSText type="body" weight="medium">
                     {formatPrice(computedTotal)}
                   </XDSText>
-                </div>
-                <div {...stylex.props(styles.summaryRow)}>
+                </XDSHStack>
+                <XDSHStack hAlign="between" vAlign="center">
                   <XDSText type="body" color="secondary">
                     Shipping
                   </XDSText>
                   <XDSText type="body" weight="medium" color="active">
                     Free
                   </XDSText>
-                </div>
-                <div {...stylex.props(styles.summaryRow)}>
+                </XDSHStack>
+                <XDSHStack hAlign="between" vAlign="center">
                   <XDSText type="body" color="secondary">
                     Tax
                   </XDSText>
                   <XDSText type="body" weight="medium">
                     {formatPrice(tax)}
                   </XDSText>
-                </div>
+                </XDSHStack>
                 <XDSDivider />
-                <div {...stylex.props(styles.summaryRow)}>
+                <XDSHStack hAlign="between" vAlign="center">
                   <XDSText type="large" weight="bold">
                     Total
                   </XDSText>
                   <XDSText type="large" weight="bold">
                     {formatPrice(computedTotal + tax)}
                   </XDSText>
-                </div>
+                </XDSHStack>
                 <XDSButton variant="primary" label="Checkout">
                   Checkout
                 </XDSButton>
               </XDSVStack>
             </XDSCard>
-          </div>
+          </XDSStackItem>
         </XDSHStack>
       </PageShell>
     );
@@ -1249,14 +1247,14 @@ export const ProductReviews: Story = {
                 </XDSText>
               </XDSVStack>
               <XDSDivider orientation="vertical" />
-              <div style={{flex: 1}}>
+              <XDSStackItem size="fill">
                 <XDSVStack gap="space2">
                   {ratingCounts.map(({stars, count}) => (
-                    <div key={stars} {...stylex.props(styles.barContainer)}>
+                    <XDSHStack key={stars} gap="space2" vAlign="center">
                       <XDSText type="supporting" color="secondary">
                         {stars} star{stars !== 1 ? 's' : ''}
                       </XDSText>
-                      <div style={{flex: 1}}>
+                      <XDSStackItem size="fill">
                         <XDSProgressBar
                           label={`${stars} stars`}
                           isLabelHidden
@@ -1267,14 +1265,14 @@ export const ProductReviews: Story = {
                           }
                           max={100}
                         />
-                      </div>
+                      </XDSStackItem>
                       <XDSText type="supporting" weight="medium">
                         {count}
                       </XDSText>
-                    </div>
+                    </XDSHStack>
                   ))}
                 </XDSVStack>
-              </div>
+              </XDSStackItem>
             </XDSHStack>
           </XDSCard>
 
@@ -1303,7 +1301,7 @@ export const ProductReviews: Story = {
                         </XDSLink>
                       </XDSHStack>
                     </XDSVStack>
-                    <div style={{marginLeft: 'auto'}}>
+                    <XDSStackItem size="fill" xstyle={styles.textEnd}>
                       <XDSText type="supporting" color="secondary">
                         {new Date(review.createdAt).toLocaleDateString(
                           'en-US',
@@ -1314,7 +1312,7 @@ export const ProductReviews: Story = {
                           },
                         )}
                       </XDSText>
-                    </div>
+                    </XDSStackItem>
                   </XDSHStack>
                   <XDSText type="body" weight="bold">
                     {review.title}
@@ -1358,7 +1356,7 @@ export const ProductDetail: Story = {
         <XDSVStack gap="space6">
           {/* Main product section */}
           <XDSHStack gap="space6" vAlign="start">
-            <div style={{flex: 1}}>
+            <XDSStackItem size="fill">
               <XDSCard isFullBleed>
                 <XDSAspectRatio ratio={1}>
                   <img
@@ -1368,8 +1366,8 @@ export const ProductDetail: Story = {
                   />
                 </XDSAspectRatio>
               </XDSCard>
-            </div>
-            <div style={{flex: 1}}>
+            </XDSStackItem>
+            <XDSStackItem size="fill">
               <XDSVStack gap="space4">
                 <XDSHStack gap="space2">
                   <XDSBadge variant="neutral">{product.category}</XDSBadge>
@@ -1420,7 +1418,7 @@ export const ProductDetail: Story = {
                   ))}
                 </XDSHStack>
               </XDSVStack>
-            </div>
+            </XDSStackItem>
           </XDSHStack>
 
           {/* Reviews section */}
