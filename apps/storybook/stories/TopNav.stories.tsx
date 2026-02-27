@@ -160,32 +160,6 @@ export const WithSubtitle: Story = {
   },
 };
 
-/**
- * Full title stack — suite name, app title, and subtitle all together.
- */
-export const WithSuiteNameAndSubtitle: Story = {
-  args: {
-    label: 'Main navigation',
-    title: (
-      <XDSTopNavTitle
-        suiteName="Acme Suite"
-        title="Analytics"
-        subtitle="Enterprise Plan"
-        logo={
-          <XDSNavIcon icon={<ChartBarIcon style={{width: 16, height: 16}} />} />
-        }
-        href="#"
-      />
-    ),
-    startContent: (
-      <>
-        <XDSTopNavItem label="Overview" href="#" isSelected />
-        <XDSTopNavItem label="Reports" href="#" />
-      </>
-    ),
-  },
-};
-
 export const NavItemStates: Story = {
   render: () => (
     <XDSTopNav
@@ -240,46 +214,6 @@ export const CenteredNavigation: Story = {
             icon={<UserCircleIcon style={{width: 16, height: 16}} />}
           />
         </>
-      }
-    />
-  ),
-};
-
-export const CenteredWithStartContent: Story = {
-  render: () => (
-    <XDSTopNav
-      label="Main navigation"
-      title={
-        <XDSTopNavTitle
-          title="Dashboard"
-          logo={
-            <XDSNavIcon
-              icon={<ChartBarIcon style={{width: 16, height: 16}} />}
-            />
-          }
-          href="#"
-        />
-      }
-      startContent={
-        <XDSTopNavItem
-          label="Back"
-          href="#"
-          icon={<HomeIcon style={{width: 16, height: 16}} />}
-        />
-      }
-      centerContent={
-        <>
-          <XDSTopNavItem label="Overview" href="#" isSelected />
-          <XDSTopNavItem label="Analytics" href="#" />
-          <XDSTopNavItem label="Reports" href="#" />
-        </>
-      }
-      endContent={
-        <XDSButton
-          label="Profile"
-          variant="ghost"
-          icon={<UserCircleIcon style={{width: 16, height: 16}} />}
-        />
       }
     />
   ),
