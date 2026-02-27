@@ -161,34 +161,57 @@ function hasTests(componentName) {
   }
 }
 
-// Check if component has stories
+// Check if component has stories (checks both directory name and exported component names)
 function hasStories(componentName) {
   const storiesDir = path.join(process.cwd(), STORYBOOK_STORIES);
   try {
     const files = fs.readdirSync(storiesDir);
-    return files.some(f =>
+    // Check directory name match
+    if (files.some(f =>
       f.toLowerCase().includes(componentName.toLowerCase()) &&
       f.endsWith('.stories.tsx')
-    );
+    )) return true;
+
+    // Also check exported component names (e.g., Layer dir exports XDSPopover)
+    const exports = getExports(componentName);
+    const xdsComponents = exports.filter(e => e.startsWith('XDS'));
+    return xdsComponents.some(comp => {
+      const name = comp.replace(/^XDS/, '');
+      return files.some(f =>
+        f.toLowerCase().includes(name.toLowerCase()) &&
+        f.endsWith('.stories.tsx')
+      );
+    });
   } catch {
     return false;
   }
 }
 
-// Get the Storybook story title for a component (e.g., "Core/XDSButton")
+// Get the Storybook story titles for a component (e.g., "Core/XDSButton")
+// Returns array since a directory like Layer may have multiple story files
 function getStoryTitle(componentName) {
   const storiesDir = path.join(process.cwd(), STORYBOOK_STORIES);
   try {
     const files = fs.readdirSync(storiesDir);
-    const storyFile = files.find(f =>
-      f.toLowerCase().includes(componentName.toLowerCase()) &&
-      f.endsWith('.stories.tsx')
-    );
-    if (!storyFile) return null;
 
-    const content = fs.readFileSync(path.join(storiesDir, storyFile), 'utf8');
-    const titleMatch = content.match(/title:\s*['"]([^'"]+)['"]/);
-    return titleMatch ? titleMatch[1] : null;
+    // Find story files matching directory name or exported component names
+    const exports = getExports(componentName);
+    const searchNames = [componentName, ...exports.filter(e => e.startsWith('XDS')).map(e => e.replace(/^XDS/, ''))];
+
+    const storyFiles = files.filter(f =>
+      f.endsWith('.stories.tsx') &&
+      searchNames.some(name => f.toLowerCase().includes(name.toLowerCase()))
+    );
+
+    if (storyFiles.length === 0) return null;
+
+    const titles = storyFiles.map(storyFile => {
+      const content = fs.readFileSync(path.join(storiesDir, storyFile), 'utf8');
+      const titleMatch = content.match(/title:\s*['"]([^'"]+)['"]/);
+      return titleMatch ? titleMatch[1] : null;
+    }).filter(Boolean);
+
+    return titles.length === 1 ? titles[0] : titles.length > 0 ? titles : null;
   } catch {
     return null;
   }
@@ -375,9 +398,17 @@ function analyze() {
     componentStats[comp] = getComponentStats(comp);
   }
 
+  // Build visual regression grep pattern from actual exported component names
+  // (not directory names — e.g., Layer/ exports XDSPopover, XDSTooltip, etc.)
+  const vrtComponents = [...new Set(
+    Object.values(componentStats)
+      .flatMap(stats => stats.exports.filter(e => e.startsWith('XDS')))
+  )];
+
   const result = {
     newComponents,
     modifiedComponents,
+    vrtComponents,
     componentStats,
     totalBundle: getTotalBundleStats(),
     analyzedAt: new Date().toISOString(),
