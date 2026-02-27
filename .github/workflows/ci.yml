@@ -467,6 +467,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -491,14 +494,70 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install chromium
 
-      - name: Run visual regression tests
+      - name: Build grep pattern from analysis
+        id: vrt-pattern
         run: |
-          COMPONENTS=$(cat analysis.json | jq -r '(.newComponents + .modifiedComponents) | map("XDS" + .) | join("|")')
+          # Use vrtComponents if available (correct component names),
+          # fall back to directory-name-based pattern
+          COMPONENTS=$(cat analysis.json | jq -r '
+            if .vrtComponents and (.vrtComponents | length > 0)
+            then .vrtComponents | join("|")
+            else (.newComponents + .modifiedComponents) | map("XDS" + .) | join("|")
+            end')
+
           if [ -z "$COMPONENTS" ] || [ "$COMPONENTS" = "" ]; then
-            echo "No components changed, skipping visual regression"
+            echo "No components to test"
+            echo "skip=true" >> $GITHUB_OUTPUT
             exit 0
           fi
-          npx playwright test --grep "$COMPONENTS"
+
+          echo "pattern=$COMPONENTS" >> $GITHUB_OUTPUT
+          echo "skip=false" >> $GITHUB_OUTPUT
+          echo "Will test components matching: $COMPONENTS"
+
+          # Detect new components (no existing baselines)
+          NEW_COMPONENTS=$(cat analysis.json | jq -r '
+            if .vrtComponents and (.vrtComponents | length > 0)
+            then [.newComponents[] as $dir |
+              .componentStats[$dir].exports[]? // empty |
+              select(startswith("XDS"))] | unique | join("|")
+            else .newComponents | map("XDS" + .) | join("|")
+            end')
+
+          echo "new_pattern=$NEW_COMPONENTS" >> $GITHUB_OUTPUT
+          echo "New components: ${NEW_COMPONENTS:-none}"
+
+      - name: Generate baselines for new components
+        if: steps.vrt-pattern.outputs.skip != 'true' && steps.vrt-pattern.outputs.new_pattern != ''
+        run: |
+          echo "Generating baselines for new components: ${{ steps.vrt-pattern.outputs.new_pattern }}"
+          npx playwright test \
+            --grep "${{ steps.vrt-pattern.outputs.new_pattern }}" \
+            --update-snapshots \
+            || true
+
+      - name: Commit new baselines
+        if: steps.vrt-pattern.outputs.skip != 'true' && steps.vrt-pattern.outputs.new_pattern != ''
+        run: |
+          # Check if any new baseline files were created
+          NEW_FILES=$(git ls-files --others --exclude-standard e2e/visual-regression.spec.ts-snapshots/)
+          if [ -n "$NEW_FILES" ]; then
+            echo "New baseline files:"
+            echo "$NEW_FILES"
+            git add e2e/visual-regression.spec.ts-snapshots/
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore(vrt): auto-generate baselines for new components"
+            git push
+            echo "Committed and pushed new baselines"
+          else
+            echo "No new baseline files to commit"
+          fi
+
+      - name: Run visual regression tests
+        if: steps.vrt-pattern.outputs.skip != 'true'
+        run: |
+          npx playwright test --grep "${{ steps.vrt-pattern.outputs.pattern }}"
 
       - name: Upload diff artifacts
         if: failure()
