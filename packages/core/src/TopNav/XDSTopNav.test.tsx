@@ -187,6 +187,31 @@ describe('XDSTopNavTitle', () => {
     render(<XDSTopNavTitle title="Test" ref={ref} />);
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLElement));
   });
+
+  it('renders suiteName above the title', () => {
+    render(<XDSTopNavTitle suiteName="Acme Suite" title="Analytics" />);
+    expect(screen.getByText('Acme Suite')).toBeInTheDocument();
+    expect(screen.getByText('Analytics')).toBeInTheDocument();
+  });
+
+  it('renders subtitle below the title', () => {
+    render(<XDSTopNavTitle title="Dashboard" subtitle="Business Account" />);
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Business Account')).toBeInTheDocument();
+  });
+
+  it('renders suiteName, title, and subtitle together', () => {
+    render(
+      <XDSTopNavTitle
+        suiteName="Suite"
+        title="Product"
+        subtitle="Account"
+      />,
+    );
+    expect(screen.getByText('Suite')).toBeInTheDocument();
+    expect(screen.getByText('Product')).toBeInTheDocument();
+    expect(screen.getByText('Account')).toBeInTheDocument();
+  });
 });
 
 describe('XDSNavIcon', () => {

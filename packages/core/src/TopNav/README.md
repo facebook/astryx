@@ -85,13 +85,21 @@ For the circular icon container, use `XDSNavIcon` from `@xds/core/NavIcon`.
 
 ```tsx
 <XDSTopNavTitle title="My App" logo={<XDSNavIcon icon={<HomeIcon />} />} href="/" />
+
+// With suite branding
+<XDSTopNavTitle suiteName="Acme Suite" title="Analytics" logo={<XDSNavIcon icon={<ChartBarIcon />} />} />
+
+// With subtitle context
+<XDSTopNavTitle title="Dashboard" subtitle="Business Account" logo={<XDSNavIcon icon={<HomeIcon />} />} />
 ```
 
-| Prop    | Type        | Default | Description                      |
-| ------- | ----------- | ------- | -------------------------------- |
-| `title` | `string`    | —       | Title text to display            |
-| `logo`  | `ReactNode` | —       | Logo element (image, XDSNavIcon) |
-| `href`  | `string`    | —       | URL to navigate to when clicked  |
+| Prop         | Type        | Default | Description                                     |
+| ------------ | ----------- | ------- | ----------------------------------------------- |
+| `title`      | `string`    | —       | Title text (app/product name)                   |
+| `suiteName` | `string`    | —       | Text above the title (e.g., suite name)         |
+| `subtitle`   | `string`    | —       | Text below the title (e.g., account context)    |
+| `logo`       | `ReactNode` | —       | Logo element (image, XDSNavIcon)                |
+| `href`       | `string`    | —       | URL to navigate to when clicked                 |
 
 ### XDSTopNavItem
 
