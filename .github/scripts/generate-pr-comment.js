@@ -98,7 +98,14 @@ if (analysis.modifiedComponents && analysis.modifiedComponents.length > 0) {
     const baseStats = analysis.baseComponentStats?.[comp] || {};
     const sbLink = getStorybookLink(storybookUrl, stats.storyTitle);
     const sbBadge = sbLink ? ` · ${extLink('View in Storybook', sbLink)}` : '';
-    componentSection += `<details>\n<summary><strong>${comp}</strong>${sbBadge}</summary>\n\n`;
+
+    // Check if this modified directory has new exports
+    const newExports = analysis.newExports || [];
+    const compExports = stats.exports || [];
+    const newInComp = compExports.filter(e => newExports.includes(e));
+    const newBadge = newInComp.length > 0 ? ` · 🆕 ${newInComp.join(', ')}` : '';
+
+    componentSection += `<details>\n<summary><strong>${comp}</strong>${sbBadge}${newBadge}</summary>\n\n`;
     componentSection += `| Metric | Before | After | Delta |\n|--------|--------|-------|-------|\n`;
 
     const esmDelta = stats.esmBytes && baseStats.esmBytes
