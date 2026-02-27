@@ -33,8 +33,6 @@ import {
   type Product,
   type Order,
   type Customer,
-  type Review,
-  type CartItem,
 } from './data/ecommerce';
 
 // =============================================================================
@@ -70,7 +68,7 @@ const styles = stylex.create({
   },
   productImage: {
     width: '100%',
-    height: '180px',
+    height: '220px',
     objectFit: 'cover',
     borderRadius: `${radiusVars['--radius-element']} ${radiusVars['--radius-element']} 0 0`,
   },
@@ -144,7 +142,7 @@ const styles = stylex.create({
     fontSize: textSizeVars['--text-sm'],
     color: colorVars['--color-text-primary'],
     fontWeight: fontWeightVars['--font-weight-medium'],
-    minWidth: '60px',
+    minWidth: '80px',
     textAlign: 'right' as const,
     margin: 0,
   },
@@ -185,7 +183,9 @@ function renderStars(rating: number): string {
   const full = Math.floor(rating);
   const half = rating % 1 >= 0.5 ? 1 : 0;
   const empty = 5 - full - half;
-  return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(empty);
+  return (
+    '\u2605'.repeat(full) + (half ? '\u00bd' : '') + '\u2606'.repeat(empty)
+  );
 }
 
 // =============================================================================
@@ -214,9 +214,15 @@ type Story = StoryObj;
 export const Dashboard: Story = {
   render: () => {
     const stats = [
-      {label: 'Total Revenue', value: formatPrice(storeSummary.totalRevenue)},
+      {
+        label: 'Total Revenue',
+        value: formatPrice(storeSummary.totalRevenue),
+      },
       {label: 'Orders', value: storeSummary.totalOrders.toString()},
-      {label: 'Customers', value: storeSummary.totalCustomers.toString()},
+      {
+        label: 'Customers',
+        value: storeSummary.totalCustomers.toString(),
+      },
       {
         label: 'Avg Order Value',
         value: formatPrice(storeSummary.averageOrderValue),
@@ -252,7 +258,7 @@ export const Dashboard: Story = {
                   <XDSProgressBar
                     label={month}
                     isLabelHidden
-                    value={(revenue / 15000) * 100}
+                    value={(revenue / 45000) * 100}
                     max={100}
                   />
                 </div>
@@ -314,7 +320,7 @@ const orderColumns: XDSTableColumn<Order>[] = [
   {
     key: 'total',
     header: 'Total',
-    width: pixel(100),
+    width: pixel(120),
     renderCell: item => formatPrice(item.total),
   },
   {
@@ -347,9 +353,9 @@ export const ProductCatalog: Story = {
   render: () => (
     <XDSVStack gap="space6">
       <XDSHStack gap="space2" vAlign="center" hAlign="between">
-        <p {...stylex.props(styles.sectionTitle)}>Products</p>
+        <p {...stylex.props(styles.sectionTitle)}>Collection</p>
         <XDSHStack gap="space2">
-          <XDSBadge variant="neutral">{products.length} products</XDSBadge>
+          <XDSBadge variant="neutral">{products.length} pieces</XDSBadge>
           <XDSButton variant="primary" label="Add Product">
             Add Product
           </XDSButton>
@@ -375,6 +381,9 @@ export const ProductCatalog: Story = {
                   </XDSHStack>
                   <XDSText type="body" weight="bold">
                     {product.name}
+                  </XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    {product.description.slice(0, 80)}\u2026
                   </XDSText>
                   <XDSHStack gap="space2" vAlign="center">
                     <p {...stylex.props(styles.price)}>
@@ -439,7 +448,7 @@ export const OrderList: Story = {
       {
         key: 'total',
         header: 'Total',
-        width: pixel(100),
+        width: pixel(120),
         renderCell: item => formatPrice(item.total),
       },
       {
@@ -479,9 +488,7 @@ export const OrderList: Story = {
       <XDSVStack gap="space4">
         <XDSHStack gap="space2" vAlign="center" hAlign="between">
           <p {...stylex.props(styles.sectionTitle)}>Orders</p>
-          <XDSHStack gap="space2">
-            <XDSBadge variant="neutral">{orders.length} orders</XDSBadge>
-          </XDSHStack>
+          <XDSBadge variant="neutral">{orders.length} orders</XDSBadge>
         </XDSHStack>
         <XDSCard>
           <XDSTable
@@ -618,7 +625,7 @@ export const ShoppingCart: Story = {
                         {item.productName}
                       </XDSText>
                       <XDSText type="supporting" color="secondary">
-                        {formatPrice(item.unitPrice)} × {item.quantity}
+                        {formatPrice(item.unitPrice)} \u00d7 {item.quantity}
                       </XDSText>
                     </XDSVStack>
                   </div>
