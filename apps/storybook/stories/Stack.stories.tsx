@@ -537,7 +537,10 @@ export const SidebarLayout: Story = {
 
 export const PageLayout: Story = {
   render: () => (
-    <XDSStack gap="space2" xstyle={styles.containerWidthLarge}>
+    <XDSStack
+      direction="vertical"
+      gap="space2"
+      xstyle={styles.containerWidthLarge}>
       <XDSStack
         direction="horizontal"
         gap="space2"

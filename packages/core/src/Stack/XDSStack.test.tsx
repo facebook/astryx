@@ -14,7 +14,7 @@ import {XDSStack} from './XDSStack';
 describe('XDSStack', () => {
   it('renders children correctly', () => {
     render(
-      <XDSStack>
+      <XDSStack direction="vertical">
         <div>Item 1</div>
         <div>Item 2</div>
       </XDSStack>,
@@ -24,15 +24,13 @@ describe('XDSStack', () => {
   });
 
   it('renders as div by default', () => {
-    render(<XDSStack data-testid="stack">Content</XDSStack>);
+    render(
+      <XDSStack direction="vertical" data-testid="stack">
+        Content
+      </XDSStack>,
+    );
     const element = screen.getByTestId('stack');
     expect(element.tagName).toBe('DIV');
-  });
-
-  it('defaults to vertical direction', () => {
-    render(<XDSStack data-testid="stack">Content</XDSStack>);
-    // Component should render without error — direction defaults to 'vertical'
-    expect(screen.getByTestId('stack')).toBeInTheDocument();
   });
 
   it('renders with horizontal direction', () => {
@@ -57,7 +55,7 @@ describe('XDSStack', () => {
 
   it('renders with polymorphic element prop', () => {
     render(
-      <XDSStack element="nav" data-testid="stack">
+      <XDSStack direction="vertical" element="nav" data-testid="stack">
         Content
       </XDSStack>,
     );
@@ -67,7 +65,7 @@ describe('XDSStack', () => {
 
   it('renders with polymorphic element as section', () => {
     render(
-      <XDSStack element="section" data-testid="stack">
+      <XDSStack direction="vertical" element="section" data-testid="stack">
         Content
       </XDSStack>,
     );
@@ -77,7 +75,7 @@ describe('XDSStack', () => {
 
   it('renders with gap prop', () => {
     render(
-      <XDSStack gap="space4">
+      <XDSStack direction="vertical" gap="space4">
         <div>Item 1</div>
         <div>Item 2</div>
       </XDSStack>,
@@ -87,7 +85,7 @@ describe('XDSStack', () => {
 
   it('renders with hAlign prop', () => {
     render(
-      <XDSStack hAlign="center">
+      <XDSStack direction="vertical" hAlign="center">
         <div>Item 1</div>
       </XDSStack>,
     );
@@ -96,7 +94,7 @@ describe('XDSStack', () => {
 
   it('renders with vAlign prop', () => {
     render(
-      <XDSStack vAlign="center">
+      <XDSStack direction="vertical" vAlign="center">
         <div>Item 1</div>
       </XDSStack>,
     );
@@ -105,7 +103,7 @@ describe('XDSStack', () => {
 
   it('renders with wrap prop', () => {
     render(
-      <XDSStack wrap="wrap">
+      <XDSStack direction="vertical" wrap="wrap">
         <div>Item 1</div>
         <div>Item 2</div>
       </XDSStack>,
@@ -138,7 +136,7 @@ describe('XDSStack', () => {
   it('forwards ref correctly', () => {
     const ref = vi.fn();
     render(
-      <XDSStack ref={ref}>
+      <XDSStack direction="vertical" ref={ref}>
         <div>Test</div>
       </XDSStack>,
     );
@@ -148,7 +146,7 @@ describe('XDSStack', () => {
   it('forwards ref with polymorphic element', () => {
     const ref = vi.fn();
     render(
-      <XDSStack element="section" ref={ref}>
+      <XDSStack direction="vertical" element="section" ref={ref}>
         <div>Test</div>
       </XDSStack>,
     );
@@ -157,7 +155,10 @@ describe('XDSStack', () => {
 
   it('passes through additional props', () => {
     render(
-      <XDSStack data-testid="stack" aria-label="Stack container">
+      <XDSStack
+        direction="vertical"
+        data-testid="stack"
+        aria-label="Stack container">
         <div>Item</div>
       </XDSStack>,
     );
@@ -168,7 +169,7 @@ describe('XDSStack', () => {
   it('passes through event handlers', () => {
     const onClick = vi.fn();
     render(
-      <XDSStack data-testid="stack" onClick={onClick}>
+      <XDSStack direction="vertical" data-testid="stack" onClick={onClick}>
         <div>Item</div>
       </XDSStack>,
     );
