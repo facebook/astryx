@@ -1062,7 +1062,8 @@ export const furnitureProducts: Product[] = [
     compareAtPrice: null,
     categoryId: 'furn-cat-1',
     category: 'Seating',
-    image: 'https://picsum.photos/seed/arcchair/400/400',
+    image:
+      'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=400&h=400&fit=crop',
     rating: 4.9,
     reviewCount: 47,
     stock: 6,
@@ -1081,7 +1082,8 @@ export const furnitureProducts: Product[] = [
     compareAtPrice: 540.0,
     categoryId: 'furn-cat-1',
     category: 'Seating',
-    image: 'https://picsum.photos/seed/pebblechair/400/400',
+    image:
+      'https://images.unsplash.com/photo-1503602642458-232111445657?w=400&h=400&fit=crop',
     rating: 4.7,
     reviewCount: 128,
     stock: 45,
@@ -1100,7 +1102,8 @@ export const furnitureProducts: Product[] = [
     compareAtPrice: 4_800.0,
     categoryId: 'furn-cat-1',
     category: 'Seating',
-    image: 'https://picsum.photos/seed/driftsofa/400/400',
+    image:
+      'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&h=400&fit=crop',
     rating: 4.8,
     reviewCount: 63,
     stock: 3,
@@ -1119,7 +1122,8 @@ export const furnitureProducts: Product[] = [
     compareAtPrice: null,
     categoryId: 'furn-cat-1',
     category: 'Seating',
-    image: 'https://picsum.photos/seed/spinestool/400/400',
+    image:
+      'https://images.unsplash.com/photo-1550581190-9c1c48d21d6c?w=400&h=400&fit=crop',
     rating: 4.5,
     reviewCount: 82,
     stock: 30,
@@ -1138,7 +1142,8 @@ export const furnitureProducts: Product[] = [
     compareAtPrice: null,
     categoryId: 'furn-cat-2',
     category: 'Lighting',
-    image: 'https://picsum.photos/seed/halopendant/400/400',
+    image:
+      'https://images.unsplash.com/photo-1524484485831-a92ffc0de03f?w=400&h=400&fit=crop',
     rating: 4.8,
     reviewCount: 91,
     stock: 12,
@@ -1157,7 +1162,8 @@ export const furnitureProducts: Product[] = [
     compareAtPrice: 890.0,
     categoryId: 'furn-cat-2',
     category: 'Lighting',
-    image: 'https://picsum.photos/seed/stemlamp/400/400',
+    image:
+      'https://images.unsplash.com/photo-1507473885765-e6ed057ab6fe?w=400&h=400&fit=crop',
     rating: 4.6,
     reviewCount: 54,
     stock: 18,
@@ -1176,7 +1182,8 @@ export const furnitureProducts: Product[] = [
     compareAtPrice: null,
     categoryId: 'furn-cat-2',
     category: 'Lighting',
-    image: 'https://picsum.photos/seed/orblamp/400/400',
+    image:
+      'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=400&h=400&fit=crop',
     rating: 4.4,
     reviewCount: 113,
     stock: 40,
@@ -1195,7 +1202,8 @@ export const furnitureProducts: Product[] = [
     compareAtPrice: null,
     categoryId: 'furn-cat-3',
     category: 'Tables',
-    image: 'https://picsum.photos/seed/slabtable/400/400',
+    image:
+      'https://images.unsplash.com/photo-1611269154421-4e27233ac5c7?w=400&h=400&fit=crop',
     rating: 5.0,
     reviewCount: 22,
     stock: 2,
@@ -1214,7 +1222,8 @@ export const furnitureProducts: Product[] = [
     compareAtPrice: 1_080.0,
     categoryId: 'furn-cat-3',
     category: 'Tables',
-    image: 'https://picsum.photos/seed/tracetable/400/400',
+    image:
+      'https://images.unsplash.com/photo-1499933374294-4584851497cc?w=400&h=400&fit=crop',
     rating: 4.7,
     reviewCount: 68,
     stock: 14,
@@ -1233,7 +1242,8 @@ export const furnitureProducts: Product[] = [
     compareAtPrice: null,
     categoryId: 'furn-cat-3',
     category: 'Tables',
-    image: 'https://picsum.photos/seed/ridgedesk/400/400',
+    image:
+      'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=400&h=400&fit=crop',
     rating: 4.6,
     reviewCount: 39,
     stock: 8,
@@ -1252,7 +1262,8 @@ export const furnitureProducts: Product[] = [
     compareAtPrice: 1_900.0,
     categoryId: 'furn-cat-4',
     category: 'Storage',
-    image: 'https://picsum.photos/seed/columnshelf/400/400',
+    image:
+      'https://images.unsplash.com/photo-1594620302200-9a762244a156?w=400&h=400&fit=crop',
     rating: 4.8,
     reviewCount: 56,
     stock: 10,
@@ -1271,7 +1282,8 @@ export const furnitureProducts: Product[] = [
     compareAtPrice: null,
     categoryId: 'furn-cat-4',
     category: 'Storage',
-    image: 'https://picsum.photos/seed/vaultcredenza/400/400',
+    image:
+      'https://images.unsplash.com/photo-1532372576444-dda954194ad0?w=400&h=400&fit=crop',
     rating: 4.9,
     reviewCount: 31,
     stock: 4,
@@ -1290,7 +1302,8 @@ export const furnitureProducts: Product[] = [
     compareAtPrice: null,
     categoryId: 'furn-cat-5',
     category: 'Decor',
-    image: 'https://picsum.photos/seed/formvase/400/400',
+    image:
+      'https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?w=400&h=400&fit=crop',
     rating: 4.5,
     reviewCount: 147,
     stock: 55,
@@ -1309,7 +1322,8 @@ export const furnitureProducts: Product[] = [
     compareAtPrice: 295.0,
     categoryId: 'furn-cat-5',
     category: 'Decor',
-    image: 'https://picsum.photos/seed/weavethrow/400/400',
+    image:
+      'https://images.unsplash.com/photo-1580301762395-21ce6d555b43?w=400&h=400&fit=crop',
     rating: 4.7,
     reviewCount: 203,
     stock: 35,
@@ -1756,7 +1770,8 @@ export const furnitureCartItems: CartItem[] = [
     id: 'furn-cart-1',
     productId: 'furn-4',
     productName: 'Spine Counter Stool',
-    image: 'https://picsum.photos/seed/spinestool/400/400',
+    image:
+      'https://images.unsplash.com/photo-1550581190-9c1c48d21d6c?w=400&h=400&fit=crop',
     quantity: 3,
     unitPrice: 395.0,
     total: 1_185.0,
@@ -1765,7 +1780,8 @@ export const furnitureCartItems: CartItem[] = [
     id: 'furn-cart-2',
     productId: 'furn-7',
     productName: 'Orb Table Lamp',
-    image: 'https://picsum.photos/seed/orblamp/400/400',
+    image:
+      'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=400&h=400&fit=crop',
     quantity: 2,
     unitPrice: 340.0,
     total: 680.0,
@@ -1774,7 +1790,8 @@ export const furnitureCartItems: CartItem[] = [
     id: 'furn-cart-3',
     productId: 'furn-14',
     productName: 'Weave Throw Blanket',
-    image: 'https://picsum.photos/seed/weavethrow/400/400',
+    image:
+      'https://images.unsplash.com/photo-1580301762395-21ce6d555b43?w=400&h=400&fit=crop',
     quantity: 1,
     unitPrice: 245.0,
     total: 245.0,
