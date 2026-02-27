@@ -51,14 +51,14 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-surface'],
   },
   topContent: {
-    paddingInline: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-1'],
     paddingBlock: spacingVars['--spacing-1'],
   },
   scrollable: {
     flex: 1,
     overflowY: 'auto',
     overflowX: 'hidden',
-    paddingInline: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-1'],
     paddingBlock: spacingVars['--spacing-1'],
   },
   stickyBottom: {
@@ -69,14 +69,14 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-surface'],
   },
   footer: {
-    paddingInline: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-1'],
     paddingBlock: spacingVars['--spacing-2'],
   },
   footerIcons: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
-    paddingInline: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-1'],
     paddingBlock: spacingVars['--spacing-2'],
     borderBlockStart: `1px solid ${colorVars['--color-divider']}`,
   },
