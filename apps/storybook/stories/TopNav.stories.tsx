@@ -286,3 +286,88 @@ export const FullExample: Story = {
     />
   ),
 };
+
+/**
+ * Ghost button end content with `isEndContentFlush` — reduces right padding
+ * from 16px to 8px. Ghost buttons have internal padding, so the tighter
+ * nav edge looks more balanced.
+ */
+export const EndContentFlush: Story = {
+  render: () => (
+    <XDSTopNav
+      label="Main navigation"
+      title={
+        <XDSTopNavTitle
+          title="Dashboard"
+          logo={
+            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+          }
+          href="#"
+        />
+      }
+      startContent={
+        <>
+          <XDSTopNavItem label="Overview" href="#" isSelected />
+          <XDSTopNavItem label="Analytics" href="#" />
+        </>
+      }
+      endContent={
+        <>
+          <XDSButton
+            label="Search"
+            variant="ghost"
+            icon={<MagnifyingGlassIcon style={{width: 16, height: 16}} />}
+          />
+          <XDSButton
+            label="Notifications"
+            variant="ghost"
+            icon={<BellIcon style={{width: 16, height: 16}} />}
+          />
+          <XDSButton
+            label="Profile"
+            variant="ghost"
+            icon={<UserCircleIcon style={{width: 16, height: 16}} />}
+          />
+        </>
+      }
+      isEndContentFlush
+    />
+  ),
+};
+
+/**
+ * Default right padding (16px) — appropriate when end content includes
+ * solid buttons or other elements without internal padding.
+ */
+export const EndContentDefault: Story = {
+  render: () => (
+    <XDSTopNav
+      label="Main navigation"
+      title={
+        <XDSTopNavTitle
+          title="Dashboard"
+          logo={
+            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+          }
+          href="#"
+        />
+      }
+      startContent={
+        <>
+          <XDSTopNavItem label="Overview" href="#" isSelected />
+          <XDSTopNavItem label="Analytics" href="#" />
+        </>
+      }
+      endContent={
+        <>
+          <XDSButton
+            label="Notifications"
+            variant="ghost"
+            icon={<BellIcon style={{width: 16, height: 16}} />}
+          />
+          <XDSButton label="Sign up" variant="primary" />
+        </>
+      }
+    />
+  ),
+};
