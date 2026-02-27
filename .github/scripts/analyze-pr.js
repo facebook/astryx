@@ -444,18 +444,10 @@ function analyze() {
     console.log(`New exports: ${newExports.join(', ')}`);
   }
 
-  // Build visual regression grep pattern from actual exported component names
-  // (not directory names — e.g., Layer/ exports XDSPopover, XDSTooltip, etc.)
-  const vrtComponents = [...new Set(
-    Object.values(componentStats)
-      .flatMap(stats => stats.exports.filter(e => e.startsWith('XDS')))
-  )];
-
   const result = {
     newComponents,
     modifiedComponents,
     newExports,
-    vrtComponents,
     componentStats,
     totalBundle: getTotalBundleStats(),
     analyzedAt: new Date().toISOString(),

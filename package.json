@@ -6,8 +6,7 @@
     "apps/*",
     "packages/*",
     "packages/themes/*",
-    "internal/*",
-    "e2e"
+    "internal/*"
   ],
   "scripts": {
     "build": "yarn workspace @xds/core build && yarn workspace @xds/theme-default build && yarn workspace @xds/theme-neutral build",
@@ -15,9 +14,6 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest --coverage",
-    "test:e2e": "playwright test",
-    "test:screenshots": "yarn storybook:build && npx playwright test",
-    "test:screenshots:update": "yarn storybook:build && npx playwright test --update-snapshots",
     "lint": "eslint .",
     "lint:strict": "XDS_STRICT_LINT=1 eslint .",
     "storybook": "yarn workspace @xds/storybook dev",

@@ -228,17 +228,6 @@ export * from './MyComponent';
 > committed automatically when changes land on `main`. If you need to verify your
 > component will be included, run `yarn sync:exports:check`.
 
-### 7. Generate screenshot test snapshots
-
-If adding a new component or adding new examples to existing:
-
-```
-yarn storybook:build
-npx playwright test --update-snapshots --grep "XDSButton"`
-```
-
-Snapshots will be stored in e2e/visual-regression.spec.ts-snapshots/ and _must be committed_ to the repo.
-
 ## Testing
 
 ### Run Tests
