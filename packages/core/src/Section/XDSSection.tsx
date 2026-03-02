@@ -43,17 +43,12 @@ declare module '../theme/types' {
 const variantStyles = stylex.create({
   section: {
     backgroundColor: colorVars['--color-surface'],
-    // Surface background: nested cards need visible borders
-    '--card-border-color': colorVars['--color-divider'],
   },
   transparent: {
     backgroundColor: 'transparent',
-    // Transparent inherits --card-border-color from parent
   },
   wash: {
     backgroundColor: colorVars['--color-wash'],
-    // Wash background: nested cards don't need borders
-    '--card-border-color': 'transparent',
   },
 });
 

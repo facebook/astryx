@@ -41,16 +41,13 @@ const styles = stylex.create({
     boxShadow: elevationVars['--elevation-base'],
     // Clip content to border-radius so nested containers don't peek out corners
     overflow: 'clip',
-    // Use inherited --card-border-color if set by ancestor, otherwise transparent
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: 'var(--card-border-color, transparent)',
+    borderColor: colorVars['--color-divider'],
   },
   // Inner wrapper: container padding and overflow handling
   cardInner: {
     height: '100%',
-    // Cards have surface background, so nested cards need visible borders
-    '--card-border-color': colorVars['--color-divider'],
   },
   // Only enable scrolling when card has fixed height
   scrollable: {
