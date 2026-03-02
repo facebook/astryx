@@ -37,6 +37,7 @@ import {XDSTooltip} from '../Layer/XDSTooltip';
 import {XDSSpinner} from '../Spinner';
 import type {XDSIconProps} from '../Icon/XDSIcon';
 import type {XDSBadgeProps} from '../Badge/XDSBadge';
+import {edgeCompensation} from '../Layout/edgeCompensation.stylex';
 
 /**
  * Base button styles
@@ -342,6 +343,17 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
       props.onClick?.(e);
     };
 
+    // Ghost buttons opt into edge compensation — they self-adjust margins
+    // when placed at container edges (e.g., TopNav endContent).
+    // Icon-only buttons use spacing-2 padding, text buttons use spacing-3.
+    const isFlat = variant === 'ghost';
+    const edgeCompStyle =
+      isFlat && isIconOnly
+        ? edgeCompensation.inlinePadding2
+        : isFlat
+          ? edgeCompensation.inlinePadding3
+          : null;
+
     const button = (
       <button
         ref={ref}
@@ -356,6 +368,7 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
           isIconOnly && styles.iconOnly,
           buttonDisabled && styles.disabled,
           isLoadingState && loadingStyles.loading,
+          edgeCompStyle,
         )}
         {...props}
         onClick={handleClick}>

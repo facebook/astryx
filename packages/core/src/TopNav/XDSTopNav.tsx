@@ -21,6 +21,7 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+import {edgeSignals} from '../Layout/edgeCompensation.stylex';
 
 /**
  * Base TopNav styles
@@ -33,6 +34,8 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-4'],
     backgroundColor: colorVars['--color-navbar'],
     boxSizing: 'border-box',
+    // Publish container padding so edge-compensating children know the value
+    '--container-padding': spacingVars['--spacing-4'],
   },
   // Flex layout (default, used when no centerContent)
   baseFlex: {
@@ -163,7 +166,7 @@ export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
           rootOverride,
         )}
         {...props}>
-        <div {...stylex.props(styles.leftSection)}>
+        <div {...stylex.props(styles.leftSection, edgeSignals.start)}>
           {title && <div {...stylex.props(styles.title)}>{title}</div>}
           {startContent && (
             <div {...stylex.props(styles.startContent)}>{startContent}</div>
@@ -173,10 +176,14 @@ export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
           <div {...stylex.props(styles.centerContent)}>{centerContent}</div>
         )}
         {hasCenterContent ? (
-          <div {...stylex.props(styles.rightSection)}>{endContent}</div>
+          <div {...stylex.props(styles.rightSection, edgeSignals.end)}>
+            {endContent}
+          </div>
         ) : (
           endContent && (
-            <div {...stylex.props(styles.endContent)}>{endContent}</div>
+            <div {...stylex.props(styles.endContent, edgeSignals.end)}>
+              {endContent}
+            </div>
           )
         )}
       </nav>
