@@ -4,6 +4,22 @@ XDS component sandbox for designer exploration and vibe testing. Deployed alongs
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
+## Setup
+
+Before writing any code, install dependencies:
+
+```bash
+npm install
+```
+
+This automatically generates `AGENTS.md` with the XDS component index via `xds agent-docs`. **Read `AGENTS.md` for all XDS component documentation** — it contains CLI commands to browse components, tokens, themes, and design rules.
+
+If `AGENTS.md` is missing, regenerate it:
+
+```bash
+npx xds agent-docs
+```
+
 ## How it works
 
 The sandbox is a Next.js app configured for static export (`output: 'export'`). On PRs, the CI workflow builds it and deploys to GitHub Pages at a versioned URL:

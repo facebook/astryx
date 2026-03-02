@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "postinstall": "xds postinstall"
+    "postinstall": "xds agent-docs"
   },
   "dependencies": {
     "@stylexjs/stylex": "^0.17.4",
