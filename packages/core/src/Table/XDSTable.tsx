@@ -180,17 +180,30 @@ function XDSTableInner<T extends Record<string, unknown>>(
  * Density, dividers, striped rows, and hover effects are applied via
  * design tokens in the component styles.
  *
+ * @compositionHint Use renderCell on columns to compose rich cell content.
+ * Combine with XDSBadge (status labels), XDSStatusDot (colored indicators),
+ * XDSText (formatted values), XDSAvatar (user cells), and XDSHStack/XDSVStack
+ * (multi-element cell layouts). Without renderCell, cells render as plain text.
+ *
  * @example
  * ```
  * <XDSTable
  *   data={users}
  *   columns={[
- *     { key: 'name', header: 'Name' },
- *     { key: 'email', header: 'Email' },
+ *     { key: 'name', header: 'Name', renderCell: (u) => (
+ *       <XDSHStack gap="space2" align="center">
+ *         <XDSAvatar name={u.name} size="small" />
+ *         <XDSText weight="semibold">{u.name}</XDSText>
+ *       </XDSHStack>
+ *     )},
+ *     { key: 'status', header: 'Status', renderCell: (u) => (
+ *       <XDSBadge variant={u.active ? 'success' : 'error'}>
+ *         {u.active ? 'Active' : 'Inactive'}
+ *       </XDSBadge>
+ *     )},
  *   ]}
  *   density="compact"
  *   dividers="grid"
- *   isStriped
  *   hasHover
  * />
  * ```

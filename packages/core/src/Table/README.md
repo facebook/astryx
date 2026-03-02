@@ -1,6 +1,7 @@
 # Table
 
-Table components for the XDS design system.
+Data-driven table with rich cell content via `renderCell`. Compose cells with
+XDSBadge, XDSStatusDot, XDSText, XDSAvatar, and layout primitives.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
@@ -47,14 +48,52 @@ Table components for the XDS design system.
 
 ### XDSTable
 
-Styled, data-driven table with density, dividers, hover, and plugin support.
+Styled, data-driven table. Use `renderCell` on columns for rich cell content —
+compose with XDSBadge, XDSStatusDot, XDSText, XDSAvatar, and layout primitives.
 
 ```tsx
 <XDSTable
   data={users}
   columns={[
-    {key: 'name', header: 'Name'},
-    {key: 'email', header: 'Email', width: proportional(2)},
+    {
+      key: 'name',
+      header: 'Name',
+      renderCell: user => (
+        <XDSHStack gap="space2" align="center">
+          <XDSAvatar name={user.name} size="small" />
+          <XDSVStack gap="space1">
+            <XDSText type="body" weight="semibold">
+              {user.name}
+            </XDSText>
+            <XDSText type="supporting" color="secondary">
+              {user.email}
+            </XDSText>
+          </XDSVStack>
+        </XDSHStack>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      width: pixel(140),
+      renderCell: user => (
+        <XDSHStack gap="space2" align="center">
+          <XDSStatusDot status={user.isActive ? 'positive' : 'negative'} />
+          <XDSBadge variant={user.isActive ? 'success' : 'error'}>
+            {user.isActive ? 'Active' : 'Inactive'}
+          </XDSBadge>
+        </XDSHStack>
+      ),
+    },
+    {
+      key: 'role',
+      header: 'Role',
+      renderCell: user => (
+        <XDSText type="label" color="secondary">
+          {user.role}
+        </XDSText>
+      ),
+    },
   ]}
   density="balanced"
   dividers="rows"
@@ -62,17 +101,17 @@ Styled, data-driven table with density, dividers, hover, and plugin support.
 />
 ```
 
-| Prop        | Type                              | Default      | Description                          |
-| ----------- | --------------------------------- | ------------ | ------------------------------------ |
-| `data`      | `T[]`                             | —            | Array of data items                  |
-| `columns`   | `XDSTableColumn<T>[]`             | —            | Column definitions (auto-generated if omitted) |
-| `idKey`     | `string \| (item: T) => string`   | —            | Row key for React reconciliation     |
-| `density`   | `'compact' \| 'balanced' \| 'spacious'` | `'balanced'` | Row density                   |
-| `dividers`  | `XDSTableDividers`                | `'rows'`     | Divider style                        |
-| `isStriped` | `boolean`                         | `false`      | Striped even rows                    |
-| `hasHover`  | `boolean`                         | `false`      | Hover highlight on rows              |
-| `plugins`   | `Record<string, TablePlugin<T>>`  | —            | Named plugins to extend behavior     |
-| `children`  | `ReactNode`                       | —            | Children mode (manual rows)          |
+| Prop        | Type                                    | Default      | Description                                                    |
+| ----------- | --------------------------------------- | ------------ | -------------------------------------------------------------- |
+| `data`      | `T[]`                                   | —            | Array of data items                                            |
+| `columns`   | `XDSTableColumn<T>[]`                   | —            | Column definitions with optional `renderCell` for rich content |
+| `idKey`     | `string \| (item: T) => string`         | —            | Row key for React reconciliation                               |
+| `density`   | `'compact' \| 'balanced' \| 'spacious'` | `'balanced'` | Row density                                                    |
+| `dividers`  | `XDSTableDividers`                      | `'rows'`     | Divider style                                                  |
+| `isStriped` | `boolean`                               | `false`      | Striped even rows                                              |
+| `hasHover`  | `boolean`                               | `false`      | Hover highlight on rows                                        |
+| `plugins`   | `Record<string, TablePlugin<T>>`        | —            | Named plugins to extend behavior                               |
+| `children`  | `ReactNode`                             | —            | Children mode (manual rows)                                    |
 
 ### XDSBaseTable
 
@@ -83,19 +122,19 @@ Unstyled table with colgroup, plugin pipeline, and components prop for custom re
   data={items}
   columns={columns}
   plugins={[myPlugin]}
-  components={{ Row: XDSTableRow, Cell: XDSTableCell }}
+  components={{Row: XDSTableRow, Cell: XDSTableCell}}
 />
 ```
 
-| Prop         | Type                       | Default | Description                               |
-| ------------ | -------------------------- | ------- | ----------------------------------------- |
-| `data`       | `T[]`                      | —       | Array of data items                       |
-| `columns`    | `XDSTableColumn<T>[]`      | —       | Column definitions                        |
-| `idKey`      | `string \| (item: T) => string` | —  | Row key for React reconciliation          |
-| `plugins`    | `TablePlugin<T>[]`         | —       | Ordered plugins for transform pipeline    |
-| `components` | `{Row?, Cell?, HeaderCell?}` | —     | Component overrides for table elements    |
-| `children`   | `ReactNode`                | —       | Children mode                             |
-| `tableProps` | `HTMLAttributes`           | —       | Additional attrs for `<table>` element    |
+| Prop         | Type                            | Default | Description                            |
+| ------------ | ------------------------------- | ------- | -------------------------------------- |
+| `data`       | `T[]`                           | —       | Array of data items                    |
+| `columns`    | `XDSTableColumn<T>[]`           | —       | Column definitions                     |
+| `idKey`      | `string \| (item: T) => string` | —       | Row key for React reconciliation       |
+| `plugins`    | `TablePlugin<T>[]`              | —       | Ordered plugins for transform pipeline |
+| `components` | `{Row?, Cell?, HeaderCell?}`    | —       | Component overrides for table elements |
+| `children`   | `ReactNode`                     | —       | Children mode                          |
+| `tableProps` | `HTMLAttributes`                | —       | Additional attrs for `<table>` element |
 
 ### XDSTableRow
 
@@ -115,15 +154,22 @@ Unstyled table with colgroup, plugin pipeline, and components prop for custom re
 
 ### XDSTableCell
 
-`<td>` wrapper with context-aware styling and xstyle support.
+`<td>` wrapper with context-aware styling and xstyle support. Accepts any ReactNode
+as children — compose rich content with XDS components like XDSBadge, XDSStatusDot,
+XDSText, XDSAvatar, and layout primitives.
 
 ```tsx
-<XDSTableCell>Cell content</XDSTableCell>
+<XDSTableCell>
+  <XDSHStack gap="space2" align="center">
+    <XDSStatusDot status="positive" />
+    <XDSText weight="semibold">Active</XDSText>
+  </XDSHStack>
+</XDSTableCell>
 ```
 
-| Prop       | Type                             | Default | Description     |
-| ---------- | -------------------------------- | ------- | --------------- |
-| `children` | `ReactNode`                      | —       | Cell content    |
+| Prop       | Type                           | Default | Description     |
+| ---------- | ------------------------------ | ------- | --------------- |
+| `children` | `ReactNode`                    | —       | Cell content    |
 | `xstyle`   | `StyleXStyles \| StyleXStyles` | —       | Style overrides |
 
 ### XDSTableHeaderCell
@@ -141,7 +187,60 @@ Unstyled table with colgroup, plugin pipeline, and components prop for custom re
 
 ## Usage Patterns
 
-### Data-driven table
+### Rich cell content with renderCell
+
+Use `renderCell` to compose XDS components inside table cells. This is the
+recommended pattern for any table that displays more than plain text.
+
+```tsx
+const columns = [
+  {
+    key: 'transaction',
+    header: 'Transaction',
+    renderCell: item => (
+      <XDSVStack gap="space1">
+        <XDSText type="body" weight="semibold">
+          {item.description}
+        </XDSText>
+        <XDSText type="supporting" color="secondary">
+          {item.date}
+        </XDSText>
+      </XDSVStack>
+    ),
+  },
+  {
+    key: 'amount',
+    header: 'Amount',
+    width: pixel(120),
+    renderCell: item => (
+      <XDSText
+        type="body"
+        weight="semibold"
+        color={item.amount > 0 ? 'positive' : 'primary'}>
+        {item.amount > 0 ? '+' : ''}
+        {item.amount.toFixed(2)}
+      </XDSText>
+    ),
+  },
+  {
+    key: 'status',
+    header: 'Status',
+    width: pixel(140),
+    renderCell: item => (
+      <XDSHStack gap="space2" align="center">
+        <XDSStatusDot status={statusMap[item.status]} />
+        <XDSBadge variant={badgeMap[item.status]}>{item.status}</XDSBadge>
+      </XDSHStack>
+    ),
+  },
+];
+
+<XDSTable data={transactions} columns={columns} hasHover dividers="rows" />;
+```
+
+### Data-driven table (plain text)
+
+For simple tables where plain text is sufficient, columns default to `String(item[key])`:
 
 ```tsx
 <XDSTable
@@ -166,11 +265,20 @@ Unstyled table with colgroup, plugin pipeline, and components prop for custom re
 
 ### Children mode
 
+For fully custom row layouts, use children mode with XDSTableRow and XDSTableCell:
+
 ```tsx
 <XDSTable density="balanced" dividers="rows" isStriped hasHover>
   <XDSTableRow>
-    <XDSTableCell>Alice</XDSTableCell>
-    <XDSTableCell>30</XDSTableCell>
+    <XDSTableCell>
+      <XDSHStack gap="space2" align="center">
+        <XDSAvatar name="Alice" size="small" />
+        <XDSText weight="semibold">Alice</XDSText>
+      </XDSHStack>
+    </XDSTableCell>
+    <XDSTableCell>
+      <XDSBadge variant="success">Active</XDSBadge>
+    </XDSTableCell>
   </XDSTableRow>
 </XDSTable>
 ```
