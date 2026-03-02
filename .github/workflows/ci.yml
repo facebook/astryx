@@ -88,18 +88,21 @@ jobs:
         run: yarn workspace @xds/storybook build
 
       - name: Compute short hash
+        if: github.event_name == 'pull_request'
         id: hash
         run: |
           COMMIT_HASH="${{ github.event.pull_request.head.sha }}"
           echo "short_hash=${COMMIT_HASH:0:7}" >> $GITHUB_OUTPUT
 
       - name: Build Sandbox
+        if: github.event_name == 'pull_request'
         run: yarn workspace @xds/sandbox build
         continue-on-error: true
         env:
           SANDBOX_BASE_PATH: /${{ steps.hash.outputs.short_hash }}/sandbox
 
       - name: Compute URLs
+        if: github.event_name == 'pull_request'
         id: urls
         run: |
           SHORT_HASH="${{ steps.hash.outputs.short_hash }}"
@@ -111,6 +114,7 @@ jobs:
           echo "sandbox_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/${SHORT_HASH}/sandbox/" >> $GITHUB_OUTPUT
 
       - name: Upload Storybook artifact
+        if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: storybook-${{ steps.urls.outputs.short_hash }}
@@ -118,6 +122,7 @@ jobs:
           retention-days: 30
 
       - name: Prepare and deploy Storybook preview
+        if: github.event_name == 'pull_request'
         run: |
           SHORT_HASH="${{ steps.urls.outputs.short_hash }}"
 
@@ -132,6 +137,7 @@ jobs:
           touch deploy/.nojekyll
 
       - name: Deploy Storybook preview to GitHub Pages
+        if: github.event_name == 'pull_request'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -140,6 +146,7 @@ jobs:
           destination_dir: .
 
       - name: Analyze components
+        if: github.event_name == 'pull_request'
         run: |
           node .github/scripts/analyze-pr.js \
             --base origin/${{ github.base_ref }} \
@@ -147,6 +154,7 @@ jobs:
             --output analysis.json
 
       - name: Upload analysis artifact
+        if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: pr-analysis
