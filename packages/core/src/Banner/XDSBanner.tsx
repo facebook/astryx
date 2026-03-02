@@ -30,6 +30,7 @@ import {
 } from '@heroicons/react/24/solid';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
+import {edgeSignals} from '../Layout/edgeCompensation.stylex';
 import {
   colorVars,
   spacingVars,
@@ -177,6 +178,8 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
+    // Publish container padding for edge compensation
+    '--container-padding': spacingVars['--spacing-4'],
   },
   // When there's only a title (no description) and actions, center everything vertically
   headerCentered: {
@@ -218,9 +221,8 @@ const styles = stylex.create({
     flexShrink: 0,
     marginInlineStart: 'auto',
   },
-  dismissButton: {
-    margin: `calc(-1 * ${spacingVars['--spacing-2']})`,
-  },
+  // dismissButton negative margin removed — edge compensation handles this
+  // automatically via --edge-end signal on the endArea
   // Content area — card background for additional content below the header
   contentArea: {
     backgroundColor: colorVars['--color-card'],
@@ -392,7 +394,7 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
             )}
           </div>
           {showEndArea && (
-            <div {...stylex.props(styles.endArea)}>
+            <div {...stylex.props(styles.endArea, edgeSignals.end)}>
               {endButton}
               {hasChildren && (
                 <XDSButton
@@ -412,16 +414,14 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
                 />
               )}
               {isDismissable && (
-                <div {...stylex.props(styles.dismissButton)}>
-                  <XDSButton
-                    variant="ghost"
-                    size="sm"
-                    label="Dismiss"
-                    tooltip="Dismiss"
-                    icon={<XDSIcon icon="close" size="sm" color="inherit" />}
-                    onClick={handleDismiss}
-                  />
-                </div>
+                <XDSButton
+                  variant="ghost"
+                  size="sm"
+                  label="Dismiss"
+                  tooltip="Dismiss"
+                  icon={<XDSIcon icon="close" size="sm" color="inherit" />}
+                  onClick={handleDismiss}
+                />
               )}
             </div>
           )}

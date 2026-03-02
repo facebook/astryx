@@ -11,6 +11,9 @@
 export {container} from './container.stylex';
 export type {ContainerOptions, SpacingToken} from './container.stylex';
 
+// Edge compensation utility
+export {edgeSignals, edgeCompensation} from './edgeCompensation.stylex';
+
 // Stack utilities (re-exported from Stack module)
 export {stack} from '../Stack/stack.stylex';
 export type {
