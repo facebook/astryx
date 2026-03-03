@@ -16,19 +16,30 @@
  *
  * 1. **Containers** set spatial signals via CSS custom properties:
  *    - `--edge-start: 1` / `--edge-end: 1` on edge-adjacent slots
- *    - `--container-padding` (already exists in the layout system)
+ *    - `--container-padding-inline` on the container root (the inline padding value)
  *
  * 2. **Components** with flat/transparent variants read these signals and
- *    self-adjust their margins, clamped to `min(own-padding, container-padding)`.
+ *    self-adjust their margins, clamped to `min(own-padding, container-padding-inline)`.
  *
  * The compensation formula:
  * ```
- * margin = var(--edge-*, 0) * -1 * min(own-padding, var(--container-padding, 0px))
+ * margin = var(--edge-*, 0) * -1 * min(own-padding, var(--container-padding-inline, 0px))
  * ```
  *
  * - When not at an edge: `--edge-*` is 0, so margin is 0 (no effect)
  * - When at an edge: margin pulls the component toward the edge by the smaller
- *   of its own padding or the container's padding
+ *   of its own padding or the container's inline padding
+ *
+ * ### Why --container-padding-inline instead of --container-padding?
+ *
+ * Edge compensation is always an inline (horizontal) adjustment. Many containers
+ * have different inline vs block padding (e.g., Banner: paddingInline=spacing-4,
+ * paddingBlock=spacing-3; TopNav: paddingInline=spacing-4, no block padding).
+ * Using the isotropic `--container-padding` would be semantically misleading and
+ * could cause incorrect vertical compensation if a future component reads it for
+ * block-direction adjustments. The existing `--container-padding` variable is used
+ * by Divider and Section for edge-to-edge bleeds in both directions — we don't
+ * want to overload it with a value that only represents one axis.
  *
  * SYNC: When modified, update /packages/core/src/Layout/README.md
  */
@@ -45,8 +56,8 @@ import * as stylex from '@stylexjs/stylex';
  * Apply these to wrapper divs around slot content (startContent, endContent, etc.)
  * so child components know they're at a container boundary.
  *
- * The container must also set `--container-padding` (via the container() utility
- * or directly) so components know how much room is available.
+ * The container must also set `--container-padding-inline` on its root element
+ * so components know how much inline room is available for compensation.
  *
  * @example
  * ```tsx
@@ -86,14 +97,22 @@ export const edgeSignals = stylex.create({
  * icon-only buttons) should apply these styles to compensate for doubled padding
  * at container edges.
  *
- * The compensation is `min(own-padding, container-padding)` — never more than
- * either value. When not at an edge (signals default to 0), no compensation
+ * The compensation is `min(own-padding, container-padding-inline)` — never more
+ * than either value. When not at an edge (signals default to 0), no compensation
  * is applied.
  *
  * Each variant corresponds to a spacing token value matching the component's
  * own inline padding:
  * - `inlinePadding2`: for icon-only buttons (paddingInline: spacing-2 = 8px)
  * - `inlinePadding3`: for text buttons ghost/tertiary (paddingInline: spacing-3 = 12px)
+ *
+ * Note: The raw px values (8px, 12px, 16px) are used instead of spacing token
+ * variables because CSS `min()` needs resolvable lengths at calc-time. StyleX
+ * token variables (e.g., `spacingVars['--spacing-2']`) are CSS custom properties
+ * that `min()` can resolve at runtime, but using them here would create a
+ * circular dependency between the component's own tokens and the compensation
+ * formula. The px values must be kept in sync with the corresponding spacing
+ * tokens manually.
  *
  * @example
  * ```tsx
@@ -112,9 +131,9 @@ export const edgeCompensation = stylex.create({
    */
   inlinePadding2: {
     marginInlineStart:
-      'calc(var(--edge-start, 0) * -1 * min(8px, var(--container-padding, 0px)))',
+      'calc(var(--edge-start, 0) * -1 * min(8px, var(--container-padding-inline, 0px)))',
     marginInlineEnd:
-      'calc(var(--edge-end, 0) * -1 * min(8px, var(--container-padding, 0px)))',
+      'calc(var(--edge-end, 0) * -1 * min(8px, var(--container-padding-inline, 0px)))',
   },
   /**
    * Compensate for spacing-3 (12px) inline padding at edges.
@@ -122,9 +141,9 @@ export const edgeCompensation = stylex.create({
    */
   inlinePadding3: {
     marginInlineStart:
-      'calc(var(--edge-start, 0) * -1 * min(12px, var(--container-padding, 0px)))',
+      'calc(var(--edge-start, 0) * -1 * min(12px, var(--container-padding-inline, 0px)))',
     marginInlineEnd:
-      'calc(var(--edge-end, 0) * -1 * min(12px, var(--container-padding, 0px)))',
+      'calc(var(--edge-end, 0) * -1 * min(12px, var(--container-padding-inline, 0px)))',
   },
   /**
    * Compensate for spacing-4 (16px) inline padding at edges.
@@ -132,8 +151,8 @@ export const edgeCompensation = stylex.create({
    */
   inlinePadding4: {
     marginInlineStart:
-      'calc(var(--edge-start, 0) * -1 * min(16px, var(--container-padding, 0px)))',
+      'calc(var(--edge-start, 0) * -1 * min(16px, var(--container-padding-inline, 0px)))',
     marginInlineEnd:
-      'calc(var(--edge-end, 0) * -1 * min(16px, var(--container-padding, 0px)))',
+      'calc(var(--edge-end, 0) * -1 * min(16px, var(--container-padding-inline, 0px)))',
   },
 });

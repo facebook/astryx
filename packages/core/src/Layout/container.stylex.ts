@@ -58,6 +58,30 @@ const containerPaddingStyles = stylex.create({
   spacing12: {'--container-padding': spacingVars['--spacing-12']},
 });
 
+/**
+ * Container inline padding styles for edge compensation.
+ * Sets --container-padding-inline so edge-compensating children (ghost buttons, etc.)
+ * know the inline padding to compensate against. Defaults to the same value as
+ * --container-padding for isotropic containers; containers with asymmetric padding
+ * (e.g., TopNav, Banner) set this directly.
+ */
+const containerPaddingInlineStyles = stylex.create({
+  spacing0: {'--container-padding-inline': spacingVars['--spacing-0']},
+  spacing0_5: {'--container-padding-inline': spacingVars['--spacing-0-5']},
+  spacing1: {'--container-padding-inline': spacingVars['--spacing-1']},
+  spacing2: {'--container-padding-inline': spacingVars['--spacing-2']},
+  spacing3: {'--container-padding-inline': spacingVars['--spacing-3']},
+  spacing4: {'--container-padding-inline': spacingVars['--spacing-4']},
+  spacing5: {'--container-padding-inline': spacingVars['--spacing-5']},
+  spacing6: {'--container-padding-inline': spacingVars['--spacing-6']},
+  spacing7: {'--container-padding-inline': spacingVars['--spacing-7']},
+  spacing8: {'--container-padding-inline': spacingVars['--spacing-8']},
+  spacing9: {'--container-padding-inline': spacingVars['--spacing-9']},
+  spacing10: {'--container-padding-inline': spacingVars['--spacing-10']},
+  spacing11: {'--container-padding-inline': spacingVars['--spacing-11']},
+  spacing12: {'--container-padding-inline': spacingVars['--spacing-12']},
+});
+
 const paddingOuterXStyles = stylex.create({
   spacing0: {'--layout-padding-outer-x': spacingVars['--spacing-0']},
   spacing0_5: {'--layout-padding-outer-x': spacingVars['--spacing-0-5']},
@@ -169,6 +193,7 @@ export interface ContainerOptions {
  *
  * Sets CSS variables for padding that child layout components read:
  * - `--container-padding` — Default padding for simple content
+ * - `--container-padding-inline` — Inline padding for edge compensation
  * - `--layout-padding-outer-x`, `--layout-padding-outer-y`
  * - `--layout-padding-inner-x`, `--layout-padding-inner-y`
  *
@@ -201,6 +226,10 @@ export function container({
   return [
     baseStyles.container,
     containerPaddingStyles[padding],
+    // Set --container-padding-inline for edge compensation. When paddingOuterX
+    // differs from the base padding, use paddingOuterX since that's the actual
+    // inline padding at the container edges.
+    containerPaddingInlineStyles[paddingOuterX],
     paddingOuterXStyles[paddingOuterX],
     paddingOuterYStyles[paddingOuterY],
     paddingInnerXStyles[paddingInnerX],

@@ -34,8 +34,10 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-4'],
     backgroundColor: colorVars['--color-navbar'],
     boxSizing: 'border-box',
-    // Publish container padding so edge-compensating children know the value
-    '--container-padding': spacingVars['--spacing-4'],
+    // Publish inline padding for edge compensation (ghost buttons at edges).
+    // Uses --container-padding-inline (not --container-padding) because TopNav
+    // has no block padding (fixed height) — the isotropic variable would be misleading.
+    '--container-padding-inline': spacingVars['--spacing-4'],
   },
   // Flex layout (default, used when no centerContent)
   baseFlex: {

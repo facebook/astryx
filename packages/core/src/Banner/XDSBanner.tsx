@@ -178,8 +178,10 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
-    // Publish container padding for edge compensation
-    '--container-padding': spacingVars['--spacing-4'],
+    // Publish inline padding for edge compensation (ghost buttons at edges).
+    // Uses --container-padding-inline (not --container-padding) because Banner
+    // has different block padding (spacing-3) vs inline padding (spacing-4).
+    '--container-padding-inline': spacingVars['--spacing-4'],
   },
   // When there's only a title (no description) and actions, center everything vertically
   headerCentered: {
