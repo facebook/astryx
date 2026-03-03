@@ -2,7 +2,7 @@ import React from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSPopover} from '@xds/core/Layer';
 import {XDSButton} from '@xds/core/Button';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSSwitch} from '@xds/core/Switch';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
@@ -43,7 +43,7 @@ function SettingsContent() {
   const [sounds, setSounds] = React.useState(true);
 
   return (
-    <XDSVStack gap="space3">
+    <XDSStack direction="vertical" gap="space3">
       <XDSHeading level={4} tabIndex={-1}>
         Settings
       </XDSHeading>
@@ -66,7 +66,7 @@ function SettingsContent() {
         value={sounds}
         onChange={setSounds}
       />
-    </XDSVStack>
+    </XDSStack>
   );
 }
 
@@ -96,7 +96,7 @@ function FilterContent({onApply}: {onApply?: () => void}) {
     setFilters(prev => ({...prev, [key]: !prev[key]}));
 
   return (
-    <XDSVStack gap="space3">
+    <XDSStack direction="vertical" gap="space3">
       <XDSHeading level={4} tabIndex={-1}>
         Filter by status
       </XDSHeading>
@@ -122,7 +122,7 @@ function FilterContent({onApply}: {onApply?: () => void}) {
         onChange={() => toggle('shared')}
       />
       <XDSDivider />
-      <XDSHStack gap="space2">
+      <XDSStack direction="horizontal" gap="space2">
         <XDSButton label="Apply" variant="primary" onClick={onApply}>
           Apply
         </XDSButton>
@@ -139,8 +139,8 @@ function FilterContent({onApply}: {onApply?: () => void}) {
           }>
           Reset
         </XDSButton>
-      </XDSHStack>
-    </XDSVStack>
+      </XDSStack>
+    </XDSStack>
   );
 }
 
@@ -173,7 +173,7 @@ function ConfirmContent({
   onCancel?: () => void;
 }) {
   return (
-    <XDSVStack gap="space3">
+    <XDSStack direction="vertical" gap="space3">
       <XDSHeading level={4} tabIndex={-1}>
         Delete project?
       </XDSHeading>
@@ -181,15 +181,15 @@ function ConfirmContent({
         This will permanently delete the project and all its data. This action
         cannot be undone.
       </XDSText>
-      <XDSHStack gap="space2">
+      <XDSStack direction="horizontal" gap="space2">
         <XDSButton label="Delete" variant="destructive" onClick={onConfirm}>
           Delete
         </XDSButton>
         <XDSButton label="Cancel" variant="ghost" onClick={onCancel}>
           Cancel
         </XDSButton>
-      </XDSHStack>
-    </XDSVStack>
+      </XDSStack>
+    </XDSStack>
   );
 }
 
@@ -235,7 +235,7 @@ export const AnchorRef: Story = {
           width={260}
           placement="below"
           content={
-            <XDSVStack gap="space2">
+            <XDSStack direction="vertical" gap="space2">
               <XDSHeading level={4} tabIndex={-1}>
                 Sibling mode
               </XDSHeading>
@@ -243,7 +243,7 @@ export const AnchorRef: Story = {
                 This popover uses anchorRef to attach to the button as a
                 sibling, without wrapping it.
               </XDSText>
-            </XDSVStack>
+            </XDSStack>
           }
         />
       </>
@@ -263,30 +263,30 @@ export const Above: Story = {
         label="Info"
         width={260}
         content={
-          <XDSVStack gap="space2">
+          <XDSStack direction="vertical" gap="space2">
             <XDSHeading level={4} tabIndex={-1}>
               Keyboard shortcuts
             </XDSHeading>
             <XDSDivider />
-            <XDSHStack gap="space3">
+            <XDSStack direction="horizontal" gap="space3">
               <XDSText type="body" weight="bold">
                 ⌘K
               </XDSText>
               <XDSText type="body">Command palette</XDSText>
-            </XDSHStack>
-            <XDSHStack gap="space3">
+            </XDSStack>
+            <XDSStack direction="horizontal" gap="space3">
               <XDSText type="body" weight="bold">
                 ⌘/
               </XDSText>
               <XDSText type="body">Toggle sidebar</XDSText>
-            </XDSHStack>
-            <XDSHStack gap="space3">
+            </XDSStack>
+            <XDSStack direction="horizontal" gap="space3">
               <XDSText type="body" weight="bold">
                 ⌘.
               </XDSText>
               <XDSText type="body">Quick actions</XDSText>
-            </XDSHStack>
-          </XDSVStack>
+            </XDSStack>
+          </XDSStack>
         }>
         <XDSButton label="Shortcuts">Shortcuts</XDSButton>
       </XDSPopover>

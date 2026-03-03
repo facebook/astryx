@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSStack} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
@@ -31,49 +31,49 @@ export default function ExamplePage() {
 
   return (
     <div {...stylex.props(styles.container)}>
-      <XDSVStack gap="space6">
-        <XDSVStack gap="space2">
+      <XDSStack direction="vertical" gap="space6">
+        <XDSStack direction="vertical" gap="space2">
           <XDSHeading level={1}>Example Page</XDSHeading>
           <XDSText type="body" color="secondary">
             A scaffold showing common XDS components. Copy this file to create
             new pages.
           </XDSText>
-        </XDSVStack>
+        </XDSStack>
 
         <XDSDivider />
 
         {/* Buttons */}
-        <XDSVStack gap="space3">
+        <XDSStack direction="vertical" gap="space3">
           <XDSHeading level={2}>Buttons</XDSHeading>
-          <XDSHStack gap="space3" vAlign="center">
+          <XDSStack direction="horizontal" gap="space3" vAlign="center">
             <XDSButton label="Primary" variant="primary" />
             <XDSButton label="Secondary" variant="secondary" />
             <XDSButton label="Ghost" variant="ghost" />
-          </XDSHStack>
-          <XDSHStack gap="space3" vAlign="center">
+          </XDSStack>
+          <XDSStack direction="horizontal" gap="space3" vAlign="center">
             <XDSButton label="Small" size="sm" />
             <XDSButton label="Medium" size="md" />
             <XDSButton label="Large" size="lg" />
-          </XDSHStack>
-        </XDSVStack>
+          </XDSStack>
+        </XDSStack>
 
         <XDSDivider />
 
         {/* Badges */}
-        <XDSVStack gap="space3">
+        <XDSStack direction="vertical" gap="space3">
           <XDSHeading level={2}>Badges</XDSHeading>
-          <XDSHStack gap="space3" vAlign="center">
+          <XDSStack direction="horizontal" gap="space3" vAlign="center">
             <XDSBadge variant="info">Info</XDSBadge>
             <XDSBadge variant="success">Success</XDSBadge>
             <XDSBadge variant="warning">Warning</XDSBadge>
             <XDSBadge variant="error">Error</XDSBadge>
-          </XDSHStack>
-        </XDSVStack>
+          </XDSStack>
+        </XDSStack>
 
         <XDSDivider />
 
         {/* Typography */}
-        <XDSVStack gap="space3">
+        <XDSStack direction="vertical" gap="space3">
           <XDSHeading level={2}>Typography</XDSHeading>
           <XDSHeading level={3}>Heading 3</XDSHeading>
           <XDSText type="large" weight="bold">
@@ -83,12 +83,12 @@ export default function ExamplePage() {
           <XDSText type="supporting" color="secondary">
             Supporting text in secondary color
           </XDSText>
-        </XDSVStack>
+        </XDSStack>
 
         <XDSDivider />
 
         {/* Form Controls */}
-        <XDSVStack gap="space3">
+        <XDSStack direction="vertical" gap="space3">
           <XDSHeading level={2}>Form Controls</XDSHeading>
           <XDSTextInput
             label="Name"
@@ -112,8 +112,8 @@ export default function ExamplePage() {
             value={updates}
             onChange={setUpdates}
           />
-        </XDSVStack>
-      </XDSVStack>
+        </XDSStack>
+      </XDSStack>
     </div>
   );
 }

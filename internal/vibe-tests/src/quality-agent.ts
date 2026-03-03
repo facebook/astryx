@@ -191,7 +191,7 @@ The code should use:
 - StyleX for styling with CSS variable tokens (var(--spacing-*), var(--color-*))
 - XDSTextInput should use \`status\` prop for validation errors (not manual border styling)
 - Interactive elements should use Button components, not clickable divs/spans
-- Layout should use XDSVStack, XDSHStack, XDSStackItem when appropriate
+- Layout should use XDSStack, XDSStackItem when appropriate
 
 ### Typography Requirements
 - **XDSHeading** for all heading text (h1-h6), with \`level\` prop for semantic level and \`variant="editorial"\` for display-scale headings

@@ -32,13 +32,13 @@ XDSSpinner is intentionally minimal. Compose with layout and text components for
 
 ```tsx
 import {XDSSpinner} from '@xds/core/Spinner';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
-<XDSVStack gap="space2" align="center">
+<XDSStack direction="vertical" gap="space2" align="center">
   <XDSSpinner size="lg" />
   <XDSText color="secondary">Loading...</XDSText>
-</XDSVStack>;
+</XDSStack>;
 ```
 
 ## Props

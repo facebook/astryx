@@ -18,7 +18,7 @@ Core UI components library for the XDS design system (`@xds/core`).
 
 - **Typography**: `XDSText`, `XDSHeading`, `XDSFontWrapper`
 - **Inputs**: `XDSButton`, `XDSTextInput`, `XDSTextArea`, `XDSCheckboxInput`
-- **Layout**: `XDSHStack`, `XDSVStack`, `XDSCard`, `XDSSection`
+- **Layout**: `XDSStack`, `XDSCard`, `XDSSection`
 - **Feedback**: `XDSTooltip`, `XDSHoverCard`
 
 ### Theme

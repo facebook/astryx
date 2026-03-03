@@ -57,7 +57,7 @@ export interface XDSCollapsibleGroupProps {
    * @example
    * ```
    * <XDSCollapsibleGroup type="single" defaultValue="general">
-   *   <XDSVStack gap="space2">
+   *   <XDSStack direction="vertical" gap="space2">
    *     <XDSCard>
    *       <XDSCollapsible trigger="General" value="general">
    *         <p>General settings content</p>
@@ -68,7 +68,7 @@ export interface XDSCollapsibleGroupProps {
    *         <p>Advanced settings content</p>
    *       </XDSCollapsible>
    *     </XDSCard>
-   *   </XDSVStack>
+   *   </XDSStack>
    * </XDSCollapsibleGroup>
    * ```
    */
@@ -93,7 +93,7 @@ function normalizeToArray(value: string | string[] | undefined): string[] {
  * @example
  * ```
  * <XDSCollapsibleGroup type="single" defaultValue="faq1">
- *   <XDSVStack gap="space2">
+ *   <XDSStack direction="vertical" gap="space2">
  *     <XDSCard>
  *       <XDSCollapsible trigger="What is XDS?" value="faq1">
  *         XDS is a design system for building internal tools.
@@ -104,7 +104,7 @@ function normalizeToArray(value: string | string[] | undefined): string[] {
  *         Install the package and import components.
  *       </XDSCollapsible>
  *     </XDSCard>
- *   </XDSVStack>
+ *   </XDSStack>
  * </XDSCollapsibleGroup>
  * ```
  */

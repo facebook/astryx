@@ -30,12 +30,10 @@ export type {
 } from '../Stack/stackItem.stylex';
 
 // Stack components (re-exported from Stack module)
-export {XDSStack, XDSHStack, XDSVStack, XDSStackItem} from '../Stack';
+export {XDSStack, XDSStackItem} from '../Stack';
 export type {
   XDSStackProps,
   StackAlignment,
-  XDSHStackProps,
-  XDSVStackProps,
   XDSStackItemProps,
 } from '../Stack';
 

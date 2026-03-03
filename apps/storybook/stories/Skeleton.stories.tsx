@@ -1,7 +1,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSSkeleton} from '@xds/core/Skeleton';
 import {XDSCard} from '@xds/core/Card';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {XDSStack} from '@xds/core/Layout';
 
 const meta: Meta<typeof XDSSkeleton> = {
   title: 'Core/XDSSkeleton',
@@ -42,59 +42,59 @@ export const Default: Story = {
 
 export const Shapes: Story = {
   render: () => (
-    <XDSHStack gap="space4" vAlign="center">
+    <XDSStack direction="horizontal" gap="space4" vAlign="center">
       <XDSSkeleton width={40} height={40} radius="rounded" />
       <XDSSkeleton width={100} height={20} radius="container" />
       <XDSSkeleton width={120} height={32} radius="element" />
       <XDSSkeleton width={80} height={80} radius="none" />
-    </XDSHStack>
+    </XDSStack>
   ),
 };
 
 export const StaggeredList: Story = {
   render: () => (
-    <XDSVStack gap="space2">
+    <XDSStack direction="vertical" gap="space2">
       <XDSSkeleton width={300} height={16} index={0} />
       <XDSSkeleton width={280} height={16} index={1} />
       <XDSSkeleton width={320} height={16} index={2} />
       <XDSSkeleton width={260} height={16} index={3} />
       <XDSSkeleton width={290} height={16} index={4} />
-    </XDSVStack>
+    </XDSStack>
   ),
 };
 
 export const CardSkeleton: Story = {
   render: () => (
     <XDSCard width={320}>
-      <XDSVStack gap="space3">
+      <XDSStack direction="vertical" gap="space3">
         {/* Avatar and name row */}
-        <XDSHStack gap="space3" vAlign="center">
+        <XDSStack direction="horizontal" gap="space3" vAlign="center">
           <XDSSkeleton width={40} height={40} radius="rounded" index={0} />
-          <XDSVStack gap="space1">
+          <XDSStack direction="vertical" gap="space1">
             <XDSSkeleton width={120} height={14} index={1} />
             <XDSSkeleton width={80} height={12} index={2} />
-          </XDSVStack>
-        </XDSHStack>
+          </XDSStack>
+        </XDSStack>
         {/* Content lines */}
         <XDSSkeleton width="100%" height={14} index={3} />
         <XDSSkeleton width="90%" height={14} index={4} />
         <XDSSkeleton width="75%" height={14} index={5} />
-      </XDSVStack>
+      </XDSStack>
     </XDSCard>
   ),
 };
 
 export const TableRowSkeleton: Story = {
   render: () => (
-    <XDSVStack gap="space2">
+    <XDSStack direction="vertical" gap="space2">
       {[0, 1, 2, 3].map(rowIndex => (
-        <XDSHStack key={rowIndex} gap="space4" vAlign="center">
+        <XDSStack direction="horizontal" key={rowIndex} gap="space4" vAlign="center">
           <XDSSkeleton width={50} height={16} index={rowIndex * 4} />
           <XDSSkeleton width={180} height={16} index={rowIndex * 4 + 1} />
           <XDSSkeleton width={100} height={16} index={rowIndex * 4 + 2} />
           <XDSSkeleton width={80} height={16} index={rowIndex * 4 + 3} />
-        </XDSHStack>
+        </XDSStack>
       ))}
-    </XDSVStack>
+    </XDSStack>
   ),
 };

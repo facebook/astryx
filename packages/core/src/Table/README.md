@@ -59,17 +59,17 @@ compose with XDSBadge, XDSStatusDot, XDSText, XDSAvatar, and layout primitives.
       key: 'name',
       header: 'Name',
       renderCell: user => (
-        <XDSHStack gap="space2" align="center">
+        <XDSStack direction="horizontal" gap="space2" align="center">
           <XDSAvatar name={user.name} size="small" />
-          <XDSVStack gap="space1">
+          <XDSStack direction="vertical" gap="space1">
             <XDSText type="body" weight="semibold">
               {user.name}
             </XDSText>
             <XDSText type="supporting" color="secondary">
               {user.email}
             </XDSText>
-          </XDSVStack>
-        </XDSHStack>
+          </XDSStack>
+        </XDSStack>
       ),
     },
     {
@@ -77,12 +77,12 @@ compose with XDSBadge, XDSStatusDot, XDSText, XDSAvatar, and layout primitives.
       header: 'Status',
       width: pixel(140),
       renderCell: user => (
-        <XDSHStack gap="space2" align="center">
+        <XDSStack direction="horizontal" gap="space2" align="center">
           <XDSStatusDot status={user.isActive ? 'positive' : 'negative'} />
           <XDSBadge variant={user.isActive ? 'success' : 'error'}>
             {user.isActive ? 'Active' : 'Inactive'}
           </XDSBadge>
-        </XDSHStack>
+        </XDSStack>
       ),
     },
     {
@@ -160,10 +160,10 @@ XDSText, XDSAvatar, and layout primitives.
 
 ```tsx
 <XDSTableCell>
-  <XDSHStack gap="space2" align="center">
+  <XDSStack direction="horizontal" gap="space2" align="center">
     <XDSStatusDot status="positive" />
     <XDSText weight="semibold">Active</XDSText>
-  </XDSHStack>
+  </XDSStack>
 </XDSTableCell>
 ```
 
@@ -198,14 +198,14 @@ const columns = [
     key: 'transaction',
     header: 'Transaction',
     renderCell: item => (
-      <XDSVStack gap="space1">
+      <XDSStack direction="vertical" gap="space1">
         <XDSText type="body" weight="semibold">
           {item.description}
         </XDSText>
         <XDSText type="supporting" color="secondary">
           {item.date}
         </XDSText>
-      </XDSVStack>
+      </XDSStack>
     ),
   },
   {
@@ -227,10 +227,10 @@ const columns = [
     header: 'Status',
     width: pixel(140),
     renderCell: item => (
-      <XDSHStack gap="space2" align="center">
+      <XDSStack direction="horizontal" gap="space2" align="center">
         <XDSStatusDot status={statusMap[item.status]} />
         <XDSBadge variant={badgeMap[item.status]}>{item.status}</XDSBadge>
-      </XDSHStack>
+      </XDSStack>
     ),
   },
 ];
@@ -271,10 +271,10 @@ For fully custom row layouts, use children mode with XDSTableRow and XDSTableCel
 <XDSTable density="balanced" dividers="rows" isStriped hasHover>
   <XDSTableRow>
     <XDSTableCell>
-      <XDSHStack gap="space2" align="center">
+      <XDSStack direction="horizontal" gap="space2" align="center">
         <XDSAvatar name="Alice" size="small" />
         <XDSText weight="semibold">Alice</XDSText>
-      </XDSHStack>
+      </XDSStack>
     </XDSTableCell>
     <XDSTableCell>
       <XDSBadge variant="success">Active</XDSBadge>

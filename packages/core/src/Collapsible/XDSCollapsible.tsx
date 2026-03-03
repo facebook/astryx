@@ -134,7 +134,7 @@ export interface XDSCollapsibleProps {
  * </XDSCard>
  *
  * <XDSCollapsibleGroup type="single" defaultValue="general">
- *   <XDSVStack gap="space2">
+ *   <XDSStack direction="vertical" gap="space2">
  *     <XDSCard>
  *       <XDSCollapsible trigger="General" value="general">
  *         <GeneralSettings />
@@ -145,7 +145,7 @@ export interface XDSCollapsibleProps {
  *         <AdvancedSettings />
  *       </XDSCollapsible>
  *     </XDSCard>
- *   </XDSVStack>
+ *   </XDSStack>
  * </XDSCollapsibleGroup>
  * ```
  */

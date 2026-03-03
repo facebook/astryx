@@ -1,7 +1,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSSection} from '@xds/core/Section';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSStack} from '@xds/core/Layout';
 import {
   XDSLayout,
   XDSLayoutHeader,
@@ -121,13 +121,13 @@ export const Variants: Story = {
 export const WithSimpleContent: Story = {
   render: () => (
     <XDSSection variant="wash" width={320}>
-      <XDSVStack gap="space2">
+      <XDSStack direction="vertical" gap="space2">
         <h3 {...stylex.props(styles.text)}>Section Title</h3>
         <p {...stylex.props(styles.text, styles.textSecondary)}>
           This section contains simple content without XDSLayout. The container
           padding is applied automatically.
         </p>
-      </XDSVStack>
+      </XDSStack>
     </XDSSection>
   ),
 };
@@ -151,11 +151,11 @@ export const WithInnerLayout: Story = {
         }
         footer={
           <XDSLayoutFooter hasDivider>
-            <XDSHStack gap="space2" hAlign="end">
+            <XDSStack direction="horizontal" gap="space2" hAlign="end">
               <XDSButton label="Action" variant="primary">
                 Action
               </XDSButton>
-            </XDSHStack>
+            </XDSStack>
           </XDSLayoutFooter>
         }
       />
@@ -169,12 +169,12 @@ export const PageLayout: Story = {
       <XDSLayout
         header={
           <XDSLayoutHeader hasDivider>
-            <XDSVStack gap="space2">
+            <XDSStack direction="vertical" gap="space2">
               <h2 {...stylex.props(styles.text)}>Page Header</h2>
               <p {...stylex.props(styles.text, styles.textSecondary)}>
                 Welcome to the application
               </p>
-            </XDSVStack>
+            </XDSStack>
           </XDSLayoutHeader>
         }
         start={
@@ -184,13 +184,13 @@ export const PageLayout: Story = {
         }
         content={
           <XDSLayoutContent>
-            <XDSVStack gap="space2">
+            <XDSStack direction="vertical" gap="space2">
               <h3 {...stylex.props(styles.text)}>Main Content</h3>
               <p {...stylex.props(styles.text, styles.textSecondary)}>
                 This demonstrates how XDSLayout can be used to create page
                 layouts with header, sidebar, and content areas.
               </p>
-            </XDSVStack>
+            </XDSStack>
           </XDSLayoutContent>
         }
       />

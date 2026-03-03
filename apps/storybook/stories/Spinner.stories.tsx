@@ -1,6 +1,6 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSSpinner} from '@xds/core/Spinner';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
 const meta: Meta<typeof XDSSpinner> = {
@@ -33,17 +33,17 @@ export const Default: Story = {
 
 export const Sizes: Story = {
   render: () => (
-    <XDSHStack gap="space4" vAlign="center">
+    <XDSStack direction="horizontal" gap="space4" vAlign="center">
       <XDSSpinner size="sm" />
       <XDSSpinner size="md" />
       <XDSSpinner size="lg" />
-    </XDSHStack>
+    </XDSStack>
   ),
 };
 
 export const Shades: Story = {
   render: () => (
-    <XDSHStack gap="space4" vAlign="center">
+    <XDSStack direction="horizontal" gap="space4" vAlign="center">
       <XDSSpinner shade="default" />
       <div
         style={{
@@ -53,17 +53,17 @@ export const Shades: Story = {
         }}>
         <XDSSpinner shade="onMedia" />
       </div>
-    </XDSHStack>
+    </XDSStack>
   ),
 };
 
 export const InContext: Story = {
   render: () => (
-    <XDSVStack gap="space2" hAlign="center">
+    <XDSStack direction="vertical" gap="space2" hAlign="center">
       <XDSSpinner size="lg" />
       <XDSText type="body" color="secondary">
         Loading...
       </XDSText>
-    </XDSVStack>
+    </XDSStack>
   ),
 };

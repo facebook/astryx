@@ -204,7 +204,7 @@ function App() {
             <strong>Inputs</strong> — XDSButton, XDSTextInput, XDSCheckboxInput
           </li>
           <li>
-            <strong>Layout</strong> — XDSHStack, XDSVStack, XDSCard, XDSSection
+            <strong>Layout</strong> — XDSStack, XDSCard, XDSSection
           </li>
           <li>
             <strong>Feedback</strong> — XDSTooltip, XDSHoverCard

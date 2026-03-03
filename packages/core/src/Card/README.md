@@ -40,7 +40,7 @@ import {XDSCard} from '@xds/core/Card';
 
 // Accordion of cards
 <XDSCollapsibleGroup type="single" defaultValue="general">
-  <XDSVStack gap="space2">
+  <XDSStack direction="vertical" gap="space2">
     <XDSCard>
       <XDSCollapsible trigger="General" value="general">
         <GeneralSettings />
@@ -51,7 +51,7 @@ import {XDSCard} from '@xds/core/Card';
         <AdvancedSettings />
       </XDSCollapsible>
     </XDSCard>
-  </XDSVStack>
+  </XDSStack>
 </XDSCollapsibleGroup>
 ```
 

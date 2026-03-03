@@ -5,7 +5,7 @@ import {
   XDSLayout,
   XDSLayoutContent,
   XDSLayoutFooter,
-  XDSHStack,
+  XDSStack,
 } from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
@@ -82,7 +82,7 @@ function BasicModalExample() {
           }
           footer={
             <XDSLayoutFooter hasDivider>
-              <XDSHStack gap="space2" hAlign="end">
+              <XDSStack direction="horizontal" gap="space2" hAlign="end">
                 <XDSButton
                   label="Cancel"
                   variant="secondary"
@@ -93,7 +93,7 @@ function BasicModalExample() {
                   variant="primary"
                   onClick={() => setIsShown(false)}
                 />
-              </XDSHStack>
+              </XDSStack>
             </XDSLayoutFooter>
           }
         />
@@ -138,7 +138,7 @@ function SubtitleModalExample() {
           }
           footer={
             <XDSLayoutFooter hasDivider>
-              <XDSHStack gap="space2" hAlign="end">
+              <XDSStack direction="horizontal" gap="space2" hAlign="end">
                 <XDSButton
                   label="Cancel"
                   variant="secondary"
@@ -149,7 +149,7 @@ function SubtitleModalExample() {
                   variant="primary"
                   onClick={() => setIsShown(false)}
                 />
-              </XDSHStack>
+              </XDSStack>
             </XDSLayoutFooter>
           }
         />
@@ -192,13 +192,13 @@ function WideModalExample() {
           }
           footer={
             <XDSLayoutFooter hasDivider>
-              <XDSHStack hAlign="end">
+              <XDSStack direction="horizontal" hAlign="end">
                 <XDSButton
                   label="Close"
                   variant="primary"
                   onClick={() => setIsShown(false)}
                 />
-              </XDSHStack>
+              </XDSStack>
             </XDSLayoutFooter>
           }
         />
@@ -245,13 +245,13 @@ function FullscreenModalExample() {
           }
           footer={
             <XDSLayoutFooter hasDivider>
-              <XDSHStack hAlign="end">
+              <XDSStack direction="horizontal" hAlign="end">
                 <XDSButton
                   label="Close"
                   variant="primary"
                   onClick={() => setIsShown(false)}
                 />
-              </XDSHStack>
+              </XDSStack>
             </XDSLayoutFooter>
           }
         />
@@ -304,13 +304,13 @@ function RequiredModalExample() {
           }
           footer={
             <XDSLayoutFooter hasDivider>
-              <XDSHStack hAlign="end">
+              <XDSStack direction="horizontal" hAlign="end">
                 <XDSButton
                   label="I Accept"
                   variant="primary"
                   onClick={handleAccept}
                 />
-              </XDSHStack>
+              </XDSStack>
             </XDSLayoutFooter>
           }
         />
@@ -359,7 +359,7 @@ function FormModalExample() {
           }
           footer={
             <XDSLayoutFooter hasDivider>
-              <XDSHStack gap="space2" hAlign="end">
+              <XDSStack direction="horizontal" gap="space2" hAlign="end">
                 <XDSButton
                   label="Cancel"
                   variant="secondary"
@@ -370,7 +370,7 @@ function FormModalExample() {
                   variant="primary"
                   onClick={() => setIsShown(false)}
                 />
-              </XDSHStack>
+              </XDSStack>
             </XDSLayoutFooter>
           }
         />
@@ -418,13 +418,13 @@ function InfoModalExample() {
           }
           footer={
             <XDSLayoutFooter hasDivider>
-              <XDSHStack hAlign="end">
+              <XDSStack direction="horizontal" hAlign="end">
                 <XDSButton
                   label="Got it"
                   variant="primary"
                   onClick={() => setIsShown(false)}
                 />
-              </XDSHStack>
+              </XDSStack>
             </XDSLayoutFooter>
           }
         />
@@ -472,13 +472,13 @@ function PositionedModalExample() {
           }
           footer={
             <XDSLayoutFooter hasDivider>
-              <XDSHStack hAlign="end">
+              <XDSStack direction="horizontal" hAlign="end">
                 <XDSButton
                   label="Close"
                   variant="primary"
                   onClick={() => setIsShown(false)}
                 />
-              </XDSHStack>
+              </XDSStack>
             </XDSLayoutFooter>
           }
         />
@@ -532,7 +532,7 @@ function ScrollingModalExample() {
           }
           footer={
             <XDSLayoutFooter hasDivider>
-              <XDSHStack gap="space2" hAlign="end">
+              <XDSStack direction="horizontal" gap="space2" hAlign="end">
                 <XDSButton
                   label="Decline"
                   variant="secondary"
@@ -543,7 +543,7 @@ function ScrollingModalExample() {
                   variant="primary"
                   onClick={() => setIsShown(false)}
                 />
-              </XDSHStack>
+              </XDSStack>
             </XDSLayoutFooter>
           }
         />
@@ -602,7 +602,7 @@ function ConfirmationModalExample() {
           }
           footer={
             <XDSLayoutFooter hasDivider>
-              <XDSHStack gap="space2" hAlign="end">
+              <XDSStack direction="horizontal" gap="space2" hAlign="end">
                 <XDSButton
                   label="Cancel"
                   variant="secondary"
@@ -613,7 +613,7 @@ function ConfirmationModalExample() {
                   variant="destructive"
                   onClick={handleDelete}
                 />
-              </XDSHStack>
+              </XDSStack>
             </XDSLayoutFooter>
           }
         />

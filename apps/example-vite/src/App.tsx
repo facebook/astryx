@@ -2,7 +2,7 @@ import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSTheme} from '@xds/core/theme';
 import {defaultTheme} from '@xds/theme-default';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSStack} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
@@ -30,8 +30,8 @@ export default function App() {
     <XDSTheme theme={defaultTheme}>
       <main {...stylex.props(styles.main)}>
         <div {...stylex.props(styles.container)}>
-          <XDSVStack gap="space6">
-            <XDSVStack gap="space2">
+          <XDSStack direction="vertical" gap="space6">
+            <XDSStack direction="vertical" gap="space2">
               <XDSHeading level={1}>XDS Example — Vite</XDSHeading>
               <XDSText type="body" color="secondary">
                 This is a reference example for consuming{' '}
@@ -45,37 +45,37 @@ export default function App() {
                 </XDSText>{' '}
                 — no PostCSS or Babel config needed.
               </XDSText>
-            </XDSVStack>
+            </XDSStack>
 
             <XDSDivider />
 
             {/* Buttons */}
-            <XDSVStack gap="space3">
+            <XDSStack direction="vertical" gap="space3">
               <XDSHeading level={2}>Buttons</XDSHeading>
-              <XDSHStack gap="space3" vAlign="center">
+              <XDSStack direction="horizontal" gap="space3" vAlign="center">
                 <XDSButton label="Primary" variant="primary" />
                 <XDSButton label="Secondary" variant="secondary" />
                 <XDSButton label="Ghost" variant="ghost" />
-              </XDSHStack>
-            </XDSVStack>
+              </XDSStack>
+            </XDSStack>
 
             <XDSDivider />
 
             {/* Badges */}
-            <XDSVStack gap="space3">
+            <XDSStack direction="vertical" gap="space3">
               <XDSHeading level={2}>Badges</XDSHeading>
-              <XDSHStack gap="space3" vAlign="center">
+              <XDSStack direction="horizontal" gap="space3" vAlign="center">
                 <XDSBadge variant="info">Info</XDSBadge>
                 <XDSBadge variant="success">Success</XDSBadge>
                 <XDSBadge variant="warning">Warning</XDSBadge>
                 <XDSBadge variant="error">Error</XDSBadge>
-              </XDSHStack>
-            </XDSVStack>
+              </XDSStack>
+            </XDSStack>
 
             <XDSDivider />
 
             {/* Text Input */}
-            <XDSVStack gap="space3">
+            <XDSStack direction="vertical" gap="space3">
               <XDSHeading level={2}>Text Input</XDSHeading>
               <XDSTextInput
                 label="Email address"
@@ -83,12 +83,12 @@ export default function App() {
                 value={email}
                 onChange={setEmail}
               />
-            </XDSVStack>
+            </XDSStack>
 
             <XDSDivider />
 
             {/* Typography */}
-            <XDSVStack gap="space3">
+            <XDSStack direction="vertical" gap="space3">
               <XDSHeading level={2}>Typography</XDSHeading>
               <XDSText type="large" weight="bold">
                 Large bold text
@@ -97,8 +97,8 @@ export default function App() {
               <XDSText type="supporting" color="secondary">
                 Supporting text in secondary color
               </XDSText>
-            </XDSVStack>
-          </XDSVStack>
+            </XDSStack>
+          </XDSStack>
         </div>
       </main>
     </XDSTheme>

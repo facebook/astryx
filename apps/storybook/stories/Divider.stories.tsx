@@ -3,7 +3,7 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCard} from '@xds/core/Card';
 import {XDSSection} from '@xds/core/Section';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
 
@@ -52,11 +52,11 @@ export const Default: Story = {
   render: args => (
     <XDSSection variant="wash">
       <XDSCard>
-        <XDSVStack gap="space3">
+        <XDSStack direction="vertical" gap="space3">
           <XDSText type="body">Content above</XDSText>
           <XDSDivider {...args} />
           <XDSText type="body">Content below</XDSText>
-        </XDSVStack>
+        </XDSStack>
       </XDSCard>
     </XDSSection>
   ),
@@ -69,11 +69,11 @@ export const WithLabel: Story = {
   render: args => (
     <XDSSection variant="wash">
       <XDSCard>
-        <XDSVStack gap="space3">
+        <XDSStack direction="vertical" gap="space3">
           <XDSText type="body">Content above</XDSText>
           <XDSDivider {...args} />
           <XDSText type="body">Content below</XDSText>
-        </XDSVStack>
+        </XDSStack>
       </XDSCard>
     </XDSSection>
   ),
@@ -84,16 +84,16 @@ export const Variants: Story = {
     <XDSSection variant="wash">
       <div {...stylex.props(styles.storyWrapper)}>
         <XDSCard>
-          <XDSVStack gap="space3">
+          <XDSStack direction="vertical" gap="space3">
             <XDSText type="supporting">Subtle (default)</XDSText>
             <XDSDivider variant="subtle" />
-          </XDSVStack>
+          </XDSStack>
         </XDSCard>
         <XDSCard>
-          <XDSVStack gap="space3">
+          <XDSStack direction="vertical" gap="space3">
             <XDSText type="supporting">Strong</XDSText>
             <XDSDivider variant="strong" />
-          </XDSVStack>
+          </XDSStack>
         </XDSCard>
       </div>
     </XDSSection>
@@ -105,24 +105,24 @@ export const FullBleed: Story = {
     <XDSSection variant="wash">
       <div {...stylex.props(styles.storyWrapper)}>
         <XDSCard>
-          <XDSVStack gap="space3">
+          <XDSStack direction="vertical" gap="space3">
             <XDSText type="label">Normal divider</XDSText>
             <XDSText type="body">
               The divider respects container padding.
             </XDSText>
             <XDSDivider />
             <XDSText type="body">Content below the divider.</XDSText>
-          </XDSVStack>
+          </XDSStack>
         </XDSCard>
         <XDSCard>
-          <XDSVStack gap="space3">
+          <XDSStack direction="vertical" gap="space3">
             <XDSText type="label">Full bleed divider</XDSText>
             <XDSText type="body">
               The divider extends to container edges.
             </XDSText>
             <XDSDivider isFullBleed />
             <XDSText type="body">Content below the divider.</XDSText>
-          </XDSVStack>
+          </XDSStack>
         </XDSCard>
       </div>
     </XDSSection>
@@ -136,11 +136,11 @@ export const Vertical: Story = {
   render: args => (
     <XDSSection variant="wash">
       <XDSCard height={200}>
-        <XDSHStack gap="space4" xstyle={styles.fullHeight}>
+        <XDSStack direction="horizontal" gap="space4" xstyle={styles.fullHeight}>
           <XDSText type="body">Left content</XDSText>
           <XDSDivider {...args} />
           <XDSText type="body">Right content</XDSText>
-        </XDSHStack>
+        </XDSStack>
       </XDSCard>
     </XDSSection>
   ),
@@ -154,11 +154,11 @@ export const VerticalWithLabel: Story = {
   render: args => (
     <XDSSection variant="wash">
       <XDSCard height={200}>
-        <XDSHStack gap="space4" xstyle={styles.fullHeight}>
+        <XDSStack direction="horizontal" gap="space4" xstyle={styles.fullHeight}>
           <XDSText type="body">Option A</XDSText>
           <XDSDivider {...args} />
           <XDSText type="body">Option B</XDSText>
-        </XDSHStack>
+        </XDSStack>
       </XDSCard>
     </XDSSection>
   ),
@@ -168,7 +168,7 @@ export const InCard: Story = {
   render: () => (
     <XDSSection variant="wash">
       <XDSCard>
-        <XDSVStack gap="space3">
+        <XDSStack direction="vertical" gap="space3">
           <XDSText type="label">Card Title</XDSText>
           <XDSDivider />
           <XDSText type="body">
@@ -179,7 +179,7 @@ export const InCard: Story = {
           <XDSText type="supporting">
             Additional details can appear below a labeled divider.
           </XDSText>
-        </XDSVStack>
+        </XDSStack>
       </XDSCard>
     </XDSSection>
   ),

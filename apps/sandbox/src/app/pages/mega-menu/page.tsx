@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {
@@ -235,18 +235,18 @@ export default function MegaMenuPage() {
 
   return (
     <div {...stylex.props(styles.container)}>
-      <XDSVStack gap="space6">
-        <XDSVStack gap="space2">
+      <XDSStack direction="vertical" gap="space6">
+        <XDSStack direction="vertical" gap="space2">
           <XDSHeading level={1}>Mega Menu</XDSHeading>
           <XDSText type="body" color="secondary">
             A top nav variation with a full-width mega menu that appears on
             hover. The nav bar and dropdown panel appear as one unified card.
             Hover over &quot;Products&quot; or &quot;Solutions&quot; to see it.
           </XDSText>
-        </XDSVStack>
+        </XDSStack>
 
         {/* Full mega menu with featured content */}
-        <XDSVStack gap="space3">
+        <XDSStack direction="vertical" gap="space3">
           <XDSHeading level={2}>With Featured Content</XDSHeading>
           <div
             {...stylex.props(
@@ -302,10 +302,10 @@ export default function MegaMenuPage() {
               }
             />
           </div>
-        </XDSVStack>
+        </XDSStack>
 
         {/* Without featured content */}
-        <XDSVStack gap="space3">
+        <XDSStack direction="vertical" gap="space3">
           <XDSHeading level={2}>Without Featured Content</XDSHeading>
           <div
             {...stylex.props(
@@ -349,8 +349,8 @@ export default function MegaMenuPage() {
               endContent={<XDSButton label="Sign in" variant="primary" />}
             />
           </div>
-        </XDSVStack>
-      </XDSVStack>
+        </XDSStack>
+      </XDSStack>
     </div>
   );
 }

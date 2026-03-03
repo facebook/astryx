@@ -2,7 +2,7 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSCard} from '@xds/core/Card';
@@ -232,23 +232,23 @@ const columns: XDSTableColumn<ReviewRow>[] = [
     header: 'Author',
     width: proportional(4),
     renderCell: (item: ReviewRow) => (
-      <XDSHStack gap="space3" vAlign="center">
+      <XDSStack direction="horizontal" gap="space3" vAlign="center">
         <XDSAvatar
           src={item.authorAvatar}
           name={item.authorName}
           size="small"
         />
         <div {...stylex.props(styles.authorInfo)}>
-          <XDSVStack gap="space1">
+          <XDSStack direction="vertical" gap="space1">
             <span {...stylex.props(styles.titleLink)}>{item.title}</span>
             <span {...stylex.props(styles.supportingLine)}>
               <XDSText type="supporting" color="secondary">
                 {item.diffId} · {item.lines} lines {item.reviewTime}
               </XDSText>
             </span>
-          </XDSVStack>
+          </XDSStack>
         </div>
-      </XDSHStack>
+      </XDSStack>
     ),
   },
   {
@@ -276,7 +276,7 @@ const columns: XDSTableColumn<ReviewRow>[] = [
     header: 'Testing',
     width: pixel(110),
     renderCell: (item: ReviewRow) => (
-      <XDSHStack gap="space2" vAlign="center">
+      <XDSStack direction="horizontal" gap="space2" vAlign="center">
         <XDSStatusDot
           variant={item.testStatus === 'passed' ? 'positive' : 'negative'}
           label={item.testStatus === 'passed' ? 'Passed' : 'Failed'}
@@ -284,7 +284,7 @@ const columns: XDSTableColumn<ReviewRow>[] = [
         <XDSText type="supporting">
           {item.testStatus === 'passed' ? 'Passed' : 'Failed'}
         </XDSText>
-      </XDSHStack>
+      </XDSStack>
     ),
   },
   {
@@ -451,14 +451,14 @@ export default function TableOverviewPage() {
 
   return (
     <div {...stylex.props(styles.container)}>
-      <XDSVStack gap="space6">
-        <XDSVStack gap="space2">
+      <XDSStack direction="vertical" gap="space6">
+        <XDSStack direction="vertical" gap="space2">
           <XDSHeading level={1}>Table Overview</XDSHeading>
           <XDSText type="body" color="secondary">
             A code review dashboard demonstrating XDSTable with selection,
             badges, avatars, and collapsible sections.
           </XDSText>
-        </XDSVStack>
+        </XDSStack>
 
         {/* Search */}
         <XDSTextInput
@@ -479,7 +479,7 @@ export default function TableOverviewPage() {
         </div>
 
         {/* Grouped Tables */}
-        <XDSVStack gap="space4">
+        <XDSStack direction="vertical" gap="space4">
           {filteredWaiting.length > 0 && (
             <XDSCollapsible
               trigger={
@@ -524,8 +524,8 @@ export default function TableOverviewPage() {
               />
             </XDSCollapsible>
           )}
-        </XDSVStack>
-      </XDSVStack>
+        </XDSStack>
+      </XDSStack>
     </div>
   );
 }

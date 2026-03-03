@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSDivider} from '@xds/core';
@@ -112,8 +112,8 @@ export default function PolymorphicLinkPage() {
 
   return (
     <div {...stylex.props(styles.container)}>
-      <XDSVStack gap="space6">
-        <XDSVStack gap="space2">
+      <XDSStack direction="vertical" gap="space6">
+        <XDSStack direction="vertical" gap="space2">
           <XDSHeading level={1}>Polymorphic Link</XDSHeading>
           <XDSText type="body" color="secondary">
             XDS components that render links can use a custom link component
@@ -124,14 +124,14 @@ export default function PolymorphicLinkPage() {
             </XDSText>{' '}
             prop.
           </XDSText>
-        </XDSVStack>
+        </XDSStack>
 
         <XDSDivider />
 
         {/* ================================================================= */}
         {/* Section 1: Provider Demo */}
         {/* ================================================================= */}
-        <XDSVStack gap="space3">
+        <XDSStack direction="vertical" gap="space3">
           <XDSHeading level={2}>Provider Demo</XDSHeading>
           <XDSText type="body" color="secondary">
             All components below are wrapped in{' '}
@@ -143,9 +143,9 @@ export default function PolymorphicLinkPage() {
           </XDSText>
 
           <XDSLinkProvider component={SimulatedNextLink}>
-            <XDSVStack gap="space4">
+            <XDSStack direction="vertical" gap="space4">
               {/* TopNav */}
-              <XDSVStack gap="space1">
+              <XDSStack direction="vertical" gap="space1">
                 <XDSText type="supporting" weight="bold">
                   XDSTopNav
                 </XDSText>
@@ -162,10 +162,10 @@ export default function PolymorphicLinkPage() {
                     }
                   />
                 </div>
-              </XDSVStack>
+              </XDSStack>
 
               {/* Breadcrumbs */}
-              <XDSVStack gap="space1">
+              <XDSStack direction="vertical" gap="space1">
                 <XDSText type="supporting" weight="bold">
                   XDSBreadcrumbs
                 </XDSText>
@@ -176,10 +176,10 @@ export default function PolymorphicLinkPage() {
                   </XDSBreadcrumbItem>
                   <XDSBreadcrumbItem isCurrent>Widget</XDSBreadcrumbItem>
                 </XDSBreadcrumbs>
-              </XDSVStack>
+              </XDSStack>
 
               {/* TabList */}
-              <XDSVStack gap="space1">
+              <XDSStack direction="vertical" gap="space1">
                 <XDSText type="supporting" weight="bold">
                   XDSTabList (with href)
                 </XDSText>
@@ -188,10 +188,10 @@ export default function PolymorphicLinkPage() {
                   <XDSTab value="details" label="Details" href="/details" />
                   <XDSTab value="reviews" label="Reviews" href="/reviews" />
                 </XDSTabList>
-              </XDSVStack>
+              </XDSStack>
 
               {/* SideNav */}
-              <XDSVStack gap="space1">
+              <XDSStack direction="vertical" gap="space1">
                 <XDSText type="supporting" weight="bold">
                   XDSSideNav
                 </XDSText>
@@ -206,27 +206,27 @@ export default function PolymorphicLinkPage() {
                     <XDSSideNavItem label="Profile" href="/profile" />
                   </XDSSideNav>
                 </div>
-              </XDSVStack>
+              </XDSStack>
 
               {/* XDSLink */}
-              <XDSVStack gap="space1">
+              <XDSStack direction="vertical" gap="space1">
                 <XDSText type="supporting" weight="bold">
                   XDSLink
                 </XDSText>
                 <XDSLink label="Documentation link" href="/docs">
                   Go to documentation
                 </XDSLink>
-              </XDSVStack>
-            </XDSVStack>
+              </XDSStack>
+            </XDSStack>
           </XDSLinkProvider>
-        </XDSVStack>
+        </XDSStack>
 
         <XDSDivider />
 
         {/* ================================================================= */}
         {/* Section 2: Per-component `as` override */}
         {/* ================================================================= */}
-        <XDSVStack gap="space3">
+        <XDSStack direction="vertical" gap="space3">
           <XDSHeading level={2}>Per-Component Override</XDSHeading>
           <XDSText type="body" color="secondary">
             The{' '}
@@ -261,14 +261,14 @@ export default function PolymorphicLinkPage() {
               />
             </div>
           </XDSLinkProvider>
-        </XDSVStack>
+        </XDSStack>
 
         <XDSDivider />
 
         {/* ================================================================= */}
         {/* Section 3: Default behavior (no provider) */}
         {/* ================================================================= */}
-        <XDSVStack gap="space3">
+        <XDSStack direction="vertical" gap="space3">
           <XDSHeading level={2}>Default Behavior</XDSHeading>
           <XDSText type="body" color="secondary">
             Without a provider or{' '}
@@ -297,8 +297,8 @@ export default function PolymorphicLinkPage() {
             <XDSBreadcrumbItem href="#products">Products</XDSBreadcrumbItem>
             <XDSBreadcrumbItem isCurrent>Current Page</XDSBreadcrumbItem>
           </XDSBreadcrumbs>
-        </XDSVStack>
-      </XDSVStack>
+        </XDSStack>
+      </XDSStack>
     </div>
   );
 }

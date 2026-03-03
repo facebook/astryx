@@ -1,7 +1,7 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {
@@ -99,17 +99,17 @@ const scienceItems = [
 export default function TopNavMenuPage() {
   return (
     <div {...stylex.props(styles.container)}>
-      <XDSVStack gap="space6">
-        <XDSVStack gap="space2">
+      <XDSStack direction="vertical" gap="space6">
+        <XDSStack direction="vertical" gap="space2">
           <XDSHeading level={1}>TopNav Menu</XDSHeading>
           <XDSText type="body" color="secondary">
             A nav item with a hover-triggered overflow menu. Hover over
             &quot;Products&quot; or &quot;Science&quot; to see the popover.
           </XDSText>
-        </XDSVStack>
+        </XDSStack>
 
         {/* Marketing-style nav with overflow menus */}
-        <XDSVStack gap="space3">
+        <XDSStack direction="vertical" gap="space3">
           <XDSHeading level={2}>Marketing Nav</XDSHeading>
           <div {...stylex.props(styles.navWrapper)}>
             <XDSTopNav
@@ -136,10 +136,10 @@ export default function TopNavMenuPage() {
               }
             />
           </div>
-        </XDSVStack>
+        </XDSStack>
 
         {/* Simple nav with one overflow menu */}
-        <XDSVStack gap="space3">
+        <XDSStack direction="vertical" gap="space3">
           <XDSHeading level={2}>Simple Nav</XDSHeading>
           <div {...stylex.props(styles.navWrapper)}>
             <XDSTopNav
@@ -167,8 +167,8 @@ export default function TopNavMenuPage() {
               }
             />
           </div>
-        </XDSVStack>
-      </XDSVStack>
+        </XDSStack>
+      </XDSStack>
     </div>
   );
 }

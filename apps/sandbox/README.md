@@ -35,14 +35,14 @@ https://facebookexperimental.github.io/xds/{commit}/sandbox/
 ```tsx
 'use client';
 
-import {XDSVStack, XDSHeading, XDSText} from '@xds/core';
+import {XDSStack,  XDSHeading, XDSText} from '@xds/core';
 
 export default function MyPage() {
   return (
-    <XDSVStack gap="space4">
+    <XDSStack direction="vertical" gap="space4">
       <XDSHeading level={1}>My Page</XDSHeading>
       <XDSText type="body">Content here</XDSText>
-    </XDSVStack>
+    </XDSStack>
   );
 }
 ```

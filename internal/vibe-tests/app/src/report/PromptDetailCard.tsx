@@ -1,6 +1,6 @@
 import * as stylex from '@stylexjs/stylex';
 import {XDSCard} from '@xds/core/Card';
-import {XDSVStack} from '@xds/core/Stack';
+import {XDSStack} from '@xds/core/Stack';
 import {XDSText} from '@xds/core/Text';
 import {XDSHeading} from '@xds/core/Text';
 import {XDSStatusDot} from '@xds/core/StatusDot';
@@ -95,7 +95,7 @@ function ScoreItem({label, score}: {label: string; score: number}) {
 function ScoreSummary({label, score}: {label: string; score: UniversalScore}) {
   return (
     <div {...stylex.props(styles.scoreBlock)}>
-      <XDSVStack gap="space2">
+      <XDSStack direction="vertical" gap="space2">
         <XDSText type="label">{label}</XDSText>
         <div {...stylex.props(styles.scoreGrid)}>
           {ALL_DIMENSIONS.map(dim => (
@@ -107,7 +107,7 @@ function ScoreSummary({label, score}: {label: string; score: UniversalScore}) {
           ))}
           <ScoreItem label="Overall" score={computeOverall(score)} />
         </div>
-      </XDSVStack>
+      </XDSStack>
     </div>
   );
 }
@@ -190,7 +190,7 @@ export function PromptDetailCard({
   return (
     <XDSCard>
       <div {...stylex.props(styles.card)}>
-        <XDSVStack gap="space3">
+        <XDSStack direction="vertical" gap="space3">
           {/* Header: prompt ID, prompt text, and buttons */}
           <div {...stylex.props(styles.header)}>
             <XDSHeading level={4}>{promptId}</XDSHeading>
@@ -300,7 +300,7 @@ export function PromptDetailCard({
               </div>
             </>
           )}
-        </XDSVStack>
+        </XDSStack>
       </div>
     </XDSCard>
   );

@@ -1,7 +1,7 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 
 const styles = stylex.create({
@@ -13,8 +13,8 @@ const styles = stylex.create({
 export default function Home() {
   return (
     <div {...stylex.props(styles.container)}>
-      <XDSVStack gap="space6">
-        <XDSVStack gap="space2">
+      <XDSStack direction="vertical" gap="space6">
+        <XDSStack direction="vertical" gap="space2">
           <XDSHeading level={1}>XDS Sandbox</XDSHeading>
           <XDSText type="body" color="secondary">
             A testing ground for XDS components. Use the sidebar to explore
@@ -24,8 +24,8 @@ export default function Home() {
             </XDSText>
             .
           </XDSText>
-        </XDSVStack>
-      </XDSVStack>
+        </XDSStack>
+      </XDSStack>
     </div>
   );
 }

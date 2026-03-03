@@ -1,6 +1,6 @@
 import {XDSTable} from '@xds/core/Table';
 import {XDSStatusDot} from '@xds/core/StatusDot';
-import {XDSHStack} from '@xds/core/Stack';
+import {XDSStack} from '@xds/core/Stack';
 import {XDSText} from '@xds/core/Text';
 import type {XDSTableColumn} from '@xds/core/Table/types';
 import type {UniversalScore} from './types';
@@ -29,14 +29,14 @@ interface RowData extends Record<string, unknown> {
 
 function ScoreCell({score}: {score: number}) {
   return (
-    <XDSHStack gap="space1" hAlign="center">
+    <XDSStack direction="horizontal" gap="space1" hAlign="center">
       <XDSStatusDot
         variant={scoreToStatusVariant(score)}
         label={`Score: ${formatScore(score)}`}
         size="sm"
       />
       <XDSText type="body">{formatScore(score)}</XDSText>
-    </XDSHStack>
+    </XDSStack>
   );
 }
 

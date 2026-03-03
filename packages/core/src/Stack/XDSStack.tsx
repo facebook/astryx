@@ -47,8 +47,8 @@ export interface XDSStackProps extends Omit<
 > {
   /**
    * Direction of the stack layout.
-   * - `horizontal`: Items flow left-to-right (like XDSHStack)
-   * - `vertical`: Items flow top-to-bottom (like XDSVStack)
+   * - `horizontal`: Items flow left-to-right
+   * - `vertical`: Items flow top-to-bottom
    */
   direction: StackDirection;
 
@@ -105,8 +105,8 @@ export interface XDSStackProps extends Omit<
 /**
  * Unified stack component for arranging items in a horizontal or vertical layout.
  *
- * Replaces `XDSHStack` and `XDSVStack` with a single component that accepts
- * a required `direction` prop so the layout intent is always explicit.
+ * Unified stack component that accepts a required `direction` prop
+ * so the layout intent is always explicit.
  *
  * The `hAlign` and `vAlign` props automatically map to the correct CSS axis
  * based on the direction:

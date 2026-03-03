@@ -30,8 +30,7 @@ import {
   XDSLayoutContent,
   XDSLayoutPanel,
   // Stack utilities
-  XDSHStack,
-  XDSVStack,
+  XDSStack,
   XDSStackItem,
   stack,
   stackItem,
@@ -64,8 +63,7 @@ Layout/
     ├── README.md
     ├── stack.stylex.ts
     ├── stackItem.stylex.ts
-    ├── XDSHStack.tsx
-    ├── XDSVStack.tsx
+    ├── XDSStack.tsx
     └── XDSStackItem.tsx
 ```
 
@@ -179,10 +177,10 @@ Sidebar for navigation, settings, or inspector panels.
     content={<XDSLayoutContent>Body content</XDSLayoutContent>}
     footer={
       <XDSLayoutFooter hasDivider>
-        <XDSHStack gap="space2" hAlign="end">
+        <XDSStack direction="horizontal" gap="space2" hAlign="end">
           <XDSButton variant="secondary">Cancel</XDSButton>
           <XDSButton variant="primary">Save</XDSButton>
-        </XDSHStack>
+        </XDSStack>
       </XDSLayoutFooter>
     }
   />
@@ -222,7 +220,7 @@ See [Container/README.md](./Container/README.md) for full documentation.
 ### Layout Structure
 
 Use XDSLayout for page shells and app layouts — any UI with a header bar, sidebar navigation,
-scrollable content area, or action footer. Don't use for simple stacking (use XDSVStack/XDSHStack).
+scrollable content area, or action footer. Don't use for simple stacking (use XDSStack).
 
 | Component          | Description                                                             |
 | ------------------ | ----------------------------------------------------------------------- |
@@ -238,8 +236,7 @@ See [XDSLayout/README.md](./XDSLayout/README.md) for full documentation.
 
 | Component      | Description                            |
 | -------------- | -------------------------------------- |
-| `XDSHStack`    | Horizontal stack (left-to-right)       |
-| `XDSVStack`    | Vertical stack (top-to-bottom)         |
+| `XDSStack`     | Stack layout (horizontal or vertical)  |
 | `XDSStackItem` | Stack item with fill/alignment control |
 
 See [Stack/README.md](./Stack/README.md) for full documentation.
@@ -258,7 +255,7 @@ See [Stack/README.md](./Stack/README.md) for full documentation.
 │  XDSLayoutContainer (sets CSS variables)                │
 ├─────────────────────────────────────────────────────────┤
 │  Layout Utilities                                        │
-│  XDSHStack, XDSVStack, stack(), stackItem()             │
+│  XDSStack, stack(), stackItem()                         │
 └─────────────────────────────────────────────────────────┘
 ```
 

@@ -5,7 +5,7 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSLayout, XDSLayoutHeader, XDSLayoutContent} from '@xds/core';
 import {XDSText} from '@xds/core';
 import {XDSButton} from '@xds/core';
-import {XDSHStack} from '@xds/core';
+import {XDSStack} from '@xds/core';
 
 const styles = stylex.create({
   table: {
@@ -51,12 +51,12 @@ export default function TablePage() {
     <XDSLayout
       header={
         <XDSLayoutHeader hasDivider>
-          <XDSHStack vAlign="center" hAlign="between">
+          <XDSStack direction="horizontal" vAlign="center" hAlign="between">
             <XDSText type="large" weight="semibold">
               Items
             </XDSText>
             <XDSButton label="Add Item" variant="primary" />
-          </XDSHStack>
+          </XDSStack>
         </XDSLayoutHeader>
       }
       content={

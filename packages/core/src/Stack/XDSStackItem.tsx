@@ -69,11 +69,11 @@ export interface XDSStackItemProps extends Omit<
  *
  * @example
  * ```
- * <XDSHStack gap="space2">
+ * <XDSStack direction="horizontal" gap="space2">
  *   <XDSStackItem size="static">Logo</XDSStackItem>
  *   <XDSStackItem size="fill">Content</XDSStackItem>
  *   <XDSStackItem size="static">Actions</XDSStackItem>
- * </XDSHStack>
+ * </XDSStack>
  * ```
  */
 export const XDSStackItem = forwardRef<HTMLElement, XDSStackItemProps>(

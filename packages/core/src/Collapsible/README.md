@@ -53,7 +53,7 @@ import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
 ```tsx
 // Single mode — only one open at a time (FAQ, settings panels)
 <XDSCollapsibleGroup type="single" defaultValue="general">
-  <XDSVStack gap="space2">
+  <XDSStack direction="vertical" gap="space2">
     <XDSCard>
       <XDSCollapsible trigger="General Settings" value="general">
         <GeneralContent />
@@ -64,19 +64,19 @@ import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
         <AdvancedContent />
       </XDSCollapsible>
     </XDSCard>
-  </XDSVStack>
+  </XDSStack>
 </XDSCollapsibleGroup>
 
 // Multiple mode — any number open
 <XDSCollapsibleGroup type="multiple" defaultValue={["s1", "s2"]}>
-  <XDSVStack gap="space2">
+  <XDSStack direction="vertical" gap="space2">
     <XDSCard>
       <XDSCollapsible trigger="Section 1" value="s1">...</XDSCollapsible>
     </XDSCard>
     <XDSCard>
       <XDSCollapsible trigger="Section 2" value="s2">...</XDSCollapsible>
     </XDSCard>
-  </XDSVStack>
+  </XDSStack>
 </XDSCollapsibleGroup>
 ```
 

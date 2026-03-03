@@ -68,18 +68,18 @@ export interface XDSTableColumn<T extends Record<string, unknown>> {
    * - XDSBadge for status labels (success/warning/error variants)
    * - XDSStatusDot for colored indicators
    * - XDSText with color="positive"|"negative" for formatted values
-   * - XDSHStack to combine multiple elements in a cell
+   * - XDSStack to combine multiple elements in a cell
    * - XDSAvatar for user/entity cells
    *
    * @example
    * ```tsx
    * renderCell: (item) => (
-   *   <XDSHStack gap="space2" align="center">
+   *   <XDSStack direction="horizontal" gap="space2" align="center">
    *     <XDSStatusDot status={item.isActive ? 'positive' : 'negative'} />
    *     <XDSBadge variant={item.isActive ? 'success' : 'error'}>
    *       {item.isActive ? 'Active' : 'Inactive'}
    *     </XDSBadge>
-   *   </XDSHStack>
+   *   </XDSStack>
    * )
    * ```
    */

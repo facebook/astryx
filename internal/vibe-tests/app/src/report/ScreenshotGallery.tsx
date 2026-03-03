@@ -1,7 +1,7 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSCard} from '@xds/core/Card';
-import {XDSVStack} from '@xds/core/Stack';
+import {XDSStack} from '@xds/core/Stack';
 import {XDSText} from '@xds/core/Text';
 import {spacingVars, colorVars} from '@xds/core/theme/tokens.stylex';
 
@@ -92,7 +92,7 @@ export function ScreenshotGallery({screenshots}: ScreenshotGalleryProps) {
       <div {...stylex.props(styles.grid)}>
         {items.map(item => (
           <XDSCard key={item.filename}>
-            <XDSVStack gap="space0">
+            <XDSStack direction="vertical" gap="space0">
               <img
                 {...stylex.props(styles.image)}
                 src={item.src}
@@ -100,15 +100,15 @@ export function ScreenshotGallery({screenshots}: ScreenshotGalleryProps) {
                 onClick={() => setEnlarged(item.src)}
               />
               <div {...stylex.props(styles.cardContent)}>
-                <XDSVStack gap="space1">
+                <XDSStack direction="vertical" gap="space1">
                   <XDSText type="label">{item.promptId}</XDSText>
                   <div {...stylex.props(styles.meta)}>
                     <XDSText type="supporting">{item.viewport}</XDSText>
                     <XDSText type="supporting">{item.theme}</XDSText>
                   </div>
-                </XDSVStack>
+                </XDSStack>
               </div>
-            </XDSVStack>
+            </XDSStack>
           </XDSCard>
         ))}
       </div>

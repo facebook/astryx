@@ -49,7 +49,7 @@ export * from './TopNav';
 export * from './SideNav';
 export * from './ProgressBar';
 
-// Layout utilities and components (includes XDSHStack, XDSVStack)
+// Layout utilities and components
 export * from './Layout';
 
 // Layer utilities and components (includes XDSHoverCard)

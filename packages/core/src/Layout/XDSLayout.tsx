@@ -142,7 +142,7 @@ function AreaProvider({
  * - Page with a sidebar → XDSLayout with `start` slot
  * - Dashboard with header + scrollable body → XDSLayout with `header` + `content`
  * - Settings page with nav panel → XDSLayout with `start` + `content`
- * - Simple vertical stack of items → use XDSVStack instead
+ * - Simple vertical stack of items → use XDSStack instead
  *
  * @example
  * ```

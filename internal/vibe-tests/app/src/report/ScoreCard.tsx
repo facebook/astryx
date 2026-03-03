@@ -1,7 +1,7 @@
 import * as stylex from '@stylexjs/stylex';
 import {XDSCard} from '@xds/core/Card';
-import {XDSVStack} from '@xds/core/Stack';
-import {XDSHStack} from '@xds/core/Stack';
+import {XDSStack} from '@xds/core/Stack';
+import {XDSStack} from '@xds/core/Stack';
 import {XDSText} from '@xds/core/Text';
 import {XDSHeading} from '@xds/core/Text';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
@@ -41,9 +41,9 @@ export function ScoreCard({
   return (
     <XDSCard>
       <div {...stylex.props(styles.card)}>
-        <XDSVStack gap="space2">
+        <XDSStack direction="vertical" gap="space2">
           <XDSText type="label">{label}</XDSText>
-          <XDSHStack gap="space2" hAlign="center">
+          <XDSStack direction="horizontal" gap="space2" hAlign="center">
             <XDSHeading level={2}>{formatScore(score)}</XDSHeading>
             {delta != null && (
               <XDSText
@@ -60,7 +60,7 @@ export function ScoreCard({
                 {compareLabel ? ` vs ${compareLabel}` : ''}
               </XDSText>
             )}
-          </XDSHStack>
+          </XDSStack>
           <XDSProgressBar
             label={label}
             isLabelHidden
@@ -69,7 +69,7 @@ export function ScoreCard({
             variant={scoreToProgressVariant(score)}
             size="sm"
           />
-        </XDSVStack>
+        </XDSStack>
       </div>
     </XDSCard>
   );

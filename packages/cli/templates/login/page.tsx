@@ -6,7 +6,7 @@ import {XDSLayout, XDSLayoutContent} from '@xds/core';
 import {XDSText} from '@xds/core';
 import {XDSTextInput} from '@xds/core';
 import {XDSButton} from '@xds/core';
-import {XDSVStack} from '@xds/core';
+import {XDSStack} from '@xds/core';
 
 const styles = stylex.create({
   container: {
@@ -41,7 +41,7 @@ export default function LoginPage() {
           <div {...stylex.props(styles.container)}>
             <form onSubmit={handleSubmit}>
               <div {...stylex.props(styles.card)}>
-                <XDSVStack gap="space5">
+                <XDSStack direction="vertical" gap="space5">
                   <XDSText type="large" weight="semibold">
                     Sign in
                   </XDSText>
@@ -61,7 +61,7 @@ export default function LoginPage() {
                   />
 
                   <XDSButton label="Sign in" variant="primary" type="submit" />
-                </XDSVStack>
+                </XDSStack>
               </div>
             </form>
           </div>

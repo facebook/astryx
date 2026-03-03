@@ -182,7 +182,7 @@ function XDSTableInner<T extends Record<string, unknown>>(
  *
  * @compositionHint Use renderCell on columns to compose rich cell content.
  * Combine with XDSBadge (status labels), XDSStatusDot (colored indicators),
- * XDSText (formatted values), XDSAvatar (user cells), and XDSHStack/XDSVStack
+ * XDSText (formatted values), XDSAvatar (user cells), and XDSStack
  * (multi-element cell layouts). Without renderCell, cells render as plain text.
  *
  * @example
@@ -191,10 +191,10 @@ function XDSTableInner<T extends Record<string, unknown>>(
  *   data={users}
  *   columns={[
  *     { key: 'name', header: 'Name', renderCell: (u) => (
- *       <XDSHStack gap="space2" align="center">
+ *       <XDSStack direction="horizontal" gap="space2" align="center">
  *         <XDSAvatar name={u.name} size="small" />
  *         <XDSText weight="semibold">{u.name}</XDSText>
- *       </XDSHStack>
+ *       </XDSStack>
  *     )},
  *     { key: 'status', header: 'Status', renderCell: (u) => (
  *       <XDSBadge variant={u.active ? 'success' : 'error'}>

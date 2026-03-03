@@ -1,7 +1,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSTooltip, useXDSTooltip} from '@xds/core/Layer';
 import {XDSButton} from '@xds/core/Button';
-import {XDSHStack} from '@xds/core/Layout';
+import {XDSStack} from '@xds/core/Layout';
 
 const meta: Meta<typeof XDSTooltip> = {
   title: 'Core/XDSTooltip',
@@ -140,7 +140,7 @@ export const LongContent: Story = {
 export const MultipleTooltips: Story = {
   render: () => (
     <div style={{padding: 100}}>
-      <XDSHStack gap="space4">
+      <XDSStack direction="horizontal" gap="space4">
         <XDSTooltip content="Save your changes" placement="above">
           <XDSButton label="Save">Save</XDSButton>
         </XDSTooltip>
@@ -152,7 +152,7 @@ export const MultipleTooltips: Story = {
             Delete
           </XDSButton>
         </XDSTooltip>
-      </XDSHStack>
+      </XDSStack>
     </div>
   ),
 };

@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSDivider} from '@xds/core';
@@ -32,17 +32,17 @@ export default function NavigationPage() {
 
   return (
     <div {...stylex.props(styles.container)}>
-      <XDSVStack gap="space6">
-        <XDSVStack gap="space2">
+      <XDSStack direction="vertical" gap="space6">
+        <XDSStack direction="vertical" gap="space2">
           <XDSHeading level={1}>Navigation Alignment</XDSHeading>
           <XDSText type="body" color="secondary">
             Explore how nav items can be positioned left, center, or right using
             XDSTopNav&apos;s slot-based API.
           </XDSText>
-        </XDSVStack>
+        </XDSStack>
 
         {/* Alignment picker */}
-        <XDSHStack gap="space3" vAlign="center">
+        <XDSStack direction="horizontal" gap="space3" vAlign="center">
           <XDSText type="body" weight="bold">
             Alignment:
           </XDSText>
@@ -64,52 +64,52 @@ export default function NavigationPage() {
             size="sm"
             onClick={() => setAlignment('end')}
           />
-        </XDSHStack>
+        </XDSStack>
 
         <XDSDivider />
 
         {/* Live preview */}
-        <XDSVStack gap="space3">
+        <XDSStack direction="vertical" gap="space3">
           <XDSHeading level={2}>Preview</XDSHeading>
           <div {...stylex.props(styles.navWrapper)}>
             <NavPreview alignment={alignment} />
           </div>
-        </XDSVStack>
+        </XDSStack>
 
         <XDSDivider />
 
         {/* All three side by side */}
-        <XDSVStack gap="space4">
+        <XDSStack direction="vertical" gap="space4">
           <XDSHeading level={2}>All Alignments</XDSHeading>
 
-          <XDSVStack gap="space2">
+          <XDSStack direction="vertical" gap="space2">
             <XDSText type="supporting" weight="bold">
               Left-aligned (startContent)
             </XDSText>
             <div {...stylex.props(styles.navWrapper)}>
               <NavPreview alignment="start" />
             </div>
-          </XDSVStack>
+          </XDSStack>
 
-          <XDSVStack gap="space2">
+          <XDSStack direction="vertical" gap="space2">
             <XDSText type="supporting" weight="bold">
               Center-aligned (centerContent)
             </XDSText>
             <div {...stylex.props(styles.navWrapper)}>
               <NavPreview alignment="center" />
             </div>
-          </XDSVStack>
+          </XDSStack>
 
-          <XDSVStack gap="space2">
+          <XDSStack direction="vertical" gap="space2">
             <XDSText type="supporting" weight="bold">
               Right-aligned (endContent)
             </XDSText>
             <div {...stylex.props(styles.navWrapper)}>
               <NavPreview alignment="end" />
             </div>
-          </XDSVStack>
-        </XDSVStack>
-      </XDSVStack>
+          </XDSStack>
+        </XDSStack>
+      </XDSStack>
     </div>
   );
 }

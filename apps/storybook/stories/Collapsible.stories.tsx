@@ -3,7 +3,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
 import {XDSCard} from '@xds/core/Card';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSStack} from '@xds/core/Layout';
 import {
   colorVars,
   spacingVars,
@@ -48,7 +48,7 @@ export const SingleMode: Story = {
   name: 'Single Mode (default)',
   render: () => (
     <XDSCollapsibleGroup type="single" defaultValue="general">
-      <XDSVStack gap="space2">
+      <XDSStack direction="vertical" gap="space2">
         <XDSCard>
           <XDSCollapsible trigger="General Settings" value="general">
             <p {...stylex.props(styles.text)}>
@@ -72,7 +72,7 @@ export const SingleMode: Story = {
             </p>
           </XDSCollapsible>
         </XDSCard>
-      </XDSVStack>
+      </XDSStack>
     </XDSCollapsibleGroup>
   ),
 };
@@ -81,7 +81,7 @@ export const MultipleMode: Story = {
   name: 'Multiple Mode',
   render: () => (
     <XDSCollapsibleGroup type="multiple" defaultValue={['faq1', 'faq3']}>
-      <XDSVStack gap="space2">
+      <XDSStack direction="vertical" gap="space2">
         <XDSCard>
           <XDSCollapsible trigger="What is XDS?" value="faq1">
             <p {...stylex.props(styles.text)}>
@@ -103,7 +103,7 @@ export const MultipleMode: Story = {
             </p>
           </XDSCollapsible>
         </XDSCard>
-      </XDSVStack>
+      </XDSStack>
     </XDSCollapsibleGroup>
   ),
 };
@@ -118,7 +118,7 @@ export const Controlled: Story = {
           Currently open: <strong>{String(open) || '(none)'}</strong>
         </p>
         <XDSCollapsibleGroup type="single" value={open} onValueChange={setOpen}>
-          <XDSVStack gap="space2">
+          <XDSStack direction="vertical" gap="space2">
             <XDSCard>
               <XDSCollapsible trigger="Section 1" value="section1">
                 <p {...stylex.props(styles.text)}>Content for section 1.</p>
@@ -134,7 +134,7 @@ export const Controlled: Story = {
                 <p {...stylex.props(styles.text)}>Content for section 3.</p>
               </XDSCollapsible>
             </XDSCard>
-          </XDSVStack>
+          </XDSStack>
         </XDSCollapsibleGroup>
       </div>
     );
@@ -144,7 +144,7 @@ export const Controlled: Story = {
 export const StandaloneCollapsible: Story = {
   name: 'Standalone Collapsible',
   render: () => (
-    <XDSVStack gap="space2">
+    <XDSStack direction="vertical" gap="space2">
       <XDSCard>
         <XDSCollapsible trigger="Starts open (default)">
           <p {...stylex.props(styles.text)}>
@@ -159,14 +159,14 @@ export const StandaloneCollapsible: Story = {
           </p>
         </XDSCollapsible>
       </XDSCard>
-    </XDSVStack>
+    </XDSStack>
   ),
 };
 
 export const WithoutCard: Story = {
   name: 'Without Card (standalone)',
   render: () => (
-    <XDSVStack gap="space2">
+    <XDSStack direction="vertical" gap="space2">
       <XDSCollapsible trigger="Show more details">
         <p {...stylex.props(styles.text)}>
           XDSCollapsible works anywhere — it doesn't require a card wrapper.
@@ -175,7 +175,7 @@ export const WithoutCard: Story = {
       <XDSCollapsible trigger="Another section" initialIsOpen={false}>
         <p {...stylex.props(styles.text)}>This section starts collapsed.</p>
       </XDSCollapsible>
-    </XDSVStack>
+    </XDSStack>
   ),
 };
 
@@ -183,7 +183,7 @@ export const FAQ: Story = {
   name: 'FAQ Page',
   render: () => (
     <XDSCollapsibleGroup type="single">
-      <XDSVStack gap="space2">
+      <XDSStack direction="vertical" gap="space2">
         <XDSCard>
           <XDSCollapsible trigger="How do I reset my password?" value="q1">
             <p {...stylex.props(styles.text)}>
@@ -217,7 +217,7 @@ export const FAQ: Story = {
             </p>
           </XDSCollapsible>
         </XDSCard>
-      </XDSVStack>
+      </XDSStack>
     </XDSCollapsibleGroup>
   ),
 };

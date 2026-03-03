@@ -1,6 +1,6 @@
 import * as stylex from '@stylexjs/stylex';
 import {XDSDialog} from '@xds/core/Dialog';
-import {XDSVStack} from '@xds/core/Stack';
+import {XDSStack} from '@xds/core/Stack';
 import {XDSText} from '@xds/core/Text';
 import {XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
@@ -59,12 +59,12 @@ export function CodeModal({
       width={800}
       aria-label={`${targetLabel} code for ${promptId}`}>
       <div {...stylex.props(styles.header)}>
-        <XDSVStack gap="space1">
+        <XDSStack direction="vertical" gap="space1">
           <XDSHeading level={3}>
             {promptId} — {targetLabel}
           </XDSHeading>
           <XDSText type="supporting">{lineCount} lines</XDSText>
-        </XDSVStack>
+        </XDSStack>
         <XDSButton
           variant="ghost"
           label="Close"

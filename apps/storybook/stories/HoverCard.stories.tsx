@@ -1,7 +1,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSHoverCard, useXDSHoverCard} from '@xds/core/Layer';
 import {XDSButton} from '@xds/core/Button';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSStack} from '@xds/core/Layout';
 
 const meta: Meta<typeof XDSHoverCard> = {
   title: 'Core/XDSHoverCard',
@@ -40,13 +40,13 @@ type Story = StoryObj<typeof XDSHoverCard>;
 function ProfileCard() {
   return (
     <div style={{width: 200}}>
-      <XDSVStack gap="space2">
+      <XDSStack direction="vertical" gap="space2">
         <div style={{fontWeight: 600}}>Jane Doe</div>
         <div style={{fontSize: 14, opacity: 0.7}}>Software Engineer</div>
         <div style={{fontSize: 13}}>
           Building great products with great people.
         </div>
-      </XDSVStack>
+      </XDSStack>
     </div>
   );
 }
@@ -150,15 +150,15 @@ export const InteractiveContent: Story = {
       <XDSHoverCard
         placement="below"
         content={
-          <XDSVStack gap="space2">
+          <XDSStack direction="vertical" gap="space2">
             <div>Interactive hover card content</div>
-            <XDSHStack gap="space2">
+            <XDSStack direction="horizontal" gap="space2">
               <XDSButton label="Follow" variant="primary">
                 Follow
               </XDSButton>
               <XDSButton label="Message">Message</XDSButton>
-            </XDSHStack>
-          </XDSVStack>
+            </XDSStack>
+          </XDSStack>
         }>
         <XDSButton label="Hover for interactive content">
           Hover for interactive content
@@ -194,10 +194,10 @@ export const TextNodeMultiple: Story = {
         <XDSHoverCard
           content={
             <div style={{width: 200}}>
-              <XDSVStack gap="space2">
+              <XDSStack direction="vertical" gap="space2">
                 <div style={{fontWeight: 600}}>John Smith</div>
                 <div style={{fontSize: 14, opacity: 0.7}}>Product Manager</div>
-              </XDSVStack>
+              </XDSStack>
             </div>
           }
           placement="above">
