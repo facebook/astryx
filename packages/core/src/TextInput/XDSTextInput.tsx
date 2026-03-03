@@ -1,6 +1,6 @@
 /**
  * @file XDSTextInput.tsx
- * @input Uses React forwardRef, useId, ChangeEvent, XDSField, XDSIcon
+ * @input Uses React useId, ChangeEvent, XDSField, XDSIcon
  * @output Exports XDSTextInput component, XDSTextInputProps
  * @position Core implementation; consumed by index.ts, tested by XDSTextInput.test.tsx
  *
@@ -12,12 +12,12 @@
  */
 
 import {
-  forwardRef,
   useContext,
   useId,
   useOptimistic,
   useTransition,
   type ChangeEvent,
+  type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSIconName} from '../Icon';
@@ -196,6 +196,8 @@ declare module '../theme/types' {
   }
 }
 export interface XDSTextInputProps {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLInputElement>;
   /**
    * Label text for the input (always rendered for accessibility).
    */
@@ -286,137 +288,133 @@ export interface XDSTextInputProps {
  * <XDSTextInput label="Search" isLabelHidden value={query} onChange={setQuery} />
  * ```
  */
-export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
-  (
-    {
-      label,
-      isLabelHidden = false,
-      description,
-      isOptional = false,
-      isRequired = false,
-      isDisabled = false,
-      startIcon,
-      status,
-      size = 'md',
-      onChange,
-      onChangeAction,
-      isLoading = false,
-      value,
-      placeholder,
-      labelTooltip,
-      hasAutoFocus = false,
-      htmlName,
-    },
-    ref,
-  ) => {
-    const themeContext = useContext(ThemeContext);
-    const wrapperOverride = themeContext?.theme.components?.textInput?.wrapper;
-    const inputOverride = themeContext?.theme.components?.textInput?.input;
+export function XDSTextInput({
+  ref,
+  label,
+  isLabelHidden = false,
+  description,
+  isOptional = false,
+  isRequired = false,
+  isDisabled = false,
+  startIcon,
+  status,
+  size = 'md',
+  onChange,
+  onChangeAction,
+  isLoading = false,
+  value,
+  placeholder,
+  labelTooltip,
+  hasAutoFocus = false,
+  htmlName,
+}: XDSTextInputProps) {
+  const themeContext = useContext(ThemeContext);
+  const wrapperOverride = themeContext?.theme.components?.textInput?.wrapper;
+  const inputOverride = themeContext?.theme.components?.textInput?.input;
 
-    const id = useId();
-    const descriptionID = useId();
-    const statusMessageID = useId();
+  const id = useId();
+  const descriptionID = useId();
+  const statusMessageID = useId();
 
-    const [, startTransition] = useTransition();
-    const [optimisticValue, setOptimisticValue] = useOptimistic(value);
-    const isBusy = isLoading || optimisticValue !== value;
+  const [, startTransition] = useTransition();
+  const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+  const isBusy = isLoading || optimisticValue !== value;
 
-    const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
-      warning: 'warning',
-      error: 'xCircle',
-      success: 'checkCircle',
-    };
+  const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
+    warning: 'warning',
+    error: 'xCircle',
+    success: 'checkCircle',
+  };
 
-    const statusIconColorMap: Record<
-      XDSInputStatusType,
-      'warning' | 'negative' | 'positive'
-    > = {
-      warning: 'warning',
-      error: 'negative',
-      success: 'positive',
-    };
+  const statusIconColorMap: Record<
+    XDSInputStatusType,
+    'warning' | 'negative' | 'positive'
+  > = {
+    warning: 'warning',
+    error: 'negative',
+    success: 'positive',
+  };
 
-    const ariaDescribedBy =
-      [
-        description ? descriptionID : null,
-        status?.message ? statusMessageID : null,
-      ]
-        .filter(Boolean)
-        .join(' ') || undefined;
+  const ariaDescribedBy =
+    [
+      description ? descriptionID : null,
+      status?.message ? statusMessageID : null,
+    ]
+      .filter(Boolean)
+      .join(' ') || undefined;
 
-    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-      const newValue = e.target.value;
-      onChange?.(newValue, e);
-      if (onChangeAction && !e.defaultPrevented) {
-        startTransition(async () => {
-          setOptimisticValue(newValue);
-          await onChangeAction(newValue, e);
-        });
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    onChange?.(newValue, e);
+    if (onChangeAction && !e.defaultPrevented) {
+      startTransition(async () => {
+        setOptimisticValue(newValue);
+        await onChangeAction(newValue, e);
+      });
+    }
+  };
+
+  return (
+    <XDSField
+      label={label}
+      isLabelHidden={isLabelHidden}
+      description={description}
+      inputID={id}
+      descriptionID={description ? descriptionID : undefined}
+      isOptional={isOptional}
+      isRequired={isRequired}
+      status={
+        status
+          ? {
+              type: status.type,
+              message: status.message,
+              messageID: status.message ? statusMessageID : undefined,
+            }
+          : undefined
       }
-    };
-
-    return (
-      <XDSField
-        label={label}
-        isLabelHidden={isLabelHidden}
-        description={description}
-        inputID={id}
-        descriptionID={description ? descriptionID : undefined}
-        isOptional={isOptional}
-        isRequired={isRequired}
-        status={
-          status
-            ? {
-                type: status.type,
-                message: status.message,
-                messageID: status.message ? statusMessageID : undefined,
-              }
-            : undefined
-        }
-        labelTooltip={labelTooltip}>
-        <div
+      labelTooltip={labelTooltip}>
+      <div
+        {...stylex.props(
+          styles.wrapper,
+          sizeStyles[size],
+          isDisabled && styles.wrapperDisabled,
+          status && statusBorderStyles[status.type],
+          status && statusHoverShadowStyles[status.type],
+          status && statusFocusStyles[status.type],
+          wrapperOverride,
+        )}>
+        {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
+        <input
+          ref={ref}
+          id={id}
+          name={htmlName}
+          type="text"
+          value={String(optimisticValue)}
+          onChange={handleChange}
+          placeholder={placeholder}
+          disabled={isDisabled}
+          autoFocus={hasAutoFocus}
+          aria-describedby={ariaDescribedBy}
+          aria-required={isRequired === true ? 'true' : undefined}
+          aria-invalid={status?.type === 'error' ? 'true' : undefined}
+          aria-busy={isBusy || undefined}
           {...stylex.props(
-            styles.wrapper,
-            sizeStyles[size],
-            isDisabled && styles.wrapperDisabled,
-            status && statusBorderStyles[status.type],
-            status && statusHoverShadowStyles[status.type],
-            status && statusFocusStyles[status.type],
-            wrapperOverride,
-          )}>
-          {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
-          <input
-            ref={ref}
-            id={id}
-            name={htmlName}
-            type="text"
-            value={String(optimisticValue)}
-            onChange={handleChange}
-            placeholder={placeholder}
-            disabled={isDisabled}
-            autoFocus={hasAutoFocus}
-            aria-describedby={ariaDescribedBy}
-            aria-required={isRequired === true ? 'true' : undefined}
-            aria-invalid={status?.type === 'error' ? 'true' : undefined}
-            aria-busy={isBusy || undefined}
-            {...stylex.props(
-              styles.input,
-              isDisabled && styles.inputDisabled,
-              inputOverride,
-            )}
-          />
-          {isBusy && <XDSSpinner size="sm" />}
-          {status && (
-            <XDSIcon
-              icon={statusIconMap[status.type]}
-              size="md"
-              color={statusIconColorMap[status.type]}
-            />
+            styles.input,
+            isDisabled && styles.inputDisabled,
+            inputOverride,
           )}
-        </div>
-      </XDSField>
-    );
-  },
-);
+        />
+        {isBusy && <XDSSpinner size="sm" />}
+        {status && (
+          <XDSIcon
+            icon={statusIconMap[status.type]}
+            size="md"
+            color={statusIconColorMap[status.type]}
+          />
+        )}
+      </div>
+    </XDSField>
+  );
+}
 
 XDSTextInput.displayName = 'XDSTextInput';

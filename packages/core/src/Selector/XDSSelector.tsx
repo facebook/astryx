@@ -17,6 +17,7 @@ import React, {
   useRef,
   useTransition,
   type ReactNode,
+  type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useXDSLayer} from '../Layer/useXDSLayer';

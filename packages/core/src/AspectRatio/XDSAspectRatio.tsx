@@ -1,6 +1,6 @@
 /**
  * @file XDSAspectRatio.tsx
- * @input Uses React forwardRef, stylex
+ * @input Uses React stylex
  * @output Exports XDSAspectRatio component and XDSAspectRatioProps
  * @position AspectRatio component; maintains a specific aspect ratio for its children
  *
@@ -10,12 +10,7 @@
  * - /apps/storybook/stories/AspectRatio.stories.tsx
  */
 
-import {
-  forwardRef,
-  useContext,
-  type HTMLAttributes,
-  type ReactNode,
-} from 'react';
+import {useContext, type HTMLAttributes, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {ThemeContext} from '../theme/ThemeContext';
@@ -37,6 +32,8 @@ export interface XDSAspectRatioProps extends Omit<
   HTMLAttributes<HTMLElement>,
   'style' | 'className'
 > {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLElement>;
   /**
    * The aspect ratio as width/height (e.g., 16/9 = 1.777..., 4/3 = 1.333..., 1 for square).
    */
@@ -82,20 +79,24 @@ const styles = stylex.create({
  * </XDSAspectRatio>
  * ```
  */
-export const XDSAspectRatio = forwardRef<HTMLElement, XDSAspectRatioProps>(
-  function XDSAspectRatio({ratio, children, xstyle, ...props}, ref) {
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.aspectRatio?.root;
-    return (
-      <div
-        ref={ref as React.Ref<HTMLDivElement>}
-        {...stylex.props(styles.container, xstyle, rootOverride)}
-        style={{aspectRatio: ratio}}
-        {...props}>
-        <div {...stylex.props(styles.child)}>{children}</div>
-      </div>
-    );
-  },
-);
+export function XDSAspectRatio({
+  ref,
+  ratio,
+  children,
+  xstyle,
+  ...props
+}: XDSAspectRatioProps) {
+  const themeContext = useContext(ThemeContext);
+  const rootOverride = themeContext?.theme.components?.aspectRatio?.root;
+  return (
+    <div
+      ref={ref as React.Ref<HTMLDivElement>}
+      {...stylex.props(styles.container, xstyle, rootOverride)}
+      style={{aspectRatio: ratio}}
+      {...props}>
+      <div {...stylex.props(styles.child)}>{children}</div>
+    </div>
+  );
+}
 
 XDSAspectRatio.displayName = 'XDSAspectRatio';

@@ -1,6 +1,6 @@
 /**
  * @file XDSList.tsx
- * @input Uses React forwardRef, ReactNode, StyleXStyles, theme tokens, XDSListContext
+ * @input Uses React ReactNode, StyleXStyles, theme tokens, XDSListContext
  * @output Exports XDSList component, XDSListProps, XDSListDensity, XDSListStyle types
  * @position Core implementation; consumed by index.ts, tested by XDSList.test.tsx
  *
@@ -11,7 +11,7 @@
  * - /apps/storybook/stories/List.stories.tsx
  */
 
-import {forwardRef, useId, useMemo, Children, type ReactNode} from 'react';
+import {useId, useMemo, Children, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
@@ -27,6 +27,8 @@ export type XDSListStyle = 'none' | 'disc' | 'decimal' | 'circle';
 export {type XDSListDensity} from './XDSListContext';
 
 export interface XDSListProps {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLUListElement | HTMLOListElement>;
   /**
    * List items. Should be XDSListItem components.
    */
@@ -132,75 +134,68 @@ const listStyleTypes = stylex.create({
  * </XDSList>
  * ```
  */
-export const XDSList = forwardRef<
-  HTMLUListElement | HTMLOListElement,
-  XDSListProps
->(
-  (
-    {
-      children,
-      density = 'balanced',
-      hasDividers = false,
-      header,
-      listStyle = 'none',
-      xstyle,
-      'data-testid': testId,
-    },
-    ref,
-  ) => {
-    const headerId = useId();
-    const isOrdered = listStyle === 'decimal';
-    const hasMarkers = listStyle !== 'none';
-    const Tag = isOrdered ? 'ol' : 'ul';
+export function XDSList({
+  ref,
+  children,
+  density = 'balanced',
+  hasDividers = false,
+  header,
+  listStyle = 'none',
+  xstyle,
+  'data-testid': testId,
+}: XDSListProps) {
+  const headerId = useId();
+  const isOrdered = listStyle === 'decimal';
+  const hasMarkers = listStyle !== 'none';
+  const Tag = isOrdered ? 'ol' : 'ul';
 
-    const contextValue = useMemo(
-      () => ({density, hasDividers, hasMarkers}),
-      [density, hasDividers, hasMarkers],
-    );
+  const contextValue = useMemo(
+    () => ({density, hasDividers, hasMarkers}),
+    [density, hasDividers, hasMarkers],
+  );
 
-    // Interleave dividers between children when hasDividers is true
-    let renderedChildren = children;
-    if (hasDividers) {
-      const childArray = Children.toArray(children);
-      const withDividers: ReactNode[] = [];
-      childArray.forEach((child, i) => {
-        withDividers.push(child);
-        if (i < childArray.length - 1) {
-          withDividers.push(
-            <hr
-              key={`divider-${i}`}
-              aria-hidden="true"
-              {...stylex.props(styles.divider)}
-            />,
-          );
-        }
-      });
-      renderedChildren = withDividers;
-    }
+  // Interleave dividers between children when hasDividers is true
+  let renderedChildren = children;
+  if (hasDividers) {
+    const childArray = Children.toArray(children);
+    const withDividers: ReactNode[] = [];
+    childArray.forEach((child, i) => {
+      withDividers.push(child);
+      if (i < childArray.length - 1) {
+        withDividers.push(
+          <hr
+            key={`divider-${i}`}
+            aria-hidden="true"
+            {...stylex.props(styles.divider)}
+          />,
+        );
+      }
+    });
+    renderedChildren = withDividers;
+  }
 
-    return (
-      <XDSListContext.Provider value={contextValue}>
-        {header != null && (
-          <div id={headerId} {...stylex.props(styles.header)}>
-            {header}
-          </div>
-        )}
-        <Tag
-          ref={ref as React.Ref<HTMLUListElement & HTMLOListElement>}
-          data-testid={testId}
-          aria-labelledby={header != null ? headerId : undefined}
-          {...(listStyle === 'none' && !isOrdered ? {role: 'list'} : {})}
-          {...stylex.props(
-            styles.list,
-            listStyleTypes[listStyle],
-            hasMarkers && styles.listWithMarkers,
-            xstyle,
-          )}>
-          {renderedChildren}
-        </Tag>
-      </XDSListContext.Provider>
-    );
-  },
-);
+  return (
+    <XDSListContext.Provider value={contextValue}>
+      {header != null && (
+        <div id={headerId} {...stylex.props(styles.header)}>
+          {header}
+        </div>
+      )}
+      <Tag
+        ref={ref as React.Ref<HTMLUListElement & HTMLOListElement>}
+        data-testid={testId}
+        aria-labelledby={header != null ? headerId : undefined}
+        {...(listStyle === 'none' && !isOrdered ? {role: 'list'} : {})}
+        {...stylex.props(
+          styles.list,
+          listStyleTypes[listStyle],
+          hasMarkers && styles.listWithMarkers,
+          xstyle,
+        )}>
+        {renderedChildren}
+      </Tag>
+    </XDSListContext.Provider>
+  );
+}
 
 XDSList.displayName = 'XDSList';

@@ -1,6 +1,6 @@
 /**
  * @file XDSSwitch.tsx
- * @input Uses React forwardRef, useId, ChangeEvent, XDSFieldLabel, XDSFieldStatus, XDSIconType, XDSInputStatus
+ * @input Uses React useId, ChangeEvent, XDSFieldLabel, XDSFieldStatus, XDSIconType, XDSInputStatus
  * @output Exports XDSSwitch component, XDSSwitchProps, XDSSwitchLabelPosition, XDSSwitchLabelSpacing
  * @position Core implementation; consumed by index.ts, tested by XDSSwitch.test.tsx
  *
@@ -12,13 +12,13 @@
  */
 
 import {
-  forwardRef,
   useContext,
   useId,
   useOptimistic,
   useTransition,
   type ChangeEvent,
   type FocusEvent,
+  type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -170,6 +170,8 @@ declare module '../theme/types' {
   }
 }
 export interface XDSSwitchProps {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLInputElement>;
   /**
    * Label text for the switch (always rendered for accessibility).
    */
@@ -273,158 +275,154 @@ export interface XDSSwitchProps {
  * />
  * ```
  */
-export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
-  (
-    {
-      label,
-      isLabelHidden = false,
-      description,
-      onChange,
-      onChangeAction,
-      isLoading = false,
-      value,
-      isDisabled = false,
-      isOptional = false,
-      isRequired = false,
-      onFocus,
-      onBlur,
-      labelIcon,
-      labelTooltip,
-      labelPosition = 'end',
-      labelSpacing = 'default',
-      status,
-    },
-    ref,
-  ) => {
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.switch?.root;
-    const trackOverride = themeContext?.theme.components?.switch?.track;
-    const thumbOverride = themeContext?.theme.components?.switch?.thumb;
+export function XDSSwitch({
+  ref,
+  label,
+  isLabelHidden = false,
+  description,
+  onChange,
+  onChangeAction,
+  isLoading = false,
+  value,
+  isDisabled = false,
+  isOptional = false,
+  isRequired = false,
+  onFocus,
+  onBlur,
+  labelIcon,
+  labelTooltip,
+  labelPosition = 'end',
+  labelSpacing = 'default',
+  status,
+}: XDSSwitchProps) {
+  const themeContext = useContext(ThemeContext);
+  const rootOverride = themeContext?.theme.components?.switch?.root;
+  const trackOverride = themeContext?.theme.components?.switch?.track;
+  const thumbOverride = themeContext?.theme.components?.switch?.thumb;
 
-    const id = useId();
-    const descriptionID = useId();
-    const statusMessageID = useId();
+  const id = useId();
+  const descriptionID = useId();
+  const statusMessageID = useId();
 
-    const [, startTransition] = useTransition();
-    const [optimisticValue, setOptimisticValue] = useOptimistic(value);
-    const isBusy = isLoading || optimisticValue !== value;
+  const [, startTransition] = useTransition();
+  const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+  const isBusy = isLoading || optimisticValue !== value;
 
-    const isOn = optimisticValue === true;
+  const isOn = optimisticValue === true;
 
-    // Build aria-describedby from description and status message
-    const describedByParts: string[] = [];
-    if (description) describedByParts.push(descriptionID);
-    if (status?.message) describedByParts.push(statusMessageID);
-    const ariaDescribedBy =
-      describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
+  // Build aria-describedby from description and status message
+  const describedByParts: string[] = [];
+  if (description) describedByParts.push(descriptionID);
+  if (status?.message) describedByParts.push(statusMessageID);
+  const ariaDescribedBy =
+    describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
 
-    const switchElement = (
-      <div {...stylex.props(styles.switchWrapper)}>
-        <input
-          ref={ref}
-          id={id}
-          type="checkbox"
-          role="switch"
-          checked={isOn}
-          disabled={isDisabled}
-          required={isRequired}
-          onChange={e => {
-            const checked = e.target.checked;
-            onChange?.(checked, e);
-            if (onChangeAction && !e.defaultPrevented) {
-              startTransition(async () => {
-                setOptimisticValue(checked);
-                await onChangeAction(checked, e);
-              });
-            }
-          }}
-          onFocus={onFocus}
-          onBlur={onBlur}
-          aria-describedby={ariaDescribedBy}
-          aria-invalid={status?.type === 'error' ? true : undefined}
-          aria-busy={isBusy || undefined}
-          {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
-        />
-        <div
-          aria-hidden="true"
-          {...stylex.props(
-            styles.track,
-            isOn ? styles.trackOn : styles.trackOff,
-            isDisabled && styles.trackDisabled,
-            isDisabled && !isOn && styles.trackDisabledOff,
-            trackOverride,
-          )}>
-          <div
-            {...stylex.props(
-              styles.thumb,
-              isOn ? styles.thumbOn : styles.thumbOff,
-              thumbOverride,
-            )}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-            {isBusy && <XDSSpinner size="sm" />}
-          </div>
-        </div>
-      </div>
-    );
-
-    const labelElement = (
-      <div {...stylex.props(styles.labelWrapper)}>
-        <XDSFieldLabel
-          label={label}
-          inputID={id}
-          isLabelHidden={isLabelHidden}
-          isDisabled={isDisabled}
-          isOptional={isOptional}
-          isRequired={isRequired}
-          labelIcon={labelIcon}
-          labelTooltip={labelTooltip}
-        />
-        {description && !isLabelHidden && (
-          <span id={descriptionID} {...stylex.props(styles.description)}>
-            {description}
-          </span>
-        )}
-      </div>
-    );
-
-    return (
-      <div>
+  const switchElement = (
+    <div {...stylex.props(styles.switchWrapper)}>
+      <input
+        ref={ref}
+        id={id}
+        type="checkbox"
+        role="switch"
+        checked={isOn}
+        disabled={isDisabled}
+        required={isRequired}
+        onChange={e => {
+          const checked = e.target.checked;
+          onChange?.(checked, e);
+          if (onChangeAction && !e.defaultPrevented) {
+            startTransition(async () => {
+              setOptimisticValue(checked);
+              await onChangeAction(checked, e);
+            });
+          }
+        }}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        aria-describedby={ariaDescribedBy}
+        aria-invalid={status?.type === 'error' ? true : undefined}
+        aria-busy={isBusy || undefined}
+        {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
+      />
+      <div
+        aria-hidden="true"
+        {...stylex.props(
+          styles.track,
+          isOn ? styles.trackOn : styles.trackOff,
+          isDisabled && styles.trackDisabled,
+          isDisabled && !isOn && styles.trackDisabledOff,
+          trackOverride,
+        )}>
         <div
           {...stylex.props(
-            styles.container,
-            labelSpacing === 'spread' && styles.containerSpread,
-            rootOverride,
-            !isDisabled && stylex.defaultMarker(),
-          )}>
-          {labelPosition === 'start' ? (
-            <>
-              {labelElement}
-              {switchElement}
-            </>
-          ) : (
-            <>
-              {switchElement}
-              {labelElement}
-            </>
+            styles.thumb,
+            isOn ? styles.thumbOn : styles.thumbOff,
+            thumbOverride,
           )}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+          {isBusy && <XDSSpinner size="sm" />}
         </div>
-        {status?.message && (
-          <div {...stylex.props(styles.statusGap)}>
-            <XDSFieldStatus
-              type={status.type}
-              message={status.message}
-              id={statusMessageID}
-              variant="detached"
-            />
-          </div>
+      </div>
+    </div>
+  );
+
+  const labelElement = (
+    <div {...stylex.props(styles.labelWrapper)}>
+      <XDSFieldLabel
+        label={label}
+        inputID={id}
+        isLabelHidden={isLabelHidden}
+        isDisabled={isDisabled}
+        isOptional={isOptional}
+        isRequired={isRequired}
+        labelIcon={labelIcon}
+        labelTooltip={labelTooltip}
+      />
+      {description && !isLabelHidden && (
+        <span id={descriptionID} {...stylex.props(styles.description)}>
+          {description}
+        </span>
+      )}
+    </div>
+  );
+
+  return (
+    <div>
+      <div
+        {...stylex.props(
+          styles.container,
+          labelSpacing === 'spread' && styles.containerSpread,
+          rootOverride,
+          !isDisabled && stylex.defaultMarker(),
+        )}>
+        {labelPosition === 'start' ? (
+          <>
+            {labelElement}
+            {switchElement}
+          </>
+        ) : (
+          <>
+            {switchElement}
+            {labelElement}
+          </>
         )}
       </div>
-    );
-  },
-);
+      {status?.message && (
+        <div {...stylex.props(styles.statusGap)}>
+          <XDSFieldStatus
+            type={status.type}
+            message={status.message}
+            id={statusMessageID}
+            variant="detached"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
 XDSSwitch.displayName = 'XDSSwitch';

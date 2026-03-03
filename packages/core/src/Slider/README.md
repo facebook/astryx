@@ -175,7 +175,7 @@ const theme: Theme = {
 
 ## Implementation Notes
 
-- The component uses `forwardRef` — the ref is merged with an internal `trackRef` for pointer position calculations
+- The component accepts a `ref` prop — the ref is merged with an internal `trackRef` for pointer position calculations
 - Pointer capture is used during drag for smooth interaction even when the cursor leaves the track
 - `snapToStep` rounds to the nearest valid step value; `clamp` enforces min/max bounds
 - In range mode, the closest thumb is selected on track click based on distance to each thumb

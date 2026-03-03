@@ -1,6 +1,6 @@
 /**
  * @file XDSCalendar.tsx
- * @input Uses React useState, useMemo, useCallback, forwardRef, hooks
+ * @input Uses React useState, useMemo, useCallback, hooks
  * @output Exports XDSCalendar component and related types
  * @position Core implementation; consumed by index.ts, tested by XDSCalendar.test.tsx
  *
@@ -12,14 +12,13 @@
  */
 
 import {
-  forwardRef,
   useContext,
   useState,
   useMemo,
   useCallback,
   useEffect,
-  useImperativeHandle,
   type HTMLAttributes,
+  type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSButton} from '../Button';
@@ -68,9 +67,11 @@ export interface DateRange {
   end: ISODateString;
 }
 
-/** Imperative handle for XDSCalendar ref */
+/**
+ * @deprecated Use the `focusDate` and `onFocusDateChange` props instead.
+ */
 export interface XDSCalendarHandle {
-  /** Navigate the calendar to show the month containing the given date */
+  /** @deprecated Use `focusDate` prop instead. */
   navigateTo: (date: ISODateString) => void;
 }
 
@@ -80,6 +81,8 @@ interface XDSCalendarBaseProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
   'onChange' | 'defaultValue'
 > {
+  /** Ref to the root container element. */
+  ref?: Ref<HTMLDivElement>;
   /** Number of months to display (default: 1) */
   numberOfMonths?: 1 | 2;
 
@@ -183,236 +186,219 @@ export type XDSCalendarProps = XDSCalendarSingleProps | XDSCalendarRangeProps;
  * @example
  * <XDSCalendar value={selectedDate} onChange={setSelectedDate} />
  */
-export const XDSCalendar = forwardRef<XDSCalendarHandle, XDSCalendarProps>(
-  (props, ref) => {
-    const {
-      mode = 'single',
-      value,
-      defaultValue,
-      onChange,
-      numberOfMonths = 1,
-      min,
-      max,
-      dateConstraints,
-      focusDate: focusDateProp,
-      onFocusDateChange,
-      hasOutsideDays = true,
-      hasWeekNumbers = false,
-      hasVariableRowCount = false,
-      weekStartsOn = 0,
-      ...rest
-    } = props;
+export function XDSCalendar({
+  ref,
+  mode = 'single',
+  value,
+  defaultValue,
+  onChange,
+  numberOfMonths = 1,
+  min,
+  max,
+  dateConstraints,
+  focusDate: focusDateProp,
+  onFocusDateChange,
+  hasOutsideDays = true,
+  hasWeekNumbers = false,
+  hasVariableRowCount = false,
+  weekStartsOn = 0,
+  ...rest
+}: XDSCalendarProps) {
+  // Get theme context for component-level overrides
+  const themeContext = useContext(ThemeContext);
+  const rootOverride = themeContext?.theme.components?.calendar?.root;
 
-    // Get theme context for component-level overrides
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.calendar?.root;
+  // Today's date (memoized)
+  const today = useMemo(() => new Date(), []);
 
-    // Today's date (memoized)
-    const today = useMemo(() => new Date(), []);
+  // Internal state for uncontrolled mode
+  const [internalValue, setInternalValue] = useState<
+    ISODateString | DateRange | undefined
+  >(defaultValue);
 
-    // Internal state for uncontrolled mode
-    const [internalValue, setInternalValue] = useState<
-      ISODateString | DateRange | undefined
-    >(defaultValue);
+  // Range selection in progress (first click made, waiting for second)
+  const [rangeSelectionStart, setRangeSelectionStart] =
+    useState<ISODateString | null>(null);
 
-    // Range selection in progress (first click made, waiting for second)
-    const [rangeSelectionStart, setRangeSelectionStart] =
-      useState<ISODateString | null>(null);
+  // Hovered date for range preview
+  const [hoveredDate, setHoveredDate] = useState<ISODateString | null>(null);
 
-    // Hovered date for range preview
-    const [hoveredDate, setHoveredDate] = useState<ISODateString | null>(null);
+  // Pending focus target after month navigation
+  const [pendingFocus, setPendingFocus] = useState<ISODateString | null>(null);
 
-    // Pending focus target after month navigation
-    const [pendingFocus, setPendingFocus] = useState<ISODateString | null>(
-      null,
-    );
+  // Determine effective value
+  const effectiveValue = value !== undefined ? value : internalValue;
 
-    // Determine effective value
-    const effectiveValue = value !== undefined ? value : internalValue;
-
-    // Focus date state (which month is visible)
-    const [internalFocusDate, setInternalFocusDate] = useState<Date>(() => {
-      if (focusDateProp) return parseISO(focusDateProp);
-      if (effectiveValue) {
-        if (typeof effectiveValue === 'string') {
-          return parseISO(effectiveValue);
-        } else {
-          return parseISO(effectiveValue.start);
-        }
+  // Focus date state (which month is visible)
+  const [internalFocusDate, setInternalFocusDate] = useState<Date>(() => {
+    if (focusDateProp) return parseISO(focusDateProp);
+    if (effectiveValue) {
+      if (typeof effectiveValue === 'string') {
+        return parseISO(effectiveValue);
+      } else {
+        return parseISO(effectiveValue.start);
       }
-      return new Date();
+    }
+    return new Date();
+  });
+
+  // Use controlled focusDate if callback is provided, otherwise use internal state
+  const isControlledFocus =
+    focusDateProp !== undefined && onFocusDateChange !== undefined;
+  const focusDate = isControlledFocus
+    ? parseISO(focusDateProp)
+    : internalFocusDate;
+
+  // Base month (first day of focus month)
+  const baseMonth = useMemo(() => {
+    const d = new Date(focusDate);
+    d.setDate(1);
+    return d;
+  }, [focusDate]);
+
+  // Generate visible months
+  const visibleMonths = useMemo(() => {
+    return Array.from({length: numberOfMonths}, (_, i) => {
+      const m = new Date(baseMonth);
+      m.setMonth(baseMonth.getMonth() + i);
+      return m;
     });
+  }, [baseMonth, numberOfMonths]);
 
-    // Use controlled focusDate if callback is provided, otherwise use internal state
-    const isControlledFocus =
-      focusDateProp !== undefined && onFocusDateChange !== undefined;
-    const focusDate = isControlledFocus
-      ? parseISO(focusDateProp)
-      : internalFocusDate;
+  // Format month header
+  const monthYearLabel = useMemo(() => {
+    const formatter = new Intl.DateTimeFormat(undefined, {
+      year: 'numeric',
+      month: 'long',
+    });
+    if (numberOfMonths === 1) {
+      return formatter.format(visibleMonths[0]);
+    }
+    return visibleMonths.map(m => formatter.format(m)).join(' – ');
+  }, [visibleMonths, numberOfMonths]);
 
-    // Expose imperative handle for external navigation
-    useImperativeHandle(
-      ref,
-      () => ({
-        navigateTo: (date: ISODateString) => {
-          if (isControlledFocus) {
-            onFocusDateChange?.(date);
-          } else {
-            setInternalFocusDate(parseISO(date));
-          }
-        },
-      }),
-      [isControlledFocus, onFocusDateChange],
-    );
+  // Navigation handlers
+  const navigateMonth = useCallback(
+    (delta: number, focusedDate?: ISODateString, offset?: number) => {
+      const newDate = new Date(baseMonth);
+      newDate.setMonth(baseMonth.getMonth() + delta);
+      const newISO = dateToISO(newDate);
 
-    // Base month (first day of focus month)
-    const baseMonth = useMemo(() => {
-      const d = new Date(focusDate);
-      d.setDate(1);
-      return d;
-    }, [focusDate]);
-
-    // Generate visible months
-    const visibleMonths = useMemo(() => {
-      return Array.from({length: numberOfMonths}, (_, i) => {
-        const m = new Date(baseMonth);
-        m.setMonth(baseMonth.getMonth() + i);
-        return m;
-      });
-    }, [baseMonth, numberOfMonths]);
-
-    // Format month header
-    const monthYearLabel = useMemo(() => {
-      const formatter = new Intl.DateTimeFormat(undefined, {
-        year: 'numeric',
-        month: 'long',
-      });
-      if (numberOfMonths === 1) {
-        return formatter.format(visibleMonths[0]);
+      // Calculate target focus date if a focused date was provided
+      if (focusedDate) {
+        const currentDate = parseISO(focusedDate);
+        const daysToMove = offset ?? 7;
+        currentDate.setDate(currentDate.getDate() + delta * daysToMove);
+        setPendingFocus(dateToISO(currentDate));
       }
-      return visibleMonths.map(m => formatter.format(m)).join(' – ');
-    }, [visibleMonths, numberOfMonths]);
 
-    // Navigation handlers
-    const navigateMonth = useCallback(
-      (delta: number, focusedDate?: ISODateString, offset?: number) => {
-        const newDate = new Date(baseMonth);
-        newDate.setMonth(baseMonth.getMonth() + delta);
-        const newISO = dateToISO(newDate);
+      if (onFocusDateChange) {
+        onFocusDateChange(newISO);
+      } else {
+        setInternalFocusDate(newDate);
+      }
+    },
+    [baseMonth, onFocusDateChange],
+  );
 
-        // Calculate target focus date if a focused date was provided
-        if (focusedDate) {
-          const currentDate = parseISO(focusedDate);
-          const daysToMove = offset ?? 7;
-          currentDate.setDate(currentDate.getDate() + delta * daysToMove);
-          setPendingFocus(dateToISO(currentDate));
-        }
+  // Day click handler
+  const handleDayClick = useCallback(
+    (date: Date) => {
+      const iso = dateToISO(date);
 
-        if (onFocusDateChange) {
-          onFocusDateChange(newISO);
+      if (mode === 'single') {
+        setInternalValue(iso);
+        (onChange as XDSCalendarSingleProps['onChange'])?.(iso, date);
+      } else {
+        // Range mode
+        if (rangeSelectionStart === null) {
+          // First click - start the range
+          setRangeSelectionStart(iso);
         } else {
-          setInternalFocusDate(newDate);
-        }
-      },
-      [baseMonth, onFocusDateChange],
-    );
+          // Second click - complete the range
+          const startDate = parseISO(rangeSelectionStart);
+          let start: ISODateString;
+          let end: ISODateString;
 
-    // Day click handler
-    const handleDayClick = useCallback(
-      (date: Date) => {
-        const iso = dateToISO(date);
-
-        if (mode === 'single') {
-          setInternalValue(iso);
-          (onChange as XDSCalendarSingleProps['onChange'])?.(iso, date);
-        } else {
-          // Range mode
-          if (rangeSelectionStart === null) {
-            // First click - start the range
-            setRangeSelectionStart(iso);
+          // Ensure start <= end
+          if (date < startDate) {
+            start = iso;
+            end = rangeSelectionStart;
           } else {
-            // Second click - complete the range
-            const startDate = parseISO(rangeSelectionStart);
-            let start: ISODateString;
-            let end: ISODateString;
-
-            // Ensure start <= end
-            if (date < startDate) {
-              start = iso;
-              end = rangeSelectionStart;
-            } else {
-              start = rangeSelectionStart;
-              end = iso;
-            }
-
-            const range: DateRange = {start, end};
-            setInternalValue(range);
-            setRangeSelectionStart(null);
-            (onChange as XDSCalendarRangeProps['onChange'])?.(range);
+            start = rangeSelectionStart;
+            end = iso;
           }
+
+          const range: DateRange = {start, end};
+          setInternalValue(range);
+          setRangeSelectionStart(null);
+          (onChange as XDSCalendarRangeProps['onChange'])?.(range);
         }
-      },
-      [mode, onChange, rangeSelectionStart],
-    );
+      }
+    },
+    [mode, onChange, rangeSelectionStart],
+  );
 
-    return (
-      <div {...stylex.props(calendarStyles.calendar, rootOverride)} {...rest}>
-        {/* Header with navigation */}
-        <div {...stylex.props(calendarStyles.header)}>
-          <XDSButton
-            label="Previous month"
-            variant="ghost"
-            icon={<XDSIcon icon="chevronLeft" size="sm" color="inherit" />}
-            onClick={() => navigateMonth(-1)}
-          />
+  return (
+    <div
+      ref={ref}
+      {...stylex.props(calendarStyles.calendar, rootOverride)}
+      {...rest}>
+      {/* Header with navigation */}
+      <div {...stylex.props(calendarStyles.header)}>
+        <XDSButton
+          label="Previous month"
+          variant="ghost"
+          icon={<XDSIcon icon="chevronLeft" size="sm" color="inherit" />}
+          onClick={() => navigateMonth(-1)}
+        />
 
-          <span {...stylex.props(calendarStyles.monthYearLabel)}>
-            {monthYearLabel}
-          </span>
+        <span {...stylex.props(calendarStyles.monthYearLabel)}>
+          {monthYearLabel}
+        </span>
 
-          <XDSButton
-            label="Next month"
-            variant="ghost"
-            icon={<XDSIcon icon="chevronRight" size="sm" color="inherit" />}
-            onClick={() => navigateMonth(1)}
-          />
-        </div>
-
-        {/* Month grids */}
-        <div {...stylex.props(calendarStyles.monthsContainer)}>
-          {visibleMonths.map(month => (
-            <MonthGrid
-              key={`${month.getFullYear()}-${month.getMonth()}`}
-              month={month}
-              value={effectiveValue}
-              mode={mode}
-              rangeSelectionStart={rangeSelectionStart}
-              hoveredDate={hoveredDate}
-              min={min}
-              max={max}
-              dateConstraints={dateConstraints}
-              hasOutsideDays={hasOutsideDays}
-              hasWeekNumbers={hasWeekNumbers}
-              hasVariableRowCount={hasVariableRowCount}
-              weekStartsOn={weekStartsOn}
-              onDayClick={handleDayClick}
-              onDayHover={date => setHoveredDate(date ? dateToISO(date) : null)}
-              today={today}
-              onNavigatePrevious={(focusedDate, offset) =>
-                navigateMonth(-1, focusedDate, offset)
-              }
-              onNavigateNext={(focusedDate, offset) =>
-                navigateMonth(1, focusedDate, offset)
-              }
-              pendingFocus={pendingFocus}
-              onPendingFocusHandled={() => setPendingFocus(null)}
-            />
-          ))}
-        </div>
+        <XDSButton
+          label="Next month"
+          variant="ghost"
+          icon={<XDSIcon icon="chevronRight" size="sm" color="inherit" />}
+          onClick={() => navigateMonth(1)}
+        />
       </div>
-    );
-  },
-);
+
+      {/* Month grids */}
+      <div {...stylex.props(calendarStyles.monthsContainer)}>
+        {visibleMonths.map(month => (
+          <MonthGrid
+            key={`${month.getFullYear()}-${month.getMonth()}`}
+            month={month}
+            value={effectiveValue}
+            mode={mode}
+            rangeSelectionStart={rangeSelectionStart}
+            hoveredDate={hoveredDate}
+            min={min}
+            max={max}
+            dateConstraints={dateConstraints}
+            hasOutsideDays={hasOutsideDays}
+            hasWeekNumbers={hasWeekNumbers}
+            hasVariableRowCount={hasVariableRowCount}
+            weekStartsOn={weekStartsOn}
+            onDayClick={handleDayClick}
+            onDayHover={date => setHoveredDate(date ? dateToISO(date) : null)}
+            today={today}
+            onNavigatePrevious={(focusedDate, offset) =>
+              navigateMonth(-1, focusedDate, offset)
+            }
+            onNavigateNext={(focusedDate, offset) =>
+              navigateMonth(1, focusedDate, offset)
+            }
+            pendingFocus={pendingFocus}
+            onPendingFocusHandled={() => setPendingFocus(null)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 XDSCalendar.displayName = 'XDSCalendar';
 

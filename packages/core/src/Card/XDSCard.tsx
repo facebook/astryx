@@ -10,7 +10,7 @@
  * - /apps/storybook/stories/Card.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useContext, type ReactNode} from 'react';
+import {useContext, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars, elevationVars} from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
@@ -80,6 +80,8 @@ const dynamicStyles = stylex.create({
 export type {SizeValue} from '../utils/types';
 
 export interface XDSCardProps {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLDivElement>;
   /**
    * Width of the card.
    * Numbers are treated as pixels, strings are used as-is.
@@ -137,59 +139,55 @@ export interface XDSCardProps {
  * </XDSCard>
  * ```
  */
-export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
-  function XDSCard(
-    {
-      width,
-      height,
-      maxWidth,
-      minHeight,
-      children,
-      isFullBleed = false,
-      ...props
-    },
-    ref,
-  ) {
-    // Get theme context for component-level overrides
-    const themeContext = useContext(ThemeContext);
-    const containerOverride = themeContext?.theme.components?.card?.container;
-    const contentOverride = themeContext?.theme.components?.card?.content;
+export function XDSCard({
+  ref,
+  width,
+  height,
+  maxWidth,
+  minHeight,
+  children,
+  isFullBleed = false,
+  ...props
+}: XDSCardProps) {
+  // Get theme context for component-level overrides
+  const themeContext = useContext(ThemeContext);
+  const containerOverride = themeContext?.theme.components?.card?.container;
+  const contentOverride = themeContext?.theme.components?.card?.content;
 
-    // Only enable scrolling when card has a fixed height (not null/undefined and not "auto")
-    const hasFixedHeight = height != null && height !== 'auto';
+  // Only enable scrolling when card has a fixed height (not null/undefined and not "auto")
+  const hasFixedHeight = height != null && height !== 'auto';
 
-    return (
+  return (
+    <div
+      ref={ref}
+      {...stylex.props(
+        styles.cardOuter,
+        containerOverride,
+        dynamicStyles.sizing(
+          width ?? null,
+          height ?? null,
+          maxWidth ?? null,
+          minHeight ?? null,
+        ),
+      )}
+      {...props}>
       <div
-        ref={ref}
         {...stylex.props(
-          styles.cardOuter,
-          containerOverride,
-          dynamicStyles.sizing(
-            width ?? null,
-            height ?? null,
-            maxWidth ?? null,
-            minHeight ?? null,
-          ),
-        )}
-        {...props}>
-        <div
-          {...stylex.props(
-            styles.cardInner,
-            hasFixedHeight && styles.scrollable,
-            ...container({
-              paddingInnerX: 'spacing4',
-              paddingInnerY: 'spacing4',
-              paddingOuterX: 'spacing4',
-              paddingOuterY: 'spacing4',
-            }),
-            isFullBleed && styles.fullBleed,
-            contentOverride,
-          )}>
-          {children}
-        </div>
+          styles.cardInner,
+          hasFixedHeight && styles.scrollable,
+          ...container({
+            paddingInnerX: 'spacing4',
+            paddingInnerY: 'spacing4',
+            paddingOuterX: 'spacing4',
+            paddingOuterY: 'spacing4',
+          }),
+          isFullBleed && styles.fullBleed,
+          contentOverride,
+        )}>
+        {children}
       </div>
-    );
-  },
-);
+    </div>
+  );
+}
 
 XDSCard.displayName = 'XDSCard';

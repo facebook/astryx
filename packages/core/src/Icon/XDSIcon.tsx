@@ -1,12 +1,12 @@
 /**
  * @file XDSIcon.tsx
- * @input Uses React forwardRef/useContext, SVGProps, icon components or semantic icon names
+ * @input Uses React useContext, SVGProps, icon components or semantic icon names
  * @output Exports XDSIcon component, XDSIconProps, XDSIconColor, XDSIconSize, XDSIconType types
  * @position Core implementation; consumed by index.ts, tested by XDSIcon.test.tsx
  *
  * Supports two modes:
  * - Component mode: Pass an SVG icon component (e.g. from @heroicons/react) — rendered
- *   directly with forwardRef and spread SVG props.
+ *   directly with ref prop and spread SVG props.
  * - String mode: Pass a semantic name (e.g. 'close', 'chevronDown') — resolved from the
  *   theme's icon registry (or built-in fallback SVGs) and wrapped in a styled span.
  *
@@ -19,7 +19,7 @@
 
 'use client';
 
-import {forwardRef, useContext, type ComponentType, type SVGProps} from 'react';
+import {useContext, type ComponentType, type SVGProps, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
@@ -156,6 +156,8 @@ export interface XDSIconProps extends Omit<
   SVGProps<SVGSVGElement>,
   'ref' | 'color'
 > {
+  /** Ref to the root element. */
+  ref?: Ref<SVGSVGElement>;
   /**
    * Icon to render. Can be:
    * - A semantic name string (e.g. 'close', 'chevronDown') — resolved from theme or built-in fallback
@@ -190,34 +192,38 @@ export interface XDSIconProps extends Omit<
  * <XDSIcon icon="close" size="md" color="primary" />
  * ```
  */
-export const XDSIcon = forwardRef<SVGSVGElement, XDSIconProps>(
-  ({icon, color = 'primary', size = 'md', ...props}, ref) => {
-    // Get theme context for component-level overrides (optional)
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.icon?.root;
+export function XDSIcon({
+  ref,
+  icon,
+  color = 'primary',
+  size = 'md',
+  ...props
+}: XDSIconProps) {
+  // Get theme context for component-level overrides (optional)
+  const themeContext = useContext(ThemeContext);
+  const rootOverride = themeContext?.theme.components?.icon?.root;
 
-    // String mode: resolve from icon registry, wrap in styled span
-    if (typeof icon === 'string') {
-      return <IconFromRegistry name={icon} color={color} size={size} />;
-    }
+  // String mode: resolve from icon registry, wrap in styled span
+  if (typeof icon === 'string') {
+    return <IconFromRegistry name={icon} color={color} size={size} />;
+  }
 
-    // Component mode: render SVG component directly with ref forwarding
-    const IconComponent = icon;
-    return (
-      <IconComponent
-        ref={ref}
-        aria-hidden="true"
-        {...stylex.props(
-          styles.root,
-          colorStyles[color],
-          sizeStyles[size],
-          rootOverride,
-        )}
-        {...props}
-      />
-    );
-  },
-);
+  // Component mode: render SVG component directly with ref forwarding
+  const IconComponent = icon;
+  return (
+    <IconComponent
+      ref={ref}
+      aria-hidden="true"
+      {...stylex.props(
+        styles.root,
+        colorStyles[color],
+        sizeStyles[size],
+        rootOverride,
+      )}
+      {...props}
+    />
+  );
+}
 
 XDSIcon.displayName = 'XDSIcon';
 

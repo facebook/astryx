@@ -10,10 +10,10 @@
  */
 
 import {
-  forwardRef,
   useContext,
   type TdHTMLAttributes,
   type ReactNode,
+  type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, textSizeVars} from '../theme/tokens.stylex';
@@ -25,6 +25,8 @@ export interface XDSTableCellProps extends Omit<
   TdHTMLAttributes<HTMLTableCellElement>,
   'className' | 'style'
 > {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLTableCellElement>;
   children?: ReactNode;
   xstyle?: StyleXStyles | StyleXStyles[];
 }
@@ -83,42 +85,45 @@ const dividerColumnStyles = stylex.create({
  * </XDSTableRow>
  * ```
  */
-export const XDSTableCell = forwardRef<HTMLTableCellElement, XDSTableCellProps>(
-  ({children, xstyle, ...props}, ref) => {
-    const ctx = useContext(XDSTableContext);
+export function XDSTableCell({
+  ref,
+  children,
+  xstyle,
+  ...props
+}: XDSTableCellProps) {
+  const ctx = useContext(XDSTableContext);
 
-    if (!ctx) {
-      return (
-        <td ref={ref} {...props} {...stylex.props(xstyle)}>
-          {children}
-        </td>
-      );
-    }
-
-    const cellStyles: StyleXStyles[] = [densityStyles[ctx.density]];
-
-    if (ctx.dividers === 'rows' || ctx.dividers === 'grid') {
-      cellStyles.push(dividerRowStyles.cell);
-    }
-
-    if (ctx.dividers === 'columns' || ctx.dividers === 'grid') {
-      cellStyles.push(dividerColumnStyles.cell);
-    }
-
-    if (xstyle) {
-      if (Array.isArray(xstyle)) {
-        cellStyles.push(...xstyle);
-      } else {
-        cellStyles.push(xstyle);
-      }
-    }
-
+  if (!ctx) {
     return (
-      <td ref={ref} {...props} {...stylex.props(...cellStyles)}>
+      <td ref={ref} {...props} {...stylex.props(xstyle)}>
         {children}
       </td>
     );
-  },
-);
+  }
+
+  const cellStyles: StyleXStyles[] = [densityStyles[ctx.density]];
+
+  if (ctx.dividers === 'rows' || ctx.dividers === 'grid') {
+    cellStyles.push(dividerRowStyles.cell);
+  }
+
+  if (ctx.dividers === 'columns' || ctx.dividers === 'grid') {
+    cellStyles.push(dividerColumnStyles.cell);
+  }
+
+  if (xstyle) {
+    if (Array.isArray(xstyle)) {
+      cellStyles.push(...xstyle);
+    } else {
+      cellStyles.push(xstyle);
+    }
+  }
+
+  return (
+    <td ref={ref} {...props} {...stylex.props(...cellStyles)}>
+      {children}
+    </td>
+  );
+}
 
 XDSTableCell.displayName = 'XDSTableCell';

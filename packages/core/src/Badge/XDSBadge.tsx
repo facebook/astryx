@@ -1,6 +1,6 @@
 /**
  * @file XDSBadge.tsx
- * @input Uses React forwardRef, HTMLAttributes
+ * @input Uses React HTMLAttributes
  * @output Exports XDSBadge component, XDSBadgeProps, XDSBadgeVariant types
  * @position Core implementation; consumed by index.ts
  *
@@ -11,12 +11,7 @@
  * - /apps/storybook/stories/Badge.stories.tsx (storybook stories)
  */
 
-import {
-  forwardRef,
-  useContext,
-  type HTMLAttributes,
-  type ReactNode,
-} from 'react';
+import {useContext, type HTMLAttributes, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -102,6 +97,8 @@ export interface XDSBadgeProps extends Omit<
   HTMLAttributes<HTMLSpanElement>,
   'className' | 'style'
 > {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLSpanElement>;
   /**
    * The visual style variant of the badge.
    * @default 'neutral'
@@ -132,32 +129,36 @@ export interface XDSBadgeProps extends Omit<
  * <XDSBadge variant="info" /> // Dot indicator
  * ```
  */
-export const XDSBadge = forwardRef<HTMLSpanElement, XDSBadgeProps>(
-  ({variant = 'neutral', children, icon, ...props}, ref) => {
-    const isDot = children == null && icon == null;
+export function XDSBadge({
+  ref,
+  variant = 'neutral',
+  children,
+  icon,
+  ...props
+}: XDSBadgeProps) {
+  const isDot = children == null && icon == null;
 
-    // Get theme context for component-level overrides (optional)
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.badge?.root;
-    const variantOverride =
-      themeContext?.theme.components?.badge?.variants?.[variant];
+  // Get theme context for component-level overrides (optional)
+  const themeContext = useContext(ThemeContext);
+  const rootOverride = themeContext?.theme.components?.badge?.root;
+  const variantOverride =
+    themeContext?.theme.components?.badge?.variants?.[variant];
 
-    return (
-      <span
-        ref={ref}
-        {...stylex.props(
-          styles.base,
-          variants[variant],
-          rootOverride,
-          variantOverride,
-          isDot && styles.dot,
-        )}
-        {...props}>
-        {icon}
-        {children}
-      </span>
-    );
-  },
-);
+  return (
+    <span
+      ref={ref}
+      {...stylex.props(
+        styles.base,
+        variants[variant],
+        rootOverride,
+        variantOverride,
+        isDot && styles.dot,
+      )}
+      {...props}>
+      {icon}
+      {children}
+    </span>
+  );
+}
 
 XDSBadge.displayName = 'XDSBadge';

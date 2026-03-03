@@ -1,6 +1,6 @@
 /**
  * @file XDSTopNavItem.tsx
- * @input Uses React forwardRef, AnchorHTMLAttributes, ReactNode
+ * @input Uses React AnchorHTMLAttributes, ReactNode
  * @output Exports XDSTopNavItem component and XDSTopNavItemProps
  * @position Navigation item component for XDSTopNav startContent
  *
@@ -13,7 +13,7 @@
 
 'use client';
 
-import {forwardRef, type AnchorHTMLAttributes, type ReactNode} from 'react';
+import {type AnchorHTMLAttributes, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -87,6 +87,8 @@ export interface XDSTopNavItemProps extends Omit<
   AnchorHTMLAttributes<HTMLAnchorElement>,
   'style' | 'className'
 > {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLAnchorElement>;
   /**
    * Custom component to render instead of `<a>`.
    * Overrides the provider-level default set by XDSLinkProvider.
@@ -139,42 +141,38 @@ export interface XDSTopNavItemProps extends Omit<
  * />
  * ```
  */
-export const XDSTopNavItem = forwardRef<HTMLAnchorElement, XDSTopNavItemProps>(
-  function XDSTopNavItem(
-    {
-      as,
-      label,
-      isSelected = false,
-      isDisabled = false,
-      icon,
-      children,
-      ...props
-    },
-    ref,
-  ) {
-    const LinkComponent = useXDSLinkComponent(as);
-    const isIconOnly = icon != null && children == null && !label;
-    const showLabel = !isIconOnly;
+export function XDSTopNavItem({
+  ref,
+  as,
+  label,
+  isSelected = false,
+  isDisabled = false,
+  icon,
+  children,
+  ...props
+}: XDSTopNavItemProps) {
+  const LinkComponent = useXDSLinkComponent(as);
+  const isIconOnly = icon != null && children == null && !label;
+  const showLabel = !isIconOnly;
 
-    return (
-      <LinkComponent
-        ref={ref}
-        aria-label={isIconOnly ? label : undefined}
-        aria-current={isSelected ? 'page' : undefined}
-        aria-disabled={isDisabled || undefined}
-        tabIndex={isDisabled ? -1 : undefined}
-        {...stylex.props(
-          styles.base,
-          isSelected && styles.selected,
-          isDisabled && styles.disabled,
-          isIconOnly && styles.iconOnly,
-        )}
-        {...props}>
-        {icon}
-        {showLabel && (children ?? label)}
-      </LinkComponent>
-    );
-  },
-);
+  return (
+    <LinkComponent
+      ref={ref}
+      aria-label={isIconOnly ? label : undefined}
+      aria-current={isSelected ? 'page' : undefined}
+      aria-disabled={isDisabled || undefined}
+      tabIndex={isDisabled ? -1 : undefined}
+      {...stylex.props(
+        styles.base,
+        isSelected && styles.selected,
+        isDisabled && styles.disabled,
+        isIconOnly && styles.iconOnly,
+      )}
+      {...props}>
+      {icon}
+      {showLabel && (children ?? label)}
+    </LinkComponent>
+  );
+}
 
 XDSTopNavItem.displayName = 'XDSTopNavItem';

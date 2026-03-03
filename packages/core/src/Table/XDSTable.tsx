@@ -11,13 +11,7 @@
  * - /apps/storybook/stories/Table.stories.tsx (storybook stories)
  */
 
-import {
-  forwardRef,
-  useContext,
-  useMemo,
-  type ReactElement,
-  type Ref,
-} from 'react';
+import {useContext, useMemo, type ReactElement, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {XDSBaseTable} from './XDSBaseTable';
@@ -126,19 +120,17 @@ const xdsComponents = {
 // XDSTable Component
 // =============================================================================
 
-function XDSTableInner<T extends Record<string, unknown>>(
-  {
-    density = 'balanced',
-    dividers = 'rows',
-    isStriped = false,
-    hasHover = false,
-    plugins: userPlugins,
-    columns,
-    data,
-    ...rest
-  }: XDSTableProps<T>,
-  ref: Ref<HTMLTableElement>,
-): ReactElement {
+export function XDSTable<T extends Record<string, unknown>>({
+  density = 'balanced',
+  dividers = 'rows',
+  isStriped = false,
+  hasHover = false,
+  plugins: userPlugins,
+  columns,
+  data,
+  ref,
+  ...rest
+}: XDSTableProps<T> & {ref?: Ref<HTMLTableElement>}): ReactElement {
   // Get theme context for component-level overrides
   const themeContext = useContext(ThemeContext);
   const rootOverride = themeContext?.theme.components?.table?.root;
@@ -208,11 +200,4 @@ function XDSTableInner<T extends Record<string, unknown>>(
  * />
  * ```
  */
-export const XDSTable = forwardRef(XDSTableInner) as <
-  T extends Record<string, unknown>,
->(
-  props: XDSTableProps<T> & {ref?: Ref<HTMLTableElement>},
-) => ReactElement;
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(XDSTable as any).displayName = 'XDSTable';
+XDSTable.displayName = 'XDSTable';

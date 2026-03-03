@@ -1,6 +1,6 @@
 /**
  * @file XDSHeading.tsx
- * @input Uses React forwardRef, HTMLAttributes, ReactNode
+ * @input Uses React HTMLAttributes, ReactNode
  * @output Exports XDSHeading component, XDSHeadingProps, XDSHeadingLevel, XDSHeadingVariant types
  * @position Core implementation; consumed by index.ts, tested by XDSHeading.test.tsx
  *
@@ -12,13 +12,13 @@
  */
 
 import {
-  forwardRef,
   lazy,
   Suspense,
   useCallback,
   useContext,
   useRef,
   type ReactNode,
+  type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -58,6 +58,8 @@ export type XDSHeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 export type XDSHeadingVariant = 'default' | 'editorial';
 
 export interface XDSHeadingProps {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLHeadingElement>;
   /**
    * Visual heading level (1-6). Determines styling from theme.
    * Required to ensure intentional visual hierarchy.
@@ -191,130 +193,126 @@ const levelToKey: Record<XDSHeadingLevel, HeadingLevel> = {
  * <XDSHeading level={3} color="secondary">Muted Heading</XDSHeading>
  * ```
  */
-export const XDSHeading = forwardRef<HTMLHeadingElement, XDSHeadingProps>(
-  function XDSHeading(
-    {
-      level,
-      accessibilityLevel,
-      variant = 'default',
-      color = 'primary',
-      display = 'block',
-      maxLines = 0,
-      hasTruncateTooltip = true,
-      wordBreak,
-      textWrap,
-      hasCapsize = false,
-      hasStrikethrough = false,
-      xstyle,
-      children,
-      ...props
+export function XDSHeading({
+  ref,
+  level,
+  accessibilityLevel,
+  variant = 'default',
+  color = 'primary',
+  display = 'block',
+  maxLines = 0,
+  hasTruncateTooltip = true,
+  wordBreak,
+  textWrap,
+  hasCapsize = false,
+  hasStrikethrough = false,
+  xstyle,
+  children,
+  ...props
+}: XDSHeadingProps) {
+  const themeContext = useContext(ThemeContext);
+  const Component = levelToTag[level];
+  const levelKey = levelToKey[level];
+
+  const headingConfig = themeContext?.theme?.components?.heading;
+  const headingStyles =
+    variant === 'editorial'
+      ? headingConfig?.editorialStyles
+      : headingConfig?.styles;
+  const levelStyle = headingStyles?.[levelKey];
+
+  // If accessibilityLevel differs from visual level, use aria-level
+  const ariaProps =
+    accessibilityLevel && accessibilityLevel !== level
+      ? {'aria-level': accessibilityLevel}
+      : {};
+
+  // Resolve wordBreak with smart default
+  const resolvedWordBreak =
+    wordBreak ?? (maxLines === 1 ? 'break-all' : 'break-word');
+
+  // Resolve display - force block when maxLines > 0 or hasCapsize
+  const resolvedDisplay = maxLines > 0 || hasCapsize ? 'block' : display;
+
+  // Truncation detection
+  const truncation = useTruncation({maxLines});
+
+  // Tooltip for truncated text
+  const tooltipPlacement: LayerPlacement =
+    typeof hasTruncateTooltip === 'string' ? hasTruncateTooltip : 'above';
+  const tooltipEnabled =
+    maxLines > 0 && hasTruncateTooltip !== false && truncation.isTruncated;
+
+  // Ref for the heading element (used as tooltip anchor)
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // Merge refs: ref, truncation.ref, headingRef
+  const mergedRef = useCallback(
+    (element: HTMLHeadingElement | null) => {
+      // Forward ref
+      if (typeof ref === 'function') {
+        ref(element);
+      } else if (ref) {
+        ref.current = element;
+      }
+      // Truncation ref
+      truncation.ref(element);
+      // Local ref for tooltip anchor
+      (
+        headingRef as React.MutableRefObject<HTMLHeadingElement | null>
+      ).current = element;
     },
-    forwardedRef,
-  ) {
-    const themeContext = useContext(ThemeContext);
-    const Component = levelToTag[level];
-    const levelKey = levelToKey[level];
+    [ref, truncation.ref],
+  );
 
-    const headingConfig = themeContext?.theme?.components?.heading;
-    const headingStyles =
-      variant === 'editorial'
-        ? headingConfig?.editorialStyles
-        : headingConfig?.styles;
-    const levelStyle = headingStyles?.[levelKey];
+  // Build inline style for -webkit-line-clamp (dynamic value)
+  const inlineStyle = maxLines > 1 ? {WebkitLineClamp: maxLines} : undefined;
 
-    // If accessibilityLevel differs from visual level, use aria-level
-    const ariaProps =
-      accessibilityLevel && accessibilityLevel !== level
-        ? {'aria-level': accessibilityLevel}
-        : {};
-
-    // Resolve wordBreak with smart default
-    const resolvedWordBreak =
-      wordBreak ?? (maxLines === 1 ? 'break-all' : 'break-word');
-
-    // Resolve display - force block when maxLines > 0 or hasCapsize
-    const resolvedDisplay = maxLines > 0 || hasCapsize ? 'block' : display;
-
-    // Truncation detection
-    const truncation = useTruncation({maxLines});
-
-    // Tooltip for truncated text
-    const tooltipPlacement: LayerPlacement =
-      typeof hasTruncateTooltip === 'string' ? hasTruncateTooltip : 'above';
-    const tooltipEnabled =
-      maxLines > 0 && hasTruncateTooltip !== false && truncation.isTruncated;
-
-    // Ref for the heading element (used as tooltip anchor)
-    const headingRef = useRef<HTMLHeadingElement>(null);
-
-    // Merge refs: forwardedRef, truncation.ref, headingRef
-    const mergedRef = useCallback(
-      (element: HTMLHeadingElement | null) => {
-        // Forward ref
-        if (typeof forwardedRef === 'function') {
-          forwardedRef(element);
-        } else if (forwardedRef) {
-          forwardedRef.current = element;
-        }
-        // Truncation ref
-        truncation.ref(element);
-        // Local ref for tooltip anchor
-        (
-          headingRef as React.MutableRefObject<HTMLHeadingElement | null>
-        ).current = element;
-      },
-      [forwardedRef, truncation.ref],
-    );
-
-    // Build inline style for -webkit-line-clamp (dynamic value)
-    const inlineStyle = maxLines > 1 ? {WebkitLineClamp: maxLines} : undefined;
-
-    return (
-      <>
-        <Component
-          ref={mergedRef}
-          {...stylex.props(
-            levelStyle,
-            colorStyles[color],
-            // Display: use truncation styles when maxLines > 0
-            maxLines === 1
-              ? truncationStyles.singleLine
-              : maxLines > 1
-                ? truncationStyles.multiLine
-                : displayStyles[resolvedDisplay],
-            // Word break when truncating
-            maxLines > 0 && wordBreakStyles[resolvedWordBreak],
-            // Text wrap
-            textWrap && textWrapStyles[textWrap],
-            // Capsize
-            hasCapsize && capsizeStyles.enabled,
-            // Decorations
-            hasStrikethrough && decorationStyles.strikethrough,
-            // User xstyle
-            xstyle,
-          )}
-          style={inlineStyle}
-          title={tooltipEnabled ? truncation.fullText : undefined}
-          {...ariaProps}
-          {...props}>
-          {children}
-        </Component>
-        {tooltipEnabled && (
-          <Suspense fallback={null}>
-            <LazyXDSTooltip
-              anchorRef={headingRef}
-              content={
-                <span {...stylex.props(truncationTooltipStyles.content)}>
-                  {truncation.fullText}
-                </span>
-              }
-              placement={tooltipPlacement}
-            />
-          </Suspense>
+  return (
+    <>
+      <Component
+        ref={mergedRef}
+        {...stylex.props(
+          levelStyle,
+          colorStyles[color],
+          // Display: use truncation styles when maxLines > 0
+          maxLines === 1
+            ? truncationStyles.singleLine
+            : maxLines > 1
+              ? truncationStyles.multiLine
+              : displayStyles[resolvedDisplay],
+          // Word break when truncating
+          maxLines > 0 && wordBreakStyles[resolvedWordBreak],
+          // Text wrap
+          textWrap && textWrapStyles[textWrap],
+          // Capsize
+          hasCapsize && capsizeStyles.enabled,
+          // Decorations
+          hasStrikethrough && decorationStyles.strikethrough,
+          // User xstyle
+          xstyle,
         )}
-      </>
-    );
-  },
-);
+        style={inlineStyle}
+        title={tooltipEnabled ? truncation.fullText : undefined}
+        {...ariaProps}
+        {...props}>
+        {children}
+      </Component>
+      {tooltipEnabled && (
+        <Suspense fallback={null}>
+          <LazyXDSTooltip
+            anchorRef={headingRef}
+            content={
+              <span {...stylex.props(truncationTooltipStyles.content)}>
+                {truncation.fullText}
+              </span>
+            }
+            placement={tooltipPlacement}
+          />
+        </Suspense>
+      )}
+    </>
+  );
+}
 
 XDSHeading.displayName = 'XDSHeading';

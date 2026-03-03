@@ -1,6 +1,6 @@
 /**
  * @file XDSLayoutFooter.tsx
- * @input Uses React forwardRef, StyleX
+ * @input Uses React StyleX
  * @output Exports XDSLayoutFooter component and XDSLayoutFooterProps
  * @position Bottom bar / footer area for XDSLayout. Use for action bars,
  *   pagination, status bars, or any fixed-height content at the bottom of a layout.
@@ -10,8 +10,7 @@
  * - /apps/storybook/stories/Layout.stories.tsx
  */
 
-import type {AriaRole, HTMLAttributes, ReactNode} from 'react';
-import {forwardRef} from 'react';
+import type {AriaRole, HTMLAttributes, ReactNode, Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 
@@ -53,6 +52,8 @@ export interface XDSLayoutFooterProps extends Omit<
   HTMLAttributes<HTMLElement>,
   'style' | 'className'
 > {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLElement>;
   /**
    * Content to render inside the footer.
    */
@@ -107,39 +108,35 @@ export interface XDSLayoutFooterProps extends Omit<
  * </XDSLayoutContainer>
  * ```
  */
-export const XDSLayoutFooter = forwardRef<HTMLElement, XDSLayoutFooterProps>(
-  function XDSLayoutFooter(
-    {
-      children,
-      hasDivider = false,
-      height,
-      isFullBleed = false,
-      label,
-      role,
-      ...props
-    },
-    ref,
-  ) {
-    // When no divider, collapse spacing for seamless visual flow
-    const shouldCollapseSpacing = !hasDivider && !isFullBleed;
+export function XDSLayoutFooter({
+  ref,
+  children,
+  hasDivider = false,
+  height,
+  isFullBleed = false,
+  label,
+  role,
+  ...props
+}: XDSLayoutFooterProps) {
+  // When no divider, collapse spacing for seamless visual flow
+  const shouldCollapseSpacing = !hasDivider && !isFullBleed;
 
-    return (
-      <div
-        ref={ref as React.Ref<HTMLDivElement>}
-        role={role}
-        aria-label={label}
-        {...stylex.props(
-          styles.footer,
-          dynamicStyles.sizing(height ?? null),
-          isFullBleed && styles.fullBleed,
-          hasDivider && styles.divider,
-          shouldCollapseSpacing && styles.collapseTop,
-        )}
-        {...props}>
-        {children}
-      </div>
-    );
-  },
-);
+  return (
+    <div
+      ref={ref as React.Ref<HTMLDivElement>}
+      role={role}
+      aria-label={label}
+      {...stylex.props(
+        styles.footer,
+        dynamicStyles.sizing(height ?? null),
+        isFullBleed && styles.fullBleed,
+        hasDivider && styles.divider,
+        shouldCollapseSpacing && styles.collapseTop,
+      )}
+      {...props}>
+      {children}
+    </div>
+  );
+}
 
 XDSLayoutFooter.displayName = 'XDSLayoutFooter';

@@ -10,10 +10,10 @@
  */
 
 import {
-  forwardRef,
   useContext,
   type ThHTMLAttributes,
   type ReactNode,
+  type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -27,6 +27,8 @@ import {XDSTableContext} from './XDSTableContext';
 
 /** Props for XDSTableHeaderCell — `<th>` wrapper with context-aware styling */
 export interface XDSTableHeaderCellProps extends ThHTMLAttributes<HTMLTableCellElement> {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLTableCellElement>;
   children?: ReactNode;
   xstyle?: StyleXStyles | StyleXStyles[];
 }
@@ -98,10 +100,12 @@ const dividerColumnStyles = stylex.create({
  * </thead>
  * ```
  */
-export const XDSTableHeaderCell = forwardRef<
-  HTMLTableCellElement,
-  XDSTableHeaderCellProps
->(({children, xstyle, ...props}, ref) => {
+export function XDSTableHeaderCell({
+  ref,
+  children,
+  xstyle,
+  ...props
+}: XDSTableHeaderCellProps) {
   const ctx = useContext(XDSTableContext);
 
   if (!ctx) {
@@ -135,6 +139,6 @@ export const XDSTableHeaderCell = forwardRef<
       {children}
     </th>
   );
-});
+}
 
 XDSTableHeaderCell.displayName = 'XDSTableHeaderCell';

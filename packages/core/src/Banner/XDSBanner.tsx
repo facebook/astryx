@@ -1,6 +1,6 @@
 /**
  * @file XDSBanner.tsx
- * @input Uses React forwardRef/useState, @heroicons/react/24/solid icons, XDSButton, XDSIcon, StyleX
+ * @input Uses React /useState, @heroicons/react/24/solid icons, XDSButton, XDSIcon, StyleX
  * @output Exports XDSBanner component, XDSBannerProps, XDSBannerStatus, XDSBannerVariant types
  * @position Core implementation; consumed by index.ts, tested by XDSBanner.test.tsx
  *
@@ -17,7 +17,7 @@
  * - /apps/storybook/stories/Banner.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useState, type ReactNode} from 'react';
+import {useState, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -56,6 +56,8 @@ export type XDSBannerStatus = 'info' | 'warning' | 'error' | 'success';
 export type XDSBannerVariant = 'card' | 'section';
 
 export interface XDSBannerProps {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLDivElement>;
   /**
    * Status type controlling the icon and color scheme.
    */
@@ -315,130 +317,126 @@ const statusStyles = stylex.create({
  * </XDSBanner>
  * ```
  */
-export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
-  (
-    {
-      status,
-      title,
-      description,
-      icon,
-      isDismissable = false,
-      onDismiss,
-      endButton,
-      variant = 'card',
-      isDefaultExpanded = false,
-      children,
-      xstyle,
-      'data-testid': testId,
-    },
-    ref,
-  ) => {
-    const [isDismissed, setIsDismissed] = useState(false);
-    const [isExpanded, setIsExpanded] = useState(isDefaultExpanded);
-    const DefaultIcon = defaultIcons[status];
-    const role = statusRole[status];
-    const iconColor = statusIconColor[status];
-    const hasChildren = children != null;
+export function XDSBanner({
+  ref,
+  status,
+  title,
+  description,
+  icon,
+  isDismissable = false,
+  onDismiss,
+  endButton,
+  variant = 'card',
+  isDefaultExpanded = false,
+  children,
+  xstyle,
+  'data-testid': testId,
+}: XDSBannerProps) {
+  const [isDismissed, setIsDismissed] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(isDefaultExpanded);
+  const DefaultIcon = defaultIcons[status];
+  const role = statusRole[status];
+  const iconColor = statusIconColor[status];
+  const hasChildren = children != null;
 
-    if (isDismissed) {
-      return null;
-    }
+  if (isDismissed) {
+    return null;
+  }
 
-    const handleDismiss = () => {
-      setIsDismissed(true);
-      onDismiss?.();
-    };
+  const handleDismiss = () => {
+    setIsDismissed(true);
+    onDismiss?.();
+  };
 
-    const handleToggleExpand = () => {
-      setIsExpanded(prev => !prev);
-    };
+  const handleToggleExpand = () => {
+    setIsExpanded(prev => !prev);
+  };
 
-    // Show the end area if there are actions, dismiss, or a collapsible toggle
-    const showEndArea = endButton != null || isDismissable || hasChildren;
-    // Center items vertically when there's only a title (no description)
-    // and the banner has action buttons
-    const hasActions = endButton != null || isDismissable;
-    const isSingleLine = description == null && hasActions;
+  // Show the end area if there are actions, dismiss, or a collapsible toggle
+  const showEndArea = endButton != null || isDismissable || hasChildren;
+  // Center items vertically when there's only a title (no description)
+  // and the banner has action buttons
+  const hasActions = endButton != null || isDismissable;
+  const isSingleLine = description == null && hasActions;
 
-    return (
+  return (
+    <div
+      ref={ref}
+      role={role}
+      data-testid={testId}
+      {...stylex.props(
+        styles.root,
+        variant === 'card' && styles.card,
+        variant === 'section' && styles.section,
+        xstyle,
+      )}>
+      {/* Header: colored status background */}
       <div
-        ref={ref}
-        role={role}
-        data-testid={testId}
         {...stylex.props(
-          styles.root,
-          variant === 'card' && styles.card,
-          variant === 'section' && styles.section,
-          xstyle,
+          styles.header,
+          isSingleLine && styles.headerCentered,
+          statusStyles[status],
         )}>
-        {/* Header: colored status background */}
-        <div
-          {...stylex.props(
-            styles.header,
-            isSingleLine && styles.headerCentered,
-            statusStyles[status],
-          )}>
-          <div {...stylex.props(styles.iconWrapper)} aria-hidden="true">
-            {icon != null ? (
-              icon
-            ) : (
-              <XDSIcon icon={DefaultIcon} size="md" color={iconColor} />
+        <div {...stylex.props(styles.iconWrapper)} aria-hidden="true">
+          {icon != null ? (
+            icon
+          ) : (
+            <XDSIcon icon={DefaultIcon} size="md" color={iconColor} />
+          )}
+        </div>
+        <div {...stylex.props(styles.headerContent)}>
+          <p {...stylex.props(styles.title)}>{title}</p>
+          {description != null && (
+            <p {...stylex.props(styles.description)}>{description}</p>
+          )}
+        </div>
+        {showEndArea && (
+          <div {...stylex.props(styles.endArea)}>
+            {endButton}
+            {hasChildren && (
+              <XDSButton
+                variant="ghost"
+                size="sm"
+                label={isExpanded ? 'Collapse' : 'Expand'}
+                tooltip={isExpanded ? 'Collapse' : 'Expand'}
+                icon={
+                  <XDSIcon
+                    icon={isExpanded ? ChevronUpIcon : ChevronDownIcon}
+                    size="sm"
+                    color="inherit"
+                  />
+                }
+                onClick={handleToggleExpand}
+                aria-expanded={isExpanded}
+              />
             )}
-          </div>
-          <div {...stylex.props(styles.headerContent)}>
-            <p {...stylex.props(styles.title)}>{title}</p>
-            {description != null && (
-              <p {...stylex.props(styles.description)}>{description}</p>
-            )}
-          </div>
-          {showEndArea && (
-            <div {...stylex.props(styles.endArea)}>
-              {endButton}
-              {hasChildren && (
+            {isDismissable && (
+              <div {...stylex.props(styles.dismissButton)}>
                 <XDSButton
                   variant="ghost"
                   size="sm"
-                  label={isExpanded ? 'Collapse' : 'Expand'}
-                  tooltip={isExpanded ? 'Collapse' : 'Expand'}
-                  icon={
-                    <XDSIcon
-                      icon={isExpanded ? ChevronUpIcon : ChevronDownIcon}
-                      size="sm"
-                      color="inherit"
-                    />
-                  }
-                  onClick={handleToggleExpand}
-                  aria-expanded={isExpanded}
+                  label="Dismiss"
+                  tooltip="Dismiss"
+                  icon={<XDSIcon icon="close" size="sm" color="inherit" />}
+                  onClick={handleDismiss}
                 />
-              )}
-              {isDismissable && (
-                <div {...stylex.props(styles.dismissButton)}>
-                  <XDSButton
-                    variant="ghost"
-                    size="sm"
-                    label="Dismiss"
-                    tooltip="Dismiss"
-                    icon={<XDSIcon icon="close" size="sm" color="inherit" />}
-                    onClick={handleDismiss}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        {/* Content area: collapsible card background for additional content */}
-        {hasChildren && isExpanded && (
-          <div
-            {...stylex.props(
-              styles.contentArea,
-              variant === 'card' && styles.contentAreaCard,
-            )}>
-            {children}
+              </div>
+            )}
           </div>
         )}
       </div>
-    );
-  },
-);
+      {/* Content area: collapsible card background for additional content */}
+      {hasChildren && isExpanded && (
+        <div
+          {...stylex.props(
+            styles.contentArea,
+            variant === 'card' && styles.contentAreaCard,
+          )}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
 
 XDSBanner.displayName = 'XDSBanner';

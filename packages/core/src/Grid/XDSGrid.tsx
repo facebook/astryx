@@ -1,6 +1,6 @@
 /**
  * @file XDSGrid.tsx
- * @input Uses React forwardRef, stylex, spacing tokens
+ * @input Uses React stylex, spacing tokens
  * @output Exports XDSGrid component and XDSGridProps
  * @position Grid component; provides CSS Grid-based layout
  *
@@ -10,12 +10,7 @@
  * - /apps/storybook/stories/Grid.stories.tsx
  */
 
-import {
-  forwardRef,
-  useContext,
-  type HTMLAttributes,
-  type ReactNode,
-} from 'react';
+import {useContext, type HTMLAttributes, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
@@ -45,6 +40,8 @@ export interface XDSGridProps extends Omit<
   HTMLAttributes<HTMLElement>,
   'style' | 'className'
 > {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLElement>;
   /**
    * Maximum number of columns.
    * - When only columns is set: creates fixed equal-width columns
@@ -340,23 +337,21 @@ function calculateMaxWidth(
  * </XDSGrid>
  * ```
  */
-export const XDSGrid = forwardRef<HTMLElement, XDSGridProps>(function XDSGrid(
-  {
-    columns,
-    minChildWidth = 0,
-    width,
-    height,
-    gap,
-    rowGap,
-    columnGap,
-    align,
-    justify,
-    xstyle,
-    children,
-    ...props
-  },
+export function XDSGrid({
   ref,
-) {
+  columns,
+  minChildWidth = 0,
+  width,
+  height,
+  gap,
+  rowGap,
+  columnGap,
+  align,
+  justify,
+  xstyle,
+  children,
+  ...props
+}: XDSGridProps) {
   const themeContext = useContext(ThemeContext);
   const rootOverride = themeContext?.theme.components?.grid?.root;
 
@@ -415,6 +410,6 @@ export const XDSGrid = forwardRef<HTMLElement, XDSGridProps>(function XDSGrid(
       {children}
     </div>
   );
-});
+}
 
 XDSGrid.displayName = 'XDSGrid';

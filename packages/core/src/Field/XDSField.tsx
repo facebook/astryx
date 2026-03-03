@@ -1,6 +1,6 @@
 /**
  * @file XDSField.tsx
- * @input Uses React forwardRef, HTMLAttributes, ReactNode, XDSFieldLabel, XDSIconType
+ * @input Uses React HTMLAttributes, ReactNode, XDSFieldLabel, XDSIconType
  * @output Exports XDSField component, XDSFieldProps
  * @position Core implementation; consumed by index.ts, tested by XDSField.test.tsx
  *
@@ -11,12 +11,7 @@
  * - /apps/storybook/stories/Field.stories.tsx (storybook stories)
  */
 
-import {
-  forwardRef,
-  useContext,
-  type HTMLAttributes,
-  type ReactNode,
-} from 'react';
+import {useContext, type HTMLAttributes, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSFieldLabel} from './XDSFieldLabel';
 import {XDSFieldStatus} from './XDSFieldStatus';
@@ -115,6 +110,8 @@ export interface XDSFieldProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
   'children'
 > {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLDivElement>;
   /**
    * Label text for the field (always rendered for accessibility).
    */
@@ -185,79 +182,72 @@ export interface XDSFieldProps extends Omit<
  * </XDSField>
  * ```
  */
-export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
-  (
-    {
-      label,
-      isLabelHidden = false,
-      description,
-      inputID,
-      descriptionID,
-      isOptional = false,
-      isRequired = false,
-      labelIcon,
-      status,
-      labelTooltip,
-      statusVariant = 'attached',
-      children,
-      ...props
-    },
-    ref,
-  ) => {
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.field?.root;
-    const descriptionOverride =
-      themeContext?.theme.components?.field?.description;
+export function XDSField({
+  ref,
+  label,
+  isLabelHidden = false,
+  description,
+  inputID,
+  descriptionID,
+  isOptional = false,
+  isRequired = false,
+  labelIcon,
+  status,
+  labelTooltip,
+  statusVariant = 'attached',
+  children,
+  ...props
+}: XDSFieldProps) {
+  const themeContext = useContext(ThemeContext);
+  const rootOverride = themeContext?.theme.components?.field?.root;
+  const descriptionOverride =
+    themeContext?.theme.components?.field?.description;
 
-    return (
-      <div
-        ref={ref}
-        {...stylex.props(styles.container, rootOverride)}
-        {...props}>
-        <XDSFieldLabel
-          label={label}
-          inputID={inputID}
-          isLabelHidden={isLabelHidden}
-          isOptional={isOptional}
-          isRequired={isRequired}
-          labelIcon={labelIcon}
-          labelTooltip={labelTooltip}
-        />
-        {description && !isLabelHidden && (
-          <span
-            id={descriptionID}
-            {...stylex.props(styles.description, descriptionOverride)}>
-            {description}
-          </span>
-        )}
-        {statusVariant === 'attached' ? (
-          <div {...stylex.props(styles.inputStatusWrapper)}>
-            {children}
-            {status?.message && (
-              <XDSFieldStatus
-                type={status.type}
-                message={status.message}
-                id={status.messageID}
-                variant="attached"
-              />
-            )}
-          </div>
-        ) : (
-          <>
-            {children}
-            {status?.message && (
-              <XDSFieldStatus
-                type={status.type}
-                message={status.message}
-                id={status.messageID}
-                variant="detached"
-              />
-            )}
-          </>
-        )}
-      </div>
-    );
-  },
-);
+  return (
+    <div ref={ref} {...stylex.props(styles.container, rootOverride)} {...props}>
+      <XDSFieldLabel
+        label={label}
+        inputID={inputID}
+        isLabelHidden={isLabelHidden}
+        isOptional={isOptional}
+        isRequired={isRequired}
+        labelIcon={labelIcon}
+        labelTooltip={labelTooltip}
+      />
+      {description && !isLabelHidden && (
+        <span
+          id={descriptionID}
+          {...stylex.props(styles.description, descriptionOverride)}>
+          {description}
+        </span>
+      )}
+      {statusVariant === 'attached' ? (
+        <div {...stylex.props(styles.inputStatusWrapper)}>
+          {children}
+          {status?.message && (
+            <XDSFieldStatus
+              type={status.type}
+              message={status.message}
+              id={status.messageID}
+              variant="attached"
+            />
+          )}
+        </div>
+      ) : (
+        <>
+          {children}
+          {status?.message && (
+            <XDSFieldStatus
+              type={status.type}
+              message={status.message}
+              id={status.messageID}
+              variant="detached"
+            />
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
 XDSField.displayName = 'XDSField';

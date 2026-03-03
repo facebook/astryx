@@ -1,6 +1,6 @@
 /**
  * @file XDSSideNavHeader.tsx
- * @input Uses React forwardRef, useRef, useCallback, ReactNode, StyleX, useXDSPopover
+ * @input Uses React useRef, useCallback, ReactNode, StyleX, useXDSPopover
  * @output Exports XDSSideNavHeader component and XDSSideNavHeaderProps
  * @position Core implementation; used inside XDSSideNav header slot
  *
@@ -16,7 +16,7 @@
 
 'use client';
 
-import {forwardRef, useCallback, useRef, type ReactNode} from 'react';
+import {useCallback, useRef, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -136,6 +136,8 @@ const styles = stylex.create({
 // =============================================================================
 
 export interface XDSSideNavHeaderProps {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLDivElement>;
   /**
    * Product/app icon.
    */
@@ -244,25 +246,20 @@ function ChevronDownIcon() {
  * />
  * ```
  */
-export const XDSSideNavHeader = forwardRef<
-  HTMLDivElement,
-  XDSSideNavHeaderProps
->(function XDSSideNavHeader(
-  {
-    icon,
-    title,
-    titleHref,
-    supertitle,
-    supertitleHref,
-    subtitle,
-    subtitleHref,
-    menu,
-    xstyle,
-    'data-testid': testId,
-    ...props
-  },
+export function XDSSideNavHeader({
   ref,
-) {
+  icon,
+  title,
+  titleHref,
+  supertitle,
+  supertitleHref,
+  subtitle,
+  subtitleHref,
+  menu,
+  xstyle,
+  'data-testid': testId,
+  ...props
+}: XDSSideNavHeaderProps) {
   const rootRef = useRef<HTMLDivElement>(null);
 
   const popover = useXDSPopover({
@@ -503,6 +500,6 @@ export const XDSSideNavHeader = forwardRef<
       {chevronElement}
     </div>
   );
-});
+}
 
 XDSSideNavHeader.displayName = 'XDSSideNavHeader';

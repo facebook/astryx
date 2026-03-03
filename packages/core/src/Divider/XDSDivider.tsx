@@ -1,6 +1,6 @@
 /**
  * @file XDSDivider.tsx
- * @input Uses React forwardRef, stylex, spacing and color tokens
+ * @input Uses React stylex, spacing and color tokens
  * @output Exports XDSDivider component and XDSDividerProps
  * @position Divider component; provides visual separation with optional label
  *
@@ -10,12 +10,7 @@
  * - /apps/storybook/stories/Divider.stories.tsx
  */
 
-import {
-  forwardRef,
-  useContext,
-  type HTMLAttributes,
-  type ReactNode,
-} from 'react';
+import {useContext, type HTMLAttributes, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -45,6 +40,8 @@ export interface XDSDividerProps extends Omit<
   HTMLAttributes<HTMLElement>,
   'style' | 'className' | 'children'
 > {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLElement>;
   /**
    * Orientation of the divider.
    * @default 'horizontal'
@@ -147,41 +144,56 @@ const fullBleedStyles = stylex.create({
  * <XDSDivider label="or" />
  * ```
  */
-export const XDSDivider = forwardRef<HTMLElement, XDSDividerProps>(
-  function XDSDivider(
-    {
-      orientation = 'horizontal',
-      label,
-      variant = 'subtle',
-      isFullBleed = false,
-      xstyle,
-      ...props
-    },
-    ref,
-  ) {
-    const isHorizontal = orientation === 'horizontal';
+export function XDSDivider({
+  ref,
+  orientation = 'horizontal',
+  label,
+  variant = 'subtle',
+  isFullBleed = false,
+  xstyle,
+  ...props
+}: XDSDividerProps) {
+  const isHorizontal = orientation === 'horizontal';
 
-    // Get theme context for component-level overrides (optional)
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.divider?.root;
-    const lineOverride = themeContext?.theme.components?.divider?.line;
-    const labelOverride = themeContext?.theme.components?.divider?.label;
+  // Get theme context for component-level overrides (optional)
+  const themeContext = useContext(ThemeContext);
+  const rootOverride = themeContext?.theme.components?.divider?.root;
+  const lineOverride = themeContext?.theme.components?.divider?.line;
+  const labelOverride = themeContext?.theme.components?.divider?.label;
 
-    return (
+  return (
+    <div
+      ref={ref as React.Ref<HTMLDivElement>}
+      role="separator"
+      aria-orientation={orientation}
+      {...stylex.props(
+        isHorizontal ? baseStyles.horizontal : baseStyles.vertical,
+        isFullBleed &&
+          (isHorizontal
+            ? fullBleedStyles.horizontal
+            : fullBleedStyles.vertical),
+        rootOverride,
+        xstyle,
+      )}
+      {...props}>
       <div
-        ref={ref as React.Ref<HTMLDivElement>}
-        role="separator"
-        aria-orientation={orientation}
         {...stylex.props(
-          isHorizontal ? baseStyles.horizontal : baseStyles.vertical,
-          isFullBleed &&
-            (isHorizontal
-              ? fullBleedStyles.horizontal
-              : fullBleedStyles.vertical),
-          rootOverride,
-          xstyle,
+          isHorizontal ? lineStyles.horizontalLine : lineStyles.verticalLine,
+          lineStyles[variant],
+          lineOverride,
         )}
-        {...props}>
+      />
+      {label && (
+        <div
+          {...stylex.props(
+            labelStyles.label,
+            !isHorizontal && labelStyles.verticalLabel,
+            labelOverride,
+          )}>
+          {label}
+        </div>
+      )}
+      {label && (
         <div
           {...stylex.props(
             isHorizontal ? lineStyles.horizontalLine : lineStyles.verticalLine,
@@ -189,30 +201,9 @@ export const XDSDivider = forwardRef<HTMLElement, XDSDividerProps>(
             lineOverride,
           )}
         />
-        {label && (
-          <div
-            {...stylex.props(
-              labelStyles.label,
-              !isHorizontal && labelStyles.verticalLabel,
-              labelOverride,
-            )}>
-            {label}
-          </div>
-        )}
-        {label && (
-          <div
-            {...stylex.props(
-              isHorizontal
-                ? lineStyles.horizontalLine
-                : lineStyles.verticalLine,
-              lineStyles[variant],
-              lineOverride,
-            )}
-          />
-        )}
-      </div>
-    );
-  },
-);
+      )}
+    </div>
+  );
+}
 
 XDSDivider.displayName = 'XDSDivider';

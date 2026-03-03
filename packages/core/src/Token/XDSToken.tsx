@@ -1,6 +1,6 @@
 /**
  * @file XDSToken.tsx
- * @input Uses React forwardRef, ReactNode, StyleXStyles
+ * @input Uses React ReactNode, StyleXStyles
  * @output Exports XDSToken component, XDSTokenProps, XDSTokenColor types
  * @position Core implementation; consumed by index.ts, tested by XDSToken.test.tsx
  *
@@ -11,7 +11,7 @@
  * - /apps/storybook/stories/Token.stories.tsx (storybook stories)
  */
 
-import {forwardRef, type ReactNode} from 'react';
+import {type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -49,6 +49,8 @@ export type XDSTokenColor =
 export type XDSTokenSize = 'sm' | 'md';
 
 export interface XDSTokenProps {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLElement>;
   /**
    * The text label displayed in the token.
    */
@@ -288,31 +290,102 @@ const colorStyles = stylex.create({
  * <XDSToken label="Link" href="/path" />
  * ```
  */
-export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
-  (
-    {
-      label,
-      size = 'md',
-      color = 'default',
-      icon,
-      isDisabled = false,
-      onRemove,
-      onClick,
-      href,
-      description,
-      endContent,
-      isLabelHidden = false,
-      xstyle,
-      'data-testid': testId,
-    },
-    ref,
-  ) => {
-    const content = (
-      <>
+export function XDSToken({
+  ref,
+  label,
+  size = 'md',
+  color = 'default',
+  icon,
+  isDisabled = false,
+  onRemove,
+  onClick,
+  href,
+  description,
+  endContent,
+  isLabelHidden = false,
+  xstyle,
+  'data-testid': testId,
+}: XDSTokenProps) {
+  const content = (
+    <>
+      {icon}
+      <span {...(isLabelHidden ? stylex.props(styles.labelHidden) : {})}>
+        {label}
+      </span>
+      {endContent}
+      {onRemove != null && (
+        <button
+          type="button"
+          aria-label={`Remove ${label}`}
+          onClick={e => {
+            e.stopPropagation();
+            onRemove(e);
+          }}
+          disabled={isDisabled}
+          {...stylex.props(styles.removeButton)}>
+          <XDSIcon icon="close" size="xsm" color="inherit" />
+        </button>
+      )}
+    </>
+  );
+
+  const sharedProps = {
+    'data-testid': testId,
+    'aria-label': isLabelHidden ? label : undefined,
+    'aria-description': description,
+  };
+
+  if (href != null) {
+    return (
+      <a
+        ref={ref as React.Ref<HTMLAnchorElement>}
+        href={href}
+        aria-disabled={isDisabled || undefined}
+        {...sharedProps}
+        {...stylex.props(
+          styles.base,
+          sizeStyles[size],
+          colorStyles[color],
+          styles.interactive,
+          isDisabled && styles.disabled,
+          xstyle,
+        )}>
+        {content}
+      </a>
+    );
+  }
+
+  if (onClick != null) {
+    const handleContainerClick = (e: React.MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('button, a')) return;
+      onClick(e);
+    };
+
+    return (
+      <span
+        ref={ref as React.Ref<HTMLSpanElement>}
+        onClick={isDisabled ? undefined : handleContainerClick}
+        {...sharedProps}
+        {...stylex.props(
+          styles.base,
+          sizeStyles[size],
+          colorStyles[color],
+          styles.interactive,
+          styles.focusWithinOutline,
+          isDisabled && styles.disabled,
+          xstyle,
+        )}>
         {icon}
-        <span {...(isLabelHidden ? stylex.props(styles.labelHidden) : {})}>
-          {label}
-        </span>
+        <button
+          type="button"
+          onClick={onClick}
+          disabled={isDisabled}
+          {...stylex.props(styles.invisibleButton)}>
+          <span {...(isLabelHidden ? stylex.props(styles.labelHidden) : {})}>
+            {label}
+          </span>
+        </button>
         {endContent}
         {onRemove != null && (
           <button
@@ -327,99 +400,24 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
             <XDSIcon icon="close" size="xsm" color="inherit" />
           </button>
         )}
-      </>
-    );
-
-    const sharedProps = {
-      'data-testid': testId,
-      'aria-label': isLabelHidden ? label : undefined,
-      'aria-description': description,
-    };
-
-    if (href != null) {
-      return (
-        <a
-          ref={ref as React.Ref<HTMLAnchorElement>}
-          href={href}
-          aria-disabled={isDisabled || undefined}
-          {...sharedProps}
-          {...stylex.props(
-            styles.base,
-            sizeStyles[size],
-            colorStyles[color],
-            styles.interactive,
-            isDisabled && styles.disabled,
-            xstyle,
-          )}>
-          {content}
-        </a>
-      );
-    }
-
-    if (onClick != null) {
-      const handleContainerClick = (e: React.MouseEvent) => {
-        const target = e.target as HTMLElement;
-        if (target.closest('button, a')) return;
-        onClick(e);
-      };
-
-      return (
-        <span
-          ref={ref as React.Ref<HTMLSpanElement>}
-          onClick={isDisabled ? undefined : handleContainerClick}
-          {...sharedProps}
-          {...stylex.props(
-            styles.base,
-            sizeStyles[size],
-            colorStyles[color],
-            styles.interactive,
-            styles.focusWithinOutline,
-            isDisabled && styles.disabled,
-            xstyle,
-          )}>
-          {icon}
-          <button
-            type="button"
-            onClick={onClick}
-            disabled={isDisabled}
-            {...stylex.props(styles.invisibleButton)}>
-            <span {...(isLabelHidden ? stylex.props(styles.labelHidden) : {})}>
-              {label}
-            </span>
-          </button>
-          {endContent}
-          {onRemove != null && (
-            <button
-              type="button"
-              aria-label={`Remove ${label}`}
-              onClick={e => {
-                e.stopPropagation();
-                onRemove(e);
-              }}
-              disabled={isDisabled}
-              {...stylex.props(styles.removeButton)}>
-              <XDSIcon icon="close" size="xsm" color="inherit" />
-            </button>
-          )}
-        </span>
-      );
-    }
-
-    return (
-      <span
-        ref={ref as React.Ref<HTMLSpanElement>}
-        {...sharedProps}
-        {...stylex.props(
-          styles.base,
-          sizeStyles[size],
-          colorStyles[color],
-          isDisabled && styles.disabled,
-          xstyle,
-        )}>
-        {content}
       </span>
     );
-  },
-);
+  }
+
+  return (
+    <span
+      ref={ref as React.Ref<HTMLSpanElement>}
+      {...sharedProps}
+      {...stylex.props(
+        styles.base,
+        sizeStyles[size],
+        colorStyles[color],
+        isDisabled && styles.disabled,
+        xstyle,
+      )}>
+      {content}
+    </span>
+  );
+}
 
 XDSToken.displayName = 'XDSToken';

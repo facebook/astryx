@@ -1,6 +1,6 @@
 /**
  * @file XDSTopNavTitle.tsx
- * @input Uses React forwardRef, HTMLAttributes, ReactNode
+ * @input Uses React HTMLAttributes, ReactNode
  * @output Exports XDSTopNavTitle component and XDSTopNavTitleProps
  * @position Companion component for XDSTopNav title slot
  *
@@ -11,7 +11,7 @@
  * - /apps/storybook/stories/TopNav.stories.tsx
  */
 
-import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
+import {type HTMLAttributes, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -53,6 +53,8 @@ export interface XDSTopNavTitleProps extends Omit<
   HTMLAttributes<HTMLElement>,
   'style' | 'className' | 'title'
 > {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLElement>;
   /**
    * The title text to display.
    */
@@ -94,21 +96,25 @@ export interface XDSTopNavTitleProps extends Omit<
  * <XDSTopNavTitle logo={<BrandLogo />} href="/" />
  * ```
  */
-export const XDSTopNavTitle = forwardRef<HTMLElement, XDSTopNavTitleProps>(
-  function XDSTopNavTitle({title, logo, href, ...props}, ref) {
-    const Element = href ? 'a' : 'div';
+export function XDSTopNavTitle({
+  ref,
+  title,
+  logo,
+  href,
+  ...props
+}: XDSTopNavTitleProps) {
+  const Element = href ? 'a' : 'div';
 
-    return (
-      <Element
-        ref={ref as React.Ref<HTMLAnchorElement & HTMLDivElement>}
-        href={href}
-        {...stylex.props(styles.base, href != null && styles.clickable)}
-        {...props}>
-        {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
-        {title && <span {...stylex.props(styles.titleText)}>{title}</span>}
-      </Element>
-    );
-  },
-);
+  return (
+    <Element
+      ref={ref as React.Ref<HTMLAnchorElement & HTMLDivElement>}
+      href={href}
+      {...stylex.props(styles.base, href != null && styles.clickable)}
+      {...props}>
+      {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
+      {title && <span {...stylex.props(styles.titleText)}>{title}</span>}
+    </Element>
+  );
+}
 
 XDSTopNavTitle.displayName = 'XDSTopNavTitle';

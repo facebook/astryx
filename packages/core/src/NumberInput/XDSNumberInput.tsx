@@ -1,6 +1,6 @@
 /**
  * @file XDSNumberInput.tsx
- * @input Uses React forwardRef, useId, useState, useMemo, useCallback, XDSField, XDSIcon
+ * @input Uses React useId, useState, useMemo, useCallback, XDSField, XDSIcon
  * @output Exports XDSNumberInput component, XDSNumberInputProps
  * @position Core implementation; consumed by index.ts, tested by XDSNumberInput.test.tsx
  *
@@ -12,7 +12,6 @@
  */
 
 import {
-  forwardRef,
   useContext,
   useId,
   useState,
@@ -21,6 +20,7 @@ import {
   useRef,
   type FocusEvent,
   type KeyboardEvent,
+  type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSIconName} from '../Icon';
@@ -207,6 +207,8 @@ declare module '../theme/types' {
   }
 }
 export interface XDSNumberInputProps {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLInputElement>;
   /**
    * Label text for the input (always rendered for accessibility).
    */
@@ -376,119 +378,138 @@ function parseNumberInput(
  * <XDSNumberInput label="Price" value={price} onChange={setPrice} min={0} step={0.01} />
  * ```
  */
-export const XDSNumberInput = forwardRef<HTMLInputElement, XDSNumberInputProps>(
-  (
-    {
-      label,
-      isLabelHidden = false,
-      description,
-      isOptional = false,
-      isRequired = false,
-      isDisabled = false,
-      startIcon,
-      labelIcon,
-      status,
-      size = 'md',
-      onChange,
-      value,
-      placeholder,
-      labelTooltip,
-      hasAutoFocus = false,
-      htmlName,
-      autoComplete,
-      min,
-      max,
-      step,
-      units,
-      isIntegerOnly = false,
-      onFocus,
-      onBlur,
-      onEnter,
+export function XDSNumberInput({
+  ref,
+  label,
+  isLabelHidden = false,
+  description,
+  isOptional = false,
+  isRequired = false,
+  isDisabled = false,
+  startIcon,
+  labelIcon,
+  status,
+  size = 'md',
+  onChange,
+  value,
+  placeholder,
+  labelTooltip,
+  hasAutoFocus = false,
+  htmlName,
+  autoComplete,
+  min,
+  max,
+  step,
+  units,
+  isIntegerOnly = false,
+  onFocus,
+  onBlur,
+  onEnter,
+}: XDSNumberInputProps) {
+  const themeContext = useContext(ThemeContext);
+  const wrapperOverride = themeContext?.theme.components?.numberInput?.wrapper;
+  const inputOverride = themeContext?.theme.components?.numberInput?.input;
+
+  const id = useId();
+  const descriptionID = useId();
+  const statusMessageID = useId();
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // Pending input while user is typing (null = show formatted value)
+  const [pendingInput, setPendingInput] = useState<string | null>(null);
+
+  const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
+    warning: 'warning',
+    error: 'xCircle',
+    success: 'checkCircle',
+  };
+
+  const statusIconColorMap: Record<
+    XDSInputStatusType,
+    'warning' | 'negative' | 'positive'
+  > = {
+    warning: 'warning',
+    error: 'negative',
+    success: 'positive',
+  };
+
+  const ariaDescribedBy =
+    [
+      description ? descriptionID : null,
+      status?.message ? statusMessageID : null,
+    ]
+      .filter(Boolean)
+      .join(' ') || undefined;
+
+  // Display value: pending input if typing, otherwise the raw value
+  // Note: With type="number", we can't use formatted display values
+  const displayValue = useMemo(() => {
+    if (pendingInput !== null) {
+      return pendingInput;
+    }
+    if (value == null) {
+      return '';
+    }
+    return String(value);
+  }, [pendingInput, value]);
+
+  // Check if current pending input is valid (for styling purposes)
+  const isInputValid = useMemo(() => {
+    if (pendingInput === null || !pendingInput.trim()) {
+      return true;
+    }
+    return parseNumberInput(pendingInput, {min, max, isIntegerOnly}) !== null;
+  }, [pendingInput, min, max, isIntegerOnly]);
+
+  // Handle input text change - update immediately if valid
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = e.target.value;
+      setPendingInput(newValue);
+
+      // If the input is valid, update immediately
+      const parsed = parseNumberInput(newValue, {min, max, isIntegerOnly});
+      if (parsed !== null && parsed !== value) {
+        onChange(parsed);
+      }
     },
-    ref,
-  ) => {
-    const themeContext = useContext(ThemeContext);
-    const wrapperOverride =
-      themeContext?.theme.components?.numberInput?.wrapper;
-    const inputOverride = themeContext?.theme.components?.numberInput?.input;
+    [value, onChange, min, max, isIntegerOnly],
+  );
 
-    const id = useId();
-    const descriptionID = useId();
-    const statusMessageID = useId();
-    const inputRef = useRef<HTMLInputElement | null>(null);
+  // Handle focus
+  const handleFocus = useCallback(
+    (e: FocusEvent<HTMLInputElement>) => {
+      onFocus?.(e);
+    },
+    [onFocus],
+  );
 
-    // Pending input while user is typing (null = show formatted value)
-    const [pendingInput, setPendingInput] = useState<string | null>(null);
-
-    const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
-      warning: 'warning',
-      error: 'xCircle',
-      success: 'checkCircle',
-    };
-
-    const statusIconColorMap: Record<
-      XDSInputStatusType,
-      'warning' | 'negative' | 'positive'
-    > = {
-      warning: 'warning',
-      error: 'negative',
-      success: 'positive',
-    };
-
-    const ariaDescribedBy =
-      [
-        description ? descriptionID : null,
-        status?.message ? statusMessageID : null,
-      ]
-        .filter(Boolean)
-        .join(' ') || undefined;
-
-    // Display value: pending input if typing, otherwise the raw value
-    // Note: With type="number", we can't use formatted display values
-    const displayValue = useMemo(() => {
+  // Handle blur - validate and clear pending input
+  const handleBlur = useCallback(
+    (e: FocusEvent<HTMLInputElement>) => {
       if (pendingInput !== null) {
-        return pendingInput;
-      }
-      if (value == null) {
-        return '';
-      }
-      return String(value);
-    }, [pendingInput, value]);
-
-    // Check if current pending input is valid (for styling purposes)
-    const isInputValid = useMemo(() => {
-      if (pendingInput === null || !pendingInput.trim()) {
-        return true;
-      }
-      return parseNumberInput(pendingInput, {min, max, isIntegerOnly}) !== null;
-    }, [pendingInput, min, max, isIntegerOnly]);
-
-    // Handle input text change - update immediately if valid
-    const handleInputChange = useCallback(
-      (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newValue = e.target.value;
-        setPendingInput(newValue);
-
-        // If the input is valid, update immediately
-        const parsed = parseNumberInput(newValue, {min, max, isIntegerOnly});
+        const parsed = parseNumberInput(pendingInput, {
+          min,
+          max,
+          isIntegerOnly,
+        });
         if (parsed !== null && parsed !== value) {
           onChange(parsed);
         }
-      },
-      [value, onChange, min, max, isIntegerOnly],
-    );
+      }
 
-    // Handle focus
-    const handleFocus = useCallback(
-      (e: FocusEvent<HTMLInputElement>) => {
-        onFocus?.(e);
-      },
-      [onFocus],
-    );
+      // Clear pending input - display will revert to formatted value
+      setPendingInput(null);
+      onBlur?.(e);
+    },
+    [pendingInput, value, onChange, min, max, isIntegerOnly, onBlur],
+  );
 
-    // Handle blur - validate and clear pending input
-    const handleBlur = useCallback(
-      (e: FocusEvent<HTMLInputElement>) => {
+  // Handle keyboard events
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        // Validate and commit on Enter
         if (pendingInput !== null) {
           const parsed = parseNumberInput(pendingInput, {
             min,
@@ -499,118 +520,94 @@ export const XDSNumberInput = forwardRef<HTMLInputElement, XDSNumberInputProps>(
             onChange(parsed);
           }
         }
+        onEnter?.();
+      }
+    },
+    [pendingInput, value, onChange, min, max, isIntegerOnly, onEnter],
+  );
 
-        // Clear pending input - display will revert to formatted value
-        setPendingInput(null);
-        onBlur?.(e);
-      },
-      [pendingInput, value, onChange, min, max, isIntegerOnly, onBlur],
-    );
+  // Combine refs
+  const setRefs = useCallback(
+    (el: HTMLInputElement | null) => {
+      inputRef.current = el;
+      if (typeof ref === 'function') {
+        ref(el);
+      } else if (ref) {
+        ref.current = el;
+      }
+    },
+    [ref],
+  );
 
-    // Handle keyboard events
-    const handleKeyDown = useCallback(
-      (e: KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
-          // Validate and commit on Enter
-          if (pendingInput !== null) {
-            const parsed = parseNumberInput(pendingInput, {
-              min,
-              max,
-              isIntegerOnly,
-            });
-            if (parsed !== null && parsed !== value) {
-              onChange(parsed);
+  return (
+    <XDSField
+      label={label}
+      isLabelHidden={isLabelHidden}
+      description={description}
+      inputID={id}
+      descriptionID={description ? descriptionID : undefined}
+      isOptional={isOptional}
+      isRequired={isRequired}
+      labelIcon={labelIcon}
+      status={
+        status
+          ? {
+              type: status.type,
+              message: status.message,
+              messageID: status.message ? statusMessageID : undefined,
             }
-          }
-          onEnter?.();
-        }
-      },
-      [pendingInput, value, onChange, min, max, isIntegerOnly, onEnter],
-    );
-
-    // Combine refs
-    const setRefs = useCallback(
-      (el: HTMLInputElement | null) => {
-        inputRef.current = el;
-        if (typeof ref === 'function') {
-          ref(el);
-        } else if (ref) {
-          ref.current = el;
-        }
-      },
-      [ref],
-    );
-
-    return (
-      <XDSField
-        label={label}
-        isLabelHidden={isLabelHidden}
-        description={description}
-        inputID={id}
-        descriptionID={description ? descriptionID : undefined}
-        isOptional={isOptional}
-        isRequired={isRequired}
-        labelIcon={labelIcon}
-        status={
-          status
-            ? {
-                type: status.type,
-                message: status.message,
-                messageID: status.message ? statusMessageID : undefined,
-              }
-            : undefined
-        }
-        labelTooltip={labelTooltip}>
-        <div
+          : undefined
+      }
+      labelTooltip={labelTooltip}>
+      <div
+        {...stylex.props(
+          styles.wrapper,
+          sizeStyles[size],
+          isDisabled && styles.wrapperDisabled,
+          status && statusBorderStyles[status.type],
+          status && statusHoverShadowStyles[status.type],
+          status && statusFocusStyles[status.type],
+          wrapperOverride,
+        )}>
+        {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
+        <input
+          ref={setRefs}
+          id={id}
+          name={htmlName}
+          type="number"
+          autoComplete={autoComplete}
+          value={displayValue}
+          onChange={handleInputChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          disabled={isDisabled}
+          autoFocus={hasAutoFocus}
+          min={min ?? undefined}
+          max={max ?? undefined}
+          step={step ?? undefined}
+          aria-describedby={ariaDescribedBy}
+          aria-required={isRequired === true ? 'true' : undefined}
+          aria-invalid={status?.type === 'error' ? 'true' : undefined}
           {...stylex.props(
-            styles.wrapper,
-            sizeStyles[size],
-            isDisabled && styles.wrapperDisabled,
-            status && statusBorderStyles[status.type],
-            status && statusHoverShadowStyles[status.type],
-            status && statusFocusStyles[status.type],
-            wrapperOverride,
-          )}>
-          {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
-          <input
-            ref={setRefs}
-            id={id}
-            name={htmlName}
-            type="number"
-            autoComplete={autoComplete}
-            value={displayValue}
-            onChange={handleInputChange}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            disabled={isDisabled}
-            autoFocus={hasAutoFocus}
-            min={min ?? undefined}
-            max={max ?? undefined}
-            step={step ?? undefined}
-            aria-describedby={ariaDescribedBy}
-            aria-required={isRequired === true ? 'true' : undefined}
-            aria-invalid={status?.type === 'error' ? 'true' : undefined}
-            {...stylex.props(
-              styles.input,
-              isDisabled && styles.inputDisabled,
-              !isInputValid && styles.inputInvalid,
-              inputOverride,
-            )}
-          />
-          {units && <span {...stylex.props(styles.units)}>{units}</span>}
-          {status && (
-            <XDSIcon
-              icon={statusIconMap[status.type]}
-              size="md"
-              color={statusIconColorMap[status.type]}
-            />
+            styles.input,
+            isDisabled && styles.inputDisabled,
+            !isInputValid && styles.inputInvalid,
+            inputOverride,
           )}
-        </div>
-      </XDSField>
-    );
-  },
-);
+        />
+        {units && <span {...stylex.props(styles.units)}>{units}</span>}
+        {status && (
+          <XDSIcon
+            icon={statusIconMap[status.type]}
+            size="md"
+            color={statusIconColorMap[status.type]}
+          />
+        )}
+      </div>
+    </XDSField>
+  );
+}
 
 XDSNumberInput.displayName = 'XDSNumberInput';

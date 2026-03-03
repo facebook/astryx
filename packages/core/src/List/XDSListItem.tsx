@@ -1,6 +1,6 @@
 /**
  * @file XDSListItem.tsx
- * @input Uses React forwardRef, ReactNode, StyleXStyles, theme tokens
+ * @input Uses React ReactNode, StyleXStyles, theme tokens
  * @output Exports XDSListItem component, XDSListItemProps type
  * @position Core implementation; consumed by XDSList, index.ts, tested by XDSList.test.tsx
  *
@@ -11,7 +11,7 @@
  * - /apps/storybook/stories/List.stories.tsx
  */
 
-import {forwardRef, useContext, type ReactNode} from 'react';
+import {useContext, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -29,6 +29,8 @@ import {XDSListContext} from './XDSListContext';
 // =============================================================================
 
 export interface XDSListItemProps {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLLIElement>;
   /**
    * Primary text label for the item.
    */
@@ -263,110 +265,103 @@ const descriptionSizeStyles = stylex.create({
  * <XDSListItem label="Docs" href="/docs" target="_blank" />
  * ```
  */
-export const XDSListItem = forwardRef<HTMLLIElement, XDSListItemProps>(
-  (
-    {
-      label,
-      description,
-      startContent,
-      endContent,
-      onClick,
-      href,
-      target,
-      isDisabled = false,
-      isSelected = false,
-      xstyle,
-      'data-testid': testId,
-    },
-    ref,
-  ) => {
-    const ctx = useContext(XDSListContext);
-    const density = ctx?.density ?? 'balanced';
-    const hasDividers = ctx?.hasDividers ?? false;
-    const hasMarkers = ctx?.hasMarkers ?? false;
-    const isInteractive = onClick != null || href != null;
+export function XDSListItem({
+  ref,
+  label,
+  description,
+  startContent,
+  endContent,
+  onClick,
+  href,
+  target,
+  isDisabled = false,
+  isSelected = false,
+  xstyle,
+  'data-testid': testId,
+}: XDSListItemProps) {
+  const ctx = useContext(XDSListContext);
+  const density = ctx?.density ?? 'balanced';
+  const hasDividers = ctx?.hasDividers ?? false;
+  const hasMarkers = ctx?.hasMarkers ?? false;
+  const isInteractive = onClick != null || href != null;
 
-    const labelAndDescription = (
-      <>
-        <span {...stylex.props(styles.label)}>{label}</span>
-        {description != null && (
-          <span
-            {...stylex.props(
-              styles.description,
-              descriptionSizeStyles[density],
-            )}>
-            {description}
-          </span>
-        )}
-      </>
-    );
+  const labelAndDescription = (
+    <>
+      <span {...stylex.props(styles.label)}>{label}</span>
+      {description != null && (
+        <span
+          {...stylex.props(styles.description, descriptionSizeStyles[density])}>
+          {description}
+        </span>
+      )}
+    </>
+  );
 
-    const handleContainerClick = (e: React.MouseEvent) => {
-      if (isDisabled) return;
-      const target = e.target as HTMLElement;
-      // Don't fire onClick if click originated from an interactive child
-      if (target.closest('button, a, input, select, textarea')) return;
-      onClick?.(e);
-    };
+  const handleContainerClick = (e: React.MouseEvent) => {
+    if (isDisabled) return;
+    const target = e.target as HTMLElement;
+    // Don't fire onClick if click originated from an interactive child
+    if (target.closest('button, a, input, select, textarea')) return;
+    onClick?.(e);
+  };
 
-    const innerContent = (
-      <>
-        {startContent != null && (
-          <span {...stylex.props(styles.startContent)}>{startContent}</span>
-        )}
+  const innerContent = (
+    <>
+      {startContent != null && (
+        <span {...stylex.props(styles.startContent)}>{startContent}</span>
+      )}
 
-        {href != null ? (
-          <a
-            href={href}
-            target={target}
-            aria-disabled={isDisabled || undefined}
-            tabIndex={isDisabled ? -1 : undefined}
-            {...stylex.props(styles.invisibleAnchor)}>
-            {labelAndDescription}
-          </a>
-        ) : onClick != null ? (
-          <button
-            type="button"
-            onClick={onClick}
-            disabled={isDisabled}
-            {...stylex.props(styles.invisibleButton)}>
-            {labelAndDescription}
-          </button>
-        ) : (
-          <span {...stylex.props(styles.content)}>{labelAndDescription}</span>
-        )}
+      {href != null ? (
+        <a
+          href={href}
+          target={target}
+          aria-disabled={isDisabled || undefined}
+          tabIndex={isDisabled ? -1 : undefined}
+          {...stylex.props(styles.invisibleAnchor)}>
+          {labelAndDescription}
+        </a>
+      ) : onClick != null ? (
+        <button
+          type="button"
+          onClick={onClick}
+          disabled={isDisabled}
+          {...stylex.props(styles.invisibleButton)}>
+          {labelAndDescription}
+        </button>
+      ) : (
+        <span {...stylex.props(styles.content)}>{labelAndDescription}</span>
+      )}
 
-        {endContent != null && (
-          <span {...stylex.props(styles.endContent)}>{endContent}</span>
-        )}
-      </>
-    );
+      {endContent != null && (
+        <span {...stylex.props(styles.endContent)}>{endContent}</span>
+      )}
+    </>
+  );
 
-    return (
-      <li
-        ref={ref}
-        data-testid={testId}
-        aria-selected={isSelected || undefined}
-        aria-disabled={isDisabled || undefined}
-        {...stylex.props(
-          hasMarkers ? styles.itemWithMarker : styles.item,
-          densityStyles[density],
-          hasDividers ? styles.noRadius : styles.withRadius,
-          isInteractive && styles.interactive,
-          isInteractive && styles.focusWithinOutline,
-          isDisabled && styles.disabled,
-          isSelected && styles.selected,
-          xstyle,
-        )}
-        onClick={isInteractive ? handleContainerClick : undefined}>
-        {hasMarkers ? (
-          <div {...stylex.props(styles.innerWrapper)}>{innerContent}</div>
-        ) : (
-          innerContent
-        )}
-      </li>
-    );
-  },
-);
+  return (
+    <li
+      ref={ref}
+      data-testid={testId}
+      aria-selected={isSelected || undefined}
+      aria-disabled={isDisabled || undefined}
+      {...stylex.props(
+        hasMarkers ? styles.itemWithMarker : styles.item,
+        densityStyles[density],
+        hasDividers ? styles.noRadius : styles.withRadius,
+        isInteractive && styles.interactive,
+        isInteractive && styles.focusWithinOutline,
+        isDisabled && styles.disabled,
+        isSelected && styles.selected,
+        xstyle,
+      )}
+      onClick={isInteractive ? handleContainerClick : undefined}>
+      {hasMarkers ? (
+        <div {...stylex.props(styles.innerWrapper)}>{innerContent}</div>
+      ) : (
+        innerContent
+      )}
+    </li>
+  );
+}
 
 XDSListItem.displayName = 'XDSListItem';

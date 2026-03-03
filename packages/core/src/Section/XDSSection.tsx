@@ -10,7 +10,7 @@
  * - /apps/storybook/stories/Section.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useContext, type ReactNode} from 'react';
+import {useContext, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
@@ -123,6 +123,8 @@ const dynamicStyles = stylex.create({
 });
 
 export interface XDSSectionProps {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLDivElement>;
   /**
    * Visual variant of the section.
    * - 'section': Surface background color
@@ -194,66 +196,61 @@ export interface XDSSectionProps {
  * </XDSSection>
  * ```
  */
-export const XDSSection = forwardRef<HTMLDivElement, XDSSectionProps>(
-  function XDSSection(
-    {
-      variant = 'section',
-      width,
-      height,
-      maxWidth,
-      minHeight,
-      children,
-      dividers,
-      isFullBleed = false,
-      ...props
-    },
-    ref,
-  ) {
-    // Get theme context for component-level overrides
-    const themeContext = useContext(ThemeContext);
-    const containerOverride =
-      themeContext?.theme.components?.section?.container;
-    const contentOverride = themeContext?.theme.components?.section?.content;
-    const variantOverride =
-      themeContext?.theme.components?.section?.variants?.[variant];
+export function XDSSection({
+  ref,
+  variant = 'section',
+  width,
+  height,
+  maxWidth,
+  minHeight,
+  children,
+  dividers,
+  isFullBleed = false,
+  ...props
+}: XDSSectionProps) {
+  // Get theme context for component-level overrides
+  const themeContext = useContext(ThemeContext);
+  const containerOverride = themeContext?.theme.components?.section?.container;
+  const contentOverride = themeContext?.theme.components?.section?.content;
+  const variantOverride =
+    themeContext?.theme.components?.section?.variants?.[variant];
 
-    return (
+  return (
+    <div
+      ref={ref}
+      {...stylex.props(
+        nestedStyles.outer,
+        dynamicStyles.sizing(
+          width ?? null,
+          height ?? null,
+          maxWidth ?? null,
+          minHeight ?? null,
+        ),
+        containerOverride,
+      )}
+      {...props}>
       <div
-        ref={ref}
         {...stylex.props(
-          nestedStyles.outer,
-          dynamicStyles.sizing(
-            width ?? null,
-            height ?? null,
-            maxWidth ?? null,
-            minHeight ?? null,
-          ),
-          containerOverride,
-        )}
-        {...props}>
-        <div
-          {...stylex.props(
-            nestedStyles.inner,
-            ...container({
-              paddingInnerX: 'spacing4',
-              paddingInnerY: 'spacing4',
-              paddingOuterX: 'spacing4',
-              paddingOuterY: 'spacing4',
-            }),
-            variantStyles[variant],
-            variantOverride,
-            isFullBleed && nestedStyles.fullBleed,
-            dividers?.includes('top') && dividerStyles.top,
-            dividers?.includes('bottom') && dividerStyles.bottom,
-            dividers?.includes('start') && dividerStyles.start,
-            dividers?.includes('end') && dividerStyles.end,
-            contentOverride,
-          )}>
-          {children}
-        </div>
+          nestedStyles.inner,
+          ...container({
+            paddingInnerX: 'spacing4',
+            paddingInnerY: 'spacing4',
+            paddingOuterX: 'spacing4',
+            paddingOuterY: 'spacing4',
+          }),
+          variantStyles[variant],
+          variantOverride,
+          isFullBleed && nestedStyles.fullBleed,
+          dividers?.includes('top') && dividerStyles.top,
+          dividers?.includes('bottom') && dividerStyles.bottom,
+          dividers?.includes('start') && dividerStyles.start,
+          dividers?.includes('end') && dividerStyles.end,
+          contentOverride,
+        )}>
+        {children}
       </div>
-    );
-  },
-);
+    </div>
+  );
+}
 
 XDSSection.displayName = 'XDSSection';

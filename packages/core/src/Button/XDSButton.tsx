@@ -1,6 +1,6 @@
 /**
  * @file XDSButton.tsx
- * @input Uses React, forwardRef, ButtonHTMLAttributes, ReactNode
+ * @input Uses React, ButtonHTMLAttributes, ReactNode
  * @output Exports XDSButton component, XDSButtonProps, XDSButtonVariant types
  * @position Core implementation; consumed by index.ts, tested by XDSButton.test.tsx
  *
@@ -14,12 +14,12 @@
  */
 
 import {
-  forwardRef,
   useContext,
   useTransition,
   type ButtonHTMLAttributes,
   type ReactElement,
   type ReactNode,
+  type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -211,6 +211,8 @@ export interface XDSButtonProps extends Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
   'children' | 'disabled'
 > {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLButtonElement>;
   /**
    * Accessible label for the button (required for accessibility).
    * Used as visible text, or as aria-label for icon-only buttons.
@@ -304,97 +306,93 @@ const loadingStyles = stylex.create({
  * <XDSButton label="Edit" icon={<PencilIcon />} endSlot={<XDSBadge>New</XDSBadge>}>Edit</XDSButton>
  * ```
  */
-export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
-  (
-    {
-      label,
-      variant = 'secondary',
-      size = 'md',
-      isDisabled = false,
-      isLoading = false,
-      onClickAction,
-      icon,
-      children,
-      endSlot,
-      tooltip,
-      ...props
-    },
-    ref,
-  ): ReactElement => {
-    const [isPending, startTransition] = useTransition();
-    const isLoadingState = isLoading || isPending;
-    const buttonDisabled = isDisabled || isLoadingState;
-    const useLightSpinner = variant === 'primary' || variant === 'destructive';
-    const isIconOnly = icon != null && children == null;
+export function XDSButton({
+  ref,
+  label,
+  variant = 'secondary',
+  size = 'md',
+  isDisabled = false,
+  isLoading = false,
+  onClickAction,
+  icon,
+  children,
+  endSlot,
+  tooltip,
+  ...props
+}: XDSButtonProps) {
+  const [isPending, startTransition] = useTransition();
+  const isLoadingState = isLoading || isPending;
+  const buttonDisabled = isDisabled || isLoadingState;
+  const useLightSpinner = variant === 'primary' || variant === 'destructive';
+  const isIconOnly = icon != null && children == null;
 
-    // Get theme context for component-level overrides (optional)
-    const themeContext = useContext(ThemeContext);
-    const themeVariantOverride =
-      themeContext?.theme.components?.button?.variants?.[variant];
+  // Get theme context for component-level overrides (optional)
+  const themeContext = useContext(ThemeContext);
+  const themeVariantOverride =
+    themeContext?.theme.components?.button?.variants?.[variant];
 
-    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-      if (onClickAction) {
-        e.preventDefault();
-        startTransition(async () => {
-          await onClickAction(e);
-        });
-      }
-      props.onClick?.(e);
-    };
-
-    const button = (
-      <button
-        ref={ref}
-        disabled={buttonDisabled}
-        aria-label={isIconOnly ? label : undefined}
-        aria-busy={isLoadingState || undefined}
-        {...stylex.props(
-          styles.base,
-          sizeStyles[size],
-          variants[variant],
-          themeVariantOverride,
-          isIconOnly && styles.iconOnly,
-          buttonDisabled && styles.disabled,
-          isLoadingState && loadingStyles.loading,
-        )}
-        {...props}
-        onClick={handleClick}>
-        {isLoadingState && (
-          <span
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-            <XDSSpinner
-              size="sm"
-              shade={useLightSpinner ? 'onMedia' : 'default'}
-            />
-          </span>
-        )}
-        {icon}
-        {children ?? (isIconOnly ? null : label)}
-        {!isIconOnly && endSlot && (
-          <span {...stylex.props(styles.endSlotWrapper)}>{endSlot}</span>
-        )}
-      </button>
-    );
-
-    if (tooltip) {
-      return (
-        <XDSTooltip content={tooltip} placement="above">
-          {button}
-        </XDSTooltip>
-      );
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (onClickAction) {
+      e.preventDefault();
+      startTransition(async () => {
+        await onClickAction(e);
+      });
     }
+    props.onClick?.(e);
+  };
 
-    return button;
-  },
-);
+  const button = (
+    <button
+      ref={ref}
+      disabled={buttonDisabled}
+      aria-label={isIconOnly ? label : undefined}
+      aria-busy={isLoadingState || undefined}
+      {...stylex.props(
+        styles.base,
+        sizeStyles[size],
+        variants[variant],
+        themeVariantOverride,
+        isIconOnly && styles.iconOnly,
+        buttonDisabled && styles.disabled,
+        isLoadingState && loadingStyles.loading,
+      )}
+      {...props}
+      onClick={handleClick}>
+      {isLoadingState && (
+        <span
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+          <XDSSpinner
+            size="sm"
+            shade={useLightSpinner ? 'onMedia' : 'default'}
+          />
+        </span>
+      )}
+      {icon}
+      {children ?? (isIconOnly ? null : label)}
+      {!isIconOnly && endSlot && (
+        <span {...stylex.props(styles.endSlotWrapper)}>{endSlot}</span>
+      )}
+    </button>
+  );
+
+  if (tooltip) {
+    return (
+      <XDSTooltip content={tooltip} placement="above">
+        {button}
+      </XDSTooltip>
+    );
+  }
+
+  return button;
+}
 
 XDSButton.displayName = 'XDSButton';

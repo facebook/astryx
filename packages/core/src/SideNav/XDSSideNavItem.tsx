@@ -1,6 +1,6 @@
 /**
  * @file XDSSideNavItem.tsx
- * @input Uses React forwardRef, ReactNode, StyleX, XDSIcon, XDSIconType
+ * @input Uses React ReactNode, StyleX, XDSIcon, XDSIconType
  * @output Exports XDSSideNavItem component and XDSSideNavItemProps
  * @position Core implementation; used inside XDSSideNav children
  *
@@ -15,7 +15,7 @@
 
 'use client';
 
-import {forwardRef, useId, type ReactNode} from 'react';
+import {useId, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -102,6 +102,8 @@ const styles = stylex.create({
 // =============================================================================
 
 export interface XDSSideNavItemProps {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLElement>;
   /**
    * Custom component to render instead of `<a>` for link items.
    * Overrides the provider-level default set by XDSLinkProvider.
@@ -177,108 +179,102 @@ export interface XDSSideNavItemProps {
  * </XDSSideNavItem>
  * ```
  */
-export const XDSSideNavItem = forwardRef<HTMLElement, XDSSideNavItemProps>(
-  function XDSSideNavItem(
-    {
-      as,
-      label,
-      icon,
-      selectedIcon,
-      isSelected = false,
-      isDisabled = false,
-      href,
-      onClick,
-      endContent,
-      children,
-      'data-testid': testId,
-    },
-    ref,
-  ) {
-    const id = useId();
-    const hasChildren = !!children;
-    const LinkComponent = useXDSLinkComponent(as);
+export function XDSSideNavItem({
+  ref,
+  as,
+  label,
+  icon,
+  selectedIcon,
+  isSelected = false,
+  isDisabled = false,
+  href,
+  onClick,
+  endContent,
+  children,
+  'data-testid': testId,
+}: XDSSideNavItemProps) {
+  const id = useId();
+  const hasChildren = !!children;
+  const LinkComponent = useXDSLinkComponent(as);
 
-    const displayIcon = isSelected && selectedIcon ? selectedIcon : icon;
+  const displayIcon = isSelected && selectedIcon ? selectedIcon : icon;
 
-    const handleClick = (e: React.MouseEvent) => {
-      if (isDisabled) {
-        e.preventDefault();
-        return;
-      }
-      onClick?.(e);
-    };
+  const handleClick = (e: React.MouseEvent) => {
+    if (isDisabled) {
+      e.preventDefault();
+      return;
+    }
+    onClick?.(e);
+  };
 
-    const itemContent = (
-      <>
-        {displayIcon && (
-          <XDSIcon
-            icon={displayIcon}
-            size="sm"
-            color={
-              isSelected ? 'primary' : isDisabled ? 'disabled' : 'secondary'
-            }
-          />
-        )}
-        <span {...stylex.props(styles.label)}>{label}</span>
-        {endContent && (
-          <span {...stylex.props(styles.endContent)}>{endContent}</span>
-        )}
-      </>
+  const itemContent = (
+    <>
+      {displayIcon && (
+        <XDSIcon
+          icon={displayIcon}
+          size="sm"
+          color={isSelected ? 'primary' : isDisabled ? 'disabled' : 'secondary'}
+        />
+      )}
+      <span {...stylex.props(styles.label)}>{label}</span>
+      {endContent && (
+        <span {...stylex.props(styles.endContent)}>{endContent}</span>
+      )}
+    </>
+  );
+
+  const ariaProps = {
+    'aria-current': isSelected ? ('page' as const) : undefined,
+    'aria-disabled': isDisabled || undefined,
+    'data-testid': testId,
+  };
+
+  const itemElement =
+    href && !isDisabled ? (
+      <LinkComponent
+        ref={ref as React.Ref<HTMLAnchorElement>}
+        href={href}
+        onClick={handleClick}
+        {...ariaProps}
+        {...stylex.props(
+          styles.item,
+          isSelected && styles.selected,
+          isDisabled && styles.disabled,
+        )}>
+        {itemContent}
+      </LinkComponent>
+    ) : (
+      <button
+        ref={ref as React.Ref<HTMLButtonElement>}
+        type="button"
+        onClick={handleClick}
+        disabled={isDisabled}
+        {...ariaProps}
+        {...stylex.props(
+          styles.item,
+          isSelected && styles.selected,
+          isDisabled && styles.disabled,
+        )}>
+        {itemContent}
+      </button>
     );
 
-    const ariaProps = {
-      'aria-current': isSelected ? ('page' as const) : undefined,
-      'aria-disabled': isDisabled || undefined,
-      'data-testid': testId,
-    };
-
-    const itemElement =
-      href && !isDisabled ? (
-        <LinkComponent
-          ref={ref as React.Ref<HTMLAnchorElement>}
-          href={href}
-          onClick={handleClick}
-          {...ariaProps}
-          {...stylex.props(
-            styles.item,
-            isSelected && styles.selected,
-            isDisabled && styles.disabled,
-          )}>
-          {itemContent}
-        </LinkComponent>
-      ) : (
-        <button
-          ref={ref as React.Ref<HTMLButtonElement>}
-          type="button"
-          onClick={handleClick}
-          disabled={isDisabled}
-          {...ariaProps}
-          {...stylex.props(
-            styles.item,
-            isSelected && styles.selected,
-            isDisabled && styles.disabled,
-          )}>
-          {itemContent}
-        </button>
-      );
-
-    return (
-      <div {...stylex.props(styles.root)}>
-        {itemElement}
-        {hasChildren && (
-          <div
-            role="group"
-            aria-labelledby={`${id}-label`}
-            {...stylex.props(styles.children)}>
-            <span id={`${id}-label`} hidden>
-              {label}
-            </span>
-            {children}
-          </div>
-        )}
-      </div>
-    );
-  },
-);
+  return (
+    <div {...stylex.props(styles.root)}>
+      {itemElement}
+      {hasChildren && (
+        <div
+          role="group"
+          aria-labelledby={`${id}-label`}
+          {...stylex.props(styles.children)}>
+          <span id={`${id}-label`} hidden>
+            {label}
+          </span>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
 
 XDSSideNavItem.displayName = 'XDSSideNavItem';

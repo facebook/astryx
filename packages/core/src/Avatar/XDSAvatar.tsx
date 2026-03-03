@@ -1,6 +1,6 @@
 /**
  * @file XDSAvatar.tsx
- * @input Uses React forwardRef, HTMLAttributes, ReactNode, useState
+ * @input Uses React HTMLAttributes, ReactNode, useState
  * @output Exports XDSAvatar component, XDSAvatarProps, XDSAvatarSize types
  * @position Core implementation; consumed by index.ts
  *
@@ -12,11 +12,11 @@
  */
 
 import {
-  forwardRef,
   useContext,
   useState,
   type HTMLAttributes,
   type ReactNode,
+  type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -179,6 +179,8 @@ export interface XDSAvatarProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
   'children'
 > {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLDivElement>;
   /**
    * The alt text shown on hover and made accessible to screen readers.
    * Falls back to `name` if not provided.
@@ -257,92 +259,87 @@ function DefaultIcon({size}: {size: number}) {
  * <XDSAvatar src="/user.jpg" status={<OnlineIndicator />} />
  * ```
  */
-export const XDSAvatar = forwardRef<HTMLDivElement, XDSAvatarProps>(
-  (
-    {
-      alt,
-      'data-testid': testId,
-      fallbackSrc,
-      name,
-      size = 'small',
-      src,
-      status,
-      ...props
-    },
-    ref,
-  ) => {
-    const [imageError, setImageError] = useState(false);
-    const [fallbackError, setFallbackError] = useState(false);
+export function XDSAvatar({
+  ref,
+  alt,
+  'data-testid': testId,
+  fallbackSrc,
+  name,
+  size = 'small',
+  src,
+  status,
+  ...props
+}: XDSAvatarProps) {
+  const [imageError, setImageError] = useState(false);
+  const [fallbackError, setFallbackError] = useState(false);
 
-    const showImage = src && !imageError;
-    const showFallbackImage = !showImage && fallbackSrc && !fallbackError;
-    const showInitials = !showImage && !showFallbackImage && name;
-    const showIcon = !showImage && !showFallbackImage && !name;
+  const showImage = src && !imageError;
+  const showFallbackImage = !showImage && fallbackSrc && !fallbackError;
+  const showInitials = !showImage && !showFallbackImage && name;
+  const showIcon = !showImage && !showFallbackImage && !name;
 
-    const accessibleName = alt || name || 'Avatar';
-    const numericSize = resolveSize(size);
+  const accessibleName = alt || name || 'Avatar';
+  const numericSize = resolveSize(size);
 
-    // Get theme context for component-level overrides (optional)
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.avatar?.root;
-    const fallbackOverride = themeContext?.theme.components?.avatar?.fallback;
+  // Get theme context for component-level overrides (optional)
+  const themeContext = useContext(ThemeContext);
+  const rootOverride = themeContext?.theme.components?.avatar?.root;
+  const fallbackOverride = themeContext?.theme.components?.avatar?.fallback;
 
-    return (
-      <XDSAvatarSizeContext.Provider value={numericSize}>
-        <div
-          ref={ref}
-          role="img"
-          aria-label={accessibleName}
-          data-testid={testId}
-          {...stylex.props(styles.wrapper, rootOverride)}
-          {...props}>
-          <div
-            {...stylex.props(styles.content, dynamicStyles.size(numericSize))}>
-            {showImage && (
-              <img
-                src={src}
-                alt={accessibleName}
-                onError={() => setImageError(true)}
-                {...stylex.props(styles.image)}
-              />
-            )}
-            {showFallbackImage && (
-              <img
-                src={fallbackSrc}
-                alt={accessibleName}
-                onError={() => setFallbackError(true)}
-                {...stylex.props(styles.image)}
-              />
-            )}
-            {showInitials && (
-              <div
-                {...stylex.props(
-                  styles.fallback,
-                  dynamicStyles.fontSize(numericSize),
-                  fallbackOverride,
-                )}>
-                {getInitials(name)}
-              </div>
-            )}
-            {showIcon && (
-              <div {...stylex.props(styles.fallback, fallbackOverride)}>
-                <DefaultIcon size={numericSize} />
-              </div>
-            )}
-          </div>
-          {status && (
+  return (
+    <XDSAvatarSizeContext.Provider value={numericSize}>
+      <div
+        ref={ref}
+        role="img"
+        aria-label={accessibleName}
+        data-testid={testId}
+        {...stylex.props(styles.wrapper, rootOverride)}
+        {...props}>
+        <div {...stylex.props(styles.content, dynamicStyles.size(numericSize))}>
+          {showImage && (
+            <img
+              src={src}
+              alt={accessibleName}
+              onError={() => setImageError(true)}
+              {...stylex.props(styles.image)}
+            />
+          )}
+          {showFallbackImage && (
+            <img
+              src={fallbackSrc}
+              alt={accessibleName}
+              onError={() => setFallbackError(true)}
+              {...stylex.props(styles.image)}
+            />
+          )}
+          {showInitials && (
             <div
               {...stylex.props(
-                styles.status,
-                dynamicStyles.statusPosition(numericSize),
+                styles.fallback,
+                dynamicStyles.fontSize(numericSize),
+                fallbackOverride,
               )}>
-              {status}
+              {getInitials(name)}
+            </div>
+          )}
+          {showIcon && (
+            <div {...stylex.props(styles.fallback, fallbackOverride)}>
+              <DefaultIcon size={numericSize} />
             </div>
           )}
         </div>
-      </XDSAvatarSizeContext.Provider>
-    );
-  },
-);
+        {status && (
+          <div
+            {...stylex.props(
+              styles.status,
+              dynamicStyles.statusPosition(numericSize),
+            )}>
+            {status}
+          </div>
+        )}
+      </div>
+    </XDSAvatarSizeContext.Provider>
+  );
+}
 
 XDSAvatar.displayName = 'XDSAvatar';

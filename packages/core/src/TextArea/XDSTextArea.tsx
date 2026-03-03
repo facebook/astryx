@@ -1,6 +1,6 @@
 /**
  * @file XDSTextArea.tsx
- * @input Uses React forwardRef, useId, ChangeEvent, ClipboardEvent, XDSField, XDSIcon
+ * @input Uses React useId, ChangeEvent, ClipboardEvent, XDSField, XDSIcon
  * @output Exports XDSTextArea component, XDSTextAreaProps, XDSTextAreaStatus, XDSTextAreaStatusType
  * @position Core implementation; consumed by index.ts, tested by XDSTextArea.test.tsx
  *
@@ -12,13 +12,13 @@
  */
 
 import {
-  forwardRef,
   useContext,
   useId,
   useOptimistic,
   useTransition,
   type ChangeEvent,
   type ClipboardEvent,
+  type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSIconName} from '../Icon';
@@ -201,6 +201,8 @@ declare module '../theme/types' {
   }
 }
 export interface XDSTextAreaProps {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLTextAreaElement>;
   /**
    * Label text for the textarea (always rendered for accessibility).
    */
@@ -303,151 +305,147 @@ export interface XDSTextAreaProps {
  * <XDSTextArea label="Notes" rows={5} value={notes} onChange={setNotes} />
  * ```
  */
-export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
-  (
-    {
-      label,
-      isLabelHidden = false,
-      description,
-      isOptional = false,
-      isRequired = false,
-      onChange,
-      onChangeAction,
-      isLoading = false,
-      value,
-      placeholder,
-      rows = 3,
-      isDisabled = false,
-      status,
-      labelTooltip,
-      startIcon,
-      hasSpellCheck = true,
-      onPaste,
-      maxLength,
-      hasAutoFocus = false,
-      htmlName,
-    },
-    ref,
-  ) => {
-    const themeContext = useContext(ThemeContext);
-    const wrapperOverride = themeContext?.theme.components?.textArea?.wrapper;
-    const textareaOverride = themeContext?.theme.components?.textArea?.textarea;
+export function XDSTextArea({
+  ref,
+  label,
+  isLabelHidden = false,
+  description,
+  isOptional = false,
+  isRequired = false,
+  onChange,
+  onChangeAction,
+  isLoading = false,
+  value,
+  placeholder,
+  rows = 3,
+  isDisabled = false,
+  status,
+  labelTooltip,
+  startIcon,
+  hasSpellCheck = true,
+  onPaste,
+  maxLength,
+  hasAutoFocus = false,
+  htmlName,
+}: XDSTextAreaProps) {
+  const themeContext = useContext(ThemeContext);
+  const wrapperOverride = themeContext?.theme.components?.textArea?.wrapper;
+  const textareaOverride = themeContext?.theme.components?.textArea?.textarea;
 
-    const id = useId();
-    const descriptionID = useId();
-    const statusMessageID = useId();
+  const id = useId();
+  const descriptionID = useId();
+  const statusMessageID = useId();
 
-    const [, startTransition] = useTransition();
-    const [optimisticValue, setOptimisticValue] = useOptimistic(value);
-    const isBusy = isLoading || optimisticValue !== value;
+  const [, startTransition] = useTransition();
+  const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+  const isBusy = isLoading || optimisticValue !== value;
 
-    const statusIconMap: Record<XDSTextAreaStatusType, XDSIconName> = {
-      warning: 'warning',
-      error: 'xCircle',
-      success: 'checkCircle',
-    };
+  const statusIconMap: Record<XDSTextAreaStatusType, XDSIconName> = {
+    warning: 'warning',
+    error: 'xCircle',
+    success: 'checkCircle',
+  };
 
-    const statusIconColorMap: Record<
-      XDSTextAreaStatusType,
-      'warning' | 'negative' | 'positive'
-    > = {
-      warning: 'warning',
-      error: 'negative',
-      success: 'positive',
-    };
+  const statusIconColorMap: Record<
+    XDSTextAreaStatusType,
+    'warning' | 'negative' | 'positive'
+  > = {
+    warning: 'warning',
+    error: 'negative',
+    success: 'positive',
+  };
 
-    const ariaDescribedBy =
-      [
-        description ? descriptionID : null,
-        status?.message ? statusMessageID : null,
-      ]
-        .filter(Boolean)
-        .join(' ') || undefined;
+  const ariaDescribedBy =
+    [
+      description ? descriptionID : null,
+      status?.message ? statusMessageID : null,
+    ]
+      .filter(Boolean)
+      .join(' ') || undefined;
 
-    const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-      const newValue = e.target.value;
-      onChange?.(newValue, e);
-      if (onChangeAction && !e.defaultPrevented) {
-        startTransition(async () => {
-          setOptimisticValue(newValue);
-          await onChangeAction(newValue, e);
-        });
+  const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    onChange?.(newValue, e);
+    if (onChangeAction && !e.defaultPrevented) {
+      startTransition(async () => {
+        setOptimisticValue(newValue);
+        await onChangeAction(newValue, e);
+      });
+    }
+  };
+
+  return (
+    <XDSField
+      label={label}
+      isLabelHidden={isLabelHidden}
+      description={description}
+      inputID={id}
+      descriptionID={description ? descriptionID : undefined}
+      isOptional={isOptional}
+      isRequired={isRequired}
+      status={
+        status
+          ? {
+              type: status.type,
+              message: status.message,
+              messageID: status.message ? statusMessageID : undefined,
+            }
+          : undefined
       }
-    };
-
-    return (
-      <XDSField
-        label={label}
-        isLabelHidden={isLabelHidden}
-        description={description}
-        inputID={id}
-        descriptionID={description ? descriptionID : undefined}
-        isOptional={isOptional}
-        isRequired={isRequired}
-        status={
-          status
-            ? {
-                type: status.type,
-                message: status.message,
-                messageID: status.message ? statusMessageID : undefined,
-              }
-            : undefined
-        }
-        labelTooltip={labelTooltip}>
+      labelTooltip={labelTooltip}>
+      <div
+        {...stylex.props(
+          styles.wrapper,
+          isDisabled && styles.wrapperDisabled,
+          status && statusBorderStyles[status.type],
+          status && statusHoverShadowStyles[status.type],
+          status && statusFocusStyles[status.type],
+          wrapperOverride,
+        )}>
+        {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
+        <textarea
+          ref={ref}
+          id={id}
+          name={htmlName}
+          value={String(optimisticValue)}
+          onChange={handleChange}
+          onPaste={onPaste}
+          placeholder={placeholder}
+          rows={rows}
+          disabled={isDisabled}
+          spellCheck={hasSpellCheck}
+          maxLength={maxLength}
+          autoFocus={hasAutoFocus}
+          aria-describedby={ariaDescribedBy}
+          aria-required={isRequired === true ? 'true' : undefined}
+          aria-invalid={status?.type === 'error' ? 'true' : undefined}
+          aria-busy={isBusy || undefined}
+          {...stylex.props(
+            styles.textarea,
+            isDisabled && styles.textareaDisabled,
+            textareaOverride,
+          )}
+        />
+        {isBusy && <XDSSpinner size="sm" />}
+        {status && (
+          <XDSIcon
+            icon={statusIconMap[status.type]}
+            size="md"
+            color={statusIconColorMap[status.type]}
+          />
+        )}
+      </div>
+      {maxLength != null && (
         <div
           {...stylex.props(
-            styles.wrapper,
-            isDisabled && styles.wrapperDisabled,
-            status && statusBorderStyles[status.type],
-            status && statusHoverShadowStyles[status.type],
-            status && statusFocusStyles[status.type],
-            wrapperOverride,
+            styles.counter,
+            value.length > maxLength && styles.counterError,
           )}>
-          {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
-          <textarea
-            ref={ref}
-            id={id}
-            name={htmlName}
-            value={String(optimisticValue)}
-            onChange={handleChange}
-            onPaste={onPaste}
-            placeholder={placeholder}
-            rows={rows}
-            disabled={isDisabled}
-            spellCheck={hasSpellCheck}
-            maxLength={maxLength}
-            autoFocus={hasAutoFocus}
-            aria-describedby={ariaDescribedBy}
-            aria-required={isRequired === true ? 'true' : undefined}
-            aria-invalid={status?.type === 'error' ? 'true' : undefined}
-            aria-busy={isBusy || undefined}
-            {...stylex.props(
-              styles.textarea,
-              isDisabled && styles.textareaDisabled,
-              textareaOverride,
-            )}
-          />
-          {isBusy && <XDSSpinner size="sm" />}
-          {status && (
-            <XDSIcon
-              icon={statusIconMap[status.type]}
-              size="md"
-              color={statusIconColorMap[status.type]}
-            />
-          )}
+          {value.length}/{maxLength}
         </div>
-        {maxLength != null && (
-          <div
-            {...stylex.props(
-              styles.counter,
-              value.length > maxLength && styles.counterError,
-            )}>
-            {value.length}/{maxLength}
-          </div>
-        )}
-      </XDSField>
-    );
-  },
-);
+      )}
+    </XDSField>
+  );
+}
 
 XDSTextArea.displayName = 'XDSTextArea';

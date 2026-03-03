@@ -14,13 +14,13 @@
  */
 
 import React, {
-  forwardRef,
   useCallback,
   useEffect,
   useId,
   useRef,
   useState,
   type ReactNode,
+  type Ref,
   type RefObject,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -44,6 +44,8 @@ import type {XDSSearchableItem, XDSSearchSource} from './types';
 // =============================================================================
 
 export interface XDSBaseTypeaheadProps<T extends XDSSearchableItem> {
+  /** Ref to the input element. */
+  ref?: Ref<HTMLInputElement>;
   /**
    * Search source providing items.
    */
@@ -247,31 +249,27 @@ const styles = stylex.create({
  * />
  * ```
  */
-export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
-  T extends XDSSearchableItem,
->(
-  {
-    searchSource,
-    value,
-    onChange,
-    renderItem,
-    placeholder = 'Search...',
-    hasEntriesOnFocus = false,
-    maxMenuItems = 10,
-    emptySearchResultsText = 'No results found',
-    isDisabled = false,
-    hasAutoFocus = false,
-    onChangeQuery,
-    onOpenChange,
-    inputId: externalInputId,
-    ariaDescribedBy,
-    inputXStyle,
-    anchorRef,
-    onKeyDown: externalOnKeyDown,
-    debounceMs = 150,
-  }: XDSBaseTypeaheadProps<T>,
-  ref: React.ForwardedRef<HTMLInputElement>,
-) {
+export function XDSBaseTypeahead<T extends XDSSearchableItem>({
+  ref,
+  searchSource,
+  value,
+  onChange,
+  renderItem,
+  placeholder = 'Search...',
+  hasEntriesOnFocus = false,
+  maxMenuItems = 10,
+  emptySearchResultsText = 'No results found',
+  isDisabled = false,
+  hasAutoFocus = false,
+  onChangeQuery,
+  onOpenChange,
+  inputId: externalInputId,
+  ariaDescribedBy,
+  inputXStyle,
+  anchorRef,
+  onKeyDown: externalOnKeyDown,
+  debounceMs = 150,
+}: XDSBaseTypeaheadProps<T>) {
   const generatedId = useId();
   const inputId = externalInputId ?? generatedId;
   const listboxId = useId();
@@ -617,8 +615,6 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
       )}
     </>
   );
-}) as <T extends XDSSearchableItem>(
-  props: XDSBaseTypeaheadProps<T> & {ref?: React.Ref<HTMLInputElement>},
-) => React.ReactElement;
+}
 
-(XDSBaseTypeahead as {displayName?: string}).displayName = 'XDSBaseTypeahead';
+XDSBaseTypeahead.displayName = 'XDSBaseTypeahead';

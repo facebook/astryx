@@ -10,7 +10,7 @@
  * - /apps/storybook/stories/Skeleton.stories.tsx
  */
 
-import {forwardRef, useContext, type HTMLAttributes} from 'react';
+import {useContext, type HTMLAttributes, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
@@ -126,6 +126,8 @@ export interface XDSSkeletonProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
   'className' | 'style'
 > {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLDivElement>;
   /**
    * Width of the skeleton.
    * Accepts a number (pixels) or string (any CSS value).
@@ -175,36 +177,32 @@ export interface XDSSkeletonProps extends Omit<
  * <XDSSkeleton width={280} height={16} index={1} />
  * ```
  */
-export const XDSSkeleton = forwardRef<HTMLDivElement, XDSSkeletonProps>(
-  (
-    {
-      width = '100%',
-      height = '100%',
-      radius: radiusProp = 'container',
-      index = 0,
-      'data-testid': testId,
-      ...props
-    },
-    ref,
-  ) => {
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.skeleton?.root;
-    return (
-      <div
-        ref={ref}
-        data-testid={testId}
-        {...stylex.props(
-          styles.root,
-          styles.animate,
-          radiusStyles[radiusProp],
-          dynamicStyles.dimensions(width, height),
-          dynamicStyles.animationDelay(index),
-          rootOverride,
-        )}
-        {...props}
-      />
-    );
-  },
-);
+export function XDSSkeleton({
+  ref,
+  width = '100%',
+  height = '100%',
+  radius: radiusProp = 'container',
+  index = 0,
+  'data-testid': testId,
+  ...props
+}: XDSSkeletonProps) {
+  const themeContext = useContext(ThemeContext);
+  const rootOverride = themeContext?.theme.components?.skeleton?.root;
+  return (
+    <div
+      ref={ref}
+      data-testid={testId}
+      {...stylex.props(
+        styles.root,
+        styles.animate,
+        radiusStyles[radiusProp],
+        dynamicStyles.dimensions(width, height),
+        dynamicStyles.animationDelay(index),
+        rootOverride,
+      )}
+      {...props}
+    />
+  );
+}
 
 XDSSkeleton.displayName = 'XDSSkeleton';

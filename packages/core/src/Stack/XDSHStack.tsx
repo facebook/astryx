@@ -10,7 +10,7 @@
  * - /apps/storybook/stories/HStack.stories.tsx
  */
 
-import {forwardRef} from 'react';
+import {type Ref} from 'react';
 import {XDSStack, type XDSStackProps} from './XDSStack';
 import type {StackCrossAlignment, StackMainAlignment} from './stack.stylex';
 
@@ -18,6 +18,8 @@ export interface XDSHStackProps extends Omit<
   XDSStackProps,
   'direction' | 'hAlign' | 'vAlign'
 > {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLElement>;
   /**
    * Horizontal alignment of items (main-axis for horizontal stack).
    * - `start`: Align to start (left in LTR)
@@ -50,10 +52,8 @@ export interface XDSHStackProps extends Omit<
  * <XDSStack direction="horizontal" gap="space2">...</XDSStack>
  * ```
  */
-export const XDSHStack = forwardRef<HTMLElement, XDSHStackProps>(
-  function XDSHStack(props, ref) {
-    return <XDSStack {...props} direction="horizontal" ref={ref} />;
-  },
-);
+export function XDSHStack({ref, ...props}: XDSStackProps) {
+  return <XDSStack {...props} direction="horizontal" ref={ref} />;
+}
 
 XDSHStack.displayName = 'XDSHStack';

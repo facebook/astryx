@@ -1,6 +1,6 @@
 /**
  * @file XDSText.tsx
- * @input Uses React forwardRef, HTMLAttributes, ReactNode
+ * @input Uses React HTMLAttributes, ReactNode
  * @output Exports XDSText component, XDSTextProps, XDSTextType, XDSTextSize types
  * @position Core implementation; consumed by index.ts, tested by XDSText.test.tsx
  *
@@ -12,13 +12,13 @@
  */
 
 import {
-  forwardRef,
   lazy,
   Suspense,
   useCallback,
   useContext,
   useRef,
   type ReactNode,
+  type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -54,6 +54,8 @@ const LazyXDSTooltip = lazy(() =>
 export type {XDSTextType, XDSTextSize};
 
 export interface XDSTextProps {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLElement>;
   /**
    * Semantic text type. Determines size, weight, and line-height from theme.
    * Required to ensure semantic usage.
@@ -179,27 +181,25 @@ const defaultColorByType: Record<XDSTextType, XDSTextColor> = {
  * <XDSText type="body" color="secondary" weight="bold">Styled text</XDSText>
  * ```
  */
-export const XDSText = forwardRef<HTMLElement, XDSTextProps>(function XDSText(
-  {
-    type,
-    size: _size,
-    color,
-    weight,
-    display = 'inline',
-    maxLines = 0,
-    hasTruncateTooltip = true,
-    wordBreak,
-    textWrap,
-    hasCapsize = false,
-    hasStrikethrough = false,
-    hasTabularNumbers = false,
-    xstyle,
-    as: Component = 'span',
-    children,
-    ...props
-  },
-  forwardedRef,
-) {
+export function XDSText({
+  ref,
+  type,
+  size: _size,
+  color,
+  weight,
+  display = 'inline',
+  maxLines = 0,
+  hasTruncateTooltip = true,
+  wordBreak,
+  textWrap,
+  hasCapsize = false,
+  hasStrikethrough = false,
+  hasTabularNumbers = false,
+  xstyle,
+  as: Component = 'span',
+  children,
+  ...props
+}: XDSTextProps) {
   const themeContext = useContext(ThemeContext);
   const textStyles = themeContext?.theme?.components?.text?.styles;
   const typeStyle = textStyles?.[type];
@@ -226,21 +226,21 @@ export const XDSText = forwardRef<HTMLElement, XDSTextProps>(function XDSText(
   // Ref for the text element (used as tooltip anchor)
   const textRef = useRef<HTMLElement>(null);
 
-  // Merge refs: forwardedRef, truncation.ref, textRef
+  // Merge refs: ref, truncation.ref, textRef
   const mergedRef = useCallback(
     (element: HTMLElement | null) => {
       // Forward ref
-      if (typeof forwardedRef === 'function') {
-        forwardedRef(element);
-      } else if (forwardedRef) {
-        forwardedRef.current = element;
+      if (typeof ref === 'function') {
+        ref(element);
+      } else if (ref) {
+        ref.current = element;
       }
       // Truncation ref
       truncation.ref(element);
       // Local ref for tooltip anchor
       (textRef as React.MutableRefObject<HTMLElement | null>).current = element;
     },
-    [forwardedRef, truncation.ref],
+    [ref, truncation.ref],
   );
 
   // Build inline style for -webkit-line-clamp (dynamic value)
@@ -292,6 +292,6 @@ export const XDSText = forwardRef<HTMLElement, XDSTextProps>(function XDSText(
       )}
     </>
   );
-});
+}
 
 XDSText.displayName = 'XDSText';

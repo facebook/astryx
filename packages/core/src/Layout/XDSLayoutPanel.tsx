@@ -1,6 +1,6 @@
 /**
  * @file XDSLayoutPanel.tsx
- * @input Uses React forwardRef, StyleX, XDSLayoutAreaContext, XDSLayoutSlotsContext
+ * @input Uses React StyleX, XDSLayoutAreaContext, XDSLayoutSlotsContext
  * @output Exports XDSLayoutPanel component and XDSLayoutPanelProps
  * @position Sidebar panel for XDSLayout start/end slots. Use for navigation panels,
  *   settings sidebars, detail panels, or any fixed-width side content.
@@ -10,8 +10,8 @@
  * - /apps/storybook/stories/Layout.stories.tsx
  */
 
-import type {AriaRole, HTMLAttributes, ReactNode} from 'react';
-import {forwardRef, useContext} from 'react';
+import type {AriaRole, HTMLAttributes, ReactNode, Ref} from 'react';
+import {useContext} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {XDSLayoutAreaContext} from './XDSLayoutAreaContext';
@@ -87,6 +87,8 @@ export interface XDSLayoutPanelProps extends Omit<
   HTMLAttributes<HTMLElement>,
   'style' | 'className'
 > {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLElement>;
   /**
    * Content to render inside the panel.
    */
@@ -162,67 +164,63 @@ export interface XDSLayoutPanelProps extends Omit<
  * </XDSLayoutContainer>
  * ```
  */
-export const XDSLayoutPanel = forwardRef<HTMLElement, XDSLayoutPanelProps>(
-  function XDSLayoutPanel(
-    {
-      children,
-      hasDivider = false,
-      isFullBleed = false,
-      isScrollable = true,
-      label,
-      role,
-      width,
-      ...props
-    },
-    ref,
-  ) {
-    const area = useContext(XDSLayoutAreaContext);
-    const {hasHeader, hasFooter} = useContext(XDSLayoutSlotsContext);
+export function XDSLayoutPanel({
+  ref,
+  children,
+  hasDivider = false,
+  isFullBleed = false,
+  isScrollable = true,
+  label,
+  role,
+  width,
+  ...props
+}: XDSLayoutPanelProps) {
+  const area = useContext(XDSLayoutAreaContext);
+  const {hasHeader, hasFooter} = useContext(XDSLayoutSlotsContext);
 
-    // Determine panel position
-    const isStartPanel = area === 'start';
-    const isEndPanel = area === 'end';
+  // Determine panel position
+  const isStartPanel = area === 'start';
+  const isEndPanel = area === 'end';
 
-    // When no divider, collapse spacing for seamless visual flow
-    const shouldCollapseSpacing = !hasDivider && !isFullBleed;
+  // When no divider, collapse spacing for seamless visual flow
+  const shouldCollapseSpacing = !hasDivider && !isFullBleed;
 
-    // Select divider style based on position
-    const dividerStyle = isStartPanel
-      ? styles.dividerEnd
-      : isEndPanel
-        ? styles.dividerStart
-        : null;
+  // Select divider style based on position
+  const dividerStyle = isStartPanel
+    ? styles.dividerEnd
+    : isEndPanel
+      ? styles.dividerStart
+      : null;
 
-    // Select collapse style based on position (collapse the side where divider would be)
-    const collapseStyle = isStartPanel
-      ? styles.collapseEnd
-      : isEndPanel
-        ? styles.collapseStart
-        : null;
+  // Select collapse style based on position (collapse the side where divider would be)
+  const collapseStyle = isStartPanel
+    ? styles.collapseEnd
+    : isEndPanel
+      ? styles.collapseStart
+      : null;
 
-    return (
-      <div
-        ref={ref as React.Ref<HTMLDivElement>}
-        role={role}
-        aria-label={label}
-        {...stylex.props(
-          styles.panel,
-          dynamicStyles.sizing(width ?? null),
-          // Outer padding on container edges (unless component is full bleed)
-          isStartPanel && !isFullBleed && styles.startPanel,
-          isEndPanel && !isFullBleed && styles.endPanel,
-          !hasHeader && !isFullBleed && styles.noHeader,
-          !hasFooter && !isFullBleed && styles.noFooter,
-          isScrollable && styles.scrollable,
-          isFullBleed && styles.fullBleed,
-          hasDivider && dividerStyle,
-          shouldCollapseSpacing && collapseStyle,
-        )}
-        {...props}>
-        {children}
-      </div>
-    );
-  },
-);
+  return (
+    <div
+      ref={ref as React.Ref<HTMLDivElement>}
+      role={role}
+      aria-label={label}
+      {...stylex.props(
+        styles.panel,
+        dynamicStyles.sizing(width ?? null),
+        // Outer padding on container edges (unless component is full bleed)
+        isStartPanel && !isFullBleed && styles.startPanel,
+        isEndPanel && !isFullBleed && styles.endPanel,
+        !hasHeader && !isFullBleed && styles.noHeader,
+        !hasFooter && !isFullBleed && styles.noFooter,
+        isScrollable && styles.scrollable,
+        isFullBleed && styles.fullBleed,
+        hasDivider && dividerStyle,
+        shouldCollapseSpacing && collapseStyle,
+      )}
+      {...props}>
+      {children}
+    </div>
+  );
+}
 
 XDSLayoutPanel.displayName = 'XDSLayoutPanel';

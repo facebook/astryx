@@ -10,13 +10,7 @@
  * - /packages/core/src/Table/index.ts (exports if types change)
  */
 
-import {
-  forwardRef,
-  memo,
-  type ReactElement,
-  type ReactNode,
-  type Ref,
-} from 'react';
+import {memo, type ReactElement, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {
   XDSBaseTableProps,
@@ -182,18 +176,16 @@ const MemoizedTableRow = memo(TableRowInner, areRowPropsEqual) as <
 /**
  * Inner XDSBaseTable implementation (generic-preserving).
  */
-function XDSBaseTableInner<T extends Record<string, unknown>>(
-  {
-    data,
-    columns: columnsProp,
-    idKey,
-    plugins: pluginsProp,
-    components,
-    children,
-    tableProps: userTableProps,
-  }: XDSBaseTableProps<T>,
-  ref: Ref<HTMLTableElement>,
-): ReactElement {
+export function XDSBaseTable<T extends Record<string, unknown>>({
+  data,
+  columns: columnsProp,
+  idKey,
+  plugins: pluginsProp,
+  components,
+  children,
+  tableProps: userTableProps,
+  ref,
+}: XDSBaseTableProps<T> & {ref?: Ref<HTMLTableElement>}): ReactElement {
   // Use stable empty array when no plugins provided
   const plugins = pluginsProp ?? (EMPTY_PLUGINS as TablePlugin<T>[]);
 
@@ -319,11 +311,4 @@ function XDSBaseTableInner<T extends Record<string, unknown>>(
  * />
  * ```
  */
-export const XDSBaseTable = forwardRef(XDSBaseTableInner) as <
-  T extends Record<string, unknown>,
->(
-  props: XDSBaseTableProps<T> & {ref?: Ref<HTMLTableElement>},
-) => ReactElement;
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(XDSBaseTable as any).displayName = 'XDSBaseTable';
+XDSBaseTable.displayName = 'XDSBaseTable';

@@ -1,6 +1,6 @@
 /**
  * @file XDSCenter.tsx
- * @input Uses React forwardRef, StyleX for centering styles
+ * @input Uses React StyleX for centering styles
  * @output Exports XDSCenter component and XDSCenterProps
  * @position Center component for centering children horizontally/vertically
  *
@@ -10,12 +10,7 @@
  * - /apps/storybook/stories/Center.stories.tsx
  */
 
-import {
-  forwardRef,
-  useContext,
-  type HTMLAttributes,
-  type ReactNode,
-} from 'react';
+import {useContext, type HTMLAttributes, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {SizeValue} from '../utils/types';
@@ -63,6 +58,8 @@ export interface XDSCenterProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
   'style' | 'className'
 > {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLDivElement>;
   /**
    * Center axis - which direction(s) to center.
    * - `both`: Center both horizontally and vertically (default)
@@ -114,37 +111,33 @@ export interface XDSCenterProps extends Omit<
  * </XDSCenter>
  * ```
  */
-export const XDSCenter = forwardRef<HTMLDivElement, XDSCenterProps>(
-  function XDSCenter(
-    {
-      axis = 'both',
-      width,
-      height,
-      isInline = false,
-      children,
-      xstyle,
-      ...props
-    },
-    ref,
-  ) {
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.center?.root;
+export function XDSCenter({
+  ref,
+  axis = 'both',
+  width,
+  height,
+  isInline = false,
+  children,
+  xstyle,
+  ...props
+}: XDSCenterProps) {
+  const themeContext = useContext(ThemeContext);
+  const rootOverride = themeContext?.theme.components?.center?.root;
 
-    const stylexProps = stylex.props(
-      isInline ? styles.inline : styles.base,
-      (axis === 'both' || axis === 'vertical') && styles.alignItemsCenter,
-      (axis === 'both' || axis === 'horizontal') && styles.justifyContentCenter,
-      dynamicStyles.sizing(width ?? null, height ?? null),
-      xstyle,
-      rootOverride,
-    );
+  const stylexProps = stylex.props(
+    isInline ? styles.inline : styles.base,
+    (axis === 'both' || axis === 'vertical') && styles.alignItemsCenter,
+    (axis === 'both' || axis === 'horizontal') && styles.justifyContentCenter,
+    dynamicStyles.sizing(width ?? null, height ?? null),
+    xstyle,
+    rootOverride,
+  );
 
-    return (
-      <div ref={ref} {...stylexProps} {...props}>
-        {children}
-      </div>
-    );
-  },
-);
+  return (
+    <div ref={ref} {...stylexProps} {...props}>
+      {children}
+    </div>
+  );
+}
 
 XDSCenter.displayName = 'XDSCenter';

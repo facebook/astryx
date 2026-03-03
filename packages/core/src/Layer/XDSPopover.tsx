@@ -19,6 +19,7 @@ import React, {
   useRef,
   type ReactElement,
   type ReactNode,
+  type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';

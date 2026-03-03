@@ -1,6 +1,6 @@
 /**
  * @file XDSProgressBar.tsx
- * @input Uses React forwardRef, useId, stylex, color/spacing/radius/transition tokens
+ * @input Uses React useId, stylex, color/spacing/radius/transition tokens
  * @output Exports XDSProgressBar component, XDSProgressBarProps, XDSProgressBarVariant, XDSProgressBarSize types
  * @position Core implementation; consumed by index.ts
  *
@@ -11,7 +11,7 @@
  * - /apps/storybook/stories/ProgressBar.stories.tsx (storybook stories)
  */
 
-import {forwardRef, useId} from 'react';
+import {useId, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -39,6 +39,8 @@ export type XDSProgressBarVariant =
 export type XDSProgressBarSize = 'sm' | 'md' | 'lg';
 
 export interface XDSProgressBarProps {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLDivElement>;
   /**
    * Current value of the progress bar.
    * Ignored when `isIndeterminate` is true.
@@ -233,83 +235,76 @@ function defaultFormatValueLabel(value: number, max: number): string {
  *   formatValueLabel={(v, m) => `${v} GB / ${m} GB`} />
  * ```
  */
-export const XDSProgressBar = forwardRef<HTMLDivElement, XDSProgressBarProps>(
-  function XDSProgressBar(
-    {
-      value = 0,
-      max = 100,
-      label,
-      isLabelHidden = false,
-      hasValueLabel = false,
-      formatValueLabel = defaultFormatValueLabel,
-      variant = 'accent',
-      size = 'md',
-      isIndeterminate = false,
-      xstyle,
-      'data-testid': dataTestId,
-    },
-    ref,
-  ) {
-    const labelId = useId();
-    const clampedValue = Math.min(Math.max(0, value), max);
-    const percentage = max > 0 ? (clampedValue / max) * 100 : 0;
-    const valueText = formatValueLabel(clampedValue, max);
+export function XDSProgressBar({
+  ref,
+  value = 0,
+  max = 100,
+  label,
+  isLabelHidden = false,
+  hasValueLabel = false,
+  formatValueLabel = defaultFormatValueLabel,
+  variant = 'accent',
+  size = 'md',
+  isIndeterminate = false,
+  xstyle,
+  'data-testid': dataTestId,
+}: XDSProgressBarProps) {
+  const labelId = useId();
+  const clampedValue = Math.min(Math.max(0, value), max);
+  const percentage = max > 0 ? (clampedValue / max) * 100 : 0;
+  const valueText = formatValueLabel(clampedValue, max);
 
-    // In indeterminate mode, don't show value label
-    const showValueLabel = hasValueLabel && !isIndeterminate;
+  // In indeterminate mode, don't show value label
+  const showValueLabel = hasValueLabel && !isIndeterminate;
 
-    return (
-      <div
-        ref={ref}
-        {...stylex.props(styles.container, xstyle)}
-        data-testid={dataTestId}>
-        {/* Label row */}
-        {!isLabelHidden || showValueLabel ? (
-          <div {...stylex.props(styles.header)}>
-            <span
-              id={labelId}
-              {...stylex.props(
-                styles.label,
-                isLabelHidden && styles.visuallyHidden,
-              )}>
-              {label}
-            </span>
-            {showValueLabel && (
-              <span {...stylex.props(styles.valueLabel)}>{valueText}</span>
-            )}
-          </div>
-        ) : (
-          <span id={labelId} {...stylex.props(styles.visuallyHidden)}>
+  return (
+    <div
+      ref={ref}
+      {...stylex.props(styles.container, xstyle)}
+      data-testid={dataTestId}>
+      {/* Label row */}
+      {!isLabelHidden || showValueLabel ? (
+        <div {...stylex.props(styles.header)}>
+          <span
+            id={labelId}
+            {...stylex.props(
+              styles.label,
+              isLabelHidden && styles.visuallyHidden,
+            )}>
             {label}
           </span>
-        )}
-
-        {/* Progress track */}
-        <div
-          role={isIndeterminate ? 'progressbar' : 'meter'}
-          aria-valuenow={isIndeterminate ? undefined : clampedValue}
-          aria-valuemin={isIndeterminate ? undefined : 0}
-          aria-valuemax={isIndeterminate ? undefined : max}
-          aria-labelledby={labelId}
-          aria-valuetext={isIndeterminate ? undefined : valueText}
-          {...stylex.props(styles.track, sizeStyles[size])}>
-          {isIndeterminate ? (
-            <div
-              {...stylex.props(
-                styles.indeterminateFill,
-                variantStyles[variant],
-              )}
-            />
-          ) : (
-            <div
-              {...stylex.props(styles.fill, variantStyles[variant])}
-              style={{width: `${percentage}%`}}
-            />
+          {showValueLabel && (
+            <span {...stylex.props(styles.valueLabel)}>{valueText}</span>
           )}
         </div>
+      ) : (
+        <span id={labelId} {...stylex.props(styles.visuallyHidden)}>
+          {label}
+        </span>
+      )}
+
+      {/* Progress track */}
+      <div
+        role={isIndeterminate ? 'progressbar' : 'meter'}
+        aria-valuenow={isIndeterminate ? undefined : clampedValue}
+        aria-valuemin={isIndeterminate ? undefined : 0}
+        aria-valuemax={isIndeterminate ? undefined : max}
+        aria-labelledby={labelId}
+        aria-valuetext={isIndeterminate ? undefined : valueText}
+        {...stylex.props(styles.track, sizeStyles[size])}>
+        {isIndeterminate ? (
+          <div
+            {...stylex.props(styles.indeterminateFill, variantStyles[variant])}
+          />
+        ) : (
+          <div
+            {...stylex.props(styles.fill, variantStyles[variant])}
+            style={{width: `${percentage}%`}}
+          />
+        )}
       </div>
-    );
-  },
-);
+    </div>
+  );
+}
 
 XDSProgressBar.displayName = 'XDSProgressBar';

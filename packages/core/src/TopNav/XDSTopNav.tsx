@@ -1,6 +1,6 @@
 /**
  * @file XDSTopNav.tsx
- * @input Uses React forwardRef, HTMLAttributes, ReactNode
+ * @input Uses React HTMLAttributes, ReactNode
  * @output Exports XDSTopNav component and XDSTopNavProps
  * @position Core implementation; consumed by index.ts
  *
@@ -11,12 +11,7 @@
  * - /apps/storybook/stories/TopNav.stories.tsx
  */
 
-import {
-  forwardRef,
-  useContext,
-  type HTMLAttributes,
-  type ReactNode,
-} from 'react';
+import {useContext, type HTMLAttributes, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
@@ -97,6 +92,8 @@ export interface XDSTopNavProps extends Omit<
   HTMLAttributes<HTMLElement>,
   'style' | 'className' | 'title'
 > {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLElement>;
   /**
    * Title slot content - typically XDSTopNavTitle with logo and text.
    * Positioned at the left edge of the nav bar.
@@ -143,45 +140,48 @@ export interface XDSTopNavProps extends Omit<
  * />
  * ```
  */
-export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
-  function XDSTopNav(
-    {title, startContent, centerContent, endContent, label, ...props},
-    ref,
-  ) {
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.topNav?.root;
-    const hasCenterContent = centerContent != null;
+export function XDSTopNav({
+  ref,
+  title,
+  startContent,
+  centerContent,
+  endContent,
+  label,
+  ...props
+}: XDSTopNavProps) {
+  const themeContext = useContext(ThemeContext);
+  const rootOverride = themeContext?.theme.components?.topNav?.root;
+  const hasCenterContent = centerContent != null;
 
-    return (
-      <nav
-        ref={ref}
-        role="navigation"
-        aria-label={label}
-        {...stylex.props(
-          styles.base,
-          hasCenterContent ? styles.baseGrid : styles.baseFlex,
-          rootOverride,
+  return (
+    <nav
+      ref={ref}
+      role="navigation"
+      aria-label={label}
+      {...stylex.props(
+        styles.base,
+        hasCenterContent ? styles.baseGrid : styles.baseFlex,
+        rootOverride,
+      )}
+      {...props}>
+      <div {...stylex.props(styles.leftSection)}>
+        {title && <div {...stylex.props(styles.title)}>{title}</div>}
+        {startContent && (
+          <div {...stylex.props(styles.startContent)}>{startContent}</div>
         )}
-        {...props}>
-        <div {...stylex.props(styles.leftSection)}>
-          {title && <div {...stylex.props(styles.title)}>{title}</div>}
-          {startContent && (
-            <div {...stylex.props(styles.startContent)}>{startContent}</div>
-          )}
-        </div>
-        {hasCenterContent && (
-          <div {...stylex.props(styles.centerContent)}>{centerContent}</div>
-        )}
-        {hasCenterContent ? (
-          <div {...stylex.props(styles.rightSection)}>{endContent}</div>
-        ) : (
-          endContent && (
-            <div {...stylex.props(styles.endContent)}>{endContent}</div>
-          )
-        )}
-      </nav>
-    );
-  },
-);
+      </div>
+      {hasCenterContent && (
+        <div {...stylex.props(styles.centerContent)}>{centerContent}</div>
+      )}
+      {hasCenterContent ? (
+        <div {...stylex.props(styles.rightSection)}>{endContent}</div>
+      ) : (
+        endContent && (
+          <div {...stylex.props(styles.endContent)}>{endContent}</div>
+        )
+      )}
+    </nav>
+  );
+}
 
 XDSTopNav.displayName = 'XDSTopNav';

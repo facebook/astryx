@@ -1,6 +1,6 @@
 /**
  * @file XDSNavIcon.tsx
- * @input Uses React forwardRef, HTMLAttributes, ReactNode
+ * @input Uses React HTMLAttributes, ReactNode
  * @output Exports XDSNavIcon component and XDSNavIconProps
  * @position Shared circular icon container for navigation headers (TopNav, PageNav)
  *
@@ -12,7 +12,7 @@
  * - /apps/storybook/stories/PageNav.stories.tsx
  */
 
-import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
+import {type HTMLAttributes, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, sizeVars} from '../theme/tokens.stylex';
 
@@ -37,6 +37,8 @@ export interface XDSNavIconProps extends Omit<
   HTMLAttributes<HTMLSpanElement>,
   'style' | 'className'
 > {
+  /** Ref to the root element. */
+  ref?: Ref<HTMLSpanElement>;
   /**
    * The icon element to render inside the circular background.
    * Should be an XDSIcon or similar icon component.
@@ -67,14 +69,12 @@ export interface XDSNavIconProps extends Omit<
  * />
  * ```
  */
-export const XDSNavIcon = forwardRef<HTMLSpanElement, XDSNavIconProps>(
-  function XDSNavIcon({icon, ...props}, ref) {
-    return (
-      <span ref={ref} {...stylex.props(styles.base)} {...props}>
-        {icon}
-      </span>
-    );
-  },
-);
+export function XDSNavIcon({ref, icon, ...props}: XDSNavIconProps) {
+  return (
+    <span ref={ref} {...stylex.props(styles.base)} {...props}>
+      {icon}
+    </span>
+  );
+}
 
 XDSNavIcon.displayName = 'XDSNavIcon';
