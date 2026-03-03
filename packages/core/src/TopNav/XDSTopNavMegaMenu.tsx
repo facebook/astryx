@@ -1,8 +1,12 @@
 /**
  * @file XDSTopNavMegaMenu.tsx
- * @input Uses React, StyleX, custom hover logic
+ * @input Uses React, StyleX, useXDSLayer (Popover API + CSS anchor positioning)
  * @output Exports XDSTopNavMegaMenu component and related types
  * @position Navigation item with hover-triggered full-width mega menu for XDSTopNav
+ *
+ * Uses useXDSLayer to promote the panel to the top layer via the Popover API,
+ * eliminating z-index stacking. CSS anchor positioning places the panel below
+ * the nav wrapper.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/TopNav/README.md
@@ -21,7 +25,9 @@ import {
   textSizeVars,
   fontWeightVars,
   lineHeightVars,
+  elevationVars,
 } from '../theme/tokens.stylex';
+import {useXDSLayer} from '../Layer';
 
 // =============================================================================
 // Styles
@@ -29,8 +35,6 @@ import {
 
 const styles = stylex.create({
   wrapper: {
-    // position: static so the panel positions relative to the nearest
-    // positioned ancestor (the nav bar wrapper), not this div.
     position: 'static',
   },
   trigger: {
@@ -78,35 +82,36 @@ const styles = stylex.create({
   chevronOpen: {
     transform: 'rotate(180deg)',
   },
-  panel: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    zIndex: 100,
-    backgroundColor: colorVars['--color-surface'],
-    // Top border provides a subtle divider between the nav bar and panel
-    // while keeping them visually connected as one card.
+  // Animation styles applied to the layer's popover element.
+  // Uses :popover-open for enter and @starting-style for initial state.
+  panelAnimation: {
+    opacity: {
+      default: 0,
+      ':popover-open': 1,
+    },
+    transform: {
+      default: 'translateY(-4px)',
+      ':popover-open': 'translateY(0)',
+    },
+    transitionProperty: 'opacity, transform, overlay, display',
+    transitionDuration: '0.2s',
+    transitionTimingFunction: 'ease-out',
+    transitionBehavior: 'allow-discrete',
+    '@starting-style': {
+      opacity: 0,
+      transform: 'translateY(-4px)',
+    },
+  },
+  // Visual styles for the panel content container.
+  panelContainer: {
+    backgroundColor: colorVars['--color-popover'],
     borderTop: `1px solid ${colorVars['--color-divider']}`,
     borderTopLeftRadius: 0,
     borderTopRightRadius: 0,
     borderBottomLeftRadius: radiusVars['--radius-container'],
     borderBottomRightRadius: radiusVars['--radius-container'],
-    // Shadow wraps the panel; the wrapper handles the nav bar's card chrome.
-    // Together they create a unified card appearance without a backdrop overlay.
-    boxShadow: `0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)`,
+    boxShadow: elevationVars['--elevation-menu'],
     overflow: 'hidden',
-    opacity: 0,
-    transform: 'translateY(-4px)',
-    transitionProperty: 'opacity, transform',
-    transitionDuration: '0.2s',
-    transitionTimingFunction: 'ease-out',
-    pointerEvents: 'none',
-  },
-  panelOpen: {
-    opacity: 1,
-    transform: 'translateY(0)',
-    pointerEvents: 'auto',
   },
   panelContent: {
     display: 'flex',
@@ -229,6 +234,11 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-divider'],
     flexShrink: 0,
   },
+  // Anchor positioning: stretch panel to match the anchor width.
+  anchorStretch: {
+    left: 'anchor(left)' as unknown as string,
+    right: 'anchor(right)' as unknown as string,
+  },
 });
 
 // =============================================================================
@@ -324,9 +334,12 @@ function ChevronDown() {
  * shows a full-width panel below the nav bar with menu items organized in
  * columns and an optional featured content area on the right.
  *
- * The panel positions itself relative to the nearest positioned ancestor
- * (typically the nav bar wrapper). For correct full-width behavior, wrap
- * the XDSTopNav in a container with `position: relative`.
+ * The panel is promoted to the top layer via the Popover API (through
+ * useXDSLayer) and positioned via CSS anchor positioning relative to the
+ * nearest positioned ancestor (typically the nav bar wrapper).
+ *
+ * For correct full-width behavior, wrap the XDSTopNav in a container with
+ * `position: relative`.
  *
  * @example
  * ```
@@ -342,7 +355,7 @@ function ChevronDown() {
  *         featured={{
  *           title: 'New: AI Features',
  *           description: 'Explore our latest AI-powered tools.',
- *           linkText: 'Learn more →',
+ *           linkText: 'Learn more \u2192',
  *           linkHref: '/ai',
  *         }}
  *       />
@@ -365,12 +378,50 @@ export function XDSTopNavMegaMenu({
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
+  // useXDSLayer handles: Popover API (top layer), CSS anchor positioning,
+  // toggle event sync, and popover element rendering.
+  const layer = useXDSLayer({
+    mode: 'context',
+    lightDismiss: false, // Hover-driven, not click-to-dismiss
+    onShow: () => onOpenChange?.(true),
+    onHide: () => onOpenChange?.(false),
+  });
+
+  // Set the CSS anchor to the nearest positioned ancestor (the nav wrapper).
+  // The panel spans this element's full width.
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+
+    let el: HTMLElement | null = wrapper.parentElement;
+    while (el) {
+      const position = getComputedStyle(el).position;
+      if (
+        position === 'relative' ||
+        position === 'absolute' ||
+        position === 'fixed'
+      ) {
+        layer.ref(el);
+        break;
+      }
+      el = el.parentElement;
+    }
+
+    return () => {
+      layer.ref(null);
+    };
+  }, [layer]);
+
   const setOpen = useCallback(
     (open: boolean) => {
       setIsOpen(open);
-      onOpenChange?.(open);
+      if (open) {
+        layer.show();
+      } else {
+        layer.hide();
+      }
     },
-    [onOpenChange],
+    [layer],
   );
 
   const clearTimeouts = useCallback(() => {
@@ -440,89 +491,98 @@ export function XDSTopNavMegaMenu({
           <ChevronDown />
         </span>
       </button>
-      <div
-        role="menu"
-        aria-label={label}
-        {...stylex.props(styles.panel, isOpen && styles.panelOpen)}>
-        <div {...stylex.props(styles.panelContent)}>
-          {/* Menu items section */}
-          <div
-            {...stylex.props(
-              styles.menuSection,
-              isSingleColumn && styles.menuSectionSingle,
-            )}>
-            {items.map((item, index) => {
-              const Element = item.href ? 'a' : 'div';
-              return (
-                <Element
-                  key={index}
-                  role="menuitem"
-                  tabIndex={isOpen ? 0 : -1}
-                  href={item.href}
-                  onClick={item.onClick}
-                  {...stylex.props(styles.menuItem)}>
-                  {item.icon && (
-                    <div {...stylex.props(styles.menuItemIcon)}>
-                      {item.icon}
-                    </div>
-                  )}
-                  <div {...stylex.props(styles.menuItemContent)}>
-                    <span {...stylex.props(styles.menuItemTitle)}>
-                      {item.title}
-                    </span>
-                    {item.description && (
-                      <span {...stylex.props(styles.menuItemDescription)}>
-                        {item.description}
-                      </span>
+      {layer.render(
+        <div
+          role="menu"
+          aria-label={label}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          {...stylex.props(styles.panelContainer)}>
+          <div {...stylex.props(styles.panelContent)}>
+            {/* Menu items section */}
+            <div
+              {...stylex.props(
+                styles.menuSection,
+                isSingleColumn && styles.menuSectionSingle,
+              )}>
+              {items.map((item, index) => {
+                const Element = item.href ? 'a' : 'div';
+                return (
+                  <Element
+                    key={index}
+                    role="menuitem"
+                    tabIndex={isOpen ? 0 : -1}
+                    href={item.href}
+                    onClick={item.onClick}
+                    {...stylex.props(styles.menuItem)}>
+                    {item.icon && (
+                      <div {...stylex.props(styles.menuItemIcon)}>
+                        {item.icon}
+                      </div>
                     )}
-                  </div>
-                </Element>
-              );
-            })}
-          </div>
-
-          {/* Featured section */}
-          {featured && (
-            <>
-              <div {...stylex.props(styles.divider)} />
-              <div {...stylex.props(styles.featured)}>
-                {featured.children ? (
-                  featured.children
-                ) : (
-                  <>
-                    {featured.image && (
-                      <img
-                        src={featured.image}
-                        alt={featured.imageAlt ?? ''}
-                        {...stylex.props(styles.featuredImage)}
-                      />
-                    )}
-                    <div {...stylex.props(styles.featuredBody)}>
-                      <span {...stylex.props(styles.featuredTitle)}>
-                        {featured.title}
+                    <div {...stylex.props(styles.menuItemContent)}>
+                      <span {...stylex.props(styles.menuItemTitle)}>
+                        {item.title}
                       </span>
-                      {featured.description && (
-                        <span {...stylex.props(styles.featuredDescription)}>
-                          {featured.description}
+                      {item.description && (
+                        <span {...stylex.props(styles.menuItemDescription)}>
+                          {item.description}
                         </span>
                       )}
-                      {featured.linkText && (
-                        <a
-                          href={featured.linkHref}
-                          onClick={featured.onLinkClick}
-                          tabIndex={isOpen ? 0 : -1}
-                          {...stylex.props(styles.featuredLink)}>
-                          {featured.linkText}
-                        </a>
-                      )}
                     </div>
-                  </>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+                  </Element>
+                );
+              })}
+            </div>
+
+            {/* Featured section */}
+            {featured && (
+              <>
+                <div {...stylex.props(styles.divider)} />
+                <div {...stylex.props(styles.featured)}>
+                  {featured.children ? (
+                    featured.children
+                  ) : (
+                    <>
+                      {featured.image && (
+                        <img
+                          src={featured.image}
+                          alt={featured.imageAlt ?? ''}
+                          {...stylex.props(styles.featuredImage)}
+                        />
+                      )}
+                      <div {...stylex.props(styles.featuredBody)}>
+                        <span {...stylex.props(styles.featuredTitle)}>
+                          {featured.title}
+                        </span>
+                        {featured.description && (
+                          <span {...stylex.props(styles.featuredDescription)}>
+                            {featured.description}
+                          </span>
+                        )}
+                        {featured.linkText && (
+                          <a
+                            href={featured.linkHref}
+                            onClick={featured.onLinkClick}
+                            tabIndex={isOpen ? 0 : -1}
+                            {...stylex.props(styles.featuredLink)}>
+                            {featured.linkText}
+                          </a>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>,
+        {
+          placement: 'below',
+          alignment: 'center',
+          xstyle: [styles.panelAnimation, styles.anchorStretch],
+        },
+      )}
     </div>
   );
 }
