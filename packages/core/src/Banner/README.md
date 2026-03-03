@@ -2,6 +2,12 @@
 
 Persistent status notification for info, warning, error, or success messages.
 
+## Import
+
+```tsx
+import {XDSBanner} from '@xds/core/Banner';
+```
+
 ## Visual Structure
 
 The banner has a two-part layout:

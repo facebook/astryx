@@ -4,6 +4,12 @@ XDSTabList component for tab navigation with overflow menu support.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
+## Import
+
+```tsx
+import {XDSTabList, XDSTab, XDSTabMenu} from '@xds/core/TabList';
+```
+
 ## Features
 
 - **Context-based communication**: `XDSTabListContext` passes value/onChange/size from XDSTabList to children

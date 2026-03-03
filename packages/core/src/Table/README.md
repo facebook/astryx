@@ -5,6 +5,17 @@ XDSBadge, XDSStatusDot, XDSText, XDSAvatar, and layout primitives.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
+## Import
+
+```tsx
+import {
+  XDSTable,
+  XDSTableRow,
+  XDSTableCell,
+  XDSTableHeaderCell,
+} from '@xds/core/Table';
+```
+
 ## Components
 
 | File                     | Export               | Purpose                                                      |

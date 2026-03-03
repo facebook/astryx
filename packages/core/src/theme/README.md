@@ -4,6 +4,12 @@ XDS theme provider and design tokens.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
+## Import
+
+```tsx
+import {XDSTheme, useXDSTheme} from '@xds/core/theme';
+```
+
 ## Features
 
 - **XDSTheme Provider**: Wraps app to provide CSS variables and icon registry

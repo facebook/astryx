@@ -2,6 +2,12 @@
 
 An empty state placeholder for content areas with no data. Displays an icon or illustration, title, optional description, and action buttons.
 
+## Import
+
+```tsx
+import {XDSEmptyState} from '@xds/core/EmptyState';
+```
+
 ## Exports
 
 | Export               | Type      | Description                |

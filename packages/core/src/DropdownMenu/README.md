@@ -4,6 +4,12 @@ A dropdown menu component for displaying actionable items in a popup menu.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
+## Import
+
+```tsx
+import {XDSDropdownMenu, XDSDropdownMenuItem} from '@xds/core/DropdownMenu';
+```
+
 ## Features
 
 - **Button customization**: Customize the trigger button via the `button` prop (supports all XDSButton props)
@@ -101,10 +107,10 @@ const [isOpen, setIsOpen] = useState(false);
 
 ```tsx
 <XDSDropdownMenu
-  button={{ label: 'Actions' }}
+  button={{label: 'Actions'}}
   items={[
-    { label: 'Edit', icon: PencilIcon, onClick: () => handleEdit() },
-    { label: 'Delete', icon: TrashIcon, onClick: () => handleDelete() },
+    {label: 'Edit', icon: PencilIcon, onClick: () => handleEdit()},
+    {label: 'Delete', icon: TrashIcon, onClick: () => handleDelete()},
   ]}
 />
 ```

@@ -1,4 +1,4 @@
-# /packages/core/src/Tokenizer
+# Tokenizer
 
 Multi-select typeahead with token chips for selected items.
 
@@ -43,7 +43,7 @@ const source = {
 />;
 ```
 
-## Key Props
+## Props
 
 | Prop           | Type                            | Default  | Description                             |
 | -------------- | ------------------------------- | -------- | --------------------------------------- |

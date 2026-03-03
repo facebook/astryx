@@ -4,6 +4,12 @@ A placeholder loading component that displays an animated pulsing effect while c
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
+## Import
+
+```tsx
+import {XDSSkeleton} from '@xds/core/Skeleton';
+```
+
 ## Features
 
 - **Pulsing Animation**: Smooth opacity animation using stepped timing for a subtle shimmer effect

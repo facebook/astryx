@@ -4,6 +4,12 @@ Avatar component for displaying user profile pictures with fallback support.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
+## Import
+
+```tsx
+import {XDSAvatar, XDSAvatarStatusDot} from '@xds/core/Avatar';
+```
+
 ## Features
 
 - **Image loading**: Primary and fallback image sources

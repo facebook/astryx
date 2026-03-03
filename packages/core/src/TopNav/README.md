@@ -4,6 +4,12 @@ Top navigation bar component for application headers.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
+## Import
+
+```tsx
+import {XDSTopNav, XDSTopNavTitle, XDSTopNavItem} from '@xds/core/TopNav';
+```
+
 ## Features
 
 - **Slot-based layout**: `title`, `startContent`, `endContent` for flexible organization
@@ -69,7 +75,9 @@ For the circular icon container, use `XDSNavIcon` from `@xds/core/NavIcon`.
 <XDSTopNav
   label="Main navigation"
   title={<XDSTopNavTitle title="My App" href="/" />}
-  startContent={<XDSTopNavItem label="Dashboard" href="/dashboard" isSelected />}
+  startContent={
+    <XDSTopNavItem label="Dashboard" href="/dashboard" isSelected />
+  }
   endContent={<XDSButton label="Profile" variant="ghost" />}
 />
 ```
@@ -84,7 +92,11 @@ For the circular icon container, use `XDSNavIcon` from `@xds/core/NavIcon`.
 ### XDSTopNavTitle
 
 ```tsx
-<XDSTopNavTitle title="My App" logo={<XDSNavIcon icon={<HomeIcon />} />} href="/" />
+<XDSTopNavTitle
+  title="My App"
+  logo={<XDSNavIcon icon={<HomeIcon />} />}
+  href="/"
+/>
 ```
 
 | Prop    | Type        | Default | Description                      |
@@ -96,7 +108,12 @@ For the circular icon container, use `XDSNavIcon` from `@xds/core/NavIcon`.
 ### XDSTopNavItem
 
 ```tsx
-<XDSTopNavItem label="Dashboard" href="/dashboard" isSelected icon={<HomeIcon />} />
+<XDSTopNavItem
+  label="Dashboard"
+  href="/dashboard"
+  isSelected
+  icon={<HomeIcon />}
+/>
 ```
 
 | Prop         | Type        | Default | Description                     |

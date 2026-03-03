@@ -4,6 +4,12 @@ A multi-line text input component for collecting longer user input.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
+## Import
+
+```tsx
+import {XDSTextArea} from '@xds/core/TextArea';
+```
+
 ## Features
 
 - **Label Support**: Required label for accessibility (can be visually hidden)

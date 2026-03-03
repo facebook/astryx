@@ -1,8 +1,14 @@
-# /packages/core/src/NavIcon
+# NavIcon
 
 Circular icon container for navigation headers.
 
 <!-- SYNC: When files in this directory change, update this document. -->
+
+## Import
+
+```tsx
+import {XDSNavIcon} from '@xds/core/NavIcon';
+```
 
 ## Features
 

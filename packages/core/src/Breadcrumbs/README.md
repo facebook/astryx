@@ -2,6 +2,12 @@
 
 A navigation breadcrumb trail with semantic HTML.
 
+## Import
+
+```tsx
+import {XDSBreadcrumbs, XDSBreadcrumbItem} from '@xds/core/Breadcrumbs';
+```
+
 ## Exports
 
 | Export                   | Type      | Description                |
@@ -38,7 +44,9 @@ Navigation container that renders a `<nav>` with an ordered list of breadcrumb i
 Individual breadcrumb item that renders as a link or plain text.
 
 ```tsx
-<XDSBreadcrumbItem href="/settings" startIcon={<XDSIcon icon={CogIcon} size="sm" />}>
+<XDSBreadcrumbItem
+  href="/settings"
+  startIcon={<XDSIcon icon={CogIcon} size="sm" />}>
   Settings
 </XDSBreadcrumbItem>
 ```

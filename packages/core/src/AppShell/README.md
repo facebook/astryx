@@ -14,6 +14,33 @@ XDSAppShell provides the structural frame for an application: header, side navig
 import {XDSAppShell} from '@xds/core/AppShell';
 ```
 
+## Usage
+
+```tsx
+<XDSAppShell
+  topNav={
+    <XDSTopNav
+      label="Navigation"
+      title={<XDSTopNavTitle title="My App" logo={<Logo />} />}
+    />
+  }
+  sideNav={
+    <XDSSideNav>
+      <XDSSideNavSection title="Main" isHeaderHidden>
+        <XDSSideNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          isSelected
+          href="/dashboard"
+        />
+        <XDSSideNavItem label="Settings" icon={CogIcon} href="/settings" />
+      </XDSSideNavSection>
+    </XDSSideNav>
+  }>
+  <MainContent />
+</XDSAppShell>
+```
+
 ## Composition Patterns
 
 XDSAppShell has two navigation slots: `topNav` (horizontal bar) and `sideNav` (vertical sidebar). How you combine them determines where app identity lives.

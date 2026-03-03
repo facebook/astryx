@@ -4,6 +4,12 @@ XDSButton component with multiple variants, sizes, and isLoading state support.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
+## Import
+
+```tsx
+import {XDSButton} from '@xds/core/Button';
+```
+
 ## Features
 
 - **Variants**: `primary`, `secondary`, `ghost`, `destructive`
@@ -58,19 +64,19 @@ or `<span onClick>` for accessibility (keyboard navigation, focus management, sc
 
 ## Props
 
-| Prop         | Type                                                        | Default       | Description                                                                                                                                          |
-| ------------ | ----------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `label`      | `string`                                                    | —             | Accessible label (required)                                                                                                                          |
-| `variant`    | `'primary' \| 'secondary' \| 'ghost' \| 'destructive'`      | `'secondary'` | Visual style variant                                                                                                                                 |
-| `size`       | `'sm' \| 'md' \| 'lg'`                                      | `'md'`        | Size variant                                                                                                                                         |
-| `isLoading`  | `boolean`                                                   | `false`       | Shows isLoading spinner                                                                                                                              |
-| `isDisabled` | `boolean`                                                   | `false`       | Disables the button                                                                                                                                  |
-| `icon`       | `ReactNode`                                                 | —             | Icon element                                                                                                                                         |
-| `children`   | `ReactNode`                                                 | —             | Button content                                                                                                                                       |
-| `endSlot`    | `ReactElement<XDSIconProps> \| ReactElement<XDSBadgeProps>` | —             | Trailing icon or badge after the label. Only accepts `<XDSIcon>` or `<XDSBadge>`. Ignored for icon-only. Color is inherited from the button variant. |
-| `tooltip`    | `string`                                                    | —             | Tooltip text shown on hover                                                                                                                          |
-| `onClick`    | `(e: MouseEvent) => void`                                   | —             | Standard click handler (passed through from `ButtonHTMLAttributes`)                                                                                  |
-| `onClickAction` | `(e: MouseEvent) => void \| Promise<void>`               | —             | Async click handler. Shows loading state while the returned promise is pending.                                                                      |
+| Prop            | Type                                                        | Default       | Description                                                                                                                                          |
+| --------------- | ----------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `label`         | `string`                                                    | —             | Accessible label (required)                                                                                                                          |
+| `variant`       | `'primary' \| 'secondary' \| 'ghost' \| 'destructive'`      | `'secondary'` | Visual style variant                                                                                                                                 |
+| `size`          | `'sm' \| 'md' \| 'lg'`                                      | `'md'`        | Size variant                                                                                                                                         |
+| `isLoading`     | `boolean`                                                   | `false`       | Shows isLoading spinner                                                                                                                              |
+| `isDisabled`    | `boolean`                                                   | `false`       | Disables the button                                                                                                                                  |
+| `icon`          | `ReactNode`                                                 | —             | Icon element                                                                                                                                         |
+| `children`      | `ReactNode`                                                 | —             | Button content                                                                                                                                       |
+| `endSlot`       | `ReactElement<XDSIconProps> \| ReactElement<XDSBadgeProps>` | —             | Trailing icon or badge after the label. Only accepts `<XDSIcon>` or `<XDSBadge>`. Ignored for icon-only. Color is inherited from the button variant. |
+| `tooltip`       | `string`                                                    | —             | Tooltip text shown on hover                                                                                                                          |
+| `onClick`       | `(e: MouseEvent) => void`                                   | —             | Standard click handler (passed through from `ButtonHTMLAttributes`)                                                                                  |
+| `onClickAction` | `(e: MouseEvent) => void \| Promise<void>`                  | —             | Async click handler. Shows loading state while the returned promise is pending.                                                                      |
 
 ## Files
 

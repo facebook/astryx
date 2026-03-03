@@ -2,6 +2,12 @@
 
 Vertical list component for rendering collections of items with consistent spacing, dividers, and marker styles. Uses a composition model: `XDSList` wraps `XDSListItem` sub-components.
 
+## Import
+
+```tsx
+import {XDSList, XDSListItem} from '@xds/core/List';
+```
+
 ## Files
 
 <!-- SYNC: Update when files are added/removed -->

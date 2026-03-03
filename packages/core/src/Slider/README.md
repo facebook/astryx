@@ -4,6 +4,12 @@ A slider component for selecting numeric values or ranges with full keyboard and
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
+## Import
+
+```tsx
+import {XDSSlider} from '@xds/core/Slider';
+```
+
 ## Features
 
 - **Single & range modes**: Pass a `number` for single thumb, `[number, number]` for range

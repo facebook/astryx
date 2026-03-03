@@ -2,6 +2,12 @@
 
 A progress bar for displaying determinate or indeterminate progress.
 
+## Import
+
+```tsx
+import {XDSProgressBar} from '@xds/core/ProgressBar';
+```
+
 ## Exports
 
 | Export                  | Type      | Description                 |

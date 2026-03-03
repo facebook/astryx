@@ -2,6 +2,12 @@
 
 XDSCalendar component for date selection with single and range modes.
 
+## Import
+
+```tsx
+import {XDSCalendar} from '@xds/core/Calendar';
+```
+
 ## Features
 
 - **Selection Modes**: `single` (default) and `range`
@@ -45,7 +51,7 @@ import { XDSCalendar } from '@xds/core/Calendar';
 | `mode`                | `'single' \| 'range'`                | `'single'` | Selection mode                 |
 | `value`               | `ISODateString \| DateRange`         | —          | Controlled selected value      |
 | `defaultValue`        | `ISODateString \| DateRange`         | —          | Uncontrolled default value     |
-| `onChange`             | `Function`                           | —          | Selection callback             |
+| `onChange`            | `Function`                           | —          | Selection callback             |
 | `numberOfMonths`      | `1 \| 2`                             | `1`        | Number of months to display    |
 | `min`                 | `ISODateString`                      | —          | Minimum selectable date        |
 | `max`                 | `ISODateString`                      | —          | Maximum selectable date        |

@@ -4,6 +4,12 @@ A radio group component for single-value selection from a list of options.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
+## Import
+
+```tsx
+import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
+```
+
 ## Features
 
 - **Accessible**: Uses native `<input type="radio">` with proper `role="radiogroup"` and ARIA attributes
@@ -89,7 +95,10 @@ import { XDSRadioList, XDSRadioListItem } from '@xds/core/RadioList';
 Radio group container with field integration for label, description, and status.
 
 ```tsx
-<XDSRadioList label="Notification preference" value={selected} onChange={setSelected}>
+<XDSRadioList
+  label="Notification preference"
+  value={selected}
+  onChange={setSelected}>
   <XDSRadioListItem label="Email" value="email" />
   <XDSRadioListItem label="SMS" value="sms" />
 </XDSRadioList>

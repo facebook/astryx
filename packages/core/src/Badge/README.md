@@ -2,6 +2,12 @@
 
 A badge component for displaying status indicators, counts, or labels.
 
+## Import
+
+```tsx
+import {XDSBadge} from '@xds/core/Badge';
+```
+
 ## Exports
 
 | Export            | Type      | Description          |

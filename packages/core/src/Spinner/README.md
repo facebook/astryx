@@ -4,6 +4,12 @@ A pure spinner component for indicating loading state. No layout, no text — ju
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
+## Import
+
+```tsx
+import {XDSSpinner} from '@xds/core/Spinner';
+```
+
 ## Features
 
 - **CSS Border Animation**: Lightweight border-based spinner with smooth 360° rotation

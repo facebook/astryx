@@ -2,6 +2,12 @@
 
 Dropdown selector for choosing from a list of options. Follows XDS input conventions with label, status, and field props.
 
+## Import
+
+```tsx
+import {XDSSelector, XDSSelectorItem} from '@xds/core/Selector';
+```
+
 ## Usage
 
 ```tsx
@@ -110,18 +116,14 @@ Dropdown selector for choosing from a list of options.
 Helper for custom item rendering:
 
 ```tsx
-<XDSSelectorItem
-  icon={UserIcon}
-  label="Primary text"
-  description="Secondary"
-/>
+<XDSSelectorItem icon={UserIcon} label="Primary text" description="Secondary" />
 ```
 
-| Prop          | Type          | Default | Description                       |
-| ------------- | ------------- | ------- | --------------------------------- |
-| `icon`        | `XDSIconType` | —       | Icon before the label             |
-| `label`       | `ReactNode`   | —       | Primary label text (required)     |
-| `description` | `ReactNode`   | —       | Secondary description text        |
+| Prop          | Type          | Default | Description                   |
+| ------------- | ------------- | ------- | ----------------------------- |
+| `icon`        | `XDSIconType` | —       | Icon before the label         |
+| `label`       | `ReactNode`   | —       | Primary label text (required) |
+| `description` | `ReactNode`   | —       | Secondary description text    |
 
 ## Keyboard
 

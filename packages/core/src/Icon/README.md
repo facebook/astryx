@@ -4,6 +4,12 @@ Renders icons with XDS design system colors and sizes. Supports both direct SVG 
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
+## Import
+
+```tsx
+import {XDSIcon} from '@xds/core/Icon';
+```
+
 ## Features
 
 - **Semantic Icon Names**: Use names like `'close'` or `'chevronDown'` — resolved from the theme's icon registry

@@ -4,6 +4,12 @@ XDSLink component for styled anchor links with multiple variants and features, p
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
+## Import
+
+```tsx
+import {XDSLink, XDSLinkProvider} from '@xds/core/Link';
+```
+
 ## Features
 
 - **Variants**: `default`, `subtle`, `inherit`
@@ -23,7 +29,9 @@ XDSLink component for styled anchor links with multiple variants and features, p
 Styled anchor link with variants, external link support, and polymorphic rendering.
 
 ```tsx
-<XDSLink label="Documentation" href="/docs">Documentation</XDSLink>
+<XDSLink label="Documentation" href="/docs">
+  Documentation
+</XDSLink>
 ```
 
 | Prop             | Type                                 | Default     | Description                                 |
@@ -51,10 +59,10 @@ Provider that sets the default link component for all XDS link components in the
 </XDSLinkProvider>
 ```
 
-| Prop        | Type                   | Default | Description                                      |
-| ----------- | ---------------------- | ------- | ------------------------------------------------ |
-| `component` | `XDSLinkComponentType` | —       | Component to use for all link elements (required)|
-| `children`  | `ReactNode`            | —       | Subtree                                          |
+| Prop        | Type                   | Default | Description                                       |
+| ----------- | ---------------------- | ------- | ------------------------------------------------- |
+| `component` | `XDSLinkComponentType` | —       | Component to use for all link elements (required) |
+| `children`  | `ReactNode`            | —       | Subtree                                           |
 
 ## Usage
 

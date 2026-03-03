@@ -4,6 +4,12 @@ XDSDialog component using the native `<dialog>` element for modal dialogs.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
+## Import
+
+```tsx
+import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
+```
+
 ## Features
 
 - **Native `<dialog>`**: Uses browser's built-in modal behavior
@@ -74,7 +80,11 @@ Modal dialog using the native `<dialog>` element.
     content={<XDSLayoutContent>Content goes here</XDSLayoutContent>}
     footer={
       <XDSLayoutFooter hasDivider>
-        <XDSButton label="Confirm" variant="primary" onClick={() => setIsShown(false)} />
+        <XDSButton
+          label="Confirm"
+          variant="primary"
+          onClick={() => setIsShown(false)}
+        />
       </XDSLayoutFooter>
     }
   />
@@ -104,14 +114,14 @@ Header for dialogs with title, optional subtitle, close button, and start/end co
 />
 ```
 
-| Prop           | Type             | Default | Description                                          |
-| -------------- | ---------------- | ------- | ---------------------------------------------------- |
-| `title`        | `string`         | —       | Dialog title (receives focus on open)                |
-| `subtitle`     | `string`         | —       | Subtitle below the title                             |
-| `onHide`       | `() => unknown`  | —       | Close button callback (no button if omitted)         |
-| `startContent` | `ReactNode`      | —       | Content before the title (e.g., back button)         |
-| `endContent`   | `ReactNode`      | —       | Content after the title, before close button         |
-| `hasDivider`   | `boolean`        | `true`  | Adds border at the bottom edge                       |
+| Prop           | Type            | Default | Description                                  |
+| -------------- | --------------- | ------- | -------------------------------------------- |
+| `title`        | `string`        | —       | Dialog title (receives focus on open)        |
+| `subtitle`     | `string`        | —       | Subtitle below the title                     |
+| `onHide`       | `() => unknown` | —       | Close button callback (no button if omitted) |
+| `startContent` | `ReactNode`     | —       | Content before the title (e.g., back button) |
+| `endContent`   | `ReactNode`     | —       | Content after the title, before close button |
+| `hasDivider`   | `boolean`       | `true`  | Adds border at the bottom edge               |
 
 ## Props
 

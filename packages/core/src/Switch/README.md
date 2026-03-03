@@ -4,6 +4,12 @@ A toggle switch component for boolean values with integrated label support.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
+## Import
+
+```tsx
+import {XDSSwitch} from '@xds/core/Switch';
+```
+
 ## Features
 
 - **Boolean Toggle**: Clean on/off switch for boolean values (40x24px with 20px thumb)

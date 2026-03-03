@@ -2,6 +2,12 @@
 
 XDSDateInput component combining a text input with a calendar popover for date selection.
 
+## Import
+
+```tsx
+import {XDSDateInput} from '@xds/core/DateInput';
+```
+
 ## Features
 
 - **Text Input**: Manual date entry with flexible parsing (supports various formats)
@@ -73,7 +79,7 @@ import { XDSDateInput } from '@xds/core/DateInput';
 | `isRequired`      | `boolean`                                     | `false`           | Mark field as required                   |
 | `isDisabled`      | `boolean`                                     | `false`           | Disable input and calendar               |
 | `value`           | `ISODateString`                               | —                 | Selected date (YYYY-MM-DD)               |
-| `onChange`         | `(value: ISODateString \| undefined) => void` | —                 | Selection callback                       |
+| `onChange`        | `(value: ISODateString \| undefined) => void` | —                 | Selection callback                       |
 | `min`             | `ISODateString`                               | —                 | Minimum selectable date                  |
 | `max`             | `ISODateString`                               | —                 | Maximum selectable date                  |
 | `dateConstraints` | `Array<(date: Date) => boolean>`              | —                 | Custom constraint functions              |

@@ -4,6 +4,12 @@ A number input component for collecting numeric user input with validation.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
+## Import
+
+```tsx
+import {XDSNumberInput} from '@xds/core/NumberInput';
+```
+
 ## Features
 
 - **Label Support**: Required label for accessibility (can be visually hidden)

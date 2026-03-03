@@ -4,6 +4,12 @@ A text input component for collecting user text input.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
+## Import
+
+```tsx
+import {XDSTextInput} from '@xds/core/TextInput';
+```
+
 ## Features
 
 - **Label Support**: Required label for accessibility (can be visually hidden)

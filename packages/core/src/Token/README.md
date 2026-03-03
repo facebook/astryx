@@ -2,6 +2,12 @@
 
 A chip/tag component for displaying entities inline. Renders as a `<span>` by default, `<button>` when `onClick` is provided, or `<a>` when `href` is provided.
 
+## Import
+
+```tsx
+import {XDSToken} from '@xds/core/Token';
+```
+
 ## Exports
 
 | Export          | Type      | Description          |

@@ -4,6 +4,12 @@ A checkbox input component for toggling boolean values.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
+## Import
+
+```tsx
+import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
+```
+
 ## Features
 
 - **Accessible**: Always includes a label (can be visually hidden)
