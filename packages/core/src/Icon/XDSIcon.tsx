@@ -182,6 +182,14 @@ export interface XDSIconProps extends Omit<
 // Component
 // =============================================================================
 
+/**
+ * Renders an icon from the icon registry or a custom SVG component.
+ *
+ * @example
+ * ```
+ * <XDSIcon icon="close" size="md" color="primary" />
+ * ```
+ */
 export const XDSIcon = forwardRef<SVGSVGElement, XDSIconProps>(
   ({icon, color = 'primary', size = 'md', ...props}, ref) => {
     // Get theme context for component-level overrides (optional)

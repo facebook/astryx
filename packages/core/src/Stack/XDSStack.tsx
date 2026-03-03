@@ -114,7 +114,7 @@ export interface XDSStackProps extends Omit<
  * - `direction='vertical'`: hAlign → align-items, vAlign → justify-content
  *
  * @example
- * ```tsx
+ * ```
  * // Vertical stack
  * <XDSStack direction="vertical" gap="space2">
  *   <Item />

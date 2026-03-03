@@ -146,7 +146,6 @@ function AreaProvider({
  *
  * @example
  * ```
- * // Full-page app shell with sidebar navigation
  * <XDSLayout
  *   header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}
  *   start={
@@ -160,26 +159,6 @@ function AreaProvider({
  *     </XDSLayoutContent>
  *   }
  * />
- *
- * // With XDSTopNav — no wrapper needed, TopNav manages its own chrome
- * <XDSLayout
- *   header={
- *     <XDSTopNav
- *       label="Main navigation"
- *       title={<XDSTopNavTitle title="My App" logo={<Logo />} />}
- *       startContent={<XDSTopNavItem label="Home" href="/" isSelected />}
- *     />
- *   }
- *   content={<XDSLayoutContent role="main">...</XDSLayoutContent>}
- * />
- *
- * // Card with structured content
- * <XDSCard>
- *   <XDSLayout
- *     header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
- *     content={<XDSLayoutContent>Body</XDSLayoutContent>}
- *   />
- * </XDSCard>
  * ```
  */
 export function XDSLayout({
