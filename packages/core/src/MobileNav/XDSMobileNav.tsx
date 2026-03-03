@@ -62,9 +62,13 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     overflow: 'hidden',
     outline: 'none',
-    // Hidden by default (native <dialog> uses display:none when closed,
-    // but we need visibility for the slide-out animation)
-    display: 'flex',
+    // Native <dialog> uses display:none when closed — we preserve that
+    // by only setting display when [open] via :where() selector.
+    // This prevents the dialog from blocking pointer events when closed.
+    display: {
+      default: 'none',
+      ':where([open])': 'flex',
+    },
   },
   // ::backdrop is provided by the browser's top layer
   backdrop: {

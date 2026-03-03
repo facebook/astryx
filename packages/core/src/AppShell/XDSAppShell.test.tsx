@@ -293,10 +293,10 @@ describe('XDSAppShell', () => {
   });
 
   // ===========================================================================
-  // Mobile overlay
+  // Mobile overlay (default XDSMobileNav wrapping sideNav)
   // ===========================================================================
 
-  it('shows overlay sideNav when below breakpoint and not collapsed', () => {
+  it('shows default mobile nav when below breakpoint and not collapsed', () => {
     // Start below breakpoint with sideNav expanded
     mockMql = createMockMatchMedia(true);
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
@@ -310,13 +310,13 @@ describe('XDSAppShell', () => {
       </XDSAppShell>,
     );
 
-    // Should show backdrop
-    expect(screen.getByTestId('sidenav-backdrop')).toBeInTheDocument();
-    // Should show nav in overlay
+    // Should show default mobile nav (XDSMobileNav wrapping sideNav)
+    expect(screen.getByTestId('sidenav-mobile')).toBeInTheDocument();
+    // Should show nav content inside the mobile nav
     expect(screen.getByText('Nav Items')).toBeInTheDocument();
   });
 
-  it('clicking backdrop calls onSideNavCollapsedChange', () => {
+  it('default mobile nav calls onSideNavCollapsedChange on close', () => {
     mockMql = createMockMatchMedia(true);
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
 
@@ -330,25 +330,9 @@ describe('XDSAppShell', () => {
       </XDSAppShell>,
     );
 
-    fireEvent.click(screen.getByTestId('sidenav-backdrop'));
-    expect(onChange).toHaveBeenCalledWith(true);
-  });
-
-  it('pressing Escape closes mobile overlay', () => {
-    mockMql = createMockMatchMedia(true);
-    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
-
-    const onChange = vi.fn();
-    render(
-      <XDSAppShell
-        sideNav={<div>Nav</div>}
-        isSideNavCollapsed={false}
-        onSideNavCollapsedChange={onChange}>
-        <div>Content</div>
-      </XDSAppShell>,
-    );
-
-    fireEvent.keyDown(document, {key: 'Escape'});
+    // Click the close button inside the default mobile nav
+    const closeButton = screen.getByRole('button', {name: /close/i});
+    fireEvent.click(closeButton);
     expect(onChange).toHaveBeenCalledWith(true);
   });
 
@@ -515,7 +499,7 @@ describe('XDSAppShell', () => {
     expect(screen.queryByTestId('appshell-mobile-nav')).not.toBeInTheDocument();
   });
 
-  it('suppresses raw overlay when mobileNav is provided', () => {
+  it('uses explicit mobileNav instead of default when provided', () => {
     mockMql = createMockMatchMedia(true);
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
 
@@ -535,9 +519,9 @@ describe('XDSAppShell', () => {
         <div>Content</div>
       </XDSAppShell>,
     );
-    // Raw overlay backdrop should NOT appear
-    expect(screen.queryByTestId('sidenav-backdrop')).not.toBeInTheDocument();
-    // mobileNav slot should be rendered
+    // Default mobile nav should NOT appear
+    expect(screen.queryByTestId('sidenav-mobile')).not.toBeInTheDocument();
+    // Explicit mobileNav slot should be rendered
     expect(screen.getByTestId('appshell-mobile-nav')).toBeInTheDocument();
   });
 
