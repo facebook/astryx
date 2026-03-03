@@ -7,10 +7,32 @@
  * SYNC: When XDSAppShell.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import {render, screen, fireEvent, act} from '@testing-library/react';
 import {XDSAppShell} from './XDSAppShell';
 import {XDSMobileNav} from '../MobileNav';
+
+// jsdom doesn't implement showModal/close on <dialog>, so we mock them
+beforeAll(() => {
+  HTMLDialogElement.prototype.showModal =
+    HTMLDialogElement.prototype.showModal ||
+    function (this: HTMLDialogElement) {
+      this.setAttribute('open', '');
+    };
+  HTMLDialogElement.prototype.close =
+    HTMLDialogElement.prototype.close ||
+    function (this: HTMLDialogElement) {
+      this.removeAttribute('open');
+    };
+});
 
 // Mock ResizeObserver
 class MockResizeObserver {

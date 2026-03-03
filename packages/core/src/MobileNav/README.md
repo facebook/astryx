@@ -141,12 +141,14 @@ const [drawerOpen, setDrawerOpen] = useState(false);
 
 ## Accessibility
 
-- `role="dialog"` + `aria-modal="true"`
+Uses the native `<dialog>` element with `showModal()` for top-layer rendering. The browser provides focus trapping, body scroll lock, and `::backdrop` — no manual z-index needed.
+
+- Native `<dialog>` in top layer (no z-index stacking issues)
 - `aria-label` set to title or "Navigation"
-- Focus moves to drawer on open, restores on close
-- Escape key closes
+- Focus trapping via `showModal()` (browser-native)
+- Escape key closes via native `cancel` event
 - Backdrop click closes
-- Body scroll locked while open
+- Body scroll locked while modal is open
 
 ## Composition with XDSSideNav
 

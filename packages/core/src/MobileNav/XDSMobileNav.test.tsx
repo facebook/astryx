@@ -7,9 +7,23 @@
  * SYNC: When XDSMobileNav.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect, vi, beforeAll} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {XDSMobileNav} from './XDSMobileNav';
+
+// jsdom doesn't implement showModal/close on <dialog>, so we mock them
+beforeAll(() => {
+  HTMLDialogElement.prototype.showModal =
+    HTMLDialogElement.prototype.showModal ||
+    function (this: HTMLDialogElement) {
+      this.setAttribute('open', '');
+    };
+  HTMLDialogElement.prototype.close =
+    HTMLDialogElement.prototype.close ||
+    function (this: HTMLDialogElement) {
+      this.removeAttribute('open');
+    };
+});
 
 describe('XDSMobileNav', () => {
   it('renders when isOpen is true', () => {
@@ -22,18 +36,19 @@ describe('XDSMobileNav', () => {
     expect(screen.getByText('Nav content')).toBeInTheDocument();
   });
 
-  it('does not render dialog as visible when isOpen is false', () => {
+  it('does not show dialog as open when isOpen is false', () => {
     render(
       <XDSMobileNav isOpen={false} onClose={() => {}} data-testid="mobile-nav">
         <span>Nav content</span>
       </XDSMobileNav>,
     );
-    // The overlay exists but is hidden via visibility:hidden
-    const overlay = screen.getByTestId('mobile-nav');
-    expect(overlay).toBeInTheDocument();
+    // The dialog element exists but is not open
+    const dialog = screen.getByTestId('mobile-nav');
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).not.toHaveAttribute('open');
   });
 
-  it('calls onClose on Escape key', () => {
+  it('calls onClose on native cancel event (Escape)', () => {
     const handleClose = vi.fn();
     render(
       <XDSMobileNav isOpen={true} onClose={handleClose}>
@@ -41,11 +56,14 @@ describe('XDSMobileNav', () => {
       </XDSMobileNav>,
     );
 
-    fireEvent.keyDown(document, {key: 'Escape'});
+    // Native <dialog> fires a cancel event on Escape
+    const dialog = screen.getByRole('dialog');
+    const cancelEvent = new Event('cancel', {bubbles: false, cancelable: true});
+    fireEvent(dialog, cancelEvent);
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
 
-  it('calls onClose on backdrop click', () => {
+  it('calls onClose on backdrop click (click on dialog itself)', () => {
     const handleClose = vi.fn();
     render(
       <XDSMobileNav
@@ -56,12 +74,9 @@ describe('XDSMobileNav', () => {
       </XDSMobileNav>,
     );
 
-    // The backdrop is the first child with aria-hidden="true"
-    const backdrop = screen
-      .getByTestId('mobile-nav')
-      .querySelector('[aria-hidden="true"]');
-    expect(backdrop).toBeInTheDocument();
-    fireEvent.click(backdrop!);
+    // Click directly on the dialog element (the transparent overlay area)
+    const dialog = screen.getByTestId('mobile-nav');
+    fireEvent.click(dialog);
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
 
@@ -121,14 +136,15 @@ describe('XDSMobileNav', () => {
     expect(screen.getByTestId('custom-nav')).toBeInTheDocument();
   });
 
-  it('sets aria-modal on dialog', () => {
+  it('uses native dialog element', () => {
     render(
-      <XDSMobileNav isOpen={true} onClose={() => {}}>
+      <XDSMobileNav isOpen={true} onClose={() => {}} data-testid="mobile-nav">
         <span>Content</span>
       </XDSMobileNav>,
     );
 
-    expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true');
+    const dialog = screen.getByTestId('mobile-nav');
+    expect(dialog.tagName).toBe('DIALOG');
   });
 
   it('sets aria-label from title', () => {
@@ -154,15 +170,22 @@ describe('XDSMobileNav', () => {
     );
   });
 
-  it('does not call onClose on Escape when closed', () => {
-    const handleClose = vi.fn();
-    render(
-      <XDSMobileNav isOpen={false} onClose={handleClose}>
+  it('opens dialog via showModal when isOpen becomes true', () => {
+    const {rerender} = render(
+      <XDSMobileNav isOpen={false} onClose={() => {}} data-testid="mobile-nav">
         <span>Content</span>
       </XDSMobileNav>,
     );
 
-    fireEvent.keyDown(document, {key: 'Escape'});
-    expect(handleClose).not.toHaveBeenCalled();
+    const dialog = screen.getByTestId('mobile-nav');
+    expect(dialog).not.toHaveAttribute('open');
+
+    rerender(
+      <XDSMobileNav isOpen={true} onClose={() => {}} data-testid="mobile-nav">
+        <span>Content</span>
+      </XDSMobileNav>,
+    );
+
+    expect(dialog).toHaveAttribute('open');
   });
 });

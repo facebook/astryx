@@ -1,12 +1,21 @@
 /**
  * @file XDSMobileNav.tsx
- * @input Uses React forwardRef, useEffect, useRef, useCallback, ReactNode, StyleX, useFocusTrap
+ * @input Uses React forwardRef, useEffect, useRef, useCallback, ReactNode, StyleX
  * @output Exports XDSMobileNav component and XDSMobileNavProps
  * @position Core implementation; consumed by index.ts
  *
  * Full-height slide-out drawer overlay for mobile navigation.
  * The mobile counterpart to XDSSideNav — accepts the same children
  * (XDSSideNavSection, XDSSideNavItem, or any ReactNode).
+ *
+ * Uses the native `<dialog>` element with `showModal()` for top-layer rendering.
+ * This eliminates z-index stacking issues — the drawer renders above everything
+ * without manual z-index management. The browser provides:
+ * - Top layer promotion (no z-index needed)
+ * - `::backdrop` pseudo-element
+ * - Body scroll lock
+ * - Focus trapping
+ * - Escape key handling via `cancel` event
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/MobileNav/index.ts (exports if types change)
@@ -29,7 +38,6 @@ import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
 import {XDSHeading} from '../Text/XDSHeading';
-import {useFocusTrap} from '../hooks/useFocusTrap';
 
 // =============================================================================
 // Styles
@@ -39,29 +47,42 @@ const SLIDE_DURATION = '0.25s';
 const SLIDE_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
 const styles = stylex.create({
-  overlay: {
+  dialog: {
+    // Reset native <dialog> defaults
     position: 'fixed',
+    margin: 0,
+    padding: 0,
+    border: 'none',
+    maxWidth: 'none',
+    maxHeight: 'none',
+    // Full viewport overlay — the dialog itself is the full-screen container
     inset: 0,
-    zIndex: 1000,
-    visibility: 'hidden',
-    pointerEvents: 'none',
+    width: '100vw',
+    height: '100dvh',
+    backgroundColor: 'transparent',
+    overflow: 'hidden',
+    outline: 'none',
+    // Hidden by default (native <dialog> uses display:none when closed,
+    // but we need visibility for the slide-out animation)
+    display: 'flex',
   },
-  overlayOpen: {
-    visibility: 'visible',
-    pointerEvents: 'auto',
-  },
+  // ::backdrop is provided by the browser's top layer
   backdrop: {
-    position: 'absolute',
-    inset: 0,
-    backgroundColor: colorVars['--color-overlay'],
-    opacity: 0,
-    transition: `opacity ${SLIDE_DURATION} ${SLIDE_EASING}`,
+    '::backdrop': {
+      backgroundColor: colorVars['--color-overlay'],
+      opacity: 0,
+      transition: `opacity ${SLIDE_DURATION} ${SLIDE_EASING}`,
+    },
     '@media (prefers-reduced-motion: reduce)': {
-      transitionDuration: '0.01s',
+      '::backdrop': {
+        transitionDuration: '0.01s',
+      },
     },
   },
   backdropOpen: {
-    opacity: 1,
+    '::backdrop': {
+      opacity: 1,
+    },
   },
   drawer: {
     position: 'absolute',
@@ -135,7 +156,7 @@ const dynamicStyles = stylex.create({
 declare module '../theme/types' {
   interface ComponentStyles {
     mobileNav?: {
-      /** Root overlay styles */
+      /** Root dialog styles */
       root?: ThemeStyleXStyles;
       /** Drawer panel styles */
       drawer?: ThemeStyleXStyles;
@@ -197,8 +218,9 @@ export interface XDSMobileNavProps {
  * in from the start (left in LTR) or end (right in LTR) edge of the viewport,
  * with a semi-transparent backdrop behind it.
  *
- * Supports keyboard dismissal (Escape), backdrop click to close, focus trapping,
- * and body scroll lock while open.
+ * Uses the native `<dialog>` element with `showModal()` for top-layer rendering,
+ * which provides built-in focus trapping, body scroll lock, and `::backdrop`.
+ * No manual z-index needed — the browser's top layer handles stacking.
  *
  * @example
  * ```tsx
@@ -218,7 +240,7 @@ export interface XDSMobileNavProps {
  * </XDSMobileNav>
  * ```
  */
-export const XDSMobileNav = forwardRef<HTMLDivElement, XDSMobileNavProps>(
+export const XDSMobileNav = forwardRef<HTMLDialogElement, XDSMobileNavProps>(
   function XDSMobileNav(
     {
       isOpen,
@@ -231,67 +253,59 @@ export const XDSMobileNav = forwardRef<HTMLDivElement, XDSMobileNavProps>(
     },
     ref,
   ) {
-    const previousActiveElement = useRef<Element | null>(null);
+    const dialogRef = useRef<HTMLDialogElement>(null);
 
-    // Focus trap + Escape handling via shared hook
-    const {containerRef, focusFirst} = useFocusTrap({
-      isActive: isOpen,
-      onEscape: onClose,
-    });
-
-    // Merge refs (containerRef from useFocusTrap + forwarded ref)
+    // Merge refs
     const setRefs = useCallback(
-      (element: HTMLDivElement | null) => {
-        (containerRef as React.MutableRefObject<HTMLElement | null>).current =
-          element;
+      (element: HTMLDialogElement | null) => {
+        (
+          dialogRef as React.MutableRefObject<HTMLDialogElement | null>
+        ).current = element;
         if (typeof ref === 'function') {
           ref(element);
         } else if (ref) {
           ref.current = element;
         }
       },
-      [ref, containerRef],
+      [ref],
     );
 
-    // Focus management: focus first focusable on open, restore focus on close
+    // Open/close the dialog via showModal()/close()
     useEffect(() => {
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+
       if (isOpen) {
-        previousActiveElement.current = document.activeElement;
-        // Delay focus slightly to allow transition to start
-        requestAnimationFrame(() => {
-          focusFirst();
-        });
+        if (!dialog.open) {
+          dialog.showModal();
+        }
       } else {
-        if (
-          previousActiveElement.current &&
-          previousActiveElement.current instanceof HTMLElement
-        ) {
-          previousActiveElement.current.focus();
+        if (dialog.open) {
+          dialog.close();
         }
       }
-    }, [isOpen, focusFirst]);
-
-    // Body scroll lock
-    useEffect(() => {
-      if (!isOpen) return;
-
-      const originalOverflow = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-
-      return () => {
-        document.body.style.overflow = originalOverflow;
-      };
     }, [isOpen]);
 
-    // Handle backdrop click
-    const handleBackdropClick = useCallback(() => {
-      onClose();
-    }, [onClose]);
+    // Handle native cancel event (Escape key) — prevent default and route through onClose
+    const handleCancel = useCallback(
+      (event: React.SyntheticEvent<HTMLDialogElement>) => {
+        event.preventDefault();
+        onClose();
+      },
+      [onClose],
+    );
 
-    // Prevent clicks inside the drawer from closing
-    const handleDrawerClick = useCallback((event: React.MouseEvent) => {
-      event.stopPropagation();
-    }, []);
+    // Handle clicks on the dialog backdrop area (outside the drawer)
+    const handleDialogClick = useCallback(
+      (event: React.MouseEvent<HTMLDialogElement>) => {
+        // Only close if click was directly on the dialog element (the transparent overlay),
+        // not on the drawer or its children
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      },
+      [onClose],
+    );
 
     // Get theme context for component-level overrides
     const themeContext = useContext(ThemeContext);
@@ -301,29 +315,21 @@ export const XDSMobileNav = forwardRef<HTMLDivElement, XDSMobileNavProps>(
     const isStart = side === 'start';
 
     return (
-      <div
+      <dialog
+        ref={setRefs}
         data-testid={testId}
-        role="presentation"
+        aria-label={title ?? 'Navigation'}
+        onClick={handleDialogClick}
+        onCancel={handleCancel}
         {...stylex.props(
-          styles.overlay,
-          isOpen && styles.overlayOpen,
+          styles.dialog,
+          styles.backdrop,
+          isOpen && styles.backdropOpen,
           rootOverride,
         )}>
-        {/* Backdrop */}
+        {/* Drawer panel */}
         <div
-          aria-hidden="true"
-          onClick={handleBackdropClick}
-          {...stylex.props(styles.backdrop, isOpen && styles.backdropOpen)}
-        />
-
-        {/* Drawer */}
-        <div
-          ref={setRefs}
-          role="dialog"
-          aria-modal="true"
-          aria-label={title ?? 'Navigation'}
-          tabIndex={-1}
-          onClick={handleDrawerClick}
+          role="document"
           {...stylex.props(
             styles.drawer,
             dynamicStyles.width(width),
@@ -349,7 +355,7 @@ export const XDSMobileNav = forwardRef<HTMLDivElement, XDSMobileNavProps>(
           {/* Scrollable content */}
           <div {...stylex.props(styles.content)}>{children}</div>
         </div>
-      </div>
+      </dialog>
     );
   },
 );
