@@ -1,26 +1,7 @@
-import React, {useState} from 'react';
+import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSTypeahead} from '@xds/core/Typeahead';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
-
-const meta: Meta<typeof XDSTypeahead> = {
-  title: 'Form/XDSTypeahead',
-  component: XDSTypeahead,
-  tags: ['autodocs'],
-  argTypes: {
-    label: {control: 'text'},
-    placeholder: {control: 'text'},
-    isDisabled: {control: 'boolean'},
-    isRequired: {control: 'boolean'},
-    isOptional: {control: 'boolean'},
-    hasEntriesOnFocus: {control: 'boolean'},
-    hasClear: {control: 'boolean'},
-    maxMenuItems: {control: 'number'},
-  },
-};
-
-export default meta;
-type Story = StoryObj<typeof XDSTypeahead>;
 
 // Sample data
 const fruits: XDSSearchableItem[] = [
@@ -40,79 +21,130 @@ const fruitSource: XDSSearchSource = {
   bootstrap: () => fruits.slice(0, 5),
 };
 
-function TypeaheadExample(
-  props: Partial<React.ComponentProps<typeof XDSTypeahead>>,
-) {
-  const [value, setValue] = useState<XDSSearchableItem | null>(null);
-  return (
-    <div style={{width: 320}}>
+const meta: Meta<typeof XDSTypeahead> = {
+  title: 'Form/XDSTypeahead',
+  component: XDSTypeahead,
+  tags: ['autodocs'],
+  argTypes: {
+    label: {control: 'text'},
+    placeholder: {control: 'text'},
+    isDisabled: {control: 'boolean'},
+    isRequired: {control: 'boolean'},
+    isOptional: {control: 'boolean'},
+    hasEntriesOnFocus: {control: 'boolean'},
+    hasClear: {control: 'boolean'},
+    maxMenuItems: {control: 'number'},
+  },
+  decorators: [
+    Story => (
+      <div style={{width: 320}}>
+        <Story />
+      </div>
+    ),
+  ],
+};
+
+export default meta;
+type Story = StoryObj<typeof XDSTypeahead>;
+
+export const Default: Story = {
+  render: args => {
+    const [value, setValue] = useState<XDSSearchableItem | null>(null);
+    return (
       <XDSTypeahead
-        label="Fruit"
+        {...args}
         searchSource={fruitSource}
         value={value}
         onChange={setValue}
-        placeholder="Search fruits..."
-        {...props}
       />
-    </div>
-  );
-}
-
-export const Default: Story = {
-  render: () => <TypeaheadExample />,
+    );
+  },
+  args: {
+    label: 'Fruit',
+    placeholder: 'Search fruits...',
+  },
 };
 
 export const WithBootstrap: Story = {
-  render: () => <TypeaheadExample hasEntriesOnFocus />,
+  ...Default,
+  args: {
+    ...Default.args,
+    hasEntriesOnFocus: true,
+  },
   name: 'With Bootstrap Results',
 };
 
 export const Required: Story = {
-  render: () => <TypeaheadExample isRequired />,
+  ...Default,
+  args: {
+    ...Default.args,
+    isRequired: true,
+  },
 };
 
 export const Optional: Story = {
-  render: () => <TypeaheadExample isOptional />,
+  ...Default,
+  args: {
+    ...Default.args,
+    isOptional: true,
+  },
 };
 
 export const WithDescription: Story = {
-  render: () => (
-    <TypeaheadExample description="Pick your favorite fruit from the list" />
-  ),
+  ...Default,
+  args: {
+    ...Default.args,
+    description: 'Pick your favorite fruit from the list',
+  },
 };
 
 export const WithError: Story = {
-  render: () => (
-    <TypeaheadExample
-      status={{type: 'error', message: 'Please select a fruit'}}
-    />
-  ),
+  ...Default,
+  args: {
+    ...Default.args,
+    status: {type: 'error', message: 'Please select a fruit'},
+  },
 };
 
 export const WithWarning: Story = {
-  render: () => (
-    <TypeaheadExample
-      status={{type: 'warning', message: 'This fruit may be out of season'}}
-    />
-  ),
+  ...Default,
+  args: {
+    ...Default.args,
+    status: {type: 'warning', message: 'This fruit may be out of season'},
+  },
 };
 
 export const WithSuccess: Story = {
-  render: () => (
-    <TypeaheadExample status={{type: 'success', message: 'Great choice!'}} />
-  ),
+  ...Default,
+  args: {
+    ...Default.args,
+    status: {type: 'success', message: 'Great choice!'},
+  },
 };
 
 export const Disabled: Story = {
-  render: () => <TypeaheadExample isDisabled />,
+  ...Default,
+  args: {
+    ...Default.args,
+    isDisabled: true,
+  },
 };
 
 export const NoClear: Story = {
-  render: () => <TypeaheadExample hasClear={false} />,
+  ...Default,
+  args: {
+    ...Default.args,
+    hasClear: false,
+  },
   name: 'Without Clear Button',
 };
 
 export const LimitedResults: Story = {
-  render: () => <TypeaheadExample maxMenuItems={3} hasEntriesOnFocus />,
+  ...Default,
+  args: {
+    ...Default.args,
+    hasEntriesOnFocus: true,
+    maxMenuItems: 3,
+  },
   name: 'Max 3 Results',
 };

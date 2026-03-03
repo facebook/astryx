@@ -327,6 +327,15 @@ const styles = stylex.create({
   sizeMdWrapper: {
     minHeight: sizeVars['--size-md'],
   },
+  tokenContainer: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    // Offset token so it sits 3px from the inner edge (4px from outer edge
+    // accounting for 1px border). Default inline padding is 8px, so
+    // -(8px - 3px) = -5px positions token equidistant from left edge as top.
+    margin: `calc(-1 * (${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px))`,
+    cursor: 'pointer',
+  },
   loadingSpinner: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -462,6 +471,9 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
   const [hasSearched, setHasSearched] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
+  // Track the value being edited so we can restore on blur without action
+  const [editingValue, setEditingValue] = useState<T | null>(null);
+
   // Debounce ref
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -473,7 +485,15 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
     onHide: () => {
       onOpenChange?.(false);
       setHighlightedIndex(-1);
-      setIsEditing(false);
+      // If we were editing an existing value and the dropdown closes,
+      // restore the token (handled by handleBlur, but also reset here for safety)
+      if (editingValue) {
+        setIsEditing(false);
+        setQuery('');
+        setEditingValue(null);
+      } else {
+        setIsEditing(false);
+      }
       searchSource.cancel?.();
     },
   });
@@ -601,6 +621,7 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
   const handleSelect = useCallback(
     (item: T) => {
       setIsEditing(false);
+      setEditingValue(null);
       onChange(item);
       setQuery('');
       setResults([]);
@@ -613,12 +634,31 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
   // Handle clear
   const handleClear = useCallback(() => {
     setIsEditing(false);
+    setEditingValue(null);
     onChange(null);
     setQuery('');
     setResults([]);
     layer.hide();
     inputRef.current?.focus();
   }, [onChange, layer]);
+
+  // Enter edit mode: remove token, populate input with the value's label
+  const handleEnterEditMode = useCallback(() => {
+    if (isDisabled || !value) return;
+    setEditingValue(value);
+    setIsEditing(true);
+    setQuery(value.label);
+    onChangeQuery?.(value.label);
+    // Don't call onChange(null) — the value stays until blur or selection
+    // We just visually switch from token to input
+    requestAnimationFrame(() => {
+      const input = inputRef.current;
+      if (input) {
+        input.focus();
+        input.setSelectionRange(0, input.value.length);
+      }
+    });
+  }, [isDisabled, value, onChangeQuery]);
 
   // Handle focus
   const handleFocus = useCallback(() => {
@@ -636,6 +676,23 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
     performBootstrap,
     layer,
   ]);
+
+  // Handle blur: if editing a value and no new selection was made, restore
+  const handleBlur = useCallback(
+    (e: React.FocusEvent) => {
+      // Don't restore if focus is moving within the wrapper (e.g. to dropdown)
+      if (wrapperRef.current?.contains(e.relatedTarget as Node)) return;
+
+      if (editingValue && isEditing) {
+        // Restore the original value — user blurred without selecting
+        setIsEditing(false);
+        setQuery('');
+        setEditingValue(null);
+        // Value was never cleared from parent, so no onChange needed
+      }
+    },
+    [editingValue, isEditing],
+  );
 
   // Keyboard navigation
   const handleKeyDown = useCallback(
@@ -678,6 +735,14 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
           break;
         case 'Escape':
           e.preventDefault();
+          if (editingValue) {
+            // Restore the original value and exit edit mode
+            setIsEditing(false);
+            setQuery('');
+            setEditingValue(null);
+            setResults([]);
+            inputRef.current?.blur();
+          }
           layer.hide();
           break;
         case 'Home':
@@ -703,6 +768,7 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
       query.length,
       performBootstrap,
       externalOnKeyDown,
+      editingValue,
     ],
   );
 
@@ -722,8 +788,10 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
     };
   }, [searchSource]);
 
-  // Display value: when editing show query, when value selected show token instead,
+  // Display value: when editing (including edit-mode for existing value) show query,
+  // when value selected and not editing show empty (token is shown instead),
   // otherwise show query (which may be empty)
+  const showToken = value != null && !isEditing;
   const displayValue = isEditing ? query : value ? '' : query;
 
   const sizeStyle = size === 'sm' ? styles.sizeSmWrapper : styles.sizeMdWrapper;
@@ -744,18 +812,23 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
       <div
         ref={wrapperRef}
         data-testid={testId}
+        onBlur={handleBlur}
         {...stylex.props(
           ...wrapperStyles,
           isDisabled && styles.wrapperDisabled,
         )}>
         {startContent}
-        {value && !isEditing && (
-          <XDSToken
-            label={value.label}
-            size={size}
-            onRemove={hasClear && !isDisabled ? handleClear : undefined}
-            isDisabled={isDisabled}
-          />
+        {showToken && (
+          <div
+            onClick={!isEmbedded ? handleEnterEditMode : undefined}
+            {...stylex.props(!isEmbedded && styles.tokenContainer)}>
+            <XDSToken
+              label={value.label}
+              size={size}
+              onRemove={hasClear && !isDisabled ? handleClear : undefined}
+              isDisabled={isDisabled}
+            />
+          </div>
         )}
         <input
           ref={setInputRef}
@@ -774,8 +847,9 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
           value={displayValue}
           onChange={handleInputChange}
           onFocus={handleFocus}
+          onClick={showToken && !isEmbedded ? handleEnterEditMode : undefined}
           onKeyDown={handleKeyDown}
-          placeholder={value ? undefined : placeholder}
+          placeholder={showToken ? undefined : value ? undefined : placeholder}
           disabled={isDisabled}
           autoFocus={hasAutoFocus}
           autoComplete="off"

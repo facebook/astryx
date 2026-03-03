@@ -238,3 +238,76 @@ describe('XDSTypeahead', () => {
     expect(screen.getByText('Selection required')).toBeInTheDocument();
   });
 });
+
+describe('XDSBaseTypeahead edit mode', () => {
+  it('wraps token in a container with spacing compensation', () => {
+    const {container} = render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+      />,
+    );
+    // Token should be wrapped in a div (tokenContainer)
+    const removeButton = screen.getByRole('button', {
+      name: `Remove ${fruits[0].label}`,
+    });
+    // The token's parent div is the tokenContainer
+    expect(removeButton.closest('div')).not.toBe(container.firstChild);
+  });
+
+  it('enters edit mode on token container click', () => {
+    const onChange = vi.fn();
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={onChange}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    // Initially, input value is empty (token is shown instead)
+    expect(input).toHaveValue('');
+
+    // Click the token area to enter edit mode
+    const removeButton = screen.getByRole('button', {
+      name: `Remove ${fruits[0].label}`,
+    });
+    const tokenContainer = removeButton.closest('div')!;
+    fireEvent.click(tokenContainer);
+
+    // Input should now contain the value's label
+    expect(input).toHaveValue(fruits[0].label);
+    // onChange should NOT have been called (value is preserved for restore)
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('restores token on blur without action', async () => {
+    const onChange = vi.fn();
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={onChange}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    // Enter edit mode
+    const removeButton = screen.getByRole('button', {
+      name: `Remove ${fruits[0].label}`,
+    });
+    fireEvent.click(removeButton.closest('div')!);
+    expect(input).toHaveValue(fruits[0].label);
+
+    // Blur without selecting anything
+    fireEvent.blur(input);
+
+    // Should restore — input goes back to empty (token is shown)
+    await waitFor(() => {
+      expect(input).toHaveValue('');
+    });
+    // onChange should not have been called
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});

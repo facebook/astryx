@@ -1,25 +1,7 @@
-import React, {useState} from 'react';
+import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSTokenizer} from '@xds/core/Tokenizer';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
-
-const meta: Meta<typeof XDSTokenizer> = {
-  title: 'Form/XDSTokenizer',
-  component: XDSTokenizer,
-  tags: ['autodocs'],
-  argTypes: {
-    label: {control: 'text'},
-    placeholder: {control: 'text'},
-    isDisabled: {control: 'boolean'},
-    isRequired: {control: 'boolean'},
-    isOptional: {control: 'boolean'},
-    hasClear: {control: 'boolean'},
-    maxEntries: {control: 'number'},
-  },
-};
-
-export default meta;
-type Story = StoryObj<typeof XDSTokenizer>;
 
 // Sample data
 const users: XDSSearchableItem[] = [
@@ -39,101 +21,140 @@ const userSource: XDSSearchSource = {
   bootstrap: () => users.slice(0, 5),
 };
 
-function TokenizerExample(
-  props: Partial<React.ComponentProps<typeof XDSTokenizer>>,
-) {
-  const [value, setValue] = useState<XDSSearchableItem[]>([]);
-  return (
-    <div style={{width: 400}}>
+const meta: Meta<typeof XDSTokenizer> = {
+  title: 'Form/XDSTokenizer',
+  component: XDSTokenizer,
+  tags: ['autodocs'],
+  argTypes: {
+    label: {control: 'text'},
+    placeholder: {control: 'text'},
+    isDisabled: {control: 'boolean'},
+    isRequired: {control: 'boolean'},
+    isOptional: {control: 'boolean'},
+    hasClear: {control: 'boolean'},
+    maxEntries: {control: 'number'},
+  },
+  decorators: [
+    Story => (
+      <div style={{width: 400}}>
+        <Story />
+      </div>
+    ),
+  ],
+};
+
+export default meta;
+type Story = StoryObj<typeof XDSTokenizer>;
+
+export const Default: Story = {
+  render: args => {
+    const [value, setValue] = useState<XDSSearchableItem[]>([]);
+    return (
       <XDSTokenizer
-        label="Team Members"
+        {...args}
         searchSource={userSource}
         value={value}
         onChange={items => setValue(items)}
-        placeholder="Search people..."
-        {...props}
       />
-    </div>
-  );
-}
-
-export const Default: Story = {
-  render: () => <TokenizerExample />,
+    );
+  },
+  args: {
+    label: 'Team Members',
+    placeholder: 'Search people...',
+  },
 };
 
 export const WithPreselected: Story = {
-  render: () => {
+  render: args => {
     const [value, setValue] = useState([users[0], users[2]]);
     return (
-      <div style={{width: 400}}>
-        <XDSTokenizer
-          label="Team Members"
-          searchSource={userSource}
-          value={value}
-          onChange={items => setValue(items)}
-          placeholder="Add more..."
-        />
-      </div>
+      <XDSTokenizer
+        {...args}
+        searchSource={userSource}
+        value={value}
+        onChange={items => setValue(items)}
+      />
     );
+  },
+  args: {
+    label: 'Team Members',
+    placeholder: 'Add more...',
   },
   name: 'Pre-selected Items',
 };
 
 export const WithClear: Story = {
-  render: () => <TokenizerExample hasClear />,
+  ...Default,
+  args: {
+    ...Default.args,
+    hasClear: true,
+  },
   name: 'With Clear All Button',
 };
 
 export const MaxEntries: Story = {
-  render: () => <TokenizerExample maxEntries={3} />,
+  ...Default,
+  args: {
+    ...Default.args,
+    maxEntries: 3,
+  },
   name: 'Max 3 Entries',
 };
 
 export const Required: Story = {
-  render: () => <TokenizerExample isRequired />,
+  ...Default,
+  args: {
+    ...Default.args,
+    isRequired: true,
+  },
 };
 
 export const WithDescription: Story = {
-  render: () => (
-    <TokenizerExample description="Select up to 5 team members for this project" />
-  ),
+  ...Default,
+  args: {
+    ...Default.args,
+    description: 'Select up to 5 team members for this project',
+  },
 };
 
 export const WithError: Story = {
-  render: () => (
-    <TokenizerExample
-      status={{type: 'error', message: 'At least one member is required'}}
-    />
-  ),
+  ...Default,
+  args: {
+    ...Default.args,
+    status: {type: 'error', message: 'At least one member is required'},
+  },
 };
 
 export const WithWarning: Story = {
-  render: () => (
-    <TokenizerExample
-      status={{type: 'warning', message: 'Some members may not have access'}}
-    />
-  ),
+  ...Default,
+  args: {
+    ...Default.args,
+    status: {type: 'warning', message: 'Some members may not have access'},
+  },
 };
 
 export const WithSuccess: Story = {
-  render: () => (
-    <TokenizerExample status={{type: 'success', message: 'Team is ready!'}} />
-  ),
+  ...Default,
+  args: {
+    ...Default.args,
+    status: {type: 'success', message: 'Team is ready!'},
+  },
 };
 
 export const Disabled: Story = {
-  render: () => {
+  render: args => {
     const [value] = useState([users[0], users[1]]);
     return (
-      <div style={{width: 400}}>
-        <XDSTokenizer
-          label="Team Members"
-          searchSource={userSource}
-          value={value}
-          onChange={() => {}}
-          isDisabled
-        />
-      </div>
+      <XDSTokenizer
+        {...args}
+        searchSource={userSource}
+        value={value}
+        onChange={() => {}}
+      />
     );
+  },
+  args: {
+    label: 'Team Members',
+    isDisabled: true,
   },
 };
