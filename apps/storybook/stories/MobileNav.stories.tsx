@@ -1,22 +1,16 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSMobileNav} from '@xds/core/MobileNav';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSText} from '@xds/core/Text';
 import {
   XDSSideNav,
   XDSSideNavHeader,
   XDSSideNavItem,
   XDSSideNavSection,
 } from '@xds/core/SideNav';
-import {XDSTopNav, XDSTopNavTitle, XDSTopNavItem} from '@xds/core/TopNav';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {useMediaQuery} from '@xds/core/hooks';
-import * as stylex from '@stylexjs/stylex';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {
   HomeIcon,
   FolderIcon,
@@ -24,38 +18,11 @@ import {
   ChartBarIcon,
   UserGroupIcon,
   CubeIcon,
-  BellIcon,
-  UserCircleIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
   FolderIcon as FolderIconSolid,
-  ChartBarIcon as ChartBarIconSolid,
-  Cog6ToothIcon as Cog6ToothIconSolid,
-  UserGroupIcon as UserGroupIconSolid,
 } from '@heroicons/react/24/solid';
-
-// =============================================================================
-// Helpers
-// =============================================================================
-
-const contentStyles = stylex.create({
-  content: {
-    padding: spacingVars['--spacing-6'],
-  },
-});
-
-function MockContent() {
-  return (
-    <div {...stylex.props(contentStyles.content)}>
-      <XDSText type="large">Page Content</XDSText>
-      <XDSText type="body">
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
-        tempor incididunt ut labore et dolore magna aliqua.
-      </XDSText>
-    </div>
-  );
-}
 
 // =============================================================================
 // Meta
@@ -362,133 +329,6 @@ export const WithoutTitle: Story = {
           </XDSSideNavSection>
         </XDSMobileNav>
       </>
-    );
-  },
-};
-
-// =============================================================================
-// Full App Shell Pattern
-// =============================================================================
-
-/**
- * The recommended responsive pattern: SideNav on desktop, MobileNav drawer on
- * mobile, all within an AppShell. This is the complete picture showing how
- * XDSMobileNav integrates with the other navigation components.
- *
- * - Desktop (>768px): TopNav + inline SideNav
- * - Mobile (≤768px): TopNav with hamburger button → MobileNav drawer
- *
- * Nav sections are defined once and shared between both layouts.
- * Resize the viewport to see the transition.
- */
-export const FullAppShellPattern: Story = {
-  name: 'Full App Shell Pattern',
-  parameters: {
-    layout: 'fullscreen',
-  },
-  render: function FullAppShellPatternStory() {
-    const isMobile = useMediaQuery('(max-width: 768px)');
-    const [mobileNavOpen, setMobileNavOpen] = useState(false);
-
-    const navSections = (
-      <>
-        <XDSSideNavSection title="Main" isHeaderHidden>
-          <XDSSideNavItem
-            label="Dashboard"
-            icon={HomeIcon}
-            selectedIcon={HomeIconSolid}
-            isSelected
-            href="#"
-          />
-          <XDSSideNavItem
-            label="Analytics"
-            icon={ChartBarIcon}
-            selectedIcon={ChartBarIconSolid}
-            href="#"
-          />
-          <XDSSideNavItem
-            label="Projects"
-            icon={FolderIcon}
-            selectedIcon={FolderIconSolid}
-            href="#"
-            endContent={<XDSBadge>12</XDSBadge>}
-          />
-        </XDSSideNavSection>
-        <XDSSideNavSection title="Organization">
-          <XDSSideNavItem
-            label="Team"
-            icon={UserGroupIcon}
-            selectedIcon={UserGroupIconSolid}
-            href="#"
-          />
-          <XDSSideNavItem
-            label="Settings"
-            icon={Cog6ToothIcon}
-            selectedIcon={Cog6ToothIconSolid}
-            href="#"
-          />
-        </XDSSideNavSection>
-      </>
-    );
-
-    return (
-      <XDSAppShell
-        topNav={
-          <XDSTopNav
-            label="Main navigation"
-            title={
-              <XDSTopNavTitle
-                title="Acme App"
-                logo={
-                  <XDSNavIcon
-                    icon={<CubeIcon style={{width: 16, height: 16}} />}
-                  />
-                }
-              />
-            }
-            startContent={
-              isMobile ? (
-                <XDSButton
-                  label="Menu"
-                  variant="ghost"
-                  icon={<XDSIcon icon="menu" color="inherit" />}
-                  onClick={() => setMobileNavOpen(true)}
-                />
-              ) : (
-                <>
-                  <XDSTopNavItem label="Home" href="#" isSelected />
-                  <XDSTopNavItem label="Products" href="#" />
-                  <XDSTopNavItem label="Docs" href="#" />
-                </>
-              )
-            }
-            endContent={
-              <>
-                <XDSButton
-                  label="Notifications"
-                  variant="ghost"
-                  icon={<BellIcon style={{width: 16, height: 16}} />}
-                />
-                <XDSButton
-                  label="Profile"
-                  variant="ghost"
-                  icon={<UserCircleIcon style={{width: 16, height: 16}} />}
-                />
-              </>
-            }
-          />
-        }
-        sideNav={<XDSSideNav>{navSections}</XDSSideNav>}
-        mobileNav={
-          <XDSMobileNav
-            isOpen={mobileNavOpen}
-            onClose={() => setMobileNavOpen(false)}
-            title="Acme App">
-            {navSections}
-          </XDSMobileNav>
-        }>
-        <MockContent />
-      </XDSAppShell>
     );
   },
 };

@@ -101,7 +101,9 @@ const styles = stylex.create({
   },
   drawerStart: {
     insetInlineStart: 0,
-    borderInlineEnd: `1px solid ${colorVars['--color-divider']}`,
+    borderInlineEndWidth: 1,
+    borderInlineEndStyle: 'solid',
+    borderInlineEndColor: colorVars['--color-divider'],
     transform: {
       default: 'translateX(-100%)',
       ':is([dir="rtl"] *)': 'translateX(100%)',
@@ -112,7 +114,9 @@ const styles = stylex.create({
   },
   drawerEnd: {
     insetInlineEnd: 0,
-    borderInlineStart: `1px solid ${colorVars['--color-divider']}`,
+    borderInlineStartWidth: 1,
+    borderInlineStartStyle: 'solid',
+    borderInlineStartColor: colorVars['--color-divider'],
     transform: {
       default: 'translateX(100%)',
       ':is([dir="rtl"] *)': 'translateX(-100%)',
@@ -128,10 +132,12 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-2'],
     flexShrink: 0,
-    borderBlockEnd: `1px solid ${colorVars['--color-divider']}`,
+    borderBlockEndWidth: 1,
+    borderBlockEndStyle: 'solid',
+    borderBlockEndColor: colorVars['--color-divider'],
   },
-  headerTitleOnly: {
-    borderBlockEnd: 'none',
+  headerNoTitle: {
+    justifyContent: 'flex-end',
   },
   content: {
     flex: 1,
@@ -329,7 +335,6 @@ export const XDSMobileNav = forwardRef<HTMLDialogElement, XDSMobileNavProps>(
         )}>
         {/* Drawer panel */}
         <div
-          role="document"
           {...stylex.props(
             styles.drawer,
             dynamicStyles.width(width),
@@ -340,9 +345,8 @@ export const XDSMobileNav = forwardRef<HTMLDialogElement, XDSMobileNavProps>(
             drawerOverride,
           )}>
           {/* Header with optional title and close button */}
-          <div
-            {...stylex.props(styles.header, !title && styles.headerTitleOnly)}>
-            {title ? <XDSHeading level={2}>{title}</XDSHeading> : <span />}
+          <div {...stylex.props(styles.header, !title && styles.headerNoTitle)}>
+            {title && <XDSHeading level={2}>{title}</XDSHeading>}
             <XDSButton
               variant="ghost"
               label="Close navigation"
