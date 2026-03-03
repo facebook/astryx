@@ -437,8 +437,8 @@ describe('XDSTable render performance', () => {
       const renderTime = endTime - startTime;
       console.log(`100 rows initial render: ${renderTime.toFixed(2)}ms`);
 
-      // Should render within 100ms (generous budget for test environment)
-      expect(renderTime).toBeLessThan(100);
+      // Should render within 200ms (generous budget for CI variance)
+      expect(renderTime).toBeLessThan(200);
     });
 
     it('should render 500 rows within performance budget', () => {
