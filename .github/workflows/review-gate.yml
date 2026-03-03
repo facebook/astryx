@@ -5,19 +5,27 @@ on:
     types: [opened, synchronize, reopened]
   pull_request_review:
     types: [submitted]
+  merge_group:
 
 jobs:
   review-gate:
     name: review-gate
     runs-on: ubuntu-latest
     steps:
+      # In merge queue context, the review already passed on the PR — auto-pass
+      - name: Auto-pass for merge queue
+        if: github.event_name == 'merge_group'
+        run: echo "Merge queue — review already validated on the PR"
+
       - name: Checkout CODEOWNERS
+        if: github.event_name != 'merge_group'
         uses: actions/checkout@v4
         with:
           sparse-checkout: .github/CODEOWNERS
           sparse-checkout-cone-mode: false
 
       - name: Check review requirement
+        if: github.event_name != 'merge_group'
         uses: actions/github-script@v7
         with:
           script: |
