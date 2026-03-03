@@ -45,7 +45,6 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {spacingVars} from '../theme/tokens.stylex';
 
 // =============================================================================
 // Container-side: Edge signal styles
@@ -102,44 +101,36 @@ export const edgeSignals = stylex.create({
  * than either value. When not at an edge (signals default to 0), no compensation
  * is applied.
  *
- * Each variant corresponds to a spacing token value matching the component's
- * own inline padding:
- * - `inlinePadding2`: for icon-only buttons (paddingInline: spacing-2)
- * - `inlinePadding3`: for text buttons ghost/tertiary (paddingInline: spacing-3)
+ * Components must set `--component-padding-inline` on themselves so the
+ * compensation formula knows the component's own inline padding. This makes
+ * edge compensation theme-safe — if a theme changes the button's internal
+ * padding, the compensation adjusts automatically.
  *
  * @example
  * ```tsx
  * // In XDSButton, for ghost variant:
+ * const styles = stylex.create({
+ *   ghost: {
+ *     paddingInline: spacingVars['--spacing-3'],
+ *     '--component-padding-inline': spacingVars['--spacing-3'],
+ *   },
+ * });
+ *
  * {...stylex.props(
  *   styles.base,
- *   variants.ghost,
- *   edgeCompensation.inlinePadding3,
+ *   styles.ghost,
+ *   edgeCompensation.self,
  * )}
  * ```
  */
 export const edgeCompensation = stylex.create({
   /**
-   * Compensate for spacing-2 inline padding at edges.
-   * Used by icon-only buttons.
+   * Self-compensating edge style. Reads --component-padding-inline from the
+   * component itself. The component must set this variable to its own inline
+   * padding value (typically via the same spacing token used for paddingInline).
    */
-  inlinePadding2: {
-    marginInlineStart: `calc(var(--edge-start, 0) * -1 * min(${spacingVars['--spacing-2']}, var(--container-padding-inline, 0px)))`,
-    marginInlineEnd: `calc(var(--edge-end, 0) * -1 * min(${spacingVars['--spacing-2']}, var(--container-padding-inline, 0px)))`,
-  },
-  /**
-   * Compensate for spacing-3 inline padding at edges.
-   * Used by ghost/tertiary XDSButton (paddingInline: spacing-3).
-   */
-  inlinePadding3: {
-    marginInlineStart: `calc(var(--edge-start, 0) * -1 * min(${spacingVars['--spacing-3']}, var(--container-padding-inline, 0px)))`,
-    marginInlineEnd: `calc(var(--edge-end, 0) * -1 * min(${spacingVars['--spacing-3']}, var(--container-padding-inline, 0px)))`,
-  },
-  /**
-   * Compensate for spacing-4 inline padding at edges.
-   * Used by larger padded components.
-   */
-  inlinePadding4: {
-    marginInlineStart: `calc(var(--edge-start, 0) * -1 * min(${spacingVars['--spacing-4']}, var(--container-padding-inline, 0px)))`,
-    marginInlineEnd: `calc(var(--edge-end, 0) * -1 * min(${spacingVars['--spacing-4']}, var(--container-padding-inline, 0px)))`,
+  self: {
+    marginInlineStart: `calc(var(--edge-start, 0) * -1 * min(var(--component-padding-inline, 0px), var(--container-padding-inline, 0px)))`,
+    marginInlineEnd: `calc(var(--edge-end, 0) * -1 * min(var(--component-padding-inline, 0px), var(--container-padding-inline, 0px)))`,
   },
 });
