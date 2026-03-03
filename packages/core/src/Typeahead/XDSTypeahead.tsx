@@ -138,14 +138,11 @@ const styles = stylex.create({
     opacity: 0.5,
     borderColor: colorVars['--color-divider-emphasized'],
   },
-  tokenContainer: {
-    display: 'inline-flex',
-    alignItems: 'center',
+  token: {
     // Offset token so it sits 3px from the inner edge (4px from outer edge
     // accounting for 1px border). Default inline padding is 8px, so
     // -(8px - 3px) = -5px positions token equidistant from left edge as top.
     margin: `calc(-1 * (${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px))`,
-    cursor: 'pointer',
   },
   clearButton: {
     all: 'unset',
@@ -298,6 +295,7 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const tokenRef = useRef<HTMLElement>(null);
 
   // Edit mode: when the user clicks the token to edit the selected value
   const [isEditing, setIsEditing] = useState(false);
@@ -351,6 +349,18 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
       setIsEditing(false);
       setEditingValue(null);
       onChange(item);
+      // After selection, focus the token so keyboard users stay in the component.
+      // Use requestAnimationFrame because the token renders on the next cycle.
+      if (item) {
+        requestAnimationFrame(() => {
+          const tokenEl = tokenRef.current;
+          if (tokenEl) {
+            // Focus the internal button inside the token
+            const button = tokenEl.querySelector('button');
+            (button ?? tokenEl).focus();
+          }
+        });
+      }
     },
     [onChange],
   );
@@ -430,19 +440,15 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
           xstyle,
         )}>
         {showToken && (
-          <div
-            onClick={e => {
-              e.stopPropagation();
-              handleEnterEditMode();
-            }}
-            {...stylex.props(styles.tokenContainer)}>
-            <XDSToken
-              label={value.label}
-              size={size}
-              onRemove={hasClear && !isDisabled ? handleClear : undefined}
-              isDisabled={isDisabled}
-            />
-          </div>
+          <XDSToken
+            ref={tokenRef}
+            label={value.label}
+            size={size}
+            onClick={handleEnterEditMode}
+            onRemove={hasClear && !isDisabled ? handleClear : undefined}
+            isDisabled={isDisabled}
+            xstyle={styles.token}
+          />
         )}
         <XDSBaseTypeahead
           ref={inputRef}
