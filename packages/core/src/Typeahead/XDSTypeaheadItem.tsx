@@ -104,7 +104,7 @@ const styles = stylex.create({
  * Exported for use in custom `renderItem` implementations.
  *
  * @example
- * ```tsx
+ * ```
  * // Default usage (automatic)
  * <XDSTypeahead searchSource={source} value={v} onChange={setV} label="Search" />
  *

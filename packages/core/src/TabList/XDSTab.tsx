@@ -163,6 +163,14 @@ const iconSizeStyles = stylex.create({
 /**
  * Tab item component. Renders as an anchor when `href` is provided,
  * otherwise as a button.
+ *
+ * @example
+ * ```
+ * <XDSTabList value={tab} onChange={setTab}>
+ *   <XDSTab value="general" label="General" />
+ *   <XDSTab value="advanced" label="Advanced" />
+ * </XDSTabList>
+ * ```
  */
 export function XDSTab({
   as,

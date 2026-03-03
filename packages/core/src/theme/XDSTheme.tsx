@@ -73,6 +73,13 @@ const wrapperStyles = stylex.create({
  *
  * Applies StyleX theme variables and sets color-scheme for light-dark() to work.
  * Use mode prop to override system preference.
+ *
+ * @example
+ * ```
+ * <XDSTheme theme={myTheme} mode="system">
+ *   <App />
+ * </XDSTheme>
+ * ```
  */
 export function XDSTheme({
   theme,

@@ -227,7 +227,7 @@ const styles = stylex.create({
  * For hover-triggered overlays, use {@link XDSHoverCard} instead.
  *
  * @example
- * ```tsx
+ * ```
  * // Basic popover
  * <XDSPopover label="Settings" content={<SettingsPanel />} placement="below">
  *   <XDSButton label="Settings" />

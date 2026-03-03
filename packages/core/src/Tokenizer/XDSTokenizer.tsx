@@ -277,7 +277,7 @@ const statusFocusStyles = stylex.create({
  * and clears the query. Backspace on empty input removes the last token.
  *
  * @example
- * ```tsx
+ * ```
  * // Basic
  * const [members, setMembers] = useState<UserItem[]>([]);
  *

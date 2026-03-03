@@ -211,6 +211,17 @@ const sizeStyles = stylex.create({
  * Tab menu trigger that opens a dropdown of additional tab options.
  * Shows the selected option's label as trigger text when an option is active.
  * Dropdown includes a heading showing the menu's label prop.
+ *
+ * @example
+ * ```
+ * <XDSTabList value={tab} onChange={setTab}>
+ *   <XDSTab value="overview" label="Overview" />
+ *   <XDSTabMenu label="More" options={[
+ *     { value: "settings", label: "Settings" },
+ *     { value: "history", label: "History" },
+ *   ]} />
+ * </XDSTabList>
+ * ```
  */
 export function XDSTabMenu({label, options}: XDSTabMenuProps) {
   const tabListCtx = useXDSTabListContext();
