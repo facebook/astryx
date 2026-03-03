@@ -69,6 +69,8 @@ or `<span onClick>` for accessibility (keyboard navigation, focus management, sc
 | `children`   | `ReactNode`                                                 | —             | Button content                                                                                                                                       |
 | `endSlot`    | `ReactElement<XDSIconProps> \| ReactElement<XDSBadgeProps>` | —             | Trailing icon or badge after the label. Only accepts `<XDSIcon>` or `<XDSBadge>`. Ignored for icon-only. Color is inherited from the button variant. |
 | `tooltip`    | `string`                                                    | —             | Tooltip text shown on hover                                                                                                                          |
+| `onClick`    | `(e: MouseEvent) => void`                                   | —             | Standard click handler (passed through from `ButtonHTMLAttributes`)                                                                                  |
+| `onClickAction` | `(e: MouseEvent) => void \| Promise<void>`               | —             | Async click handler. Shows loading state while the returned promise is pending.                                                                      |
 
 ## Files
 
