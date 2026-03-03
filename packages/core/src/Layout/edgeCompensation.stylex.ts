@@ -45,6 +45,7 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 
 // =============================================================================
 // Container-side: Edge signal styles
@@ -103,16 +104,8 @@ export const edgeSignals = stylex.create({
  *
  * Each variant corresponds to a spacing token value matching the component's
  * own inline padding:
- * - `inlinePadding2`: for icon-only buttons (paddingInline: spacing-2 = 8px)
- * - `inlinePadding3`: for text buttons ghost/tertiary (paddingInline: spacing-3 = 12px)
- *
- * Note: The raw px values (8px, 12px, 16px) are used instead of spacing token
- * variables because CSS `min()` needs resolvable lengths at calc-time. StyleX
- * token variables (e.g., `spacingVars['--spacing-2']`) are CSS custom properties
- * that `min()` can resolve at runtime, but using them here would create a
- * circular dependency between the component's own tokens and the compensation
- * formula. The px values must be kept in sync with the corresponding spacing
- * tokens manually.
+ * - `inlinePadding2`: for icon-only buttons (paddingInline: spacing-2)
+ * - `inlinePadding3`: for text buttons ghost/tertiary (paddingInline: spacing-3)
  *
  * @example
  * ```tsx
@@ -126,33 +119,27 @@ export const edgeSignals = stylex.create({
  */
 export const edgeCompensation = stylex.create({
   /**
-   * Compensate for spacing-2 (8px) inline padding at edges.
+   * Compensate for spacing-2 inline padding at edges.
    * Used by icon-only buttons.
    */
   inlinePadding2: {
-    marginInlineStart:
-      'calc(var(--edge-start, 0) * -1 * min(8px, var(--container-padding-inline, 0px)))',
-    marginInlineEnd:
-      'calc(var(--edge-end, 0) * -1 * min(8px, var(--container-padding-inline, 0px)))',
+    marginInlineStart: `calc(var(--edge-start, 0) * -1 * min(${spacingVars['--spacing-2']}, var(--container-padding-inline, 0px)))`,
+    marginInlineEnd: `calc(var(--edge-end, 0) * -1 * min(${spacingVars['--spacing-2']}, var(--container-padding-inline, 0px)))`,
   },
   /**
-   * Compensate for spacing-3 (12px) inline padding at edges.
+   * Compensate for spacing-3 inline padding at edges.
    * Used by ghost/tertiary XDSButton (paddingInline: spacing-3).
    */
   inlinePadding3: {
-    marginInlineStart:
-      'calc(var(--edge-start, 0) * -1 * min(12px, var(--container-padding-inline, 0px)))',
-    marginInlineEnd:
-      'calc(var(--edge-end, 0) * -1 * min(12px, var(--container-padding-inline, 0px)))',
+    marginInlineStart: `calc(var(--edge-start, 0) * -1 * min(${spacingVars['--spacing-3']}, var(--container-padding-inline, 0px)))`,
+    marginInlineEnd: `calc(var(--edge-end, 0) * -1 * min(${spacingVars['--spacing-3']}, var(--container-padding-inline, 0px)))`,
   },
   /**
-   * Compensate for spacing-4 (16px) inline padding at edges.
+   * Compensate for spacing-4 inline padding at edges.
    * Used by larger padded components.
    */
   inlinePadding4: {
-    marginInlineStart:
-      'calc(var(--edge-start, 0) * -1 * min(16px, var(--container-padding-inline, 0px)))',
-    marginInlineEnd:
-      'calc(var(--edge-end, 0) * -1 * min(16px, var(--container-padding-inline, 0px)))',
+    marginInlineStart: `calc(var(--edge-start, 0) * -1 * min(${spacingVars['--spacing-4']}, var(--container-padding-inline, 0px)))`,
+    marginInlineEnd: `calc(var(--edge-end, 0) * -1 * min(${spacingVars['--spacing-4']}, var(--container-padding-inline, 0px)))`,
   },
 });
