@@ -1,11 +1,12 @@
 /**
  * @file XDSBaseTypeahead.tsx
  * @input Uses React, StyleX, useXDSLayer, XDSTypeaheadItem
- * @output Exports XDSBaseTypeahead unstyled typeahead component
+ * @output Exports XDSBaseTypeahead combobox engine component
  * @position Core implementation; used by XDSTypeahead and XDSTokenizer
  *
- * Handles search, keyboard navigation, selection, and dropdown positioning.
- * No field wrapper, no styling — just the combobox behavior.
+ * Pure combobox engine: input, search, keyboard navigation, dropdown.
+ * No wrapper div, no border styling, no token rendering.
+ * Consumers provide their own wrapper and pass anchorRef for dropdown positioning.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Typeahead/README.md
@@ -20,13 +21,13 @@ import React, {
   useRef,
   useState,
   type ReactNode,
+  type RefObject,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {useXDSLayer} from '../Layer/useXDSLayer';
 import {XDSTypeaheadItem} from './XDSTypeaheadItem';
 import {XDSIcon} from '../Icon';
-import {XDSToken} from '../Token';
 import {
   colorVars,
   spacingVars,
@@ -35,9 +36,6 @@ import {
   lineHeightVars,
   typographyVars,
   fontWeightVars,
-  sizeVars,
-  transitionVars,
-  elevationVars,
 } from '../theme/tokens.stylex';
 import type {XDSSearchableItem, XDSSearchSource} from './types';
 
@@ -96,12 +94,6 @@ export interface XDSBaseTypeaheadProps<T extends XDSSearchableItem> {
   isDisabled?: boolean;
 
   /**
-   * Show clear button when a value is selected.
-   * @default true
-   */
-  hasClear?: boolean;
-
-  /**
    * Auto-focus on mount.
    * @default false
    */
@@ -116,12 +108,6 @@ export interface XDSBaseTypeaheadProps<T extends XDSSearchableItem> {
    * Callback when dropdown opens/closes.
    */
   onOpenChange?: (isOpen: boolean) => void;
-
-  /**
-   * The size of the input.
-   * @default 'md'
-   */
-  size?: 'sm' | 'md';
 
   /**
    * Debounce delay in ms before triggering search after typing.
@@ -141,42 +127,22 @@ export interface XDSBaseTypeaheadProps<T extends XDSSearchableItem> {
   ariaDescribedBy?: string;
 
   /**
-   * Additional StyleX styles for the input wrapper.
-   */
-  wrapperXStyle?: StyleXStyles;
-
-  /**
    * Additional StyleX styles for the input element.
    */
   inputXStyle?: StyleXStyles;
 
   /**
-   * Content rendered before the input (e.g., tokens in Tokenizer).
+   * Ref to the anchor element for dropdown positioning.
+   * The dropdown will be positioned relative to this element.
+   * If not provided, the input itself is used as the anchor.
    */
-  startContent?: ReactNode;
-
-  /**
-   * Whether the input should visually appear as part of a group.
-   * When true, some wrapper styles are suppressed.
-   * @default false
-   */
-  isEmbedded?: boolean;
+  anchorRef?: RefObject<HTMLElement | null>;
 
   /**
    * Additional keydown handler called before internal keyboard navigation.
    * If the handler calls `e.preventDefault()`, internal handling is skipped.
    */
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-
-  /**
-   * Validation status type for border styling.
-   */
-  statusType?: 'warning' | 'error' | 'success';
-
-  /**
-   * Test ID.
-   */
-  'data-testid'?: string;
 }
 
 // =============================================================================
@@ -184,54 +150,6 @@ export interface XDSBaseTypeaheadProps<T extends XDSSearchableItem> {
 // =============================================================================
 
 const styles = stylex.create({
-  wrapper: {
-    boxSizing: 'border-box',
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: spacingVars['--spacing-1'],
-    // Standard padding minus border width to prevent height jump
-    // when a token (28px) is added inside the input
-    paddingBlock: `calc(${spacingVars['--spacing-1']} - 1px)`,
-    paddingInline: spacingVars['--spacing-2'],
-    borderWidth: '1px',
-    borderStyle: 'solid',
-    borderColor: {
-      default: colorVars['--color-divider-emphasized'],
-      ':hover': {
-        '@media (hover: hover)': colorVars['--color-divider-high-contrast'],
-      },
-    },
-    borderRadius: radiusVars['--radius-element'],
-    backgroundColor: colorVars['--color-surface'],
-    transitionProperty: 'border-color, outline, box-shadow',
-    transitionDuration: transitionVars['--transition-fast'],
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)': elevationVars['--elevation-input-hover'],
-      },
-    },
-    outline: {
-      default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline']}`,
-    },
-    outlineOffset: '0',
-  },
-  wrapperDisabled: {
-    cursor: 'not-allowed',
-    opacity: 0.5,
-    borderColor: colorVars['--color-divider-emphasized'],
-  },
-  wrapperEmbedded: {
-    borderWidth: 0,
-    borderStyle: 'none',
-    padding: 0,
-    backgroundColor: 'transparent',
-    boxShadow: 'none',
-    outline: 'none',
-  },
   input: {
     display: 'block',
     flex: 1,
@@ -251,9 +169,6 @@ const styles = stylex.create({
   },
   inputDisabled: {
     cursor: 'not-allowed',
-  },
-  inputUnselected: {
-    color: colorVars['--color-text-secondary'],
   },
   dropdown: {
     boxSizing: 'border-box',
@@ -287,10 +202,6 @@ const styles = stylex.create({
   itemHighlighted: {
     backgroundColor: colorVars['--color-hover-overlay'],
   },
-  itemDisabled: {
-    opacity: 0.5,
-    cursor: 'not-allowed',
-  },
   itemSelected: {
     fontWeight: fontWeightVars['--font-weight-medium'],
   },
@@ -305,37 +216,6 @@ const styles = stylex.create({
     fontSize: textSizeVars['--text-sm'],
     color: colorVars['--color-text-secondary'],
   },
-  clearButton: {
-    all: 'unset',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    padding: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-rounded'],
-    color: colorVars['--color-text-secondary'],
-    opacity: {
-      default: 0.7,
-      ':hover': {
-        '@media (hover: hover)': 1,
-      },
-    },
-  },
-  sizeSmWrapper: {
-    minHeight: sizeVars['--size-sm'],
-  },
-  sizeMdWrapper: {
-    minHeight: sizeVars['--size-md'],
-  },
-  tokenContainer: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    // Offset token so it sits 3px from the inner edge (4px from outer edge
-    // accounting for 1px border). Default inline padding is 8px, so
-    // -(8px - 3px) = -5px positions token equidistant from left edge as top.
-    margin: `calc(-1 * (${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px))`,
-    cursor: 'pointer',
-  },
   loadingSpinner: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -344,84 +224,25 @@ const styles = stylex.create({
   },
 });
 
-const statusBorderStyles = stylex.create({
-  warning: {
-    borderColor: colorVars['--color-warning'],
-  },
-  error: {
-    borderColor: colorVars['--color-negative'],
-  },
-  success: {
-    borderColor: colorVars['--color-positive'],
-  },
-});
-
-const statusHoverShadowStyles = stylex.create({
-  warning: {
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)':
-          elevationVars['--elevation-input-hover-warning'],
-      },
-    },
-  },
-  error: {
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)': elevationVars['--elevation-input-hover-error'],
-      },
-    },
-  },
-  success: {
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)':
-          elevationVars['--elevation-input-hover-success'],
-      },
-    },
-  },
-});
-
-const statusFocusStyles = stylex.create({
-  warning: {
-    outline: {
-      default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline-warning']}`,
-    },
-  },
-  error: {
-    outline: {
-      default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline-error']}`,
-    },
-  },
-  success: {
-    outline: {
-      default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline-success']}`,
-    },
-  },
-});
-
 // =============================================================================
 // Component
 // =============================================================================
 
 /**
- * Unstyled typeahead/combobox component.
+ * Combobox engine: input, search, keyboard navigation, and dropdown.
  *
- * Handles search, keyboard navigation, selection, and dropdown positioning.
- * Used internally by XDSTypeahead (styled) and XDSTokenizer (multi-select).
+ * Renders only the `<input>` and the dropdown popover. No wrapper div,
+ * no border styling, no token rendering. Consumers (XDSTypeahead,
+ * XDSTokenizer) provide their own wrapper and pass `anchorRef` for
+ * dropdown positioning.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSBaseTypeahead
  *   searchSource={source}
  *   value={selected}
  *   onChange={setSelected}
+ *   anchorRef={wrapperRef}
  *   placeholder="Search..."
  * />
  * ```
@@ -439,21 +260,15 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
     maxMenuItems = 10,
     emptySearchResultsText = 'No results found',
     isDisabled = false,
-    hasClear = true,
     hasAutoFocus = false,
     onChangeQuery,
     onOpenChange,
-    size = 'md',
     inputId: externalInputId,
     ariaDescribedBy,
-    wrapperXStyle,
     inputXStyle,
-    startContent,
-    isEmbedded = false,
+    anchorRef,
     onKeyDown: externalOnKeyDown,
-    statusType,
     debounceMs = 150,
-    'data-testid': testId,
   }: XDSBaseTypeaheadProps<T>,
   ref: React.ForwardedRef<HTMLInputElement>,
 ) {
@@ -462,17 +277,13 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
   const listboxId = useId();
 
   const inputRef = useRef<HTMLInputElement>(null);
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const fallbackAnchorRef = useRef<HTMLInputElement>(null);
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<T[]>([]);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-
-  // Track the value being edited so we can restore on blur without action
-  const [editingValue, setEditingValue] = useState<T | null>(null);
 
   // Debounce ref
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -485,24 +296,18 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
     onHide: () => {
       onOpenChange?.(false);
       setHighlightedIndex(-1);
-      // If we were editing an existing value and the dropdown closes,
-      // restore the token (handled by handleBlur, but also reset here for safety)
-      if (editingValue) {
-        setIsEditing(false);
-        setQuery('');
-        setEditingValue(null);
-      } else {
-        setIsEditing(false);
-      }
       searchSource.cancel?.();
     },
   });
 
-  // Merge refs
+  // Merge refs: forward ref + internal ref + fallback anchor ref
   const setInputRef = useCallback(
     (el: HTMLInputElement | null) => {
       (inputRef as React.MutableRefObject<HTMLInputElement | null>).current =
         el;
+      (
+        fallbackAnchorRef as React.MutableRefObject<HTMLInputElement | null>
+      ).current = el;
       if (typeof ref === 'function') {
         ref(el);
       } else if (ref) {
@@ -512,21 +317,20 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
     [ref],
   );
 
-  // Set up anchor on wrapper
+  // Set up anchor on the provided anchorRef or fall back to the input itself
   useEffect(() => {
-    const el = wrapperRef.current;
+    const el = anchorRef?.current ?? fallbackAnchorRef.current;
     if (el) {
       layer.ref(el);
     }
     return () => {
       layer.ref(null);
     };
-  }, [layer]);
+  }, [layer, anchorRef]);
 
   // Perform search
   const performSearch = useCallback(
     async (searchQuery: string) => {
-      // Cancel any in-flight search before starting a new one
       searchSource.cancel?.();
       setIsLoading(true);
       setHasSearched(true);
@@ -570,7 +374,6 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
       setQuery(newQuery);
       onChangeQuery?.(newQuery);
 
-      // Cancel pending debounce
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
@@ -590,7 +393,6 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
         }
       };
 
-      // Skip debounce when delay is 0 (e.g., local/synchronous sources)
       if (debounceMs <= 0) {
         triggerSearch();
       } else {
@@ -611,7 +413,6 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
   // Handle input change
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      setIsEditing(true);
       handleQueryChange(e.target.value);
     },
     [handleQueryChange],
@@ -620,8 +421,6 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
   // Handle item selection
   const handleSelect = useCallback(
     (item: T) => {
-      setIsEditing(false);
-      setEditingValue(null);
       onChange(item);
       setQuery('');
       setResults([]);
@@ -630,35 +429,6 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
     },
     [onChange, layer],
   );
-
-  // Handle clear
-  const handleClear = useCallback(() => {
-    setIsEditing(false);
-    setEditingValue(null);
-    onChange(null);
-    setQuery('');
-    setResults([]);
-    layer.hide();
-    inputRef.current?.focus();
-  }, [onChange, layer]);
-
-  // Enter edit mode: remove token, populate input with the value's label
-  const handleEnterEditMode = useCallback(() => {
-    if (isDisabled || !value) return;
-    setEditingValue(value);
-    setIsEditing(true);
-    setQuery(value.label);
-    onChangeQuery?.(value.label);
-    // Don't call onChange(null) — the value stays until blur or selection
-    // We just visually switch from token to input
-    requestAnimationFrame(() => {
-      const input = inputRef.current;
-      if (input) {
-        input.focus();
-        input.setSelectionRange(0, input.value.length);
-      }
-    });
-  }, [isDisabled, value, onChangeQuery]);
 
   // Handle focus
   const handleFocus = useCallback(() => {
@@ -677,27 +447,9 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
     layer,
   ]);
 
-  // Handle blur: if editing a value and no new selection was made, restore
-  const handleBlur = useCallback(
-    (e: React.FocusEvent) => {
-      // Don't restore if focus is moving within the wrapper (e.g. to dropdown)
-      if (wrapperRef.current?.contains(e.relatedTarget as Node)) return;
-
-      if (editingValue && isEditing) {
-        // Restore the original value — user blurred without selecting
-        setIsEditing(false);
-        setQuery('');
-        setEditingValue(null);
-        // Value was never cleared from parent, so no onChange needed
-      }
-    },
-    [editingValue, isEditing],
-  );
-
   // Keyboard navigation
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      // Call external handler first
       externalOnKeyDown?.(e);
       if (e.defaultPrevented) return;
 
@@ -735,14 +487,6 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
           break;
         case 'Escape':
           e.preventDefault();
-          if (editingValue) {
-            // Restore the original value and exit edit mode
-            setIsEditing(false);
-            setQuery('');
-            setEditingValue(null);
-            setResults([]);
-            inputRef.current?.blur();
-          }
           layer.hide();
           break;
         case 'Home':
@@ -768,7 +512,6 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
       query.length,
       performBootstrap,
       externalOnKeyDown,
-      editingValue,
     ],
   );
 
@@ -788,96 +531,44 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
     };
   }, [searchSource]);
 
-  // Display value: when editing (including edit-mode for existing value) show query,
-  // when value selected and not editing show empty (token is shown instead),
-  // otherwise show query (which may be empty)
-  const showToken = value != null && !isEditing;
-  const displayValue = isEditing ? query : value ? '' : query;
-
-  const sizeStyle = size === 'sm' ? styles.sizeSmWrapper : styles.sizeMdWrapper;
-
-  const wrapperStyles = isEmbedded
-    ? [styles.wrapperEmbedded, wrapperXStyle]
-    : [
-        styles.wrapper,
-        sizeStyle,
-        statusType && statusBorderStyles[statusType],
-        statusType && statusHoverShadowStyles[statusType],
-        statusType && statusFocusStyles[statusType],
-        wrapperXStyle,
-      ];
-
   return (
     <>
-      <div
-        ref={wrapperRef}
-        data-testid={testId}
-        onBlur={handleBlur}
+      <input
+        ref={setInputRef}
+        id={inputId}
+        type="text"
+        role="combobox"
+        aria-expanded={layer.isOpen}
+        aria-controls={listboxId}
+        aria-activedescendant={
+          layer.isOpen && highlightedIndex >= 0
+            ? getItemId(highlightedIndex)
+            : undefined
+        }
+        aria-autocomplete="list"
+        aria-describedby={ariaDescribedBy}
+        value={query}
+        onChange={handleInputChange}
+        onFocus={handleFocus}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        disabled={isDisabled}
+        autoFocus={hasAutoFocus}
+        autoComplete="off"
         {...stylex.props(
-          ...wrapperStyles,
-          isDisabled && styles.wrapperDisabled,
-        )}>
-        {startContent}
-        {showToken && (
-          <div
-            onClick={!isEmbedded ? handleEnterEditMode : undefined}
-            {...stylex.props(!isEmbedded && styles.tokenContainer)}>
-            <XDSToken
-              label={value.label}
-              size={size}
-              onRemove={hasClear && !isDisabled ? handleClear : undefined}
-              isDisabled={isDisabled}
-            />
-          </div>
+          styles.input,
+          isDisabled && styles.inputDisabled,
+          inputXStyle,
         )}
-        <input
-          ref={setInputRef}
-          id={inputId}
-          type="text"
-          role="combobox"
-          aria-expanded={layer.isOpen}
-          aria-controls={listboxId}
-          aria-activedescendant={
-            layer.isOpen && highlightedIndex >= 0
-              ? getItemId(highlightedIndex)
-              : undefined
-          }
-          aria-autocomplete="list"
-          aria-describedby={ariaDescribedBy}
-          value={displayValue}
-          onChange={handleInputChange}
-          onFocus={handleFocus}
-          onClick={showToken && !isEmbedded ? handleEnterEditMode : undefined}
-          onKeyDown={handleKeyDown}
-          placeholder={showToken ? undefined : value ? undefined : placeholder}
-          disabled={isDisabled}
-          autoFocus={hasAutoFocus}
-          autoComplete="off"
-          {...stylex.props(
-            styles.input,
-            isDisabled && styles.inputDisabled,
-            isEditing && query.length > 0 && !value && styles.inputUnselected,
-            inputXStyle,
-          )}
-        />
-        {isLoading && (
-          <span
-            role="status"
-            aria-label="Loading"
-            {...stylex.props(styles.loadingSpinner)}>
-            <XDSIcon icon="clock" size="sm" color="secondary" />
-          </span>
-        )}
-        {hasClear && value && !isDisabled && isEditing && (
-          <button
-            type="button"
-            aria-label="Clear selection"
-            onClick={handleClear}
-            {...stylex.props(styles.clearButton)}>
-            <XDSIcon icon="close" size="sm" />
-          </button>
-        )}
-      </div>
+      />
+      {isLoading && (
+        <span
+          role="status"
+          aria-label="Loading"
+          {...stylex.props(styles.loadingSpinner)}>
+          <XDSIcon icon="clock" size="sm" color="secondary" />
+        </span>
+      )}
 
       {layer.render(
         <div

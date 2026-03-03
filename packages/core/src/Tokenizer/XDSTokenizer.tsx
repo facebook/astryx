@@ -340,6 +340,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   const descriptionId = useId();
   const statusMessageId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   const isAtMax = maxEntries != null && value.length >= maxEntries;
 
@@ -479,6 +480,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
       }
       labelTooltip={labelTooltip}>
       <div
+        ref={wrapperRef}
         role="group"
         aria-label={label}
         onClick={handleWrapperClick}
@@ -508,14 +510,13 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
           maxMenuItems={maxMenuItems}
           emptySearchResultsText={emptySearchResultsText}
           isDisabled={isDisabled}
-          hasClear={false}
           hasAutoFocus={hasAutoFocus}
-          size={size}
           inputId={inputId}
           ariaDescribedBy={ariaDescribedBy}
           onChangeQuery={onChangeQuery}
           debounceMs={debounceMs}
           onKeyDown={handleKeyDown}
+          anchorRef={wrapperRef}
           inputXStyle={
             isAtMax
               ? styles.inputAtMax
@@ -523,7 +524,6 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
                 ? styles.inputCompact
                 : undefined
           }
-          isEmbedded
         />
         {hasClear && value.length > 0 && !isDisabled && (
           <button
