@@ -46,11 +46,18 @@ export type XDSTokenColor =
   | 'pink'
   | 'gray';
 
+export type XDSTokenSize = 'sm' | 'md';
+
 export interface XDSTokenProps {
   /**
    * The text label displayed in the token.
    */
   label: string;
+  /**
+   * The size of the token.
+   * @default 'md'
+   */
+  size?: XDSTokenSize;
   /**
    * The color variant of the token.
    * @default 'default'
@@ -111,9 +118,7 @@ const styles = stylex.create({
     display: 'inline-flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
-    height: sizeVars['--size-sm'],
-    paddingBlock: spacingVars['--spacing-1'],
-    paddingInline: spacingVars['--spacing-3'],
+    paddingBlock: 0,
     borderWidth: 0,
     borderStyle: 'none',
     borderRadius: radiusVars['--radius-content'],
@@ -202,6 +207,18 @@ const styles = stylex.create({
   },
 });
 
+const sizeStyles = stylex.create({
+  sm: {
+    height: `calc(${sizeVars['--size-sm']} - 8px)`,
+    fontSize: textSizeVars['--text-xsm'],
+    paddingInline: spacingVars['--spacing-2'],
+  },
+  md: {
+    height: `calc(${sizeVars['--size-md']} - 8px)`,
+    paddingInline: spacingVars['--spacing-3'],
+  },
+});
+
 const colorStyles = stylex.create({
   default: {
     backgroundColor: colorVars['--color-deemphasized'],
@@ -275,6 +292,7 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
   (
     {
       label,
+      size = 'md',
       color = 'default',
       icon,
       isDisabled = false,
@@ -327,6 +345,7 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
           {...sharedProps}
           {...stylex.props(
             styles.base,
+            sizeStyles[size],
             colorStyles[color],
             styles.interactive,
             isDisabled && styles.disabled,
@@ -351,6 +370,7 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
           {...sharedProps}
           {...stylex.props(
             styles.base,
+            sizeStyles[size],
             colorStyles[color],
             styles.interactive,
             styles.focusWithinOutline,
@@ -391,6 +411,7 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
         {...sharedProps}
         {...stylex.props(
           styles.base,
+          sizeStyles[size],
           colorStyles[color],
           isDisabled && styles.disabled,
           xstyle,
