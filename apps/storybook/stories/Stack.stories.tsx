@@ -231,13 +231,113 @@ export const Vertical: Story = {
 // Alignment
 // ============================================================================
 
-export const HorizontalAlignments: Story = {
+export const HorizontalMainAxis: Story = {
+  name: 'Horizontal: Main Axis (hAlign)',
   render: () => (
     <div {...stylex.props(styles.storyWrapper)}>
       <div>
-        <h4 {...stylex.props(styles.heading)}>
-          direction=&quot;horizontal&quot;, vAlign: start
-        </h4>
+        <h4 {...stylex.props(styles.heading)}>hAlign: start (default)</h4>
+        <XDSStack
+          direction="horizontal"
+          gap="space2"
+          hAlign="start"
+          xstyle={[
+            styles.container,
+            styles.containerWidthLarge,
+            styles.containerPadding,
+          ]}>
+          <Box>A</Box>
+          <Box>B</Box>
+          <Box>C</Box>
+        </XDSStack>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>hAlign: center</h4>
+        <XDSStack
+          direction="horizontal"
+          gap="space2"
+          hAlign="center"
+          xstyle={[
+            styles.container,
+            styles.containerWidthLarge,
+            styles.containerPadding,
+          ]}>
+          <Box>A</Box>
+          <Box>B</Box>
+          <Box>C</Box>
+        </XDSStack>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>hAlign: end</h4>
+        <XDSStack
+          direction="horizontal"
+          gap="space2"
+          hAlign="end"
+          xstyle={[
+            styles.container,
+            styles.containerWidthLarge,
+            styles.containerPadding,
+          ]}>
+          <Box>A</Box>
+          <Box>B</Box>
+          <Box>C</Box>
+        </XDSStack>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>hAlign: between</h4>
+        <XDSStack
+          direction="horizontal"
+          hAlign="between"
+          xstyle={[
+            styles.container,
+            styles.containerWidthLarge,
+            styles.containerPadding,
+          ]}>
+          <Box>A</Box>
+          <Box>B</Box>
+          <Box>C</Box>
+        </XDSStack>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>hAlign: around</h4>
+        <XDSStack
+          direction="horizontal"
+          hAlign="around"
+          xstyle={[
+            styles.container,
+            styles.containerWidthLarge,
+            styles.containerPadding,
+          ]}>
+          <Box>A</Box>
+          <Box>B</Box>
+          <Box>C</Box>
+        </XDSStack>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>hAlign: evenly</h4>
+        <XDSStack
+          direction="horizontal"
+          hAlign="evenly"
+          xstyle={[
+            styles.container,
+            styles.containerWidthLarge,
+            styles.containerPadding,
+          ]}>
+          <Box>A</Box>
+          <Box>B</Box>
+          <Box>C</Box>
+        </XDSStack>
+      </div>
+    </div>
+  ),
+};
+
+export const HorizontalCrossAxis: Story = {
+  name: 'Horizontal: Cross Axis (vAlign)',
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>vAlign: start</h4>
         <XDSStack
           direction="horizontal"
           gap="space2"
@@ -251,9 +351,7 @@ export const HorizontalAlignments: Story = {
         </XDSStack>
       </div>
       <div>
-        <h4 {...stylex.props(styles.heading)}>
-          direction=&quot;horizontal&quot;, vAlign: center
-        </h4>
+        <h4 {...stylex.props(styles.heading)}>vAlign: center</h4>
         <XDSStack
           direction="horizontal"
           gap="space2"
@@ -267,9 +365,7 @@ export const HorizontalAlignments: Story = {
         </XDSStack>
       </div>
       <div>
-        <h4 {...stylex.props(styles.heading)}>
-          direction=&quot;horizontal&quot;, vAlign: end
-        </h4>
+        <h4 {...stylex.props(styles.heading)}>vAlign: end</h4>
         <XDSStack
           direction="horizontal"
           gap="space2"
@@ -283,9 +379,7 @@ export const HorizontalAlignments: Story = {
         </XDSStack>
       </div>
       <div>
-        <h4 {...stylex.props(styles.heading)}>
-          direction=&quot;horizontal&quot;, vAlign: stretch (default)
-        </h4>
+        <h4 {...stylex.props(styles.heading)}>vAlign: stretch (default)</h4>
         <XDSStack
           direction="horizontal"
           gap="space2"
@@ -302,13 +396,103 @@ export const HorizontalAlignments: Story = {
   ),
 };
 
-export const VerticalAlignments: Story = {
+export const VerticalMainAxis: Story = {
+  name: 'Vertical: Main Axis (vAlign)',
   render: () => (
     <div {...stylex.props(styles.storyWrapperRow)}>
       <div>
-        <h4 {...stylex.props(styles.heading)}>
-          direction=&quot;vertical&quot;, hAlign: start
-        </h4>
+        <h4 {...stylex.props(styles.heading)}>vAlign: start (default)</h4>
+        <XDSStack
+          direction="vertical"
+          gap="space2"
+          vAlign="start"
+          xstyle={[
+            styles.container,
+            styles.containerWidthSmall,
+            styles.containerHeightLarge,
+            styles.containerPadding,
+          ]}>
+          <Box>A</Box>
+          <Box>B</Box>
+          <Box>C</Box>
+        </XDSStack>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>vAlign: center</h4>
+        <XDSStack
+          direction="vertical"
+          gap="space2"
+          vAlign="center"
+          xstyle={[
+            styles.container,
+            styles.containerWidthSmall,
+            styles.containerHeightLarge,
+            styles.containerPadding,
+          ]}>
+          <Box>A</Box>
+          <Box>B</Box>
+          <Box>C</Box>
+        </XDSStack>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>vAlign: end</h4>
+        <XDSStack
+          direction="vertical"
+          gap="space2"
+          vAlign="end"
+          xstyle={[
+            styles.container,
+            styles.containerWidthSmall,
+            styles.containerHeightLarge,
+            styles.containerPadding,
+          ]}>
+          <Box>A</Box>
+          <Box>B</Box>
+          <Box>C</Box>
+        </XDSStack>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>vAlign: between</h4>
+        <XDSStack
+          direction="vertical"
+          vAlign="between"
+          xstyle={[
+            styles.container,
+            styles.containerWidthSmall,
+            styles.containerHeightLarge,
+            styles.containerPadding,
+          ]}>
+          <Box>A</Box>
+          <Box>B</Box>
+          <Box>C</Box>
+        </XDSStack>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>vAlign: evenly</h4>
+        <XDSStack
+          direction="vertical"
+          vAlign="evenly"
+          xstyle={[
+            styles.container,
+            styles.containerWidthSmall,
+            styles.containerHeightLarge,
+            styles.containerPadding,
+          ]}>
+          <Box>A</Box>
+          <Box>B</Box>
+          <Box>C</Box>
+        </XDSStack>
+      </div>
+    </div>
+  ),
+};
+
+export const VerticalCrossAxis: Story = {
+  name: 'Vertical: Cross Axis (hAlign)',
+  render: () => (
+    <div {...stylex.props(styles.storyWrapperRow)}>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>hAlign: start</h4>
         <XDSStack
           direction="vertical"
           gap="space2"
@@ -324,9 +508,7 @@ export const VerticalAlignments: Story = {
         </XDSStack>
       </div>
       <div>
-        <h4 {...stylex.props(styles.heading)}>
-          direction=&quot;vertical&quot;, hAlign: center
-        </h4>
+        <h4 {...stylex.props(styles.heading)}>hAlign: center</h4>
         <XDSStack
           direction="vertical"
           gap="space2"
@@ -342,9 +524,7 @@ export const VerticalAlignments: Story = {
         </XDSStack>
       </div>
       <div>
-        <h4 {...stylex.props(styles.heading)}>
-          direction=&quot;vertical&quot;, hAlign: end
-        </h4>
+        <h4 {...stylex.props(styles.heading)}>hAlign: end</h4>
         <XDSStack
           direction="vertical"
           gap="space2"
@@ -360,9 +540,7 @@ export const VerticalAlignments: Story = {
         </XDSStack>
       </div>
       <div>
-        <h4 {...stylex.props(styles.heading)}>
-          direction=&quot;vertical&quot;, hAlign: stretch
-        </h4>
+        <h4 {...stylex.props(styles.heading)}>hAlign: stretch (default)</h4>
         <XDSStack
           direction="vertical"
           gap="space2"
