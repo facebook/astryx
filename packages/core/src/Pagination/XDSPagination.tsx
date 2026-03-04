@@ -1,0 +1,642 @@
+/**
+ * @file XDSPagination.tsx
+ * @input Uses React, StyleX, XDSButton, XDSIcon, XDSSelector, XDSText
+ * @output Exports XDSPagination component, XDSPaginationProps, XDSPaginationVariant, XDSPaginationSize types
+ * @position Core implementation; consumed by index.ts, tested by XDSPagination.test.tsx
+ *
+ * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/Pagination/README.md (props table, features, implementation notes)
+ * - /packages/core/src/Pagination/XDSPagination.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/Pagination/index.ts (exports if types change)
+ * - /apps/storybook/stories/Pagination.stories.tsx (storybook stories)
+ *
+ * Last synced props: page, onChange, onChangeAction, totalItems, totalPages, hasMore,
+ *   pageSize, pageSizeOptions, onPageSizeChange, variant, siblingCount, size, isDisabled,
+ *   label, data-testid, xstyle
+ */
+
+'use client';
+
+import {forwardRef, useContext, useTransition} from 'react';
+import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
+import {
+  colorVars,
+  sizeVars,
+  spacingVars,
+  radiusVars,
+  transitionVars,
+  textSizeVars,
+  fontWeightVars,
+  lineHeightVars,
+} from '../theme/tokens.stylex';
+import {ThemeContext} from '../theme/ThemeContext';
+import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+import {XDSButton} from '../Button';
+import {XDSIcon} from '../Icon';
+import {XDSSelector} from '../Selector';
+import {XDSText} from '../Text';
+
+// =============================================================================
+// Module Augmentation - Register component styles with ComponentStyles
+// =============================================================================
+
+declare module '../theme/types' {
+  interface ComponentStyles {
+    pagination?: {
+      /** Root nav container styles */
+      root?: ThemeStyleXStyles;
+      /** Page number button styles */
+      button?: ThemeStyleXStyles;
+    };
+  }
+}
+
+// =============================================================================
+// Types
+// =============================================================================
+
+/** Visual variant controlling what appears between prev/next buttons. */
+export type XDSPaginationVariant =
+  | 'pages'
+  | 'count'
+  | 'compact'
+  | 'dots'
+  | 'none';
+
+/** Size of the pagination controls. */
+export type XDSPaginationSize = 'sm' | 'md';
+
+export interface XDSPaginationProps {
+  // --- Core (required) ---
+  /** Current page number (1-based). Page 1 is the first page. */
+  page: number;
+  /** Called when the page changes. */
+  onChange: (page: number) => void;
+  /**
+   * Async action on page change. Fires after onChange.
+   * Uses React transitions for built-in loading state.
+   */
+  onChangeAction?: (page: number) => void | Promise<void>;
+
+  // --- Data shape (provide one) ---
+  /**
+   * Total number of items. Used to calculate page count.
+   * Takes precedence over totalPages if both provided.
+   */
+  totalItems?: number;
+  /**
+   * Total number of pages. Use when you know page count but not item count.
+   */
+  totalPages?: number;
+  /**
+   * Whether more pages exist after the current one.
+   * Use for cursor-based pagination where total is unknown.
+   */
+  hasMore?: boolean;
+
+  // --- Page size ---
+  /** Number of items per page. @default 10 */
+  pageSize?: number;
+  /** Available page size options. Shows a page size selector when provided. */
+  pageSizeOptions?: number[];
+  /** Called when the page size changes. */
+  onPageSizeChange?: (pageSize: number) => void;
+
+  // --- Display ---
+  /**
+   * Visual variant controlling what appears between prev/next buttons.
+   * - pages: Page number buttons with ellipsis (default)
+   * - count: "X–Y of Z" text
+   * - compact: "Page X of Y" text
+   * - dots: Dot indicators
+   * - none: Just prev/next buttons
+   * @default 'pages'
+   */
+  variant?: XDSPaginationVariant;
+  /**
+   * Number of page buttons to show on each side of the current page.
+   * Only applies when variant='pages'. @default 1
+   */
+  siblingCount?: number;
+  /**
+   * Size of the pagination controls.
+   * @default 'md'
+   */
+  size?: XDSPaginationSize;
+
+  // --- Behavior ---
+  /** Whether the component is disabled. @default false */
+  isDisabled?: boolean;
+
+  // --- Accessibility ---
+  /**
+   * Accessible label for the navigation landmark.
+   * @default 'Pagination'
+   */
+  label?: string;
+
+  // --- Standard XDS ---
+  /** Test ID for automated testing. */
+  'data-testid'?: string;
+  /** StyleX overrides for the root element. */
+  xstyle?: StyleXStyles;
+}
+
+// =============================================================================
+// Styles
+// =============================================================================
+
+const styles = stylex.create({
+  root: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacingVars['--spacing-4'],
+  },
+  controls: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+  },
+  pageButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: sizeVars['--size-md'],
+    height: sizeVars['--size-md'],
+    paddingInline: spacingVars['--spacing-2'],
+    borderWidth: 0,
+    borderStyle: 'none',
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: 'transparent',
+    color: colorVars['--color-text-primary'],
+    fontFamily: 'inherit',
+    fontSize: textSizeVars['--text-base'],
+    lineHeight: lineHeightVars['--leading-base'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    cursor: 'pointer',
+    transitionProperty: 'background-color, color',
+    transitionDuration: transitionVars['--transition-fast'],
+    backgroundImage: {
+      default: null,
+      ':hover': {
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+      },
+      ':active': `linear-gradient(${colorVars['--color-pressed-overlay']}, ${colorVars['--color-pressed-overlay']})`,
+    },
+    outline: {
+      default: 'none',
+      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': '3px',
+    },
+  },
+  pageButtonSm: {
+    minWidth: sizeVars['--size-sm'],
+    height: sizeVars['--size-sm'],
+    fontSize: textSizeVars['--text-sm'],
+  },
+  pageButtonActive: {
+    backgroundColor: colorVars['--color-accent'],
+    color: colorVars['--color-text-on-media'],
+    backgroundImage: {
+      default: null,
+      ':hover': {
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+      },
+      ':active': `linear-gradient(${colorVars['--color-pressed-overlay']}, ${colorVars['--color-pressed-overlay']})`,
+    },
+  },
+  pageButtonDisabled: {
+    cursor: 'not-allowed',
+    opacity: 0.5,
+  },
+  ellipsis: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: sizeVars['--size-md'],
+    height: sizeVars['--size-md'],
+    color: colorVars['--color-text-secondary'],
+    fontSize: textSizeVars['--text-base'],
+    userSelect: 'none',
+  },
+  ellipsisSm: {
+    minWidth: sizeVars['--size-sm'],
+    height: sizeVars['--size-sm'],
+    fontSize: textSizeVars['--text-sm'],
+  },
+  infoText: {
+    display: 'flex',
+    alignItems: 'center',
+    whiteSpace: 'nowrap',
+  },
+  dotsContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderWidth: 0,
+    borderStyle: 'none',
+    padding: 0,
+    borderRadius: '50%',
+    backgroundColor: colorVars['--color-deemphasized'],
+    cursor: 'pointer',
+    transitionProperty: 'background-color',
+    transitionDuration: transitionVars['--transition-fast'],
+    outline: {
+      default: 'none',
+      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': '2px',
+    },
+  },
+  dotSm: {
+    width: 6,
+    height: 6,
+  },
+  dotActive: {
+    backgroundColor: colorVars['--color-accent'],
+  },
+  dotDisabled: {
+    cursor: 'not-allowed',
+    opacity: 0.5,
+  },
+  pageSizeSelector: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+  },
+  pageSizeSelectorControl: {
+    width: 80,
+  },
+  disabled: {
+    opacity: 0.5,
+    pointerEvents: 'none' as const,
+  },
+});
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+/**
+ * Generates the range of page numbers to display, including ellipsis markers.
+ * Returns an array of page numbers and '...' strings.
+ *
+ * @example
+ * generatePageRange(5, 10, 1) → [1, '...', 4, 5, 6, '...', 10]
+ * generatePageRange(1, 10, 1) → [1, 2, 3, '...', 10]
+ * generatePageRange(1, 5, 1)  → [1, 2, 3, 4, 5]
+ */
+export function generatePageRange(
+  currentPage: number,
+  totalPages: number,
+  siblingCount: number,
+): Array<number | '...'> {
+  // Total page number slots (excluding ellipses):
+  // first + last + current + 2*siblings = 3 + 2*siblings
+  // With 2 potential ellipsis slots: 5 + 2*siblings
+  const totalSlots = 5 + 2 * siblingCount;
+
+  // If total pages fit within slots, show all pages
+  if (totalPages <= totalSlots) {
+    return Array.from({length: totalPages}, (_, i) => i + 1);
+  }
+
+  const leftSiblingIndex = Math.max(currentPage - siblingCount, 1);
+  const rightSiblingIndex = Math.min(currentPage + siblingCount, totalPages);
+
+  const showLeftEllipsis = leftSiblingIndex > 2;
+  const showRightEllipsis = rightSiblingIndex < totalPages - 1;
+
+  if (!showLeftEllipsis && showRightEllipsis) {
+    // Near the start: show more pages on the left
+    const leftRange = 3 + 2 * siblingCount;
+    const pages: Array<number | '...'> = Array.from(
+      {length: leftRange},
+      (_, i) => i + 1,
+    );
+    pages.push('...', totalPages);
+    return pages;
+  }
+
+  if (showLeftEllipsis && !showRightEllipsis) {
+    // Near the end: show more pages on the right
+    const rightRange = 3 + 2 * siblingCount;
+    const pages: Array<number | '...'> = [1, '...'];
+    for (let i = totalPages - rightRange + 1; i <= totalPages; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  // In the middle: show ellipsis on both sides
+  const pages: Array<number | '...'> = [1, '...'];
+  for (let i = leftSiblingIndex; i <= rightSiblingIndex; i++) {
+    pages.push(i);
+  }
+  pages.push('...', totalPages);
+  return pages;
+}
+
+// =============================================================================
+// Component
+// =============================================================================
+
+/**
+ * Standalone pagination controls for navigating through pages of content.
+ *
+ * Supports multiple display variants: page numbers, count text, compact text,
+ * dot indicators, or minimal prev/next navigation. Works with known totals
+ * or cursor-based pagination.
+ *
+ * @example
+ * ```tsx
+ * // Page number buttons (default)
+ * <XDSPagination
+ *   page={page}
+ *   onChange={setPage}
+ *   totalItems={200}
+ *   pageSize={20}
+ * />
+ *
+ * // Count display below a table
+ * <XDSPagination
+ *   page={page}
+ *   onChange={setPage}
+ *   totalItems={200}
+ *   pageSize={20}
+ *   variant="count"
+ *   pageSizeOptions={[10, 20, 50]}
+ *   onPageSizeChange={setPageSize}
+ *   size="sm"
+ * />
+ *
+ * // Cursor-based (no total known)
+ * <XDSPagination
+ *   page={page}
+ *   onChange={setPage}
+ *   hasMore={data.hasNextPage}
+ * />
+ *
+ * // Carousel dots
+ * <XDSPagination
+ *   page={slideIndex}
+ *   onChange={setSlideIndex}
+ *   totalPages={slides.length}
+ *   variant="dots"
+ * />
+ * ```
+ */
+export const XDSPagination = forwardRef<HTMLElement, XDSPaginationProps>(
+  function XDSPagination(
+    {
+      page,
+      onChange,
+      onChangeAction,
+      totalItems,
+      totalPages: totalPagesProp,
+      hasMore,
+      pageSize = 10,
+      pageSizeOptions,
+      onPageSizeChange,
+      variant = 'pages',
+      siblingCount = 1,
+      size = 'md',
+      isDisabled = false,
+      label = 'Pagination',
+      'data-testid': testId,
+      xstyle,
+    },
+    ref,
+  ) {
+    const [isPending, startTransition] = useTransition();
+    const themeContext = useContext(ThemeContext);
+    const rootOverride = themeContext?.theme.components?.pagination?.root;
+    const buttonOverride = themeContext?.theme.components?.pagination?.button;
+
+    // Compute pagination state
+    const computedTotalPages =
+      totalPagesProp ??
+      (totalItems != null ? Math.ceil(totalItems / pageSize) : undefined);
+
+    const hasPrevious = page > 1;
+    const hasNext =
+      computedTotalPages != null
+        ? page < computedTotalPages
+        : (hasMore ?? false);
+
+    // Return null for empty state
+    if (totalItems != null && totalItems <= 0) {
+      return null;
+    }
+    if (computedTotalPages != null && computedTotalPages <= 0) {
+      return null;
+    }
+
+    const handlePageChange = (newPage: number) => {
+      if (isDisabled || isPending) return;
+      onChange(newPage);
+      if (onChangeAction) {
+        startTransition(async () => {
+          await onChangeAction(newPage);
+        });
+      }
+    };
+
+    const handlePrevious = () => {
+      if (hasPrevious) {
+        handlePageChange(page - 1);
+      }
+    };
+
+    const handleNext = () => {
+      if (hasNext) {
+        handlePageChange(page + 1);
+      }
+    };
+
+    const handlePageSizeChange = (value: string) => {
+      const newSize = Number(value);
+      onPageSizeChange?.(newSize);
+      // Reset to page 1 when page size changes
+      onChange(1);
+      if (onChangeAction) {
+        startTransition(async () => {
+          await onChangeAction(1);
+        });
+      }
+    };
+
+    // Item range for count display
+    const rangeStart = (page - 1) * pageSize + 1;
+    const rangeEnd =
+      totalItems != null
+        ? Math.min(page * pageSize, totalItems)
+        : page * pageSize;
+
+    const buttonSize = size === 'sm' ? 'sm' : 'md';
+    const isSm = size === 'sm';
+
+    const renderIndicator = () => {
+      switch (variant) {
+        case 'pages': {
+          if (computedTotalPages == null) return null;
+          const pageRange = generatePageRange(
+            page,
+            computedTotalPages,
+            siblingCount,
+          );
+          return (
+            <>
+              {pageRange.map((item, index) => {
+                if (item === '...') {
+                  return (
+                    <span
+                      key={`ellipsis-${index}`}
+                      aria-hidden="true"
+                      {...stylex.props(
+                        styles.ellipsis,
+                        isSm && styles.ellipsisSm,
+                      )}>
+                      …
+                    </span>
+                  );
+                }
+                const isActive = item === page;
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    aria-label={`Go to page ${item}`}
+                    aria-current={isActive ? 'page' : undefined}
+                    onClick={() => handlePageChange(item)}
+                    disabled={isDisabled}
+                    {...stylex.props(
+                      styles.pageButton,
+                      isSm && styles.pageButtonSm,
+                      isActive && styles.pageButtonActive,
+                      isDisabled && styles.pageButtonDisabled,
+                      buttonOverride,
+                    )}>
+                    {item}
+                  </button>
+                );
+              })}
+            </>
+          );
+        }
+
+        case 'count': {
+          if (totalItems == null) return null;
+          return (
+            <span {...stylex.props(styles.infoText)}>
+              <XDSText type="body" size="sm" color="secondary">
+                {`${rangeStart}\u2013${rangeEnd} of ${totalItems}`}
+              </XDSText>
+            </span>
+          );
+        }
+
+        case 'compact': {
+          if (computedTotalPages == null) return null;
+          return (
+            <span {...stylex.props(styles.infoText)}>
+              <XDSText type="body" size="sm" color="secondary">
+                {`Page ${page} of ${computedTotalPages}`}
+              </XDSText>
+            </span>
+          );
+        }
+
+        case 'dots': {
+          if (computedTotalPages == null) return null;
+          return (
+            <div
+              {...stylex.props(styles.dotsContainer)}
+              role="group"
+              aria-label="Page indicators">
+              {Array.from({length: computedTotalPages}, (_, i) => (
+                <button
+                  key={i + 1}
+                  type="button"
+                  aria-label={`Go to page ${i + 1}`}
+                  aria-current={i + 1 === page ? 'page' : undefined}
+                  onClick={() => handlePageChange(i + 1)}
+                  disabled={isDisabled}
+                  {...stylex.props(
+                    styles.dot,
+                    isSm && styles.dotSm,
+                    i + 1 === page && styles.dotActive,
+                    isDisabled && styles.dotDisabled,
+                  )}
+                />
+              ))}
+            </div>
+          );
+        }
+
+        case 'none':
+        default:
+          return null;
+      }
+    };
+
+    return (
+      <nav
+        ref={ref}
+        aria-label={label}
+        data-testid={testId}
+        {...stylex.props(styles.root, rootOverride, xstyle)}>
+        {pageSizeOptions != null && pageSizeOptions.length > 0 && (
+          <div {...stylex.props(styles.pageSizeSelector)}>
+            <div {...stylex.props(styles.pageSizeSelectorControl)}>
+              <XDSSelector
+                label="Items per page"
+                isLabelHidden
+                items={pageSizeOptions.map(opt => String(opt))}
+                value={String(pageSize)}
+                onChange={handlePageSizeChange}
+                size={buttonSize}
+                isDisabled={isDisabled}
+              />
+            </div>
+          </div>
+        )}
+
+        <div {...stylex.props(styles.controls)}>
+          <XDSButton
+            label="Go to previous page"
+            variant="ghost"
+            size={buttonSize}
+            icon={<XDSIcon icon="chevronLeft" size={isSm ? 'sm' : 'md'} />}
+            onClick={handlePrevious}
+            isDisabled={isDisabled || !hasPrevious}
+          />
+
+          {renderIndicator()}
+
+          <XDSButton
+            label="Go to next page"
+            variant="ghost"
+            size={buttonSize}
+            icon={<XDSIcon icon="chevronRight" size={isSm ? 'sm' : 'md'} />}
+            onClick={handleNext}
+            isDisabled={isDisabled || !hasNext}
+          />
+        </div>
+      </nav>
+    );
+  },
+);
+
+XDSPagination.displayName = 'XDSPagination';
