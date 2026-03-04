@@ -90,9 +90,9 @@ export interface XDSBannerProps {
    * Typically an XDSButton with a secondary or ghost variant.
    *
    * @example
-   * endButton={<XDSButton label="Retry" variant="ghost" onClick={handleRetry} />}
+   * endContent={<XDSButton label="Retry" variant="ghost" onClick={handleRetry} />}
    */
-  endButton?: ReactNode;
+  endContent?: ReactNode;
   /**
    * Visual variant of the banner.
    * - `card`: standalone card with border-radius
@@ -328,7 +328,7 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
       icon,
       isDismissable = false,
       onDismiss,
-      endButton,
+      endContent,
       variant = 'card',
       isDefaultExpanded = false,
       children,
@@ -358,10 +358,10 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
     };
 
     // Show the end area if there are actions, dismiss, or a collapsible toggle
-    const showEndArea = endButton != null || isDismissable || hasChildren;
+    const showEndArea = endContent != null || isDismissable || hasChildren;
     // Center items vertically when there's only a title (no description)
     // and the banner has action buttons
-    const hasActions = endButton != null || isDismissable;
+    const hasActions = endContent != null || isDismissable;
     const isSingleLine = description == null && hasActions;
 
     return (
@@ -397,7 +397,7 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
           </div>
           {showEndArea && (
             <div {...stylex.props(styles.endArea, edgeSignals.end)}>
-              {endButton}
+              {endContent}
               {hasChildren && (
                 <XDSButton
                   variant="ghost"

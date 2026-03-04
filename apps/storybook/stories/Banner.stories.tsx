@@ -77,7 +77,7 @@ export const WithEndButton: Story = {
     status: 'info',
     title: 'New update available',
     description: 'Version 2.0 is ready to install.',
-    endButton: <XDSButton label="Update now" variant="primary" size="sm" />,
+    endContent: <XDSButton label="Update now" variant="primary" size="sm" />,
   },
 };
 
@@ -115,7 +115,7 @@ export const CollapsibleContent: Story = {
     status: 'info',
     title: 'Emphasized Text',
     description: 'Description text',
-    endButton: <XDSButton label="Button" variant="secondary" size="sm" />,
+    endContent: <XDSButton label="Button" variant="secondary" size="sm" />,
     isDismissable: true,
     children: (
       <div
@@ -138,7 +138,7 @@ export const CollapsibleContentExpanded: Story = {
     title: 'Emphasized Text',
     description: 'Description text',
     isDefaultExpanded: true,
-    endButton: <XDSButton label="Button" variant="secondary" size="sm" />,
+    endContent: <XDSButton label="Button" variant="secondary" size="sm" />,
     isDismissable: true,
     children: (
       <div
@@ -177,7 +177,7 @@ export const ContentAreaWithAction: Story = {
     status: 'warning',
     title: 'Configuration changes detected',
     description: 'Review the changes before they take effect.',
-    endButton: <XDSButton label="Review" variant="secondary" size="sm" />,
+    endContent: <XDSButton label="Review" variant="secondary" size="sm" />,
     isDismissable: true,
     isDefaultExpanded: true,
     children: (
@@ -227,7 +227,7 @@ export const AllFeatures: Story = {
       <XDSBanner
         status="info"
         title="With action button"
-        endButton={
+        endContent={
           <XDSButton label="Learn more" variant="secondary" size="sm" />
         }
       />

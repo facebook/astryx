@@ -51,7 +51,7 @@ import {XDSBanner} from '@xds/core/Banner';
 | `icon`          | `ReactNode`                                   | —        | Override the default status icon                      |
 | `isDismissable` | `boolean`                                     | `false`  | Whether the banner can be dismissed                   |
 | `onDismiss`     | `() => void`                                  | —        | Called on dismiss (banner hides itself regardless)    |
-| `endButton`     | `ReactNode`                                   | —        | Action button in the header area (end-aligned)        |
+| `endContent`    | `ReactNode`                                   | —        | Action button in the header area (end-aligned)        |
 | `variant`       | `'card' \| 'section'`                         | `'card'` | Visual variant                                        |
 | `children`      | `ReactNode`                                   | —        | Content rendered in card-background area below header |
 | `xstyle`        | `StyleXStyles`                                | —        | StyleX overrides                                      |

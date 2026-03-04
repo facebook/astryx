@@ -135,12 +135,12 @@ describe('XDSBanner', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('renders endButton', () => {
+  it('renders endContent', () => {
     render(
       <XDSBanner
         status="info"
         title="With Action"
-        endButton={<button data-testid="end-btn">Action</button>}
+        endContent={<button data-testid="end-btn">Action</button>}
       />,
     );
     expect(screen.getByTestId('end-btn')).toBeInTheDocument();
