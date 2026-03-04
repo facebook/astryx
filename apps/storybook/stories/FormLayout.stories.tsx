@@ -11,6 +11,9 @@ const meta: Meta<typeof XDSFormLayout> = {
   title: 'Form/XDSFormLayout',
   component: XDSFormLayout,
   tags: ['autodocs'],
+  args: {
+    direction: 'vertical',
+  },
   argTypes: {
     direction: {
       control: 'select',
@@ -23,33 +26,43 @@ const meta: Meta<typeof XDSFormLayout> = {
 export default meta;
 type Story = StoryObj<typeof XDSFormLayout>;
 
+// Helper component that uses args so Storybook controls work
+function FormLayoutDemo({
+  direction,
+}: {
+  direction?: 'vertical' | 'horizontal' | 'horizontal-labels';
+}) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [bio, setBio] = useState('');
+  return (
+    <XDSFormLayout direction={direction}>
+      <XDSTextInput label="Name" value={name} onChange={setName} />
+      <XDSTextInput label="Email" value={email} onChange={setEmail} />
+      <XDSTextInput label="Bio" value={bio} onChange={setBio} />
+    </XDSFormLayout>
+  );
+}
+
 // ─── Vertical (default) ───────────────────────────────────────────────────
 
 export const Vertical: Story = {
   name: 'Vertical (Default)',
-  render: () => {
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [bio, setBio] = useState('');
-    return (
-      <XDSFormLayout>
-        <XDSTextInput label="Name" value={name} onChange={setName} />
-        <XDSTextInput label="Email" value={email} onChange={setEmail} />
-        <XDSTextInput label="Bio" value={bio} onChange={setBio} />
-      </XDSFormLayout>
-    );
-  },
+  render: args => <FormLayoutDemo direction={args.direction} />,
 };
 
 // ─── Horizontal ───────────────────────────────────────────────────────────
 
 export const Horizontal: Story = {
   name: 'Horizontal',
-  render: () => {
+  args: {
+    direction: 'horizontal',
+  },
+  render: args => {
     const [first, setFirst] = useState('');
     const [last, setLast] = useState('');
     return (
-      <XDSFormLayout direction="horizontal">
+      <XDSFormLayout direction={args.direction}>
         <XDSTextInput label="First Name" value={first} onChange={setFirst} />
         <XDSTextInput label="Last Name" value={last} onChange={setLast} />
       </XDSFormLayout>
@@ -61,12 +74,15 @@ export const Horizontal: Story = {
 
 export const HorizontalLabels: Story = {
   name: 'Horizontal Labels (Settings)',
-  render: () => {
+  args: {
+    direction: 'horizontal-labels',
+  },
+  render: args => {
     const [displayName, setDisplayName] = useState('Jane Doe');
     const [email, setEmail] = useState('jane@example.com');
     const [timezone, setTimezone] = useState('America/Los_Angeles');
     return (
-      <XDSFormLayout direction="horizontal-labels">
+      <XDSFormLayout direction={args.direction}>
         <XDSTextInput
           label="Display Name"
           value={displayName}
@@ -77,7 +93,7 @@ export const HorizontalLabels: Story = {
           label="Timezone"
           value={timezone}
           onChange={v => setTimezone(v as string)}
-          options={[
+          items={[
             {label: 'Pacific Time', value: 'America/Los_Angeles'},
             {label: 'Eastern Time', value: 'America/New_York'},
             {label: 'UTC', value: 'UTC'},
@@ -115,7 +131,7 @@ export const MixedControls: Story = {
           label="Role"
           value={role}
           onChange={v => setRole(v as string)}
-          options={[
+          items={[
             {label: 'Viewer', value: 'viewer'},
             {label: 'Editor', value: 'editor'},
             {label: 'Admin', value: 'admin'},
