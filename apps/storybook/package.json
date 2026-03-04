@@ -22,6 +22,6 @@
     "@storybook/react-vite": "^8.4.0",
     "@storybook/test": "^8.4.0",
     "@stylexjs/unplugin": "^0.17.4",
-    "storybook": "^8.4.0"
+    "storybook": "^8.6.17"
   }
 }
