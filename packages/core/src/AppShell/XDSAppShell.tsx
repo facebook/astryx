@@ -241,7 +241,7 @@ const styles = stylex.create({
   headerSticky: {
     position: 'sticky',
     top: 0,
-    zIndex: 10,
+    zIndex: 1,
   },
   // Sticky sideNav for auto height mode
   sideNavSticky: {
