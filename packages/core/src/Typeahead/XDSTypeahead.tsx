@@ -18,7 +18,14 @@ import React, {useCallback, useId, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSBaseTypeahead} from './XDSBaseTypeahead';
-import {XDSField, type XDSInputStatus} from '../Field';
+import {
+  XDSField,
+  type XDSInputStatus,
+  inputWrapperStyles,
+  inputStatusBorderStyles,
+  inputStatusHoverShadowStyles,
+  inputStatusFocusWithinStyles,
+} from '../Field';
 import {XDSToken} from '../Token';
 import {XDSIcon} from '../Icon';
 import {
@@ -26,8 +33,6 @@ import {
   spacingVars,
   radiusVars,
   sizeVars,
-  transitionVars,
-  elevationVars,
 } from '../theme/tokens.stylex';
 import type {XDSSearchableItem, XDSSearchSource} from './types';
 import type {ReactNode} from 'react';
@@ -98,45 +103,12 @@ export interface XDSTypeaheadProps<T extends XDSSearchableItem> {
 
 const styles = stylex.create({
   wrapper: {
-    boxSizing: 'border-box',
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
     flexWrap: 'wrap',
     gap: spacingVars['--spacing-1'],
     // Standard padding minus border width to prevent height jump
     // when a token (28px) is added inside the input
     paddingBlock: `calc(${spacingVars['--spacing-1']} - 1px)`,
-    paddingInline: spacingVars['--spacing-2'],
-    borderWidth: '1px',
-    borderStyle: 'solid',
-    borderColor: {
-      default: colorVars['--color-divider-emphasized'],
-      ':hover': {
-        '@media (hover: hover)': colorVars['--color-divider-high-contrast'],
-      },
-    },
-    borderRadius: radiusVars['--radius-element'],
-    backgroundColor: colorVars['--color-surface'],
-    transitionProperty: 'border-color, outline, box-shadow',
-    transitionDuration: transitionVars['--transition-fast'],
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)': elevationVars['--elevation-input-hover'],
-      },
-    },
-    outline: {
-      default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline']}`,
-    },
-    outlineOffset: '0',
     cursor: 'text',
-  },
-  wrapperDisabled: {
-    cursor: 'not-allowed',
-    opacity: 0.5,
-    borderColor: colorVars['--color-divider-emphasized'],
   },
   token: {
     // Offset token so it sits 3px from the inner edge (4px from outer edge
@@ -173,68 +145,6 @@ const styles = stylex.create({
     padding: 0,
     opacity: 0,
     position: 'absolute' as const,
-  },
-});
-
-const statusBorderStyles = stylex.create({
-  warning: {
-    borderColor: colorVars['--color-warning'],
-  },
-  error: {
-    borderColor: colorVars['--color-negative'],
-  },
-  success: {
-    borderColor: colorVars['--color-positive'],
-  },
-});
-
-const statusHoverShadowStyles = stylex.create({
-  warning: {
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)':
-          elevationVars['--elevation-input-hover-warning'],
-      },
-    },
-  },
-  error: {
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)': elevationVars['--elevation-input-hover-error'],
-      },
-    },
-  },
-  success: {
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)':
-          elevationVars['--elevation-input-hover-success'],
-      },
-    },
-  },
-});
-
-const statusFocusStyles = stylex.create({
-  warning: {
-    outline: {
-      default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline-warning']}`,
-    },
-  },
-  error: {
-    outline: {
-      default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline-error']}`,
-    },
-  },
-  success: {
-    outline: {
-      default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline-success']}`,
-    },
   },
 });
 
@@ -431,12 +341,13 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
         onClick={handleWrapperClick}
         onBlur={handleBlur}
         {...stylex.props(
+          inputWrapperStyles.base,
           styles.wrapper,
           sizeStyle,
-          status && statusBorderStyles[status.type],
-          status && statusHoverShadowStyles[status.type],
-          status && statusFocusStyles[status.type],
-          isDisabled && styles.wrapperDisabled,
+          status && inputStatusBorderStyles[status.type],
+          status && inputStatusHoverShadowStyles[status.type],
+          status && inputStatusFocusWithinStyles[status.type],
+          isDisabled && inputWrapperStyles.disabled,
           xstyle,
         )}>
         {showToken && (
