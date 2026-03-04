@@ -30,6 +30,7 @@ export * from './Stack';
 export * from './Switch';
 export * from './DateInput';
 export * from './Field';
+export * from './FormLayout';
 export * from './Grid';
 export * from './Section';
 export * from './Selector';
