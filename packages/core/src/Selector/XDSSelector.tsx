@@ -22,7 +22,11 @@ import * as stylex from '@stylexjs/stylex';
 import {useXDSLayer} from '../Layer/useXDSLayer';
 import {XDSIcon} from '../Icon';
 import type {XDSIconName} from '../Icon';
-import {XDSField} from '../Field';
+import {
+  XDSField,
+  inputStatusBorderStyles,
+  inputStatusHoverShadowStyles,
+} from '../Field';
 import {XDSDivider} from '../Divider';
 import {XDSSpinner} from '../Spinner';
 import {
@@ -205,68 +209,6 @@ const sizeStyles = stylex.create({
   },
   lg: {
     height: sizeVars['--size-lg'],
-  },
-});
-
-const statusBorderStyles = stylex.create({
-  warning: {
-    borderColor: colorVars['--color-warning'],
-  },
-  error: {
-    borderColor: colorVars['--color-negative'],
-  },
-  success: {
-    borderColor: colorVars['--color-positive'],
-  },
-});
-
-const statusFocusStyles = stylex.create({
-  warning: {
-    outline: {
-      default: 'none',
-      ':focus': `1px solid ${colorVars['--color-focus-outline-warning']}`,
-    },
-  },
-  error: {
-    outline: {
-      default: 'none',
-      ':focus': `1px solid ${colorVars['--color-focus-outline-error']}`,
-    },
-  },
-  success: {
-    outline: {
-      default: 'none',
-      ':focus': `1px solid ${colorVars['--color-focus-outline-success']}`,
-    },
-  },
-});
-
-const statusHoverShadowStyles = stylex.create({
-  warning: {
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)':
-          elevationVars['--elevation-input-hover-warning'],
-      },
-    },
-  },
-  error: {
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)': elevationVars['--elevation-input-hover-error'],
-      },
-    },
-  },
-  success: {
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)':
-          elevationVars['--elevation-input-hover-success'],
-      },
-    },
   },
 });
 
@@ -675,8 +617,8 @@ export function XDSSelector<T extends XDSSelectorOption>({
           sizeStyles[size],
           isDisabled && styles.triggerDisabled,
           !selectedItem && styles.triggerPlaceholder,
-          status && statusBorderStyles[status.type],
-          status && statusHoverShadowStyles[status.type],
+          status && inputStatusBorderStyles[status.type],
+          status && inputStatusHoverShadowStyles[status.type],
           triggerOverride,
         )}>
         <span>{selectedItem?.label ?? placeholder}</span>

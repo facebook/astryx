@@ -27,15 +27,21 @@ import type {XDSIconName} from '../Icon';
 import {
   colorVars,
   sizeVars,
-  spacingVars,
   radiusVars,
   elevationVars,
-  transitionVars,
   typographyVars,
   textSizeVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
-import {XDSField, type XDSInputStatus, type XDSInputStatusType} from '../Field';
+import {
+  XDSField,
+  type XDSInputStatus,
+  type XDSInputStatusType,
+  inputWrapperStyles,
+  inputStatusBorderStyles,
+  inputStatusHoverShadowStyles,
+  inputStatusFocusWithinStyles,
+} from '../Field';
 import {XDSIcon} from '../Icon';
 import {XDSSpinner} from '../Spinner';
 import {
@@ -47,43 +53,6 @@ import {useXDSPopover} from '../Layer';
 import {parseDateInput, formatDisplayDate} from '../utils';
 
 const styles = stylex.create({
-  wrapper: {
-    boxSizing: 'border-box',
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-1'],
-    paddingInline: spacingVars['--spacing-2'],
-    borderWidth: 1,
-    borderStyle: 'solid',
-    borderColor: {
-      default: colorVars['--color-divider-emphasized'],
-      ':hover': {
-        '@media (hover: hover)': colorVars['--color-divider-high-contrast'],
-      },
-    },
-    borderRadius: radiusVars['--radius-element'],
-    backgroundColor: colorVars['--color-surface'],
-    transitionProperty: 'border-color, outline, box-shadow',
-    transitionDuration: transitionVars['--transition-fast'],
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)': elevationVars['--elevation-input-hover'],
-      },
-    },
-    outline: {
-      default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline']}`,
-    },
-    outlineOffset: '0',
-  },
-  wrapperDisabled: {
-    cursor: 'not-allowed',
-    opacity: 0.5,
-    borderColor: colorVars['--color-divider-emphasized'],
-  },
   iconButton: {
     display: 'flex',
     alignItems: 'center',
@@ -143,67 +112,6 @@ const sizeStyles = stylex.create({
   },
   lg: {
     height: sizeVars['--size-lg'],
-  },
-});
-
-const statusBorderStyles = stylex.create({
-  warning: {
-    borderColor: colorVars['--color-warning'],
-  },
-  error: {
-    borderColor: colorVars['--color-negative'],
-  },
-  success: {
-    borderColor: colorVars['--color-positive'],
-  },
-});
-
-const statusFocusStyles = stylex.create({
-  warning: {
-    outline: {
-      default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline-warning']}`,
-    },
-  },
-  error: {
-    outline: {
-      default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline-error']}`,
-    },
-  },
-  success: {
-    outline: {
-      default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline-success']}`,
-    },
-  },
-});
-const statusHoverShadowStyles = stylex.create({
-  warning: {
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)':
-          elevationVars['--elevation-input-hover-warning'],
-      },
-    },
-  },
-  error: {
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)': elevationVars['--elevation-input-hover-error'],
-      },
-    },
-  },
-  success: {
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)':
-          elevationVars['--elevation-input-hover-success'],
-      },
-    },
   },
 });
 
@@ -568,12 +476,12 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
         <div
           ref={popover.triggerRef}
           {...stylex.props(
-            styles.wrapper,
+            inputWrapperStyles.base,
             sizeStyles[size],
-            isDisabled && styles.wrapperDisabled,
-            status && statusBorderStyles[status.type],
-            status && statusHoverShadowStyles[status.type],
-            status && statusFocusStyles[status.type],
+            isDisabled && inputWrapperStyles.disabled,
+            status && inputStatusBorderStyles[status.type],
+            status && inputStatusHoverShadowStyles[status.type],
+            status && inputStatusFocusWithinStyles[status.type],
             wrapperOverride,
           )}>
           <button

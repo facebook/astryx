@@ -20,7 +20,14 @@ import React, {
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSBaseTypeahead} from '../Typeahead/XDSBaseTypeahead';
-import {XDSField, type XDSInputStatus} from '../Field';
+import {
+  XDSField,
+  type XDSInputStatus,
+  inputWrapperStyles,
+  inputStatusBorderStyles,
+  inputStatusHoverShadowStyles,
+  inputStatusFocusWithinStyles,
+} from '../Field';
 import {XDSToken} from '../Token';
 import {XDSIcon} from '../Icon';
 import {
@@ -28,8 +35,6 @@ import {
   spacingVars,
   radiusVars,
   sizeVars,
-  transitionVars,
-  elevationVars,
 } from '../theme/tokens.stylex';
 import type {XDSSearchableItem, XDSSearchSource} from '../Typeahead/types';
 
@@ -114,45 +119,12 @@ export interface XDSTokenizerProps<T extends XDSSearchableItem> {
 
 const styles = stylex.create({
   wrapper: {
-    boxSizing: 'border-box',
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
     flexWrap: 'wrap',
     gap: spacingVars['--spacing-1'],
     // Standard padding minus border width to prevent height jump
     // when tokens (28px) are added inside the input
     paddingBlock: `calc(${spacingVars['--spacing-1']} - 1px)`,
-    paddingInline: spacingVars['--spacing-2'],
-    borderWidth: '1px',
-    borderStyle: 'solid',
-    borderColor: {
-      default: colorVars['--color-divider-emphasized'],
-      ':hover': {
-        '@media (hover: hover)': colorVars['--color-divider-high-contrast'],
-      },
-    },
-    borderRadius: radiusVars['--radius-element'],
-    backgroundColor: colorVars['--color-surface'],
-    transitionProperty: 'border-color, outline, box-shadow',
-    transitionDuration: transitionVars['--transition-fast'],
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)': elevationVars['--elevation-input-hover'],
-      },
-    },
-    outline: {
-      default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline']}`,
-    },
-    outlineOffset: '0',
     cursor: 'text',
-  },
-  wrapperDisabled: {
-    cursor: 'not-allowed',
-    opacity: 0.5,
-    borderColor: colorVars['--color-divider-emphasized'],
   },
   tokenContainer: {
     display: 'flex',
@@ -200,68 +172,6 @@ const styles = stylex.create({
     minWidth: '40px',
     flex: '0 1 auto',
     width: '40px',
-  },
-});
-
-const statusBorderStyles = stylex.create({
-  warning: {
-    borderColor: colorVars['--color-warning'],
-  },
-  error: {
-    borderColor: colorVars['--color-negative'],
-  },
-  success: {
-    borderColor: colorVars['--color-positive'],
-  },
-});
-
-const statusHoverShadowStyles = stylex.create({
-  warning: {
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)':
-          elevationVars['--elevation-input-hover-warning'],
-      },
-    },
-  },
-  error: {
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)': elevationVars['--elevation-input-hover-error'],
-      },
-    },
-  },
-  success: {
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)':
-          elevationVars['--elevation-input-hover-success'],
-      },
-    },
-  },
-});
-
-const statusFocusStyles = stylex.create({
-  warning: {
-    outline: {
-      default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline-warning']}`,
-    },
-  },
-  error: {
-    outline: {
-      default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline-error']}`,
-    },
-  },
-  success: {
-    outline: {
-      default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline-success']}`,
-    },
   },
 });
 
@@ -486,12 +396,13 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
         onClick={handleWrapperClick}
         data-testid={testId}
         {...stylex.props(
+          inputWrapperStyles.base,
           styles.wrapper,
           sizeStyle,
-          isDisabled && styles.wrapperDisabled,
-          status && statusBorderStyles[status.type],
-          status && statusHoverShadowStyles[status.type],
-          status && statusFocusStyles[status.type],
+          isDisabled && inputWrapperStyles.disabled,
+          status && inputStatusBorderStyles[status.type],
+          status && inputStatusHoverShadowStyles[status.type],
+          status && inputStatusFocusWithinStyles[status.type],
           xstyle,
         )}>
         {tokens.length > 0 && (

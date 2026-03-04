@@ -23,3 +23,12 @@ export type {
 
 // Shared input types
 export type {XDSInputStatus, XDSInputStatusType, XDSInputSize} from './types';
+
+// Shared input styles
+export {
+  inputWrapperStyles,
+  inputStatusBorderStyles,
+  inputStatusHoverShadowStyles,
+  inputStatusFocusWithinStyles,
+  inputStatusFocusStyles,
+} from './inputStyles.stylex';
