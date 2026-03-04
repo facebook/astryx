@@ -25,6 +25,7 @@ import {
   Clock,
   ExternalLink,
   Menu,
+  MoreHorizontal,
 } from 'lucide-react';
 
 const iconProps = {
@@ -46,4 +47,5 @@ export const neutralIconRegistry: XDSIconRegistry = {
   clock: <Clock {...iconProps} />,
   externalLink: <ExternalLink {...iconProps} />,
   menu: <Menu {...iconProps} />,
+  moreHorizontal: <MoreHorizontal {...iconProps} />,
 };

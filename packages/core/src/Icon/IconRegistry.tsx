@@ -38,7 +38,8 @@ export type XDSIconName =
   | 'calendar'
   | 'clock'
   | 'externalLink'
-  | 'menu';
+  | 'menu'
+  | 'moreHorizontal';
 
 /**
  * Icon registry mapping semantic names to React nodes.

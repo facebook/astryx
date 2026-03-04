@@ -160,4 +160,13 @@ export const defaultIcons: XDSIconRegistry = {
       <path d="M4 6h16M4 12h16M4 18h16" />
     </svg>
   ),
+
+  /** ⋯ — three horizontal dots (more/overflow) */
+  moreHorizontal: (
+    <svg {...solidSvgProps}>
+      <circle cx="5" cy="12" r="1.5" />
+      <circle cx="12" cy="12" r="1.5" />
+      <circle cx="19" cy="12" r="1.5" />
+    </svg>
+  ),
 };
