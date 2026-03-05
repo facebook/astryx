@@ -1,7 +1,7 @@
 {
   "name": "@xds/theme-neutral",
   "version": "0.0.1",
-  "private": true,
+  "private": false,
   "description": "Neutral theme for XDS components (Lucide icons)",
   "license": "MIT",
   "sideEffects": false,
