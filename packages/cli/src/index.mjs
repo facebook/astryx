@@ -20,7 +20,10 @@ program
   .name('xds')
   .description('XDS design system CLI — components, themes, and tooling')
   .version('0.0.1')
-  .addHelpCommand('help', 'Show all commands');
+  .addHelpCommand('help', 'Show all commands')
+  .action(() => {
+    program.help();
+  });
 
 registerInit(program);
 registerComponent(program);
