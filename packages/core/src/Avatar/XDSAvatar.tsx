@@ -299,48 +299,37 @@ export const XDSAvatar = forwardRef<HTMLDivElement, XDSAvatarProps>(
           role="img"
           aria-label={accessibleName}
           data-testid={testId}
-          {...stylex.props(styles.wrapper, rootOverride)}
+          sx={[styles.wrapper, rootOverride]}
           {...props}>
-          <div
-            {...stylex.props(styles.content, dynamicStyles.size(numericSize))}>
+          <div sx={[styles.content, dynamicStyles.size(numericSize)]}>
             {showImage && (
               <img
                 src={src}
                 alt={accessibleName}
                 onError={() => setImageError(true)}
-                {...stylex.props(styles.image)}
-              />
+                sx={styles.image} />
             )}
             {showFallbackImage && (
               <img
                 src={fallbackSrc}
                 alt={accessibleName}
                 onError={() => setFallbackError(true)}
-                {...stylex.props(styles.image)}
-              />
+                sx={styles.image} />
             )}
             {showInitials && (
               <div
-                {...stylex.props(
-                  styles.fallback,
-                  dynamicStyles.fontSize(numericSize),
-                  fallbackOverride,
-                )}>
+                sx={[styles.fallback, dynamicStyles.fontSize(numericSize), fallbackOverride]}>
                 {getInitials(name)}
               </div>
             )}
             {showIcon && (
-              <div {...stylex.props(styles.fallback, fallbackOverride)}>
+              <div sx={[styles.fallback, fallbackOverride]}>
                 <DefaultIcon size={numericSize} />
               </div>
             )}
           </div>
           {status && (
-            <div
-              {...stylex.props(
-                styles.status,
-                dynamicStyles.statusPosition(numericSize),
-              )}>
+            <div sx={[styles.status, dynamicStyles.statusPosition(numericSize)]}>
               {status}
             </div>
           )}

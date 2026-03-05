@@ -150,7 +150,7 @@ export function XDSBreadcrumbItem({
 
   const content = (
     <>
-      {startIcon && <span {...stylex.props(itemStyles.icon)}>{startIcon}</span>}
+      {startIcon && <span sx={itemStyles.icon}>{startIcon}</span>}
       {children}
     </>
   );
@@ -158,19 +158,15 @@ export function XDSBreadcrumbItem({
   if (isCurrent) {
     return (
       <li
-        {...stylex.props(
+        sx={[
           itemStyles.root,
-          isSupporting ? itemStyles.supportingSize : itemStyles.defaultSize,
-        )}
+          isSupporting ? itemStyles.supportingSize : itemStyles.defaultSize
+        ]}
         data-testid={testId}>
         <span
-          {...stylex.props(
-            itemStyles.contentWrapper,
-            itemStyles.current,
-            isSupporting
-              ? itemStyles.supportingCurrent
-              : itemStyles.defaultCurrent,
-          )}
+          sx={[itemStyles.contentWrapper, itemStyles.current, isSupporting
+            ? itemStyles.supportingCurrent
+            : itemStyles.defaultCurrent]}
           aria-current="page">
           {content}
         </span>
@@ -180,18 +176,18 @@ export function XDSBreadcrumbItem({
 
   return (
     <li
-      {...stylex.props(
+      sx={[
         itemStyles.root,
-        isSupporting ? itemStyles.supportingSize : itemStyles.defaultSize,
-      )}
+        isSupporting ? itemStyles.supportingSize : itemStyles.defaultSize
+      ]}
       data-testid={testId}>
       <LinkComponent
         href={href}
         onClick={onClick}
-        {...stylex.props(
+        sx={[
           itemStyles.link,
-          isSupporting ? itemStyles.supportingLink : itemStyles.defaultLink,
-        )}>
+          isSupporting ? itemStyles.supportingLink : itemStyles.defaultLink
+        ]}>
         {content}
       </LinkComponent>
     </li>

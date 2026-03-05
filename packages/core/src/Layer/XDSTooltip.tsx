@@ -267,11 +267,11 @@ export function XDSTooltip({
           ref={tooltip.ref}
           tabIndex={0}
           aria-describedby={tooltip.describedBy}
-          {...stylex.props(
+          sx={[
             styles.wrapperInline,
             showHoverIndication && styles.hoverIndication,
-            showHoverIndication && themeHoverIndicationOverride,
-          )}>
+            showHoverIndication && themeHoverIndicationOverride
+          ]}>
           {children}
         </span>
         {tooltip.renderTooltip(content)}
@@ -284,7 +284,7 @@ export function XDSTooltip({
     <>
       <div
         ref={wrapperRef as React.RefObject<HTMLDivElement | null>}
-        {...stylex.props(styles.wrapperContents)}>
+        sx={styles.wrapperContents}>
         {children}
       </div>
       {tooltip.renderTooltip(content)}

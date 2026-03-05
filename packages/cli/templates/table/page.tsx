@@ -61,22 +61,22 @@ export default function TablePage() {
       }
       content={
         <XDSLayoutContent>
-          <table {...stylex.props(styles.table)}>
+          <table sx={styles.table}>
             <thead>
               <tr>
-                <th {...stylex.props(styles.th)}>Name</th>
-                <th {...stylex.props(styles.th)}>Status</th>
-                <th {...stylex.props(styles.th)}>Updated</th>
-                <th {...stylex.props(styles.th)}>Actions</th>
+                <th sx={styles.th}>Name</th>
+                <th sx={styles.th}>Status</th>
+                <th sx={styles.th}>Updated</th>
+                <th sx={styles.th}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {data.map(item => (
-                <tr key={item.id} {...stylex.props(styles.row)}>
-                  <td {...stylex.props(styles.td)}>
+                <tr key={item.id} sx={styles.row}>
+                  <td sx={styles.td}>
                     <XDSText type="body">{item.name}</XDSText>
                   </td>
-                  <td {...stylex.props(styles.td)}>
+                  <td sx={styles.td}>
                     <XDSText
                       type="body"
                       color={
@@ -85,12 +85,12 @@ export default function TablePage() {
                       {item.status}
                     </XDSText>
                   </td>
-                  <td {...stylex.props(styles.td)}>
+                  <td sx={styles.td}>
                     <XDSText type="body" color="secondary">
                       {item.updatedAt}
                     </XDSText>
                   </td>
-                  <td {...stylex.props(styles.td)}>
+                  <td sx={styles.td}>
                     <XDSButton label="Edit" variant="secondary" size="sm" />
                   </td>
                 </tr>

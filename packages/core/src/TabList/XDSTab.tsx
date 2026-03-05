@@ -192,7 +192,7 @@ export function XDSTab({
   }, [tabListCtx, value]);
 
   const iconElement = displayIcon ? (
-    <span {...stylex.props(styles.icon, iconSizeStyles[size])}>
+    <span sx={[styles.icon, iconSizeStyles[size]]}>
       {displayIcon}
     </span>
   ) : null;
@@ -209,13 +209,13 @@ export function XDSTab({
   };
 
   const hoverUnderlineElement = !isSelected ? (
-    <span {...stylex.props(styles.hoverUnderline)} />
+    <span sx={styles.hoverUnderline} />
   ) : null;
 
   const labelElement = (
-    <span {...stylex.props(styles.labelContainer)}>
-      <span {...stylex.props(styles.labelText)}>{label}</span>
-      <span aria-hidden="true" {...stylex.props(styles.labelSizer)}>
+    <span sx={styles.labelContainer}>
+      <span sx={styles.labelText}>{label}</span>
+      <span aria-hidden="true" sx={styles.labelSizer}>
         {label}
       </span>
     </span>

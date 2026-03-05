@@ -418,14 +418,14 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
     const headerInner =
       hasTopNav || hasBanner ? (
         <XDSLayoutHeader isFullBleed hasDivider={hasTopNav}>
-          {hasBanner && <div {...stylex.props(styles.banner)}>{banner}</div>}
+          {hasBanner && <div sx={styles.banner}>{banner}</div>}
           {hasTopNav && topNav}
         </XDSLayoutHeader>
       ) : undefined;
 
     const headerContent =
       headerInner != null ? (
-        <div ref={headerRef} {...stylex.props(isAuto && styles.headerSticky)}>
+        <div ref={headerRef} sx={isAuto && styles.headerSticky}>
           {headerInner}
         </div>
       ) : undefined;
@@ -452,8 +452,8 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
 
     const sideNavContent =
       sideNavPanel != null && isAuto ? (
-        <div {...stylex.props(styles.sideNavAutoWrapper)}>
-          <div {...stylex.props(styles.sideNavSticky)}>{sideNavPanel}</div>
+        <div sx={styles.sideNavAutoWrapper}>
+          <div sx={styles.sideNavSticky}>{sideNavPanel}</div>
         </div>
       ) : (
         sideNavPanel
@@ -482,20 +482,19 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
       <div
         ref={setShellRef}
         data-testid={dataTestId}
-        {...stylex.props(
+        sx={[
           styles.root,
           background === 'wash' ? styles.rootBgWash : styles.rootBgSurface,
           isFill ? styles.rootFill : styles.rootAuto,
-          xstyle,
-        )}>
+          xstyle
+        ]}>
         {/* Skip-to-content link */}
         <a
           href={`#${MAIN_CONTENT_ID}`}
-          {...stylex.props(styles.skipLink)}
+          sx={styles.skipLink}
           data-testid="skip-to-content">
           Skip to content
         </a>
-
         <XDSLayout
           height={height}
           isFullBleed
@@ -503,7 +502,6 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
           start={sideNavContent}
           content={mainContent}
         />
-
         {/* Mobile nav — either explicit mobileNav or default wrapping sideNav */}
         {mobileNav}
         {useDefaultMobileNav && (

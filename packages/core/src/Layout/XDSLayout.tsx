@@ -187,26 +187,18 @@ export function XDSLayout({
 
   return (
     <XDSLayoutSlotsContext.Provider value={slotsValue}>
-      <div
-        {...stylex.props(
-          styles.layoutOuter,
-          isFill ? styles.fill : styles.auto,
-        )}>
+      <div sx={[styles.layoutOuter, isFill ? styles.fill : styles.auto]}>
         <div
-          {...stylex.props(
+          sx={[
             styles.layoutInner,
             ...stack({direction: 'vertical'}),
             isFill ? styles.fill : styles.auto,
-            isFullBleed && styles.fullBleed,
-          )}>
+            isFullBleed && styles.fullBleed
+          ]}>
           <AreaProvider area="header">{header}</AreaProvider>
-          <div
-            {...stylex.props(
-              ...stack({direction: 'horizontal'}),
-              styles.middle,
-            )}>
+          <div sx={[...stack({direction: 'horizontal'}), styles.middle]}>
             <AreaProvider area="start">{start}</AreaProvider>
-            <div {...stylex.props(...stackItem({size: 'fill'}))}>
+            <div sx={stackItem({size: 'fill'})}>
               <AreaProvider area="content">{content}</AreaProvider>
             </div>
             <AreaProvider area="end">{end}</AreaProvider>

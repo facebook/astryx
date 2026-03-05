@@ -359,7 +359,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
 
     if (renderToken) {
       return (
-        <span key={item.id} {...stylex.props(styles.token)}>
+        <span key={item.id} sx={styles.token}>
           {renderToken(item, onRemoveItem)}
         </span>
       );
@@ -402,7 +402,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
         aria-label={label}
         onClick={handleWrapperClick}
         data-testid={testId}
-        {...stylex.props(
+        sx={[
           inputWrapperStyles.base,
           styles.wrapper,
           value.length > 0 && styles.wrapperWithTokens,
@@ -411,8 +411,8 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
           status && inputStatusBorderStyles[status.type],
           status && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
-          xstyle,
-        )}>
+          xstyle
+        ]}>
         {tokens}
         <XDSBaseTypeahead
           ref={inputRef}
@@ -448,7 +448,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
               e.stopPropagation();
               handleClearAll();
             }}
-            {...stylex.props(styles.clearAllButton)}>
+            sx={styles.clearAllButton}>
             <XDSIcon icon="close" size="sm" />
           </button>
         )}

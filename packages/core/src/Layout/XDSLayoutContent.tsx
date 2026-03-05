@@ -148,7 +148,7 @@ export const XDSLayoutContent = forwardRef<HTMLElement, XDSLayoutContentProps>(
         ref={ref as React.Ref<HTMLDivElement>}
         role={role}
         aria-label={label}
-        {...stylex.props(
+        sx={[
           styles.content,
           // Outer padding on container edges (unless content is full bleed)
           !hasStart && !isFullBleed && styles.noStart,
@@ -156,8 +156,8 @@ export const XDSLayoutContent = forwardRef<HTMLElement, XDSLayoutContentProps>(
           !hasHeader && !isFullBleed && styles.noHeader,
           !hasFooter && !isFullBleed && styles.noFooter,
           isScrollable && styles.scrollable,
-          isFullBleed && styles.fullBleed,
-        )}
+          isFullBleed && styles.fullBleed
+        ]}
         {...props}>
         {children}
       </div>

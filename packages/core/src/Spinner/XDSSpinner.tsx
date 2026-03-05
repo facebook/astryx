@@ -185,9 +185,9 @@ export const XDSSpinner = forwardRef<HTMLSpanElement, XDSSpinnerProps>(
         role="status"
         aria-label="Loading"
         data-testid={testId}
-        {...stylex.props(styles.spinner, rootOverride)}
+        sx={[styles.spinner, rootOverride]}
         style={{width: frameSize, height: frameSize}}>
-        <canvas ref={canvasRef} {...stylex.props(styles.canvas)} />
+        <canvas ref={canvasRef} sx={styles.canvas} />
       </span>
     );
   },

@@ -163,30 +163,20 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
     return (
       <div
         ref={ref}
-        {...stylex.props(
-          styles.cardOuter,
-          containerOverride,
-          dynamicStyles.sizing(
-            width ?? null,
-            height ?? null,
-            maxWidth ?? null,
-            minHeight ?? null,
-          ),
-        )}
+        sx={[styles.cardOuter, containerOverride, dynamicStyles.sizing(
+          width ?? null,
+          height ?? null,
+          maxWidth ?? null,
+          minHeight ?? null,
+        )]}
         {...props}>
         <div
-          {...stylex.props(
-            styles.cardInner,
-            hasFixedHeight && styles.scrollable,
-            ...container({
-              paddingInnerX: 'spacing4',
-              paddingInnerY: 'spacing4',
-              paddingOuterX: 'spacing4',
-              paddingOuterY: 'spacing4',
-            }),
-            isFullBleed && styles.fullBleed,
-            contentOverride,
-          )}>
+          sx={[styles.cardInner, hasFixedHeight && styles.scrollable, ...container({
+            paddingInnerX: 'spacing4',
+            paddingInnerY: 'spacing4',
+            paddingOuterX: 'spacing4',
+            paddingOuterY: 'spacing4',
+          }), isFullBleed && styles.fullBleed, contentOverride]}>
           {children}
         </div>
       </div>

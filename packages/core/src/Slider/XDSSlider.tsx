@@ -583,15 +583,14 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
           aria-describedby={ariaDescribedBy}
           style={positionStyle}
           onKeyDown={e => handleKeyDown(thumbIndex, e)}
-          {...stylex.props(
+          sx={[
             styles.thumb,
             isHorizontal ? styles.thumbHorizontal : styles.thumbVertical,
             !isDisabled && styles.thumbHover,
             !isDisabled && styles.thumbFocusWithin,
             isDisabled && styles.thumbDisabled,
-            thumbOverride,
-          )}
-        />
+            thumbOverride
+          ]} />
       );
 
       if (useTooltip) {
@@ -631,7 +630,7 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
     // Text value display
     const textDisplay =
       valueDisplay === 'text' ? (
-        <span {...stylex.props(styles.textValue)}>
+        <span sx={styles.textValue}>
           {isRange
             ? `${displayValue(values[0])} – ${displayValue(values[1])}`
             : displayValue(values[0])}
@@ -659,8 +658,8 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
         }
         labelTooltip={labelTooltip}
         statusVariant="detached"
-        {...stylex.props(xstyle)}>
-        <div {...stylex.props(styles.sliderRow, rootOverride)}>
+        sx={xstyle}>
+        <div sx={[styles.sliderRow, rootOverride]}>
           <div
             ref={node => {
               // Merge refs
@@ -677,43 +676,30 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
-            {...stylex.props(
-              styles.trackContainer,
-              isHorizontal
-                ? styles.trackContainerHorizontal
-                : styles.trackContainerVertical,
-              isDisabled && styles.trackContainerDisabled,
-            )}>
+            sx={[styles.trackContainer, isHorizontal
+              ? styles.trackContainerHorizontal
+              : styles.trackContainerVertical, isDisabled && styles.trackContainerDisabled]}>
             {/* Background track */}
             <div
-              {...stylex.props(
+              sx={[
                 styles.track,
                 isHorizontal ? styles.trackHorizontal : styles.trackVertical,
-                trackOverride,
-              )}
-            />
+                trackOverride
+              ]} />
 
             {/* Filled track */}
             <div
               style={filledStyle}
-              {...stylex.props(
-                styles.filledTrack,
-                isHorizontal
-                  ? styles.filledTrackHorizontal
-                  : styles.filledTrackVertical,
-                filledTrackOverride,
-              )}
-            />
+              sx={[styles.filledTrack, isHorizontal
+                ? styles.filledTrackHorizontal
+                : styles.filledTrackVertical, filledTrackOverride]} />
 
             {/* Marks */}
             {marks && (
               <div
-                {...stylex.props(
-                  styles.marksContainer,
-                  isHorizontal
-                    ? styles.marksContainerHorizontal
-                    : styles.marksContainerVertical,
-                )}>
+                sx={[styles.marksContainer, isHorizontal
+                  ? styles.marksContainerHorizontal
+                  : styles.marksContainerVertical]}>
                 {marks.map(mark => {
                   const percent = getPercent(mark.value, min, max);
                   const markPos = isHorizontal
@@ -724,23 +710,16 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
                       <div
                         data-testid="slider-mark"
                         style={markPos}
-                        {...stylex.props(
-                          styles.mark,
-                          isHorizontal
-                            ? styles.markHorizontal
-                            : styles.markVertical,
-                        )}
-                      />
+                        sx={[styles.mark, isHorizontal
+                          ? styles.markHorizontal
+                          : styles.markVertical]} />
                       {mark.label && (
                         <span
                           data-testid="slider-mark-label"
                           style={markPos}
-                          {...stylex.props(
-                            styles.markLabel,
-                            isHorizontal
-                              ? styles.markLabelHorizontal
-                              : styles.markLabelVertical,
-                          )}>
+                          sx={[styles.markLabel, isHorizontal
+                            ? styles.markLabelHorizontal
+                            : styles.markLabelVertical]}>
                           {mark.label}
                         </span>
                       )}

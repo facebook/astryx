@@ -163,12 +163,12 @@ export const XDSTopNavItem = forwardRef<HTMLAnchorElement, XDSTopNavItemProps>(
         aria-current={isSelected ? 'page' : undefined}
         aria-disabled={isDisabled || undefined}
         tabIndex={isDisabled ? -1 : undefined}
-        {...stylex.props(
+        sx={[
           styles.base,
           isSelected && styles.selected,
           isDisabled && styles.disabled,
-          isIconOnly && styles.iconOnly,
-        )}
+          isIconOnly && styles.iconOnly
+        ]}
         {...props}>
         {icon}
         {showLabel && (children ?? label)}

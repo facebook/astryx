@@ -38,9 +38,9 @@ export default function LoginPage() {
     <XDSLayout
       content={
         <XDSLayoutContent>
-          <div {...stylex.props(styles.container)}>
+          <div sx={styles.container}>
             <form onSubmit={handleSubmit}>
-              <div {...stylex.props(styles.card)}>
+              <div sx={styles.card}>
                 <XDSVStack gap="space5">
                   <XDSText type="large" weight="semibold">
                     Sign in

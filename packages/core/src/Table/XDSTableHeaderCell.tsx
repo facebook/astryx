@@ -108,7 +108,7 @@ export const XDSTableHeaderCell = forwardRef<
 
   if (!ctx) {
     return (
-      <th ref={ref} {...props} {...stylex.props(xstyle)}>
+      <th ref={ref} {...props} sx={xstyle}>
         {children}
       </th>
     );
@@ -133,7 +133,7 @@ export const XDSTableHeaderCell = forwardRef<
   }
 
   return (
-    <th ref={ref} {...props} {...stylex.props(...cellStyles)}>
+    <th ref={ref} {...props} sx={cellStyles}>
       {children}
     </th>
   );

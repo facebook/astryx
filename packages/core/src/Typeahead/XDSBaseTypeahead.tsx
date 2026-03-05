@@ -557,29 +557,20 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
         disabled={isDisabled}
         autoFocus={hasAutoFocus}
         autoComplete="off"
-        {...stylex.props(
-          styles.input,
-          isDisabled && styles.inputDisabled,
-          inputXStyle,
-        )}
-      />
+        sx={[styles.input, isDisabled && styles.inputDisabled, inputXStyle]} />
       {isLoading && (
-        <span
-          role="status"
-          aria-label="Loading"
-          {...stylex.props(styles.loadingSpinner)}>
+        <span role="status" aria-label="Loading" sx={styles.loadingSpinner}>
           <XDSIcon icon="clock" size="sm" color="secondary" />
         </span>
       )}
-
       {layer.render(
         <div
           id={listboxId}
           role="listbox"
           aria-label="Search results"
-          {...stylex.props(styles.dropdown)}>
+          sx={styles.dropdown}>
           {results.length === 0 && hasSearched ? (
-            <div {...stylex.props(styles.emptyState)}>
+            <div sx={styles.emptyState}>
               {emptySearchResultsText}
             </div>
           ) : (
@@ -592,12 +583,12 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
                 tabIndex={-1}
                 onClick={() => handleSelect(item)}
                 onMouseEnter={() => setHighlightedIndex(index)}
-                {...stylex.props(
+                sx={[
                   styles.item,
                   index === highlightedIndex && styles.itemHighlighted,
-                  value?.id === item.id && styles.itemSelected,
-                )}>
-                <span {...stylex.props(styles.itemContent)}>
+                  value?.id === item.id && styles.itemSelected
+                ]}>
+                <span sx={styles.itemContent}>
                   {renderItem ? (
                     renderItem(item)
                   ) : (

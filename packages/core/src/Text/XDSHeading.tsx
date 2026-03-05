@@ -277,7 +277,7 @@ export const XDSHeading = forwardRef<HTMLHeadingElement, XDSHeadingProps>(
       <>
         <Component
           ref={mergedRef}
-          {...stylex.props(
+          sx={[
             levelStyle,
             colorStyles[color],
             // Display: use truncation styles when maxLines > 0
@@ -295,8 +295,8 @@ export const XDSHeading = forwardRef<HTMLHeadingElement, XDSHeadingProps>(
             // Decorations
             hasStrikethrough && decorationStyles.strikethrough,
             // User xstyle
-            xstyle,
-          )}
+            xstyle
+          ]}
           style={inlineStyle}
           title={tooltipEnabled ? truncation.fullText : undefined}
           {...ariaProps}
@@ -308,7 +308,7 @@ export const XDSHeading = forwardRef<HTMLHeadingElement, XDSHeadingProps>(
             <LazyXDSTooltip
               anchorRef={headingRef}
               content={
-                <span {...stylex.props(truncationTooltipStyles.content)}>
+                <span sx={truncationTooltipStyles.content}>
                   {truncation.fullText}
                 </span>
               }

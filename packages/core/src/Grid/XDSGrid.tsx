@@ -402,7 +402,7 @@ export const XDSGrid = forwardRef<HTMLElement, XDSGridProps>(function XDSGrid(
   return (
     <div
       ref={ref as React.Ref<HTMLDivElement>}
-      {...stylex.props(
+      sx={[
         baseStyles.grid,
         gap != null && gapStyles[gap],
         rowGap != null && rowGapStyles[rowGap],
@@ -410,8 +410,8 @@ export const XDSGrid = forwardRef<HTMLElement, XDSGridProps>(function XDSGrid(
         align != null && alignStyles[align],
         justify != null && justifyStyles[justify],
         xstyle,
-        rootOverride,
-      )}
+        rootOverride
+      ]}
       style={inlineStyle}
       {...props}>
       {children}

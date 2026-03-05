@@ -63,8 +63,8 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <nav {...stylex.props(styles.sidebar)}>
-      <div {...stylex.props(styles.title)}>Sandbox</div>
+    <nav sx={styles.sidebar}>
+      <div sx={styles.title}>Sandbox</div>
       {pages.map(page => {
         const isActive =
           pathname === page.href ||
@@ -73,7 +73,7 @@ export function Sidebar() {
           <Link
             key={page.href}
             href={page.href}
-            {...stylex.props(styles.link, isActive && styles.linkActive)}>
+            sx={[styles.link, isActive && styles.linkActive]}>
             {page.name}
           </Link>
         );

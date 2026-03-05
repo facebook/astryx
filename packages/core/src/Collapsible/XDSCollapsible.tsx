@@ -177,17 +177,9 @@ export const XDSCollapsible = forwardRef<HTMLDivElement, XDSCollapsibleProps>(
 
     return (
       <div ref={ref} {...props}>
-        <button
-          type="button"
-          onClick={toggle}
-          aria-expanded={isOpen}
-          {...stylex.props(styles.trigger)}>
+        <button type="button" onClick={toggle} aria-expanded={isOpen} sx={styles.trigger}>
           <span>{trigger}</span>
-          <span
-            {...stylex.props(
-              styles.chevron,
-              isOpen ? styles.chevronOpen : styles.chevronClosed,
-            )}>
+          <span sx={[styles.chevron, isOpen ? styles.chevronOpen : styles.chevronClosed]}>
             {chevronIcon}
           </span>
         </button>

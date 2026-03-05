@@ -219,9 +219,9 @@ export const XDSSideNavItem = forwardRef<HTMLElement, XDSSideNavItemProps>(
             }
           />
         )}
-        <span {...stylex.props(styles.label)}>{label}</span>
+        <span sx={styles.label}>{label}</span>
         {endContent && (
-          <span {...stylex.props(styles.endContent)}>{endContent}</span>
+          <span sx={styles.endContent}>{endContent}</span>
         )}
       </>
     );
@@ -239,11 +239,7 @@ export const XDSSideNavItem = forwardRef<HTMLElement, XDSSideNavItemProps>(
           href={href}
           onClick={handleClick}
           {...ariaProps}
-          {...stylex.props(
-            styles.item,
-            isSelected && styles.selected,
-            isDisabled && styles.disabled,
-          )}>
+          sx={[styles.item, isSelected && styles.selected, isDisabled && styles.disabled]}>
           {itemContent}
         </LinkComponent>
       ) : (
@@ -253,23 +249,16 @@ export const XDSSideNavItem = forwardRef<HTMLElement, XDSSideNavItemProps>(
           onClick={handleClick}
           disabled={isDisabled}
           {...ariaProps}
-          {...stylex.props(
-            styles.item,
-            isSelected && styles.selected,
-            isDisabled && styles.disabled,
-          )}>
+          sx={[styles.item, isSelected && styles.selected, isDisabled && styles.disabled]}>
           {itemContent}
         </button>
       );
 
     return (
-      <div {...stylex.props(styles.root)}>
+      <div sx={styles.root}>
         {itemElement}
         {hasChildren && (
-          <div
-            role="group"
-            aria-labelledby={`${id}-label`}
-            {...stylex.props(styles.children)}>
+          <div role="group" aria-labelledby={`${id}-label`} sx={styles.children}>
             <span id={`${id}-label`} hidden>
               {label}
             </span>

@@ -164,28 +164,28 @@ export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
         ref={ref}
         role="navigation"
         aria-label={label}
-        {...stylex.props(
+        sx={[
           styles.base,
           hasCenterContent ? styles.baseGrid : styles.baseFlex,
-          rootOverride,
-        )}
+          rootOverride
+        ]}
         {...props}>
-        <div {...stylex.props(styles.leftSection, edgeSignals.start)}>
-          {title && <div {...stylex.props(styles.title)}>{title}</div>}
+        <div sx={[styles.leftSection, edgeSignals.start]}>
+          {title && <div sx={styles.title}>{title}</div>}
           {startContent && (
-            <div {...stylex.props(styles.startContent)}>{startContent}</div>
+            <div sx={styles.startContent}>{startContent}</div>
           )}
         </div>
         {hasCenterContent && (
-          <div {...stylex.props(styles.centerContent)}>{centerContent}</div>
+          <div sx={styles.centerContent}>{centerContent}</div>
         )}
         {hasCenterContent ? (
-          <div {...stylex.props(styles.rightSection, edgeSignals.end)}>
+          <div sx={[styles.rightSection, edgeSignals.end]}>
             {endContent}
           </div>
         ) : (
           endContent && (
-            <div {...stylex.props(styles.endContent, edgeSignals.end)}>
+            <div sx={[styles.endContent, edgeSignals.end]}>
               {endContent}
             </div>
           )

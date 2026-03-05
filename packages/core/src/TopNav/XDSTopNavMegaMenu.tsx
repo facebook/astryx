@@ -480,14 +480,14 @@ export function XDSTopNavMegaMenu({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onKeyDown={handleKeyDown}
-      {...stylex.props(styles.wrapper)}>
+      sx={styles.wrapper}>
       <button
         type="button"
         aria-haspopup="true"
         aria-expanded={isOpen}
-        {...stylex.props(styles.trigger, isOpen && styles.triggerOpen)}>
+        sx={[styles.trigger, isOpen && styles.triggerOpen]}>
         {label}
-        <span {...stylex.props(styles.chevron, isOpen && styles.chevronOpen)}>
+        <span sx={[styles.chevron, isOpen && styles.chevronOpen]}>
           <ChevronDown />
         </span>
       </button>
@@ -497,14 +497,10 @@ export function XDSTopNavMegaMenu({
           aria-label={label}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
-          {...stylex.props(styles.panelContainer)}>
-          <div {...stylex.props(styles.panelContent)}>
+          sx={styles.panelContainer}>
+          <div sx={styles.panelContent}>
             {/* Menu items section */}
-            <div
-              {...stylex.props(
-                styles.menuSection,
-                isSingleColumn && styles.menuSectionSingle,
-              )}>
+            <div sx={[styles.menuSection, isSingleColumn && styles.menuSectionSingle]}>
               {items.map((item, index) => {
                 const Element = item.href ? 'a' : 'div';
                 return (
@@ -514,18 +510,18 @@ export function XDSTopNavMegaMenu({
                     tabIndex={isOpen ? 0 : -1}
                     href={item.href}
                     onClick={item.onClick}
-                    {...stylex.props(styles.menuItem)}>
+                    sx={styles.menuItem}>
                     {item.icon && (
-                      <div {...stylex.props(styles.menuItemIcon)}>
+                      <div sx={styles.menuItemIcon}>
                         {item.icon}
                       </div>
                     )}
-                    <div {...stylex.props(styles.menuItemContent)}>
-                      <span {...stylex.props(styles.menuItemTitle)}>
+                    <div sx={styles.menuItemContent}>
+                      <span sx={styles.menuItemTitle}>
                         {item.title}
                       </span>
                       {item.description && (
-                        <span {...stylex.props(styles.menuItemDescription)}>
+                        <span sx={styles.menuItemDescription}>
                           {item.description}
                         </span>
                       )}
@@ -538,8 +534,8 @@ export function XDSTopNavMegaMenu({
             {/* Featured section */}
             {featured && (
               <>
-                <div {...stylex.props(styles.divider)} />
-                <div {...stylex.props(styles.featured)}>
+                <div sx={styles.divider} />
+                <div sx={styles.featured}>
                   {featured.children ? (
                     featured.children
                   ) : (
@@ -548,15 +544,14 @@ export function XDSTopNavMegaMenu({
                         <img
                           src={featured.image}
                           alt={featured.imageAlt ?? ''}
-                          {...stylex.props(styles.featuredImage)}
-                        />
+                          sx={styles.featuredImage} />
                       )}
-                      <div {...stylex.props(styles.featuredBody)}>
-                        <span {...stylex.props(styles.featuredTitle)}>
+                      <div sx={styles.featuredBody}>
+                        <span sx={styles.featuredTitle}>
                           {featured.title}
                         </span>
                         {featured.description && (
-                          <span {...stylex.props(styles.featuredDescription)}>
+                          <span sx={styles.featuredDescription}>
                             {featured.description}
                           </span>
                         )}
@@ -565,7 +560,7 @@ export function XDSTopNavMegaMenu({
                             href={featured.linkHref}
                             onClick={featured.onLinkClick}
                             tabIndex={isOpen ? 0 : -1}
-                            {...stylex.props(styles.featuredLink)}>
+                            sx={styles.featuredLink}>
                             {featured.linkText}
                           </a>
                         )}

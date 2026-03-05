@@ -387,11 +387,11 @@ export const XDSMoreMenu = forwardRef<HTMLButtonElement, XDSMoreMenuProps>(
             aria-disabled={item.isDisabled}
             onClick={() => handleItemClick(item)}
             onMouseEnter={() => handleItemMouseEnter(item, flatIndex)}
-            {...stylex.props(
+            sx={[
               styles.item,
               isHighlighted && styles.itemHighlighted,
-              item.isDisabled && styles.itemDisabled,
-            )}>
+              item.isDisabled && styles.itemDisabled
+            ]}>
             {children ? children(item) : <DefaultItem item={item} />}
           </div>
         );
@@ -478,7 +478,7 @@ export const XDSMoreMenu = forwardRef<HTMLButtonElement, XDSMoreMenuProps>(
           data-testid={testId}
         />
         {layer.render(
-          <div id={menuId} role="menu" {...stylex.props(styles.dropdown)}>
+          <div id={menuId} role="menu" sx={styles.dropdown}>
             {renderOptions()}
           </div>,
           {

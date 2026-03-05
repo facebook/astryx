@@ -125,7 +125,7 @@ const NavItem = ({
   active?: boolean;
   children: React.ReactNode;
 }) => (
-  <div {...stylex.props(styles.navItem, active && styles.navItemActive)}>
+  <div sx={[styles.navItem, active && styles.navItemActive]}>
     {children}
   </div>
 );
@@ -338,7 +338,7 @@ export const Playground = {
     },
   },
   render: (args: PlaygroundArgs) => (
-    <div {...stylex.props(styles.pageWrapper)}>
+    <div sx={styles.pageWrapper}>
       <XDSCard width={args.cardWidth} height={args.cardHeight}>
         <XDSLayout
           isFullBleed={args.layoutIsFullBleed}
@@ -347,7 +347,7 @@ export const Playground = {
               <XDSLayoutHeader
                 hasDivider={args.headerHasDivider}
                 isFullBleed={args.headerIsFullBleed}>
-                <h3 {...stylex.props(styles.heading)}>Layout Header</h3>
+                <h3 sx={styles.heading}>Layout Header</h3>
               </XDSLayoutHeader>
             ) : undefined
           }
@@ -369,20 +369,20 @@ export const Playground = {
             <XDSLayoutContent
               isFullBleed={args.contentIsFullBleed}
               isScrollable={args.contentIsScrollable}>
-              <h4 {...stylex.props(styles.subheading)}>Main Content Area</h4>
+              <h4 sx={styles.subheading}>Main Content Area</h4>
               <br />
-              <p {...stylex.props(styles.bodyText)}>
+              <p sx={styles.bodyText}>
                 This is the main content area. Use the controls panel to toggle
                 headers, footers, side panels, and adjust their properties.
               </p>
               <br />
-              <p {...stylex.props(styles.bodyText)}>
+              <p sx={styles.bodyText}>
                 Try enabling &quot;isFullBleed&quot; to see how content can
                 extend to the edges, or toggle &quot;isScrollable&quot; to
                 change overflow behavior.
               </p>
               <br />
-              <div {...stylex.props(styles.placeholder)}>
+              <div sx={styles.placeholder}>
                 Placeholder content block
               </div>
             </XDSLayoutContent>
@@ -394,8 +394,8 @@ export const Playground = {
                 hasDivider={args.endPanelHasDivider}
                 isScrollable={args.endPanelIsScrollable}
                 role="complementary">
-                <p {...stylex.props(styles.sectionLabel)}>Details</p>
-                <p {...stylex.props(styles.bodyText)}>
+                <p sx={styles.sectionLabel}>Details</p>
+                <p sx={styles.bodyText}>
                   Additional information or actions can go in the end panel.
                 </p>
               </XDSLayoutPanel>
@@ -430,23 +430,23 @@ export const Playground = {
 export const BasicCard: Story = {
   name: 'Basic Card Layout',
   render: () => (
-    <div {...stylex.props(styles.pageWrapper)}>
+    <div sx={styles.pageWrapper}>
       <XDSCard width={400} height={350}>
         <XDSLayout
           header={
             <XDSLayoutHeader hasDivider>
-              <h3 {...stylex.props(styles.heading)}>Card Title</h3>
+              <h3 sx={styles.heading}>Card Title</h3>
             </XDSLayoutHeader>
           }
           content={
             <XDSLayoutContent>
-              <p {...stylex.props(styles.bodyText)}>
+              <p sx={styles.bodyText}>
                 This is a basic card layout with a header, scrollable content
                 area, and footer. The layout automatically handles padding and
                 spacing between sections.
               </p>
               <br />
-              <p {...stylex.props(styles.bodyText)}>
+              <p sx={styles.bodyText}>
                 Try scrolling this content area when it overflows.
               </p>
             </XDSLayoutContent>
@@ -472,12 +472,12 @@ export const BasicCard: Story = {
 export const WithSidebar: Story = {
   name: 'Layout with Sidebar',
   render: () => (
-    <div {...stylex.props(styles.pageWrapper)}>
+    <div sx={styles.pageWrapper}>
       <XDSCard width={700} height={400}>
         <XDSLayout
           header={
             <XDSLayoutHeader hasDivider>
-              <h3 {...stylex.props(styles.heading)}>Settings</h3>
+              <h3 sx={styles.heading}>Settings</h3>
             </XDSLayoutHeader>
           }
           start={
@@ -491,9 +491,9 @@ export const WithSidebar: Story = {
           }
           content={
             <XDSLayoutContent>
-              <h4 {...stylex.props(styles.subheading)}>General Settings</h4>
+              <h4 sx={styles.subheading}>General Settings</h4>
               <br />
-              <p {...stylex.props(styles.bodyText)}>
+              <p sx={styles.bodyText}>
                 Configure your general preferences here. The sidebar navigation
                 allows you to switch between different settings sections.
               </p>
@@ -520,17 +520,17 @@ export const WithSidebar: Story = {
 export const DualPanels: Story = {
   name: 'Dual Panel Layout',
   render: () => (
-    <div {...stylex.props(styles.pageWrapper, styles.pageWrapperTall)}>
+    <div sx={[styles.pageWrapper, styles.pageWrapperTall]}>
       <XDSCard width="100%" maxWidth={800} height={400}>
         <XDSLayout
           header={
             <XDSLayoutHeader hasDivider>
-              <h3 {...stylex.props(styles.heading)}>File Browser</h3>
+              <h3 sx={styles.heading}>File Browser</h3>
             </XDSLayoutHeader>
           }
           start={
             <XDSLayoutPanel hasDivider>
-              <p {...stylex.props(styles.sectionLabel)}>Folders</p>
+              <p sx={styles.sectionLabel}>Folders</p>
               <NavItem>Documents</NavItem>
               <NavItem active>Projects</NavItem>
               <NavItem>Downloads</NavItem>
@@ -538,16 +538,16 @@ export const DualPanels: Story = {
           }
           content={
             <XDSLayoutContent>
-              <p {...stylex.props(styles.sectionLabel)}>Files</p>
-              <div {...stylex.props(styles.placeholder)}>
+              <p sx={styles.sectionLabel}>Files</p>
+              <div sx={styles.placeholder}>
                 Select a folder to view its contents
               </div>
             </XDSLayoutContent>
           }
           end={
             <XDSLayoutPanel hasDivider>
-              <p {...stylex.props(styles.sectionLabel)}>Details</p>
-              <p {...stylex.props(styles.bodyText)}>
+              <p sx={styles.sectionLabel}>Details</p>
+              <p sx={styles.bodyText}>
                 Select a file to view details
               </p>
             </XDSLayoutPanel>
@@ -561,17 +561,17 @@ export const DualPanels: Story = {
 export const NoDividers: Story = {
   name: 'Without Dividers',
   render: () => (
-    <div {...stylex.props(styles.pageWrapper)}>
+    <div sx={styles.pageWrapper}>
       <XDSCard width={400} height={350}>
         <XDSLayout
           header={
             <XDSLayoutHeader>
-              <h3 {...stylex.props(styles.heading)}>Seamless Layout</h3>
+              <h3 sx={styles.heading}>Seamless Layout</h3>
             </XDSLayoutHeader>
           }
           content={
             <XDSLayoutContent>
-              <p {...stylex.props(styles.bodyText)}>
+              <p sx={styles.bodyText}>
                 When dividers are not used, the layout automatically collapses
                 spacing between sections for a seamless visual flow.
               </p>
@@ -595,17 +595,17 @@ export const NoDividers: Story = {
 export const FullBleedContent: Story = {
   name: 'Full Bleed Content',
   render: () => (
-    <div {...stylex.props(styles.pageWrapper)}>
+    <div sx={styles.pageWrapper}>
       <XDSCard width={400} height={350}>
         <XDSLayout
           header={
             <XDSLayoutHeader hasDivider>
-              <h3 {...stylex.props(styles.heading)}>Full Bleed Example</h3>
+              <h3 sx={styles.heading}>Full Bleed Example</h3>
             </XDSLayoutHeader>
           }
           content={
             <XDSLayoutContent isFullBleed>
-              <div {...stylex.props(styles.placeholderFullBleed)}>
+              <div sx={styles.placeholderFullBleed}>
                 This content uses isFullBleed to remove padding, allowing it to
                 touch the edges. Useful for tables, images, or other
                 edge-to-edge content.
@@ -631,18 +631,18 @@ export const SectionVariants: Story = {
   name: 'Section Variants',
   render: () => (
     <XDSVStack gap="space6" xstyle={styles.storySection}>
-      <p {...stylex.props(styles.sectionLabel)}>XDSSection Variants</p>
+      <p sx={styles.sectionLabel}>XDSSection Variants</p>
       <XDSHStack gap="space4" wrap="wrap">
         <XDSSection variant="section" width={300} height={250}>
           <XDSLayout
             header={
               <XDSLayoutHeader hasDivider>
-                <p {...stylex.props(styles.subheading)}>Section</p>
+                <p sx={styles.subheading}>Section</p>
               </XDSLayoutHeader>
             }
             content={
               <XDSLayoutContent>
-                <p {...stylex.props(styles.bodyText)}>
+                <p sx={styles.bodyText}>
                   Surface background color
                 </p>
               </XDSLayoutContent>
@@ -654,12 +654,12 @@ export const SectionVariants: Story = {
           <XDSLayout
             header={
               <XDSLayoutHeader hasDivider>
-                <p {...stylex.props(styles.subheading)}>Wash</p>
+                <p sx={styles.subheading}>Wash</p>
               </XDSLayoutHeader>
             }
             content={
               <XDSLayoutContent>
-                <p {...stylex.props(styles.bodyText)}>Wash background color</p>
+                <p sx={styles.bodyText}>Wash background color</p>
               </XDSLayoutContent>
             }
           />
@@ -669,12 +669,12 @@ export const SectionVariants: Story = {
           <XDSLayout
             header={
               <XDSLayoutHeader hasDivider>
-                <p {...stylex.props(styles.subheading)}>Transparent</p>
+                <p sx={styles.subheading}>Transparent</p>
               </XDSLayoutHeader>
             }
             content={
               <XDSLayoutContent>
-                <p {...stylex.props(styles.bodyText)}>
+                <p sx={styles.bodyText}>
                   No background, shows parent
                 </p>
               </XDSLayoutContent>
@@ -689,14 +689,14 @@ export const SectionVariants: Story = {
 export const ContentOnly: Story = {
   name: 'Content Only',
   render: () => (
-    <div {...stylex.props(styles.pageWrapper)}>
+    <div sx={styles.pageWrapper}>
       <XDSCard width={400} height={350}>
         <XDSLayout
           content={
             <XDSLayoutContent>
-              <h3 {...stylex.props(styles.heading)}>Simple Content</h3>
+              <h3 sx={styles.heading}>Simple Content</h3>
               <br />
-              <p {...stylex.props(styles.bodyText)}>
+              <p sx={styles.bodyText}>
                 A layout can have just content without header or footer. This is
                 useful for simple cards or content blocks.
               </p>
@@ -713,7 +713,7 @@ export const ThemedLayout: Story = {
   render: () => (
     <XDSHStack gap="space6" xstyle={styles.storySection}>
       <XDSVStack gap="space3">
-        <p {...stylex.props(styles.sectionLabel)}>
+        <p sx={styles.sectionLabel}>
           Default Theme (16px padding)
         </p>
         <XDSTheme theme={defaultTheme}>
@@ -721,12 +721,12 @@ export const ThemedLayout: Story = {
             <XDSLayout
               header={
                 <XDSLayoutHeader hasDivider>
-                  <h3 {...stylex.props(styles.heading)}>Default Theme</h3>
+                  <h3 sx={styles.heading}>Default Theme</h3>
                 </XDSLayoutHeader>
               }
               content={
                 <XDSLayoutContent>
-                  <p {...stylex.props(styles.bodyText)}>
+                  <p sx={styles.bodyText}>
                     This card uses the default theme with 16px padding around
                     the layout areas.
                   </p>
@@ -750,7 +750,7 @@ export const ThemedLayout: Story = {
       </XDSVStack>
 
       <XDSVStack gap="space3">
-        <p {...stylex.props(styles.sectionLabel)}>
+        <p sx={styles.sectionLabel}>
           Neutral Theme (12px padding)
         </p>
         <XDSTheme theme={neutralTheme}>
@@ -758,12 +758,12 @@ export const ThemedLayout: Story = {
             <XDSLayout
               header={
                 <XDSLayoutHeader hasDivider>
-                  <h3 {...stylex.props(styles.heading)}>Neutral Theme</h3>
+                  <h3 sx={styles.heading}>Neutral Theme</h3>
                 </XDSLayoutHeader>
               }
               content={
                 <XDSLayoutContent>
-                  <p {...stylex.props(styles.bodyText)}>
+                  <p sx={styles.bodyText}>
                     This card uses the neutral theme with 12px padding around
                     the layout areas.
                   </p>
@@ -793,40 +793,36 @@ export const OuterPaddingDemo: Story = {
   name: 'Outer Padding Demonstration',
   render: () => (
     <XDSVStack gap="space6" xstyle={styles.storySection}>
-      <p {...stylex.props(styles.sectionLabel)}>Outer Padding</p>
-      <p {...stylex.props(styles.bodyText)}>
+      <p sx={styles.sectionLabel}>Outer Padding</p>
+      <p sx={styles.bodyText}>
         Outer padding creates space between the container edge and the layout
         content. Notice how the dividers are inset from the container edges as
         outer padding increases.
       </p>
       <XDSHStack gap="space4" wrap="wrap">
         <XDSVStack gap="space2">
-          <p {...stylex.props(styles.subheading)}>paddingOuterX/Y = spacing0</p>
+          <p sx={styles.subheading}>paddingOuterX/Y = spacing0</p>
           <div
-            {...stylex.props(
-              ...container({
-                paddingOuterX: 'spacing0',
-                paddingOuterY: 'spacing0',
-              }),
-              styles.demoContainer,
-              styles.demoSize,
-            )}>
+            sx={[...container({
+              paddingOuterX: 'spacing0',
+              paddingOuterY: 'spacing0',
+            }), styles.demoContainer, styles.demoSize]}>
             <XDSLayout
               header={
                 <XDSLayoutHeader hasDivider>
-                  <p {...stylex.props(styles.subheading)}>Header</p>
+                  <p sx={styles.subheading}>Header</p>
                 </XDSLayoutHeader>
               }
               content={
                 <XDSLayoutContent>
-                  <p {...stylex.props(styles.bodyText)}>
+                  <p sx={styles.bodyText}>
                     Dividers touch container edges.
                   </p>
                 </XDSLayoutContent>
               }
               footer={
                 <XDSLayoutFooter hasDivider>
-                  <p {...stylex.props(styles.bodyText)}>Footer</p>
+                  <p sx={styles.bodyText}>Footer</p>
                 </XDSLayoutFooter>
               }
             />
@@ -834,32 +830,28 @@ export const OuterPaddingDemo: Story = {
         </XDSVStack>
 
         <XDSVStack gap="space2">
-          <p {...stylex.props(styles.subheading)}>paddingOuterX/Y = spacing4</p>
+          <p sx={styles.subheading}>paddingOuterX/Y = spacing4</p>
           <div
-            {...stylex.props(
-              ...container({
-                paddingOuterX: 'spacing4',
-                paddingOuterY: 'spacing4',
-              }),
-              styles.demoContainer,
-              styles.demoSize,
-            )}>
+            sx={[...container({
+              paddingOuterX: 'spacing4',
+              paddingOuterY: 'spacing4',
+            }), styles.demoContainer, styles.demoSize]}>
             <XDSLayout
               header={
                 <XDSLayoutHeader hasDivider>
-                  <p {...stylex.props(styles.subheading)}>Header</p>
+                  <p sx={styles.subheading}>Header</p>
                 </XDSLayoutHeader>
               }
               content={
                 <XDSLayoutContent>
-                  <p {...stylex.props(styles.bodyText)}>
+                  <p sx={styles.bodyText}>
                     16px inset from edges.
                   </p>
                 </XDSLayoutContent>
               }
               footer={
                 <XDSLayoutFooter hasDivider>
-                  <p {...stylex.props(styles.bodyText)}>Footer</p>
+                  <p sx={styles.bodyText}>Footer</p>
                 </XDSLayoutFooter>
               }
             />
@@ -867,32 +859,28 @@ export const OuterPaddingDemo: Story = {
         </XDSVStack>
 
         <XDSVStack gap="space2">
-          <p {...stylex.props(styles.subheading)}>paddingOuterX/Y = spacing7</p>
+          <p sx={styles.subheading}>paddingOuterX/Y = spacing7</p>
           <div
-            {...stylex.props(
-              ...container({
-                paddingOuterX: 'spacing7',
-                paddingOuterY: 'spacing7',
-              }),
-              styles.demoContainer,
-              styles.demoSize,
-            )}>
+            sx={[...container({
+              paddingOuterX: 'spacing7',
+              paddingOuterY: 'spacing7',
+            }), styles.demoContainer, styles.demoSize]}>
             <XDSLayout
               header={
                 <XDSLayoutHeader hasDivider>
-                  <p {...stylex.props(styles.subheading)}>Header</p>
+                  <p sx={styles.subheading}>Header</p>
                 </XDSLayoutHeader>
               }
               content={
                 <XDSLayoutContent>
-                  <p {...stylex.props(styles.bodyText)}>
+                  <p sx={styles.bodyText}>
                     48px inset from edges.
                   </p>
                 </XDSLayoutContent>
               }
               footer={
                 <XDSLayoutFooter hasDivider>
-                  <p {...stylex.props(styles.bodyText)}>Footer</p>
+                  <p sx={styles.bodyText}>Footer</p>
                 </XDSLayoutFooter>
               }
             />

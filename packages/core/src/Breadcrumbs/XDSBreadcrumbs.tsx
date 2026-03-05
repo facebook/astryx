@@ -195,12 +195,9 @@ export const XDSBreadcrumbs = forwardRef<HTMLElement, XDSBreadcrumbsProps>(
             key={`sep-${index}`}
             role="presentation"
             aria-hidden="true"
-            {...stylex.props(
-              separatorStyles.root,
-              isSupporting
-                ? separatorStyles.supportingSize
-                : separatorStyles.defaultSize,
-            )}>
+            sx={[separatorStyles.root, isSupporting
+              ? separatorStyles.supportingSize
+              : separatorStyles.defaultSize]}>
             {separator}
           </li>,
         );
@@ -212,8 +209,8 @@ export const XDSBreadcrumbs = forwardRef<HTMLElement, XDSBreadcrumbsProps>(
         ref={ref}
         aria-label={label}
         data-testid={testId}
-        {...stylex.props(navStyles.root, xstyle)}>
-        <ol {...stylex.props(listStyles.root)}>{rendered}</ol>
+        sx={[navStyles.root, xstyle]}>
+        <ol sx={listStyles.root}>{rendered}</ol>
       </nav>
     );
   },

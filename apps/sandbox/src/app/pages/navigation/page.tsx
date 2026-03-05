@@ -31,7 +31,7 @@ export default function NavigationPage() {
   const [alignment, setAlignment] = useState<Alignment>('start');
 
   return (
-    <div {...stylex.props(styles.container)}>
+    <div sx={styles.container}>
       <XDSVStack gap="space6">
         <XDSVStack gap="space2">
           <XDSHeading level={1}>Navigation Alignment</XDSHeading>
@@ -71,7 +71,7 @@ export default function NavigationPage() {
         {/* Live preview */}
         <XDSVStack gap="space3">
           <XDSHeading level={2}>Preview</XDSHeading>
-          <div {...stylex.props(styles.navWrapper)}>
+          <div sx={styles.navWrapper}>
             <NavPreview alignment={alignment} />
           </div>
         </XDSVStack>
@@ -86,7 +86,7 @@ export default function NavigationPage() {
             <XDSText type="supporting" weight="bold">
               Left-aligned (startContent)
             </XDSText>
-            <div {...stylex.props(styles.navWrapper)}>
+            <div sx={styles.navWrapper}>
               <NavPreview alignment="start" />
             </div>
           </XDSVStack>
@@ -95,7 +95,7 @@ export default function NavigationPage() {
             <XDSText type="supporting" weight="bold">
               Center-aligned (centerContent)
             </XDSText>
-            <div {...stylex.props(styles.navWrapper)}>
+            <div sx={styles.navWrapper}>
               <NavPreview alignment="center" />
             </div>
           </XDSVStack>
@@ -104,7 +104,7 @@ export default function NavigationPage() {
             <XDSText type="supporting" weight="bold">
               Right-aligned (endContent)
             </XDSText>
-            <div {...stylex.props(styles.navWrapper)}>
+            <div sx={styles.navWrapper}>
               <NavPreview alignment="end" />
             </div>
           </XDSVStack>

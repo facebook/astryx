@@ -445,12 +445,8 @@ export const XDSPagination = forwardRef<HTMLElement, XDSPaginationProps>(
                     <span
                       key={`ellipsis-${index}`}
                       aria-hidden="true"
-                      {...stylex.props(
-                        styles.ellipsis,
-                        isSm && styles.ellipsisSm,
-                      )}>
-                      …
-                    </span>
+                      sx={[styles.ellipsis, isSm && styles.ellipsisSm]}>…
+                                          </span>
                   );
                 }
                 const isActive = item === page;
@@ -475,7 +471,7 @@ export const XDSPagination = forwardRef<HTMLElement, XDSPaginationProps>(
         case 'count': {
           if (totalItems == null) return null;
           return (
-            <span {...stylex.props(styles.infoText)}>
+            <span sx={styles.infoText}>
               <XDSText type="body" size="sm" color="secondary">
                 {`${rangeStart}\u2013${rangeEnd} of ${totalItems}`}
               </XDSText>
@@ -486,7 +482,7 @@ export const XDSPagination = forwardRef<HTMLElement, XDSPaginationProps>(
         case 'compact': {
           if (computedTotalPages == null) return null;
           return (
-            <span {...stylex.props(styles.infoText)}>
+            <span sx={styles.infoText}>
               <XDSText type="body" size="sm" color="secondary">
                 {`Page ${page} of ${computedTotalPages}`}
               </XDSText>
@@ -497,10 +493,7 @@ export const XDSPagination = forwardRef<HTMLElement, XDSPaginationProps>(
         case 'dots': {
           if (computedTotalPages == null) return null;
           return (
-            <div
-              {...stylex.props(styles.dotsContainer)}
-              role="group"
-              aria-label="Page indicators">
+            <div sx={styles.dotsContainer} role="group" aria-label="Page indicators">
               {Array.from({length: computedTotalPages}, (_, i) => (
                 <button
                   key={i + 1}
@@ -509,13 +502,12 @@ export const XDSPagination = forwardRef<HTMLElement, XDSPaginationProps>(
                   aria-current={i + 1 === page ? 'page' : undefined}
                   onClick={() => handlePageChange(i + 1)}
                   disabled={isDisabled}
-                  {...stylex.props(
+                  sx={[
                     styles.dot,
                     isSm && styles.dotSm,
                     i + 1 === page && styles.dotActive,
-                    isDisabled && styles.dotDisabled,
-                  )}
-                />
+                    isDisabled && styles.dotDisabled
+                  ]} />
               ))}
             </div>
           );
@@ -532,10 +524,10 @@ export const XDSPagination = forwardRef<HTMLElement, XDSPaginationProps>(
         ref={ref}
         aria-label={label}
         data-testid={testId}
-        {...stylex.props(styles.root, rootOverride, xstyle)}>
+        sx={[styles.root, rootOverride, xstyle]}>
         {pageSizeOptions != null && pageSizeOptions.length > 0 && (
-          <div {...stylex.props(styles.pageSizeSelector)}>
-            <div {...stylex.props(styles.pageSizeSelectorControl)}>
+          <div sx={styles.pageSizeSelector}>
+            <div sx={styles.pageSizeSelectorControl}>
               <XDSSelector
                 label="Items per page"
                 isLabelHidden
@@ -548,8 +540,7 @@ export const XDSPagination = forwardRef<HTMLElement, XDSPaginationProps>(
             </div>
           </div>
         )}
-
-        <div {...stylex.props(styles.controls)}>
+        <div sx={styles.controls}>
           <XDSButton
             label="Go to previous page"
             variant="ghost"

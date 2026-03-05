@@ -378,7 +378,7 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
         disabled={buttonDisabled}
         aria-label={isIconOnly ? label : undefined}
         aria-busy={isLoadingState || undefined}
-        {...stylex.props(
+        sx={[
           styles.base,
           sizeStyles[size],
           variants[variant],
@@ -387,8 +387,8 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
           buttonDisabled && styles.disabled,
           isLoadingState && loadingStyles.loading,
           edgePaddingSignal,
-          edgeCompStyle,
-        )}
+          edgeCompStyle
+        ]}
         {...props}
         onClick={handleClick}>
         {isLoadingState && (
@@ -412,7 +412,7 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
         {icon}
         {children ?? (isIconOnly ? null : label)}
         {!isIconOnly && endSlot && (
-          <span {...stylex.props(styles.endSlotWrapper)}>{endSlot}</span>
+          <span sx={styles.endSlotWrapper}>{endSlot}</span>
         )}
       </button>
     );

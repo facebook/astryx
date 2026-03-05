@@ -463,54 +463,50 @@ export function CompareView({comparison}: CompareViewProps) {
 
   return (
     <XDSVStack gap="space4">
-      <div
-        {...stylex.props(
-          isThreeWay ? styles.summaryGrid4 : styles.summaryGrid,
-        )}>
+      <div sx={isThreeWay ? styles.summaryGrid4 : styles.summaryGrid}>
         <XDSCard>
-          <div {...stylex.props(styles.winCard)}>
+          <div sx={styles.winCard}>
             <XDSVStack gap="space2">
               <XDSText type="label">XDS Wins</XDSText>
               <XDSHeading level={2}>
-                <span {...stylex.props(styles.positive)}>{xdsWins}</span>
+                <span sx={styles.positive}>{xdsWins}</span>
               </XDSHeading>
             </XDSVStack>
           </div>
         </XDSCard>
         <XDSCard>
-          <div {...stylex.props(styles.winCard)}>
+          <div sx={styles.winCard}>
             <XDSVStack gap="space2">
               <XDSText type="label">Baseline Wins</XDSText>
               <XDSHeading level={2}>
-                <span {...stylex.props(styles.negative)}>{baselineWins}</span>
+                <span sx={styles.negative}>{baselineWins}</span>
               </XDSHeading>
             </XDSVStack>
           </div>
         </XDSCard>
         {isThreeWay && (
           <XDSCard>
-            <div {...stylex.props(styles.winCard)}>
+            <div sx={styles.winCard}>
               <XDSVStack gap="space2">
                 <XDSText type="label">HTML Wins</XDSText>
                 <XDSHeading level={2}>
-                  <span {...stylex.props(styles.warning)}>{htmlWins}</span>
+                  <span sx={styles.warning}>{htmlWins}</span>
                 </XDSHeading>
               </XDSVStack>
             </div>
           </XDSCard>
         )}
         <XDSCard>
-          <div {...stylex.props(styles.winCard)}>
+          <div sx={styles.winCard}>
             <XDSVStack gap="space2">
               <XDSText type="label">Ties</XDSText>
               <XDSHeading level={2}>
-                <span {...stylex.props(styles.neutral)}>{ties}</span>
+                <span sx={styles.neutral}>{ties}</span>
               </XDSHeading>
             </XDSVStack>
           </div>
         </XDSCard>
       </div>
-
       <XDSVStack gap="space3">
         <XDSHeading level={3}>Dimension Comparison</XDSHeading>
         <XDSTable<DimRow>
@@ -521,7 +517,6 @@ export function CompareView({comparison}: CompareViewProps) {
           dividers="rows"
         />
       </XDSVStack>
-
       {catData.length > 0 && (
         <XDSVStack gap="space3">
           <XDSHeading level={3}>Category Breakdown</XDSHeading>
@@ -534,7 +529,6 @@ export function CompareView({comparison}: CompareViewProps) {
           />
         </XDSVStack>
       )}
-
       {xds.cost && baseline.cost && (
         <XDSVStack gap="space3">
           <XDSHeading level={3}>Cost Comparison</XDSHeading>

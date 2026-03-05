@@ -166,16 +166,14 @@ export function XDSAvatarStatusDot({
   return (
     <div
       {...(label ? {'aria-label': label} : undefined)}
-      {...stylex.props(
+      sx={[
         styles.dot,
         variantStyleMap[variant],
-        dynamicStyles.size(dotSize, borderWidth),
-      )}
+        dynamicStyles.size(dotSize, borderWidth)
+      ]}
       {...props}>
       {icon && iconSize > 0 && (
-        <span
-          aria-hidden="true"
-          {...stylex.props(styles.icon, dynamicStyles.iconSize(iconSize))}>
+        <span aria-hidden="true" sx={[styles.icon, dynamicStyles.iconSize(iconSize)]}>
           {icon}
         </span>
       )}

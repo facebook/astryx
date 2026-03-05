@@ -261,31 +261,22 @@ export const XDSProgressBar = forwardRef<HTMLDivElement, XDSProgressBarProps>(
     const showValueLabel = hasValueLabel && !isIndeterminate;
 
     return (
-      <div
-        ref={ref}
-        {...stylex.props(styles.container, xstyle)}
-        data-testid={dataTestId}>
+      <div ref={ref} sx={[styles.container, xstyle]} data-testid={dataTestId}>
         {/* Label row */}
         {!isLabelHidden || showValueLabel ? (
-          <div {...stylex.props(styles.header)}>
-            <span
-              id={labelId}
-              {...stylex.props(
-                styles.label,
-                isLabelHidden && styles.visuallyHidden,
-              )}>
+          <div sx={styles.header}>
+            <span id={labelId} sx={[styles.label, isLabelHidden && styles.visuallyHidden]}>
               {label}
             </span>
             {showValueLabel && (
-              <span {...stylex.props(styles.valueLabel)}>{valueText}</span>
+              <span sx={styles.valueLabel}>{valueText}</span>
             )}
           </div>
         ) : (
-          <span id={labelId} {...stylex.props(styles.visuallyHidden)}>
+          <span id={labelId} sx={styles.visuallyHidden}>
             {label}
           </span>
         )}
-
         {/* Progress track */}
         <div
           role={isIndeterminate ? 'progressbar' : 'meter'}
@@ -294,19 +285,13 @@ export const XDSProgressBar = forwardRef<HTMLDivElement, XDSProgressBarProps>(
           aria-valuemax={isIndeterminate ? undefined : max}
           aria-labelledby={labelId}
           aria-valuetext={isIndeterminate ? undefined : valueText}
-          {...stylex.props(styles.track, sizeStyles[size])}>
+          sx={[styles.track, sizeStyles[size]]}>
           {isIndeterminate ? (
-            <div
-              {...stylex.props(
-                styles.indeterminateFill,
-                variantStyles[variant],
-              )}
-            />
+            <div sx={[styles.indeterminateFill, variantStyles[variant]]} />
           ) : (
             <div
-              {...stylex.props(styles.fill, variantStyles[variant])}
-              style={{width: `${percentage}%`}}
-            />
+              sx={[styles.fill, variantStyles[variant]]}
+              style={{width: `${percentage}%`}} />
           )}
         </div>
       </div>

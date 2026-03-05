@@ -512,13 +512,13 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
           aria-disabled={item.disabled}
           onClick={() => onItemSelect(item)}
           onMouseEnter={() => onItemMouseEnter(item, flatIndex)}
-          {...stylex.props(
+          sx={[
             styles.item,
             isHighlighted && styles.itemHighlighted,
             isSelected && styles.itemSelected,
-            item.disabled && styles.itemDisabled,
-          )}>
-          <span {...stylex.props(styles.itemContent)}>
+            item.disabled && styles.itemDisabled
+          ]}>
+          <span sx={styles.itemContent}>
             {children ? children(item) : <DefaultOption option={item} />}
           </span>
           {isSelected && <XDSIcon icon="check" size="sm" color="accent" />}
@@ -622,23 +622,23 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
         onClick={onTriggerClick}
         onKeyDown={onKeyDown}
         data-testid={testId}
-        {...stylex.props(
+        sx={[
           styles.trigger,
           sizeStyles[size],
           isDisabled && styles.triggerDisabled,
           !selectedItem && styles.triggerPlaceholder,
           status && inputStatusBorderStyles[status.type],
           status && inputStatusHoverShadowStyles[status.type],
-          triggerOverride,
-        )}>
+          triggerOverride
+        ]}>
         <span>{selectedItem?.label ?? placeholder}</span>
         {isBusy && <XDSSpinner size="sm" />}
         <span
-          {...stylex.props(
+          sx={[
             styles.triggerIcon,
             !status && layer.isOpen && styles.triggerIconOpen,
-            status && styles.triggerIconStatus,
-          )}>
+            status && styles.triggerIconStatus
+          ]}>
           {status ? (
             <XDSIcon
               icon={STATUS_ICON_MAP[status.type]}
@@ -650,19 +650,18 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
           )}
         </span>
       </button>
-
       {layer.render(
         <div
           ref={listboxRef}
           id={listboxId}
           role="listbox"
           aria-labelledby={triggerId}
-          {...stylex.props(
+          sx={[
             styles.dropdown,
             !isPositioned && styles.dropdownHidden,
             styles.dropdownOffset(-selectedItemOffset),
-            dropdownOverride,
-          )}>
+            dropdownOverride
+          ]}>
           {renderOptions()}
         </div>,
         {

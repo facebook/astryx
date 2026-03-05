@@ -207,7 +207,7 @@ export const XDSLayoutPanel = forwardRef<HTMLElement, XDSLayoutPanelProps>(
         ref={ref as React.Ref<HTMLDivElement>}
         role={role}
         aria-label={label}
-        {...stylex.props(
+        sx={[
           styles.panel,
           dynamicStyles.sizing(width ?? null),
           // Outer padding on container edges (unless component is full bleed)
@@ -218,8 +218,8 @@ export const XDSLayoutPanel = forwardRef<HTMLElement, XDSLayoutPanelProps>(
           isScrollable && styles.scrollable,
           isFullBleed && styles.fullBleed,
           hasDivider && dividerStyle,
-          shouldCollapseSpacing && collapseStyle,
-        )}
+          shouldCollapseSpacing && collapseStyle
+        ]}
         {...props}>
         {children}
       </div>

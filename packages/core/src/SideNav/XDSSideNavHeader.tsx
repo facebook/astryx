@@ -301,7 +301,7 @@ export const XDSSideNavHeader = forwardRef<
 
   // Render text content
   const renderTextContent = () => (
-    <span {...stylex.props(styles.textContainer)}>
+    <span sx={styles.textContainer}>
       {supertitle &&
         (hasAnyHref && supertitleHref && menu ? (
           <XDSLink
@@ -312,7 +312,7 @@ export const XDSSideNavHeader = forwardRef<
             {supertitle}
           </XDSLink>
         ) : (
-          <span {...stylex.props(styles.supertitle)}>{supertitle}</span>
+          <span sx={styles.supertitle}>{supertitle}</span>
         ))}
       {hasAnyHref && titleHref && menu ? (
         <XDSLink
@@ -323,7 +323,7 @@ export const XDSSideNavHeader = forwardRef<
           {title}
         </XDSLink>
       ) : (
-        <span {...stylex.props(styles.title)}>{title}</span>
+        <span sx={styles.title}>{title}</span>
       )}
       {subtitle &&
         (hasAnyHref && subtitleHref && menu ? (
@@ -335,13 +335,13 @@ export const XDSSideNavHeader = forwardRef<
             {subtitle}
           </XDSLink>
         ) : (
-          <span {...stylex.props(styles.subtitle)}>{subtitle}</span>
+          <span sx={styles.subtitle}>{subtitle}</span>
         ))}
     </span>
   );
 
   const chevronElement = showChevron && (
-    <span {...stylex.props(styles.chevron)}>
+    <span sx={styles.chevron}>
       <ChevronDownIcon />
     </span>
   );
@@ -353,14 +353,9 @@ export const XDSSideNavHeader = forwardRef<
         ref={ref as React.Ref<HTMLAnchorElement>}
         href={titleHref}
         data-testid={testId}
-        {...stylex.props(
-          styles.root,
-          styles.interactive,
-          styles.interactiveInset,
-          xstyle,
-        )}
+        sx={[styles.root, styles.interactive, styles.interactiveInset, xstyle]}
         {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}>
-        {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
+        {icon && <span sx={styles.icon}>{icon}</span>}
         {renderTextContent()}
         {chevronElement}
       </a>
@@ -377,18 +372,13 @@ export const XDSSideNavHeader = forwardRef<
           onClick={handleToggle}
           data-testid={testId}
           {...popover.triggerProps}
-          {...stylex.props(
-            styles.root,
-            styles.interactive,
-            styles.interactiveInset,
-            xstyle,
-          )}>
-          {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
+          sx={[styles.root, styles.interactive, styles.interactiveInset, xstyle]}>
+          {icon && <span sx={styles.icon}>{icon}</span>}
           {renderTextContent()}
           {chevronElement}
         </button>
         {popover.render(
-          <div {...stylex.props(styles.popoverContent)}>{menu}</div>,
+          <div sx={styles.popoverContent}>{menu}</div>,
           {placement: 'below', alignment: 'start', xstyle: styles.popover},
         )}
       </>
@@ -401,17 +391,14 @@ export const XDSSideNavHeader = forwardRef<
   if (menu && hasAnyHref) {
     return (
       <>
-        <div
-          ref={setRef}
-          data-testid={testId}
-          {...stylex.props(styles.root, xstyle)}>
+        <div ref={setRef} data-testid={testId} sx={[styles.root, xstyle]}>
           {icon &&
             (titleHref ? (
-              <a href={titleHref} {...stylex.props(styles.icon)}>
+              <a href={titleHref} sx={styles.icon}>
                 {icon}
               </a>
             ) : (
-              <span {...stylex.props(styles.icon)}>{icon}</span>
+              <span sx={styles.icon}>{icon}</span>
             ))}
           {renderTextContent()}
           {showChevron && (
@@ -420,13 +407,13 @@ export const XDSSideNavHeader = forwardRef<
               onClick={handleToggle}
               aria-label="Open menu"
               {...popover.triggerProps}
-              {...stylex.props(styles.chevron, styles.interactive)}>
+              sx={[styles.chevron, styles.interactive]}>
               <ChevronDownIcon />
             </button>
           )}
         </div>
         {popover.render(
-          <div {...stylex.props(styles.popoverContent)}>{menu}</div>,
+          <div sx={styles.popoverContent}>{menu}</div>,
           {placement: 'below', alignment: 'start', xstyle: styles.popover},
         )}
       </>
@@ -436,20 +423,16 @@ export const XDSSideNavHeader = forwardRef<
   // Static header with independent links (no menu)
   if (hasAnyHref && !isWholeHeaderLink) {
     return (
-      <div
-        ref={ref}
-        data-testid={testId}
-        {...stylex.props(styles.root, xstyle)}
-        {...props}>
+      <div ref={ref} data-testid={testId} sx={[styles.root, xstyle]} {...props}>
         {icon &&
           (titleHref ? (
-            <a href={titleHref} {...stylex.props(styles.icon)}>
+            <a href={titleHref} sx={styles.icon}>
               {icon}
             </a>
           ) : (
-            <span {...stylex.props(styles.icon)}>{icon}</span>
+            <span sx={styles.icon}>{icon}</span>
           ))}
-        <span {...stylex.props(styles.textContainer)}>
+        <span sx={styles.textContainer}>
           {supertitle &&
             (supertitleHref ? (
               <XDSLink
@@ -460,7 +443,7 @@ export const XDSSideNavHeader = forwardRef<
                 {supertitle}
               </XDSLink>
             ) : (
-              <span {...stylex.props(styles.supertitle)}>{supertitle}</span>
+              <span sx={styles.supertitle}>{supertitle}</span>
             ))}
           {titleHref ? (
             <XDSLink
@@ -471,7 +454,7 @@ export const XDSSideNavHeader = forwardRef<
               {title}
             </XDSLink>
           ) : (
-            <span {...stylex.props(styles.title)}>{title}</span>
+            <span sx={styles.title}>{title}</span>
           )}
           {subtitle &&
             (subtitleHref ? (
@@ -483,7 +466,7 @@ export const XDSSideNavHeader = forwardRef<
                 {subtitle}
               </XDSLink>
             ) : (
-              <span {...stylex.props(styles.subtitle)}>{subtitle}</span>
+              <span sx={styles.subtitle}>{subtitle}</span>
             ))}
         </span>
         {chevronElement}
@@ -493,12 +476,8 @@ export const XDSSideNavHeader = forwardRef<
 
   // Default: static header, no links, no menu
   return (
-    <div
-      ref={ref}
-      data-testid={testId}
-      {...stylex.props(styles.root, xstyle)}
-      {...props}>
-      {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
+    <div ref={ref} data-testid={testId} sx={[styles.root, xstyle]} {...props}>
+      {icon && <span sx={styles.icon}>{icon}</span>}
       {renderTextContent()}
       {chevronElement}
     </div>

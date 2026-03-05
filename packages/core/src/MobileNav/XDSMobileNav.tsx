@@ -333,25 +333,25 @@ export const XDSMobileNav = forwardRef<HTMLDialogElement, XDSMobileNavProps>(
         aria-label={title ?? 'Navigation'}
         onClick={handleDialogClick}
         onCancel={handleCancel}
-        {...stylex.props(
+        sx={[
           styles.dialog,
           styles.backdrop,
           isOpen && styles.backdropOpen,
-          rootOverride,
-        )}>
+          rootOverride
+        ]}>
         {/* Drawer panel */}
         <div
-          {...stylex.props(
+          sx={[
             styles.drawer,
             dynamicStyles.width(width),
             isStart && styles.drawerStart,
             isStart && isOpen && styles.drawerStartOpen,
             !isStart && styles.drawerEnd,
             !isStart && isOpen && styles.drawerEndOpen,
-            drawerOverride,
-          )}>
+            drawerOverride
+          ]}>
           {/* Header with optional title and close button */}
-          <div {...stylex.props(styles.header, !title && styles.headerNoTitle)}>
+          <div sx={[styles.header, !title && styles.headerNoTitle]}>
             {title && <XDSHeading level={2}>{title}</XDSHeading>}
             <XDSButton
               variant="ghost"
@@ -363,7 +363,7 @@ export const XDSMobileNav = forwardRef<HTMLDialogElement, XDSMobileNavProps>(
           </div>
 
           {/* Scrollable content */}
-          <div {...stylex.props(styles.content)}>{children}</div>
+          <div sx={styles.content}>{children}</div>
         </div>
       </dialog>
     );

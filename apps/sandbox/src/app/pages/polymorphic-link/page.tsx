@@ -70,7 +70,7 @@ const SimulatedNextLink = forwardRef<
         console.log(`[SimulatedNextLink] Client-side navigate to: ${href}`);
         onClick?.(e);
       }}
-      {...stylex.props(styles.customLinkIndicator)}
+      sx={styles.customLinkIndicator}
       {...props}>
       {children}
     </a>
@@ -110,7 +110,7 @@ export default function PolymorphicLinkPage() {
   const [tab, setTab] = useState('overview');
 
   return (
-    <div {...stylex.props(styles.container)}>
+    <div sx={styles.container}>
       <XDSVStack gap="space6">
         <XDSVStack gap="space2">
           <XDSHeading level={1}>Polymorphic Link</XDSHeading>
@@ -148,7 +148,7 @@ export default function PolymorphicLinkPage() {
                 <XDSText type="supporting" weight="bold">
                   XDSTopNav
                 </XDSText>
-                <div {...stylex.props(styles.navWrapper)}>
+                <div sx={styles.navWrapper}>
                   <XDSTopNav
                     label="Provider demo navigation"
                     title={<XDSTopNavTitle title="My App" />}
@@ -194,7 +194,7 @@ export default function PolymorphicLinkPage() {
                 <XDSText type="supporting" weight="bold">
                   XDSSideNav
                 </XDSText>
-                <div {...stylex.props(styles.sidenavWrapper)}>
+                <div sx={styles.sidenavWrapper}>
                   <XDSSideNav aria-label="Provider sidenav">
                     <XDSSideNavItem
                       label="Dashboard"
@@ -242,7 +242,7 @@ export default function PolymorphicLinkPage() {
           </XDSText>
 
           <XDSLinkProvider component={SimulatedNextLink}>
-            <div {...stylex.props(styles.navWrapper)}>
+            <div sx={styles.navWrapper}>
               <XDSTopNav
                 label="Override demo navigation"
                 title={<XDSTopNavTitle title="Override Demo" />}
@@ -277,7 +277,7 @@ export default function PolymorphicLinkPage() {
             prop, components render native {'<a>'} elements as usual.
           </XDSText>
 
-          <div {...stylex.props(styles.navWrapper)}>
+          <div sx={styles.navWrapper}>
             <XDSTopNav
               label="Default navigation"
               title={<XDSTopNavTitle title="Default" />}

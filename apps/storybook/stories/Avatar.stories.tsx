@@ -99,9 +99,9 @@ export const WithImage: Story = {
 
 export const AllSizes: Story = {
   render: () => (
-    <div {...stylex.props(styles.storyWrapper)}>
-      <h4 {...stylex.props(styles.heading)}>Named Sizes</h4>
-      <div {...stylex.props(styles.row)}>
+    <div sx={styles.storyWrapper}>
+      <h4 sx={styles.heading}>Named Sizes</h4>
+      <div sx={styles.row}>
         <XDSAvatar name="TY" size="tiny" />
         <XDSAvatar name="XS" size="xsmall" />
         <XDSAvatar name="SM" size="small" />
@@ -114,9 +114,9 @@ export const AllSizes: Story = {
 
 export const WithImages: Story = {
   render: () => (
-    <div {...stylex.props(styles.storyWrapper)}>
-      <h4 {...stylex.props(styles.heading)}>With Images (Different Sizes)</h4>
-      <div {...stylex.props(styles.row)}>
+    <div sx={styles.storyWrapper}>
+      <h4 sx={styles.heading}>With Images (Different Sizes)</h4>
+      <div sx={styles.row}>
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=1"
           name="User 1"
@@ -149,9 +149,9 @@ export const WithImages: Story = {
 
 export const InitialsFallback: Story = {
   render: () => (
-    <div {...stylex.props(styles.storyWrapper)}>
-      <h4 {...stylex.props(styles.heading)}>Initials Fallback</h4>
-      <div {...stylex.props(styles.row)}>
+    <div sx={styles.storyWrapper}>
+      <h4 sx={styles.heading}>Initials Fallback</h4>
+      <div sx={styles.row}>
         <XDSAvatar name="John Doe" size="medium" />
         <XDSAvatar name="Alice" size="medium" />
         <XDSAvatar name="Bob Smith Johnson" size="medium" />
@@ -163,9 +163,9 @@ export const InitialsFallback: Story = {
 
 export const NoImageNoName: Story = {
   render: () => (
-    <div {...stylex.props(styles.storyWrapper)}>
-      <h4 {...stylex.props(styles.heading)}>Default Icon (No Image or Name)</h4>
-      <div {...stylex.props(styles.row)}>
+    <div sx={styles.storyWrapper}>
+      <h4 sx={styles.heading}>Default Icon (No Image or Name)</h4>
+      <div sx={styles.row}>
         <XDSAvatar size="tiny" />
         <XDSAvatar size="xsmall" />
         <XDSAvatar size="small" />
@@ -178,11 +178,11 @@ export const NoImageNoName: Story = {
 
 export const FallbackChain: Story = {
   render: () => (
-    <div {...stylex.props(styles.storyWrapper)}>
-      <h4 {...stylex.props(styles.heading)}>Fallback Chain Demo</h4>
-      <div {...stylex.props(styles.row)}>
+    <div sx={styles.storyWrapper}>
+      <h4 sx={styles.heading}>Fallback Chain Demo</h4>
+      <div sx={styles.row}>
         <div>
-          <p {...stylex.props(styles.heading)}>Valid src</p>
+          <p sx={styles.heading}>Valid src</p>
           <XDSAvatar
             src="https://i.pravatar.cc/150?img=10"
             name="Test User"
@@ -190,7 +190,7 @@ export const FallbackChain: Story = {
           />
         </div>
         <div>
-          <p {...stylex.props(styles.heading)}>
+          <p sx={styles.heading}>
             Invalid src, valid fallbackSrc
           </p>
           <XDSAvatar
@@ -201,7 +201,7 @@ export const FallbackChain: Story = {
           />
         </div>
         <div>
-          <p {...stylex.props(styles.heading)}>Both invalid, has name</p>
+          <p sx={styles.heading}>Both invalid, has name</p>
           <XDSAvatar
             src="https://invalid-url.example/broken.jpg"
             fallbackSrc="https://also-invalid.example/broken.jpg"
@@ -210,7 +210,7 @@ export const FallbackChain: Story = {
           />
         </div>
         <div>
-          <p {...stylex.props(styles.heading)}>All invalid, no name</p>
+          <p sx={styles.heading}>All invalid, no name</p>
           <XDSAvatar
             src="https://invalid-url.example/broken.jpg"
             size="large"
@@ -223,9 +223,9 @@ export const FallbackChain: Story = {
 
 export const WithStatus: Story = {
   render: () => (
-    <div {...stylex.props(styles.storyWrapper)}>
-      <h4 {...stylex.props(styles.heading)}>With Status Indicators</h4>
-      <div {...stylex.props(styles.row)}>
+    <div sx={styles.storyWrapper}>
+      <h4 sx={styles.heading}>With Status Indicators</h4>
+      <div sx={styles.row}>
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=20"
           name="Online User"
@@ -252,13 +252,13 @@ export const WithStatus: Story = {
 export const StatusAcrossAllSizes: Story = {
   name: 'Status Dot Across All Sizes',
   render: () => (
-    <div {...stylex.props(styles.storyWrapper)}>
-      <h4 {...stylex.props(styles.heading)}>
+    <div sx={styles.storyWrapper}>
+      <h4 sx={styles.heading}>
         Status dot scales proportionally with avatar size
       </h4>
 
-      <h4 {...stylex.props(styles.heading)}>Named Sizes</h4>
-      <div {...stylex.props(styles.row)}>
+      <h4 sx={styles.heading}>Named Sizes</h4>
+      <div sx={styles.row}>
         <XDSAvatar
           name="TY"
           size="tiny"
@@ -286,8 +286,8 @@ export const StatusAcrossAllSizes: Story = {
         />
       </div>
 
-      <h4 {...stylex.props(styles.heading)}>Numeric Sizes with Images</h4>
-      <div {...stylex.props(styles.row)}>
+      <h4 sx={styles.heading}>Numeric Sizes with Images</h4>
+      <div sx={styles.row}>
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=30"
           name="U1"
@@ -326,8 +326,8 @@ export const StatusAcrossAllSizes: Story = {
         />
       </div>
 
-      <h4 {...stylex.props(styles.heading)}>All Colors at Medium</h4>
-      <div {...stylex.props(styles.row)}>
+      <h4 sx={styles.heading}>All Colors at Medium</h4>
+      <div sx={styles.row}>
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=40"
           name="Positive"
@@ -353,9 +353,9 @@ export const StatusAcrossAllSizes: Story = {
 
 export const StatusWithSizes: Story = {
   render: () => (
-    <div {...stylex.props(styles.storyWrapper)}>
-      <h4 {...stylex.props(styles.heading)}>Status with Different Sizes</h4>
-      <div {...stylex.props(styles.row)}>
+    <div sx={styles.storyWrapper}>
+      <h4 sx={styles.heading}>Status with Different Sizes</h4>
+      <div sx={styles.row}>
         <XDSAvatar name="AB" size="small" status={<XDSAvatarStatusDot />} />
         <XDSAvatar name="CD" size="medium" status={<XDSAvatarStatusDot />} />
         <XDSAvatar name="EF" size="large" status={<XDSAvatarStatusDot />} />
@@ -368,13 +368,13 @@ export const StatusWithSizes: Story = {
 export const StatusWithIcon: Story = {
   name: 'Status Dot with Icon',
   render: () => (
-    <div {...stylex.props(styles.storyWrapper)}>
-      <h4 {...stylex.props(styles.heading)}>
+    <div sx={styles.storyWrapper}>
+      <h4 sx={styles.heading}>
         Icon inside status dot (hidden at tiny sizes where there isn't room)
       </h4>
 
-      <h4 {...stylex.props(styles.heading)}>Named Sizes</h4>
-      <div {...stylex.props(styles.row)}>
+      <h4 sx={styles.heading}>Named Sizes</h4>
+      <div sx={styles.row}>
         <XDSAvatar
           name="TY"
           size="tiny"
@@ -434,8 +434,8 @@ export const StatusWithIcon: Story = {
         />
       </div>
 
-      <h4 {...stylex.props(styles.heading)}>Numeric Sizes with Images</h4>
-      <div {...stylex.props(styles.row)}>
+      <h4 sx={styles.heading}>Numeric Sizes with Images</h4>
+      <div sx={styles.row}>
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=30"
           name="U1"
@@ -510,8 +510,8 @@ export const StatusWithIcon: Story = {
         />
       </div>
 
-      <h4 {...stylex.props(styles.heading)}>All Variants with Icons</h4>
-      <div {...stylex.props(styles.row)}>
+      <h4 sx={styles.heading}>All Variants with Icons</h4>
+      <div sx={styles.row}>
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=52"
           name="Positive"
@@ -555,9 +555,9 @@ export const StatusWithIcon: Story = {
 
 export const NumericSizes: Story = {
   render: () => (
-    <div {...stylex.props(styles.storyWrapper)}>
-      <h4 {...stylex.props(styles.heading)}>Numeric Pixel Sizes</h4>
-      <div {...stylex.props(styles.row)}>
+    <div sx={styles.storyWrapper}>
+      <h4 sx={styles.heading}>Numeric Pixel Sizes</h4>
+      <div sx={styles.row}>
         <XDSAvatar name="16" size={16} />
         <XDSAvatar name="24" size={24} />
         <XDSAvatar name="36" size={36} />

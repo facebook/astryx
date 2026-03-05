@@ -143,33 +143,21 @@ export const XDSEmptyState = forwardRef<HTMLDivElement, XDSEmptyStateProps>(
       <div
         ref={ref}
         role="status"
-        {...stylex.props(
-          styles.container,
-          isCompact && styles.containerCompact,
-          xstyle,
-        )}
+        sx={[styles.container, isCompact && styles.containerCompact, xstyle]}
         {...props}>
         {icon != null && <div aria-hidden="true">{icon}</div>}
-        <div {...stylex.props(styles.textGroup)}>
-          <h3 {...stylex.props(styles.title, isCompact && styles.titleCompact)}>
+        <div sx={styles.textGroup}>
+          <h3 sx={[styles.title, isCompact && styles.titleCompact]}>
             {title}
           </h3>
           {description != null && (
-            <p
-              {...stylex.props(
-                styles.description,
-                isCompact && styles.descriptionCompact,
-              )}>
+            <p sx={[styles.description, isCompact && styles.descriptionCompact]}>
               {description}
             </p>
           )}
         </div>
         {actions != null && (
-          <div
-            {...stylex.props(
-              styles.actions,
-              isCompact && styles.actionsCompact,
-            )}>
+          <div sx={[styles.actions, isCompact && styles.actionsCompact]}>
             {actions}
           </div>
         )}

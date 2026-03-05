@@ -143,14 +143,14 @@ export function XDSSideNavSection({
 
   const headerContent = (
     <>
-      <span {...stylex.props(styles.titleContainer)}>
-        <span id={titleId} {...stylex.props(styles.title)}>
+      <span sx={styles.titleContainer}>
+        <span id={titleId} sx={styles.title}>
           {title}
         </span>
-        {subtitle && <span {...stylex.props(styles.subtitle)}>{subtitle}</span>}
+        {subtitle && <span sx={styles.subtitle}>{subtitle}</span>}
       </span>
       {endContent && (
-        <span {...stylex.props(styles.endContent)}>{endContent}</span>
+        <span sx={styles.endContent}>{endContent}</span>
       )}
     </>
   );
@@ -174,13 +174,13 @@ export function XDSSideNavSection({
       role="group"
       aria-labelledby={titleId}
       data-testid={testId}
-      {...stylex.props(styles.root)}>
+      sx={styles.root}>
       <div
         style={isHeaderHidden ? visuallyHiddenStyle : undefined}
-        {...stylex.props(styles.header)}>
+        sx={styles.header}>
         {headerContent}
       </div>
-      <div {...stylex.props(styles.items)}>{children}</div>
+      <div sx={styles.items}>{children}</div>
     </div>
   );
 }

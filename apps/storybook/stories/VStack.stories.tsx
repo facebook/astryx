@@ -57,7 +57,7 @@ const Box = ({
 }: {
   children: React.ReactNode;
   alt?: boolean;
-}) => <div {...stylex.props(styles.box, alt && styles.boxAlt)}>{children}</div>;
+}) => <div sx={[styles.box, alt && styles.boxAlt]}>{children}</div>;
 
 const meta: Meta<typeof XDSVStack> = {
   title: 'Layout/XDSVStack',
@@ -188,9 +188,9 @@ export const Wrapping: Story = {
 
 export const AllAlignments: Story = {
   render: () => (
-    <div {...stylex.props(styles.storyWrapper)}>
+    <div sx={styles.storyWrapper}>
       <div>
-        <h4 {...stylex.props(styles.heading)}>hAlign: start</h4>
+        <h4 sx={styles.heading}>hAlign: start</h4>
         <XDSVStack
           gap="space2"
           hAlign="start"
@@ -205,7 +205,7 @@ export const AllAlignments: Story = {
         </XDSVStack>
       </div>
       <div>
-        <h4 {...stylex.props(styles.heading)}>hAlign: center</h4>
+        <h4 sx={styles.heading}>hAlign: center</h4>
         <XDSVStack
           gap="space2"
           hAlign="center"
@@ -220,7 +220,7 @@ export const AllAlignments: Story = {
         </XDSVStack>
       </div>
       <div>
-        <h4 {...stylex.props(styles.heading)}>hAlign: end</h4>
+        <h4 sx={styles.heading}>hAlign: end</h4>
         <XDSVStack
           gap="space2"
           hAlign="end"
@@ -235,7 +235,7 @@ export const AllAlignments: Story = {
         </XDSVStack>
       </div>
       <div>
-        <h4 {...stylex.props(styles.heading)}>hAlign: stretch</h4>
+        <h4 sx={styles.heading}>hAlign: stretch</h4>
         <XDSVStack
           gap="space2"
           hAlign="stretch"

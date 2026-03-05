@@ -360,9 +360,9 @@ export const XDSCalendar = forwardRef<XDSCalendarHandle, XDSCalendarProps>(
     );
 
     return (
-      <div {...stylex.props(calendarStyles.calendar, rootOverride)} {...rest}>
+      <div sx={[calendarStyles.calendar, rootOverride]} {...rest}>
         {/* Header with navigation */}
-        <div {...stylex.props(calendarStyles.header)}>
+        <div sx={calendarStyles.header}>
           <XDSButton
             label="Previous month"
             variant="ghost"
@@ -370,7 +370,7 @@ export const XDSCalendar = forwardRef<XDSCalendarHandle, XDSCalendarProps>(
             onClick={() => navigateMonth(-1)}
           />
 
-          <span {...stylex.props(calendarStyles.monthYearLabel)}>
+          <span sx={calendarStyles.monthYearLabel}>
             {monthYearLabel}
           </span>
 
@@ -381,9 +381,8 @@ export const XDSCalendar = forwardRef<XDSCalendarHandle, XDSCalendarProps>(
             onClick={() => navigateMonth(1)}
           />
         </div>
-
         {/* Month grids */}
-        <div {...stylex.props(calendarStyles.monthsContainer)}>
+        <div sx={calendarStyles.monthsContainer}>
           {visibleMonths.map(month => (
             <MonthGrid
               key={`${month.getFullYear()}-${month.getMonth()}`}
@@ -625,49 +624,40 @@ function MonthGrid({
   }, [month]);
 
   return (
-    <div {...stylex.props(monthGridStyles.monthGrid)}>
+    <div sx={monthGridStyles.monthGrid}>
       {/* Day names header */}
       <div
-        {...stylex.props(
+        sx={[
           monthGridStyles.weekHeader,
-          hasWeekNumbers && monthGridStyles.weekHeaderWithNumbers,
-        )}>
+          hasWeekNumbers && monthGridStyles.weekHeaderWithNumbers
+        ]}>
         {hasWeekNumbers && (
-          <div
-            {...stylex.props(
-              monthGridStyles.dayName,
-              monthGridStyles.weekNumberHeader,
-            )}
-          />
+          <div sx={[monthGridStyles.dayName, monthGridStyles.weekNumberHeader]} />
         )}
         {dayNames.map((name, i) => (
-          <div key={i} {...stylex.props(monthGridStyles.dayName)}>
+          <div key={i} sx={monthGridStyles.dayName}>
             {name}
           </div>
         ))}
       </div>
-
       {/* Days grid */}
       <div
         ref={gridRef as React.RefObject<HTMLDivElement | null>}
         role="grid"
         aria-label={monthLabel}
         onKeyDown={handleGridKeyDown}
-        {...stylex.props(
+        sx={[
           monthGridStyles.daysGrid,
-          hasWeekNumbers && monthGridStyles.daysGridWithNumbers,
-        )}>
+          hasWeekNumbers && monthGridStyles.daysGridWithNumbers
+        ]}>
         {weeks.map((week, weekIndex) => {
           const weekDate = week.find(d => !d.isOutside)?.date || week[0].date;
           const weekNum = getWeekNumber(weekDate);
 
           return (
-            <div
-              key={weekIndex}
-              role="row"
-              {...stylex.props(monthGridStyles.weekRow)}>
+            <div key={weekIndex} role="row" sx={monthGridStyles.weekRow}>
               {hasWeekNumbers && (
-                <div {...stylex.props(monthGridStyles.weekNumber)}>
+                <div sx={monthGridStyles.weekNumber}>
                   {weekNum}
                 </div>
               )}
@@ -739,7 +729,7 @@ function DayCell({
 
   // Empty cell for outside days when not showing them
   if (isOutside && !hasOutsideDays) {
-    return <div {...stylex.props(dayCellStyles.cell)} />;
+    return <div sx={dayCellStyles.cell} />;
   }
 
   const isToday = isSameDay(date, today);
@@ -776,11 +766,11 @@ function DayCell({
   const previewRoundRight = isPreviewEnd || isLastColumn;
 
   return (
-    <div {...stylex.props(dayCellStyles.cell)}>
+    <div sx={dayCellStyles.cell}>
       {/* Range background */}
       {hasRangeBackground && (
         <div
-          {...stylex.props(
+          sx={[
             dayCellStyles.rangeBg,
             dayCellTheme.rangeBg,
             roundLeft && dayCellStyles.rangeBgRadiusLeft,
@@ -788,25 +778,21 @@ function DayCell({
             isRangeStart && dayCellStyles.rangeInsetLeft,
             isRangeStart && roundRight && dayCellStyles.rangeInsetRight,
             isRangeEnd && dayCellStyles.rangeInsetRight,
-            isRangeStart && roundLeft && dayCellStyles.rangeInsetLeft,
-          )}
-        />
+            isRangeStart && roundLeft && dayCellStyles.rangeInsetLeft
+          ]} />
       )}
-
       {/* Preview range background */}
       {isInPreview && (
         <div
-          {...stylex.props(
+          sx={[
             dayCellStyles.previewBg,
             dayCellTheme.previewBg,
             previewRoundLeft && dayCellStyles.previewBgRadiusLeft,
             previewRoundRight && dayCellStyles.previewBgRadiusRight,
             isPreviewStart && dayCellStyles.previewStart,
-            isPreviewEnd && dayCellStyles.previewEnd,
-          )}
-        />
+            isPreviewEnd && dayCellStyles.previewEnd
+          ]} />
       )}
-
       {/* Day button */}
       <button
         type="button"
@@ -819,7 +805,7 @@ function DayCell({
         onClick={() => !isDisabled && onDayClick(date)}
         onMouseEnter={() => !isDisabled && onDayHover(date)}
         onMouseLeave={() => onDayHover(null)}
-        {...stylex.props(
+        sx={[
           dayCellStyles.day,
           dayCellTheme.day,
           isOutside && dayCellStyles.dayOutside,
@@ -833,8 +819,8 @@ function DayCell({
           (isSelected || isRangeStart || isRangeEnd) &&
             dayCellTheme.daySelected,
           isDisabled && dayCellStyles.dayDisabled,
-          isDisabled && dayCellTheme.dayDisabled,
-        )}>
+          isDisabled && dayCellTheme.dayDisabled
+        ]}>
         {dayNumber}
       </button>
     </div>

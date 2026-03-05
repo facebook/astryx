@@ -477,25 +477,22 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
         labelTooltip={labelTooltip}>
         <div
           ref={popover.triggerRef}
-          {...stylex.props(
+          sx={[
             inputWrapperStyles.base,
             sizeStyles[size],
             isDisabled && inputWrapperStyles.disabled,
             status && inputStatusBorderStyles[status.type],
             status && inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
-            wrapperOverride,
-          )}>
+            wrapperOverride
+          ]}>
           <button
             type="button"
             onClick={handleOpen}
             disabled={isDisabled}
             aria-label="Open calendar"
             {...popover.triggerProps}
-            {...stylex.props(
-              styles.iconButton,
-              isDisabled && styles.iconButtonDisabled,
-            )}>
+            sx={[styles.iconButton, isDisabled && styles.iconButtonDisabled]}>
             <XDSIcon icon="calendar" size="sm" color="secondary" />
           </button>
           <input
@@ -513,13 +510,12 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
             aria-busy={isBusy || undefined}
-            {...stylex.props(
+            sx={[
               styles.input,
               isDisabled && styles.inputDisabled,
               !isInputValid && styles.inputInvalid,
-              inputOverride,
-            )}
-          />
+              inputOverride
+            ]} />
           {isBusy && <XDSSpinner size="sm" />}
           {status && (
             <XDSIcon

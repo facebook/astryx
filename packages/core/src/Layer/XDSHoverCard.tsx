@@ -224,11 +224,11 @@ export function XDSHoverCard({
           ref={hoverCard.ref}
           tabIndex={0}
           aria-describedby={hoverCard.describedBy}
-          {...stylex.props(
+          sx={[
             styles.wrapperInline,
             showHoverIndication && styles.hoverIndication,
-            showHoverIndication && themeHoverIndicationOverride,
-          )}>
+            showHoverIndication && themeHoverIndicationOverride
+          ]}>
           {children}
         </span>
         {hoverCard.renderHoverCard(content)}
@@ -241,7 +241,7 @@ export function XDSHoverCard({
     <>
       <div
         ref={wrapperRef as React.RefObject<HTMLDivElement | null>}
-        {...stylex.props(styles.wrapperContents)}>
+        sx={styles.wrapperContents}>
         {children}
       </div>
       {hoverCard.renderHoverCard(content)}

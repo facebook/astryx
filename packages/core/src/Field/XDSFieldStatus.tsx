@@ -106,11 +106,11 @@ export function XDSFieldStatus({
   return (
     <div
       id={id}
-      {...stylex.props(
+      sx={[
         styles.base,
         variant === 'attached' ? styles.attached : styles.detached,
-        colorStyles[type],
-      )}>
+        colorStyles[type]
+      ]}>
       {message}
     </div>
   );

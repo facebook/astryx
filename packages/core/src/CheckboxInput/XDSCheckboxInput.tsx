@@ -356,14 +356,13 @@ export const XDSCheckboxInput = forwardRef<
     return (
       <div>
         <div
-          {...stylex.props(
+          sx={[
             styles.container,
             isLabelHidden && styles.containerLabelHidden,
             rootOverride,
-            !isDisabled && stylex.defaultMarker(),
-          )}>
-          <div
-            {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}>
+            !isDisabled && stylex.defaultMarker()
+          ]}>
+          <div sx={[styles.checkboxWrapper, wrapperSizeStyles[size]]}>
             <input
               ref={ref}
               id={id}
@@ -386,15 +385,10 @@ export const XDSCheckboxInput = forwardRef<
               aria-describedby={ariaDescribedBy}
               aria-invalid={status?.type === 'error' ? true : undefined}
               aria-busy={isBusy || undefined}
-              {...stylex.props(
-                styles.input,
-                wrapperSizeStyles[size],
-                isDisabled && styles.inputDisabled,
-              )}
-            />
+              sx={[styles.input, wrapperSizeStyles[size], isDisabled && styles.inputDisabled]} />
             <div
               aria-hidden="true"
-              {...stylex.props(
+              sx={[
                 styles.checkbox,
                 checkboxSizeStyles[size],
                 checkboxOverride,
@@ -404,8 +398,8 @@ export const XDSCheckboxInput = forwardRef<
                 isDisabled && styles.checkboxDisabled,
                 isDisabled &&
                   !isCheckedOrIndeterminate &&
-                  styles.checkboxDisabledUnchecked,
-              )}>
+                  styles.checkboxDisabledUnchecked
+              ]}>
               {isBusy ? (
                 <XDSSpinner
                   size="sm"
@@ -415,11 +409,11 @@ export const XDSCheckboxInput = forwardRef<
                 <>
                   <svg
                     viewBox="0 0 10 10"
-                    {...stylex.props(
+                    sx={[
                       styles.checkmark,
                       checkmarkSizeStyles[size],
-                      isChecked && styles.checkmarkVisible,
-                    )}>
+                      isChecked && styles.checkmarkVisible
+                    ]}>
                     <path
                       d="M8.5 2.5L4 7.5L1.5 5"
                       stroke="currentColor"
@@ -430,21 +424,16 @@ export const XDSCheckboxInput = forwardRef<
                     />
                   </svg>
                   <div
-                    {...stylex.props(
+                    sx={[
                       styles.indeterminateMark,
                       indeterminateSizeStyles[size],
-                      isIndeterminate && styles.indeterminateMarkVisible,
-                    )}
-                  />
+                      isIndeterminate && styles.indeterminateMarkVisible
+                    ]} />
                 </>
               )}
             </div>
           </div>
-          <div
-            {...stylex.props(
-              styles.labelWrapper,
-              labelWrapperSizeStyles[size],
-            )}>
+          <div sx={[styles.labelWrapper, labelWrapperSizeStyles[size]]}>
             <XDSFieldLabel
               label={label}
               inputID={id}
@@ -455,7 +444,7 @@ export const XDSCheckboxInput = forwardRef<
               labelIcon={labelIcon}
             />
             {description && !isLabelHidden && (
-              <span id={descriptionID} {...stylex.props(styles.description)}>
+              <span id={descriptionID} sx={styles.description}>
                 {description}
               </span>
             )}

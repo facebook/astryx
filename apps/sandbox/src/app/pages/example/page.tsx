@@ -30,7 +30,7 @@ export default function ExamplePage() {
   const [updates, setUpdates] = useState(false);
 
   return (
-    <div {...stylex.props(styles.container)}>
+    <div sx={styles.container}>
       <XDSVStack gap="space6">
         <XDSVStack gap="space2">
           <XDSHeading level={1}>Example Page</XDSHeading>

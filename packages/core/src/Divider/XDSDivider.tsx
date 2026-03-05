@@ -174,43 +174,32 @@ export const XDSDivider = forwardRef<HTMLElement, XDSDividerProps>(
         ref={ref as React.Ref<HTMLDivElement>}
         role="separator"
         aria-orientation={orientation}
-        {...stylex.props(
-          isHorizontal ? baseStyles.horizontal : baseStyles.vertical,
-          isFullBleed &&
-            (isHorizontal
-              ? fullBleedStyles.horizontal
-              : fullBleedStyles.vertical),
-          rootOverride,
-          xstyle,
-        )}
+        sx={[isHorizontal ? baseStyles.horizontal : baseStyles.vertical, isFullBleed &&
+          (isHorizontal
+            ? fullBleedStyles.horizontal
+            : fullBleedStyles.vertical), rootOverride, xstyle]}
         {...props}>
         <div
-          {...stylex.props(
+          sx={[
             isHorizontal ? lineStyles.horizontalLine : lineStyles.verticalLine,
             lineStyles[variant],
-            lineOverride,
-          )}
-        />
+            lineOverride
+          ]} />
         {label && (
           <div
-            {...stylex.props(
+            sx={[
               labelStyles.label,
               !isHorizontal && labelStyles.verticalLabel,
-              labelOverride,
-            )}>
+              labelOverride
+            ]}>
             {label}
           </div>
         )}
         {label && (
           <div
-            {...stylex.props(
-              isHorizontal
-                ? lineStyles.horizontalLine
-                : lineStyles.verticalLine,
-              lineStyles[variant],
-              lineOverride,
-            )}
-          />
+            sx={[isHorizontal
+              ? lineStyles.horizontalLine
+              : lineStyles.verticalLine, lineStyles[variant], lineOverride]} />
         )}
       </div>
     );

@@ -169,11 +169,7 @@ export const XDSList = forwardRef<
         withDividers.push(child);
         if (i < childArray.length - 1) {
           withDividers.push(
-            <hr
-              key={`divider-${i}`}
-              aria-hidden="true"
-              {...stylex.props(styles.divider)}
-            />,
+            <hr key={`divider-${i}`} aria-hidden="true" sx={styles.divider} />,
           );
         }
       });
@@ -183,7 +179,7 @@ export const XDSList = forwardRef<
     return (
       <XDSListContext.Provider value={contextValue}>
         {header != null && (
-          <div id={headerId} {...stylex.props(styles.header)}>
+          <div id={headerId} sx={styles.header}>
             {header}
           </div>
         )}
@@ -192,12 +188,12 @@ export const XDSList = forwardRef<
           data-testid={testId}
           aria-labelledby={header != null ? headerId : undefined}
           {...(listStyle === 'none' && !isOrdered ? {role: 'list'} : {})}
-          {...stylex.props(
+          sx={[
             styles.list,
             listStyleTypes[listStyle],
             hasMarkers && styles.listWithMarkers,
-            xstyle,
-          )}>
+            xstyle
+          ]}>
           {renderedChildren}
         </Tag>
       </XDSListContext.Provider>

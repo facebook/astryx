@@ -81,7 +81,7 @@ export const XDSGridSpan = forwardRef<HTMLElement, XDSGridSpanProps>(
     return (
       <div
         ref={ref as React.Ref<HTMLDivElement>}
-        {...stylex.props(baseStyles.span, xstyle)}
+        sx={[baseStyles.span, xstyle]}
         style={inlineStyle}
         {...props}>
         {children}

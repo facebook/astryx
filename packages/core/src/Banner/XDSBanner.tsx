@@ -373,34 +373,30 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
         ref={ref}
         role={role}
         data-testid={testId}
-        {...stylex.props(
+        sx={[
           styles.root,
           variant === 'card' && styles.card,
           variant === 'section' && styles.section,
-          xstyle,
-        )}>
+          xstyle
+        ]}>
         {/* Header: colored status background */}
         <div
-          {...stylex.props(
-            styles.header,
-            isSingleLine && styles.headerCentered,
-            statusStyles[status],
-          )}>
-          <div {...stylex.props(styles.iconWrapper)} aria-hidden="true">
+          sx={[styles.header, isSingleLine && styles.headerCentered, statusStyles[status]]}>
+          <div sx={styles.iconWrapper} aria-hidden="true">
             {icon != null ? (
               icon
             ) : (
               <XDSIcon icon={DefaultIcon} size="md" color={iconColor} />
             )}
           </div>
-          <div {...stylex.props(styles.headerContent)}>
-            <p {...stylex.props(styles.title)}>{title}</p>
+          <div sx={styles.headerContent}>
+            <p sx={styles.title}>{title}</p>
             {description != null && (
-              <p {...stylex.props(styles.description)}>{description}</p>
+              <p sx={styles.description}>{description}</p>
             )}
           </div>
           {showEndArea && (
-            <div {...stylex.props(styles.endArea, edgeSignals.end)}>
+            <div sx={[styles.endArea, edgeSignals.end]}>
               {endContent}
               {hasChildren && (
                 <XDSButton
@@ -434,11 +430,7 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
         </div>
         {/* Content area: collapsible card background for additional content */}
         {hasChildren && isExpanded && (
-          <div
-            {...stylex.props(
-              styles.contentArea,
-              variant === 'card' && styles.contentAreaCard,
-            )}>
+          <div sx={[styles.contentArea, variant === 'card' && styles.contentAreaCard]}>
             {children}
           </div>
         )}

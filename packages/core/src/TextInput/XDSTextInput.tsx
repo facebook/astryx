@@ -284,7 +284,7 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
         }
         labelTooltip={labelTooltip}>
         <div
-          {...stylex.props(
+          sx={[
             inputWrapperStyles.base,
             styles.wrapper,
             sizeStyles[size],
@@ -292,8 +292,8 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
             status && inputStatusBorderStyles[status.type],
             status && inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
-            wrapperOverride,
-          )}>
+            wrapperOverride
+          ]}>
           {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
           <input
             ref={ref}
@@ -309,12 +309,7 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
             aria-busy={isBusy || undefined}
-            {...stylex.props(
-              styles.input,
-              isDisabled && styles.inputDisabled,
-              inputOverride,
-            )}
-          />
+            sx={[styles.input, isDisabled && styles.inputDisabled, inputOverride]} />
           {isBusy && <XDSSpinner size="sm" />}
           {status && (
             <XDSIcon

@@ -128,13 +128,13 @@ export const XDSLayoutFooter = forwardRef<HTMLElement, XDSLayoutFooterProps>(
         ref={ref as React.Ref<HTMLDivElement>}
         role={role}
         aria-label={label}
-        {...stylex.props(
+        sx={[
           styles.footer,
           dynamicStyles.sizing(height ?? null),
           isFullBleed && styles.fullBleed,
           hasDivider && styles.divider,
-          shouldCollapseSpacing && styles.collapseTop,
-        )}
+          shouldCollapseSpacing && styles.collapseTop
+        ]}
         {...props}>
         {children}
       </div>

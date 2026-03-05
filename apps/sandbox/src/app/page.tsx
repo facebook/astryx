@@ -12,7 +12,7 @@ const styles = stylex.create({
 
 export default function Home() {
   return (
-    <div {...stylex.props(styles.container)}>
+    <div sx={styles.container}>
       <XDSVStack gap="space6">
         <XDSVStack gap="space2">
           <XDSHeading level={1}>XDS Sandbox</XDSHeading>

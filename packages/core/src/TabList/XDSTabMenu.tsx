@@ -269,28 +269,24 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
         aria-expanded={layer.isOpen}
         aria-controls={menuId}
         onClick={handleToggle}
-        {...stylex.props(
+        sx={[
           styles.trigger,
           sizeStyles[size],
           hasSelectedOption && styles.triggerSelected,
-          !hasSelectedOption && stylex.defaultMarker(),
-        )}>
-        <span
-          {...stylex.props(
-            styles.triggerLabel,
-            hasSelectedOption && styles.underline,
-          )}>
-          <span {...stylex.props(styles.triggerLabelText)}>{triggerLabel}</span>
-          <span aria-hidden="true" {...stylex.props(styles.triggerLabelSizer)}>
+          !hasSelectedOption && stylex.defaultMarker()
+        ]}>
+        <span sx={[styles.triggerLabel, hasSelectedOption && styles.underline]}>
+          <span sx={styles.triggerLabelText}>{triggerLabel}</span>
+          <span aria-hidden="true" sx={styles.triggerLabelSizer}>
             {triggerLabel}
           </span>
           {!hasSelectedOption && (
-            <span {...stylex.props(styles.hoverUnderline)} />
+            <span sx={styles.hoverUnderline} />
           )}
         </span>
         <span
           aria-hidden="true"
-          {...stylex.props(styles.chevron, layer.isOpen && styles.chevronOpen)}>
+          sx={[styles.chevron, layer.isOpen && styles.chevronOpen]}>
           <XDSIcon icon="chevronDown" size="sm" color="inherit" />
         </span>
       </button>
@@ -301,7 +297,7 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
           role="menu"
           aria-label={label}
           onKeyDown={handleListKeyDown}
-          {...stylex.props(styles.dropdown)}>
+          sx={styles.dropdown}>
           <XDSDivider label={label} />
           {options.map(option => {
             const isSelected = tabListCtx.value === option.value;
@@ -318,11 +314,8 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
                     handleSelect(option.value);
                   }
                 }}
-                {...stylex.props(
-                  styles.menuItem,
-                  isSelected && styles.menuItemSelected,
-                )}>
-                <span {...stylex.props(styles.menuItemContent)}>
+                sx={[styles.menuItem, isSelected && styles.menuItemSelected]}>
+                <span sx={styles.menuItemContent}>
                   {option.icon && (
                     <XDSIcon icon={option.icon} size="sm" color="secondary" />
                   )}

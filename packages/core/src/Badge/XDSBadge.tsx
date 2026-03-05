@@ -147,13 +147,13 @@ export const XDSBadge = forwardRef<HTMLSpanElement, XDSBadgeProps>(
     return (
       <span
         ref={ref}
-        {...stylex.props(
+        sx={[
           styles.base,
           variants[variant],
           rootOverride,
           variantOverride,
-          isDot && styles.dot,
-        )}
+          isDot && styles.dot
+        ]}
         {...props}>
         {icon}
         {children}

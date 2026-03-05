@@ -252,7 +252,7 @@ export const XDSText = forwardRef<HTMLElement, XDSTextProps>(function XDSText(
     <>
       <Component
         ref={mergedRef}
-        {...stylex.props(
+        sx={[
           typeStyle,
           colorStyles[resolvedColor],
           weight && weightStyles[weight],
@@ -272,8 +272,8 @@ export const XDSText = forwardRef<HTMLElement, XDSTextProps>(function XDSText(
           hasStrikethrough && decorationStyles.strikethrough,
           hasTabularNumbers && tabularNumbersStyle.enabled,
           // User xstyle
-          xstyle,
-        )}
+          xstyle
+        ]}
         style={inlineStyle}
         title={tooltipEnabled ? truncation.fullText : undefined}
         {...props}>
@@ -284,7 +284,7 @@ export const XDSText = forwardRef<HTMLElement, XDSTextProps>(function XDSText(
           <LazyXDSTooltip
             anchorRef={textRef}
             content={
-              <span {...stylex.props(truncationTooltipStyles.content)}>
+              <span sx={truncationTooltipStyles.content}>
                 {truncation.fullText}
               </span>
             }

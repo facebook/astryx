@@ -79,7 +79,7 @@ const styles = stylex.create({
 
 function ScoreItem({label, score}: {label: string; score: number}) {
   return (
-    <div {...stylex.props(styles.scoreItem)}>
+    <div sx={styles.scoreItem}>
       <XDSStatusDot
         variant={scoreToStatusVariant(score)}
         label={`${label}: ${score}`}
@@ -94,10 +94,10 @@ function ScoreItem({label, score}: {label: string; score: number}) {
 
 function ScoreSummary({label, score}: {label: string; score: UniversalScore}) {
   return (
-    <div {...stylex.props(styles.scoreBlock)}>
+    <div sx={styles.scoreBlock}>
       <XDSVStack gap="space2">
         <XDSText type="label">{label}</XDSText>
-        <div {...stylex.props(styles.scoreGrid)}>
+        <div sx={styles.scoreGrid}>
           {ALL_DIMENSIONS.map(dim => (
             <ScoreItem
               key={dim}
@@ -125,7 +125,7 @@ function Findings({score}: {score: UniversalScore}) {
   }
 
   return (
-    <div {...stylex.props(styles.findingsGrid)}>
+    <div sx={styles.findingsGrid}>
       {allFindings.map((f, i) => (
         <>
           <XDSBadge
@@ -189,10 +189,10 @@ export function PromptDetailCard({
 
   return (
     <XDSCard>
-      <div {...stylex.props(styles.card)}>
+      <div sx={styles.card}>
         <XDSVStack gap="space3">
           {/* Header: prompt ID, prompt text, and buttons */}
-          <div {...stylex.props(styles.header)}>
+          <div sx={styles.header}>
             <XDSHeading level={4}>{promptId}</XDSHeading>
             {promptText && (
               <XDSText type="body" xstyle={styles.promptText}>
@@ -200,7 +200,7 @@ export function PromptDetailCard({
               </XDSText>
             )}
             {(hasAnyPreview || hasAnyCode) && (
-              <div {...stylex.props(styles.buttonRow)}>
+              <div sx={styles.buttonRow}>
                 {previewUrls?.xds && (
                   <XDSButton
                     variant="secondary"
@@ -255,7 +255,7 @@ export function PromptDetailCard({
 
           {/* Score summaries in constrained grid */}
           {(xdsScore || baselineScore || htmlScore) && (
-            <div {...stylex.props(scoresStyle)}>
+            <div sx={scoresStyle}>
               {xdsScore && <ScoreSummary label="XDS" score={xdsScore} />}
               {baselineScore && (
                 <ScoreSummary label="Baseline" score={baselineScore} />
@@ -268,8 +268,8 @@ export function PromptDetailCard({
           {xdsScore && (
             <>
               <XDSDivider />
-              <div {...stylex.props(styles.section)}>
-                <div {...stylex.props(styles.sectionLabel)}>
+              <div sx={styles.section}>
+                <div sx={styles.sectionLabel}>
                   <XDSText type="label">XDS Findings</XDSText>
                 </div>
                 <Findings score={xdsScore} />
@@ -280,8 +280,8 @@ export function PromptDetailCard({
           {baselineScore && (
             <>
               <XDSDivider />
-              <div {...stylex.props(styles.section)}>
-                <div {...stylex.props(styles.sectionLabel)}>
+              <div sx={styles.section}>
+                <div sx={styles.sectionLabel}>
                   <XDSText type="label">Baseline Findings</XDSText>
                 </div>
                 <Findings score={baselineScore} />
@@ -292,8 +292,8 @@ export function PromptDetailCard({
           {htmlScore && (
             <>
               <XDSDivider />
-              <div {...stylex.props(styles.section)}>
-                <div {...stylex.props(styles.sectionLabel)}>
+              <div sx={styles.section}>
+                <div sx={styles.sectionLabel}>
                   <XDSText type="label">HTML Findings</XDSText>
                 </div>
                 <Findings score={htmlScore} />

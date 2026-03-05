@@ -211,7 +211,7 @@ export function XDSRadioList({
       }
       labelTooltip={labelTooltip}
       statusVariant="detached"
-      {...stylex.props(xstyle)}>
+      sx={xstyle}>
       <div
         role="radiogroup"
         aria-label={label}
@@ -225,11 +225,11 @@ export function XDSRadioList({
         }
         aria-invalid={status?.type === 'error' ? true : undefined}
         aria-required={isRequired || undefined}
-        {...stylex.props(
+        sx={[
           styles.radiogroup,
           orientation === 'vertical' ? styles.vertical : styles.horizontal,
-          rootOverride,
-        )}>
+          rootOverride
+        ]}>
         <RadioListContext.Provider value={contextValue}>
           {children}
         </RadioListContext.Provider>

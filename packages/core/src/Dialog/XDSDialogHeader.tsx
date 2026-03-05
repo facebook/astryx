@@ -129,11 +129,11 @@ export const XDSDialogHeader = forwardRef<HTMLElement, XDSDialogHeaderProps>(
 
     return (
       <XDSLayoutHeader ref={ref} hasDivider={hasDivider}>
-        <div {...stylex.props(styles.container)}>
+        <div sx={styles.container}>
           {startContent && (
-            <div {...stylex.props(styles.actions)}>{startContent}</div>
+            <div sx={styles.actions}>{startContent}</div>
           )}
-          <div {...stylex.props(styles.titleWrapper)}>
+          <div sx={styles.titleWrapper}>
             <XDSHeading ref={titleRef} level={2} xstyle={styles.titleFocusable}>
               {title}
             </XDSHeading>
@@ -144,10 +144,10 @@ export const XDSDialogHeader = forwardRef<HTMLElement, XDSDialogHeaderProps>(
             )}
           </div>
           {(endContent || onOpenChange) && (
-            <div {...stylex.props(styles.actions)}>
+            <div sx={styles.actions}>
               {endContent}
               {onOpenChange && (
-                <div {...stylex.props(styles.closeButton)}>
+                <div sx={styles.closeButton}>
                   <XDSButton
                     variant="ghost"
                     label="Close"

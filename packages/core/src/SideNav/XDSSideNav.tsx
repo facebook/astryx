@@ -182,22 +182,22 @@ export const XDSSideNav = forwardRef<HTMLElement, XDSSideNavProps>(
         role="navigation"
         aria-label="Side navigation"
         data-testid={testId}
-        {...stylex.props(styles.root, rootOverride, xstyle)}
+        sx={[styles.root, rootOverride, xstyle]}
         {...props}>
         {hasStickyTop && (
-          <div {...stylex.props(styles.stickyTop)}>
+          <div sx={styles.stickyTop}>
             {header}
             {topContent && (
-              <div {...stylex.props(styles.topContent)}>{topContent}</div>
+              <div sx={styles.topContent}>{topContent}</div>
             )}
           </div>
         )}
-        <div {...stylex.props(styles.scrollable)}>{children}</div>
+        <div sx={styles.scrollable}>{children}</div>
         {hasStickyBottom && (
-          <div {...stylex.props(styles.stickyBottom)}>
-            {footer && <div {...stylex.props(styles.footer)}>{footer}</div>}
+          <div sx={styles.stickyBottom}>
+            {footer && <div sx={styles.footer}>{footer}</div>}
             {footerIcons && (
-              <div {...stylex.props(styles.footerIcons)}>{footerIcons}</div>
+              <div sx={styles.footerIcons}>{footerIcons}</div>
             )}
           </div>
         )}

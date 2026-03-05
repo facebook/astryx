@@ -241,14 +241,11 @@ export function XDSTopNavMenu({
         type="button"
         aria-haspopup="true"
         aria-describedby={hoverCard.describedBy}
-        {...stylex.props(styles.trigger)}>
+        sx={styles.trigger}>
         {label}
       </button>
       {hoverCard.renderHoverCard(
-        <div
-          role="menu"
-          aria-label={label}
-          {...stylex.props(styles.menuContainer)}>
+        <div role="menu" aria-label={label} sx={styles.menuContainer}>
           {items.map((item, index) => {
             const Element = item.href ? 'a' : 'div';
             return (
@@ -258,14 +255,14 @@ export function XDSTopNavMenu({
                 tabIndex={0}
                 href={item.href}
                 onClick={item.onClick}
-                {...stylex.props(styles.menuItem)}>
-                <div {...stylex.props(styles.menuItemIcon)}>{item.icon}</div>
-                <div {...stylex.props(styles.menuItemContent)}>
-                  <span {...stylex.props(styles.menuItemTitle)}>
+                sx={styles.menuItem}>
+                <div sx={styles.menuItemIcon}>{item.icon}</div>
+                <div sx={styles.menuItemContent}>
+                  <span sx={styles.menuItemTitle}>
                     {item.title}
                   </span>
                   {item.description && (
-                    <span {...stylex.props(styles.menuItemDescription)}>
+                    <span sx={styles.menuItemDescription}>
                       {item.description}
                     </span>
                   )}

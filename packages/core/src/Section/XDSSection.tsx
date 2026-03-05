@@ -225,35 +225,20 @@ export const XDSSection = forwardRef<HTMLDivElement, XDSSectionProps>(
     return (
       <div
         ref={ref}
-        {...stylex.props(
-          nestedStyles.outer,
-          dynamicStyles.sizing(
-            width ?? null,
-            height ?? null,
-            maxWidth ?? null,
-            minHeight ?? null,
-          ),
-          containerOverride,
-        )}
+        sx={[nestedStyles.outer, dynamicStyles.sizing(
+          width ?? null,
+          height ?? null,
+          maxWidth ?? null,
+          minHeight ?? null,
+        ), containerOverride]}
         {...props}>
         <div
-          {...stylex.props(
-            nestedStyles.inner,
-            ...container({
-              paddingInnerX: 'spacing4',
-              paddingInnerY: 'spacing4',
-              paddingOuterX: 'spacing4',
-              paddingOuterY: 'spacing4',
-            }),
-            variantStyles[variant],
-            variantOverride,
-            isFullBleed && nestedStyles.fullBleed,
-            dividers?.includes('top') && dividerStyles.top,
-            dividers?.includes('bottom') && dividerStyles.bottom,
-            dividers?.includes('start') && dividerStyles.start,
-            dividers?.includes('end') && dividerStyles.end,
-            contentOverride,
-          )}>
+          sx={[nestedStyles.inner, ...container({
+            paddingInnerX: 'spacing4',
+            paddingInnerY: 'spacing4',
+            paddingOuterX: 'spacing4',
+            paddingOuterY: 'spacing4',
+          }), variantStyles[variant], variantOverride, isFullBleed && nestedStyles.fullBleed, dividers?.includes('top') && dividerStyles.top, dividers?.includes('bottom') && dividerStyles.bottom, dividers?.includes('start') && dividerStyles.start, dividers?.includes('end') && dividerStyles.end, contentOverride]}>
           {children}
         </div>
       </div>

@@ -28,8 +28,8 @@ export default function App() {
 
   return (
     <XDSTheme theme={defaultTheme}>
-      <main {...stylex.props(styles.main)}>
-        <div {...stylex.props(styles.container)}>
+      <main sx={styles.main}>
+        <div sx={styles.container}>
           <XDSVStack gap="space6">
             <XDSVStack gap="space2">
               <XDSHeading level={1}>XDS Example — Vite</XDSHeading>

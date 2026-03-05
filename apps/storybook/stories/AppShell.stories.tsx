@@ -63,9 +63,9 @@ const styles = stylex.create({
 
 function MockContent({paragraphs = 3}: {paragraphs?: number}) {
   return (
-    <div {...stylex.props(styles.content)}>
+    <div sx={styles.content}>
       <XDSText type="large">Page Content</XDSText>
-      <div {...stylex.props(styles.longContent)}>
+      <div sx={styles.longContent}>
         {Array.from({length: paragraphs}, (_, i) => (
           <XDSText type="body" key={i}>
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do

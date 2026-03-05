@@ -346,7 +346,7 @@ export const XDSDialog = forwardRef<HTMLDialogElement, XDSDialogProps>(
         onClick={handleClick}
         onCancel={handleCancel}
         aria-modal="true"
-        {...stylex.props(
+        sx={[
           styles.dialog,
           styles.backdrop,
           !isFullscreen && dynamicStyles.sizing(width, maxHeight),
@@ -358,8 +358,8 @@ export const XDSDialog = forwardRef<HTMLDialogElement, XDSDialogProps>(
               position?.left,
             ),
           isFullscreen && styles.fullscreen,
-          rootOverride,
-        )}
+          rootOverride
+        ]}
         {...props}>
         {children}
       </dialog>

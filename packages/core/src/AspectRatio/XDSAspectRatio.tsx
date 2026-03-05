@@ -91,10 +91,10 @@ export const XDSAspectRatio = forwardRef<HTMLElement, XDSAspectRatioProps>(
     return (
       <div
         ref={ref as React.Ref<HTMLDivElement>}
-        {...stylex.props(styles.container, xstyle, rootOverride)}
+        sx={[styles.container, xstyle, rootOverride]}
         style={{aspectRatio: ratio}}
         {...props}>
-        <div {...stylex.props(styles.child)}>{children}</div>
+        <div sx={styles.child}>{children}</div>
       </div>
     );
   },

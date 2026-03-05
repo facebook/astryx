@@ -138,14 +138,14 @@ export const MixedControls: Story = {
           ]}
         />
         <XDSField label="Notifications" inputID="notif-group">
-          <div {...stylex.props(checkboxStyles.group)} id="notif-group">
-            <label {...stylex.props(checkboxStyles.label)}>
+          <div sx={checkboxStyles.group} id="notif-group">
+            <label sx={checkboxStyles.label}>
               <input type="checkbox" defaultChecked /> Email
             </label>
-            <label {...stylex.props(checkboxStyles.label)}>
+            <label sx={checkboxStyles.label}>
               <input type="checkbox" /> SMS
             </label>
-            <label {...stylex.props(checkboxStyles.label)}>
+            <label sx={checkboxStyles.label}>
               <input type="checkbox" defaultChecked /> Push
             </label>
           </div>
@@ -229,11 +229,11 @@ export const InDialog: Story = {
     const [name, setName] = useState('Jane Doe');
     const [email, setEmail] = useState('jane@example.com');
     return (
-      <div {...stylex.props(dialogStyles.container)}>
-        <div {...stylex.props(dialogStyles.header)}>
+      <div sx={dialogStyles.container}>
+        <div sx={dialogStyles.header}>
           <XDSText variant="subtitle">Edit Profile</XDSText>
         </div>
-        <div {...stylex.props(dialogStyles.body)}>
+        <div sx={dialogStyles.body}>
           <form
             id="edit-profile"
             onSubmit={e => {
@@ -246,14 +246,12 @@ export const InDialog: Story = {
             </XDSFormLayout>
           </form>
         </div>
-        <div {...stylex.props(dialogStyles.footer)}>
-          <button
-            {...stylex.props(dialogStyles.button, dialogStyles.secondary)}
-            type="button">
+        <div sx={dialogStyles.footer}>
+          <button sx={[dialogStyles.button, dialogStyles.secondary]} type="button">
             Cancel
           </button>
           <button
-            {...stylex.props(dialogStyles.button, dialogStyles.primary)}
+            sx={[dialogStyles.button, dialogStyles.primary]}
             type="submit"
             form="edit-profile">
             Save

@@ -121,13 +121,13 @@ export default meta;
 type Story = StoryObj<typeof XDSGrid>;
 
 const GridItem = ({children}: {children: React.ReactNode}) => (
-  <div {...stylex.props(styles.item)}>
+  <div sx={styles.item}>
     <XDSText type="body">{children}</XDSText>
   </div>
 );
 
 const FeaturedItem = ({children}: {children: React.ReactNode}) => (
-  <div {...stylex.props(styles.featuredItem)}>
+  <div sx={styles.featuredItem}>
     <XDSText type="body">{children}</XDSText>
   </div>
 );
@@ -138,7 +138,7 @@ export const Default: Story = {
     gap: 'space4',
   },
   render: args => (
-    <div {...stylex.props(styles.container)}>
+    <div sx={styles.container}>
       <XDSGrid {...args}>
         <GridItem>Item 1</GridItem>
         <GridItem>Item 2</GridItem>
@@ -153,8 +153,8 @@ export const Default: Story = {
 
 export const FixedColumns: Story = {
   render: () => (
-    <div {...stylex.props(styles.storyWrapper)}>
-      <div {...stylex.props(styles.container)}>
+    <div sx={styles.storyWrapper}>
+      <div sx={styles.container}>
         <XDSText type="supporting" xstyle={styles.sectionLabel}>
           2 Columns
         </XDSText>
@@ -165,7 +165,7 @@ export const FixedColumns: Story = {
           <GridItem>Item 4</GridItem>
         </XDSGrid>
       </div>
-      <div {...stylex.props(styles.container)}>
+      <div sx={styles.container}>
         <XDSText type="supporting" xstyle={styles.sectionLabel}>
           4 Columns
         </XDSText>
@@ -186,7 +186,7 @@ export const FixedColumns: Story = {
 
 export const ResponsiveAutoFit: Story = {
   render: () => (
-    <div {...stylex.props(styles.container)}>
+    <div sx={styles.container}>
       <XDSText type="supporting" xstyle={styles.sectionLabel}>
         Resize the viewport - columns adjust automatically (min 200px per item)
       </XDSText>
@@ -204,7 +204,7 @@ export const ResponsiveAutoFit: Story = {
 
 export const CappedResponsive: Story = {
   render: () => (
-    <div {...stylex.props(styles.container)}>
+    <div sx={styles.container}>
       <XDSText type="supporting" xstyle={styles.sectionLabel}>
         Auto-fit with max 3 columns (min 250px per item, capped via max-width)
       </XDSText>
@@ -222,7 +222,7 @@ export const CappedResponsive: Story = {
 
 export const WithGridSpan: Story = {
   render: () => (
-    <div {...stylex.props(styles.container)}>
+    <div sx={styles.container}>
       <XDSText type="supporting" xstyle={styles.sectionLabel}>
         Using XDSGridSpan to span multiple columns/rows
       </XDSText>
@@ -246,7 +246,7 @@ export const WithGridSpan: Story = {
 
 export const GridSpanWithRows: Story = {
   render: () => (
-    <div {...stylex.props(styles.container)}>
+    <div sx={styles.container}>
       <XDSText type="supporting" xstyle={styles.sectionLabel}>
         Grid items spanning both columns and rows
       </XDSText>
@@ -274,7 +274,7 @@ export const GalleryExample: Story = {
       <XDSGrid minChildWidth={280} gap="space5">
         {Array.from({length: 8}, (_, i) => (
           <XDSCard key={i}>
-            <div {...stylex.props(styles.cardImage)} />
+            <div sx={styles.cardImage} />
             <XDSText type="label" display="block">
               Card Title {i + 1}
             </XDSText>
@@ -290,8 +290,8 @@ export const GalleryExample: Story = {
 
 export const DifferentGaps: Story = {
   render: () => (
-    <div {...stylex.props(styles.storyWrapper)}>
-      <div {...stylex.props(styles.container)}>
+    <div sx={styles.storyWrapper}>
+      <div sx={styles.container}>
         <XDSText type="supporting" xstyle={styles.sectionLabel}>
           Same gap for rows and columns (space4)
         </XDSText>
@@ -304,7 +304,7 @@ export const DifferentGaps: Story = {
           <GridItem>Item 6</GridItem>
         </XDSGrid>
       </div>
-      <div {...stylex.props(styles.container)}>
+      <div sx={styles.container}>
         <XDSText type="supporting" xstyle={styles.sectionLabel}>
           Different gaps: rowGap=space2, columnGap=space6
         </XDSText>

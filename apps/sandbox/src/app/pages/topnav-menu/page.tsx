@@ -98,7 +98,7 @@ const scienceItems = [
  */
 export default function TopNavMenuPage() {
   return (
-    <div {...stylex.props(styles.container)}>
+    <div sx={styles.container}>
       <XDSVStack gap="space6">
         <XDSVStack gap="space2">
           <XDSHeading level={1}>TopNav Menu</XDSHeading>
@@ -111,7 +111,7 @@ export default function TopNavMenuPage() {
         {/* Marketing-style nav with overflow menus */}
         <XDSVStack gap="space3">
           <XDSHeading level={2}>Marketing Nav</XDSHeading>
-          <div {...stylex.props(styles.navWrapper)}>
+          <div sx={styles.navWrapper}>
             <XDSTopNav
               label="Marketing navigation"
               title={
@@ -141,7 +141,7 @@ export default function TopNavMenuPage() {
         {/* Simple nav with one overflow menu */}
         <XDSVStack gap="space3">
           <XDSHeading level={2}>Simple Nav</XDSHeading>
-          <div {...stylex.props(styles.navWrapper)}>
+          <div sx={styles.navWrapper}>
             <XDSTopNav
               label="Simple navigation"
               title={<XDSTopNavTitle title="App" href="#" />}

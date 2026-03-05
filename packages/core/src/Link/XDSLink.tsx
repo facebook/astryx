@@ -283,14 +283,14 @@ export const XDSLink = forwardRef<HTMLAnchorElement, XDSLinkProps>(
         aria-label={label}
         aria-disabled={isDisabled || undefined}
         tabIndex={isDisabled ? -1 : undefined}
-        {...stylex.props(
+        sx={[
           styles.base,
           linkColorStyles[color],
           hasUnderline && styles.hasUnderline,
           isStandalone && styles.standalone,
           isDisabled && styles.disabled,
-          rootOverride,
-        )}
+          rootOverride
+        ]}
         {...props}>
         <XDSText
           type={type}

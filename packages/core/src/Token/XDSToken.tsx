@@ -320,8 +320,7 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
     const content = (
       <>
         {icon}
-        <span
-          {...stylex.props(styles.label, isLabelHidden && styles.labelHidden)}>
+        <span sx={[styles.label, isLabelHidden && styles.labelHidden]}>
           {label}
         </span>
         {endContent}
@@ -334,7 +333,7 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
               onRemove(e);
             }}
             disabled={isDisabled}
-            {...stylex.props(styles.removeButton)}>
+            sx={styles.removeButton}>
             <XDSIcon icon="close" size="xsm" color="inherit" />
           </button>
         )}
@@ -354,14 +353,14 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
           href={href}
           aria-disabled={isDisabled || undefined}
           {...sharedProps}
-          {...stylex.props(
+          sx={[
             styles.base,
             sizeStyles[size],
             colorStyles[color],
             styles.interactive,
             isDisabled && styles.disabled,
-            xstyle,
-          )}>
+            xstyle
+          ]}>
           {content}
         </a>
       );
@@ -379,26 +378,22 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
           ref={ref as React.Ref<HTMLSpanElement>}
           onClick={isDisabled ? undefined : handleContainerClick}
           {...sharedProps}
-          {...stylex.props(
+          sx={[
             styles.base,
             sizeStyles[size],
             colorStyles[color],
             styles.interactive,
             styles.focusWithinOutline,
             isDisabled && styles.disabled,
-            xstyle,
-          )}>
+            xstyle
+          ]}>
           {icon}
           <button
             type="button"
             onClick={onClick}
             disabled={isDisabled}
-            {...stylex.props(styles.invisibleButton)}>
-            <span
-              {...stylex.props(
-                styles.label,
-                isLabelHidden && styles.labelHidden,
-              )}>
+            sx={styles.invisibleButton}>
+            <span sx={[styles.label, isLabelHidden && styles.labelHidden]}>
               {label}
             </span>
           </button>
@@ -412,7 +407,7 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
                 onRemove(e);
               }}
               disabled={isDisabled}
-              {...stylex.props(styles.removeButton)}>
+              sx={styles.removeButton}>
               <XDSIcon icon="close" size="xsm" color="inherit" />
             </button>
           )}
@@ -424,13 +419,13 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
       <span
         ref={ref as React.Ref<HTMLSpanElement>}
         {...sharedProps}
-        {...stylex.props(
+        sx={[
           styles.base,
           sizeStyles[size],
           colorStyles[color],
           isDisabled && styles.disabled,
-          xstyle,
-        )}>
+          xstyle
+        ]}>
         {content}
       </span>
     );

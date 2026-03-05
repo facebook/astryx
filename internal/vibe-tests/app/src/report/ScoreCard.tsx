@@ -40,7 +40,7 @@ export function ScoreCard({
 
   return (
     <XDSCard>
-      <div {...stylex.props(styles.card)}>
+      <div sx={styles.card}>
         <XDSVStack gap="space2">
           <XDSText type="label">{label}</XDSText>
           <XDSHStack gap="space2" hAlign="center">

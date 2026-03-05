@@ -212,10 +212,7 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
       themeContext?.theme.components?.field?.description;
 
     return (
-      <div
-        ref={ref}
-        {...stylex.props(styles.container, rootOverride)}
-        {...props}>
+      <div ref={ref} sx={[styles.container, rootOverride]} {...props}>
         <XDSFieldLabel
           label={label}
           inputID={inputID}
@@ -228,16 +225,16 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
         {description && (
           <span
             id={descriptionID}
-            {...stylex.props(
+            sx={[
               styles.description,
               isLabelHidden && styles.labelHidden,
-              descriptionOverride,
-            )}>
+              descriptionOverride
+            ]}>
             {description}
           </span>
         )}
         {statusVariant === 'attached' ? (
-          <div {...stylex.props(styles.inputStatusWrapper)}>
+          <div sx={styles.inputStatusWrapper}>
             {children}
             {status?.message && (
               <XDSFieldStatus

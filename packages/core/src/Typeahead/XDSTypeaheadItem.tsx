@@ -136,12 +136,12 @@ export function XDSTypeaheadItem<T extends XDSSearchableItem>({
   }
 
   return (
-    <div {...stylex.props(styles.container, isDisabled && styles.disabled)}>
+    <div sx={[styles.container, isDisabled && styles.disabled]}>
       {icon}
-      <div {...stylex.props(styles.content)}>
-        <span {...stylex.props(styles.label)}>{item.label}</span>
+      <div sx={styles.content}>
+        <span sx={styles.label}>{item.label}</span>
         {description && (
-          <span {...stylex.props(styles.description)}>{description}</span>
+          <span sx={styles.description}>{description}</span>
         )}
       </div>
     </div>

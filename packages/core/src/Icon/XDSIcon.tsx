@@ -207,14 +207,8 @@ export const XDSIcon = forwardRef<SVGSVGElement, XDSIconProps>(
       <IconComponent
         ref={ref}
         aria-hidden="true"
-        {...stylex.props(
-          styles.root,
-          colorStyles[color],
-          sizeStyles[size],
-          rootOverride,
-        )}
-        {...props}
-      />
+        sx={[styles.root, colorStyles[color], sizeStyles[size], rootOverride]}
+        {...props} />
     );
   },
 );
@@ -249,7 +243,7 @@ function IconFromRegistry({
 
   return (
     <span
-      {...stylex.props(styles.span, colorStyles[color], spanSizeStyles[size])}
+      sx={[styles.span, colorStyles[color], spanSizeStyles[size]]}
       aria-hidden="true">
       {resolvedIcon}
     </span>

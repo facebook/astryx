@@ -128,13 +128,13 @@ export const XDSLayoutHeader = forwardRef<HTMLElement, XDSLayoutHeaderProps>(
         ref={ref as React.Ref<HTMLDivElement>}
         role={role}
         aria-label={label}
-        {...stylex.props(
+        sx={[
           styles.header,
           dynamicStyles.sizing(height ?? null),
           isFullBleed && styles.fullBleed,
           hasDivider && styles.divider,
-          shouldCollapseSpacing && styles.collapseBottom,
-        )}
+          shouldCollapseSpacing && styles.collapseBottom
+        ]}
         {...props}>
         {children}
       </div>

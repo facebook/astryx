@@ -195,16 +195,15 @@ export const XDSSkeleton = forwardRef<HTMLDivElement, XDSSkeletonProps>(
       <div
         ref={ref}
         data-testid={testId}
-        {...stylex.props(
+        sx={[
           styles.root,
           styles.animate,
           radiusStyles[radiusProp],
           dynamicStyles.dimensions(width, height),
           dynamicStyles.animationDelay(index),
-          rootOverride,
-        )}
-        {...props}
-      />
+          rootOverride
+        ]}
+        {...props} />
     );
   },
 );

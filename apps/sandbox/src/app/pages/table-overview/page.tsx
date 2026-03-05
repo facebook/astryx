@@ -209,7 +209,7 @@ function StatCard({
 }) {
   return (
     <XDSCard>
-      <div {...stylex.props(styles.statCard)}>
+      <div sx={styles.statCard}>
         <XDSText type="supporting" color="secondary">
           {emoji ? `${emoji} ` : ''}
           {label}
@@ -238,10 +238,10 @@ const columns: XDSTableColumn<ReviewRow>[] = [
           name={item.authorName}
           size="small"
         />
-        <div {...stylex.props(styles.authorInfo)}>
+        <div sx={styles.authorInfo}>
           <XDSVStack gap="space1">
-            <span {...stylex.props(styles.titleLink)}>{item.title}</span>
-            <span {...stylex.props(styles.supportingLine)}>
+            <span sx={styles.titleLink}>{item.title}</span>
+            <span sx={styles.supportingLine}>
               <XDSText type="supporting" color="secondary">
                 {item.diffId} · {item.lines} lines {item.reviewTime}
               </XDSText>
@@ -256,11 +256,11 @@ const columns: XDSTableColumn<ReviewRow>[] = [
     header: 'Reviewers',
     width: pixel(120),
     renderCell: (item: ReviewRow) => (
-      <div {...stylex.props(styles.avatarGroup)}>
+      <div sx={styles.avatarGroup}>
         {item.reviewerAvatars.map((src: string, i: number) => (
           <div
             key={i}
-            {...stylex.props(styles.avatarOverlap)}
+            sx={styles.avatarOverlap}
             style={{
               marginLeft: i > 0 ? -8 : 0,
               zIndex: item.reviewerAvatars.length - i,
@@ -450,7 +450,7 @@ export default function TableOverviewPage() {
   const filteredAccepted = filterRows(acceptedAndReady);
 
   return (
-    <div {...stylex.props(styles.container)}>
+    <div sx={styles.container}>
       <XDSVStack gap="space6">
         <XDSVStack gap="space2">
           <XDSHeading level={1}>Table Overview</XDSHeading>
@@ -470,7 +470,7 @@ export default function TableOverviewPage() {
         />
 
         {/* Stats Row */}
-        <div {...stylex.props(styles.statsRow)}>
+        <div sx={styles.statsRow}>
           <StatCard emoji="🔥" label="Review streak" value="4 days" />
           <StatCard label="Reviews today" value={6} />
           <StatCard label="Diff reviews" value={28} />

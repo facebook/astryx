@@ -516,16 +516,16 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
         }
         labelTooltip={labelTooltip}>
         <div
-          {...stylex.props(
+          sx={[
             inputWrapperStyles.base,
             sizeStyles[size],
             isDisabled && inputWrapperStyles.disabled,
             status && inputStatusBorderStyles[status.type],
             status && inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
-            wrapperOverride,
-          )}>
-          <div {...stylex.props(styles.icon)}>
+            wrapperOverride
+          ]}>
+          <div sx={styles.icon}>
             <XDSIcon icon="clock" size="sm" color="secondary" />
           </div>
           <input
@@ -543,20 +543,19 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
             aria-busy={isBusy || undefined}
-            {...stylex.props(
+            sx={[
               styles.input,
               isDisabled && styles.inputDisabled,
               !isInputValid && styles.inputInvalid,
-              inputOverride,
-            )}
-          />
+              inputOverride
+            ]} />
           {isBusy && <XDSSpinner size="sm" />}
           {hasClear && value && !isDisabled && (
             <button
               type="button"
               onClick={handleClear}
               aria-label="Clear time"
-              {...stylex.props(styles.clearButton)}>
+              sx={styles.clearButton}>
               <XDSIcon icon="close" size="sm" color="secondary" />
             </button>
           )}

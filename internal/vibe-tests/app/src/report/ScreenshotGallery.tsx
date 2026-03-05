@@ -89,20 +89,19 @@ export function ScreenshotGallery({screenshots}: ScreenshotGalleryProps) {
 
   return (
     <>
-      <div {...stylex.props(styles.grid)}>
+      <div sx={styles.grid}>
         {items.map(item => (
           <XDSCard key={item.filename}>
             <XDSVStack gap="space0">
               <img
-                {...stylex.props(styles.image)}
+                sx={styles.image}
                 src={item.src}
                 alt={`Screenshot: ${item.promptId}`}
-                onClick={() => setEnlarged(item.src)}
-              />
-              <div {...stylex.props(styles.cardContent)}>
+                onClick={() => setEnlarged(item.src)} />
+              <div sx={styles.cardContent}>
                 <XDSVStack gap="space1">
                   <XDSText type="label">{item.promptId}</XDSText>
-                  <div {...stylex.props(styles.meta)}>
+                  <div sx={styles.meta}>
                     <XDSText type="supporting">{item.viewport}</XDSText>
                     <XDSText type="supporting">{item.theme}</XDSText>
                   </div>
@@ -113,14 +112,8 @@ export function ScreenshotGallery({screenshots}: ScreenshotGalleryProps) {
         ))}
       </div>
       {enlarged && (
-        <div
-          {...stylex.props(styles.overlay)}
-          onClick={() => setEnlarged(null)}>
-          <img
-            {...stylex.props(styles.overlayImage)}
-            src={enlarged}
-            alt="Enlarged screenshot"
-          />
+        <div sx={styles.overlay} onClick={() => setEnlarged(null)}>
+          <img sx={styles.overlayImage} src={enlarged} alt="Enlarged screenshot" />
         </div>
       )}
     </>

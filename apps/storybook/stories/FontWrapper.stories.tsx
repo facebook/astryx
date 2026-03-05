@@ -239,26 +239,21 @@ function StyleXApproachDemo() {
 
   return (
     <XDSFontWrapper>
-      <p {...stylex.props(proseStyles?.p)}>
+      <p sx={proseStyles?.p}>
         While XDSFontWrapper automatically styles native elements via CSS, you
         can also use the{' '}
-        <code {...stylex.props(proseStyles?.code)}>
+        <code sx={proseStyles?.code}>
           useXDSFontWrapperStyles
         </code>{' '}
         hook to access theme styles programmatically for StyleX-based styling:
       </p>
-
-      <h2 {...stylex.props(headingStyles?.h2)}>Styled with StyleX</h2>
-      <p {...stylex.props(proseStyles?.p)}>
+      <h2 sx={headingStyles?.h2}>Styled with StyleX</h2>
+      <p sx={proseStyles?.p}>
         This approach gives you more control and type safety, but requires
         applying styles to each element individually.
       </p>
-
-      <pre {...stylex.props(proseStyles?.pre)}>
-        <code
-          {...stylex.props(
-            proseStyles?.preCode,
-          )}>{`import { useFontWrapperStyles } from '@xds/core';
+      <pre sx={proseStyles?.pre}>
+        <code sx={proseStyles?.preCode}>{`import { useFontWrapperStyles } from '@xds/core';
 import * as stylex from '@stylexjs/stylex';
 
 function Article() {

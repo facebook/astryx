@@ -516,12 +516,12 @@ export function XDSDropdownMenu({
           aria-disabled={item.isDisabled}
           onClick={() => handleItemClick(item)}
           onMouseEnter={() => handleItemMouseEnter(item, flatIndex)}
-          {...stylex.props(
+          sx={[
             styles.item,
             isHighlighted && styles.itemHighlighted,
             item.isDisabled && styles.itemDisabled,
-            itemOverride,
-          )}>
+            itemOverride
+          ]}>
           {children ? children(item) : <DefaultItem item={item} />}
         </div>
       );
@@ -578,7 +578,7 @@ export function XDSDropdownMenu({
 
   // Build chevron icon - inherits color from button text
   const chevronIcon = (
-    <span {...stylex.props(styles.chevronIcon)}>
+    <span sx={styles.chevronIcon}>
       <XDSIcon icon="chevronDown" size="sm" color="inherit" />
     </span>
   );
@@ -612,12 +612,8 @@ export function XDSDropdownMenu({
         {button.label}
         {chevronIcon}
       </XDSButton>
-
       {layer.render(
-        <div
-          id={menuId}
-          role="menu"
-          {...stylex.props(styles.dropdown, rootOverride)}>
+        <div id={menuId} role="menu" sx={[styles.dropdown, rootOverride]}>
           {renderOptions()}
         </div>,
         {

@@ -355,7 +355,7 @@ export function useXDSPopover(
           role="dialog"
           aria-modal="true"
           aria-label={dialogLabel}
-          {...stylex.props(styles.contentWrapper)}>
+          sx={styles.contentWrapper}>
           {children}
           {hasCloseButton && (
             <button
@@ -364,10 +364,7 @@ export function useXDSPopover(
               onFocus={() => setIsCloseButtonFocused(true)}
               onBlur={() => setIsCloseButtonFocused(false)}
               aria-label={closeButtonLabel}
-              {...stylex.props(
-                styles.closeButton,
-                isCloseButtonFocused && styles.closeButtonFocused,
-              )}>
+              sx={[styles.closeButton, isCloseButtonFocused && styles.closeButtonFocused]}>
               {closeButtonLabel}
             </button>
           )}

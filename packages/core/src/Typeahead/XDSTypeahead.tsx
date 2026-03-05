@@ -344,7 +344,7 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
         data-testid={testId}
         onClick={handleWrapperClick}
         onBlur={handleBlur}
-        {...stylex.props(
+        sx={[
           inputWrapperStyles.base,
           styles.wrapper,
           sizeStyle,
@@ -352,8 +352,8 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
           status && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           isDisabled && inputWrapperStyles.disabled,
-          xstyle,
-        )}>
+          xstyle
+        ]}>
         {showToken && (
           <XDSToken
             ref={tokenRef}
@@ -394,7 +394,7 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
               e.stopPropagation();
               handleClear();
             }}
-            {...stylex.props(styles.clearButton)}>
+            sx={styles.clearButton}>
             <XDSIcon icon="close" size="sm" />
           </button>
         )}

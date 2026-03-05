@@ -82,7 +82,7 @@ export const WithLabel: Story = {
 export const Variants: Story = {
   render: () => (
     <XDSSection variant="wash">
-      <div {...stylex.props(styles.storyWrapper)}>
+      <div sx={styles.storyWrapper}>
         <XDSCard>
           <XDSVStack gap="space3">
             <XDSText type="supporting">Subtle (default)</XDSText>
@@ -103,7 +103,7 @@ export const Variants: Story = {
 export const FullBleed: Story = {
   render: () => (
     <XDSSection variant="wash">
-      <div {...stylex.props(styles.storyWrapper)}>
+      <div sx={styles.storyWrapper}>
         <XDSCard>
           <XDSVStack gap="space3">
             <XDSText type="label">Normal divider</XDSText>

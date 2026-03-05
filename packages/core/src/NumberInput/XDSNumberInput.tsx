@@ -472,7 +472,7 @@ export const XDSNumberInput = forwardRef<HTMLInputElement, XDSNumberInputProps>(
         }
         labelTooltip={labelTooltip}>
         <div
-          {...stylex.props(
+          sx={[
             inputWrapperStyles.base,
             styles.wrapper,
             sizeStyles[size],
@@ -480,8 +480,8 @@ export const XDSNumberInput = forwardRef<HTMLInputElement, XDSNumberInputProps>(
             status && inputStatusBorderStyles[status.type],
             status && inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
-            wrapperOverride,
-          )}>
+            wrapperOverride
+          ]}>
           {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
           <input
             ref={setRefs}
@@ -503,14 +503,13 @@ export const XDSNumberInput = forwardRef<HTMLInputElement, XDSNumberInputProps>(
             aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
-            {...stylex.props(
+            sx={[
               styles.input,
               isDisabled && styles.inputDisabled,
               !isInputValid && styles.inputInvalid,
-              inputOverride,
-            )}
-          />
-          {units && <span {...stylex.props(styles.units)}>{units}</span>}
+              inputOverride
+            ]} />
+          {units && <span sx={styles.units}>{units}</span>}
           {status && (
             <XDSIcon
               icon={statusIconMap[status.type]}

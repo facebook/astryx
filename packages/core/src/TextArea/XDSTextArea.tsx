@@ -306,15 +306,15 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
         }
         labelTooltip={labelTooltip}>
         <div
-          {...stylex.props(
+          sx={[
             inputWrapperStyles.base,
             styles.wrapper,
             isDisabled && inputWrapperStyles.disabled,
             status && inputStatusBorderStyles[status.type],
             status && inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
-            wrapperOverride,
-          )}>
+            wrapperOverride
+          ]}>
           {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
           <textarea
             ref={ref}
@@ -333,12 +333,7 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
             aria-busy={isBusy || undefined}
-            {...stylex.props(
-              styles.textarea,
-              isDisabled && styles.textareaDisabled,
-              textareaOverride,
-            )}
-          />
+            sx={[styles.textarea, isDisabled && styles.textareaDisabled, textareaOverride]} />
           {isBusy && <XDSSpinner size="sm" />}
           {status && (
             <XDSIcon
@@ -349,11 +344,7 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
           )}
         </div>
         {maxLength != null && (
-          <div
-            {...stylex.props(
-              styles.counter,
-              value.length > maxLength && styles.counterError,
-            )}>
+          <div sx={[styles.counter, value.length > maxLength && styles.counterError]}>
             {value.length}/{maxLength}
           </div>
         )}

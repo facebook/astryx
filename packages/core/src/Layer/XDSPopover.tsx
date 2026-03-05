@@ -427,7 +427,7 @@ export function XDSPopover({
         {popover.render(
           <div
             data-testid={testId}
-            {...stylex.props(styles.container, styles.contentPadding, xstyle)}>
+            sx={[styles.container, styles.contentPadding, xstyle]}>
             {content}
           </div>,
           {
@@ -442,13 +442,13 @@ export function XDSPopover({
 
   return (
     <>
-      <div ref={wrapperRef} {...stylex.props(styles.anchorWrapper)}>
+      <div ref={wrapperRef} sx={styles.anchorWrapper}>
         {children}
       </div>
       {popover.render(
         <div
           data-testid={testId}
-          {...stylex.props(styles.container, styles.contentPadding, xstyle)}>
+          sx={[styles.container, styles.contentPadding, xstyle]}>
           {content}
         </div>,
         {

@@ -58,7 +58,7 @@ export function CodeModal({
       purpose="info"
       width={800}
       aria-label={`${targetLabel} code for ${promptId}`}>
-      <div {...stylex.props(styles.header)}>
+      <div sx={styles.header}>
         <XDSVStack gap="space1">
           <XDSHeading level={3}>
             {promptId} — {targetLabel}
@@ -73,8 +73,8 @@ export function CodeModal({
           onClick={onHide}
         />
       </div>
-      <div {...stylex.props(styles.content)}>
-        <div {...stylex.props(styles.codeBlock)}>{code}</div>
+      <div sx={styles.content}>
+        <div sx={styles.codeBlock}>{code}</div>
       </div>
     </XDSDialog>
   );

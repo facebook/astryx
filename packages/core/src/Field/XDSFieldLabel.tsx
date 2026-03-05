@@ -129,12 +129,12 @@ export const XDSFieldLabel = forwardRef<HTMLLabelElement, XDSFieldLabelProps>(
       <label
         ref={ref}
         htmlFor={inputID}
-        {...stylex.props(
+        sx={[
           styles.label,
           !isDisabled && styles.labelClickable,
           isDisabled && styles.labelDisabled,
-          isLabelHidden && styles.labelHidden,
-        )}>
+          isLabelHidden && styles.labelHidden
+        ]}>
         {labelIcon && (
           <XDSIcon
             icon={labelIcon}
@@ -144,7 +144,7 @@ export const XDSFieldLabel = forwardRef<HTMLLabelElement, XDSFieldLabelProps>(
         )}
         {label}
         {statusText && (
-          <span {...stylex.props(styles.optionalRequired)}>
+          <span sx={styles.optionalRequired}>
             {' '}
             ∙ {statusText}
           </span>

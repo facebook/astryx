@@ -391,7 +391,7 @@ export function useXDSTooltip(
       };
 
       return layer.render(
-        <div {...stylex.props(styles.content, themeContentOverride)}>
+        <div sx={[styles.content, themeContentOverride]}>
           {children}
         </div>,
         renderProps,

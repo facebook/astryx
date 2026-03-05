@@ -39,7 +39,7 @@ const styles = stylex.create({
 
 // Demo box component for visibility
 const Box = ({children}: {children: React.ReactNode}) => (
-  <div {...stylex.props(styles.box)}>{children}</div>
+  <div sx={styles.box}>{children}</div>
 );
 
 const meta: Meta<typeof XDSCenter> = {
@@ -164,7 +164,7 @@ export const WithIcon: Story = {
   render: args => (
     <XDSSection variant="wash">
       <XDSCenter {...args}>
-        <div {...stylex.props(styles.iconWrapper)}>
+        <div sx={styles.iconWrapper}>
           <XDSIcon icon={CheckCircleIcon} size="lg" />
         </div>
       </XDSCenter>
@@ -194,7 +194,7 @@ export const AllAxisModes: Story = {
   },
   render: () => (
     <XDSSection variant="wash">
-      <div {...stylex.props(styles.storyWrapper)}>
+      <div sx={styles.storyWrapper}>
         <XDSCard>
           <XDSText type="supporting" display="block">
             axis: both (default)

@@ -246,10 +246,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>(
   const hasColumns = resolvedColumns.length > 0;
 
   let tableElement: ReactNode = (
-    <table
-      ref={ref}
-      {...tableRenderProps.htmlProps}
-      {...stylex.props(...tableRenderProps.styles)}>
+    <table ref={ref} {...tableRenderProps.htmlProps} sx={tableRenderProps.styles}>
       {/* thead */}
       {hasColumns && (
         <thead>

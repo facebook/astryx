@@ -333,7 +333,7 @@ export function useXDSLayer(
           }}
           id={id}
           popover={lightDismiss ? 'auto' : 'manual'}
-          {...stylex.props(styles.base, xstyle)}
+          sx={[styles.base, xstyle]}
           style={anchorStyle}>
           {children}
         </div>
@@ -363,7 +363,7 @@ export function useXDSLayer(
           }}
           id={id}
           popover={lightDismiss ? 'auto' : 'manual'}
-          {...stylex.props(styles.base, styles.fixed)}
+          sx={[styles.base, styles.fixed]}
           style={positionStyle}>
           {children}
         </div>

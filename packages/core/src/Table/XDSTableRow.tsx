@@ -98,7 +98,7 @@ export const XDSTableRow = forwardRef<HTMLTableRowElement, XDSTableRowProps>(
 
     if (!ctx) {
       return (
-        <tr ref={ref} {...props} {...stylex.props(xstyle)}>
+        <tr ref={ref} {...props} sx={xstyle}>
           {children}
         </tr>
       );
@@ -125,7 +125,7 @@ export const XDSTableRow = forwardRef<HTMLTableRowElement, XDSTableRowProps>(
     }
 
     return (
-      <tr ref={ref} {...props} {...stylex.props(...rowStyles)}>
+      <tr ref={ref} {...props} sx={rowStyles}>
         {children}
       </tr>
     );

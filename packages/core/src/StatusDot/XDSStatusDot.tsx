@@ -142,16 +142,15 @@ export const XDSStatusDot = forwardRef<HTMLSpanElement, XDSStatusDotProps>(
         ref={ref}
         role="img"
         aria-label={label}
-        {...stylex.props(
+        sx={[
           styles.base,
           sizes[size],
           variants[variant],
           isPulsing && styles.pulsing,
           isPulsing && styles.reducedMotion,
-          xstyle,
-        )}
-        {...props}
-      />
+          xstyle
+        ]}
+        {...props} />
     );
   },
 );

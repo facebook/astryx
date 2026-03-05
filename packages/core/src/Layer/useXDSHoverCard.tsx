@@ -426,7 +426,7 @@ export function useXDSHoverCard(
 
       return layer.render(
         <div
-          {...stylex.props(styles.content, themeContentOverride)}
+          sx={[styles.content, themeContentOverride]}
           onMouseEnter={() => {
             isHoveringContentRef.current = true;
             clearTimeouts();

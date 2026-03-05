@@ -290,13 +290,9 @@ export const XDSListItem = forwardRef<HTMLLIElement, XDSListItemProps>(
 
     const labelAndDescription = (
       <>
-        <span {...stylex.props(styles.label)}>{label}</span>
+        <span sx={styles.label}>{label}</span>
         {description != null && (
-          <span
-            {...stylex.props(
-              styles.description,
-              descriptionSizeStyles[density],
-            )}>
+          <span sx={[styles.description, descriptionSizeStyles[density]]}>
             {description}
           </span>
         )}
@@ -314,7 +310,7 @@ export const XDSListItem = forwardRef<HTMLLIElement, XDSListItemProps>(
     const innerContent = (
       <>
         {startContent != null && (
-          <span {...stylex.props(styles.startContent)}>{startContent}</span>
+          <span sx={styles.startContent}>{startContent}</span>
         )}
 
         {href != null ? (
@@ -323,7 +319,7 @@ export const XDSListItem = forwardRef<HTMLLIElement, XDSListItemProps>(
             target={target}
             aria-disabled={isDisabled || undefined}
             tabIndex={isDisabled ? -1 : undefined}
-            {...stylex.props(styles.invisibleAnchor)}>
+            sx={styles.invisibleAnchor}>
             {labelAndDescription}
           </a>
         ) : onClick != null ? (
@@ -331,15 +327,15 @@ export const XDSListItem = forwardRef<HTMLLIElement, XDSListItemProps>(
             type="button"
             onClick={onClick}
             disabled={isDisabled}
-            {...stylex.props(styles.invisibleButton)}>
+            sx={styles.invisibleButton}>
             {labelAndDescription}
           </button>
         ) : (
-          <span {...stylex.props(styles.content)}>{labelAndDescription}</span>
+          <span sx={styles.content}>{labelAndDescription}</span>
         )}
 
         {endContent != null && (
-          <span {...stylex.props(styles.endContent)}>{endContent}</span>
+          <span sx={styles.endContent}>{endContent}</span>
         )}
       </>
     );
@@ -350,7 +346,7 @@ export const XDSListItem = forwardRef<HTMLLIElement, XDSListItemProps>(
         data-testid={testId}
         aria-selected={isSelected || undefined}
         aria-disabled={isDisabled || undefined}
-        {...stylex.props(
+        sx={[
           hasMarkers ? styles.itemWithMarker : styles.item,
           densityStyles[density],
           hasDividers ? styles.noRadius : styles.withRadius,
@@ -358,11 +354,11 @@ export const XDSListItem = forwardRef<HTMLLIElement, XDSListItemProps>(
           isInteractive && styles.focusWithinOutline,
           isDisabled && styles.disabled,
           isSelected && styles.selected,
-          xstyle,
-        )}
+          xstyle
+        ]}
         onClick={isInteractive ? handleContainerClick : undefined}>
         {hasMarkers ? (
-          <div {...stylex.props(styles.innerWrapper)}>{innerContent}</div>
+          <div sx={styles.innerWrapper}>{innerContent}</div>
         ) : (
           innerContent
         )}

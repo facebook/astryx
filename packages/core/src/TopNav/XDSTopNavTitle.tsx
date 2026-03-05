@@ -102,10 +102,10 @@ export const XDSTopNavTitle = forwardRef<HTMLElement, XDSTopNavTitleProps>(
       <Element
         ref={ref as React.Ref<HTMLAnchorElement & HTMLDivElement>}
         href={href}
-        {...stylex.props(styles.base, href != null && styles.clickable)}
+        sx={[styles.base, href != null && styles.clickable]}
         {...props}>
-        {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
-        {title && <span {...stylex.props(styles.titleText)}>{title}</span>}
+        {logo && <span sx={styles.logo}>{logo}</span>}
+        {title && <span sx={styles.titleText}>{title}</span>}
       </Element>
     );
   },

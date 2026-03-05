@@ -105,11 +105,7 @@ export function XDSTabList({
     <XDSTabListContext.Provider value={contextValue}>
       <nav
         aria-label="Tabs"
-        {...stylex.props(
-          styles.nav,
-          hasDivider && styles.divider,
-          rootOverride,
-        )}>
+        sx={[styles.nav, hasDivider && styles.divider, rootOverride]}>
         {children}
       </nav>
     </XDSTabListContext.Provider>

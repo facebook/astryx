@@ -321,7 +321,7 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
       describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
 
     const switchElement = (
-      <div {...stylex.props(styles.switchWrapper)}>
+      <div sx={styles.switchWrapper}>
         <input
           ref={ref}
           id={id}
@@ -345,23 +345,18 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
           aria-describedby={ariaDescribedBy}
           aria-invalid={status?.type === 'error' ? true : undefined}
           aria-busy={isBusy || undefined}
-          {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
-        />
+          sx={[styles.input, isDisabled && styles.inputDisabled]} />
         <div
           aria-hidden="true"
-          {...stylex.props(
+          sx={[
             styles.track,
             isOn ? styles.trackOn : styles.trackOff,
             isDisabled && styles.trackDisabled,
             isDisabled && !isOn && styles.trackDisabledOff,
-            trackOverride,
-          )}>
+            trackOverride
+          ]}>
           <div
-            {...stylex.props(
-              styles.thumb,
-              isOn ? styles.thumbOn : styles.thumbOff,
-              thumbOverride,
-            )}
+            sx={[styles.thumb, isOn ? styles.thumbOn : styles.thumbOff, thumbOverride]}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -374,7 +369,7 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
     );
 
     const labelElement = (
-      <div {...stylex.props(styles.labelWrapper)}>
+      <div sx={styles.labelWrapper}>
         <XDSFieldLabel
           label={label}
           inputID={id}
@@ -386,7 +381,7 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
           labelTooltip={labelTooltip}
         />
         {description && !isLabelHidden && (
-          <span id={descriptionID} {...stylex.props(styles.description)}>
+          <span id={descriptionID} sx={styles.description}>
             {description}
           </span>
         )}
@@ -396,12 +391,12 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
     return (
       <div>
         <div
-          {...stylex.props(
+          sx={[
             styles.container,
             labelSpacing === 'spread' && styles.containerSpread,
             rootOverride,
-            !isDisabled && stylex.defaultMarker(),
-          )}>
+            !isDisabled && stylex.defaultMarker()
+          ]}>
           {labelPosition === 'start' ? (
             <>
               {labelElement}
@@ -415,7 +410,7 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
           )}
         </div>
         {status?.message && (
-          <div {...stylex.props(styles.statusGap)}>
+          <div sx={styles.statusGap}>
             <XDSFieldStatus
               type={status.type}
               message={status.message}

@@ -234,7 +234,7 @@ export default function MegaMenuPage() {
   const isAnyOpen1 = menuOpen1 || menuOpen2;
 
   return (
-    <div {...stylex.props(styles.container)}>
+    <div sx={styles.container}>
       <XDSVStack gap="space6">
         <XDSVStack gap="space2">
           <XDSHeading level={1}>Mega Menu</XDSHeading>
@@ -248,11 +248,7 @@ export default function MegaMenuPage() {
         {/* Full mega menu with featured content */}
         <XDSVStack gap="space3">
           <XDSHeading level={2}>With Featured Content</XDSHeading>
-          <div
-            {...stylex.props(
-              styles.navWrapper,
-              isAnyOpen1 && styles.navWrapperMenuOpen,
-            )}>
+          <div sx={[styles.navWrapper, isAnyOpen1 && styles.navWrapperMenuOpen]}>
             <XDSTopNav
               label="Marketing navigation"
               title={
@@ -307,11 +303,7 @@ export default function MegaMenuPage() {
         {/* Without featured content */}
         <XDSVStack gap="space3">
           <XDSHeading level={2}>Without Featured Content</XDSHeading>
-          <div
-            {...stylex.props(
-              styles.navWrapper,
-              menuOpen3 && styles.navWrapperMenuOpen,
-            )}>
+          <div sx={[styles.navWrapper, menuOpen3 && styles.navWrapperMenuOpen]}>
             <XDSTopNav
               label="Simple navigation"
               title={<XDSTopNavTitle title="App" href="#" />}

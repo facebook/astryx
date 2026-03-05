@@ -147,12 +147,12 @@ export const XDSFormLayout = forwardRef<HTMLDivElement, XDSFormLayoutProps>(
       <XDSFormLayoutContext.Provider value={contextValue}>
         <div
           ref={ref}
-          {...stylex.props(
+          sx={[
             styles.base,
             direction === 'horizontal' && styles.horizontal,
             direction === 'horizontal-labels' && styles.horizontalLabels,
-            xstyle,
-          )}
+            xstyle
+          ]}
           {...props}>
           {children}
         </div>

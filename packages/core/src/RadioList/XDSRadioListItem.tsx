@@ -256,19 +256,16 @@ export function XDSRadioListItem({
   return (
     <div
       data-testid={dataTestId}
-      {...stylex.props(
-        styles.container,
-        !isDisabled && stylex.defaultMarker(),
-      )}>
+      sx={[styles.container, !isDisabled && stylex.defaultMarker()]}>
       {startContent && (
-        <div {...stylex.props(styles.startContent)}>{startContent}</div>
+        <div sx={styles.startContent}>{startContent}</div>
       )}
       <div
-        {...stylex.props(
+        sx={[
           styles.radioWrapper,
           wrapperSizeStyles[size],
-          !isDisabled && styles.radioWrapperFocus,
-        )}>
+          !isDisabled && styles.radioWrapperFocus
+        ]}>
         <input
           id={id}
           type="radio"
@@ -279,40 +276,33 @@ export function XDSRadioListItem({
           required={context.isRequired}
           onChange={() => context.onChange(value)}
           aria-describedby={description ? descriptionID : undefined}
-          {...stylex.props(
-            styles.input,
-            wrapperSizeStyles[size],
-            isDisabled && styles.inputDisabled,
-          )}
-        />
+          sx={[styles.input, wrapperSizeStyles[size], isDisabled && styles.inputDisabled]} />
         <div
           aria-hidden="true"
-          {...stylex.props(
+          sx={[
             styles.radio,
             radioSizeStyles[size],
             isChecked ? styles.radioChecked : styles.radioUnchecked,
             isDisabled && styles.radioDisabled,
-            isDisabled && !isChecked && styles.radioDisabledUnchecked,
-          )}>
+            isDisabled && !isChecked && styles.radioDisabledUnchecked
+          ]}>
           {isChecked && (
-            <div {...stylex.props(styles.innerDot, dotSizeStyles[size])} />
+            <div sx={[styles.innerDot, dotSizeStyles[size]]} />
           )}
         </div>
       </div>
-      <div {...stylex.props(styles.labelWrapper, labelWrapperSizeStyles[size])}>
-        <label
-          htmlFor={id}
-          {...stylex.props(styles.label, isDisabled && styles.labelDisabled)}>
+      <div sx={[styles.labelWrapper, labelWrapperSizeStyles[size]]}>
+        <label htmlFor={id} sx={[styles.label, isDisabled && styles.labelDisabled]}>
           {label}
         </label>
         {description && (
-          <span id={descriptionID} {...stylex.props(styles.description)}>
+          <span id={descriptionID} sx={styles.description}>
             {description}
           </span>
         )}
       </div>
       {endContent && (
-        <div {...stylex.props(styles.endContent)}>{endContent}</div>
+        <div sx={styles.endContent}>{endContent}</div>
       )}
     </div>
   );
