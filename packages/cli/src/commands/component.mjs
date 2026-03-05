@@ -4,6 +4,9 @@
  * `xds component --list` prints all components grouped by category.
  * `xds component <name>` prints the full component README.
  * `xds component <name> --compact` prints a token-optimized version for LLMs.
+ *
+ * Component docs live in typed {Name}.doc.tsx files (ComponentDoc exports).
+ * This file imports them directly — no markdown parsing needed.
  */
 
 import * as fs from 'node:fs';
@@ -119,6 +122,175 @@ export function discoverComponents(coreDir) {
 
   return ordered;
 }
+
+/**
+ * Load the typed docs object from a README.tsx file.
+ * The CLI runs under tsx, which handles TypeScript imports natively.
+ */
+export async function loadDocs(readmePath) {
+  const mod = await import(pathToFileURL(readmePath).href);
+  return mod.docs;
+}
+
+/**
+ * Find the doc file for a component, checking both top-level
+ * and nested directories. Prefers {Name}.doc.tsx, then README.tsx,
+ * then README.md (for backward compatibility with tests).
+ */
+export function findComponentReadme(coreDir, name) {
+  const srcDir = path.join(coreDir, 'src');
+  // Preferred: {Name}.doc.tsx, then README.tsx, then README.md
+  const docNames = [`${name}.doc.tsx`, 'README.tsx', 'README.md'];
+
+  for (const docName of docNames) {
+    // Direct match: src/{name}/{Name}.doc.tsx (or README.tsx/md)
+    const direct = path.join(srcDir, name, docName);
+    if (fs.existsSync(direct)) return direct;
+  }
+
+  // Nested match: src/*/{name}/{Name}.doc.tsx (or README.tsx/md)
+  const entries = fs.readdirSync(srcDir, {withFileTypes: true});
+  for (const docName of docNames) {
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const nested = path.join(srcDir, entry.name, name, docName);
+      if (fs.existsSync(nested)) return nested;
+    }
+  }
+
+  // Fallback: find the directory containing XDS{name}.tsx,
+  // then return the doc file in that directory or nearest parent
+  const sourcePath = findComponentSource(coreDir, name);
+  if (sourcePath) {
+    let dir = path.dirname(sourcePath);
+    while (dir.startsWith(srcDir)) {
+      for (const docName of docNames) {
+        const docFile = path.join(dir, docName);
+        if (fs.existsSync(docFile)) return docFile;
+      }
+      dir = path.dirname(dir);
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Find the main source file for a component (XDS*.tsx, excluding tests).
+ * For "Button" finds src/Button/XDSButton.tsx
+ * For "Layout" finds src/Layout/XDSLayout/XDSLayout.tsx
+ * For "Card" finds src/Layout/Container/XDSCard.tsx (deep search fallback)
+ */
+export function findComponentSource(coreDir, name) {
+  const srcDir = path.join(coreDir, 'src');
+  const xdsName = `XDS${name}.tsx`;
+
+  function searchDir(dirPath) {
+    if (!fs.existsSync(dirPath)) return null;
+    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+
+    // Check for exact match first
+    const exact = path.join(dirPath, xdsName);
+    if (fs.existsSync(exact)) return exact;
+
+    // Recurse into subdirectories
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const found = searchDir(path.join(dirPath, entry.name));
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  // Search in the component's directory
+  const directDir = path.join(srcDir, name);
+  if (fs.existsSync(directDir)) {
+    const found = searchDir(directDir);
+    if (found) return found;
+  }
+
+  // Search nested (component might be under a parent dir)
+  const entries = fs.readdirSync(srcDir, {withFileTypes: true});
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const nestedDir = path.join(srcDir, entry.name, name);
+    if (fs.existsSync(nestedDir)) {
+      const found = searchDir(nestedDir);
+      if (found) return found;
+    }
+  }
+
+  // Fallback: search entire src tree for the file
+  return searchDir(srcDir);
+}
+
+/**
+ * Compute the Levenshtein (edit) distance between two strings.
+ * Used for fuzzy-matching component names. Dependency-free.
+ */
+export function levenshteinDistance(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m + 1}, () => Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i-1] === b[j-1]
+        ? dp[i-1][j-1]
+        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+    }
+  }
+  return dp[m][n];
+}
+
+/**
+ * Find the closest component names to a given (possibly misspelled) name.
+ * Returns matches sorted by distance, filtered to maxDistance.
+ */
+export function findClosestComponents(name, components, maxDistance = 3) {
+  const allNames = Object.values(components).flat();
+  const needle = name.toLowerCase();
+
+  const matches = allNames
+    .map(comp => ({
+      name: comp,
+      distance: levenshteinDistance(needle, comp.toLowerCase()),
+    }))
+    .filter(m => m.distance <= maxDistance)
+    .sort((a, b) => a.distance - b.distance);
+
+  return matches;
+}
+
+/**
+ * Resolve the import path for a component.
+ * Returns e.g. '@xds/core/Table' or '@xds/core' depending on package.json exports.
+ */
+export function resolveImportPath(coreDir, componentName) {
+  const srcDir = path.join(coreDir, 'src');
+  const sourcePath = findComponentSource(coreDir, componentName);
+  if (!sourcePath) return '@xds/core';
+
+  // Get the top-level directory under src/ from the source path
+  const relToSrc = path.relative(srcDir, sourcePath);
+  const topDir = relToSrc.split(path.sep)[0];
+
+  // Check package.json exports for ./${topDir}
+  const pkgPath = path.join(coreDir, 'package.json');
+  if (fs.existsSync(pkgPath)) {
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+    if (pkg.exports && pkg.exports[`./${topDir}`]) {
+      return `@xds/core/${topDir}`;
+    }
+  }
+
+  return '@xds/core';
+}
+
+// ── Legacy markdown-parsing functions ────────────────────────────────
+// These are kept for backward compatibility with existing tests.
+// The CLI action handler uses the new format functions below instead.
 
 /**
  * Minimal cleanup for full docs (default mode).

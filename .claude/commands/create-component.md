@@ -22,7 +22,7 @@ Use this structure based on Button.tsx:
  * @position Core implementation
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/{ComponentName}/README.md
+ * - /packages/core/src/{ComponentName}/{ComponentName}.doc.tsx
  * - /packages/core/src/{ComponentName}/{ComponentName}.test.tsx
  * - /packages/core/src/{ComponentName}/index.ts
  * - /apps/storybook/stories/{ComponentName}.stories.tsx
@@ -111,46 +111,40 @@ export { {ComponentName} } from './{ComponentName}';
 export type { {ComponentName}Props, {ComponentName}Variant } from './{ComponentName}';
 ```
 
-### 3. README.md
+### 3. {ComponentName}.doc.tsx
 
-```markdown
-# /packages/core/src/{ComponentName}
+```tsx
+import type {ComponentDoc} from '../docs-types';
 
-Brief description of the component.
-
-<!-- SYNC: When files in this directory change, update this document. -->
-
-## Features
-
-- **Variants**: List variants
-- Other features
-
-## Usage
-
-\`\`\`tsx
-import { {ComponentName} } from '@xds/core/{ComponentName}';
-
-<{ComponentName} variant="default">Content</{ComponentName}>
-\`\`\`
-
-## Props
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `variant` | `'{variant1}' \| '{variant2}'` | `'default'` | Visual style variant |
-| `children` | `ReactNode` | — | Component content |
-
-## Files
-
-| File | Role | Purpose |
-|------|------|---------|
-| `index.ts` | Entry | Exports component and types |
-| `{ComponentName}.tsx` | Core | Component implementation |
-| `{ComponentName}.test.tsx` | Test | Unit tests |
-
-## Implementation Notes
-
-- Variant type derived from `keyof typeof variants`
+export const docs: ComponentDoc = {
+  name: '{ComponentName}',
+  description: 'Brief description of the component.',
+  features: ['Variants: list available variants'],
+  props: [
+    {
+      name: 'variant',
+      type: "'{variant1}' | '{variant2}'",
+      description: 'Visual style variant',
+      default: "'default'",
+    },
+    {
+      name: 'children',
+      type: 'ReactNode',
+      description: 'Component content',
+      required: true,
+    },
+  ],
+  examples: [
+    {
+      label: 'Basic',
+      code: `<{ComponentName} variant="default">Content</{ComponentName}>`,
+    },
+  ],
+  theming: {
+    componentKey: '{componentName}',
+    surfaces: [{name: 'root', description: 'Outer wrapper element'}],
+  },
+};
 ```
 
 ### 4. Update /packages/core/src/index.ts
@@ -172,6 +166,7 @@ export * from './{ComponentName}';
 ## Token Reference
 
 Available tokens from `tokens.stylex`:
+
 - `colorTokens`: accent, surface, textPrimary, hoverOverlay, pressedOverlay, focusOutline, negative, etc.
 - `spacingTokens`: space0, space0_5, space1, space2, space3, space4, space5, space6, space7
 - `radiusTokens`: rounded, container, element, content
