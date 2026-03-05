@@ -351,7 +351,8 @@
       "types": "./dist/utils/index.d.ts",
       "import": "./dist/utils/index.mjs",
       "require": "./dist/utils/index.js"
-    }
+    },
+    "./xds.css": "./dist/xds.css"
   },
   "files": [
     "dist",
@@ -364,7 +365,9 @@
     "dev": "tsup --watch",
     "test": "vitest run --root ../..",
     "test:watch": "vitest --root ../..",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "build:css": "node ../../scripts/build-css.mjs",
+    "postbuild": "yarn build:css"
   },
   "peerDependencies": {
     "react": ">=19.0.0",

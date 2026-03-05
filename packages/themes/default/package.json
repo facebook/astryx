@@ -13,7 +13,8 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
-    }
+    },
+    "./theme.css": "./dist/theme.css"
   },
   "files": [
     "dist",
@@ -21,7 +22,9 @@
   ],
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch"
+    "dev": "tsup --watch",
+    "build:css": "node ../../../scripts/build-theme-css.mjs packages/themes/default",
+    "postbuild": "yarn build:css"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0"

@@ -21,9 +21,11 @@
  * 2. Combine with theme and typography:
  *    import '@xds/core/reset.css';        // @layer reset  — clean slate
  *    import '@xds/core/typography.css';    // @layer typography — prose styles
- *    // XDS components handle their own styles
+ *    import '@xds/core/xds.css';           // @layer xds — component styles
+ *    import '@xds/theme-default/theme.css'; // @layer xds.theme — theme overrides
  *
- * Layer order: reset → typography → components
+ * Layer order: reset → typography → xds → xds.theme
+ * Consumer styles (unlayered) always override all XDS layers.
  * The reset has the lowest priority and can be overridden by any other layer.
  *
  * Similar to:
