@@ -4,18 +4,16 @@
  * Orchestrates the full XDS setup flow using @clack/prompts:
  *   1. Intro
  *   2. Agent docs installation
- *   3. Theme selection
- *   4. Swizzle awareness
- *   5. Template selection
- *   6. Success outro
+ *   3. Swizzle awareness
+ *   4. Template selection
+ *   5. Success outro
  */
 
 import * as p from '@clack/prompts';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
-import {findCoreDir, CLI_ROOT} from '../utils/paths.mjs';
+import {CLI_ROOT} from '../utils/paths.mjs';
 import {installAgentDocs} from './agent-docs.mjs';
-import {discoverThemes, writeThemeConfig} from './theme.mjs';
 import {listTemplates} from './template.mjs';
 
 function isCancel(value) {
@@ -61,51 +59,13 @@ export function registerInit(program) {
         }
       }
 
-      // Step 3: Theme Selection
-      const coreDir = findCoreDir(process.cwd());
-
-      if (coreDir) {
-        const themes = discoverThemes(coreDir);
-
-        if (themes.length > 0) {
-          const themeOptions = [
-            ...themes.map(t => ({
-              value: t.exportName,
-              label:
-                t.name === 'default'
-                  ? 'Default — Blue accent, system fonts'
-                  : t.name === 'neutral'
-                    ? 'Neutral — Grayscale, shadcn-inspired'
-                    : t.name,
-            })),
-            {value: 'skip', label: 'Skip — Configure later'},
-          ];
-
-          const themeChoice = isCancel(
-            await p.select({
-              message: 'Choose a theme:',
-              options: themeOptions,
-            }),
-          );
-
-          if (themeChoice !== 'skip') {
-            writeThemeConfig(process.cwd(), themeChoice);
-            p.log.success(`Theme set to ${themeChoice}`);
-            p.note(
-              `import { XDSTheme, ${themeChoice} } from '@xds/core/theme';\n\n<XDSTheme theme={${themeChoice}}>\n  {children}\n</XDSTheme>`,
-              'Add to your root layout',
-            );
-          }
-        }
-      }
-
-      // Step 4: Swizzle Awareness
+      // Step 3: Swizzle Awareness
       p.note(
         'You can customize any component with:\n  npx xds swizzle XDSButton\n  npx xds swizzle --list',
         'Component Customization',
       );
 
-      // Step 5: Template Selection
+      // Step 4: Template Selection
       const templates = listTemplates();
 
       if (templates.length > 0) {
@@ -151,7 +111,7 @@ export function registerInit(program) {
         }
       }
 
-      // Step 6: Success
+      // Step 5: Success
       p.outro('XDS initialized!');
 
       console.log('');
