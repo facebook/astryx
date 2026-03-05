@@ -19,15 +19,6 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     },
-    "./reset.css": "./src/reset.css",
-    "./typography.css": "./src/typography.css",
-    "./theme/tokens.stylex": {
-      "source": "./src/theme/tokens.stylex.ts",
-      "types": "./dist/theme/tokens.stylex.d.ts",
-      "import": "./dist/theme/tokens.stylex.mjs",
-      "require": "./dist/theme/tokens.stylex.js"
-    },
-    "./xds.md": "./xds.md",
     "./AppShell": {
       "source": "./src/AppShell/index.ts",
       "types": "./dist/AppShell/index.d.ts",
@@ -99,6 +90,12 @@
       "types": "./dist/Collapsible/index.d.ts",
       "import": "./dist/Collapsible/index.mjs",
       "require": "./dist/Collapsible/index.js"
+    },
+    "./CommandPalette": {
+      "source": "./src/CommandPalette/index.ts",
+      "types": "./dist/CommandPalette/index.d.ts",
+      "import": "./dist/CommandPalette/index.mjs",
+      "require": "./dist/CommandPalette/index.js"
     },
     "./DateInput": {
       "source": "./src/DateInput/index.ts",
@@ -340,18 +337,27 @@
       "import": "./dist/hooks/index.mjs",
       "require": "./dist/hooks/index.js"
     },
+    "./reset.css": "./src/reset.css",
     "./theme": {
       "source": "./src/theme/index.ts",
       "types": "./dist/theme/index.d.ts",
       "import": "./dist/theme/index.mjs",
       "require": "./dist/theme/index.js"
     },
+    "./theme/tokens.stylex": {
+      "source": "./src/theme/tokens.stylex.ts",
+      "types": "./dist/theme/tokens.stylex.d.ts",
+      "import": "./dist/theme/tokens.stylex.mjs",
+      "require": "./dist/theme/tokens.stylex.js"
+    },
+    "./typography.css": "./src/typography.css",
     "./utils": {
       "source": "./src/utils/index.ts",
       "types": "./dist/utils/index.d.ts",
       "import": "./dist/utils/index.mjs",
       "require": "./dist/utils/index.js"
-    }
+    },
+    "./xds.md": "./xds.md"
   },
   "files": [
     "dist",
