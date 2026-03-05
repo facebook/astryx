@@ -236,12 +236,21 @@ const meta: Meta<typeof XDSAppShell> = {
       control: 'radio',
       options: ['fill', 'auto'],
     },
+    initialIsSideNavCollapsed: {
+      control: 'boolean',
+      description: 'Whether the side nav starts collapsed',
+    },
     sideNavBreakpoint: {
       control: 'radio',
       options: ['sm', 'md', 'lg', 'none'],
     },
     sideNavWidth: {
       control: 'number',
+    },
+    background: {
+      control: 'radio',
+      options: ['surface', 'wash'],
+      description: 'Background color of the shell',
     },
   },
 };

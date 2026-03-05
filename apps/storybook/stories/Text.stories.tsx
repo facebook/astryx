@@ -11,6 +11,23 @@ const meta: Meta<typeof XDSText> = {
       options: ['body', 'large', 'label', 'supporting', 'code'],
       description: 'Semantic text type',
     },
+    size: {
+      control: 'select',
+      options: [
+        '4xs',
+        '3xs',
+        '2xs',
+        'xsm',
+        'sm',
+        'base',
+        'lg',
+        'xl',
+        '2xl',
+        '3xl',
+        '4xl',
+      ],
+      description: 'Explicit font size override',
+    },
     color: {
       control: 'select',
       options: [

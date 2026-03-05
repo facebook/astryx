@@ -354,3 +354,84 @@ export const TooltipWithOptional: Story = {
     isOptional: true,
   },
 };
+
+// =============================================================================
+// Status Variants
+// =============================================================================
+
+export const StatusVariants: Story = {
+  render: () => {
+    const [values, setValues] = useState({
+      error: 'bad-email',
+      warning: 'admin',
+      success: 'valid-user',
+    });
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '24px',
+          maxWidth: '400px',
+        }}>
+        <XDSField
+          label="Email"
+          description="Enter your work email address"
+          inputID="status-error-input"
+          status={{
+            type: 'error',
+            message: 'Please enter a valid email address',
+          }}>
+          <input
+            id="status-error-input"
+            value={values.error}
+            onChange={e => setValues(v => ({...v, error: e.target.value}))}
+            style={{
+              padding: '8px',
+              fontSize: '14px',
+              width: '100%',
+              boxSizing: 'border-box',
+            }}
+          />
+        </XDSField>
+        <XDSField
+          label="Username"
+          description="Choose a unique username"
+          inputID="status-warning-input"
+          status={{
+            type: 'warning',
+            message: 'This username is reserved for administrators',
+          }}>
+          <input
+            id="status-warning-input"
+            value={values.warning}
+            onChange={e => setValues(v => ({...v, warning: e.target.value}))}
+            style={{
+              padding: '8px',
+              fontSize: '14px',
+              width: '100%',
+              boxSizing: 'border-box',
+            }}
+          />
+        </XDSField>
+        <XDSField
+          label="API Key"
+          description="Paste your API key"
+          inputID="status-success-input"
+          status={{type: 'success', message: 'API key is valid and active'}}>
+          <input
+            id="status-success-input"
+            value={values.success}
+            onChange={e => setValues(v => ({...v, success: e.target.value}))}
+            style={{
+              padding: '8px',
+              fontSize: '14px',
+              width: '100%',
+              boxSizing: 'border-box',
+            }}
+          />
+        </XDSField>
+      </div>
+    );
+  },
+};

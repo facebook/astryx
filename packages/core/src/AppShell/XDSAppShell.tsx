@@ -233,7 +233,11 @@ const styles = stylex.create({
     top: 0,
     zIndex: 1,
   },
-  // Sticky sideNav for auto height mode
+  // Wrapper for auto height mode — stretches to full content height
+  sideNavAutoWrapper: {
+    alignSelf: 'stretch',
+  },
+  // Sticky sideNav for auto height mode — sticks within the wrapper
   sideNavSticky: {
     position: 'sticky',
     top: 'var(--appshell-header-height, 0px)',
@@ -446,7 +450,9 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
 
     const sideNavContent =
       sideNavPanel != null && isAuto ? (
-        <div {...stylex.props(styles.sideNavSticky)}>{sideNavPanel}</div>
+        <div {...stylex.props(styles.sideNavAutoWrapper)}>
+          <div {...stylex.props(styles.sideNavSticky)}>{sideNavPanel}</div>
+        </div>
       ) : (
         sideNavPanel
       );

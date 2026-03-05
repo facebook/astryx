@@ -62,7 +62,7 @@ describe('XDSField', () => {
     expect(screen.getByLabelText('Search')).toBeInTheDocument();
   });
 
-  it('hides description when isLabelHidden is true', () => {
+  it('visually hides description when isLabelHidden is true', () => {
     render(
       <XDSField
         label="Search"
@@ -73,7 +73,11 @@ describe('XDSField', () => {
         <input id="search-input" />
       </XDSField>,
     );
-    expect(screen.queryByText('Search for items')).not.toBeInTheDocument();
+    // Description should still be in the DOM for screen readers
+    const description = screen.getByText('Search for items');
+    expect(description).toBeInTheDocument();
+    // But should have the visually-hidden styles applied
+    expect(description.className).toContain('labelHidden');
   });
 
   it('shows label visually by default', () => {

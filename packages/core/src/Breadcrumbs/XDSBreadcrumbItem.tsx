@@ -70,7 +70,7 @@ export interface XDSBreadcrumbItemProps {
 
 const itemStyles = stylex.create({
   root: {
-    display: 'inline-flex',
+    display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
     lineHeight: lineHeightVars['--leading-snug'],
@@ -82,12 +82,12 @@ const itemStyles = stylex.create({
     fontSize: textSizeVars['--text-xsm'],
   },
   contentWrapper: {
-    display: 'inline-flex',
+    display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
   },
   link: {
-    display: 'inline-flex',
+    display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
     textDecoration: {
@@ -114,7 +114,7 @@ const itemStyles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   icon: {
-    display: 'inline-flex',
+    display: 'flex',
     alignItems: 'center',
     flexShrink: 0,
   },

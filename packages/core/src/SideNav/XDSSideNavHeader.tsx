@@ -115,8 +115,8 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 16,
-    height: 16,
+    width: spacingVars['--spacing-4'],
+    height: spacingVars['--spacing-4'],
     color: colorVars['--color-icon-secondary'],
   },
   popoverContent: {
