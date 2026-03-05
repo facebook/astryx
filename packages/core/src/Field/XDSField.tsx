@@ -223,10 +223,14 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
           labelIcon={labelIcon}
           labelTooltip={labelTooltip}
         />
-        {description && !isLabelHidden && (
+        {description && (
           <span
             id={descriptionID}
-            {...stylex.props(styles.description, descriptionOverride)}>
+            {...stylex.props(
+              styles.description,
+              isLabelHidden && styles.labelHidden,
+              descriptionOverride,
+            )}>
             {description}
           </span>
         )}

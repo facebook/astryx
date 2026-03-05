@@ -67,6 +67,11 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-surface'],
     borderRadius: radiusVars['--radius-container'],
     boxShadow: elevationVars['--elevation-dialog'],
+    display: {
+      default: 'none',
+      ':where([open])': 'flex',
+    },
+    flexDirection: 'column',
     overflow: 'hidden',
     height: 'fit-content',
     // Animation for opening

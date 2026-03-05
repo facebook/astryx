@@ -19,10 +19,13 @@ export default meta;
 type Story = StoryObj<typeof XDSTabList>;
 
 export const Default: Story = {
-  render: () => {
+  args: {
+    size: 'md',
+  },
+  render: args => {
     const [value, setValue] = useState('home');
     return (
-      <XDSTabList value={value} onChange={setValue}>
+      <XDSTabList value={value} onChange={setValue} size={args.size}>
         <XDSTab value="home" label="Home" />
         <XDSTab value="projects" label="Projects" />
         <XDSTab value="settings" label="Settings" />
@@ -32,10 +35,13 @@ export const Default: Story = {
 };
 
 export const WithMenu: Story = {
-  render: () => {
+  args: {
+    size: 'md',
+  },
+  render: args => {
     const [value, setValue] = useState('home');
     return (
-      <XDSTabList value={value} onChange={setValue}>
+      <XDSTabList value={value} onChange={setValue} size={args.size}>
         <XDSTab value="home" label="Home" />
         <XDSTab value="projects" label="Projects" />
         <XDSTabMenu
@@ -52,10 +58,13 @@ export const WithMenu: Story = {
 };
 
 export const MenuWithSelectedChild: Story = {
-  render: () => {
+  args: {
+    size: 'md',
+  },
+  render: args => {
     const [value, setValue] = useState('analytics');
     return (
-      <XDSTabList value={value} onChange={setValue}>
+      <XDSTabList value={value} onChange={setValue} size={args.size}>
         <XDSTab value="home" label="Home" />
         <XDSTab value="projects" label="Projects" />
         <XDSTabMenu
@@ -111,7 +120,10 @@ export const SizeVariants: Story = {
 };
 
 export const WithIcons: Story = {
-  render: () => {
+  args: {
+    size: 'md',
+  },
+  render: args => {
     const [value, setValue] = useState('home');
 
     // Inline SVG icons for the story
@@ -132,7 +144,7 @@ export const WithIcons: Story = {
     );
 
     return (
-      <XDSTabList value={value} onChange={setValue}>
+      <XDSTabList value={value} onChange={setValue} size={args.size}>
         <XDSTab value="home" label="Home" icon={HomeIcon} />
         <XDSTab value="settings" label="Settings" icon={CogIcon} />
       </XDSTabList>
