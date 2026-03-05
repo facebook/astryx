@@ -8,6 +8,20 @@ import {viteSingleFile} from 'vite-plugin-singlefile';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '../../..');
 
+/**
+ * Browser targets for lightningcss.
+ * Prevents lowering native light-dark() into --lightningcss-light/--lightningcss-dark
+ * polyfill variables. XDS tokens use native light-dark() which is baseline 2024:
+ * Chrome 123+, Firefox 120+, Safari 17.5+
+ *
+ * Must match the targets in apps/storybook/.storybook/main.ts
+ */
+const lightningcssTargets = {
+  chrome: 123 << 16,
+  firefox: 120 << 16,
+  safari: (17 << 16) | (5 << 8),
+};
+
 export default defineConfig({
   plugins: [
     stylex.vite({
@@ -23,6 +37,9 @@ export default defineConfig({
           repoRoot,
           'packages/core/src/theme/tokens.stylex.ts',
         ),
+      },
+      lightningcssOptions: {
+        targets: lightningcssTargets,
       },
     }),
     react(),
