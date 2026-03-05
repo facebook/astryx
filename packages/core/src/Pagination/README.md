@@ -95,6 +95,12 @@ import {XDSPagination} from '@xds/core/Pagination';
 - Ellipsis elements are `aria-hidden`
 - All interactive elements are keyboard accessible
 
+## Implementation Notes
+
+- Page number buttons use `XDSButton` (`variant="ghost"` for inactive, `variant="primary"` for active page) for theming and swizzle compatibility.
+- Prev/next buttons use `XDSButton` with `variant="ghost"` and icon-only mode.
+- Dot indicators remain custom elements (intentionally different visual treatment from buttons).
+
 ## Theme Integration
 
 ```typescript
@@ -103,8 +109,6 @@ theme.components.pagination = {
   root: {
     /* root nav styles */
   },
-  button: {
-    /* page button styles */
-  },
 };
+// Page buttons inherit theming from XDSButton's component styles
 ```
