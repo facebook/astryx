@@ -28,6 +28,11 @@ import {XDSCommandPaletteEmpty} from './XDSCommandPaletteEmpty';
 import {XDSCommandPaletteShortcut} from './XDSCommandPaletteShortcut';
 import {XDSCommandPaletteFooter} from './XDSCommandPaletteFooter';
 import {XDSCommandPaletteLoading} from './XDSCommandPaletteLoading';
+import * as stylex from '@stylexjs/stylex';
+import {
+  colorVars,
+  textSizeVars,
+} from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
 import type {XDSCommand, CommandPaletteFilterFn} from './types';
 
@@ -357,6 +362,16 @@ XDSCommandPaletteProvider.displayName = 'XDSCommandPaletteProvider';
 // Default command item renderer
 // =============================================================================
 
+const commandItemStyles = stylex.create({
+  label: {
+    flex: 1,
+  },
+  description: {
+    color: colorVars['--color-text-secondary'],
+    fontSize: textSizeVars['--text-sm'],
+  },
+});
+
 function CommandItem({command}: {command: XDSCommand}) {
   if (command.renderItem) {
     // Custom render — still wrap in Item for registration/keyboard/filtering
@@ -378,9 +393,9 @@ function CommandItem({command}: {command: XDSCommand}) {
       keywords={command.keywords}
       isDisabled={command.isDisabled}>
       {command.icon && <XDSIcon icon={command.icon} size="sm" />}
-      <span style={{flex: 1}}>{command.label}</span>
+      <span {...stylex.props(commandItemStyles.label)}>{command.label}</span>
       {command.description && (
-        <span style={{color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)'}}>
+        <span {...stylex.props(commandItemStyles.description)}>
           {command.description}
         </span>
       )}

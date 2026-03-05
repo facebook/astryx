@@ -9,7 +9,7 @@
  * - /packages/core/src/CommandPalette/index.ts
  */
 
-import {useCallback, useRef, useEffect, type KeyboardEvent, type SVGProps} from 'react';
+import {useCallback, useRef, useEffect, type KeyboardEvent} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -19,30 +19,9 @@ import {
   textSizeVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
+import {XDSIcon} from '../Icon';
 import {useCommandPaletteContext} from './CommandPaletteContext';
 
-/**
- * Search icon component for the command palette input.
- * Inline SVG since 'search' is not yet in XDSIconRegistry.
- */
-function SearchIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      width="1em"
-      height="1em"
-      {...props}>
-      <circle cx={11} cy={11} r={8} />
-      <line x1={21} y1={21} x2={16.65} y2={16.65} />
-    </svg>
-  );
-}
 
 const styles = stylex.create({
   wrapper: {
@@ -122,6 +101,11 @@ export function XDSCommandPaletteInput({
     inputRef.current?.focus();
   }, []);
 
+  // Keyboard navigation is handled here rather than via useListFocus because
+  // filtering causes items to appear/disappear dynamically. useListFocus is
+  // designed for static lists and doesn't account for items being filtered out
+  // mid-navigation. The combobox pattern (input + listbox) also requires the
+  // input to own focus while aria-activedescendant tracks the highlighted item.
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
       const enabledItems = getEnabledItems();
@@ -199,7 +183,7 @@ export function XDSCommandPaletteInput({
   return (
     <div {...stylex.props(styles.wrapper, xstyle)}>
       <div {...stylex.props(styles.icon)}>
-        <SearchIcon />
+        <XDSIcon icon="search" size="sm" color="secondary" />
       </div>
       <input
         ref={inputRef}
