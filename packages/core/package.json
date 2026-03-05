@@ -353,7 +353,13 @@
       "require": "./dist/utils/index.js"
     }
   },
+  "files": [
+    "dist",
+    "src",
+    "xds.md"
+  ],
   "scripts": {
+    "prepack": "yarn build",
     "build": "NODE_OPTIONS='--max-old-space-size=4096' tsup",
     "dev": "tsup --watch",
     "test": "vitest run --root ../..",
