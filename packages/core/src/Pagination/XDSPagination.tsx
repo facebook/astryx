@@ -1,6 +1,6 @@
 /**
  * @file XDSPagination.tsx
- * @input Uses React, StyleX, XDSButton, XDSIcon, XDSSelector, XDSText
+ * @input Uses React, StyleX, XDSButton, XDSIcon, XDSSelector, XDSText; page number buttons delegate to XDSButton
  * @output Exports XDSPagination component, XDSPaginationProps, XDSPaginationVariant, XDSPaginationSize types
  * @position Core implementation; consumed by index.ts, tested by XDSPagination.test.tsx
  *
@@ -24,11 +24,8 @@ import {
   colorVars,
   sizeVars,
   spacingVars,
-  radiusVars,
   transitionVars,
   textSizeVars,
-  fontWeightVars,
-  lineHeightVars,
 } from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
@@ -46,8 +43,6 @@ declare module '../theme/types' {
     pagination?: {
       /** Root nav container styles */
       root?: ThemeStyleXStyles;
-      /** Page number button styles */
-      button?: ThemeStyleXStyles;
     };
   }
 }
@@ -158,61 +153,6 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
-  },
-  pageButton: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: sizeVars['--size-md'],
-    height: sizeVars['--size-md'],
-    paddingInline: spacingVars['--spacing-2'],
-    borderWidth: 0,
-    borderStyle: 'none',
-    borderRadius: radiusVars['--radius-element'],
-    backgroundColor: 'transparent',
-    color: colorVars['--color-text-primary'],
-    fontFamily: 'inherit',
-    fontSize: textSizeVars['--text-base'],
-    lineHeight: lineHeightVars['--leading-base'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
-    cursor: 'pointer',
-    transitionProperty: 'background-color, color',
-    transitionDuration: transitionVars['--transition-fast'],
-    backgroundImage: {
-      default: null,
-      ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-pressed-overlay']}, ${colorVars['--color-pressed-overlay']})`,
-    },
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '3px',
-    },
-  },
-  pageButtonSm: {
-    minWidth: sizeVars['--size-sm'],
-    height: sizeVars['--size-sm'],
-    fontSize: textSizeVars['--text-sm'],
-  },
-  pageButtonActive: {
-    backgroundColor: colorVars['--color-accent'],
-    color: colorVars['--color-text-on-media'],
-    backgroundImage: {
-      default: null,
-      ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-pressed-overlay']}, ${colorVars['--color-pressed-overlay']})`,
-    },
-  },
-  pageButtonDisabled: {
-    cursor: 'not-allowed',
-    opacity: 0.5,
   },
   ellipsis: {
     display: 'inline-flex',
@@ -422,7 +362,6 @@ export const XDSPagination = forwardRef<HTMLElement, XDSPaginationProps>(
     const [isPending, startTransition] = useTransition();
     const themeContext = useContext(ThemeContext);
     const rootOverride = themeContext?.theme.components?.pagination?.root;
-    const buttonOverride = themeContext?.theme.components?.pagination?.button;
 
     // Compute pagination state
     const computedTotalPages =
@@ -514,22 +453,17 @@ export const XDSPagination = forwardRef<HTMLElement, XDSPaginationProps>(
                 }
                 const isActive = item === page;
                 return (
-                  <button
+                  <XDSButton
                     key={item}
-                    type="button"
+                    label={`Go to page ${item}`}
                     aria-label={`Go to page ${item}`}
-                    aria-current={isActive ? 'page' : undefined}
+                    variant={isActive ? 'primary' : 'ghost'}
+                    size={buttonSize}
                     onClick={() => handlePageChange(item)}
-                    disabled={isDisabled}
-                    {...stylex.props(
-                      styles.pageButton,
-                      isSm && styles.pageButtonSm,
-                      isActive && styles.pageButtonActive,
-                      isDisabled && styles.pageButtonDisabled,
-                      buttonOverride,
-                    )}>
+                    isDisabled={isDisabled}
+                    aria-current={isActive ? 'page' : undefined}>
                     {item}
-                  </button>
+                  </XDSButton>
                 );
               })}
             </>
