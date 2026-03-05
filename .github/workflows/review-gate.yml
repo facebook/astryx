@@ -7,6 +7,10 @@ on:
     types: [submitted]
   merge_group:
 
+permissions:
+  checks: write
+  pull-requests: read
+
 jobs:
   review-gate:
     name: review-gate
@@ -78,11 +82,44 @@ jobs:
               latestReviews.set(review.user.login, review.state);
             }
 
-            for (const owner of globalOwners) {
-              if (latestReviews.get(owner) === 'APPROVED') {
-                console.log(`Code owner @${owner} has approved this PR`);
-                return;
+            const approved = [...globalOwners].some(
+              owner => latestReviews.get(owner) === 'APPROVED'
+            );
+
+            if (approved) {
+              const approver = [...globalOwners].find(
+                owner => latestReviews.get(owner) === 'APPROVED'
+              );
+              console.log(`Code owner @${approver} has approved this PR`);
+
+              // Neutralize any previous failed review-gate check runs so they
+              // don't block merge. GitHub's status rollup considers ALL check
+              // runs for a given name — a stale failure poisons the overall
+              // result even when the latest run succeeded.
+              const checkRuns = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: pr.head.sha,
+                check_name: 'review-gate',
+              });
+
+              for (const run of checkRuns.data.check_runs) {
+                if (run.conclusion === 'failure') {
+                  console.log(`Neutralizing stale failed check run ${run.id}`);
+                  await github.rest.checks.update({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    check_run_id: run.id,
+                    conclusion: 'neutral',
+                    output: {
+                      title: 'Superseded',
+                      summary: 'Superseded by a newer review-gate run after code owner approval.',
+                    },
+                  });
+                }
               }
+
+              return;
             }
 
             core.setFailed(
