@@ -322,7 +322,7 @@ describe('useXDSCommandPaletteHistory', () => {
 // =============================================================================
 
 function renderHook<T>(hook: () => T) {
-  let result = {current: {} as T};
+  const result = {current: {} as T};
 
   function TestComponent() {
     result.current = hook();

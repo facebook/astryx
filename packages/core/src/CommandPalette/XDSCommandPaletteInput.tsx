@@ -108,9 +108,6 @@ export function XDSCommandPaletteInput({
   // input to own focus while aria-activedescendant tracks the highlighted item.
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
-      const enabledItems = getEnabledItems();
-      const enabledCount = enabledItems.length;
-
       switch (e.key) {
         case 'ArrowDown': {
           e.preventDefault();
