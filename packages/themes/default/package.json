@@ -1,7 +1,7 @@
 {
   "name": "@xds/theme-default",
   "version": "0.0.1",
-  "private": true,
+  "private": false,
   "description": "Default theme for XDS components (Heroicons)",
   "license": "MIT",
   "sideEffects": false,
