@@ -12,6 +12,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as crypto from 'node:crypto';
 import {execSync} from 'node:child_process';
 import {getResultsDir, ensureDir, readJson, writeJson} from './utils.js';
 
@@ -500,8 +501,12 @@ function buildPreview(
   promptId: string,
   outPath: string,
 ): boolean {
-  const tmpDir = path.join(VIBE_DIR, '.preview-tmp');
-  if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, {recursive: true});
+  // Use a unique temp directory per build to prevent race conditions
+  // when multiple build-previews processes run concurrently
+  const tmpDir = path.join(
+    VIBE_DIR,
+    `.preview-tmp-${crypto.randomUUID()}`,
+  );
   ensureDir(tmpDir);
 
   try {
