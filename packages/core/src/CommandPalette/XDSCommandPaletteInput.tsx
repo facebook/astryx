@@ -72,7 +72,7 @@ export interface XDSCommandPaletteInputProps {
  *
  * @example
  * ```
- * <XDSCommandPalette isOpen={isOpen} onHide={onHide}>
+ * <XDSCommandPalette isOpen={isOpen} onOpenChange={onOpenChange}>
  *   <XDSCommandPaletteInput placeholder="Search commands..." />
  *   <XDSCommandPaletteList>...</XDSCommandPaletteList>
  * </XDSCommandPalette>
@@ -90,7 +90,7 @@ export function XDSCommandPaletteInput({
     setHighlightedIndex,
     items,
     selectItem,
-    onHide,
+    onClose,
   } = useCommandPaletteContext();
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -165,12 +165,12 @@ export function XDSCommandPaletteInput({
         }
         case 'Escape': {
           e.preventDefault();
-          onHide();
+          onClose();
           break;
         }
       }
     },
-    [highlightedIndex, items, setHighlightedIndex, selectItem, onHide],
+    [highlightedIndex, items, setHighlightedIndex, selectItem, onClose],
   );
 
   const activeDescendant =

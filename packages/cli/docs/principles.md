@@ -10,9 +10,50 @@ React design system for internal tools. Components use `XDS` prefix.
 4. CSS variables for colors, not hex
 5. Form inputs are controlled (value + onChange)
 
+## Style Overrides: xstyle prop
+
+Most XDS components accept an `xstyle` prop for customizing styles.
+It supports three formats — pick the one that fits:
+
+**Inline styles** — for simple one-off overrides:
+
+```tsx
+<XDSTextInput label="Name" xstyle={{ maxWidth: 300 }} />
+<XDSCard xstyle={{ height: 200, padding: 16 }} />
+```
+
+**StyleX styles** — for complex, reusable, or pseudo-class overrides:
+
+```tsx
+import * as stylex from '@stylexjs/stylex';
+const overrides = stylex.create({
+  hoverCard: {
+    boxShadow: {
+      default: 'none',
+      ':hover': {'@media (hover: hover)': '0 4px 12px rgba(0,0,0,0.15)'},
+    },
+  },
+});
+<XDSCard xstyle={overrides.hoverCard} />;
+```
+
+**CSS class name** — for Tailwind, CSS Modules, or external CSS:
+
+```tsx
+<XDSCard xstyle="my-custom-card" />
+<XDSCard xstyle={styles.customCard} />  // CSS Module
+```
+
+Rules of thumb:
+
+- 1-2 simple properties → inline
+- 3+ properties, reusable, or named → `stylex.create`
+- Pseudo-classes (`:hover`, `:focus-visible`) → `stylex.create` (required)
+- All `:hover` MUST use `@media (hover: hover)` guards
+
 ## Anti-Patterns
 
-❌ Inline styles → Use StyleX
+❌ Inline styles on raw elements → Use `xstyle` on XDS components
 ❌ Hardcoded colors (#fff) → Use var(--color-_)
 ❌ Hardcoded spacing (16px) → Use spacing tokens or var(--spacing-_)
 ❌ Inventing props → Read component docs first

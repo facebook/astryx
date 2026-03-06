@@ -94,7 +94,7 @@ describe('XDSCommandPaletteShortcut', () => {
 describe('XDSCommandPalette (composable)', () => {
   it('renders when isOpen is true', () => {
     render(
-      <XDSCommandPalette isOpen={true} onHide={vi.fn()}>
+      <XDSCommandPalette isOpen={true} onOpenChange={vi.fn()}>
         <XDSCommandPaletteInput />
         <XDSCommandPaletteList>
           <XDSCommandPaletteItem value="test" onSelect={vi.fn()}>
@@ -109,7 +109,7 @@ describe('XDSCommandPalette (composable)', () => {
 
   it('renders groups with headings', () => {
     render(
-      <XDSCommandPalette isOpen={true} onHide={vi.fn()}>
+      <XDSCommandPalette isOpen={true} onOpenChange={vi.fn()}>
         <XDSCommandPaletteInput />
         <XDSCommandPaletteList>
           <XDSCommandPaletteGroup heading="Navigation">
@@ -126,7 +126,7 @@ describe('XDSCommandPalette (composable)', () => {
 
   it('renders empty state', () => {
     render(
-      <XDSCommandPalette isOpen={true} onHide={vi.fn()}>
+      <XDSCommandPalette isOpen={true} onOpenChange={vi.fn()}>
         <XDSCommandPaletteInput />
         <XDSCommandPaletteList>
           <XDSCommandPaletteEmpty>No results found</XDSCommandPaletteEmpty>
@@ -138,7 +138,7 @@ describe('XDSCommandPalette (composable)', () => {
 
   it('renders loading state', () => {
     render(
-      <XDSCommandPalette isOpen={true} onHide={vi.fn()}>
+      <XDSCommandPalette isOpen={true} onOpenChange={vi.fn()}>
         <XDSCommandPaletteInput />
         <XDSCommandPaletteList>
           <XDSCommandPaletteLoading>Searching...</XDSCommandPaletteLoading>
@@ -150,7 +150,7 @@ describe('XDSCommandPalette (composable)', () => {
 
   it('renders footer', () => {
     render(
-      <XDSCommandPalette isOpen={true} onHide={vi.fn()}>
+      <XDSCommandPalette isOpen={true} onOpenChange={vi.fn()}>
         <XDSCommandPaletteInput />
         <XDSCommandPaletteList>
           <XDSCommandPaletteItem value="test" onSelect={vi.fn()}>
@@ -168,7 +168,7 @@ describe('XDSCommandPalette (composable)', () => {
   it('calls onSelect when item is clicked', () => {
     const onSelect = vi.fn();
     render(
-      <XDSCommandPalette isOpen={true} onHide={vi.fn()}>
+      <XDSCommandPalette isOpen={true} onOpenChange={vi.fn()}>
         <XDSCommandPaletteInput />
         <XDSCommandPaletteList>
           <XDSCommandPaletteItem value="test" onSelect={onSelect}>
@@ -184,7 +184,7 @@ describe('XDSCommandPalette (composable)', () => {
   it('does not call onSelect for disabled items', () => {
     const onSelect = vi.fn();
     render(
-      <XDSCommandPalette isOpen={true} onHide={vi.fn()}>
+      <XDSCommandPalette isOpen={true} onOpenChange={vi.fn()}>
         <XDSCommandPaletteInput />
         <XDSCommandPaletteList>
           <XDSCommandPaletteItem value="test" onSelect={onSelect} isDisabled>
@@ -199,7 +199,10 @@ describe('XDSCommandPalette (composable)', () => {
 
   it('has correct ARIA attributes', () => {
     render(
-      <XDSCommandPalette isOpen={true} onHide={vi.fn()} label="Test palette">
+      <XDSCommandPalette
+        isOpen={true}
+        onOpenChange={vi.fn()}
+        label="Test palette">
         <XDSCommandPaletteInput placeholder="Search..." />
         <XDSCommandPaletteList>
           <XDSCommandPaletteItem value="test" onSelect={vi.fn()}>

@@ -153,7 +153,7 @@ export const FilterPanel: Story = {
         label="Filter"
         width={240}
         isOpen={isOpen}
-        onToggle={setIsOpen}
+        onOpenChange={setIsOpen}
         content={<FilterContent onApply={() => setIsOpen(false)} />}>
         <XDSButton label="Filter">Filter</XDSButton>
       </XDSPopover>
@@ -202,7 +202,7 @@ export const Confirmation: Story = {
         label="Confirm deletion"
         width={300}
         isOpen={isOpen}
-        onToggle={setIsOpen}
+        onOpenChange={setIsOpen}
         content={
           <ConfirmContent
             onConfirm={() => setIsOpen(false)}

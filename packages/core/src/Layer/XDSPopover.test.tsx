@@ -100,33 +100,33 @@ describe('XDSPopover', () => {
     expect(dialog).toHaveAttribute('aria-label', 'Greeting');
   });
 
-  it('calls onToggle when opened', () => {
-    const onToggle = vi.fn();
+  it('calls onOpenChange when opened', () => {
+    const onOpenChange = vi.fn();
     render(
       <XDSPopover
         content={<span>Content</span>}
         label="Test"
-        onToggle={onToggle}>
+        onOpenChange={onOpenChange}>
         <button>Open</button>
       </XDSPopover>,
     );
     fireEvent.click(screen.getByRole('button', {name: 'Open'}));
-    expect(onToggle).toHaveBeenCalledWith(true);
+    expect(onOpenChange).toHaveBeenCalledWith(true);
   });
 
   it('does not open when isEnabled is false', () => {
-    const onToggle = vi.fn();
+    const onOpenChange = vi.fn();
     render(
       <XDSPopover
         content={<span>Content</span>}
         label="Test"
         isEnabled={false}
-        onToggle={onToggle}>
+        onOpenChange={onOpenChange}>
         <button>Open</button>
       </XDSPopover>,
     );
     fireEvent.click(screen.getByRole('button', {name: 'Open'}));
-    expect(onToggle).not.toHaveBeenCalled();
+    expect(onOpenChange).not.toHaveBeenCalled();
   });
 
   it('renders with data-testid', () => {

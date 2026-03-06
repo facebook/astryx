@@ -92,10 +92,10 @@ export interface XDSAppShellProps {
   height?: 'fill' | 'auto';
 
   /**
-   * Initial collapsed state for uncontrolled usage.
+   * Default collapsed state for uncontrolled usage.
    * @default false
    */
-  initialIsSideNavCollapsed?: boolean;
+  defaultIsSideNavCollapsed?: boolean;
 
   /**
    * Whether the side nav is collapsed (controlled).
@@ -264,7 +264,7 @@ const styles = stylex.create({
  *   topNav={<XDSTopNav label="Navigation" title={<XDSTopNavTitle title="My App" />} />}
  *   sideNav={<XDSSideNav>{navSections}</XDSSideNav>}
  *   mobileNav={
- *     <XDSMobileNav isOpen={mobileOpen} onClose={() => setMobileOpen(false)} title="My App">
+ *     <XDSMobileNav isOpen={mobileOpen} onOpenChange={(open) => setMobileOpen(open)} title="My App">
  *       {navSections}
  *     </XDSMobileNav>
  *   }
@@ -281,7 +281,7 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
       children,
       'data-testid': dataTestId,
       height = 'fill',
-      initialIsSideNavCollapsed = false,
+      defaultIsSideNavCollapsed = false,
       isSideNavCollapsed: controlledCollapsed,
       mobileNav,
       onSideNavCollapsedChange,
@@ -298,7 +298,7 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
     // =========================================================================
     const isControlled = controlledCollapsed !== undefined;
     const [uncontrolledCollapsed, setUncontrolledCollapsed] = useState(
-      initialIsSideNavCollapsed,
+      defaultIsSideNavCollapsed,
     );
     const isCollapsed = isControlled
       ? controlledCollapsed
@@ -507,7 +507,7 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
         {useDefaultMobileNav && (
           <XDSMobileNav
             isOpen={!isCollapsed}
-            onClose={handleToggleCollapse}
+            onOpenChange={() => handleToggleCollapse()}
             width={sideNavWidth}
             data-testid="sidenav-mobile">
             {sideNav}

@@ -325,7 +325,9 @@ export function XDSCommandPaletteProvider({
       {children}
       <XDSCommandPalette
         isOpen={isOpen}
-        onHide={close}
+        onOpenChange={open => {
+          if (!open) close();
+        }}
         onValueChange={handleValueChange}
         filter={filter}>
         <XDSCommandPaletteInput placeholder={placeholder} />

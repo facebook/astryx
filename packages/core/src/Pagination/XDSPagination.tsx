@@ -537,7 +537,7 @@ export const XDSPagination = forwardRef<HTMLElement, XDSPaginationProps>(
               <XDSSelector
                 label="Items per page"
                 isLabelHidden
-                items={pageSizeOptions.map(opt => String(opt))}
+                options={pageSizeOptions.map(opt => String(opt))}
                 value={String(pageSize)}
                 onChange={handlePageSizeChange}
                 size={buttonSize}

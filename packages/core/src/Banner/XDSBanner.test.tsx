@@ -175,9 +175,9 @@ describe('XDSBanner', () => {
     expect(screen.queryByTestId('child-content')).not.toBeInTheDocument();
   });
 
-  it('shows children when isDefaultExpanded is true', () => {
+  it('shows children when defaultIsExpanded is true', () => {
     render(
-      <XDSBanner status="info" title="Expanded" isDefaultExpanded>
+      <XDSBanner status="info" title="Expanded" defaultIsExpanded>
         <div data-testid="child-content">Extra content</div>
       </XDSBanner>,
     );
@@ -226,9 +226,9 @@ describe('XDSBanner', () => {
     expect(screen.getByRole('button', {name: 'Expand'})).toBeInTheDocument();
   });
 
-  it('shows collapse button when isDefaultExpanded', () => {
+  it('shows collapse button when defaultIsExpanded', () => {
     render(
-      <XDSBanner status="info" title="Expanded" isDefaultExpanded>
+      <XDSBanner status="info" title="Expanded" defaultIsExpanded>
         <div>Content</div>
       </XDSBanner>,
     );

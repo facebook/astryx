@@ -26,7 +26,7 @@ beforeEach(() => {
 describe('XDSDialog', () => {
   it('renders when isOpen is true', () => {
     render(
-      <XDSDialog isOpen={true} onHide={() => {}}>
+      <XDSDialog isOpen={true} onOpenChange={() => {}}>
         Dialog content
       </XDSDialog>,
     );
@@ -36,7 +36,7 @@ describe('XDSDialog', () => {
 
   it('calls showModal when opened', () => {
     render(
-      <XDSDialog isOpen={true} onHide={() => {}}>
+      <XDSDialog isOpen={true} onOpenChange={() => {}}>
         Content
       </XDSDialog>,
     );
@@ -45,7 +45,7 @@ describe('XDSDialog', () => {
 
   it('does not show when isOpen is false', () => {
     render(
-      <XDSDialog isOpen={false} onHide={() => {}}>
+      <XDSDialog isOpen={false} onOpenChange={() => {}}>
         Hidden content
       </XDSDialog>,
     );
@@ -55,7 +55,7 @@ describe('XDSDialog', () => {
 
   it('has aria-modal attribute', () => {
     render(
-      <XDSDialog isOpen={true} onHide={() => {}}>
+      <XDSDialog isOpen={true} onOpenChange={() => {}}>
         Content
       </XDSDialog>,
     );
@@ -63,11 +63,11 @@ describe('XDSDialog', () => {
   });
 
   describe('purpose: info (default)', () => {
-    it('calls onHide when Escape is pressed', () => {
+    it('calls onOpenChange(false) when Escape is pressed', () => {
       const handleHide = vi.fn();
 
       render(
-        <XDSDialog isOpen={true} onHide={handleHide} purpose="info">
+        <XDSDialog isOpen={true} onOpenChange={handleHide} purpose="info">
           Content
         </XDSDialog>,
       );
@@ -84,11 +84,11 @@ describe('XDSDialog', () => {
   });
 
   describe('purpose: form', () => {
-    it('calls onHide when Escape is pressed', () => {
+    it('calls onOpenChange(false) when Escape is pressed', () => {
       const handleHide = vi.fn();
 
       render(
-        <XDSDialog isOpen={true} onHide={handleHide} purpose="form">
+        <XDSDialog isOpen={true} onOpenChange={handleHide} purpose="form">
           Content
         </XDSDialog>,
       );
@@ -105,11 +105,11 @@ describe('XDSDialog', () => {
   });
 
   describe('purpose: required', () => {
-    it('does not call onHide when Escape is pressed', () => {
+    it('does not call onOpenChange when Escape is pressed', () => {
       const handleHide = vi.fn();
 
       render(
-        <XDSDialog isOpen={true} onHide={handleHide} purpose="required">
+        <XDSDialog isOpen={true} onOpenChange={handleHide} purpose="required">
           Content
         </XDSDialog>,
       );
@@ -127,7 +127,7 @@ describe('XDSDialog', () => {
     it('prevents default on cancel event', () => {
       const handleHide = vi.fn();
       render(
-        <XDSDialog isOpen={true} onHide={handleHide} purpose="required">
+        <XDSDialog isOpen={true} onOpenChange={handleHide} purpose="required">
           Content
         </XDSDialog>,
       );
@@ -144,7 +144,7 @@ describe('XDSDialog', () => {
   describe('variant: standard', () => {
     it('renders with default variant', () => {
       render(
-        <XDSDialog isOpen={true} onHide={() => {}}>
+        <XDSDialog isOpen={true} onOpenChange={() => {}}>
           Content
         </XDSDialog>,
       );
@@ -153,7 +153,7 @@ describe('XDSDialog', () => {
 
     it('accepts custom width', () => {
       render(
-        <XDSDialog isOpen={true} onHide={() => {}} width={600}>
+        <XDSDialog isOpen={true} onOpenChange={() => {}} width={600}>
           Content
         </XDSDialog>,
       );
@@ -162,7 +162,7 @@ describe('XDSDialog', () => {
 
     it('accepts custom maxHeight', () => {
       render(
-        <XDSDialog isOpen={true} onHide={() => {}} maxHeight="50vh">
+        <XDSDialog isOpen={true} onOpenChange={() => {}} maxHeight="50vh">
           Content
         </XDSDialog>,
       );
@@ -173,7 +173,7 @@ describe('XDSDialog', () => {
   describe('variant: fullscreen', () => {
     it('renders fullscreen variant', () => {
       render(
-        <XDSDialog isOpen={true} onHide={() => {}} variant="fullscreen">
+        <XDSDialog isOpen={true} onOpenChange={() => {}} variant="fullscreen">
           Content
         </XDSDialog>,
       );
@@ -186,7 +186,7 @@ describe('XDSDialog', () => {
       render(
         <XDSDialog
           isOpen={true}
-          onHide={() => {}}
+          onOpenChange={() => {}}
           position={{top: 100, right: 20}}>
           Content
         </XDSDialog>,
@@ -198,7 +198,7 @@ describe('XDSDialog', () => {
       render(
         <XDSDialog
           isOpen={true}
-          onHide={() => {}}
+          onOpenChange={() => {}}
           position={{top: '10vh', left: '5vw'}}>
           Content
         </XDSDialog>,
@@ -209,7 +209,10 @@ describe('XDSDialog', () => {
 
   it('forwards additional props to dialog element', () => {
     render(
-      <XDSDialog isOpen={true} onHide={() => {}} data-testid="custom-dialog">
+      <XDSDialog
+        isOpen={true}
+        onOpenChange={() => {}}
+        data-testid="custom-dialog">
         Content
       </XDSDialog>,
     );

@@ -185,9 +185,11 @@ export interface XDSMobileNavProps {
   isOpen: boolean;
 
   /**
-   * Called when the drawer should close (backdrop click, escape, close button).
+   * Callback fired when the drawer visibility changes.
+   * Called with `false` when the drawer should close
+   * (backdrop click, escape, close button).
    */
-  onClose: () => void;
+  onOpenChange: (isOpen: boolean) => void;
 
   /**
    * Drawer content — typically XDSSideNavSection/XDSSideNavItem, or any ReactNode.
@@ -240,7 +242,7 @@ export interface XDSMobileNavProps {
  *
  * <XDSMobileNav
  *   isOpen={isOpen}
- *   onClose={() => setIsOpen(false)}
+ *   onOpenChange={(open) => setIsOpen(open)}
  *   title="Navigation"
  * >
  *   <XDSSideNavSection title="Main">
@@ -254,7 +256,7 @@ export const XDSMobileNav = forwardRef<HTMLDialogElement, XDSMobileNavProps>(
   function XDSMobileNav(
     {
       isOpen,
-      onClose,
+      onOpenChange,
       children,
       title,
       width = 280,
@@ -296,13 +298,13 @@ export const XDSMobileNav = forwardRef<HTMLDialogElement, XDSMobileNavProps>(
       }
     }, [isOpen]);
 
-    // Handle native cancel event (Escape key) — prevent default and route through onClose
+    // Handle native cancel event (Escape key) — prevent default and route through onOpenChange
     const handleCancel = useCallback(
       (event: React.SyntheticEvent<HTMLDialogElement>) => {
         event.preventDefault();
-        onClose();
+        onOpenChange(false);
       },
-      [onClose],
+      [onOpenChange],
     );
 
     // Handle clicks on the dialog backdrop area (outside the drawer)
@@ -311,10 +313,10 @@ export const XDSMobileNav = forwardRef<HTMLDialogElement, XDSMobileNavProps>(
         // Only close if click was directly on the dialog element (the transparent overlay),
         // not on the drawer or its children
         if (event.target === event.currentTarget) {
-          onClose();
+          onOpenChange(false);
         }
       },
-      [onClose],
+      [onOpenChange],
     );
 
     // Get theme context for component-level overrides
@@ -356,7 +358,7 @@ export const XDSMobileNav = forwardRef<HTMLDialogElement, XDSMobileNavProps>(
               label="Close navigation"
               tooltip="Close"
               icon={<XDSIcon icon="close" color="inherit" />}
-              onClick={onClose}
+              onClick={() => onOpenChange(false)}
             />
           </div>
 

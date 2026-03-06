@@ -189,4 +189,16 @@ describe('XDSCheckboxInput', () => {
     const label = screen.getByText('Accept terms');
     expect(label).toBeVisible();
   });
+
+  it('sets aria-busy when loading', () => {
+    render(
+      <XDSCheckboxInput
+        label="Accept terms"
+        value={false}
+        onChange={() => {}}
+        isLoading
+      />,
+    );
+    expect(screen.getByRole('checkbox')).toHaveAttribute('aria-busy', 'true');
+  });
 });

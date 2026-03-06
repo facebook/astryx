@@ -5,20 +5,20 @@ Dropdown selector for choosing from a list of options. Follows XDS input convent
 ## Usage
 
 ```tsx
-import {XDSSelector, XDSSelectorItem} from '@xds/core/Selector';
+import {XDSSelector, XDSSelectorOption} from '@xds/core/Selector';
 
 // Basic usage (label is required)
 <XDSSelector
   label="Fruit"
-  items={['Apple', 'Banana', 'Orange']}
+  options={['Apple', 'Banana', 'Orange']}
   value={value}
   onChange={setValue}
 />
 
-// With object items (supports disabled, icons)
+// With object options (supports disabled, icons)
 <XDSSelector
   label="Settings"
-  items={[
+  options={[
     {value: 'profile', label: 'Profile', icon: UserIcon},
     {value: 'settings', label: 'Settings', icon: CogIcon, disabled: true},
   ]}
@@ -29,9 +29,9 @@ import {XDSSelector, XDSSelectorItem} from '@xds/core/Selector';
 // Sections (automatically include labeled dividers)
 <XDSSelector
   label="Fruit"
-  items={[
+  options={[
     {value: 'apple', label: 'Apple'},
-    {type: 'section', title: 'Citrus', items: [
+    {type: 'section', title: 'Citrus', options: [
       {value: 'orange', label: 'Orange'},
     ]},
   ]}
@@ -39,13 +39,13 @@ import {XDSSelector, XDSSelectorItem} from '@xds/core/Selector';
   onChange={setValue}
 />
 
-// Custom rendering with XDSSelectorItem
-<XDSSelector label="User" items={users} value={value} onChange={setValue}>
-  {user => (
-    <XDSSelectorItem
+// Custom rendering with XDSSelectorOption
+<XDSSelector label="User" options={users} value={value} onChange={setValue}>
+  {option => (
+    <XDSSelectorOption
       icon={UserIcon}
-      label={user.label}
-      description={user.email}
+      label={option.label}
+      description={option.email}
     />
   )}
 </XDSSelector>
@@ -55,7 +55,7 @@ import {XDSSelector, XDSSelectorItem} from '@xds/core/Selector';
   label="Fruit"
   isRequired
   status={{type: 'error', message: 'Required'}}
-  items={['Apple', 'Banana']}
+  options={['Apple', 'Banana']}
   value={value}
   onChange={setValue}
 />
@@ -68,28 +68,28 @@ Dropdown selector for choosing from a list of options.
 ```tsx
 <XDSSelector
   label="Fruit"
-  items={['Apple', 'Banana', 'Orange']}
+  options={['Apple', 'Banana', 'Orange']}
   value={value}
   onChange={setValue}
 />
 ```
 
-| Prop                        | Type                                                      | Description                                                         |
-| --------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------- |
-| `label`                     | `string`                                                  | **Required.** Label text for accessibility                          |
-| `items`                     | `XDSSelectorOption[]`                                     | **Required.** Array of items (strings, objects, dividers, sections) |
-| `value`                     | `string`                                                  | Selected value                                                      |
-| `onChange`                  | `(value: string) => void`                                 | Selection callback                                                  |
-| `placeholder`               | `string`                                                  | Placeholder text (default: `'Select...'`)                           |
-| `size`                      | `'sm' \| 'md' \| 'lg'`                                    | Size variant (default: `'md'`)                                      |
-| `isDisabled`                | `boolean`                                                 | Disable selector                                                    |
-| `isLabelHidden`             | `boolean`                                                 | Visually hide label                                                 |
-| `description`               | `string`                                                  | Helper text below label                                             |
-| `isOptional` / `isRequired` | `boolean`                                                 | Field requirement indicators                                        |
-| `status`                    | `{type: 'error'\|'warning'\|'success', message?: string}` | Status with optional message                                        |
-| `children`                  | `(item: XDSSelectorItemData) => ReactNode`                | Custom item renderer                                                |
+| Prop                        | Type                                                      | Description                                                           |
+| --------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------- |
+| `label`                     | `string`                                                  | **Required.** Label text for accessibility                            |
+| `options`                   | `XDSSelectorOptionType[]`                                 | **Required.** Array of options (strings, objects, dividers, sections) |
+| `value`                     | `string`                                                  | Selected value                                                        |
+| `onChange`                  | `(value: string) => void`                                 | Selection callback                                                    |
+| `placeholder`               | `string`                                                  | Placeholder text (default: `'Select...'`)                             |
+| `size`                      | `'sm' \| 'md' \| 'lg'`                                    | Size variant (default: `'md'`)                                        |
+| `isDisabled`                | `boolean`                                                 | Disable selector                                                      |
+| `isLabelHidden`             | `boolean`                                                 | Visually hide label                                                   |
+| `description`               | `string`                                                  | Helper text below label                                               |
+| `isOptional` / `isRequired` | `boolean`                                                 | Field requirement indicators                                          |
+| `status`                    | `{type: 'error'\|'warning'\|'success', message?: string}` | Status with optional message                                          |
+| `children`                  | `(option: XDSSelectorOptionData) => ReactNode`            | Custom option renderer                                                |
 
-## Item Types
+## Option Types
 
 ```tsx
 // String - converted to {value: 'Apple', label: 'Apple'}
@@ -101,27 +101,27 @@ Dropdown selector for choosing from a list of options.
 // Divider - horizontal separator
 {type: 'divider'}
 
-// Section - grouped items with labeled divider
-{type: 'section', title: 'Group Name', items: [...]}
+// Section - grouped options with labeled divider
+{type: 'section', title: 'Group Name', options: [...]}
 ```
 
-### XDSSelectorItem
+### XDSSelectorOption
 
-Helper for custom item rendering:
+Helper for custom option rendering:
 
 ```tsx
-<XDSSelectorItem
+<XDSSelectorOption
   icon={UserIcon}
   label="Primary text"
   description="Secondary"
 />
 ```
 
-| Prop          | Type          | Default | Description                       |
-| ------------- | ------------- | ------- | --------------------------------- |
-| `icon`        | `XDSIconType` | —       | Icon before the label             |
-| `label`       | `ReactNode`   | —       | Primary label text (required)     |
-| `description` | `ReactNode`   | —       | Secondary description text        |
+| Prop          | Type          | Default | Description                   |
+| ------------- | ------------- | ------- | ----------------------------- |
+| `icon`        | `XDSIconType` | —       | Icon before the label         |
+| `label`       | `ReactNode`   | —       | Primary label text (required) |
+| `description` | `ReactNode`   | —       | Secondary description text    |
 
 ## Keyboard
 

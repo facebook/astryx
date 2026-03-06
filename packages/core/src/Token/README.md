@@ -2,6 +2,8 @@
 
 A chip/tag component for displaying entities inline. Renders as a `<span>` by default, `<button>` when `onClick` is provided, or `<a>` when `href` is provided.
 
+Long labels are automatically truncated with an ellipsis. When `onClick` is provided, the focus outline wraps the entire token (not just the label) via `:focus-within` on the container.
+
 ## Exports
 
 | Export          | Type      | Description          |

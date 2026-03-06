@@ -268,4 +268,48 @@ describe('XDSTokenizer', () => {
     );
     expect(screen.getByRole('group')).toHaveAttribute('aria-label', 'Members');
   });
+
+  it('hides placeholder when tokens are present', () => {
+    render(
+      <XDSTokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[users[0]]}
+        onChange={() => {}}
+        placeholder="Search people..."
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    // Placeholder should be empty when tokens exist
+    expect(input).not.toHaveAttribute('placeholder', 'Search people...');
+  });
+
+  it('shows placeholder when no tokens are present', () => {
+    render(
+      <XDSTokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        placeholder="Search people..."
+      />,
+    );
+    expect(screen.getByPlaceholderText('Search people...')).toBeInTheDocument();
+  });
+
+  it('renders tokens as direct children of wrapper (not in a sub-container)', () => {
+    const {container} = render(
+      <XDSTokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[users[0], users[1]]}
+        onChange={() => {}}
+        data-testid="tokenizer"
+      />,
+    );
+    const wrapper = screen.getByTestId('tokenizer');
+    // Tokens should be direct children of the wrapper, not nested in a div
+    const tokenElements = wrapper.querySelectorAll(':scope > span');
+    expect(tokenElements.length).toBeGreaterThanOrEqual(2);
+  });
 });

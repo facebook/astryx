@@ -115,7 +115,7 @@ export interface XDSPopoverProps {
   /**
    * Callback fired when the popover visibility changes.
    */
-  onToggle?: (isOpen: boolean) => void;
+  onOpenChange?: (isOpen: boolean) => void;
 
   /**
    * Whether the popover is enabled.
@@ -236,7 +236,7 @@ const styles = stylex.create({
  * // Controlled popover
  * <XDSPopover
  *   isOpen={isOpen}
- *   onToggle={setIsOpen}
+ *   onOpenChange={setIsOpen}
  *   label="Filter"
  *   content={<FilterForm />}
  * >
@@ -259,7 +259,7 @@ export function XDSPopover({
   placement = 'below',
   alignment = 'start',
   isOpen,
-  onToggle,
+  onOpenChange,
   isEnabled = true,
   width,
   label,
@@ -275,10 +275,10 @@ export function XDSPopover({
   const popover = useXDSPopover({
     dialogLabel: label,
     hasLightDismiss: true,
-    onShow: () => onToggle?.(true),
+    onShow: () => onOpenChange?.(true),
     onHide: () => {
       lastHideTimeRef.current = Date.now();
-      onToggle?.(false);
+      onOpenChange?.(false);
     },
   });
 

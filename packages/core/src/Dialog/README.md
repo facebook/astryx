@@ -36,7 +36,7 @@ function Example() {
     <>
       <XDSButton label="Open Dialog" onClick={() => setIsOpen(true)} />
 
-      <XDSDialog isOpen={isOpen} onHide={() => setIsOpen(false)}>
+      <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
         <XDSLayout
           header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
           content={<XDSLayoutContent>Content goes here</XDSLayoutContent>}
@@ -68,7 +68,7 @@ function Example() {
 Modal dialog using the native `<dialog>` element.
 
 ```tsx
-<XDSDialog isOpen={isOpen} onHide={() => setIsOpen(false)}>
+<XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
   <XDSLayout
     header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
     content={<XDSLayoutContent>Content goes here</XDSLayoutContent>}
@@ -85,16 +85,16 @@ Modal dialog using the native `<dialog>` element.
 </XDSDialog>
 ```
 
-| Prop        | Type                             | Default      | Description                                      |
-| ----------- | -------------------------------- | ------------ | ------------------------------------------------ |
-| `isOpen`    | `boolean`                        | —            | Whether the dialog is open (required)            |
-| `onHide`    | `() => unknown`                  | —            | Callback when dialog requests to hide (required) |
-| `width`     | `number \| string`               | `400`        | Width of the dialog (px or CSS value)            |
-| `maxHeight` | `number \| string`               | `'75vh'`     | Maximum height of the dialog                     |
-| `position`  | `XDSDialogPosition`              | —            | Static position (centered by default)            |
-| `variant`   | `'standard' \| 'fullscreen'`     | `'standard'` | Dialog variant                                   |
-| `purpose`   | `'required' \| 'form' \| 'info'` | `'info'`     | Dismissal behavior                               |
-| `children`  | `ReactNode`                      | —            | Dialog content (required)                        |
+| Prop           | Type                             | Default      | Description                                        |
+| -------------- | -------------------------------- | ------------ | -------------------------------------------------- |
+| `isOpen`       | `boolean`                        | —            | Whether the dialog is open (required)              |
+| `onOpenChange` | `(isOpen: boolean) => unknown`   | —            | Callback when dialog visibility changes (required) |
+| `width`        | `number \| string`               | `400`        | Width of the dialog (px or CSS value)              |
+| `maxHeight`    | `number \| string`               | `'75vh'`     | Maximum height of the dialog                       |
+| `position`     | `XDSDialogPosition`              | —            | Static position (centered by default)              |
+| `variant`      | `'standard' \| 'fullscreen'`     | `'standard'` | Dialog variant                                     |
+| `purpose`      | `'required' \| 'form' \| 'info'` | `'info'`     | Dismissal behavior                                 |
+| `children`     | `ReactNode`                      | —            | Dialog content (required)                          |
 
 ### XDSDialogHeader
 
@@ -104,7 +104,7 @@ Header for dialogs with title, optional subtitle, close button, and start/end co
 <XDSDialogHeader
   title="Confirm Action"
   subtitle="This cannot be undone"
-  onHide={() => setIsOpen(false)}
+  onOpenChange={open => setIsOpen(open)}
 />
 ```
 
@@ -112,23 +112,10 @@ Header for dialogs with title, optional subtitle, close button, and start/end co
 | -------------- | --------------- | ------- | -------------------------------------------- |
 | `title`        | `string`        | —       | Dialog title (receives focus on open)        |
 | `subtitle`     | `string`        | —       | Subtitle below the title                     |
-| `onHide`       | `() => unknown` | —       | Close button callback (no button if omitted) |
+| `onOpenChange` | `() => unknown` | —       | Close button callback (no button if omitted) |
 | `startContent` | `ReactNode`     | —       | Content before the title (e.g., back button) |
 | `endContent`   | `ReactNode`     | —       | Content after the title, before close button |
 | `hasDivider`   | `boolean`       | `true`  | Adds border at the bottom edge               |
-
-## Props
-
-| Prop        | Type                             | Default      | Description                                      |
-| ----------- | -------------------------------- | ------------ | ------------------------------------------------ |
-| `isOpen`    | `boolean`                        | —            | Whether the dialog is open (required)            |
-| `onHide`    | `() => unknown`                  | —            | Callback when dialog requests to hide (required) |
-| `width`     | `number \| string`               | `400`        | Width of the dialog (px or CSS value)            |
-| `maxHeight` | `number \| string`               | `'75vh'`     | Maximum height of the dialog                     |
-| `position`  | `XDSDialogPosition`              | —            | Static position (centered by default)            |
-| `variant`   | `'standard' \| 'fullscreen'`     | `'standard'` | Dialog variant                                   |
-| `purpose`   | `'required' \| 'form' \| 'info'` | `'info'`     | Dismissal behavior                               |
-| `children`  | `ReactNode`                      | —            | Dialog content (required)                        |
 
 ## Purpose Prop
 
@@ -149,7 +136,7 @@ Configure a static position instead of centering:
 ```tsx
 <XDSDialog
   isOpen={isOpen}
-  onHide={() => setIsOpen(false)}
+  onOpenChange={open => setIsOpen(open)}
   position={{top: 100, right: 20}}>
   {/* content */}
 </XDSDialog>

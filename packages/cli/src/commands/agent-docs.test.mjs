@@ -5,6 +5,7 @@ import * as os from 'node:os';
 import {
   generateCompressedIndex,
   getXdsVersion,
+  installAgentDocs,
   injectAgentsMd,
   injectClaudeMd,
   injectXdsBlock,
@@ -248,5 +249,51 @@ XDS index stuff
     expect(claudeContent).toContain('Rules.');
     expect(claudeContent).toContain('More rules.');
     expect(claudeContent).not.toContain('<!-- XDS:START -->');
+  });
+});
+
+describe('installAgentDocs', () => {
+  function setupCorePackage(dir, version = '1.0.0') {
+    // Create a minimal @xds/core so getXdsVersion works
+    const coreDir = path.join(dir, 'node_modules', '@xds', 'core');
+    fs.mkdirSync(coreDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(coreDir, 'package.json'),
+      JSON.stringify({version}),
+    );
+  }
+
+  it('creates AGENTS.md when neither file exists', () => {
+    setupCorePackage(tmpDir);
+
+    installAgentDocs(tmpDir);
+
+    expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, 'CLAUDE.md'))).toBe(false);
+  });
+
+  it('injects into CLAUDE.md and skips creating AGENTS.md when only CLAUDE.md exists', () => {
+    setupCorePackage(tmpDir);
+    fs.writeFileSync(path.join(tmpDir, 'CLAUDE.md'), '# Claude\n\nProject rules.\n');
+
+    installAgentDocs(tmpDir);
+
+    expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(false);
+    const claudeContent = fs.readFileSync(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
+    expect(claudeContent).toContain('<!-- XDS:START -->');
+    expect(claudeContent).toContain('Project rules.');
+  });
+
+  it('injects into both when both files exist', () => {
+    setupCorePackage(tmpDir);
+    fs.writeFileSync(path.join(tmpDir, 'AGENTS.md'), '# Agents\n\nAgent rules.\n');
+    fs.writeFileSync(path.join(tmpDir, 'CLAUDE.md'), '# Claude\n\nClaude rules.\n');
+
+    installAgentDocs(tmpDir);
+
+    const agentsContent = fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
+    const claudeContent = fs.readFileSync(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
+    expect(agentsContent).toContain('<!-- XDS:START -->');
+    expect(claudeContent).toContain('<!-- XDS:START -->');
   });
 });

@@ -36,7 +36,7 @@ Three layers, each building on the last:
 ### Layer 1: Composable
 
 ```tsx
-<XDSCommandPalette isOpen={isOpen} onHide={() => setIsOpen(false)}>
+<XDSCommandPalette isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
   <XDSCommandPaletteInput placeholder="Search..." />
   <XDSCommandPaletteList>
     <XDSCommandPaletteGroup heading="Navigation">
