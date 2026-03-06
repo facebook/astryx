@@ -34,10 +34,10 @@ const styles = stylex.create({
 
 export interface XDSCommandPaletteProps {
   /**
-   * Whether the command palette is shown.
+   * Whether the command palette is open.
    * Matches XDSDialog convention.
    */
-  isShown: boolean;
+  isOpen: boolean;
 
   /**
    * Called when the palette requests to close.
@@ -96,7 +96,7 @@ export interface XDSCommandPaletteProps {
    *
    * @example
    * ```
-   * <XDSCommandPalette isShown={isShown} onHide={() => setIsShown(false)}>
+   * <XDSCommandPalette isOpen={isOpen} onHide={() => setIsOpen(false)}>
    *   <XDSCommandPaletteInput placeholder="Search commands..." />
    *   <XDSCommandPaletteList>
    *     <XDSCommandPaletteItem value="home" onSelect={() => navigate("/")}>
@@ -120,7 +120,7 @@ export interface XDSCommandPaletteProps {
  * 2. Provider (Layer 2): Use XDSCommandPaletteProvider for distributed command registration
  */
 export function XDSCommandPalette({
-  isShown,
+  isOpen,
   onHide,
   value: controlledValue,
   onValueChange,
@@ -152,13 +152,10 @@ export function XDSCommandPalette({
 
   const registerItem = useCallback(
     (itemValue: string, isDisabled?: boolean) => {
-      itemsRef.current = [
-        ...itemsRef.current,
-        {value: itemValue, isDisabled},
-      ];
+      itemsRef.current = [...itemsRef.current, {value: itemValue, isDisabled}];
       return () => {
         itemsRef.current = itemsRef.current.filter(
-          (item) => item.value !== itemValue,
+          item => item.value !== itemValue,
         );
       };
     },
@@ -211,7 +208,7 @@ export function XDSCommandPalette({
 
   return (
     <XDSDialog
-      isShown={isShown}
+      isOpen={isOpen}
       onHide={handleHide}
       width={width}
       maxHeight={maxHeight}

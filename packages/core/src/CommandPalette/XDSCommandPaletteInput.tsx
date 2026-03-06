@@ -22,7 +22,6 @@ import {
 import {XDSIcon} from '../Icon';
 import {useCommandPaletteContext} from './CommandPaletteContext';
 
-
 const styles = stylex.create({
   wrapper: {
     display: 'flex',
@@ -73,7 +72,7 @@ export interface XDSCommandPaletteInputProps {
  *
  * @example
  * ```
- * <XDSCommandPalette isShown={isShown} onHide={onHide}>
+ * <XDSCommandPalette isOpen={isOpen} onHide={onHide}>
  *   <XDSCommandPaletteInput placeholder="Search commands..." />
  *   <XDSCommandPaletteList>...</XDSCommandPaletteList>
  * </XDSCommandPalette>
@@ -186,7 +185,7 @@ export function XDSCommandPaletteInput({
         ref={inputRef}
         type="text"
         value={search}
-        onChange={(e) => {
+        onChange={e => {
           setSearch(e.target.value);
           setHighlightedIndex(0);
         }}
