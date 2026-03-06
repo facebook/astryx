@@ -72,8 +72,10 @@ export interface XDSHeadingProps {
    * @default Same as `level`
    *
    * @example
+   * ```
    * // Visually styled as h2, but semantically h3 in document outline
    * <XDSHeading level={2} accessibilityLevel={3}>Sidebar Section</XDSHeading>
+   * ```
    */
   accessibilityLevel?: XDSHeadingLevel;
 
