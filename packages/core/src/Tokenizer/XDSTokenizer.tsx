@@ -121,11 +121,16 @@ const styles = stylex.create({
   wrapper: {
     flexWrap: 'wrap',
     gap: spacingVars['--spacing-1'],
-    // Standard padding minus border width to prevent height jump
-    // when tokens (28px) are added inside the input
-    paddingBlock: `calc(${spacingVars['--spacing-1']} - 1px)`,
     cursor: 'text',
     height: 'auto',
+  },
+  wrapperWithTokens: {
+    // Override padding for border concentricity: token border-radius
+    // (radius-content: 4px) sits concentric with wrapper border-radius
+    // (radius-element: 8px) when inset = radius-element - radius-content - border
+    // = 8 - 4 - 1 = 3px.
+    paddingBlock: `calc(${spacingVars['--spacing-1']} - 1px)`,
+    paddingInline: `calc(${spacingVars['--spacing-1']} - 1px)`,
   },
   token: {
     flexShrink: 0,
@@ -166,6 +171,9 @@ const styles = stylex.create({
     minWidth: '40px',
     flex: '1 1 40px',
     width: 0,
+    // Restore normal text inset when input follows tokens, since the
+    // wrapper padding is reduced for border concentricity.
+    paddingInlineStart: `calc(${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px)`,
   },
 });
 
@@ -393,6 +401,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
         {...stylex.props(
           inputWrapperStyles.base,
           styles.wrapper,
+          value.length > 0 && styles.wrapperWithTokens,
           sizeStyle,
           isDisabled && inputWrapperStyles.disabled,
           status && inputStatusBorderStyles[status.type],

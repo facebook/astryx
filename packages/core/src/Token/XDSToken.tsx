@@ -179,6 +179,8 @@ const styles = stylex.create({
     font: 'inherit',
     color: 'inherit',
     outline: 'none',
+    overflow: 'hidden',
+    minWidth: 0,
   },
   focusWithinOutline: {
     outline: {
