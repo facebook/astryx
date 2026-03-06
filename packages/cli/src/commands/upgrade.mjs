@@ -21,6 +21,7 @@ import {
   versions,
 } from '../codemods/registry.mjs';
 import {runCodemods} from '../codemods/runner.mjs';
+import {installAgentDocs} from './agent-docs.mjs';
 
 /**
  * Detect the installed @xds/core version from the consumer's package.json.
@@ -146,6 +147,18 @@ export function registerUpgrade(program) {
         path: options.path,
         codemod: options.codemod,
       });
+
+      // Refresh agent docs (AGENTS.md / CLAUDE.md) with updated component index
+      if (options.apply) {
+        try {
+          installAgentDocs(process.cwd());
+          p.log.success('Agent docs updated to match new version.');
+        } catch {
+          p.log.warn(
+            'Could not update agent docs. Run `npx xds agent-docs` to update manually.',
+          );
+        }
+      }
 
       p.outro(options.apply ? 'Upgrade complete' : 'Dry run complete');
     });

@@ -42,6 +42,7 @@
     "@vitest/coverage-v8": "^2.1.0",
     "eslint": "^9.15.0",
     "husky": "^9.1.7",
+    "jscodeshift": "^17.3.0",
     "jsdom": "^27.4.0",
     "prettier": "^3.4.0",
     "react": "^19.2.4",
