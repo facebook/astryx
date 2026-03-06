@@ -27,7 +27,12 @@ export {XDSCommandPaletteGroup} from './XDSCommandPaletteGroup';
 export type {XDSCommandPaletteGroupProps} from './XDSCommandPaletteGroup';
 
 // Layer 2: Provider for distributed command registration
-export {XDSCommandPaletteProvider} from './XDSCommandPaletteProvider';
+export {
+  XDSCommandPaletteProvider,
+  useXDSCommandPalette,
+  useXDSCommandPaletteRegister,
+} from './XDSCommandPaletteProvider';
+export type {XDSCommandPaletteProviderProps} from './XDSCommandPaletteProvider';
 
 // Hooks
 export {useXDSCommandPaletteHistory} from './useXDSCommandPaletteHistory';
