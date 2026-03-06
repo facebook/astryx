@@ -5,18 +5,18 @@
  */
 
 import type {
-  XDSSelectorOption,
-  XDSSelectorItemData,
+  XDSSelectorOptionType,
+  XDSSelectorOptionData,
   XDSSelectorDivider,
   XDSSelectorSection,
 } from './types';
 
 /**
- * Type guard: check if option is a selectable item (string or ItemData)
+ * Type guard: check if option is a selectable option (string or OptionData)
  */
-export function isItemData(
-  option: XDSSelectorOption,
-): option is XDSSelectorItemData | string {
+export function isOptionData(
+  option: XDSSelectorOptionType,
+): option is XDSSelectorOptionData | string {
   if (typeof option === 'string') return true;
   return !('type' in option);
 }
@@ -25,7 +25,7 @@ export function isItemData(
  * Type guard: check if option is a divider
  */
 export function isDivider(
-  option: XDSSelectorOption,
+  option: XDSSelectorOptionType,
 ): option is XDSSelectorDivider {
   return (
     typeof option === 'object' && 'type' in option && option.type === 'divider'
@@ -36,7 +36,7 @@ export function isDivider(
  * Type guard: check if option is a section
  */
 export function isSection(
-  option: XDSSelectorOption,
+  option: XDSSelectorOptionType,
 ): option is XDSSelectorSection {
   return (
     typeof option === 'object' && 'type' in option && option.type === 'section'
@@ -44,11 +44,11 @@ export function isSection(
 }
 
 /**
- * Normalize string or item to consistent shape
+ * Normalize string or option to consistent shape
  */
-export function normalizeItem(
-  option: string | XDSSelectorItemData,
-): XDSSelectorItemData {
+export function normalizeOption(
+  option: string | XDSSelectorOptionData,
+): XDSSelectorOptionData {
   if (typeof option === 'string') {
     return {value: option, label: option};
   }
@@ -59,23 +59,38 @@ export function normalizeItem(
 }
 
 /**
- * Get all selectable items from options (flattening sections)
+ * Get all selectable options (flattening sections)
  */
-export function getSelectableItems(
-  options: XDSSelectorOption[],
-): XDSSelectorItemData[] {
-  const items: XDSSelectorItemData[] = [];
+export function getSelectableOptions(
+  options: XDSSelectorOptionType[],
+): XDSSelectorOptionData[] {
+  const result: XDSSelectorOptionData[] = [];
 
   for (const option of options) {
-    if (isItemData(option)) {
-      items.push(normalizeItem(option));
+    if (isOptionData(option)) {
+      result.push(normalizeOption(option));
     } else if (isSection(option)) {
-      for (const item of option.items) {
-        items.push(normalizeItem(item));
+      for (const opt of option.options) {
+        result.push(normalizeOption(opt));
       }
     }
     // Skip dividers
   }
 
-  return items;
+  return result;
 }
+
+/**
+ * @deprecated Use isOptionData instead
+ */
+export const isItemData = isOptionData;
+
+/**
+ * @deprecated Use normalizeOption instead
+ */
+export const normalizeItem = normalizeOption;
+
+/**
+ * @deprecated Use getSelectableOptions instead
+ */
+export const getSelectableItems = getSelectableOptions;
