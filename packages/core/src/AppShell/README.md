@@ -114,7 +114,7 @@ On desktop the SideNav renders inline; on mobile AppShell hides the SideNav
 (via `sideNavBreakpoint`) and the consumer shows an XDSMobileNav drawer instead.
 
 Pass a fully composed `<XDSMobileNav>` — AppShell just renders it, same as
-every other slot. All drawer props (`isOpen`, `onClose`, `title`) stay on
+every other slot. All drawer props (`isOpen`, `onOpenChange`, `title`) stay on
 XDSMobileNav where they belong.
 
 ```tsx
@@ -144,7 +144,7 @@ const isMobile = useMediaQuery('(max-width: 768px)');
   mobileNav={
     <XDSMobileNav
       isOpen={mobileOpen}
-      onClose={() => setMobileOpen(false)}
+      onOpenChange={open => setMobileOpen(open)}
       title="My App">
       {navSections}
     </XDSMobileNav>

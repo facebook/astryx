@@ -477,7 +477,7 @@ describe('XDSAppShell', () => {
         mobileNav={
           <XDSMobileNav
             isOpen={true}
-            onClose={() => {}}
+            onOpenChange={() => {}}
             title="Test App"
             data-testid="appshell-mobile-nav">
             <div>Mobile Nav Content</div>
@@ -509,7 +509,7 @@ describe('XDSAppShell', () => {
         mobileNav={
           <XDSMobileNav
             isOpen={false}
-            onClose={() => {}}
+            onOpenChange={() => {}}
             data-testid="appshell-mobile-nav">
             <div>Mobile Nav</div>
           </XDSMobileNav>
@@ -525,13 +525,13 @@ describe('XDSAppShell', () => {
     expect(screen.getByTestId('appshell-mobile-nav')).toBeInTheDocument();
   });
 
-  it('mobileNav onClose is called when close button is clicked', () => {
+  it('mobileNav onOpenChange is called when close button is clicked', () => {
     const onClose = vi.fn();
     render(
       <XDSAppShell
         sideNav={<div>Side Nav</div>}
         mobileNav={
-          <XDSMobileNav isOpen={true} onClose={onClose} title="Nav">
+          <XDSMobileNav isOpen={true} onOpenChange={onClose} title="Nav">
             <div>Mobile Nav</div>
           </XDSMobileNav>
         }>

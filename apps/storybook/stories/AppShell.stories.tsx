@@ -604,7 +604,7 @@ export const WithMobileNav: Story = {
         mobileNav={
           <XDSMobileNav
             isOpen={mobileNavOpen}
-            onClose={() => setMobileNavOpen(false)}
+            onOpenChange={open => setMobileNavOpen(open)}
             title="Acme App">
             {navSections}
           </XDSMobileNav>

@@ -36,7 +36,7 @@ const [isOpen, setIsOpen] = useState(false);
 
 <XDSMobileNav
   isOpen={isOpen}
-  onClose={() => setIsOpen(false)}
+  onOpenChange={(open) => setIsOpen(open)}
   title="Navigation"
 >
   <XDSSideNavSection title="Main">
@@ -79,7 +79,7 @@ const navSections = (
       />
       <XDSMobileNav
         isOpen={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        onOpenChange={open => setDrawerOpen(open)}
         title="My App">
         {navSections}
       </XDSMobileNav>
@@ -118,7 +118,7 @@ const [drawerOpen, setDrawerOpen] = useState(false);
   }
 />
 
-<XDSMobileNav isOpen={drawerOpen} onClose={() => setDrawerOpen(false)}>
+<XDSMobileNav isOpen={drawerOpen} onOpenChange={(open) => setDrawerOpen(open)}>
   <XDSSideNavSection title="Navigation">
     <XDSSideNavItem label="Home" href="/" isSelected />
     <XDSSideNavItem label="Products" href="/products" />
@@ -129,15 +129,15 @@ const [drawerOpen, setDrawerOpen] = useState(false);
 
 ## Props
 
-| Prop          | Type               | Default | Description                                       |
-| ------------- | ------------------ | ------- | ------------------------------------------------- |
-| `isOpen`      | `boolean`          | —       | Whether the drawer is open (required)             |
-| `onClose`     | `() => void`       | —       | Called on backdrop click, escape, or close button |
-| `children`    | `ReactNode`        | —       | Drawer content (XDSSideNavSection, items, etc.)   |
-| `title`       | `string`           | —       | Optional title at the top of the drawer           |
-| `width`       | `number`           | `280`   | Drawer width in pixels (capped at 85vw)           |
-| `side`        | `'start' \| 'end'` | `start` | Which side the drawer slides from                 |
-| `data-testid` | `string`           | —       | Test ID for the root element                      |
+| Prop           | Type                        | Default | Description                                     |
+| -------------- | --------------------------- | ------- | ----------------------------------------------- |
+| `isOpen`       | `boolean`                   | —       | Whether the drawer is open (required)           |
+| `onOpenChange` | `(isOpen: boolean) => void` | —       | Called when drawer visibility changes           |
+| `children`     | `ReactNode`                 | —       | Drawer content (XDSSideNavSection, items, etc.) |
+| `title`        | `string`                    | —       | Optional title at the top of the drawer         |
+| `width`        | `number`                    | `280`   | Drawer width in pixels (capped at 85vw)         |
+| `side`         | `'start' \| 'end'`          | `start` | Which side the drawer slides from               |
+| `data-testid`  | `string`                    | —       | Test ID for the root element                    |
 
 ## Accessibility
 
@@ -166,5 +166,5 @@ const sections = (
 <XDSSideNav>{sections}</XDSSideNav>
 
 // Mobile: drawer
-<XDSMobileNav isOpen={open} onClose={close}>{sections}</XDSMobileNav>
+<XDSMobileNav isOpen={open} onOpenChange={(open) => { if (!open) close(); }}>{sections}</XDSMobileNav>
 ```

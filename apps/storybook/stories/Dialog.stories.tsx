@@ -63,12 +63,12 @@ function BasicModalExample() {
         variant="primary"
         onClick={() => setIsShown(true)}
       />
-      <XDSDialog isShown={isShown} onHide={() => setIsShown(false)}>
+      <XDSDialog isShown={isShown} onOpenChange={open => setIsShown(open)}>
         <XDSLayout
           header={
             <XDSDialogHeader
               title="Modal Title"
-              onHide={() => setIsShown(false)}
+              onOpenChange={open => setIsShown(open)}
             />
           }
           content={
@@ -119,13 +119,13 @@ function SubtitleModalExample() {
         variant="secondary"
         onClick={() => setIsShown(true)}
       />
-      <XDSDialog isShown={isShown} onHide={() => setIsShown(false)}>
+      <XDSDialog isShown={isShown} onOpenChange={open => setIsShown(open)}>
         <XDSLayout
           header={
             <XDSDialogHeader
               title="Edit User Profile"
               subtitle="Make changes to your account settings"
-              onHide={() => setIsShown(false)}
+              onOpenChange={open => setIsShown(open)}
             />
           }
           content={
@@ -175,12 +175,15 @@ function WideModalExample() {
         variant="secondary"
         onClick={() => setIsShown(true)}
       />
-      <XDSDialog isShown={isShown} onHide={() => setIsShown(false)} width={600}>
+      <XDSDialog
+        isShown={isShown}
+        onOpenChange={open => setIsShown(open)}
+        width={600}>
         <XDSLayout
           header={
             <XDSDialogHeader
               title="Wide Modal"
-              onHide={() => setIsShown(false)}
+              onOpenChange={open => setIsShown(open)}
             />
           }
           content={
@@ -226,13 +229,13 @@ function FullscreenModalExample() {
       />
       <XDSDialog
         isShown={isShown}
-        onHide={() => setIsShown(false)}
+        onOpenChange={open => setIsShown(open)}
         variant="fullscreen">
         <XDSLayout
           header={
             <XDSDialogHeader
               title="Fullscreen Modal"
-              onHide={() => setIsShown(false)}
+              onOpenChange={open => setIsShown(open)}
             />
           }
           content={
@@ -290,7 +293,7 @@ function RequiredModalExample() {
       )}
       <XDSDialog
         isShown={isShown}
-        onHide={() => setIsShown(false)}
+        onOpenChange={open => setIsShown(open)}
         purpose="required">
         <XDSLayout
           header={<XDSDialogHeader title="Accept Terms" />}
@@ -338,14 +341,14 @@ function FormModalExample() {
       />
       <XDSDialog
         isShown={isShown}
-        onHide={() => setIsShown(false)}
+        onOpenChange={open => setIsShown(open)}
         purpose="form"
         width={500}>
         <XDSLayout
           header={
             <XDSDialogHeader
               title="Edit Profile"
-              onHide={() => setIsShown(false)}
+              onOpenChange={open => setIsShown(open)}
             />
           }
           content={
@@ -398,13 +401,13 @@ function InfoModalExample() {
       />
       <XDSDialog
         isShown={isShown}
-        onHide={() => setIsShown(false)}
+        onOpenChange={open => setIsShown(open)}
         purpose="info">
         <XDSLayout
           header={
             <XDSDialogHeader
               title="Information"
-              onHide={() => setIsShown(false)}
+              onOpenChange={open => setIsShown(open)}
             />
           }
           content={
@@ -452,14 +455,14 @@ function PositionedModalExample() {
       />
       <XDSDialog
         isShown={isShown}
-        onHide={() => setIsShown(false)}
+        onOpenChange={open => setIsShown(open)}
         position={{top: 100, right: 20}}
         width={350}>
         <XDSLayout
           header={
             <XDSDialogHeader
               title="Positioned Modal"
-              onHide={() => setIsShown(false)}
+              onOpenChange={open => setIsShown(open)}
             />
           }
           content={
@@ -506,13 +509,13 @@ function ScrollingModalExample() {
       />
       <XDSDialog
         isShown={isShown}
-        onHide={() => setIsShown(false)}
+        onOpenChange={open => setIsShown(open)}
         maxHeight="50vh">
         <XDSLayout
           header={
             <XDSDialogHeader
               title="Terms and Conditions"
-              onHide={() => setIsShown(false)}
+              onOpenChange={open => setIsShown(open)}
             />
           }
           content={
@@ -584,14 +587,14 @@ function ConfirmationModalExample() {
       )}
       <XDSDialog
         isShown={isShown}
-        onHide={() => setIsShown(false)}
+        onOpenChange={open => setIsShown(open)}
         width={350}
         purpose="form">
         <XDSLayout
           header={
             <XDSDialogHeader
               title="Confirm Delete"
-              onHide={() => setIsShown(false)}
+              onOpenChange={open => setIsShown(open)}
             />
           }
           content={

@@ -59,10 +59,11 @@ export interface XDSDialogHeaderProps {
   subtitle?: string;
 
   /**
-   * Callback fired when the close button is clicked.
+   * Callback fired when the dialog visibility changes.
+   * Called with `false` when the close button is clicked.
    * If not provided, no close button will be rendered.
    */
-  onHide?: () => unknown;
+  onOpenChange?: (isOpen: boolean) => unknown;
 
   /**
    * Content to render before the title (e.g., a back button).
@@ -93,9 +94,9 @@ export interface XDSDialogHeaderProps {
  *
  * @example
  * ```
- * <XDSDialog isShown={isShown} onHide={() => setIsShown(false)}>
+ * <XDSDialog isShown={isShown} onOpenChange={(open) => setIsShown(open)}>
  *   <XDSLayout
- *     header={<XDSDialogHeader title="Modal Title" onHide={() => setIsShown(false)} />}
+ *     header={<XDSDialogHeader title="Modal Title" onOpenChange={(open) => setIsShown(open)} />}
  *     content={<XDSLayoutContent>Content</XDSLayoutContent>}
  *     footer={<XDSLayoutFooter hasDivider>Actions</XDSLayoutFooter>}
  *   />
@@ -104,7 +105,14 @@ export interface XDSDialogHeaderProps {
  */
 export const XDSDialogHeader = forwardRef<HTMLElement, XDSDialogHeaderProps>(
   function XDSDialogHeader(
-    {title, subtitle, onHide, startContent, endContent, hasDivider = true},
+    {
+      title,
+      subtitle,
+      onOpenChange,
+      startContent,
+      endContent,
+      hasDivider = true,
+    },
     ref,
   ) {
     const titleRef = useRef<HTMLHeadingElement>(null);
@@ -133,17 +141,17 @@ export const XDSDialogHeader = forwardRef<HTMLElement, XDSDialogHeaderProps>(
               </XDSText>
             )}
           </div>
-          {(endContent || onHide) && (
+          {(endContent || onOpenChange) && (
             <div {...stylex.props(styles.actions)}>
               {endContent}
-              {onHide && (
+              {onOpenChange && (
                 <div {...stylex.props(styles.closeButton)}>
                   <XDSButton
                     variant="ghost"
                     label="Close"
                     tooltip="Close"
                     icon={<XDSIcon icon="close" color="inherit" />}
-                    onClick={onHide}
+                    onClick={() => onOpenChange?.(false)}
                   />
                 </div>
               )}
