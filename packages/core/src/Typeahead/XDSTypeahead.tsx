@@ -42,6 +42,8 @@ export type {
   XDSInputStatusType as XDSTypeaheadStatusType,
 } from '../Field';
 
+export type XDSTypeaheadSize = 'sm' | 'md';
+
 export interface XDSTypeaheadProps<T extends XDSSearchableItem> {
   /** Accessible label (required). */
   label: string;
@@ -80,7 +82,7 @@ export interface XDSTypeaheadProps<T extends XDSSearchableItem> {
   /** Auto-focus on mount. @default false */
   hasAutoFocus?: boolean;
   /** Input size. @default 'md' */
-  size?: 'sm' | 'md';
+  size?: XDSTypeaheadSize;
   /**
    * Debounce delay in ms before triggering search after typing.
    * Set to 0 for synchronous/local search sources that don't need debouncing.

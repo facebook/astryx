@@ -56,6 +56,8 @@ export type XDSTokenizerChange<T extends XDSSearchableItem> =
   | {item: T; type: 'remove'}
   | {type: 'reorder'};
 
+export type XDSTokenizerSize = 'sm' | 'md';
+
 export interface XDSTokenizerProps<T extends XDSSearchableItem> {
   /** Accessible label (required). */
   label: string;
@@ -98,7 +100,7 @@ export interface XDSTokenizerProps<T extends XDSSearchableItem> {
   /** Auto-focus on mount. @default false */
   hasAutoFocus?: boolean;
   /** Input size. @default 'md' */
-  size?: 'sm' | 'md';
+  size?: XDSTokenizerSize;
   /**
    * Debounce delay in ms before triggering search after typing.
    * Set to 0 for synchronous/local search sources that don't need debouncing.

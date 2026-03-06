@@ -125,13 +125,13 @@ import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
 </XDSCollapsibleGroup>
 ```
 
-| Prop            | Type                                  | Default    | Description                            |
-| --------------- | ------------------------------------- | ---------- | -------------------------------------- |
-| `type`          | `"single" \| "multiple"`              | `"single"` | Whether one or many items can be open  |
-| `defaultValue`  | `string \| string[]`                  | —          | Default open item(s) — uncontrolled    |
-| `value`         | `string \| string[]`                  | —          | Controlled open item(s)                |
-| `onValueChange` | `(value: string \| string[]) => void` | —          | Callback when open items change        |
-| `children`      | `ReactNode`                           | —          | XDSCollapsible instances to coordinate |
+| Prop           | Type                                  | Default    | Description                            |
+| -------------- | ------------------------------------- | ---------- | -------------------------------------- |
+| `type`         | `"single" \| "multiple"`              | `"single"` | Whether one or many items can be open  |
+| `defaultValue` | `string \| string[]`                  | —          | Default open item(s) — uncontrolled    |
+| `value`        | `string \| string[]`                  | —          | Controlled open item(s)                |
+| `onChange`     | `(value: string \| string[]) => void` | —          | Callback when open items change        |
+| `children`     | `ReactNode`                           | —          | XDSCollapsible instances to coordinate |
 
 ## How It Works
 

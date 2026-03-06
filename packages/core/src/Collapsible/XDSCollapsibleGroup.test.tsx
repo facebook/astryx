@@ -241,15 +241,12 @@ describe('XDSCollapsibleGroup', () => {
   });
 
   describe('controlled mode', () => {
-    it('respects value and onValueChange', async () => {
-      const onValueChange = vi.fn();
+    it('respects value and onChange', async () => {
+      const onChange = vi.fn();
       const user = userEvent.setup();
 
       const {rerender} = render(
-        <XDSCollapsibleGroup
-          type="single"
-          value="a"
-          onValueChange={onValueChange}>
+        <XDSCollapsibleGroup type="single" value="a" onChange={onChange}>
           <XDSCollapsible trigger="Item A" value="a">
             <p>Content A</p>
           </XDSCollapsible>
@@ -262,16 +259,13 @@ describe('XDSCollapsibleGroup', () => {
       expect(screen.getByText('Content A')).toBeVisible();
       expect(screen.getByText('Content B')).not.toBeVisible();
 
-      // Click B — should call onValueChange
+      // Click B — should call onChange
       await user.click(screen.getByRole('button', {name: /Item B/}));
-      expect(onValueChange).toHaveBeenCalledWith('b');
+      expect(onChange).toHaveBeenCalledWith('b');
 
       // Rerender with new value
       rerender(
-        <XDSCollapsibleGroup
-          type="single"
-          value="b"
-          onValueChange={onValueChange}>
+        <XDSCollapsibleGroup type="single" value="b" onChange={onChange}>
           <XDSCollapsible trigger="Item A" value="a">
             <p>Content A</p>
           </XDSCollapsible>

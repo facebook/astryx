@@ -46,7 +46,7 @@ export interface XDSCollapsibleGroupProps {
   /**
    * Callback when the open item(s) change.
    */
-  onValueChange?: (value: string | string[]) => void;
+  onChange?: (value: string | string[]) => void;
 
   /**
    * Children — any components that support isCollapsible + value.
@@ -112,7 +112,7 @@ export function XDSCollapsibleGroup({
   type = 'single',
   defaultValue,
   value: controlledValue,
-  onValueChange,
+  onChange,
   children,
 }: XDSCollapsibleGroupProps) {
   const isControlled = controlledValue !== undefined;
@@ -147,16 +147,16 @@ export function XDSCollapsibleGroup({
         setInternalValue(nextValues);
       }
 
-      if (onValueChange) {
+      if (onChange) {
         // Return the value in the same shape as the type suggests
         if (type === 'single') {
-          onValueChange(nextValues[0] ?? '');
+          onChange(nextValues[0] ?? '');
         } else {
-          onValueChange(nextValues);
+          onChange(nextValues);
         }
       }
     },
-    [type, openValues, isControlled, onValueChange],
+    [type, openValues, isControlled, onChange],
   );
 
   const contextValue = useMemo<CollapsibleGroupContextValue>(

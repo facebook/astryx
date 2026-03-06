@@ -10,6 +10,7 @@
 export {XDSTokenizer} from './XDSTokenizer';
 export type {
   XDSTokenizerProps,
+  XDSTokenizerSize,
   XDSTokenizerChange,
   XDSTokenizerStatus,
   XDSTokenizerStatusType,

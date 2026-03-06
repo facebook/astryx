@@ -117,7 +117,7 @@ export const Controlled: Story = {
         <p {...stylex.props(styles.textSecondary)}>
           Currently open: <strong>{String(open) || '(none)'}</strong>
         </p>
-        <XDSCollapsibleGroup type="single" value={open} onValueChange={setOpen}>
+        <XDSCollapsibleGroup type="single" value={open} onChange={setOpen}>
           <XDSVStack gap="space2">
             <XDSCard>
               <XDSCollapsible trigger="Section 1" value="section1">
