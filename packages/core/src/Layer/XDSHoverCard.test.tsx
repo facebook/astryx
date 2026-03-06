@@ -81,12 +81,12 @@ describe('XDSHoverCard', () => {
     expect(describedBy).toContain('existing-id');
   });
 
-  it('calls onShow callback when shown', async () => {
-    const onShow = vi.fn();
+  it('calls onOpenChange(true) when shown', async () => {
+    const onOpenChange = vi.fn();
     render(
       <XDSHoverCard
         content={<span>Card content</span>}
-        onShow={onShow}
+        onOpenChange={onOpenChange}
         delay={0}>
         <button>Trigger</button>
       </XDSHoverCard>,
@@ -96,16 +96,16 @@ describe('XDSHoverCard', () => {
     fireEvent.mouseEnter(trigger);
 
     await waitFor(() => {
-      expect(onShow).toHaveBeenCalled();
+      expect(onOpenChange).toHaveBeenCalledWith(true);
     });
   });
 
   it('respects isEnabled prop', async () => {
-    const onShow = vi.fn();
+    const onOpenChange = vi.fn();
     render(
       <XDSHoverCard
         content={<span>Card content</span>}
-        onShow={onShow}
+        onOpenChange={onOpenChange}
         isEnabled={false}
         delay={0}>
         <button>Trigger</button>
@@ -115,9 +115,9 @@ describe('XDSHoverCard', () => {
     const trigger = screen.getByRole('button', {name: 'Trigger'});
     fireEvent.mouseEnter(trigger);
 
-    // Wait a bit and verify onShow was not called
+    // Wait a bit and verify onOpenChange was not called
     await new Promise(resolve => setTimeout(resolve, 50));
-    expect(onShow).not.toHaveBeenCalled();
+    expect(onOpenChange).not.toHaveBeenCalled();
   });
 
   it('supports text-only children with inline wrapper', () => {
@@ -136,14 +136,14 @@ describe('XDSHoverCard', () => {
 
   describe('Escape key behavior', () => {
     it('hides hover card when Escape is pressed on trigger', async () => {
-      const onHide = vi.fn();
+      const onOpenChange = vi.fn();
       // Reset the mock before this test
       vi.mocked(HTMLElement.prototype.hidePopover).mockClear();
 
       render(
         <XDSHoverCard
           content={<span>Card content</span>}
-          onHide={onHide}
+          onOpenChange={onOpenChange}
           delay={0}
           hideDelay={0}>
           <button>Trigger</button>
@@ -228,11 +228,11 @@ describe('XDSHoverCard', () => {
     });
 
     it('does not re-show hover card after Escape dismiss and refocus', async () => {
-      const onShow = vi.fn();
+      const onOpenChange = vi.fn();
       render(
         <XDSHoverCard
           content={<button>Interactive button</button>}
-          onShow={onShow}
+          onOpenChange={onOpenChange}
           delay={0}
           hideDelay={0}>
           <button>Trigger</button>
@@ -244,7 +244,7 @@ describe('XDSHoverCard', () => {
       // Show the hover card via focus
       fireEvent.focus(trigger);
       await waitFor(() => {
-        expect(onShow).toHaveBeenCalledTimes(1);
+        expect(onOpenChange).toHaveBeenCalledTimes(1);
       });
 
       // Focus the content button
@@ -252,14 +252,15 @@ describe('XDSHoverCard', () => {
       (contentButton as HTMLElement).focus();
 
       // Clear the mock to track new calls
-      onShow.mockClear();
+      onOpenChange.mockClear();
 
       // Press Escape - this refocuses trigger but shouldn't re-show
       fireEvent.keyDown(contentButton, {key: 'Escape'});
 
-      // Wait a bit and verify onShow was not called again
+      // Wait a bit and verify onOpenChange was not called with true (re-show)
+      // It may be called with false (dismiss), which is expected
       await new Promise(resolve => setTimeout(resolve, 50));
-      expect(onShow).not.toHaveBeenCalled();
+      expect(onOpenChange).not.toHaveBeenCalledWith(true);
     });
   });
 });

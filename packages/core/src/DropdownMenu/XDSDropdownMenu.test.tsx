@@ -116,7 +116,7 @@ describe('XDSDropdownMenu controlled mode', () => {
         button={{label: 'Actions'}}
         items={[{label: 'Item 1'}]}
         isMenuOpen={false}
-        onMenuToggle={handleToggle}
+        onOpenChange={handleToggle}
       />,
     );
 
@@ -128,14 +128,14 @@ describe('XDSDropdownMenu controlled mode', () => {
         button={{label: 'Actions'}}
         items={[{label: 'Item 1'}]}
         isMenuOpen={true}
-        onMenuToggle={handleToggle}
+        onOpenChange={handleToggle}
       />,
     );
 
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
   });
 
-  it('calls onMenuToggle when button is clicked', async () => {
+  it('calls onOpenChange when button is clicked', async () => {
     const user = userEvent.setup();
     const handleToggle = vi.fn();
     render(
@@ -143,7 +143,7 @@ describe('XDSDropdownMenu controlled mode', () => {
         button={{label: 'Actions'}}
         items={[{label: 'Item 1'}]}
         isMenuOpen={false}
-        onMenuToggle={handleToggle}
+        onOpenChange={handleToggle}
       />,
     );
 

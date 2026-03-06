@@ -8,7 +8,7 @@ A dropdown menu component for displaying actionable items in a popup menu.
 
 - **Button customization**: Customize the trigger button via the `button` prop (supports all XDSButton props)
 - **Data-driven items**: Pass items via the `items` prop with support for sections and dividers
-- **Controlled/Uncontrolled**: Supports both controlled (`isMenuOpen`/`onMenuToggle`) and uncontrolled modes
+- **Controlled/Uncontrolled**: Supports both controlled (`isMenuOpen`/`onOpenChange`) and uncontrolled modes
 - **Custom menu width**: Override default width (matches button) via `menuWidth` prop
 - **Sections**: Group related items with optional headers using `XDSDropdownMenuSection`
 - **Keyboard navigation**: Full keyboard support (Arrow keys, Home, End, Enter, Space, Escape)
@@ -77,7 +77,7 @@ const [isOpen, setIsOpen] = useState(false);
   button={{ label: 'Options' }}
   items={[...]}
   isMenuOpen={isOpen}
-  onMenuToggle={setIsOpen}
+  onOpenChange={setIsOpen}
 />
 
 // Custom item rendering with XDSDropdownMenuItem
@@ -101,10 +101,10 @@ const [isOpen, setIsOpen] = useState(false);
 
 ```tsx
 <XDSDropdownMenu
-  button={{ label: 'Actions' }}
+  button={{label: 'Actions'}}
   items={[
-    { label: 'Edit', icon: PencilIcon, onClick: () => handleEdit() },
-    { label: 'Delete', icon: TrashIcon, onClick: () => handleDelete() },
+    {label: 'Edit', icon: PencilIcon, onClick: () => handleEdit()},
+    {label: 'Delete', icon: TrashIcon, onClick: () => handleDelete()},
   ]}
 />
 ```
@@ -114,7 +114,7 @@ const [isOpen, setIsOpen] = useState(false);
 | `button`       | `XDSDropdownMenuButtonProps`                   | `{ label: 'Menu' }` | Props for the trigger button (XDSButton props except onClick) |
 | `items`        | `XDSDropdownMenuOption[]`                      | —                   | Menu items (items, dividers, or sections)                     |
 | `isMenuOpen`   | `boolean`                                      | —                   | Controlled open state                                         |
-| `onMenuToggle` | `(isOpen: boolean) => void`                    | —                   | Callback when open state changes                              |
+| `onOpenChange` | `(isOpen: boolean) => void`                    | —                   | Callback when menu visibility changes                         |
 | `menuWidth`    | `number \| string`                             | —                   | Custom menu width (default: matches button)                   |
 | `onClick`      | `() => void`                                   | —                   | Callback when button is clicked                               |
 | `children`     | `(item: XDSDropdownMenuItemData) => ReactNode` | —                   | Custom render function for items                              |

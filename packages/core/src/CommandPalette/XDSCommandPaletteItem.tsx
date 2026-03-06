@@ -125,14 +125,12 @@ export function XDSCommandPaletteItem({
   }, [value, isDisabled, ctx.registerItem]);
 
   // Determine this item's index in the items array
-  const itemIndex = ctx.items.findIndex((item) => item.value === value);
+  const itemIndex = ctx.items.findIndex(item => item.value === value);
   const isHighlighted = itemIndex === ctx.highlightedIndex;
   const isSelected = ctx.value === value;
 
   // Filter: check if this item matches the search
-  const score = ctx.isFiltered
-    ? ctx.filter(value, ctx.search, keywords)
-    : 1;
+  const score = ctx.isFiltered ? ctx.filter(value, ctx.search, keywords) : 1;
 
   // Scroll highlighted item into view
   useEffect(() => {
@@ -145,7 +143,7 @@ export function XDSCommandPaletteItem({
     if (isDisabled) return;
     onSelect?.(value);
     ctx.selectItem(value);
-    ctx.onHide();
+    ctx.onClose();
   }, [isDisabled, value, onSelect, ctx]);
 
   const handleMouseEnter = useCallback(() => {

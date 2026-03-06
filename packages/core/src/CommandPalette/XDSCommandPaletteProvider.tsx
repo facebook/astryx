@@ -29,10 +29,7 @@ import {XDSCommandPaletteShortcut} from './XDSCommandPaletteShortcut';
 import {XDSCommandPaletteFooter} from './XDSCommandPaletteFooter';
 import {XDSCommandPaletteLoading} from './XDSCommandPaletteLoading';
 import * as stylex from '@stylexjs/stylex';
-import {
-  colorVars,
-  textSizeVars,
-} from '../theme/tokens.stylex';
+import {colorVars, textSizeVars} from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
 import type {XDSCommand, CommandPaletteFilterFn} from './types';
 
@@ -205,17 +202,17 @@ export function XDSCommandPaletteProvider({
   }, []);
 
   const register = useCallback((newCommands: XDSCommand[]) => {
-    setCommands((prev) => [...prev, ...newCommands]);
+    setCommands(prev => [...prev, ...newCommands]);
     return () => {
-      setCommands((prev) =>
-        prev.filter((cmd) => !newCommands.some((nc) => nc.id === cmd.id)),
+      setCommands(prev =>
+        prev.filter(cmd => !newCommands.some(nc => nc.id === cmd.id)),
       );
     };
   }, []);
 
   // Keyboard shortcut listener
   useEffect(() => {
-    const parts = shortcut.split('+').map((p) => p.trim().toLowerCase());
+    const parts = shortcut.split('+').map(p => p.trim().toLowerCase());
     const key = parts[parts.length - 1];
     const needsMod = parts.includes('mod');
     const needsShift = parts.includes('shift');
@@ -230,7 +227,7 @@ export function XDSCommandPaletteProvider({
         (!needsAlt || e.altKey)
       ) {
         e.preventDefault();
-        setIsOpen((prev) => !prev);
+        setIsOpen(prev => !prev);
       }
     };
 
@@ -305,7 +302,7 @@ export function XDSCommandPaletteProvider({
 
   const handleValueChange = useCallback(
     (value: string) => {
-      const cmd = allCommands.find((c) => c.id === value);
+      const cmd = allCommands.find(c => c.id === value);
       if (cmd && !cmd.isDisabled) {
         cmd.onSelect();
         close();
@@ -328,18 +325,20 @@ export function XDSCommandPaletteProvider({
       {children}
       <XDSCommandPalette
         isShown={isOpen}
-        onHide={close}
+        onOpenChange={open => {
+          if (!open) close();
+        }}
         onValueChange={handleValueChange}
         filter={filter}>
         <XDSCommandPaletteInput placeholder={placeholder} />
         <XDSCommandPaletteList>
-          {groupedCommands.ungrouped.map((cmd) => (
+          {groupedCommands.ungrouped.map(cmd => (
             <CommandItem key={cmd.id} command={cmd} />
           ))}
           {Array.from(groupedCommands.groups.entries()).map(
             ([groupName, cmds]) => (
               <XDSCommandPaletteGroup key={groupName} heading={groupName}>
-                {cmds.map((cmd) => (
+                {cmds.map(cmd => (
                   <CommandItem key={cmd.id} command={cmd} />
                 ))}
               </XDSCommandPaletteGroup>
@@ -399,7 +398,9 @@ function CommandItem({command}: {command: XDSCommand}) {
           {command.description}
         </span>
       )}
-      {command.shortcut && <XDSCommandPaletteShortcut keys={command.shortcut} />}
+      {command.shortcut && (
+        <XDSCommandPaletteShortcut keys={command.shortcut} />
+      )}
     </XDSCommandPaletteItem>
   );
 }

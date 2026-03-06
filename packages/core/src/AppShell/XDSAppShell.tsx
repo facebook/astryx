@@ -264,7 +264,7 @@ const styles = stylex.create({
  *   topNav={<XDSTopNav label="Navigation" title={<XDSTopNavTitle title="My App" />} />}
  *   sideNav={<XDSSideNav>{navSections}</XDSSideNav>}
  *   mobileNav={
- *     <XDSMobileNav isOpen={mobileOpen} onClose={() => setMobileOpen(false)} title="My App">
+ *     <XDSMobileNav isOpen={mobileOpen} onOpenChange={(open) => setMobileOpen(open)} title="My App">
  *       {navSections}
  *     </XDSMobileNav>
  *   }
@@ -507,7 +507,7 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
         {useDefaultMobileNav && (
           <XDSMobileNav
             isOpen={!isCollapsed}
-            onClose={handleToggleCollapse}
+            onOpenChange={() => handleToggleCollapse()}
             width={sideNavWidth}
             data-testid="sidenav-mobile">
             {sideNav}

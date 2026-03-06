@@ -95,14 +95,10 @@ export interface XDSHoverCardProps {
   isEnabled?: boolean;
 
   /**
-   * Callback fired when hover card is shown
+   * Callback fired when hover card visibility changes.
+   * Called with `true` when shown and `false` when hidden.
    */
-  onShow?: () => void;
-
-  /**
-   * Callback fired when hover card is hidden
-   */
-  onHide?: () => void;
+  onOpenChange?: (isOpen: boolean) => void;
 
   /**
    * Whether to show hover indication (dashed underline) on the trigger.
@@ -161,8 +157,7 @@ export function XDSHoverCard({
   hideDelay = 200,
   focusTrigger = 'auto',
   isEnabled = true,
-  onShow,
-  onHide,
+  onOpenChange,
   hasHoverIndication = 'auto',
 }: XDSHoverCardProps): ReactElement {
   const wrapperRef = useRef<HTMLElement>(null);
@@ -185,8 +180,8 @@ export function XDSHoverCard({
     hideDelay,
     focusTrigger,
     isEnabled,
-    onShow,
-    onHide,
+    onShow: onOpenChange ? () => onOpenChange(true) : undefined,
+    onHide: onOpenChange ? () => onOpenChange(false) : undefined,
   });
 
   // For element children with display:contents, attach ref to first child

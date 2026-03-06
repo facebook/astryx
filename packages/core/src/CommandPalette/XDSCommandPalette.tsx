@@ -40,10 +40,11 @@ export interface XDSCommandPaletteProps {
   isShown: boolean;
 
   /**
-   * Called when the palette requests to close.
+   * Callback fired when the command palette visibility changes.
+   * Called with `false` when the palette requests to close.
    * Matches XDSDialog convention.
    */
-  onHide: () => void;
+  onOpenChange: (isOpen: boolean) => unknown;
 
   /**
    * Controlled selected value.
@@ -96,7 +97,7 @@ export interface XDSCommandPaletteProps {
    *
    * @example
    * ```
-   * <XDSCommandPalette isShown={isShown} onHide={() => setIsShown(false)}>
+   * <XDSCommandPalette isShown={isShown} onOpenChange={(open) => setIsShown(open)}>
    *   <XDSCommandPaletteInput placeholder="Search commands..." />
    *   <XDSCommandPaletteList>
    *     <XDSCommandPaletteItem value="home" onSelect={() => navigate("/")}>
@@ -121,7 +122,7 @@ export interface XDSCommandPaletteProps {
  */
 export function XDSCommandPalette({
   isShown,
-  onHide,
+  onOpenChange,
   value: controlledValue,
   onValueChange,
   filter = defaultFilter,
@@ -152,13 +153,10 @@ export function XDSCommandPalette({
 
   const registerItem = useCallback(
     (itemValue: string, isDisabled?: boolean) => {
-      itemsRef.current = [
-        ...itemsRef.current,
-        {value: itemValue, isDisabled},
-      ];
+      itemsRef.current = [...itemsRef.current, {value: itemValue, isDisabled}];
       return () => {
         itemsRef.current = itemsRef.current.filter(
-          (item) => item.value !== itemValue,
+          item => item.value !== itemValue,
         );
       };
     },
@@ -172,12 +170,17 @@ export function XDSCommandPalette({
     [setValue],
   );
 
-  // Reset search and highlight when opening/closing
-  const handleHide = useCallback(() => {
-    setSearch('');
-    setHighlightedIndex(0);
-    onHide();
-  }, [onHide]);
+  // Reset search and highlight when closing, then forward to consumer
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        setSearch('');
+        setHighlightedIndex(0);
+      }
+      onOpenChange(open);
+    },
+    [onOpenChange],
+  );
 
   const contextValue = useMemo(
     () => ({
@@ -193,7 +196,7 @@ export function XDSCommandPalette({
       items: itemsRef.current,
       registerItem,
       selectItem,
-      onHide: handleHide,
+      onClose: () => handleOpenChange(false),
     }),
     [
       search,
@@ -205,14 +208,14 @@ export function XDSCommandPalette({
       highlightedIndex,
       registerItem,
       selectItem,
-      handleHide,
+      handleOpenChange,
     ],
   );
 
   return (
     <XDSDialog
       isShown={isShown}
-      onHide={handleHide}
+      onOpenChange={handleOpenChange}
       width={width}
       maxHeight={maxHeight}
       purpose="info"

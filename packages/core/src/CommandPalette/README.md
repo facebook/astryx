@@ -12,35 +12,35 @@ Three layers, each building on the last:
 
 ## File Manifest
 
-| File | Purpose |
-|------|---------|
-| `index.ts` | Public exports |
-| `types.ts` | Shared types (XDSCommand, filter function) |
-| `filter.ts` | Default substring filter |
-| `CommandPaletteContext.ts` | Internal context for compound components |
-| `XDSCommandPalette.tsx` | Root component (wraps XDSDialog) |
-| `XDSCommandPaletteInput.tsx` | Search input with combobox ARIA |
-| `XDSCommandPaletteList.tsx` | Scrollable results container (listbox) |
-| `XDSCommandPaletteItem.tsx` | Selectable item (option) |
-| `XDSCommandPaletteGroup.tsx` | Visual grouping with heading |
-| `XDSCommandPaletteEmpty.tsx` | Empty state |
-| `XDSCommandPaletteLoading.tsx` | Loading indicator |
-| `XDSCommandPaletteSeparator.tsx` | Visual divider (wraps XDSDivider) |
-| `XDSCommandPaletteShortcut.tsx` | Keyboard shortcut display |
-| `XDSCommandPaletteFooter.tsx` | Footer bar |
-| `XDSCommandPaletteProvider.tsx` | Registry provider + hooks |
-| `useXDSCommandPaletteHistory.ts` | Optional history hook |
+| File                             | Purpose                                    |
+| -------------------------------- | ------------------------------------------ |
+| `index.ts`                       | Public exports                             |
+| `types.ts`                       | Shared types (XDSCommand, filter function) |
+| `filter.ts`                      | Default substring filter                   |
+| `CommandPaletteContext.ts`       | Internal context for compound components   |
+| `XDSCommandPalette.tsx`          | Root component (wraps XDSDialog)           |
+| `XDSCommandPaletteInput.tsx`     | Search input with combobox ARIA            |
+| `XDSCommandPaletteList.tsx`      | Scrollable results container (listbox)     |
+| `XDSCommandPaletteItem.tsx`      | Selectable item (option)                   |
+| `XDSCommandPaletteGroup.tsx`     | Visual grouping with heading               |
+| `XDSCommandPaletteEmpty.tsx`     | Empty state                                |
+| `XDSCommandPaletteLoading.tsx`   | Loading indicator                          |
+| `XDSCommandPaletteSeparator.tsx` | Visual divider (wraps XDSDivider)          |
+| `XDSCommandPaletteShortcut.tsx`  | Keyboard shortcut display                  |
+| `XDSCommandPaletteFooter.tsx`    | Footer bar                                 |
+| `XDSCommandPaletteProvider.tsx`  | Registry provider + hooks                  |
+| `useXDSCommandPaletteHistory.ts` | Optional history hook                      |
 
 ## Usage
 
 ### Layer 1: Composable
 
 ```tsx
-<XDSCommandPalette isShown={isShown} onHide={() => setIsShown(false)}>
+<XDSCommandPalette isShown={isShown} onOpenChange={open => setIsShown(open)}>
   <XDSCommandPaletteInput placeholder="Search..." />
   <XDSCommandPaletteList>
     <XDSCommandPaletteGroup heading="Navigation">
-      <XDSCommandPaletteItem value="home" onSelect={() => navigate("/")}>
+      <XDSCommandPaletteItem value="home" onSelect={() => navigate('/')}>
         <XDSIcon icon="home" size="sm" />
         <span>Go Home</span>
         <XDSCommandPaletteShortcut keys="mod+h" />
@@ -61,20 +61,25 @@ Three layers, each building on the last:
 // Wrap your app
 <XDSCommandPaletteProvider shortcut="mod+k">
   <App />
-</XDSCommandPaletteProvider>
+</XDSCommandPaletteProvider>;
 
 // Register commands from anywhere
 function Navigation() {
   useXDSCommandPaletteRegister([
-    { id: "home", label: "Go Home", icon: "home", onSelect: () => navigate("/") },
-    { id: "settings", label: "Settings", shortcut: "mod+,", onSelect: () => navigate("/settings") },
+    {id: 'home', label: 'Go Home', icon: 'home', onSelect: () => navigate('/')},
+    {
+      id: 'settings',
+      label: 'Settings',
+      shortcut: 'mod+,',
+      onSelect: () => navigate('/settings'),
+    },
   ]);
   return <nav>...</nav>;
 }
 
 // Imperative control
 function SearchButton() {
-  const { open } = useXDSCommandPalette();
+  const {open} = useXDSCommandPalette();
   return <XDSButton label="Search" onClick={open} />;
 }
 ```
@@ -82,7 +87,7 @@ function SearchButton() {
 ### Layer 3: History
 
 ```tsx
-const { history, record, clear } = useXDSCommandPaletteHistory({
+const {history, record, clear} = useXDSCommandPaletteHistory({
   persist: true,
   maxEntries: 10,
 });
