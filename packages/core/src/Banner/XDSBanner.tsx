@@ -92,7 +92,9 @@ export interface XDSBannerProps {
    * Typically an XDSButton with a secondary or ghost variant.
    *
    * @example
+   * ```
    * endContent={<XDSButton label="Retry" variant="ghost" onClick={handleRetry} />}
+   * ```
    */
   endContent?: ReactNode;
   /**
