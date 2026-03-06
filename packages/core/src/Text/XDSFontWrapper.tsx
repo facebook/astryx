@@ -49,6 +49,7 @@ export interface XDSFontWrapperProps {
  * Uses the reset.css stylesheet which references theme CSS custom properties.
  *
  * @example
+ * ```
  * // Default variant (dense scale)
  * <XDSFontWrapper>
  *   <h1>Page Title</h1>
@@ -59,17 +60,16 @@ export interface XDSFontWrapperProps {
  *   </ul>
  * </XDSFontWrapper>
  *
- * @example
  * // Editorial variant (larger heading scale)
  * <XDSFontWrapper variant="editorial">
  *   <h1>Article Title</h1>
  *   <p>Body text for long-form content.</p>
  * </XDSFontWrapper>
  *
- * @example
  * // For global usage, apply to body:
  * // import '@xds/core/typography.css';
  * // <body className="xds-typography">
+ * ```
  */
 export function XDSFontWrapper({
   variant = 'default',
@@ -104,10 +104,12 @@ XDSFontWrapper.displayName = 'XDSFontWrapper';
  * Use this for applying styles to native HTML elements programmatically.
  *
  * @example
+ * ```
  * const { headingStyles, proseStyles } = useXDSFontWrapperStyles();
  *
  * <h1 {...stylex.props(headingStyles?.h1)}>Title</h1>
  * <p {...stylex.props(proseStyles?.p)}>Paragraph</p>
+ * ```
  */
 export function useXDSFontWrapperStyles() {
   const themeContext = useTheme();

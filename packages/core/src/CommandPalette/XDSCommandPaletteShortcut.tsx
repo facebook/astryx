@@ -46,14 +46,14 @@ const styles = stylex.create({
  * Map of modifier key names to display symbols.
  */
 const KEY_DISPLAY: Record<string, string> = {
-  mod: '\u2318',    // ⌘
-  ctrl: '\u2303',   // ⌃
-  alt: '\u2325',    // ⌥
-  shift: '\u21E7',  // ⇧
-  enter: '\u21B5',  // ↵
+  mod: '\u2318', // ⌘
+  ctrl: '\u2303', // ⌃
+  alt: '\u2325', // ⌥
+  shift: '\u21E7', // ⇧
+  enter: '\u21B5', // ↵
   backspace: '\u232B', // ⌫
   escape: 'Esc',
-  tab: '\u21E5',    // ⇥
+  tab: '\u21E5', // ⇥
   up: '\u2191',
   down: '\u2193',
   left: '\u2190',
@@ -65,7 +65,10 @@ export interface XDSCommandPaletteShortcutProps {
    * Keyboard shortcut string. Use "+" to separate keys.
    * Special keys: mod (Cmd on Mac), ctrl, alt, shift, enter, backspace, escape.
    *
-   * @example "mod+k", "mod+shift+p", "enter"
+   * @example
+   * ```
+   * "mod+k", "mod+shift+p", "enter"
+   * ```
    */
   keys: string;
 }
@@ -82,7 +85,7 @@ export interface XDSCommandPaletteShortcutProps {
 export function XDSCommandPaletteShortcut({
   keys,
 }: XDSCommandPaletteShortcutProps) {
-  const parts = keys.split('+').map((key) => key.trim().toLowerCase());
+  const parts = keys.split('+').map(key => key.trim().toLowerCase());
 
   return (
     <span {...stylex.props(styles.wrapper)} aria-hidden="true">

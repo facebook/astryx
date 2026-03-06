@@ -21,7 +21,10 @@ import type {
  * Create a proportional column width (fr-like).
  * Columns share available space proportionally.
  *
- * @example proportional(2) // twice as wide as proportional(1)
+ * @example
+ * ```
+ * proportional(2) // twice as wide as proportional(1)
+ * ```
  */
 export function proportional(value: number = 1): ProportionalWidth {
   return {type: 'proportional', value};
@@ -30,7 +33,10 @@ export function proportional(value: number = 1): ProportionalWidth {
 /**
  * Create a fixed pixel column width.
  *
- * @example pixel(200) // exactly 200px wide
+ * @example
+ * ```
+ * pixel(200) // exactly 200px wide
+ * ```
  */
 export function pixel(value: number): PixelWidth {
   return {type: 'pixel', value};
