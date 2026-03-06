@@ -31,6 +31,9 @@ export function generateCompressedIndex(version) {
 |npx xds template <name> [path]       Scaffold page (blank, table, login)
 |npx xds swizzle <Name> --gap "<reason>"  Copy component source for customization + file gap report
 |npx xds gap-report --component <Name> --category <cat> --reason "<why>"  File gap without swizzle
+|npx xds upgrade                       Preview API migrations for your version
+|npx xds upgrade --apply               Apply codemods to update breaking API changes
+|RULE: After bumping @xds/core version, ALWAYS run npx xds upgrade --apply to migrate breaking API changes.
 |RULE: When swizzling to unblock yourself, ALWAYS use --gap to explain what capability was missing.
 ${XDS_MARKER_END}`;
 }

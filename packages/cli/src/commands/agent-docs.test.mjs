@@ -36,6 +36,13 @@ describe('generateCompressedIndex', () => {
     const result = generateCompressedIndex('1.0.0');
     expect(result).not.toContain('npx xds theme');
   });
+
+  it('includes upgrade command and migration rule', () => {
+    const result = generateCompressedIndex('1.0.0');
+    expect(result).toContain('npx xds upgrade');
+    expect(result).toContain('npx xds upgrade --apply');
+    expect(result).toContain('ALWAYS run npx xds upgrade --apply to migrate breaking API changes');
+  });
 });
 
 describe('getXdsVersion', () => {
