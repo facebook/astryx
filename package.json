@@ -21,7 +21,6 @@
     "docs": "yarn workspace @xds/docs dev",
     "sync:exports": "node scripts/sync-exports.js",
     "sync:exports:check": "node scripts/sync-exports.js --check",
-    "lint:docs": "tsc --project packages/core/tsconfig.docs.json",
     "xds": "yarn workspace @xds/cli xds",
     "package:source": "node scripts/package-source.js",
     "changeset": "changeset",
