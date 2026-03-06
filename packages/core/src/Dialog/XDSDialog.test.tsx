@@ -24,9 +24,9 @@ beforeEach(() => {
 });
 
 describe('XDSDialog', () => {
-  it('renders when isShown is true', () => {
+  it('renders when isOpen is true', () => {
     render(
-      <XDSDialog isShown={true} onHide={() => {}}>
+      <XDSDialog isOpen={true} onHide={() => {}}>
         Dialog content
       </XDSDialog>,
     );
@@ -36,16 +36,16 @@ describe('XDSDialog', () => {
 
   it('calls showModal when opened', () => {
     render(
-      <XDSDialog isShown={true} onHide={() => {}}>
+      <XDSDialog isOpen={true} onHide={() => {}}>
         Content
       </XDSDialog>,
     );
     expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalled();
   });
 
-  it('does not show when isShown is false', () => {
+  it('does not show when isOpen is false', () => {
     render(
-      <XDSDialog isShown={false} onHide={() => {}}>
+      <XDSDialog isOpen={false} onHide={() => {}}>
         Hidden content
       </XDSDialog>,
     );
@@ -55,7 +55,7 @@ describe('XDSDialog', () => {
 
   it('has aria-modal attribute', () => {
     render(
-      <XDSDialog isShown={true} onHide={() => {}}>
+      <XDSDialog isOpen={true} onHide={() => {}}>
         Content
       </XDSDialog>,
     );
@@ -67,7 +67,7 @@ describe('XDSDialog', () => {
       const handleHide = vi.fn();
 
       render(
-        <XDSDialog isShown={true} onHide={handleHide} purpose="info">
+        <XDSDialog isOpen={true} onHide={handleHide} purpose="info">
           Content
         </XDSDialog>,
       );
@@ -88,7 +88,7 @@ describe('XDSDialog', () => {
       const handleHide = vi.fn();
 
       render(
-        <XDSDialog isShown={true} onHide={handleHide} purpose="form">
+        <XDSDialog isOpen={true} onHide={handleHide} purpose="form">
           Content
         </XDSDialog>,
       );
@@ -109,7 +109,7 @@ describe('XDSDialog', () => {
       const handleHide = vi.fn();
 
       render(
-        <XDSDialog isShown={true} onHide={handleHide} purpose="required">
+        <XDSDialog isOpen={true} onHide={handleHide} purpose="required">
           Content
         </XDSDialog>,
       );
@@ -127,7 +127,7 @@ describe('XDSDialog', () => {
     it('prevents default on cancel event', () => {
       const handleHide = vi.fn();
       render(
-        <XDSDialog isShown={true} onHide={handleHide} purpose="required">
+        <XDSDialog isOpen={true} onHide={handleHide} purpose="required">
           Content
         </XDSDialog>,
       );
@@ -144,7 +144,7 @@ describe('XDSDialog', () => {
   describe('variant: standard', () => {
     it('renders with default variant', () => {
       render(
-        <XDSDialog isShown={true} onHide={() => {}}>
+        <XDSDialog isOpen={true} onHide={() => {}}>
           Content
         </XDSDialog>,
       );
@@ -153,7 +153,7 @@ describe('XDSDialog', () => {
 
     it('accepts custom width', () => {
       render(
-        <XDSDialog isShown={true} onHide={() => {}} width={600}>
+        <XDSDialog isOpen={true} onHide={() => {}} width={600}>
           Content
         </XDSDialog>,
       );
@@ -162,7 +162,7 @@ describe('XDSDialog', () => {
 
     it('accepts custom maxHeight', () => {
       render(
-        <XDSDialog isShown={true} onHide={() => {}} maxHeight="50vh">
+        <XDSDialog isOpen={true} onHide={() => {}} maxHeight="50vh">
           Content
         </XDSDialog>,
       );
@@ -173,7 +173,7 @@ describe('XDSDialog', () => {
   describe('variant: fullscreen', () => {
     it('renders fullscreen variant', () => {
       render(
-        <XDSDialog isShown={true} onHide={() => {}} variant="fullscreen">
+        <XDSDialog isOpen={true} onHide={() => {}} variant="fullscreen">
           Content
         </XDSDialog>,
       );
@@ -185,7 +185,7 @@ describe('XDSDialog', () => {
     it('accepts position configuration', () => {
       render(
         <XDSDialog
-          isShown={true}
+          isOpen={true}
           onHide={() => {}}
           position={{top: 100, right: 20}}>
           Content
@@ -197,7 +197,7 @@ describe('XDSDialog', () => {
     it('handles string position values', () => {
       render(
         <XDSDialog
-          isShown={true}
+          isOpen={true}
           onHide={() => {}}
           position={{top: '10vh', left: '5vw'}}>
           Content
@@ -209,7 +209,7 @@ describe('XDSDialog', () => {
 
   it('forwards additional props to dialog element', () => {
     render(
-      <XDSDialog isShown={true} onHide={() => {}} data-testid="custom-dialog">
+      <XDSDialog isOpen={true} onHide={() => {}} data-testid="custom-dialog">
         Content
       </XDSDialog>,
     );

@@ -107,15 +107,15 @@ export interface XDSPopoverProps {
   alignment?: LayerAlignment;
 
   /**
-   * Whether the popover is shown (controlled mode).
+   * Whether the popover is open (controlled mode).
    * Omit for uncontrolled behavior.
    */
-  isShown?: boolean;
+  isOpen?: boolean;
 
   /**
    * Callback fired when the popover visibility changes.
    */
-  onToggle?: (isShown: boolean) => void;
+  onToggle?: (isOpen: boolean) => void;
 
   /**
    * Whether the popover is enabled.
@@ -235,7 +235,7 @@ const styles = stylex.create({
  *
  * // Controlled popover
  * <XDSPopover
- *   isShown={isOpen}
+ *   isOpen={isOpen}
  *   onToggle={setIsOpen}
  *   label="Filter"
  *   content={<FilterForm />}
@@ -258,7 +258,7 @@ export function XDSPopover({
   content,
   placement = 'below',
   alignment = 'start',
-  isShown,
+  isOpen,
   onToggle,
   isEnabled = true,
   width,
@@ -267,7 +267,7 @@ export function XDSPopover({
   'data-testid': testId,
 }: XDSPopoverProps): ReactElement {
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const isControlled = isShown !== undefined;
+  const isControlled = isOpen !== undefined;
   // Track when the popover was last hidden by light dismiss to prevent
   // the trigger click from immediately re-opening it.
   const lastHideTimeRef = useRef(0);
@@ -408,12 +408,12 @@ export function XDSPopover({
   // Sync controlled state
   useLayoutEffect(() => {
     if (!isControlled) return;
-    if (isShown && !popover.isOpen) {
+    if (isOpen && !popover.isOpen) {
       popover.show();
-    } else if (!isShown && popover.isOpen) {
+    } else if (!isOpen && popover.isOpen) {
       popover.hide();
     }
-  }, [isShown, isControlled, popover]);
+  }, [isOpen, isControlled, popover]);
 
   // Determine popover xstyle
   const popoverXstyle = width ? styles.customWidth(width) : styles.matchTrigger;

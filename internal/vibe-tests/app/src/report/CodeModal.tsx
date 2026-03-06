@@ -33,7 +33,7 @@ const styles = stylex.create({
 });
 
 interface CodeModalProps {
-  isShown: boolean;
+  isOpen: boolean;
   onHide: () => void;
   promptId: string;
   target: 'xds' | 'baseline' | 'html';
@@ -41,7 +41,7 @@ interface CodeModalProps {
 }
 
 export function CodeModal({
-  isShown,
+  isOpen,
   onHide,
   promptId,
   target,
@@ -53,7 +53,7 @@ export function CodeModal({
 
   return (
     <XDSDialog
-      isShown={isShown}
+      isOpen={isOpen}
       onHide={onHide}
       purpose="info"
       width={800}

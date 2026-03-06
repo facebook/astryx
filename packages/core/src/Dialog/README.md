@@ -30,13 +30,13 @@ import {XDSButton} from '@xds/core/Button';
 import {useState} from 'react';
 
 function Example() {
-  const [isShown, setIsShown] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
-      <XDSButton label="Open Dialog" onClick={() => setIsShown(true)} />
+      <XDSButton label="Open Dialog" onClick={() => setIsOpen(true)} />
 
-      <XDSDialog isShown={isShown} onHide={() => setIsShown(false)}>
+      <XDSDialog isOpen={isOpen} onHide={() => setIsOpen(false)}>
         <XDSLayout
           header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
           content={<XDSLayoutContent>Content goes here</XDSLayoutContent>}
@@ -45,12 +45,12 @@ function Example() {
               <XDSButton
                 label="Cancel"
                 variant="secondary"
-                onClick={() => setIsShown(false)}
+                onClick={() => setIsOpen(false)}
               />
               <XDSButton
                 label="Confirm"
                 variant="primary"
-                onClick={() => setIsShown(false)}
+                onClick={() => setIsOpen(false)}
               />
             </XDSLayoutFooter>
           }
@@ -68,13 +68,17 @@ function Example() {
 Modal dialog using the native `<dialog>` element.
 
 ```tsx
-<XDSDialog isShown={isShown} onHide={() => setIsShown(false)}>
+<XDSDialog isOpen={isOpen} onHide={() => setIsOpen(false)}>
   <XDSLayout
     header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
     content={<XDSLayoutContent>Content goes here</XDSLayoutContent>}
     footer={
       <XDSLayoutFooter hasDivider>
-        <XDSButton label="Confirm" variant="primary" onClick={() => setIsShown(false)} />
+        <XDSButton
+          label="Confirm"
+          variant="primary"
+          onClick={() => setIsOpen(false)}
+        />
       </XDSLayoutFooter>
     }
   />
@@ -83,7 +87,7 @@ Modal dialog using the native `<dialog>` element.
 
 | Prop        | Type                             | Default      | Description                                      |
 | ----------- | -------------------------------- | ------------ | ------------------------------------------------ |
-| `isShown`   | `boolean`                        | —            | Whether the dialog is shown (required)           |
+| `isOpen`    | `boolean`                        | —            | Whether the dialog is open (required)            |
 | `onHide`    | `() => unknown`                  | —            | Callback when dialog requests to hide (required) |
 | `width`     | `number \| string`               | `400`        | Width of the dialog (px or CSS value)            |
 | `maxHeight` | `number \| string`               | `'75vh'`     | Maximum height of the dialog                     |
@@ -100,24 +104,24 @@ Header for dialogs with title, optional subtitle, close button, and start/end co
 <XDSDialogHeader
   title="Confirm Action"
   subtitle="This cannot be undone"
-  onHide={() => setIsShown(false)}
+  onHide={() => setIsOpen(false)}
 />
 ```
 
-| Prop           | Type             | Default | Description                                          |
-| -------------- | ---------------- | ------- | ---------------------------------------------------- |
-| `title`        | `string`         | —       | Dialog title (receives focus on open)                |
-| `subtitle`     | `string`         | —       | Subtitle below the title                             |
-| `onHide`       | `() => unknown`  | —       | Close button callback (no button if omitted)         |
-| `startContent` | `ReactNode`      | —       | Content before the title (e.g., back button)         |
-| `endContent`   | `ReactNode`      | —       | Content after the title, before close button         |
-| `hasDivider`   | `boolean`        | `true`  | Adds border at the bottom edge                       |
+| Prop           | Type            | Default | Description                                  |
+| -------------- | --------------- | ------- | -------------------------------------------- |
+| `title`        | `string`        | —       | Dialog title (receives focus on open)        |
+| `subtitle`     | `string`        | —       | Subtitle below the title                     |
+| `onHide`       | `() => unknown` | —       | Close button callback (no button if omitted) |
+| `startContent` | `ReactNode`     | —       | Content before the title (e.g., back button) |
+| `endContent`   | `ReactNode`     | —       | Content after the title, before close button |
+| `hasDivider`   | `boolean`       | `true`  | Adds border at the bottom edge               |
 
 ## Props
 
 | Prop        | Type                             | Default      | Description                                      |
 | ----------- | -------------------------------- | ------------ | ------------------------------------------------ |
-| `isShown`   | `boolean`                        | —            | Whether the dialog is shown (required)           |
+| `isOpen`    | `boolean`                        | —            | Whether the dialog is open (required)            |
 | `onHide`    | `() => unknown`                  | —            | Callback when dialog requests to hide (required) |
 | `width`     | `number \| string`               | `400`        | Width of the dialog (px or CSS value)            |
 | `maxHeight` | `number \| string`               | `'75vh'`     | Maximum height of the dialog                     |
@@ -144,8 +148,8 @@ Configure a static position instead of centering:
 
 ```tsx
 <XDSDialog
-  isShown={isShown}
-  onHide={() => setIsShown(false)}
+  isOpen={isOpen}
+  onHide={() => setIsOpen(false)}
   position={{top: 100, right: 20}}>
   {/* content */}
 </XDSDialog>
