@@ -92,10 +92,10 @@ export interface XDSAppShellProps {
   height?: 'fill' | 'auto';
 
   /**
-   * Initial collapsed state for uncontrolled usage.
+   * Default collapsed state for uncontrolled usage.
    * @default false
    */
-  initialIsSideNavCollapsed?: boolean;
+  defaultIsSideNavCollapsed?: boolean;
 
   /**
    * Whether the side nav is collapsed (controlled).
@@ -281,7 +281,7 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
       children,
       'data-testid': dataTestId,
       height = 'fill',
-      initialIsSideNavCollapsed = false,
+      defaultIsSideNavCollapsed = false,
       isSideNavCollapsed: controlledCollapsed,
       mobileNav,
       onSideNavCollapsedChange,
@@ -298,7 +298,7 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
     // =========================================================================
     const isControlled = controlledCollapsed !== undefined;
     const [uncontrolledCollapsed, setUncontrolledCollapsed] = useState(
-      initialIsSideNavCollapsed,
+      defaultIsSideNavCollapsed,
     );
     const isCollapsed = isControlled
       ? controlledCollapsed

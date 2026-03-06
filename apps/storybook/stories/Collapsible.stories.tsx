@@ -153,7 +153,7 @@ export const StandaloneCollapsible: Story = {
         </XDSCollapsible>
       </XDSCard>
       <XDSCard>
-        <XDSCollapsible trigger="Starts collapsed" initialIsOpen={false}>
+        <XDSCollapsible trigger="Starts collapsed" defaultIsOpen={false}>
           <p {...stylex.props(styles.text)}>
             This collapsible starts collapsed. Click to reveal.
           </p>
@@ -172,7 +172,7 @@ export const WithoutCard: Story = {
           XDSCollapsible works anywhere — it doesn't require a card wrapper.
         </p>
       </XDSCollapsible>
-      <XDSCollapsible trigger="Another section" initialIsOpen={false}>
+      <XDSCollapsible trigger="Another section" defaultIsOpen={false}>
         <p {...stylex.props(styles.text)}>This section starts collapsed.</p>
       </XDSCollapsible>
     </XDSVStack>

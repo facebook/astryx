@@ -216,11 +216,11 @@ describe('XDSAppShell', () => {
     expect(screen.getByRole('navigation')).toBeInTheDocument();
   });
 
-  it('sideNav is hidden when initialIsSideNavCollapsed is true', () => {
+  it('sideNav is hidden when defaultIsSideNavCollapsed is true', () => {
     render(
       <XDSAppShell
         sideNav={<div>Nav Items</div>}
-        initialIsSideNavCollapsed={true}>
+        defaultIsSideNavCollapsed={true}>
         <div>Content</div>
       </XDSAppShell>,
     );
