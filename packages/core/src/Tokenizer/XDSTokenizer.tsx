@@ -347,9 +347,9 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
 
     if (renderToken) {
       return (
-        <React.Fragment key={item.id}>
+        <span key={item.id} {...stylex.props(styles.token)}>
           {renderToken(item, onRemoveItem)}
-        </React.Fragment>
+        </span>
       );
     }
 
