@@ -34,7 +34,7 @@ export interface CommandPaletteContextValue {
   /** Select an item by value. */
   selectItem: (value: string) => void;
   /** Close the palette. */
-  onHide: () => void;
+  onClose: () => void;
 }
 
 export const CommandPaletteContext =
