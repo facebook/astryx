@@ -30,7 +30,7 @@ import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
 
 // Starts collapsed
 <XDSCard>
-  <XDSCollapsible trigger="Advanced" initialIsOpen={false}>
+  <XDSCollapsible trigger="Advanced" defaultIsOpen={false}>
     <p>Hidden by default</p>
   </XDSCollapsible>
 </XDSCard>
@@ -107,7 +107,7 @@ import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
 | --------------- | --------------------------- | ------- | -------------------------------------------------- |
 | `trigger`       | `ReactNode`                 | —       | Content shown in the trigger area (always visible) |
 | `children`      | `ReactNode`                 | —       | Content that collapses/expands                     |
-| `initialIsOpen` | `boolean`                   | `true`  | Initial open state (uncontrolled)                  |
+| `defaultIsOpen` | `boolean`                   | `true`  | Default open state (uncontrolled)                  |
 | `isOpen`        | `boolean`                   | —       | Controlled open state                              |
 | `onOpenChange`  | `(isOpen: boolean) => void` | —       | Callback when open state changes                   |
 | `value`         | `string`                    | —       | Identifier for group coordination                  |

@@ -105,7 +105,7 @@ export interface XDSBannerProps {
    * Only relevant when children are provided.
    * @default false
    */
-  isDefaultExpanded?: boolean;
+  defaultIsExpanded?: boolean;
   /**
    * Extra content rendered below the header in a collapsible card-background area.
    * Use for rich content like lists, links, or detailed information.
@@ -313,7 +313,7 @@ const statusStyles = stylex.create({
  * <XDSBanner
  *   status="warning"
  *   title="Configuration changes"
- *   isDefaultExpanded
+ *   defaultIsExpanded
  * >
  *   <p>Details here...</p>
  * </XDSBanner>
@@ -330,7 +330,7 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
       onDismiss,
       endContent,
       variant = 'card',
-      isDefaultExpanded = false,
+      defaultIsExpanded = false,
       children,
       xstyle,
       'data-testid': testId,
@@ -338,7 +338,7 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
     ref,
   ) => {
     const [isDismissed, setIsDismissed] = useState(false);
-    const [isExpanded, setIsExpanded] = useState(isDefaultExpanded);
+    const [isExpanded, setIsExpanded] = useState(defaultIsExpanded);
     const DefaultIcon = defaultIcons[status];
     const role = statusRole[status];
     const iconColor = statusIconColor[status];

@@ -24,8 +24,8 @@ import {CollapsibleGroupContext} from './XDSCollapsibleGroupContext';
  * Configuration for collapsible behavior.
  */
 export type CollapsibleConfig = {
-  /** Whether the component starts open. @default true */
-  initialIsOpen?: boolean;
+  /** Default open state for uncontrolled usage. @default true */
+  defaultIsOpen?: boolean;
   /** Controlled open state. */
   isOpen?: boolean;
   /** Callback when open state changes. */
@@ -36,7 +36,7 @@ export interface UseXDSCollapsibleOptions {
   /**
    * Whether the component is collapsible.
    * - `true` — self-managed, starts open
-   * - `{ initialIsOpen: false }` — self-managed, starts collapsed
+   * - `{ defaultIsOpen: false }` — self-managed, starts collapsed
    * - `{ isOpen, onOpenChange }` — controlled externally
    */
   isCollapsible?: boolean | CollapsibleConfig;
@@ -62,7 +62,7 @@ export interface UseXDSCollapsibleReturn {
  * Supports three modes:
  * 1. **Group-controlled**: When inside a CollapsibleGroup with a `value`, defers to group.
  * 2. **Controlled**: When `isOpen` and `onOpenChange` are provided in config.
- * 3. **Uncontrolled**: Self-managed internal state with optional `initialIsOpen`.
+ * 3. **Uncontrolled**: Self-managed internal state with optional `defaultIsOpen`.
  *
  * @example
  * ```
@@ -90,7 +90,7 @@ export function useXDSCollapsible(
   const [internalIsOpen, setInternalIsOpen] = useState(() => {
     if (isControlledByGroup) return true; // group manages this
     if (config?.isOpen !== undefined) return config.isOpen;
-    return config?.initialIsOpen ?? true;
+    return config?.defaultIsOpen ?? true;
   });
 
   // Determine open state from the appropriate source

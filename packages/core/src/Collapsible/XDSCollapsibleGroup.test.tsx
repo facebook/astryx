@@ -63,9 +63,9 @@ describe('XDSCollapsible', () => {
     expect(screen.getByText('Collapsible content')).toBeVisible();
   });
 
-  it('starts collapsed when initialIsOpen is false', () => {
+  it('starts collapsed when defaultIsOpen is false', () => {
     render(
-      <XDSCollapsible trigger="Details" initialIsOpen={false}>
+      <XDSCollapsible trigger="Details" defaultIsOpen={false}>
         <p>Hidden content</p>
       </XDSCollapsible>,
     );

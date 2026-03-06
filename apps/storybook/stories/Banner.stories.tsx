@@ -24,7 +24,7 @@ const meta: Meta<typeof XDSBanner> = {
       description:
         'Whether the banner can be dismissed (manages its own hidden state)',
     },
-    isDefaultExpanded: {
+    defaultIsExpanded: {
       control: 'boolean',
       description:
         'Whether the content area starts expanded (only relevant when children are provided)',
@@ -137,7 +137,7 @@ export const CollapsibleContentExpanded: Story = {
     status: 'info',
     title: 'Emphasized Text',
     description: 'Description text',
-    isDefaultExpanded: true,
+    defaultIsExpanded: true,
     endContent: <XDSButton label="Button" variant="secondary" size="sm" />,
     isDismissable: true,
     children: (
@@ -160,7 +160,7 @@ export const WithContentArea: Story = {
     status: 'error',
     title: 'Multiple errors found',
     description: 'The following issues need to be resolved:',
-    isDefaultExpanded: true,
+    defaultIsExpanded: true,
     children: (
       <ul style={{margin: 0, paddingInlineStart: '20px', fontSize: '13px'}}>
         <li>Email address is invalid</li>
@@ -179,7 +179,7 @@ export const ContentAreaWithAction: Story = {
     description: 'Review the changes before they take effect.',
     endContent: <XDSButton label="Review" variant="secondary" size="sm" />,
     isDismissable: true,
-    isDefaultExpanded: true,
+    defaultIsExpanded: true,
     children: (
       <div style={{fontSize: '13px'}}>
         <p style={{margin: '0 0 8px'}}>Changed settings:</p>
@@ -245,10 +245,10 @@ export const AllFeatures: Story = {
         status="success"
         title="Expanded by default"
         description="This content area starts open."
-        isDefaultExpanded
+        defaultIsExpanded
         isDismissable>
         <div style={{fontSize: '13px'}}>
-          Content is visible immediately because isDefaultExpanded is true.
+          Content is visible immediately because defaultIsExpanded is true.
         </div>
       </XDSBanner>
       <XDSBanner

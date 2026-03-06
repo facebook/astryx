@@ -195,7 +195,7 @@ const isMobile = useMediaQuery('(max-width: 768px)');
 | `banner`                    | `ReactNode`                      | —        | Banner slot for system-wide announcements   |
 | `height`                    | `'fill' \| 'auto'`               | `'fill'` | Height behavior                             |
 | `isSideNavCollapsed`        | `boolean`                        | —        | Whether sideNav is collapsed (controlled)   |
-| `initialIsSideNavCollapsed` | `boolean`                        | `false`  | Initial collapsed state (uncontrolled)      |
+| `defaultIsSideNavCollapsed` | `boolean`                        | `false`  | Default collapsed state (uncontrolled)      |
 | `mobileNav`                 | `ReactNode`                      | —        | Mobile navigation (typically XDSMobileNav)  |
 | `onSideNavCollapsedChange`  | `(isCollapsed: boolean) => void` | —        | Collapse change callback                    |
 | `sideNavBreakpoint`         | `'sm' \| 'md' \| 'lg' \| 'none'` | `'md'`   | Breakpoint for auto-collapse                |
@@ -223,7 +223,7 @@ const isMobile = useMediaQuery('(max-width: 768px)');
 ## SideNav Behavior
 
 - **Controlled**: Use `isSideNavCollapsed` + `onSideNavCollapsedChange`
-- **Uncontrolled**: Use `initialIsSideNavCollapsed`
+- **Uncontrolled**: Use `defaultIsSideNavCollapsed`
 - **Responsive**: `sideNavBreakpoint` auto-collapses below the specified width
 - **Mobile**: Collapsed sideNav renders as an overlay with backdrop
 - **Animations**: Snap open/closed for now; ViewTransitions support planned

@@ -236,7 +236,7 @@ const meta: Meta<typeof XDSAppShell> = {
       control: 'radio',
       options: ['fill', 'auto'],
     },
-    initialIsSideNavCollapsed: {
+    defaultIsSideNavCollapsed: {
       control: 'boolean',
       description: 'Whether the side nav starts collapsed',
     },

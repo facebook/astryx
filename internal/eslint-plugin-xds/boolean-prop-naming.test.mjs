@@ -53,6 +53,30 @@ describe('boolean-prop-naming', () => {
             }
           `,
         },
+        // ✅ Correct "defaultIs" prefix
+        {
+          code: `
+            interface XDSCollapsibleProps {
+              defaultIsOpen?: boolean;
+            }
+          `,
+        },
+        // ✅ Correct "defaultHas" prefix
+        {
+          code: `
+            interface XDSSelectorProps {
+              defaultHasSelection?: boolean;
+            }
+          `,
+        },
+        // ✅ Correct "defaultIs" prefix — expanded
+        {
+          code: `
+            interface XDSBannerProps {
+              defaultIsExpanded?: boolean;
+            }
+          `,
+        },
         // ✅ Non-boolean prop — should be ignored
         {
           code: `

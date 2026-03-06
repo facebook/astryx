@@ -5,7 +5,8 @@
  * Boolean props in *Props interfaces/types must use:
  *   - `is` prefix for state/condition booleans (isDisabled, isRequired, isLoading)
  *   - `has` prefix for feature toggles (hasAutoFocus, hasClear, hasSeconds)
- *   - `initialIs` / `initialHas` for uncontrolled boolean defaults
+ *   - `defaultIs` / `defaultHas` for uncontrolled boolean defaults
+ *   - `initialIs` / `initialHas` (deprecated aliases, kept for backward compat)
  *
  * Exceptions:
  *   - aria-* and data-* attributes (follow their own conventions)
@@ -37,6 +38,8 @@ function isValidBooleanPropName(name) {
   return (
     name.startsWith('is') ||
     name.startsWith('has') ||
+    name.startsWith('defaultIs') ||
+    name.startsWith('defaultHas') ||
     name.startsWith('initialIs') ||
     name.startsWith('initialHas')
   );
