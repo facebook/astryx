@@ -190,7 +190,7 @@ const isMobile = useMediaQuery('(max-width: 768px)');
       description: 'Whether the sideNav is collapsed (controlled mode).',
     },
     {
-      name: 'initialIsSideNavCollapsed',
+      name: 'defaultIsSideNavCollapsed',
       type: 'boolean',
       description: 'Initial collapsed state for uncontrolled mode.',
       default: 'false',

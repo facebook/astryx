@@ -169,7 +169,7 @@ layer.show();
           name: 'alignment',
           type: 'LayerAlignment',
           description: 'Alignment along the placement axis.',
-          default: "'start'",
+          default: "'center'",
         },
         {
           name: 'delay',
@@ -299,9 +299,8 @@ layer.show();
       props: [
         {
           name: 'children',
-          type: 'ReactElement',
+          type: 'ReactNode',
           description: 'Trigger element that must accept a ref.',
-          required: true,
         },
         {
           name: 'content',
@@ -319,7 +318,7 @@ layer.show();
           name: 'alignment',
           type: 'LayerAlignment',
           description: 'Alignment along the placement axis.',
-          default: "'start'",
+          default: "'center'",
         },
         {
           name: 'delay',
@@ -392,14 +391,14 @@ layer.show();
           default: "'start'",
         },
         {
-          name: 'isShown',
+          name: 'isOpen',
           type: 'boolean',
           description:
             'Whether the popover is shown in controlled mode. Omit for uncontrolled behavior.',
         },
         {
-          name: 'onToggle',
-          type: '(isShown: boolean) => void',
+          name: 'onOpenChange',
+          type: '(isOpen: boolean) => void',
           description: 'Callback fired when the popover visibility changes.',
         },
         {

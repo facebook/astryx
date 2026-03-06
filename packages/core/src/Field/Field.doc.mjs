@@ -150,7 +150,7 @@ const bioDescId = useId();
           default: 'false',
         },
         {
-          name: 'labelStartIcon',
+          name: 'labelIcon',
           type: 'XDSIconType',
           description: 'Icon to display before the label text.',
         },
@@ -183,6 +183,7 @@ const bioDescId = useId();
           name: 'inputID',
           type: 'string',
           description: 'ID of the input this label is for.',
+          required: true,
         },
         {
           name: 'isLabelHidden',
@@ -209,12 +210,12 @@ const bioDescId = useId();
           default: 'false',
         },
         {
-          name: 'startIcon',
+          name: 'labelIcon',
           type: 'XDSIconType',
           description: 'Icon before the label text.',
         },
         {
-          name: 'tooltip',
+          name: 'labelTooltip',
           type: 'string',
           description: 'Tooltip text for info icon at end of label.',
         },

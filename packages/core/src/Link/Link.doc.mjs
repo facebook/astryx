@@ -5,7 +5,7 @@ export const docs = {
   description:
     'XDSLink component for styled anchor links with multiple variants and features, plus polymorphic link infrastructure for rendering custom link components (Next.js Link, React Router Link, etc.).',
   features: [
-    "Variants: 'default', 'subtle', 'inherit'",
+    "Color control: Uses XDSText color prop ('active' default, 'secondary', 'inherit', etc.)",
     'External links: Opens in new tab with external link icon',
     'Tooltip support: Display tooltip text on hover',
     'Underline control: Always show underline or only on hover',
@@ -43,10 +43,6 @@ export const docs = {
       code: '<XDSLink label="Settings" href="/settings" isStandalone>Settings</XDSLink>',
     },
     {
-      label: 'Subtle variant',
-      code: '<XDSLink label="Privacy" href="/privacy" variant="subtle">Privacy Policy</XDSLink>',
-    },
-    {
       label: 'Disabled link',
       code: '<XDSLink label="Disabled" href="/disabled" isDisabled>Disabled Link</XDSLink>',
     },
@@ -82,7 +78,6 @@ function MyComponent({as}: {as?: XDSLinkComponentType}) {
     surfaces: [{name: 'root', description: 'Root anchor element styles'}],
   },
   notes: [
-    'XDSLinkVariant type is derived from the `variants` StyleX object using `keyof typeof variants`',
     'By default, links inherit font family, size, line-height, and weight from parent elements',
     'Use isStandalone prop when the link is not inline within other text content',
     'isExternalLink automatically sets target="_blank" and rel="noopener noreferrer" for security',
@@ -115,12 +110,6 @@ function MyComponent({as}: {as?: XDSLinkComponentType}) {
           name: 'href',
           type: 'string',
           description: 'Link destination URL',
-        },
-        {
-          name: 'variant',
-          type: "'default' | 'subtle' | 'inherit'",
-          description: 'Visual style variant',
-          default: "'default'",
         },
         {
           name: 'hasUnderline',

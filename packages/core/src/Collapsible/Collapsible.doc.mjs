@@ -112,7 +112,6 @@ export const docs = {
           name: 'children',
           type: 'ReactNode',
           description: 'Content that collapses and expands.',
-          required: true,
         },
         {
           name: 'defaultIsOpen',
@@ -181,7 +180,7 @@ export const docs = {
           description: 'Controlled open item(s).',
         },
         {
-          name: 'onValueChange',
+          name: 'onChange',
           type: '(value: string | string[]) => void',
           description: 'Callback invoked when the set of open items changes.',
         },

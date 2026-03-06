@@ -14,7 +14,7 @@ export const docs = {
     {
       name: 'size',
       type: "'sm' | 'md' | 'lg'",
-      description: 'Spinner size (12px, 20px, 28px).',
+      description: 'Spinner size (10px, 14px, 18px).',
       default: "'md'",
     },
     {
@@ -56,10 +56,10 @@ export const docs = {
   },
   notes: [
     'Uses CSS border technique: three visible borders + one transparent for the gap.',
-    'Animation: rotate(360deg) at 0.6s linear infinite.',
+    'Animation: rotate(360deg) at 0.75s linear infinite.',
     'Color inherits from currentColor, controlled by shade styles using theme tokens.',
     'Element is a <span> with display: inline-block for inline composability.',
     'XDSSpinner is intentionally minimal — compose with layout and text components for full loading states.',
-    'Size reference: sm = 12×12px / 2px border, md = 20×20px / 2px border, lg = 28×28px / 3px border.',
+    'Size reference: sm = 10×10px / 3px border, md = 14×14px / 3px border, lg = 18×18px / 3px border.',
   ],
 };

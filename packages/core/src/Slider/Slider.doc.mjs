@@ -120,7 +120,6 @@ export const docs = {
       name: 'onChange',
       type: '(value: number) => void | (value: [number, number]) => void',
       description: 'Callback fired on value change during drag.',
-      required: true,
     },
     {
       name: 'onChangeEnd',

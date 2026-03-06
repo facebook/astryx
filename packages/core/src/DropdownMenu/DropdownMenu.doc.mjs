@@ -53,7 +53,7 @@ export const docs = {
       title: 'Manage',
       items: [
         { label: 'Rename', onClick: () => handleRename() },
-        { label: 'Delete', disabled: true },
+        { label: 'Delete', isDisabled: true },
       ],
     },
   ]}
@@ -236,7 +236,7 @@ export const docs = {
           description: 'Callback fired when the item is selected.',
         },
         {
-          name: 'disabled',
+          name: 'isDisabled',
           type: 'boolean',
           description:
             'Whether the item is disabled; disabled items are skipped during keyboard navigation.',
@@ -255,7 +255,7 @@ export const docs = {
         },
         {
           label: 'Disabled item with icon',
-          code: `{ label: 'Delete', icon: TrashIcon, disabled: true }`,
+          code: `{ label: 'Delete', icon: TrashIcon, isDisabled: true }`,
         },
       ],
     },

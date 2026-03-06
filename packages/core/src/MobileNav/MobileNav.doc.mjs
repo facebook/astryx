@@ -12,10 +12,10 @@ export const docs = {
       required: true,
     },
     {
-      name: 'onClose',
-      type: '() => void',
+      name: 'onOpenChange',
+      type: '(isOpen: boolean) => void',
       description:
-        'Called when the drawer should close (backdrop click, Escape key, or close button).',
+        'Called when the drawer visibility changes (backdrop click, Escape key, or close button).',
       required: true,
     },
     {
@@ -59,7 +59,7 @@ export const docs = {
 
 <XDSMobileNav
   isOpen={isOpen}
-  onClose={() => setIsOpen(false)}
+  onOpenChange={() => setIsOpen(false)}
   title="Navigation"
 >
   <XDSSideNavSection title="Main">
@@ -97,7 +97,7 @@ const navSections = (
     />
     <XDSMobileNav
       isOpen={drawerOpen}
-      onClose={() => setDrawerOpen(false)}
+      onOpenChange={() => setDrawerOpen(false)}
       title="My App"
     >
       {navSections}
@@ -120,7 +120,7 @@ const navSections = (
 <XDSSideNav>{sections}</XDSSideNav>
 
 // Mobile: drawer
-<XDSMobileNav isOpen={open} onClose={close}>{sections}</XDSMobileNav>`,
+<XDSMobileNav isOpen={open} onOpenChange={close}>{sections}</XDSMobileNav>`,
     },
   ],
   features: [

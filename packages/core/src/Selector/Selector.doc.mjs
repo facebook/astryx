@@ -32,7 +32,7 @@ export const docs = {
       label: 'Basic',
       code: `<XDSSelector
   label="Fruit"
-  items={['Apple', 'Banana', 'Orange']}
+  options={['Apple', 'Banana', 'Orange']}
   value={value}
   onChange={setValue}
 />`,
@@ -41,7 +41,7 @@ export const docs = {
       label: 'With object items (icon, disabled)',
       code: `<XDSSelector
   label="Settings"
-  items={[
+  options={[
     {value: 'profile', label: 'Profile', icon: UserIcon},
     {value: 'settings', label: 'Settings', icon: CogIcon, disabled: true},
   ]}
@@ -53,7 +53,7 @@ export const docs = {
       label: 'Sections',
       code: `<XDSSelector
   label="Fruit"
-  items={[
+  options={[
     {value: 'apple', label: 'Apple'},
     {type: 'section', title: 'Citrus', items: [
       {value: 'orange', label: 'Orange'},
@@ -65,7 +65,7 @@ export const docs = {
     },
     {
       label: 'Custom rendering with XDSSelectorItem',
-      code: `<XDSSelector label="User" items={users} value={value} onChange={setValue}>
+      code: `<XDSSelector label="User" options={users} value={value} onChange={setValue}>
   {user => (
     <XDSSelectorItem
       icon={UserIcon}
@@ -81,7 +81,7 @@ export const docs = {
   label="Fruit"
   isRequired
   status={{type: 'error', message: 'Required'}}
-  items={['Apple', 'Banana']}
+  options={['Apple', 'Banana']}
   value={value}
   onChange={setValue}
 />`,
@@ -99,7 +99,7 @@ export const docs = {
           required: true,
         },
         {
-          name: 'items',
+          name: 'options',
           type: 'XDSSelectorOption[]',
           description:
             'Array of items — strings, objects with value/label/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, items}).',
@@ -168,7 +168,7 @@ export const docs = {
           label: 'Basic',
           code: `<XDSSelector
   label="Fruit"
-  items={['Apple', 'Banana', 'Orange']}
+  options={['Apple', 'Banana', 'Orange']}
   value={value}
   onChange={setValue}
 />`,
@@ -177,7 +177,7 @@ export const docs = {
           label: 'With object items',
           code: `<XDSSelector
   label="Settings"
-  items={[
+  options={[
     {value: 'profile', label: 'Profile', icon: UserIcon},
     {value: 'settings', label: 'Settings', icon: CogIcon, disabled: true},
   ]}
@@ -212,7 +212,7 @@ export const docs = {
       examples: [
         {
           label: 'Custom item rendering',
-          code: `<XDSSelector label="User" items={users} value={value} onChange={setValue}>
+          code: `<XDSSelector label="User" options={users} value={value} onChange={setValue}>
   {user => (
     <XDSSelectorItem
       icon={UserIcon}

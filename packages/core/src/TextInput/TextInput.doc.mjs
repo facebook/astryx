@@ -101,7 +101,7 @@ export const docs = {
     },
     {
       name: 'size',
-      type: "'sm' | 'md'",
+      type: "'sm' | 'md' | 'lg'",
       description: 'Size variant of the input.',
       default: "'md'",
     },
@@ -199,6 +199,6 @@ export const docs = {
     'isOptional and isRequired are mutually exclusive — if both are set, "Optional" is shown.',
     'onChangeAction fires after onChange inside a React transition, enabling useOptimistic for an instant UI update while the async work completes.',
     'The component wraps XDSField for label, description, and optional/required rendering.',
-    'The size prop currently supports "sm" and "md"; the sizeStyles object in the source also defines "lg" but it is not exposed in XDSTextInputSize.',
+    'The size prop supports "sm", "md", and "lg".',
   ],
 };

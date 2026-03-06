@@ -212,7 +212,7 @@ function Example() {
         },
         {
           name: 'onOpenChange',
-          type: '() => unknown',
+          type: '(isOpen: boolean) => unknown',
           description:
             'Close button callback (no button if omitted).',
         },

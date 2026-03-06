@@ -40,7 +40,6 @@ export const docs = {
       name: 'onChange',
       type: '(checked: boolean, e: ChangeEvent) => void',
       description: 'Callback fired when the checkbox state changes.',
-      required: true,
     },
     {
       name: 'isDisabled',

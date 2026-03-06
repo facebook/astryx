@@ -140,7 +140,7 @@ export const docs = {
       description: 'Placeholder text.',
     },
     {
-      name: 'tooltip',
+      name: 'labelTooltip',
       type: 'string',
       description:
         'Tooltip text to display in an info icon at the end of the label.',
