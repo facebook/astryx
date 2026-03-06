@@ -27,13 +27,13 @@ import {XDSButton} from '@xds/core/Button';
 import {useState} from 'react';
 
 function Example() {
-  const [isShown, setIsShown] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
-      <XDSButton label="Open Dialog" onClick={() => setIsShown(true)} />
+      <XDSButton label="Open Dialog" onClick={() => setIsOpen(true)} />
 
-      <XDSDialog isShown={isShown} onHide={() => setIsShown(false)}>
+      <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
         <XDSLayout
           header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
           content={<XDSLayoutContent>Content goes here</XDSLayoutContent>}
@@ -42,12 +42,12 @@ function Example() {
               <XDSButton
                 label="Cancel"
                 variant="secondary"
-                onClick={() => setIsShown(false)}
+                onClick={() => setIsOpen(false)}
               />
               <XDSButton
                 label="Confirm"
                 variant="primary"
-                onClick={() => setIsShown(false)}
+                onClick={() => setIsOpen(false)}
               />
             </XDSLayoutFooter>
           }
@@ -60,8 +60,8 @@ function Example() {
     {
       label: 'Static position',
       code: `<XDSDialog
-  isShown={isShown}
-  onHide={() => setIsShown(false)}
+  isOpen={isOpen}
+  onOpenChange={open => setIsOpen(open)}
   position={{top: 100, right: 20}}>
   {/* content */}
 </XDSDialog>`,
@@ -69,15 +69,15 @@ function Example() {
     {
       label: 'Fullscreen variant',
       code: `<XDSDialog
-  isShown={isShown}
-  onHide={() => setIsShown(false)}
+  isOpen={isOpen}
+  onOpenChange={open => setIsOpen(open)}
   variant="fullscreen">
   <XDSLayout
     header={<XDSLayoutHeader hasDivider>Full-screen title</XDSLayoutHeader>}
     content={<XDSLayoutContent>Content goes here</XDSLayoutContent>}
     footer={
       <XDSLayoutFooter hasDivider>
-        <XDSButton label="Close" onClick={() => setIsShown(false)} />
+        <XDSButton label="Close" onClick={() => setIsOpen(false)} />
       </XDSLayoutFooter>
     }
   />
@@ -86,8 +86,8 @@ function Example() {
     {
       label: 'Required purpose (non-dismissible)',
       code: `<XDSDialog
-  isShown={isShown}
-  onHide={() => setIsShown(false)}
+  isOpen={isOpen}
+  onOpenChange={open => setIsOpen(open)}
   purpose="required">
   {/* user must take an explicit action to close */}
 </XDSDialog>`,
@@ -97,7 +97,7 @@ function Example() {
       code: `<XDSDialogHeader
   title="Confirm Action"
   subtitle="This cannot be undone"
-  onHide={() => setIsShown(false)}
+  onOpenChange={open => setIsOpen(open)}
 />`,
     },
   ],
@@ -128,15 +128,15 @@ function Example() {
       description: 'Modal dialog using the native <dialog> element.',
       props: [
         {
-          name: 'isShown',
+          name: 'isOpen',
           type: 'boolean',
-          description: 'Whether the dialog is shown.',
+          description: 'Whether the dialog is open (required).',
           required: true,
         },
         {
-          name: 'onHide',
-          type: '() => unknown',
-          description: 'Callback invoked when the dialog requests to hide.',
+          name: 'onOpenChange',
+          type: '(isOpen: boolean) => unknown',
+          description: 'Callback when dialog visibility changes (required).',
           required: true,
         },
         {
@@ -181,13 +181,13 @@ function Example() {
       examples: [
         {
           label: 'Basic',
-          code: `<XDSDialog isShown={isShown} onHide={() => setIsShown(false)}>
+          code: `<XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
   <XDSLayout
     header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
     content={<XDSLayoutContent>Content goes here</XDSLayoutContent>}
     footer={
       <XDSLayoutFooter hasDivider>
-        <XDSButton label="Confirm" variant="primary" onClick={() => setIsShown(false)} />
+        <XDSButton label="Confirm" variant="primary" onClick={() => setIsOpen(false)} />
       </XDSLayoutFooter>
     }
   />
@@ -203,35 +203,35 @@ function Example() {
         {
           name: 'title',
           type: 'string',
-          description: 'Dialog title; receives focus when the dialog opens.',
+          description: 'Dialog title (receives focus on open).',
         },
         {
           name: 'subtitle',
           type: 'string',
-          description: 'Subtitle displayed below the title.',
+          description: 'Subtitle below the title.',
         },
         {
-          name: 'onHide',
+          name: 'onOpenChange',
           type: '() => unknown',
           description:
-            'Callback for the close button; no close button is rendered when omitted.',
+            'Close button callback (no button if omitted).',
         },
         {
           name: 'startContent',
           type: 'ReactNode',
           description:
-            'Content rendered before the title (e.g., a back button).',
+            'Content before the title (e.g., a back button).',
         },
         {
           name: 'endContent',
           type: 'ReactNode',
           description:
-            'Content rendered after the title and before the close button.',
+            'Content after the title, before close button.',
         },
         {
           name: 'hasDivider',
           type: 'boolean',
-          description: 'Adds a border at the bottom edge of the header.',
+          description: 'Adds border at the bottom edge.',
           default: 'true',
         },
       ],
@@ -241,7 +241,7 @@ function Example() {
           code: `<XDSDialogHeader
   title="Confirm Action"
   subtitle="This cannot be undone"
-  onHide={() => setIsShown(false)}
+  onOpenChange={open => setIsOpen(open)}
 />`,
         },
         {
@@ -249,7 +249,7 @@ function Example() {
           code: `<XDSDialogHeader
   title="Step 2 of 3"
   startContent={<XDSButton label="Back" variant="secondary" onClick={goBack} />}
-  onHide={() => setIsShown(false)}
+  onOpenChange={open => setIsOpen(open)}
 />`,
         },
       ],

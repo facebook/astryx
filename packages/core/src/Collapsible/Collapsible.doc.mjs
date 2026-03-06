@@ -6,7 +6,7 @@ export const docs = {
   features: [
     'XDSCollapsible makes any content collapsible — a trigger toggles visibility of the content area',
     'Handles state management, accessibility (aria-expanded, keyboard activation), and a chevron indicator',
-    'Supports uncontrolled (initialIsOpen), controlled (isOpen / onOpenChange), and group-coordinated modes',
+    'Supports uncontrolled (defaultIsOpen), controlled (isOpen / onOpenChange), and group-coordinated modes',
     'XDSCollapsibleGroup coordinates multiple XDSCollapsible instances so only one (single mode) or multiple (multiple mode) can be open at a time',
     'XDSCollapsibleGroup renders no wrapper DOM element',
     'When inside a group, XDSCollapsible defers open/close state to the group context via the value prop',
@@ -35,7 +35,7 @@ export const docs = {
 
 // Starts collapsed
 <XDSCard>
-  <XDSCollapsible trigger="Advanced" initialIsOpen={false}>
+  <XDSCollapsible trigger="Advanced" defaultIsOpen={false}>
     <p>Hidden by default</p>
   </XDSCollapsible>
 </XDSCard>
@@ -115,9 +115,9 @@ export const docs = {
           required: true,
         },
         {
-          name: 'initialIsOpen',
+          name: 'defaultIsOpen',
           type: 'boolean',
-          description: 'Initial open state when used in uncontrolled mode.',
+          description: 'Default open state (uncontrolled).',
           default: 'true',
         },
         {
@@ -146,7 +146,7 @@ export const docs = {
         },
         {
           label: 'Starts collapsed',
-          code: `<XDSCollapsible trigger="Advanced" initialIsOpen={false}>
+          code: `<XDSCollapsible trigger="Advanced" defaultIsOpen={false}>
   <p>Hidden by default</p>
 </XDSCollapsible>`,
         },

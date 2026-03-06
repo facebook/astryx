@@ -7,7 +7,7 @@ export const docs = {
   features: [
     'Button customization: Customize the trigger button via the `button` prop (supports all XDSButton props)',
     'Data-driven items: Pass items via the `items` prop with support for sections and dividers',
-    'Controlled/Uncontrolled: Supports both controlled (`isMenuOpen`/`onMenuToggle`) and uncontrolled modes',
+    'Controlled/Uncontrolled: Supports both controlled (`isMenuOpen`/`onOpenChange`) and uncontrolled modes',
     'Custom menu width: Override default width (matches button) via `menuWidth` prop',
     'Sections: Group related items with optional headers using `XDSDropdownMenuSection`',
     'Keyboard navigation: Full keyboard support (Arrow keys, Home, End, Enter, Space, Escape)',
@@ -77,7 +77,7 @@ export const docs = {
   button={{ label: 'Options' }}
   items={[...]}
   isMenuOpen={isOpen}
-  onMenuToggle={setIsOpen}
+  onOpenChange={setIsOpen}
 />`,
     },
     {
@@ -142,7 +142,7 @@ export const docs = {
           description: 'Controlled open state for the menu.',
         },
         {
-          name: 'onMenuToggle',
+          name: 'onOpenChange',
           type: '(isOpen: boolean) => void',
           description: 'Callback fired when the open state changes.',
         },
@@ -201,6 +201,11 @@ export const docs = {
           type: 'ReactNode',
           description:
             'Additional content rendered after the label and description.',
+        },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description: 'StyleX styles for the root container.',
         },
       ],
       examples: [

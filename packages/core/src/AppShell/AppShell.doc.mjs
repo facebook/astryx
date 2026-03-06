@@ -140,7 +140,7 @@ const isMobile = useMediaQuery('(max-width: 768px)');
   mobileNav={
     <XDSMobileNav
       isOpen={mobileOpen}
-      onClose={() => setMobileOpen(false)}
+      onOpenChange={open => setMobileOpen(open)}
       title="My App">
       {navSections}
     </XDSMobileNav>
