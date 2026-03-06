@@ -405,7 +405,10 @@ export const XDSCheckboxInput = forwardRef<
                   styles.checkboxDisabledUnchecked,
               )}>
               {isBusy ? (
-                <XDSSpinner size="sm" />
+                <XDSSpinner
+                  size="sm"
+                  shade={isCheckedOrIndeterminate ? 'onMedia' : 'default'}
+                />
               ) : (
                 <>
                   <svg
