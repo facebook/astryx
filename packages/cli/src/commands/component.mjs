@@ -617,6 +617,14 @@ export function extractBriefAll(coreDir) {
   const components = discoverComponents(coreDir);
   const output = [];
 
+  // Add xstyle override hint at the top
+  output.push(
+    `> **Style overrides:** Most components accept an \`xstyle\` prop.`,
+    `> Use inline objects for simple overrides: \`xstyle={{ maxWidth: 300 }}\``,
+    `> Use \`stylex.create()\` for pseudo-classes/media queries or 3+ properties.`,
+    `> See \`npx xds docs principles\` for details.\n`,
+  );
+
   for (const [category, comps] of Object.entries(components)) {
     output.push(`## ${category}\n`);
     for (const comp of comps) {
