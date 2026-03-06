@@ -14,3 +14,7 @@ AGENTS.html.md
 
 # Test results (generated)
 results/
+
+# Preview build temp dirs
+.preview-tmp*
+.baseline-shims/
