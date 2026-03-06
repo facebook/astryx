@@ -326,7 +326,7 @@ export function XDSCommandPaletteProvider({
     <ProviderContext.Provider value={contextValue}>
       {children}
       <XDSCommandPalette
-        isShown={isOpen}
+        isOpen={isOpen}
         onOpenChange={open => {
           if (!open) close();
         }}

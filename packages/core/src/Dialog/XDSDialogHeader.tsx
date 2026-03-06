@@ -96,9 +96,9 @@ export interface XDSDialogHeaderProps {
  *
  * @example
  * ```
- * <XDSDialog isShown={isShown} onOpenChange={(open) => setIsShown(open)}>
+ * <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
  *   <XDSLayout
- *     header={<XDSDialogHeader title="Modal Title" onOpenChange={(open) => setIsShown(open)} />}
+ *     header={<XDSDialogHeader title="Modal Title" onOpenChange={open => setIsOpen(open)} />}
  *     content={<XDSLayoutContent>Content</XDSLayoutContent>}
  *     footer={<XDSLayoutFooter hasDivider>Actions</XDSLayoutFooter>}
  *   />

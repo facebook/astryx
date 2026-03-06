@@ -160,9 +160,9 @@ export interface XDSDialogProps extends Omit<
   'children'
 > {
   /**
-   * Whether the dialog is shown.
+   * Whether the dialog is open.
    */
-  isShown: boolean;
+  isOpen: boolean;
 
   /**
    * Callback fired when the dialog visibility changes.
@@ -230,11 +230,11 @@ export interface XDSDialogProps extends Omit<
  *
  * @example
  * ```
- * const [isShown, setIsShown] = useState(false);
+ * const [isOpen, setIsOpen] = useState(false);
  *
- * <XDSDialog isShown={isShown} onOpenChange={(open) => setIsShown(open)}>
+ * <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
  *   <XDSLayout
- *     header={<XDSDialogHeader title="Title" onOpenChange={(open) => setIsShown(open)} />}
+ *     header={<XDSDialogHeader title="Title" onOpenChange={open => setIsOpen(open)} />}
  *     content={<XDSLayoutContent>Content</XDSLayoutContent>}
  *     footer={<XDSLayoutFooter hasDivider>Actions</XDSLayoutFooter>}
  *   />
@@ -244,7 +244,7 @@ export interface XDSDialogProps extends Omit<
 export const XDSDialog = forwardRef<HTMLDialogElement, XDSDialogProps>(
   (
     {
-      isShown,
+      isOpen,
       onOpenChange,
       width = 400,
       maxHeight = '75vh',
@@ -278,7 +278,7 @@ export const XDSDialog = forwardRef<HTMLDialogElement, XDSDialogProps>(
       const dialog = dialogRef.current;
       if (!dialog) return;
 
-      if (isShown) {
+      if (isOpen) {
         if (!dialog.open) {
           dialog.showModal();
         }
@@ -287,12 +287,12 @@ export const XDSDialog = forwardRef<HTMLDialogElement, XDSDialogProps>(
           dialog.close();
         }
       }
-    }, [isShown]);
+    }, [isOpen]);
 
     // Handle Escape key
     useEffect(() => {
       const dialog = dialogRef.current;
-      if (!dialog || !isShown) return;
+      if (!dialog || !isOpen) return;
 
       const handleKeyDown = (event: KeyboardEvent) => {
         if (event.key === 'Escape') {
@@ -305,7 +305,7 @@ export const XDSDialog = forwardRef<HTMLDialogElement, XDSDialogProps>(
 
       dialog.addEventListener('keydown', handleKeyDown);
       return () => dialog.removeEventListener('keydown', handleKeyDown);
-    }, [isShown, allowEscape, onOpenChange]);
+    }, [isOpen, allowEscape, onOpenChange]);
 
     // Handle backdrop click
     const handleClick = (event: React.MouseEvent<HTMLDialogElement>) => {

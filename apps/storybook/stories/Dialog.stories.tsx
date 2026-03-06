@@ -22,7 +22,7 @@ const meta: Meta<typeof XDSDialog> = {
   component: XDSDialog,
   tags: ['autodocs'],
   argTypes: {
-    isShown: {
+    isOpen: {
       control: 'boolean',
       description: 'Whether the dialog is shown',
     },
@@ -54,21 +54,21 @@ type Story = StoryObj<typeof XDSDialog>;
  * Basic modal example with XDSDialogHeader
  */
 function BasicModalExample() {
-  const [isShown, setIsShown] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
       <XDSButton
         label="Open Modal"
         variant="primary"
-        onClick={() => setIsShown(true)}
+        onClick={() => setIsOpen(true)}
       />
-      <XDSDialog isShown={isShown} onOpenChange={open => setIsShown(open)}>
+      <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
         <XDSLayout
           header={
             <XDSDialogHeader
               title="Modal Title"
-              onOpenChange={open => setIsShown(open)}
+              onOpenChange={open => setIsOpen(open)}
             />
           }
           content={
@@ -86,12 +86,12 @@ function BasicModalExample() {
                 <XDSButton
                   label="Cancel"
                   variant="secondary"
-                  onClick={() => setIsShown(false)}
+                  onClick={() => setIsOpen(false)}
                 />
                 <XDSButton
                   label="Confirm"
                   variant="primary"
-                  onClick={() => setIsShown(false)}
+                  onClick={() => setIsOpen(false)}
                 />
               </XDSHStack>
             </XDSLayoutFooter>
@@ -110,22 +110,22 @@ export const Default: Story = {
  * Dialog with subtitle example
  */
 function SubtitleModalExample() {
-  const [isShown, setIsShown] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
       <XDSButton
         label="Open Modal with Subtitle"
         variant="secondary"
-        onClick={() => setIsShown(true)}
+        onClick={() => setIsOpen(true)}
       />
-      <XDSDialog isShown={isShown} onOpenChange={open => setIsShown(open)}>
+      <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
         <XDSLayout
           header={
             <XDSDialogHeader
               title="Edit User Profile"
               subtitle="Make changes to your account settings"
-              onOpenChange={open => setIsShown(open)}
+              onOpenChange={open => setIsOpen(open)}
             />
           }
           content={
@@ -142,12 +142,12 @@ function SubtitleModalExample() {
                 <XDSButton
                   label="Cancel"
                   variant="secondary"
-                  onClick={() => setIsShown(false)}
+                  onClick={() => setIsOpen(false)}
                 />
                 <XDSButton
                   label="Save Changes"
                   variant="primary"
-                  onClick={() => setIsShown(false)}
+                  onClick={() => setIsOpen(false)}
                 />
               </XDSHStack>
             </XDSLayoutFooter>
@@ -166,24 +166,24 @@ export const WithSubtitle: Story = {
  * Custom width example
  */
 function WideModalExample() {
-  const [isShown, setIsShown] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
       <XDSButton
         label="Open Wide Modal (600px)"
         variant="secondary"
-        onClick={() => setIsShown(true)}
+        onClick={() => setIsOpen(true)}
       />
       <XDSDialog
-        isShown={isShown}
-        onOpenChange={open => setIsShown(open)}
+        isOpen={isOpen}
+        onOpenChange={open => setIsOpen(open)}
         width={600}>
         <XDSLayout
           header={
             <XDSDialogHeader
               title="Wide Modal"
-              onOpenChange={open => setIsShown(open)}
+              onOpenChange={open => setIsOpen(open)}
             />
           }
           content={
@@ -199,7 +199,7 @@ function WideModalExample() {
                 <XDSButton
                   label="Close"
                   variant="primary"
-                  onClick={() => setIsShown(false)}
+                  onClick={() => setIsOpen(false)}
                 />
               </XDSHStack>
             </XDSLayoutFooter>
@@ -218,24 +218,24 @@ export const CustomWidth: Story = {
  * Fullscreen variant
  */
 function FullscreenModalExample() {
-  const [isShown, setIsShown] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
       <XDSButton
         label="Open Fullscreen Modal"
         variant="secondary"
-        onClick={() => setIsShown(true)}
+        onClick={() => setIsOpen(true)}
       />
       <XDSDialog
-        isShown={isShown}
-        onOpenChange={open => setIsShown(open)}
+        isOpen={isOpen}
+        onOpenChange={open => setIsOpen(open)}
         variant="fullscreen">
         <XDSLayout
           header={
             <XDSDialogHeader
               title="Fullscreen Modal"
-              onOpenChange={open => setIsShown(open)}
+              onOpenChange={open => setIsOpen(open)}
             />
           }
           content={
@@ -252,7 +252,7 @@ function FullscreenModalExample() {
                 <XDSButton
                   label="Close"
                   variant="primary"
-                  onClick={() => setIsShown(false)}
+                  onClick={() => setIsOpen(false)}
                 />
               </XDSHStack>
             </XDSLayoutFooter>
@@ -271,12 +271,12 @@ export const Fullscreen: Story = {
  * Purpose: required - cannot be dismissed
  */
 function RequiredModalExample() {
-  const [isShown, setIsShown] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [accepted, setAccepted] = useState(false);
 
   const handleAccept = () => {
     setAccepted(true);
-    setIsShown(false);
+    setIsOpen(false);
   };
 
   return (
@@ -284,7 +284,7 @@ function RequiredModalExample() {
       <XDSButton
         label="Open Required Modal"
         variant="destructive"
-        onClick={() => setIsShown(true)}
+        onClick={() => setIsOpen(true)}
       />
       {accepted && (
         <XDSText type="body" color="primary" xstyle={styles.acceptedMessage}>
@@ -292,8 +292,8 @@ function RequiredModalExample() {
         </XDSText>
       )}
       <XDSDialog
-        isShown={isShown}
-        onOpenChange={open => setIsShown(open)}
+        isOpen={isOpen}
+        onOpenChange={open => setIsOpen(open)}
         purpose="required">
         <XDSLayout
           header={<XDSDialogHeader title="Accept Terms" />}
@@ -330,25 +330,25 @@ export const PurposeRequired: Story = {
  * Purpose: form - prevents backdrop click
  */
 function FormModalExample() {
-  const [isShown, setIsShown] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
       <XDSButton
         label="Open Form Modal"
         variant="secondary"
-        onClick={() => setIsShown(true)}
+        onClick={() => setIsOpen(true)}
       />
       <XDSDialog
-        isShown={isShown}
-        onOpenChange={open => setIsShown(open)}
+        isOpen={isOpen}
+        onOpenChange={open => setIsOpen(open)}
         purpose="form"
         width={500}>
         <XDSLayout
           header={
             <XDSDialogHeader
               title="Edit Profile"
-              onOpenChange={open => setIsShown(open)}
+              onOpenChange={open => setIsOpen(open)}
             />
           }
           content={
@@ -366,12 +366,12 @@ function FormModalExample() {
                 <XDSButton
                   label="Cancel"
                   variant="secondary"
-                  onClick={() => setIsShown(false)}
+                  onClick={() => setIsOpen(false)}
                 />
                 <XDSButton
                   label="Save"
                   variant="primary"
-                  onClick={() => setIsShown(false)}
+                  onClick={() => setIsOpen(false)}
                 />
               </XDSHStack>
             </XDSLayoutFooter>
@@ -390,24 +390,24 @@ export const PurposeForm: Story = {
  * Purpose: info - allows all dismissals
  */
 function InfoModalExample() {
-  const [isShown, setIsShown] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
       <XDSButton
         label="Open Info Modal"
         variant="secondary"
-        onClick={() => setIsShown(true)}
+        onClick={() => setIsOpen(true)}
       />
       <XDSDialog
-        isShown={isShown}
-        onOpenChange={open => setIsShown(open)}
+        isOpen={isOpen}
+        onOpenChange={open => setIsOpen(open)}
         purpose="info">
         <XDSLayout
           header={
             <XDSDialogHeader
               title="Information"
-              onOpenChange={open => setIsShown(open)}
+              onOpenChange={open => setIsOpen(open)}
             />
           }
           content={
@@ -425,7 +425,7 @@ function InfoModalExample() {
                 <XDSButton
                   label="Got it"
                   variant="primary"
-                  onClick={() => setIsShown(false)}
+                  onClick={() => setIsOpen(false)}
                 />
               </XDSHStack>
             </XDSLayoutFooter>
@@ -444,25 +444,25 @@ export const PurposeInfo: Story = {
  * Custom position example
  */
 function PositionedModalExample() {
-  const [isShown, setIsShown] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
       <XDSButton
         label="Open Positioned Modal"
         variant="secondary"
-        onClick={() => setIsShown(true)}
+        onClick={() => setIsOpen(true)}
       />
       <XDSDialog
-        isShown={isShown}
-        onOpenChange={open => setIsShown(open)}
+        isOpen={isOpen}
+        onOpenChange={open => setIsOpen(open)}
         position={{top: 100, right: 20}}
         width={350}>
         <XDSLayout
           header={
             <XDSDialogHeader
               title="Positioned Modal"
-              onOpenChange={open => setIsShown(open)}
+              onOpenChange={open => setIsOpen(open)}
             />
           }
           content={
@@ -479,7 +479,7 @@ function PositionedModalExample() {
                 <XDSButton
                   label="Close"
                   variant="primary"
-                  onClick={() => setIsShown(false)}
+                  onClick={() => setIsOpen(false)}
                 />
               </XDSHStack>
             </XDSLayoutFooter>
@@ -498,24 +498,24 @@ export const CustomPosition: Story = {
  * Scrolling content example
  */
 function ScrollingModalExample() {
-  const [isShown, setIsShown] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
       <XDSButton
         label="Open Scrolling Modal"
         variant="secondary"
-        onClick={() => setIsShown(true)}
+        onClick={() => setIsOpen(true)}
       />
       <XDSDialog
-        isShown={isShown}
-        onOpenChange={open => setIsShown(open)}
+        isOpen={isOpen}
+        onOpenChange={open => setIsOpen(open)}
         maxHeight="50vh">
         <XDSLayout
           header={
             <XDSDialogHeader
               title="Terms and Conditions"
-              onOpenChange={open => setIsShown(open)}
+              onOpenChange={open => setIsOpen(open)}
             />
           }
           content={
@@ -541,12 +541,12 @@ function ScrollingModalExample() {
                 <XDSButton
                   label="Decline"
                   variant="secondary"
-                  onClick={() => setIsShown(false)}
+                  onClick={() => setIsOpen(false)}
                 />
                 <XDSButton
                   label="Accept"
                   variant="primary"
-                  onClick={() => setIsShown(false)}
+                  onClick={() => setIsOpen(false)}
                 />
               </XDSHStack>
             </XDSLayoutFooter>
@@ -565,12 +565,12 @@ export const ScrollingContent: Story = {
  * Confirmation dialog pattern
  */
 function ConfirmationModalExample() {
-  const [isShown, setIsShown] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [deleted, setDeleted] = useState(false);
 
   const handleDelete = () => {
     setDeleted(true);
-    setIsShown(false);
+    setIsOpen(false);
   };
 
   return (
@@ -578,7 +578,7 @@ function ConfirmationModalExample() {
       <XDSButton
         label="Delete Item"
         variant="destructive"
-        onClick={() => setIsShown(true)}
+        onClick={() => setIsOpen(true)}
       />
       {deleted && (
         <XDSText type="body" color="primary">
@@ -586,15 +586,15 @@ function ConfirmationModalExample() {
         </XDSText>
       )}
       <XDSDialog
-        isShown={isShown}
-        onOpenChange={open => setIsShown(open)}
+        isOpen={isOpen}
+        onOpenChange={open => setIsOpen(open)}
         width={350}
         purpose="form">
         <XDSLayout
           header={
             <XDSDialogHeader
               title="Confirm Delete"
-              onOpenChange={open => setIsShown(open)}
+              onOpenChange={open => setIsOpen(open)}
             />
           }
           content={
@@ -611,7 +611,7 @@ function ConfirmationModalExample() {
                 <XDSButton
                   label="Cancel"
                   variant="secondary"
-                  onClick={() => setIsShown(false)}
+                  onClick={() => setIsOpen(false)}
                 />
                 <XDSButton
                   label="Delete"
