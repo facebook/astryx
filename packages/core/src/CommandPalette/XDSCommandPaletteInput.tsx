@@ -74,7 +74,7 @@ export interface XDSCommandPaletteInputProps {
  *
  * @example
  * ```
- * <XDSCommandPalette isShown={isShown} onOpenChange={(open) => setIsShown(open)}>
+ * <XDSCommandPalette isOpen={isOpen} onOpenChange={onOpenChange}>
  *   <XDSCommandPaletteInput placeholder="Search commands..." />
  *   <XDSCommandPaletteList>...</XDSCommandPaletteList>
  * </XDSCommandPalette>

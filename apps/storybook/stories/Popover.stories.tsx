@@ -146,15 +146,15 @@ function FilterContent({onApply}: {onApply?: () => void}) {
 
 export const FilterPanel: Story = {
   render: function FilterPanelStory() {
-    const [isShown, setIsShown] = React.useState(false);
+    const [isOpen, setIsOpen] = React.useState(false);
     return (
       <XDSPopover
         placement="below"
         label="Filter"
         width={240}
-        isShown={isShown}
-        onOpenChange={setIsShown}
-        content={<FilterContent onApply={() => setIsShown(false)} />}>
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        content={<FilterContent onApply={() => setIsOpen(false)} />}>
         <XDSButton label="Filter">Filter</XDSButton>
       </XDSPopover>
     );
@@ -195,18 +195,18 @@ function ConfirmContent({
 
 export const Confirmation: Story = {
   render: function ConfirmationStory() {
-    const [isShown, setIsShown] = React.useState(false);
+    const [isOpen, setIsOpen] = React.useState(false);
     return (
       <XDSPopover
         placement="below"
         label="Confirm deletion"
         width={300}
-        isShown={isShown}
-        onOpenChange={setIsShown}
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
         content={
           <ConfirmContent
-            onConfirm={() => setIsShown(false)}
-            onCancel={() => setIsShown(false)}
+            onConfirm={() => setIsOpen(false)}
+            onCancel={() => setIsOpen(false)}
           />
         }>
         <XDSButton label="Delete project" variant="destructive">
