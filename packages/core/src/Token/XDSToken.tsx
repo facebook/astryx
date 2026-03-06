@@ -129,6 +129,13 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     textDecoration: 'none',
     maxWidth: '100%',
+    overflow: 'hidden',
+  },
+  label: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    minWidth: 0,
   },
   interactive: {
     cursor: 'pointer',
@@ -171,6 +178,7 @@ const styles = stylex.create({
     cursor: 'inherit',
     font: 'inherit',
     color: 'inherit',
+    outline: 'none',
   },
   focusWithinOutline: {
     outline: {
@@ -310,7 +318,8 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
     const content = (
       <>
         {icon}
-        <span {...(isLabelHidden ? stylex.props(styles.labelHidden) : {})}>
+        <span
+          {...stylex.props(styles.label, isLabelHidden && styles.labelHidden)}>
           {label}
         </span>
         {endContent}
@@ -383,7 +392,11 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
             onClick={onClick}
             disabled={isDisabled}
             {...stylex.props(styles.invisibleButton)}>
-            <span {...(isLabelHidden ? stylex.props(styles.labelHidden) : {})}>
+            <span
+              {...stylex.props(
+                styles.label,
+                isLabelHidden && styles.labelHidden,
+              )}>
               {label}
             </span>
           </button>

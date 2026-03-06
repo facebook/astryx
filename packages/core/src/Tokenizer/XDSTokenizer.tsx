@@ -125,16 +125,10 @@ const styles = stylex.create({
     // when tokens (28px) are added inside the input
     paddingBlock: `calc(${spacingVars['--spacing-1']} - 1px)`,
     cursor: 'text',
+    height: 'auto',
   },
-  tokenContainer: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: spacingVars['--spacing-1'],
-    alignItems: 'center',
-    // Offset tokens so they sit 3px from the inner edge (4px from outer edge
-    // accounting for 1px border). Default inline padding is 8px, so
-    // -(8px - 3px) = -5px positions tokens equidistant from left edge as top.
-    margin: `calc(-1 * (${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px))`,
+  token: {
+    flexShrink: 0,
   },
   clearAllButton: {
     all: 'unset',
@@ -170,8 +164,8 @@ const styles = stylex.create({
   },
   inputCompact: {
     minWidth: '40px',
-    flex: '0 1 auto',
-    width: '40px',
+    flex: '1 1 40px',
+    width: 0,
   },
 });
 
@@ -366,6 +360,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
         size={size}
         onRemove={isDisabled ? undefined : onRemoveItem}
         isDisabled={isDisabled}
+        xstyle={styles.token}
       />
     );
   });
@@ -405,18 +400,14 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
           status && inputStatusFocusWithinStyles[status.type],
           xstyle,
         )}>
-        {tokens.length > 0 && (
-          <div {...stylex.props(styles.tokenContainer)}>{tokens}</div>
-        )}
+        {tokens}
         <XDSBaseTypeahead
           ref={inputRef}
           searchSource={isAtMax ? emptySource : filteredSource}
           value={null}
           onChange={handleAdd}
           renderItem={renderItem}
-          placeholder={
-            value.length === 0 ? placeholder : isAtMax ? '' : undefined
-          }
+          placeholder={value.length === 0 ? placeholder : ''}
           hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
           maxMenuItems={maxMenuItems}
           emptySearchResultsText={emptySearchResultsText}
