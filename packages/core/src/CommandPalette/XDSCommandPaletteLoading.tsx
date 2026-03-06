@@ -40,7 +40,7 @@ export function XDSCommandPaletteLoading({
   children = 'Loading...',
 }: XDSCommandPaletteLoadingProps) {
   return (
-    <div role="status" aria-live="polite" {...stylex.props(styles.loading)}>
+    <div role="status" aria-live="polite" sx={styles.loading}>
       {children}
     </div>
   );

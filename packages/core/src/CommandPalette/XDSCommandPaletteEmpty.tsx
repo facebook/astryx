@@ -38,7 +38,7 @@ export interface XDSCommandPaletteEmptyProps {
  */
 export function XDSCommandPaletteEmpty({children}: XDSCommandPaletteEmptyProps) {
   return (
-    <div role="status" {...stylex.props(styles.empty)}>
+    <div role="status" sx={styles.empty}>
       {children}
     </div>
   );

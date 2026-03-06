@@ -88,9 +88,9 @@ export function XDSCommandPaletteShortcut({
   const parts = keys.split('+').map(key => key.trim().toLowerCase());
 
   return (
-    <span {...stylex.props(styles.wrapper)} aria-hidden="true">
+    <span sx={styles.wrapper} aria-hidden="true">
       {parts.map((key, i) => (
-        <kbd key={i} {...stylex.props(styles.kbd)}>
+        <kbd key={i} sx={styles.kbd}>
           {KEY_DISPLAY[key] ?? key.toUpperCase()}
         </kbd>
       ))}

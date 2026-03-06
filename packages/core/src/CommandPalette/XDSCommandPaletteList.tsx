@@ -56,10 +56,7 @@ export function XDSCommandPaletteList({
   const {listId} = useCommandPaletteContext();
 
   return (
-    <div
-      id={listId}
-      role="listbox"
-      {...stylex.props(styles.list, xstyle)}>
+    <div id={listId} role="listbox" sx={[styles.list, xstyle]}>
       {children}
     </div>
   );

@@ -394,9 +394,9 @@ function CommandItem({command}: {command: XDSCommand}) {
       keywords={command.keywords}
       isDisabled={command.isDisabled}>
       {command.icon && <XDSIcon icon={command.icon} size="sm" />}
-      <span {...stylex.props(commandItemStyles.label)}>{command.label}</span>
+      <span sx={commandItemStyles.label}>{command.label}</span>
       {command.description && (
-        <span {...stylex.props(commandItemStyles.description)}>
+        <span sx={commandItemStyles.description}>
           {command.description}
         </span>
       )}

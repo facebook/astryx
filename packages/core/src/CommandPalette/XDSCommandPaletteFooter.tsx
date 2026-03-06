@@ -51,7 +51,7 @@ export interface XDSCommandPaletteFooterProps {
  */
 export function XDSCommandPaletteFooter({children}: XDSCommandPaletteFooterProps) {
   return (
-    <div {...stylex.props(styles.footer)}>
+    <div sx={styles.footer}>
       {children}
     </div>
   );

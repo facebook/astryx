@@ -222,7 +222,7 @@ export function XDSCommandPalette({
       maxHeight={maxHeight}
       purpose="info"
       aria-label={label}
-      {...stylex.props(styles.dialog, xstyle)}>
+      sx={[styles.dialog, xstyle]}>
       <CommandPaletteContext.Provider value={contextValue}>
         {children}
       </CommandPaletteContext.Provider>

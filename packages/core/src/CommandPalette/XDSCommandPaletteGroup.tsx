@@ -67,8 +67,8 @@ export function XDSCommandPaletteGroup({
   xstyle,
 }: XDSCommandPaletteGroupProps) {
   return (
-    <div role="group" aria-label={heading} {...stylex.props(styles.group, xstyle)}>
-      <div aria-hidden="true" {...stylex.props(styles.heading)}>
+    <div role="group" aria-label={heading} sx={[styles.group, xstyle]}>
+      <div aria-hidden="true" sx={styles.heading}>
         {heading}
       </div>
       {children}

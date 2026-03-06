@@ -179,8 +179,8 @@ export function XDSCommandPaletteInput({
     highlightedIndex >= 0 ? `${listId}-item-${highlightedIndex}` : undefined;
 
   return (
-    <div {...stylex.props(styles.wrapper, xstyle)}>
-      <div {...stylex.props(styles.icon)}>
+    <div sx={[styles.wrapper, xstyle]}>
+      <div sx={styles.icon}>
         <XDSIcon icon="search" size="sm" color="secondary" />
       </div>
       <input
@@ -201,8 +201,7 @@ export function XDSCommandPaletteInput({
         autoComplete="off"
         autoCorrect="off"
         spellCheck={false}
-        {...stylex.props(styles.input)}
-      />
+        sx={styles.input} />
     </div>
   );
 }

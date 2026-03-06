@@ -86,9 +86,9 @@ export function XDSSelectorOption({
   xstyle,
 }: XDSSelectorOptionProps) {
   return (
-    <span {...stylex.props(styles.root, xstyle)}>
+    <span sx={[styles.root, xstyle]}>
       {icon && <XDSIcon icon={icon} size="sm" color="secondary" />}
-      <span {...stylex.props(styles.content)}>
+      <span sx={styles.content}>
         {typeof label === 'string' ? (
           <XDSText type="body" maxLines={1}>
             {label}

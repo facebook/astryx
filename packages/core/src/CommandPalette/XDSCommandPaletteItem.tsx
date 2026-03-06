@@ -165,14 +165,14 @@ export function XDSCommandPaletteItem({
       aria-disabled={isDisabled || undefined}
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
-      {...stylex.props(
+      sx={[
         styles.item,
         !isDisabled && styles.itemHover,
         isHighlighted && styles.itemHighlighted,
         isSelected && styles.itemSelected,
         isDisabled && styles.itemDisabled,
-        xstyle,
-      )}>
+        xstyle
+      ]}>
       {children}
     </div>
   );
