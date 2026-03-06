@@ -20,6 +20,7 @@
       "require": "./dist/index.js"
     },
     "./reset.css": "./src/reset.css",
+    "./xds.css": "./dist/xds.css",
     "./typography.css": "./src/typography.css",
     "./theme/tokens.stylex": {
       "source": "./src/theme/tokens.stylex.ts",
