@@ -115,7 +115,7 @@ function discoverXDSComponents(): Set<string> {
     'XDSRadioListItem',
     'XDSSection',
     'XDSSelector',
-    'XDSSelectorItem',
+    'XDSSelectorOption',
     'XDSSkeleton',
     'XDSSlider',
     'XDSSpinner',

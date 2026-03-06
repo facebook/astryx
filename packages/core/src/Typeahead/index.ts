@@ -18,6 +18,7 @@ export type {XDSBaseTypeaheadProps} from './XDSBaseTypeahead';
 export {XDSTypeahead} from './XDSTypeahead';
 export type {
   XDSTypeaheadProps,
+  XDSTypeaheadSize,
   XDSTypeaheadStatus,
   XDSTypeaheadStatusType,
 } from './XDSTypeahead';

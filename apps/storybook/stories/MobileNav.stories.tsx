@@ -57,7 +57,7 @@ export const Default: Story = {
         />
         <XDSMobileNav
           isOpen={isOpen}
-          onClose={() => setIsOpen(false)}
+          onOpenChange={open => setIsOpen(open)}
           title="Navigation">
           <XDSSideNavSection title="Main">
             <XDSSideNavItem
@@ -139,7 +139,7 @@ export const WithSideNavChildren: Story = {
         <XDSButton label="Open Drawer" onClick={() => setIsOpen(true)} />
         <XDSMobileNav
           isOpen={isOpen}
-          onClose={() => setIsOpen(false)}
+          onOpenChange={open => setIsOpen(open)}
           title="My App">
           {navSections}
         </XDSMobileNav>
@@ -202,7 +202,7 @@ export const ResponsivePattern: Story = {
           />
           <XDSMobileNav
             isOpen={drawerOpen}
-            onClose={() => setDrawerOpen(false)}
+            onOpenChange={open => setDrawerOpen(open)}
             title="My App">
             {navSections}
           </XDSMobileNav>
@@ -244,7 +244,7 @@ export const EndSide: Story = {
         <XDSButton label="Open from Right" onClick={() => setIsOpen(true)} />
         <XDSMobileNav
           isOpen={isOpen}
-          onClose={() => setIsOpen(false)}
+          onOpenChange={open => setIsOpen(open)}
           title="Settings"
           side="end">
           <XDSSideNavSection title="Settings">
@@ -274,7 +274,7 @@ export const CustomWidth: Story = {
         <XDSButton label="Open Wide Drawer" onClick={() => setIsOpen(true)} />
         <XDSMobileNav
           isOpen={isOpen}
-          onClose={() => setIsOpen(false)}
+          onOpenChange={open => setIsOpen(open)}
           title="Wide Navigation"
           width={360}>
           <XDSSideNavSection title="Main">
@@ -313,7 +313,7 @@ export const WithoutTitle: Story = {
           variant="ghost"
           onClick={() => setIsOpen(true)}
         />
-        <XDSMobileNav isOpen={isOpen} onClose={() => setIsOpen(false)}>
+        <XDSMobileNav isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
           <XDSSideNavSection title="Main">
             <XDSSideNavItem
               label="Dashboard"

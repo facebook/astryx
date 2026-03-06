@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/CheckboxInput.stories.tsx (storybook stories)
  */
 
+'use client';
+
 import {
   forwardRef,
   useContext,
@@ -405,7 +407,10 @@ export const XDSCheckboxInput = forwardRef<
                   styles.checkboxDisabledUnchecked,
               )}>
               {isBusy ? (
-                <XDSSpinner size="sm" />
+                <XDSSpinner
+                  size="sm"
+                  shade={isCheckedOrIndeterminate ? 'onMedia' : 'default'}
+                />
               ) : (
                 <>
                   <svg

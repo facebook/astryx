@@ -165,12 +165,26 @@ export function removeAgentDocs(targetDir) {
 /**
  * Programmatic entry point for installing agent docs.
  * Used by the init wizard.
+ *
+ * Strategy:
+ * - If CLAUDE.md exists, inject there (don't create AGENTS.md)
+ * - If only AGENTS.md exists (or neither), inject into AGENTS.md
+ * - If both exist, inject into both
  */
 export function installAgentDocs(targetDir) {
   const coreDir = findCoreDir(targetDir);
   const version = getXdsVersion(coreDir);
-  injectAgentsMd(targetDir, version);
-  injectClaudeMd(targetDir, version);
+  const hasClaudeMd = fs.existsSync(path.join(targetDir, CLAUDE_MD));
+  const hasAgentsMd = fs.existsSync(path.join(targetDir, AGENTS_MD));
+
+  if (hasClaudeMd) {
+    injectClaudeMd(targetDir, version);
+    if (hasAgentsMd) {
+      injectAgentsMd(targetDir, version);
+    }
+  } else {
+    injectAgentsMd(targetDir, version);
+  }
 }
 
 export function registerAgentDocs(program) {
@@ -192,18 +206,30 @@ export function registerAgentDocs(program) {
 
       console.log(`\n📚 Installing XDS agent docs (v${version})...\n`);
 
-      injectAgentsMd(targetDir, version);
-      console.log(`✓ Injected compressed index into ${AGENTS_MD}`);
+      const hasClaudeMd = fs.existsSync(path.join(targetDir, CLAUDE_MD));
+      const hasAgentsMd = fs.existsSync(path.join(targetDir, AGENTS_MD));
+      const targets = [];
 
-      if (injectClaudeMd(targetDir, version)) {
+      if (hasClaudeMd) {
+        injectClaudeMd(targetDir, version);
         console.log(`✓ Injected compressed index into ${CLAUDE_MD}`);
+        targets.push(CLAUDE_MD);
+        if (hasAgentsMd) {
+          injectAgentsMd(targetDir, version);
+          console.log(`✓ Injected compressed index into ${AGENTS_MD}`);
+          targets.push(AGENTS_MD);
+        }
+      } else {
+        injectAgentsMd(targetDir, version);
+        console.log(`✓ Injected compressed index into ${AGENTS_MD}`);
+        targets.push(AGENTS_MD);
       }
 
       console.log(`
 ✅ XDS agent docs installed!
 
 Your AI coding agent will now:
-  • See the XDS component index in AGENTS.md${fs.existsSync(path.join(targetDir, CLAUDE_MD)) ? ' and CLAUDE.md' : ''}
+  • See the XDS component index in ${targets.join(' and ')}
   • Run \`npx xds component <name>\` to read detailed docs
   • Run \`npx xds docs principles\` for design principles
   • Run \`npx xds docs tokens\` for design token reference

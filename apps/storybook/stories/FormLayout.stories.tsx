@@ -93,7 +93,7 @@ export const HorizontalLabels: Story = {
           label="Timezone"
           value={timezone}
           onChange={v => setTimezone(v as string)}
-          items={[
+          options={[
             {label: 'Pacific Time', value: 'America/Los_Angeles'},
             {label: 'Eastern Time', value: 'America/New_York'},
             {label: 'UTC', value: 'UTC'},
@@ -131,7 +131,7 @@ export const MixedControls: Story = {
           label="Role"
           value={role}
           onChange={v => setRole(v as string)}
-          items={[
+          options={[
             {label: 'Viewer', value: 'viewer'},
             {label: 'Editor', value: 'editor'},
             {label: 'Admin', value: 'admin'},

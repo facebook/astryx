@@ -5,6 +5,8 @@
  * @position Internal context; consumed by composable sub-components
  */
 
+'use client';
+
 import {createContext, useContext} from 'react';
 import type {CommandPaletteFilterFn} from './types';
 
@@ -34,7 +36,7 @@ export interface CommandPaletteContextValue {
   /** Select an item by value. */
   selectItem: (value: string) => void;
   /** Close the palette. */
-  onHide: () => void;
+  onClose: () => void;
 }
 
 export const CommandPaletteContext =

@@ -28,7 +28,7 @@ beforeAll(() => {
 describe('XDSMobileNav', () => {
   it('renders when isOpen is true', () => {
     render(
-      <XDSMobileNav isOpen={true} onClose={() => {}}>
+      <XDSMobileNav isOpen={true} onOpenChange={() => {}}>
         <span>Nav content</span>
       </XDSMobileNav>,
     );
@@ -38,7 +38,10 @@ describe('XDSMobileNav', () => {
 
   it('does not show dialog as open when isOpen is false', () => {
     render(
-      <XDSMobileNav isOpen={false} onClose={() => {}} data-testid="mobile-nav">
+      <XDSMobileNav
+        isOpen={false}
+        onOpenChange={() => {}}
+        data-testid="mobile-nav">
         <span>Nav content</span>
       </XDSMobileNav>,
     );
@@ -48,10 +51,10 @@ describe('XDSMobileNav', () => {
     expect(dialog).not.toHaveAttribute('open');
   });
 
-  it('calls onClose on native cancel event (Escape)', () => {
+  it('calls onOpenChange(false) on native cancel event (Escape)', () => {
     const handleClose = vi.fn();
     render(
-      <XDSMobileNav isOpen={true} onClose={handleClose}>
+      <XDSMobileNav isOpen={true} onOpenChange={handleClose}>
         <span>Content</span>
       </XDSMobileNav>,
     );
@@ -63,12 +66,12 @@ describe('XDSMobileNav', () => {
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
 
-  it('calls onClose on backdrop click (click on dialog itself)', () => {
+  it('calls onOpenChange(false) on backdrop click (click on dialog itself)', () => {
     const handleClose = vi.fn();
     render(
       <XDSMobileNav
         isOpen={true}
-        onClose={handleClose}
+        onOpenChange={handleClose}
         data-testid="mobile-nav">
         <span>Content</span>
       </XDSMobileNav>,
@@ -83,7 +86,7 @@ describe('XDSMobileNav', () => {
   it('does not close on drawer content click', () => {
     const handleClose = vi.fn();
     render(
-      <XDSMobileNav isOpen={true} onClose={handleClose}>
+      <XDSMobileNav isOpen={true} onOpenChange={handleClose}>
         <span>Content</span>
       </XDSMobileNav>,
     );
@@ -94,7 +97,7 @@ describe('XDSMobileNav', () => {
 
   it('renders close button', () => {
     render(
-      <XDSMobileNav isOpen={true} onClose={() => {}}>
+      <XDSMobileNav isOpen={true} onOpenChange={() => {}}>
         <span>Content</span>
       </XDSMobileNav>,
     );
@@ -103,10 +106,10 @@ describe('XDSMobileNav', () => {
     expect(closeButton).toBeInTheDocument();
   });
 
-  it('calls onClose when close button is clicked', () => {
+  it('calls onOpenChange(false) when close button is clicked', () => {
     const handleClose = vi.fn();
     render(
-      <XDSMobileNav isOpen={true} onClose={handleClose}>
+      <XDSMobileNav isOpen={true} onOpenChange={handleClose}>
         <span>Content</span>
       </XDSMobileNav>,
     );
@@ -118,7 +121,7 @@ describe('XDSMobileNav', () => {
 
   it('renders title when provided', () => {
     render(
-      <XDSMobileNav isOpen={true} onClose={() => {}} title="Navigation">
+      <XDSMobileNav isOpen={true} onOpenChange={() => {}} title="Navigation">
         <span>Content</span>
       </XDSMobileNav>,
     );
@@ -128,7 +131,10 @@ describe('XDSMobileNav', () => {
 
   it('forwards data-testid', () => {
     render(
-      <XDSMobileNav isOpen={true} onClose={() => {}} data-testid="custom-nav">
+      <XDSMobileNav
+        isOpen={true}
+        onOpenChange={() => {}}
+        data-testid="custom-nav">
         <span>Content</span>
       </XDSMobileNav>,
     );
@@ -138,7 +144,10 @@ describe('XDSMobileNav', () => {
 
   it('uses native dialog element', () => {
     render(
-      <XDSMobileNav isOpen={true} onClose={() => {}} data-testid="mobile-nav">
+      <XDSMobileNav
+        isOpen={true}
+        onOpenChange={() => {}}
+        data-testid="mobile-nav">
         <span>Content</span>
       </XDSMobileNav>,
     );
@@ -149,7 +158,7 @@ describe('XDSMobileNav', () => {
 
   it('sets aria-label from title', () => {
     render(
-      <XDSMobileNav isOpen={true} onClose={() => {}} title="My Nav">
+      <XDSMobileNav isOpen={true} onOpenChange={() => {}} title="My Nav">
         <span>Content</span>
       </XDSMobileNav>,
     );
@@ -159,7 +168,7 @@ describe('XDSMobileNav', () => {
 
   it('defaults aria-label to Navigation when no title', () => {
     render(
-      <XDSMobileNav isOpen={true} onClose={() => {}}>
+      <XDSMobileNav isOpen={true} onOpenChange={() => {}}>
         <span>Content</span>
       </XDSMobileNav>,
     );
@@ -172,7 +181,10 @@ describe('XDSMobileNav', () => {
 
   it('opens dialog via showModal when isOpen becomes true', () => {
     const {rerender} = render(
-      <XDSMobileNav isOpen={false} onClose={() => {}} data-testid="mobile-nav">
+      <XDSMobileNav
+        isOpen={false}
+        onOpenChange={() => {}}
+        data-testid="mobile-nav">
         <span>Content</span>
       </XDSMobileNav>,
     );
@@ -181,7 +193,10 @@ describe('XDSMobileNav', () => {
     expect(dialog).not.toHaveAttribute('open');
 
     rerender(
-      <XDSMobileNav isOpen={true} onClose={() => {}} data-testid="mobile-nav">
+      <XDSMobileNav
+        isOpen={true}
+        onOpenChange={() => {}}
+        data-testid="mobile-nav">
         <span>Content</span>
       </XDSMobileNav>,
     );

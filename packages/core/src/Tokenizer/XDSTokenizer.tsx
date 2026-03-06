@@ -10,6 +10,8 @@
  * - /apps/storybook/stories/Tokenizer.stories.tsx
  */
 
+'use client';
+
 import React, {
   useCallback,
   useId,
@@ -56,6 +58,8 @@ export type XDSTokenizerChange<T extends XDSSearchableItem> =
   | {item: T; type: 'remove'}
   | {type: 'reorder'};
 
+export type XDSTokenizerSize = 'sm' | 'md';
+
 export interface XDSTokenizerProps<T extends XDSSearchableItem> {
   /** Accessible label (required). */
   label: string;
@@ -98,7 +102,7 @@ export interface XDSTokenizerProps<T extends XDSSearchableItem> {
   /** Auto-focus on mount. @default false */
   hasAutoFocus?: boolean;
   /** Input size. @default 'md' */
-  size?: 'sm' | 'md';
+  size?: XDSTokenizerSize;
   /**
    * Debounce delay in ms before triggering search after typing.
    * Set to 0 for synchronous/local search sources that don't need debouncing.
@@ -121,20 +125,19 @@ const styles = stylex.create({
   wrapper: {
     flexWrap: 'wrap',
     gap: spacingVars['--spacing-1'],
-    // Standard padding minus border width to prevent height jump
-    // when tokens (28px) are added inside the input
-    paddingBlock: `calc(${spacingVars['--spacing-1']} - 1px)`,
     cursor: 'text',
+    height: 'auto',
   },
-  tokenContainer: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: spacingVars['--spacing-1'],
-    alignItems: 'center',
-    // Offset tokens so they sit 3px from the inner edge (4px from outer edge
-    // accounting for 1px border). Default inline padding is 8px, so
-    // -(8px - 3px) = -5px positions tokens equidistant from left edge as top.
-    margin: `calc(-1 * (${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px))`,
+  wrapperWithTokens: {
+    // Override padding for border concentricity: token border-radius
+    // (radius-content: 4px) sits concentric with wrapper border-radius
+    // (radius-element: 8px) when inset = radius-element - radius-content - border
+    // = 8 - 4 - 1 = 3px.
+    paddingBlock: `calc(${spacingVars['--spacing-1']} - 1px)`,
+    paddingInline: `calc(${spacingVars['--spacing-1']} - 1px)`,
+  },
+  token: {
+    flexShrink: 0,
   },
   clearAllButton: {
     all: 'unset',
@@ -170,8 +173,11 @@ const styles = stylex.create({
   },
   inputCompact: {
     minWidth: '40px',
-    flex: '0 1 auto',
-    width: '40px',
+    flex: '1 1 40px',
+    width: 0,
+    // Restore normal text inset when input follows tokens, since the
+    // wrapper padding is reduced for border concentricity.
+    paddingInlineStart: `calc(${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px)`,
   },
 });
 
@@ -353,9 +359,9 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
 
     if (renderToken) {
       return (
-        <React.Fragment key={item.id}>
+        <span key={item.id} {...stylex.props(styles.token)}>
           {renderToken(item, onRemoveItem)}
-        </React.Fragment>
+        </span>
       );
     }
 
@@ -366,6 +372,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
         size={size}
         onRemove={isDisabled ? undefined : onRemoveItem}
         isDisabled={isDisabled}
+        xstyle={styles.token}
       />
     );
   });
@@ -398,6 +405,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
         {...stylex.props(
           inputWrapperStyles.base,
           styles.wrapper,
+          value.length > 0 && styles.wrapperWithTokens,
           sizeStyle,
           isDisabled && inputWrapperStyles.disabled,
           status && inputStatusBorderStyles[status.type],
@@ -405,18 +413,14 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
           status && inputStatusFocusWithinStyles[status.type],
           xstyle,
         )}>
-        {tokens.length > 0 && (
-          <div {...stylex.props(styles.tokenContainer)}>{tokens}</div>
-        )}
+        {tokens}
         <XDSBaseTypeahead
           ref={inputRef}
           searchSource={isAtMax ? emptySource : filteredSource}
           value={null}
           onChange={handleAdd}
           renderItem={renderItem}
-          placeholder={
-            value.length === 0 ? placeholder : isAtMax ? '' : undefined
-          }
+          placeholder={value.length === 0 ? placeholder : ''}
           hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
           maxMenuItems={maxMenuItems}
           emptySearchResultsText={emptySearchResultsText}

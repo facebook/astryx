@@ -7,9 +7,9 @@
 import type {XDSIconType} from '../Icon';
 
 /**
- * A selectable item in the selector
+ * A selectable option in the selector
  */
-export type XDSSelectorItemData = {
+export type XDSSelectorOptionData = {
   value: string;
   label?: string;
   disabled?: boolean;
@@ -17,26 +17,37 @@ export type XDSSelectorItemData = {
 };
 
 /**
- * A divider between items
+ * A divider between options
  */
 export type XDSSelectorDivider = {
   type: 'divider';
 };
 
 /**
- * A section/group of items with optional title
+ * A section/group of options with optional title
  */
 export type XDSSelectorSection = {
   type: 'section';
   title?: string;
-  items: XDSSelectorItemData[];
+  options: XDSSelectorOptionData[];
 };
 
 /**
- * Union of all option types
+ * Union of all option types passed to the `options` prop.
+ * Can be a plain string, option data object, divider, or section.
  */
-export type XDSSelectorOption =
+export type XDSSelectorOptionType =
   | string
-  | XDSSelectorItemData
+  | XDSSelectorOptionData
   | XDSSelectorDivider
   | XDSSelectorSection;
+
+/**
+ * @deprecated Use XDSSelectorOptionType instead
+ */
+export type XDSSelectorOption = XDSSelectorOptionType;
+
+/**
+ * @deprecated Use XDSSelectorOptionData instead
+ */
+export type XDSSelectorItemData = XDSSelectorOptionData;

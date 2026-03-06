@@ -83,10 +83,10 @@ export interface XDSCollapsibleProps {
   children?: ReactNode;
 
   /**
-   * Initial open state for uncontrolled usage.
+   * Default open state for uncontrolled usage.
    * @default true
    */
-  initialIsOpen?: boolean;
+  defaultIsOpen?: boolean;
 
   /**
    * Controlled open state. When provided, the component is fully controlled.
@@ -154,7 +154,7 @@ export const XDSCollapsible = forwardRef<HTMLDivElement, XDSCollapsibleProps>(
     {
       trigger,
       children,
-      initialIsOpen,
+      defaultIsOpen,
       isOpen: controlledIsOpen,
       onOpenChange,
       value,
@@ -166,7 +166,7 @@ export const XDSCollapsible = forwardRef<HTMLDivElement, XDSCollapsibleProps>(
     const collapsibleConfig =
       controlledIsOpen !== undefined
         ? {isOpen: controlledIsOpen, onOpenChange}
-        : {initialIsOpen: initialIsOpen ?? true, onOpenChange};
+        : {defaultIsOpen: defaultIsOpen ?? true, onOpenChange};
 
     const {isOpen, toggle} = useXDSCollapsible({
       isCollapsible: collapsibleConfig,

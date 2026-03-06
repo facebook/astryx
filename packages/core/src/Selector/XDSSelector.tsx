@@ -9,6 +9,8 @@
  * - /packages/core/src/Selector/index.ts
  */
 
+'use client';
+
 import React, {
   useCallback,
   useId,
@@ -41,16 +43,16 @@ import {
   fontWeightVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
-import {type XDSSelectorOption, type XDSSelectorItemData} from './types';
+import {type XDSSelectorOptionType, type XDSSelectorOptionData} from './types';
 import {
-  isItemData,
+  isOptionData,
   isDivider,
   isSection,
-  normalizeItem,
-  getSelectableItems,
+  normalizeOption,
+  getSelectableOptions,
 } from './utils';
 import {useCombobox, useSelectedItemOffset} from './hooks';
-import {XDSSelectorItem} from './XDSSelectorItem';
+import {XDSSelectorOption} from './XDSSelectorOption';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
@@ -257,7 +259,7 @@ declare module '../theme/types' {
   }
 }
 export interface XDSSelectorProps<
-  T extends XDSSelectorOption = XDSSelectorOption,
+  T extends XDSSelectorOptionType = XDSSelectorOptionType,
 > {
   /**
    * Label text for the selector (always rendered for accessibility).
@@ -294,10 +296,10 @@ export interface XDSSelectorProps<
   isDisabled?: boolean;
 
   /**
-   * The items to display in the selector.
+   * The options to display in the selector.
    * Can be strings, objects, dividers, or sections.
    */
-  items: T[];
+  options: T[];
 
   /**
    * The currently selected value.
@@ -347,10 +349,10 @@ export interface XDSSelectorProps<
   labelTooltip?: string;
 
   /**
-   * Custom render function for items.
-   * Only called for selectable items (not dividers/sections).
+   * Custom render function for options.
+   * Only called for selectable options (not dividers/sections).
    */
-  children?: (item: XDSSelectorItemData) => ReactNode;
+  children?: (option: XDSSelectorOptionData) => ReactNode;
 
   /**
    * Test ID for testing frameworks.
@@ -359,10 +361,15 @@ export interface XDSSelectorProps<
 }
 
 /**
- * Default item renderer
+ * Default option renderer
  */
-function DefaultItem({item}: {item: XDSSelectorItemData}) {
-  return <XDSSelectorItem icon={item.icon} label={item.label ?? item.value} />;
+function DefaultOption({option}: {option: XDSSelectorOptionData}) {
+  return (
+    <XDSSelectorOption
+      icon={option.icon}
+      label={option.label ?? option.value}
+    />
+  );
 }
 
 /**
@@ -372,21 +379,21 @@ function DefaultItem({item}: {item: XDSSelectorItemData}) {
  * ```
  * <XDSSelector
  *   label="Fruit"
- *   items={['Apple', 'Banana', 'Orange']}
+ *   options={['Apple', 'Banana', 'Orange']}
  *   value={fruit}
  *   onChange={setFruit}
  *   placeholder="Select a fruit..."
  * />
  * ```
  */
-export function XDSSelector<T extends XDSSelectorOption>({
+export function XDSSelector<T extends XDSSelectorOptionType>({
   label,
   isLabelHidden = false,
   description,
   isOptional = false,
   isRequired = false,
   isDisabled = false,
-  items,
+  options,
   value,
   onChange,
   onChangeAction,
@@ -421,8 +428,11 @@ export function XDSSelector<T extends XDSSelectorOption>({
       .filter(Boolean)
       .join(' ') || undefined;
 
-  // Flatten items for keyboard navigation
-  const selectableItems = useMemo(() => getSelectableItems(items), [items]);
+  // Flatten options for keyboard navigation
+  const selectableItems = useMemo(
+    () => getSelectableOptions(options),
+    [options],
+  );
 
   // Find selected item and its index for positioning
   const selectedItemIndex = useMemo(() => {
@@ -489,7 +499,7 @@ export function XDSSelector<T extends XDSSelectorOption>({
 
   // Render an individual item
   const renderItem = useCallback(
-    (item: XDSSelectorItemData, flatIndex: number) => {
+    (item: XDSSelectorOptionData, flatIndex: number) => {
       const isHighlighted = flatIndex === highlightedIndex;
       const isSelected = item.value === value;
 
@@ -509,7 +519,7 @@ export function XDSSelector<T extends XDSSelectorOption>({
             item.disabled && styles.itemDisabled,
           )}>
           <span {...stylex.props(styles.itemContent)}>
-            {children ? children(item) : <DefaultItem item={item} />}
+            {children ? children(item) : <DefaultOption option={item} />}
           </span>
           {isSelected && <XDSIcon icon="check" size="sm" color="accent" />}
         </div>
@@ -530,8 +540,8 @@ export function XDSSelector<T extends XDSSelectorOption>({
     let flatIndex = 0;
     const elements: ReactNode[] = [];
 
-    for (let i = 0; i < items.length; i++) {
-      const option = items[i];
+    for (let i = 0; i < options.length; i++) {
+      const option = options[i];
 
       if (isDivider(option)) {
         elements.push(
@@ -539,8 +549,8 @@ export function XDSSelector<T extends XDSSelectorOption>({
         );
       } else if (isSection(option)) {
         const sectionItems: ReactNode[] = [];
-        for (const item of option.items) {
-          sectionItems.push(renderItem(normalizeItem(item), flatIndex));
+        for (const opt of option.options) {
+          sectionItems.push(renderItem(normalizeOption(opt), flatIndex));
           flatIndex++;
         }
         // Render divider with label before the group
@@ -558,14 +568,14 @@ export function XDSSelector<T extends XDSSelectorOption>({
             {sectionItems}
           </div>,
         );
-      } else if (isItemData(option)) {
-        elements.push(renderItem(normalizeItem(option), flatIndex));
+      } else if (isOptionData(option)) {
+        elements.push(renderItem(normalizeOption(option), flatIndex));
         flatIndex++;
       }
     }
 
     return elements;
-  }, [items, renderItem, listboxId]);
+  }, [options, renderItem, listboxId]);
 
   return (
     <XDSField

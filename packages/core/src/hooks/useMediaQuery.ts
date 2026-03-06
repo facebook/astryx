@@ -10,6 +10,8 @@
  * - /packages/core/src/hooks/index.ts
  */
 
+'use client';
+
 import {useState, useEffect} from 'react';
 
 /**

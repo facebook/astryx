@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/DropdownMenu.stories.tsx
  */
 
+'use client';
+
 import React, {
   useContext,
   useCallback,
@@ -257,9 +259,9 @@ export interface XDSDropdownMenuProps {
   isMenuOpen?: boolean;
 
   /**
-   * Callback when menu open state changes (controlled mode).
+   * Callback fired when the menu visibility changes (controlled mode).
    */
-  onMenuToggle?: (isOpen: boolean) => void;
+  onOpenChange?: (isOpen: boolean) => void;
 
   /**
    * Width of the dropdown menu.
@@ -318,7 +320,7 @@ export function XDSDropdownMenu({
   button = {label: 'Menu'},
   items,
   isMenuOpen: controlledIsOpen,
-  onMenuToggle,
+  onOpenChange,
   menuWidth,
   onClick,
   children,
@@ -351,7 +353,7 @@ export function XDSDropdownMenu({
     lightDismiss: true,
     onHide: () => {
       if (isControlled) {
-        onMenuToggle?.(false);
+        onOpenChange?.(false);
       } else {
         setInternalIsOpen(false);
       }
@@ -360,7 +362,7 @@ export function XDSDropdownMenu({
     },
     onShow: () => {
       if (isControlled) {
-        onMenuToggle?.(true);
+        onOpenChange?.(true);
       } else {
         setInternalIsOpen(true);
       }
@@ -381,7 +383,7 @@ export function XDSDropdownMenu({
   const handleButtonClick = useCallback(() => {
     onClick?.();
     if (isControlled) {
-      onMenuToggle?.(!controlledIsOpen);
+      onOpenChange?.(!controlledIsOpen);
     } else {
       if (layer.isOpen) {
         layer.hide();
@@ -389,7 +391,7 @@ export function XDSDropdownMenu({
         layer.show();
       }
     }
-  }, [onClick, isControlled, onMenuToggle, controlledIsOpen, layer]);
+  }, [onClick, isControlled, onOpenChange, controlledIsOpen, layer]);
 
   const closeMenu = useCallback(() => {
     layer.hide();

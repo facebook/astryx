@@ -43,34 +43,49 @@ export const Composable: Story = {
 
     return (
       <>
-        <XDSButton label="Open Command Palette (⌘K)" onClick={() => setIsShown(true)} />
-        <XDSCommandPalette isShown={isShown} onHide={() => setIsShown(false)}>
+        <XDSButton
+          label="Open Command Palette (⌘K)"
+          onClick={() => setIsShown(true)}
+        />
+        <XDSCommandPalette
+          isShown={isShown}
+          onOpenChange={open => setIsShown(open)}>
           <XDSCommandPaletteInput placeholder="Type a command or search..." />
           <XDSCommandPaletteList>
             <XDSCommandPaletteGroup heading="Navigation">
-              <XDSCommandPaletteItem value="home" onSelect={() => setIsShown(false)}>
+              <XDSCommandPaletteItem
+                value="home"
+                onSelect={() => setIsShown(false)}>
                 <XDSIcon icon="home" size="sm" />
                 <span style={{flex: 1}}>Go Home</span>
                 <XDSCommandPaletteShortcut keys="mod+h" />
               </XDSCommandPaletteItem>
-              <XDSCommandPaletteItem value="settings" onSelect={() => setIsShown(false)}>
+              <XDSCommandPaletteItem
+                value="settings"
+                onSelect={() => setIsShown(false)}>
                 <XDSIcon icon="settings" size="sm" />
                 <span style={{flex: 1}}>Settings</span>
                 <XDSCommandPaletteShortcut keys="mod+," />
               </XDSCommandPaletteItem>
-              <XDSCommandPaletteItem value="profile" onSelect={() => setIsShown(false)}>
+              <XDSCommandPaletteItem
+                value="profile"
+                onSelect={() => setIsShown(false)}>
                 <XDSIcon icon="person" size="sm" />
                 <span style={{flex: 1}}>Profile</span>
               </XDSCommandPaletteItem>
             </XDSCommandPaletteGroup>
             <XDSCommandPaletteSeparator />
             <XDSCommandPaletteGroup heading="Actions">
-              <XDSCommandPaletteItem value="new-file" onSelect={() => setIsShown(false)}>
+              <XDSCommandPaletteItem
+                value="new-file"
+                onSelect={() => setIsShown(false)}>
                 <XDSIcon icon="add" size="sm" />
                 <span style={{flex: 1}}>New File</span>
                 <XDSCommandPaletteShortcut keys="mod+n" />
               </XDSCommandPaletteItem>
-              <XDSCommandPaletteItem value="save" onSelect={() => setIsShown(false)}>
+              <XDSCommandPaletteItem
+                value="save"
+                onSelect={() => setIsShown(false)}>
                 <XDSIcon icon="check" size="sm" />
                 <span style={{flex: 1}}>Save</span>
                 <XDSCommandPaletteShortcut keys="mod+s" />
@@ -99,16 +114,25 @@ export const DisabledItems: Story = {
     return (
       <>
         <XDSButton label="Open Palette" onClick={() => setIsShown(true)} />
-        <XDSCommandPalette isShown={isShown} onHide={() => setIsShown(false)}>
+        <XDSCommandPalette
+          isShown={isShown}
+          onOpenChange={open => setIsShown(open)}>
           <XDSCommandPaletteInput />
           <XDSCommandPaletteList>
-            <XDSCommandPaletteItem value="enabled" onSelect={() => setIsShown(false)}>
+            <XDSCommandPaletteItem
+              value="enabled"
+              onSelect={() => setIsShown(false)}>
               Enabled Action
             </XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="disabled" isDisabled onSelect={() => {}}>
+            <XDSCommandPaletteItem
+              value="disabled"
+              isDisabled
+              onSelect={() => {}}>
               Disabled Action (no permission)
             </XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="another" onSelect={() => setIsShown(false)}>
+            <XDSCommandPaletteItem
+              value="another"
+              onSelect={() => setIsShown(false)}>
               Another Action
             </XDSCommandPaletteItem>
           </XDSCommandPaletteList>
@@ -127,20 +151,38 @@ export const Filtering: Story = {
 
     const items = [
       {value: 'dashboard', label: 'Dashboard', keywords: ['home', 'overview']},
-      {value: 'users', label: 'User Management', keywords: ['people', 'accounts']},
-      {value: 'analytics', label: 'Analytics', keywords: ['data', 'reports', 'charts']},
+      {
+        value: 'users',
+        label: 'User Management',
+        keywords: ['people', 'accounts'],
+      },
+      {
+        value: 'analytics',
+        label: 'Analytics',
+        keywords: ['data', 'reports', 'charts'],
+      },
       {value: 'billing', label: 'Billing', keywords: ['payments', 'invoices']},
-      {value: 'notifications', label: 'Notification Settings', keywords: ['alerts', 'emails']},
-      {value: 'api-keys', label: 'API Keys', keywords: ['tokens', 'credentials']},
+      {
+        value: 'notifications',
+        label: 'Notification Settings',
+        keywords: ['alerts', 'emails'],
+      },
+      {
+        value: 'api-keys',
+        label: 'API Keys',
+        keywords: ['tokens', 'credentials'],
+      },
     ];
 
     return (
       <>
         <XDSButton label="Open Palette" onClick={() => setIsShown(true)} />
-        <XDSCommandPalette isShown={isShown} onHide={() => setIsShown(false)}>
+        <XDSCommandPalette
+          isShown={isShown}
+          onOpenChange={open => setIsShown(open)}>
           <XDSCommandPaletteInput placeholder="Search pages..." />
           <XDSCommandPaletteList>
-            {items.map((item) => (
+            {items.map(item => (
               <XDSCommandPaletteItem
                 key={item.value}
                 value={item.value}
@@ -163,17 +205,50 @@ export const Filtering: Story = {
 
 function NavigationCommands() {
   useXDSCommandPaletteRegister([
-    {id: 'nav-home', label: 'Go Home', icon: 'home', group: 'Navigation', onSelect: () => alert('Home')},
-    {id: 'nav-settings', label: 'Settings', icon: 'settings', shortcut: 'mod+,', group: 'Navigation', onSelect: () => alert('Settings')},
-    {id: 'nav-profile', label: 'Profile', icon: 'person', group: 'Navigation', onSelect: () => alert('Profile')},
+    {
+      id: 'nav-home',
+      label: 'Go Home',
+      icon: 'home',
+      group: 'Navigation',
+      onSelect: () => alert('Home'),
+    },
+    {
+      id: 'nav-settings',
+      label: 'Settings',
+      icon: 'settings',
+      shortcut: 'mod+,',
+      group: 'Navigation',
+      onSelect: () => alert('Settings'),
+    },
+    {
+      id: 'nav-profile',
+      label: 'Profile',
+      icon: 'person',
+      group: 'Navigation',
+      onSelect: () => alert('Profile'),
+    },
   ]);
   return null;
 }
 
 function ActionCommands() {
   useXDSCommandPaletteRegister([
-    {id: 'act-new', label: 'New File', icon: 'add', shortcut: 'mod+n', group: 'Actions', onSelect: () => alert('New File')},
-    {id: 'act-save', label: 'Save', icon: 'check', shortcut: 'mod+s', group: 'Actions', onSelect: () => alert('Save')},
+    {
+      id: 'act-new',
+      label: 'New File',
+      icon: 'add',
+      shortcut: 'mod+n',
+      group: 'Actions',
+      onSelect: () => alert('New File'),
+    },
+    {
+      id: 'act-save',
+      label: 'Save',
+      icon: 'check',
+      shortcut: 'mod+s',
+      group: 'Actions',
+      onSelect: () => alert('Save'),
+    },
   ]);
   return null;
 }
@@ -210,7 +285,9 @@ export const Loading: Story = {
     return (
       <>
         <XDSButton label="Open Palette" onClick={() => setIsShown(true)} />
-        <XDSCommandPalette isShown={isShown} onHide={() => setIsShown(false)}>
+        <XDSCommandPalette
+          isShown={isShown}
+          onOpenChange={open => setIsShown(open)}>
           <XDSCommandPaletteInput placeholder="Search..." />
           <XDSCommandPaletteList>
             <XDSCommandPaletteLoading>Searching...</XDSCommandPaletteLoading>

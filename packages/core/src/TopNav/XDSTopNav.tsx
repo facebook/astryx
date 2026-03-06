@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/TopNav.stories.tsx
  */
 
+'use client';
+
 import {
   forwardRef,
   useContext,

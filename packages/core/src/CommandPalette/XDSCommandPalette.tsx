@@ -10,6 +10,8 @@
  * - /apps/storybook/stories/CommandPalette.stories.tsx
  */
 
+'use client';
+
 import {
   useCallback,
   useId,
@@ -35,16 +37,17 @@ const styles = stylex.create({
 
 export interface XDSCommandPaletteProps {
   /**
-   * Whether the command palette is shown.
+   * Whether the command palette is open.
    * Matches XDSDialog convention.
    */
-  isShown: boolean;
+  isOpen: boolean;
 
   /**
-   * Called when the palette requests to close.
+   * Callback fired when the command palette visibility changes.
+   * Called with `false` when the palette requests to close.
    * Matches XDSDialog convention.
    */
-  onHide: () => void;
+  onOpenChange: (isOpen: boolean) => unknown;
 
   /**
    * Controlled selected value.
@@ -92,7 +95,7 @@ export interface XDSCommandPaletteProps {
    *
    * @example
    * ```
-   * <XDSCommandPalette isShown={isShown} onHide={() => setIsShown(false)}>
+   * <XDSCommandPalette isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
    *   <XDSCommandPaletteInput placeholder="Search commands..." />
    *   <XDSCommandPaletteList>
    *     <XDSCommandPaletteItem value="home" onSelect={() => navigate("/")}>
@@ -116,8 +119,8 @@ export interface XDSCommandPaletteProps {
  * command palette convention (Cmd+K in VS Code, Linear, etc.).
  */
 export function XDSCommandPalette({
-  isShown,
-  onHide,
+  isOpen,
+  onOpenChange,
   value: controlledValue,
   onValueChange,
   filter = defaultFilter,
@@ -164,12 +167,17 @@ export function XDSCommandPalette({
     [setValue],
   );
 
-  // Reset search and highlight when opening/closing
-  const handleHide = useCallback(() => {
-    setSearch('');
-    setHighlightedIndex(0);
-    onHide();
-  }, [onHide]);
+  // Reset search and highlight when closing, then forward to consumer
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        setSearch('');
+        setHighlightedIndex(0);
+      }
+      onOpenChange(open);
+    },
+    [onOpenChange],
+  );
 
   const contextValue = useMemo(
     () => ({
@@ -185,7 +193,7 @@ export function XDSCommandPalette({
       items: itemsRef.current,
       registerItem,
       selectItem,
-      onHide: handleHide,
+      onClose: () => handleOpenChange(false),
     }),
     [
       search,
@@ -197,14 +205,14 @@ export function XDSCommandPalette({
       highlightedIndex,
       registerItem,
       selectItem,
-      handleHide,
+      handleOpenChange,
     ],
   );
 
   return (
     <XDSDialog
-      isShown={isShown}
-      onHide={handleHide}
+      isOpen={isOpen}
+      onOpenChange={handleOpenChange}
       width={width}
       maxHeight={maxHeight}
       position={{top: '15vh'}}

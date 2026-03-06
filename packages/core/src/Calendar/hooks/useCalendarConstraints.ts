@@ -8,6 +8,8 @@
  * - /packages/core/src/Calendar/hooks/index.ts
  */
 
+'use client';
+
 import {useCallback, useMemo} from 'react';
 import type {ISODateString} from '../XDSCalendar';
 

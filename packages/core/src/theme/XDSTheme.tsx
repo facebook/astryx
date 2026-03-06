@@ -16,6 +16,8 @@
  * ```
  */
 
+'use client';
+
 import React, {useContext, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Theme as ThemeType, ThemeMode} from './types';

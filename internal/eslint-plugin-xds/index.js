@@ -5,6 +5,7 @@
  * Rules:
  * - no-hardcoded-styles: Enforces usage of design tokens instead of hardcoded values in StyleX
  * - boolean-prop-naming: Enforces is/has prefix on boolean props in *Props interfaces
+ * - docblock-example-format: Enforces @example blocks use ``` fenced code on a separate line
  *
  * Philosophy: Strict for agents (CI), lenient for humans (local dev)
  * - "strict" config: All rules as errors - use in CI/agent environments
@@ -12,6 +13,7 @@
  */
 
 import booleanPropNamingRule from './boolean-prop-naming.js';
+import docblockExampleFormatRule from './docblock-example-format.js';
 
 // =============================================================================
 // Rule: no-hardcoded-styles
@@ -213,6 +215,7 @@ const plugin = {
   rules: {
     'no-hardcoded-styles': noHardcodedStylesRule,
     'boolean-prop-naming': booleanPropNamingRule,
+    'docblock-example-format': docblockExampleFormatRule,
   },
   configs: {},
 };
@@ -225,6 +228,7 @@ plugin.configs.strict = {
   rules: {
     '@xds/no-hardcoded-styles': 'error',
     '@xds/boolean-prop-naming': 'error',
+    '@xds/docblock-example-format': 'error',
   },
 };
 
@@ -236,6 +240,7 @@ plugin.configs.recommended = {
   rules: {
     '@xds/no-hardcoded-styles': 'warn',
     '@xds/boolean-prop-naming': 'warn',
+    '@xds/docblock-example-format': 'warn',
   },
 };
 

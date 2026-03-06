@@ -5,6 +5,8 @@
  * without pulling in the full theme provider implementation.
  */
 
+'use client';
+
 import {createContext} from 'react';
 import type {Theme, ThemeMode} from './types';
 

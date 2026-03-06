@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/Dialog.stories.tsx (storybook stories)
  */
 
+'use client';
+
 import {
   forwardRef,
   useContext,
@@ -158,18 +160,19 @@ export interface XDSDialogProps extends Omit<
   'children'
 > {
   /**
-   * Whether the dialog is shown.
+   * Whether the dialog is open.
    */
-  isShown: boolean;
+  isOpen: boolean;
 
   /**
-   * Callback fired when the dialog requests to be hidden.
-   * This is called based on the `purpose` prop configuration:
+   * Callback fired when the dialog visibility changes.
+   * Called with `false` when the dialog requests to be hidden.
+   * Behavior depends on the `purpose` prop:
    * - required: Never called automatically
    * - form: Called on Escape key only
    * - info: Called on Escape key and backdrop click
    */
-  onHide: () => unknown;
+  onOpenChange: (isOpen: boolean) => unknown;
 
   /**
    * The width of the dialog.
@@ -227,11 +230,11 @@ export interface XDSDialogProps extends Omit<
  *
  * @example
  * ```
- * const [isShown, setIsShown] = useState(false);
+ * const [isOpen, setIsOpen] = useState(false);
  *
- * <XDSDialog isShown={isShown} onHide={() => setIsShown(false)}>
+ * <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
  *   <XDSLayout
- *     header={<XDSDialogHeader title="Title" onHide={() => setIsShown(false)} />}
+ *     header={<XDSDialogHeader title="Title" onOpenChange={open => setIsOpen(open)} />}
  *     content={<XDSLayoutContent>Content</XDSLayoutContent>}
  *     footer={<XDSLayoutFooter hasDivider>Actions</XDSLayoutFooter>}
  *   />
@@ -241,8 +244,8 @@ export interface XDSDialogProps extends Omit<
 export const XDSDialog = forwardRef<HTMLDialogElement, XDSDialogProps>(
   (
     {
-      isShown,
-      onHide,
+      isOpen,
+      onOpenChange,
       width = 400,
       maxHeight = '75vh',
       position,
@@ -275,7 +278,7 @@ export const XDSDialog = forwardRef<HTMLDialogElement, XDSDialogProps>(
       const dialog = dialogRef.current;
       if (!dialog) return;
 
-      if (isShown) {
+      if (isOpen) {
         if (!dialog.open) {
           dialog.showModal();
         }
@@ -284,25 +287,25 @@ export const XDSDialog = forwardRef<HTMLDialogElement, XDSDialogProps>(
           dialog.close();
         }
       }
-    }, [isShown]);
+    }, [isOpen]);
 
     // Handle Escape key
     useEffect(() => {
       const dialog = dialogRef.current;
-      if (!dialog || !isShown) return;
+      if (!dialog || !isOpen) return;
 
       const handleKeyDown = (event: KeyboardEvent) => {
         if (event.key === 'Escape') {
           event.preventDefault();
           if (allowEscape) {
-            onHide();
+            onOpenChange(false);
           }
         }
       };
 
       dialog.addEventListener('keydown', handleKeyDown);
       return () => dialog.removeEventListener('keydown', handleKeyDown);
-    }, [isShown, allowEscape, onHide]);
+    }, [isOpen, allowEscape, onOpenChange]);
 
     // Handle backdrop click
     const handleClick = (event: React.MouseEvent<HTMLDialogElement>) => {
@@ -318,7 +321,7 @@ export const XDSDialog = forwardRef<HTMLDialogElement, XDSDialogProps>(
         event.clientY > rect.bottom;
 
       if (isBackdropClick && allowBackdropClick) {
-        onHide();
+        onOpenChange(false);
       }
     };
 
@@ -326,7 +329,7 @@ export const XDSDialog = forwardRef<HTMLDialogElement, XDSDialogProps>(
     const handleCancel = (event: React.SyntheticEvent<HTMLDialogElement>) => {
       event.preventDefault();
       if (allowEscape) {
-        onHide();
+        onOpenChange(false);
       }
     };
 

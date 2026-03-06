@@ -358,7 +358,7 @@ export function Report() {
                         : data.htmlSourceCode?.[codeModal.promptId];
                   return code ? (
                     <CodeModal
-                      isShown
+                      isOpen
                       onHide={() => setCodeModal(null)}
                       promptId={codeModal.promptId}
                       target={codeModal.target}

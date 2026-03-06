@@ -8,6 +8,8 @@
  * - /packages/core/src/Layout/XDSLayout/README.md
  */
 
+'use client';
+
 import {createContext} from 'react';
 
 /**

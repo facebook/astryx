@@ -4,9 +4,11 @@
  * @position Internal hooks; used by XDSSelector.tsx
  */
 
+'use client';
+
 import {useCallback, useLayoutEffect, useRef, useState} from 'react';
 import type {RefObject} from 'react';
-import type {XDSSelectorItemData} from './types';
+import type {XDSSelectorOptionData} from './types';
 
 // =============================================================================
 // useSelectedItemOffset - Position dropdown to center selected item over trigger
@@ -93,7 +95,7 @@ export function useSelectedItemOffset({
 // =============================================================================
 
 interface UseComboboxOptions {
-  selectableItems: XDSSelectorItemData[];
+  selectableItems: XDSSelectorOptionData[];
   value?: string;
   isDisabled?: boolean;
   isOpen: boolean;
@@ -109,8 +111,8 @@ interface UseComboboxResult {
   getItemId: (index: number) => string;
   onTriggerClick: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
-  onItemSelect: (item: XDSSelectorItemData) => void;
-  onItemMouseEnter: (item: XDSSelectorItemData, index: number) => void;
+  onItemSelect: (item: XDSSelectorOptionData) => void;
+  onItemMouseEnter: (item: XDSSelectorOptionData, index: number) => void;
 }
 
 /**
@@ -153,7 +155,7 @@ export function useCombobox({
   }, [onClose]);
 
   const selectItem = useCallback(
-    (item: XDSSelectorItemData) => {
+    (item: XDSSelectorOptionData) => {
       if (item.disabled) return;
       onSelect?.(item.value);
       closeAndReset();
@@ -173,7 +175,7 @@ export function useCombobox({
   }, [isDisabled, isOpen, onOpen, closeAndReset, findSelectedIndex]);
 
   const onItemMouseEnter = useCallback(
-    (item: XDSSelectorItemData, index: number) => {
+    (item: XDSSelectorOptionData, index: number) => {
       if (!item.disabled) {
         setHighlightedIndex(index);
       }

@@ -10,6 +10,8 @@
  * - /apps/storybook/stories/Section.stories.tsx (storybook stories)
  */
 
+'use client';
+
 import {forwardRef, useContext, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
@@ -165,7 +167,10 @@ export interface XDSSectionProps {
   /**
    * Which sides should have divider borders.
    * Use 'start'/'end' for horizontal (respects RTL).
-   * @example dividers={['top', 'bottom']}
+   * @example
+   * ```
+   * dividers={['top', 'bottom']}
+   * ```
    */
   dividers?: Array<'top' | 'bottom' | 'start' | 'end'>;
 

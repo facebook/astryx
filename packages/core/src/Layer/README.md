@@ -97,18 +97,19 @@ Component wrapper for tooltip display on hover/focus.
 </XDSTooltip>
 ```
 
-| Prop                 | Type                            | Default   | Description                                        |
-| -------------------- | ------------------------------- | --------- | -------------------------------------------------- |
-| `children`           | `ReactNode`                     | —         | Trigger element(s)                                 |
-| `anchorRef`          | `RefObject<HTMLElement>`        | —         | External anchor ref (sibling mode)                 |
-| `content`            | `ReactNode`                     | —         | Tooltip content (typically short text)             |
-| `placement`          | `LayerPlacement`                | `'above'` | Position relative to anchor                        |
-| `alignment`          | `LayerAlignment`                | `'center'`| Alignment on placement axis                        |
-| `delay`              | `number`                        | `200`     | Show delay in ms                                   |
-| `hideDelay`          | `number`                        | `0`       | Hide delay in ms                                   |
-| `focusTrigger`       | `'auto' \| 'always' \| 'never'` | `'auto'`  | When to trigger on focus                           |
-| `isEnabled`          | `boolean`                       | `true`    | Enable/disable triggers                            |
-| `hasHoverIndication` | `'auto' \| boolean`             | `'auto'`  | Show dashed underline on trigger                   |
+| Prop                 | Type                            | Default    | Description                            |
+| -------------------- | ------------------------------- | ---------- | -------------------------------------- |
+| `children`           | `ReactNode`                     | —          | Trigger element(s)                     |
+| `anchorRef`          | `RefObject<HTMLElement>`        | —          | External anchor ref (sibling mode)     |
+| `content`            | `ReactNode`                     | —          | Tooltip content (typically short text) |
+| `placement`          | `LayerPlacement`                | `'above'`  | Position relative to anchor            |
+| `alignment`          | `LayerAlignment`                | `'center'` | Alignment on placement axis            |
+| `delay`              | `number`                        | `200`      | Show delay in ms                       |
+| `hideDelay`          | `number`                        | `0`        | Hide delay in ms                       |
+| `focusTrigger`       | `'auto' \| 'always' \| 'never'` | `'auto'`   | When to trigger on focus               |
+| `isEnabled`          | `boolean`                       | `true`     | Enable/disable triggers                |
+| `hasHoverIndication` | `'auto' \| boolean`             | `'auto'`   | Show dashed underline on trigger       |
+| `onOpenChange`       | `(isOpen: boolean) => void`     | —          | Callback when visibility changes       |
 
 ### XDSHoverCard
 
@@ -130,6 +131,7 @@ Component wrapper for simpler hover card usage.
 | `hideDelay`    | `number`                        | `200`     | Hide delay in ms                  |
 | `focusTrigger` | `'auto' \| 'always' \| 'never'` | `'auto'`  | Focus listener behavior           |
 | `isEnabled`    | `boolean`                       | `true`    | Enable/disable triggers           |
+| `onOpenChange` | `(isOpen: boolean) => void`     | —         | Callback when visibility changes  |
 
 ## Position Values
 

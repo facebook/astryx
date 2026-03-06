@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
  */
 
+'use client';
+
 import {
   forwardRef,
   useContext,
@@ -218,8 +220,11 @@ export interface XDSAvatarProps extends Omit<
 /**
  * Generates initials from a name string.
  * Takes the first letter of the first two words.
- * @example getInitials('John Doe') // 'JD'
- * @example getInitials('Alice') // 'A'
+ * @example
+ * ```
+ * getInitials('John Doe') // 'JD'
+ * getInitials('Alice') // 'A'
+ * ```
  */
 function getInitials(name: string): string {
   const words = name.trim().split(/\s+/);

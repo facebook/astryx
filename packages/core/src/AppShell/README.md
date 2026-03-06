@@ -114,7 +114,7 @@ On desktop the SideNav renders inline; on mobile AppShell hides the SideNav
 (via `sideNavBreakpoint`) and the consumer shows an XDSMobileNav drawer instead.
 
 Pass a fully composed `<XDSMobileNav>` — AppShell just renders it, same as
-every other slot. All drawer props (`isOpen`, `onClose`, `title`) stay on
+every other slot. All drawer props (`isOpen`, `onOpenChange`, `title`) stay on
 XDSMobileNav where they belong.
 
 ```tsx
@@ -144,7 +144,7 @@ const isMobile = useMediaQuery('(max-width: 768px)');
   mobileNav={
     <XDSMobileNav
       isOpen={mobileOpen}
-      onClose={() => setMobileOpen(false)}
+      onOpenChange={open => setMobileOpen(open)}
       title="My App">
       {navSections}
     </XDSMobileNav>
@@ -195,7 +195,7 @@ const isMobile = useMediaQuery('(max-width: 768px)');
 | `banner`                    | `ReactNode`                      | —        | Banner slot for system-wide announcements   |
 | `height`                    | `'fill' \| 'auto'`               | `'fill'` | Height behavior                             |
 | `isSideNavCollapsed`        | `boolean`                        | —        | Whether sideNav is collapsed (controlled)   |
-| `initialIsSideNavCollapsed` | `boolean`                        | `false`  | Initial collapsed state (uncontrolled)      |
+| `defaultIsSideNavCollapsed` | `boolean`                        | `false`  | Default collapsed state (uncontrolled)      |
 | `mobileNav`                 | `ReactNode`                      | —        | Mobile navigation (typically XDSMobileNav)  |
 | `onSideNavCollapsedChange`  | `(isCollapsed: boolean) => void` | —        | Collapse change callback                    |
 | `sideNavBreakpoint`         | `'sm' \| 'md' \| 'lg' \| 'none'` | `'md'`   | Breakpoint for auto-collapse                |
@@ -223,7 +223,7 @@ const isMobile = useMediaQuery('(max-width: 768px)');
 ## SideNav Behavior
 
 - **Controlled**: Use `isSideNavCollapsed` + `onSideNavCollapsedChange`
-- **Uncontrolled**: Use `initialIsSideNavCollapsed`
+- **Uncontrolled**: Use `defaultIsSideNavCollapsed`
 - **Responsive**: `sideNavBreakpoint` auto-collapses below the specified width
 - **Mobile**: Collapsed sideNav renders as an overlay with backdrop
 - **Animations**: Snap open/closed for now; ViewTransitions support planned

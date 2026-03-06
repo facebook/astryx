@@ -9,6 +9,8 @@
  * - /packages/core/src/CommandPalette/index.ts
  */
 
+'use client';
+
 import {useCallback, useRef, useEffect, type KeyboardEvent} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -21,7 +23,6 @@ import {
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
 import {useCommandPaletteContext} from './CommandPaletteContext';
-
 
 const styles = stylex.create({
   wrapper: {
@@ -73,7 +74,7 @@ export interface XDSCommandPaletteInputProps {
  *
  * @example
  * ```
- * <XDSCommandPalette isShown={isShown} onHide={onHide}>
+ * <XDSCommandPalette isOpen={isOpen} onOpenChange={onOpenChange}>
  *   <XDSCommandPaletteInput placeholder="Search commands..." />
  *   <XDSCommandPaletteList>...</XDSCommandPaletteList>
  * </XDSCommandPalette>
@@ -91,7 +92,7 @@ export function XDSCommandPaletteInput({
     setHighlightedIndex,
     items,
     selectItem,
-    onHide,
+    onClose,
   } = useCommandPaletteContext();
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -166,12 +167,12 @@ export function XDSCommandPaletteInput({
         }
         case 'Escape': {
           e.preventDefault();
-          onHide();
+          onClose();
           break;
         }
       }
     },
-    [highlightedIndex, items, setHighlightedIndex, selectItem, onHide],
+    [highlightedIndex, items, setHighlightedIndex, selectItem, onClose],
   );
 
   const activeDescendant =
@@ -186,7 +187,7 @@ export function XDSCommandPaletteInput({
         ref={inputRef}
         type="text"
         value={search}
-        onChange={(e) => {
+        onChange={e => {
           setSearch(e.target.value);
           setHighlightedIndex(0);
         }}

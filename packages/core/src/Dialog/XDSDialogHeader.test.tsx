@@ -48,22 +48,22 @@ describe('XDSDialogHeader', () => {
     expect(screen.queryByText('This is a subtitle')).not.toBeInTheDocument();
   });
 
-  it('renders close button when onHide is provided', () => {
-    render(<XDSDialogHeader title="Title" onHide={() => {}} />);
+  it('renders close button when onOpenChange is provided', () => {
+    render(<XDSDialogHeader title="Title" onOpenChange={() => {}} />);
     expect(screen.getByRole('button', {name: /close/i})).toBeInTheDocument();
   });
 
-  it('does not render close button when onHide is not provided', () => {
+  it('does not render close button when onOpenChange is not provided', () => {
     render(<XDSDialogHeader title="Title" />);
     expect(
       screen.queryByRole('button', {name: /close/i}),
     ).not.toBeInTheDocument();
   });
 
-  it('calls onHide when close button is clicked', async () => {
+  it('calls onOpenChange(false) when close button is clicked', async () => {
     const user = userEvent.setup();
     const handleHide = vi.fn();
-    render(<XDSDialogHeader title="Title" onHide={handleHide} />);
+    render(<XDSDialogHeader title="Title" onOpenChange={handleHide} />);
 
     await user.click(screen.getByRole('button', {name: /close/i}));
     expect(handleHide).toHaveBeenCalledTimes(1);
@@ -92,7 +92,7 @@ describe('XDSDialogHeader', () => {
     render(
       <XDSDialogHeader
         title="Title"
-        onHide={() => {}}
+        onOpenChange={() => {}}
         endContent={<button>Custom Action</button>}
       />,
     );
@@ -115,7 +115,7 @@ describe('XDSDialogHeader', () => {
         title="Title"
         startContent={<button>Back</button>}
         endContent={<button>Save</button>}
-        onHide={() => {}}
+        onOpenChange={() => {}}
       />,
     );
     expect(screen.getByRole('button', {name: 'Back'})).toBeInTheDocument();

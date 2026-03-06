@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/Tooltip.stories.tsx
  */
 
+'use client';
+
 import React, {
   useContext,
   useLayoutEffect,
@@ -106,14 +108,10 @@ export interface XDSTooltipProps {
   isEnabled?: boolean;
 
   /**
-   * Callback fired when tooltip is shown
+   * Callback fired when tooltip visibility changes.
+   * Called with `true` when shown and `false` when hidden.
    */
-  onShow?: () => void;
-
-  /**
-   * Callback fired when tooltip is hidden
-   */
-  onHide?: () => void;
+  onOpenChange?: (isOpen: boolean) => void;
 
   /**
    * Whether to show hover indication (dashed underline) on the trigger.
@@ -171,8 +169,7 @@ export function XDSTooltip({
   hideDelay = 0,
   focusTrigger = 'auto',
   isEnabled = true,
-  onShow,
-  onHide,
+  onOpenChange,
   hasHoverIndication = 'auto',
 }: XDSTooltipProps): ReactElement {
   const wrapperRef = useRef<HTMLElement>(null);
@@ -195,8 +192,8 @@ export function XDSTooltip({
     hideDelay,
     focusTrigger,
     isEnabled,
-    onShow,
-    onHide,
+    onShow: onOpenChange ? () => onOpenChange(true) : undefined,
+    onHide: onOpenChange ? () => onOpenChange(false) : undefined,
   });
 
   // Sibling mode: attach to external anchorRef

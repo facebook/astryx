@@ -233,9 +233,11 @@ const styles = stylex.create({
  * Returns an array of page numbers and '...' strings.
  *
  * @example
+ * ```
  * generatePageRange(5, 10, 1) → [1, '...', 4, 5, 6, '...', 10]
  * generatePageRange(1, 10, 1) → [1, 2, 3, '...', 10]
  * generatePageRange(1, 5, 1)  → [1, 2, 3, 4, 5]
+ * ```
  */
 export function generatePageRange(
   currentPage: number,
@@ -537,7 +539,7 @@ export const XDSPagination = forwardRef<HTMLElement, XDSPaginationProps>(
               <XDSSelector
                 label="Items per page"
                 isLabelHidden
-                items={pageSizeOptions.map(opt => String(opt))}
+                options={pageSizeOptions.map(opt => String(opt))}
                 value={String(pageSize)}
                 onChange={handlePageSizeChange}
                 size={buttonSize}

@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/Slider.stories.tsx
  */
 
+'use client';
+
 import {
   forwardRef,
   useContext,

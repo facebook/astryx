@@ -243,7 +243,9 @@ export function parseISO(iso: ISODateString): Date {
  * Uses locale-aware formatting with full month name.
  *
  * @example
+ * ```
  * formatDisplayDate("2026-01-25") // "January 25, 2026"
+ * ```
  */
 export function formatDisplayDate(iso: ISODateString): string {
   const date = parseISO(iso);

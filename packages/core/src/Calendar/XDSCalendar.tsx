@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/Calendar.stories.tsx (storybook stories)
  */
 
+'use client';
+
 import {
   forwardRef,
   useContext,
@@ -181,7 +183,9 @@ export type XDSCalendarProps = XDSCalendarSingleProps | XDSCalendarRangeProps;
  * A calendar component for selecting dates or date ranges.
  *
  * @example
+ * ```
  * <XDSCalendar value={selectedDate} onChange={setSelectedDate} />
+ * ```
  */
 export const XDSCalendar = forwardRef<XDSCalendarHandle, XDSCalendarProps>(
   (props, ref) => {

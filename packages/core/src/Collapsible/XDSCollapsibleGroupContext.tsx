@@ -9,6 +9,8 @@
  * - /packages/core/src/Collapsible/README.md
  */
 
+'use client';
+
 import {createContext} from 'react';
 
 /**
