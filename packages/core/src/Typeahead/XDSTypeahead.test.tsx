@@ -249,7 +249,7 @@ describe('XDSTypeahead edit mode', () => {
         onChange={onChange}
       />,
     );
-    const input = screen.getByRole('combobox');
+    screen.getByRole('combobox');
 
     // Click the token area to enter edit mode
     const removeButton = screen.getByRole('button', {

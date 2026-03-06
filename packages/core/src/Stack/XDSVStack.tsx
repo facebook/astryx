@@ -5,7 +5,7 @@
  * @position Layout/Stack component; wraps XDSStack with direction='vertical'
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Layout/Stack/README.md
+ * - /packages/core/src/Stack/Stack.doc.mjs
  * - /packages/core/src/Layout/Stack/XDSVStack.test.tsx
  * - /apps/storybook/stories/VStack.stories.tsx
  */

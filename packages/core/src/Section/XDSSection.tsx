@@ -5,7 +5,7 @@
  * @position Core section container component
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Section/README.md (props table, features)
+ * - /packages/core/src/Section/Section.doc.mjs (props table, features)
  * - /packages/core/src/Section/index.ts (exports if types change)
  * - /apps/storybook/stories/Section.stories.tsx (storybook stories)
  */

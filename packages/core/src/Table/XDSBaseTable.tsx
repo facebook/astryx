@@ -5,7 +5,7 @@
  * @position Core structural component; wrapped by XDSTable.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Table/README.md (component description, props)
+ * - /packages/core/src/Table/Table.doc.mjs (component description, props)
  * - /packages/core/src/Table/XDSTable.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Table/index.ts (exports if types change)
  */

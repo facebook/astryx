@@ -5,7 +5,7 @@
  * @position Core implementation; consumed by index.ts, tested by XDSHeading.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Text/README.md (props table, features, implementation notes)
+ * - /packages/core/src/Text/Text.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Text/XDSHeading.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Text/index.ts (exports if types change)
  * - /apps/storybook/stories/Text.stories.tsx (storybook stories)

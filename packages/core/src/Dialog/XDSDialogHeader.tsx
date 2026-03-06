@@ -5,7 +5,7 @@
  * @position Dialog header component; used with XDSDialog and XDSLayout
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Dialog/README.md
+ * - /packages/core/src/Dialog/Dialog.doc.mjs
  * - /packages/core/src/Dialog/XDSDialogHeader.test.tsx
  * - /packages/core/src/Dialog/index.ts
  * - /apps/storybook/stories/Dialog.stories.tsx

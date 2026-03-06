@@ -5,7 +5,7 @@
  * @position AspectRatio component; maintains a specific aspect ratio for its children
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/AspectRatio/README.md
+ * - /packages/core/src/AspectRatio/AspectRatio.doc.mjs
  * - /packages/core/src/AspectRatio/XDSAspectRatio.test.tsx
  * - /apps/storybook/stories/AspectRatio.stories.tsx
  */

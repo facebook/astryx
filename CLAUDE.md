@@ -55,7 +55,7 @@ For architectural context, decisions, and research, see the **[GitHub Wiki](http
 - **Research** — AI + Design Systems, AI Model Trajectory, Swizzle Ergonomics
 - **Future** — Animation System, RSC Utilities, Distribution Strategy
 
-For component-specific documentation, see the `README.md` in each component directory under `packages/core/src/`.
+For component-specific documentation, see the `{Name}.doc.mjs` file in each component directory under `packages/core/src/` (e.g. `Button/Button.doc.mjs`). These are plain JS files with JSDoc type annotations exporting a `ComponentDoc` object (typed via `packages/core/src/docs-types.ts`).
 
 ## Documentation Standard
 

@@ -4,7 +4,7 @@
  * @output Exports XDSTopNav and companion components
  * @position Entry point for TopNav module
  *
- * SYNC: When modified, update /packages/core/src/TopNav/README.md
+ * SYNC: When modified, update /packages/core/src/TopNav/TopNav.doc.mjs
  */
 
 export {XDSTopNav} from './XDSTopNav';

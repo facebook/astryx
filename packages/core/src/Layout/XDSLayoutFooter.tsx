@@ -6,7 +6,7 @@
  *   pagination, status bars, or any fixed-height content at the bottom of a layout.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Layout/XDSLayout/README.md
+ * - /packages/core/src/Layout/Layout.doc.mjs
  * - /apps/storybook/stories/Layout.stories.tsx
  */
 

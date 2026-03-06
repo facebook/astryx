@@ -8,7 +8,7 @@
  *   Manages padding collapse, scroll containment, and responsive slot sizing automatically.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Layout/XDSLayout/README.md
+ * - /packages/core/src/Layout/Layout.doc.mjs
  * - /packages/core/src/Layout/XDSLayout/index.ts
  * - /apps/storybook/stories/Layout.stories.tsx
  */

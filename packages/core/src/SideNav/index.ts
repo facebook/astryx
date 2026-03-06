@@ -4,7 +4,7 @@
  * @output Exports XDSSideNav, XDSSideNavHeader, XDSSideNavItem, XDSSideNavSection
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  *
- * SYNC: When modified, update this header and /packages/core/src/SideNav/README.md
+ * SYNC: When modified, update this header and /packages/core/src/SideNav/SideNav.doc.mjs
  */
 
 export {XDSSideNav} from './XDSSideNav';

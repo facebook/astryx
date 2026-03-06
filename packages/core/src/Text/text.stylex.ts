@@ -5,7 +5,7 @@
  * @position Styles module; consumed by XDSText.tsx, XDSHeading.tsx
  *
  * SYNC: When modified, update:
- * - /packages/core/src/Text/README.md
+ * - /packages/core/src/Text/Text.doc.mjs
  */
 
 import * as stylex from '@stylexjs/stylex';

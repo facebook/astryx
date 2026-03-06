@@ -371,6 +371,7 @@
     "test": "vitest run --root ../..",
     "test:watch": "vitest --root ../..",
     "lint": "eslint src",
+    "typecheck:docs": "tsc --project tsconfig.docs.json",
     "build:css": "node ../../scripts/build-css.mjs",
     "postbuild": "yarn build:css"
   },

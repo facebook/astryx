@@ -5,7 +5,7 @@
  * @position Selection plugin; consumed by XDSTable via plugins prop
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Table/README.md (selection documentation)
+ * - /packages/core/src/Table/Table.doc.mjs (selection documentation)
  * - /packages/core/src/Table/index.ts (exports)
  */
 

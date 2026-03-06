@@ -5,7 +5,7 @@
  * @position Layout/Stack component; uses stackItem.stylex.ts
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Layout/README.md
+ * - /packages/core/src/Stack/Stack.doc.mjs
  * - /packages/core/src/Layout/Stack/XDSStackItem.test.tsx
  * - /apps/storybook/stories/StackItem.stories.tsx
  */

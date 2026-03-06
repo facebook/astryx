@@ -5,7 +5,7 @@
  * @position Core implementation; consumed by index.ts, tested by XDSDialog.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Dialog/README.md (props table, features, implementation notes)
+ * - /packages/core/src/Dialog/Dialog.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Dialog/XDSDialog.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Dialog/index.ts (exports if types change)
  * - /apps/storybook/stories/Dialog.stories.tsx (storybook stories)

@@ -5,7 +5,7 @@
  * @position Shared circular icon container for navigation headers (TopNav, PageNav)
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/NavIcon/README.md
+ * - /packages/core/src/NavIcon/NavIcon.doc.mjs
  * - /packages/core/src/NavIcon/XDSNavIcon.test.tsx
  * - /packages/core/src/NavIcon/index.ts
  * - /apps/storybook/stories/TopNav.stories.tsx

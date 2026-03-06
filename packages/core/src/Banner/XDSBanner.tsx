@@ -11,7 +11,7 @@
  * - When children are provided, a collapse/expand toggle button appears in the end area
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Banner/README.md (props table, features, implementation notes)
+ * - /packages/core/src/Banner/Banner.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Banner/XDSBanner.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Banner/index.ts (exports if types change)
  * - /apps/storybook/stories/Banner.stories.tsx (storybook stories)

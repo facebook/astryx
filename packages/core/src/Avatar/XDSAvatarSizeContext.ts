@@ -5,7 +5,7 @@
  * @position Internal context; provided by XDSAvatar, consumed by sub-components
  *
  * SYNC: When modified, update:
- * - /packages/core/src/Avatar/README.md
+ * - /packages/core/src/Avatar/Avatar.doc.mjs
  */
 
 'use client';

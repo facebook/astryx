@@ -4,7 +4,7 @@
  * @position Sub-component; used by XDSDropdownMenu and consumers for custom items
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/DropdownMenu/README.md
+ * - /packages/core/src/DropdownMenu/DropdownMenu.doc.mjs
  * - /packages/core/src/DropdownMenu/XDSDropdownMenu.test.tsx
  * - /packages/core/src/DropdownMenu/index.ts
  * - /apps/storybook/stories/DropdownMenu.stories.tsx

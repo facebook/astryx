@@ -4,7 +4,7 @@
  * @output Exports XDSTabListContext, useXDSTabListContext
  * @position Context provider; consumed by XDSTab.tsx, XDSTabMenu.tsx
  *
- * SYNC: When modified, update /packages/core/src/TabList/README.md
+ * SYNC: When modified, update /packages/core/src/TabList/TabList.doc.mjs
  */
 
 'use client';

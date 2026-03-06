@@ -5,7 +5,7 @@
  * @position Core layer utility; used by useXDSHoverCard, useXDSTooltip, etc.
  *
  * SYNC: When modified, update:
- * - /packages/core/src/Layer/README.md
+ * - /packages/core/src/Layer/Layer.doc.mjs
  * - /packages/core/src/Layer/index.ts
  */
 

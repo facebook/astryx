@@ -58,6 +58,9 @@ jobs:
 
       - run: yarn build
 
+      - name: Typecheck component docs
+        run: yarn workspace @xds/core typecheck:docs
+
   # Build storybook + analyze components (parallel with test)
   # Uploads storybook preview and analysis artifacts for downstream jobs
   build:

@@ -6,7 +6,7 @@
  *   settings sidebars, detail panels, or any fixed-width side content.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Layout/XDSLayout/README.md
+ * - /packages/core/src/Layout/Layout.doc.mjs
  * - /apps/storybook/stories/Layout.stories.tsx
  */
 

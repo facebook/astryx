@@ -5,7 +5,7 @@
  * @position Typography component; provides base styles for wrapped content
  *
  * SYNC: When modified, update:
- * - /packages/core/src/Text/README.md
+ * - /packages/core/src/Text/Text.doc.mjs
  * - /packages/core/src/Text/index.ts
  */
 

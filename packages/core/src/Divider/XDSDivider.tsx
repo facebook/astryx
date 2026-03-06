@@ -5,7 +5,7 @@
  * @position Divider component; provides visual separation with optional label
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Divider/README.md
+ * - /packages/core/src/Divider/Divider.doc.mjs
  * - /packages/core/src/Divider/XDSDivider.test.tsx
  * - /apps/storybook/stories/Divider.stories.tsx
  */

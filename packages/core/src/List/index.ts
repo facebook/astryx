@@ -4,7 +4,7 @@
  * @output Exports XDSList, XDSListItem components and their props/types
  * @position Package entry point for List
  *
- * SYNC: When modified, update /packages/core/src/List/README.md
+ * SYNC: When modified, update /packages/core/src/List/List.doc.mjs
  */
 
 export {XDSList} from './XDSList';

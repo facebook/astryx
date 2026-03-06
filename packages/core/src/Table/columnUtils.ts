@@ -5,7 +5,7 @@
  * @position Utility layer; consumed by XDSBaseTable.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Table/README.md (utility descriptions)
+ * - /packages/core/src/Table/Table.doc.mjs (utility descriptions)
  * - /packages/core/src/Table/index.ts (exports if functions change)
  */
 

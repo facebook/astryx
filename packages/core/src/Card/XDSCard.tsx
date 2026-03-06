@@ -5,7 +5,7 @@
  * @position Core card container component
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Card/README.md (props table, features)
+ * - /packages/core/src/Card/Card.doc.mjs (props table, features)
  * - /packages/core/src/Card/index.ts (exports if types change)
  * - /apps/storybook/stories/Card.stories.tsx (storybook stories)
  */

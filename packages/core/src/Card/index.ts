@@ -4,7 +4,7 @@
  * @output Exports XDSCard component and types
  * @position Entry point for @xds/core/Card module
  *
- * SYNC: When modified, update /packages/core/src/Card/README.md
+ * SYNC: When modified, update /packages/core/src/Card/Card.doc.mjs
  */
 
 export {XDSCard} from './XDSCard';

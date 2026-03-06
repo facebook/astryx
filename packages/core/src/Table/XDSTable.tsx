@@ -5,7 +5,7 @@
  * @position Styled wrapper; the primary table API for consumers
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Table/README.md (props table, features, usage examples)
+ * - /packages/core/src/Table/Table.doc.mjs (props table, features, usage examples)
  * - /packages/core/src/Table/XDSTable.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Table/index.ts (exports if types change)
  * - /apps/storybook/stories/Table.stories.tsx (storybook stories)

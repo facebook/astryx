@@ -5,7 +5,7 @@
  * @position Core implementation; consumed by index.ts, tested by XDSSlider.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Slider/README.md
+ * - /packages/core/src/Slider/Slider.doc.mjs
  * - /packages/core/src/Slider/XDSSlider.test.tsx
  * - /packages/core/src/Slider/index.ts
  * - /apps/storybook/stories/Slider.stories.tsx

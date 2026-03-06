@@ -5,7 +5,7 @@
  * @position Core implementation; consumed by index.ts, tested by XDSLink.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Link/README.md (props table, features, implementation notes)
+ * - /packages/core/src/Link/Link.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Link/XDSLink.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Link/index.ts (exports if types change)
  * - /apps/storybook/stories/Link.stories.tsx (storybook stories)

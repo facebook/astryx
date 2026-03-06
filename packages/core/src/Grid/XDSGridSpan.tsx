@@ -5,7 +5,7 @@
  * @position Grid span component; controls grid item span
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Grid/README.md
+ * - /packages/core/src/Grid/Grid.doc.mjs
  * - /packages/core/src/Grid/XDSGrid.test.tsx
  * - /apps/storybook/stories/Grid.stories.tsx
  */

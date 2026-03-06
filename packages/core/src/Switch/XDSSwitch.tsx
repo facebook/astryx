@@ -5,7 +5,7 @@
  * @position Core implementation; consumed by index.ts, tested by XDSSwitch.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Switch/README.md (props table, features, implementation notes)
+ * - /packages/core/src/Switch/Switch.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Switch/XDSSwitch.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Switch/index.ts (exports if types change)
  * - /apps/storybook/stories/Switch.stories.tsx (storybook stories)

@@ -4,7 +4,7 @@
  * @output Exports all Table components, types, and utilities
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  *
- * SYNC: When modified, update this header and /packages/core/src/Table/README.md
+ * SYNC: When modified, update this header and /packages/core/src/Table/Table.doc.mjs
  */
 
 export {XDSBaseTable} from './XDSBaseTable';

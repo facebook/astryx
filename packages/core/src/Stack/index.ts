@@ -4,7 +4,7 @@
  * @output Exports XDSStack, XDSHStack, XDSVStack, XDSStackItem components
  * @position Entry point for Layout/Stack
  *
- * SYNC: When modified, update /packages/core/src/Layout/README.md
+ * SYNC: When modified, update /packages/core/src/Stack/Stack.doc.mjs
  */
 
 // Unified stack component

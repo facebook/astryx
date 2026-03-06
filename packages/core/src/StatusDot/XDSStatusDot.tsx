@@ -5,7 +5,7 @@
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/StatusDot/README.md (props table, features, implementation notes)
+ * - /packages/core/src/StatusDot/StatusDot.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/StatusDot/XDSStatusDot.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/StatusDot/index.ts (exports if types change)
  * - /apps/storybook/stories/StatusDot.stories.tsx (storybook stories)

@@ -18,7 +18,7 @@ import {getResultsDir, ensureDir, readJson, writeJson} from './utils.js';
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 const VIBE_DIR = path.resolve(__dirname, '..');
-const APP_DIR = path.join(VIBE_DIR, 'app');
+const _APP_DIR = path.join(VIBE_DIR, 'app');
 const REPO_ROOT = path.resolve(VIBE_DIR, '../..');
 
 interface PreviewManifest {

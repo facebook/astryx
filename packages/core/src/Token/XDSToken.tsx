@@ -5,7 +5,7 @@
  * @position Core implementation; consumed by index.ts, tested by XDSToken.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Token/README.md (props table, features, implementation notes)
+ * - /packages/core/src/Token/Token.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Token/XDSToken.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Token/index.ts (exports if types change)
  * - /apps/storybook/stories/Token.stories.tsx (storybook stories)

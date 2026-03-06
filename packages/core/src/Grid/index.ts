@@ -4,7 +4,7 @@
  * @output Exports Grid components and types
  * @position Package entry point for Grid
  *
- * SYNC: When modified, update /packages/core/src/Grid/README.md
+ * SYNC: When modified, update /packages/core/src/Grid/Grid.doc.mjs
  */
 
 export {XDSGrid} from './XDSGrid';

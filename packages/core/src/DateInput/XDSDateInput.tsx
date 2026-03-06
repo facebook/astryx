@@ -5,7 +5,7 @@
  * @position Core implementation; consumed by index.ts, tested by XDSDateInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/DateInput/README.md (props table, features, implementation notes)
+ * - /packages/core/src/DateInput/DateInput.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/DateInput/XDSDateInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/DateInput/index.ts (exports if types change)
  * - /apps/storybook/stories/DateInput.stories.tsx (storybook stories)

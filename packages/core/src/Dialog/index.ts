@@ -4,7 +4,7 @@
  * @output Exports XDSDialog, XDSDialogHeader, and related types
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  *
- * SYNC: When modified, update this header and /packages/core/src/Dialog/README.md
+ * SYNC: When modified, update this header and /packages/core/src/Dialog/Dialog.doc.mjs
  */
 
 export {XDSDialog} from './XDSDialog';

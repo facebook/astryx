@@ -5,7 +5,7 @@
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/EmptyState/README.md (props table, features, implementation notes)
+ * - /packages/core/src/EmptyState/EmptyState.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/EmptyState/XDSEmptyState.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/EmptyState/index.ts (exports if types change)
  * - /apps/storybook/stories/EmptyState.stories.tsx (storybook stories)

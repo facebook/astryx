@@ -4,7 +4,7 @@
  * @output StyleX utility for stack (flex container) styling
  * @position Layout utility; used by XDSHStack, XDSVStack components
  *
- * SYNC: When modified, update /packages/core/src/Layout/README.md
+ * SYNC: When modified, update /packages/core/src/Stack/Stack.doc.mjs
  */
 
 import * as stylex from '@stylexjs/stylex';
