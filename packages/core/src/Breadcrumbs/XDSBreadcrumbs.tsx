@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/Breadcrumbs.stories.tsx
  */
 
+'use client';
+
 import {
   forwardRef,
   Children,

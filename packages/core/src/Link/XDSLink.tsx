@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/Link.stories.tsx (storybook stories)
  */
 
+'use client';
+
 import {
   forwardRef,
   useContext,

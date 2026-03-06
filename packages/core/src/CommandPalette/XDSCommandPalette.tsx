@@ -10,6 +10,8 @@
  * - /apps/storybook/stories/CommandPalette.stories.tsx
  */
 
+'use client';
+
 import {
   useCallback,
   useId,

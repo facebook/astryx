@@ -10,6 +10,8 @@
  * - /apps/storybook/stories/Center.stories.tsx
  */
 
+'use client';
+
 import {
   forwardRef,
   useContext,

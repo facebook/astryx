@@ -9,6 +9,8 @@
  * - /packages/core/src/Layer/index.ts
  */
 
+'use client';
+
 import {
   useCallback,
   useContext,

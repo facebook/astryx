@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
  */
 
+'use client';
+
 import {
   forwardRef,
   useContext,

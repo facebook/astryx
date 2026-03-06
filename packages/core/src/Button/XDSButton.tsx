@@ -13,6 +13,8 @@
  * Last synced props: label, variant, size, isDisabled, isLoading, onClickAction, icon, children, tooltip, endSlot
  */
 
+'use client';
+
 import {
   forwardRef,
   useContext,

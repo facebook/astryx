@@ -10,6 +10,8 @@
  * - /apps/storybook/stories/Layout.stories.tsx
  */
 
+'use client';
+
 import type {AriaRole, HTMLAttributes, ReactNode} from 'react';
 import {forwardRef, useContext} from 'react';
 import * as stylex from '@stylexjs/stylex';

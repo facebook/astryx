@@ -8,6 +8,8 @@
  * - /packages/core/src/Calendar/hooks/index.ts
  */
 
+'use client';
+
 import {useMemo} from 'react';
 import type {DayOfWeek, ISODateString} from '../XDSCalendar';
 

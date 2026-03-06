@@ -10,6 +10,8 @@
  * - /apps/storybook/stories/Divider.stories.tsx
  */
 
+'use client';
+
 import {
   forwardRef,
   useContext,

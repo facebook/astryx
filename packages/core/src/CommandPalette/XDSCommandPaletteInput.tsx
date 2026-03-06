@@ -9,6 +9,8 @@
  * - /packages/core/src/CommandPalette/index.ts
  */
 
+'use client';
+
 import {useCallback, useRef, useEffect, type KeyboardEvent} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';

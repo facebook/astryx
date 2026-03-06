@@ -17,6 +17,8 @@
  * - /apps/storybook/stories/Banner.stories.tsx (storybook stories)
  */
 
+'use client';
+
 import {forwardRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';

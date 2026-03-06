@@ -9,6 +9,8 @@
  * - /packages/core/src/CommandPalette/index.ts
  */
 
+'use client';
+
 import {
   createContext,
   useCallback,

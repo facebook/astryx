@@ -10,6 +10,8 @@
  * - /packages/core/src/TabList/XDSTabList.test.tsx
  */
 
+'use client';
+
 import {useContext, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';

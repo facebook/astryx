@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/ProgressBar.stories.tsx (storybook stories)
  */
 
+'use client';
+
 import {forwardRef, useId} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';

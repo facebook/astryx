@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/FormLayout.stories.tsx (storybook stories)
  */
 
+'use client';
+
 import {forwardRef, useMemo, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';

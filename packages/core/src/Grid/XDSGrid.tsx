@@ -10,6 +10,8 @@
  * - /apps/storybook/stories/Grid.stories.tsx
  */
 
+'use client';
+
 import {
   forwardRef,
   useContext,

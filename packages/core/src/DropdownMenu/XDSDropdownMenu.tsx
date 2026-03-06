@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/DropdownMenu.stories.tsx
  */
 
+'use client';
+
 import React, {
   useContext,
   useCallback,

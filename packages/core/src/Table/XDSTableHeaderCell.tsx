@@ -9,6 +9,8 @@
  * - /packages/core/src/Table/index.ts
  */
 
+'use client';
+
 import {
   forwardRef,
   useContext,
