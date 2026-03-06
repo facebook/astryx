@@ -26,6 +26,7 @@ import {
   ExternalLink,
   Menu,
   MoreHorizontal,
+  Search,
 } from 'lucide-react';
 
 const iconProps = {
@@ -48,4 +49,5 @@ export const neutralIconRegistry: XDSIconRegistry = {
   externalLink: <ExternalLink {...iconProps} />,
   menu: <Menu {...iconProps} />,
   moreHorizontal: <MoreHorizontal {...iconProps} />,
+  search: <Search {...iconProps} />,
 };
