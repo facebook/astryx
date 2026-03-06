@@ -10,6 +10,8 @@
  * - /packages/core/src/TabList/XDSTabList.test.tsx
  */
 
+'use client';
+
 import React, {useCallback, useId} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSIcon} from '../Icon';

@@ -10,6 +10,8 @@
  * - /apps/storybook/stories/Skeleton.stories.tsx
  */
 
+'use client';
+
 import {forwardRef, useContext, type HTMLAttributes} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';

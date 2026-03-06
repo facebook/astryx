@@ -8,6 +8,8 @@
  * - /packages/core/src/Avatar/README.md
  */
 
+'use client';
+
 import {createContext} from 'react';
 
 /**

@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/DateInput.stories.tsx (storybook stories)
  */
 
+'use client';
+
 import {
   forwardRef,
   useContext,

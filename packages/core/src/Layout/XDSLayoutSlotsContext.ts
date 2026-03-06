@@ -9,6 +9,8 @@
  * - /packages/core/src/Layout/XDSLayout/index.ts
  */
 
+'use client';
+
 import {createContext} from 'react';
 
 /**

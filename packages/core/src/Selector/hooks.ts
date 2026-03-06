@@ -4,6 +4,8 @@
  * @position Internal hooks; used by XDSSelector.tsx
  */
 
+'use client';
+
 import {useCallback, useLayoutEffect, useRef, useState} from 'react';
 import type {RefObject} from 'react';
 import type {XDSSelectorOptionData} from './types';

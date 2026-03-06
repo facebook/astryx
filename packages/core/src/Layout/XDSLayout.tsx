@@ -13,6 +13,8 @@
  * - /apps/storybook/stories/Layout.stories.tsx
  */
 
+'use client';
+
 import {type ReactNode, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSLayoutAreaContext, type LayoutArea} from './XDSLayoutAreaContext';

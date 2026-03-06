@@ -13,6 +13,8 @@
  * - /apps/storybook/stories/AppShell.stories.tsx
  */
 
+'use client';
+
 import {
   forwardRef,
   useCallback,

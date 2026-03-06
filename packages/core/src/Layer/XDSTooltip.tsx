@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/Tooltip.stories.tsx
  */
 
+'use client';
+
 import React, {
   useContext,
   useLayoutEffect,

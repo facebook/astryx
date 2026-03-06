@@ -10,6 +10,8 @@
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
  */
 
+'use client';
+
 import {useContext, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';

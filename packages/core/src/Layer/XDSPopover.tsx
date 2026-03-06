@@ -13,6 +13,8 @@
  * - /apps/storybook/stories/Popover.stories.tsx
  */
 
+'use client';
+
 import React, {
   useCallback,
   useLayoutEffect,

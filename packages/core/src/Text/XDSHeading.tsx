@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/Text.stories.tsx (storybook stories)
  */
 
+'use client';
+
 import {
   forwardRef,
   lazy,

@@ -3,7 +3,7 @@
 exports[`XDSFormLayout > matches snapshot for horizontal direction 1`] = `
 <div
   class="XDSFormLayout__styles.base x78zum5 x18g69wz XDSFormLayout__styles.horizontal x1q0g3np x1a02dak"
-  data-style-src="@xds/core:src/FormLayout/XDSFormLayout.tsx:34; @xds/core:src/FormLayout/XDSFormLayout.tsx:39"
+  data-style-src="@xds/core:src/FormLayout/XDSFormLayout.tsx:36; @xds/core:src/FormLayout/XDSFormLayout.tsx:41"
   data-testid="layout"
 >
   <input
@@ -18,7 +18,7 @@ exports[`XDSFormLayout > matches snapshot for horizontal direction 1`] = `
 exports[`XDSFormLayout > matches snapshot for horizontal-labels direction 1`] = `
 <div
   class="XDSFormLayout__styles.base xdt5ytf XDSFormLayout__styles.horizontalLabels xrvj5dj x1pmbctz xlaq8a2 x7a106z xedohl4 x1rpgqan x1a1jff"
-  data-style-src="@xds/core:src/FormLayout/XDSFormLayout.tsx:34; @xds/core:src/FormLayout/XDSFormLayout.tsx:43"
+  data-style-src="@xds/core:src/FormLayout/XDSFormLayout.tsx:36; @xds/core:src/FormLayout/XDSFormLayout.tsx:45"
   data-testid="layout"
 >
   <label>
@@ -33,7 +33,7 @@ exports[`XDSFormLayout > matches snapshot for horizontal-labels direction 1`] = 
 exports[`XDSFormLayout > matches snapshot for vertical direction 1`] = `
 <div
   class="XDSFormLayout__styles.base x78zum5 xdt5ytf x18g69wz"
-  data-style-src="@xds/core:src/FormLayout/XDSFormLayout.tsx:34"
+  data-style-src="@xds/core:src/FormLayout/XDSFormLayout.tsx:36"
   data-testid="layout"
 >
   <input

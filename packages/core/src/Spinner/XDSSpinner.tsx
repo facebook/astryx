@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/Spinner.stories.tsx
  */
 
+'use client';
+
 import {forwardRef, useContext, useEffect, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';

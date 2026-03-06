@@ -10,6 +10,8 @@
  * - /apps/storybook/stories/AspectRatio.stories.tsx
  */
 
+'use client';
+
 import {
   forwardRef,
   useContext,

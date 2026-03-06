@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/HoverCard.stories.tsx
  */
 
+'use client';
+
 import React, {
   useContext,
   useLayoutEffect,

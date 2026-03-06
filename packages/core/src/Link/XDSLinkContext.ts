@@ -15,6 +15,8 @@
  * - /packages/core/src/Link/README.md
  */
 
+'use client';
+
 import {createContext} from 'react';
 import type {XDSLinkComponentType} from './types';
 

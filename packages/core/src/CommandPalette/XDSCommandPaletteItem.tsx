@@ -9,6 +9,8 @@
  * - /packages/core/src/CommandPalette/index.ts
  */
 
+'use client';
+
 import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';

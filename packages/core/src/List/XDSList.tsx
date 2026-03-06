@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/List.stories.tsx
  */
 
+'use client';
+
 import {forwardRef, useId, useMemo, Children, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';

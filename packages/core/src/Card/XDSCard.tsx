@@ -10,6 +10,8 @@
  * - /apps/storybook/stories/Card.stories.tsx (storybook stories)
  */
 
+'use client';
+
 import {forwardRef, useContext, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars, elevationVars} from '../theme/tokens.stylex';

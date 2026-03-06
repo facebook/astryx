@@ -7,6 +7,8 @@
  * SYNC: When modified, update /packages/core/src/TabList/README.md
  */
 
+'use client';
+
 import {createContext, useContext} from 'react';
 
 /**

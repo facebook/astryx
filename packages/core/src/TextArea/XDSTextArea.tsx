@@ -11,6 +11,8 @@
  * - /apps/storybook/stories/TextArea.stories.tsx (storybook stories)
  */
 
+'use client';
+
 import {
   forwardRef,
   useContext,

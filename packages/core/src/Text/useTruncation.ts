@@ -8,6 +8,8 @@
  * - /packages/core/src/Text/README.md
  */
 
+'use client';
+
 import {useCallback, useRef, useState, type RefCallback} from 'react';
 
 export interface UseTruncationOptions {
