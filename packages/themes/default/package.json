@@ -38,7 +38,7 @@
     "@babel/core": "^7.28.5",
     "@babel/preset-react": "^7.28.5",
     "@babel/preset-typescript": "^7.28.5",
-    "@stylexjs/babel-plugin": "^0.17.4",
+    "@stylexjs/babel-plugin": "^0.18.1",
     "esbuild-plugin-babel": "^0.2.3",
     "tsup": "^8.3.0"
   }
