@@ -6,15 +6,12 @@ import {
   XDSCommandPaletteList,
   XDSCommandPaletteItem,
   XDSCommandPaletteGroup,
-  XDSCommandPaletteEmpty,
-  XDSCommandPaletteShortcut,
-  XDSCommandPaletteFooter,
-  XDSCommandPaletteSeparator,
-  XDSCommandPaletteLoading,
   XDSCommandPaletteProvider,
   useXDSCommandPaletteRegister,
   useXDSCommandPalette,
 } from '@xds/core/CommandPalette';
+import {XDSKbd} from '@xds/core/Kbd';
+import {XDSDivider} from '@xds/core/Divider';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSButton} from '@xds/core/Button';
 
@@ -58,14 +55,14 @@ export const Composable: Story = {
                 onSelect={() => setIsShown(false)}>
                 <XDSIcon icon="home" size="sm" />
                 <span style={{flex: 1}}>Go Home</span>
-                <XDSCommandPaletteShortcut keys="mod+h" />
+                <XDSKbd keys="mod+h" />
               </XDSCommandPaletteItem>
               <XDSCommandPaletteItem
                 value="settings"
                 onSelect={() => setIsShown(false)}>
                 <XDSIcon icon="settings" size="sm" />
                 <span style={{flex: 1}}>Settings</span>
-                <XDSCommandPaletteShortcut keys="mod+," />
+                <XDSKbd keys="mod+," />
               </XDSCommandPaletteItem>
               <XDSCommandPaletteItem
                 value="profile"
@@ -74,30 +71,24 @@ export const Composable: Story = {
                 <span style={{flex: 1}}>Profile</span>
               </XDSCommandPaletteItem>
             </XDSCommandPaletteGroup>
-            <XDSCommandPaletteSeparator />
+            <XDSDivider />
             <XDSCommandPaletteGroup heading="Actions">
               <XDSCommandPaletteItem
                 value="new-file"
                 onSelect={() => setIsShown(false)}>
                 <XDSIcon icon="add" size="sm" />
                 <span style={{flex: 1}}>New File</span>
-                <XDSCommandPaletteShortcut keys="mod+n" />
+                <XDSKbd keys="mod+n" />
               </XDSCommandPaletteItem>
               <XDSCommandPaletteItem
                 value="save"
                 onSelect={() => setIsShown(false)}>
                 <XDSIcon icon="check" size="sm" />
                 <span style={{flex: 1}}>Save</span>
-                <XDSCommandPaletteShortcut keys="mod+s" />
+                <XDSKbd keys="mod+s" />
               </XDSCommandPaletteItem>
             </XDSCommandPaletteGroup>
-            <XDSCommandPaletteEmpty>No results found</XDSCommandPaletteEmpty>
           </XDSCommandPaletteList>
-          <XDSCommandPaletteFooter>
-            <span>↑↓ Navigate</span>
-            <span>↵ Select</span>
-            <span>Esc Close</span>
-          </XDSCommandPaletteFooter>
         </XDSCommandPalette>
       </>
     );
@@ -191,7 +182,6 @@ export const Filtering: Story = {
                 {item.label}
               </XDSCommandPaletteItem>
             ))}
-            <XDSCommandPaletteEmpty>No pages found</XDSCommandPaletteEmpty>
           </XDSCommandPaletteList>
         </XDSCommandPalette>
       </>
@@ -271,29 +261,6 @@ export const Provider: Story = {
         <ActionCommands />
         <OpenButton />
       </XDSCommandPaletteProvider>
-    );
-  },
-};
-
-/**
- * Loading state for async command fetching.
- */
-export const Loading: Story = {
-  render: function LoadingStory() {
-    const [isShown, setIsShown] = useState(false);
-
-    return (
-      <>
-        <XDSButton label="Open Palette" onClick={() => setIsShown(true)} />
-        <XDSCommandPalette
-          isShown={isShown}
-          onOpenChange={open => setIsShown(open)}>
-          <XDSCommandPaletteInput placeholder="Search..." />
-          <XDSCommandPaletteList>
-            <XDSCommandPaletteLoading>Searching...</XDSCommandPaletteLoading>
-          </XDSCommandPaletteList>
-        </XDSCommandPalette>
-      </>
     );
   },
 };

@@ -17,12 +17,9 @@ export type {XDSCommandPaletteInputProps} from './XDSCommandPaletteInput';
 export {XDSCommandPaletteList} from './XDSCommandPaletteList';
 export type {XDSCommandPaletteListProps} from './XDSCommandPaletteList';
 
-// Items: consumers should use XDSListItem directly inside XDSCommandPaletteList.
-// XDSCommandPaletteItem is kept for backward compatibility but composes XDSListItem.
 export {XDSCommandPaletteItem} from './XDSCommandPaletteItem';
 export type {XDSCommandPaletteItemProps} from './XDSCommandPaletteItem';
 
-// Group: kept as a family-specific component (heading + role="group")
 export {XDSCommandPaletteGroup} from './XDSCommandPaletteGroup';
 export type {XDSCommandPaletteGroupProps} from './XDSCommandPaletteGroup';
 
@@ -42,22 +39,3 @@ export {defaultFilter as commandPaletteFilter} from './filter';
 
 // Types
 export type {CommandPaletteFilterFn} from './types';
-
-// ---- Deprecated re-exports ----
-// These are thin wrappers around existing XDS primitives.
-// Use XDSDivider, XDSEmptyState, XDSSpinner, XDSKbd directly instead.
-
-/** @deprecated Use XDSKbd from @xds/core instead */
-export {XDSCommandPaletteShortcut} from './XDSCommandPaletteShortcut';
-
-/** @deprecated Use XDSDivider directly */
-export {XDSCommandPaletteSeparator} from './XDSCommandPaletteSeparator';
-
-/** @deprecated Use XDSEmptyState or XDSText directly */
-export {XDSCommandPaletteEmpty} from './XDSCommandPaletteEmpty';
-
-/** @deprecated Use XDSSpinner + XDSText directly */
-export {XDSCommandPaletteLoading} from './XDSCommandPaletteLoading';
-
-/** @deprecated Compose footer content directly */
-export {XDSCommandPaletteFooter} from './XDSCommandPaletteFooter';

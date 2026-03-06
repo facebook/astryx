@@ -23,11 +23,6 @@ Three layers, each building on the last:
 | `XDSCommandPaletteList.tsx`      | Scrollable results container (listbox)     |
 | `XDSCommandPaletteItem.tsx`      | Selectable item (option)                   |
 | `XDSCommandPaletteGroup.tsx`     | Visual grouping with heading               |
-| `XDSCommandPaletteEmpty.tsx`     | Empty state                                |
-| `XDSCommandPaletteLoading.tsx`   | Loading indicator                          |
-| `XDSCommandPaletteSeparator.tsx` | Visual divider (wraps XDSDivider)          |
-| `XDSCommandPaletteShortcut.tsx`  | Keyboard shortcut display                  |
-| `XDSCommandPaletteFooter.tsx`    | Footer bar                                 |
 | `XDSCommandPaletteProvider.tsx`  | Registry provider + hooks                  |
 | `useXDSCommandPaletteHistory.ts` | Optional history hook                      |
 
@@ -43,15 +38,10 @@ Three layers, each building on the last:
       <XDSCommandPaletteItem value="home" onSelect={() => navigate('/')}>
         <XDSIcon icon="home" size="sm" />
         <span>Go Home</span>
-        <XDSCommandPaletteShortcut keys="mod+h" />
+        <XDSKbd keys="mod+h" />
       </XDSCommandPaletteItem>
     </XDSCommandPaletteGroup>
-    <XDSCommandPaletteEmpty>No results</XDSCommandPaletteEmpty>
   </XDSCommandPaletteList>
-  <XDSCommandPaletteFooter>
-    <span>↑↓ Navigate</span>
-    <span>↵ Select</span>
-  </XDSCommandPaletteFooter>
 </XDSCommandPalette>
 ```
 
