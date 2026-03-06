@@ -1,9 +1,9 @@
 /**
  * @file Type definitions for component documentation.
  *
- * Every component directory under `packages/core/src/` has a `README.tsx`
- * that exports a single `docs` constant of type `ComponentDoc`. The CLI
- * imports these directly — no markdown parsing needed.
+ * Every component directory under `packages/core/src/` has a `{Name}.doc.mjs`
+ * that exports a single `docs` constant typed via JSDoc. The CLI imports these
+ * directly — no markdown parsing needed.
  */
 
 /**
@@ -148,12 +148,12 @@ export interface MultiComponentDoc extends BaseDoc {
 }
 
 /**
- * The documentation type for a component directory's README.tsx.
+ * The documentation type for a component directory's {Name}.doc.mjs file.
  *
- * Every README.tsx must export a single `docs` constant of this type:
+ * Every .doc.mjs must export a single `docs` constant of this type:
  *
- *   import type \{ComponentDoc\} from '../docs-types';
- *   export const docs: ComponentDoc = \{ ... \};
+ *   /\*\* \@type \{import('../docs-types').ComponentDoc\} *\/
+ *   export const docs = \{ ... \};
  *
  * Use SingleComponentDoc (with `props`) for single-component directories.
  * Use MultiComponentDoc (with `components`) for multi-component directories.

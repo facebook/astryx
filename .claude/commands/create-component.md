@@ -22,7 +22,7 @@ Use this structure based on Button.tsx:
  * @position Core implementation
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/{ComponentName}/{ComponentName}.doc.tsx
+ * - /packages/core/src/{ComponentName}/{ComponentName}.doc.mjs
  * - /packages/core/src/{ComponentName}/{ComponentName}.test.tsx
  * - /packages/core/src/{ComponentName}/index.ts
  * - /apps/storybook/stories/{ComponentName}.stories.tsx
@@ -111,12 +111,12 @@ export { {ComponentName} } from './{ComponentName}';
 export type { {ComponentName}Props, {ComponentName}Variant } from './{ComponentName}';
 ```
 
-### 3. {ComponentName}.doc.tsx
+### 3. {ComponentName}.doc.mjs
 
-```tsx
-import type {ComponentDoc} from '../docs-types';
+```js
+/** @type {import('../docs-types').ComponentDoc} */
 
-export const docs: ComponentDoc = {
+export const docs = {
   name: '{ComponentName}',
   description: 'Brief description of the component.',
   features: ['Variants: list available variants'],

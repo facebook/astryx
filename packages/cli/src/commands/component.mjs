@@ -5,7 +5,7 @@
  * `xds component <name>` prints the full component README.
  * `xds component <name> --compact` prints a token-optimized version for LLMs.
  *
- * Component docs live in typed {Name}.doc.tsx files (ComponentDoc exports).
+ * Component docs live in typed {Name}.doc.mjs files (ComponentDoc exports).
  * This file imports them directly — no markdown parsing needed.
  */
 
@@ -124,8 +124,7 @@ export function discoverComponents(coreDir) {
 }
 
 /**
- * Load the typed docs object from a README.tsx file.
- * The CLI runs under tsx, which handles TypeScript imports natively.
+ * Load the typed docs object from a .doc.mjs file.
  */
 export async function loadDocs(readmePath) {
   const mod = await import(pathToFileURL(readmePath).href);
@@ -134,21 +133,21 @@ export async function loadDocs(readmePath) {
 
 /**
  * Find the doc file for a component, checking both top-level
- * and nested directories. Prefers {Name}.doc.tsx, then README.tsx,
- * then README.md (for backward compatibility with tests).
+ * and nested directories. Prefers {Name}.doc.mjs, then README.md
+ * (for backward compatibility).
  */
 export function findComponentReadme(coreDir, name) {
   const srcDir = path.join(coreDir, 'src');
-  // Preferred: {Name}.doc.tsx, then README.tsx, then README.md
-  const docNames = [`${name}.doc.tsx`, 'README.tsx', 'README.md'];
+  // Preferred: {Name}.doc.mjs, then README.md
+  const docNames = [`${name}.doc.mjs`, 'README.md'];
 
   for (const docName of docNames) {
-    // Direct match: src/{name}/{Name}.doc.tsx (or README.tsx/md)
+    // Direct match: src/{name}/{Name}.doc.mjs (or README.md)
     const direct = path.join(srcDir, name, docName);
     if (fs.existsSync(direct)) return direct;
   }
 
-  // Nested match: src/*/{name}/{Name}.doc.tsx (or README.tsx/md)
+  // Nested match: src/*/{name}/{Name}.doc.mjs (or README.md)
   const entries = fs.readdirSync(srcDir, {withFileTypes: true});
   for (const docName of docNames) {
     for (const entry of entries) {
@@ -923,6 +922,292 @@ export function extractProps(content, componentName) {
   }
 
   return output.join('\n') + '\n';
+}
+
+// ── Format functions ────────────────────────────────────────────────
+// These operate on the typed ComponentDoc object directly.
+// Used by the CLI action handler for .doc.mjs files.
+
+/**
+ * Render a props array as a markdown table.
+ */
+function formatPropsTable(props) {
+  if (!props || props.length === 0) return '';
+  const lines = [];
+  lines.push('| Prop | Type | Default | Description |');
+  lines.push('|------|------|---------|-------------|');
+  for (const p of props) {
+    const def = p.default ? `\`${p.default}\`` : '—';
+    const req = p.required ? ' **(required)**' : '';
+    lines.push(`| \`${p.name}\` | \`${p.type}\` | ${def} | ${p.description}${req} |`);
+  }
+  return lines.join('\n');
+}
+
+/**
+ * Format full component docs (default mode, replaces cleanReadme).
+ */
+export function formatFull(docs) {
+  const sections = [];
+
+  sections.push(`# ${docs.name}\n`);
+  sections.push(docs.description + '\n');
+
+  if (docs.features?.length) {
+    sections.push('## Features\n');
+    sections.push(docs.features.map(f => `- ${f}`).join('\n') + '\n');
+  }
+
+  // Single component props
+  if ('props' in docs) {
+    sections.push('## Props\n');
+    sections.push(formatPropsTable(docs.props) + '\n');
+  }
+
+  // Multi-component
+  if ('components' in docs) {
+    sections.push('## Components\n');
+    for (const comp of docs.components) {
+      sections.push(`### ${comp.name}\n`);
+      sections.push(comp.description + '\n');
+      sections.push(formatPropsTable(comp.props) + '\n');
+      if (comp.examples?.length) {
+        for (const ex of comp.examples) {
+          if (ex.label) sections.push(`#### ${ex.label}\n`);
+          sections.push('```tsx\n' + ex.code + '\n```\n');
+        }
+      }
+    }
+  }
+
+  if (docs.examples?.length) {
+    sections.push('## Examples\n');
+    for (const ex of docs.examples) {
+      if (ex.label) sections.push(`### ${ex.label}\n`);
+      sections.push('```tsx\n' + ex.code + '\n```\n');
+    }
+  }
+
+  if (docs.theming) {
+    sections.push('## Theming\n');
+    sections.push(`Component key: \`${docs.theming.componentKey}\`\n`);
+    if (docs.theming.surfaces?.length) {
+      const surfaceLines = [];
+      surfaceLines.push('| Surface | Description |');
+      surfaceLines.push('|---------|-------------|');
+      for (const s of docs.theming.surfaces) {
+        surfaceLines.push(`| \`${s.name}\` | ${s.description} |`);
+      }
+      sections.push(surfaceLines.join('\n') + '\n');
+    }
+  }
+
+  if (docs.accessibility?.length) {
+    sections.push('## Accessibility\n');
+    sections.push(docs.accessibility.map(a => `- ${a}`).join('\n') + '\n');
+  }
+
+  if (docs.keyboard) {
+    sections.push('## Keyboard\n');
+    sections.push(docs.keyboard + '\n');
+  }
+
+  if (docs.notes?.length) {
+    sections.push('## Notes\n');
+    sections.push(docs.notes.map(n => `- ${n}`).join('\n') + '\n');
+  }
+
+  return sections.join('\n');
+}
+
+/**
+ * Format compact docs for LLM consumption (replaces extractCompact + ensureImportStatement).
+ * Includes: import, features, props, limited examples, keyboard, notes.
+ */
+export function formatCompact(docs, componentName, importHint) {
+  const displayName = componentName.startsWith('XDS')
+    ? componentName
+    : `XDS${componentName}`;
+
+  const sections = [];
+
+  sections.push(`# ${docs.name}\n`);
+  sections.push(docs.description + '\n');
+
+  // Import statement
+  if (importHint) {
+    sections.push('## Import\n');
+    sections.push(`\`\`\`tsx\nimport { ${displayName} } from '${importHint}';\n\`\`\`\n`);
+  }
+
+  if (docs.features?.length) {
+    sections.push('## Features\n');
+    sections.push(docs.features.map(f => `- ${f}`).join('\n') + '\n');
+  }
+
+  // Props
+  if ('props' in docs) {
+    sections.push('## Props\n');
+    sections.push(formatPropsTable(docs.props) + '\n');
+  }
+
+  if ('components' in docs) {
+    for (const comp of docs.components) {
+      sections.push(`### ${comp.name}\n`);
+      sections.push(comp.description + '\n');
+      sections.push(formatPropsTable(comp.props) + '\n');
+    }
+  }
+
+  // Limited examples (max 3)
+  const examples = docs.examples?.slice(0, 3) || [];
+  if (examples.length) {
+    sections.push('## Usage\n');
+    for (const ex of examples) {
+      if (ex.label) sections.push(`### ${ex.label}\n`);
+      sections.push('```tsx\n' + ex.code + '\n```\n');
+    }
+  }
+
+  if (docs.keyboard) {
+    sections.push('## Keyboard\n');
+    sections.push(docs.keyboard + '\n');
+  }
+
+  if (docs.notes?.length) {
+    sections.push('## Notes\n');
+    sections.push(docs.notes.map(n => `- ${n}`).join('\n') + '\n');
+  }
+
+  return sections.join('\n');
+}
+
+/**
+ * Format a brief, LLM-optimized summary (replaces extractBrief).
+ *
+ * Format: component signature + key props + one usage example.
+ * Targets ~200-400 chars per component (vs ~2-3KB for --compact).
+ *
+ * For multi-component docs, extracts the entry matching componentName.
+ */
+export function formatBrief(docs, componentName, importHint) {
+  const displayName = componentName.startsWith('XDS')
+    ? componentName
+    : `XDS${componentName}`;
+
+  // Find the right props and examples for this component
+  let props = [];
+  let description = docs.description;
+  let examples = docs.examples || [];
+
+  if ('props' in docs) {
+    props = docs.props;
+  } else if ('components' in docs) {
+    const entry = docs.components.find(c => c.name === displayName);
+    if (entry) {
+      props = entry.props;
+      description = entry.description;
+      examples = entry.examples || docs.examples || [];
+    }
+  }
+
+  // Build signature from union-type props
+  const signatureProps = [];
+  const otherProps = [];
+
+  for (const prop of props) {
+    if (prop.type.includes('|') && !prop.type.includes('ReactNode')) {
+      const values = prop.type
+        .replace(/['"]/g, '')
+        .split('|')
+        .map(v => v.trim())
+        .join('|');
+      signatureProps.push(`${prop.name}: ${values}`);
+    } else if (prop.required) {
+      otherProps.unshift(`${prop.name}: ${prop.type.split('|')[0].trim()}`);
+    } else {
+      otherProps.push(prop.name);
+    }
+  }
+
+  // Build output
+  const output = [];
+
+  // Signature line
+  const sigStr =
+    signatureProps.length > 0
+      ? `${displayName}(${signatureProps.join(', ')})`
+      : displayName;
+  output.push(importHint ? `${sigStr}  ← from '${importHint}'` : sigStr);
+
+  // Description (shortened)
+  if (description) {
+    const shortDesc =
+      description.length > 80
+        ? description.slice(0, 77) + '...'
+        : description;
+    output.push(`  ${shortDesc}`);
+  }
+
+  // Other props
+  if (otherProps.length > 0) {
+    output.push(`  ${otherProps.join(' · ')}`);
+  }
+
+  // First code example
+  if (examples.length > 0) {
+    const code = examples[0].code;
+    const codeLine =
+      code.split('\n').find(l => l.trim().startsWith('<XDS')) ||
+      code.split('\n')[0];
+    output.push(`  ${codeLine.trim()}`);
+  }
+
+  return output.join('\n') + '\n';
+}
+
+/**
+ * Format only the props tables (replaces extractProps).
+ */
+export function formatProps(docs, componentName) {
+  if ('props' in docs) {
+    return `## Props\n\n${formatPropsTable(docs.props)}\n`;
+  }
+
+  if ('components' in docs) {
+    const sections = [];
+    for (const comp of docs.components) {
+      sections.push(`### ${comp.name} Props\n`);
+      sections.push(formatPropsTable(comp.props) + '\n');
+    }
+    return sections.join('\n');
+  }
+
+  return `No props documentation found for ${componentName}.\n`;
+}
+
+/**
+ * Format brief summaries for ALL components in one output.
+ */
+export async function formatBriefAll(coreDir) {
+  const components = discoverComponents(coreDir);
+  const output = [];
+
+  for (const [category, comps] of Object.entries(components)) {
+    output.push(`## ${category}\n`);
+    for (const comp of comps) {
+      const readmePath = findComponentReadme(coreDir, comp);
+      if (readmePath) {
+        const docs = await loadDocs(readmePath);
+        const importPath = resolveImportPath(coreDir, comp);
+        output.push(formatBrief(docs, comp, importPath));
+      } else {
+        output.push(`XDS${comp}\n  (no docs)\n`);
+      }
+    }
+  }
+
+  return output.join('\n');
 }
 
 export function registerComponent(program) {
