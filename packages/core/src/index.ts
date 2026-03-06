@@ -45,6 +45,7 @@ export * from './Table';
 export * from './Token';
 export * from './Typeahead';
 export * from './Tokenizer';
+export * from './CommandPalette';
 export * from './Dialog';
 export * from './DropdownMenu';
 export * from './MoreMenu';

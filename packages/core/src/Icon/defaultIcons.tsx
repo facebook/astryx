@@ -169,4 +169,12 @@ export const defaultIcons: XDSIconRegistry = {
       <circle cx="19" cy="12" r="1.5" />
     </svg>
   ),
+
+  /** 🔍 — magnifying glass (search) */
+  search: (
+    <svg {...svgProps}>
+      <circle cx="11" cy="11" r="8" />
+      <path d="M21 21l-4.35-4.35" />
+    </svg>
+  ),
 };

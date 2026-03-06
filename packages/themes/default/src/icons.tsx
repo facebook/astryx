@@ -22,6 +22,7 @@ import {
   InformationCircleIcon,
   Bars3Icon,
   EllipsisHorizontalIcon,
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 
 import {
@@ -52,4 +53,5 @@ export const defaultIconRegistry: XDSIconRegistry = {
   externalLink: <ArrowTopRightOnSquareIcon {...iconProps} />,
   menu: <Bars3Icon {...iconProps} />,
   moreHorizontal: <EllipsisHorizontalIcon {...iconProps} />,
+  search: <MagnifyingGlassIcon {...iconProps} />,
 };
