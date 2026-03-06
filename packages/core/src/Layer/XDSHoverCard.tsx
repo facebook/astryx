@@ -5,7 +5,7 @@
  * @position Layer component; uses display:contents wrapper to avoid cloneElement
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Layer/README.md
+ * - /packages/core/src/Layer/Layer.doc.mjs
  * - /packages/core/src/Layer/XDSHoverCard.test.tsx
  * - /packages/core/src/Layer/index.ts
  * - /apps/storybook/stories/HoverCard.stories.tsx

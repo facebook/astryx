@@ -5,7 +5,7 @@
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Badge/README.md (props table, features, implementation notes)
+ * - /packages/core/src/Badge/Badge.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Badge/XDSBadge.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Badge/index.ts (exports if types change)
  * - /apps/storybook/stories/Badge.stories.tsx (storybook stories)

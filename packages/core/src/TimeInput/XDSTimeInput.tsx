@@ -5,7 +5,7 @@
  * @position Core implementation; consumed by index.ts, tested by XDSTimeInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/TimeInput/README.md (props table, features, implementation notes)
+ * - /packages/core/src/TimeInput/TimeInput.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/TimeInput/XDSTimeInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/TimeInput/index.ts (exports if types change)
  * - /apps/storybook/stories/TimeInput.stories.tsx (storybook stories)

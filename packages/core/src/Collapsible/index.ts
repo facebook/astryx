@@ -4,7 +4,7 @@
  * @output Exports components, hook, and types
  * @position Entry point for @xds/core/Collapsible module
  *
- * SYNC: When modified, update /packages/core/src/Collapsible/README.md
+ * SYNC: When modified, update /packages/core/src/Collapsible/Collapsible.doc.mjs
  */
 
 export {XDSCollapsible} from './XDSCollapsible';

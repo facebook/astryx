@@ -83,7 +83,7 @@ const icons: Partial<XDSIconRegistry> = {
 
 When no theme is active, components use built-in lightweight SVG fallbacks.
 
-See the [Icon README](../Icon/README.md) for the full list of semantic names.
+See the [Icon docs](../Icon/Icon.doc.mjs) for the full list of semantic names.
 
 ### Adding icons to a custom theme
 

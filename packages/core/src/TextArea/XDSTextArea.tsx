@@ -5,7 +5,7 @@
  * @position Core implementation; consumed by index.ts, tested by XDSTextArea.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/TextArea/README.md (props table, features, implementation notes)
+ * - /packages/core/src/TextArea/TextArea.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/TextArea/XDSTextArea.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/TextArea/index.ts (exports if types change)
  * - /apps/storybook/stories/TextArea.stories.tsx (storybook stories)

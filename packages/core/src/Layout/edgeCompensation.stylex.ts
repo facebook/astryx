@@ -41,7 +41,7 @@
  * by Divider and Section for edge-to-edge bleeds in both directions — we don't
  * want to overload it with a value that only represents one axis.
  *
- * SYNC: When modified, update /packages/core/src/Layout/README.md
+ * SYNC: When modified, update /packages/core/src/Layout/Layout.doc.mjs
  */
 
 import * as stylex from '@stylexjs/stylex';

@@ -18,7 +18,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Icon/IconRegistry.tsx (XDSIconName type if names change)
- * - /packages/core/src/Icon/README.md (fallback icon documentation)
+ * - /packages/core/src/Icon/Icon.doc.mjs (fallback icon documentation)
  */
 
 import type {XDSIconRegistry} from './IconRegistry';

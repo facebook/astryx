@@ -4,7 +4,7 @@
  * @output Exports XDSTabList, XDSTab, XDSTabMenu and their types
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  *
- * SYNC: When modified, update this header and /packages/core/src/TabList/README.md
+ * SYNC: When modified, update this header and /packages/core/src/TabList/TabList.doc.mjs
  */
 
 export {XDSTabList} from './XDSTabList';

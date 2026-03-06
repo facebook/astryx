@@ -5,7 +5,7 @@
  * @position Core implementation; consumed by index.ts, tested by XDSTextInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/TextInput/README.md (props table, features, implementation notes)
+ * - /packages/core/src/TextInput/TextInput.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/TextInput/XDSTextInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/TextInput/index.ts (exports if types change)
  * - /apps/storybook/stories/TextInput.stories.tsx (storybook stories)

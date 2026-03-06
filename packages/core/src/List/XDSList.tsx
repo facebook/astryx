@@ -5,7 +5,7 @@
  * @position Core implementation; consumed by index.ts, tested by XDSList.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/List/README.md
+ * - /packages/core/src/List/List.doc.mjs
  * - /packages/core/src/List/XDSList.test.tsx
  * - /packages/core/src/List/index.ts
  * - /apps/storybook/stories/List.stories.tsx

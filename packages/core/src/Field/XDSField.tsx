@@ -5,7 +5,7 @@
  * @position Core implementation; consumed by index.ts, tested by XDSField.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Field/README.md (props table, features, implementation notes)
+ * - /packages/core/src/Field/Field.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Field/XDSField.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Field/index.ts (exports if types change)
  * - /apps/storybook/stories/Field.stories.tsx (storybook stories)

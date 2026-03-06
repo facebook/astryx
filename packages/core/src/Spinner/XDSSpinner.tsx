@@ -5,7 +5,7 @@
  * @position Core implementation of spinner loading indicator
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Spinner/README.md
+ * - /packages/core/src/Spinner/Spinner.doc.mjs
  * - /packages/core/src/Spinner/XDSSpinner.test.tsx
  * - /packages/core/src/Spinner/index.ts
  * - /apps/storybook/stories/Spinner.stories.tsx

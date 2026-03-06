@@ -5,7 +5,7 @@
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/ProgressBar/README.md (props table, features, implementation notes)
+ * - /packages/core/src/ProgressBar/ProgressBar.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/ProgressBar/XDSProgressBar.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/ProgressBar/index.ts (exports if types change)
  * - /apps/storybook/stories/ProgressBar.stories.tsx (storybook stories)

@@ -5,7 +5,7 @@
  * @position Sub-component of XDSAvatar; renders a size-aware status indicator
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Avatar/README.md (features, files table)
+ * - /packages/core/src/Avatar/Avatar.doc.mjs (features, files table)
  * - /packages/core/src/Avatar/index.ts (exports)
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
  */

@@ -4,7 +4,7 @@
  * @output Exports XDS layout system
  * @position Entry point for @xds/core/Layout
  *
- * SYNC: When modified, update /packages/core/src/Layout/README.md
+ * SYNC: When modified, update /packages/core/src/Layout/Layout.doc.mjs
  */
 
 // Container utility

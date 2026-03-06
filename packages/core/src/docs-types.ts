@@ -14,17 +14,32 @@
  * @example
  * {name: 'label', type: 'string', description: 'Visible label text', required: true}
  * {name: 'size', type: "'sm' | 'md' | 'lg'", description: 'Control size', default: "'md'"}
+ * {name: 'onChange', type: '(value: string) => void', description: 'Called when value changes.'}
  */
 export interface PropDoc {
-  /** Prop name exactly as used in JSX. e.g. `"onChange"`, `"isDisabled"` */
+  /** Prop name exactly as used in JSX, camelCased.
+   *  Callbacks start with `on` (`"onChange"`, `"onToggle"`).
+   *  Booleans use `is`/`has` prefix (`"isDisabled"`, `"hasHover"`). */
   name: string;
-  /** TypeScript type signature as a string. Use single quotes inside unions.
-   *  e.g. `"string"`, `"boolean"`, `"'sm' | 'md' | 'lg'"`, `"(value: string) => void"` */
+  /** TypeScript type signature as a string. Use single quotes for string
+   *  literal unions. Keep close to the actual TS type.
+   *
+   *  Simple: `"string"`, `"boolean"`, `"ReactNode"`
+   *  Union: `"'primary' | 'secondary' | 'ghost'"`
+   *  Function: `"(checked: boolean, e: ChangeEvent) => void"`
+   *  Async: `"(e: MouseEvent) => void | Promise<void>"`
+   *  Generic: `"XDSTableColumn<T>[]"` */
   type: string;
-  /** What this prop does, in one sentence. */
+  /** What this prop does, in 1-2 sentences. Focus on behavior and
+   *  consequences rather than restating the prop name.
+   *
+   *  Good: `"Shows a loading spinner and disables interaction."`
+   *  Weak: `"Shows a loading spinner."` */
   description: string;
   /** Default value as a string, if the prop is optional and has one.
-   *  e.g. `"false"`, `"'md'"`, `"'balanced'"`. Omit if no default. */
+   *  String literals in single quotes: `"'md'"`, `"'balanced'"`.
+   *  Other values unquoted: `"false"`, `"0"`, `"() => true"`.
+   *  Omit entirely for required props or optional props with no default. */
   default?: string;
   /** True if the prop must be provided. Omit (don't set to false) if optional. */
   required?: boolean;
@@ -32,18 +47,21 @@ export interface PropDoc {
 
 /**
  * A usage example showing the component in JSX. Examples should progress
- * from simple to complex. Include 2-5 examples per component.
+ * from basic to advanced. Include 2-5 examples per component (complex
+ * components like Table or Layer may justify more).
  *
  * @example
  * {label: 'Basic', code: '<XDSButton variant="primary">Save</XDSButton>'}
  * {label: 'With icon', code: '<XDSButton icon={PlusIcon} variant="secondary">Add</XDSButton>'}
  */
 export interface Example {
-  /** Short label describing this example. e.g. `"Basic"`, `"With icon"`,
-   *  `"24-hour format"`. Omit only for trivial single-example components. */
+  /** Short descriptive title in sentence case, 2-8 words.
+   *  e.g. `"Basic"`, `"With icon"`, `"Rich cell content with renderCell"`.
+   *  Omit only for trivial single-example sub-components. */
   label?: string;
-  /** TSX code string. Can be a single JSX expression or a multi-line snippet.
-   *  Use template literals for multi-line code. */
+  /** JSX code string. Use regular strings for single-line snippets and
+   *  template literals for multi-line code. Prefer realistic variable names
+   *  (`users`, `transactions`) over generic ones (`data`, `value1`). */
   code: string;
 }
 
@@ -57,9 +75,12 @@ export interface Example {
  * {name: 'track', description: 'Slider track background'}
  */
 export interface ThemingSurface {
-  /** Surface key as used in the theme object. e.g. `"root"`, `"trigger"`, `"dropdown"` */
+  /** Surface key as used in the theme object, always camelCase.
+   *  e.g. `"root"`, `"track"`, `"filledTrack"`, `"headerRow"`, `"bodyCell"` */
   name: string;
-  /** What this surface styles, in a few words. */
+  /** Short noun phrase describing the DOM element or visual region.
+   *  No trailing period. e.g. `"Outer wrapper element"`,
+   *  `"Animated circular thumb inside the track"` */
   description: string;
 }
 
@@ -69,12 +90,15 @@ export interface ThemingSurface {
  * XDSBaseTable, XDSTableRow, XDSTableCell, XDSTableHeaderCell).
  *
  * Also use for hooks with config objects (e.g. useXDSTableSelection) —
- * treat config options as "props".
+ * treat config options as "props". Order components with the primary/most-used
+ * component first.
  */
 export interface ComponentEntry {
-  /** Full export name including XDS prefix. e.g. `"XDSTableRow"`, `"XDSDialogHeader"` */
+  /** Full export name including XDS prefix. e.g. `"XDSTableRow"`,
+   *  `"XDSDialogHeader"`, `"useXDSTableSelection"` */
   name: string;
-  /** One-sentence description of what this specific component does. */
+  /** One-sentence description of what this specific component does.
+   *  For sub-components, explain the role within the parent composition. */
   description: string;
   /** All public props for this component. */
   props: PropDoc[];
@@ -87,39 +111,48 @@ export interface ComponentEntry {
  * Do not use this interface directly — use `ComponentDoc` (the union type).
  */
 interface BaseDoc {
-  /** Display name for the component directory. Usually the directory name
-   *  without the XDS prefix. e.g. `"Button"`, `"Table"`, `"TextInput"` */
+  /** Directory name without the XDS prefix, PascalCase.
+   *  e.g. `"Button"`, `"Table"`, `"TextInput"`, `"AppShell"` */
   name: string;
-  /** One-sentence summary of what this component (or component group) does.
-   *  Should be concise enough for a listing. */
+  /** One-sentence summary of the component or component group.
+   *  Be specific enough to differentiate from similar components.
+   *  e.g. `"Data-driven table with rich cell content via renderCell."` */
   description: string;
   /** Top-level usage examples showing the component in real scenarios.
    *  For multi-component dirs, these show how the components work together.
-   *  Include 2-5 examples progressing from basic to advanced. */
+   *  Start with the most common usage pattern, then progress to advanced.
+   *  Include 2-5 examples (complex components may justify more). */
   examples: Example[];
   /** Key capabilities as short bullet points. Each string is one feature.
-   *  e.g. `"Accessible — uses native checkbox semantics"`,
-   *  `"Supports density variants: compact, balanced, spacious"` */
+   *  Strongly recommended even though optional — all existing components
+   *  include this field. Use "Category: details" format.
+   *  e.g. `"Variants: 'primary', 'secondary', 'ghost', 'destructive'"`,
+   *  `"Single & range modes: pass a number or [number, number]"` */
   features?: string[];
-  /** Theming configuration. Include this if the component supports
+  /** Theming configuration. Include only if the component supports
    *  style overrides via the theme's `ComponentStyles`. */
   theming?: {
     /** The key used in the theme's `components` object.
-     *  e.g. `"button"`, `"switch"`, `"table"` — always lowercase. */
+     *  Always lowercase, matches the directory name.
+     *  e.g. `"button"`, `"switch"`, `"table"` */
     componentKey: string;
     /** All styleable surfaces this component exposes. */
     surfaces: ThemingSurface[];
   };
-  /** Accessibility notes — ARIA patterns, screen reader behavior,
-   *  keyboard interaction details not covered by the `keyboard` field.
-   *  Each string is one self-contained note. */
+  /** Accessibility notes — ARIA patterns, screen reader behavior.
+   *  Each string is one self-contained, declarative note.
+   *  e.g. `"Uses native <dialog> with showModal() for correct ARIA modal semantics."`,
+   *  `"Selection plugin sets aria-selected on selected body rows"` */
   accessibility?: string[];
-  /** Keyboard interaction summary. Short prose describing key bindings.
-   *  e.g. `"↑↓ navigate, Enter/Space select, Escape close, Home/End jump"` */
+  /** Keyboard interaction summary as a single string. Separate bindings
+   *  with semicolons or commas. Use key names like `Arrow keys`, `Enter/Space`,
+   *  `Escape`, `Tab/Shift+Tab`, `Home/End`.
+   *  e.g. `"Space toggles the switch; Tab/Shift+Tab moves focus in and out"` */
   keyboard?: string;
   /** Additional technical notes — architecture decisions, performance
    *  considerations, implementation details, caveats. Each string is one
-   *  self-contained note. Use for anything that doesn't fit the other fields. */
+   *  self-contained note. Do not duplicate information from `features`,
+   *  `accessibility`, or `keyboard`. */
   notes?: string[];
 }
 

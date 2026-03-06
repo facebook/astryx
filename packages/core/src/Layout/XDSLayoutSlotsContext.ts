@@ -5,7 +5,7 @@
  * @position Context for layout slot information
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Layout/XDSLayout/README.md
+ * - /packages/core/src/Layout/Layout.doc.mjs
  * - /packages/core/src/Layout/XDSLayout/index.ts
  */
 

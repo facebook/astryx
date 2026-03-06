@@ -4,7 +4,7 @@
  * @output StyleX utility for stack item styling
  * @position Layout utility; used by XDSStackItem and directly by components
  *
- * SYNC: When modified, update /packages/core/src/Layout/README.md
+ * SYNC: When modified, update /packages/core/src/Stack/Stack.doc.mjs
  */
 
 import * as stylex from '@stylexjs/stylex';

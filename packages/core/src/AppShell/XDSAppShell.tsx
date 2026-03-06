@@ -7,7 +7,7 @@
  *   Use for any app that needs a top nav, side navigation, and scrollable content.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/AppShell/README.md
+ * - /packages/core/src/AppShell/AppShell.doc.mjs
  * - /packages/core/src/AppShell/index.ts
  * - /packages/core/src/AppShell/XDSAppShell.test.tsx
  * - /apps/storybook/stories/AppShell.stories.tsx

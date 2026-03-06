@@ -5,7 +5,7 @@
  * @position Hook; consumed by XDSText.tsx, XDSHeading.tsx
  *
  * SYNC: When modified, update:
- * - /packages/core/src/Text/README.md
+ * - /packages/core/src/Text/Text.doc.mjs
  */
 
 'use client';

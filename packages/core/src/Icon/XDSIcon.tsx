@@ -11,7 +11,7 @@
  *   theme's icon registry (or built-in fallback SVGs) and wrapped in a styled span.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Icon/README.md (props table, features, implementation notes)
+ * - /packages/core/src/Icon/Icon.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Icon/XDSIcon.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Icon/index.ts (exports if types change)
  * - /apps/storybook/stories/Icon.stories.tsx (storybook stories)

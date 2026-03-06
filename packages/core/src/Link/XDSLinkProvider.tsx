@@ -18,7 +18,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Link/index.ts
- * - /packages/core/src/Link/README.md
+ * - /packages/core/src/Link/Link.doc.mjs
  */
 
 'use client';

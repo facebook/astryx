@@ -5,7 +5,7 @@
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/TopNav/README.md
+ * - /packages/core/src/TopNav/TopNav.doc.mjs
  * - /packages/core/src/TopNav/XDSTopNav.test.tsx
  * - /packages/core/src/TopNav/index.ts
  * - /apps/storybook/stories/TopNav.stories.tsx

@@ -5,7 +5,7 @@
  * @position Sub-component; used inside XDSTable for header cells
  *
  * SYNC: When modified, update:
- * - /packages/core/src/Table/README.md
+ * - /packages/core/src/Table/Table.doc.mjs
  * - /packages/core/src/Table/index.ts
  */
 

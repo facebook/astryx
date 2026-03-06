@@ -12,7 +12,7 @@
  * - /packages/core/src/Link/XDSLinkProvider.tsx
  * - /packages/core/src/Link/useXDSLinkComponent.ts
  * - /packages/core/src/Link/index.ts
- * - /packages/core/src/Link/README.md
+ * - /packages/core/src/Link/Link.doc.mjs
  */
 
 'use client';

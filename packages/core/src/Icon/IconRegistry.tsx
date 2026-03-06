@@ -5,7 +5,7 @@
  * @position Core icon infrastructure; consumed by components that need internal icons
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Icon/README.md (features, usage)
+ * - /packages/core/src/Icon/Icon.doc.mjs (features, usage)
  * - /packages/core/src/Icon/index.ts (exports)
  * - /packages/core/src/Icon/defaultIcons.tsx (fallback icon set)
  */

@@ -7,7 +7,7 @@
  * Section grouping for navigation items with optional title and end content.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/SideNav/README.md
+ * - /packages/core/src/SideNav/SideNav.doc.mjs
  * - /packages/core/src/SideNav/XDSSideNav.test.tsx
  * - /packages/core/src/SideNav/index.ts
  * - /apps/storybook/stories/SideNav.stories.tsx

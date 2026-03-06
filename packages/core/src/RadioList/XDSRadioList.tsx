@@ -5,7 +5,7 @@
  * @position Core implementation; consumed by index.ts, tested by XDSRadioList.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/RadioList/README.md
+ * - /packages/core/src/RadioList/RadioList.doc.mjs
  * - /packages/core/src/RadioList/XDSRadioList.test.tsx
  * - /packages/core/src/RadioList/index.ts
  * - /apps/storybook/stories/RadioList.stories.tsx

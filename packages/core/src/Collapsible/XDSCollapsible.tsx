@@ -12,7 +12,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Collapsible/index.ts (exports)
- * - /packages/core/src/Collapsible/README.md
+ * - /packages/core/src/Collapsible/Collapsible.doc.mjs
  * - /apps/storybook/stories/Collapsible.stories.tsx
  */
 

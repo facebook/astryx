@@ -6,7 +6,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Collapsible/XDSCollapsibleGroup.tsx (provider)
- * - /packages/core/src/Collapsible/README.md
+ * - /packages/core/src/Collapsible/Collapsible.doc.mjs
  */
 
 'use client';

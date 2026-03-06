@@ -5,7 +5,7 @@
  * @position Core implementation; consumed by index.ts, tested by XDSButton.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Button/README.md (props table, features, implementation notes)
+ * - /packages/core/src/Button/Button.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Button/XDSButton.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Button/index.ts (exports if types change)
  * - /apps/storybook/stories/Button.stories.tsx (storybook stories)

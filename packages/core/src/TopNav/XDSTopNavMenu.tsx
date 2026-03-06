@@ -5,7 +5,7 @@
  * @position Navigation item with hover-triggered overflow menu for XDSTopNav
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/TopNav/README.md
+ * - /packages/core/src/TopNav/TopNav.doc.mjs
  * - /packages/core/src/TopNav/XDSTopNavMenu.test.tsx
  * - /packages/core/src/TopNav/index.ts
  */

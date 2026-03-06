@@ -5,7 +5,7 @@
  * @position Type foundation; consumed by XDSBaseTable and extended by XDSTable
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Table/README.md (type descriptions)
+ * - /packages/core/src/Table/Table.doc.mjs (type descriptions)
  * - /packages/core/src/Table/index.ts (exports if types change)
  */
 

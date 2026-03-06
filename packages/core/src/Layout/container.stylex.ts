@@ -4,7 +4,7 @@
  * @output StyleX utility for layout container styling
  * @position Layout utility; used by XDSCard, XDSSection components
  *
- * SYNC: When modified, update /packages/core/src/Layout/README.md
+ * SYNC: When modified, update /packages/core/src/Layout/Layout.doc.mjs
  */
 
 import * as stylex from '@stylexjs/stylex';

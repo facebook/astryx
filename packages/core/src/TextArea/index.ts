@@ -4,7 +4,7 @@
  * @output Exports XDSTextArea, XDSTextAreaProps, XDSTextAreaStatus, XDSTextAreaStatusType
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  *
- * SYNC: When modified, update this header and /packages/core/src/TextArea/README.md
+ * SYNC: When modified, update this header and /packages/core/src/TextArea/TextArea.doc.mjs
  */
 
 export {XDSTextArea} from './XDSTextArea';

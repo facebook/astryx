@@ -4,7 +4,7 @@
  * @output Exports XDSAppShell and related types
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  *
- * SYNC: When modified, update this header and /packages/core/src/AppShell/README.md
+ * SYNC: When modified, update this header and /packages/core/src/AppShell/AppShell.doc.mjs
  */
 
 export {XDSAppShell} from './XDSAppShell';

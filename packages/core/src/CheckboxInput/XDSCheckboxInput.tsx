@@ -5,7 +5,7 @@
  * @position Core implementation; consumed by index.ts, tested by XDSCheckboxInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/CheckboxInput/README.md (props table, features, implementation notes)
+ * - /packages/core/src/CheckboxInput/CheckboxInput.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/CheckboxInput/XDSCheckboxInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/CheckboxInput/index.ts (exports if types change)
  * - /apps/storybook/stories/CheckboxInput.stories.tsx (storybook stories)

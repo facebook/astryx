@@ -12,7 +12,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Collapsible/index.ts (exports)
- * - /packages/core/src/Collapsible/README.md
+ * - /packages/core/src/Collapsible/Collapsible.doc.mjs
  *
  * NOTE: Public hooks use the `useXDS` prefix per XDS naming conventions.
  */

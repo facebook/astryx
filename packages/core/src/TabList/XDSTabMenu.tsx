@@ -5,7 +5,7 @@
  * @position Menu trigger button; opens dropdown of overflow menu items
  *
  * SYNC: When modified, update:
- * - /packages/core/src/TabList/README.md
+ * - /packages/core/src/TabList/TabList.doc.mjs
  * - /packages/core/src/TabList/index.ts
  * - /packages/core/src/TabList/XDSTabList.test.tsx
  */

@@ -9,7 +9,7 @@
  * the nav wrapper.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/TopNav/README.md
+ * - /packages/core/src/TopNav/TopNav.doc.mjs
  * - /packages/core/src/TopNav/index.ts
  */
 

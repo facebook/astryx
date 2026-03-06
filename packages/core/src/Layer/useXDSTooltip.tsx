@@ -5,7 +5,7 @@
  * @position Layer hook; builds on useXDSLayer for tooltip behavior
  *
  * SYNC: When modified, update:
- * - /packages/core/src/Layer/README.md
+ * - /packages/core/src/Layer/Layer.doc.mjs
  * - /packages/core/src/Layer/index.ts
  */
 

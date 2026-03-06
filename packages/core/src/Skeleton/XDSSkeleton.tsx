@@ -5,7 +5,7 @@
  * @position Core implementation of skeleton loading placeholder
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Skeleton/README.md
+ * - /packages/core/src/Skeleton/Skeleton.doc.mjs
  * - /packages/core/src/Skeleton/index.ts
  * - /apps/storybook/stories/Skeleton.stories.tsx
  */

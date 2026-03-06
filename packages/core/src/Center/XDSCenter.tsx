@@ -5,7 +5,7 @@
  * @position Center component for centering children horizontally/vertically
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Center/README.md
+ * - /packages/core/src/Center/Center.doc.mjs
  * - /packages/core/src/Center/XDSCenter.test.tsx
  * - /apps/storybook/stories/Center.stories.tsx
  */

@@ -5,7 +5,7 @@
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update:
- * - /packages/core/src/Selector/README.md
+ * - /packages/core/src/Selector/Selector.doc.mjs
  * - /packages/core/src/Selector/index.ts
  */
 

@@ -5,7 +5,7 @@
  * @position Core container component; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Breadcrumbs/README.md
+ * - /packages/core/src/Breadcrumbs/Breadcrumbs.doc.mjs
  * - /packages/core/src/Breadcrumbs/XDSBreadcrumbs.test.tsx
  * - /packages/core/src/Breadcrumbs/index.ts
  * - /apps/storybook/stories/Breadcrumbs.stories.tsx
