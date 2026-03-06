@@ -17,7 +17,6 @@ import {
   CodeBracketIcon,
   GlobeAltIcon,
   UserCircleIcon,
-  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 
 // =============================================================================
@@ -155,7 +154,7 @@ export const MultipleMenus: Story = {
 export const MegaMenu: Story = {
   name: 'Mega Menu',
   render: function MegaMenuStory() {
-    const [menuOpen, setMenuOpen] = useState(false);
+    const [, setMenuOpen] = useState(false);
 
     return (
       <div style={{position: 'relative'}}>

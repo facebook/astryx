@@ -298,7 +298,7 @@ describe('XDSTokenizer', () => {
   });
 
   it('renders tokens as direct children of wrapper (not in a sub-container)', () => {
-    const {container} = render(
+    const {container: _container} = render(
       <XDSTokenizer
         label="Members"
         searchSource={userSource}

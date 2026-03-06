@@ -12,9 +12,11 @@
  * `className`, `style`, and `data-testid`.
  *
  * @example
+ * ```
  * {name: 'label', type: 'string', description: 'Visible label text', required: true}
  * {name: 'size', type: "'sm' | 'md' | 'lg'", description: 'Control size', default: "'md'"}
  * {name: 'onChange', type: '(value: string) => void', description: 'Called when value changes.'}
+ * ```
  */
 export interface PropDoc {
   /** Prop name exactly as used in JSX, camelCased.
@@ -51,8 +53,10 @@ export interface PropDoc {
  * components like Table or Layer may justify more).
  *
  * @example
+ * ```
  * {label: 'Basic', code: '<XDSButton variant="primary">Save</XDSButton>'}
  * {label: 'With icon', code: '<XDSButton icon={PlusIcon} variant="secondary">Add</XDSButton>'}
+ * ```
  */
 export interface Example {
   /** Short descriptive title in sentence case, 2-8 words.
@@ -71,8 +75,10 @@ export interface Example {
  * `trigger`, `track`) that map to internal styled elements.
  *
  * @example
+ * ```
  * {name: 'root', description: 'Outer wrapper element'}
  * {name: 'track', description: 'Slider track background'}
+ * ```
  */
 export interface ThemingSurface {
   /** Surface key as used in the theme object, always camelCase.

@@ -328,9 +328,7 @@ describe('XDSToken text overflow', () => {
   });
 
   it('label element has overflow styles when onClick is provided', () => {
-    const {container} = render(
-      <XDSToken label="A very long clickable label" onClick={() => {}} />,
-    );
+    const {container: _container} = render();
     // In onClick mode, the label is inside the invisible button
     const button = screen.getByRole('button', {
       name: 'A very long clickable label',
