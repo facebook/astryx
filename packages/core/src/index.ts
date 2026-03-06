@@ -46,6 +46,9 @@ export * from './Token';
 export * from './Typeahead';
 export * from './Tokenizer';
 export * from './CommandPalette';
+
+// Keyboard shortcut display
+export * from './Kbd';
 export * from './Dialog';
 export * from './DropdownMenu';
 export * from './MoreMenu';

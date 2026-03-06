@@ -19,16 +19,17 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSDialog} from '../Dialog';
 import {CommandPaletteContext} from './CommandPaletteContext';
 import {defaultFilter} from './filter';
 import type {CommandPaletteFilterFn} from './types';
 
 const styles = stylex.create({
-  dialog: {
-    // Override dialog defaults for command palette appearance
+  content: {
+    display: 'flex',
+    flexDirection: 'column',
     overflow: 'hidden',
+    height: '100%',
   },
 });
 
@@ -87,11 +88,6 @@ export interface XDSCommandPaletteProps {
   maxHeight?: number | string;
 
   /**
-   * StyleX overrides for the dialog container.
-   */
-  xstyle?: StyleXStyles;
-
-  /**
    * Composable content: XDSCommandPaletteInput, XDSCommandPaletteList, etc.
    *
    * @example
@@ -112,12 +108,12 @@ export interface XDSCommandPaletteProps {
 /**
  * Command palette root component.
  *
- * Composes with XDSDialog for modal behavior and provides context
- * for composable sub-components (Input, List, Item, Group, etc.).
+ * Composes with XDSDialog for modal behavior (top layer, backdrop,
+ * focus trapping, dismiss on Escape/backdrop click) and provides
+ * context for composable sub-components (Input, List, Item, Group).
  *
- * Supports two usage patterns:
- * 1. Composable (Layer 1): Render sub-components directly as children
- * 2. Provider (Layer 2): Use XDSCommandPaletteProvider for distributed command registration
+ * Positioned at top-center of the viewport, matching the standard
+ * command palette convention (Cmd+K in VS Code, Linear, etc.).
  */
 export function XDSCommandPalette({
   isShown,
@@ -129,7 +125,6 @@ export function XDSCommandPalette({
   label = 'Command palette',
   width = 640,
   maxHeight = 480,
-  xstyle,
   children,
 }: XDSCommandPaletteProps) {
   const listId = useId();
@@ -152,13 +147,10 @@ export function XDSCommandPalette({
 
   const registerItem = useCallback(
     (itemValue: string, isDisabled?: boolean) => {
-      itemsRef.current = [
-        ...itemsRef.current,
-        {value: itemValue, isDisabled},
-      ];
+      itemsRef.current = [...itemsRef.current, {value: itemValue, isDisabled}];
       return () => {
         itemsRef.current = itemsRef.current.filter(
-          (item) => item.value !== itemValue,
+          item => item.value !== itemValue,
         );
       };
     },
@@ -215,11 +207,11 @@ export function XDSCommandPalette({
       onHide={handleHide}
       width={width}
       maxHeight={maxHeight}
+      position={{top: '15vh'}}
       purpose="info"
-      aria-label={label}
-      {...stylex.props(styles.dialog, xstyle)}>
+      aria-label={label}>
       <CommandPaletteContext.Provider value={contextValue}>
-        {children}
+        <div {...stylex.props(styles.content)}>{children}</div>
       </CommandPaletteContext.Provider>
     </XDSDialog>
   );

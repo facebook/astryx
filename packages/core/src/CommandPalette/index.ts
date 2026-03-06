@@ -7,7 +7,7 @@
  * SYNC: When modified, update /packages/core/src/CommandPalette/README.md
  */
 
-// Layer 1: Composable primitives
+// Layer 1: Composable primitives — the CommandPalette family
 export {XDSCommandPalette} from './XDSCommandPalette';
 export type {XDSCommandPaletteProps} from './XDSCommandPalette';
 
@@ -17,44 +17,42 @@ export type {XDSCommandPaletteInputProps} from './XDSCommandPaletteInput';
 export {XDSCommandPaletteList} from './XDSCommandPaletteList';
 export type {XDSCommandPaletteListProps} from './XDSCommandPaletteList';
 
+// Items: consumers should use XDSListItem directly inside XDSCommandPaletteList.
+// XDSCommandPaletteItem is kept for backward compatibility but composes XDSListItem.
 export {XDSCommandPaletteItem} from './XDSCommandPaletteItem';
 export type {XDSCommandPaletteItemProps} from './XDSCommandPaletteItem';
 
+// Group: kept as a family-specific component (heading + role="group")
 export {XDSCommandPaletteGroup} from './XDSCommandPaletteGroup';
 export type {XDSCommandPaletteGroupProps} from './XDSCommandPaletteGroup';
 
-export {XDSCommandPaletteEmpty} from './XDSCommandPaletteEmpty';
-export type {XDSCommandPaletteEmptyProps} from './XDSCommandPaletteEmpty';
+// Layer 2: Provider for distributed command registration
+export {XDSCommandPaletteProvider} from './XDSCommandPaletteProvider';
 
-export {XDSCommandPaletteLoading} from './XDSCommandPaletteLoading';
-export type {XDSCommandPaletteLoadingProps} from './XDSCommandPaletteLoading';
+// Hooks
+export {useXDSCommandPaletteHistory} from './useXDSCommandPaletteHistory';
 
+// Utilities
+export {defaultFilter as commandPaletteFilter} from './filter';
+
+// Types
+export type {CommandPaletteFilterFn} from './types';
+
+// ---- Deprecated re-exports ----
+// These are thin wrappers around existing XDS primitives.
+// Use XDSDivider, XDSEmptyState, XDSSpinner, XDSKbd directly instead.
+
+/** @deprecated Use XDSKbd from @xds/core instead */
+export {XDSCommandPaletteShortcut} from './XDSCommandPaletteShortcut';
+
+/** @deprecated Use XDSDivider directly */
 export {XDSCommandPaletteSeparator} from './XDSCommandPaletteSeparator';
 
-export {XDSCommandPaletteShortcut} from './XDSCommandPaletteShortcut';
-export type {XDSCommandPaletteShortcutProps} from './XDSCommandPaletteShortcut';
+/** @deprecated Use XDSEmptyState or XDSText directly */
+export {XDSCommandPaletteEmpty} from './XDSCommandPaletteEmpty';
 
+/** @deprecated Use XDSSpinner + XDSText directly */
+export {XDSCommandPaletteLoading} from './XDSCommandPaletteLoading';
+
+/** @deprecated Compose footer content directly */
 export {XDSCommandPaletteFooter} from './XDSCommandPaletteFooter';
-export type {XDSCommandPaletteFooterProps} from './XDSCommandPaletteFooter';
-
-// Layer 2: Registry provider
-export {
-  XDSCommandPaletteProvider,
-  useXDSCommandPalette,
-  useXDSCommandPaletteRegister,
-} from './XDSCommandPaletteProvider';
-export type {XDSCommandPaletteProviderProps} from './XDSCommandPaletteProvider';
-
-// Layer 3: Optional history
-export {useXDSCommandPaletteHistory} from './useXDSCommandPaletteHistory';
-export type {
-  CommandPaletteHistoryOptions,
-  CommandPaletteHistoryEntry,
-} from './useXDSCommandPaletteHistory';
-
-// Shared types
-export type {
-  XDSCommand,
-  CommandItemRenderProps,
-  CommandPaletteFilterFn,
-} from './types';
