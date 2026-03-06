@@ -384,7 +384,6 @@
     "@babel/preset-react": "^7.28.5",
     "@babel/preset-typescript": "^7.28.5",
     "@stylexjs/babel-plugin": "^0.18.1",
-    "@stylexjs/esbuild-plugin": "^0.18.1",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",
     "esbuild-plugin-babel": "^0.2.3"
