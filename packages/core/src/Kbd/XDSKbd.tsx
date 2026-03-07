@@ -1,11 +1,16 @@
 /**
- * @file XDSCommandPaletteShortcut.tsx
- * @input Uses React, StyleX
- * @output Exports XDSCommandPaletteShortcut component
- * @position Sub-component; keyboard shortcut display
+ * @file XDSKbd.tsx
+ * @input Uses React, StyleX, theme tokens
+ * @output Exports XDSKbd component and XDSKbdProps
+ * @position Core implementation; renders styled keyboard shortcut indicators
+ *
+ * SYNC: When modified, update:
+ * - /packages/core/src/Kbd/README.md
+ * - /packages/core/src/Kbd/index.ts
  */
 
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
@@ -18,10 +23,9 @@ import {
 
 const styles = stylex.create({
   wrapper: {
-    display: 'flex',
+    display: 'inline-flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
-    marginInlineStart: 'auto',
     flexShrink: 0,
   },
   kbd: {
@@ -60,35 +64,42 @@ const KEY_DISPLAY: Record<string, string> = {
   right: '\u2192',
 };
 
-export interface XDSCommandPaletteShortcutProps {
+export interface XDSKbdProps {
   /**
    * Keyboard shortcut string. Use "+" to separate keys.
    * Special keys: mod (Cmd on Mac), ctrl, alt, shift, enter, backspace, escape.
    *
    * @example
    * ```
-   * "mod+k", "mod+shift+p", "enter"
+   * "mod+k"
+   * "mod+shift+p"
+   * "enter"
    * ```
    */
   keys: string;
+
+  /**
+   * StyleX overrides for the wrapper element.
+   */
+  xstyle?: StyleXStyles;
 }
 
 /**
  * Displays a keyboard shortcut as styled <kbd> elements.
  *
+ * A general-purpose component for rendering keyboard shortcuts
+ * anywhere in the system — tooltips, menus, documentation, etc.
+ *
  * @example
  * ```
- * <XDSCommandPaletteShortcut keys="mod+k" />
- * // Renders: ⌘ K
+ * <XDSKbd keys="mod+k" />
  * ```
  */
-export function XDSCommandPaletteShortcut({
-  keys,
-}: XDSCommandPaletteShortcutProps) {
+export function XDSKbd({keys, xstyle}: XDSKbdProps) {
   const parts = keys.split('+').map(key => key.trim().toLowerCase());
 
   return (
-    <span {...stylex.props(styles.wrapper)} aria-hidden="true">
+    <span {...stylex.props(styles.wrapper, xstyle)} aria-hidden="true">
       {parts.map((key, i) => (
         <kbd key={i} {...stylex.props(styles.kbd)}>
           {KEY_DISPLAY[key] ?? key.toUpperCase()}
@@ -98,4 +109,4 @@ export function XDSCommandPaletteShortcut({
   );
 }
 
-XDSCommandPaletteShortcut.displayName = 'XDSCommandPaletteShortcut';
+XDSKbd.displayName = 'XDSKbd';

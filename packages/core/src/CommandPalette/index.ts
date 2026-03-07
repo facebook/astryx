@@ -7,7 +7,7 @@
  * SYNC: When modified, update /packages/core/src/CommandPalette/README.md
  */
 
-// Layer 1: Composable primitives
+// Layer 1: Composable primitives — the CommandPalette family
 export {XDSCommandPalette} from './XDSCommandPalette';
 export type {XDSCommandPaletteProps} from './XDSCommandPalette';
 
@@ -23,21 +23,7 @@ export type {XDSCommandPaletteItemProps} from './XDSCommandPaletteItem';
 export {XDSCommandPaletteGroup} from './XDSCommandPaletteGroup';
 export type {XDSCommandPaletteGroupProps} from './XDSCommandPaletteGroup';
 
-export {XDSCommandPaletteEmpty} from './XDSCommandPaletteEmpty';
-export type {XDSCommandPaletteEmptyProps} from './XDSCommandPaletteEmpty';
-
-export {XDSCommandPaletteLoading} from './XDSCommandPaletteLoading';
-export type {XDSCommandPaletteLoadingProps} from './XDSCommandPaletteLoading';
-
-export {XDSCommandPaletteSeparator} from './XDSCommandPaletteSeparator';
-
-export {XDSCommandPaletteShortcut} from './XDSCommandPaletteShortcut';
-export type {XDSCommandPaletteShortcutProps} from './XDSCommandPaletteShortcut';
-
-export {XDSCommandPaletteFooter} from './XDSCommandPaletteFooter';
-export type {XDSCommandPaletteFooterProps} from './XDSCommandPaletteFooter';
-
-// Layer 2: Registry provider
+// Layer 2: Provider for distributed command registration
 export {
   XDSCommandPaletteProvider,
   useXDSCommandPalette,
@@ -45,16 +31,11 @@ export {
 } from './XDSCommandPaletteProvider';
 export type {XDSCommandPaletteProviderProps} from './XDSCommandPaletteProvider';
 
-// Layer 3: Optional history
+// Hooks
 export {useXDSCommandPaletteHistory} from './useXDSCommandPaletteHistory';
-export type {
-  CommandPaletteHistoryOptions,
-  CommandPaletteHistoryEntry,
-} from './useXDSCommandPaletteHistory';
 
-// Shared types
-export type {
-  XDSCommand,
-  CommandItemRenderProps,
-  CommandPaletteFilterFn,
-} from './types';
+// Utilities
+export {defaultFilter as commandPaletteFilter} from './filter';
+
+// Types
+export type {CommandPaletteFilterFn} from './types';
