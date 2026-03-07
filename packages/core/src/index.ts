@@ -53,6 +53,7 @@ export * from './TreeList';
 
 // Keyboard shortcut display
 export * from './Kbd';
+export * from './CommandPalette';
 export * from './Dialog';
 export * from './DropdownMenu';
 export * from './MoreMenu';
