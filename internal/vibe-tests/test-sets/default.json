@@ -273,7 +273,8 @@
       "prompt": "An autocomplete input that fetches suggestions from an API as you type",
       "expectedComponents": [
         "XDSTextInput",
-        "XDSCard"
+        "XDSCard",
+        "XDSTypeahead"
       ],
       "complexity": "moderate",
       "followUps": [

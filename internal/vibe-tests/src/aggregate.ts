@@ -118,8 +118,8 @@ function analyzeJobBreakdown(
 
     // Imports
     if (stripped.startsWith('import')) {
-      if (target === 'xds') {
-        // XDS: imports from @xds/core are component routing
+      if (target === 'xds' || target === 'xds-tailwind') {
+        // XDS/XDS+Tailwind: imports from @xds/core are component routing
         if (line.includes('XDS') || line.includes('@xds')) {
           jobs.componentRouting += chars;
         } else {
@@ -146,7 +146,8 @@ function analyzeJobBreakdown(
       continue;
     }
 
-    // StyleX styles block - XDS only, this is supplemental styling
+    // StyleX styles block - XDS (pure) only, this is supplemental styling
+    // For xds-tailwind, StyleX should not appear (Tailwind replaces it)
     if (target === 'xds') {
       if (line.includes('stylex.create')) {
         inStyles = true;
@@ -160,8 +161,11 @@ function analyzeJobBreakdown(
       }
     }
 
-    // For baseline: inline style objects are supplemental (escape hatch)
-    if (target === 'baseline' && line.includes('style={{')) {
+    // For baseline/xds-tailwind: inline style objects are supplemental (escape hatch)
+    if (
+      (target === 'baseline' || target === 'xds-tailwind') &&
+      line.includes('style={{')
+    ) {
       jobs.supplementalStyling += chars;
       continue;
     }
@@ -182,7 +186,7 @@ function analyzeJobBreakdown(
     }
 
     // JSX with components and props
-    if (target === 'xds') {
+    if (target === 'xds' || target === 'xds-tailwind') {
       // XDS component patterns
       const propPatterns = [
         'label=',
@@ -270,7 +274,10 @@ function analyzeJobBreakdown(
 
     // JSX structure (html elements)
     if (/<\/?[a-z]/.test(line)) {
-      if (target === 'xds' && line.includes('XDS')) {
+      if (
+        (target === 'xds' || target === 'xds-tailwind') &&
+        line.includes('XDS')
+      ) {
         // Already handled above
       } else {
         jobs.contentAuthoring += chars;
@@ -615,7 +622,7 @@ function detectEscapeHatches(
   // Check for hardcoded colors (hex, rgb, hsl in StyleX style definitions)
   // Only flag colors in stylex.create() blocks, not in data objects
   // Dynamic data colors (like user-defined label colors) are acceptable
-  if (target === 'xds') {
+  if (target === 'xds' || target === 'xds-tailwind') {
     // Match colors specifically in style property contexts (after colon with property name)
     // Skip if the color is a variable reference (like label.color) or data property
     const hardcodedColorRegex =
@@ -642,8 +649,9 @@ function detectEscapeHatches(
 
   // Check for hardcoded spacing (px values in padding, margin, gap)
   // Skip for baseline since Tailwind classes handle this differently
+  // For xds-tailwind, flag hardcoded spacing (should use Tailwind utilities instead)
   // Note: width/height are dimension constraints, not spacing - they're acceptable
-  if (target === 'xds') {
+  if (target === 'xds' || target === 'xds-tailwind') {
     // Only match true spacing properties, not dimensions
     const hardcodedSpacingRegex =
       /(?:padding|margin|gap|paddingTop|paddingBottom|paddingLeft|paddingRight|paddingBlock|paddingInline|marginTop|marginBottom|marginLeft|marginRight|marginBlock|marginInline|rowGap|columnGap)\s*:\s*['"]?\d+px['"]?/gi;
@@ -680,7 +688,9 @@ function detectEscapeHatches(
       detail:
         target === 'xds'
           ? 'Inline style object instead of StyleX'
-          : 'Inline style object instead of Tailwind',
+          : target === 'xds-tailwind'
+            ? 'Inline style object instead of Tailwind className'
+            : 'Inline style object instead of Tailwind',
       codeSnippet: match[0],
     });
   }
@@ -692,7 +702,7 @@ function detectEscapeHatches(
       type: 'wrapper_div',
       severity: 'acceptable',
       detail:
-        target === 'xds'
+        target === 'xds' || target === 'xds-tailwind'
           ? 'Wrapper div that could potentially use XDS layout components'
           : 'Wrapper div (common in Tailwind patterns)',
       codeSnippet: match[0],
@@ -722,7 +732,7 @@ function detectEscapeHatches(
   }
 
   // Check for hallucinated props - target-specific
-  if (target === 'xds') {
+  if (target === 'xds' || target === 'xds-tailwind') {
     // XDS-specific hallucination checks
     const hallucinatedProps = [
       {pattern: /variant\s*=\s*["']outline["']/g, prop: 'variant="outline"'},
@@ -771,7 +781,7 @@ function detectEscapeHatches(
 
   // Check for hardcoded typography values (fontSize, fontWeight, lineHeight, fontFamily)
   // These should use XDSText/XDSHeading type system or design tokens
-  if (target === 'xds') {
+  if (target === 'xds' || target === 'xds-tailwind') {
     // Hardcoded fontSize (raw px/rem/em values, not via var(--text-*))
     const hardcodedFontSizeRegex =
       /fontSize\s*:\s*['"]?\d+(?:\.\d+)?(?:px|rem|em)['"]?/gi;
