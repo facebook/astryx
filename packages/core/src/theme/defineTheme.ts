@@ -139,10 +139,8 @@ export interface XDSDefineThemeInput {
 export interface XDSDefinedTheme {
   /** Theme name */
   name: string;
-  /** Resolved token values (overrides merged with defaults) */
+  /** Token overrides — only the tokens the consumer specified */
   tokens: Record<string, string>;
-  /** Only the overridden tokens (for CSS generation) */
-  overrides: Record<string, string>;
   /** Component style overrides */
   components?: XDSComponentStyleMap;
   /** Icon registry */
@@ -155,7 +153,8 @@ export interface XDSDefinedTheme {
 // All defaults merged into a single flat map
 // =============================================================================
 
-const allDefaults: Record<string, string> = {
+/** All XDS token defaults as a flat map. Useful for resolving full token sets. */
+export const xdsTokenDefaults: Record<string, string> = {
   ...colorDefaults,
   ...spacingDefaults,
   ...sizeDefaults,
@@ -191,29 +190,25 @@ function resolveTokenValue(value: XDSTokenValue): string {
  * inherits from the XDS defaults.
  */
 export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
-  const overrides: Record<string, string> = {};
+  const tokens: Record<string, string> = {};
 
   if (input.tokens) {
     for (const [key, value] of Object.entries(input.tokens)) {
       if (value !== undefined) {
-        if (!(key in allDefaults)) {
+        if (!(key in xdsTokenDefaults)) {
           console.warn(
             `[XDS] defineTheme("${input.name}"): unknown token "${key}". ` +
               `Run "npx xds docs tokens" to see valid token names.`,
           );
         }
-        overrides[key] = resolveTokenValue(value);
+        tokens[key] = resolveTokenValue(value);
       }
     }
   }
 
-  // Merge: defaults + overrides
-  const tokens = {...allDefaults, ...overrides};
-
   return {
     name: input.name,
     tokens,
-    overrides,
     components: input.components,
     icons: input.icons,
   };
@@ -240,7 +235,7 @@ export function generateThemeCSS(theme: XDSDefinedTheme): string {
   const scopeSelector = `[data-xds-theme="${theme.name}"]`;
 
   // Token overrides — applied to the scope root itself
-  const tokenEntries = Object.entries(theme.overrides);
+  const tokenEntries = Object.entries(theme.tokens);
   if (tokenEntries.length > 0) {
     const declarations = tokenEntries
       .map(([prop, value]) => `    ${prop}: ${value};`)
@@ -281,6 +276,6 @@ export function isDefinedTheme(theme: unknown): theme is XDSDefinedTheme {
     theme !== null &&
     'name' in theme &&
     'tokens' in theme &&
-    'overrides' in theme
+    !('styles' in theme)
   );
 }

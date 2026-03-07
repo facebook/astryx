@@ -403,7 +403,6 @@ export const ${toIdentifier(themeDef.name)}Theme = {
   name: '${themeDef.name}',
   __built: true,
   tokens: ${tokensStr},
-  overrides: ${tokensStr},
 ${iconsField}
 };
 `;

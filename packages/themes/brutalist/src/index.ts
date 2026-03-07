@@ -65,5 +65,22 @@ export const brutalistTheme = defineTheme({
         borderTopColor: 'var(--color-text-primary)',
       },
     },
+    // Headings are aggressive
+    heading: {
+      base: {
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+      },
+    },
+    // Body text is monospace too
+    text: {
+      base: {
+        fontFamily: '"Courier New", "Courier", monospace',
+      },
+      'type:code': {
+        backgroundColor: 'var(--color-wash)',
+        padding: '2px 4px',
+      },
+    },
   },
 });

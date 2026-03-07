@@ -12,7 +12,12 @@
  */
 
 export {XDSTheme, useXDSTheme, Theme, useTheme} from './XDSTheme';
-export {defineTheme, generateThemeCSS, isDefinedTheme} from './defineTheme';
+export {
+  defineTheme,
+  generateThemeCSS,
+  isDefinedTheme,
+  xdsTokenDefaults,
+} from './defineTheme';
 export type {
   XDSDefineThemeInput,
   XDSDefinedTheme,
