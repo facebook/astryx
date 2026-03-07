@@ -302,40 +302,12 @@ export function generatePageRange(
  * or cursor-based pagination.
  *
  * @example
- * ```tsx
- * // Page number buttons (default)
+ * ```
  * <XDSPagination
  *   page={page}
  *   onChange={setPage}
  *   totalItems={200}
  *   pageSize={20}
- * />
- *
- * // Count display below a table
- * <XDSPagination
- *   page={page}
- *   onChange={setPage}
- *   totalItems={200}
- *   pageSize={20}
- *   variant="count"
- *   pageSizeOptions={[10, 20, 50]}
- *   onPageSizeChange={setPageSize}
- *   size="sm"
- * />
- *
- * // Cursor-based (no total known)
- * <XDSPagination
- *   page={page}
- *   onChange={setPage}
- *   hasMore={data.hasNextPage}
- * />
- *
- * // Carousel dots
- * <XDSPagination
- *   page={slideIndex}
- *   onChange={setSlideIndex}
- *   totalPages={slides.length}
- *   variant="dots"
  * />
  * ```
  */

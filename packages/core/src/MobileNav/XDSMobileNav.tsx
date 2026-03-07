@@ -235,11 +235,7 @@ export interface XDSMobileNavProps {
  * No manual z-index needed — the browser's top layer handles stacking.
  *
  * @example
- * ```tsx
- * const [isOpen, setIsOpen] = useState(false);
- *
- * <XDSButton label="Menu" onClick={() => setIsOpen(true)} />
- *
+ * ```
  * <XDSMobileNav
  *   isOpen={isOpen}
  *   onOpenChange={(open) => setIsOpen(open)}

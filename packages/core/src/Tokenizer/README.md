@@ -1,4 +1,4 @@
-# /packages/core/src/Tokenizer
+# Tokenizer
 
 Multi-select typeahead with token chips for selected items.
 

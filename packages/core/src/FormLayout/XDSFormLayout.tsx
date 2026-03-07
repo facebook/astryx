@@ -108,32 +108,11 @@ export interface XDSFormLayoutProps extends Omit<
  * Supports nesting — a horizontal layout inside a vertical layout works naturally.
  *
  * @example
- * ```tsx
- * // Vertical (default) — simple form
+ * ```
  * <XDSFormLayout>
  *   <XDSTextInput label="Name" value={name} onChange={setName} />
  *   <XDSTextInput label="Email" value={email} onChange={setEmail} />
  * </XDSFormLayout>
- *
- * // Horizontal — related fields side by side
- * <XDSFormLayout direction="horizontal">
- *   <XDSTextInput label="First Name" value={first} onChange={setFirst} />
- *   <XDSTextInput label="Last Name" value={last} onChange={setLast} />
- * </XDSFormLayout>
- *
- * // Horizontal labels — settings panel pattern
- * <XDSFormLayout direction="horizontal-labels">
- *   <XDSTextInput label="Display Name" value={name} onChange={setName} />
- *   <XDSSelector label="Timezone" value={tz} onChange={setTz} options={tzs} />
- * </XDSFormLayout>
- *
- * // Dialog composition via HTML form attribute
- * <form id="edit-form" onSubmit={handleSubmit}>
- *   <XDSFormLayout>
- *     <XDSTextInput label="Name" value={name} onChange={setName} />
- *   </XDSFormLayout>
- * </form>
- * <XDSButton label="Save" type="submit" form="edit-form" />
  * ```
  */
 export const XDSFormLayout = forwardRef<HTMLDivElement, XDSFormLayoutProps>(

@@ -1,4 +1,4 @@
-# /packages/core/src/Typeahead
+# Typeahead
 
 Searchable dropdown components for single-item selection with keyboard navigation.
 
