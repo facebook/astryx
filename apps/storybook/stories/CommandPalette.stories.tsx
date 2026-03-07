@@ -3,30 +3,13 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {
   XDSCommandPalette,
   XDSCommandPaletteInput,
+  XDSCommandPaletteList,
+  XDSCommandPaletteItem,
+  XDSCommandPaletteGroup,
+  XDSCommandPaletteFooter,
 } from '@xds/core/CommandPalette';
 import {XDSButton} from '@xds/core/Button';
-import {XDSText} from '@xds/core/Text';
 import {XDSDivider} from '@xds/core/Divider';
-import * as stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  list: {
-    flex: 1,
-    overflowY: 'auto',
-    padding: '8px',
-  },
-  item: {
-    padding: '8px 12px',
-    borderRadius: '6px',
-    cursor: 'pointer',
-  },
-  footer: {
-    padding: '8px 16px',
-    display: 'flex',
-    justifyContent: 'flex-end',
-    gap: '8px',
-  },
-});
 
 const meta: Meta<typeof XDSCommandPalette> = {
   title: 'Core/XDSCommandPalette',
@@ -55,24 +38,35 @@ const meta: Meta<typeof XDSCommandPalette> = {
 export default meta;
 type Story = StoryObj<typeof XDSCommandPalette>;
 
+const ALL_ITEMS = [
+  {value: 'dashboard', label: 'Go to Dashboard', group: 'Navigation'},
+  {value: 'settings', label: 'Open Settings', group: 'Navigation'},
+  {value: 'profile', label: 'View Profile', group: 'Navigation'},
+  {value: 'dark-mode', label: 'Toggle Dark Mode', group: 'Actions'},
+  {value: 'new-file', label: 'Create New File', group: 'Actions'},
+  {value: 'search', label: 'Search Files', group: 'Actions'},
+];
+
 /**
- * The command palette with the real input component and placeholder list content.
+ * Full command palette with input, grouped items, and footer.
  */
 export const Default: Story = {
   render: function Render() {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
+    const [highlighted, setHighlighted] = useState(0);
 
-    const items = [
-      'Go to Dashboard',
-      'Search Files',
-      'Toggle Dark Mode',
-      'Open Settings',
-      'Create New File',
-    ];
+    const filtered = ALL_ITEMS.filter(item =>
+      item.label.toLowerCase().includes(search.toLowerCase()),
+    );
 
-    const filtered = items.filter(item =>
-      item.toLowerCase().includes(search.toLowerCase()),
+    const groups = filtered.reduce(
+      (acc, item) => {
+        if (!acc[item.group]) acc[item.group] = [];
+        acc[item.group].push(item);
+        return acc;
+      },
+      {} as Record<string, typeof ALL_ITEMS>,
     );
 
     return (
@@ -84,29 +78,35 @@ export const Default: Story = {
         <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
           <XDSCommandPaletteInput
             value={search}
-            onValueChange={setSearch}
+            onValueChange={v => {
+              setSearch(v);
+              setHighlighted(0);
+            }}
             placeholder="Type a command..."
           />
           <XDSDivider />
-          <div {...stylex.props(styles.list)}>
-            {filtered.length > 0 ? (
-              filtered.map(item => (
-                <div key={item} {...stylex.props(styles.item)}>
-                  <XDSText type="body">{item}</XDSText>
-                </div>
-              ))
-            ) : (
-              <XDSText type="body" color="secondary">
-                No results found
-              </XDSText>
-            )}
-          </div>
-          <XDSDivider />
-          <div {...stylex.props(styles.footer)}>
-            <XDSText type="body" size="sm" color="secondary">
-              ESC to close
-            </XDSText>
-          </div>
+          <XDSCommandPaletteList>
+            {Object.entries(groups).map(([group, items]) => (
+              <XDSCommandPaletteGroup key={group} heading={group}>
+                {items.map(item => {
+                  const flatIndex = filtered.indexOf(item);
+                  return (
+                    <XDSCommandPaletteItem
+                      key={item.value}
+                      value={item.value}
+                      isHighlighted={flatIndex === highlighted}
+                      onSelect={() => {
+                        setIsOpen(false);
+                        setSearch('');
+                      }}>
+                      {item.label}
+                    </XDSCommandPaletteItem>
+                  );
+                })}
+              </XDSCommandPaletteGroup>
+            ))}
+          </XDSCommandPaletteList>
+          <XDSCommandPaletteFooter />
         </XDSCommandPalette>
       </>
     );
@@ -114,23 +114,34 @@ export const Default: Story = {
 };
 
 /**
- * Empty state — just the shell with input and no items.
+ * Flat list without groups.
  */
-export const Empty: Story = {
+export const FlatList: Story = {
   render: function Render() {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
       <>
-        <XDSButton label="Open Empty Palette" onClick={() => setIsOpen(true)} />
+        <XDSButton label="Open Flat Palette" onClick={() => setIsOpen(true)} />
         <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
-          <XDSCommandPaletteInput placeholder="No commands registered..." />
+          <XDSCommandPaletteInput placeholder="Search..." />
           <XDSDivider />
-          <div {...stylex.props(styles.list)}>
-            <XDSText type="body" color="secondary">
-              No results found
-            </XDSText>
-          </div>
+          <XDSCommandPaletteList>
+            <XDSCommandPaletteItem
+              value="home"
+              onSelect={() => setIsOpen(false)}>
+              Go Home
+            </XDSCommandPaletteItem>
+            <XDSCommandPaletteItem
+              value="settings"
+              onSelect={() => setIsOpen(false)}>
+              Settings
+            </XDSCommandPaletteItem>
+            <XDSCommandPaletteItem value="disabled" isDisabled>
+              Disabled Item
+            </XDSCommandPaletteItem>
+          </XDSCommandPaletteList>
+          <XDSCommandPaletteFooter />
         </XDSCommandPalette>
       </>
     );
@@ -138,30 +149,29 @@ export const Empty: Story = {
 };
 
 /**
- * Custom dimensions — narrower and shorter.
+ * With custom footer content.
  */
-export const CustomSize: Story = {
+export const CustomFooter: Story = {
   render: function Render() {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
       <>
-        <XDSButton label="Open Small Palette" onClick={() => setIsOpen(true)} />
-        <XDSCommandPalette
-          isOpen={isOpen}
-          onOpenChange={setIsOpen}
-          width={400}
-          maxHeight={300}>
-          <XDSCommandPaletteInput placeholder="Quick search..." />
+        <XDSButton label="Open Custom Footer" onClick={() => setIsOpen(true)} />
+        <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
+          <XDSCommandPaletteInput placeholder="Search..." />
           <XDSDivider />
-          <div {...stylex.props(styles.list)}>
-            <div {...stylex.props(styles.item)}>
-              <XDSText type="body">Option A</XDSText>
-            </div>
-            <div {...stylex.props(styles.item)}>
-              <XDSText type="body">Option B</XDSText>
-            </div>
-          </div>
+          <XDSCommandPaletteList>
+            <XDSCommandPaletteItem value="a" onSelect={() => setIsOpen(false)}>
+              Option A
+            </XDSCommandPaletteItem>
+            <XDSCommandPaletteItem value="b" onSelect={() => setIsOpen(false)}>
+              Option B
+            </XDSCommandPaletteItem>
+          </XDSCommandPaletteList>
+          <XDSCommandPaletteFooter>
+            <span>Tip: Use ⌘K to open this palette</span>
+          </XDSCommandPaletteFooter>
         </XDSCommandPalette>
       </>
     );
