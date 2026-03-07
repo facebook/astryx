@@ -9,3 +9,6 @@
 
 export {XDSCommandPalette} from './XDSCommandPalette';
 export type {XDSCommandPaletteProps} from './XDSCommandPalette';
+
+export {XDSCommandPaletteInput} from './XDSCommandPaletteInput';
+export type {XDSCommandPaletteInputProps} from './XDSCommandPaletteInput';
