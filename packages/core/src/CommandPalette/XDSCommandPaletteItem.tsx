@@ -105,7 +105,7 @@ export interface XDSCommandPaletteItemProps {
  * <XDSCommandPaletteItem value="settings" onSelect={() => navigate("/settings")}>
  *   <XDSIcon icon="settings" size="sm" />
  *   <span>Settings</span>
- *   <XDSCommandPaletteShortcut keys="mod+," />
+ *   <XDSKbd keys="mod+," />
  * </XDSCommandPaletteItem>
  * ```
  */

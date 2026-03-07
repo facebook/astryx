@@ -20,19 +20,10 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSDialog} from '../Dialog';
 import {CommandPaletteContext} from './CommandPaletteContext';
 import {defaultFilter} from './filter';
 import type {CommandPaletteFilterFn} from './types';
-
-const styles = stylex.create({
-  dialog: {
-    // Override dialog defaults for command palette appearance
-    overflow: 'hidden',
-  },
-});
 
 export interface XDSCommandPaletteProps {
   /**
@@ -90,11 +81,6 @@ export interface XDSCommandPaletteProps {
   maxHeight?: number | string;
 
   /**
-   * StyleX overrides for the dialog container.
-   */
-  xstyle?: StyleXStyles;
-
-  /**
    * Composable content: XDSCommandPaletteInput, XDSCommandPaletteList, etc.
    *
    * @example
@@ -132,7 +118,6 @@ export function XDSCommandPalette({
   label = 'Command palette',
   width = 640,
   maxHeight = 480,
-  xstyle,
   children,
 }: XDSCommandPaletteProps) {
   const listId = useId();
@@ -221,8 +206,7 @@ export function XDSCommandPalette({
       width={width}
       maxHeight={maxHeight}
       purpose="info"
-      aria-label={label}
-      {...stylex.props(styles.dialog, xstyle)}>
+      aria-label={label}>
       <CommandPaletteContext.Provider value={contextValue}>
         {children}
       </CommandPaletteContext.Provider>

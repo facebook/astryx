@@ -12,10 +12,7 @@ import {XDSCommandPaletteInput} from './XDSCommandPaletteInput';
 import {XDSCommandPaletteList} from './XDSCommandPaletteList';
 import {XDSCommandPaletteItem} from './XDSCommandPaletteItem';
 import {XDSCommandPaletteGroup} from './XDSCommandPaletteGroup';
-import {XDSCommandPaletteEmpty} from './XDSCommandPaletteEmpty';
-import {XDSCommandPaletteShortcut} from './XDSCommandPaletteShortcut';
 import {XDSCommandPaletteFooter} from './XDSCommandPaletteFooter';
-import {XDSCommandPaletteLoading} from './XDSCommandPaletteLoading';
 import {useXDSCommandPaletteHistory} from './useXDSCommandPaletteHistory';
 import {defaultFilter} from './filter';
 
@@ -66,28 +63,6 @@ describe('defaultFilter', () => {
 });
 
 // =============================================================================
-// Shortcut display tests
-// =============================================================================
-
-describe('XDSCommandPaletteShortcut', () => {
-  it('renders modifier keys as symbols', () => {
-    const {container} = render(<XDSCommandPaletteShortcut keys="mod+k" />);
-    const kbds = container.querySelectorAll('kbd');
-    expect(kbds).toHaveLength(2);
-    expect(kbds[0].textContent).toBe('\u2318'); // ⌘
-    expect(kbds[1].textContent).toBe('K');
-  });
-
-  it('renders multi-key shortcuts', () => {
-    const {container} = render(
-      <XDSCommandPaletteShortcut keys="mod+shift+p" />,
-    );
-    const kbds = container.querySelectorAll('kbd');
-    expect(kbds).toHaveLength(3);
-  });
-});
-
-// =============================================================================
 // Composable component tests (Layer 1)
 // =============================================================================
 
@@ -129,7 +104,7 @@ describe('XDSCommandPalette (composable)', () => {
       <XDSCommandPalette isOpen={true} onOpenChange={vi.fn()}>
         <XDSCommandPaletteInput />
         <XDSCommandPaletteList>
-          <XDSCommandPaletteEmpty>No results found</XDSCommandPaletteEmpty>
+          <div role="status">No results found</div>
         </XDSCommandPaletteList>
       </XDSCommandPalette>,
     );
@@ -141,7 +116,9 @@ describe('XDSCommandPalette (composable)', () => {
       <XDSCommandPalette isOpen={true} onOpenChange={vi.fn()}>
         <XDSCommandPaletteInput />
         <XDSCommandPaletteList>
-          <XDSCommandPaletteLoading>Searching...</XDSCommandPaletteLoading>
+          <div role="status" aria-live="polite">
+            Searching...
+          </div>
         </XDSCommandPaletteList>
       </XDSCommandPalette>,
     );

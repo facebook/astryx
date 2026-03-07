@@ -26,12 +26,15 @@ import {XDSCommandPaletteInput} from './XDSCommandPaletteInput';
 import {XDSCommandPaletteList} from './XDSCommandPaletteList';
 import {XDSCommandPaletteItem} from './XDSCommandPaletteItem';
 import {XDSCommandPaletteGroup} from './XDSCommandPaletteGroup';
-import {XDSCommandPaletteEmpty} from './XDSCommandPaletteEmpty';
-import {XDSCommandPaletteShortcut} from './XDSCommandPaletteShortcut';
 import {XDSCommandPaletteFooter} from './XDSCommandPaletteFooter';
-import {XDSCommandPaletteLoading} from './XDSCommandPaletteLoading';
+import {XDSKbd} from '../Kbd';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, textSizeVars} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  spacingVars,
+  textSizeVars,
+  typographyVars,
+} from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
 import type {XDSCommand, CommandPaletteFilterFn} from './types';
 
@@ -346,9 +349,18 @@ export function XDSCommandPaletteProvider({
               </XDSCommandPaletteGroup>
             ),
           )}
-          {isFetching && <XDSCommandPaletteLoading />}
+          {isFetching && (
+            <div
+              role="status"
+              aria-live="polite"
+              {...stylex.props(providerStyles.statusMessage)}>
+              Loading...
+            </div>
+          )}
           {!isFetching && allCommands.length === 0 && (
-            <XDSCommandPaletteEmpty>{emptyContent}</XDSCommandPaletteEmpty>
+            <div role="status" {...stylex.props(providerStyles.statusMessage)}>
+              {emptyContent}
+            </div>
           )}
         </XDSCommandPaletteList>
         {footer ?? defaultFooter}
@@ -363,13 +375,24 @@ XDSCommandPaletteProvider.displayName = 'XDSCommandPaletteProvider';
 // Default command item renderer
 // =============================================================================
 
-const commandItemStyles = stylex.create({
+const providerStyles = stylex.create({
   label: {
     flex: 1,
   },
   description: {
     color: colorVars['--color-text-secondary'],
     fontSize: textSizeVars['--text-sm'],
+  },
+  statusMessage: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBlock: spacingVars['--spacing-6'],
+    paddingInline: spacingVars['--spacing-4'],
+    fontFamily: typographyVars['--font-body'],
+    fontSize: textSizeVars['--text-sm'],
+    color: colorVars['--color-text-secondary'],
+    userSelect: 'none',
   },
 });
 
@@ -394,15 +417,13 @@ function CommandItem({command}: {command: XDSCommand}) {
       keywords={command.keywords}
       isDisabled={command.isDisabled}>
       {command.icon && <XDSIcon icon={command.icon} size="sm" />}
-      <span {...stylex.props(commandItemStyles.label)}>{command.label}</span>
+      <span {...stylex.props(providerStyles.label)}>{command.label}</span>
       {command.description && (
-        <span {...stylex.props(commandItemStyles.description)}>
+        <span {...stylex.props(providerStyles.description)}>
           {command.description}
         </span>
       )}
-      {command.shortcut && (
-        <XDSCommandPaletteShortcut keys={command.shortcut} />
-      )}
+      {command.shortcut && <XDSKbd keys={command.shortcut} />}
     </XDSCommandPaletteItem>
   );
 }
