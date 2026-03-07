@@ -23,6 +23,10 @@ XDS is an open source design system born from years of building internal tools a
 npm install @xds/core
 # or
 yarn add @xds/core
+# or
+pnpm add @xds/core
+# or
+bun add @xds/core
 ```
 
 ### 1. Import Base Styles
