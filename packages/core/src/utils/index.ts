@@ -28,3 +28,5 @@ export {
   createISOTimeString,
 } from './timeParser';
 export type {ISOTimeString, ParsedTime} from './timeParser';
+
+export {parseStyleKey} from './parseStyleKey';

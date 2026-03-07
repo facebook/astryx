@@ -12,18 +12,14 @@
  */
 
 export {XDSTheme, useXDSTheme, Theme, useTheme} from './XDSTheme';
-export {
-  defineTheme,
-  generateThemeCSS,
-  getThemeClassName,
-  isDefinedTheme,
-} from './defineTheme';
+export {defineTheme, generateThemeCSS, isDefinedTheme} from './defineTheme';
 export type {
-  DefineThemeInput,
-  DefinedTheme,
+  XDSDefineThemeInput,
+  XDSDefinedTheme,
   XDSTokenName,
-  TokenValue,
-  ComponentStyleMap,
+  XDSTokenValue,
+  XDSComponentStyleMap,
+  XDSStyleOverrides,
 } from './defineTheme';
 
 // Export token defaults and vars for use in custom components and themes

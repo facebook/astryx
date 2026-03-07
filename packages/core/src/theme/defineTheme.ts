@@ -3,7 +3,8 @@
  *
  * Two distribution modes:
  * - Unbuilt: XDSTheme generates CSS and injects a <style> tag at runtime
- * - Built: `npx xds build-theme` pre-compiles to a CSS file; XDSTheme just applies a className
+ * - Built: `npx xds build-theme` pre-compiles to a CSS file; XDSTheme just
+ *   sets the data-xds-theme attribute
  *
  * Token values can be:
  * - A string: used as-is for both light and dark modes
@@ -28,6 +29,7 @@
  */
 
 import type {XDSIconRegistry} from '../Icon/IconRegistry';
+import {parseStyleKey} from '../utils/parseStyleKey';
 import {
   colorDefaults,
   spacingDefaults,
@@ -62,21 +64,24 @@ export type XDSTokenName =
  * Token value — either a single string or a [light, dark] tuple.
  * Tuples are converted to CSS light-dark() at theme creation time.
  */
-export type TokenValue = string | [light: string, dark: string];
+export type XDSTokenValue = string | [light: string, dark: string];
 
 /**
  * CSS property values for a style rule.
  * Keys are camelCase CSS properties, values are CSS strings.
  */
-export type StyleOverrides = Record<string, string>;
+export type XDSStyleOverrides = Record<string, string>;
 
 /**
  * Component style overrides.
  *
- * Each top-level key is a component name. Values are objects where:
- * - `base` — styles for all instances
+ * Each top-level key is a component name (lowercase). Values are objects
+ * mapping style keys to CSS property overrides:
+ * - `base` — styles applied to all instances of the component
  * - `prop:value` — styles when a visual prop matches (e.g. `variant:secondary`)
  * - `prop:value+prop:value` — intersection of multiple props
+ *
+ * The `base` key is optional — omit it to only override specific variants.
  *
  * @example
  * ```tsx
@@ -92,19 +97,23 @@ export type StyleOverrides = Record<string, string>;
  * }
  * ```
  */
-export type ComponentStyleMap = Record<string, Record<string, StyleOverrides>>;
+export type XDSComponentStyleMap = Record<
+  string,
+  Record<string, XDSStyleOverrides>
+>;
 
 /** Input to defineTheme */
-export interface DefineThemeInput {
-  /** Theme name — used for CSS class and identification */
+export interface XDSDefineThemeInput {
+  /** Theme name — used for data-xds-theme attribute and identification */
   name: string;
   /** Token overrides — flat map of CSS custom property names to values.
    *  Values can be a string or [light, dark] tuple.
    *  Only include tokens you want to override; defaults fill the rest. */
-  tokens?: Partial<Record<XDSTokenName, TokenValue>>;
+  tokens?: Partial<Record<XDSTokenName, XDSTokenValue>>;
   /**
    * Component style overrides — keyed by component name (lowercase).
-   * Each entry maps CSS properties to values, scoped under the theme class.
+   * Each entry maps style keys to CSS property overrides, scoped under
+   * the theme's data-xds-theme attribute via @scope.
    *
    * @example
    * ```tsx
@@ -115,17 +124,19 @@ export interface DefineThemeInput {
    *   },
    * }
    * // Generates:
-   * // [data-xds-theme="ocean"] .xds-button { font-weight: 600; }
-   * // [data-xds-theme="ocean"] .xds-button[data-variant="secondary"] { ... }
+   * // @scope ([data-xds-theme="ocean"]) to ([data-xds-theme]) {
+   * //   .xds-button { font-weight: 600; }
+   * //   .xds-button.secondary { background-color: ...; }
+   * // }
    * ```
    */
-  components?: ComponentStyleMap;
+  components?: XDSComponentStyleMap;
   /** Icon registry — maps semantic icon names to React nodes */
   icons?: Partial<XDSIconRegistry>;
 }
 
 /** A defined theme — ready to pass to <XDSTheme> */
-export interface DefinedTheme {
+export interface XDSDefinedTheme {
   /** Theme name */
   name: string;
   /** Resolved token values (overrides merged with defaults) */
@@ -133,13 +144,11 @@ export interface DefinedTheme {
   /** Only the overridden tokens (for CSS generation) */
   overrides: Record<string, string>;
   /** Component style overrides */
-  components?: ComponentStyleMap;
+  components?: XDSComponentStyleMap;
   /** Icon registry */
   icons?: Partial<XDSIconRegistry>;
-  /** Pre-built CSS className — set by build-theme, absent for unbuilt themes */
-  __builtClassName?: string;
-  /** Marker to distinguish from legacy Theme type */
-  __defined: true;
+  /** Whether this theme has been pre-compiled by build-theme CLI */
+  __built?: true;
 }
 
 // =============================================================================
@@ -168,7 +177,7 @@ const allDefaults: Record<string, string> = {
  * - String values pass through as-is
  * - [light, dark] tuples become light-dark(light, dark)
  */
-function resolveTokenValue(value: TokenValue): string {
+function resolveTokenValue(value: XDSTokenValue): string {
   if (Array.isArray(value)) {
     return `light-dark(${value[0]}, ${value[1]})`;
   }
@@ -181,7 +190,7 @@ function resolveTokenValue(value: TokenValue): string {
  * Pass only the tokens you want to override — everything else
  * inherits from the XDS defaults.
  */
-export function defineTheme(input: DefineThemeInput): DefinedTheme {
+export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
   const overrides: Record<string, string> = {};
 
   if (input.tokens) {
@@ -207,7 +216,6 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
     overrides,
     components: input.components,
     icons: input.icons,
-    __defined: true,
   };
 }
 
@@ -224,40 +232,10 @@ function toKebabCase(str: string): string {
 }
 
 /**
- * Parse a component style key into a CSS selector suffix.
- *
- * Uses class names for visual prop values — shorter HTML, easier to inspect.
- * The component class (e.g. .xds-button) disambiguates any value overlaps.
- *
- * Values starting with a digit get prefixed with the prop name since
- * CSS class names can't start with a number.
- *
- * - `base` → '' (no suffix)
- * - `variant:secondary` → '.secondary'
- * - `level:1` → '.level-1'
- * - `variant:destructive+size:sm` → '.destructive.sm'
- */
-function parseStyleKey(key: string): string {
-  if (key === 'base') return '';
-
-  return key
-    .split('+')
-    .map(part => {
-      const [prop, value] = part.split(':');
-      // CSS classes can't start with a digit — prefix with prop name
-      if (/^\d/.test(value)) {
-        return `.${prop}-${value}`;
-      }
-      return `.${value}`;
-    })
-    .join('');
-}
-
-/**
  * Generate CSS rules for a defined theme.
  * Includes token overrides and component style overrides.
  */
-export function generateThemeCSS(theme: DefinedTheme): string {
+export function generateThemeCSS(theme: XDSDefinedTheme): string {
   const parts: string[] = [];
   const scopeSelector = `[data-xds-theme="${theme.name}"]`;
 
@@ -292,24 +270,17 @@ export function generateThemeCSS(theme: DefinedTheme): string {
   return `@scope (${scopeSelector}) to ([data-xds-theme]) {\n${inner}\n}`;
 }
 
-/**
- * Get the className for a defined theme.
- * Built themes use the pre-compiled class; unbuilt themes use the generated one.
- */
-export function getThemeClassName(theme: DefinedTheme): string {
-  return theme.__builtClassName ?? `xds-theme-${theme.name}`;
-}
-
 // =============================================================================
 // Type guard
 // =============================================================================
 
 /** Check if a theme object was created with defineTheme */
-export function isDefinedTheme(theme: unknown): theme is DefinedTheme {
+export function isDefinedTheme(theme: unknown): theme is XDSDefinedTheme {
   return (
     typeof theme === 'object' &&
     theme !== null &&
-    '__defined' in theme &&
-    (theme as DefinedTheme).__defined === true
+    'name' in theme &&
+    'tokens' in theme &&
+    'overrides' in theme
   );
 }

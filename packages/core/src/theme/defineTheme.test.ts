@@ -1,16 +1,10 @@
 import {describe, it, expect, vi} from 'vitest';
-import {
-  defineTheme,
-  generateThemeCSS,
-  getThemeClassName,
-  isDefinedTheme,
-} from './defineTheme';
+import {defineTheme, generateThemeCSS, isDefinedTheme} from './defineTheme';
 
 describe('defineTheme', () => {
-  it('creates a theme with name and marker', () => {
+  it('creates a theme with name', () => {
     const theme = defineTheme({name: 'test'});
     expect(theme.name).toBe('test');
-    expect(theme.__defined).toBe(true);
   });
 
   it('merges overrides with defaults', () => {
@@ -117,19 +111,6 @@ describe('generateThemeCSS', () => {
   it('returns empty string for no overrides', () => {
     const theme = defineTheme({name: 'empty'});
     expect(generateThemeCSS(theme)).toBe('');
-  });
-});
-
-describe('getThemeClassName', () => {
-  it('returns generated class for unbuilt themes', () => {
-    const theme = defineTheme({name: 'ocean'});
-    expect(getThemeClassName(theme)).toBe('xds-theme-ocean');
-  });
-
-  it('returns pre-built class when set', () => {
-    const theme = defineTheme({name: 'ocean'});
-    theme.__builtClassName = 'xds-theme-ocean-abc123';
-    expect(getThemeClassName(theme)).toBe('xds-theme-ocean-abc123');
   });
 });
 
