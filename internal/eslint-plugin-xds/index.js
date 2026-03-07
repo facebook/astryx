@@ -13,6 +13,7 @@
  */
 
 import booleanPropNamingRule from './boolean-prop-naming.js';
+import presentationalComponentRule from './presentational-component.js';
 import docblockExampleFormatRule from './docblock-example-format.js';
 
 // =============================================================================
@@ -215,6 +216,7 @@ const plugin = {
   rules: {
     'no-hardcoded-styles': noHardcodedStylesRule,
     'boolean-prop-naming': booleanPropNamingRule,
+    'presentational-component': presentationalComponentRule,
     'docblock-example-format': docblockExampleFormatRule,
   },
   configs: {},
@@ -228,6 +230,7 @@ plugin.configs.strict = {
   rules: {
     '@xds/no-hardcoded-styles': 'error',
     '@xds/boolean-prop-naming': 'error',
+    '@xds/presentational-component': 'error',
     '@xds/docblock-example-format': 'error',
   },
 };
@@ -240,6 +243,7 @@ plugin.configs.recommended = {
   rules: {
     '@xds/no-hardcoded-styles': 'warn',
     '@xds/boolean-prop-naming': 'warn',
+    '@xds/presentational-component': 'error',
     '@xds/docblock-example-format': 'warn',
   },
 };
