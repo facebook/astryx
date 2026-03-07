@@ -21,12 +21,25 @@ const themes = {
 };
 
 /**
- * Decorator that wraps all stories in the XDS Theme provider
+ * Decorator that wraps all stories in the XDS Theme provider.
+ *
+ * Sets `color-scheme` on the document root so that CSS `light-dark()`
+ * resolves correctly at every level of the page — not just inside the
+ * XDSTheme wrapper div.  Without this, the iframe's `<html>` and
+ * `<body>` keep the browser-default `color-scheme` (typically "light")
+ * and toggling the toolbar has no visible effect.
  */
 const withXDSTheme: Decorator = (Story, context) => {
   // Get theme selection from toolbar
   const themeKey = (context.globals?.xdsTheme || 'default') as string;
   const mode = context.globals?.colorMode === 'dark' ? 'dark' : 'light';
+
+  // Sync color-scheme to the document root so light-dark() works
+  // everywhere, including on <html>/<body> backgrounds and any
+  // elements rendered outside the XDSTheme wrapper.
+  React.useEffect(() => {
+    document.documentElement.style.setProperty('color-scheme', mode);
+  }, [mode]);
 
   // No theme — render with just base defineVars defaults
   if (themeKey === 'none') {
