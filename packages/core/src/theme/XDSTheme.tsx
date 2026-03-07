@@ -189,36 +189,24 @@ export function XDSTheme({
         ? wrapperStyles.light
         : wrapperStyles.system;
 
-  // Build div props
-  let divProps: {className?: string; style?: React.CSSProperties};
-
-  if (defined) {
-    const stylexResult = stylex.props(wrapperStyles.base, colorSchemeStyle);
-    divProps = {
-      className: stylexResult.className,
-      style: stylexResult.style as React.CSSProperties | undefined,
-    };
-  } else {
-    const legacy = theme as LegacyTheme;
-    const stylexResult = stylex.props(
-      wrapperStyles.base,
-      colorSchemeStyle,
-      legacy.styles.colors,
-      legacy.styles.spacing,
-      legacy.styles.size,
-      legacy.styles.radius,
-      legacy.styles.elevation,
-      legacy.styles.transition,
-      legacy.styles.typography,
-      legacy.styles.textSize,
-      legacy.styles.lineHeight,
-      legacy.styles.fontWeight,
-    );
-    divProps = {
-      className: stylexResult.className,
-      style: stylexResult.style as React.CSSProperties | undefined,
-    };
-  }
+  // StyleX props — defined themes only need base + color scheme,
+  // legacy themes also apply all token group styles
+  const stylexProps = defined
+    ? stylex.props(wrapperStyles.base, colorSchemeStyle)
+    : stylex.props(
+        wrapperStyles.base,
+        colorSchemeStyle,
+        (theme as LegacyTheme).styles.colors,
+        (theme as LegacyTheme).styles.spacing,
+        (theme as LegacyTheme).styles.size,
+        (theme as LegacyTheme).styles.radius,
+        (theme as LegacyTheme).styles.elevation,
+        (theme as LegacyTheme).styles.transition,
+        (theme as LegacyTheme).styles.typography,
+        (theme as LegacyTheme).styles.textSize,
+        (theme as LegacyTheme).styles.lineHeight,
+        (theme as LegacyTheme).styles.fontWeight,
+      );
 
   // Icons — from either theme type
   const icons = defined
@@ -237,8 +225,7 @@ export function XDSTheme({
   return (
     <ThemeContext.Provider value={contextValue}>
       <div
-        className={divProps.className}
-        style={divProps.style}
+        {...stylexProps}
         data-xds-theme={
           defined
             ? (theme as XDSDefinedTheme).name
