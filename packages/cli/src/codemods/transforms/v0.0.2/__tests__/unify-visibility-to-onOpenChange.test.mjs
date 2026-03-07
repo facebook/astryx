@@ -27,13 +27,6 @@ describe('unify-visibility-to-onOpenChange', () => {
     expect(output).not.toContain('onHide');
   });
 
-  it('renames onHide to onOpenChange on XDSCommandPalette', async () => {
-    const input = '<XDSCommandPalette onHide={() => setOpen(false)} />';
-    const output = await applyTransform(input);
-    expect(output).toContain('onOpenChange=');
-    expect(output).not.toContain('onHide');
-  });
-
   it('renames onClose to onOpenChange on XDSMobileNav', async () => {
     const input = '<XDSMobileNav onClose={handleClose} />';
     const output = await applyTransform(input);

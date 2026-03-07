@@ -20,7 +20,6 @@ export const meta = {
 const SIMPLE_RENAMES = [
   {component: 'XDSDialog', oldProp: 'onHide'},
   {component: 'XDSDialogHeader', oldProp: 'onHide'},
-  {component: 'XDSCommandPalette', oldProp: 'onHide'},
   {component: 'XDSMobileNav', oldProp: 'onClose'},
   {component: 'XDSDropdownMenu', oldProp: 'onMenuToggle'},
   {component: 'XDSPopover', oldProp: 'onToggle'},

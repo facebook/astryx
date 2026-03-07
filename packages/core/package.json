@@ -100,12 +100,6 @@
       "import": "./dist/Collapsible/index.mjs",
       "require": "./dist/Collapsible/index.js"
     },
-    "./CommandPalette": {
-      "source": "./src/CommandPalette/index.ts",
-      "types": "./dist/CommandPalette/index.d.ts",
-      "import": "./dist/CommandPalette/index.mjs",
-      "require": "./dist/CommandPalette/index.js"
-    },
     "./DateInput": {
       "source": "./src/DateInput/index.ts",
       "types": "./dist/DateInput/index.d.ts",

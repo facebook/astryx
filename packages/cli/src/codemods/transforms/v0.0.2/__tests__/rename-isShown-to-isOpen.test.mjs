@@ -19,13 +19,6 @@ describe('rename-isShown-to-isOpen', () => {
     expect(output).not.toContain('isShown=');
   });
 
-  it('renames isShown on XDSCommandPalette', async () => {
-    const input = '<XDSCommandPalette isShown={visible} onOpenChange={setVisible} />';
-    const output = await applyTransform(input);
-    expect(output).toContain('isOpen={visible}');
-    expect(output).not.toContain('isShown=');
-  });
-
   it('renames isShown on XDSPopover', async () => {
     const input = '<XDSPopover isShown={open} onOpenChange={setOpen} content={<div />}><button /></XDSPopover>';
     const output = await applyTransform(input);
@@ -58,14 +51,12 @@ describe('rename-isShown-to-isOpen', () => {
     const input = `
       <div>
         <XDSDialog isShown={a} onOpenChange={setA}>Dialog</XDSDialog>
-        <XDSCommandPalette isShown={b} onOpenChange={setB} />
         <XDSPopover isShown={c} onOpenChange={setC} content={<div />}><button /></XDSPopover>
       </div>
     `;
     const output = await applyTransform(input);
     expect(output).not.toContain('isShown=');
     expect(output).toContain('isOpen={a}');
-    expect(output).toContain('isOpen={b}');
     expect(output).toContain('isOpen={c}');
   });
 

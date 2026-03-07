@@ -1,16 +1,16 @@
 /**
- * @file Codemod: Rename `isShown` prop to `isOpen` on Dialog, CommandPalette, and Popover
+ * @file Codemod: Rename `isShown` prop to `isOpen` on Dialog and Popover
  * @see https://github.com/facebookexperimental/xds/pull/472
  */
 
 export const meta = {
   title: 'Rename isShown → isOpen',
   description:
-    'Renames the `isShown` prop to `isOpen` on XDSDialog, XDSCommandPalette, and XDSPopover for consistency.',
+    'Renames the `isShown` prop to `isOpen` on XDSDialog and XDSPopover for consistency.',
   pr: '#472',
 };
 
-const TARGET_COMPONENTS = ['XDSDialog', 'XDSCommandPalette', 'XDSPopover'];
+const TARGET_COMPONENTS = ['XDSDialog', 'XDSPopover'];
 
 export default function transformer(file, api) {
   const j = api.jscodeshift;
