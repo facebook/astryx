@@ -69,7 +69,12 @@ export interface XDSKbdProps {
    * Keyboard shortcut string. Use "+" to separate keys.
    * Special keys: mod (Cmd on Mac), ctrl, alt, shift, enter, backspace, escape.
    *
-   * @example "mod+k", "mod+shift+p", "enter"
+   * @example
+   * ```
+   * "mod+k"
+   * "mod+shift+p"
+   * "enter"
+   * ```
    */
   keys: string;
 
