@@ -24,3 +24,9 @@ export type {XDSCommandPaletteGroupProps} from './XDSCommandPaletteGroup';
 
 export {XDSCommandPaletteFooter} from './XDSCommandPaletteFooter';
 export type {XDSCommandPaletteFooterProps} from './XDSCommandPaletteFooter';
+
+export {useCommandPaletteContext} from './CommandPaletteContext';
+export type {CommandPaletteContextValue} from './CommandPaletteContext';
+
+export {defaultFilter} from './filter';
+export type {CommandPaletteFilterFn} from './types';

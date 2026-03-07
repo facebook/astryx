@@ -1,6 +1,6 @@
 /**
  * @file XDSCommandPaletteInput.tsx
- * @input Uses React, StyleX, XDSIcon
+ * @input Uses React, StyleX, XDSIcon, CommandPaletteContext
  * @output Exports XDSCommandPaletteInput component and props
  * @position Search input for the command palette
  *
@@ -12,7 +12,13 @@
 
 'use client';
 
-import {forwardRef, useEffect, useRef, type InputHTMLAttributes} from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useRef,
+  type InputHTMLAttributes,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSIcon} from '../Icon';
 import {
@@ -22,6 +28,7 @@ import {
   typographyVars,
   textSizeVars,
 } from '../theme/tokens.stylex';
+import {useCommandPaletteContext} from './CommandPaletteContext';
 
 const styles = stylex.create({
   wrapper: {
@@ -59,11 +66,13 @@ export interface XDSCommandPaletteInputProps extends Omit<
 > {
   /**
    * The current search value.
+   * When omitted inside XDSCommandPalette, reads from context.
    */
   value?: string;
 
   /**
    * Called when the search value changes.
+   * When omitted inside XDSCommandPalette, writes to context.
    */
   onValueChange?: (value: string) => void;
 
@@ -86,14 +95,16 @@ export interface XDSCommandPaletteInputProps extends Omit<
  * Renders a search icon and a text input. Auto-focuses when mounted
  * so users can start typing immediately.
  *
+ * When used inside XDSCommandPalette, automatically wires to the
+ * context for search state. Can also be used standalone with explicit
+ * value/onValueChange props.
+ *
  * @compositionHint Place as the first child of XDSCommandPalette.
  *
  * @example
  * ```
  * <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
  *   <XDSCommandPaletteInput
- *     value={search}
- *     onValueChange={setSearch}
  *     placeholder="Search commands..."
  *   />
  * </XDSCommandPalette>
@@ -104,16 +115,22 @@ export const XDSCommandPaletteInput = forwardRef<
   XDSCommandPaletteInputProps
 >(function XDSCommandPaletteInput(
   {
-    value,
+    value: controlledValue,
     onValueChange,
     placeholder = 'Search...',
     hasAutoFocus = true,
     onChange,
+    onKeyDown,
     ...props
   },
   ref,
 ) {
+  const ctx = useCommandPaletteContext();
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Use context values as fallback
+  const value = controlledValue ?? ctx?.search;
+  const handleValueChange = onValueChange ?? ctx?.setSearch;
 
   // Merge refs
   const setRefs = (element: HTMLInputElement | null) => {
@@ -129,12 +146,56 @@ export const XDSCommandPaletteInput = forwardRef<
   // Auto-focus on mount
   useEffect(() => {
     if (hasAutoFocus && inputRef.current) {
-      // Use requestAnimationFrame to ensure dialog is open first
       requestAnimationFrame(() => {
         inputRef.current?.focus();
       });
     }
   }, [hasAutoFocus]);
+
+  // Keyboard navigation when context is available
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      onKeyDown?.(e);
+      if (!ctx || e.defaultPrevented) return;
+
+      const items = ctx.items.filter(item => !item.isDisabled);
+      if (items.length === 0) return;
+
+      switch (e.key) {
+        case 'ArrowDown': {
+          e.preventDefault();
+          ctx.setHighlightedIndex(
+            Math.min(ctx.highlightedIndex + 1, items.length - 1),
+          );
+          break;
+        }
+        case 'ArrowUp': {
+          e.preventDefault();
+          ctx.setHighlightedIndex(Math.max(ctx.highlightedIndex - 1, 0));
+          break;
+        }
+        case 'Home': {
+          e.preventDefault();
+          ctx.setHighlightedIndex(0);
+          break;
+        }
+        case 'End': {
+          e.preventDefault();
+          ctx.setHighlightedIndex(items.length - 1);
+          break;
+        }
+        case 'Enter': {
+          e.preventDefault();
+          const highlighted = items[ctx.highlightedIndex];
+          if (highlighted) {
+            ctx.selectItem(highlighted.value);
+          }
+          break;
+        }
+      }
+    },
+    [ctx, onKeyDown],
+  );
 
   return (
     <div {...stylex.props(styles.wrapper)}>
@@ -147,12 +208,21 @@ export const XDSCommandPaletteInput = forwardRef<
         role="combobox"
         aria-expanded={true}
         aria-autocomplete="list"
+        aria-controls={ctx?.listId}
+        aria-activedescendant={
+          ctx && ctx.highlightedIndex >= 0
+            ? `${ctx.listId}-item-${ctx.highlightedIndex}`
+            : undefined
+        }
         placeholder={placeholder}
         value={value}
         onChange={e => {
-          onValueChange?.(e.target.value);
+          handleValueChange?.(e.target.value);
           onChange?.(e);
+          // Reset highlight when search changes
+          ctx?.setHighlightedIndex(0);
         }}
+        onKeyDown={handleKeyDown}
         {...stylex.props(styles.input)}
         {...props}
       />

@@ -9,6 +9,7 @@ import {
   XDSCommandPaletteFooter,
 } from '@xds/core/CommandPalette';
 import {XDSButton} from '@xds/core/Button';
+import {XDSIcon} from '@xds/core/Icon';
 import {XDSDivider} from '@xds/core/Divider';
 
 const meta: Meta<typeof XDSCommandPalette> = {
@@ -38,73 +39,57 @@ const meta: Meta<typeof XDSCommandPalette> = {
 export default meta;
 type Story = StoryObj<typeof XDSCommandPalette>;
 
-const ALL_ITEMS = [
-  {value: 'dashboard', label: 'Go to Dashboard', group: 'Navigation'},
-  {value: 'settings', label: 'Open Settings', group: 'Navigation'},
-  {value: 'profile', label: 'View Profile', group: 'Navigation'},
-  {value: 'dark-mode', label: 'Toggle Dark Mode', group: 'Actions'},
-  {value: 'new-file', label: 'Create New File', group: 'Actions'},
-  {value: 'search', label: 'Search Files', group: 'Actions'},
-];
-
 /**
- * Full command palette with input, grouped items, and footer.
+ * Full command palette with context-driven filtering and selection.
+ * Type to filter items. Arrow keys to navigate. Enter to select.
  */
 export const Default: Story = {
   render: function Render() {
     const [isOpen, setIsOpen] = useState(false);
-    const [search, setSearch] = useState('');
-    const [highlighted, setHighlighted] = useState(0);
-
-    const filtered = ALL_ITEMS.filter(item =>
-      item.label.toLowerCase().includes(search.toLowerCase()),
-    );
-
-    const groups = filtered.reduce(
-      (acc, item) => {
-        if (!acc[item.group]) acc[item.group] = [];
-        acc[item.group].push(item);
-        return acc;
-      },
-      {} as Record<string, typeof ALL_ITEMS>,
-    );
 
     return (
       <>
         <XDSButton
-          label="Open Command Palette"
+          label="Open Command Palette (or press ⌘K)"
           onClick={() => setIsOpen(true)}
         />
-        <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
-          <XDSCommandPaletteInput
-            value={search}
-            onValueChange={v => {
-              setSearch(v);
-              setHighlighted(0);
-            }}
-            placeholder="Type a command..."
-          />
+        <XDSCommandPalette
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          onValueChange={value => {
+            console.log('Selected:', value);
+          }}>
+          <XDSCommandPaletteInput placeholder="Type a command..." />
           <XDSDivider />
           <XDSCommandPaletteList>
-            {Object.entries(groups).map(([group, items]) => (
-              <XDSCommandPaletteGroup key={group} heading={group}>
-                {items.map(item => {
-                  const flatIndex = filtered.indexOf(item);
-                  return (
-                    <XDSCommandPaletteItem
-                      key={item.value}
-                      value={item.value}
-                      isHighlighted={flatIndex === highlighted}
-                      onSelect={() => {
-                        setIsOpen(false);
-                        setSearch('');
-                      }}>
-                      {item.label}
-                    </XDSCommandPaletteItem>
-                  );
-                })}
-              </XDSCommandPaletteGroup>
-            ))}
+            <XDSCommandPaletteGroup heading="Navigation">
+              <XDSCommandPaletteItem value="Go to Dashboard">
+                <XDSIcon icon="home" size="sm" />
+                Go to Dashboard
+              </XDSCommandPaletteItem>
+              <XDSCommandPaletteItem value="Open Settings">
+                <XDSIcon icon="settings" size="sm" />
+                Open Settings
+              </XDSCommandPaletteItem>
+              <XDSCommandPaletteItem value="View Profile">
+                <XDSIcon icon="user" size="sm" />
+                View Profile
+              </XDSCommandPaletteItem>
+            </XDSCommandPaletteGroup>
+            <XDSCommandPaletteGroup heading="Actions">
+              <XDSCommandPaletteItem
+                value="Toggle Dark Mode"
+                keywords={['theme', 'appearance']}>
+                Toggle Dark Mode
+              </XDSCommandPaletteItem>
+              <XDSCommandPaletteItem value="Create New File">
+                Create New File
+              </XDSCommandPaletteItem>
+              <XDSCommandPaletteItem value="Search Files">
+                <XDSIcon icon="search" size="sm" />
+                Search Files
+              </XDSCommandPaletteItem>
+            </XDSCommandPaletteGroup>
           </XDSCommandPaletteList>
           <XDSCommandPaletteFooter />
         </XDSCommandPalette>
@@ -114,7 +99,7 @@ export const Default: Story = {
 };
 
 /**
- * Flat list without groups.
+ * Flat list without groups — items filter automatically.
  */
 export const FlatList: Story = {
   render: function Render() {
@@ -127,18 +112,15 @@ export const FlatList: Story = {
           <XDSCommandPaletteInput placeholder="Search..." />
           <XDSDivider />
           <XDSCommandPaletteList>
-            <XDSCommandPaletteItem
-              value="home"
-              onSelect={() => setIsOpen(false)}>
-              Go Home
-            </XDSCommandPaletteItem>
-            <XDSCommandPaletteItem
-              value="settings"
-              onSelect={() => setIsOpen(false)}>
+            <XDSCommandPaletteItem value="Home">Go Home</XDSCommandPaletteItem>
+            <XDSCommandPaletteItem value="Settings">
               Settings
             </XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="disabled" isDisabled>
+            <XDSCommandPaletteItem value="Disabled Item" isDisabled>
               Disabled Item
+            </XDSCommandPaletteItem>
+            <XDSCommandPaletteItem value="Profile">
+              Profile
             </XDSCommandPaletteItem>
           </XDSCommandPaletteList>
           <XDSCommandPaletteFooter />
@@ -162,16 +144,50 @@ export const CustomFooter: Story = {
           <XDSCommandPaletteInput placeholder="Search..." />
           <XDSDivider />
           <XDSCommandPaletteList>
-            <XDSCommandPaletteItem value="a" onSelect={() => setIsOpen(false)}>
+            <XDSCommandPaletteItem value="Option A">
               Option A
             </XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="b" onSelect={() => setIsOpen(false)}>
+            <XDSCommandPaletteItem value="Option B">
               Option B
             </XDSCommandPaletteItem>
           </XDSCommandPaletteList>
           <XDSCommandPaletteFooter>
             <span>Tip: Use ⌘K to open this palette</span>
           </XDSCommandPaletteFooter>
+        </XDSCommandPalette>
+      </>
+    );
+  },
+};
+
+/**
+ * With external filtering disabled — all items always shown.
+ */
+export const UnfilteredList: Story = {
+  render: function Render() {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+      <>
+        <XDSButton label="Open Unfiltered" onClick={() => setIsOpen(true)} />
+        <XDSCommandPalette
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          isFiltered={false}>
+          <XDSCommandPaletteInput placeholder="Search (no filtering)..." />
+          <XDSDivider />
+          <XDSCommandPaletteList>
+            <XDSCommandPaletteItem value="Always Visible A">
+              Always Visible A
+            </XDSCommandPaletteItem>
+            <XDSCommandPaletteItem value="Always Visible B">
+              Always Visible B
+            </XDSCommandPaletteItem>
+            <XDSCommandPaletteItem value="Always Visible C">
+              Always Visible C
+            </XDSCommandPaletteItem>
+          </XDSCommandPaletteList>
+          <XDSCommandPaletteFooter />
         </XDSCommandPalette>
       </>
     );

@@ -1,6 +1,6 @@
 /**
  * @file XDSCommandPaletteList.tsx
- * @input Uses React, StyleX
+ * @input Uses React, StyleX, CommandPaletteContext
  * @output Exports XDSCommandPaletteList component
  * @position Sub-component; scrollable results container
  *
@@ -15,6 +15,7 @@ import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
+import {useCommandPaletteContext} from './CommandPaletteContext';
 
 const styles = stylex.create({
   list: {
@@ -47,6 +48,9 @@ export interface XDSCommandPaletteListProps {
  * Scrollable results container for the command palette.
  * Renders as a listbox for ARIA compliance.
  *
+ * When used inside XDSCommandPalette, automatically gets the correct
+ * ID for aria-controls linking with the input.
+ *
  * @compositionHint Place inside XDSCommandPalette, after XDSCommandPaletteInput.
  *   Contains XDSCommandPaletteItem and XDSCommandPaletteGroup children.
  *
@@ -64,8 +68,11 @@ export function XDSCommandPaletteList({
   label = 'Commands',
   xstyle,
 }: XDSCommandPaletteListProps) {
+  const ctx = useCommandPaletteContext();
+
   return (
     <div
+      id={ctx?.listId}
       role="listbox"
       aria-label={label}
       {...stylex.props(styles.list, xstyle)}>
