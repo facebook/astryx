@@ -35,6 +35,7 @@ export * from './Grid';
 export * from './Section';
 export * from './Selector';
 export * from './Icon';
+export * from './Kbd';
 export * from './Text';
 export * from './TextInput';
 export * from './TabList';

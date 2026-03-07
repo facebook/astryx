@@ -160,6 +160,12 @@
       "import": "./dist/Icon/index.mjs",
       "require": "./dist/Icon/index.js"
     },
+    "./Kbd": {
+      "source": "./src/Kbd/index.ts",
+      "types": "./dist/Kbd/index.d.ts",
+      "import": "./dist/Kbd/index.mjs",
+      "require": "./dist/Kbd/index.js"
+    },
     "./Layer": {
       "source": "./src/Layer/index.ts",
       "types": "./dist/Layer/index.d.ts",
