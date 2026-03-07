@@ -1,22 +1,15 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSCommandPalette} from '@xds/core/CommandPalette';
+import {
+  XDSCommandPalette,
+  XDSCommandPaletteInput,
+} from '@xds/core/CommandPalette';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
 import {XDSDivider} from '@xds/core/Divider';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
-  input: {
-    width: '100%',
-    padding: '12px 16px',
-    border: 'none',
-    outline: 'none',
-    fontSize: '16px',
-    backgroundColor: 'transparent',
-    color: 'inherit',
-    fontFamily: 'inherit',
-  },
   list: {
     flex: 1,
     overflowY: 'auto',
@@ -63,12 +56,24 @@ export default meta;
 type Story = StoryObj<typeof XDSCommandPalette>;
 
 /**
- * The command palette dialog shell with placeholder content.
- * This demonstrates the structural layout — input, list, and footer slots.
+ * The command palette with the real input component and placeholder list content.
  */
 export const Default: Story = {
   render: function Render() {
     const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState('');
+
+    const items = [
+      'Go to Dashboard',
+      'Search Files',
+      'Toggle Dark Mode',
+      'Open Settings',
+      'Create New File',
+    ];
+
+    const filtered = items.filter(item =>
+      item.toLowerCase().includes(search.toLowerCase()),
+    );
 
     return (
       <>
@@ -77,21 +82,24 @@ export const Default: Story = {
           onClick={() => setIsOpen(true)}
         />
         <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
-          <input
+          <XDSCommandPaletteInput
+            value={search}
+            onValueChange={setSearch}
             placeholder="Type a command..."
-            {...stylex.props(styles.input)}
           />
           <XDSDivider />
           <div {...stylex.props(styles.list)}>
-            <div {...stylex.props(styles.item)}>
-              <XDSText type="body">Go to Dashboard</XDSText>
-            </div>
-            <div {...stylex.props(styles.item)}>
-              <XDSText type="body">Search Files</XDSText>
-            </div>
-            <div {...stylex.props(styles.item)}>
-              <XDSText type="body">Toggle Dark Mode</XDSText>
-            </div>
+            {filtered.length > 0 ? (
+              filtered.map(item => (
+                <div key={item} {...stylex.props(styles.item)}>
+                  <XDSText type="body">{item}</XDSText>
+                </div>
+              ))
+            ) : (
+              <XDSText type="body" color="secondary">
+                No results found
+              </XDSText>
+            )}
           </div>
           <XDSDivider />
           <div {...stylex.props(styles.footer)}>
@@ -106,7 +114,7 @@ export const Default: Story = {
 };
 
 /**
- * Empty state — just the dialog shell with no content.
+ * Empty state — just the shell with input and no items.
  */
 export const Empty: Story = {
   render: function Render() {
@@ -116,10 +124,7 @@ export const Empty: Story = {
       <>
         <XDSButton label="Open Empty Palette" onClick={() => setIsOpen(true)} />
         <XDSCommandPalette isOpen={isOpen} onOpenChange={setIsOpen}>
-          <input
-            placeholder="No commands registered..."
-            {...stylex.props(styles.input)}
-          />
+          <XDSCommandPaletteInput placeholder="No commands registered..." />
           <XDSDivider />
           <div {...stylex.props(styles.list)}>
             <XDSText type="body" color="secondary">
@@ -147,10 +152,7 @@ export const CustomSize: Story = {
           onOpenChange={setIsOpen}
           width={400}
           maxHeight={300}>
-          <input
-            placeholder="Quick search..."
-            {...stylex.props(styles.input)}
-          />
+          <XDSCommandPaletteInput placeholder="Quick search..." />
           <XDSDivider />
           <div {...stylex.props(styles.list)}>
             <div {...stylex.props(styles.item)}>
