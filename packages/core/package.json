@@ -107,6 +107,12 @@
       "import": "./dist/DateInput/index.mjs",
       "require": "./dist/DateInput/index.js"
     },
+    "./CommandPalette": {
+      "source": "./src/CommandPalette/index.ts",
+      "types": "./dist/CommandPalette/index.d.ts",
+      "import": "./dist/CommandPalette/index.mjs",
+      "require": "./dist/CommandPalette/index.js"
+    },
     "./Dialog": {
       "source": "./src/Dialog/index.ts",
       "types": "./dist/Dialog/index.d.ts",
