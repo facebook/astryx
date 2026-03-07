@@ -1,7 +1,7 @@
 /**
  * @file index.ts
- * @input Imports XDSCommandPalette component and types
- * @output Exports XDSCommandPalette and related types
+ * @input Imports CommandPalette components and types
+ * @output Exports all CommandPalette components and types
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  *
  * SYNC: When modified, update this header
@@ -12,3 +12,15 @@ export type {XDSCommandPaletteProps} from './XDSCommandPalette';
 
 export {XDSCommandPaletteInput} from './XDSCommandPaletteInput';
 export type {XDSCommandPaletteInputProps} from './XDSCommandPaletteInput';
+
+export {XDSCommandPaletteList} from './XDSCommandPaletteList';
+export type {XDSCommandPaletteListProps} from './XDSCommandPaletteList';
+
+export {XDSCommandPaletteItem} from './XDSCommandPaletteItem';
+export type {XDSCommandPaletteItemProps} from './XDSCommandPaletteItem';
+
+export {XDSCommandPaletteGroup} from './XDSCommandPaletteGroup';
+export type {XDSCommandPaletteGroupProps} from './XDSCommandPaletteGroup';
+
+export {XDSCommandPaletteFooter} from './XDSCommandPaletteFooter';
+export type {XDSCommandPaletteFooterProps} from './XDSCommandPaletteFooter';
