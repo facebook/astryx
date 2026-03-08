@@ -1,0 +1,84 @@
+import path from 'path';
+import {fileURLToPath} from 'url';
+import {defineConfig} from 'vite';
+import react from '@vitejs/plugin-react';
+import stylex from '@stylexjs/unplugin';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(__dirname, '../../..');
+
+/**
+ * Browser targets for lightningcss.
+ * Prevents lowering native light-dark() into --lightningcss-light/--lightningcss-dark
+ * polyfill variables. XDS tokens use native light-dark() which is baseline 2024:
+ * Chrome 123+, Firefox 120+, Safari 17.5+
+ *
+ * Must match the targets in apps/storybook/.storybook/main.ts
+ */
+const lightningcssTargets = {
+  chrome: 123 << 16,
+  firefox: 120 << 16,
+  safari: (17 << 16) | (5 << 8),
+};
+
+/**
+ * Vite config for the preview app.
+ *
+ * Supports BOTH StyleX (for XDS component internals) AND Tailwind
+ * (for consumer code in XDS+Tailwind results). XDS components use
+ * StyleX internally — handled by the StyleX plugin. Consumer code
+ * uses Tailwind utility classes via className — handled by PostCSS.
+ */
+export default defineConfig({
+  root: __dirname,
+  plugins: [
+    stylex.vite({
+      dev: process.env.NODE_ENV === 'development',
+      runtimeInjection: false,
+      treeshakeCompensation: true,
+      unstable_moduleResolution: {
+        type: 'commonJS',
+        rootDir: repoRoot,
+      },
+      aliases: {
+        '@xds/core/theme/tokens.stylex': path.resolve(
+          repoRoot,
+          'packages/core/src/theme/tokens.stylex.ts',
+        ),
+      },
+      lightningcssOptions: {
+        targets: lightningcssTargets,
+      },
+    }),
+    react(),
+  ],
+  css: {
+    postcss: path.resolve(__dirname, 'postcss.config.js'),
+  },
+  resolve: {
+    alias: {
+      '@xds/core/theme/tokens.stylex': path.resolve(
+        repoRoot,
+        'packages/core/src/theme/tokens.stylex.ts',
+      ),
+      '@xds/core': path.resolve(repoRoot, 'packages/core/src'),
+      '@xds/theme-default': path.resolve(
+        repoRoot,
+        'packages/themes/default/src',
+      ),
+      '@xds/theme/default': path.resolve(
+        repoRoot,
+        'packages/themes/default/src',
+      ),
+      '@xds/theme-neutral': path.resolve(
+        repoRoot,
+        'packages/themes/neutral/src',
+      ),
+      '@xds/theme/neutral': path.resolve(
+        repoRoot,
+        'packages/themes/neutral/src',
+      ),
+    },
+  },
+  server: {port: 5175, strictPort: true},
+});

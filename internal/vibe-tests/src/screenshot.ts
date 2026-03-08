@@ -48,15 +48,18 @@ function parseArgs(): {iteration: string; prompt?: string} {
 
 function generatePreviewCode(
   componentPath: string,
-  target: 'xds' | 'baseline',
+  target: 'xds' | 'baseline' | 'xds-tailwind',
 ): string {
   const relPath = path.relative(path.join(APP_DIR, 'src'), componentPath);
   const importPath = relPath.replace(/\.tsx$/, '').replace(/\\/g, '/');
 
-  if (target === 'xds') {
+  if (target === 'xds' || target === 'xds-tailwind') {
+    // XDS+Tailwind uses the same XDS wrapper but also imports Tailwind CSS
+    const tailwindImport =
+      target === 'xds-tailwind' ? `\nimport '../tailwind.css';` : '';
     return `
 import React from 'react';
-import Component from '${importPath}';
+import Component from '${importPath}';${tailwindImport}
 import XDSWrapper from './xds-wrapper';
 
 export default function Preview({ theme }: { theme: string }) {
@@ -102,7 +105,7 @@ async function main() {
     prompts: Array<{id: string; category: string}>;
   }>(manifestPath);
 
-  const target = manifest.config.target as 'xds' | 'baseline';
+  const target = manifest.config.target as 'xds' | 'baseline' | 'xds-tailwind';
 
   // Determine which prompts to screenshot
   let promptIds = manifest.prompts.map(p => p.id);
@@ -146,9 +149,17 @@ async function main() {
   ensureDir(screenshotsDir);
 
   // Start Vite dev server
+  // Use the preview config for xds-tailwind (includes PostCSS/Tailwind),
+  // default config for other targets
+  const configFile =
+    target === 'xds-tailwind'
+      ? path.join(APP_DIR, 'vite.config.preview.ts')
+      : undefined;
+
   const {createServer} = await import('vite');
   const server = await createServer({
     root: APP_DIR,
+    configFile,
     server: {port: 5174, strictPort: true},
     logLevel: 'silent',
   });
