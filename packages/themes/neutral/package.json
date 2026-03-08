@@ -5,10 +5,10 @@
   "description": "Neutral theme for XDS components (Lucide icons)",
   "license": "MIT",
   "sideEffects": false,
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./src/neutralTheme.ts",
+  "types": "./src/neutralTheme.ts",
   "exports": {
-    ".": "./src/index.ts",
+    ".": "./src/neutralTheme.ts",
     "./theme.css": "./dist/theme.css"
   },
   "files": [
@@ -16,7 +16,7 @@
     "src"
   ],
   "scripts": {
-    "build:theme": "xds build-theme src/index.ts -o dist/theme.css"
+    "build": "xds build-theme src/neutralTheme.ts -o dist/theme.css"
   },
   "dependencies": {
     "lucide-react": "^0.575.0"

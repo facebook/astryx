@@ -16,7 +16,7 @@
     "src"
   ],
   "scripts": {
-    "build:theme": "xds build-theme src/index.ts -o dist/theme.css"
+    "build": "xds build-theme src/index.ts -o dist/theme.css"
   },
   "peerDependencies": {
     "@xds/core": "*"
