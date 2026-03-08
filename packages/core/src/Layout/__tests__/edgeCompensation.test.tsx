@@ -44,12 +44,12 @@ describe('Edge Compensation', () => {
       render(
         <XDSTopNav
           label="Test nav"
-          title={<span data-testid="title">Logo</span>}
+          heading={<span data-testid="heading">Logo</span>}
         />,
       );
-      const title = screen.getByTestId('title');
-      // title > title wrapper > leftSection (with edgeSignals.start)
-      const leftSection = title.parentElement?.parentElement;
+      const heading = screen.getByTestId('heading');
+      // heading > heading wrapper > leftSection (with edgeSignals.start)
+      const leftSection = heading.parentElement?.parentElement;
       expect(leftSection).toHaveAttribute('class');
     });
   });

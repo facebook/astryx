@@ -1,7 +1,7 @@
 /**
  * @file index.ts
  * @input Imports SideNav components and types
- * @output Exports XDSSideNav, XDSSideNavHeader, XDSSideNavItem, XDSSideNavSection
+ * @output Exports XDSSideNav, XDSSideNavHeading, XDSSideNavItem, XDSSideNavSection
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  *
  * SYNC: When modified, update this header and /packages/core/src/SideNav/SideNav.doc.mjs
@@ -10,8 +10,13 @@
 export {XDSSideNav} from './XDSSideNav';
 export type {XDSSideNavProps} from './XDSSideNav';
 
-export {XDSSideNavHeader} from './XDSSideNavHeader';
-export type {XDSSideNavHeaderProps} from './XDSSideNavHeader';
+export {XDSSideNavHeading} from './XDSSideNavHeading';
+export type {XDSSideNavHeadingProps} from './XDSSideNavHeading';
+
+/** @deprecated Use XDSSideNavHeading instead */
+export {XDSSideNavHeading as XDSSideNavHeader} from './XDSSideNavHeading';
+/** @deprecated Use XDSSideNavHeadingProps instead */
+export type {XDSSideNavHeadingProps as XDSSideNavHeaderProps} from './XDSSideNavHeading';
 
 export {XDSSideNavItem} from './XDSSideNavItem';
 export type {XDSSideNavItemProps} from './XDSSideNavItem';

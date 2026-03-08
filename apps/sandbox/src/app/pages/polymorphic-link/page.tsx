@@ -10,7 +10,7 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSDivider} from '@xds/core';
-import {XDSTopNav, XDSTopNavTitle, XDSTopNavItem} from '@xds/core/TopNav';
+import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {XDSSideNav, XDSSideNavItem} from '@xds/core/SideNav';
 import {XDSBreadcrumbs, XDSBreadcrumbItem} from '@xds/core/Breadcrumbs';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
@@ -151,7 +151,7 @@ export default function PolymorphicLinkPage() {
                 <div {...stylex.props(styles.navWrapper)}>
                   <XDSTopNav
                     label="Provider demo navigation"
-                    title={<XDSTopNavTitle title="My App" />}
+                    heading={<XDSTopNavHeading heading="My App" />}
                     startContent={
                       <>
                         <XDSTopNavItem label="Home" href="/" isSelected />
@@ -245,7 +245,7 @@ export default function PolymorphicLinkPage() {
             <div {...stylex.props(styles.navWrapper)}>
               <XDSTopNav
                 label="Override demo navigation"
-                title={<XDSTopNavTitle title="Override Demo" />}
+                heading={<XDSTopNavHeading heading="Override Demo" />}
                 startContent={
                   <>
                     <XDSTopNavItem label="Home" href="/" isSelected />
@@ -280,7 +280,7 @@ export default function PolymorphicLinkPage() {
           <div {...stylex.props(styles.navWrapper)}>
             <XDSTopNav
               label="Default navigation"
-              title={<XDSTopNavTitle title="Default" />}
+              heading={<XDSTopNavHeading heading="Default" />}
               startContent={
                 <>
                   <XDSTopNavItem label="Home" href="#home" isSelected />

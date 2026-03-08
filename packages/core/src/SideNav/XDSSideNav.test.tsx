@@ -12,7 +12,7 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {forwardRef, type ComponentPropsWithoutRef} from 'react';
 import {XDSSideNav} from './XDSSideNav';
-import {XDSSideNavHeader} from './XDSSideNavHeader';
+import {XDSSideNavHeading} from './XDSSideNavHeading';
 import {XDSSideNavItem} from './XDSSideNavItem';
 import {XDSSideNavSection} from './XDSSideNavSection';
 import {XDSLinkProvider} from '../Link/XDSLinkProvider';
@@ -119,49 +119,49 @@ describe('XDSSideNav', () => {
 });
 
 // =============================================================================
-// XDSSideNavHeader
+// XDSSideNavHeading
 // =============================================================================
 
-describe('XDSSideNavHeader', () => {
-  it('renders title text', () => {
-    render(<XDSSideNavHeader title="My App" />);
+describe('XDSSideNavHeading', () => {
+  it('renders heading text', () => {
+    render(<XDSSideNavHeading heading="My App" />);
     expect(screen.getByText('My App')).toBeInTheDocument();
   });
 
   it('renders icon', () => {
     render(
-      <XDSSideNavHeader
-        title="My App"
+      <XDSSideNavHeading
+        heading="My App"
         icon={<span data-testid="app-icon">🏠</span>}
       />,
     );
     expect(screen.getByTestId('app-icon')).toBeInTheDocument();
   });
 
-  it('renders supertitle', () => {
-    render(<XDSSideNavHeader title="Product" supertitle="Suite Name" />);
+  it('renders superheading', () => {
+    render(<XDSSideNavHeading heading="Product" superheading="Suite Name" />);
     expect(screen.getByText('Suite Name')).toBeInTheDocument();
   });
 
-  it('renders subtitle', () => {
-    render(<XDSSideNavHeader title="Product" subtitle="Account" />);
+  it('renders subheading', () => {
+    render(<XDSSideNavHeading heading="Product" subheading="Account" />);
     expect(screen.getByText('Account')).toBeInTheDocument();
   });
 
-  it('renders as link when titleHref is provided without menu', () => {
-    render(<XDSSideNavHeader title="My App" titleHref="/home" />);
+  it('renders as link when headingHref is provided without menu', () => {
+    render(<XDSSideNavHeading heading="My App" headingHref="/home" />);
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('href', '/home');
     expect(link).toHaveTextContent('My App');
   });
 
-  it('renders independent links when titleHref and supertitleHref are provided', () => {
+  it('renders independent links when headingHref and superheadingHref are provided', () => {
     render(
-      <XDSSideNavHeader
-        title="Product"
-        titleHref="/product"
-        supertitle="Suite"
-        supertitleHref="/suite"
+      <XDSSideNavHeading
+        heading="Product"
+        headingHref="/product"
+        superheading="Suite"
+        superheadingHref="/suite"
       />,
     );
     const links = screen.getAllByRole('link');
@@ -171,20 +171,22 @@ describe('XDSSideNavHeader', () => {
   });
 
   it('shows chevron when menu is provided', () => {
-    render(<XDSSideNavHeader title="My App" menu={<div>Menu content</div>} />);
+    render(
+      <XDSSideNavHeading heading="My App" menu={<div>Menu content</div>} />,
+    );
     // The chevron SVG should be rendered
     const button = screen.getByRole('button');
     expect(button).toBeInTheDocument();
   });
 
   it('does not show chevron without menu', () => {
-    const {container} = render(<XDSSideNavHeader title="My App" />);
+    const {container} = render(<XDSSideNavHeading heading="My App" />);
     const svg = container.querySelector('svg');
     expect(svg).not.toBeInTheDocument();
   });
 
-  it('whole header is popover trigger when menu provided without hrefs', () => {
-    render(<XDSSideNavHeader title="My App" menu={<div>Menu</div>} />);
+  it('whole heading is popover trigger when menu provided without hrefs', () => {
+    render(<XDSSideNavHeading heading="My App" menu={<div>Menu</div>} />);
     const button = screen.getByRole('button');
     expect(button).toHaveAttribute('aria-haspopup', 'dialog');
     expect(button).toHaveAttribute('aria-expanded', 'false');
@@ -193,8 +195,8 @@ describe('XDSSideNavHeader', () => {
   it('toggles popover on click when menu is provided', async () => {
     const user = userEvent.setup();
     render(
-      <XDSSideNavHeader
-        title="My App"
+      <XDSSideNavHeading
+        heading="My App"
         menu={<div data-testid="menu-content">Menu</div>}
       />,
     );
@@ -205,9 +207,9 @@ describe('XDSSideNavHeader', () => {
 
   it('renders chevron as separate trigger when menu and hrefs are provided', () => {
     render(
-      <XDSSideNavHeader
-        title="Product"
-        titleHref="/product"
+      <XDSSideNavHeading
+        heading="Product"
+        headingHref="/product"
         menu={<div>Menu</div>}
       />,
     );
@@ -216,7 +218,7 @@ describe('XDSSideNavHeader', () => {
   });
 
   it('passes data-testid', () => {
-    render(<XDSSideNavHeader title="My App" data-testid="nav-header" />);
+    render(<XDSSideNavHeading heading="My App" data-testid="nav-header" />);
     expect(screen.getByTestId('nav-header')).toBeInTheDocument();
   });
 });
@@ -341,7 +343,7 @@ describe('XDSSideNavSection', () => {
     expect(screen.getByRole('group')).toBeInTheDocument();
   });
 
-  it('renders title text', () => {
+  it('renders heading text', () => {
     render(
       <XDSSideNavSection title="Main">
         <XDSSideNavItem label="Dashboard" />
@@ -363,7 +365,7 @@ describe('XDSSideNavSection', () => {
     expect(label).toHaveTextContent('Main');
   });
 
-  it('renders subtitle', () => {
+  it('renders subheading', () => {
     render(
       <XDSSideNavSection title="Main" subtitle="Primary navigation">
         <XDSSideNavItem label="Dashboard" />
@@ -401,7 +403,7 @@ describe('SideNav integration', () => {
   it('renders a complete page nav', () => {
     render(
       <XDSSideNav
-        header={<XDSSideNavHeader title="My App" />}
+        header={<XDSSideNavHeading heading="My App" />}
         topContent={<button>Create</button>}
         footer={<div data-testid="promo">Promo</div>}
         footerIcons={<button>Help</button>}>

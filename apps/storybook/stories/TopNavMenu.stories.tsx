@@ -2,7 +2,7 @@ import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
   XDSTopNav,
-  XDSTopNavTitle,
+  XDSTopNavHeading,
   XDSTopNavItem,
   XDSTopNavMenu,
   XDSTopNavMegaMenu,
@@ -43,9 +43,9 @@ export const Default: Story = {
   render: () => (
     <XDSTopNav
       label="Main navigation"
-      title={
-        <XDSTopNavTitle
-          title="My App"
+      heading={
+        <XDSTopNavHeading
+          heading="My App"
           logo={
             <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
@@ -107,7 +107,7 @@ export const MultipleMenus: Story = {
   render: () => (
     <XDSTopNav
       label="Main navigation"
-      title={<XDSTopNavTitle title="Platform" href="#" />}
+      heading={<XDSTopNavHeading heading="Platform" href="#" />}
       startContent={
         <>
           <XDSTopNavMenu
@@ -160,9 +160,9 @@ export const MegaMenu: Story = {
       <div style={{position: 'relative'}}>
         <XDSTopNav
           label="Marketing navigation"
-          title={
-            <XDSTopNavTitle
-              title="Acme"
+          heading={
+            <XDSTopNavHeading
+              heading="Acme"
               logo={
                 <XDSNavIcon
                   icon={<CubeIcon style={{width: 16, height: 16}} />}
@@ -246,7 +246,7 @@ export const MegaMenuSimple: Story = {
     <div style={{position: 'relative'}}>
       <XDSTopNav
         label="Simple navigation"
-        title={<XDSTopNavTitle title="App" href="#" />}
+        heading={<XDSTopNavHeading heading="App" href="#" />}
         startContent={
           <>
             <XDSTopNavItem label="Home" href="#" isSelected />

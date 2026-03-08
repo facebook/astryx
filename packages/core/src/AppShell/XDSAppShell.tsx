@@ -281,7 +281,7 @@ const styles = stylex.create({
  * @example
  * ```
  * <XDSAppShell
- *   topNav={<XDSTopNav label="Navigation" title={<XDSTopNavTitle title="My App" />} />}
+ *   topNav={<XDSTopNav label="Navigation" heading={<XDSTopNavHeading heading="My App" />} />}
  *   sideNav={<XDSSideNav>{navSections}</XDSSideNav>}
  *   mobileNav={
  *     <XDSMobileNav isOpen={mobileOpen} onOpenChange={(open) => setMobileOpen(open)} title="My App">

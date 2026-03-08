@@ -5,7 +5,7 @@ export const docs = {
   description:
     'Circular icon container with accent background for navigation headers.',
   features: [
-    'Shared — used in both XDSTopNavTitle and XDSPageNavHeader',
+    'Shared — used in both XDSTopNavHeading and XDSPageNavHeader',
     'Accent background — uses --color-accent with --color-icon-on-media contrast',
     'Fixed size — renders at the medium (--size-md) design token size',
   ],
@@ -23,8 +23,8 @@ export const docs = {
       label: 'In top navigation',
       code: `import {CubeIcon} from '@heroicons/react/24/solid';
 
-<XDSTopNavTitle
-  title="My App"
+<XDSTopNavHeading
+  heading="My App"
   logo={<XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
 />`,
     },
@@ -34,15 +34,15 @@ export const docs = {
 
 <XDSPageNavHeader
   icon={<XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
-  title="My App"
+  heading="My App"
 />`,
     },
     {
       label: 'With HomeIcon',
       code: `import {HomeIcon} from '@heroicons/react/24/solid';
 
-<XDSTopNavTitle
-  title="Dashboard"
+<XDSTopNavHeading
+  heading="Dashboard"
   logo={<XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />}
 />`,
     },

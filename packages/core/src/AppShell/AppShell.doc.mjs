@@ -20,7 +20,7 @@ export const docs = {
   topNav={
     <XDSTopNav
       label="Main navigation"
-      title={<XDSTopNavTitle title="My App" logo={<Logo />} />}
+      heading={<XDSTopNavHeading heading="My App" logo={<Logo />} />}
       startContent={
         <>
           <XDSTopNavItem label="Home" href="/" isSelected />
@@ -59,7 +59,7 @@ export const docs = {
   sideNav={
     <XDSSideNav
       header={
-        <XDSSideNavHeader icon={<AppIcon />} title="My App" titleHref="/" />
+        <XDSSideNavHeading icon={<AppIcon />} heading="My App" headingHref="/" />
       }>
       <XDSSideNavSection title="Main" isHeaderHidden>
         <XDSSideNavItem
@@ -85,7 +85,7 @@ export const docs = {
   topNav={
     <XDSTopNav
       label="Navigation"
-      title={<XDSTopNavTitle title="Landing Page" />}
+      heading={<XDSTopNavHeading heading="Landing Page" />}
     />
   }>
   <LandingContent />
@@ -94,7 +94,7 @@ export const docs = {
     {
       label: 'Auto height for content-heavy pages',
       code: `<XDSAppShell
-  topNav={<XDSTopNav label="Docs" title={<XDSTopNavTitle title="Docs" />} />}
+  topNav={<XDSTopNav label="Docs" heading={<XDSTopNavHeading heading="Docs" />} />}
   sideNav={<XDSSideNav>...</XDSSideNav>}
   height="auto"
 >
@@ -104,7 +104,7 @@ export const docs = {
     {
       label: 'Controlled sideNav collapse',
       code: `<XDSAppShell
-  topNav={<XDSTopNav label="App" title={<XDSTopNavTitle title="App" />} />}
+  topNav={<XDSTopNav label="App" heading={<XDSTopNavHeading heading="App" />} />}
   sideNav={<XDSSideNav>...</XDSSideNav>}
   isSideNavCollapsed={collapsed}
   onSideNavCollapsedChange={setCollapsed}
@@ -121,7 +121,7 @@ const isMobile = useMediaQuery('(max-width: 768px)');
   topNav={
     <XDSTopNav
       label="Navigation"
-      title={<XDSTopNavTitle title="My App" />}
+      heading={<XDSTopNavHeading heading="My App" />}
       startContent={
         isMobile ? (
           <XDSButton
@@ -227,8 +227,8 @@ const isMobile = useMediaQuery('(max-width: 768px)');
     ],
   },
   notes: [
-    'When a TopNav is present, omit XDSSideNavHeader from the SideNav — the TopNav already provides app identity. Adding both would double the identity.',
-    'When there is no TopNav, include XDSSideNavHeader inside the SideNav so the app name and logo are present.',
+    'When a TopNav is present, omit XDSSideNavHeading from the SideNav — the TopNav already provides app identity. Adding both would double the identity.',
+    'When there is no TopNav, include XDSSideNavHeading inside the SideNav so the app name and logo are present.',
     'XDSAppShell composes XDSLayout internally: topNav + banner map to XDSLayoutHeader, sideNav maps to XDSLayoutPanel, and children map to XDSLayoutContent.',
     'SideNav collapse animations currently snap open/closed; ViewTransitions support is planned.',
     'In "auto" height mode, TopNav gets position: sticky; top: 0 and SideNav gets position: sticky; top: <header-height>.',

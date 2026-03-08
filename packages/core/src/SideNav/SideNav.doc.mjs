@@ -23,15 +23,15 @@ export const docs = {
   theming: {
     targets: [
       {className: 'xds-side-nav'},
-      {className: 'xds-side-nav-header'},
+      {className: 'xds-side-nav-heading'},
       {className: 'xds-side-nav-item'},
       {className: 'xds-side-nav-section'},
     ],
   },
   notes: [
-    'When used inside XDSAppShell alongside XDSTopNav, omit XDSSideNavHeader — the TopNav already provides app identity and including the header would duplicate it.',
-    'Without a TopNav, include XDSSideNavHeader to provide app identity.',
-    'Header interaction model: titleHref only → whole header is one link; titleHref + supertitleHref, no menu → each text is an independent link; menu only, no hrefs → whole header is the popover trigger; menu + hrefs → links are independent <a> elements, chevron/remaining area is the popover trigger.',
+    'When used inside XDSAppShell alongside XDSTopNav, omit XDSSideNavHeading — the TopNav already provides app identity and including the header would duplicate it.',
+    'Without a TopNav, include XDSSideNavHeading to provide app identity.',
+    'Header interaction model: headingHref only → whole header is one link; headingHref + superheadingHref, no menu → each text is an independent link; menu only, no hrefs → whole header is the popover trigger; menu + hrefs → links are independent <a> elements, chevron/remaining area is the popover trigger.',
     'Depends on useXDSPopover for the header menu popover and XDSIcon for rendering icon components in nav items.',
   ],
   examples: [
@@ -39,10 +39,10 @@ export const docs = {
       label: 'With XDSAppShell + TopNav (no header)',
       code: `// TopNav provides identity → SideNav has no header
 <XDSAppShell
-  topNav={<XDSTopNav title={<XDSTopNavTitle title="My App" />} />}
+  topNav={<XDSTopNav heading={<XDSTopNavHeading heading="My App" />} />}
   sideNav={
     <XDSSideNav>
-      <XDSSideNavSection title="Main" isHeaderHidden>
+      <XDSSideNavSection heading="Main" isHeaderHidden>
         <XDSSideNavItem
           label="Dashboard"
           icon={HomeIcon}
@@ -63,11 +63,11 @@ export const docs = {
   sideNav={
     <XDSSideNav
       header={
-        <XDSSideNavHeader icon={<AppIcon />} title="My App" titleHref="/" />
+        <XDSSideNavHeading icon={<AppIcon />} heading="My App" headingHref="/" />
       }
       topContent={<XDSButton label="Create new" variant="primary" />}
       footerIcons={<XDSButton icon={HelpIcon} variant="ghost" label="Help" />}>
-      <XDSSideNavSection title="Main">
+      <XDSSideNavSection heading="Main">
         <XDSSideNavItem
           label="Dashboard"
           icon={HomeIcon}
@@ -83,7 +83,7 @@ export const docs = {
         />
       </XDSSideNavSection>
 
-      <XDSSideNavSection title="Settings">
+      <XDSSideNavSection heading="Settings">
         <XDSSideNavItem label="General" href="/settings/general" />
         <XDSSideNavItem label="Security" href="/settings/security" />
       </XDSSideNavSection>
@@ -102,7 +102,7 @@ export const docs = {
         {
           name: 'header',
           type: 'ReactNode',
-          description: 'Header area (typically XDSSideNavHeader). Sticky.',
+          description: 'Header area (typically XDSSideNavHeading). Sticky.',
         },
         {
           name: 'topContent',
@@ -129,9 +129,9 @@ export const docs = {
         {
           label: 'Basic',
           code: `<XDSSideNav
-  header={<XDSSideNavHeader icon={<AppIcon />} title="My App" titleHref="/" />}
+  header={<XDSSideNavHeading icon={<AppIcon />} heading="My App" headingHref="/" />}
   topContent={<XDSButton label="Create new" variant="primary" />}>
-  <XDSSideNavSection title="Main">
+  <XDSSideNavSection heading="Main">
     <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
     <XDSSideNavItem label="Projects" icon={FolderIcon} href="/projects" />
   </XDSSideNavSection>
@@ -140,12 +140,12 @@ export const docs = {
       ],
     },
     {
-      name: 'XDSSideNavHeader',
+      name: 'XDSSideNavHeading',
       description:
-        'Product/suite/account header with smart interaction boundary logic for links and a menu popover.',
+        'Product/suite/account heading with smart interaction boundary logic for links and a menu popover.',
       props: [
         {
-          name: 'title',
+          name: 'heading',
           type: 'string',
           description: 'Product/app name.',
           required: true,
@@ -156,29 +156,29 @@ export const docs = {
           description: 'Product/app icon.',
         },
         {
-          name: 'titleHref',
+          name: 'headingHref',
           type: 'string',
-          description: 'Link for the title.',
+          description: 'Link for the heading.',
         },
         {
-          name: 'supertitle',
+          name: 'superheading',
           type: 'string',
-          description: 'Text above the title.',
+          description: 'Text above the heading.',
         },
         {
-          name: 'supertitleHref',
+          name: 'superheadingHref',
           type: 'string',
-          description: 'Link for the supertitle.',
+          description: 'Link for the superheading.',
         },
         {
-          name: 'subtitle',
+          name: 'subheading',
           type: 'string',
-          description: 'Text below the title.',
+          description: 'Text below the heading.',
         },
         {
-          name: 'subtitleHref',
+          name: 'subheadingHref',
           type: 'string',
-          description: 'Link for the subtitle.',
+          description: 'Link for the subheading.',
         },
         {
           name: 'menu',
@@ -189,25 +189,25 @@ export const docs = {
       examples: [
         {
           label: 'Title link only',
-          code: `<XDSSideNavHeader icon={<AppIcon />} title="My App" titleHref="/" />`,
+          code: `<XDSSideNavHeading icon={<AppIcon />} heading="My App" headingHref="/" />`,
         },
         {
-          label: 'With supertitle and subtitle',
-          code: `<XDSSideNavHeader
+          label: 'With superheading and subheading',
+          code: `<XDSSideNavHeading
   icon={<AppIcon />}
-  supertitle="Acme Corp"
-  supertitleHref="/org"
-  title="My App"
-  titleHref="/"
-  subtitle="v2.0"
+  superheading="Acme Corp"
+  superheadingHref="/org"
+  heading="My App"
+  headingHref="/"
+  subheading="v2.0"
 />`,
         },
         {
           label: 'With menu',
-          code: `<XDSSideNavHeader
+          code: `<XDSSideNavHeading
   icon={<AppIcon />}
-  title="My App"
-  titleHref="/"
+  heading="My App"
+  headingHref="/"
   menu={<WorkspaceSwitcher />}
 />`,
         },
@@ -335,21 +335,21 @@ export const docs = {
       examples: [
         {
           label: 'Basic section',
-          code: `<XDSSideNavSection title="Main">
+          code: `<XDSSideNavSection heading="Main">
   <XDSSideNavItem label="Dashboard" href="/dashboard" />
   <XDSSideNavItem label="Projects" href="/projects" />
 </XDSSideNavSection>`,
         },
         {
           label: 'With end content and hidden header',
-          code: `<XDSSideNavSection title="Settings" endContent={<XDSBadge>New</XDSBadge>}>
+          code: `<XDSSideNavSection heading="Settings" endContent={<XDSBadge>New</XDSBadge>}>
   <XDSSideNavItem label="General" href="/settings/general" />
   <XDSSideNavItem label="Security" href="/settings/security" />
 </XDSSideNavSection>`,
         },
         {
           label: 'Hidden header (used with TopNav)',
-          code: `<XDSSideNavSection title="Main" isHeaderHidden>
+          code: `<XDSSideNavSection heading="Main" isHeaderHidden>
   <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
 </XDSSideNavSection>`,
         },

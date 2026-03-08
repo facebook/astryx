@@ -52,7 +52,7 @@ const styles = stylex.create({
     flex: '1 1 0%',
     minWidth: 0,
   },
-  title: {
+  heading: {
     display: 'flex',
     alignItems: 'center',
     flexShrink: 0,
@@ -83,18 +83,12 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSTopNavProps extends Omit<
-  XDSBaseProps<HTMLElement>,
-  'title'
-> {
+export interface XDSTopNavProps extends XDSBaseProps<HTMLElement> {
   /**
-   * Title slot content — typically XDSTopNavTitle with logo and text.
+   * Heading slot content — typically XDSTopNavHeading with logo and text.
    * Positioned at the left edge of the nav bar.
-   *
-   * Note: named `title` for now but will be renamed to `heading` to avoid
-   * collision with the HTML `title` attribute. See follow-up PR.
    */
-  title?: ReactNode;
+  heading?: ReactNode;
   /**
    * Start content slot - typically navigation items or breadcrumbs.
    * Positioned after the title, left-aligned.
@@ -122,7 +116,7 @@ export interface XDSTopNavProps extends Omit<
 /**
  * Top navigation bar for application headers.
  *
- * Slot-based layout with `title`, `startContent`, `centerContent`, and
+ * Slot-based layout with `heading`, `startContent`, `centerContent`, and
  * `endContent`. When `centerContent` is provided, the layout switches to a
  * three-column CSS grid to keep center content horizontally centered.
  *
@@ -130,7 +124,7 @@ export interface XDSTopNavProps extends Omit<
  * ```
  * <XDSTopNav
  *   label="Main navigation"
- *   title={<XDSTopNavTitle title="My App" />}
+ *   heading={<XDSTopNavHeading heading="My App" />}
  *   startContent={<XDSTopNavItem label="Home" href="/" isSelected />}
  *   endContent={<XDSButton label="Search" variant="ghost" />}
  * />
@@ -139,7 +133,7 @@ export interface XDSTopNavProps extends Omit<
 export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
   function XDSTopNav(
     {
-      title,
+      heading,
       startContent,
       centerContent,
       endContent,
@@ -170,7 +164,7 @@ export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
         )}
         {...props}>
         <div {...stylex.props(styles.leftSection, edgeSignals.start)}>
-          {title && <div {...stylex.props(styles.title)}>{title}</div>}
+          {heading && <div {...stylex.props(styles.heading)}>{heading}</div>}
           {startContent && (
             <div {...stylex.props(styles.startContent)}>{startContent}</div>
           )}

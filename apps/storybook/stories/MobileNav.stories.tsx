@@ -3,7 +3,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {XDSMobileNav} from '@xds/core/MobileNav';
 import {
   XDSSideNav,
-  XDSSideNavHeader,
+  XDSSideNavHeading,
   XDSSideNavItem,
   XDSSideNavSection,
 } from '@xds/core/SideNav';
@@ -214,14 +214,14 @@ export const ResponsivePattern: Story = {
       <div style={{width: 280, height: 600, border: '1px solid #e5e7eb'}}>
         <XDSSideNav
           header={
-            <XDSSideNavHeader
+            <XDSSideNavHeading
               icon={
                 <XDSNavIcon
                   icon={<CubeIcon style={{width: 16, height: 16}} />}
                 />
               }
-              title="My App"
-              titleHref="/"
+              heading="My App"
+              headingHref="/"
             />
           }>
           {navSections}
