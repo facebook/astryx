@@ -5,10 +5,10 @@
  * @position Client-side icon context; wraps the global registry with
  *   React Context support for tree-scoped overrides via XDSTheme.
  *
- * For server components, use getIcon() from iconRegistry.ts instead.
+ * For server components, use getIcon() from globalIconRegistry.tsx instead.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Icon/iconRegistry.ts (global registry, types)
+ * - /packages/core/src/Icon/globalIconRegistry.tsx (global registry, types)
  * - /packages/core/src/Icon/Icon.doc.mjs (features, usage)
  * - /packages/core/src/Icon/index.ts (exports)
  */
