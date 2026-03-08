@@ -14,7 +14,6 @@
 'use client';
 
 import React, {
-  useContext,
   useCallback,
   useId,
   useMemo,
@@ -38,8 +37,6 @@ import {
   typographyVars,
   textSizeVars,
 } from '../theme/tokens.stylex';
-import {ThemeContext} from '../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
 const styles = stylex.create({
   // Dropdown container
@@ -114,19 +111,6 @@ const styles = stylex.create({
     justifyContent: 'center',
   },
 });
-
-// =============================================================================
-// Module Augmentation - Register DropdownMenu's style surfaces with ComponentStyles
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    dropdownMenu?: {
-      root?: ThemeStyleXStyles;
-      item?: ThemeStyleXStyles;
-    };
-  }
-}
 
 // =============================================================================
 // Types
@@ -328,10 +312,6 @@ export function XDSDropdownMenu({
 }: XDSDropdownMenuProps) {
   const menuId = useId();
 
-  // Get theme context for component-level overrides (optional)
-  const themeContext = useContext(ThemeContext);
-  const rootOverride = themeContext?.theme.components?.dropdownMenu?.root;
-  const itemOverride = themeContext?.theme.components?.dropdownMenu?.item;
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   // Internal state for uncontrolled mode
@@ -520,7 +500,6 @@ export function XDSDropdownMenu({
             styles.item,
             isHighlighted && styles.itemHighlighted,
             item.isDisabled && styles.itemDisabled,
-            itemOverride,
           )}>
           {children ? children(item) : <DefaultItem item={item} />}
         </div>
@@ -614,10 +593,7 @@ export function XDSDropdownMenu({
       </XDSButton>
 
       {layer.render(
-        <div
-          id={menuId}
-          role="menu"
-          {...stylex.props(styles.dropdown, rootOverride)}>
+        <div id={menuId} role="menu" {...stylex.props(styles.dropdown)}>
           {renderOptions()}
         </div>,
         {

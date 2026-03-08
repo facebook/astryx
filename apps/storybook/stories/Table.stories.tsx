@@ -7,7 +7,12 @@ import {
   pixel,
 } from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
-import {colorRaw, spacingRaw, radiusRaw, textSizeRaw} from '@xds/core/theme';
+import {
+  colorDefaults,
+  spacingDefaults,
+  radiusDefaults,
+  textSizeDefaults,
+} from '@xds/core/theme';
 
 // =============================================================================
 // Sample Data
@@ -198,17 +203,17 @@ export const CustomCellRenderer: Story = {
         renderCell: item => (
           <span
             style={{
-              padding: `${spacingRaw['--spacing-0-5']} ${spacingRaw['--spacing-2']}`,
-              borderRadius: radiusRaw['--radius-content'],
-              fontSize: textSizeRaw['--text-xsm'],
+              padding: `${spacingDefaults['--spacing-0-5']} ${spacingDefaults['--spacing-2']}`,
+              borderRadius: radiusDefaults['--radius-content'],
+              fontSize: textSizeDefaults['--text-xsm'],
               backgroundColor:
                 item.role === 'Engineer'
-                  ? colorRaw['--color-blue-background']
-                  : colorRaw['--color-purple-background'],
+                  ? colorDefaults['--color-blue-background']
+                  : colorDefaults['--color-purple-background'],
               color:
                 item.role === 'Engineer'
-                  ? colorRaw['--color-blue-text']
-                  : colorRaw['--color-purple-text'],
+                  ? colorDefaults['--color-blue-text']
+                  : colorDefaults['--color-purple-text'],
             }}>
             {item.role}
           </span>

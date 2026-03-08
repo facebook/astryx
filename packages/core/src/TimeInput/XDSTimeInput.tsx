@@ -15,7 +15,6 @@
 
 import {
   forwardRef,
-  useContext,
   useId,
   useState,
   useCallback,
@@ -119,30 +118,16 @@ const sizeStyles = stylex.create({
 });
 
 export type XDSTimeInputSize = keyof typeof sizeStyles;
+
 export type XDSTimeInputHourFormat = '12h' | '24h';
 
 // Re-export shared types for convenience
+
 export type {
   XDSInputStatus as XDSTimeInputStatus,
   XDSInputStatusType as XDSTimeInputStatusType,
 } from '../Field';
-import {ThemeContext} from '../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
-// =============================================================================
-// Module Augmentation - Register component styles with ComponentStyles
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    timeInput?: {
-      /** Input wrapper styles */
-      wrapper?: ThemeStyleXStyles;
-      /** Text input styles */
-      input?: ThemeStyleXStyles;
-    };
-  }
-}
 export interface XDSTimeInputProps {
   /**
    * Label text for the input (required for accessibility).
@@ -303,10 +288,6 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
     },
     ref,
   ) => {
-    const themeContext = useContext(ThemeContext);
-    const wrapperOverride = themeContext?.theme.components?.timeInput?.wrapper;
-    const inputOverride = themeContext?.theme.components?.timeInput?.input;
-
     const id = useId();
     const descriptionID = useId();
     const statusMessageID = useId();
@@ -523,7 +504,6 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
             status && inputStatusBorderStyles[status.type],
             status && inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
-            wrapperOverride,
           )}>
           <div {...stylex.props(styles.icon)}>
             <XDSIcon icon="clock" size="sm" color="secondary" />
@@ -547,7 +527,6 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
               styles.input,
               isDisabled && styles.inputDisabled,
               !isInputValid && styles.inputInvalid,
-              inputOverride,
             )}
           />
           {isBusy && <XDSSpinner size="sm" />}

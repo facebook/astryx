@@ -32,19 +32,6 @@ import {
   radiusVars,
   elevationVars,
 } from '../theme/tokens.stylex';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
-
-// =============================================================================
-// Module Augmentation
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    popover?: {
-      container?: ThemeStyleXStyles;
-    };
-  }
-}
 
 // =============================================================================
 // Helpers

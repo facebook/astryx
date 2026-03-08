@@ -16,17 +16,10 @@
 
 'use client';
 
-import {
-  forwardRef,
-  useContext,
-  type HTMLAttributes,
-  type ReactNode,
-} from 'react';
+import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
-import {ThemeContext} from '../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
@@ -82,19 +75,6 @@ const styles = stylex.create({
     borderBlockStart: `1px solid ${colorVars['--color-divider']}`,
   },
 });
-
-// =============================================================================
-// Module Augmentation
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    sideNav?: {
-      /** Root container styles */
-      root?: ThemeStyleXStyles;
-    };
-  }
-}
 
 // =============================================================================
 // Types
@@ -171,9 +151,6 @@ export const XDSSideNav = forwardRef<HTMLElement, XDSSideNavProps>(
     },
     ref,
   ) {
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.sideNav?.root;
-
     const hasStickyTop = !!(header || topContent);
     const hasStickyBottom = !!(footer || footerIcons);
 
@@ -185,7 +162,7 @@ export const XDSSideNav = forwardRef<HTMLElement, XDSSideNavProps>(
         data-testid={testId}
         {...mergeProps(
           xdsClassName('side-nav'),
-          stylex.props(styles.root, rootOverride, xstyle),
+          stylex.props(styles.root, xstyle),
         )}
         {...props}>
         {hasStickyTop && (

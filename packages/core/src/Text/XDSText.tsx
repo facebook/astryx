@@ -18,13 +18,11 @@ import {
   lazy,
   Suspense,
   useCallback,
-  useContext,
   useRef,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {ThemeContext} from '../theme/ThemeContext';
 import type {
   XDSTextType,
   XDSTextSize,
@@ -203,10 +201,6 @@ export const XDSText = forwardRef<HTMLElement, XDSTextProps>(function XDSText(
   },
   forwardedRef,
 ) {
-  const themeContext = useContext(ThemeContext);
-  const textStyles = themeContext?.theme?.components?.text?.styles;
-  const typeStyle = textStyles?.[type];
-
   // Resolve color with type-based default
   const resolvedColor = color ?? defaultColorByType[type];
 
@@ -256,7 +250,6 @@ export const XDSText = forwardRef<HTMLElement, XDSTextProps>(function XDSText(
         {...mergeProps(
           xdsClassName('text', {type}),
           stylex.props(
-            typeStyle,
             colorStyles[resolvedColor],
             weight && weightStyles[weight],
             // Display: use truncation styles when maxLines > 0

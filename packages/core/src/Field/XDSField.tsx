@@ -13,12 +13,7 @@
 
 'use client';
 
-import {
-  forwardRef,
-  useContext,
-  type HTMLAttributes,
-  type ReactNode,
-} from 'react';
+import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSFieldLabel} from './XDSFieldLabel';
 import {XDSFieldStatus} from './XDSFieldStatus';
@@ -30,8 +25,6 @@ import {
   typographyVars,
 } from '../theme/tokens.stylex';
 import type {XDSIconType} from '../Icon';
-import {ThemeContext} from '../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {xdsClassName, mergeProps} from '../utils';
 
 const styles = stylex.create({
@@ -100,20 +93,6 @@ export interface XDSFieldStatus {
   messageID?: string;
 }
 
-// =============================================================================
-// Module Augmentation - Register component styles with ComponentStyles
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    field?: {
-      /** Root container styles */
-      root?: ThemeStyleXStyles;
-      /** Description text styles */
-      description?: ThemeStyleXStyles;
-    };
-  }
-}
 export interface XDSFieldProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
   'children'
@@ -207,18 +186,10 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
     },
     ref,
   ) => {
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.field?.root;
-    const descriptionOverride =
-      themeContext?.theme.components?.field?.description;
-
     return (
       <div
         ref={ref}
-        {...mergeProps(
-          xdsClassName('field'),
-          stylex.props(styles.container, rootOverride),
-        )}
+        {...mergeProps(xdsClassName('field'), stylex.props(styles.container))}
         {...props}>
         <XDSFieldLabel
           label={label}
@@ -235,7 +206,6 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
             {...stylex.props(
               styles.description,
               isLabelHidden && styles.labelHidden,
-              descriptionOverride,
             )}>
             {description}
           </span>

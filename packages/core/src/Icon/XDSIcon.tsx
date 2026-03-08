@@ -1,6 +1,6 @@
 /**
  * @file XDSIcon.tsx
- * @input Uses React forwardRef/useContext, SVGProps, icon components or semantic icon names
+ * @input Uses React forwardRef/SVGProps, icon components or semantic icon names
  * @output Exports XDSIcon component, XDSIconProps, XDSIconColor, XDSIconSize, XDSIconType types
  * @position Core implementation; consumed by index.ts, tested by XDSIcon.test.tsx
  *
@@ -19,11 +19,9 @@
 
 'use client';
 
-import {forwardRef, useContext, type ComponentType, type SVGProps} from 'react';
+import {forwardRef, type ComponentType, type SVGProps} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
-import {ThemeContext} from '../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {useXDSIcon, type XDSIconName} from './IconRegistry';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -137,18 +135,6 @@ export type XDSIconSize = keyof typeof sizeStyles;
  */
 export type XDSIconType = ComponentType<SVGProps<SVGSVGElement>>;
 
-// =============================================================================
-// Module Augmentation - Register Icon's style surfaces with ComponentStyles
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    icon?: {
-      root?: ThemeStyleXStyles;
-    };
-  }
-}
-
 /**
  * Props for XDSIcon component.
  * Extends SVGProps to allow passing additional SVG attributes (used when icon is a component).
@@ -193,10 +179,6 @@ export interface XDSIconProps extends Omit<
  */
 export const XDSIcon = forwardRef<SVGSVGElement, XDSIconProps>(
   ({icon, color = 'primary', size = 'md', ...props}, ref) => {
-    // Get theme context for component-level overrides (optional)
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.icon?.root;
-
     // String mode: resolve from icon registry, wrap in styled span
     if (typeof icon === 'string') {
       return <IconFromRegistry name={icon} color={color} size={size} />;
@@ -210,12 +192,7 @@ export const XDSIcon = forwardRef<SVGSVGElement, XDSIconProps>(
         aria-hidden="true"
         {...mergeProps(
           xdsClassName('icon', {size, color}),
-          stylex.props(
-            styles.root,
-            colorStyles[color],
-            sizeStyles[size],
-            rootOverride,
-          ),
+          stylex.props(styles.root, colorStyles[color], sizeStyles[size]),
         )}
         {...props}
       />

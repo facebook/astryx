@@ -15,7 +15,6 @@
 
 import {
   forwardRef,
-  useContext,
   useId,
   useState,
   useMemo,
@@ -95,28 +94,13 @@ const sizeStyles = stylex.create({
 export type XDSNumberInputSize = keyof typeof sizeStyles;
 
 // Re-export shared types for convenience
+
 export type {
   XDSInputStatus as XDSNumberInputStatus,
   XDSInputStatusType as XDSNumberInputStatusType,
 } from '../Field';
-import {ThemeContext} from '../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {xdsClassName, mergeProps} from '../utils';
 
-// =============================================================================
-// Module Augmentation - Register component styles with ComponentStyles
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    numberInput?: {
-      /** Input wrapper styles */
-      wrapper?: ThemeStyleXStyles;
-      /** Text input styles */
-      input?: ThemeStyleXStyles;
-    };
-  }
-}
 export interface XDSNumberInputProps {
   /**
    * Label text for the input (always rendered for accessibility).
@@ -318,11 +302,6 @@ export const XDSNumberInput = forwardRef<HTMLInputElement, XDSNumberInputProps>(
     },
     ref,
   ) => {
-    const themeContext = useContext(ThemeContext);
-    const wrapperOverride =
-      themeContext?.theme.components?.numberInput?.wrapper;
-    const inputOverride = themeContext?.theme.components?.numberInput?.input;
-
     const id = useId();
     const descriptionID = useId();
     const statusMessageID = useId();
@@ -483,7 +462,6 @@ export const XDSNumberInput = forwardRef<HTMLInputElement, XDSNumberInputProps>(
               status && inputStatusBorderStyles[status.type],
               status && inputStatusHoverShadowStyles[status.type],
               status && inputStatusFocusWithinStyles[status.type],
-              wrapperOverride,
             ),
           )}>
           {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
@@ -511,7 +489,6 @@ export const XDSNumberInput = forwardRef<HTMLInputElement, XDSNumberInputProps>(
               styles.input,
               isDisabled && styles.inputDisabled,
               !isInputValid && styles.inputInvalid,
-              inputOverride,
             )}
           />
           {units && <span {...stylex.props(styles.units)}>{units}</span>}

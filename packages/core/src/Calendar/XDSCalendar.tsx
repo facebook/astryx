@@ -15,7 +15,6 @@
 
 import {
   forwardRef,
-  useContext,
   useState,
   useMemo,
   useCallback,
@@ -47,8 +46,6 @@ import {
   getWeekNumber,
   formatAccessibleDate,
 } from './utils';
-import {ThemeContext} from '../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
@@ -59,19 +56,23 @@ import {xdsClassName, mergeProps} from '../utils';
  * ISO 8601 date string in YYYY-MM-DD format.
  * Example: "2026-01-28"
  */
+
 export type ISODateString =
   `${number}${number}${number}${number}-${number}${number}-${number}${number}`;
 
 /** Day of week: 0 = Sunday through 6 = Saturday */
+
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 /** Date range with start and end dates */
+
 export interface DateRange {
   start: ISODateString;
   end: ISODateString;
 }
 
 /** Imperative handle for XDSCalendar ref */
+
 export interface XDSCalendarHandle {
   /** Navigate the calendar to show the month containing the given date */
   navigateTo: (date: ISODateString) => void;
@@ -162,18 +163,6 @@ interface XDSCalendarRangeProps extends XDSCalendarBaseProps {
   onChange?: (value: DateRange) => void;
 }
 
-// =============================================================================
-// Module Augmentation - Register component styles with ComponentStyles
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    calendar?: {
-      /** Root container styles */
-      root?: ThemeStyleXStyles;
-    };
-  }
-}
 export type XDSCalendarProps = XDSCalendarSingleProps | XDSCalendarRangeProps;
 
 // =============================================================================
@@ -207,10 +196,6 @@ export const XDSCalendar = forwardRef<XDSCalendarHandle, XDSCalendarProps>(
       weekStartsOn = 0,
       ...rest
     } = props;
-
-    // Get theme context for component-level overrides
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.calendar?.root;
 
     // Today's date (memoized)
     const today = useMemo(() => new Date(), []);
@@ -364,7 +349,7 @@ export const XDSCalendar = forwardRef<XDSCalendarHandle, XDSCalendarProps>(
       <div
         {...mergeProps(
           xdsClassName('calendar', {mode}),
-          stylex.props(calendarStyles.calendar, rootOverride),
+          stylex.props(calendarStyles.calendar),
         )}
         {...rest}>
         {/* Header with navigation */}

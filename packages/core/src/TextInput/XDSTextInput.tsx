@@ -15,7 +15,6 @@
 
 import {
   forwardRef,
-  useContext,
   useId,
   useOptimistic,
   useTransition,
@@ -83,28 +82,13 @@ const sizeStyles = stylex.create({
 export type XDSTextInputSize = keyof typeof sizeStyles;
 
 // Re-export shared types for convenience
+
 export type {
   XDSInputStatus as XDSTextInputStatus,
   XDSInputStatusType as XDSTextInputStatusType,
 } from '../Field';
-import {ThemeContext} from '../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {xdsClassName, mergeProps} from '../utils';
 
-// =============================================================================
-// Module Augmentation - Register component styles with ComponentStyles
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    textInput?: {
-      /** Wrapper container styles */
-      wrapper?: ThemeStyleXStyles;
-      /** Input element styles */
-      input?: ThemeStyleXStyles;
-    };
-  }
-}
 export interface XDSTextInputProps {
   /**
    * Label text for the input (always rendered for accessibility).
@@ -219,10 +203,6 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
     },
     ref,
   ) => {
-    const themeContext = useContext(ThemeContext);
-    const wrapperOverride = themeContext?.theme.components?.textInput?.wrapper;
-    const inputOverride = themeContext?.theme.components?.textInput?.input;
-
     const id = useId();
     const descriptionID = useId();
     const statusMessageID = useId();
@@ -295,7 +275,6 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
               status && inputStatusBorderStyles[status.type],
               status && inputStatusHoverShadowStyles[status.type],
               status && inputStatusFocusWithinStyles[status.type],
-              wrapperOverride,
             ),
           )}>
           {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
@@ -313,11 +292,7 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
             aria-busy={isBusy || undefined}
-            {...stylex.props(
-              styles.input,
-              isDisabled && styles.inputDisabled,
-              inputOverride,
-            )}
+            {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
           />
           {isBusy && <XDSSpinner size="sm" />}
           {status && (

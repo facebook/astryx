@@ -1,6 +1,6 @@
 /**
  * @file XDSCard.tsx
- * @input Uses container utility, StyleX, ThemeContext
+ * @input Uses container utility, StyleX
  * @output Exports XDSCard component and XDSCardProps
  * @position Core card container component
  *
@@ -12,29 +12,12 @@
 
 'use client';
 
-import {forwardRef, useContext, type ReactNode} from 'react';
+import {forwardRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars, elevationVars} from '../theme/tokens.stylex';
-import {ThemeContext} from '../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {container} from '../Layout/container.stylex';
 import type {SizeValue} from '../utils/types';
 import {xdsClassName, mergeProps} from '../utils';
-
-// =============================================================================
-// Module Augmentation - Register XDSCard's themeable properties
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    card?: {
-      /** Outer container styles (background, border, shadow, border-radius) */
-      container?: ThemeStyleXStyles;
-      /** Inner content styles (padding) */
-      content?: ThemeStyleXStyles;
-    };
-  }
-}
 
 const styles = stylex.create({
   // Outer wrapper: visual styling with clip for border-radius
@@ -153,11 +136,6 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
     },
     ref,
   ) {
-    // Get theme context for component-level overrides
-    const themeContext = useContext(ThemeContext);
-    const containerOverride = themeContext?.theme.components?.card?.container;
-    const contentOverride = themeContext?.theme.components?.card?.content;
-
     // Only enable scrolling when card has a fixed height (not null/undefined and not "auto")
     const hasFixedHeight = height != null && height !== 'auto';
 
@@ -168,7 +146,6 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
           xdsClassName('card'),
           stylex.props(
             styles.cardOuter,
-            containerOverride,
             dynamicStyles.sizing(
               width ?? null,
               height ?? null,
@@ -189,7 +166,6 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
               paddingOuterY: 'spacing4',
             }),
             isFullBleed && styles.fullBleed,
-            contentOverride,
           )}>
           {children}
         </div>

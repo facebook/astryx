@@ -14,14 +14,12 @@
 'use client';
 
 import React, {
-  useContext,
   useLayoutEffect,
   useRef,
   type ReactElement,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {ThemeContext} from '../theme/ThemeContext';
 import {useXDSHoverCard, type HoverCardFocusTrigger} from './useXDSHoverCard';
 import type {LayerAlignment, LayerPlacement} from './useXDSLayer';
 import {colorVars} from '../theme/tokens.stylex';
@@ -165,11 +163,6 @@ export function XDSHoverCard({
   const wrapperRef = useRef<HTMLElement>(null);
   const textOnly = isTextOnly(children);
 
-  // Get theme context for hover indication override
-  const themeContext = useContext(ThemeContext);
-  const themeHoverIndicationOverride =
-    themeContext?.theme.components?.hoverCard?.hoverIndication;
-
   // Determine if hover indication should be shown
   const showHoverIndication =
     hasHoverIndication === true || (hasHoverIndication === 'auto' && textOnly);
@@ -227,7 +220,6 @@ export function XDSHoverCard({
           {...stylex.props(
             styles.wrapperInline,
             showHoverIndication && styles.hoverIndication,
-            showHoverIndication && themeHoverIndicationOverride,
           )}>
           {children}
         </span>

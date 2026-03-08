@@ -15,7 +15,6 @@
 
 import {
   forwardRef,
-  useContext,
   useId,
   useState,
   useCallback,
@@ -120,28 +119,13 @@ const sizeStyles = stylex.create({
 export type XDSDateInputSize = keyof typeof sizeStyles;
 
 // Re-export shared types for convenience
+
 export type {
   XDSInputStatus as XDSDateInputStatus,
   XDSInputStatusType as XDSDateInputStatusType,
 } from '../Field';
-import {ThemeContext} from '../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {xdsClassName, mergeProps} from '../utils';
 
-// =============================================================================
-// Module Augmentation - Register component styles with ComponentStyles
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    dateInput?: {
-      /** Input wrapper styles */
-      wrapper?: ThemeStyleXStyles;
-      /** Text input styles */
-      input?: ThemeStyleXStyles;
-    };
-  }
-}
 export interface XDSDateInputProps {
   /**
    * Label text for the input (required for accessibility).
@@ -283,10 +267,6 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
     },
     ref,
   ) => {
-    const themeContext = useContext(ThemeContext);
-    const wrapperOverride = themeContext?.theme.components?.dateInput?.wrapper;
-    const inputOverride = themeContext?.theme.components?.dateInput?.input;
-
     const id = useId();
     const descriptionID = useId();
     const statusMessageID = useId();
@@ -487,7 +467,6 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
               status && inputStatusBorderStyles[status.type],
               status && inputStatusHoverShadowStyles[status.type],
               status && inputStatusFocusWithinStyles[status.type],
-              wrapperOverride,
             ),
           )}>
           <button
@@ -521,7 +500,6 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
               styles.input,
               isDisabled && styles.inputDisabled,
               !isInputValid && styles.inputInvalid,
-              inputOverride,
             )}
           />
           {isBusy && <XDSSpinner size="sm" />}

@@ -14,14 +14,12 @@
 'use client';
 
 import React, {
-  useContext,
   useLayoutEffect,
   useRef,
   type ReactElement,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {ThemeContext} from '../theme/ThemeContext';
 import {useXDSTooltip, type TooltipFocusTrigger} from './useXDSTooltip';
 import type {LayerAlignment, LayerPlacement} from './useXDSLayer';
 import {colorVars} from '../theme/tokens.stylex';
@@ -175,11 +173,6 @@ export function XDSTooltip({
   const wrapperRef = useRef<HTMLElement>(null);
   const textOnly = children != null ? isTextOnly(children) : false;
 
-  // Get theme context for hover indication override
-  const themeContext = useContext(ThemeContext);
-  const themeHoverIndicationOverride =
-    themeContext?.theme.components?.tooltip?.hoverIndication;
-
   // Determine if hover indication should be shown
   const showHoverIndication =
     hasHoverIndication === true || (hasHoverIndication === 'auto' && textOnly);
@@ -270,7 +263,6 @@ export function XDSTooltip({
           {...stylex.props(
             styles.wrapperInline,
             showHoverIndication && styles.hoverIndication,
-            showHoverIndication && themeHoverIndicationOverride,
           )}>
           {children}
         </span>

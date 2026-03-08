@@ -1,6 +1,6 @@
 /**
  * @file XDSSection.tsx
- * @input Uses container utility, StyleX, ThemeContext
+ * @input Uses container utility, StyleX
  * @output Exports XDSSection component and XDSSectionProps
  * @position Core section container component
  *
@@ -12,11 +12,9 @@
 
 'use client';
 
-import {forwardRef, useContext, type ReactNode} from 'react';
+import {forwardRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
-import {ThemeContext} from '../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {container} from '../Layout/container.stylex';
 import type {SizeValue} from '../utils/types';
 import {xdsClassName, mergeProps} from '../utils';
@@ -25,23 +23,6 @@ import {xdsClassName, mergeProps} from '../utils';
  * Visual variant for the section.
  */
 export type XDSSectionVariant = 'section' | 'transparent' | 'wash';
-
-// =============================================================================
-// Module Augmentation - Register XDSSection's themeable properties
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    section?: {
-      /** Outer container styles (positioning, margins) */
-      container?: ThemeStyleXStyles;
-      /** Inner content styles (padding) */
-      content?: ThemeStyleXStyles;
-      /** Style overrides for each variant (background, visual styling) */
-      variants?: Partial<Record<XDSSectionVariant, ThemeStyleXStyles>>;
-    };
-  }
-}
 
 const variantStyles = stylex.create({
   section: {
@@ -215,14 +196,6 @@ export const XDSSection = forwardRef<HTMLDivElement, XDSSectionProps>(
     },
     ref,
   ) {
-    // Get theme context for component-level overrides
-    const themeContext = useContext(ThemeContext);
-    const containerOverride =
-      themeContext?.theme.components?.section?.container;
-    const contentOverride = themeContext?.theme.components?.section?.content;
-    const variantOverride =
-      themeContext?.theme.components?.section?.variants?.[variant];
-
     return (
       <div
         ref={ref}
@@ -236,7 +209,6 @@ export const XDSSection = forwardRef<HTMLDivElement, XDSSectionProps>(
               maxWidth ?? null,
               minHeight ?? null,
             ),
-            containerOverride,
           ),
         )}
         {...props}>
@@ -250,13 +222,11 @@ export const XDSSection = forwardRef<HTMLDivElement, XDSSectionProps>(
               paddingOuterY: 'spacing4',
             }),
             variantStyles[variant],
-            variantOverride,
             isFullBleed && nestedStyles.fullBleed,
             dividers?.includes('top') && dividerStyles.top,
             dividers?.includes('bottom') && dividerStyles.bottom,
             dividers?.includes('start') && dividerStyles.start,
             dividers?.includes('end') && dividerStyles.end,
-            contentOverride,
           )}>
           {children}
         </div>
