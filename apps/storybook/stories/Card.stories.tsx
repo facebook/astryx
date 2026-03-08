@@ -315,3 +315,65 @@ export const FullBleed: Story = {
     </div>
   ),
 };
+
+/**
+ * Cards shown on top of different background treatments.
+ * Demonstrates the visual contrast between cards on wash (gray)
+ * backgrounds vs surface (white) backgrounds.
+ */
+export const OnBackgrounds: Story = {
+  decorators: [Story => <Story />],
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 0,
+      }}>
+      <div {...stylex.props(styles.pageWrapper)}>
+        <h4 {...stylex.props(styles.heading)}>Cards on wash background</h4>
+        <div {...stylex.props(styles.storyWrapper)}>
+          <XDSCard width={250}>
+            <XDSVStack gap="space2">
+              <h3 {...stylex.props(styles.text)}>Card on Wash</h3>
+              <p {...stylex.props(styles.text, styles.textSecondary)}>
+                Cards stand out clearly against the wash background, creating a
+                layered visual hierarchy.
+              </p>
+            </XDSVStack>
+          </XDSCard>
+          <XDSCard width={250}>
+            <XDSVStack gap="space2">
+              <h3 {...stylex.props(styles.text)}>Another Card</h3>
+              <p {...stylex.props(styles.text, styles.textSecondary)}>
+                Multiple cards on wash create a dashboard-like layout.
+              </p>
+            </XDSVStack>
+          </XDSCard>
+        </div>
+      </div>
+      <XDSSection variant="section" width="100%">
+        <h4 {...stylex.props(styles.heading)}>Cards on surface section</h4>
+        <div {...stylex.props(styles.storyWrapper)}>
+          <XDSCard width={250}>
+            <XDSVStack gap="space2">
+              <h3 {...stylex.props(styles.text)}>Card on Surface</h3>
+              <p {...stylex.props(styles.text, styles.textSecondary)}>
+                On a surface background, cards are more subtle since both share
+                the same base color.
+              </p>
+            </XDSVStack>
+          </XDSCard>
+          <XDSCard width={250}>
+            <XDSVStack gap="space2">
+              <h3 {...stylex.props(styles.text)}>Another Card</h3>
+              <p {...stylex.props(styles.text, styles.textSecondary)}>
+                The card border and shadow provide separation from the surface.
+              </p>
+            </XDSVStack>
+          </XDSCard>
+        </div>
+      </XDSSection>
+    </div>
+  ),
+};

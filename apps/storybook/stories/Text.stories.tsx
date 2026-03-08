@@ -566,7 +566,12 @@ export const MetricsExample: Story = {
   ),
 };
 
-export const FormExample: Story = {
+/**
+ * Text types in a form-like context. Note: for actual forms, prefer
+ * XDSTextInput or XDSTextArea which include built-in labels and
+ * descriptions. This example shows how Text types pair with content.
+ */
+export const FormLikeContext: Story = {
   render: () => (
     <div
       style={{
@@ -576,27 +581,26 @@ export const FormExample: Story = {
         gap: '16px',
       }}>
       <div>
-        <XDSText type="label" as="label" display="block">
-          Email address
+        <XDSText type="label" display="block">
+          Section title as label
         </XDSText>
-        <input
-          type="email"
-          style={{width: '100%', padding: '8px', marginTop: '4px'}}
-        />
+        <XDSText type="body" display="block">
+          Body text provides the main content or instructions for this section.
+        </XDSText>
         <XDSText type="supporting" display="block">
-          We'll never share your email.
+          Supporting text adds extra context or constraints.
         </XDSText>
       </div>
       <div>
-        <XDSText type="label" as="label" display="block">
-          Password
+        <XDSText type="label" display="block">
+          Another section
         </XDSText>
-        <input
-          type="password"
-          style={{width: '100%', padding: '8px', marginTop: '4px'}}
-        />
+        <XDSText type="body" display="block">
+          These text types create a natural visual hierarchy without any
+          additional styling.
+        </XDSText>
         <XDSText type="supporting" color="active" display="block">
-          Must be at least 8 characters.
+          Active supporting text draws attention to important details.
         </XDSText>
       </div>
     </div>
