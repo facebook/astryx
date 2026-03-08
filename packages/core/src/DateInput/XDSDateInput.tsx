@@ -496,6 +496,7 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={status?.type === 'error' ? 'true' : undefined}
             aria-busy={isBusy || undefined}
+            autoComplete="off"
             {...stylex.props(
               styles.input,
               isDisabled && styles.inputDisabled,

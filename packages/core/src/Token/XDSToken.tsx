@@ -243,7 +243,7 @@ const sizeStyles = stylex.create({
   },
   md: {
     height: `calc(${sizeVars['--size-md']} - 8px)`,
-    paddingInline: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-2'],
   },
 });
 
