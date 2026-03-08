@@ -72,13 +72,20 @@ function createEntryFile(
 ): string {
   const entryPath = path.join(tmpDir, 'entry.tsx');
 
-  // For XDS target, wrap in theme provider and import reset
-  if (target === 'xds') {
+  // For XDS and XDS+Tailwind targets, wrap in theme provider and import reset
+  if (target === 'xds' || target === 'xds-tailwind') {
+    const tailwindImport =
+      target === 'xds-tailwind'
+        ? `import '${path
+            .resolve(VIBE_DIR, 'app/tailwind.css')
+            .replace(/\\/g, '/')}';`
+        : '';
     fs.writeFileSync(
       entryPath,
       `import React from 'react';
 import {createRoot} from 'react-dom/client';
 import '@xds/core/reset.css';
+${tailwindImport}
 import {XDSTheme} from '@xds/core/theme';
 import {defaultTheme} from '@xds/theme/default';
 import Component from '${componentPath.replace(/\\/g, '/')}';
@@ -206,12 +213,12 @@ function createIndexHtml(
 function createViteConfig(tmpDir: string, target: string): string {
   const configPath = path.join(tmpDir, 'vite.config.ts');
 
-  // For XDS previews, the generated component may use patterns that
-  // StyleX's babel plugin rejects (e.g. createTheme with type casts).
-  // We use a pre-transform plugin to strip TypeScript type assertions
-  // before StyleX processes the file.
+  // For XDS and XDS+Tailwind previews, the generated component may use
+  // patterns that StyleX's babel plugin rejects (e.g. createTheme with
+  // type casts). We use a pre-transform plugin to strip TypeScript type
+  // assertions before StyleX processes the file.
   const plugins =
-    target === 'xds'
+    target === 'xds' || target === 'xds-tailwind'
       ? `
     {
       name: 'stylex-inline-vars',
@@ -268,7 +275,9 @@ function createViteConfig(tmpDir: string, target: string): string {
         rootDir: '${REPO_ROOT.replace(/\\/g, '/')}',
       },
       aliases: {
-        '@xds/core/theme/tokens.stylex': '${path.resolve(REPO_ROOT, 'packages/core/src/theme/tokens.stylex.ts').replace(/\\/g, '/')}',
+        '@xds/core/theme/tokens.stylex': '${path
+          .resolve(REPO_ROOT, 'packages/core/src/theme/tokens.stylex.ts')
+          .replace(/\\/g, '/')}',
       },
     }),
     react(),
@@ -278,29 +287,52 @@ function createViteConfig(tmpDir: string, target: string): string {
     viteSingleFile(),`;
 
   const imports =
-    target === 'xds'
+    target === 'xds' || target === 'xds-tailwind'
       ? `import stylex from '@stylexjs/unplugin';
 import react from '@vitejs/plugin-react';
 import {viteSingleFile} from 'vite-plugin-singlefile';`
       : `import react from '@vitejs/plugin-react';
 import {viteSingleFile} from 'vite-plugin-singlefile';`;
 
+  const xdsAliases = `
+    alias: {
+      '@xds/core/theme/tokens.stylex': '${path
+        .resolve(REPO_ROOT, 'packages/core/src/theme/tokens.stylex.ts')
+        .replace(/\\/g, '/')}',
+      '@xds/core': '${path
+        .resolve(REPO_ROOT, 'packages/core/src')
+        .replace(/\\/g, '/')}',
+      '@xds/theme/default': '${path
+        .resolve(REPO_ROOT, 'packages/themes/default/src')
+        .replace(/\\/g, '/')}',
+      '@xds/theme/neutral': '${path
+        .resolve(REPO_ROOT, 'packages/themes/neutral/src')
+        .replace(/\\/g, '/')}',
+    },`;
+
   const aliases =
-    target === 'xds'
+    target === 'xds' || target === 'xds-tailwind'
+      ? xdsAliases
+      : target === 'baseline'
       ? `
     alias: {
-      '@xds/core/theme/tokens.stylex': '${path.resolve(REPO_ROOT, 'packages/core/src/theme/tokens.stylex.ts').replace(/\\/g, '/')}',
-      '@xds/core': '${path.resolve(REPO_ROOT, 'packages/core/src').replace(/\\/g, '/')}',
-      '@xds/theme/default': '${path.resolve(REPO_ROOT, 'packages/themes/default/src').replace(/\\/g, '/')}',
-      '@xds/theme/neutral': '${path.resolve(REPO_ROOT, 'packages/themes/neutral/src').replace(/\\/g, '/')}',
+      '@/components/ui': '${path
+        .resolve(VIBE_DIR, '.baseline-shims/components/ui')
+        .replace(/\\/g, '/')}',
+      '@/lib/utils': '${path
+        .resolve(VIBE_DIR, '.baseline-shims/lib/utils')
+        .replace(/\\/g, '/')}',
     },`
-      : target === 'baseline'
-        ? `
-    alias: {
-      '@/components/ui': '${path.resolve(VIBE_DIR, '.baseline-shims/components/ui').replace(/\\/g, '/')}',
-      '@/lib/utils': '${path.resolve(VIBE_DIR, '.baseline-shims/lib/utils').replace(/\\/g, '/')}',
-    },`
-        : '';
+      : '';
+
+  // XDS+Tailwind needs PostCSS with Tailwind for utility class resolution
+  const cssConfig =
+    target === 'xds-tailwind'
+      ? `
+  css: {
+    postcss: '${path.resolve(VIBE_DIR, 'app').replace(/\\/g, '/')}',
+  },`
+      : '';
 
   fs.writeFileSync(
     configPath,
@@ -310,7 +342,7 @@ ${imports}
 export default defineConfig({
   root: '${tmpDir.replace(/\\/g, '/')}',
   plugins: [${plugins}
-  ],
+  ],${cssConfig}
   resolve: {${aliases}
   },
   build: {
@@ -503,10 +535,7 @@ function buildPreview(
 ): boolean {
   // Use a unique temp directory per build to prevent race conditions
   // when multiple build-previews processes run concurrently
-  const tmpDir = path.join(
-    VIBE_DIR,
-    `.preview-tmp-${crypto.randomUUID()}`,
-  );
+  const tmpDir = path.join(VIBE_DIR, `.preview-tmp-${crypto.randomUUID()}`);
   ensureDir(tmpDir);
 
   try {
@@ -620,7 +649,9 @@ async function main() {
     0,
   );
   console.log(
-    `\n✅ Built ${totalPreviews} preview(s) for ${Object.keys(manifest).length} prompt(s)`,
+    `\n✅ Built ${totalPreviews} preview(s) for ${
+      Object.keys(manifest).length
+    } prompt(s)`,
   );
   console.log(`   Manifest: ${manifestOutPath}`);
 }

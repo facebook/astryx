@@ -29,7 +29,9 @@
     "universal:compare": "tsx src/universal-compare.ts",
     "report:build": "tsx src/build-report.ts",
     "report:dev": "tsx src/build-report.ts --dev",
-    "report:deploy": "tsx src/deploy-report.ts"
+    "report:deploy": "tsx src/deploy-report.ts",
+    "preview:dev": "vite --config app/vite.config.preview.ts",
+    "preview:build": "vite build --config app/vite.config.preview.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0",
@@ -37,6 +39,9 @@
     "commander": "^12.1.0"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.1",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.1",
     "tsx": "^4.19.0"
   }
 }
