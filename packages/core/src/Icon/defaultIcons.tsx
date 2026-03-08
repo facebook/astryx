@@ -17,7 +17,7 @@
  * - Status icons (checkCircle, xCircle, warning) use solid fills for better color visibility
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Icon/IconRegistry.tsx (XDSIconName type if names change)
+ * - /packages/core/src/Icon/globalIconRegistry.tsx (XDSIconName type if names change)
  * - /packages/core/src/Icon/Icon.doc.mjs (fallback icon documentation)
  */
 
@@ -52,43 +52,43 @@ const solidSvgProps = {
 };
 
 export const defaultIcons: XDSIconRegistry = {
-  /** ✕ — two diagonal lines */
+  /** ✕ — close/dismiss (Dialog, MobileNav, Token, TimeInput, etc.) */
   close: (
     <svg {...svgProps}>
       <path d="M6 6l12 12M6 18L18 6" />
     </svg>
   ),
 
-  /** ▾ — downward chevron */
-  chevronDown: (
+  /** ▾ — expand/collapse chevron (Selector, DropdownMenu, Collapsible, TabMenu) */
+  'selector.chevron': (
     <svg {...svgProps}>
       <path d="M6 9l6 6 6-6" />
     </svg>
   ),
 
-  /** ‹ — left chevron */
-  chevronLeft: (
+  /** ‹ — navigate previous (Calendar, Pagination) */
+  'nav.prev': (
     <svg {...svgProps}>
       <path d="M15 6l-6 6 6 6" />
     </svg>
   ),
 
-  /** › — right chevron */
-  chevronRight: (
+  /** › — navigate next (Calendar, Pagination) */
+  'nav.next': (
     <svg {...svgProps}>
       <path d="M9 6l6 6-6 6" />
     </svg>
   ),
 
-  /** ✓ — checkmark */
-  check: (
+  /** ✓ — selected item checkmark (Selector, TabMenu, Typeahead) */
+  'selector.check': (
     <svg {...svgProps}>
       <path d="M5 13l4 4L19 7" />
     </svg>
   ),
 
-  /** ✓ in circle — success (solid fill for status visibility) */
-  checkCircle: (
+  /** ✓ in circle — success status (solid fill for visibility) */
+  'status.success': (
     <svg {...solidSvgProps}>
       <path
         fillRule="evenodd"
@@ -98,8 +98,8 @@ export const defaultIcons: XDSIconRegistry = {
     </svg>
   ),
 
-  /** ✕ in circle — error (solid fill for status visibility) */
-  xCircle: (
+  /** ✕ in circle — error status (solid fill for visibility) */
+  'status.error': (
     <svg {...solidSvgProps}>
       <path
         fillRule="evenodd"
@@ -109,8 +109,8 @@ export const defaultIcons: XDSIconRegistry = {
     </svg>
   ),
 
-  /** △ with ! — warning (solid fill for status visibility) */
-  warning: (
+  /** △ with ! — warning status (solid fill for visibility) */
+  'status.warning': (
     <svg {...solidSvgProps}>
       <path
         fillRule="evenodd"
@@ -120,8 +120,8 @@ export const defaultIcons: XDSIconRegistry = {
     </svg>
   ),
 
-  /** ⓘ — information */
-  info: (
+  /** ⓘ — information tooltip (FieldLabel) */
+  'field.info': (
     <svg {...svgProps}>
       <circle cx="12" cy="12" r="9" />
       <path d="M12 11v5" />
@@ -129,24 +129,24 @@ export const defaultIcons: XDSIconRegistry = {
     </svg>
   ),
 
-  /** 📅 — calendar */
-  calendar: (
+  /** 📅 — calendar trigger (DateInput) */
+  'dateInput.calendar': (
     <svg {...svgProps}>
       <rect x="3" y="4" width="18" height="18" rx="2" />
       <path d="M16 2v4M8 2v4M3 10h18" />
     </svg>
   ),
 
-  /** 🕐 — clock */
-  clock: (
+  /** 🕐 — clock indicator (TimeInput) */
+  'timeInput.clock': (
     <svg {...svgProps}>
       <circle cx="12" cy="12" r="9" />
       <path d="M12 7v5l3 3" />
     </svg>
   ),
 
-  /** ↗ — external link arrow */
-  externalLink: (
+  /** ↗ — external link indicator (Link) */
+  'link.external': (
     <svg {...svgProps}>
       <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
       <path d="M15 3h6v6" />
@@ -154,15 +154,15 @@ export const defaultIcons: XDSIconRegistry = {
     </svg>
   ),
 
-  /** ☰ — hamburger menu (three horizontal lines) */
-  menu: (
+  /** ☰ — hamburger menu (navigation) */
+  'nav.menu': (
     <svg {...svgProps} strokeWidth={2}>
       <path d="M4 6h16M4 12h16M4 18h16" />
     </svg>
   ),
 
-  /** ⋯ — three horizontal dots (more/overflow) */
-  moreHorizontal: (
+  /** ⋯ — more/overflow trigger (MoreMenu) */
+  'moreMenu.trigger': (
     <svg {...solidSvgProps}>
       <circle cx="5" cy="12" r="1.5" />
       <circle cx="12" cy="12" r="1.5" />
@@ -170,8 +170,8 @@ export const defaultIcons: XDSIconRegistry = {
     </svg>
   ),
 
-  /** 🔍 — magnifying glass (search) */
-  search: (
+  /** 🔍 — search (search inputs) */
+  'search.icon': (
     <svg {...svgProps}>
       <circle cx="11" cy="11" r="8" />
       <path d="M21 21l-4.35-4.35" />

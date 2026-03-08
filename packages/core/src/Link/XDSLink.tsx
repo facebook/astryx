@@ -292,7 +292,7 @@ export const XDSLink = forwardRef<HTMLAnchorElement, XDSLinkProps>(
           {children}
         </XDSText>
         {isExternalLink && (
-          <XDSIcon icon="externalLink" size="xsm" color="inherit" />
+          <XDSIcon icon="link.external" size="xsm" color="inherit" />
         )}
       </LinkComponent>
     );

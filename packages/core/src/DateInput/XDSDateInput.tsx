@@ -286,9 +286,9 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
 
     // Status icon mapping
     const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
-      warning: 'warning',
-      error: 'xCircle',
-      success: 'checkCircle',
+      warning: 'status.warning',
+      error: 'status.error',
+      success: 'status.success',
     };
 
     const statusIconColorMap: Record<
@@ -489,7 +489,7 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
               styles.iconButton,
               isDisabled && styles.iconButtonDisabled,
             )}>
-            <XDSIcon icon="calendar" size="sm" color="secondary" />
+            <XDSIcon icon="dateInput.calendar" size="sm" color="secondary" />
           </button>
           <input
             ref={setRefs}

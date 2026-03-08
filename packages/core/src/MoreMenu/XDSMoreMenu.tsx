@@ -177,7 +177,7 @@ export interface XDSMoreMenuProps {
   /**
    * Override the default three-dot icon.
    * Accepts any ReactNode (same as XDSButton's `icon` prop).
-   * @default Three horizontal dots from the icon registry ('moreHorizontal')
+   * @default Three horizontal dots from the icon registry ('moreMenu.trigger')
    */
   icon?: ReactNode;
 
@@ -247,7 +247,7 @@ export const XDSMoreMenu = forwardRef<HTMLButtonElement, XDSMoreMenuProps>(
     },
     ref,
   ) => {
-    const moreIcon = useXDSIcon('moreHorizontal');
+    const moreIcon = useXDSIcon('moreMenu.trigger');
     const buttonRef = useRef<HTMLButtonElement | null>(null);
     const menuId = useId();
     const [highlightedIndex, setHighlightedIndex] = useState(-1);

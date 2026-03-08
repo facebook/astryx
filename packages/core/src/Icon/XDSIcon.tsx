@@ -7,7 +7,7 @@
  * Supports two modes:
  * - Component mode: Pass an SVG icon component (e.g. from @heroicons/react) — rendered
  *   directly with forwardRef and spread SVG props.
- * - String mode: Pass a semantic name (e.g. 'close', 'chevronDown') — resolved from the
+ * - String mode: Pass a semantic name (e.g. 'close', 'selector.chevron') — resolved from the
  *   theme's icon registry (or built-in fallback SVGs) and wrapped in a styled span.
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -145,7 +145,7 @@ export interface XDSIconProps extends Omit<
 > {
   /**
    * Icon to render. Can be:
-   * - A semantic name string (e.g. 'close', 'chevronDown') — resolved from theme or built-in fallback
+   * - A semantic name string (e.g. 'close', 'selector.chevron') — resolved from theme or built-in fallback
    * - An SVG icon component (e.g. from @heroicons/react) — rendered directly
    */
   icon: XDSIconType | XDSIconName;

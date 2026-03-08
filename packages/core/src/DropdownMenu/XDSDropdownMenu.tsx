@@ -558,7 +558,7 @@ export function XDSDropdownMenu({
   // Build chevron icon - inherits color from button text
   const chevronIcon = (
     <span {...stylex.props(styles.chevronIcon)}>
-      <XDSIcon icon="chevronDown" size="sm" color="inherit" />
+      <XDSIcon icon="selector.chevron" size="sm" color="inherit" />
     </span>
   );
 

@@ -219,9 +219,9 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
     const isBusy = isLoading || optimisticValue !== value;
 
     const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
-      warning: 'warning',
-      error: 'xCircle',
-      success: 'checkCircle',
+      warning: 'status.warning',
+      error: 'status.error',
+      success: 'status.success',
     };
 
     const statusIconColorMap: Record<

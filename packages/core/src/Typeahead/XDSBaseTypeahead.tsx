@@ -568,7 +568,7 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
           role="status"
           aria-label="Loading"
           {...stylex.props(styles.loadingSpinner)}>
-          <XDSIcon icon="clock" size="sm" color="secondary" />
+          <XDSIcon icon="timeInput.clock" size="sm" color="secondary" />
         </span>
       )}
 
@@ -605,7 +605,7 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
                   )}
                 </span>
                 {value?.id === item.id && (
-                  <XDSIcon icon="check" size="sm" color="accent" />
+                  <XDSIcon icon="selector.check" size="sm" color="accent" />
                 )}
               </div>
             ))

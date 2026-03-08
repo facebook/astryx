@@ -232,9 +232,9 @@ export const XDSTextArea = forwardRef<HTMLTextAreaElement, XDSTextAreaProps>(
     const isBusy = isLoading || optimisticValue !== value;
 
     const statusIconMap: Record<XDSTextAreaStatusType, XDSIconName> = {
-      warning: 'warning',
-      error: 'xCircle',
-      success: 'checkCircle',
+      warning: 'status.warning',
+      error: 'status.error',
+      success: 'status.success',
     };
 
     const statusIconColorMap: Record<

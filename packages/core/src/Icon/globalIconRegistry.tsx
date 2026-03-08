@@ -18,30 +18,57 @@ import {defaultIcons} from './defaultIcons';
 // =============================================================================
 
 /**
- * Semantic icon names used internally by XDS components.
+ * Known namespaced icon names used internally by XDS components.
  *
- * These represent the functional purpose of each icon, not a specific
- * visual representation. Themes provide the actual icon components.
+ * Names follow the pattern `component.role` — they describe where and why
+ * an icon is used, not what it looks like. This lets themes override icons
+ * per-component and prevents name collisions with marketplace components.
+ *
+ * The type also accepts any `${string}.${string}` pattern so marketplace
+ * components can register their own namespaced icons:
+ *
+ * @example
+ * ```
+ * // Marketplace component registers its own icons
+ * registerIcons({
+ *   'ratingWidget.star': <StarIcon />,
+ *   'ratingWidget.starEmpty': <StarOutlineIcon />,
+ * });
+ * ```
  */
 export type XDSIconName =
+  // Shared — used by multiple components (Dialog, MobileNav, Token, etc.)
   | 'close'
-  | 'chevronDown'
-  | 'chevronLeft'
-  | 'chevronRight'
-  | 'check'
-  | 'checkCircle'
-  | 'xCircle'
-  | 'warning'
-  | 'info'
-  | 'calendar'
-  | 'clock'
-  | 'externalLink'
-  | 'menu'
-  | 'moreHorizontal'
-  | 'search';
+  // Selector / DropdownMenu / Collapsible / TabMenu
+  | 'selector.chevron'
+  | 'selector.check'
+  // Navigation — Calendar, Pagination
+  | 'nav.prev'
+  | 'nav.next'
+  | 'nav.menu'
+  // Status — used by TextInput, NumberInput, Selector, DateInput, TextArea, TimeInput
+  | 'status.success'
+  | 'status.error'
+  | 'status.warning'
+  // Field
+  | 'field.info'
+  // Date/Time inputs
+  | 'dateInput.calendar'
+  | 'timeInput.clock'
+  // Link
+  | 'link.external'
+  // MoreMenu
+  | 'moreMenu.trigger'
+  // Search
+  | 'search.icon'
+  // Extensible — marketplace components can register any namespaced icon
+  | `${string}.${string}`;
 
 /**
  * Icon registry mapping semantic names to React nodes.
+ *
+ * Uses a flexible record type so marketplace components can add
+ * their own namespaced entries beyond the built-in XDS names.
  */
 export type XDSIconRegistry = Record<XDSIconName, ReactNode>;
 
@@ -58,13 +85,28 @@ let globalRegistry: Partial<XDSIconRegistry> = {};
  * Icons registered here are available to all components — including
  * server-rendered ones that can't access React Context.
  *
+ * Marketplace components should register their own namespaced icons
+ * at module level so themes can override them:
+ *
  * @example
  * ```ts
- * // app/layout.tsx (RSC-compatible)
+ * // app/layout.tsx — register theme icons
  * import { registerIcons } from '@xds/core';
  * import { brandIcons } from './brand-icons';
  *
  * registerIcons(brandIcons);
+ * ```
+ *
+ * @example
+ * ```ts
+ * // Marketplace component — register defaults at module level
+ * import { registerIcons } from '@xds/core';
+ *
+ * // Theme can override these by registering the same keys
+ * registerIcons({
+ *   'ratingWidget.star': <StarIcon />,
+ *   'ratingWidget.starEmpty': <StarOutlineIcon />,
+ * });
  * ```
  */
 export function registerIcons(icons: Partial<XDSIconRegistry>): void {

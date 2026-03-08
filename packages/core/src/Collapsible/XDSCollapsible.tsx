@@ -172,7 +172,7 @@ export const XDSCollapsible = forwardRef<HTMLDivElement, XDSCollapsibleProps>(
       value,
     });
 
-    const chevronIcon = useXDSIcon('chevronDown');
+    const chevronIcon = useXDSIcon('selector.chevron');
 
     return (
       <div ref={ref} className={xdsClassName('collapsible')} {...props}>

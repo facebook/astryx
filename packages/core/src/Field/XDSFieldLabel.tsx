@@ -156,7 +156,7 @@ export const XDSFieldLabel = forwardRef<HTMLLabelElement, XDSFieldLabelProps>(
         {labelTooltip && (
           <XDSTooltip content={labelTooltip} placement="above">
             <XDSIcon
-              icon="info"
+              icon="field.info"
               size="sm"
               color={isDisabled ? 'disabled' : 'secondary'}
             />

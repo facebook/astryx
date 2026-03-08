@@ -52,6 +52,7 @@ export const IconRegistryContext =
  * @example
  * ```
  * const closeIcon = useXDSIcon('close');
+ * const chevron = useXDSIcon('selector.chevron');
  * ```
  */
 export function useXDSIcon(name: XDSIconName): ReactNode {

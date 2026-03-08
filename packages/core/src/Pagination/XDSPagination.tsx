@@ -536,7 +536,7 @@ export const XDSPagination = forwardRef<HTMLElement, XDSPaginationProps>(
             label="Go to previous page"
             variant="ghost"
             size={buttonSize}
-            icon={<XDSIcon icon="chevronLeft" size={isSm ? 'sm' : 'md'} />}
+            icon={<XDSIcon icon="nav.prev" size={isSm ? 'sm' : 'md'} />}
             onClick={handlePrevious}
             isDisabled={isDisabled || !hasPrevious}
           />
@@ -547,7 +547,7 @@ export const XDSPagination = forwardRef<HTMLElement, XDSPaginationProps>(
             label="Go to next page"
             variant="ghost"
             size={buttonSize}
-            icon={<XDSIcon icon="chevronRight" size={isSm ? 'sm' : 'md'} />}
+            icon={<XDSIcon icon="nav.next" size={isSm ? 'sm' : 'md'} />}
             onClick={handleNext}
             isDisabled={isDisabled || !hasNext}
           />

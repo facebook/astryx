@@ -362,7 +362,7 @@ export const XDSCalendar = forwardRef<XDSCalendarHandle, XDSCalendarProps>(
           <XDSButton
             label="Previous month"
             variant="ghost"
-            icon={<XDSIcon icon="chevronLeft" size="sm" color="inherit" />}
+            icon={<XDSIcon icon="nav.prev" size="sm" color="inherit" />}
             onClick={() => navigateMonth(-1)}
           />
 
@@ -373,7 +373,7 @@ export const XDSCalendar = forwardRef<XDSCalendarHandle, XDSCalendarProps>(
           <XDSButton
             label="Next month"
             variant="ghost"
-            icon={<XDSIcon icon="chevronRight" size="sm" color="inherit" />}
+            icon={<XDSIcon icon="nav.next" size="sm" color="inherit" />}
             onClick={() => navigateMonth(1)}
           />
         </div>

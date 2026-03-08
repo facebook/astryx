@@ -318,9 +318,9 @@ export const XDSNumberInput = forwardRef<HTMLInputElement, XDSNumberInputProps>(
     const [pendingInput, setPendingInput] = useState<string | null>(null);
 
     const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
-      warning: 'warning',
-      error: 'xCircle',
-      success: 'checkCircle',
+      warning: 'status.warning',
+      error: 'status.error',
+      success: 'status.success',
     };
 
     const statusIconColorMap: Record<

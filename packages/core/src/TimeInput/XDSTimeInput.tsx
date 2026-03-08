@@ -299,9 +299,9 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
 
     // Status icon mapping
     const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
-      warning: 'warning',
-      error: 'xCircle',
-      success: 'checkCircle',
+      warning: 'status.warning',
+      error: 'status.error',
+      success: 'status.success',
     };
 
     const statusIconColorMap: Record<
@@ -506,7 +506,7 @@ export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
             status && inputStatusFocusWithinStyles[status.type],
           )}>
           <div {...stylex.props(styles.icon)}>
-            <XDSIcon icon="clock" size="sm" color="secondary" />
+            <XDSIcon icon="timeInput.clock" size="sm" color="secondary" />
           </div>
           <input
             ref={setRefs}

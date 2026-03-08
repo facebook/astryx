@@ -291,7 +291,7 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
         <span
           aria-hidden="true"
           {...stylex.props(styles.chevron, layer.isOpen && styles.chevronOpen)}>
-          <XDSIcon icon="chevronDown" size="sm" color="inherit" />
+          <XDSIcon icon="selector.chevron" size="sm" color="inherit" />
         </span>
       </button>
       {layer.render(
@@ -329,7 +329,7 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
                   {option.label}
                 </span>
                 {isSelected && (
-                  <XDSIcon icon="check" size="sm" color="accent" />
+                  <XDSIcon icon="selector.check" size="sm" color="accent" />
                 )}
               </div>
             );

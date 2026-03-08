@@ -215,9 +215,9 @@ const sizeStyles = stylex.create({
 });
 
 const STATUS_ICON_MAP: Record<XDSSelectorStatusType, XDSIconName> = {
-  warning: 'warning',
-  error: 'xCircle',
-  success: 'checkCircle',
+  warning: 'status.warning',
+  error: 'status.error',
+  success: 'status.success',
 };
 
 const STATUS_ICON_COLOR_MAP: Record<
@@ -506,7 +506,9 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
           <span {...stylex.props(styles.itemContent)}>
             {children ? children(item) : <DefaultOption option={item} />}
           </span>
-          {isSelected && <XDSIcon icon="check" size="sm" color="accent" />}
+          {isSelected && (
+            <XDSIcon icon="selector.check" size="sm" color="accent" />
+          )}
         </div>
       );
     },
@@ -636,7 +638,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
               color={STATUS_ICON_COLOR_MAP[status.type]}
             />
           ) : (
-            <XDSIcon icon="chevronDown" size="sm" color="inherit" />
+            <XDSIcon icon="selector.chevron" size="sm" color="inherit" />
           )}
         </span>
       </button>
