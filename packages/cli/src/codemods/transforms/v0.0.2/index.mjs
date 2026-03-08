@@ -28,6 +28,9 @@ import renameTopNavTitleToHeading, {
 import renameSideNavHeaderToHeading, {
   meta as sideNavHeaderMeta,
 } from './rename-sidenav-header-to-heading.mjs';
+import migrateUseXDSIconToGetIcon, {
+  meta as useXDSIconMeta,
+} from './migrate-useXDSIcon-to-getIcon.mjs';
 export default [
   {
     name: 'rename-selector-items-to-options',
@@ -68,5 +71,10 @@ export default [
     name: 'rename-sidenav-header-to-heading',
     transform: renameSideNavHeaderToHeading,
     meta: sideNavHeaderMeta,
+  },
+  {
+    name: 'migrate-useXDSIcon-to-getIcon',
+    transform: migrateUseXDSIconToGetIcon,
+    meta: useXDSIconMeta,
   },
 ];
