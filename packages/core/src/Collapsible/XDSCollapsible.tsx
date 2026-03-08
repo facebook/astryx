@@ -122,31 +122,30 @@ export interface XDSCollapsibleProps {
  * Use inside XDSCard for elevated collapsible sections.
  * Wrap multiple instances in XDSCollapsibleGroup for accordion behavior.
  *
+ *
  * @example
  * ```
  * <XDSCollapsible trigger="Details">
- *   <XDSText type="body">Collapsible content</XDSText>
+ * <XDSText type="body">Collapsible content</XDSText>
  * </XDSCollapsible>
- *
  * <XDSCard>
- *   <XDSCollapsible trigger="Settings">
- *     <SettingsForm />
- *   </XDSCollapsible>
+ * <XDSCollapsible trigger="Settings">
+ * <SettingsForm />
+ * </XDSCollapsible>
  * </XDSCard>
- *
  * <XDSCollapsibleGroup type="single" defaultValue="general">
- *   <XDSVStack gap="space2">
- *     <XDSCard>
- *       <XDSCollapsible trigger="General" value="general">
- *         <GeneralSettings />
- *       </XDSCollapsible>
- *     </XDSCard>
- *     <XDSCard>
- *       <XDSCollapsible trigger="Advanced" value="advanced">
- *         <AdvancedSettings />
- *       </XDSCollapsible>
- *     </XDSCard>
- *   </XDSVStack>
+ * <XDSVStack gap="space2">
+ * <XDSCard>
+ * <XDSCollapsible trigger="General" value="general">
+ * <GeneralSettings />
+ * </XDSCollapsible>
+ * </XDSCard>
+ * <XDSCard>
+ * <XDSCollapsible trigger="Advanced" value="advanced">
+ * <AdvancedSettings />
+ * </XDSCollapsible>
+ * </XDSCard>
+ * </XDSVStack>
  * </XDSCollapsibleGroup>
  * ```
  */

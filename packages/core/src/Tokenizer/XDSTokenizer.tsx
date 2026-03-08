@@ -115,6 +115,7 @@ export interface XDSTokenizerProps<T extends XDSSearchableItem> {
    * StyleX styles created via `stylex.create()`. Merged with the component's
    * base styles inside a single `stylex.props()` call for optimal deduplication.
    *
+   *
    * @example
    * ```
    * const overrides = stylex.create({ root: { marginBottom: 8 } });
@@ -211,36 +212,33 @@ const styles = stylex.create({
  * Tokens render inline before the text input. Selecting an item adds a token
  * and clears the query. Backspace on empty input removes the last token.
  *
+ *
  * @example
  * ```
- * // Basic
  * const [members, setMembers] = useState<UserItem[]>([]);
- *
  * <XDSTokenizer
- *   label="Team members"
- *   searchSource={userSource}
- *   value={members}
- *   onChange={(items, change) => {
- *     setMembers(items);
- *     if (change.type === 'add') console.log('Added:', change.item.label);
- *   }}
- *   placeholder="Search people..."
+ * label="Team members"
+ * searchSource={userSource}
+ * value={members}
+ * onChange={(items, change) => {
+ * setMembers(items);
+ * if (change.type === 'add') console.log('Added:', change.item.label);
+ * }}
+ * placeholder="Search people..."
  * />
- *
- * // Custom rendering
  * <XDSTokenizer
- *   label="Tags"
- *   searchSource={tagSource}
- *   value={tags}
- *   onChange={(items) => setTags(items)}
- *   renderToken={(item, onRemove) => (
- *     <XDSToken
- *       label={item.label}
- *       color={item.auxiliaryData.color}
- *       onRemove={onRemove}
- *     />
- *   )}
- *   maxEntries={5}
+ * label="Tags"
+ * searchSource={tagSource}
+ * value={tags}
+ * onChange={(items) => setTags(items)}
+ * renderToken={(item, onRemove) => (
+ * <XDSToken
+ * label={item.label}
+ * color={item.auxiliaryData.color}
+ * onRemove={onRemove}
+ * />
+ * )}
+ * maxEntries={5}
  * />
  * ```
  */

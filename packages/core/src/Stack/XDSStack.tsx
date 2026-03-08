@@ -94,6 +94,7 @@ export interface XDSStackProps extends XDSBaseProps<HTMLDivElement> {
    * StyleX styles created via `stylex.create()`. Merged with the component's
    * base styles inside a single `stylex.props()` call for optimal deduplication.
    *
+   *
    * @example
    * ```
    * const overrides = stylex.create({ root: { marginBottom: 8 } });
@@ -129,18 +130,16 @@ export interface XDSStackProps extends XDSBaseProps<HTMLDivElement> {
  * - `direction='horizontal'`: hAlign → justify-content, vAlign → align-items
  * - `direction='vertical'`: hAlign → align-items, vAlign → justify-content
  *
+ *
  * @example
  * ```
- * // Vertical stack
  * <XDSStack direction="vertical" gap="space2">
- *   <Item />
- *   <Item />
+ * <Item />
+ * <Item />
  * </XDSStack>
- *
- * // Horizontal stack
  * <XDSStack direction="horizontal" gap="space4" vAlign="center">
- *   <Item />
- *   <Item />
+ * <Item />
+ * <Item />
  * </XDSStack>
  * ```
  */

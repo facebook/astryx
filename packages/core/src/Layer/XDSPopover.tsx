@@ -131,6 +131,7 @@ export interface XDSPopoverProps {
    * StyleX styles created via `stylex.create()`. Merged with the component's
    * base styles inside a single `stylex.props()` call for optimal deduplication.
    *
+   *
    * @example
    * ```
    * const overrides = stylex.create({ root: { marginBottom: 8 } });
@@ -233,29 +234,24 @@ const styles = stylex.create({
  *
  * For hover-triggered overlays, use {@link XDSHoverCard} instead.
  *
+ *
  * @example
  * ```
- * // Basic popover
  * <XDSPopover label="Settings" content={<SettingsPanel />} placement="below">
- *   <XDSButton label="Settings" />
+ * <XDSButton label="Settings" />
  * </XDSPopover>
- *
- * // Controlled popover
  * <XDSPopover
- *   isOpen={isOpen}
- *   onOpenChange={setIsOpen}
- *   label="Filter"
- *   content={<FilterForm />}
- * >
- *   <XDSButton label="Filter" />
+ * isOpen={isOpen}
+ * onOpenChange={setIsOpen}
+ * label="Filter"
+ * content={<FilterForm />}>
+ * <XDSButton label="Filter" />
  * </XDSPopover>
- *
- * // Sibling mode with anchorRef
  * <XDSPopover
- *   anchorRef={myButtonRef}
- *   label="Actions"
- *   content={<ActionMenu />}
- *   placement="below"
+ * anchorRef={myButtonRef}
+ * label="Actions"
+ * content={<ActionMenu />}
+ * placement="below"
  * />
  * ```
  */

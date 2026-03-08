@@ -74,6 +74,7 @@ export interface XDSSliderBaseProps {
    * StyleX styles created via `stylex.create()`. Merged with the component's
    * base styles inside a single `stylex.props()` call for optimal deduplication.
    *
+   *
    * @example
    * ```
    * const overrides = stylex.create({ root: { marginBottom: 8 } });
@@ -311,12 +312,10 @@ function getPercent(val: number, min: number, max: number): number {
 /**
  * A slider component for selecting numeric values or ranges.
  *
+ *
  * @example
  * ```
- * // Single value
  * <XDSSlider label="Volume" value={50} onChange={setValue} />
- *
- * // Range
  * <XDSSlider label="Price range" value={[20, 80]} onChange={setRange} />
  * ```
  */

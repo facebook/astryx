@@ -218,17 +218,17 @@ export interface XDSMobileNavProps extends Omit<XDSBaseProps, 'title'> {
  * which provides built-in focus trapping, body scroll lock, and `::backdrop`.
  * No manual z-index needed — the browser's top layer handles stacking.
  *
+ *
  * @example
  * ```
  * <XDSMobileNav
- *   isOpen={isOpen}
- *   onOpenChange={(open) => setIsOpen(open)}
- *   title="Navigation"
- * >
- *   <XDSSideNavSection title="Main">
- *     <XDSSideNavItem label="Home" icon={HomeIcon} isSelected href="/" />
- *     <XDSSideNavItem label="Settings" icon={SettingsIcon} href="/settings" />
- *   </XDSSideNavSection>
+ * isOpen={isOpen}
+ * onOpenChange={(open) => setIsOpen(open)}
+ * title="Navigation">
+ * <XDSSideNavSection title="Main">
+ * <XDSSideNavItem label="Home" icon={HomeIcon} isSelected href="/" />
+ * <XDSSideNavItem label="Settings" icon={SettingsIcon} href="/settings" />
+ * </XDSSideNavSection>
  * </XDSMobileNav>
  * ```
  */

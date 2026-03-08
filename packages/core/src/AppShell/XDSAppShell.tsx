@@ -148,6 +148,7 @@ export interface XDSAppShellProps {
    * StyleX styles created via `stylex.create()`. Merged with the component's
    * base styles inside a single `stylex.props()` call for optimal deduplication.
    *
+   *
    * @example
    * ```
    * const overrides = stylex.create({ root: { marginBottom: 8 } });
@@ -278,18 +279,18 @@ const styles = stylex.create({
  * Supports two height modes (`fill` and `auto`), responsive side nav
  * collapse, and mobile overlay with backdrop.
  *
+ *
  * @example
  * ```
  * <XDSAppShell
- *   topNav={<XDSTopNav label="Navigation" title={<XDSTopNavTitle title="My App" />} />}
- *   sideNav={<XDSSideNav>{navSections}</XDSSideNav>}
- *   mobileNav={
- *     <XDSMobileNav isOpen={mobileOpen} onOpenChange={(open) => setMobileOpen(open)} title="My App">
- *       {navSections}
- *     </XDSMobileNav>
- *   }
- * >
- *   <Content />
+ * topNav={<XDSTopNav label="Navigation" title={<XDSTopNavTitle title="My App" />} />}
+ * sideNav={<XDSSideNav>{navSections}</XDSSideNav>}
+ * mobileNav={
+ * <XDSMobileNav isOpen={mobileOpen} onOpenChange={(open) => setMobileOpen(open)} title="My App">
+ * {navSections}
+ * </XDSMobileNav>
+ * }>
+ * <Content />
  * </XDSAppShell>
  * ```
  */

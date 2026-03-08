@@ -299,20 +299,15 @@ const edgeCompStyles = stylex.create({
  * Wrap your app in <Theme> to apply a theme.
  * Themes can provide component-level variant overrides via theme.components.button.variants
  *
+ *
  * @example
  * ```
  * <XDSButton label="Click me" />
  * <XDSButton label="Primary action" variant="primary" />
  * <XDSButton label="Delete" variant="destructive" />
- *
- * // Icon-only (square) — pass icon without children
  * <XDSButton label="Settings" icon={<GearIcon />} variant="ghost" />
  * <XDSButton label="Pick emoji" icon={<span>🚀</span>} variant="ghost" size="sm" />
- *
- * // Icon + visible label
  * <XDSButton label="Edit" icon={<PencilIcon />}>Edit</XDSButton>
- *
- * // With endSlot (badge or icon)
  * <XDSButton label="Messages" endSlot={<XDSBadge>3</XDSBadge>} />
  * <XDSButton label="Edit" icon={<PencilIcon />} endSlot={<XDSBadge>New</XDSBadge>}>Edit</XDSButton>
  * ```

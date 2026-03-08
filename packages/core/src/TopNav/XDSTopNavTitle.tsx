@@ -74,22 +74,18 @@ export interface XDSTopNavTitleProps extends XDSBaseProps<HTMLElement> {
  * Displays a logo and/or title text, optionally as a clickable link.
  * Use with XDSNavIcon to create a circular icon background.
  *
+ *
  * @example
  * ```
- * // Logo with text
  * <XDSTopNavTitle
- *   title="My App"
- *   logo={<img src="/logo.svg" alt="" width={24} height={24} />}
- *   href="/"
+ * title="My App"
+ * logo={<img src="/logo.svg" alt="" width={24} height={24} />}
+ * href="/"
  * />
- *
- * // With circular icon
  * <XDSTopNavTitle
- *   title="Dashboard"
- *   logo={<XDSNavIcon icon={<HomeIcon />} />}
+ * title="Dashboard"
+ * logo={<XDSNavIcon icon={<HomeIcon />} />}
  * />
- *
- * // Logo only
  * <XDSTopNavTitle logo={<BrandLogo />} href="/" />
  * ```
  */

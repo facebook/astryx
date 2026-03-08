@@ -213,18 +213,12 @@ export interface XDSLinkProps extends XDSBaseProps<HTMLAnchorElement> {
  * Uses XDSText internally for typography styling.
  * Wrap your app in <Theme> to apply a theme.
  *
+ *
  * @example
  * ```
- * // Basic link
  * <XDSLink label="Documentation" href="/docs">Documentation</XDSLink>
- *
- * // External link (opens in new tab with icon)
  * <XDSLink label="GitHub" href="https://github.com" isExternalLink>GitHub</XDSLink>
- *
- * // Link with custom color
  * <XDSLink label="Settings" href="/settings" color="secondary">Settings</XDSLink>
- *
- * // Always underlined link
  * <XDSLink label="Privacy Policy" href="/privacy" hasUnderline>Privacy Policy</XDSLink>
  * ```
  */

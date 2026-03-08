@@ -138,13 +138,13 @@ function mergeIds(...ids: (string | undefined | null)[]): string | undefined {
  * Uses a display:contents wrapper so children refs are preserved.
  * Uses CSS anchor positioning and the Popover API for optimal performance.
  *
+ *
  * @example
  * ```
  * <XDSHoverCard
- *   content={<ProfileCard user={user} />}
- *   placement="above"
- * >
- *   <XDSButton>Hover me</XDSButton>
+ * content={<ProfileCard user={user} />}
+ * placement="above">
+ * <XDSButton>Hover me</XDSButton>
  * </XDSHoverCard>
  * ```
  */

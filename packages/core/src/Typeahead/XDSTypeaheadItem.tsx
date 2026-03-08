@@ -104,24 +104,22 @@ const styles = stylex.create({
  * Renders a label with optional icon and description.
  * Exported for use in custom `renderItem` implementations.
  *
+ *
  * @example
  * ```
- * // Default usage (automatic)
  * <XDSTypeahead searchSource={source} value={v} onChange={setV} label="Search" />
- *
- * // Custom renderItem using XDSTypeaheadItem
  * <XDSTypeahead
- *   searchSource={source}
- *   value={v}
- *   onChange={setV}
- *   label="Search"
- *   renderItem={(item) => (
- *     <XDSTypeaheadItem
- *       item={item}
- *       icon={<XDSAvatar src={item.auxiliaryData.avatar} size="sm" />}
- *       description={item.auxiliaryData.role}
- *     />
- *   )}
+ * searchSource={source}
+ * value={v}
+ * onChange={setV}
+ * label="Search"
+ * renderItem={(item) => (
+ * <XDSTypeaheadItem
+ * item={item}
+ * icon={<XDSAvatar src={item.auxiliaryData.avatar} size="sm" />}
+ * description={item.auxiliaryData.role}
+ * />
+ * )}
  * />
  * ```
  */

@@ -177,6 +177,7 @@ export interface XDSSideNavHeaderProps {
    * StyleX styles created via `stylex.create()`. Merged with the component's
    * base styles inside a single `stylex.props()` call for optimal deduplication.
    *
+   *
    * @example
    * ```
    * const overrides = stylex.create({ root: { marginBottom: 8 } });
@@ -238,27 +239,23 @@ function ChevronDownIcon() {
  *
  * The chevron indicator is automatically shown when `menu` is provided.
  *
+ *
  * @example
  * ```
- * // Single product
  * <XDSSideNavHeader icon={<AppIcon />} title="My App" titleHref="/" />
- *
- * // Suite with menu
  * <XDSSideNavHeader
- *   icon={<SuiteIcon />}
- *   supertitle="Suite Name"
- *   supertitleHref="/suite"
- *   title="Product Name"
- *   titleHref="/product"
- *   menu={<ProductSwitcher />}
+ * icon={<SuiteIcon />}
+ * supertitle="Suite Name"
+ * supertitleHref="/suite"
+ * title="Product Name"
+ * titleHref="/product"
+ * menu={<ProductSwitcher />}
  * />
- *
- * // Account context with menu
  * <XDSSideNavHeader
- *   icon={<AppIcon />}
- *   title="Product Name"
- *   subtitle="Business Account"
- *   menu={<AccountSwitcher />}
+ * icon={<AppIcon />}
+ * title="Product Name"
+ * subtitle="Business Account"
+ * menu={<AccountSwitcher />}
  * />
  * ```
  */

@@ -115,6 +115,7 @@ export interface XDSRadioListProps {
    * StyleX styles created via `stylex.create()`. Merged with the component's
    * base styles inside a single `stylex.props()` call for optimal deduplication.
    *
+   *
    * @example
    * ```
    * const overrides = stylex.create({ root: { marginBottom: 8 } });
@@ -145,16 +146,16 @@ export interface XDSRadioListProps {
 /**
  * A radio group component for single-value selection.
  *
+ *
  * @example
  * ```
  * <XDSRadioList
- *   label="Notification preference"
- *   value={selected}
- *   onChange={setSelected}
- * >
- *   <XDSRadioListItem label="Email" value="email" />
- *   <XDSRadioListItem label="SMS" value="sms" />
- *   <XDSRadioListItem label="Push" value="push" />
+ * label="Notification preference"
+ * value={selected}
+ * onChange={setSelected}>
+ * <XDSRadioListItem label="Email" value="email" />
+ * <XDSRadioListItem label="SMS" value="sms" />
+ * <XDSRadioListItem label="Push" value="push" />
  * </XDSRadioList>
  * ```
  */

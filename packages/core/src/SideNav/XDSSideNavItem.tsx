@@ -162,19 +162,19 @@ export interface XDSSideNavItemProps {
  *
  * Supports icons, selected state, nesting, and end content like badges or counts.
  *
+ *
  * @example
  * ```
  * <XDSSideNavItem
- *   label="Dashboard"
- *   icon={HomeIcon}
- *   selectedIcon={HomeIconSolid}
- *   isSelected
- *   href="/dashboard"
+ * label="Dashboard"
+ * icon={HomeIcon}
+ * selectedIcon={HomeIconSolid}
+ * isSelected
+ * href="/dashboard"
  * />
- *
  * <XDSSideNavItem label="Settings" icon={CogIcon}>
- *   <XDSSideNavItem label="General" href="/settings/general" />
- *   <XDSSideNavItem label="Security" href="/settings/security" />
+ * <XDSSideNavItem label="General" href="/settings/general" />
+ * <XDSSideNavItem label="Security" href="/settings/security" />
  * </XDSSideNavItem>
  * ```
  */

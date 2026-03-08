@@ -92,6 +92,7 @@ export interface XDSBannerProps {
    * Action button rendered in the header area (end-aligned).
    * Typically an XDSButton with a secondary or ghost variant.
    *
+   *
    * @example
    * ```
    * endContent={<XDSButton label="Retry" variant="ghost" onClick={handleRetry} />}
@@ -120,6 +121,7 @@ export interface XDSBannerProps {
   /**
    * StyleX styles created via `stylex.create()`. Merged with the component's
    * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
    *
    * @example
    * ```
@@ -304,40 +306,32 @@ const statusStyles = stylex.create({
  *
  * Uses `role="alert"` for error/warning and `role="status"` for info/success.
  *
+ *
  * @example
  * ```
- * // Simple banner — just the colored header
  * <XDSBanner status="info" title="New update available" />
- *
- * // With description and dismiss
  * <XDSBanner
- *   status="error"
- *   title="Something went wrong"
- *   description="Please try again later."
- *   isDismissable
- *   onDismiss={() => logDismiss()}
+ * status="error"
+ * title="Something went wrong"
+ * description="Please try again later."
+ * isDismissable
+ * onDismiss={() => logDismiss()}
  * />
- *
- * // With collapsible content area
  * <XDSBanner
- *   status="error"
- *   title="Multiple errors found"
- *   description="The following issues need to be resolved:"
- *   isDismissable
- * >
- *   <ul>
- *     <li>Email address is invalid</li>
- *     <li>Password must be at least 8 characters</li>
- *   </ul>
+ * status="error"
+ * title="Multiple errors found"
+ * description="The following issues need to be resolved:"
+ * isDismissable>
+ * <ul>
+ * <li>Email address is invalid</li>
+ * <li>Password must be at least 8 characters</li>
+ * </ul>
  * </XDSBanner>
- *
- * // Content area expanded by default
  * <XDSBanner
- *   status="warning"
- *   title="Configuration changes"
- *   defaultIsExpanded
- * >
- *   <p>Details here...</p>
+ * status="warning"
+ * title="Configuration changes"
+ * defaultIsExpanded>
+ * <p>Details here...</p>
  * </XDSBanner>
  * ```
  */

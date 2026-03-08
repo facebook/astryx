@@ -49,20 +49,17 @@ export interface XDSNavIconProps extends XDSBaseProps<HTMLDivElement> {
  * Wraps an icon with a circular accent-colored background, suitable for
  * use as a logo in top navigation or side navigation title areas.
  *
+ *
  * @example
  * ```
  * import {HomeIcon} from '@heroicons/react/24/solid';
- *
- * // In XDSTopNavTitle
  * <XDSTopNavTitle
- *   title="Dashboard"
- *   logo={<XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />}
+ * title="Dashboard"
+ * logo={<XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />}
  * />
- *
- * // In XDSPageNavHeader
  * <XDSPageNavHeader
- *   icon={<XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />}
- *   title="My App"
+ * icon={<XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />}
+ * title="My App"
  * />
  * ```
  */

@@ -98,6 +98,7 @@ export interface XDSProgressBarProps {
    * StyleX styles created via `stylex.create()`. Merged with the component's
    * base styles inside a single `stylex.props()` call for optimal deduplication.
    *
+   *
    * @example
    * ```
    * const overrides = stylex.create({ root: { marginBottom: 8 } });
@@ -240,17 +241,13 @@ function defaultFormatValueLabel(value: number, max: number): string {
  * Styles use XDS theme tokens via StyleX.
  * Wrap your app in <Theme> to apply a theme.
  *
+ *
  * @example
  * ```
- * // Determinate
  * <XDSProgressBar value={75} label="Upload progress" />
- *
- * // Indeterminate
  * <XDSProgressBar isIndeterminate label="Loading..." />
- *
- * // Custom format
  * <XDSProgressBar value={3.2} max={5} label="Disk usage" hasValueLabel
- *   formatValueLabel={(v, m) => `${v} GB / ${m} GB`} />
+ * formatValueLabel={(v, m) => `${v} GB / ${m} GB`} />
  * ```
  */
 export const XDSProgressBar = forwardRef<HTMLDivElement, XDSProgressBarProps>(

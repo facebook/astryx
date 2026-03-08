@@ -106,6 +106,7 @@ export interface XDSSideNavProps extends XDSBaseProps<HTMLElement> {
    * StyleX styles created via `stylex.create()`. Merged with the component's
    * base styles inside a single `stylex.props()` call for optimal deduplication.
    *
+   *
    * @example
    * ```
    * const overrides = stylex.create({ root: { marginBottom: 8 } });
@@ -139,16 +140,16 @@ export interface XDSSideNavProps extends XDSBaseProps<HTMLElement> {
  * Five vertical zones: sticky header + action area at top,
  * scrollable nav content in the middle, and sticky footer + icon bar at bottom.
  *
+ *
  * @example
  * ```
  * <XDSSideNav
- *   header={<XDSSideNavHeader title="My App" titleHref="/" />}
- *   topContent={<XDSButton label="Create new" variant="primary" />}
- * >
- *   <XDSSideNavSection title="Main">
- *     <XDSSideNavItem label="Dashboard" isSelected href="/dashboard" />
- *     <XDSSideNavItem label="Projects" href="/projects" />
- *   </XDSSideNavSection>
+ * header={<XDSSideNavHeader title="My App" titleHref="/" />}
+ * topContent={<XDSButton label="Create new" variant="primary" />}>
+ * <XDSSideNavSection title="Main">
+ * <XDSSideNavItem label="Dashboard" isSelected href="/dashboard" />
+ * <XDSSideNavItem label="Projects" href="/projects" />
+ * </XDSSideNavSection>
  * </XDSSideNav>
  * ```
  */

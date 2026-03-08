@@ -101,35 +101,32 @@ export interface XDSLayoutContentProps extends XDSBaseProps<HTMLDivElement> {
  * Already provides its own padding and scroll — don't add padding or
  * overflow to children. Use `isFullBleed` if you need edge-to-edge content.
  *
+ *
  * @example
  * ```
  * <XDSLayoutContainer variant="card">
- *   <XDSLayout
- *     header={<XDSLayoutHeader>Title</XDSLayoutHeader>}
- *     content={<XDSLayoutContent>Main body content</XDSLayoutContent>}
- *   />
+ * <XDSLayout
+ * header={<XDSLayoutHeader>Title</XDSLayoutHeader>}
+ * content={<XDSLayoutContent>Main body content</XDSLayoutContent>}
+ * />
  * </XDSLayoutContainer>
- *
- * // Full bleed for edge-to-edge content
  * <XDSLayoutContainer variant="card">
- *   <XDSLayout
- *     content={
- *       <XDSLayoutContent isFullBleed>
- *         <Table />
- *       </XDSLayoutContent>
- *     }
- *   />
+ * <XDSLayout
+ * content={
+ * <XDSLayoutContent isFullBleed>
+ * <Table />
+ * </XDSLayoutContent>
+ * }
+ * />
  * </XDSLayoutContainer>
- *
- * // Non-scrollable for auto-height layouts with sticky elements
  * <XDSLayoutContainer variant="card">
- *   <XDSLayout
- *     content={
- *       <XDSLayoutContent isScrollable={false}>
- *         <StickyElement />
- *       </XDSLayoutContent>
- *     }
- *   />
+ * <XDSLayout
+ * content={
+ * <XDSLayoutContent isScrollable={false}>
+ * <StickyElement />
+ * </XDSLayoutContent>
+ * }
+ * />
  * </XDSLayoutContainer>
  * ```
  */

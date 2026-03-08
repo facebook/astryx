@@ -71,9 +71,9 @@ export interface XDSHeadingProps {
    *
    * @default Same as `level`
    *
+   *
    * @example
    * ```
-   * // Visually styled as h2, but semantically h3 in document outline
    * <XDSHeading level={2} accessibilityLevel={3}>Sidebar Section</XDSHeading>
    * ```
    */
@@ -144,6 +144,7 @@ export interface XDSHeadingProps {
    * StyleX styles created via `stylex.create()`. Merged with the component's
    * base styles inside a single `stylex.props()` call for optimal deduplication.
    *
+   *
    * @example
    * ```
    * const overrides = stylex.create({ root: { marginBottom: 8 } });
@@ -185,17 +186,14 @@ const levelToTag = {
  *
  * Renders headings with semantic HTML (h1-h6) and themed styling.
  *
+ *
  * @example
  * ```
  * <XDSHeading level={1}>Page Title</XDSHeading>
  * <XDSHeading level={2}>Section</XDSHeading>
  * <XDSHeading level={1} variant="editorial">Article Title</XDSHeading>
  * <XDSHeading level={2} accessibilityLevel={3}>Sidebar Section</XDSHeading>
- *
- * // With truncation
  * <XDSHeading level={2} maxLines={1}>Very Long Section Title...</XDSHeading>
- *
- * // With color
  * <XDSHeading level={3} color="secondary">Muted Heading</XDSHeading>
  * ```
  */

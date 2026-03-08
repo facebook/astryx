@@ -107,6 +107,7 @@ export interface XDSEmptyStateProps {
    * StyleX styles created via `stylex.create()`. Merged with the component's
    * base styles inside a single `stylex.props()` call for optimal deduplication.
    *
+   *
    * @example
    * ```
    * const overrides = stylex.create({ root: { marginBottom: 8 } });
@@ -137,18 +138,18 @@ export interface XDSEmptyStateProps {
  * Uses `role="status"` to announce content to screen readers.
  * Styles use XDS theme tokens via StyleX. Wrap your app in <Theme> to apply a theme.
  *
+ *
  * @example
  * ```
  * <XDSEmptyState
- *   title="No results found"
- *   description="Try adjusting your search or filters."
+ * title="No results found"
+ * description="Try adjusting your search or filters."
  * />
- *
  * <XDSEmptyState
- *   icon={<XDSIcon icon={InboxIcon} size="lg" />}
- *   title="No messages"
- *   description="You're all caught up!"
- *   actions={<XDSButton label="Compose" variant="primary" />}
+ * icon={<XDSIcon icon={InboxIcon} size="lg" />}
+ * title="No messages"
+ * description="You're all caught up!"
+ * actions={<XDSButton label="Compose" variant="primary" />}
  * />
  * ```
  */

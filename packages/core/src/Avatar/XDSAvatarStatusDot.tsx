@@ -74,6 +74,7 @@ export interface XDSAvatarStatusDotProps extends XDSBaseProps<HTMLSpanElement> {
    * The icon is automatically sized to fit the dot and hidden
    * at the smallest avatar sizes where there isn't enough room.
    *
+   *
    * @example
    * ```
    * <XDSAvatarStatusDot variant="positive" label="Verified" icon={<CheckIcon />} />
@@ -136,20 +137,18 @@ const variantStyleMap: Record<XDSAvatarStatusDotVariant, stylex.StyleXStyles> =
  * Must be used inside an XDSAvatar's `status` prop so it can read
  * the avatar size from context.
  *
+ *
  * @example
  * ```
- * // Presence indicator
  * <XDSAvatar
- *   name="John Doe"
- *   size="medium"
- *   status={<XDSAvatarStatusDot variant="positive" label="Online" />}
+ * name="John Doe"
+ * size="medium"
+ * status={<XDSAvatarStatusDot variant="positive" label="Online" />}
  * />
- *
- * // With icon (e.g. verified badge)
  * <XDSAvatar
- *   name="Jane Smith"
- *   size="large"
- *   status={<XDSAvatarStatusDot variant="positive" label="Verified" icon={<CheckIcon />} />}
+ * name="Jane Smith"
+ * size="large"
+ * status={<XDSAvatarStatusDot variant="positive" label="Verified" icon={<CheckIcon />} />}
  * />
  * ```
  */

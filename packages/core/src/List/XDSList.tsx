@@ -67,6 +67,7 @@ export interface XDSListProps {
    * StyleX styles created via `stylex.create()`. Merged with the component's
    * base styles inside a single `stylex.props()` call for optimal deduplication.
    *
+   *
    * @example
    * ```
    * const overrides = stylex.create({ root: { marginBottom: 8 } });
@@ -139,16 +140,16 @@ const listStyleTypes = stylex.create({
  * Renders semantic `<ul>` or `<ol>` elements with configurable density,
  * dividers, marker styles, and an optional header.
  *
+ *
  * @example
  * ```
  * <XDSList>
- *   <XDSListItem label="Notifications" description="Manage your alerts" />
- *   <XDSListItem label="Privacy" description="Control your data" />
+ * <XDSListItem label="Notifications" description="Manage your alerts" />
+ * <XDSListItem label="Privacy" description="Control your data" />
  * </XDSList>
- *
  * <XDSList listStyle="decimal" density="compact">
- *   <XDSListItem label="First step" />
- *   <XDSListItem label="Second step" />
+ * <XDSListItem label="First step" />
+ * <XDSListItem label="Second step" />
  * </XDSList>
  * ```
  */

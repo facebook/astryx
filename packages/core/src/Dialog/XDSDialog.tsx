@@ -206,16 +206,16 @@ export interface XDSDialogProps extends XDSBaseProps<HTMLDialogElement> {
  * Designed to be used with XDSLayout as its child for structured content.
  * Uses the browser's built-in modal behavior for optimal accessibility.
  *
+ *
  * @example
  * ```
  * const [isOpen, setIsOpen] = useState(false);
- *
  * <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
- *   <XDSLayout
- *     header={<XDSDialogHeader title="Title" onOpenChange={open => setIsOpen(open)} />}
- *     content={<XDSLayoutContent>Content</XDSLayoutContent>}
- *     footer={<XDSLayoutFooter hasDivider>Actions</XDSLayoutFooter>}
- *   />
+ * <XDSLayout
+ * header={<XDSDialogHeader title="Title" onOpenChange={open => setIsOpen(open)} />}
+ * content={<XDSLayoutContent>Content</XDSLayoutContent>}
+ * footer={<XDSLayoutFooter hasDivider>Actions</XDSLayoutFooter>}
+ * />
  * </XDSDialog>
  * ```
  */

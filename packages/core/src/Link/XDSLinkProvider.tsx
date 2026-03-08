@@ -7,18 +7,14 @@
  * Sets the default link component for all XDS components in the subtree.
  * Individual components can still override via the `as` prop.
  *
+ *
  * @example
  * ```
  * import Link from 'next/link';
- *
  * <XDSLinkProvider component={Link}>
- *   <App />
+ * <App />
  * </XDSLinkProvider>
  * ```
- *
- * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Link/index.ts
- * - /packages/core/src/Link/Link.doc.mjs
  */
 
 'use client';
@@ -31,6 +27,7 @@ export interface XDSLinkProviderProps {
   /**
    * The component to use for all link elements in the subtree.
    * Must accept href, className, style, and children props.
+   *
    *
    * @example
    * ```
