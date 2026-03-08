@@ -25,6 +25,7 @@
     "package:source": "node scripts/package-source.js",
     "changeset": "changeset",
     "version-packages": "changeset version",
+    "verify-exports": "node scripts/verify-exports.mjs",
     "release": "yarn build && changeset publish",
     "prepare": "husky install"
   },
