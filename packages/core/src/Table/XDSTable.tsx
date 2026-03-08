@@ -165,7 +165,7 @@ function XDSTableInner<T extends Record<string, unknown>>({
  *   data={users}
  *   columns={[
  *     { key: 'name', header: 'Name', renderCell: (u) => (
- *       <XDSHStack gap="space2" align="center">
+ *       <XDSHStack gap={2} align="center">
  *         <XDSAvatar name={u.name} size="small" />
  *         <XDSText weight="semibold">{u.name}</XDSText>
  *       </XDSHStack>

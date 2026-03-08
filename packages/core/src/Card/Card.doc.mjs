@@ -39,8 +39,14 @@ export const docs = {
     {
       name: 'isFullBleed',
       type: 'boolean',
-      description: 'Removes internal padding for edge-to-edge content.',
+      description: 'Deprecated. Use `padding={0}` instead.',
       default: 'false',
+    },
+    {
+      name: 'padding',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: 'Internal padding using the spacing scale.',
+      default: '4',
     },
   ],
   examples: [
@@ -71,7 +77,7 @@ export const docs = {
     {
       label: 'Accordion of cards',
       code: `<XDSCollapsibleGroup type="single" defaultValue="general">
-  <XDSVStack gap="space2">
+  <XDSVStack gap={2}>
     <XDSCard>
       <XDSCollapsible trigger="General" value="general">
         <GeneralSettings />

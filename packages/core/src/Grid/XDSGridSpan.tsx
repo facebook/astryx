@@ -78,7 +78,7 @@ const baseStyles = stylex.create({
  *
  * @example
  * ```
- * <XDSGrid columns={3} gap="space4">
+ * <XDSGrid columns={3} gap={4}>
  *   <XDSGridSpan columns={2}>Wide item</XDSGridSpan>
  *   <div>Normal</div>
  * </XDSGrid>

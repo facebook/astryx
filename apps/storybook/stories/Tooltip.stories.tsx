@@ -140,7 +140,7 @@ export const LongContent: Story = {
 export const MultipleTooltips: Story = {
   render: () => (
     <div style={{padding: 100}}>
-      <XDSHStack gap="space4">
+      <XDSHStack gap={4}>
         <XDSTooltip content="Save your changes" placement="above">
           <XDSButton label="Save">Save</XDSButton>
         </XDSTooltip>

@@ -1,6 +1,6 @@
 /**
  * @file XDSLayoutHeader.tsx
- * @input Uses React, StyleX
+ * @input Uses React StyleX
  * @output Exports XDSLayoutHeader component and XDSLayoutHeaderProps
  * @position Top bar / header area for XDSLayout. Use for page titles, app bars,
  *   toolbar areas, or any fixed-height content at the top of a layout.
@@ -12,9 +12,12 @@
 
 import type {AriaRole, ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import type {SpacingStep} from '../utils/types';
+import {paddingStyles, containerPaddingInlineVarStyles} from './padding.stylex';
 
 const styles = stylex.create({
   header: {
@@ -51,7 +54,6 @@ const dynamicStyles = stylex.create({
 });
 
 export interface XDSLayoutHeaderProps extends XDSBaseProps<HTMLDivElement> {
-  /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLElement>;
   /**
    * Content to render inside the header.
@@ -73,9 +75,17 @@ export interface XDSLayoutHeaderProps extends XDSBaseProps<HTMLDivElement> {
 
   /**
    * Removes internal padding, allowing content to touch the edges.
+   * @deprecated Use `padding={0}` instead.
    * @default false
    */
   isFullBleed?: boolean;
+
+  /**
+   * Internal padding of the header using the spacing scale.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   * Overrides the default padding from the layout container.
+   */
+  padding?: SpacingStep;
 
   /**
    * Accessible label for the landmark.
@@ -113,6 +123,7 @@ export function XDSLayoutHeader({
   height,
   isFullBleed = false,
   label,
+  padding,
   role,
   xstyle,
   className,
@@ -121,7 +132,7 @@ export function XDSLayoutHeader({
   ...props
 }: XDSLayoutHeaderProps) {
   // When no divider, collapse spacing for seamless visual flow
-  const shouldCollapseSpacing = !hasDivider && !isFullBleed;
+  const shouldCollapseSpacing = !hasDivider && !isFullBleed && padding == null;
 
   return (
     <div
@@ -133,7 +144,9 @@ export function XDSLayoutHeader({
         stylex.props(
           styles.header,
           dynamicStyles.sizing(height ?? null),
-          isFullBleed && styles.fullBleed,
+          isFullBleed && padding == null && styles.fullBleed,
+          padding != null && paddingStyles[padding],
+          padding != null && containerPaddingInlineVarStyles[padding],
           hasDivider && styles.divider,
           shouldCollapseSpacing && styles.collapseBottom,
           xstyle,

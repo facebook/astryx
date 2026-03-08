@@ -23,6 +23,11 @@ import {stack} from '../Stack/stack.stylex';
 import {stackItem} from '../Stack/stackItem.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSBaseProps} from '../XDSBaseProps';
+import type {SpacingStep} from '../utils/types';
+import {
+  layoutPaddingOuterXVarStyles,
+  layoutPaddingOuterYVarStyles,
+} from './padding.stylex';
 
 /**
  * Height behavior for the layout.
@@ -89,9 +94,17 @@ export interface XDSLayoutProps extends Omit<XDSBaseProps, 'content'> {
 
   /**
    * Removes padding at layout's outer edges, making layout touch container edges.
+   * @deprecated Use `padding={0}` instead.
    * @default false
    */
   isFullBleed?: boolean;
+
+  /**
+   * Padding at the layout's outer edges using the spacing scale.
+   * Controls both `--layout-padding-outer-x` and `--layout-padding-outer-y`.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   */
+  padding?: SpacingStep;
 
   /**
    * Start panel slot (left in LTR, right in RTL).
@@ -180,6 +193,7 @@ export function XDSLayout({
   header,
   height = 'fill',
   isFullBleed = false,
+  padding,
   start,
   xstyle,
   className,
@@ -216,7 +230,9 @@ export function XDSLayout({
             styles.layoutInner,
             ...stack({direction: 'vertical'}),
             isFill ? styles.fill : styles.auto,
-            isFullBleed && styles.fullBleed,
+            isFullBleed && padding == null && styles.fullBleed,
+            padding != null && layoutPaddingOuterXVarStyles[padding],
+            padding != null && layoutPaddingOuterYVarStyles[padding],
           )}>
           <AreaProvider area="header">{header}</AreaProvider>
           <div

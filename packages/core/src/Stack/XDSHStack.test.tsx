@@ -41,7 +41,7 @@ describe('XDSHStack', () => {
 
   it('renders with gap prop', () => {
     render(
-      <XDSHStack gap="space4">
+      <XDSHStack gap={4}>
         <div>Item 1</div>
         <div>Item 2</div>
       </XDSHStack>,

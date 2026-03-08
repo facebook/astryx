@@ -232,14 +232,14 @@ const columns: XDSTableColumn<ReviewRow>[] = [
     header: 'Author',
     width: proportional(4),
     renderCell: (item: ReviewRow) => (
-      <XDSHStack gap="space3" vAlign="center">
+      <XDSHStack gap={3} vAlign="center">
         <XDSAvatar
           src={item.authorAvatar}
           name={item.authorName}
           size="small"
         />
         <div {...stylex.props(styles.authorInfo)}>
-          <XDSVStack gap="space1">
+          <XDSVStack gap={1}>
             <span {...stylex.props(styles.titleLink)}>{item.title}</span>
             <span {...stylex.props(styles.supportingLine)}>
               <XDSText type="supporting" color="secondary">
@@ -276,7 +276,7 @@ const columns: XDSTableColumn<ReviewRow>[] = [
     header: 'Testing',
     width: pixel(110),
     renderCell: (item: ReviewRow) => (
-      <XDSHStack gap="space2" vAlign="center">
+      <XDSHStack gap={2} vAlign="center">
         <XDSStatusDot
           variant={item.testStatus === 'passed' ? 'positive' : 'negative'}
           label={item.testStatus === 'passed' ? 'Passed' : 'Failed'}
@@ -451,8 +451,8 @@ export default function TableOverviewPage() {
 
   return (
     <div {...stylex.props(styles.container)}>
-      <XDSVStack gap="space6">
-        <XDSVStack gap="space2">
+      <XDSVStack gap={6}>
+        <XDSVStack gap={2}>
           <XDSHeading level={1}>Table Overview</XDSHeading>
           <XDSText type="body" color="secondary">
             A code review dashboard demonstrating XDSTable with selection,
@@ -479,7 +479,7 @@ export default function TableOverviewPage() {
         </div>
 
         {/* Grouped Tables */}
-        <XDSVStack gap="space4">
+        <XDSVStack gap={4}>
           {filteredWaiting.length > 0 && (
             <XDSCollapsible
               trigger={

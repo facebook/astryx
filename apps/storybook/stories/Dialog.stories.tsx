@@ -82,7 +82,7 @@ function BasicModalExample() {
           }
           footer={
             <XDSLayoutFooter hasDivider>
-              <XDSHStack gap="space2" hAlign="end">
+              <XDSHStack gap={2} hAlign="end">
                 <XDSButton
                   label="Cancel"
                   variant="secondary"
@@ -138,7 +138,7 @@ function SubtitleModalExample() {
           }
           footer={
             <XDSLayoutFooter hasDivider>
-              <XDSHStack gap="space2" hAlign="end">
+              <XDSHStack gap={2} hAlign="end">
                 <XDSButton
                   label="Cancel"
                   variant="secondary"
@@ -362,7 +362,7 @@ function FormModalExample() {
           }
           footer={
             <XDSLayoutFooter hasDivider>
-              <XDSHStack gap="space2" hAlign="end">
+              <XDSHStack gap={2} hAlign="end">
                 <XDSButton
                   label="Cancel"
                   variant="secondary"
@@ -537,7 +537,7 @@ function ScrollingModalExample() {
           }
           footer={
             <XDSLayoutFooter hasDivider>
-              <XDSHStack gap="space2" hAlign="end">
+              <XDSHStack gap={2} hAlign="end">
                 <XDSButton
                   label="Decline"
                   variant="secondary"
@@ -607,7 +607,7 @@ function ConfirmationModalExample() {
           }
           footer={
             <XDSLayoutFooter hasDivider>
-              <XDSHStack gap="space2" hAlign="end">
+              <XDSHStack gap={2} hAlign="end">
                 <XDSButton
                   label="Cancel"
                   variant="secondary"

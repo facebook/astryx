@@ -32,8 +32,8 @@ export default function NavigationPage() {
 
   return (
     <div {...stylex.props(styles.container)}>
-      <XDSVStack gap="space6">
-        <XDSVStack gap="space2">
+      <XDSVStack gap={6}>
+        <XDSVStack gap={2}>
           <XDSHeading level={1}>Navigation Alignment</XDSHeading>
           <XDSText type="body" color="secondary">
             Explore how nav items can be positioned left, center, or right using
@@ -42,7 +42,7 @@ export default function NavigationPage() {
         </XDSVStack>
 
         {/* Alignment picker */}
-        <XDSHStack gap="space3" vAlign="center">
+        <XDSHStack gap={3} vAlign="center">
           <XDSText type="body" weight="bold">
             Alignment:
           </XDSText>
@@ -69,7 +69,7 @@ export default function NavigationPage() {
         <XDSDivider />
 
         {/* Live preview */}
-        <XDSVStack gap="space3">
+        <XDSVStack gap={3}>
           <XDSHeading level={2}>Preview</XDSHeading>
           <div {...stylex.props(styles.navWrapper)}>
             <NavPreview alignment={alignment} />
@@ -79,10 +79,10 @@ export default function NavigationPage() {
         <XDSDivider />
 
         {/* All three side by side */}
-        <XDSVStack gap="space4">
+        <XDSVStack gap={4}>
           <XDSHeading level={2}>All Alignments</XDSHeading>
 
-          <XDSVStack gap="space2">
+          <XDSVStack gap={2}>
             <XDSText type="supporting" weight="bold">
               Left-aligned (startContent)
             </XDSText>
@@ -91,7 +91,7 @@ export default function NavigationPage() {
             </div>
           </XDSVStack>
 
-          <XDSVStack gap="space2">
+          <XDSVStack gap={2}>
             <XDSText type="supporting" weight="bold">
               Center-aligned (centerContent)
             </XDSText>
@@ -100,7 +100,7 @@ export default function NavigationPage() {
             </div>
           </XDSVStack>
 
-          <XDSVStack gap="space2">
+          <XDSVStack gap={2}>
             <XDSText type="supporting" weight="bold">
               Right-aligned (endContent)
             </XDSText>

@@ -46,7 +46,7 @@ export const docs = {
     content={<XDSLayoutContent>Body content</XDSLayoutContent>}
     footer={
       <XDSLayoutFooter hasDivider>
-        <XDSHStack gap="space2" hAlign="end">
+        <XDSHStack gap={2} hAlign="end">
           <XDSButton variant="secondary">Cancel</XDSButton>
           <XDSButton variant="primary">Save</XDSButton>
         </XDSHStack>
@@ -353,7 +353,7 @@ export const docs = {
     content={<XDSLayoutContent>Body content</XDSLayoutContent>}
     footer={
       <XDSLayoutFooter hasDivider>
-        <XDSHStack gap="space2" hAlign="end">
+        <XDSHStack gap={2} hAlign="end">
           <XDSButton variant="secondary">Cancel</XDSButton>
           <XDSButton variant="primary">Save</XDSButton>
         </XDSHStack>
@@ -383,7 +383,7 @@ export const docs = {
       examples: [
         {
           label: 'Basic',
-          code: `<XDSHStack gap="space2" hAlign="end">
+          code: `<XDSHStack gap={2} hAlign="end">
   <XDSButton variant="secondary">Cancel</XDSButton>
   <XDSButton variant="primary">Save</XDSButton>
 </XDSHStack>`,
@@ -397,7 +397,7 @@ export const docs = {
       examples: [
         {
           label: 'Basic',
-          code: `<XDSVStack gap="space4">
+          code: `<XDSVStack gap={4}>
   <XDSCard>First</XDSCard>
   <XDSCard>Second</XDSCard>
 </XDSVStack>`,

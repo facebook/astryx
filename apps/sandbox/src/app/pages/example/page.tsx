@@ -31,8 +31,8 @@ export default function ExamplePage() {
 
   return (
     <div {...stylex.props(styles.container)}>
-      <XDSVStack gap="space6">
-        <XDSVStack gap="space2">
+      <XDSVStack gap={6}>
+        <XDSVStack gap={2}>
           <XDSHeading level={1}>Example Page</XDSHeading>
           <XDSText type="body" color="secondary">
             A scaffold showing common XDS components. Copy this file to create
@@ -43,14 +43,14 @@ export default function ExamplePage() {
         <XDSDivider />
 
         {/* Buttons */}
-        <XDSVStack gap="space3">
+        <XDSVStack gap={3}>
           <XDSHeading level={2}>Buttons</XDSHeading>
-          <XDSHStack gap="space3" vAlign="center">
+          <XDSHStack gap={3} vAlign="center">
             <XDSButton label="Primary" variant="primary" />
             <XDSButton label="Secondary" variant="secondary" />
             <XDSButton label="Ghost" variant="ghost" />
           </XDSHStack>
-          <XDSHStack gap="space3" vAlign="center">
+          <XDSHStack gap={3} vAlign="center">
             <XDSButton label="Small" size="sm" />
             <XDSButton label="Medium" size="md" />
             <XDSButton label="Large" size="lg" />
@@ -60,9 +60,9 @@ export default function ExamplePage() {
         <XDSDivider />
 
         {/* Badges */}
-        <XDSVStack gap="space3">
+        <XDSVStack gap={3}>
           <XDSHeading level={2}>Badges</XDSHeading>
-          <XDSHStack gap="space3" vAlign="center">
+          <XDSHStack gap={3} vAlign="center">
             <XDSBadge variant="info">Info</XDSBadge>
             <XDSBadge variant="success">Success</XDSBadge>
             <XDSBadge variant="warning">Warning</XDSBadge>
@@ -73,7 +73,7 @@ export default function ExamplePage() {
         <XDSDivider />
 
         {/* Typography */}
-        <XDSVStack gap="space3">
+        <XDSVStack gap={3}>
           <XDSHeading level={2}>Typography</XDSHeading>
           <XDSHeading level={3}>Heading 3</XDSHeading>
           <XDSText type="large" weight="bold">
@@ -88,7 +88,7 @@ export default function ExamplePage() {
         <XDSDivider />
 
         {/* Form Controls */}
-        <XDSVStack gap="space3">
+        <XDSVStack gap={3}>
           <XDSHeading level={2}>Form Controls</XDSHeading>
           <XDSTextInput
             label="Name"

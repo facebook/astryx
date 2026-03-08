@@ -57,7 +57,7 @@ export interface XDSCollapsibleGroupProps {
    * @example
    * ```
    * <XDSCollapsibleGroup type="single" defaultValue="general">
-   *   <XDSVStack gap="space2">
+   *   <XDSVStack gap={2}>
    *     <XDSCard>
    *       <XDSCollapsible trigger="General" value="general">
    *         <p>General settings content</p>
@@ -93,7 +93,7 @@ function normalizeToArray(value: string | string[] | undefined): string[] {
  * @example
  * ```
  * <XDSCollapsibleGroup type="single" defaultValue="faq1">
- *   <XDSVStack gap="space2">
+ *   <XDSVStack gap={2}>
  *     <XDSCard>
  *       <XDSCollapsible trigger="What is XDS?" value="faq1">
  *         XDS is a design system for building internal tools.

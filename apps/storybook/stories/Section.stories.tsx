@@ -121,7 +121,7 @@ export const Variants: Story = {
 export const WithSimpleContent: Story = {
   render: () => (
     <XDSSection variant="wash" width={320}>
-      <XDSVStack gap="space2">
+      <XDSVStack gap={2}>
         <h3 {...stylex.props(styles.text)}>Section Title</h3>
         <p {...stylex.props(styles.text, styles.textSecondary)}>
           This section contains simple content without XDSLayout. The container
@@ -151,7 +151,7 @@ export const WithInnerLayout: Story = {
         }
         footer={
           <XDSLayoutFooter hasDivider>
-            <XDSHStack gap="space2" hAlign="end">
+            <XDSHStack gap={2} hAlign="end">
               <XDSButton label="Action" variant="primary">
                 Action
               </XDSButton>
@@ -169,7 +169,7 @@ export const PageLayout: Story = {
       <XDSLayout
         header={
           <XDSLayoutHeader hasDivider>
-            <XDSVStack gap="space2">
+            <XDSVStack gap={2}>
               <h2 {...stylex.props(styles.text)}>Page Header</h2>
               <p {...stylex.props(styles.text, styles.textSecondary)}>
                 Welcome to the application
@@ -184,7 +184,7 @@ export const PageLayout: Story = {
         }
         content={
           <XDSLayoutContent>
-            <XDSVStack gap="space2">
+            <XDSVStack gap={2}>
               <h3 {...stylex.props(styles.text)}>Main Content</h3>
               <p {...stylex.props(styles.text, styles.textSecondary)}>
                 This demonstrates how XDSLayout can be used to create page

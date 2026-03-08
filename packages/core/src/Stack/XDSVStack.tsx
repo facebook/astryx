@@ -42,7 +42,7 @@ export interface XDSVStackProps extends Omit<
  *
  * @example
  * ```
- * <XDSVStack gap="space2">
+ * <XDSVStack gap={2}>
  *   <Item />
  *   <Item />
  * </XDSVStack>

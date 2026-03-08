@@ -1,6 +1,6 @@
 /**
  * @file XDSLayoutContent.tsx
- * @input Uses React, StyleX, XDSLayoutSlotsContext
+ * @input Uses React StyleX, XDSLayoutSlotsContext
  * @output Exports XDSLayoutContent component and XDSLayoutContentProps
  * @position Scrollable main content area for XDSLayout. Wraps the primary body content
  *   with automatic scroll containment and context-aware padding.
@@ -19,6 +19,8 @@ import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {XDSLayoutSlotsContext} from './XDSLayoutSlotsContext';
 import {xdsClassName, mergeProps} from '../utils';
+import type {SpacingStep} from '../utils/types';
+import {paddingStyles, containerPaddingInlineVarStyles} from './padding.stylex';
 
 const styles = stylex.create({
   content: {
@@ -61,7 +63,6 @@ const styles = stylex.create({
 });
 
 export interface XDSLayoutContentProps extends XDSBaseProps<HTMLDivElement> {
-  /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLElement>;
   /**
    * Content to render inside the content area.
@@ -71,9 +72,17 @@ export interface XDSLayoutContentProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * Removes internal padding, allowing content to touch the edges.
    * Useful for edge-to-edge content like tables.
+   * @deprecated Use `padding={0}` instead.
    * @default false
    */
   isFullBleed?: boolean;
+
+  /**
+   * Internal padding of the content area using the spacing scale.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   * Overrides the default padding from the layout container.
+   */
+  padding?: SpacingStep;
 
   /**
    * Enables scrollable overflow for the content area.
@@ -135,6 +144,7 @@ export function XDSLayoutContent({
   children,
   isFullBleed = false,
   isScrollable = true,
+  padding,
   label,
   role,
   xstyle,
@@ -157,12 +167,14 @@ export function XDSLayoutContent({
         stylex.props(
           styles.content,
           // Outer padding on container edges (unless content is full bleed)
-          !hasStart && !isFullBleed && styles.noStart,
-          !hasEnd && !isFullBleed && styles.noEnd,
-          !hasHeader && !isFullBleed && styles.noHeader,
-          !hasFooter && !isFullBleed && styles.noFooter,
+          !hasStart && !isFullBleed && padding == null && styles.noStart,
+          !hasEnd && !isFullBleed && padding == null && styles.noEnd,
+          !hasHeader && !isFullBleed && padding == null && styles.noHeader,
+          !hasFooter && !isFullBleed && padding == null && styles.noFooter,
           isScrollable && styles.scrollable,
-          isFullBleed && styles.fullBleed,
+          isFullBleed && padding == null && styles.fullBleed,
+          padding != null && paddingStyles[padding],
+          padding != null && containerPaddingInlineVarStyles[padding],
           xstyle,
         ),
         className,

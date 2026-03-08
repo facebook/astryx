@@ -40,7 +40,7 @@ type Story = StoryObj<typeof XDSHoverCard>;
 function ProfileCard() {
   return (
     <div style={{width: 200}}>
-      <XDSVStack gap="space2">
+      <XDSVStack gap={2}>
         <div style={{fontWeight: 600}}>Jane Doe</div>
         <div style={{fontSize: 14, opacity: 0.7}}>Software Engineer</div>
         <div style={{fontSize: 13}}>
@@ -150,9 +150,9 @@ export const InteractiveContent: Story = {
       <XDSHoverCard
         placement="below"
         content={
-          <XDSVStack gap="space2">
+          <XDSVStack gap={2}>
             <div>Interactive hover card content</div>
-            <XDSHStack gap="space2">
+            <XDSHStack gap={2}>
               <XDSButton label="Follow" variant="primary">
                 Follow
               </XDSButton>
@@ -194,7 +194,7 @@ export const TextNodeMultiple: Story = {
         <XDSHoverCard
           content={
             <div style={{width: 200}}>
-              <XDSVStack gap="space2">
+              <XDSVStack gap={2}>
                 <div style={{fontWeight: 600}}>John Smith</div>
                 <div style={{fontSize: 14, opacity: 0.7}}>Product Manager</div>
               </XDSVStack>

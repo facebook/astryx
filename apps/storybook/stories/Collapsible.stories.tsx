@@ -48,7 +48,7 @@ export const SingleMode: Story = {
   name: 'Single Mode (default)',
   render: () => (
     <XDSCollapsibleGroup type="single" defaultValue="general">
-      <XDSVStack gap="space2">
+      <XDSVStack gap={2}>
         <XDSCard>
           <XDSCollapsible trigger="General Settings" value="general">
             <p {...stylex.props(styles.text)}>
@@ -81,7 +81,7 @@ export const MultipleMode: Story = {
   name: 'Multiple Mode',
   render: () => (
     <XDSCollapsibleGroup type="multiple" defaultValue={['faq1', 'faq3']}>
-      <XDSVStack gap="space2">
+      <XDSVStack gap={2}>
         <XDSCard>
           <XDSCollapsible trigger="What is XDS?" value="faq1">
             <p {...stylex.props(styles.text)}>
@@ -118,7 +118,7 @@ export const Controlled: Story = {
           Currently open: <strong>{String(open) || '(none)'}</strong>
         </p>
         <XDSCollapsibleGroup type="single" value={open} onChange={setOpen}>
-          <XDSVStack gap="space2">
+          <XDSVStack gap={2}>
             <XDSCard>
               <XDSCollapsible trigger="Section 1" value="section1">
                 <p {...stylex.props(styles.text)}>Content for section 1.</p>
@@ -144,7 +144,7 @@ export const Controlled: Story = {
 export const StandaloneCollapsible: Story = {
   name: 'Standalone Collapsible',
   render: () => (
-    <XDSVStack gap="space2">
+    <XDSVStack gap={2}>
       <XDSCard>
         <XDSCollapsible trigger="Starts open (default)">
           <p {...stylex.props(styles.text)}>
@@ -166,7 +166,7 @@ export const StandaloneCollapsible: Story = {
 export const WithoutCard: Story = {
   name: 'Without Card (standalone)',
   render: () => (
-    <XDSVStack gap="space2">
+    <XDSVStack gap={2}>
       <XDSCollapsible trigger="Show more details">
         <p {...stylex.props(styles.text)}>
           XDSCollapsible works anywhere — it doesn't require a card wrapper.
@@ -183,7 +183,7 @@ export const FAQ: Story = {
   name: 'FAQ Page',
   render: () => (
     <XDSCollapsibleGroup type="single">
-      <XDSVStack gap="space2">
+      <XDSVStack gap={2}>
         <XDSCard>
           <XDSCollapsible trigger="How do I reset my password?" value="q1">
             <p {...stylex.props(styles.text)}>

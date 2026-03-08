@@ -15,7 +15,7 @@ export const docs = {
   examples: [
     {
       label: 'Fixed 3-column grid',
-      code: `<XDSGrid columns={3} gap="space4">
+      code: `<XDSGrid columns={3} gap={4}>
   <Item />
   <Item />
   <Item />
@@ -23,7 +23,7 @@ export const docs = {
     },
     {
       label: 'Responsive auto-fit',
-      code: `<XDSGrid minChildWidth={200} gap="space4">
+      code: `<XDSGrid minChildWidth={200} gap={4}>
   <Card />
   <Card />
   <Card />
@@ -31,20 +31,20 @@ export const docs = {
     },
     {
       label: 'Auto-fit with max columns cap',
-      code: `<XDSGrid minChildWidth={200} columns={4} gap="space4">
+      code: `<XDSGrid minChildWidth={200} columns={4} gap={4}>
   <Card />
 </XDSGrid>`,
     },
     {
       label: 'Grid item spanning multiple columns',
-      code: `<XDSGrid columns={3} gap="space4">
+      code: `<XDSGrid columns={3} gap={4}>
   <XDSGridSpan columns={2}>Wide item</XDSGridSpan>
   <div>Normal item</div>
 </XDSGrid>`,
     },
     {
       label: 'Dense grid (e.g. color swatches, icon grids, compact controls)',
-      code: `<XDSGrid columns={6} gap="space2">
+      code: `<XDSGrid columns={6} gap={2}>
   {items.map(item => (
     <XDSButton key={item.id} label={item.label} icon={item.icon} variant="ghost" size="sm" />
   ))}
@@ -88,17 +88,17 @@ export const docs = {
         },
         {
           name: 'gap',
-          type: 'SpacingScale',
+          type: 'SpacingStep',
           description: 'Spacing between all items.',
         },
         {
           name: 'rowGap',
-          type: 'SpacingScale',
+          type: 'SpacingStep',
           description: 'Row spacing; overrides `gap` for the row axis.',
         },
         {
           name: 'columnGap',
-          type: 'SpacingScale',
+          type: 'SpacingStep',
           description: 'Column spacing; overrides `gap` for the column axis.',
         },
         {
@@ -122,7 +122,7 @@ export const docs = {
       examples: [
         {
           label: 'Basic',
-          code: `<XDSGrid columns={3} gap="space4">
+          code: `<XDSGrid columns={3} gap={4}>
   <Item />
   <Item />
   <Item />
@@ -153,7 +153,7 @@ export const docs = {
       examples: [
         {
           label: 'Spanning two columns',
-          code: `<XDSGrid columns={3} gap="space4">
+          code: `<XDSGrid columns={3} gap={4}>
   <XDSGridSpan columns={2}>Wide item</XDSGridSpan>
   <div>Normal item</div>
 </XDSGrid>`,

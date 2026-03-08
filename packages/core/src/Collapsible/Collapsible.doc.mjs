@@ -61,7 +61,7 @@ export const docs = {
       label: 'Coordinated group — single mode (accordion)',
       code: `// Single mode — only one open at a time (FAQ, settings panels)
 <XDSCollapsibleGroup type="single" defaultValue="general">
-  <XDSVStack gap="space2">
+  <XDSVStack gap={2}>
     <XDSCard>
       <XDSCollapsible trigger="General Settings" value="general">
         <GeneralContent />
@@ -79,7 +79,7 @@ export const docs = {
       label: 'Coordinated group — multiple mode',
       code: `// Multiple mode — any number open
 <XDSCollapsibleGroup type="multiple" defaultValue={["s1", "s2"]}>
-  <XDSVStack gap="space2">
+  <XDSVStack gap={2}>
     <XDSCard>
       <XDSCollapsible trigger="Section 1" value="s1">...</XDSCollapsible>
     </XDSCard>

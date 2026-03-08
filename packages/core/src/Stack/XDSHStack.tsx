@@ -42,7 +42,7 @@ export interface XDSHStackProps extends Omit<
  *
  * @example
  * ```
- * <XDSHStack gap="space2">
+ * <XDSHStack gap={2}>
  *   <Item />
  *   <Item />
  * </XDSHStack>

@@ -27,9 +27,9 @@ export const docs = {
       key: 'name',
       header: 'Name',
       renderCell: user => (
-        <XDSHStack gap="space2" align="center">
+        <XDSHStack gap={2} align="center">
           <XDSAvatar name={user.name} size="small" />
-          <XDSVStack gap="space1">
+          <XDSVStack gap={1}>
             <XDSText type="body" weight="semibold">
               {user.name}
             </XDSText>
@@ -45,7 +45,7 @@ export const docs = {
       header: 'Status',
       width: pixel(140),
       renderCell: user => (
-        <XDSHStack gap="space2" align="center">
+        <XDSHStack gap={2} align="center">
           <XDSStatusDot status={user.isActive ? 'positive' : 'negative'} />
           <XDSBadge variant={user.isActive ? 'success' : 'error'}>
             {user.isActive ? 'Active' : 'Inactive'}
@@ -82,7 +82,7 @@ export const docs = {
       key: 'description',
       header: 'Transaction',
       renderCell: tx => (
-        <XDSVStack gap="space1">
+        <XDSVStack gap={1}>
           <XDSText weight="semibold">{tx.description}</XDSText>
           <XDSText type="supporting" color="secondary">
             {tx.date}
@@ -129,7 +129,7 @@ export const docs = {
       code: `<XDSTable density="balanced" dividers="rows" isStriped hasHover>
   <XDSTableRow>
     <XDSTableCell>
-      <XDSHStack gap="space2" align="center">
+      <XDSHStack gap={2} align="center">
         <XDSAvatar name="Alice" size="small" />
         <XDSText weight="semibold">Alice</XDSText>
       </XDSHStack>

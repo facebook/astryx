@@ -30,8 +30,8 @@ export default function App() {
     <XDSTheme theme={defaultTheme}>
       <main {...stylex.props(styles.main)}>
         <div {...stylex.props(styles.container)}>
-          <XDSVStack gap="space6">
-            <XDSVStack gap="space2">
+          <XDSVStack gap={6}>
+            <XDSVStack gap={2}>
               <XDSHeading level={1}>XDS Example — Vite</XDSHeading>
               <XDSText type="body" color="secondary">
                 This is a reference example for consuming{' '}
@@ -50,9 +50,9 @@ export default function App() {
             <XDSDivider />
 
             {/* Buttons */}
-            <XDSVStack gap="space3">
+            <XDSVStack gap={3}>
               <XDSHeading level={2}>Buttons</XDSHeading>
-              <XDSHStack gap="space3" vAlign="center">
+              <XDSHStack gap={3} vAlign="center">
                 <XDSButton label="Primary" variant="primary" />
                 <XDSButton label="Secondary" variant="secondary" />
                 <XDSButton label="Ghost" variant="ghost" />
@@ -62,9 +62,9 @@ export default function App() {
             <XDSDivider />
 
             {/* Badges */}
-            <XDSVStack gap="space3">
+            <XDSVStack gap={3}>
               <XDSHeading level={2}>Badges</XDSHeading>
-              <XDSHStack gap="space3" vAlign="center">
+              <XDSHStack gap={3} vAlign="center">
                 <XDSBadge variant="info">Info</XDSBadge>
                 <XDSBadge variant="success">Success</XDSBadge>
                 <XDSBadge variant="warning">Warning</XDSBadge>
@@ -75,7 +75,7 @@ export default function App() {
             <XDSDivider />
 
             {/* Text Input */}
-            <XDSVStack gap="space3">
+            <XDSVStack gap={3}>
               <XDSHeading level={2}>Text Input</XDSHeading>
               <XDSTextInput
                 label="Email address"
@@ -88,7 +88,7 @@ export default function App() {
             <XDSDivider />
 
             {/* Typography */}
-            <XDSVStack gap="space3">
+            <XDSVStack gap={3}>
               <XDSHeading level={2}>Typography</XDSHeading>
               <XDSText type="large" weight="bold">
                 Large bold text

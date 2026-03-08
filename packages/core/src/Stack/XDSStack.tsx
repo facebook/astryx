@@ -27,6 +27,7 @@ import {
   type StackMainAlignment,
   type StackWrap,
   type SpacingScale,
+  type SpacingStep,
 } from './stack.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -71,10 +72,11 @@ export interface XDSStackProps extends XDSBaseProps<HTMLDivElement> {
   vAlign?: StackAlignment;
 
   /**
-   * Spacing between items using theme spacing tokens.
-   * Use token names: 'space0', 'space1', 'space2', 'space3', 'space4', 'space5', 'space6', 'space7'
+   * Spacing between items.
+   * Accepts numeric spacing steps (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10)
+   * or legacy string tokens ('space0', 'space1', etc.).
    */
-  gap?: SpacingScale;
+  gap?: SpacingStep | SpacingScale;
 
   /**
    * Whether items should wrap.
@@ -132,11 +134,11 @@ export interface XDSStackProps extends XDSBaseProps<HTMLDivElement> {
  *
  * @example
  * ```
- * <XDSStack direction="vertical" gap="space2">
+ * <XDSStack direction="vertical" gap={2}>
  *   <Item />
  *   <Item />
  * </XDSStack>
- * <XDSStack direction="horizontal" gap="space4" vAlign="center">
+ * <XDSStack direction="horizontal" gap={4} vAlign="center">
  *   <Item />
  *   <Item />
  * </XDSStack>

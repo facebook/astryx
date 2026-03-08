@@ -86,7 +86,7 @@ export interface XDSStackItemProps extends XDSBaseProps<HTMLDivElement> {
  *
  * @example
  * ```
- * <XDSHStack gap="space2">
+ * <XDSHStack gap={2}>
  *   <XDSStackItem size="static">Logo</XDSStackItem>
  *   <XDSStackItem size="fill">Content</XDSStackItem>
  *   <XDSStackItem size="static">Actions</XDSStackItem>

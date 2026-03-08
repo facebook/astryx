@@ -38,7 +38,7 @@ export const docs = {
     },
     {
       label: 'Full bleed',
-      code: `<XDSSection variant="wash" isFullBleed>
+      code: `<XDSSection variant="wash" padding={0}>
   <XDSLayout
     content={<XDSLayoutContent>Edge-to-edge content</XDSLayoutContent>}
   />

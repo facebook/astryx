@@ -235,8 +235,8 @@ export default function MegaMenuPage() {
 
   return (
     <div {...stylex.props(styles.container)}>
-      <XDSVStack gap="space6">
-        <XDSVStack gap="space2">
+      <XDSVStack gap={6}>
+        <XDSVStack gap={2}>
           <XDSHeading level={1}>Mega Menu</XDSHeading>
           <XDSText type="body" color="secondary">
             A top nav variation with a full-width mega menu that appears on
@@ -246,7 +246,7 @@ export default function MegaMenuPage() {
         </XDSVStack>
 
         {/* Full mega menu with featured content */}
-        <XDSVStack gap="space3">
+        <XDSVStack gap={3}>
           <XDSHeading level={2}>With Featured Content</XDSHeading>
           <div
             {...stylex.props(
@@ -305,7 +305,7 @@ export default function MegaMenuPage() {
         </XDSVStack>
 
         {/* Without featured content */}
-        <XDSVStack gap="space3">
+        <XDSVStack gap={3}>
           <XDSHeading level={2}>Without Featured Content</XDSHeading>
           <div
             {...stylex.props(

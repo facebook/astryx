@@ -17,6 +17,7 @@ export type SpacingToken =
   | 'spacing0'
   | 'spacing0_5'
   | 'spacing1'
+  | 'spacing1_5'
   | 'spacing2'
   | 'spacing3'
   | 'spacing4'
@@ -45,6 +46,7 @@ const containerPaddingStyles = stylex.create({
   spacing0: {'--container-padding': spacingVars['--spacing-0']},
   spacing0_5: {'--container-padding': spacingVars['--spacing-0-5']},
   spacing1: {'--container-padding': spacingVars['--spacing-1']},
+  spacing1_5: {'--container-padding': spacingVars['--spacing-1-5']},
   spacing2: {'--container-padding': spacingVars['--spacing-2']},
   spacing3: {'--container-padding': spacingVars['--spacing-3']},
   spacing4: {'--container-padding': spacingVars['--spacing-4']},
@@ -69,6 +71,7 @@ const containerPaddingInlineStyles = stylex.create({
   spacing0: {'--container-padding-inline': spacingVars['--spacing-0']},
   spacing0_5: {'--container-padding-inline': spacingVars['--spacing-0-5']},
   spacing1: {'--container-padding-inline': spacingVars['--spacing-1']},
+  spacing1_5: {'--container-padding-inline': spacingVars['--spacing-1-5']},
   spacing2: {'--container-padding-inline': spacingVars['--spacing-2']},
   spacing3: {'--container-padding-inline': spacingVars['--spacing-3']},
   spacing4: {'--container-padding-inline': spacingVars['--spacing-4']},
@@ -86,6 +89,7 @@ const paddingOuterXStyles = stylex.create({
   spacing0: {'--layout-padding-outer-x': spacingVars['--spacing-0']},
   spacing0_5: {'--layout-padding-outer-x': spacingVars['--spacing-0-5']},
   spacing1: {'--layout-padding-outer-x': spacingVars['--spacing-1']},
+  spacing1_5: {'--layout-padding-outer-x': spacingVars['--spacing-1-5']},
   spacing2: {'--layout-padding-outer-x': spacingVars['--spacing-2']},
   spacing3: {'--layout-padding-outer-x': spacingVars['--spacing-3']},
   spacing4: {'--layout-padding-outer-x': spacingVars['--spacing-4']},
@@ -103,6 +107,7 @@ const paddingOuterYStyles = stylex.create({
   spacing0: {'--layout-padding-outer-y': spacingVars['--spacing-0']},
   spacing0_5: {'--layout-padding-outer-y': spacingVars['--spacing-0-5']},
   spacing1: {'--layout-padding-outer-y': spacingVars['--spacing-1']},
+  spacing1_5: {'--layout-padding-outer-y': spacingVars['--spacing-1-5']},
   spacing2: {'--layout-padding-outer-y': spacingVars['--spacing-2']},
   spacing3: {'--layout-padding-outer-y': spacingVars['--spacing-3']},
   spacing4: {'--layout-padding-outer-y': spacingVars['--spacing-4']},
@@ -120,6 +125,7 @@ const paddingInnerXStyles = stylex.create({
   spacing0: {'--layout-padding-inner-x': spacingVars['--spacing-0']},
   spacing0_5: {'--layout-padding-inner-x': spacingVars['--spacing-0-5']},
   spacing1: {'--layout-padding-inner-x': spacingVars['--spacing-1']},
+  spacing1_5: {'--layout-padding-inner-x': spacingVars['--spacing-1-5']},
   spacing2: {'--layout-padding-inner-x': spacingVars['--spacing-2']},
   spacing3: {'--layout-padding-inner-x': spacingVars['--spacing-3']},
   spacing4: {'--layout-padding-inner-x': spacingVars['--spacing-4']},
@@ -137,6 +143,7 @@ const paddingInnerYStyles = stylex.create({
   spacing0: {'--layout-padding-inner-y': spacingVars['--spacing-0']},
   spacing0_5: {'--layout-padding-inner-y': spacingVars['--spacing-0-5']},
   spacing1: {'--layout-padding-inner-y': spacingVars['--spacing-1']},
+  spacing1_5: {'--layout-padding-inner-y': spacingVars['--spacing-1-5']},
   spacing2: {'--layout-padding-inner-y': spacingVars['--spacing-2']},
   spacing3: {'--layout-padding-inner-y': spacingVars['--spacing-3']},
   spacing4: {'--layout-padding-inner-y': spacingVars['--spacing-4']},

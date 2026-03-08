@@ -16,7 +16,13 @@ import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {container} from '../Layout/container.stylex';
-import type {SizeValue} from '../utils/types';
+import type {SpacingToken} from '../Layout/container.stylex';
+import {
+  paddingStyles,
+  containerPaddingInlineVarStyles,
+  spacingStepToToken,
+} from '../Layout/padding.stylex';
+import type {SizeValue, SpacingStep} from '../utils/types';
 import {xdsClassName, mergeProps} from '../utils';
 
 /**
@@ -107,8 +113,7 @@ const dynamicStyles = stylex.create({
 });
 
 export interface XDSSectionProps {
-  /** Ref forwarded to the root element */
-  ref?: React.Ref<HTMLDivElement>;
+  ref?: React.Ref<HTMLElement>;
   /**
    * Visual variant of the section.
    * - 'section': Surface background color
@@ -160,9 +165,17 @@ export interface XDSSectionProps {
 
   /**
    * Removes internal padding, allowing content to touch the edges.
+   * @deprecated Use `padding={0}` instead.
    * @default false
    */
   isFullBleed?: boolean;
+
+  /**
+   * Internal padding of the section using the spacing scale.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   * @default 4 (16px)
+   */
+  padding?: SpacingStep;
 }
 
 /**
@@ -192,12 +205,16 @@ export function XDSSection({
   children,
   dividers,
   isFullBleed = false,
+  padding,
   ref,
   ...props
 }: XDSSectionProps) {
+  // Resolve effective padding: isFullBleed maps to padding=0
+  const effectivePadding = isFullBleed ? 0 : (padding ?? 4);
+  const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
   return (
     <div
-      ref={ref}
+      ref={ref as React.Ref<HTMLDivElement>}
       {...mergeProps(
         xdsClassName('section', {variant}),
         stylex.props(
@@ -215,13 +232,15 @@ export function XDSSection({
         {...stylex.props(
           nestedStyles.inner,
           ...container({
-            paddingInnerX: 'spacing4',
-            paddingInnerY: 'spacing4',
-            paddingOuterX: 'spacing4',
-            paddingOuterY: 'spacing4',
+            paddingInnerX: paddingToken,
+            paddingInnerY: paddingToken,
+            paddingOuterX: paddingToken,
+            paddingOuterY: paddingToken,
           }),
+          effectivePadding !== 4 && paddingStyles[effectivePadding],
+          effectivePadding !== 4 &&
+            containerPaddingInlineVarStyles[effectivePadding],
           variantStyles[variant],
-          isFullBleed && nestedStyles.fullBleed,
           dividers?.includes('top') && dividerStyles.top,
           dividers?.includes('bottom') && dividerStyles.bottom,
           dividers?.includes('start') && dividerStyles.start,

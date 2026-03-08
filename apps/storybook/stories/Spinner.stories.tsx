@@ -33,7 +33,7 @@ export const Default: Story = {
 
 export const Sizes: Story = {
   render: () => (
-    <XDSHStack gap="space4" vAlign="center">
+    <XDSHStack gap={4} vAlign="center">
       <XDSSpinner size="sm" />
       <XDSSpinner size="md" />
       <XDSSpinner size="lg" />
@@ -43,7 +43,7 @@ export const Sizes: Story = {
 
 export const Shades: Story = {
   render: () => (
-    <XDSHStack gap="space4" vAlign="center">
+    <XDSHStack gap={4} vAlign="center">
       <XDSSpinner shade="default" />
       <div
         style={{
@@ -59,7 +59,7 @@ export const Shades: Story = {
 
 export const InContext: Story = {
   render: () => (
-    <XDSVStack gap="space2" hAlign="center">
+    <XDSVStack gap={2} hAlign="center">
       <XDSSpinner size="lg" />
       <XDSText type="body" color="secondary">
         Loading...

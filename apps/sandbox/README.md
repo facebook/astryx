@@ -39,7 +39,7 @@ import {XDSVStack, XDSHeading, XDSText} from '@xds/core';
 
 export default function MyPage() {
   return (
-    <XDSVStack gap="space4">
+    <XDSVStack gap={4}>
       <XDSHeading level={1}>My Page</XDSHeading>
       <XDSText type="body">Content here</XDSText>
     </XDSVStack>

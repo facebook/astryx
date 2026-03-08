@@ -23,6 +23,7 @@ export type {
   StackMainAlignment,
   StackWrap,
   SpacingScale,
+  SpacingStep,
 } from '../Stack/stack.stylex';
 
 export {stackItem} from '../Stack/stackItem.stylex';

@@ -31,6 +31,12 @@ import renameSideNavHeaderToHeading, {
 import migrateUseXDSIconToGetIcon, {
   meta as useXDSIconMeta,
 } from './migrate-useXDSIcon-to-getIcon.mjs';
+import migrateGapToNumeric, {
+  meta as gapMeta,
+} from './migrate-gap-to-numeric.mjs';
+import migrateIsFullBleedToPadding, {
+  meta as fullBleedMeta,
+} from './migrate-isFullBleed-to-padding.mjs';
 export default [
   {
     name: 'rename-selector-items-to-options',
@@ -76,5 +82,15 @@ export default [
     name: 'migrate-useXDSIcon-to-getIcon',
     transform: migrateUseXDSIconToGetIcon,
     meta: useXDSIconMeta,
+  },
+  {
+    name: 'migrate-gap-to-numeric',
+    transform: migrateGapToNumeric,
+    meta: gapMeta,
+  },
+  {
+    name: 'migrate-isFullBleed-to-padding',
+    transform: migrateIsFullBleedToPadding,
+    meta: fullBleedMeta,
   },
 ];

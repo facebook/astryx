@@ -1,6 +1,6 @@
 /**
  * @file XDSLayoutPanel.tsx
- * @input Uses React, StyleX, XDSLayoutAreaContext, XDSLayoutSlotsContext
+ * @input Uses React StyleX, XDSLayoutAreaContext, XDSLayoutSlotsContext
  * @output Exports XDSLayoutPanel component and XDSLayoutPanelProps
  * @position Sidebar panel for XDSLayout start/end slots. Use for navigation panels,
  *   settings sidebars, detail panels, or any fixed-width side content.
@@ -20,6 +20,8 @@ import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {XDSLayoutAreaContext} from './XDSLayoutAreaContext';
 import {XDSLayoutSlotsContext} from './XDSLayoutSlotsContext';
 import {xdsClassName, mergeProps} from '../utils';
+import type {SpacingStep} from '../utils/types';
+import {paddingStyles, containerPaddingInlineVarStyles} from './padding.stylex';
 
 const styles = stylex.create({
   panel: {
@@ -88,7 +90,6 @@ const dynamicStyles = stylex.create({
 });
 
 export interface XDSLayoutPanelProps extends XDSBaseProps<HTMLDivElement> {
-  /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLElement>;
   /**
    * Content to render inside the panel.
@@ -106,9 +107,17 @@ export interface XDSLayoutPanelProps extends XDSBaseProps<HTMLDivElement> {
 
   /**
    * Removes internal padding, allowing content to touch the edges.
+   * @deprecated Use `padding={0}` instead.
    * @default false
    */
   isFullBleed?: boolean;
+
+  /**
+   * Internal padding of the panel using the spacing scale.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   * Overrides the default padding from the layout container.
+   */
+  padding?: SpacingStep;
 
   /**
    * Enables scrollable overflow for the panel.
@@ -171,6 +180,7 @@ export function XDSLayoutPanel({
   isFullBleed = false,
   isScrollable = true,
   label,
+  padding,
   role,
   width,
   xstyle,
@@ -187,7 +197,7 @@ export function XDSLayoutPanel({
   const isEndPanel = area === 'end';
 
   // When no divider, collapse spacing for seamless visual flow
-  const shouldCollapseSpacing = !hasDivider && !isFullBleed;
+  const shouldCollapseSpacing = !hasDivider && !isFullBleed && padding == null;
 
   // Select divider style based on position
   const dividerStyle = isStartPanel
@@ -214,12 +224,14 @@ export function XDSLayoutPanel({
           styles.panel,
           dynamicStyles.sizing(width ?? null),
           // Outer padding on container edges (unless component is full bleed)
-          isStartPanel && !isFullBleed && styles.startPanel,
-          isEndPanel && !isFullBleed && styles.endPanel,
-          !hasHeader && !isFullBleed && styles.noHeader,
-          !hasFooter && !isFullBleed && styles.noFooter,
+          isStartPanel && !isFullBleed && padding == null && styles.startPanel,
+          isEndPanel && !isFullBleed && padding == null && styles.endPanel,
+          !hasHeader && !isFullBleed && padding == null && styles.noHeader,
+          !hasFooter && !isFullBleed && padding == null && styles.noFooter,
           isScrollable && styles.scrollable,
-          isFullBleed && styles.fullBleed,
+          isFullBleed && padding == null && styles.fullBleed,
+          padding != null && paddingStyles[padding],
+          padding != null && containerPaddingInlineVarStyles[padding],
           hasDivider && dividerStyle,
           shouldCollapseSpacing && collapseStyle,
           xstyle,

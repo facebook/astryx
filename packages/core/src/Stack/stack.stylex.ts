@@ -9,6 +9,7 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
+import type {SpacingStep} from '../utils/types';
 
 const alignItemsStyles = stylex.create({
   center: {
@@ -119,6 +120,10 @@ const gapStyles = stylex.create({
     columnGap: spacingVars['--spacing-1'],
     rowGap: spacingVars['--spacing-1'],
   },
+  'space1.5': {
+    columnGap: spacingVars['--spacing-1-5'],
+    rowGap: spacingVars['--spacing-1-5'],
+  },
   space2: {
     columnGap: spacingVars['--spacing-2'],
     rowGap: spacingVars['--spacing-2'],
@@ -167,9 +172,40 @@ const gapStyles = stylex.create({
 
 /**
  * Spacing token names for gap values.
- * These match the theme's spacing token names.
+ * @deprecated Use numeric `SpacingStep` values instead (e.g., `2` instead of `'space2'`).
  */
 export type SpacingScale = keyof typeof gapStyles;
+
+/**
+ * Maps numeric SpacingStep values to their corresponding gapStyles keys.
+ */
+const numericToGapKey: Record<SpacingStep, keyof typeof gapStyles> = {
+  0: 'space0',
+  0.5: 'space0.5',
+  1: 'space1',
+  1.5: 'space1.5',
+  2: 'space2',
+  3: 'space3',
+  4: 'space4',
+  5: 'space5',
+  6: 'space6',
+  8: 'space8',
+  10: 'space10',
+};
+
+/**
+ * Resolves a gap value (numeric or legacy string) to a gapStyles key.
+ */
+function resolveGapKey(
+  gap: SpacingStep | SpacingScale,
+): keyof typeof gapStyles {
+  if (typeof gap === 'number') {
+    return numericToGapKey[gap as SpacingStep];
+  }
+  return gap;
+}
+
+export {type SpacingStep};
 
 export interface StackOptions {
   /**
@@ -185,10 +221,11 @@ export interface StackOptions {
   direction: StackDirection;
 
   /**
-   * Spacing between items using theme spacing tokens.
-   * Use token names: 'space0', 'space1', 'space2', etc.
+   * Spacing between items.
+   * Accepts numeric spacing steps (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10)
+   * or legacy string tokens ('space0', 'space1', etc.).
    */
-  gap?: SpacingScale;
+  gap?: SpacingStep | SpacingScale;
 
   /**
    * Position of items along the main-axis.
@@ -215,8 +252,8 @@ export interface StackOptions {
  * import { stack } from '@xds/core/Layout';
  * import * as stylex from '@stylexjs/stylex';
  *
- * // Horizontal stack with gap
- * <div {...stylex.props(...stack({ direction: 'horizontal', gap: 'space2' }))}>
+ * // Horizontal stack with numeric gap
+ * <div {...stylex.props(...stack({ direction: 'horizontal', gap: 2 }))}>
  *   <Child />
  *   <Child />
  * </div>
@@ -228,7 +265,7 @@ export interface StackOptions {
  * </div>
  *
  * // Wrapping horizontal stack with larger gap
- * <div {...stylex.props(...stack({ direction: 'horizontal', gap: 'space4', wrap: 'wrap' }))}>
+ * <div {...stylex.props(...stack({ direction: 'horizontal', gap: 4, wrap: 'wrap' }))}>
  *   <Child />
  *   <Child />
  *   <Child />
@@ -245,7 +282,7 @@ export function stack({
   return [
     baseStyles.stack,
     directionStyles[direction],
-    gap != null && gapStyles[gap],
+    gap != null && gapStyles[resolveGapKey(gap)],
     crossAlign != null && alignItemsStyles[crossAlign],
     mainAlign != null && justifyContentStyles[mainAlign],
     wrap != null && wrapStyles[wrap],

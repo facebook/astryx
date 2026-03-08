@@ -14,7 +14,7 @@ export const docs = {
   examples: [
     {
       label: 'Header layout',
-      code: `<XDSHStack element="header" gap="space2">
+      code: `<XDSHStack element="header" gap={2}>
   <XDSStackItem size="static">
     <Logo />
   </XDSStackItem>
@@ -28,7 +28,7 @@ export const docs = {
     },
     {
       label: 'Sidebar layout',
-      code: `<XDSHStack gap="space4">
+      code: `<XDSHStack gap={4}>
   <XDSStackItem size="static">
     <Sidebar />
   </XDSStackItem>
@@ -39,7 +39,7 @@ export const docs = {
     },
     {
       label: 'Page layout',
-      code: `<XDSVStack element="main" gap="space6">
+      code: `<XDSVStack element="main" gap={6}>
   <XDSStackItem size="static">
     <PageHeader />
   </XDSStackItem>
@@ -63,7 +63,7 @@ export const docs = {
       code: `import {stack} from '@xds/core/Layout';
 import * as stylex from '@stylexjs/stylex';
 
-<div {...stylex.props(...stack({direction: 'horizontal', gap: 'space2'}))}>
+<div {...stylex.props(...stack({direction: 'horizontal', gap: 2}))}>
   <Child />
   <Child />
 </div>`,
@@ -77,7 +77,7 @@ import * as stylex from '@stylexjs/stylex';
   },
   notes: [
     "Import from '@xds/core/Layout': XDSHStack, XDSVStack, XDSStackItem, stack, stackItem.",
-    'The gap prop accepts spacing tokens: space0, space0.5, space1, space2, space3, space4, space5, space6, space7.',
+    'The gap prop accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
     'stack and stackItem are low-level StyleX utilities for advanced cases where the component API is insufficient.',
   ],
   components: [
@@ -88,9 +88,9 @@ import * as stylex from '@stylexjs/stylex';
       props: [
         {
           name: 'gap',
-          type: 'SpacingScale',
+          type: 'SpacingStep',
           description:
-            'Spacing token controlling the gap between items: space0, space1, space2, space3, space4, space5, space6, space7.',
+            'Numeric spacing step controlling the gap between items: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
         },
         {
           name: 'vAlign',
@@ -119,21 +119,21 @@ import * as stylex from '@stylexjs/stylex';
       examples: [
         {
           label: 'Basic horizontal stack',
-          code: `<XDSHStack gap="space2">
+          code: `<XDSHStack gap={2}>
   <Item />
   <Item />
 </XDSHStack>`,
         },
         {
           label: 'With vertical alignment',
-          code: `<XDSHStack gap="space4" vAlign="center">
+          code: `<XDSHStack gap={4} vAlign="center">
   <Item />
   <Item />
 </XDSHStack>`,
         },
         {
           label: 'Polymorphic rendering',
-          code: `<XDSHStack element="nav" gap="space2">
+          code: `<XDSHStack element="nav" gap={2}>
   <Link />
   <Link />
 </XDSHStack>`,
@@ -147,9 +147,9 @@ import * as stylex from '@stylexjs/stylex';
       props: [
         {
           name: 'gap',
-          type: 'SpacingScale',
+          type: 'SpacingStep',
           description:
-            'Spacing token controlling the gap between items: space0, space1, space2, space3, space4, space5, space6, space7.',
+            'Numeric spacing step controlling the gap between items: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
         },
         {
           name: 'hAlign',
@@ -178,21 +178,21 @@ import * as stylex from '@stylexjs/stylex';
       examples: [
         {
           label: 'Basic vertical stack',
-          code: `<XDSVStack gap="space2">
+          code: `<XDSVStack gap={2}>
   <Item />
   <Item />
 </XDSVStack>`,
         },
         {
           label: 'With horizontal alignment',
-          code: `<XDSVStack gap="space4" hAlign="center">
+          code: `<XDSVStack gap={4} hAlign="center">
   <Item />
   <Item />
 </XDSVStack>`,
         },
         {
           label: 'Polymorphic rendering',
-          code: `<XDSVStack element="main" gap="space4">
+          code: `<XDSVStack element="main" gap={4}>
   <Header />
   <Content />
 </XDSVStack>`,
@@ -232,7 +232,7 @@ import * as stylex from '@stylexjs/stylex';
       examples: [
         {
           label: 'Static and fill sizing',
-          code: `<XDSHStack gap="space2">
+          code: `<XDSHStack gap={2}>
   <XDSStackItem size="static">Logo</XDSStackItem>
   <XDSStackItem size="fill">Content</XDSStackItem>
   <XDSStackItem size="static">Actions</XDSStackItem>
@@ -266,9 +266,9 @@ import * as stylex from '@stylexjs/stylex';
         },
         {
           name: 'gap',
-          type: 'SpacingScale',
+          type: 'SpacingStep',
           description:
-            'Spacing token controlling the gap between items: space0, space1, space2, space3, space4, space5, space6, space7.',
+            'Numeric spacing step controlling the gap between items: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
         },
         {
           name: 'crossAlign',
@@ -288,7 +288,7 @@ import * as stylex from '@stylexjs/stylex';
           code: `import {stack} from '@xds/core/Layout';
 import * as stylex from '@stylexjs/stylex';
 
-<div {...stylex.props(...stack({direction: 'horizontal', gap: 'space2'}))}>
+<div {...stylex.props(...stack({direction: 'horizontal', gap: 2}))}>
   <Child />
   <Child />
 </div>`,

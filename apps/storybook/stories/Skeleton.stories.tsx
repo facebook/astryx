@@ -42,7 +42,7 @@ export const Default: Story = {
 
 export const Shapes: Story = {
   render: () => (
-    <XDSHStack gap="space4" vAlign="center">
+    <XDSHStack gap={4} vAlign="center">
       <XDSSkeleton width={40} height={40} radius="rounded" />
       <XDSSkeleton width={100} height={20} radius="container" />
       <XDSSkeleton width={120} height={32} radius="element" />
@@ -53,7 +53,7 @@ export const Shapes: Story = {
 
 export const StaggeredList: Story = {
   render: () => (
-    <XDSVStack gap="space2">
+    <XDSVStack gap={2}>
       <XDSSkeleton width={300} height={16} index={0} />
       <XDSSkeleton width={280} height={16} index={1} />
       <XDSSkeleton width={320} height={16} index={2} />
@@ -66,11 +66,11 @@ export const StaggeredList: Story = {
 export const CardSkeleton: Story = {
   render: () => (
     <XDSCard width={320}>
-      <XDSVStack gap="space3">
+      <XDSVStack gap={3}>
         {/* Avatar and name row */}
-        <XDSHStack gap="space3" vAlign="center">
+        <XDSHStack gap={3} vAlign="center">
           <XDSSkeleton width={40} height={40} radius="rounded" index={0} />
-          <XDSVStack gap="space1">
+          <XDSVStack gap={1}>
             <XDSSkeleton width={120} height={14} index={1} />
             <XDSSkeleton width={80} height={12} index={2} />
           </XDSVStack>
@@ -86,9 +86,9 @@ export const CardSkeleton: Story = {
 
 export const TableRowSkeleton: Story = {
   render: () => (
-    <XDSVStack gap="space2">
+    <XDSVStack gap={2}>
       {[0, 1, 2, 3].map(rowIndex => (
-        <XDSHStack key={rowIndex} gap="space4" vAlign="center">
+        <XDSHStack key={rowIndex} gap={4} vAlign="center">
           <XDSSkeleton width={50} height={16} index={rowIndex * 4} />
           <XDSSkeleton width={180} height={16} index={rowIndex * 4 + 1} />
           <XDSSkeleton width={100} height={16} index={rowIndex * 4 + 2} />

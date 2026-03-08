@@ -41,7 +41,7 @@ describe('XDSGrid', () => {
 
   it('renders with both columns and minChildWidth (capped)', () => {
     render(
-      <XDSGrid columns={3} minChildWidth={250} gap="space4" data-testid="grid">
+      <XDSGrid columns={3} minChildWidth={250} gap={4} data-testid="grid">
         <div>Item 1</div>
         <div>Item 2</div>
         <div>Item 3</div>
@@ -57,11 +57,7 @@ describe('XDSGrid', () => {
 
   it('renders with columns and minChildWidth using columnGap', () => {
     render(
-      <XDSGrid
-        columns={4}
-        minChildWidth={200}
-        columnGap="space6"
-        data-testid="grid">
+      <XDSGrid columns={4} minChildWidth={200} columnGap={6} data-testid="grid">
         <div>Item 1</div>
         <div>Item 2</div>
       </XDSGrid>,
@@ -73,7 +69,7 @@ describe('XDSGrid', () => {
 
   it('applies gap correctly', () => {
     render(
-      <XDSGrid columns={2} gap="space4" data-testid="grid">
+      <XDSGrid columns={2} gap={4} data-testid="grid">
         <div>Item 1</div>
         <div>Item 2</div>
       </XDSGrid>,
@@ -85,11 +81,7 @@ describe('XDSGrid', () => {
 
   it('applies rowGap and columnGap separately', () => {
     render(
-      <XDSGrid
-        columns={2}
-        rowGap="space2"
-        columnGap="space6"
-        data-testid="grid">
+      <XDSGrid columns={2} rowGap={2} columnGap={6} data-testid="grid">
         <div>Item 1</div>
         <div>Item 2</div>
       </XDSGrid>,

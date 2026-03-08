@@ -148,6 +148,7 @@ export const spacingDefaults = {
   '--spacing-0': '0px',
   '--spacing-0-5': '2px',
   '--spacing-1': '4px',
+  '--spacing-1-5': '6px',
   '--spacing-2': '8px',
   '--spacing-3': '12px',
   '--spacing-4': '16px',

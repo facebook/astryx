@@ -18,6 +18,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {SpacingScale} from '../Layout';
+import type {SpacingStep} from '../utils/types';
 import type {SizeValue} from '../utils/types';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -60,21 +61,22 @@ export interface XDSGridProps extends XDSBaseProps<HTMLDivElement> {
 
   /**
    * Spacing between all grid items (both row and column).
-   * Uses XDS spacing tokens.
+   * Accepts numeric spacing steps (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10)
+   * or legacy string tokens ('space0', 'space1', etc.).
    */
-  gap?: SpacingScale;
+  gap?: SpacingStep | SpacingScale;
 
   /**
    * Spacing between rows. Overrides gap for rows.
-   * Uses XDS spacing tokens.
+   * Accepts numeric spacing steps or legacy string tokens.
    */
-  rowGap?: SpacingScale;
+  rowGap?: SpacingStep | SpacingScale;
 
   /**
    * Spacing between columns. Overrides gap for columns.
-   * Uses XDS spacing tokens.
+   * Accepts numeric spacing steps or legacy string tokens.
    */
-  columnGap?: SpacingScale;
+  columnGap?: SpacingStep | SpacingScale;
 
   /**
    * Vertical alignment of grid items (align-items).
@@ -162,6 +164,9 @@ const gapStyles = stylex.create({
   space1: {
     gap: spacingVars['--spacing-1'],
   },
+  'space1.5': {
+    gap: spacingVars['--spacing-1-5'],
+  },
   space2: {
     gap: spacingVars['--spacing-2'],
   },
@@ -206,6 +211,9 @@ const rowGapStyles = stylex.create({
   },
   space1: {
     rowGap: spacingVars['--spacing-1'],
+  },
+  'space1.5': {
+    rowGap: spacingVars['--spacing-1-5'],
   },
   space2: {
     rowGap: spacingVars['--spacing-2'],
@@ -252,6 +260,9 @@ const columnGapStyles = stylex.create({
   space1: {
     columnGap: spacingVars['--spacing-1'],
   },
+  'space1.5': {
+    columnGap: spacingVars['--spacing-1-5'],
+  },
   space2: {
     columnGap: spacingVars['--spacing-2'],
   },
@@ -287,11 +298,39 @@ const columnGapStyles = stylex.create({
   },
 });
 
+/**
+ * Maps numeric SpacingStep values to their corresponding gap style keys.
+ */
+const numericToGapKey: Record<SpacingStep, SpacingScale> = {
+  0: 'space0',
+  0.5: 'space0.5',
+  1: 'space1',
+  1.5: 'space1.5',
+  2: 'space2',
+  3: 'space3',
+  4: 'space4',
+  5: 'space5',
+  6: 'space6',
+  8: 'space8',
+  10: 'space10',
+};
+
+/**
+ * Resolves a gap value (numeric or legacy string) to a gap style key.
+ */
+function resolveGapKey(gap: SpacingStep | SpacingScale): SpacingScale {
+  if (typeof gap === 'number') {
+    return numericToGapKey[gap as SpacingStep];
+  }
+  return gap;
+}
+
 // Spacing token values in pixels for max-width calculation
 const spacingPixels: Record<SpacingScale, number> = {
   space0: 0,
   'space0.5': 2,
   space1: 4,
+  'space1.5': 6,
   space2: 8,
   space3: 12,
   space4: 16,
@@ -312,14 +351,14 @@ const spacingPixels: Record<SpacingScale, number> = {
 function calculateMaxWidth(
   columns: number,
   minChildWidth: number,
-  gap: SpacingScale | undefined,
-  columnGap: SpacingScale | undefined,
+  gap: SpacingStep | SpacingScale | undefined,
+  columnGap: SpacingStep | SpacingScale | undefined,
 ): number {
   const gapPx =
     columnGap != null
-      ? spacingPixels[columnGap]
+      ? spacingPixels[resolveGapKey(columnGap)]
       : gap != null
-        ? spacingPixels[gap]
+        ? spacingPixels[resolveGapKey(gap)]
         : 0;
   return columns * minChildWidth + (columns - 1) * gapPx;
 }
@@ -335,7 +374,7 @@ function calculateMaxWidth(
  *
  * @example
  * ```
- * <XDSGrid columns={3} gap="space4">
+ * <XDSGrid columns={3} gap={4}>
  *   <Item />
  *   <Item />
  *   <Item />
@@ -403,9 +442,9 @@ export function XDSGrid({
         xdsClassName('grid', {columns, gap, align, justify}),
         stylex.props(
           baseStyles.grid,
-          gap != null && gapStyles[gap],
-          rowGap != null && rowGapStyles[rowGap],
-          columnGap != null && columnGapStyles[columnGap],
+          gap != null && gapStyles[resolveGapKey(gap)],
+          rowGap != null && rowGapStyles[resolveGapKey(rowGap)],
+          columnGap != null && columnGapStyles[resolveGapKey(columnGap)],
           align != null && alignStyles[align],
           justify != null && justifyStyles[justify],
           xstyle,

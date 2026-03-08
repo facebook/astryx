@@ -39,7 +39,7 @@ export const docs = {
     },
     {
       label: 'Composing with layout and text',
-      code: `<XDSVStack gap="space2" align="center">
+      code: `<XDSVStack gap={2} align="center">
   <XDSSpinner size="lg" />
   <XDSText color="secondary">Loading...</XDSText>
 </XDSVStack>`,

@@ -16,7 +16,13 @@ import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars, elevationVars} from '../theme/tokens.stylex';
 import {container} from '../Layout/container.stylex';
-import type {SizeValue} from '../utils/types';
+import type {SpacingToken} from '../Layout/container.stylex';
+import {
+  paddingStyles,
+  containerPaddingInlineVarStyles,
+  spacingStepToToken,
+} from '../Layout/padding.stylex';
+import type {SizeValue, SpacingStep} from '../utils/types';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSBaseProps} from '../XDSBaseProps';
 
@@ -26,7 +32,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-card'],
     borderRadius: radiusVars['--radius-container'],
     boxShadow: elevationVars['--elevation-base'],
-    // Clip content to border-radius so nested containers don't peek out corners
+    // Clip content to border-radius so nested containers don\'t peek out corners
     overflow: 'clip',
     borderWidth: 1,
     borderStyle: 'solid',
@@ -39,13 +45,6 @@ const styles = stylex.create({
   // Only enable scrolling when card has fixed height
   scrollable: {
     overflow: 'auto',
-  },
-  // Full bleed: removes all internal padding
-  fullBleed: {
-    paddingInlineStart: 0,
-    paddingInlineEnd: 0,
-    paddingBlockStart: 0,
-    paddingBlockEnd: 0,
   },
 });
 
@@ -67,7 +66,6 @@ const dynamicStyles = stylex.create({
 export type {SizeValue} from '../utils/types';
 
 export interface XDSCardProps extends XDSBaseProps {
-  /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /**
    * CSS class name(s) appended to the root element.
@@ -109,9 +107,17 @@ export interface XDSCardProps extends XDSBaseProps {
 
   /**
    * Removes internal padding, allowing content to touch the edges.
+   * @deprecated Use `padding={0}` instead.
    * @default false
    */
   isFullBleed?: boolean;
+
+  /**
+   * Internal padding of the card using the spacing scale.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   * @default 4 (16px)
+   */
+  padding?: SpacingStep;
 }
 
 /**
@@ -141,6 +147,7 @@ export function XDSCard({
   minHeight,
   children,
   isFullBleed = false,
+  padding,
   xstyle,
   className,
   style,
@@ -149,6 +156,10 @@ export function XDSCard({
 }: XDSCardProps) {
   // Only enable scrolling when card has a fixed height (not null/undefined and not "auto")
   const hasFixedHeight = height != null && height !== 'auto';
+
+  // Resolve effective padding: isFullBleed maps to padding=0
+  const effectivePadding = isFullBleed ? 0 : (padding ?? 4);
+  const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
 
   return (
     <div
@@ -174,12 +185,14 @@ export function XDSCard({
           styles.cardInner,
           hasFixedHeight && styles.scrollable,
           ...container({
-            paddingInnerX: 'spacing4',
-            paddingInnerY: 'spacing4',
-            paddingOuterX: 'spacing4',
-            paddingOuterY: 'spacing4',
+            paddingInnerX: paddingToken,
+            paddingInnerY: paddingToken,
+            paddingOuterX: paddingToken,
+            paddingOuterY: paddingToken,
           }),
-          isFullBleed && styles.fullBleed,
+          effectivePadding !== 4 && paddingStyles[effectivePadding],
+          effectivePadding !== 4 &&
+            containerPaddingInlineVarStyles[effectivePadding],
         )}>
         {children}
       </div>

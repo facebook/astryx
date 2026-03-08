@@ -198,7 +198,7 @@ export const ResponsiveGrid: Story = {
       <XDSText type="supporting" xstyle={styles.sectionLabel}>
         Responsive grid of aspect ratio boxes
       </XDSText>
-      <XDSGrid minChildWidth={200} gap="space4">
+      <XDSGrid minChildWidth={200} gap={4}>
         {[
           {ratio: 16 / 9, label: '16:9'},
           {ratio: 4 / 3, label: '4:3'},
@@ -283,7 +283,7 @@ export const ImageGallery: Story = {
       <XDSText type="supporting" xstyle={styles.sectionLabel}>
         Image gallery with consistent aspect ratios
       </XDSText>
-      <XDSGrid columns={3} gap="space4">
+      <XDSGrid columns={3} gap={4}>
         {Array.from({length: 6}, (_, i) => (
           <XDSAspectRatio key={i} ratio={4 / 3}>
             <img

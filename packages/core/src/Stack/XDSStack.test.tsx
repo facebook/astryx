@@ -75,7 +75,7 @@ describe('XDSStack', () => {
 
   it('renders with gap prop', () => {
     render(
-      <XDSStack direction="vertical" gap="space4">
+      <XDSStack direction="vertical" gap={4}>
         <div>Item 1</div>
         <div>Item 2</div>
       </XDSStack>,

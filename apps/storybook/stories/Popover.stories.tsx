@@ -43,7 +43,7 @@ function SettingsContent() {
   const [sounds, setSounds] = React.useState(true);
 
   return (
-    <XDSVStack gap="space3">
+    <XDSVStack gap={3}>
       <XDSHeading level={4} tabIndex={-1}>
         Settings
       </XDSHeading>
@@ -96,7 +96,7 @@ function FilterContent({onApply}: {onApply?: () => void}) {
     setFilters(prev => ({...prev, [key]: !prev[key]}));
 
   return (
-    <XDSVStack gap="space3">
+    <XDSVStack gap={3}>
       <XDSHeading level={4} tabIndex={-1}>
         Filter by status
       </XDSHeading>
@@ -122,7 +122,7 @@ function FilterContent({onApply}: {onApply?: () => void}) {
         onChange={() => toggle('shared')}
       />
       <XDSDivider />
-      <XDSHStack gap="space2">
+      <XDSHStack gap={2}>
         <XDSButton label="Apply" variant="primary" onClick={onApply}>
           Apply
         </XDSButton>
@@ -173,7 +173,7 @@ function ConfirmContent({
   onCancel?: () => void;
 }) {
   return (
-    <XDSVStack gap="space3">
+    <XDSVStack gap={3}>
       <XDSHeading level={4} tabIndex={-1}>
         Delete project?
       </XDSHeading>
@@ -181,7 +181,7 @@ function ConfirmContent({
         This will permanently delete the project and all its data. This action
         cannot be undone.
       </XDSText>
-      <XDSHStack gap="space2">
+      <XDSHStack gap={2}>
         <XDSButton label="Delete" variant="destructive" onClick={onConfirm}>
           Delete
         </XDSButton>
@@ -235,7 +235,7 @@ export const AnchorRef: Story = {
           width={260}
           placement="below"
           content={
-            <XDSVStack gap="space2">
+            <XDSVStack gap={2}>
               <XDSHeading level={4} tabIndex={-1}>
                 Sibling mode
               </XDSHeading>
@@ -263,24 +263,24 @@ export const Above: Story = {
         label="Info"
         width={260}
         content={
-          <XDSVStack gap="space2">
+          <XDSVStack gap={2}>
             <XDSHeading level={4} tabIndex={-1}>
               Keyboard shortcuts
             </XDSHeading>
             <XDSDivider />
-            <XDSHStack gap="space3">
+            <XDSHStack gap={3}>
               <XDSText type="body" weight="bold">
                 ⌘K
               </XDSText>
               <XDSText type="body">Command palette</XDSText>
             </XDSHStack>
-            <XDSHStack gap="space3">
+            <XDSHStack gap={3}>
               <XDSText type="body" weight="bold">
                 ⌘/
               </XDSText>
               <XDSText type="body">Toggle sidebar</XDSText>
             </XDSHStack>
-            <XDSHStack gap="space3">
+            <XDSHStack gap={3}>
               <XDSText type="body" weight="bold">
                 ⌘.
               </XDSText>

@@ -9,3 +9,21 @@
  * Size value type - accepts numbers (treated as pixels) or strings (e.g., '100%', '50vh').
  */
 export type SizeValue = number | string;
+
+/**
+ * Numeric spacing step from the XDS spacing scale.
+ *
+ * Maps to CSS spacing tokens:
+ * - 0 = 0px (--spacing-0)
+ * - 0.5 = 2px (--spacing-0-5)
+ * - 1 = 4px (--spacing-1)
+ * - 1.5 = 6px (--spacing-1-5)
+ * - 2 = 8px (--spacing-2)
+ * - 3 = 12px (--spacing-3)
+ * - 4 = 16px (--spacing-4)
+ * - 5 = 20px (--spacing-5)
+ * - 6 = 24px (--spacing-6)
+ * - 8 = 32px (--spacing-8)
+ * - 10 = 40px (--spacing-10)
+ */
+export type SpacingStep = 0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10;

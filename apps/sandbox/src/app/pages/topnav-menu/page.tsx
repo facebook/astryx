@@ -99,8 +99,8 @@ const scienceItems = [
 export default function TopNavMenuPage() {
   return (
     <div {...stylex.props(styles.container)}>
-      <XDSVStack gap="space6">
-        <XDSVStack gap="space2">
+      <XDSVStack gap={6}>
+        <XDSVStack gap={2}>
           <XDSHeading level={1}>TopNav Menu</XDSHeading>
           <XDSText type="body" color="secondary">
             A nav item with a hover-triggered overflow menu. Hover over
@@ -109,7 +109,7 @@ export default function TopNavMenuPage() {
         </XDSVStack>
 
         {/* Marketing-style nav with overflow menus */}
-        <XDSVStack gap="space3">
+        <XDSVStack gap={3}>
           <XDSHeading level={2}>Marketing Nav</XDSHeading>
           <div {...stylex.props(styles.navWrapper)}>
             <XDSTopNav
@@ -139,7 +139,7 @@ export default function TopNavMenuPage() {
         </XDSVStack>
 
         {/* Simple nav with one overflow menu */}
-        <XDSVStack gap="space3">
+        <XDSVStack gap={3}>
           <XDSHeading level={2}>Simple Nav</XDSHeading>
           <div {...stylex.props(styles.navWrapper)}>
             <XDSTopNav

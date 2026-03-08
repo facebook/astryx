@@ -406,7 +406,7 @@ export const Playground = {
               <XDSLayoutFooter
                 hasDivider={args.footerHasDivider}
                 isFullBleed={args.footerIsFullBleed}>
-                <XDSHStack gap="space2" hAlign="end">
+                <XDSHStack gap={2} hAlign="end">
                   <XDSButton label="Cancel" variant="secondary">
                     Cancel
                   </XDSButton>
@@ -453,7 +453,7 @@ export const BasicCard: Story = {
           }
           footer={
             <XDSLayoutFooter hasDivider>
-              <XDSHStack gap="space2" hAlign="end">
+              <XDSHStack gap={2} hAlign="end">
                 <XDSButton label="Cancel" variant="secondary">
                   Cancel
                 </XDSButton>
@@ -501,7 +501,7 @@ export const WithSidebar: Story = {
           }
           footer={
             <XDSLayoutFooter hasDivider>
-              <XDSHStack gap="space2" hAlign="end">
+              <XDSHStack gap={2} hAlign="end">
                 <XDSButton label="Reset" variant="secondary">
                   Reset
                 </XDSButton>
@@ -579,7 +579,7 @@ export const NoDividers: Story = {
           }
           footer={
             <XDSLayoutFooter>
-              <XDSHStack gap="space2" hAlign="end">
+              <XDSHStack gap={2} hAlign="end">
                 <XDSButton label="Continue" variant="primary">
                   Continue
                 </XDSButton>
@@ -614,7 +614,7 @@ export const FullBleedContent: Story = {
           }
           footer={
             <XDSLayoutFooter hasDivider>
-              <XDSHStack gap="space2" hAlign="end">
+              <XDSHStack gap={2} hAlign="end">
                 <XDSButton label="Close" variant="secondary">
                   Close
                 </XDSButton>
@@ -630,9 +630,9 @@ export const FullBleedContent: Story = {
 export const SectionVariants: Story = {
   name: 'Section Variants',
   render: () => (
-    <XDSVStack gap="space6" xstyle={styles.storySection}>
+    <XDSVStack gap={6} xstyle={styles.storySection}>
       <p {...stylex.props(styles.sectionLabel)}>XDSSection Variants</p>
-      <XDSHStack gap="space4" wrap="wrap">
+      <XDSHStack gap={4} wrap="wrap">
         <XDSSection variant="section" width={300} height={250}>
           <XDSLayout
             header={
@@ -711,8 +711,8 @@ export const ContentOnly: Story = {
 export const ThemedLayout: Story = {
   name: 'Themed Layout (Neutral vs Default)',
   render: () => (
-    <XDSHStack gap="space6" xstyle={styles.storySection}>
-      <XDSVStack gap="space3">
+    <XDSHStack gap={6} xstyle={styles.storySection}>
+      <XDSVStack gap={3}>
         <p {...stylex.props(styles.sectionLabel)}>
           Default Theme (16px padding)
         </p>
@@ -734,7 +734,7 @@ export const ThemedLayout: Story = {
               }
               footer={
                 <XDSLayoutFooter hasDivider>
-                  <XDSHStack gap="space2" hAlign="end">
+                  <XDSHStack gap={2} hAlign="end">
                     <XDSButton label="Cancel" variant="secondary">
                       Cancel
                     </XDSButton>
@@ -749,7 +749,7 @@ export const ThemedLayout: Story = {
         </XDSTheme>
       </XDSVStack>
 
-      <XDSVStack gap="space3">
+      <XDSVStack gap={3}>
         <p {...stylex.props(styles.sectionLabel)}>
           Neutral Theme (12px padding)
         </p>
@@ -771,7 +771,7 @@ export const ThemedLayout: Story = {
               }
               footer={
                 <XDSLayoutFooter hasDivider>
-                  <XDSHStack gap="space2" hAlign="end">
+                  <XDSHStack gap={2} hAlign="end">
                     <XDSButton label="Cancel" variant="secondary">
                       Cancel
                     </XDSButton>
@@ -792,15 +792,15 @@ export const ThemedLayout: Story = {
 export const OuterPaddingDemo: Story = {
   name: 'Outer Padding Demonstration',
   render: () => (
-    <XDSVStack gap="space6" xstyle={styles.storySection}>
+    <XDSVStack gap={6} xstyle={styles.storySection}>
       <p {...stylex.props(styles.sectionLabel)}>Outer Padding</p>
       <p {...stylex.props(styles.bodyText)}>
         Outer padding creates space between the container edge and the layout
         content. Notice how the dividers are inset from the container edges as
         outer padding increases.
       </p>
-      <XDSHStack gap="space4" wrap="wrap">
-        <XDSVStack gap="space2">
+      <XDSHStack gap={4} wrap="wrap">
+        <XDSVStack gap={2}>
           <p {...stylex.props(styles.subheading)}>paddingOuterX/Y = spacing0</p>
           <div
             {...stylex.props(
@@ -833,7 +833,7 @@ export const OuterPaddingDemo: Story = {
           </div>
         </XDSVStack>
 
-        <XDSVStack gap="space2">
+        <XDSVStack gap={2}>
           <p {...stylex.props(styles.subheading)}>paddingOuterX/Y = spacing4</p>
           <div
             {...stylex.props(
@@ -866,7 +866,7 @@ export const OuterPaddingDemo: Story = {
           </div>
         </XDSVStack>
 
-        <XDSVStack gap="space2">
+        <XDSVStack gap={2}>
           <p {...stylex.props(styles.subheading)}>paddingOuterX/Y = spacing7</p>
           <div
             {...stylex.props(

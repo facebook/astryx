@@ -128,18 +128,8 @@ const meta: Meta<typeof XDSStack> = {
     },
     gap: {
       control: 'select',
-      options: [
-        'space0',
-        'space0.5',
-        'space1',
-        'space2',
-        'space3',
-        'space4',
-        'space5',
-        'space6',
-        'space7',
-      ],
-      description: 'Spacing token for gap between items',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description: 'Spacing step for gap between items',
     },
     hAlign: {
       control: 'select',
@@ -187,7 +177,7 @@ type Story = StoryObj<typeof XDSStack>;
 export const Default: Story = {
   args: {
     direction: 'vertical',
-    gap: 'space2',
+    gap: 2,
     children: null,
   },
   render: args => (
@@ -202,7 +192,7 @@ export const Default: Story = {
 export const Horizontal: Story = {
   args: {
     direction: 'horizontal',
-    gap: 'space2',
+    gap: 2,
   },
   render: args => (
     <XDSStack {...args}>
@@ -216,7 +206,7 @@ export const Horizontal: Story = {
 export const Vertical: Story = {
   args: {
     direction: 'vertical',
-    gap: 'space4',
+    gap: 4,
   },
   render: args => (
     <XDSStack {...args}>
@@ -240,7 +230,7 @@ export const HorizontalAlignments: Story = {
         </h4>
         <XDSStack
           direction="horizontal"
-          gap="space2"
+          gap={2}
           vAlign="start"
           xstyle={[styles.container, styles.containerHeightSmall]}>
           <Box>A</Box>
@@ -256,7 +246,7 @@ export const HorizontalAlignments: Story = {
         </h4>
         <XDSStack
           direction="horizontal"
-          gap="space2"
+          gap={2}
           vAlign="center"
           xstyle={[styles.container, styles.containerHeightSmall]}>
           <Box>A</Box>
@@ -272,7 +262,7 @@ export const HorizontalAlignments: Story = {
         </h4>
         <XDSStack
           direction="horizontal"
-          gap="space2"
+          gap={2}
           vAlign="end"
           xstyle={[styles.container, styles.containerHeightSmall]}>
           <Box>A</Box>
@@ -288,7 +278,7 @@ export const HorizontalAlignments: Story = {
         </h4>
         <XDSStack
           direction="horizontal"
-          gap="space2"
+          gap={2}
           vAlign="stretch"
           xstyle={[styles.container, styles.containerHeightSmall]}>
           <Box>A</Box>
@@ -311,7 +301,7 @@ export const VerticalAlignments: Story = {
         </h4>
         <XDSStack
           direction="vertical"
-          gap="space2"
+          gap={2}
           hAlign="start"
           xstyle={[
             styles.container,
@@ -329,7 +319,7 @@ export const VerticalAlignments: Story = {
         </h4>
         <XDSStack
           direction="vertical"
-          gap="space2"
+          gap={2}
           hAlign="center"
           xstyle={[
             styles.container,
@@ -347,7 +337,7 @@ export const VerticalAlignments: Story = {
         </h4>
         <XDSStack
           direction="vertical"
-          gap="space2"
+          gap={2}
           hAlign="end"
           xstyle={[
             styles.container,
@@ -365,7 +355,7 @@ export const VerticalAlignments: Story = {
         </h4>
         <XDSStack
           direction="vertical"
-          gap="space2"
+          gap={2}
           hAlign="stretch"
           xstyle={[
             styles.container,
@@ -388,7 +378,7 @@ export const VerticalAlignments: Story = {
 export const Wrapping: Story = {
   args: {
     direction: 'horizontal',
-    gap: 'space2',
+    gap: 2,
     wrap: 'wrap',
   },
   render: args => (
@@ -416,7 +406,7 @@ export const StackItemFillSize: Story = {
   render: () => (
     <XDSStack
       direction="horizontal"
-      gap="space2"
+      gap={2}
       xstyle={[
         styles.container,
         styles.containerWidthMedium,
@@ -441,7 +431,7 @@ export const StackItemEqualFill: Story = {
       <h4 {...stylex.props(styles.heading)}>Equal Fill (1:1:1)</h4>
       <XDSStack
         direction="horizontal"
-        gap="space2"
+        gap={2}
         xstyle={[
           styles.container,
           styles.containerWidthMedium,
@@ -465,7 +455,7 @@ export const StackItemCrossAlignSelf: Story = {
   render: () => (
     <XDSStack
       direction="horizontal"
-      gap="space2"
+      gap={2}
       xstyle={[
         styles.container,
         styles.containerHeightMedium,
@@ -495,7 +485,7 @@ export const HeaderLayout: Story = {
   render: () => (
     <XDSStack
       direction="horizontal"
-      gap="space2"
+      gap={2}
       xstyle={[
         styles.container,
         styles.containerWidthLarge,
@@ -518,7 +508,7 @@ export const SidebarLayout: Story = {
   render: () => (
     <XDSStack
       direction="horizontal"
-      gap="space2"
+      gap={2}
       xstyle={[
         styles.container,
         styles.containerWidthLarge,
@@ -537,13 +527,10 @@ export const SidebarLayout: Story = {
 
 export const PageLayout: Story = {
   render: () => (
-    <XDSStack
-      direction="vertical"
-      gap="space2"
-      xstyle={styles.containerWidthLarge}>
+    <XDSStack direction="vertical" gap={2} xstyle={styles.containerWidthLarge}>
       <XDSStack
         direction="horizontal"
-        gap="space2"
+        gap={2}
         xstyle={[styles.container, styles.containerPadding]}>
         <XDSStackItem size="static">
           <Box alt>Logo</Box>
@@ -557,7 +544,7 @@ export const PageLayout: Story = {
       </XDSStack>
       <XDSStack
         direction="horizontal"
-        gap="space2"
+        gap={2}
         xstyle={[
           styles.container,
           styles.containerHeightLarge,
