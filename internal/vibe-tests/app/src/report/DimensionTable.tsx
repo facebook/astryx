@@ -2,7 +2,7 @@ import {XDSTable} from '@xds/core/Table';
 import {XDSStatusDot} from '@xds/core/StatusDot';
 import {XDSHStack} from '@xds/core/Stack';
 import {XDSText} from '@xds/core/Text';
-import type {XDSTableColumn} from '@xds/core/Table/types';
+import type {XDSTableColumn} from '@xds/core/Table';
 import type {UniversalScore} from './types';
 import {
   ALL_DIMENSIONS,

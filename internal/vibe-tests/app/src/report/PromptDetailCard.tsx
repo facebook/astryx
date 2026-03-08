@@ -1,4 +1,3 @@
-import * as stylex from '@stylexjs/stylex';
 import {XDSCard} from '@xds/core/Card';
 import {XDSVStack} from '@xds/core/Stack';
 import {XDSText} from '@xds/core/Text';
@@ -7,7 +6,6 @@ import {XDSStatusDot} from '@xds/core/StatusDot';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
 import {XDSDivider} from '@xds/core/Divider';
-import {spacingVars, colorVars} from '@xds/core/theme/tokens.stylex';
 import type {UniversalScore} from './types';
 import {
   ALL_DIMENSIONS,
@@ -15,71 +13,11 @@ import {
   computeOverall,
   scoreToStatusVariant,
 } from './utils';
-
-const styles = stylex.create({
-  card: {
-    padding: spacingVars['--spacing-4'],
-  },
-  header: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: spacingVars['--spacing-2'],
-  },
-  promptText: {
-    color: colorVars['--color-text-secondary'],
-  },
-  scoreGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: spacingVars['--spacing-2'],
-  },
-  scoreItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
-    whiteSpace: 'nowrap',
-  },
-  scoresRow: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: spacingVars['--spacing-3'],
-  },
-  scoresRow3: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
-    gap: spacingVars['--spacing-3'],
-  },
-  scoresRowSingle: {
-    display: 'grid',
-    gridTemplateColumns: '1fr',
-    gap: spacingVars['--spacing-3'],
-  },
-  scoreBlock: {
-    minWidth: 0,
-    overflow: 'hidden',
-  },
-  findingsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'auto 1fr',
-    gap: `${spacingVars['--spacing-1']} ${spacingVars['--spacing-2']}`,
-    alignItems: 'baseline',
-  },
-  section: {
-    paddingBlockStart: spacingVars['--spacing-2'],
-  },
-  sectionLabel: {
-    paddingBlockEnd: spacingVars['--spacing-1'],
-  },
-  buttonRow: {
-    display: 'flex',
-    gap: spacingVars['--spacing-2'],
-    flexWrap: 'wrap',
-  },
-});
+import './report.css';
 
 function ScoreItem({label, score}: {label: string; score: number}) {
   return (
-    <div {...stylex.props(styles.scoreItem)}>
+    <div className="report-promptDetail-scoreItem">
       <XDSStatusDot
         variant={scoreToStatusVariant(score)}
         label={`${label}: ${score}`}
@@ -94,10 +32,10 @@ function ScoreItem({label, score}: {label: string; score: number}) {
 
 function ScoreSummary({label, score}: {label: string; score: UniversalScore}) {
   return (
-    <div {...stylex.props(styles.scoreBlock)}>
+    <div className="report-promptDetail-scoreBlock">
       <XDSVStack gap="space2">
         <XDSText type="label">{label}</XDSText>
-        <div {...stylex.props(styles.scoreGrid)}>
+        <div className="report-promptDetail-scoreGrid">
           {ALL_DIMENSIONS.map(dim => (
             <ScoreItem
               key={dim}
@@ -125,7 +63,7 @@ function Findings({score}: {score: UniversalScore}) {
   }
 
   return (
-    <div {...stylex.props(styles.findingsGrid)}>
+    <div className="report-promptDetail-findingsGrid">
       {allFindings.map((f, i) => (
         <>
           <XDSBadge
@@ -181,26 +119,26 @@ export function PromptDetailCard({
     previewUrls?.xds || previewUrls?.baseline || previewUrls?.html;
   const hasAnyCode = hasXdsCode || hasBaselineCode || hasHtmlCode;
 
-  const scoresStyle = hasAll
-    ? styles.scoresRow3
+  const scoresClassName = hasAll
+    ? 'report-promptDetail-scoresRow3'
     : hasBoth
-      ? styles.scoresRow
-      : styles.scoresRowSingle;
+      ? 'report-promptDetail-scoresRow'
+      : 'report-promptDetail-scoresRowSingle';
 
   return (
     <XDSCard>
-      <div {...stylex.props(styles.card)}>
+      <div className="report-promptDetail-card">
         <XDSVStack gap="space3">
           {/* Header: prompt ID, prompt text, and buttons */}
-          <div {...stylex.props(styles.header)}>
+          <div className="report-promptDetail-header">
             <XDSHeading level={4}>{promptId}</XDSHeading>
             {promptText && (
-              <XDSText type="body" xstyle={styles.promptText}>
+              <XDSText type="body" className="report-promptDetail-promptText">
                 {promptText}
               </XDSText>
             )}
             {(hasAnyPreview || hasAnyCode) && (
-              <div {...stylex.props(styles.buttonRow)}>
+              <div className="report-promptDetail-buttonRow">
                 {previewUrls?.xds && (
                   <XDSButton
                     variant="secondary"
@@ -255,7 +193,7 @@ export function PromptDetailCard({
 
           {/* Score summaries in constrained grid */}
           {(xdsScore || baselineScore || htmlScore) && (
-            <div {...stylex.props(scoresStyle)}>
+            <div className={scoresClassName}>
               {xdsScore && <ScoreSummary label="XDS" score={xdsScore} />}
               {baselineScore && (
                 <ScoreSummary label="Baseline" score={baselineScore} />
@@ -268,8 +206,8 @@ export function PromptDetailCard({
           {xdsScore && (
             <>
               <XDSDivider />
-              <div {...stylex.props(styles.section)}>
-                <div {...stylex.props(styles.sectionLabel)}>
+              <div className="report-promptDetail-section">
+                <div className="report-promptDetail-sectionLabel">
                   <XDSText type="label">XDS Findings</XDSText>
                 </div>
                 <Findings score={xdsScore} />
@@ -280,8 +218,8 @@ export function PromptDetailCard({
           {baselineScore && (
             <>
               <XDSDivider />
-              <div {...stylex.props(styles.section)}>
-                <div {...stylex.props(styles.sectionLabel)}>
+              <div className="report-promptDetail-section">
+                <div className="report-promptDetail-sectionLabel">
                   <XDSText type="label">Baseline Findings</XDSText>
                 </div>
                 <Findings score={baselineScore} />
@@ -292,8 +230,8 @@ export function PromptDetailCard({
           {htmlScore && (
             <>
               <XDSDivider />
-              <div {...stylex.props(styles.section)}>
-                <div {...stylex.props(styles.sectionLabel)}>
+              <div className="report-promptDetail-section">
+                <div className="report-promptDetail-sectionLabel">
                   <XDSText type="label">HTML Findings</XDSText>
                 </div>
                 <Findings score={htmlScore} />

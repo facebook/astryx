@@ -1,33 +1,23 @@
-import * as stylex from '@stylexjs/stylex';
 import {XDSCard} from '@xds/core/Card';
 import {XDSVStack} from '@xds/core/Stack';
 import {XDSHStack} from '@xds/core/Stack';
 import {XDSText} from '@xds/core/Text';
 import {XDSHeading} from '@xds/core/Text';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
-import {spacingVars, colorVars} from '@xds/core/theme/tokens.stylex';
 import {formatScore, scoreToProgressVariant} from './utils';
-
-const styles = stylex.create({
-  card: {
-    padding: spacingVars['--spacing-3'],
-  },
-  deltaPositive: {
-    color: colorVars['--color-positive'],
-  },
-  deltaNegative: {
-    color: colorVars['--color-negative'],
-  },
-  deltaNeutral: {
-    color: colorVars['--color-text-secondary'],
-  },
-});
+import './report.css';
 
 interface ScoreCardProps {
   label: string;
   score: number;
   compareScore?: number;
   compareLabel?: string;
+}
+
+function deltaClassName(delta: number): string {
+  if (delta > 0) return 'report-color-positive';
+  if (delta < 0) return 'report-color-negative';
+  return 'report-color-neutral';
 }
 
 export function ScoreCard({
@@ -40,21 +30,13 @@ export function ScoreCard({
 
   return (
     <XDSCard>
-      <div {...stylex.props(styles.card)}>
+      <div className="report-scoreCard-card">
         <XDSVStack gap="space2">
           <XDSText type="label">{label}</XDSText>
           <XDSHStack gap="space2" hAlign="center">
             <XDSHeading level={2}>{formatScore(score)}</XDSHeading>
             {delta != null && (
-              <XDSText
-                type="supporting"
-                xstyle={
-                  delta > 0
-                    ? styles.deltaPositive
-                    : delta < 0
-                      ? styles.deltaNegative
-                      : styles.deltaNeutral
-                }>
+              <XDSText type="supporting" className={deltaClassName(delta)}>
                 {delta > 0 ? '+' : ''}
                 {formatScore(delta)}
                 {compareLabel ? ` vs ${compareLabel}` : ''}

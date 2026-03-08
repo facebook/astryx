@@ -1,5 +1,4 @@
 import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {XDSTheme} from '@xds/core/theme';
 import {XDSVStack} from '@xds/core/Stack';
 import {XDSHStack} from '@xds/core/Stack';
@@ -9,8 +8,7 @@ import {XDSTabList} from '@xds/core/TabList';
 import {XDSTab} from '@xds/core/TabList';
 import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
-import {defaultTheme} from '@xds/theme/default';
-import {spacingVars, colorVars} from '@xds/core/theme/tokens.stylex';
+import {defaultTheme} from '@xds/theme-default';
 import type {ReportData} from './types';
 import {ALL_DIMENSIONS, DIMENSION_LABELS} from './utils';
 import {ScoreCard} from './ScoreCard';
@@ -19,48 +17,11 @@ import {PromptDetailCard} from './PromptDetailCard';
 import {CodeModal} from './CodeModal';
 import {CompareView} from './CompareView';
 import {ScreenshotGallery} from './ScreenshotGallery';
-
-const styles = stylex.create({
-  root: {
-    minHeight: '100vh',
-    backgroundColor: colorVars['--color-wash'],
-  },
-  container: {
-    maxWidth: '1200px',
-    marginInline: 'auto',
-    padding: spacingVars['--spacing-5'],
-  },
-  header: {
-    paddingBlock: spacingVars['--spacing-3'],
-  },
-  scoreGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-    gap: spacingVars['--spacing-3'],
-  },
-  metricsCard: {
-    padding: spacingVars['--spacing-3'],
-  },
-  metricsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-    gap: spacingVars['--spacing-3'],
-  },
-  metricItem: {
-    textAlign: 'center',
-  },
-  tabContent: {
-    paddingBlockStart: spacingVars['--spacing-3'],
-  },
-  emptyState: {
-    padding: spacingVars['--spacing-8'],
-    textAlign: 'center',
-  },
-});
+import './report.css';
 
 function MetricValue({label, value}: {label: string; value: string}) {
   return (
-    <div {...stylex.props(styles.metricItem)}>
+    <div className="report-metricItem">
       <XDSVStack gap="space1">
         <XDSText type="label">{label}</XDSText>
         <XDSHeading level={3}>{value}</XDSHeading>
@@ -93,10 +54,10 @@ function EfficiencyMetricsCard({
 
   return (
     <XDSCard>
-      <div {...stylex.props(styles.metricsCard)}>
+      <div className="report-metricsCard">
         <XDSVStack gap="space2">
           <XDSHeading level={4}>Efficiency Metrics</XDSHeading>
-          <div {...stylex.props(styles.metricsGrid)}>
+          <div className="report-metricsGrid">
             <MetricValue
               label="Decisions / Element"
               value={avgDecisions.toFixed(1)}
@@ -138,10 +99,10 @@ function MaintainabilityMetricsCard({
 
   return (
     <XDSCard>
-      <div {...stylex.props(styles.metricsCard)}>
+      <div className="report-metricsCard">
         <XDSVStack gap="space2">
           <XDSHeading level={4}>Maintainability Metrics</XDSHeading>
-          <div {...stylex.props(styles.metricsGrid)}>
+          <div className="report-metricsGrid">
             <MetricValue
               label="Semantic Ratio"
               value={`${(avgSemantic * 100).toFixed(0)}%`}
@@ -163,10 +124,10 @@ function CostMetricsCard({cost}: {cost: ReportData['universal']['cost']}) {
 
   return (
     <XDSCard>
-      <div {...stylex.props(styles.metricsCard)}>
+      <div className="report-metricsCard">
         <XDSVStack gap="space2">
           <XDSHeading level={4}>Cost</XDSHeading>
-          <div {...stylex.props(styles.metricsGrid)}>
+          <div className="report-metricsGrid">
             {cost.avgDurationMs > 0 && (
               <MetricValue
                 label="Avg Duration"
@@ -209,9 +170,9 @@ export function Report() {
   if (!data) {
     return (
       <XDSTheme theme={defaultTheme} mode={themeMode}>
-        <div {...stylex.props(styles.root)}>
-          <div {...stylex.props(styles.container)}>
-            <div {...stylex.props(styles.emptyState)}>
+        <div className="report-root">
+          <div className="report-container">
+            <div className="report-emptyState">
               <XDSVStack gap="space4">
                 <XDSHeading level={2}>No Report Data</XDSHeading>
                 <XDSText type="body">
@@ -230,11 +191,11 @@ export function Report() {
 
   return (
     <XDSTheme theme={defaultTheme} mode={themeMode}>
-      <div {...stylex.props(styles.root)}>
-        <div {...stylex.props(styles.container)}>
+      <div className="report-root">
+        <div className="report-container">
           <XDSVStack gap="space5">
             {/* Header */}
-            <div {...stylex.props(styles.header)}>
+            <div className="report-header">
               <XDSHStack gap="space4" hAlign="between" vAlign="center">
                 <XDSVStack gap="space1">
                   <XDSHeading level={1}>Vibe Test Report</XDSHeading>
@@ -267,7 +228,7 @@ export function Report() {
             </XDSTabList>
 
             {/* Tab Content */}
-            <div {...stylex.props(styles.tabContent)}>
+            <div className="report-tabContent">
               {activeTab === 'overview' && (
                 <XDSVStack gap="space4">
                   {/* Overall score */}
@@ -289,7 +250,7 @@ export function Report() {
                   {/* Dimension scores grid */}
                   <XDSVStack gap="space3">
                     <XDSHeading level={3}>Dimensions</XDSHeading>
-                    <div {...stylex.props(styles.scoreGrid)}>
+                    <div className="report-scoreGrid">
                       {ALL_DIMENSIONS.map(dim => (
                         <ScoreCard
                           key={dim}

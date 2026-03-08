@@ -1,63 +1,17 @@
-import * as stylex from '@stylexjs/stylex';
 import {XDSCard} from '@xds/core/Card';
 import {XDSVStack} from '@xds/core/Stack';
 import {XDSText} from '@xds/core/Text';
 import {XDSHeading} from '@xds/core/Text';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSTable} from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table/types';
-import {spacingVars, colorVars} from '@xds/core/theme/tokens.stylex';
+import type {XDSTableColumn} from '@xds/core/Table';
 import type {
   UniversalComparison,
   UniversalDimension,
   CostMetrics,
 } from './types';
 import {ALL_DIMENSIONS, DIMENSION_LABELS, formatScore} from './utils';
-
-const styles = stylex.create({
-  summaryGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: spacingVars['--spacing-3'],
-  },
-  summaryGrid4: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: spacingVars['--spacing-3'],
-  },
-  winCard: {
-    padding: spacingVars['--spacing-3'],
-    textAlign: 'center',
-  },
-  positive: {
-    color: colorVars['--color-positive'],
-  },
-  negative: {
-    color: colorVars['--color-negative'],
-  },
-  neutral: {
-    color: colorVars['--color-text-secondary'],
-  },
-  warning: {
-    color: colorVars['--color-warning'],
-  },
-  costGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-    gap: spacingVars['--spacing-3'],
-  },
-  costCard: {
-    padding: spacingVars['--spacing-3'],
-  },
-  costLabel: {
-    marginBlockEnd: spacingVars['--spacing-1'],
-  },
-  costValues: {
-    display: 'flex',
-    gap: spacingVars['--spacing-3'],
-    alignItems: 'baseline',
-  },
-});
+import './report.css';
 
 type WinnerType = 'xds' | 'baseline' | 'html' | 'tie';
 
@@ -139,6 +93,12 @@ function winnerLabel(w: string): string {
     default:
       return 'Tie';
   }
+}
+
+function deltaClassName(delta: number): string {
+  if (delta > 0) return 'report-color-positive';
+  if (delta < 0) return 'report-color-negative';
+  return 'report-color-neutral';
 }
 
 function CostComparisonSection({
@@ -350,15 +310,7 @@ export function CompareView({comparison}: CompareViewProps) {
       key: 'delta',
       header: 'Delta (XDS−Base)',
       renderCell: row => (
-        <XDSText
-          type="body"
-          xstyle={
-            row.delta > 0
-              ? styles.positive
-              : row.delta < 0
-                ? styles.negative
-                : styles.neutral
-          }>
+        <XDSText type="body" className={deltaClassName(row.delta)}>
           {row.delta > 0 ? '+' : ''}
           {formatScore(row.delta)}
         </XDSText>
@@ -445,15 +397,7 @@ export function CompareView({comparison}: CompareViewProps) {
       key: 'delta',
       header: 'Delta (XDS−Base)',
       renderCell: row => (
-        <XDSText
-          type="body"
-          xstyle={
-            row.delta > 0
-              ? styles.positive
-              : row.delta < 0
-                ? styles.negative
-                : styles.neutral
-          }>
+        <XDSText type="body" className={deltaClassName(row.delta)}>
           {row.delta > 0 ? '+' : ''}
           {formatScore(row.delta)}
         </XDSText>
@@ -464,47 +408,49 @@ export function CompareView({comparison}: CompareViewProps) {
   return (
     <XDSVStack gap="space4">
       <div
-        {...stylex.props(
-          isThreeWay ? styles.summaryGrid4 : styles.summaryGrid,
-        )}>
+        className={
+          isThreeWay
+            ? 'report-compare-summaryGrid4'
+            : 'report-compare-summaryGrid'
+        }>
         <XDSCard>
-          <div {...stylex.props(styles.winCard)}>
+          <div className="report-compare-winCard">
             <XDSVStack gap="space2">
               <XDSText type="label">XDS Wins</XDSText>
               <XDSHeading level={2}>
-                <span {...stylex.props(styles.positive)}>{xdsWins}</span>
+                <span className="report-color-positive">{xdsWins}</span>
               </XDSHeading>
             </XDSVStack>
           </div>
         </XDSCard>
         <XDSCard>
-          <div {...stylex.props(styles.winCard)}>
+          <div className="report-compare-winCard">
             <XDSVStack gap="space2">
               <XDSText type="label">Baseline Wins</XDSText>
               <XDSHeading level={2}>
-                <span {...stylex.props(styles.negative)}>{baselineWins}</span>
+                <span className="report-color-negative">{baselineWins}</span>
               </XDSHeading>
             </XDSVStack>
           </div>
         </XDSCard>
         {isThreeWay && (
           <XDSCard>
-            <div {...stylex.props(styles.winCard)}>
+            <div className="report-compare-winCard">
               <XDSVStack gap="space2">
                 <XDSText type="label">HTML Wins</XDSText>
                 <XDSHeading level={2}>
-                  <span {...stylex.props(styles.warning)}>{htmlWins}</span>
+                  <span className="report-color-warning">{htmlWins}</span>
                 </XDSHeading>
               </XDSVStack>
             </div>
           </XDSCard>
         )}
         <XDSCard>
-          <div {...stylex.props(styles.winCard)}>
+          <div className="report-compare-winCard">
             <XDSVStack gap="space2">
               <XDSText type="label">Ties</XDSText>
               <XDSHeading level={2}>
-                <span {...stylex.props(styles.neutral)}>{ties}</span>
+                <span className="report-color-neutral">{ties}</span>
               </XDSHeading>
             </XDSVStack>
           </div>

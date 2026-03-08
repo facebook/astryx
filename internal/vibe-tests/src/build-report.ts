@@ -322,22 +322,23 @@ async function main() {
     const {createServer} = await import('vite');
     const server = await createServer({
       root: APP_DIR,
+      configFile: path.join(APP_DIR, 'vite.config.report.ts'),
       server: {port: 5173, strictPort: true},
     });
     await server.listen();
     server.printUrls();
-    console.log('\nOpen http://localhost:5173?mode=report to view the report.');
+    console.log('\nOpen http://localhost:5173 to view the report.');
     console.log('Press Ctrl+C to stop.\n');
   } else {
     console.log('\n🏗️  Step 5: Building static report...');
-    execSync('npx vite build', {
+    execSync('npx vite build --config vite.config.report.ts', {
       cwd: APP_DIR,
       stdio: 'inherit',
     });
 
     // Step 5: Inject data and styles into the built HTML
     const distDir = path.join(APP_DIR, 'dist');
-    const reportHtml = path.join(distDir, 'index.html');
+    const reportHtml = path.join(distDir, 'index.report.html');
     if (fs.existsSync(reportHtml)) {
       console.log('💉 Step 6: Injecting report data and styles...');
       injectDataIntoHtml(reportHtml, dataScript);
@@ -347,7 +348,7 @@ async function main() {
       fs.copyFileSync(reportHtml, destPath);
       console.log(`\n✅ Report saved to: ${destPath}`);
     } else {
-      console.error('Build succeeded but no index.html found in dist/');
+      console.error('Build succeeded but no index.report.html found in dist/');
     }
   }
 }

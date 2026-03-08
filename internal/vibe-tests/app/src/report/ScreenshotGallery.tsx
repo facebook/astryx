@@ -1,50 +1,8 @@
 import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {XDSCard} from '@xds/core/Card';
 import {XDSVStack} from '@xds/core/Stack';
 import {XDSText} from '@xds/core/Text';
-import {spacingVars, colorVars} from '@xds/core/theme/tokens.stylex';
-
-const styles = stylex.create({
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-    gap: spacingVars['--spacing-4'],
-  },
-  cardContent: {
-    padding: spacingVars['--spacing-3'],
-  },
-  image: {
-    width: '100%',
-    height: 'auto',
-    display: 'block',
-    cursor: 'pointer',
-    borderRadius: spacingVars['--spacing-1'],
-  },
-  overlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: colorVars['--color-overlay'],
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 9999,
-    cursor: 'pointer',
-  },
-  overlayImage: {
-    maxWidth: '90vw',
-    maxHeight: '90vh',
-    objectFit: 'contain',
-  },
-  meta: {
-    display: 'flex',
-    gap: spacingVars['--spacing-2'],
-    flexWrap: 'wrap',
-  },
-});
+import './report.css';
 
 interface ScreenshotGalleryProps {
   screenshots: Record<string, string>;
@@ -89,20 +47,20 @@ export function ScreenshotGallery({screenshots}: ScreenshotGalleryProps) {
 
   return (
     <>
-      <div {...stylex.props(styles.grid)}>
+      <div className="report-gallery-grid">
         {items.map(item => (
           <XDSCard key={item.filename}>
             <XDSVStack gap="space0">
               <img
-                {...stylex.props(styles.image)}
+                className="report-gallery-image"
                 src={item.src}
                 alt={`Screenshot: ${item.promptId}`}
                 onClick={() => setEnlarged(item.src)}
               />
-              <div {...stylex.props(styles.cardContent)}>
+              <div className="report-gallery-cardContent">
                 <XDSVStack gap="space1">
                   <XDSText type="label">{item.promptId}</XDSText>
-                  <div {...stylex.props(styles.meta)}>
+                  <div className="report-gallery-meta">
                     <XDSText type="supporting">{item.viewport}</XDSText>
                     <XDSText type="supporting">{item.theme}</XDSText>
                   </div>
@@ -114,10 +72,10 @@ export function ScreenshotGallery({screenshots}: ScreenshotGalleryProps) {
       </div>
       {enlarged && (
         <div
-          {...stylex.props(styles.overlay)}
+          className="report-gallery-overlay"
           onClick={() => setEnlarged(null)}>
           <img
-            {...stylex.props(styles.overlayImage)}
+            className="report-gallery-overlayImage"
             src={enlarged}
             alt="Enlarged screenshot"
           />
