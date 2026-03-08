@@ -1,6 +1,6 @@
 /**
  * @file XDSEmptyState.tsx
- * @input Uses React forwardRef, HTMLAttributes
+ * @input Uses React, HTMLAttributes
  * @output Exports XDSEmptyState component, XDSEmptyStateProps type
  * @position Core implementation; consumed by index.ts
  *
@@ -11,7 +11,7 @@
  * - /apps/storybook/stories/EmptyState.stories.tsx (storybook stories)
  */
 
-import {forwardRef, type ReactNode} from 'react';
+import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -80,6 +80,8 @@ const styles = stylex.create({
 });
 
 export interface XDSEmptyStateProps {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * The primary message displayed in the empty state.
    */
@@ -151,63 +153,56 @@ export interface XDSEmptyStateProps {
  * />
  * ```
  */
-export const XDSEmptyState = forwardRef<HTMLDivElement, XDSEmptyStateProps>(
-  (
-    {
-      title,
-      description,
-      icon,
-      actions,
-      isCompact = false,
-      xstyle,
-      className,
-      style,
-      ...props
-    },
-    ref,
-  ) => {
-    return (
-      <div
-        ref={ref}
-        role="status"
-        {...mergeProps(
-          xdsClassName('emptystate'),
-          stylex.props(
-            styles.container,
-            isCompact && styles.containerCompact,
-            xstyle,
-          ),
-          className,
-          style,
-        )}
-        {...props}>
-        {icon != null && <div aria-hidden="true">{icon}</div>}
-        <div {...stylex.props(styles.textGroup)}>
-          <h3 {...stylex.props(styles.title, isCompact && styles.titleCompact)}>
-            {title}
-          </h3>
-          {description != null && (
-            <p
-              {...stylex.props(
-                styles.description,
-                isCompact && styles.descriptionCompact,
-              )}>
-              {description}
-            </p>
-          )}
-        </div>
-        {actions != null && (
-          <div
+export function XDSEmptyState({
+  title,
+  description,
+  icon,
+  actions,
+  isCompact = false,
+  xstyle,
+  className,
+  style,
+  ref,
+  ...props
+}: XDSEmptyStateProps) {
+  return (
+    <div
+      ref={ref}
+      role="status"
+      {...mergeProps(
+        xdsClassName('emptystate'),
+        stylex.props(
+          styles.container,
+          isCompact && styles.containerCompact,
+          xstyle,
+        ),
+        className,
+        style,
+      )}
+      {...props}>
+      {icon != null && <div aria-hidden="true">{icon}</div>}
+      <div {...stylex.props(styles.textGroup)}>
+        <h3 {...stylex.props(styles.title, isCompact && styles.titleCompact)}>
+          {title}
+        </h3>
+        {description != null && (
+          <p
             {...stylex.props(
-              styles.actions,
-              isCompact && styles.actionsCompact,
+              styles.description,
+              isCompact && styles.descriptionCompact,
             )}>
-            {actions}
-          </div>
+            {description}
+          </p>
         )}
       </div>
-    );
-  },
-);
+      {actions != null && (
+        <div
+          {...stylex.props(styles.actions, isCompact && styles.actionsCompact)}>
+          {actions}
+        </div>
+      )}
+    </div>
+  );
+}
 
 XDSEmptyState.displayName = 'XDSEmptyState';

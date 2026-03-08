@@ -1,6 +1,6 @@
 /**
  * @file XDSLayoutContent.tsx
- * @input Uses React forwardRef, StyleX, XDSLayoutSlotsContext
+ * @input Uses React, StyleX, XDSLayoutSlotsContext
  * @output Exports XDSLayoutContent component and XDSLayoutContentProps
  * @position Scrollable main content area for XDSLayout. Wraps the primary body content
  *   with automatic scroll containment and context-aware padding.
@@ -14,7 +14,7 @@
 
 import type {AriaRole, ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {forwardRef, useContext} from 'react';
+import {useContext} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {XDSLayoutSlotsContext} from './XDSLayoutSlotsContext';
@@ -61,6 +61,8 @@ const styles = stylex.create({
 });
 
 export interface XDSLayoutContentProps extends XDSBaseProps<HTMLDivElement> {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLElement>;
   /**
    * Content to render inside the content area.
    */
@@ -129,51 +131,47 @@ export interface XDSLayoutContentProps extends XDSBaseProps<HTMLDivElement> {
  * </XDSLayoutContainer>
  * ```
  */
-export const XDSLayoutContent = forwardRef<HTMLElement, XDSLayoutContentProps>(
-  function XDSLayoutContent(
-    {
-      children,
-      isFullBleed = false,
-      isScrollable = true,
-      label,
-      role,
-      xstyle,
-      className,
-      style,
-      ...props
-    },
-    ref,
-  ) {
-    const {hasHeader, hasFooter, hasStart, hasEnd} = useContext(
-      XDSLayoutSlotsContext,
-    );
+export function XDSLayoutContent({
+  children,
+  isFullBleed = false,
+  isScrollable = true,
+  label,
+  role,
+  xstyle,
+  className,
+  style,
+  ref,
+  ...props
+}: XDSLayoutContentProps) {
+  const {hasHeader, hasFooter, hasStart, hasEnd} = useContext(
+    XDSLayoutSlotsContext,
+  );
 
-    return (
-      <div
-        ref={ref as React.Ref<HTMLDivElement>}
-        role={role}
-        aria-label={label}
-        {...mergeProps(
-          xdsClassName('layout-content'),
-          stylex.props(
-            styles.content,
-            // Outer padding on container edges (unless content is full bleed)
-            !hasStart && !isFullBleed && styles.noStart,
-            !hasEnd && !isFullBleed && styles.noEnd,
-            !hasHeader && !isFullBleed && styles.noHeader,
-            !hasFooter && !isFullBleed && styles.noFooter,
-            isScrollable && styles.scrollable,
-            isFullBleed && styles.fullBleed,
-            xstyle,
-          ),
-          className,
-          style,
-        )}
-        {...props}>
-        {children}
-      </div>
-    );
-  },
-);
+  return (
+    <div
+      ref={ref as React.Ref<HTMLDivElement>}
+      role={role}
+      aria-label={label}
+      {...mergeProps(
+        xdsClassName('layout-content'),
+        stylex.props(
+          styles.content,
+          // Outer padding on container edges (unless content is full bleed)
+          !hasStart && !isFullBleed && styles.noStart,
+          !hasEnd && !isFullBleed && styles.noEnd,
+          !hasHeader && !isFullBleed && styles.noHeader,
+          !hasFooter && !isFullBleed && styles.noFooter,
+          isScrollable && styles.scrollable,
+          isFullBleed && styles.fullBleed,
+          xstyle,
+        ),
+        className,
+        style,
+      )}
+      {...props}>
+      {children}
+    </div>
+  );
+}
 
 XDSLayoutContent.displayName = 'XDSLayoutContent';

@@ -1,6 +1,6 @@
 /**
  * @file XDSButton.tsx
- * @input Uses React, forwardRef, ButtonHTMLAttributes, ReactNode
+ * @input Uses React, ButtonHTMLAttributes, ReactNode
  * @output Exports XDSButton component, XDSButtonProps, XDSButtonVariant types
  * @position Core implementation; consumed by index.ts, tested by XDSButton.test.tsx
  *
@@ -15,12 +15,7 @@
 
 'use client';
 
-import {
-  forwardRef,
-  useTransition,
-  type ReactElement,
-  type ReactNode,
-} from 'react';
+import {useTransition, type ReactElement, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -196,6 +191,8 @@ export type XDSButtonVariant = keyof typeof variants;
 export type XDSButtonSize = keyof typeof sizeStyles;
 
 export interface XDSButtonProps extends XDSBaseProps<HTMLButtonElement> {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLButtonElement>;
   /** HTML button type attribute. @default 'button' */
   type?: 'button' | 'submit' | 'reset';
   /** HTML name attribute for form submission. */
@@ -311,114 +308,110 @@ const edgeCompStyles = stylex.create({
  * <XDSButton label="Edit" icon={<PencilIcon />} endSlot={<XDSBadge>New</XDSBadge>}>Edit</XDSButton>
  * ```
  */
-export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
-  (
-    {
-      label,
-      variant = 'secondary',
-      size = 'md',
-      isDisabled = false,
-      isLoading = false,
-      onClickAction,
-      icon,
-      children,
-      endSlot,
-      tooltip,
-      xstyle,
-      className,
-      style,
-      ...props
-    },
-    ref,
-  ): ReactElement => {
-    const [isPending, startTransition] = useTransition();
-    const isLoadingState = isLoading || isPending;
-    const buttonDisabled = isDisabled || isLoadingState;
-    const useLightSpinner = variant === 'primary' || variant === 'destructive';
-    const isIconOnly = icon != null && children == null;
+export function XDSButton({
+  label,
+  variant = 'secondary',
+  size = 'md',
+  isDisabled = false,
+  isLoading = false,
+  onClickAction,
+  icon,
+  children,
+  endSlot,
+  tooltip,
+  xstyle,
+  className,
+  style,
+  ref,
+  ...props
+}: XDSButtonProps): ReactElement {
+  const [isPending, startTransition] = useTransition();
+  const isLoadingState = isLoading || isPending;
+  const buttonDisabled = isDisabled || isLoadingState;
+  const useLightSpinner = variant === 'primary' || variant === 'destructive';
+  const isIconOnly = icon != null && children == null;
 
-    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-      if (onClickAction) {
-        e.preventDefault();
-        startTransition(async () => {
-          await onClickAction(e);
-        });
-      }
-      props.onClick?.(e);
-    };
-
-    // Ghost buttons opt into edge compensation — they self-adjust margins
-    // when placed at container edges (e.g., TopNav endContent).
-    // The component publishes its own inline padding via --component-padding-inline
-    // so the compensation formula stays theme-safe.
-    const isFlat = variant === 'ghost';
-    const edgeCompStyle = isFlat ? edgeCompensation.self : null;
-    const edgePaddingSignal = isFlat
-      ? isIconOnly
-        ? edgeCompStyles.paddingInline2
-        : edgeCompStyles.paddingInline3
-      : null;
-
-    const button = (
-      <button
-        ref={ref}
-        disabled={buttonDisabled}
-        aria-label={isIconOnly ? label : undefined}
-        aria-busy={isLoadingState || undefined}
-        {...mergeProps(
-          xdsClassName('button', {variant, size}),
-          stylex.props(
-            styles.base,
-            sizeStyles[size],
-            variants[variant],
-            isIconOnly && styles.iconOnly,
-            buttonDisabled && styles.disabled,
-            isLoadingState && loadingStyles.loading,
-            edgePaddingSignal,
-            edgeCompStyle,
-            xstyle,
-          ),
-          className,
-          style,
-        )}
-        {...props}
-        onClick={handleClick}>
-        {isLoadingState && (
-          <span
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-            <XDSSpinner
-              size="sm"
-              shade={useLightSpinner ? 'onMedia' : 'default'}
-            />
-          </span>
-        )}
-        {icon}
-        {children ?? (isIconOnly ? null : label)}
-        {!isIconOnly && endSlot && (
-          <span {...stylex.props(styles.endSlotWrapper)}>{endSlot}</span>
-        )}
-      </button>
-    );
-
-    if (tooltip) {
-      return (
-        <XDSTooltip content={tooltip} placement="above">
-          {button}
-        </XDSTooltip>
-      );
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (onClickAction) {
+      e.preventDefault();
+      startTransition(async () => {
+        await onClickAction(e);
+      });
     }
+    props.onClick?.(e);
+  };
 
-    return button;
-  },
-);
+  // Ghost buttons opt into edge compensation — they self-adjust margins
+  // when placed at container edges (e.g., TopNav endContent).
+  // The component publishes its own inline padding via --component-padding-inline
+  // so the compensation formula stays theme-safe.
+  const isFlat = variant === 'ghost';
+  const edgeCompStyle = isFlat ? edgeCompensation.self : null;
+  const edgePaddingSignal = isFlat
+    ? isIconOnly
+      ? edgeCompStyles.paddingInline2
+      : edgeCompStyles.paddingInline3
+    : null;
+
+  const button = (
+    <button
+      ref={ref}
+      disabled={buttonDisabled}
+      aria-label={isIconOnly ? label : undefined}
+      aria-busy={isLoadingState || undefined}
+      {...mergeProps(
+        xdsClassName('button', {variant, size}),
+        stylex.props(
+          styles.base,
+          sizeStyles[size],
+          variants[variant],
+          isIconOnly && styles.iconOnly,
+          buttonDisabled && styles.disabled,
+          isLoadingState && loadingStyles.loading,
+          edgePaddingSignal,
+          edgeCompStyle,
+          xstyle,
+        ),
+        className,
+        style,
+      )}
+      {...props}
+      onClick={handleClick}>
+      {isLoadingState && (
+        <span
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+          <XDSSpinner
+            size="sm"
+            shade={useLightSpinner ? 'onMedia' : 'default'}
+          />
+        </span>
+      )}
+      {icon}
+      {children ?? (isIconOnly ? null : label)}
+      {!isIconOnly && endSlot && (
+        <span {...stylex.props(styles.endSlotWrapper)}>{endSlot}</span>
+      )}
+    </button>
+  );
+
+  if (tooltip) {
+    return (
+      <XDSTooltip content={tooltip} placement="above">
+        {button}
+      </XDSTooltip>
+    );
+  }
+
+  return button;
+}
 
 XDSButton.displayName = 'XDSButton';

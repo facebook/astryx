@@ -1,6 +1,6 @@
 /**
  * @file XDSDivider.tsx
- * @input Uses React forwardRef, stylex, spacing and color tokens
+ * @input Uses React, stylex, spacing and color tokens
  * @output Exports XDSDivider component and XDSDividerProps
  * @position Divider component; provides visual separation with optional label
  *
@@ -12,7 +12,7 @@
 
 'use client';
 
-import {type HTMLAttributes, forwardRef, type ReactNode} from 'react';
+import {type HTMLAttributes, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -28,6 +28,8 @@ export interface XDSDividerProps extends Omit<
   XDSBaseProps<HTMLDivElement>,
   'children'
 > {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLElement>;
   /**
    * Orientation of the divider.
    * @default 'horizontal'
@@ -147,69 +149,63 @@ const fullBleedStyles = stylex.create({
  * <XDSDivider label="or" />
  * ```
  */
-export const XDSDivider = forwardRef<HTMLElement, XDSDividerProps>(
-  function XDSDivider(
-    {
-      orientation = 'horizontal',
-      label,
-      variant = 'subtle',
-      isFullBleed = false,
-      xstyle,
-      className,
-      style,
-      ...props
-    },
-    ref,
-  ) {
-    const isHorizontal = orientation === 'horizontal';
+export function XDSDivider({
+  orientation = 'horizontal',
+  label,
+  variant = 'subtle',
+  isFullBleed = false,
+  xstyle,
+  className,
+  style,
+  ref,
+  ...props
+}: XDSDividerProps) {
+  const isHorizontal = orientation === 'horizontal';
 
-    return (
+  return (
+    <div
+      ref={ref as React.Ref<HTMLDivElement>}
+      role="separator"
+      aria-orientation={orientation}
+      {...mergeProps(
+        xdsClassName('divider', {variant, orientation}),
+        stylex.props(
+          isHorizontal ? baseStyles.horizontal : baseStyles.vertical,
+          isFullBleed &&
+            (isHorizontal
+              ? fullBleedStyles.horizontal
+              : fullBleedStyles.vertical),
+          xstyle,
+        ),
+        className,
+        style,
+      )}
+      {...props}>
       <div
-        ref={ref as React.Ref<HTMLDivElement>}
-        role="separator"
-        aria-orientation={orientation}
-        {...mergeProps(
-          xdsClassName('divider', {variant, orientation}),
-          stylex.props(
-            isHorizontal ? baseStyles.horizontal : baseStyles.vertical,
-            isFullBleed &&
-              (isHorizontal
-                ? fullBleedStyles.horizontal
-                : fullBleedStyles.vertical),
-            xstyle,
-          ),
-          className,
-          style,
+        {...stylex.props(
+          isHorizontal ? lineStyles.horizontalLine : lineStyles.verticalLine,
+          lineStyles[variant],
         )}
-        {...props}>
+      />
+      {label && (
+        <div
+          {...stylex.props(
+            labelStyles.label,
+            !isHorizontal && labelStyles.verticalLabel,
+          )}>
+          {label}
+        </div>
+      )}
+      {label && (
         <div
           {...stylex.props(
             isHorizontal ? lineStyles.horizontalLine : lineStyles.verticalLine,
             lineStyles[variant],
           )}
         />
-        {label && (
-          <div
-            {...stylex.props(
-              labelStyles.label,
-              !isHorizontal && labelStyles.verticalLabel,
-            )}>
-            {label}
-          </div>
-        )}
-        {label && (
-          <div
-            {...stylex.props(
-              isHorizontal
-                ? lineStyles.horizontalLine
-                : lineStyles.verticalLine,
-              lineStyles[variant],
-            )}
-          />
-        )}
-      </div>
-    );
-  },
-);
+      )}
+    </div>
+  );
+}
 
 XDSDivider.displayName = 'XDSDivider';

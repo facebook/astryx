@@ -11,7 +11,7 @@
 
 'use client';
 
-import {forwardRef, useContext, type ReactNode} from 'react';
+import {useContext, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, transitionVars} from '../theme/tokens.stylex';
@@ -21,6 +21,8 @@ import {xdsClassName, mergeProps} from '../utils';
 
 /** Props for XDSTableRow — thin `<tr>` wrapper */
 export interface XDSTableRowProps extends XDSBaseProps<HTMLTableRowElement> {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLTableRowElement>;
   children: ReactNode;
   xstyle?: StyleXStyles[];
 }
@@ -86,50 +88,53 @@ const _lastBodyRowStyles = stylex.create({
  * </XDSTable>
  * ```
  */
-export const XDSTableRow = forwardRef<HTMLTableRowElement, XDSTableRowProps>(
-  ({children, xstyle, ...props}, ref) => {
-    const ctx = useContext(XDSTableContext);
+export function XDSTableRow({
+  children,
+  xstyle,
+  ref,
+  ...props
+}: XDSTableRowProps) {
+  const ctx = useContext(XDSTableContext);
 
-    if (!ctx) {
-      return (
-        <tr
-          ref={ref}
-          {...props}
-          {...mergeProps(xdsClassName('table-row'), stylex.props(xstyle))}>
-          {children}
-        </tr>
-      );
-    }
-
-    const rowStyles: StyleXStyles[] = [];
-
-    // Handle striped + hover combination to avoid backgroundColor conflicts
-    if (ctx.isStriped && ctx.hasHover) {
-      rowStyles.push(stripedHoverRowStyles.row);
-    } else if (ctx.isStriped) {
-      rowStyles.push(stripedRowStyles.row);
-    } else if (ctx.hasHover) {
-      rowStyles.push(hoverRowStyles.row);
-    }
-
-    if (ctx.dividers === 'rows' || ctx.dividers === 'grid') {
-      // Note: last-body-row border removal is handled by XDSTableCell
-      // to avoid affecting the header row in <thead>.
-    }
-
-    if (xstyle) {
-      rowStyles.push(...xstyle);
-    }
-
+  if (!ctx) {
     return (
       <tr
         ref={ref}
         {...props}
-        {...mergeProps(xdsClassName('table-row'), stylex.props(...rowStyles))}>
+        {...mergeProps(xdsClassName('table-row'), stylex.props(xstyle))}>
         {children}
       </tr>
     );
-  },
-);
+  }
+
+  const rowStyles: StyleXStyles[] = [];
+
+  // Handle striped + hover combination to avoid backgroundColor conflicts
+  if (ctx.isStriped && ctx.hasHover) {
+    rowStyles.push(stripedHoverRowStyles.row);
+  } else if (ctx.isStriped) {
+    rowStyles.push(stripedRowStyles.row);
+  } else if (ctx.hasHover) {
+    rowStyles.push(hoverRowStyles.row);
+  }
+
+  if (ctx.dividers === 'rows' || ctx.dividers === 'grid') {
+    // Note: last-body-row border removal is handled by XDSTableCell
+    // to avoid affecting the header row in <thead>.
+  }
+
+  if (xstyle) {
+    rowStyles.push(...xstyle);
+  }
+
+  return (
+    <tr
+      ref={ref}
+      {...props}
+      {...mergeProps(xdsClassName('table-row'), stylex.props(...rowStyles))}>
+      {children}
+    </tr>
+  );
+}
 
 XDSTableRow.displayName = 'XDSTableRow';

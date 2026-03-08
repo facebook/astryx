@@ -1,6 +1,6 @@
 /**
  * @file XDSSideNav.tsx
- * @input Uses React forwardRef, HTMLAttributes, ReactNode, StyleX
+ * @input Uses React, HTMLAttributes, ReactNode, StyleX
  * @output Exports XDSSideNav component and XDSSideNavProps
  * @position Core implementation; consumed by index.ts, tested by XDSSideNav.test.tsx
  *
@@ -16,7 +16,7 @@
 
 'use client';
 
-import {forwardRef, type ReactNode} from 'react';
+import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -82,6 +82,8 @@ const styles = stylex.create({
 // =============================================================================
 
 export interface XDSSideNavProps extends XDSBaseProps<HTMLElement> {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLElement>;
   /**
    * Header area — typically XDSSideNavHeading. Sticky at top.
    */
@@ -151,58 +153,54 @@ export interface XDSSideNavProps extends XDSBaseProps<HTMLElement> {
  * </XDSSideNav>
  * ```
  */
-export const XDSSideNav = forwardRef<HTMLElement, XDSSideNavProps>(
-  function XDSSideNav(
-    {
-      header,
-      topContent,
-      children,
-      footer,
-      footerIcons,
-      xstyle,
-      className,
-      style,
-      'data-testid': testId,
-      ...props
-    },
-    ref,
-  ) {
-    const hasStickyTop = !!(header || topContent);
-    const hasStickyBottom = !!(footer || footerIcons);
+export function XDSSideNav({
+  header,
+  topContent,
+  children,
+  footer,
+  footerIcons,
+  xstyle,
+  className,
+  style,
+  'data-testid': testId,
+  ref,
+  ...props
+}: XDSSideNavProps) {
+  const hasStickyTop = !!(header || topContent);
+  const hasStickyBottom = !!(footer || footerIcons);
 
-    return (
-      <nav
-        ref={ref}
-        role="navigation"
-        aria-label="Side navigation"
-        data-testid={testId}
-        {...mergeProps(
-          xdsClassName('side-nav'),
-          stylex.props(styles.root, xstyle),
-          className,
-          style,
-        )}
-        {...props}>
-        {hasStickyTop && (
-          <div {...stylex.props(styles.stickyTop)}>
-            {header}
-            {topContent && (
-              <div {...stylex.props(styles.topContent)}>{topContent}</div>
-            )}
-          </div>
-        )}
-        <div {...stylex.props(styles.scrollable)}>{children}</div>
-        {hasStickyBottom && (
-          <div {...stylex.props(styles.stickyBottom)}>
-            {footer && <div {...stylex.props(styles.footer)}>{footer}</div>}
-            {footerIcons && (
-              <div {...stylex.props(styles.footerIcons)}>{footerIcons}</div>
-            )}
-          </div>
-        )}
-      </nav>
-    );
-  },
-);
+  return (
+    <nav
+      ref={ref}
+      role="navigation"
+      aria-label="Side navigation"
+      data-testid={testId}
+      {...mergeProps(
+        xdsClassName('side-nav'),
+        stylex.props(styles.root, xstyle),
+        className,
+        style,
+      )}
+      {...props}>
+      {hasStickyTop && (
+        <div {...stylex.props(styles.stickyTop)}>
+          {header}
+          {topContent && (
+            <div {...stylex.props(styles.topContent)}>{topContent}</div>
+          )}
+        </div>
+      )}
+      <div {...stylex.props(styles.scrollable)}>{children}</div>
+      {hasStickyBottom && (
+        <div {...stylex.props(styles.stickyBottom)}>
+          {footer && <div {...stylex.props(styles.footer)}>{footer}</div>}
+          {footerIcons && (
+            <div {...stylex.props(styles.footerIcons)}>{footerIcons}</div>
+          )}
+        </div>
+      )}
+    </nav>
+  );
+}
 
 XDSSideNav.displayName = 'XDSSideNav';

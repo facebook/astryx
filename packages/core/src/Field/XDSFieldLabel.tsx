@@ -1,6 +1,6 @@
 /**
  * @file XDSFieldLabel.tsx
- * @input Uses React forwardRef, XDSIcon, XDSIconType
+ * @input Uses React, XDSIcon, XDSIconType
  * @output Exports XDSFieldLabel component, XDSFieldLabelProps
  * @position Core label implementation; used by XDSField, XDSCheckboxInput
  *
@@ -9,7 +9,6 @@
  * - /packages/core/src/Field/index.ts (exports if types change)
  */
 
-import {forwardRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -63,6 +62,8 @@ const styles = stylex.create({
 });
 
 export interface XDSFieldLabelProps {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLLabelElement>;
   /**
    * Label text (always rendered for accessibility).
    */
@@ -110,61 +111,54 @@ export interface XDSFieldLabelProps {
  * <XDSFieldLabel label="Hidden label" inputID={inputId} isLabelHidden />
  * ```
  */
-export const XDSFieldLabel = forwardRef<HTMLLabelElement, XDSFieldLabelProps>(
-  (
-    {
-      label,
-      inputID,
-      isLabelHidden = false,
-      isDisabled = false,
-      isOptional = false,
-      isRequired = false,
-      labelIcon,
-      labelTooltip,
-    },
-    ref,
-  ) => {
-    const statusText = isOptional ? 'Optional' : isRequired ? 'Required' : null;
+export function XDSFieldLabel({
+  label,
+  inputID,
+  isLabelHidden = false,
+  isDisabled = false,
+  isOptional = false,
+  isRequired = false,
+  labelIcon,
+  labelTooltip,
+  ref,
+}: XDSFieldLabelProps) {
+  const statusText = isOptional ? 'Optional' : isRequired ? 'Required' : null;
 
-    return (
-      <label
-        ref={ref}
-        htmlFor={inputID}
-        {...mergeProps(
-          xdsClassName('field-label'),
-          stylex.props(
-            styles.label,
-            !isDisabled && styles.labelClickable,
-            isDisabled && styles.labelDisabled,
-            isLabelHidden && styles.labelHidden,
-          ),
-        )}>
-        {labelIcon && (
+  return (
+    <label
+      ref={ref}
+      htmlFor={inputID}
+      {...mergeProps(
+        xdsClassName('field-label'),
+        stylex.props(
+          styles.label,
+          !isDisabled && styles.labelClickable,
+          isDisabled && styles.labelDisabled,
+          isLabelHidden && styles.labelHidden,
+        ),
+      )}>
+      {labelIcon && (
+        <XDSIcon
+          icon={labelIcon}
+          size="sm"
+          color={isDisabled ? 'disabled' : 'primary'}
+        />
+      )}
+      {label}
+      {statusText && (
+        <span {...stylex.props(styles.optionalRequired)}> ∙ {statusText}</span>
+      )}
+      {labelTooltip && (
+        <XDSTooltip content={labelTooltip} placement="above">
           <XDSIcon
-            icon={labelIcon}
+            icon="info"
             size="sm"
-            color={isDisabled ? 'disabled' : 'primary'}
+            color={isDisabled ? 'disabled' : 'secondary'}
           />
-        )}
-        {label}
-        {statusText && (
-          <span {...stylex.props(styles.optionalRequired)}>
-            {' '}
-            ∙ {statusText}
-          </span>
-        )}
-        {labelTooltip && (
-          <XDSTooltip content={labelTooltip} placement="above">
-            <XDSIcon
-              icon="info"
-              size="sm"
-              color={isDisabled ? 'disabled' : 'secondary'}
-            />
-          </XDSTooltip>
-        )}
-      </label>
-    );
-  },
-);
+        </XDSTooltip>
+      )}
+    </label>
+  );
+}
 
 XDSFieldLabel.displayName = 'XDSFieldLabel';

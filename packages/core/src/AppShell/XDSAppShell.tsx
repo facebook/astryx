@@ -15,14 +15,7 @@
 
 'use client';
 
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, fontWeightVars, textSizeVars} from '../theme/tokens.stylex';
@@ -62,6 +55,8 @@ const MAIN_CONTENT_ID = 'xds-app-shell-main';
 export type XDSAppShellBreakpoint = 'sm' | 'md' | 'lg' | 'none';
 
 export interface XDSAppShellProps {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * Background color of the shell.
    * - `wash`: Page-level background — subtle gray in light, near-black in dark
@@ -292,256 +287,251 @@ const styles = stylex.create({
  * </XDSAppShell>
  * ```
  */
-export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
-  function XDSAppShell(
-    {
-      background = 'surface',
-      banner,
-      children,
-      'data-testid': dataTestId,
-      height = 'fill',
-      defaultIsSideNavCollapsed = false,
-      isSideNavCollapsed: controlledCollapsed,
-      mobileNav,
-      onSideNavCollapsedChange,
-      sideNav,
-      sideNavBreakpoint = 'md',
-      sideNavWidth = DEFAULT_SIDENAV_WIDTH,
-      topNav,
-      xstyle,
-      className,
-      style,
-    },
-    ref,
-  ) {
-    // =========================================================================
-    // SideNav collapse state (controlled + uncontrolled)
-    // =========================================================================
-    const isControlled = controlledCollapsed !== undefined;
-    const [uncontrolledCollapsed, setUncontrolledCollapsed] = useState(
-      defaultIsSideNavCollapsed,
-    );
-    const isCollapsed = isControlled
-      ? controlledCollapsed
-      : uncontrolledCollapsed;
+export function XDSAppShell({
+  background = 'surface',
+  banner,
+  children,
+  'data-testid': dataTestId,
+  height = 'fill',
+  defaultIsSideNavCollapsed = false,
+  isSideNavCollapsed: controlledCollapsed,
+  mobileNav,
+  onSideNavCollapsedChange,
+  sideNav,
+  sideNavBreakpoint = 'md',
+  sideNavWidth = DEFAULT_SIDENAV_WIDTH,
+  topNav,
+  xstyle,
+  className,
+  style,
+  ref,
+}: XDSAppShellProps) {
+  // =========================================================================
+  // SideNav collapse state (controlled + uncontrolled)
+  // =========================================================================
+  const isControlled = controlledCollapsed !== undefined;
+  const [uncontrolledCollapsed, setUncontrolledCollapsed] = useState(
+    defaultIsSideNavCollapsed,
+  );
+  const isCollapsed = isControlled
+    ? controlledCollapsed
+    : uncontrolledCollapsed;
 
-    // Track whether we're below the breakpoint
-    const [isBelowBreakpoint, setIsBelowBreakpoint] = useState(false);
+  // Track whether we're below the breakpoint
+  const [isBelowBreakpoint, setIsBelowBreakpoint] = useState(false);
 
-    const isFill = height === 'fill';
-    const isAuto = height === 'auto';
-    const hasSideNav = sideNav != null;
-    const hasMobileNav = mobileNav != null;
-    const hasTopNav = topNav != null;
-    const hasBanner = banner != null;
+  const isFill = height === 'fill';
+  const isAuto = height === 'auto';
+  const hasSideNav = sideNav != null;
+  const hasMobileNav = mobileNav != null;
+  const hasTopNav = topNav != null;
+  const hasBanner = banner != null;
 
-    // =========================================================================
-    // Header height measurement for sticky sideNav offset (auto mode)
-    // =========================================================================
-    const headerRef = useRef<HTMLDivElement>(null);
-    const shellRef = useRef<HTMLDivElement>(null);
+  // =========================================================================
+  // Header height measurement for sticky sideNav offset (auto mode)
+  // =========================================================================
+  const headerRef = useRef<HTMLDivElement>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
 
-    // Merge forwarded ref with internal shell ref
-    const setShellRef = useCallback(
-      (node: HTMLDivElement | null) => {
-        (shellRef as React.MutableRefObject<HTMLDivElement | null>).current =
-          node;
-        if (typeof ref === 'function') {
-          ref(node);
-        } else if (ref) {
-          (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
-        }
-      },
-      [ref],
-    );
-
-    useEffect(() => {
-      if (!isAuto || !headerRef.current || !shellRef.current) return;
-
-      const headerEl = headerRef.current;
-      const shellEl = shellRef.current;
-
-      const updateHeight = () => {
-        const height = headerEl.getBoundingClientRect().height;
-        shellEl.style.setProperty('--appshell-header-height', `${height}px`);
-      };
-
-      updateHeight();
-
-      const observer = new ResizeObserver(updateHeight);
-      observer.observe(headerEl);
-      return () => observer.disconnect();
-    }, [isAuto]);
-
-    // =========================================================================
-    // Responsive breakpoint handling
-    //
-    // Uses matchMedia which is event-driven — the listener only fires when the
-    // media query match state actually changes, not on every resize. This is
-    // efficient and does not over-trigger.
-    // =========================================================================
-    useEffect(() => {
-      if (sideNavBreakpoint === 'none' || !hasSideNav) return;
-
-      const breakpointPx = BREAKPOINT_VALUES[sideNavBreakpoint];
-      const mql = window.matchMedia(`(max-width: ${breakpointPx}px)`);
-
-      const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
-        const matches = 'matches' in e ? e.matches : false;
-        setIsBelowBreakpoint(matches);
-        if (matches) {
-          // Auto-collapse below breakpoint
-          if (!isControlled) {
-            setUncontrolledCollapsed(true);
-          }
-          onSideNavCollapsedChange?.(true);
-        }
-      };
-
-      // Check initial state
-      handleChange(mql);
-
-      mql.addEventListener('change', handleChange);
-      return () => mql.removeEventListener('change', handleChange);
-    }, [sideNavBreakpoint, hasSideNav, isControlled, onSideNavCollapsedChange]);
-
-    // =========================================================================
-    // Toggle handler — snaps open/closed (no transitions for now)
-    // TODO: Add ViewTransitions support with React transition API
-    // =========================================================================
-    const handleToggleCollapse = useCallback(() => {
-      const newValue = !isCollapsed;
-      if (!isControlled) {
-        setUncontrolledCollapsed(newValue);
+  // Merge forwarded ref with internal shell ref
+  const setShellRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      (shellRef as React.MutableRefObject<HTMLDivElement | null>).current =
+        node;
+      if (typeof ref === 'function') {
+        ref(node);
+      } else if (ref) {
+        (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
       }
-      onSideNavCollapsedChange?.(newValue);
-    }, [isCollapsed, isControlled, onSideNavCollapsedChange]);
+    },
+    [ref],
+  );
 
-    // =========================================================================
-    // Determine if sideNav should show as overlay (mobile) or inline
-    // =========================================================================
-    const showSideNavInline = hasSideNav && !isCollapsed && !isBelowBreakpoint;
-    // Default mobile nav: when no explicit mobileNav is provided, AppShell
-    // internally renders an XDSMobileNav wrapping the sideNav content.
-    // This shares the same <dialog>-based behavior as explicit mobileNav.
-    const useDefaultMobileNav =
-      hasSideNav && !hasMobileNav && isBelowBreakpoint;
+  useEffect(() => {
+    if (!isAuto || !headerRef.current || !shellRef.current) return;
 
-    // =========================================================================
-    // Build header content (topNav + banner)
-    //
-    // In auto mode, the header wrapper gets sticky positioning so the topNav
-    // stays pinned while the page scrolls. The ref is used to measure header
-    // height for the sideNav's sticky offset.
-    // =========================================================================
-    const headerInner =
-      hasTopNav || hasBanner ? (
-        <XDSLayoutHeader isFullBleed hasDivider={hasTopNav}>
-          {hasBanner && <div {...stylex.props(styles.banner)}>{banner}</div>}
-          {hasTopNav && topNav}
-        </XDSLayoutHeader>
-      ) : undefined;
+    const headerEl = headerRef.current;
+    const shellEl = shellRef.current;
 
-    const headerContent =
-      headerInner != null ? (
-        <div ref={headerRef} {...stylex.props(isAuto && styles.headerSticky)}>
-          {headerInner}
-        </div>
-      ) : undefined;
+    const updateHeight = () => {
+      const height = headerEl.getBoundingClientRect().height;
+      shellEl.style.setProperty('--appshell-header-height', `${height}px`);
+    };
 
-    // =========================================================================
-    // Build sideNav content
-    //
-    // In auto mode, the sideNav panel is not internally scrollable (the page
-    // scrolls as a whole), but it gets sticky positioning so it stays pinned
-    // below the header while the main content scrolls. A wrapper div applies
-    // the sticky behavior since XDSLayoutPanel doesn't accept style/className.
-    // =========================================================================
-    const sideNavPanel = showSideNavInline ? (
-      <XDSLayoutPanel
-        isFullBleed
-        hasDivider
-        width={sideNavWidth}
-        role="navigation"
-        label="Application navigation"
-        isScrollable={isFill}>
-        {sideNav}
-      </XDSLayoutPanel>
+    updateHeight();
+
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(headerEl);
+    return () => observer.disconnect();
+  }, [isAuto]);
+
+  // =========================================================================
+  // Responsive breakpoint handling
+  //
+  // Uses matchMedia which is event-driven — the listener only fires when the
+  // media query match state actually changes, not on every resize. This is
+  // efficient and does not over-trigger.
+  // =========================================================================
+  useEffect(() => {
+    if (sideNavBreakpoint === 'none' || !hasSideNav) return;
+
+    const breakpointPx = BREAKPOINT_VALUES[sideNavBreakpoint];
+    const mql = window.matchMedia(`(max-width: ${breakpointPx}px)`);
+
+    const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
+      const matches = 'matches' in e ? e.matches : false;
+      setIsBelowBreakpoint(matches);
+      if (matches) {
+        // Auto-collapse below breakpoint
+        if (!isControlled) {
+          setUncontrolledCollapsed(true);
+        }
+        onSideNavCollapsedChange?.(true);
+      }
+    };
+
+    // Check initial state
+    handleChange(mql);
+
+    mql.addEventListener('change', handleChange);
+    return () => mql.removeEventListener('change', handleChange);
+  }, [sideNavBreakpoint, hasSideNav, isControlled, onSideNavCollapsedChange]);
+
+  // =========================================================================
+  // Toggle handler — snaps open/closed (no transitions for now)
+  // TODO: Add ViewTransitions support with React transition API
+  // =========================================================================
+  const handleToggleCollapse = useCallback(() => {
+    const newValue = !isCollapsed;
+    if (!isControlled) {
+      setUncontrolledCollapsed(newValue);
+    }
+    onSideNavCollapsedChange?.(newValue);
+  }, [isCollapsed, isControlled, onSideNavCollapsedChange]);
+
+  // =========================================================================
+  // Determine if sideNav should show as overlay (mobile) or inline
+  // =========================================================================
+  const showSideNavInline = hasSideNav && !isCollapsed && !isBelowBreakpoint;
+  // Default mobile nav: when no explicit mobileNav is provided, AppShell
+  // internally renders an XDSMobileNav wrapping the sideNav content.
+  // This shares the same <dialog>-based behavior as explicit mobileNav.
+  const useDefaultMobileNav = hasSideNav && !hasMobileNav && isBelowBreakpoint;
+
+  // =========================================================================
+  // Build header content (topNav + banner)
+  //
+  // In auto mode, the header wrapper gets sticky positioning so the topNav
+  // stays pinned while the page scrolls. The ref is used to measure header
+  // height for the sideNav's sticky offset.
+  // =========================================================================
+  const headerInner =
+    hasTopNav || hasBanner ? (
+      <XDSLayoutHeader isFullBleed hasDivider={hasTopNav}>
+        {hasBanner && <div {...stylex.props(styles.banner)}>{banner}</div>}
+        {hasTopNav && topNav}
+      </XDSLayoutHeader>
     ) : undefined;
 
-    const sideNavContent =
-      sideNavPanel != null && isAuto ? (
-        <div {...stylex.props(styles.sideNavAutoWrapper)}>
-          <div {...stylex.props(styles.sideNavSticky)}>{sideNavPanel}</div>
-        </div>
-      ) : (
-        sideNavPanel
-      );
-
-    // =========================================================================
-    // Build main content
-    // =========================================================================
-    const mainContent = (
-      <XDSLayoutContent
-        isFullBleed
-        role="main"
-        id={MAIN_CONTENT_ID}
-        isScrollable={isFill}>
-        {children}
-      </XDSLayoutContent>
-    );
-
-    // =========================================================================
-    // Render
-    //
-    // TODO: Include root providers (ThemeProvider, ProseProvider, LayerProvider)
-    // at the app level once they're available for wrapping.
-    // =========================================================================
-    return (
-      <div
-        ref={setShellRef}
-        data-testid={dataTestId}
-        {...mergeProps(
-          xdsClassName('app-shell', {background, height}),
-          stylex.props(
-            styles.root,
-            background === 'wash' ? styles.rootBgWash : styles.rootBgSurface,
-            isFill ? styles.rootFill : styles.rootAuto,
-            xstyle,
-          ),
-          className,
-          style,
-        )}>
-        {/* Skip-to-content link */}
-        <a
-          href={`#${MAIN_CONTENT_ID}`}
-          {...stylex.props(styles.skipLink)}
-          data-testid="skip-to-content">
-          Skip to content
-        </a>
-
-        <XDSLayout
-          height={height}
-          isFullBleed
-          header={headerContent}
-          start={sideNavContent}
-          content={mainContent}
-        />
-
-        {/* Mobile nav — either explicit mobileNav or default wrapping sideNav */}
-        {mobileNav}
-        {useDefaultMobileNav && (
-          <XDSMobileNav
-            isOpen={!isCollapsed}
-            onOpenChange={() => handleToggleCollapse()}
-            width={sideNavWidth}
-            data-testid="sidenav-mobile">
-            {sideNav}
-          </XDSMobileNav>
-        )}
+  const headerContent =
+    headerInner != null ? (
+      <div ref={headerRef} {...stylex.props(isAuto && styles.headerSticky)}>
+        {headerInner}
       </div>
+    ) : undefined;
+
+  // =========================================================================
+  // Build sideNav content
+  //
+  // In auto mode, the sideNav panel is not internally scrollable (the page
+  // scrolls as a whole), but it gets sticky positioning so it stays pinned
+  // below the header while the main content scrolls. A wrapper div applies
+  // the sticky behavior since XDSLayoutPanel doesn't accept style/className.
+  // =========================================================================
+  const sideNavPanel = showSideNavInline ? (
+    <XDSLayoutPanel
+      isFullBleed
+      hasDivider
+      width={sideNavWidth}
+      role="navigation"
+      label="Application navigation"
+      isScrollable={isFill}>
+      {sideNav}
+    </XDSLayoutPanel>
+  ) : undefined;
+
+  const sideNavContent =
+    sideNavPanel != null && isAuto ? (
+      <div {...stylex.props(styles.sideNavAutoWrapper)}>
+        <div {...stylex.props(styles.sideNavSticky)}>{sideNavPanel}</div>
+      </div>
+    ) : (
+      sideNavPanel
     );
-  },
-);
+
+  // =========================================================================
+  // Build main content
+  // =========================================================================
+  const mainContent = (
+    <XDSLayoutContent
+      isFullBleed
+      role="main"
+      id={MAIN_CONTENT_ID}
+      isScrollable={isFill}>
+      {children}
+    </XDSLayoutContent>
+  );
+
+  // =========================================================================
+  // Render
+  //
+  // TODO: Include root providers (ThemeProvider, ProseProvider, LayerProvider)
+  // at the app level once they're available for wrapping.
+  // =========================================================================
+  return (
+    <div
+      ref={setShellRef}
+      data-testid={dataTestId}
+      {...mergeProps(
+        xdsClassName('app-shell', {background, height}),
+        stylex.props(
+          styles.root,
+          background === 'wash' ? styles.rootBgWash : styles.rootBgSurface,
+          isFill ? styles.rootFill : styles.rootAuto,
+          xstyle,
+        ),
+        className,
+        style,
+      )}>
+      {/* Skip-to-content link */}
+      <a
+        href={`#${MAIN_CONTENT_ID}`}
+        {...stylex.props(styles.skipLink)}
+        data-testid="skip-to-content">
+        Skip to content
+      </a>
+
+      <XDSLayout
+        height={height}
+        isFullBleed
+        header={headerContent}
+        start={sideNavContent}
+        content={mainContent}
+      />
+
+      {/* Mobile nav — either explicit mobileNav or default wrapping sideNav */}
+      {mobileNav}
+      {useDefaultMobileNav && (
+        <XDSMobileNav
+          isOpen={!isCollapsed}
+          onOpenChange={() => handleToggleCollapse()}
+          width={sideNavWidth}
+          data-testid="sidenav-mobile">
+          {sideNav}
+        </XDSMobileNav>
+      )}
+    </div>
+  );
+}
 
 XDSAppShell.displayName = 'XDSAppShell';

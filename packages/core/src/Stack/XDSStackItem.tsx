@@ -1,6 +1,6 @@
 /**
  * @file XDSStackItem.tsx
- * @input Uses React forwardRef, ElementType, stackItem utility
+ * @input Uses React, ElementType, stackItem utility
  * @output Exports XDSStackItem polymorphic component and XDSStackItemProps
  * @position Layout/Stack component; uses stackItem.stylex.ts
  *
@@ -11,7 +11,6 @@
  */
 
 import {
-  forwardRef,
   createElement,
   type ElementType,
   type HTMLAttributes,
@@ -29,6 +28,8 @@ import {
 import {xdsClassName, mergeProps} from '../utils';
 
 export interface XDSStackItemProps extends XDSBaseProps<HTMLDivElement> {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLElement>;
   /**
    * Overrides the default cross-alignment for this item.
    * (hAlign for VStack, vAlign for HStack)
@@ -92,40 +93,36 @@ export interface XDSStackItemProps extends XDSBaseProps<HTMLDivElement> {
  * </XDSHStack>
  * ```
  */
-export const XDSStackItem = forwardRef<HTMLElement, XDSStackItemProps>(
-  function XDSStackItem(
-    {
-      crossAlignSelf,
-      size,
-      element = 'div',
-      xstyle,
-      className,
-      style,
-      children,
-      ...props
-    },
-    ref,
-  ) {
-    const stylexProps = stylex.props(
-      ...stackItem({crossAlignSelf, size}),
-      xstyle,
-    );
+export function XDSStackItem({
+  crossAlignSelf,
+  size,
+  element = 'div',
+  xstyle,
+  className,
+  style,
+  children,
+  ref,
+  ...props
+}: XDSStackItemProps) {
+  const stylexProps = stylex.props(
+    ...stackItem({crossAlignSelf, size}),
+    xstyle,
+  );
 
-    return createElement(
-      element,
-      {
-        ref: ref as Ref<Element>,
-        ...mergeProps(
-          xdsClassName('stack-item', {size}),
-          stylexProps,
-          className,
-          style,
-        ),
-        ...props,
-      },
-      children,
-    );
-  },
-);
+  return createElement(
+    element,
+    {
+      ref: ref as Ref<Element>,
+      ...mergeProps(
+        xdsClassName('stack-item', {size}),
+        stylexProps,
+        className,
+        style,
+      ),
+      ...props,
+    },
+    children,
+  );
+}
 
 XDSStackItem.displayName = 'XDSStackItem';

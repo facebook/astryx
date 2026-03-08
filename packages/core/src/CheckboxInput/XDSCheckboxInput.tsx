@@ -1,6 +1,6 @@
 /**
  * @file XDSCheckboxInput.tsx
- * @input Uses React forwardRef, useId, ChangeEvent, XDSFieldLabel, XDSFieldStatus, XDSIconType, XDSInputStatus
+ * @input Uses React, useId, ChangeEvent, XDSFieldLabel, XDSFieldStatus, XDSIconType, XDSInputStatus
  * @output Exports XDSCheckboxInput component, XDSCheckboxInputProps
  * @position Core implementation; consumed by index.ts, tested by XDSCheckboxInput.test.tsx
  *
@@ -14,7 +14,6 @@
 'use client';
 
 import {
-  forwardRef,
   useId,
   useOptimistic,
   useTransition,
@@ -197,6 +196,8 @@ const labelWrapperSizeStyles = stylex.create({
 export type XDSCheckboxInputSize = keyof typeof wrapperSizeStyles;
 
 export interface XDSCheckboxInputProps {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLInputElement>;
   /**
    * Label text for the checkbox (always rendered for accessibility).
    */
@@ -289,166 +290,155 @@ export interface XDSCheckboxInputProps {
  * />
  * ```
  */
-export const XDSCheckboxInput = forwardRef<
-  HTMLInputElement,
-  XDSCheckboxInputProps
->(
-  (
-    {
-      label,
-      isLabelHidden = false,
-      description,
-      onChange,
-      onChangeAction,
-      isLoading = false,
-      value,
-      isDisabled = false,
-      isOptional = false,
-      isRequired = false,
-      size = 'md',
-      onFocus,
-      onBlur,
-      labelIcon,
-      status,
-    },
-    ref,
-  ) => {
-    const id = useId();
-    const descriptionID = useId();
-    const statusMessageID = useId();
+export function XDSCheckboxInput({
+  label,
+  isLabelHidden = false,
+  description,
+  onChange,
+  onChangeAction,
+  isLoading = false,
+  value,
+  isDisabled = false,
+  isOptional = false,
+  isRequired = false,
+  size = 'md',
+  onFocus,
+  onBlur,
+  labelIcon,
+  status,
+  ref,
+}: XDSCheckboxInputProps) {
+  const id = useId();
+  const descriptionID = useId();
+  const statusMessageID = useId();
 
-    const [, startTransition] = useTransition();
-    const [optimisticValue, setOptimisticValue] = useOptimistic(value);
-    const isBusy = isLoading || optimisticValue !== value;
+  const [, startTransition] = useTransition();
+  const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+  const isBusy = isLoading || optimisticValue !== value;
 
-    const isIndeterminate = optimisticValue === 'indeterminate';
-    const isChecked = optimisticValue === true;
-    const isCheckedOrIndeterminate = isChecked || isIndeterminate;
+  const isIndeterminate = optimisticValue === 'indeterminate';
+  const isChecked = optimisticValue === true;
+  const isCheckedOrIndeterminate = isChecked || isIndeterminate;
 
-    // Build aria-describedby from description and status message
-    const describedByParts: string[] = [];
-    if (description) describedByParts.push(descriptionID);
-    if (status?.message) describedByParts.push(statusMessageID);
-    const ariaDescribedBy =
-      describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
+  // Build aria-describedby from description and status message
+  const describedByParts: string[] = [];
+  if (description) describedByParts.push(descriptionID);
+  if (status?.message) describedByParts.push(statusMessageID);
+  const ariaDescribedBy =
+    describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
 
-    return (
-      <div className={xdsClassName('checkbox-input', {size})}>
-        <div
-          {...stylex.props(
-            styles.container,
-            isLabelHidden && styles.containerLabelHidden,
-            !isDisabled && stylex.defaultMarker(),
-          )}>
-          <div
-            {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}>
-            <input
-              ref={ref}
-              id={id}
-              type="checkbox"
-              checked={isChecked}
-              disabled={isDisabled}
-              required={isRequired}
-              onChange={e => {
-                const checked = e.target.checked;
-                onChange?.(checked, e);
-                if (onChangeAction && !e.defaultPrevented) {
-                  startTransition(async () => {
-                    setOptimisticValue(checked);
-                    await onChangeAction(checked, e);
-                  });
-                }
-              }}
-              onFocus={onFocus}
-              onBlur={onBlur}
-              aria-describedby={ariaDescribedBy}
-              aria-invalid={status?.type === 'error' ? true : undefined}
-              aria-busy={isBusy || undefined}
-              {...stylex.props(
-                styles.input,
-                wrapperSizeStyles[size],
-                isDisabled && styles.inputDisabled,
-              )}
-            />
-            <div
-              aria-hidden="true"
-              {...stylex.props(
-                styles.checkbox,
-                checkboxSizeStyles[size],
-                isCheckedOrIndeterminate
-                  ? styles.checkboxChecked
-                  : styles.checkboxUnchecked,
-                isDisabled && styles.checkboxDisabled,
-                isDisabled &&
-                  !isCheckedOrIndeterminate &&
-                  styles.checkboxDisabledUnchecked,
-              )}>
-              {isBusy ? (
-                <XDSSpinner
-                  size="sm"
-                  shade={isCheckedOrIndeterminate ? 'onMedia' : 'default'}
-                />
-              ) : (
-                <>
-                  <svg
-                    viewBox="0 0 10 10"
-                    {...stylex.props(
-                      styles.checkmark,
-                      checkmarkSizeStyles[size],
-                      isChecked && styles.checkmarkVisible,
-                    )}>
-                    <path
-                      d="M8.5 2.5L4 7.5L1.5 5"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  <div
-                    {...stylex.props(
-                      styles.indeterminateMark,
-                      indeterminateSizeStyles[size],
-                      isIndeterminate && styles.indeterminateMarkVisible,
-                    )}
-                  />
-                </>
-              )}
-            </div>
-          </div>
-          <div
+  return (
+    <div className={xdsClassName('checkbox-input', {size})}>
+      <div
+        {...stylex.props(
+          styles.container,
+          isLabelHidden && styles.containerLabelHidden,
+          !isDisabled && stylex.defaultMarker(),
+        )}>
+        <div {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}>
+          <input
+            ref={ref}
+            id={id}
+            type="checkbox"
+            checked={isChecked}
+            disabled={isDisabled}
+            required={isRequired}
+            onChange={e => {
+              const checked = e.target.checked;
+              onChange?.(checked, e);
+              if (onChangeAction && !e.defaultPrevented) {
+                startTransition(async () => {
+                  setOptimisticValue(checked);
+                  await onChangeAction(checked, e);
+                });
+              }
+            }}
+            onFocus={onFocus}
+            onBlur={onBlur}
+            aria-describedby={ariaDescribedBy}
+            aria-invalid={status?.type === 'error' ? true : undefined}
+            aria-busy={isBusy || undefined}
             {...stylex.props(
-              styles.labelWrapper,
-              labelWrapperSizeStyles[size],
+              styles.input,
+              wrapperSizeStyles[size],
+              isDisabled && styles.inputDisabled,
+            )}
+          />
+          <div
+            aria-hidden="true"
+            {...stylex.props(
+              styles.checkbox,
+              checkboxSizeStyles[size],
+              isCheckedOrIndeterminate
+                ? styles.checkboxChecked
+                : styles.checkboxUnchecked,
+              isDisabled && styles.checkboxDisabled,
+              isDisabled &&
+                !isCheckedOrIndeterminate &&
+                styles.checkboxDisabledUnchecked,
             )}>
-            <XDSFieldLabel
-              label={label}
-              inputID={id}
-              isLabelHidden={isLabelHidden}
-              isDisabled={isDisabled}
-              isOptional={isOptional}
-              isRequired={isRequired}
-              labelIcon={labelIcon}
-            />
-            {description && !isLabelHidden && (
-              <span id={descriptionID} {...stylex.props(styles.description)}>
-                {description}
-              </span>
+            {isBusy ? (
+              <XDSSpinner
+                size="sm"
+                shade={isCheckedOrIndeterminate ? 'onMedia' : 'default'}
+              />
+            ) : (
+              <>
+                <svg
+                  viewBox="0 0 10 10"
+                  {...stylex.props(
+                    styles.checkmark,
+                    checkmarkSizeStyles[size],
+                    isChecked && styles.checkmarkVisible,
+                  )}>
+                  <path
+                    d="M8.5 2.5L4 7.5L1.5 5"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <div
+                  {...stylex.props(
+                    styles.indeterminateMark,
+                    indeterminateSizeStyles[size],
+                    isIndeterminate && styles.indeterminateMarkVisible,
+                  )}
+                />
+              </>
             )}
           </div>
         </div>
-        {status?.message && (
-          <XDSFieldStatus
-            type={status.type}
-            message={status.message}
-            id={statusMessageID}
-            variant="detached"
+        <div
+          {...stylex.props(styles.labelWrapper, labelWrapperSizeStyles[size])}>
+          <XDSFieldLabel
+            label={label}
+            inputID={id}
+            isLabelHidden={isLabelHidden}
+            isDisabled={isDisabled}
+            isOptional={isOptional}
+            isRequired={isRequired}
+            labelIcon={labelIcon}
           />
-        )}
+          {description && !isLabelHidden && (
+            <span id={descriptionID} {...stylex.props(styles.description)}>
+              {description}
+            </span>
+          )}
+        </div>
       </div>
-    );
-  },
-);
+      {status?.message && (
+        <XDSFieldStatus
+          type={status.type}
+          message={status.message}
+          id={statusMessageID}
+          variant="detached"
+        />
+      )}
+    </div>
+  );
+}
 
 XDSCheckboxInput.displayName = 'XDSCheckboxInput';

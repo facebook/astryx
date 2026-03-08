@@ -13,7 +13,7 @@
 
 'use client';
 
-import {forwardRef, useEffect, useRef} from 'react';
+import {useEffect, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
@@ -71,6 +71,8 @@ export type XDSSpinnerSize = keyof typeof SIZES;
 export type XDSSpinnerShade = 'default' | 'onMedia';
 
 export interface XDSSpinnerProps {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLSpanElement>;
   /**
    * Spinner size.
    * - 'sm': 10px diameter
@@ -105,81 +107,83 @@ export interface XDSSpinnerProps {
  * <XDSSpinner size="lg" shade="onMedia" />
  * ```
  */
-export const XDSSpinner = forwardRef<HTMLSpanElement, XDSSpinnerProps>(
-  ({size = 'md', shade = 'default', 'data-testid': testId}, ref) => {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+export function XDSSpinner({
+  size = 'md',
+  shade = 'default',
+  'data-testid': testId,
+  ref,
+}: XDSSpinnerProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-    useEffect(() => {
-      const canvas = canvasRef.current;
-      if (canvas == null) return;
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas == null) return;
 
-      const context = canvas.getContext('2d');
-      if (!context) return;
-
-      const {border, diameter} = SIZES[size];
-      const pixelRatio = window.devicePixelRatio || 1;
-
-      // Resolve colors from CSS custom properties
-      const computedStyle = getComputedStyle(canvas);
-      const activeColor =
-        shade === 'onMedia'
-          ? computedStyle.getPropertyValue(
-              colorVars['--color-icon-on-media'],
-            ) || '#FFFFFF'
-          : computedStyle.getPropertyValue(colorVars['--color-accent']) ||
-            '#0064E0';
-      const backgroundColor =
-        shade === 'onMedia' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.1)';
-
-      const radius = (diameter / 2) * pixelRatio;
-      const lineWidth = border * pixelRatio;
-      const frameSize = (radius + lineWidth) * 2;
-
-      canvas.height = canvas.width = frameSize;
-      canvas.style.width = canvas.style.height = frameSize / pixelRatio + 'px';
-
-      context.lineCap = 'round';
-      context.lineWidth = lineWidth;
-
-      const center = frameSize / 2;
-
-      // Background circle (full ring, faded)
-      context.beginPath();
-      context.arc(center, center, radius, 0, 2 * Math.PI);
-      context.strokeStyle = backgroundColor;
-      context.stroke();
-
-      // Active arc (partial ring, colored)
-      context.beginPath();
-      context.arc(
-        center,
-        center,
-        radius,
-        START_POINT * Math.PI,
-        ((START_POINT + SPREAD) % 2) * Math.PI,
-      );
-      context.strokeStyle = activeColor;
-      context.stroke();
-    }, [shade, size]);
+    const context = canvas.getContext('2d');
+    if (!context) return;
 
     const {border, diameter} = SIZES[size];
-    const frameSize = diameter + border * 2;
+    const pixelRatio = window.devicePixelRatio || 1;
 
-    return (
-      <span
-        ref={ref}
-        role="status"
-        aria-label="Loading"
-        data-testid={testId}
-        {...mergeProps(
-          xdsClassName('spinner', {size}),
-          stylex.props(styles.spinner),
-        )}
-        style={{width: frameSize, height: frameSize}}>
-        <canvas ref={canvasRef} {...stylex.props(styles.canvas)} />
-      </span>
+    // Resolve colors from CSS custom properties
+    const computedStyle = getComputedStyle(canvas);
+    const activeColor =
+      shade === 'onMedia'
+        ? computedStyle.getPropertyValue(colorVars['--color-icon-on-media']) ||
+          '#FFFFFF'
+        : computedStyle.getPropertyValue(colorVars['--color-accent']) ||
+          '#0064E0';
+    const backgroundColor =
+      shade === 'onMedia' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.1)';
+
+    const radius = (diameter / 2) * pixelRatio;
+    const lineWidth = border * pixelRatio;
+    const frameSize = (radius + lineWidth) * 2;
+
+    canvas.height = canvas.width = frameSize;
+    canvas.style.width = canvas.style.height = frameSize / pixelRatio + 'px';
+
+    context.lineCap = 'round';
+    context.lineWidth = lineWidth;
+
+    const center = frameSize / 2;
+
+    // Background circle (full ring, faded)
+    context.beginPath();
+    context.arc(center, center, radius, 0, 2 * Math.PI);
+    context.strokeStyle = backgroundColor;
+    context.stroke();
+
+    // Active arc (partial ring, colored)
+    context.beginPath();
+    context.arc(
+      center,
+      center,
+      radius,
+      START_POINT * Math.PI,
+      ((START_POINT + SPREAD) % 2) * Math.PI,
     );
-  },
-);
+    context.strokeStyle = activeColor;
+    context.stroke();
+  }, [shade, size]);
+
+  const {border, diameter} = SIZES[size];
+  const frameSize = diameter + border * 2;
+
+  return (
+    <span
+      ref={ref}
+      role="status"
+      aria-label="Loading"
+      data-testid={testId}
+      {...mergeProps(
+        xdsClassName('spinner', {size}),
+        stylex.props(styles.spinner),
+      )}
+      style={{width: frameSize, height: frameSize}}>
+      <canvas ref={canvasRef} {...stylex.props(styles.canvas)} />
+    </span>
+  );
+}
 
 XDSSpinner.displayName = 'XDSSpinner';

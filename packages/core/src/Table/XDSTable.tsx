@@ -13,7 +13,7 @@
 
 'use client';
 
-import {forwardRef, useMemo, type ReactElement, type Ref} from 'react';
+import {useMemo, type ReactElement, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {XDSBaseTable} from './XDSBaseTable';
@@ -109,19 +109,17 @@ const xdsComponents = {
 // XDSTable Component
 // =============================================================================
 
-function XDSTableInner<T extends Record<string, unknown>>(
-  {
-    density = 'balanced',
-    dividers = 'rows',
-    isStriped = false,
-    hasHover = false,
-    plugins: userPlugins,
-    columns,
-    data,
-    ...rest
-  }: XDSTableProps<T>,
-  ref: Ref<HTMLTableElement>,
-): ReactElement {
+function XDSTableInner<T extends Record<string, unknown>>({
+  density = 'balanced',
+  dividers = 'rows',
+  isStriped = false,
+  hasHover = false,
+  plugins: userPlugins,
+  columns,
+  data,
+  ref,
+  ...rest
+}: XDSTableProps<T> & {ref?: Ref<HTMLTableElement>}): ReactElement {
   // Table-level styling plugin (just adds font/color to <table>)
   const tablePlugin = useMemo(() => buildTableStylePlugin<T>(), []);
   const basePlugins = useMemo(() => [tablePlugin], [tablePlugin]);
@@ -184,9 +182,7 @@ function XDSTableInner<T extends Record<string, unknown>>(
  * />
  * ```
  */
-export const XDSTable = forwardRef(XDSTableInner) as <
-  T extends Record<string, unknown>,
->(
+export const XDSTable = XDSTableInner as <T extends Record<string, unknown>>(
   props: XDSTableProps<T> & {ref?: Ref<HTMLTableElement>},
 ) => ReactElement;
 

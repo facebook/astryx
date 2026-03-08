@@ -1,6 +1,6 @@
 /**
  * @file XDSTopNavHeading.tsx
- * @input Uses React forwardRef, HTMLAttributes, ReactNode
+ * @input Uses React, HTMLAttributes, ReactNode
  * @output Exports XDSTopNavHeading component and XDSTopNavHeadingProps
  * @position Companion component for XDSTopNav heading slot
  *
@@ -11,7 +11,7 @@
  * - /apps/storybook/stories/TopNav.stories.tsx
  */
 
-import {forwardRef, type ReactNode} from 'react';
+import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -52,6 +52,8 @@ const styles = stylex.create({
 });
 
 export interface XDSTopNavHeadingProps extends XDSBaseProps<HTMLElement> {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLElement>;
   /**
    * The heading text to display.
    */
@@ -88,31 +90,33 @@ export interface XDSTopNavHeadingProps extends XDSBaseProps<HTMLElement> {
  * <XDSTopNavHeading logo={<BrandLogo />} href="/" />
  * ```
  */
-export const XDSTopNavHeading = forwardRef<HTMLElement, XDSTopNavHeadingProps>(
-  function XDSTopNavHeading(
-    {heading, logo, href, xstyle, className, style, ...props},
-    ref,
-  ) {
-    const Element = href ? 'a' : 'div';
+export function XDSTopNavHeading({
+  heading,
+  logo,
+  href,
+  xstyle,
+  className,
+  style,
+  ref,
+  ...props
+}: XDSTopNavHeadingProps) {
+  const Element = href ? 'a' : 'div';
 
-    return (
-      <Element
-        ref={ref as React.Ref<HTMLAnchorElement & HTMLDivElement>}
-        href={href}
-        {...mergeProps(
-          xdsClassName('top-nav-heading'),
-          stylex.props(styles.base, href != null && styles.clickable, xstyle),
-          className,
-          style,
-        )}
-        {...props}>
-        {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
-        {heading && (
-          <span {...stylex.props(styles.headingText)}>{heading}</span>
-        )}
-      </Element>
-    );
-  },
-);
+  return (
+    <Element
+      ref={ref as React.Ref<HTMLAnchorElement & HTMLDivElement>}
+      href={href}
+      {...mergeProps(
+        xdsClassName('top-nav-heading'),
+        stylex.props(styles.base, href != null && styles.clickable, xstyle),
+        className,
+        style,
+      )}
+      {...props}>
+      {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
+      {heading && <span {...stylex.props(styles.headingText)}>{heading}</span>}
+    </Element>
+  );
+}
 
 XDSTopNavHeading.displayName = 'XDSTopNavHeading';

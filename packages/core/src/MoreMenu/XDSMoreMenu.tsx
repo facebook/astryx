@@ -17,7 +17,6 @@
 'use client';
 
 import {
-  forwardRef,
   useCallback,
   useId,
   useMemo,
@@ -144,6 +143,8 @@ function getSelectableItems(
 // =============================================================================
 
 export interface XDSMoreMenuProps {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLButtonElement>;
   /**
    * Menu items — data array of actions, dividers, and sections.
    * Same type as XDSDropdownMenu's `items` prop.
@@ -233,263 +234,258 @@ function DefaultItem({item}: {item: XDSDropdownMenuItemData}) {
  * />
  * ```
  */
-export const XDSMoreMenu = forwardRef<HTMLButtonElement, XDSMoreMenuProps>(
-  (
-    {
-      items,
-      label = 'More options',
-      variant = 'ghost',
-      size = 'md',
-      icon,
-      isDisabled = false,
-      children,
-      'data-testid': testId,
+export function XDSMoreMenu({
+  items,
+  label = 'More options',
+  variant = 'ghost',
+  size = 'md',
+  icon,
+  isDisabled = false,
+  children,
+  'data-testid': testId,
+  ref,
+}: XDSMoreMenuProps) {
+  const moreIcon = getIcon('moreHorizontal');
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const menuId = useId();
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+
+  const selectableItems = useMemo(() => getSelectableItems(items), [items]);
+
+  const layer = useXDSLayer({
+    mode: 'context',
+    lightDismiss: true,
+    onHide: () => {
+      setHighlightedIndex(-1);
+      buttonRef.current?.focus();
     },
-    ref,
-  ) => {
-    const moreIcon = getIcon('moreHorizontal');
-    const buttonRef = useRef<HTMLButtonElement | null>(null);
-    const menuId = useId();
-    const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  });
 
-    const selectableItems = useMemo(() => getSelectableItems(items), [items]);
-
-    const layer = useXDSLayer({
-      mode: 'context',
-      lightDismiss: true,
-      onHide: () => {
-        setHighlightedIndex(-1);
-        buttonRef.current?.focus();
-      },
-    });
-
-    const handleButtonClick = useCallback(() => {
-      if (layer.isOpen) {
-        layer.hide();
-      } else {
-        layer.show();
-      }
-    }, [layer]);
-
-    const closeMenu = useCallback(() => {
+  const handleButtonClick = useCallback(() => {
+    if (layer.isOpen) {
       layer.hide();
-    }, [layer]);
+    } else {
+      layer.show();
+    }
+  }, [layer]);
 
-    const getItemId = useCallback(
-      (index: number) => `${menuId}-item-${index}`,
-      [menuId],
-    );
+  const closeMenu = useCallback(() => {
+    layer.hide();
+  }, [layer]);
 
-    const handleItemClick = useCallback(
-      (item: XDSDropdownMenuItemData) => {
-        if (item.isDisabled) return;
-        item.onClick?.();
-        closeMenu();
-      },
-      [closeMenu],
-    );
+  const getItemId = useCallback(
+    (index: number) => `${menuId}-item-${index}`,
+    [menuId],
+  );
 
-    const handleItemMouseEnter = useCallback(
-      (item: XDSDropdownMenuItemData, index: number) => {
-        if (item.isDisabled) return;
-        setHighlightedIndex(index);
-      },
-      [],
-    );
+  const handleItemClick = useCallback(
+    (item: XDSDropdownMenuItemData) => {
+      if (item.isDisabled) return;
+      item.onClick?.();
+      closeMenu();
+    },
+    [closeMenu],
+  );
 
-    const handleKeyDown = useCallback(
-      (e: React.KeyboardEvent) => {
-        if (!layer.isOpen) {
-          if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            layer.show();
-            setHighlightedIndex(0);
-          }
-          return;
+  const handleItemMouseEnter = useCallback(
+    (item: XDSDropdownMenuItemData, index: number) => {
+      if (item.isDisabled) return;
+      setHighlightedIndex(index);
+    },
+    [],
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (!layer.isOpen) {
+        if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          layer.show();
+          setHighlightedIndex(0);
         }
+        return;
+      }
 
-        switch (e.key) {
-          case 'ArrowDown':
-            e.preventDefault();
-            setHighlightedIndex(prev => {
-              let next = prev + 1;
-              while (
-                next < selectableItems.length &&
-                selectableItems[next].isDisabled
-              ) {
-                next++;
-              }
-              return next < selectableItems.length ? next : prev;
-            });
-            break;
-          case 'ArrowUp':
-            e.preventDefault();
-            setHighlightedIndex(prev => {
-              let next = prev - 1;
-              while (next >= 0 && selectableItems[next].isDisabled) {
-                next--;
-              }
-              return next >= 0 ? next : prev;
-            });
-            break;
-          case 'Home':
-            e.preventDefault();
-            {
-              let index = 0;
-              while (
-                index < selectableItems.length &&
-                selectableItems[index].isDisabled
-              ) {
-                index++;
-              }
-              setHighlightedIndex(index < selectableItems.length ? index : -1);
-            }
-            break;
-          case 'End':
-            e.preventDefault();
-            {
-              let index = selectableItems.length - 1;
-              while (index >= 0 && selectableItems[index].isDisabled) {
-                index--;
-              }
-              setHighlightedIndex(index >= 0 ? index : -1);
-            }
-            break;
-          case 'Escape':
-            e.preventDefault();
-            closeMenu();
-            break;
-          case 'Enter':
-          case ' ':
-            e.preventDefault();
-            if (
-              highlightedIndex >= 0 &&
-              highlightedIndex < selectableItems.length
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setHighlightedIndex(prev => {
+            let next = prev + 1;
+            while (
+              next < selectableItems.length &&
+              selectableItems[next].isDisabled
             ) {
-              handleItemClick(selectableItems[highlightedIndex]);
+              next++;
             }
-            break;
-        }
-      },
-      [layer, selectableItems, highlightedIndex, closeMenu, handleItemClick],
-    );
+            return next < selectableItems.length ? next : prev;
+          });
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setHighlightedIndex(prev => {
+            let next = prev - 1;
+            while (next >= 0 && selectableItems[next].isDisabled) {
+              next--;
+            }
+            return next >= 0 ? next : prev;
+          });
+          break;
+        case 'Home':
+          e.preventDefault();
+          {
+            let index = 0;
+            while (
+              index < selectableItems.length &&
+              selectableItems[index].isDisabled
+            ) {
+              index++;
+            }
+            setHighlightedIndex(index < selectableItems.length ? index : -1);
+          }
+          break;
+        case 'End':
+          e.preventDefault();
+          {
+            let index = selectableItems.length - 1;
+            while (index >= 0 && selectableItems[index].isDisabled) {
+              index--;
+            }
+            setHighlightedIndex(index >= 0 ? index : -1);
+          }
+          break;
+        case 'Escape':
+          e.preventDefault();
+          closeMenu();
+          break;
+        case 'Enter':
+        case ' ':
+          e.preventDefault();
+          if (
+            highlightedIndex >= 0 &&
+            highlightedIndex < selectableItems.length
+          ) {
+            handleItemClick(selectableItems[highlightedIndex]);
+          }
+          break;
+      }
+    },
+    [layer, selectableItems, highlightedIndex, closeMenu, handleItemClick],
+  );
 
-    const renderItem = useCallback(
-      (item: XDSDropdownMenuItemData, flatIndex: number) => {
-        const isHighlighted = flatIndex === highlightedIndex;
+  const renderItem = useCallback(
+    (item: XDSDropdownMenuItemData, flatIndex: number) => {
+      const isHighlighted = flatIndex === highlightedIndex;
 
-        return (
-          <div
-            key={`${item.label}-${flatIndex}`}
-            id={getItemId(flatIndex)}
-            role="menuitem"
-            tabIndex={-1}
-            aria-disabled={item.isDisabled}
-            onClick={() => handleItemClick(item)}
-            onMouseEnter={() => handleItemMouseEnter(item, flatIndex)}
-            {...stylex.props(
-              styles.item,
-              isHighlighted && styles.itemHighlighted,
-              item.isDisabled && styles.itemDisabled,
-            )}>
-            {children ? children(item) : <DefaultItem item={item} />}
-          </div>
+      return (
+        <div
+          key={`${item.label}-${flatIndex}`}
+          id={getItemId(flatIndex)}
+          role="menuitem"
+          tabIndex={-1}
+          aria-disabled={item.isDisabled}
+          onClick={() => handleItemClick(item)}
+          onMouseEnter={() => handleItemMouseEnter(item, flatIndex)}
+          {...stylex.props(
+            styles.item,
+            isHighlighted && styles.itemHighlighted,
+            item.isDisabled && styles.itemDisabled,
+          )}>
+          {children ? children(item) : <DefaultItem item={item} />}
+        </div>
+      );
+    },
+    [
+      children,
+      highlightedIndex,
+      getItemId,
+      handleItemClick,
+      handleItemMouseEnter,
+    ],
+  );
+
+  const renderOptions = useCallback(() => {
+    let flatIndex = 0;
+    const elements: ReactNode[] = [];
+
+    for (let i = 0; i < items.length; i++) {
+      const option = items[i];
+
+      if (isDivider(option)) {
+        elements.push(
+          <XDSDivider key={`divider-${i}`} xstyle={styles.divider} />,
         );
-      },
-      [
-        children,
-        highlightedIndex,
-        getItemId,
-        handleItemClick,
-        handleItemMouseEnter,
-      ],
-    );
-
-    const renderOptions = useCallback(() => {
-      let flatIndex = 0;
-      const elements: ReactNode[] = [];
-
-      for (let i = 0; i < items.length; i++) {
-        const option = items[i];
-
-        if (isDivider(option)) {
-          elements.push(
-            <XDSDivider key={`divider-${i}`} xstyle={styles.divider} />,
-          );
-        } else if (isSection(option)) {
-          const sectionItems: ReactNode[] = [];
-          for (const item of option.items) {
-            sectionItems.push(renderItem(item, flatIndex));
-            flatIndex++;
-          }
-          if (option.title) {
-            elements.push(
-              <XDSDivider
-                key={`section-divider-${i}`}
-                label={option.title}
-                xstyle={styles.sectionDivider}
-              />,
-            );
-          }
-          elements.push(
-            <div key={`section-${i}`} role="group" aria-label={option.title}>
-              {sectionItems}
-            </div>,
-          );
-        } else if (isItemData(option)) {
-          elements.push(renderItem(option, flatIndex));
+      } else if (isSection(option)) {
+        const sectionItems: ReactNode[] = [];
+        for (const item of option.items) {
+          sectionItems.push(renderItem(item, flatIndex));
           flatIndex++;
         }
-      }
-
-      return elements;
-    }, [items, renderItem]);
-
-    return (
-      <>
-        <XDSButton
-          ref={el => {
-            buttonRef.current = el;
-            layer.ref(el);
-            if (typeof ref === 'function') {
-              ref(el);
-            } else if (ref) {
-              (
-                ref as React.MutableRefObject<HTMLButtonElement | null>
-              ).current = el;
-            }
-          }}
-          label={label}
-          icon={icon ?? moreIcon}
-          variant={variant}
-          size={size}
-          isDisabled={isDisabled}
-          tooltip={layer.isOpen ? undefined : label}
-          onClick={handleButtonClick}
-          onKeyDown={handleKeyDown}
-          aria-haspopup="menu"
-          aria-expanded={layer.isOpen}
-          aria-controls={menuId}
-          aria-activedescendant={
-            layer.isOpen && highlightedIndex >= 0
-              ? getItemId(highlightedIndex)
-              : undefined
-          }
-          data-testid={testId}
-        />
-        {layer.render(
-          <div id={menuId} role="menu" {...stylex.props(styles.dropdown)}>
-            {renderOptions()}
+        if (option.title) {
+          elements.push(
+            <XDSDivider
+              key={`section-divider-${i}`}
+              label={option.title}
+              xstyle={styles.sectionDivider}
+            />,
+          );
+        }
+        elements.push(
+          <div key={`section-${i}`} role="group" aria-label={option.title}>
+            {sectionItems}
           </div>,
-          {
-            placement: 'below',
-            alignment: 'end',
-            xstyle: [styles.popover, styles.popoverGap],
-          },
-        )}
-      </>
-    );
-  },
-);
+        );
+      } else if (isItemData(option)) {
+        elements.push(renderItem(option, flatIndex));
+        flatIndex++;
+      }
+    }
+
+    return elements;
+  }, [items, renderItem]);
+
+  return (
+    <>
+      <XDSButton
+        ref={el => {
+          buttonRef.current = el;
+          layer.ref(el);
+          if (typeof ref === 'function') {
+            ref(el);
+          } else if (ref) {
+            (ref as React.MutableRefObject<HTMLButtonElement | null>).current =
+              el;
+          }
+        }}
+        label={label}
+        icon={icon ?? moreIcon}
+        variant={variant}
+        size={size}
+        isDisabled={isDisabled}
+        tooltip={layer.isOpen ? undefined : label}
+        onClick={handleButtonClick}
+        onKeyDown={handleKeyDown}
+        aria-haspopup="menu"
+        aria-expanded={layer.isOpen}
+        aria-controls={menuId}
+        aria-activedescendant={
+          layer.isOpen && highlightedIndex >= 0
+            ? getItemId(highlightedIndex)
+            : undefined
+        }
+        data-testid={testId}
+      />
+      {layer.render(
+        <div id={menuId} role="menu" {...stylex.props(styles.dropdown)}>
+          {renderOptions()}
+        </div>,
+        {
+          placement: 'below',
+          alignment: 'end',
+          xstyle: [styles.popover, styles.popoverGap],
+        },
+      )}
+    </>
+  );
+}
 
 XDSMoreMenu.displayName = 'XDSMoreMenu';

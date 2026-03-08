@@ -1,6 +1,6 @@
 /**
  * @file XDSLayoutHeader.tsx
- * @input Uses React forwardRef, StyleX
+ * @input Uses React, StyleX
  * @output Exports XDSLayoutHeader component and XDSLayoutHeaderProps
  * @position Top bar / header area for XDSLayout. Use for page titles, app bars,
  *   toolbar areas, or any fixed-height content at the top of a layout.
@@ -12,7 +12,6 @@
 
 import type {AriaRole, ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {forwardRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
@@ -52,6 +51,8 @@ const dynamicStyles = stylex.create({
 });
 
 export interface XDSLayoutHeaderProps extends XDSBaseProps<HTMLDivElement> {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLElement>;
   /**
    * Content to render inside the header.
    */
@@ -106,48 +107,44 @@ export interface XDSLayoutHeaderProps extends XDSBaseProps<HTMLDivElement> {
  * </XDSLayoutContainer>
  * ```
  */
-export const XDSLayoutHeader = forwardRef<HTMLElement, XDSLayoutHeaderProps>(
-  function XDSLayoutHeader(
-    {
-      children,
-      hasDivider = false,
-      height,
-      isFullBleed = false,
-      label,
-      role,
-      xstyle,
-      className,
-      style,
-      ...props
-    },
-    ref,
-  ) {
-    // When no divider, collapse spacing for seamless visual flow
-    const shouldCollapseSpacing = !hasDivider && !isFullBleed;
+export function XDSLayoutHeader({
+  children,
+  hasDivider = false,
+  height,
+  isFullBleed = false,
+  label,
+  role,
+  xstyle,
+  className,
+  style,
+  ref,
+  ...props
+}: XDSLayoutHeaderProps) {
+  // When no divider, collapse spacing for seamless visual flow
+  const shouldCollapseSpacing = !hasDivider && !isFullBleed;
 
-    return (
-      <div
-        ref={ref as React.Ref<HTMLDivElement>}
-        role={role}
-        aria-label={label}
-        {...mergeProps(
-          xdsClassName('layout-header'),
-          stylex.props(
-            styles.header,
-            dynamicStyles.sizing(height ?? null),
-            isFullBleed && styles.fullBleed,
-            hasDivider && styles.divider,
-            shouldCollapseSpacing && styles.collapseBottom,
-            xstyle,
-          ),
-          className,
-          style,
-        )}
-        {...props}>
-        {children}
-      </div>
-    );
-  },
-);
+  return (
+    <div
+      ref={ref as React.Ref<HTMLDivElement>}
+      role={role}
+      aria-label={label}
+      {...mergeProps(
+        xdsClassName('layout-header'),
+        stylex.props(
+          styles.header,
+          dynamicStyles.sizing(height ?? null),
+          isFullBleed && styles.fullBleed,
+          hasDivider && styles.divider,
+          shouldCollapseSpacing && styles.collapseBottom,
+          xstyle,
+        ),
+        className,
+        style,
+      )}
+      {...props}>
+      {children}
+    </div>
+  );
+}
 
 XDSLayoutHeader.displayName = 'XDSLayoutHeader';

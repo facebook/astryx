@@ -1,6 +1,6 @@
 /**
  * @file XDSGrid.tsx
- * @input Uses React forwardRef, stylex, spacing tokens
+ * @input Uses React, stylex, spacing tokens
  * @output Exports XDSGrid component and XDSGridProps
  * @position Grid component; provides CSS Grid-based layout
  *
@@ -12,7 +12,7 @@
 
 'use client';
 
-import {forwardRef, type ReactNode} from 'react';
+import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -28,6 +28,8 @@ import {xdsClassName, mergeProps} from '../utils';
 export type GridAlignment = 'start' | 'center' | 'end' | 'stretch';
 
 export interface XDSGridProps extends XDSBaseProps<HTMLDivElement> {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLElement>;
   /**
    * Maximum number of columns.
    * - When only columns is set: creates fixed equal-width columns
@@ -340,25 +342,23 @@ function calculateMaxWidth(
  * </XDSGrid>
  * ```
  */
-export const XDSGrid = forwardRef<HTMLElement, XDSGridProps>(function XDSGrid(
-  {
-    columns,
-    minChildWidth = 0,
-    width,
-    height,
-    gap,
-    rowGap,
-    columnGap,
-    align,
-    justify,
-    xstyle,
-    className,
-    style,
-    children,
-    ...props
-  },
+export function XDSGrid({
+  columns,
+  minChildWidth = 0,
+  width,
+  height,
+  gap,
+  rowGap,
+  columnGap,
+  align,
+  justify,
+  xstyle,
+  className,
+  style,
+  children,
   ref,
-) {
+  ...props
+}: XDSGridProps) {
   // Determine grid-template-columns value
   let gridTemplateColumns: string;
   let calculatedMaxWidth: number | undefined;
@@ -417,6 +417,6 @@ export const XDSGrid = forwardRef<HTMLElement, XDSGridProps>(function XDSGrid(
       {children}
     </div>
   );
-});
+}
 
 XDSGrid.displayName = 'XDSGrid';

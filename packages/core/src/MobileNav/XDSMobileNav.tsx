@@ -1,6 +1,6 @@
 /**
  * @file XDSMobileNav.tsx
- * @input Uses React forwardRef, useEffect, useRef, useCallback, ReactNode, StyleX
+ * @input Uses React, useEffect, useRef, useCallback, ReactNode, StyleX
  * @output Exports XDSMobileNav component and XDSMobileNavProps
  * @position Core implementation; consumed by index.ts
  *
@@ -23,13 +23,7 @@
 
 'use client';
 
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useRef,
-  type ReactNode,
-} from 'react';
+import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {XDSButton} from '../Button';
@@ -163,6 +157,8 @@ const dynamicStyles = stylex.create({
 // =============================================================================
 
 export interface XDSMobileNavProps extends Omit<XDSBaseProps, 'title'> {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLDialogElement>;
   /**
    * Whether the drawer is open.
    */
@@ -231,123 +227,118 @@ export interface XDSMobileNavProps extends Omit<XDSBaseProps, 'title'> {
  * </XDSMobileNav>
  * ```
  */
-export const XDSMobileNav = forwardRef<HTMLDialogElement, XDSMobileNavProps>(
-  function XDSMobileNav(
-    {
-      isOpen,
-      onOpenChange,
-      children,
-      title,
-      width = 280,
-      side = 'start',
-      'data-testid': testId,
-      xstyle,
-      className,
-      style,
-    },
-    ref,
-  ) {
-    const dialogRef = useRef<HTMLDialogElement>(null);
+export function XDSMobileNav({
+  isOpen,
+  onOpenChange,
+  children,
+  title,
+  width = 280,
+  side = 'start',
+  'data-testid': testId,
+  xstyle,
+  className,
+  style,
+  ref,
+}: XDSMobileNavProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
-    // Merge refs
-    const setRefs = useCallback(
-      (element: HTMLDialogElement | null) => {
-        (
-          dialogRef as React.MutableRefObject<HTMLDialogElement | null>
-        ).current = element;
-        if (typeof ref === 'function') {
-          ref(element);
-        } else if (ref) {
-          ref.current = element;
-        }
-      },
-      [ref],
-    );
-
-    // Open/close the dialog via showModal()/close()
-    useEffect(() => {
-      const dialog = dialogRef.current;
-      if (!dialog) return;
-
-      if (isOpen) {
-        if (!dialog.open) {
-          dialog.showModal();
-        }
-      } else {
-        if (dialog.open) {
-          dialog.close();
-        }
+  // Merge refs
+  const setRefs = useCallback(
+    (element: HTMLDialogElement | null) => {
+      (dialogRef as React.MutableRefObject<HTMLDialogElement | null>).current =
+        element;
+      if (typeof ref === 'function') {
+        ref(element);
+      } else if (ref) {
+        ref.current = element;
       }
-    }, [isOpen]);
+    },
+    [ref],
+  );
 
-    // Handle native cancel event (Escape key) — prevent default and route through onOpenChange
-    const handleCancel = useCallback(
-      (event: React.SyntheticEvent<HTMLDialogElement>) => {
-        event.preventDefault();
+  // Open/close the dialog via showModal()/close()
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    if (isOpen) {
+      if (!dialog.open) {
+        dialog.showModal();
+      }
+    } else {
+      if (dialog.open) {
+        dialog.close();
+      }
+    }
+  }, [isOpen]);
+
+  // Handle native cancel event (Escape key) — prevent default and route through onOpenChange
+  const handleCancel = useCallback(
+    (event: React.SyntheticEvent<HTMLDialogElement>) => {
+      event.preventDefault();
+      onOpenChange(false);
+    },
+    [onOpenChange],
+  );
+
+  // Handle clicks on the dialog backdrop area (outside the drawer)
+  const handleDialogClick = useCallback(
+    (event: React.MouseEvent<HTMLDialogElement>) => {
+      // Only close if click was directly on the dialog element (the transparent overlay),
+      // not on the drawer or its children
+      if (event.target === event.currentTarget) {
         onOpenChange(false);
-      },
-      [onOpenChange],
-    );
+      }
+    },
+    [onOpenChange],
+  );
 
-    // Handle clicks on the dialog backdrop area (outside the drawer)
-    const handleDialogClick = useCallback(
-      (event: React.MouseEvent<HTMLDialogElement>) => {
-        // Only close if click was directly on the dialog element (the transparent overlay),
-        // not on the drawer or its children
-        if (event.target === event.currentTarget) {
-          onOpenChange(false);
-        }
-      },
-      [onOpenChange],
-    );
+  const isStart = side === 'start';
 
-    const isStart = side === 'start';
-
-    return (
-      <dialog
-        ref={setRefs}
-        data-testid={testId}
-        aria-label={title ?? 'Navigation'}
-        onClick={handleDialogClick}
-        onCancel={handleCancel}
-        {...mergeProps(
-          xdsClassName('mobile-nav', {side}),
-          stylex.props(
-            styles.dialog,
-            styles.backdrop,
-            isOpen && styles.backdropOpen,
-            xstyle,
-          ),
+  return (
+    <dialog
+      ref={setRefs}
+      data-testid={testId}
+      aria-label={title ?? 'Navigation'}
+      onClick={handleDialogClick}
+      onCancel={handleCancel}
+      {...mergeProps(
+        xdsClassName('mobile-nav', {side}),
+        stylex.props(
+          styles.dialog,
+          styles.backdrop,
+          isOpen && styles.backdropOpen,
+          xstyle,
+        ),
+      )}>
+      xstyle, className, style,
+      {/* Drawer panel */}
+      <div
+        {...stylex.props(
+          styles.drawer,
+          dynamicStyles.width(width),
+          isStart && styles.drawerStart,
+          isStart && isOpen && styles.drawerStartOpen,
+          !isStart && styles.drawerEnd,
+          !isStart && isOpen && styles.drawerEndOpen,
         )}>
-        xstyle, className, style,
-        {/* Drawer panel */}
-        <div
-          {...stylex.props(
-            styles.drawer,
-            dynamicStyles.width(width),
-            isStart && styles.drawerStart,
-            isStart && isOpen && styles.drawerStartOpen,
-            !isStart && styles.drawerEnd,
-            !isStart && isOpen && styles.drawerEndOpen,
-          )}>
-          {/* Header with optional title and close button */}
-          <div {...stylex.props(styles.header, !title && styles.headerNoTitle)}>
-            {title && <XDSHeading level={2}>{title}</XDSHeading>}
-            <XDSButton
-              variant="ghost"
-              label="Close navigation"
-              tooltip="Close"
-              icon={<XDSIcon icon="close" color="inherit" />}
-              onClick={() => onOpenChange(false)}
-            />
-          </div>
-
-          {/* Scrollable content */}
-          <div {...stylex.props(styles.content)}>{children}</div>
+        {/* Header with optional title and close button */}
+        <div {...stylex.props(styles.header, !title && styles.headerNoTitle)}>
+          {title && <XDSHeading level={2}>{title}</XDSHeading>}
+          <XDSButton
+            variant="ghost"
+            label="Close navigation"
+            tooltip="Close"
+            icon={<XDSIcon icon="close" color="inherit" />}
+            onClick={() => onOpenChange(false)}
+          />
         </div>
-      </dialog>
-    );
-  },
-);
+
+        {/* Scrollable content */}
+        <div {...stylex.props(styles.content)}>{children}</div>
+      </div>
+    </dialog>
+  );
+}
 
 XDSMobileNav.displayName = 'XDSMobileNav';

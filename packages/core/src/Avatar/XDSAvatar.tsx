@@ -1,6 +1,6 @@
 /**
  * @file XDSAvatar.tsx
- * @input Uses React forwardRef, HTMLAttributes, ReactNode, useState
+ * @input Uses React, HTMLAttributes, ReactNode, useState
  * @output Exports XDSAvatar component, XDSAvatarProps, XDSAvatarSize types
  * @position Core implementation; consumed by index.ts
  *
@@ -13,7 +13,7 @@
 
 'use client';
 
-import {forwardRef, useState, type ReactNode} from 'react';
+import {useState, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -159,6 +159,8 @@ const dynamicStyles = stylex.create({
 });
 
 export interface XDSAvatarProps extends XDSBaseProps<HTMLDivElement> {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * The alt text shown on hover and made accessible to screen readers.
    * Falls back to `name` if not provided.
@@ -240,94 +242,89 @@ function DefaultIcon({size}: {size: number}) {
  * <XDSAvatar src="/user.jpg" status={<OnlineIndicator />} />
  * ```
  */
-export const XDSAvatar = forwardRef<HTMLDivElement, XDSAvatarProps>(
-  (
-    {
-      alt,
-      'data-testid': testId,
-      fallbackSrc,
-      name,
-      size = 'small',
-      src,
-      status,
-      xstyle,
-      className,
-      style,
-      ...props
-    },
-    ref,
-  ) => {
-    const [imageError, setImageError] = useState(false);
-    const [fallbackError, setFallbackError] = useState(false);
+export function XDSAvatar({
+  alt,
+  'data-testid': testId,
+  fallbackSrc,
+  name,
+  size = 'small',
+  src,
+  status,
+  xstyle,
+  className,
+  style,
+  ref,
+  ...props
+}: XDSAvatarProps) {
+  const [imageError, setImageError] = useState(false);
+  const [fallbackError, setFallbackError] = useState(false);
 
-    const showImage = src && !imageError;
-    const showFallbackImage = !showImage && fallbackSrc && !fallbackError;
-    const showInitials = !showImage && !showFallbackImage && name;
-    const showIcon = !showImage && !showFallbackImage && !name;
+  const showImage = src && !imageError;
+  const showFallbackImage = !showImage && fallbackSrc && !fallbackError;
+  const showInitials = !showImage && !showFallbackImage && name;
+  const showIcon = !showImage && !showFallbackImage && !name;
 
-    const accessibleName = alt || name || 'Avatar';
-    const numericSize = resolveSize(size);
+  const accessibleName = alt || name || 'Avatar';
+  const numericSize = resolveSize(size);
 
-    return (
-      <XDSAvatarSizeContext.Provider value={numericSize}>
-        <div
-          ref={ref}
-          role="img"
-          aria-label={accessibleName}
-          data-testid={testId}
-          {...mergeProps(
-            xdsClassName('avatar', {size}),
-            stylex.props(styles.wrapper, xstyle),
-            className,
-            style,
+  return (
+    <XDSAvatarSizeContext.Provider value={numericSize}>
+      <div
+        ref={ref}
+        role="img"
+        aria-label={accessibleName}
+        data-testid={testId}
+        {...mergeProps(
+          xdsClassName('avatar', {size}),
+          stylex.props(styles.wrapper, xstyle),
+          className,
+          style,
+        )}
+        {...props}>
+        <div {...stylex.props(styles.content, dynamicStyles.size(numericSize))}>
+          {showImage && (
+            <img
+              src={src}
+              alt={accessibleName}
+              onError={() => setImageError(true)}
+              {...stylex.props(styles.image)}
+            />
           )}
-          {...props}>
-          <div
-            {...stylex.props(styles.content, dynamicStyles.size(numericSize))}>
-            {showImage && (
-              <img
-                src={src}
-                alt={accessibleName}
-                onError={() => setImageError(true)}
-                {...stylex.props(styles.image)}
-              />
-            )}
-            {showFallbackImage && (
-              <img
-                src={fallbackSrc}
-                alt={accessibleName}
-                onError={() => setFallbackError(true)}
-                {...stylex.props(styles.image)}
-              />
-            )}
-            {showInitials && (
-              <div
-                {...stylex.props(
-                  styles.fallback,
-                  dynamicStyles.fontSize(numericSize),
-                )}>
-                {getInitials(name)}
-              </div>
-            )}
-            {showIcon && (
-              <div {...stylex.props(styles.fallback)}>
-                <DefaultIcon size={numericSize} />
-              </div>
-            )}
-          </div>
-          {status && (
+          {showFallbackImage && (
+            <img
+              src={fallbackSrc}
+              alt={accessibleName}
+              onError={() => setFallbackError(true)}
+              {...stylex.props(styles.image)}
+            />
+          )}
+          {showInitials && (
             <div
               {...stylex.props(
-                styles.status,
-                dynamicStyles.statusPosition(numericSize),
+                styles.fallback,
+                dynamicStyles.fontSize(numericSize),
               )}>
-              {status}
+              {getInitials(name)}
+            </div>
+          )}
+          {showIcon && (
+            <div {...stylex.props(styles.fallback)}>
+              <DefaultIcon size={numericSize} />
             </div>
           )}
         </div>
-      </XDSAvatarSizeContext.Provider>
-    );
-  },
-);
+        {status && (
+          <div
+            {...stylex.props(
+              styles.status,
+              dynamicStyles.statusPosition(numericSize),
+            )}>
+            {status}
+          </div>
+        )}
+      </div>
+    </XDSAvatarSizeContext.Provider>
+  );
+}
 
 XDSAvatar.displayName = 'XDSAvatar';

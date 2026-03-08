@@ -1,6 +1,6 @@
 /**
  * @file XDSDialog.tsx
- * @input Uses React forwardRef, DialogHTMLAttributes, ReactNode
+ * @input Uses React, DialogHTMLAttributes, ReactNode
  * @output Exports XDSDialog component, XDSDialogProps, XDSDialogVariant, XDSDialogPurpose types
  * @position Core implementation; consumed by index.ts, tested by XDSDialog.test.tsx
  *
@@ -13,7 +13,7 @@
 
 'use client';
 
-import {forwardRef, useEffect, useRef, type ReactNode} from 'react';
+import {useEffect, useRef, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -137,6 +137,8 @@ function formatPosition(value: number | string | undefined): string | null {
 }
 
 export interface XDSDialogProps extends XDSBaseProps<HTMLDialogElement> {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLDialogElement>;
   /**
    * Whether the dialog is open.
    */
@@ -218,134 +220,130 @@ export interface XDSDialogProps extends XDSBaseProps<HTMLDialogElement> {
  * </XDSDialog>
  * ```
  */
-export const XDSDialog = forwardRef<HTMLDialogElement, XDSDialogProps>(
-  (
-    {
-      isOpen,
-      onOpenChange,
-      width = 400,
-      maxHeight = '75vh',
-      position,
-      variant = 'standard',
-      purpose = 'info',
-      children,
-      xstyle,
-      className,
-      style,
-      ...props
-    },
-    ref,
-  ) => {
-    const dialogRef = useRef<HTMLDialogElement>(null);
+export function XDSDialog({
+  isOpen,
+  onOpenChange,
+  width = 400,
+  maxHeight = '75vh',
+  position,
+  variant = 'standard',
+  purpose = 'info',
+  children,
+  xstyle,
+  className,
+  style,
+  ref,
+  ...props
+}: XDSDialogProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
-    // Derive dismissal behavior from purpose
-    const allowEscape = purpose !== 'required';
-    const allowBackdropClick = purpose === 'info';
+  // Derive dismissal behavior from purpose
+  const allowEscape = purpose !== 'required';
+  const allowBackdropClick = purpose === 'info';
 
-    // Merge refs
-    const setRefs = (element: HTMLDialogElement | null) => {
-      (dialogRef as React.MutableRefObject<HTMLDialogElement | null>).current =
-        element;
-      if (typeof ref === 'function') {
-        ref(element);
-      } else if (ref) {
-        ref.current = element;
+  // Merge refs
+  const setRefs = (element: HTMLDialogElement | null) => {
+    (dialogRef as React.MutableRefObject<HTMLDialogElement | null>).current =
+      element;
+    if (typeof ref === 'function') {
+      ref(element);
+    } else if (ref) {
+      ref.current = element;
+    }
+  };
+
+  // Handle open/close state
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    if (isOpen) {
+      if (!dialog.open) {
+        dialog.showModal();
+      }
+    } else {
+      if (dialog.open) {
+        dialog.close();
+      }
+    }
+  }, [isOpen]);
+
+  // Handle Escape key
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog || !isOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        if (allowEscape) {
+          onOpenChange(false);
+        }
       }
     };
 
-    // Handle open/close state
-    useEffect(() => {
-      const dialog = dialogRef.current;
-      if (!dialog) return;
+    dialog.addEventListener('keydown', handleKeyDown);
+    return () => dialog.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, allowEscape, onOpenChange]);
 
-      if (isOpen) {
-        if (!dialog.open) {
-          dialog.showModal();
-        }
-      } else {
-        if (dialog.open) {
-          dialog.close();
-        }
-      }
-    }, [isOpen]);
+  // Handle backdrop click
+  const handleClick = (event: React.MouseEvent<HTMLDialogElement>) => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
 
-    // Handle Escape key
-    useEffect(() => {
-      const dialog = dialogRef.current;
-      if (!dialog || !isOpen) return;
+    // Check if click was on the backdrop (dialog element itself, not content)
+    const rect = dialog.getBoundingClientRect();
+    const isBackdropClick =
+      event.clientX < rect.left ||
+      event.clientX > rect.right ||
+      event.clientY < rect.top ||
+      event.clientY > rect.bottom;
 
-      const handleKeyDown = (event: KeyboardEvent) => {
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          if (allowEscape) {
-            onOpenChange(false);
-          }
-        }
-      };
+    if (isBackdropClick && allowBackdropClick) {
+      onOpenChange(false);
+    }
+  };
 
-      dialog.addEventListener('keydown', handleKeyDown);
-      return () => dialog.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, allowEscape, onOpenChange]);
+  // Handle native cancel event (browser Escape handling)
+  const handleCancel = (event: React.SyntheticEvent<HTMLDialogElement>) => {
+    event.preventDefault();
+    if (allowEscape) {
+      onOpenChange(false);
+    }
+  };
 
-    // Handle backdrop click
-    const handleClick = (event: React.MouseEvent<HTMLDialogElement>) => {
-      const dialog = dialogRef.current;
-      if (!dialog) return;
+  const isFullscreen = variant === 'fullscreen';
+  const hasPosition = position != null && !isFullscreen;
 
-      // Check if click was on the backdrop (dialog element itself, not content)
-      const rect = dialog.getBoundingClientRect();
-      const isBackdropClick =
-        event.clientX < rect.left ||
-        event.clientX > rect.right ||
-        event.clientY < rect.top ||
-        event.clientY > rect.bottom;
-
-      if (isBackdropClick && allowBackdropClick) {
-        onOpenChange(false);
-      }
-    };
-
-    // Handle native cancel event (browser Escape handling)
-    const handleCancel = (event: React.SyntheticEvent<HTMLDialogElement>) => {
-      event.preventDefault();
-      if (allowEscape) {
-        onOpenChange(false);
-      }
-    };
-
-    const isFullscreen = variant === 'fullscreen';
-    const hasPosition = position != null && !isFullscreen;
-
-    return (
-      <dialog
-        ref={setRefs}
-        onClick={handleClick}
-        onCancel={handleCancel}
-        aria-modal="true"
-        {...mergeProps(
-          xdsClassName('dialog', {variant}),
-          stylex.props(
-            styles.dialog,
-            styles.backdrop,
-            !isFullscreen && dynamicStyles.sizing(width, maxHeight),
-            hasPosition &&
-              dynamicStyles.position(
-                position?.top,
-                position?.right,
-                position?.bottom,
-                position?.left,
-              ),
-            isFullscreen && styles.fullscreen,
-            xstyle,
-          ),
-          className,
-          style,
-        )}
-        {...props}>
-        {children}
-      </dialog>
-    );
-  },
-);
+  return (
+    <dialog
+      ref={setRefs}
+      onClick={handleClick}
+      onCancel={handleCancel}
+      aria-modal="true"
+      {...mergeProps(
+        xdsClassName('dialog', {variant}),
+        stylex.props(
+          styles.dialog,
+          styles.backdrop,
+          !isFullscreen && dynamicStyles.sizing(width, maxHeight),
+          hasPosition &&
+            dynamicStyles.position(
+              position?.top,
+              position?.right,
+              position?.bottom,
+              position?.left,
+            ),
+          isFullscreen && styles.fullscreen,
+          xstyle,
+        ),
+        className,
+        style,
+      )}
+      {...props}>
+      {children}
+    </dialog>
+  );
+}
 
 XDSDialog.displayName = 'XDSDialog';

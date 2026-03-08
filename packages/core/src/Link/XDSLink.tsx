@@ -1,6 +1,6 @@
 /**
  * @file XDSLink.tsx
- * @input Uses React forwardRef, AnchorHTMLAttributes, ReactNode
+ * @input Uses React, AnchorHTMLAttributes, ReactNode
  * @output Exports XDSLink component, XDSLinkProps
  * @position Core implementation; consumed by index.ts, tested by XDSLink.test.tsx
  *
@@ -13,7 +13,7 @@
 
 'use client';
 
-import {forwardRef, type MouseEventHandler, type ReactNode} from 'react';
+import {type MouseEventHandler, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 
@@ -108,6 +108,8 @@ const linkColorStyles = stylex.create({
 });
 
 export interface XDSLinkProps extends XDSBaseProps<HTMLAnchorElement> {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLAnchorElement>;
   /**
    * Custom component to render instead of `<a>`.
    * Overrides the provider-level default set by XDSLinkProvider.
@@ -221,93 +223,89 @@ export interface XDSLinkProps extends XDSBaseProps<HTMLAnchorElement> {
  * <XDSLink label="Privacy Policy" href="/privacy" hasUnderline>Privacy Policy</XDSLink>
  * ```
  */
-export const XDSLink = forwardRef<HTMLAnchorElement, XDSLinkProps>(
-  (
-    {
-      as,
-      label,
-      href,
-      hasUnderline = false,
-      isDisabled = false,
-      isExternalLink = false,
-      target,
-      onClick,
-      tooltip,
-      isStandalone = false,
-      type = 'body',
-      size,
-      weight,
-      color = 'active',
-      display = 'inline',
-      maxLines = 0,
-      children,
-      rel,
-      xstyle,
-      className,
-      style,
-      ...props
-    },
-    ref,
-  ) => {
-    const LinkComponent = useXDSLinkComponent(as);
-    // Determine target and rel based on isExternalLink
-    const computedTarget = isExternalLink ? '_blank' : target;
-    const computedRel = isExternalLink
-      ? rel
-        ? `${rel} noopener noreferrer`
-        : 'noopener noreferrer'
-      : rel;
+export function XDSLink({
+  as,
+  label,
+  href,
+  hasUnderline = false,
+  isDisabled = false,
+  isExternalLink = false,
+  target,
+  onClick,
+  tooltip,
+  isStandalone = false,
+  type = 'body',
+  size,
+  weight,
+  color = 'active',
+  display = 'inline',
+  maxLines = 0,
+  children,
+  rel,
+  xstyle,
+  className,
+  style,
+  ref,
+  ...props
+}: XDSLinkProps) {
+  const LinkComponent = useXDSLinkComponent(as);
+  // Determine target and rel based on isExternalLink
+  const computedTarget = isExternalLink ? '_blank' : target;
+  const computedRel = isExternalLink
+    ? rel
+      ? `${rel} noopener noreferrer`
+      : 'noopener noreferrer'
+    : rel;
 
-    const linkElement = (
-      <LinkComponent
-        ref={ref}
-        href={href}
-        target={computedTarget}
-        rel={computedRel}
-        onClick={onClick}
-        aria-label={label}
-        aria-disabled={isDisabled || undefined}
-        tabIndex={isDisabled ? -1 : undefined}
-        {...mergeProps(
-          xdsClassName('link', {color}),
-          stylex.props(
-            styles.base,
-            linkColorStyles[color],
-            hasUnderline && styles.hasUnderline,
-            isStandalone && styles.standalone,
-            isDisabled && styles.disabled,
-            xstyle,
-          ),
-          className,
-          style,
-        )}
-        {...props}>
-        <XDSText
-          type={type}
-          size={size}
-          weight={weight}
-          color={color}
-          display={display}
-          maxLines={maxLines}>
-          {children}
-        </XDSText>
-        {isExternalLink && (
-          <XDSIcon icon="externalLink" size="xsm" color="inherit" />
-        )}
-      </LinkComponent>
+  const linkElement = (
+    <LinkComponent
+      ref={ref}
+      href={href}
+      target={computedTarget}
+      rel={computedRel}
+      onClick={onClick}
+      aria-label={label}
+      aria-disabled={isDisabled || undefined}
+      tabIndex={isDisabled ? -1 : undefined}
+      {...mergeProps(
+        xdsClassName('link', {color}),
+        stylex.props(
+          styles.base,
+          linkColorStyles[color],
+          hasUnderline && styles.hasUnderline,
+          isStandalone && styles.standalone,
+          isDisabled && styles.disabled,
+          xstyle,
+        ),
+        className,
+        style,
+      )}
+      {...props}>
+      <XDSText
+        type={type}
+        size={size}
+        weight={weight}
+        color={color}
+        display={display}
+        maxLines={maxLines}>
+        {children}
+      </XDSText>
+      {isExternalLink && (
+        <XDSIcon icon="externalLink" size="xsm" color="inherit" />
+      )}
+    </LinkComponent>
+  );
+
+  // Wrap with tooltip if provided
+  if (tooltip) {
+    return (
+      <XDSTooltip content={tooltip} placement="above">
+        {linkElement}
+      </XDSTooltip>
     );
+  }
 
-    // Wrap with tooltip if provided
-    if (tooltip) {
-      return (
-        <XDSTooltip content={tooltip} placement="above">
-          {linkElement}
-        </XDSTooltip>
-      );
-    }
-
-    return linkElement;
-  },
-);
+  return linkElement;
+}
 
 XDSLink.displayName = 'XDSLink';
