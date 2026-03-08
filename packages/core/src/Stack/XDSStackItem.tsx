@@ -27,10 +27,7 @@ import {
 } from './stackItem.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
-export interface XDSStackItemProps extends Omit<
-  HTMLAttributes<HTMLElement>,
-  'style' | 'className'
-> {
+export interface XDSStackItemProps extends HTMLAttributes<HTMLElement> {
   /**
    * Overrides the default cross-alignment for this item.
    * (hAlign for VStack, vAlign for HStack)
@@ -53,9 +50,26 @@ export interface XDSStackItemProps extends Omit<
   element?: ElementType;
 
   /**
-   * StyleX styles to apply to the stack item.
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
    */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) appended to the root element.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
 
   /**
    * Content to render inside the stack item.
@@ -79,7 +93,16 @@ export interface XDSStackItemProps extends Omit<
  */
 export const XDSStackItem = forwardRef<HTMLElement, XDSStackItemProps>(
   function XDSStackItem(
-    {crossAlignSelf, size, element = 'div', xstyle, children, ...props},
+    {
+      crossAlignSelf,
+      size,
+      element = 'div',
+      xstyle,
+      className,
+      style,
+      children,
+      ...props
+    },
     ref,
   ) {
     const stylexProps = stylex.props(
@@ -91,7 +114,12 @@ export const XDSStackItem = forwardRef<HTMLElement, XDSStackItemProps>(
       element,
       {
         ref: ref as Ref<Element>,
-        ...mergeProps(xdsClassName('stack-item', {size}), stylexProps),
+        ...mergeProps(
+          xdsClassName('stack-item', {size}),
+          stylexProps,
+          className,
+          style,
+        ),
         ...props,
       },
       children,

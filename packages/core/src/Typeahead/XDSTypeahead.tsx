@@ -95,8 +95,27 @@ export interface XDSTypeaheadProps<T extends XDSSearchableItem> {
   onChangeQuery?: (query: string) => void;
   /** Callback when dropdown opens/closes. */
   onOpenChange?: (isOpen: boolean) => void;
-  /** StyleX overrides. */
+  /**
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
+   */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) appended to the root element.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
   /** Test ID. */
   'data-testid'?: string;
 }
@@ -201,6 +220,8 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
   onChangeQuery,
   onOpenChange,
   xstyle,
+  className,
+  style,
   'data-testid': testId,
 }: XDSTypeaheadProps<T>) {
   const inputId = useId();
@@ -338,7 +359,10 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
             }
           : undefined
       }
-      labelTooltip={labelTooltip}>
+      labelTooltip={labelTooltip}
+      xstyle={xstyle}
+      className={className}
+      style={style}>
       <div
         ref={wrapperRef}
         data-testid={testId}
@@ -352,7 +376,6 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
           status && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           isDisabled && inputWrapperStyles.disabled,
-          xstyle,
         )}>
         {showToken && (
           <XDSToken

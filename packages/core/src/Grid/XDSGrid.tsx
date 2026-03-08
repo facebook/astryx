@@ -26,10 +26,7 @@ import {xdsClassName, mergeProps} from '../utils';
 
 export type GridAlignment = 'start' | 'center' | 'end' | 'stretch';
 
-export interface XDSGridProps extends Omit<
-  HTMLAttributes<HTMLElement>,
-  'style' | 'className'
-> {
+export interface XDSGridProps extends HTMLAttributes<HTMLElement> {
   /**
    * Maximum number of columns.
    * - When only columns is set: creates fixed equal-width columns
@@ -89,9 +86,26 @@ export interface XDSGridProps extends Omit<
   justify?: GridAlignment;
 
   /**
-   * StyleX styles to apply to the grid container.
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
    */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) appended to the root element.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
 
   /**
    * Content to render inside the grid.
@@ -337,6 +351,8 @@ export const XDSGrid = forwardRef<HTMLElement, XDSGridProps>(function XDSGrid(
     align,
     justify,
     xstyle,
+    className,
+    style,
     children,
     ...props
   },
@@ -393,8 +409,9 @@ export const XDSGrid = forwardRef<HTMLElement, XDSGridProps>(function XDSGrid(
           justify != null && justifyStyles[justify],
           xstyle,
         ),
+        className,
+        {...style, ...inlineStyle},
       )}
-      style={inlineStyle}
       {...props}>
       {children}
     </div>

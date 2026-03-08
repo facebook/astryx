@@ -51,9 +51,26 @@ export interface XDSSelectorOptionProps {
   children?: ReactNode;
 
   /**
-   * StyleX styles for the root container.
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
    */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) appended to the root element.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
 }
 
 /**
@@ -85,12 +102,16 @@ export function XDSSelectorOption({
   description,
   children,
   xstyle,
+  className,
+  style,
 }: XDSSelectorOptionProps) {
   return (
     <span
       {...mergeProps(
         xdsClassName('selector-option'),
         stylex.props(styles.root, xstyle),
+        className,
+        style,
       )}>
       {icon && <XDSIcon icon={icon} size="sm" color="secondary" />}
       <span {...stylex.props(styles.content)}>

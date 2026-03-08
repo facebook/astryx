@@ -60,10 +60,7 @@ const styles = stylex.create({
 // Props
 // =============================================================================
 
-export interface XDSFormLayoutProps extends Omit<
-  HTMLAttributes<HTMLDivElement>,
-  'style' | 'className'
-> {
+export interface XDSFormLayoutProps extends HTMLAttributes<HTMLDivElement> {
   /**
    * Form fields to arrange. Accepts XDS inputs (XDSTextInput, XDSSelector, etc.)
    * and XDSField-wrapped custom controls.
@@ -84,9 +81,26 @@ export interface XDSFormLayoutProps extends Omit<
   direction?: XDSFormLayoutDirection;
 
   /**
-   * StyleX styles to apply to the layout container.
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
    */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) appended to the root element.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
 
   /**
    * Test ID for the root element.
@@ -118,7 +132,7 @@ export interface XDSFormLayoutProps extends Omit<
  */
 export const XDSFormLayout = forwardRef<HTMLDivElement, XDSFormLayoutProps>(
   function XDSFormLayout(
-    {children, direction = 'vertical', xstyle, ...props},
+    {children, direction = 'vertical', xstyle, className, style, ...props},
     ref,
   ) {
     const contextValue = useMemo(() => ({direction}), [direction]);
@@ -135,6 +149,8 @@ export const XDSFormLayout = forwardRef<HTMLDivElement, XDSFormLayoutProps>(
               direction === 'horizontal-labels' && styles.horizontalLabels,
               xstyle,
             ),
+            className,
+            style,
           )}
           {...props}>
           {children}

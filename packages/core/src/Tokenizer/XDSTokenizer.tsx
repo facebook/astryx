@@ -111,8 +111,27 @@ export interface XDSTokenizerProps<T extends XDSSearchableItem> {
   debounceMs?: number;
   /** Query change callback. */
   onChangeQuery?: (query: string) => void;
-  /** StyleX overrides. */
+  /**
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
+   */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) appended to the root element.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
   /** Test ID. */
   'data-testid'?: string;
 }
@@ -250,6 +269,8 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   debounceMs,
   onChangeQuery,
   xstyle,
+  className,
+  style,
   'data-testid': testId,
 }: XDSTokenizerProps<T>) {
   const inputId = useId();
@@ -395,7 +416,10 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
             }
           : undefined
       }
-      labelTooltip={labelTooltip}>
+      labelTooltip={labelTooltip}
+      xstyle={xstyle}
+      className={className}
+      style={style}>
       <div
         ref={wrapperRef}
         role="group"
@@ -411,7 +435,6 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
           status && inputStatusBorderStyles[status.type],
           status && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
-          xstyle,
         )}>
         {tokens}
         <XDSBaseTypeahead

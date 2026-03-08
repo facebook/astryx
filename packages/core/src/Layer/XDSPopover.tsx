@@ -23,6 +23,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {xdsClassName, mergeProps} from '../utils';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {useXDSPopover} from './useXDSPopover';
 import type {LayerAlignment, LayerPlacement} from './useXDSLayer';
@@ -127,9 +128,26 @@ export interface XDSPopoverProps {
   label?: string;
 
   /**
-   * Optional StyleX overrides for the popover container.
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
    */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) appended to the root element.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
 
   /**
    * Test ID for the popover container.
@@ -253,6 +271,8 @@ export function XDSPopover({
   width,
   label,
   xstyle,
+  className,
+  style,
   'data-testid': testId,
 }: XDSPopoverProps): ReactElement {
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -414,7 +434,12 @@ export function XDSPopover({
         {popover.render(
           <div
             data-testid={testId}
-            {...stylex.props(styles.container, styles.contentPadding, xstyle)}>
+            {...mergeProps(
+              xdsClassName('popover'),
+              stylex.props(styles.container, styles.contentPadding, xstyle),
+              className,
+              style,
+            )}>
             {content}
           </div>,
           {
@@ -435,7 +460,12 @@ export function XDSPopover({
       {popover.render(
         <div
           data-testid={testId}
-          {...stylex.props(styles.container, styles.contentPadding, xstyle)}>
+          {...mergeProps(
+            xdsClassName('popover'),
+            stylex.props(styles.container, styles.contentPadding, xstyle),
+            className,
+            style,
+          )}>
           {content}
         </div>,
         {

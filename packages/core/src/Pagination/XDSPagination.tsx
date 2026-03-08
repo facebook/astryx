@@ -120,8 +120,27 @@ export interface XDSPaginationProps {
   // --- Standard XDS ---
   /** Test ID for automated testing. */
   'data-testid'?: string;
-  /** StyleX overrides for the root element. */
+  /**
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
+   */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) appended to the root element.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
 }
 
 // =============================================================================
@@ -316,6 +335,8 @@ export const XDSPagination = forwardRef<HTMLElement, XDSPaginationProps>(
       label = 'Pagination',
       'data-testid': testId,
       xstyle,
+      className,
+      style,
     },
     ref,
   ) {
@@ -491,6 +512,8 @@ export const XDSPagination = forwardRef<HTMLElement, XDSPaginationProps>(
         {...mergeProps(
           xdsClassName('pagination', {variant, size}),
           stylex.props(styles.root, xstyle),
+          className,
+          style,
         )}>
         {pageSizeOptions != null && pageSizeOptions.length > 0 && (
           <div {...stylex.props(styles.pageSizeSelector)}>

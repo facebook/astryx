@@ -15,6 +15,7 @@
 
 import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSFieldLabel} from './XDSFieldLabel';
 import {XDSFieldStatus} from './XDSFieldStatus';
 import {
@@ -150,6 +151,27 @@ export interface XDSFieldProps extends Omit<
    */
   statusVariant?: 'attached' | 'detached';
   /**
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
+   */
+  xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) appended to the root element.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
+  /**
    * The input or control to render inside the field.
    */
   children: ReactNode;
@@ -181,7 +203,10 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
       status,
       labelTooltip,
       statusVariant = 'attached',
+      xstyle,
       children,
+      className,
+      style,
       ...props
     },
     ref,
@@ -189,7 +214,12 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
     return (
       <div
         ref={ref}
-        {...mergeProps(xdsClassName('field'), stylex.props(styles.container))}
+        {...mergeProps(
+          xdsClassName('field'),
+          stylex.props(styles.container, xstyle),
+          className,
+          style,
+        )}
         {...props}>
         <XDSFieldLabel
           label={label}

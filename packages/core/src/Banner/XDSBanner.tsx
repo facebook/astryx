@@ -118,9 +118,26 @@ export interface XDSBannerProps {
    */
   children?: ReactNode;
   /**
-   * StyleX override styles applied to the root element.
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
    */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) appended to the root element.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
   /**
    * Test ID for the root element.
    */
@@ -338,6 +355,8 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
       defaultIsExpanded = false,
       children,
       xstyle,
+      className,
+      style,
       'data-testid': testId,
     },
     ref,
@@ -382,6 +401,8 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
             variant === 'section' && styles.section,
             xstyle,
           ),
+          className,
+          style,
         )}>
         {/* Header: colored status background */}
         <div

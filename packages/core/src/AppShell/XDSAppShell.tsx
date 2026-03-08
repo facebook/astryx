@@ -145,9 +145,26 @@ export interface XDSAppShellProps {
   topNav?: ReactNode;
 
   /**
-   * StyleX overrides for the root element.
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
    */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) appended to the root element.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
 }
 
 // =============================================================================
@@ -293,6 +310,8 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
       sideNavWidth = DEFAULT_SIDENAV_WIDTH,
       topNav,
       xstyle,
+      className,
+      style,
     },
     ref,
   ) {
@@ -491,6 +510,8 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
             isFill ? styles.rootFill : styles.rootAuto,
             xstyle,
           ),
+          className,
+          style,
         )}>
         {/* Skip-to-content link */}
         <a

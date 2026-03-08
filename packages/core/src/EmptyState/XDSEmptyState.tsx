@@ -104,9 +104,26 @@ export interface XDSEmptyStateProps {
    */
   isCompact?: boolean;
   /**
-   * StyleX override styles applied to the container.
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
    */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) appended to the root element.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
   /**
    * Test ID for the container element.
    */
@@ -137,7 +154,17 @@ export interface XDSEmptyStateProps {
  */
 export const XDSEmptyState = forwardRef<HTMLDivElement, XDSEmptyStateProps>(
   (
-    {title, description, icon, actions, isCompact = false, xstyle, ...props},
+    {
+      title,
+      description,
+      icon,
+      actions,
+      isCompact = false,
+      xstyle,
+      className,
+      style,
+      ...props
+    },
     ref,
   ) => {
     return (
@@ -151,6 +178,8 @@ export const XDSEmptyState = forwardRef<HTMLDivElement, XDSEmptyStateProps>(
             isCompact && styles.containerCompact,
             xstyle,
           ),
+          className,
+          style,
         )}
         {...props}>
         {icon != null && <div aria-hidden="true">{icon}</div>}
