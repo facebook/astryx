@@ -30,6 +30,7 @@ import {
 } from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 /**
  * Base badge styles
@@ -147,12 +148,15 @@ export const XDSBadge = forwardRef<HTMLSpanElement, XDSBadgeProps>(
     return (
       <span
         ref={ref}
-        {...stylex.props(
-          styles.base,
-          variants[variant],
-          rootOverride,
-          variantOverride,
-          isDot && styles.dot,
+        {...mergeProps(
+          xdsClassName('badge', {variant}),
+          stylex.props(
+            styles.base,
+            variants[variant],
+            rootOverride,
+            variantOverride,
+            isDot && styles.dot,
+          ),
         )}
         {...props}>
         {icon}

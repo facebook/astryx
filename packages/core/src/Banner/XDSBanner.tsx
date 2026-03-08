@@ -41,6 +41,7 @@ import {
   fontWeightVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Types
@@ -373,11 +374,14 @@ export const XDSBanner = forwardRef<HTMLDivElement, XDSBannerProps>(
         ref={ref}
         role={role}
         data-testid={testId}
-        {...stylex.props(
-          styles.root,
-          variant === 'card' && styles.card,
-          variant === 'section' && styles.section,
-          xstyle,
+        {...mergeProps(
+          xdsClassName('banner', {variant}),
+          stylex.props(
+            styles.root,
+            variant === 'card' && styles.card,
+            variant === 'section' && styles.section,
+            xstyle,
+          ),
         )}>
         {/* Header: colored status background */}
         <div

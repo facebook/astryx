@@ -28,6 +28,7 @@ import {
 } from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Module Augmentation - Register Divider's style surfaces with ComponentStyles
@@ -174,14 +175,17 @@ export const XDSDivider = forwardRef<HTMLElement, XDSDividerProps>(
         ref={ref as React.Ref<HTMLDivElement>}
         role="separator"
         aria-orientation={orientation}
-        {...stylex.props(
-          isHorizontal ? baseStyles.horizontal : baseStyles.vertical,
-          isFullBleed &&
-            (isHorizontal
-              ? fullBleedStyles.horizontal
-              : fullBleedStyles.vertical),
-          rootOverride,
-          xstyle,
+        {...mergeProps(
+          xdsClassName('divider', {variant, orientation}),
+          stylex.props(
+            isHorizontal ? baseStyles.horizontal : baseStyles.vertical,
+            isFullBleed &&
+              (isHorizontal
+                ? fullBleedStyles.horizontal
+                : fullBleedStyles.vertical),
+            rootOverride,
+            xstyle,
+          ),
         )}
         {...props}>
         <div

@@ -21,6 +21,7 @@ import {
   fontWeightVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
+import {xdsClassName, mergeProps} from '../utils';
 
 const styles = stylex.create({
   container: {
@@ -143,10 +144,13 @@ export const XDSEmptyState = forwardRef<HTMLDivElement, XDSEmptyStateProps>(
       <div
         ref={ref}
         role="status"
-        {...stylex.props(
-          styles.container,
-          isCompact && styles.containerCompact,
-          xstyle,
+        {...mergeProps(
+          xdsClassName('emptystate'),
+          stylex.props(
+            styles.container,
+            isCompact && styles.containerCompact,
+            xstyle,
+          ),
         )}
         {...props}>
         {icon != null && <div aria-hidden="true">{icon}</div>}

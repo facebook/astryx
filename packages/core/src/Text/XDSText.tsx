@@ -48,6 +48,7 @@ import {
 } from './text.stylex';
 import {useTruncation} from './useTruncation';
 import type {LayerPlacement} from '../Layer';
+import {xdsClassName, mergeProps} from '../utils';
 
 const LazyXDSTooltip = lazy(() =>
   import('../Layer/XDSTooltip').then(mod => ({default: mod.XDSTooltip})),
@@ -252,27 +253,30 @@ export const XDSText = forwardRef<HTMLElement, XDSTextProps>(function XDSText(
     <>
       <Component
         ref={mergedRef}
-        {...stylex.props(
-          typeStyle,
-          colorStyles[resolvedColor],
-          weight && weightStyles[weight],
-          // Display: use truncation styles when maxLines > 0
-          maxLines === 1
-            ? truncationStyles.singleLine
-            : maxLines > 1
-              ? truncationStyles.multiLine
-              : displayStyles[resolvedDisplay],
-          // Word break when truncating
-          maxLines > 0 && wordBreakStyles[resolvedWordBreak],
-          // Text wrap
-          textWrap && textWrapStyles[textWrap],
-          // Capsize
-          hasCapsize && capsizeStyles.enabled,
-          // Decorations
-          hasStrikethrough && decorationStyles.strikethrough,
-          hasTabularNumbers && tabularNumbersStyle.enabled,
-          // User xstyle
-          xstyle,
+        {...mergeProps(
+          xdsClassName('text', {type}),
+          stylex.props(
+            typeStyle,
+            colorStyles[resolvedColor],
+            weight && weightStyles[weight],
+            // Display: use truncation styles when maxLines > 0
+            maxLines === 1
+              ? truncationStyles.singleLine
+              : maxLines > 1
+                ? truncationStyles.multiLine
+                : displayStyles[resolvedDisplay],
+            // Word break when truncating
+            maxLines > 0 && wordBreakStyles[resolvedWordBreak],
+            // Text wrap
+            textWrap && textWrapStyles[textWrap],
+            // Capsize
+            hasCapsize && capsizeStyles.enabled,
+            // Decorations
+            hasStrikethrough && decorationStyles.strikethrough,
+            hasTabularNumbers && tabularNumbersStyle.enabled,
+            // User xstyle
+            xstyle,
+          ),
         )}
         style={inlineStyle}
         title={tooltipEnabled ? truncation.fullText : undefined}

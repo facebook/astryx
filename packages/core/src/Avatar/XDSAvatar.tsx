@@ -29,6 +29,7 @@ import {
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {XDSAvatarSizeContext} from './XDSAvatarSizeContext';
+import {xdsClassName, mergeProps} from '../utils';
 
 /**
  * The offset ratio for positioning elements on a circle's edge at 45°.
@@ -299,7 +300,10 @@ export const XDSAvatar = forwardRef<HTMLDivElement, XDSAvatarProps>(
           role="img"
           aria-label={accessibleName}
           data-testid={testId}
-          {...stylex.props(styles.wrapper, rootOverride)}
+          {...mergeProps(
+            xdsClassName('avatar', {size}),
+            stylex.props(styles.wrapper, rootOverride),
+          )}
           {...props}>
           <div
             {...stylex.props(styles.content, dynamicStyles.size(numericSize))}>

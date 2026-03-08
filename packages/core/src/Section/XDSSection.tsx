@@ -19,6 +19,7 @@ import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {container} from '../Layout/container.stylex';
 import type {SizeValue} from '../utils/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 /**
  * Visual variant for the section.
@@ -225,15 +226,18 @@ export const XDSSection = forwardRef<HTMLDivElement, XDSSectionProps>(
     return (
       <div
         ref={ref}
-        {...stylex.props(
-          nestedStyles.outer,
-          dynamicStyles.sizing(
-            width ?? null,
-            height ?? null,
-            maxWidth ?? null,
-            minHeight ?? null,
+        {...mergeProps(
+          xdsClassName('section', {variant}),
+          stylex.props(
+            nestedStyles.outer,
+            dynamicStyles.sizing(
+              width ?? null,
+              height ?? null,
+              maxWidth ?? null,
+              minHeight ?? null,
+            ),
+            containerOverride,
           ),
-          containerOverride,
         )}
         {...props}>
         <div

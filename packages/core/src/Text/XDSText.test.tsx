@@ -182,4 +182,11 @@ describe('XDSText', () => {
       expect(screen.getByText('No tooltip')).toBeInTheDocument();
     });
   });
+
+  it('renders xds-* class names for theme targeting', () => {
+    render(<XDSText type="body">Themed Text</XDSText>);
+    const element = screen.getByText('Themed Text');
+    expect(element.className).toContain('xds-text');
+    expect(element.className).toContain('body');
+  });
 });

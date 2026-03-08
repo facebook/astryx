@@ -43,6 +43,7 @@ import type {
 } from '../theme/types';
 import {useXDSLinkComponent} from './useXDSLinkComponent';
 import type {XDSLinkComponentType} from './types';
+import {xdsClassName, mergeProps} from '../utils';
 
 /**
  * Base link styles
@@ -283,13 +284,16 @@ export const XDSLink = forwardRef<HTMLAnchorElement, XDSLinkProps>(
         aria-label={label}
         aria-disabled={isDisabled || undefined}
         tabIndex={isDisabled ? -1 : undefined}
-        {...stylex.props(
-          styles.base,
-          linkColorStyles[color],
-          hasUnderline && styles.hasUnderline,
-          isStandalone && styles.standalone,
-          isDisabled && styles.disabled,
-          rootOverride,
+        {...mergeProps(
+          xdsClassName('link', {color}),
+          stylex.props(
+            styles.base,
+            linkColorStyles[color],
+            hasUnderline && styles.hasUnderline,
+            isStandalone && styles.standalone,
+            isDisabled && styles.disabled,
+            rootOverride,
+          ),
         )}
         {...props}>
         <XDSText

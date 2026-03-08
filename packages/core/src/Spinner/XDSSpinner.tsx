@@ -18,6 +18,7 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Constants
@@ -185,7 +186,10 @@ export const XDSSpinner = forwardRef<HTMLSpanElement, XDSSpinnerProps>(
         role="status"
         aria-label="Loading"
         data-testid={testId}
-        {...stylex.props(styles.spinner, rootOverride)}
+        {...mergeProps(
+          xdsClassName('spinner', {size}),
+          stylex.props(styles.spinner, rootOverride),
+        )}
         style={{width: frameSize, height: frameSize}}>
         <canvas ref={canvasRef} {...stylex.props(styles.canvas)} />
       </span>

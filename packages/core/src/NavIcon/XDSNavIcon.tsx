@@ -15,6 +15,7 @@
 import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, sizeVars} from '../theme/tokens.stylex';
+import {xdsClassName, mergeProps} from '../utils';
 
 /**
  * NavIcon styles
@@ -70,7 +71,10 @@ export interface XDSNavIconProps extends Omit<
 export const XDSNavIcon = forwardRef<HTMLSpanElement, XDSNavIconProps>(
   function XDSNavIcon({icon, ...props}, ref) {
     return (
-      <span ref={ref} {...stylex.props(styles.base)} {...props}>
+      <span
+        ref={ref}
+        {...mergeProps(xdsClassName('navicon'), stylex.props(styles.base))}
+        {...props}>
         {icon}
       </span>
     );
