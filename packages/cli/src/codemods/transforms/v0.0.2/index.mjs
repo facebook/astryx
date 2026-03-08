@@ -22,6 +22,12 @@ import renameFormTooltipStartIcon, {
 import renameIsShownToIsOpen, {
   meta as isShownMeta,
 } from './rename-isShown-to-isOpen.mjs';
+import renameTopNavTitleToHeading, {
+  meta as topNavTitleMeta,
+} from './rename-topnav-title-to-heading.mjs';
+import renameSideNavHeaderToHeading, {
+  meta as sideNavHeaderMeta,
+} from './rename-sidenav-header-to-heading.mjs';
 export default [
   {
     name: 'rename-selector-items-to-options',
@@ -52,5 +58,15 @@ export default [
     name: 'rename-isShown-to-isOpen',
     transform: renameIsShownToIsOpen,
     meta: isShownMeta,
+  },
+  {
+    name: 'rename-topnav-title-to-heading',
+    transform: renameTopNavTitleToHeading,
+    meta: topNavTitleMeta,
+  },
+  {
+    name: 'rename-sidenav-header-to-heading',
+    transform: renameSideNavHeaderToHeading,
+    meta: sideNavHeaderMeta,
   },
 ];
