@@ -43,10 +43,7 @@ const dynamicStyles = stylex.create({
 
 export type CenterAxis = 'both' | 'horizontal' | 'vertical';
 
-export interface XDSCenterProps extends Omit<
-  HTMLAttributes<HTMLDivElement>,
-  'style' | 'className'
-> {
+export interface XDSCenterProps extends HTMLAttributes<HTMLDivElement> {
   /**
    * Center axis - which direction(s) to center.
    * - `both`: Center both horizontally and vertically (default)
@@ -80,9 +77,27 @@ export interface XDSCenterProps extends Omit<
   children: ReactNode;
 
   /**
-   * StyleX styles to apply to the container.
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
    */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) to append to the root element. Applied after StyleX
+   * classes, so Tailwind or utility classes will win in specificity.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
 }
 
 /**
@@ -107,6 +122,8 @@ export const XDSCenter = forwardRef<HTMLDivElement, XDSCenterProps>(
       isInline = false,
       children,
       xstyle,
+      className,
+      style,
       ...props
     },
     ref,
@@ -121,6 +138,8 @@ export const XDSCenter = forwardRef<HTMLDivElement, XDSCenterProps>(
         dynamicStyles.sizing(width ?? null, height ?? null),
         xstyle,
       ),
+      className,
+      style,
     );
 
     return (

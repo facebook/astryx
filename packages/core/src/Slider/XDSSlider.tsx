@@ -70,8 +70,28 @@ export interface XDSSliderBaseProps {
   valueDisplay?: 'tooltip' | 'text' | 'none';
   /** Tick marks at specified positions with optional labels. */
   marks?: Array<{value: number; label?: string}>;
-  /** Additional styles. */
+  /**
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
+   */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) to append to the root element. Applied after StyleX
+   * classes, so Tailwind or utility classes will win in specificity.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
   /** Test ID for the root element. */
   'data-testid'?: string;
 }
@@ -320,6 +340,8 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
       valueDisplay = 'tooltip',
       marks,
       xstyle,
+      className,
+      style,
       'data-testid': testId,
       value,
       onChange,
@@ -630,7 +652,9 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
         }
         labelTooltip={labelTooltip}
         statusVariant="detached"
-        {...stylex.props(xstyle)}>
+        xstyle={xstyle}
+        className={className}
+        style={style}>
         <div {...stylex.props(styles.sliderRow)}>
           <div
             ref={node => {

@@ -141,11 +141,27 @@ export interface XDSHeadingProps {
   hasStrikethrough?: boolean;
 
   /**
-   * Constrained styles for layout integration.
-   * Allows margins, width constraints, flex child props, text alignment.
-   * Typography properties (fontSize, fontWeight, color, etc.) should NOT be used.
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
    */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) to append to the root element. Applied after StyleX
+   * classes, so Tailwind or utility classes will win in specificity.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
 
   /**
    * Heading content
@@ -199,6 +215,8 @@ export const XDSHeading = forwardRef<HTMLHeadingElement, XDSHeadingProps>(
       hasCapsize = false,
       hasStrikethrough = false,
       xstyle,
+      className,
+      style,
       children,
       ...props
     },
@@ -278,8 +296,9 @@ export const XDSHeading = forwardRef<HTMLHeadingElement, XDSHeadingProps>(
               // User xstyle
               xstyle,
             ),
+            className,
+            {...style, ...inlineStyle},
           )}
-          style={inlineStyle}
           title={tooltipEnabled ? truncation.fullText : undefined}
           {...ariaProps}
           {...props}>

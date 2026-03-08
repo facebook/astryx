@@ -25,7 +25,7 @@ import {xdsClassName, mergeProps} from '../utils';
 
 export interface XDSDividerProps extends Omit<
   HTMLAttributes<HTMLElement>,
-  'style' | 'className' | 'children'
+  'children'
 > {
   /**
    * Orientation of the divider.
@@ -55,9 +55,27 @@ export interface XDSDividerProps extends Omit<
   isFullBleed?: boolean;
 
   /**
-   * StyleX styles to apply to the divider container.
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
    */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) to append to the root element. Applied after StyleX
+   * classes, so Tailwind or utility classes will win in specificity.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
 }
 
 const baseStyles = stylex.create({
@@ -137,6 +155,8 @@ export const XDSDivider = forwardRef<HTMLElement, XDSDividerProps>(
       variant = 'subtle',
       isFullBleed = false,
       xstyle,
+      className,
+      style,
       ...props
     },
     ref,
@@ -158,6 +178,8 @@ export const XDSDivider = forwardRef<HTMLElement, XDSDividerProps>(
                 : fullBleedStyles.vertical),
             xstyle,
           ),
+          className,
+          style,
         )}
         {...props}>
         <div

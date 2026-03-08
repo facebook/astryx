@@ -17,10 +17,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
-export interface XDSAspectRatioProps extends Omit<
-  HTMLAttributes<HTMLElement>,
-  'style' | 'className'
-> {
+export interface XDSAspectRatioProps extends HTMLAttributes<HTMLElement> {
   /**
    * The aspect ratio as width/height (e.g., 16/9 = 1.777..., 4/3 = 1.333..., 1 for square).
    */
@@ -33,9 +30,27 @@ export interface XDSAspectRatioProps extends Omit<
   children: ReactNode;
 
   /**
-   * StyleX styles to apply to the aspect ratio container.
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
    */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) to append to the root element. Applied after StyleX
+   * classes, so Tailwind or utility classes will win in specificity.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
 }
 
 const styles = stylex.create({
@@ -67,15 +82,19 @@ const styles = stylex.create({
  * ```
  */
 export const XDSAspectRatio = forwardRef<HTMLElement, XDSAspectRatioProps>(
-  function XDSAspectRatio({ratio, children, xstyle, ...props}, ref) {
+  function XDSAspectRatio(
+    {ratio, children, xstyle, className, style, ...props},
+    ref,
+  ) {
     return (
       <div
         ref={ref as React.Ref<HTMLDivElement>}
         {...mergeProps(
           xdsClassName('aspect-ratio'),
           stylex.props(styles.container, xstyle),
+          className,
+          {...style, aspectRatio: ratio},
         )}
-        style={{aspectRatio: ratio}}
         {...props}>
         <div {...stylex.props(styles.child)}>{children}</div>
       </div>

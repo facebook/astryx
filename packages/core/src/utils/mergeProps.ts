@@ -1,24 +1,40 @@
 /**
- * Merge stylex.props result with an xds-* class name.
+ * Merge xds-* class name, stylex.props result, and optional consumer className/style.
  *
  * stylex.props() returns { className, style }. This merges the xds-*
  * class name into the className string so both StyleX styles and the
  * stable theme-targeting class are applied.
  *
+ * Consumer className is appended last so utility classes (e.g. Tailwind) win.
+ * Consumer style is spread last so inline overrides win.
+ *
  * @example
  * ```tsx
  * <div {...mergeProps(
  *   xdsClassName('button', { variant }),
- *   stylex.props(styles.base, variants[variant])
+ *   stylex.props(styles.base, variants[variant]),
+ *   className,
+ *   style,
  * )} />
  * ```
  */
 export function mergeProps(
   xdsClass: string,
   stylexResult: {className?: string; style?: object},
+  className?: string,
+  style?: React.CSSProperties,
 ): {className: string; style?: object} {
-  const merged = stylexResult.className
+  let cls = stylexResult.className
     ? `${xdsClass} ${stylexResult.className}`
     : xdsClass;
-  return {className: merged, style: stylexResult.style};
+  if (className) {
+    cls = `${cls} ${className}`;
+  }
+
+  const mergedStyle =
+    style && stylexResult.style
+      ? {...stylexResult.style, ...style}
+      : style || stylexResult.style;
+
+  return {className: cls, style: mergedStyle};
 }

@@ -64,9 +64,27 @@ export interface XDSListProps {
   listStyle?: XDSListStyle;
 
   /**
-   * StyleX styles to apply to the list container.
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
    */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) to append to the root element. Applied after StyleX
+   * classes, so Tailwind or utility classes will win in specificity.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
 
   /**
    * Test ID for testing frameworks.
@@ -147,6 +165,8 @@ export const XDSList = forwardRef<
       header,
       listStyle = 'none',
       xstyle,
+      className,
+      style,
       'data-testid': testId,
     },
     ref,
@@ -201,6 +221,8 @@ export const XDSList = forwardRef<
               hasMarkers && styles.listWithMarkers,
               xstyle,
             ),
+            className,
+            style,
           )}>
           {renderedChildren}
         </Tag>

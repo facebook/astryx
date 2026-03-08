@@ -42,10 +42,7 @@ import {xdsClassName, mergeProps} from '../utils';
  */
 export type StackAlignment = StackMainAlignment | StackCrossAlignment;
 
-export interface XDSStackProps extends Omit<
-  HTMLAttributes<HTMLElement>,
-  'style' | 'className'
-> {
+export interface XDSStackProps extends HTMLAttributes<HTMLElement> {
   /**
    * Direction of the stack layout.
    * - `horizontal`: Items flow left-to-right (like XDSHStack)
@@ -93,9 +90,27 @@ export interface XDSStackProps extends Omit<
   element?: ElementType;
 
   /**
-   * StyleX styles to apply to the stack.
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
    */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) to append to the root element. Applied after StyleX
+   * classes, so Tailwind or utility classes will win in specificity.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
 
   /**
    * Content to render inside the stack.
@@ -139,6 +154,8 @@ export const XDSStack = forwardRef<HTMLElement, XDSStackProps>(
       wrap,
       element = 'div',
       xstyle,
+      className,
+      style,
       children,
       ...props
     },
@@ -172,6 +189,8 @@ export const XDSStack = forwardRef<HTMLElement, XDSStackProps>(
         ...mergeProps(
           xdsClassName('stack', {direction, gap, wrap}),
           stylexProps,
+          className,
+          style,
         ),
         ...props,
       },

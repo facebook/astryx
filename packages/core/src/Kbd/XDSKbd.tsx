@@ -80,9 +80,27 @@ export interface XDSKbdProps {
   keys: string;
 
   /**
-   * StyleX overrides for the wrapper element.
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
    */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) to append to the root element. Applied after StyleX
+   * classes, so Tailwind or utility classes will win in specificity.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
 }
 
 /**
@@ -96,12 +114,17 @@ export interface XDSKbdProps {
  * <XDSKbd keys="mod+k" />
  * ```
  */
-export function XDSKbd({keys, xstyle}: XDSKbdProps) {
+export function XDSKbd({keys, xstyle, className, style}: XDSKbdProps) {
   const parts = keys.split('+').map(key => key.trim().toLowerCase());
 
   return (
     <span
-      {...mergeProps(xdsClassName('kbd'), stylex.props(styles.wrapper, xstyle))}
+      {...mergeProps(
+        xdsClassName('kbd'),
+        stylex.props(styles.wrapper, xstyle),
+        className,
+        style,
+      )}
       aria-hidden="true">
       {parts.map((key, i) => (
         <kbd key={i} {...stylex.props(styles.kbd)}>

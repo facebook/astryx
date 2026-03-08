@@ -80,10 +80,7 @@ const styles = stylex.create({
 // Types
 // =============================================================================
 
-export interface XDSSideNavProps extends Omit<
-  HTMLAttributes<HTMLElement>,
-  'style' | 'className'
-> {
+export interface XDSSideNavProps extends HTMLAttributes<HTMLElement> {
   /**
    * Header area — typically XDSSideNavHeader. Sticky at top.
    */
@@ -105,9 +102,27 @@ export interface XDSSideNavProps extends Omit<
    */
   footerIcons?: ReactNode;
   /**
-   * StyleX overrides for the root container.
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
    */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) to append to the root element. Applied after StyleX
+   * classes, so Tailwind or utility classes will win in specificity.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
   /**
    * Test ID for the root element.
    */
@@ -146,6 +161,8 @@ export const XDSSideNav = forwardRef<HTMLElement, XDSSideNavProps>(
       footer,
       footerIcons,
       xstyle,
+      className,
+      style,
       'data-testid': testId,
       ...props
     },
@@ -163,6 +180,8 @@ export const XDSSideNav = forwardRef<HTMLElement, XDSSideNavProps>(
         {...mergeProps(
           xdsClassName('side-nav'),
           stylex.props(styles.root, xstyle),
+          className,
+          style,
         )}
         {...props}>
         {hasStickyTop && (

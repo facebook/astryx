@@ -114,9 +114,27 @@ export interface XDSStatusDotProps {
    */
   isPulsing?: boolean;
   /**
-   * Optional StyleX styles override.
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
    */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) to append to the root element. Applied after StyleX
+   * classes, so Tailwind or utility classes will win in specificity.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
   /**
    * Optional test ID for testing.
    */
@@ -137,7 +155,19 @@ export interface XDSStatusDotProps {
  * ```
  */
 export const XDSStatusDot = forwardRef<HTMLSpanElement, XDSStatusDotProps>(
-  ({variant, size = 'md', label, isPulsing = false, xstyle, ...props}, ref) => {
+  (
+    {
+      variant,
+      size = 'md',
+      label,
+      isPulsing = false,
+      xstyle,
+      className,
+      style,
+      ...props
+    },
+    ref,
+  ) => {
     return (
       <span
         ref={ref}
@@ -153,6 +183,8 @@ export const XDSStatusDot = forwardRef<HTMLSpanElement, XDSStatusDotProps>(
             isPulsing && styles.reducedMotion,
             xstyle,
           ),
+          className,
+          style,
         )}
         {...props}
       />

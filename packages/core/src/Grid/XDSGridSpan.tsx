@@ -15,10 +15,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
-export interface XDSGridSpanProps extends Omit<
-  HTMLAttributes<HTMLElement>,
-  'style' | 'className'
-> {
+export interface XDSGridSpanProps extends HTMLAttributes<HTMLElement> {
   /**
    * Number of columns to span, or 'full' to span all columns.
    * - Number: `grid-column: span N`
@@ -33,9 +30,27 @@ export interface XDSGridSpanProps extends Omit<
   rows?: number;
 
   /**
-   * StyleX styles to apply to the grid span element.
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```tsx
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
    */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) to append to the root element. Applied after StyleX
+   * classes, so Tailwind or utility classes will win in specificity.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
 
   /**
    * Content to render inside the grid span.
@@ -68,7 +83,10 @@ const baseStyles = stylex.create({
  * ```
  */
 export const XDSGridSpan = forwardRef<HTMLElement, XDSGridSpanProps>(
-  function XDSGridSpan({columns, rows, xstyle, children, ...props}, ref) {
+  function XDSGridSpan(
+    {columns, rows, xstyle, className, style, children, ...props},
+    ref,
+  ) {
     // Build inline style for grid spanning
     const inlineStyle: React.CSSProperties = {
       ...(columns != null && {
@@ -85,8 +103,9 @@ export const XDSGridSpan = forwardRef<HTMLElement, XDSGridSpanProps>(
         {...mergeProps(
           xdsClassName('grid-span'),
           stylex.props(baseStyles.span, xstyle),
+          className,
+          {...style, ...inlineStyle},
         )}
-        style={inlineStyle}
         {...props}>
         {children}
       </div>
