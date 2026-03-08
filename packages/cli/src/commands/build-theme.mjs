@@ -60,9 +60,43 @@ function parseStyleKey(key) {
 }
 
 /**
- * Generate CSS from a theme definition object
+ * Maps component style keys to HTML elements for prose co-selection.
+ *
+ * When a theme overrides a prose-related component, the HTML element
+ * counterpart should get the same styles. This map defines which
+ * HTML elements correspond to which component + style key.
+ *
+ * 'base' overrides apply to all HTML counterparts.
+ * Variant-specific overrides only apply to matching elements.
  */
-function generateCSS(themeDef) {
+const PROSE_COMPONENT_MAP = {
+  heading: {
+    base: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+  },
+  text: {
+    base: ['p', 'small'],
+    'type:code': ['code', 'pre'],
+    'type:supporting': ['small'],
+  },
+  kbd: {
+    base: ['kbd'],
+  },
+  link: {
+    base: ['a'],
+  },
+  divider: {
+    base: ['hr'],
+  },
+};
+
+/**
+ * Generate CSS from a theme definition object.
+ *
+ * When prose is enabled, component overrides for prose-related components
+ * (heading, text, kbd, link, divider) co-select their HTML element
+ * counterparts so raw markup inherits the theme's component styling.
+ */
+function generateCSS(themeDef, {prose = true} = {}) {
   const parts = [];
   const scopeSelector = `[data-xds-theme="${themeDef.name}"]`;
 
@@ -84,7 +118,20 @@ function generateCSS(themeDef) {
           const declarations = entries
             .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
             .join('\n');
-          parts.push(`  .xds-${component}${suffix} {\n${declarations}\n  }`);
+
+          // Build selector — co-select HTML elements for prose-related components
+          const xdsSelector = `.xds-${component}${suffix}`;
+          let selector = `  ${xdsSelector}`;
+
+          if (prose) {
+            const htmlElements = PROSE_COMPONENT_MAP[component]?.[key];
+            if (htmlElements) {
+              const htmlSelector = htmlElements.map(el => `  ${el}`).join(',\n');
+              selector = `  ${xdsSelector},\n${htmlSelector}`;
+            }
+          }
+
+          parts.push(`${selector} {\n${declarations}\n  }`);
         }
       }
     }
@@ -580,13 +627,14 @@ export function registerBuildTheme(program) {
       }
 
       // Generate CSS (tokens + component overrides)
+      const noProse = options.prose === false;
       const scopeBlocks = [];
 
-      const mainCss = generateCSS(themeDef);
+      const mainCss = generateCSS(themeDef, {prose: !noProse});
       if (mainCss) scopeBlocks.push(mainCss);
 
-      // Prose mappings — alias HTML elements to XDS component classes
-      if (options.prose !== false) {
+      // Prose defaults — baseline HTML element styles from tokens
+      if (!noProse) {
         const proseCss = generateProseCSS(themeDef);
         if (proseCss) scopeBlocks.push(proseCss);
       }
