@@ -58,6 +58,9 @@ jobs:
 
       - run: yarn build
 
+      - name: Verify package exports
+        run: node scripts/verify-exports.mjs
+
       - name: Typecheck component docs
         run: yarn workspace @xds/core typecheck:docs
 
@@ -86,6 +89,9 @@ jobs:
 
       - name: Build core package
         run: yarn build
+
+      - name: Verify package exports
+        run: node scripts/verify-exports.mjs
 
       - name: Build Storybook
         run: yarn workspace @xds/storybook build
