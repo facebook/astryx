@@ -7,7 +7,7 @@
  * - Component overrides scoped via @scope'd CSS selectors on .xds-* classes
  *
  * Usage:
- * ```tsx
+ * ```
  * const ocean = defineTheme({
  *   name: 'ocean',
  *   tokens: { '--color-accent': ['#0077B6', '#48CAE4'] },

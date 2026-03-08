@@ -91,7 +91,7 @@ export interface XDSGridProps extends XDSBaseProps<HTMLDivElement> {
    * base styles inside a single `stylex.props()` call for optimal deduplication.
    *
    * @example
-   * ```tsx
+   * ```
    * const overrides = stylex.create({ root: { marginBottom: 8 } });
    * <Component xstyle={overrides.root} />
    * ```
