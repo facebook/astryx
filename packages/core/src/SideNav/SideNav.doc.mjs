@@ -42,7 +42,7 @@ export const docs = {
   topNav={<XDSTopNav heading={<XDSTopNavHeading heading="My App" />} />}
   sideNav={
     <XDSSideNav>
-      <XDSSideNavSection heading="Main" isHeaderHidden>
+      <XDSSideNavSection title="Main" isHeaderHidden>
         <XDSSideNavItem
           label="Dashboard"
           icon={HomeIcon}
@@ -67,7 +67,7 @@ export const docs = {
       }
       topContent={<XDSButton label="Create new" variant="primary" />}
       footerIcons={<XDSButton icon={HelpIcon} variant="ghost" label="Help" />}>
-      <XDSSideNavSection heading="Main">
+      <XDSSideNavSection title="Main">
         <XDSSideNavItem
           label="Dashboard"
           icon={HomeIcon}
@@ -83,7 +83,7 @@ export const docs = {
         />
       </XDSSideNavSection>
 
-      <XDSSideNavSection heading="Settings">
+      <XDSSideNavSection title="Settings">
         <XDSSideNavItem label="General" href="/settings/general" />
         <XDSSideNavItem label="Security" href="/settings/security" />
       </XDSSideNavSection>
@@ -131,7 +131,7 @@ export const docs = {
           code: `<XDSSideNav
   header={<XDSSideNavHeading icon={<AppIcon />} heading="My App" headingHref="/" />}
   topContent={<XDSButton label="Create new" variant="primary" />}>
-  <XDSSideNavSection heading="Main">
+  <XDSSideNavSection title="Main">
     <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
     <XDSSideNavItem label="Projects" icon={FolderIcon} href="/projects" />
   </XDSSideNavSection>
@@ -335,21 +335,21 @@ export const docs = {
       examples: [
         {
           label: 'Basic section',
-          code: `<XDSSideNavSection heading="Main">
+          code: `<XDSSideNavSection title="Main">
   <XDSSideNavItem label="Dashboard" href="/dashboard" />
   <XDSSideNavItem label="Projects" href="/projects" />
 </XDSSideNavSection>`,
         },
         {
           label: 'With end content and hidden header',
-          code: `<XDSSideNavSection heading="Settings" endContent={<XDSBadge>New</XDSBadge>}>
+          code: `<XDSSideNavSection title="Settings" endContent={<XDSBadge>New</XDSBadge>}>
   <XDSSideNavItem label="General" href="/settings/general" />
   <XDSSideNavItem label="Security" href="/settings/security" />
 </XDSSideNavSection>`,
         },
         {
           label: 'Hidden header (used with TopNav)',
-          code: `<XDSSideNavSection heading="Main" isHeaderHidden>
+          code: `<XDSSideNavSection title="Main" isHeaderHidden>
   <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
 </XDSSideNavSection>`,
         },
