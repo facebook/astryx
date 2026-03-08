@@ -38,6 +38,7 @@ import type {XDSInputStatus} from '../Field/types';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {XDSSpinner} from '../Spinner';
+import {xdsClassName, mergeProps} from '../utils';
 
 // Fixed dimensions: 40px width, 24px height, 16px thumb (off), 20px thumb (on)
 const SWITCH_WIDTH = 40;
@@ -349,12 +350,15 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
         />
         <div
           aria-hidden="true"
-          {...stylex.props(
-            styles.track,
-            isOn ? styles.trackOn : styles.trackOff,
-            isDisabled && styles.trackDisabled,
-            isDisabled && !isOn && styles.trackDisabledOff,
-            trackOverride,
+          {...mergeProps(
+            xdsClassName('switch'),
+            stylex.props(
+              styles.track,
+              isOn ? styles.trackOn : styles.trackOff,
+              isDisabled && styles.trackDisabled,
+              isDisabled && !isOn && styles.trackDisabledOff,
+              trackOverride,
+            ),
           )}>
           <div
             {...stylex.props(

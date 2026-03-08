@@ -195,4 +195,12 @@ describe('XDSButton', () => {
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute('aria-busy', 'true');
   });
+
+  it('renders xds-* class names for theme targeting', () => {
+    render(<XDSButton label="Test" variant="secondary" size="sm" />);
+    const button = screen.getByRole('button');
+    expect(button.className).toContain('xds-button');
+    expect(button.className).toContain('secondary');
+    expect(button.className).toContain('sm');
+  });
 });

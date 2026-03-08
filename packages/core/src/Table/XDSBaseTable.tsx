@@ -34,6 +34,7 @@ import {generateColumns, defaultCellRenderer} from './columnUtils';
 import {XDSTableRow} from './XDSTableRow';
 import {XDSTableCell} from './XDSTableCell';
 import {XDSTableHeaderCell} from './XDSTableHeaderCell';
+import {xdsClassName, mergeProps} from '../utils';
 
 const styles = stylex.create({
   table: {
@@ -249,7 +250,10 @@ function XDSBaseTableInner<T extends Record<string, unknown>>(
     <table
       ref={ref}
       {...tableRenderProps.htmlProps}
-      {...stylex.props(...tableRenderProps.styles)}>
+      {...mergeProps(
+        xdsClassName('base-table'),
+        stylex.props(...tableRenderProps.styles),
+      )}>
       {/* thead */}
       {hasColumns && (
         <thead>

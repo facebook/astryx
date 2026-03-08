@@ -29,6 +29,7 @@ import {
   lineHeightVars,
 } from '../theme/tokens.stylex';
 import type {XDSBreadcrumbItemProps} from './XDSBreadcrumbItem';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Variant type
@@ -212,7 +213,10 @@ export const XDSBreadcrumbs = forwardRef<HTMLElement, XDSBreadcrumbsProps>(
         ref={ref}
         aria-label={label}
         data-testid={testId}
-        {...stylex.props(navStyles.root, xstyle)}>
+        {...mergeProps(
+          xdsClassName('breadcrumbs', {variant}),
+          stylex.props(navStyles.root, xstyle),
+        )}>
         <ol {...stylex.props(listStyles.root)}>{rendered}</ol>
       </nav>
     );

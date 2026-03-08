@@ -25,6 +25,7 @@ import {
   lineHeightVars,
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Types
@@ -354,13 +355,16 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
           href={href}
           aria-disabled={isDisabled || undefined}
           {...sharedProps}
-          {...stylex.props(
-            styles.base,
-            sizeStyles[size],
-            colorStyles[color],
-            styles.interactive,
-            isDisabled && styles.disabled,
-            xstyle,
+          {...mergeProps(
+            xdsClassName('token', {color}),
+            stylex.props(
+              styles.base,
+              sizeStyles[size],
+              colorStyles[color],
+              styles.interactive,
+              isDisabled && styles.disabled,
+              xstyle,
+            ),
           )}>
           {content}
         </a>
@@ -379,14 +383,17 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
           ref={ref as React.Ref<HTMLSpanElement>}
           onClick={isDisabled ? undefined : handleContainerClick}
           {...sharedProps}
-          {...stylex.props(
-            styles.base,
-            sizeStyles[size],
-            colorStyles[color],
-            styles.interactive,
-            styles.focusWithinOutline,
-            isDisabled && styles.disabled,
-            xstyle,
+          {...mergeProps(
+            xdsClassName('token', {color}),
+            stylex.props(
+              styles.base,
+              sizeStyles[size],
+              colorStyles[color],
+              styles.interactive,
+              styles.focusWithinOutline,
+              isDisabled && styles.disabled,
+              xstyle,
+            ),
           )}>
           {icon}
           <button
@@ -424,12 +431,15 @@ export const XDSToken = forwardRef<HTMLElement, XDSTokenProps>(
       <span
         ref={ref as React.Ref<HTMLSpanElement>}
         {...sharedProps}
-        {...stylex.props(
-          styles.base,
-          sizeStyles[size],
-          colorStyles[color],
-          isDisabled && styles.disabled,
-          xstyle,
+        {...mergeProps(
+          xdsClassName('token', {color}),
+          stylex.props(
+            styles.base,
+            sizeStyles[size],
+            colorStyles[color],
+            isDisabled && styles.disabled,
+            xstyle,
+          ),
         )}>
         {content}
       </span>

@@ -32,6 +32,7 @@ import {
 // of lazy loading layer resources.
 import {useXDSPopover} from '../Layer/useXDSPopover';
 import {XDSLink} from '../Link';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Styles
@@ -353,11 +354,14 @@ export const XDSSideNavHeader = forwardRef<
         ref={ref as React.Ref<HTMLAnchorElement>}
         href={titleHref}
         data-testid={testId}
-        {...stylex.props(
-          styles.root,
-          styles.interactive,
-          styles.interactiveInset,
-          xstyle,
+        {...mergeProps(
+          xdsClassName('side-nav-header'),
+          stylex.props(
+            styles.root,
+            styles.interactive,
+            styles.interactiveInset,
+            xstyle,
+          ),
         )}
         {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}>
         {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
@@ -377,11 +381,14 @@ export const XDSSideNavHeader = forwardRef<
           onClick={handleToggle}
           data-testid={testId}
           {...popover.triggerProps}
-          {...stylex.props(
-            styles.root,
-            styles.interactive,
-            styles.interactiveInset,
-            xstyle,
+          {...mergeProps(
+            xdsClassName('side-nav-header'),
+            stylex.props(
+              styles.root,
+              styles.interactive,
+              styles.interactiveInset,
+              xstyle,
+            ),
           )}>
           {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
           {renderTextContent()}
@@ -404,7 +411,10 @@ export const XDSSideNavHeader = forwardRef<
         <div
           ref={setRef}
           data-testid={testId}
-          {...stylex.props(styles.root, xstyle)}>
+          {...mergeProps(
+            xdsClassName('side-nav-header'),
+            stylex.props(styles.root, xstyle),
+          )}>
           {icon &&
             (titleHref ? (
               <a href={titleHref} {...stylex.props(styles.icon)}>
@@ -439,7 +449,10 @@ export const XDSSideNavHeader = forwardRef<
       <div
         ref={ref}
         data-testid={testId}
-        {...stylex.props(styles.root, xstyle)}
+        {...mergeProps(
+          xdsClassName('side-nav-header'),
+          stylex.props(styles.root, xstyle),
+        )}
         {...props}>
         {icon &&
           (titleHref ? (
@@ -496,7 +509,10 @@ export const XDSSideNavHeader = forwardRef<
     <div
       ref={ref}
       data-testid={testId}
-      {...stylex.props(styles.root, xstyle)}
+      {...mergeProps(
+        xdsClassName('side-nav-header'),
+        stylex.props(styles.root, xstyle),
+      )}
       {...props}>
       {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
       {renderTextContent()}

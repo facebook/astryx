@@ -17,6 +17,7 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Animation Timing Constants
@@ -195,13 +196,16 @@ export const XDSSkeleton = forwardRef<HTMLDivElement, XDSSkeletonProps>(
       <div
         ref={ref}
         data-testid={testId}
-        {...stylex.props(
-          styles.root,
-          styles.animate,
-          radiusStyles[radiusProp],
-          dynamicStyles.dimensions(width, height),
-          dynamicStyles.animationDelay(index),
-          rootOverride,
+        {...mergeProps(
+          xdsClassName('skeleton'),
+          stylex.props(
+            styles.root,
+            styles.animate,
+            radiusStyles[radiusProp],
+            dynamicStyles.dimensions(width, height),
+            dynamicStyles.animationDelay(index),
+            rootOverride,
+          ),
         )}
         {...props}
       />

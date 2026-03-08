@@ -219,4 +219,15 @@ describe('XDSLink', () => {
     expect(link).toHaveAttribute('data-custom-link');
     expect(link).not.toHaveAttribute('data-another-link');
   });
+
+  it('renders xds-* class names for theme targeting', () => {
+    render(
+      <XDSLink label="Themed" href="/test" color="secondary">
+        Themed Link
+      </XDSLink>,
+    );
+    const link = screen.getByRole('link', {name: 'Themed'});
+    expect(link.className).toContain('xds-link');
+    expect(link.className).toContain('secondary');
+  });
 });

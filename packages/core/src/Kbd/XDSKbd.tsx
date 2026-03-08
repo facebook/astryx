@@ -11,6 +11,7 @@
 
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
+import {xdsClassName, mergeProps} from '../utils';
 import {
   colorVars,
   spacingVars,
@@ -99,7 +100,9 @@ export function XDSKbd({keys, xstyle}: XDSKbdProps) {
   const parts = keys.split('+').map(key => key.trim().toLowerCase());
 
   return (
-    <span {...stylex.props(styles.wrapper, xstyle)} aria-hidden="true">
+    <span
+      {...mergeProps(xdsClassName('kbd'), stylex.props(styles.wrapper, xstyle))}
+      aria-hidden="true">
       {parts.map((key, i) => (
         <kbd key={i} {...stylex.props(styles.kbd)}>
           {KEY_DISPLAY[key] ?? key.toUpperCase()}

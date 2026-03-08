@@ -44,6 +44,7 @@ import {
 } from './text.stylex';
 import {useTruncation} from './useTruncation';
 import type {LayerPlacement} from '../Layer';
+import {xdsClassName, mergeProps} from '../utils';
 
 const LazyXDSTooltip = lazy(() =>
   import('../Layer/XDSTooltip').then(mod => ({default: mod.XDSTooltip})),
@@ -277,25 +278,28 @@ export const XDSHeading = forwardRef<HTMLHeadingElement, XDSHeadingProps>(
       <>
         <Component
           ref={mergedRef}
-          {...stylex.props(
-            levelStyle,
-            colorStyles[color],
-            // Display: use truncation styles when maxLines > 0
-            maxLines === 1
-              ? truncationStyles.singleLine
-              : maxLines > 1
-                ? truncationStyles.multiLine
-                : displayStyles[resolvedDisplay],
-            // Word break when truncating
-            maxLines > 0 && wordBreakStyles[resolvedWordBreak],
-            // Text wrap
-            textWrap && textWrapStyles[textWrap],
-            // Capsize
-            hasCapsize && capsizeStyles.enabled,
-            // Decorations
-            hasStrikethrough && decorationStyles.strikethrough,
-            // User xstyle
-            xstyle,
+          {...mergeProps(
+            xdsClassName('heading', {level}),
+            stylex.props(
+              levelStyle,
+              colorStyles[color],
+              // Display: use truncation styles when maxLines > 0
+              maxLines === 1
+                ? truncationStyles.singleLine
+                : maxLines > 1
+                  ? truncationStyles.multiLine
+                  : displayStyles[resolvedDisplay],
+              // Word break when truncating
+              maxLines > 0 && wordBreakStyles[resolvedWordBreak],
+              // Text wrap
+              textWrap && textWrapStyles[textWrap],
+              // Capsize
+              hasCapsize && capsizeStyles.enabled,
+              // Decorations
+              hasStrikethrough && decorationStyles.strikethrough,
+              // User xstyle
+              xstyle,
+            ),
           )}
           style={inlineStyle}
           title={tooltipEnabled ? truncation.fullText : undefined}

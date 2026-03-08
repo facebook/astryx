@@ -22,6 +22,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Module Augmentation - Register component styles with ComponentStyles
@@ -91,7 +92,10 @@ export const XDSAspectRatio = forwardRef<HTMLElement, XDSAspectRatioProps>(
     return (
       <div
         ref={ref as React.Ref<HTMLDivElement>}
-        {...stylex.props(styles.container, xstyle, rootOverride)}
+        {...mergeProps(
+          xdsClassName('aspect-ratio'),
+          stylex.props(styles.container, xstyle, rootOverride),
+        )}
         style={{aspectRatio: ratio}}
         {...props}>
         <div {...stylex.props(styles.child)}>{children}</div>

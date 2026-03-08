@@ -21,6 +21,7 @@ import {XDSLayoutAreaContext, type LayoutArea} from './XDSLayoutAreaContext';
 import {XDSLayoutSlotsContext, type LayoutSlots} from './XDSLayoutSlotsContext';
 import {stack} from '../Stack/stack.stylex';
 import {stackItem} from '../Stack/stackItem.stylex';
+import {xdsClassName, mergeProps} from '../utils';
 
 /**
  * Height behavior for the layout.
@@ -188,9 +189,9 @@ export function XDSLayout({
   return (
     <XDSLayoutSlotsContext.Provider value={slotsValue}>
       <div
-        {...stylex.props(
-          styles.layoutOuter,
-          isFill ? styles.fill : styles.auto,
+        {...mergeProps(
+          xdsClassName('layout', {height}),
+          stylex.props(styles.layoutOuter, isFill ? styles.fill : styles.auto),
         )}>
         <div
           {...stylex.props(

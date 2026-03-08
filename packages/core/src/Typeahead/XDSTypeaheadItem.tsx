@@ -19,6 +19,7 @@ import {
   fontWeightVars,
 } from '../theme/tokens.stylex';
 import type {XDSSearchableItem} from './types';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Types
@@ -136,7 +137,11 @@ export function XDSTypeaheadItem<T extends XDSSearchableItem>({
   }
 
   return (
-    <div {...stylex.props(styles.container, isDisabled && styles.disabled)}>
+    <div
+      {...mergeProps(
+        xdsClassName('typeahead-item'),
+        stylex.props(styles.container, isDisabled && styles.disabled),
+      )}>
       {icon}
       <div {...stylex.props(styles.content)}>
         <span {...stylex.props(styles.label)}>{item.label}</span>

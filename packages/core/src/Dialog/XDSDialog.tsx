@@ -30,6 +30,7 @@ import {
 } from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 /**
  * Dialog variant type
@@ -346,19 +347,22 @@ export const XDSDialog = forwardRef<HTMLDialogElement, XDSDialogProps>(
         onClick={handleClick}
         onCancel={handleCancel}
         aria-modal="true"
-        {...stylex.props(
-          styles.dialog,
-          styles.backdrop,
-          !isFullscreen && dynamicStyles.sizing(width, maxHeight),
-          hasPosition &&
-            dynamicStyles.position(
-              position?.top,
-              position?.right,
-              position?.bottom,
-              position?.left,
-            ),
-          isFullscreen && styles.fullscreen,
-          rootOverride,
+        {...mergeProps(
+          xdsClassName('dialog', {variant}),
+          stylex.props(
+            styles.dialog,
+            styles.backdrop,
+            !isFullscreen && dynamicStyles.sizing(width, maxHeight),
+            hasPosition &&
+              dynamicStyles.position(
+                position?.top,
+                position?.right,
+                position?.bottom,
+                position?.left,
+              ),
+            isFullscreen && styles.fullscreen,
+            rootOverride,
+          ),
         )}
         {...props}>
         {children}

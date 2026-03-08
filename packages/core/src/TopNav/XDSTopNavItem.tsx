@@ -26,6 +26,7 @@ import {
 } from '../theme/tokens.stylex';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 /**
  * NavItem styles with hover/selected states
@@ -163,11 +164,14 @@ export const XDSTopNavItem = forwardRef<HTMLAnchorElement, XDSTopNavItemProps>(
         aria-current={isSelected ? 'page' : undefined}
         aria-disabled={isDisabled || undefined}
         tabIndex={isDisabled ? -1 : undefined}
-        {...stylex.props(
-          styles.base,
-          isSelected && styles.selected,
-          isDisabled && styles.disabled,
-          isIconOnly && styles.iconOnly,
+        {...mergeProps(
+          xdsClassName('top-nav-item'),
+          stylex.props(
+            styles.base,
+            isSelected && styles.selected,
+            isDisabled && styles.disabled,
+            isIconOnly && styles.iconOnly,
+          ),
         )}
         {...props}>
         {icon}

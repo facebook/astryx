@@ -21,6 +21,7 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars, transitionVars} from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
 import {XDSTableContext} from './XDSTableContext';
+import {xdsClassName, mergeProps} from '../utils';
 
 /** Props for XDSTableRow — thin `<tr>` wrapper */
 export interface XDSTableRowProps extends Omit<
@@ -98,7 +99,10 @@ export const XDSTableRow = forwardRef<HTMLTableRowElement, XDSTableRowProps>(
 
     if (!ctx) {
       return (
-        <tr ref={ref} {...props} {...stylex.props(xstyle)}>
+        <tr
+          ref={ref}
+          {...props}
+          {...mergeProps(xdsClassName('table-row'), stylex.props(xstyle))}>
           {children}
         </tr>
       );
@@ -125,7 +129,10 @@ export const XDSTableRow = forwardRef<HTMLTableRowElement, XDSTableRowProps>(
     }
 
     return (
-      <tr ref={ref} {...props} {...stylex.props(...rowStyles)}>
+      <tr
+        ref={ref}
+        {...props}
+        {...mergeProps(xdsClassName('table-row'), stylex.props(...rowStyles))}>
         {children}
       </tr>
     );

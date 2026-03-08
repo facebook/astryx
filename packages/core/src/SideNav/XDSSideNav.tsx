@@ -27,6 +27,7 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Styles
@@ -182,7 +183,10 @@ export const XDSSideNav = forwardRef<HTMLElement, XDSSideNavProps>(
         role="navigation"
         aria-label="Side navigation"
         data-testid={testId}
-        {...stylex.props(styles.root, rootOverride, xstyle)}
+        {...mergeProps(
+          xdsClassName('side-nav'),
+          stylex.props(styles.root, rootOverride, xstyle),
+        )}
         {...props}>
         {hasStickyTop && (
           <div {...stylex.props(styles.stickyTop)}>

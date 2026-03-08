@@ -172,4 +172,11 @@ describe('XDSHeading', () => {
       expect(element.tagName).toBe('H2');
     });
   });
+
+  it('renders xds-* class names for theme targeting', () => {
+    render(<XDSHeading level={2}>Themed Heading</XDSHeading>);
+    const element = screen.getByText('Themed Heading');
+    expect(element.className).toContain('xds-heading');
+    expect(element.className).toContain('level-2');
+  });
 });

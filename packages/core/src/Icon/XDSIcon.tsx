@@ -25,6 +25,7 @@ import {colorVars} from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {useXDSIcon, type XDSIconName} from './IconRegistry';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Styles
@@ -207,11 +208,14 @@ export const XDSIcon = forwardRef<SVGSVGElement, XDSIconProps>(
       <IconComponent
         ref={ref}
         aria-hidden="true"
-        {...stylex.props(
-          styles.root,
-          colorStyles[color],
-          sizeStyles[size],
-          rootOverride,
+        {...mergeProps(
+          xdsClassName('icon', {size, color}),
+          stylex.props(
+            styles.root,
+            colorStyles[color],
+            sizeStyles[size],
+            rootOverride,
+          ),
         )}
         {...props}
       />
@@ -249,7 +253,10 @@ function IconFromRegistry({
 
   return (
     <span
-      {...stylex.props(styles.span, colorStyles[color], spanSizeStyles[size])}
+      {...mergeProps(
+        xdsClassName('icon', {size, color}),
+        stylex.props(styles.span, colorStyles[color], spanSizeStyles[size]),
+      )}
       aria-hidden="true">
       {resolvedIcon}
     </span>

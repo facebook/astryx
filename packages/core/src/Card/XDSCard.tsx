@@ -19,6 +19,7 @@ import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {container} from '../Layout/container.stylex';
 import type {SizeValue} from '../utils/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Module Augmentation - Register XDSCard's themeable properties
@@ -163,14 +164,17 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
     return (
       <div
         ref={ref}
-        {...stylex.props(
-          styles.cardOuter,
-          containerOverride,
-          dynamicStyles.sizing(
-            width ?? null,
-            height ?? null,
-            maxWidth ?? null,
-            minHeight ?? null,
+        {...mergeProps(
+          xdsClassName('card'),
+          stylex.props(
+            styles.cardOuter,
+            containerOverride,
+            dynamicStyles.sizing(
+              width ?? null,
+              height ?? null,
+              maxWidth ?? null,
+              minHeight ?? null,
+            ),
           ),
         )}
         {...props}>

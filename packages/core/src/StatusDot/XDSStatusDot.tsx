@@ -15,6 +15,7 @@ import {forwardRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
+import {xdsClassName, mergeProps} from '../utils';
 
 /**
  * Pulse animation keyframes
@@ -142,13 +143,16 @@ export const XDSStatusDot = forwardRef<HTMLSpanElement, XDSStatusDotProps>(
         ref={ref}
         role="img"
         aria-label={label}
-        {...stylex.props(
-          styles.base,
-          sizes[size],
-          variants[variant],
-          isPulsing && styles.pulsing,
-          isPulsing && styles.reducedMotion,
-          xstyle,
+        {...mergeProps(
+          xdsClassName('statusdot', {variant, size}),
+          stylex.props(
+            styles.base,
+            sizes[size],
+            variants[variant],
+            isPulsing && styles.pulsing,
+            isPulsing && styles.reducedMotion,
+            xstyle,
+          ),
         )}
         {...props}
       />

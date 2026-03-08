@@ -28,6 +28,7 @@ import {
   elevationVars,
 } from '../theme/tokens.stylex';
 import {useXDSLayer} from '../Layer';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Styles
@@ -480,7 +481,10 @@ export function XDSTopNavMegaMenu({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onKeyDown={handleKeyDown}
-      {...stylex.props(styles.wrapper)}>
+      {...mergeProps(
+        xdsClassName('top-nav-mega-menu'),
+        stylex.props(styles.wrapper),
+      )}>
       <button
         type="button"
         aria-haspopup="true"

@@ -21,6 +21,7 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, textSizeVars} from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
 import {XDSTableContext} from './XDSTableContext';
+import {xdsClassName, mergeProps} from '../utils';
 
 /** Props for XDSTableCell — thin `<td>` wrapper */
 export interface XDSTableCellProps extends Omit<
@@ -91,7 +92,10 @@ export const XDSTableCell = forwardRef<HTMLTableCellElement, XDSTableCellProps>(
 
     if (!ctx) {
       return (
-        <td ref={ref} {...props} {...stylex.props(xstyle)}>
+        <td
+          ref={ref}
+          {...props}
+          {...mergeProps(xdsClassName('table-cell'), stylex.props(xstyle))}>
           {children}
         </td>
       );
@@ -116,7 +120,13 @@ export const XDSTableCell = forwardRef<HTMLTableCellElement, XDSTableCellProps>(
     }
 
     return (
-      <td ref={ref} {...props} {...stylex.props(...cellStyles)}>
+      <td
+        ref={ref}
+        {...props}
+        {...mergeProps(
+          xdsClassName('table-cell'),
+          stylex.props(...cellStyles),
+        )}>
         {children}
       </td>
     );

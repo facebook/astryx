@@ -13,6 +13,7 @@
 import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
+import {xdsClassName, mergeProps} from '../utils';
 
 export interface XDSGridSpanProps extends Omit<
   HTMLAttributes<HTMLElement>,
@@ -81,7 +82,10 @@ export const XDSGridSpan = forwardRef<HTMLElement, XDSGridSpanProps>(
     return (
       <div
         ref={ref as React.Ref<HTMLDivElement>}
-        {...stylex.props(baseStyles.span, xstyle)}
+        {...mergeProps(
+          xdsClassName('grid-span'),
+          stylex.props(baseStyles.span, xstyle),
+        )}
         style={inlineStyle}
         {...props}>
         {children}

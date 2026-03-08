@@ -28,6 +28,7 @@ import {
   type StackWrap,
   type SpacingScale,
 } from './stack.stylex';
+import {xdsClassName, mergeProps} from '../utils';
 
 /**
  * Alignment values accepted by XDSStack.
@@ -168,7 +169,10 @@ export const XDSStack = forwardRef<HTMLElement, XDSStackProps>(
       element,
       {
         ref: ref as Ref<Element>,
-        ...stylexProps,
+        ...mergeProps(
+          xdsClassName('stack', {direction, gap, wrap}),
+          stylexProps,
+        ),
         ...props,
       },
       children,

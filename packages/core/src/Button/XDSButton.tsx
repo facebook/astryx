@@ -40,6 +40,7 @@ import {XDSSpinner} from '../Spinner';
 import type {XDSIconProps} from '../Icon/XDSIcon';
 import type {XDSBadgeProps} from '../Badge/XDSBadge';
 import {edgeCompensation} from '../Layout/edgeCompensation.stylex';
+import {xdsClassName, mergeProps} from '../utils';
 
 /**
  * Base button styles
@@ -378,16 +379,19 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
         disabled={buttonDisabled}
         aria-label={isIconOnly ? label : undefined}
         aria-busy={isLoadingState || undefined}
-        {...stylex.props(
-          styles.base,
-          sizeStyles[size],
-          variants[variant],
-          themeVariantOverride,
-          isIconOnly && styles.iconOnly,
-          buttonDisabled && styles.disabled,
-          isLoadingState && loadingStyles.loading,
-          edgePaddingSignal,
-          edgeCompStyle,
+        {...mergeProps(
+          xdsClassName('button', {variant, size}),
+          stylex.props(
+            styles.base,
+            sizeStyles[size],
+            variants[variant],
+            themeVariantOverride,
+            isIconOnly && styles.iconOnly,
+            buttonDisabled && styles.disabled,
+            isLoadingState && loadingStyles.loading,
+            edgePaddingSignal,
+            edgeCompStyle,
+          ),
         )}
         {...props}
         onClick={handleClick}>

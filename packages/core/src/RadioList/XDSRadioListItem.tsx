@@ -24,6 +24,7 @@ import {
   fontWeightVars,
 } from '../theme/tokens.stylex';
 import {RadioListContext} from './XDSRadioList';
+import {xdsClassName, mergeProps} from '../utils';
 
 const styles = stylex.create({
   container: {
@@ -256,9 +257,9 @@ export function XDSRadioListItem({
   return (
     <div
       data-testid={dataTestId}
-      {...stylex.props(
-        styles.container,
-        !isDisabled && stylex.defaultMarker(),
+      {...mergeProps(
+        xdsClassName('radio-list-item'),
+        stylex.props(styles.container, !isDisabled && stylex.defaultMarker()),
       )}>
       {startContent && (
         <div {...stylex.props(styles.startContent)}>{startContent}</div>

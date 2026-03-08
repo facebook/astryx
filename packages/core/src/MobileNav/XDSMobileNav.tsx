@@ -38,6 +38,7 @@ import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
 import {XDSHeading} from '../Text/XDSHeading';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Styles
@@ -329,11 +330,14 @@ export const XDSMobileNav = forwardRef<HTMLDialogElement, XDSMobileNavProps>(
         aria-label={title ?? 'Navigation'}
         onClick={handleDialogClick}
         onCancel={handleCancel}
-        {...stylex.props(
-          styles.dialog,
-          styles.backdrop,
-          isOpen && styles.backdropOpen,
-          rootOverride,
+        {...mergeProps(
+          xdsClassName('mobile-nav', {side}),
+          stylex.props(
+            styles.dialog,
+            styles.backdrop,
+            isOpen && styles.backdropOpen,
+            rootOverride,
+          ),
         )}>
         {/* Drawer panel */}
         <div

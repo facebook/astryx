@@ -16,6 +16,7 @@ import {useContext, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {XDSAvatarSizeContext} from './XDSAvatarSizeContext';
+import {xdsClassName, mergeProps} from '../utils';
 
 /**
  * Resolves the status dot size, border width, and icon size based on the
@@ -166,10 +167,13 @@ export function XDSAvatarStatusDot({
   return (
     <div
       {...(label ? {'aria-label': label} : undefined)}
-      {...stylex.props(
-        styles.dot,
-        variantStyleMap[variant],
-        dynamicStyles.size(dotSize, borderWidth),
+      {...mergeProps(
+        xdsClassName('avatar-status-dot', {variant}),
+        stylex.props(
+          styles.dot,
+          variantStyleMap[variant],
+          dynamicStyles.size(dotSize, borderWidth),
+        ),
       )}
       {...props}>
       {icon && iconSize > 0 && (

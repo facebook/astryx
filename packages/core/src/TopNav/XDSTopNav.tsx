@@ -24,6 +24,7 @@ import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {edgeSignals} from '../Layout/edgeCompensation.stylex';
+import {xdsClassName, mergeProps} from '../utils';
 
 /**
  * Base TopNav styles
@@ -164,10 +165,13 @@ export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
         ref={ref}
         role="navigation"
         aria-label={label}
-        {...stylex.props(
-          styles.base,
-          hasCenterContent ? styles.baseGrid : styles.baseFlex,
-          rootOverride,
+        {...mergeProps(
+          xdsClassName('top-nav'),
+          stylex.props(
+            styles.base,
+            hasCenterContent ? styles.baseGrid : styles.baseFlex,
+            rootOverride,
+          ),
         )}
         {...props}>
         <div {...stylex.props(styles.leftSection, edgeSignals.start)}>

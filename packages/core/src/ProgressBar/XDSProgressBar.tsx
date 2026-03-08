@@ -25,6 +25,7 @@ import {
   lineHeightVars,
   transitionVars,
 } from '../theme/tokens.stylex';
+import {xdsClassName, mergeProps} from '../utils';
 
 /**
  * Progress bar variant type — maps to semantic color tokens.
@@ -263,7 +264,10 @@ export const XDSProgressBar = forwardRef<HTMLDivElement, XDSProgressBarProps>(
     return (
       <div
         ref={ref}
-        {...stylex.props(styles.container, xstyle)}
+        {...mergeProps(
+          xdsClassName('progressbar', {variant, size}),
+          stylex.props(styles.container, xstyle),
+        )}
         data-testid={dataTestId}>
         {/* Label row */}
         {!isLabelHidden || showValueLabel ? (

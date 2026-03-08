@@ -20,6 +20,7 @@ import {
   fontWeightVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
+import {xdsClassName, mergeProps} from '../utils';
 
 /**
  * Title styles
@@ -102,7 +103,10 @@ export const XDSTopNavTitle = forwardRef<HTMLElement, XDSTopNavTitleProps>(
       <Element
         ref={ref as React.Ref<HTMLAnchorElement & HTMLDivElement>}
         href={href}
-        {...stylex.props(styles.base, href != null && styles.clickable)}
+        {...mergeProps(
+          xdsClassName('top-nav-title'),
+          stylex.props(styles.base, href != null && styles.clickable),
+        )}
         {...props}>
         {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
         {title && <span {...stylex.props(styles.titleText)}>{title}</span>}

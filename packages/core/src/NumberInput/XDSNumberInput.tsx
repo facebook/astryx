@@ -101,6 +101,7 @@ export type {
 } from '../Field';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Module Augmentation - Register component styles with ComponentStyles
@@ -472,15 +473,18 @@ export const XDSNumberInput = forwardRef<HTMLInputElement, XDSNumberInputProps>(
         }
         labelTooltip={labelTooltip}>
         <div
-          {...stylex.props(
-            inputWrapperStyles.base,
-            styles.wrapper,
-            sizeStyles[size],
-            isDisabled && inputWrapperStyles.disabled,
-            status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
-            status && inputStatusFocusWithinStyles[status.type],
-            wrapperOverride,
+          {...mergeProps(
+            xdsClassName('number-input', {size}),
+            stylex.props(
+              inputWrapperStyles.base,
+              styles.wrapper,
+              sizeStyles[size],
+              isDisabled && inputWrapperStyles.disabled,
+              status && inputStatusBorderStyles[status.type],
+              status && inputStatusHoverShadowStyles[status.type],
+              status && inputStatusFocusWithinStyles[status.type],
+              wrapperOverride,
+            ),
           )}>
           {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
           <input

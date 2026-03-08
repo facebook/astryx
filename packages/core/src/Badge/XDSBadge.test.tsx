@@ -47,4 +47,11 @@ describe('XDSBadge', () => {
     render(<XDSBadge data-testid="custom-badge">Test</XDSBadge>);
     expect(screen.getByTestId('custom-badge')).toBeInTheDocument();
   });
+
+  it('renders xds-* class names for theme targeting', () => {
+    const {container} = render(<XDSBadge variant="success">Active</XDSBadge>);
+    const root = container.firstElementChild!;
+    expect(root.className).toContain('xds-badge');
+    expect(root.className).toContain('success');
+  });
 });

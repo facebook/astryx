@@ -18,6 +18,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {XDSListContext, type XDSListDensity} from './XDSListContext';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Types
@@ -192,11 +193,14 @@ export const XDSList = forwardRef<
           data-testid={testId}
           aria-labelledby={header != null ? headerId : undefined}
           {...(listStyle === 'none' && !isOrdered ? {role: 'list'} : {})}
-          {...stylex.props(
-            styles.list,
-            listStyleTypes[listStyle],
-            hasMarkers && styles.listWithMarkers,
-            xstyle,
+          {...mergeProps(
+            xdsClassName('list', {density, listStyle}),
+            stylex.props(
+              styles.list,
+              listStyleTypes[listStyle],
+              hasMarkers && styles.listWithMarkers,
+              xstyle,
+            ),
           )}>
           {renderedChildren}
         </Tag>

@@ -97,4 +97,18 @@ describe('XDSDivider', () => {
     expect(divider).toHaveAttribute('aria-orientation', 'vertical');
     expect(screen.getByText('Vertical')).toBeInTheDocument();
   });
+
+  it('renders xds-* class names for theme targeting', () => {
+    render(
+      <XDSDivider
+        variant="strong"
+        orientation="vertical"
+        data-testid="divider"
+      />,
+    );
+    const root = screen.getByTestId('divider');
+    expect(root.className).toContain('xds-divider');
+    expect(root.className).toContain('strong');
+    expect(root.className).toContain('vertical');
+  });
 });

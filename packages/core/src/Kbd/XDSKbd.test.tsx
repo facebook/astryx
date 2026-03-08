@@ -55,4 +55,10 @@ describe('XDSKbd', () => {
     expect(screen.getByText('\u2318')).toBeInTheDocument();
     expect(screen.getByText('K')).toBeInTheDocument();
   });
+
+  it('renders xds-* class names for theme targeting', () => {
+    const {container} = render(<XDSKbd keys="k" />);
+    const wrapper = container.firstChild as HTMLElement;
+    expect(wrapper.className).toContain('xds-kbd');
+  });
 });

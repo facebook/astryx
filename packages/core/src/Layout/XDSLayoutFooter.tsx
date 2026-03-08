@@ -14,6 +14,7 @@ import type {AriaRole, HTMLAttributes, ReactNode} from 'react';
 import {forwardRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
+import {xdsClassName, mergeProps} from '../utils';
 
 const styles = stylex.create({
   footer: {
@@ -128,12 +129,15 @@ export const XDSLayoutFooter = forwardRef<HTMLElement, XDSLayoutFooterProps>(
         ref={ref as React.Ref<HTMLDivElement>}
         role={role}
         aria-label={label}
-        {...stylex.props(
-          styles.footer,
-          dynamicStyles.sizing(height ?? null),
-          isFullBleed && styles.fullBleed,
-          hasDivider && styles.divider,
-          shouldCollapseSpacing && styles.collapseTop,
+        {...mergeProps(
+          xdsClassName('layout-footer'),
+          stylex.props(
+            styles.footer,
+            dynamicStyles.sizing(height ?? null),
+            isFullBleed && styles.fullBleed,
+            hasDivider && styles.divider,
+            shouldCollapseSpacing && styles.collapseTop,
+          ),
         )}
         {...props}>
         {children}
