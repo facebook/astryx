@@ -12,7 +12,8 @@
 
 'use client';
 
-import type {AriaRole, HTMLAttributes, ReactNode} from 'react';
+import type {AriaRole, ReactNode} from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {forwardRef, useContext} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
@@ -86,10 +87,7 @@ const dynamicStyles = stylex.create({
   }),
 });
 
-export interface XDSLayoutPanelProps extends Omit<
-  HTMLAttributes<HTMLElement>,
-  'style' | 'className'
-> {
+export interface XDSLayoutPanelProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * Content to render inside the panel.
    */
@@ -175,6 +173,8 @@ export const XDSLayoutPanel = forwardRef<HTMLElement, XDSLayoutPanelProps>(
       label,
       role,
       width,
+      className,
+      style,
       ...props
     },
     ref,
@@ -223,6 +223,8 @@ export const XDSLayoutPanel = forwardRef<HTMLElement, XDSLayoutPanelProps>(
             hasDivider && dividerStyle,
             shouldCollapseSpacing && collapseStyle,
           ),
+          className,
+          style,
         )}
         {...props}>
         {children}

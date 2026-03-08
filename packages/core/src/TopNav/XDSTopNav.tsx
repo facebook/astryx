@@ -13,7 +13,8 @@
 
 'use client';
 
-import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
+import {forwardRef, type ReactNode} from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {edgeSignals} from '../Layout/edgeCompensation.stylex';
@@ -83,12 +84,15 @@ const styles = stylex.create({
 });
 
 export interface XDSTopNavProps extends Omit<
-  HTMLAttributes<HTMLElement>,
-  'style' | 'className' | 'title'
+  XDSBaseProps<HTMLElement>,
+  'title'
 > {
   /**
-   * Title slot content - typically XDSTopNavTitle with logo and text.
+   * Title slot content — typically XDSTopNavTitle with logo and text.
    * Positioned at the left edge of the nav bar.
+   *
+   * Note: named `title` for now but will be renamed to `heading` to avoid
+   * collision with the HTML `title` attribute. See follow-up PR.
    */
   title?: ReactNode;
   /**
@@ -134,7 +138,16 @@ export interface XDSTopNavProps extends Omit<
  */
 export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
   function XDSTopNav(
-    {title, startContent, centerContent, endContent, label, ...props},
+    {
+      title,
+      startContent,
+      centerContent,
+      endContent,
+      label,
+      className,
+      style,
+      ...props
+    },
     ref,
   ) {
     const hasCenterContent = centerContent != null;
@@ -150,6 +163,8 @@ export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
             styles.base,
             hasCenterContent ? styles.baseGrid : styles.baseFlex,
           ),
+          className,
+          style,
         )}
         {...props}>
         <div {...stylex.props(styles.leftSection, edgeSignals.start)}>

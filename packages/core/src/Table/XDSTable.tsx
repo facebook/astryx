@@ -22,7 +22,14 @@ import {XDSTableCell} from './XDSTableCell';
 import {XDSTableHeaderCell} from './XDSTableHeaderCell';
 import {XDSTableContext} from './XDSTableContext';
 import {useXDSBaseTablePlugins} from './useXDSBaseTablePlugins';
-import type {XDSBaseTableProps, TablePlugin, TableRenderProps} from './types';
+import type {
+  XDSBaseTableProps,
+  TablePlugin,
+  TableRenderProps,
+  TableRowComponentProps,
+  TableCellComponentProps,
+  TableHeaderCellComponentProps,
+} from './types';
 
 // =============================================================================
 // XDSTable Types
@@ -87,11 +94,15 @@ function buildTableStylePlugin<
   };
 }
 
-// Stable component references for the components prop
+// Stable component references for the components prop.
+// XDSTable* components accept XDSBaseProps (narrower than the internal
+// Table*ComponentProps interfaces), but they spread ...props on their HTML
+// elements, so extra attributes from the plugin pipeline pass through safely.
 const xdsComponents = {
-  Row: XDSTableRow,
-  Cell: XDSTableCell,
-  HeaderCell: XDSTableHeaderCell,
+  Row: XDSTableRow as unknown as React.ComponentType<TableRowComponentProps>,
+  Cell: XDSTableCell as unknown as React.ComponentType<TableCellComponentProps>,
+  HeaderCell:
+    XDSTableHeaderCell as unknown as React.ComponentType<TableHeaderCellComponentProps>,
 };
 
 // =============================================================================

@@ -18,10 +18,10 @@
 import {
   forwardRef,
   useTransition,
-  type ButtonHTMLAttributes,
   type ReactElement,
   type ReactNode,
 } from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -195,10 +195,15 @@ export type XDSButtonVariant = keyof typeof variants;
  */
 export type XDSButtonSize = keyof typeof sizeStyles;
 
-export interface XDSButtonProps extends Omit<
-  ButtonHTMLAttributes<HTMLButtonElement>,
-  'children' | 'disabled'
-> {
+export interface XDSButtonProps extends XDSBaseProps<HTMLButtonElement> {
+  /** HTML button type attribute. @default 'button' */
+  type?: 'button' | 'submit' | 'reset';
+  /** HTML name attribute for form submission. */
+  name?: string;
+  /** HTML value attribute for form submission. */
+  value?: string | number | readonly string[];
+  /** Associates the button with a form element by ID. */
+  form?: string;
   /**
    * Accessible label for the button (required for accessibility).
    * Used as visible text, or as aria-label for icon-only buttons.
@@ -224,6 +229,11 @@ export interface XDSButtonProps extends Omit<
    * @default false
    */
   isLoading?: boolean;
+  /**
+   * Click handler. For async actions that should show a loading state,
+   * use `onClickAction` instead.
+   */
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
   /**
    * Async click action. Shows loading state while pending.
    */
@@ -320,6 +330,8 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
       children,
       endSlot,
       tooltip,
+      className,
+      style,
       ...props
     },
     ref,
@@ -370,6 +382,8 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
             edgePaddingSignal,
             edgeCompStyle,
           ),
+          className,
+          style,
         )}
         {...props}
         onClick={handleClick}>

@@ -12,7 +12,8 @@
 
 'use client';
 
-import {forwardRef, type HTMLAttributes} from 'react';
+import {forwardRef} from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
@@ -111,10 +112,7 @@ export type XDSSkeletonRadius = keyof typeof radiusStyles;
 // Component
 // =============================================================================
 
-export interface XDSSkeletonProps extends Omit<
-  HTMLAttributes<HTMLDivElement>,
-  'className' | 'style'
-> {
+export interface XDSSkeletonProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * Width of the skeleton.
    * Accepts a number (pixels) or string (any CSS value).
@@ -172,6 +170,8 @@ export const XDSSkeleton = forwardRef<HTMLDivElement, XDSSkeletonProps>(
       radius: radiusProp = 'container',
       index = 0,
       'data-testid': testId,
+      className,
+      style,
       ...props
     },
     ref,
@@ -189,6 +189,8 @@ export const XDSSkeleton = forwardRef<HTMLDivElement, XDSSkeletonProps>(
             dynamicStyles.dimensions(width, height),
             dynamicStyles.animationDelay(index),
           ),
+          className,
+          style,
         )}
         {...props}
       />

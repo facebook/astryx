@@ -67,6 +67,14 @@ export type {SizeValue} from '../utils/types';
 
 export interface XDSCardProps {
   /**
+   * CSS class name(s) appended to the root element.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element.
+   */
+  style?: React.CSSProperties;
+  /**
    * Width of the card.
    * Numbers are treated as pixels, strings are used as-is.
    */
@@ -132,6 +140,8 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
       minHeight,
       children,
       isFullBleed = false,
+      className,
+      style,
       ...props
     },
     ref,
@@ -153,6 +163,8 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
               minHeight ?? null,
             ),
           ),
+          className,
+          style,
         )}
         {...props}>
         <div

@@ -29,6 +29,7 @@ import type {
   BodyCellRenderProps,
   TableRowComponentProps,
   TableCellComponentProps,
+  TableHeaderCellComponentProps,
 } from './types';
 import {generateColumns, defaultCellRenderer} from './columnUtils';
 import {XDSTableRow} from './XDSTableRow';
@@ -198,9 +199,12 @@ function XDSBaseTableInner<T extends Record<string, unknown>>(
   // Use stable empty array when no plugins provided
   const plugins = pluginsProp ?? (EMPTY_PLUGINS as TablePlugin<T>[]);
 
-  const RowComponent = components?.Row ?? XDSTableRow;
-  const CellComponent = components?.Cell ?? XDSTableCell;
-  const HeaderCellComponent = components?.HeaderCell ?? XDSTableHeaderCell;
+  const RowComponent = (components?.Row ??
+    XDSTableRow) as React.ComponentType<TableRowComponentProps>;
+  const CellComponent = (components?.Cell ??
+    XDSTableCell) as React.ComponentType<TableCellComponentProps>;
+  const HeaderCellComponent = (components?.HeaderCell ??
+    XDSTableHeaderCell) as React.ComponentType<TableHeaderCellComponentProps>;
 
   // Resolve columns: explicit > auto-generated from data
   const resolvedColumns: XDSTableColumn<T>[] =

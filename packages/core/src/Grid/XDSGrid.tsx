@@ -12,7 +12,8 @@
 
 'use client';
 
-import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
+import {forwardRef, type ReactNode} from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
@@ -26,7 +27,7 @@ import {xdsClassName, mergeProps} from '../utils';
 
 export type GridAlignment = 'start' | 'center' | 'end' | 'stretch';
 
-export interface XDSGridProps extends HTMLAttributes<HTMLElement> {
+export interface XDSGridProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * Maximum number of columns.
    * - When only columns is set: creates fixed equal-width columns

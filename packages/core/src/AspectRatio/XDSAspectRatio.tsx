@@ -12,12 +12,13 @@
 
 'use client';
 
-import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
+import {forwardRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
 
-export interface XDSAspectRatioProps extends HTMLAttributes<HTMLElement> {
+export interface XDSAspectRatioProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * The aspect ratio as width/height (e.g., 16/9 = 1.777..., 4/3 = 1.333..., 1 for square).
    */

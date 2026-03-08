@@ -10,7 +10,8 @@
  * - /apps/storybook/stories/Layout.stories.tsx
  */
 
-import type {AriaRole, HTMLAttributes, ReactNode} from 'react';
+import type {AriaRole, ReactNode} from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {forwardRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
@@ -50,10 +51,7 @@ const dynamicStyles = stylex.create({
   }),
 });
 
-export interface XDSLayoutHeaderProps extends Omit<
-  HTMLAttributes<HTMLElement>,
-  'style' | 'className'
-> {
+export interface XDSLayoutHeaderProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * Content to render inside the header.
    */
@@ -117,6 +115,8 @@ export const XDSLayoutHeader = forwardRef<HTMLElement, XDSLayoutHeaderProps>(
       isFullBleed = false,
       label,
       role,
+      className,
+      style,
       ...props
     },
     ref,
@@ -138,6 +138,8 @@ export const XDSLayoutHeader = forwardRef<HTMLElement, XDSLayoutHeaderProps>(
             hasDivider && styles.divider,
             shouldCollapseSpacing && styles.collapseBottom,
           ),
+          className,
+          style,
         )}
         {...props}>
         {children}

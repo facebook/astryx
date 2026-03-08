@@ -12,7 +12,8 @@
 
 'use client';
 
-import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
+import {type HTMLAttributes, forwardRef, type ReactNode} from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -24,7 +25,7 @@ import {
 import {xdsClassName, mergeProps} from '../utils';
 
 export interface XDSDividerProps extends Omit<
-  HTMLAttributes<HTMLElement>,
+  XDSBaseProps<HTMLDivElement>,
   'children'
 > {
   /**

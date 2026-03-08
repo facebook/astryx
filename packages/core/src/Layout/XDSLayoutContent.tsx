@@ -12,7 +12,8 @@
 
 'use client';
 
-import type {AriaRole, HTMLAttributes, ReactNode} from 'react';
+import type {AriaRole, ReactNode} from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {forwardRef, useContext} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
@@ -59,10 +60,7 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSLayoutContentProps extends Omit<
-  HTMLAttributes<HTMLElement>,
-  'style' | 'className'
-> {
+export interface XDSLayoutContentProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * Content to render inside the content area.
    */
@@ -137,7 +135,16 @@ export interface XDSLayoutContentProps extends Omit<
  */
 export const XDSLayoutContent = forwardRef<HTMLElement, XDSLayoutContentProps>(
   function XDSLayoutContent(
-    {children, isFullBleed = false, isScrollable = true, label, role, ...props},
+    {
+      children,
+      isFullBleed = false,
+      isScrollable = true,
+      label,
+      role,
+      className,
+      style,
+      ...props
+    },
     ref,
   ) {
     const {hasHeader, hasFooter, hasStart, hasEnd} = useContext(
@@ -161,6 +168,8 @@ export const XDSLayoutContent = forwardRef<HTMLElement, XDSLayoutContentProps>(
             isScrollable && styles.scrollable,
             isFullBleed && styles.fullBleed,
           ),
+          className,
+          style,
         )}
         {...props}>
         {children}
