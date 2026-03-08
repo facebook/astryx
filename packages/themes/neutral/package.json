@@ -5,15 +5,10 @@
   "description": "Neutral theme for XDS components (Lucide icons)",
   "license": "MIT",
   "sideEffects": false,
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
-    },
+    ".": "./src/index.ts",
     "./theme.css": "./dist/theme.css"
   },
   "files": [
@@ -21,25 +16,16 @@
     "src"
   ],
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
-    "build:css": "node ../../../scripts/build-theme-css.mjs packages/themes/neutral",
-    "postbuild": "yarn build:css"
+    "build:theme": "xds build-theme src/index.ts -o dist/theme.css"
   },
   "dependencies": {
     "lucide-react": "^0.575.0"
   },
   "peerDependencies": {
-    "@stylexjs/stylex": ">=0.10.0",
     "@xds/core": "*",
     "react": ">=19"
   },
   "devDependencies": {
-    "@babel/core": "^7.28.5",
-    "@babel/preset-react": "^7.28.5",
-    "@babel/preset-typescript": "^7.28.5",
-    "@stylexjs/babel-plugin": "^0.17.4",
-    "esbuild-plugin-babel": "^0.2.3",
-    "tsup": "^8.3.0"
+    "@xds/cli": "*"
   }
 }

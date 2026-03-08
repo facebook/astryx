@@ -279,7 +279,7 @@ export const XDSHeading = forwardRef<HTMLHeadingElement, XDSHeadingProps>(
         <Component
           ref={mergedRef}
           {...mergeProps(
-            xdsClassName('heading', {level}),
+            xdsClassName('heading', {variant, level}),
             stylex.props(
               levelStyle,
               colorStyles[color],

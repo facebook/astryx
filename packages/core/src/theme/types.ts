@@ -169,6 +169,9 @@ export interface ComponentStyles {
  * Theme styles - StyleX styles that set CSS variables.
  * All fields are optional — omitted groups use the defineVars defaults
  * from tokens.stylex.ts, enabling partial theme overrides.
+ *
+ * @deprecated Use `defineTheme()` from `@xds/core/theme` instead.
+ * StyleX-based themes are being replaced by CSS-based theming.
  */
 export interface ThemeStyles {
   /** Color CSS variables */
@@ -197,6 +200,8 @@ export interface ThemeStyles {
  * Raw token values for programmatic access.
  * Useful for charting libraries, theme editors, or parsing light-dark() values.
  * All fields are optional — partial themes only include overridden groups.
+ *
+ * @deprecated Use `defineTheme()` — token values are accessible via `theme.tokens`.
  */
 export interface ThemeRaw {
   colors?: Record<string, string>;
@@ -212,7 +217,11 @@ export interface ThemeRaw {
 }
 
 /**
- * Theme object - pre-compiled StyleX styles that set CSS variables
+ * Theme object - pre-compiled StyleX styles that set CSS variables.
+ *
+ * @deprecated Use `defineTheme()` from `@xds/core/theme` to create themes.
+ * The `XDSDefinedTheme` type replaces this interface. All shipped themes
+ * (default, neutral, brutalist) now use `defineTheme()`.
  */
 export interface Theme {
   /** Theme name */

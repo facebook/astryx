@@ -1,2 +1,2 @@
-export {defaultTheme} from './defaultTheme.stylex';
+export {defaultTheme} from './defaultTheme';
 export {defaultIconRegistry} from './icons';
