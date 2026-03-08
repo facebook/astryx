@@ -153,3 +153,22 @@ export const SupportingWithIcons: Story = {
     </XDSBreadcrumbs>
   ),
 };
+
+/**
+ * Shows `isCurrent` on a middle breadcrumb item rather than the last one.
+ * This is useful when navigating to a child page that isn't represented
+ * in the breadcrumb trail — the parent is still the "current" page in
+ * the hierarchy.
+ */
+export const CurrentOnMiddleItem: Story = {
+  name: 'Current on Middle Item',
+  render: () => (
+    <XDSBreadcrumbs>
+      <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
+      <XDSBreadcrumbItem isCurrent>Projects</XDSBreadcrumbItem>
+      <XDSBreadcrumbItem href="/projects/my-project/settings">
+        Settings
+      </XDSBreadcrumbItem>
+    </XDSBreadcrumbs>
+  ),
+};

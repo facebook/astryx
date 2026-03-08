@@ -259,6 +259,69 @@ export default meta;
 type Story = StoryObj<typeof XDSAppShell>;
 
 // =============================================================================
+// Playground (interactive controls)
+// =============================================================================
+
+/**
+ * Interactive playground with controls for toggling top nav and side nav.
+ * When top nav is turned off, the side nav automatically shows a header
+ * with the app title since there's no top bar to display it.
+ */
+export const Playground: StoryObj<
+  typeof XDSAppShell & {showTopNav: boolean; showSideNav: boolean}
+> = {
+  argTypes: {
+    showTopNav: {
+      control: 'boolean',
+      description: 'Show the top navigation bar',
+    },
+    showSideNav: {
+      control: 'boolean',
+      description: 'Show the side navigation',
+    },
+    background: {
+      control: 'radio',
+      options: ['surface', 'wash'],
+      description: 'Background color of the shell',
+    },
+    height: {
+      control: 'radio',
+      options: ['fill', 'auto'],
+    },
+  },
+  args: {
+    showTopNav: true,
+    showSideNav: true,
+    background: 'wash',
+    height: 'fill',
+  },
+  render: function PlaygroundStory(args: {
+    showTopNav: boolean;
+    showSideNav: boolean;
+    background: 'surface' | 'wash';
+    height: 'fill' | 'auto';
+  }) {
+    return (
+      <XDSAppShell
+        topNav={args.showTopNav ? <AppTopNav /> : undefined}
+        sideNav={
+          args.showSideNav ? (
+            args.showTopNav ? (
+              <SideNavWithoutHeader />
+            ) : (
+              <SideNavWithHeader />
+            )
+          ) : undefined
+        }
+        background={args.background}
+        height={args.height}>
+        <MockContent />
+      </XDSAppShell>
+    );
+  },
+};
+
+// =============================================================================
 // Stories
 // =============================================================================
 
