@@ -626,18 +626,20 @@ export function registerBuildTheme(program) {
         console.warn(`  ⚠ ${w}`);
       }
 
-      // Generate CSS (tokens + component overrides)
+      // Generate CSS
       const noProse = options.prose === false;
       const scopeBlocks = [];
 
-      const mainCss = generateCSS(themeDef, {prose: !noProse});
-      if (mainCss) scopeBlocks.push(mainCss);
-
-      // Prose defaults — baseline HTML element styles from tokens
+      // Prose defaults first — baseline HTML element styles from tokens.
+      // These come before component overrides so overrides win by source order.
       if (!noProse) {
         const proseCss = generateProseCSS(themeDef);
         if (proseCss) scopeBlocks.push(proseCss);
       }
+
+      // Tokens + component overrides (with prose co-selection) come after
+      const mainCss = generateCSS(themeDef, {prose: !noProse});
+      if (mainCss) scopeBlocks.push(mainCss);
 
       if (scopeBlocks.length === 0) {
         console.log('No overrides found — nothing to build.');
