@@ -6,8 +6,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Stack/Stack.doc.mjs
- * - /packages/core/src/Layout/Stack/XDSVStack.test.tsx
- * - /apps/storybook/stories/VStack.stories.tsx
+ * - /packages/core/src/Stack/XDSVStack.test.tsx
  */
 
 import {forwardRef} from 'react';
@@ -38,16 +37,14 @@ export interface XDSVStackProps extends Omit<
 
 /**
  * Vertical stack component for arranging items top-to-bottom.
- *
- * @deprecated Use `XDSStack` with `direction="vertical"` (or omit direction) instead.
+ * Convenience wrapper around `XDSStack` with `direction="vertical"`.
  *
  * @example
  * ```
- * // Before
- * <XDSVStack gap="space2">...</XDSVStack>
- *
- * // After
- * <XDSStack direction="vertical" gap="space2">...</XDSStack>
+ * <XDSVStack gap="space2">
+ *   <Item />
+ *   <Item />
+ * </XDSVStack>
  * ```
  */
 export const XDSVStack = forwardRef<HTMLElement, XDSVStackProps>(

@@ -11,7 +11,7 @@
 export {XDSStack} from './XDSStack';
 export type {XDSStackProps, StackAlignment} from './XDSStack';
 
-// Legacy wrappers (deprecated — use XDSStack instead)
+// Convenience wrappers
 export {XDSHStack} from './XDSHStack';
 export type {XDSHStackProps} from './XDSHStack';
 

@@ -22,10 +22,6 @@ import renameFormTooltipStartIcon, {
 import renameIsShownToIsOpen, {
   meta as isShownMeta,
 } from './rename-isShown-to-isOpen.mjs';
-import replaceHStackVStackWithStack, {
-  meta as stackMeta,
-} from './replace-hstack-vstack-with-stack.mjs';
-
 export default [
   {
     name: 'rename-selector-items-to-options',
@@ -56,10 +52,5 @@ export default [
     name: 'rename-isShown-to-isOpen',
     transform: renameIsShownToIsOpen,
     meta: isShownMeta,
-  },
-  {
-    name: 'replace-hstack-vstack-with-stack',
-    transform: replaceHStackVStackWithStack,
-    meta: stackMeta,
   },
 ];

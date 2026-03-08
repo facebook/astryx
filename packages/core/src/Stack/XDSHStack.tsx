@@ -6,8 +6,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Stack/Stack.doc.mjs
- * - /packages/core/src/Layout/Stack/XDSHStack.test.tsx
- * - /apps/storybook/stories/HStack.stories.tsx
+ * - /packages/core/src/Stack/XDSHStack.test.tsx
  */
 
 import {forwardRef} from 'react';
@@ -38,16 +37,14 @@ export interface XDSHStackProps extends Omit<
 
 /**
  * Horizontal stack component for arranging items left-to-right.
- *
- * @deprecated Use `XDSStack` with `direction="horizontal"` instead.
+ * Convenience wrapper around `XDSStack` with `direction="horizontal"`.
  *
  * @example
  * ```
- * // Before
- * <XDSHStack gap="space2">...</XDSHStack>
- *
- * // After
- * <XDSStack direction="horizontal" gap="space2">...</XDSStack>
+ * <XDSHStack gap="space2">
+ *   <Item />
+ *   <Item />
+ * </XDSHStack>
  * ```
  */
 export const XDSHStack = forwardRef<HTMLElement, XDSHStackProps>(
