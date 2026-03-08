@@ -39,7 +39,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-1'],
     cursor: 'default',
     userSelect: 'none',

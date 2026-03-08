@@ -43,7 +43,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-3'],
     boxSizing: 'border-box',
     textDecoration: 'none',
@@ -66,7 +66,7 @@ const styles = stylex.create({
     },
   },
   interactiveInset: {
-    marginInline: spacingVars['--spacing-1'],
+    marginInline: spacingVars['--spacing-2'],
     marginBlock: spacingVars['--spacing-1'],
   },
   icon: {

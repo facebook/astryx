@@ -86,11 +86,15 @@ const itemStyles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
+    lineHeight: lineHeightVars['--leading-snug'],
+    paddingBlock: spacingVars['--spacing-1'],
   },
   link: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
+    lineHeight: lineHeightVars['--leading-snug'],
+    paddingBlock: spacingVars['--spacing-1'],
     textDecoration: {
       default: 'none',
       ':hover': {

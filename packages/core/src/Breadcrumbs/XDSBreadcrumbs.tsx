@@ -138,6 +138,7 @@ const separatorStyles = stylex.create({
     alignItems: 'center',
     color: colorVars['--color-text-secondary'],
     lineHeight: lineHeightVars['--leading-snug'],
+    paddingBlock: spacingVars['--spacing-1'],
     userSelect: 'none',
   },
   defaultSize: {
