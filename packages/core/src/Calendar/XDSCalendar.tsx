@@ -194,6 +194,7 @@ export const XDSCalendar = forwardRef<XDSCalendarHandle, XDSCalendarProps>(
       hasWeekNumbers = false,
       hasVariableRowCount = false,
       weekStartsOn = 0,
+      xstyle,
       className,
       style,
       ...rest
@@ -351,7 +352,7 @@ export const XDSCalendar = forwardRef<XDSCalendarHandle, XDSCalendarProps>(
       <div
         {...mergeProps(
           xdsClassName('calendar', {mode}),
-          stylex.props(calendarStyles.calendar),
+          stylex.props(calendarStyles.calendar, xstyle),
           className,
           style,
         )}

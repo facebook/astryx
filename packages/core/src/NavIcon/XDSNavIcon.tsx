@@ -67,13 +67,13 @@ export interface XDSNavIconProps extends XDSBaseProps<HTMLDivElement> {
  * ```
  */
 export const XDSNavIcon = forwardRef<HTMLSpanElement, XDSNavIconProps>(
-  function XDSNavIcon({icon, className, style, ...props}, ref) {
+  function XDSNavIcon({icon, xstyle, className, style, ...props}, ref) {
     return (
       <span
         ref={ref}
         {...mergeProps(
           xdsClassName('navicon'),
-          stylex.props(styles.base),
+          stylex.props(styles.base, xstyle),
           className,
           style,
         )}

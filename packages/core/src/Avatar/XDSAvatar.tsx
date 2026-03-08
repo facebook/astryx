@@ -250,6 +250,7 @@ export const XDSAvatar = forwardRef<HTMLDivElement, XDSAvatarProps>(
       size = 'small',
       src,
       status,
+      xstyle,
       className,
       style,
       ...props
@@ -276,7 +277,7 @@ export const XDSAvatar = forwardRef<HTMLDivElement, XDSAvatarProps>(
           data-testid={testId}
           {...mergeProps(
             xdsClassName('avatar', {size}),
-            stylex.props(styles.wrapper),
+            stylex.props(styles.wrapper, xstyle),
             className,
             style,
           )}

@@ -114,7 +114,10 @@ export interface XDSBadgeProps extends XDSBaseProps<HTMLSpanElement> {
  * ```
  */
 export const XDSBadge = forwardRef<HTMLSpanElement, XDSBadgeProps>(
-  ({variant = 'neutral', children, icon, className, style, ...props}, ref) => {
+  (
+    {variant = 'neutral', children, icon, xstyle, className, style, ...props},
+    ref,
+  ) => {
     const isDot = children == null && icon == null;
 
     return (
@@ -122,7 +125,12 @@ export const XDSBadge = forwardRef<HTMLSpanElement, XDSBadgeProps>(
         ref={ref}
         {...mergeProps(
           xdsClassName('badge', {variant}),
-          stylex.props(styles.base, variants[variant], isDot && styles.dot),
+          stylex.props(
+            styles.base,
+            variants[variant],
+            isDot && styles.dot,
+            xstyle,
+          ),
           className,
           style,
         )}

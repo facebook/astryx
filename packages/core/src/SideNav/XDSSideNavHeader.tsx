@@ -381,6 +381,8 @@ export const XDSSideNavHeader = forwardRef<
             styles.interactiveInset,
             xstyle,
           ),
+          className,
+          style,
         )}
         {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}>
         {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
@@ -408,6 +410,8 @@ export const XDSSideNavHeader = forwardRef<
               styles.interactiveInset,
               xstyle,
             ),
+            className,
+            style,
           )}>
           {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
           {renderTextContent()}
@@ -535,6 +539,8 @@ export const XDSSideNavHeader = forwardRef<
       {...mergeProps(
         xdsClassName('side-nav-header'),
         stylex.props(styles.root, xstyle),
+        className,
+        style,
       )}
       {...props}>
       {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}

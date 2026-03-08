@@ -115,6 +115,7 @@ export const XDSLayoutHeader = forwardRef<HTMLElement, XDSLayoutHeaderProps>(
       isFullBleed = false,
       label,
       role,
+      xstyle,
       className,
       style,
       ...props
@@ -137,6 +138,7 @@ export const XDSLayoutHeader = forwardRef<HTMLElement, XDSLayoutHeaderProps>(
             isFullBleed && styles.fullBleed,
             hasDivider && styles.divider,
             shouldCollapseSpacing && styles.collapseBottom,
+            xstyle,
           ),
           className,
           style,

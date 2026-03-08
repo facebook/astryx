@@ -100,8 +100,12 @@ export type {
   XDSInputStatusType as XDSNumberInputStatusType,
 } from '../Field';
 import {xdsClassName, mergeProps} from '../utils';
+import {XDSBaseProps} from '../XDSBaseProps';
 
-export interface XDSNumberInputProps {
+export interface XDSNumberInputProps extends Omit<
+  XDSBaseProps,
+  'onChange' | 'defaultValue'
+> {
   /**
    * Label text for the input (always rendered for accessibility).
    */
@@ -299,6 +303,9 @@ export const XDSNumberInput = forwardRef<HTMLInputElement, XDSNumberInputProps>(
       onFocus,
       onBlur,
       onEnter,
+      xstyle,
+      className,
+      style,
     },
     ref,
   ) => {
@@ -462,7 +469,10 @@ export const XDSNumberInput = forwardRef<HTMLInputElement, XDSNumberInputProps>(
               status && inputStatusBorderStyles[status.type],
               status && inputStatusHoverShadowStyles[status.type],
               status && inputStatusFocusWithinStyles[status.type],
+              xstyle,
             ),
+            className,
+            style,
           )}>
           {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
           <input

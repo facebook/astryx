@@ -157,6 +157,7 @@ export function XDSAvatarStatusDot({
   variant = 'positive',
   label,
   icon,
+  xstyle,
   className,
   style,
   ...props
@@ -173,6 +174,7 @@ export function XDSAvatarStatusDot({
           styles.dot,
           variantStyleMap[variant],
           dynamicStyles.size(dotSize, borderWidth),
+          xstyle,
         ),
         className,
         style,

@@ -36,6 +36,7 @@ import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
 import {XDSHeading} from '../Text/XDSHeading';
 import {xdsClassName, mergeProps} from '../utils';
+import {XDSBaseProps} from '../XDSBaseProps';
 
 // =============================================================================
 // Styles
@@ -161,7 +162,7 @@ const dynamicStyles = stylex.create({
 // Types
 // =============================================================================
 
-export interface XDSMobileNavProps {
+export interface XDSMobileNavProps extends Omit<XDSBaseProps, 'title'> {
   /**
    * Whether the drawer is open.
    */
@@ -241,6 +242,9 @@ export const XDSMobileNav = forwardRef<HTMLDialogElement, XDSMobileNavProps>(
       width = 280,
       side = 'start',
       'data-testid': testId,
+      xstyle,
+      className,
+      style,
     },
     ref,
   ) {
@@ -313,8 +317,10 @@ export const XDSMobileNav = forwardRef<HTMLDialogElement, XDSMobileNavProps>(
             styles.dialog,
             styles.backdrop,
             isOpen && styles.backdropOpen,
+            xstyle,
           ),
         )}>
+        xstyle, className, style,
         {/* Drawer panel */}
         <div
           {...stylex.props(

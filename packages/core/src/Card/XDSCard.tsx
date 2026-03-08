@@ -18,6 +18,7 @@ import {colorVars, radiusVars, elevationVars} from '../theme/tokens.stylex';
 import {container} from '../Layout/container.stylex';
 import type {SizeValue} from '../utils/types';
 import {xdsClassName, mergeProps} from '../utils';
+import {XDSBaseProps} from '../XDSBaseProps';
 
 const styles = stylex.create({
   // Outer wrapper: visual styling with clip for border-radius
@@ -65,7 +66,7 @@ const dynamicStyles = stylex.create({
 
 export type {SizeValue} from '../utils/types';
 
-export interface XDSCardProps {
+export interface XDSCardProps extends XDSBaseProps {
   /**
    * CSS class name(s) appended to the root element.
    */
@@ -140,6 +141,7 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
       minHeight,
       children,
       isFullBleed = false,
+      xstyle,
       className,
       style,
       ...props
@@ -162,6 +164,7 @@ export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
               maxWidth ?? null,
               minHeight ?? null,
             ),
+            xstyle,
           ),
           className,
           style,

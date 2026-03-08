@@ -249,6 +249,9 @@ export const XDSLink = forwardRef<HTMLAnchorElement, XDSLinkProps>(
       maxLines = 0,
       children,
       rel,
+      xstyle,
+      className,
+      style,
       ...props
     },
     ref,
@@ -280,7 +283,10 @@ export const XDSLink = forwardRef<HTMLAnchorElement, XDSLinkProps>(
             hasUnderline && styles.hasUnderline,
             isStandalone && styles.standalone,
             isDisabled && styles.disabled,
+            xstyle,
           ),
+          className,
+          style,
         )}
         {...props}>
         <XDSText

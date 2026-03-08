@@ -54,6 +54,7 @@ import {
 import {useCombobox, useSelectedItemOffset} from './hooks';
 import {XDSSelectorOption} from './XDSSelectorOption';
 import {xdsClassName, mergeProps} from '../utils';
+import {XDSBaseProps} from '../XDSBaseProps';
 
 const styles = stylex.create({
   // Trigger button
@@ -245,7 +246,7 @@ export interface XDSSelectorStatus {
 
 export interface XDSSelectorProps<
   T extends XDSSelectorOptionType = XDSSelectorOptionType,
-> {
+> extends Omit<XDSBaseProps, 'onChange' | 'defaultValue' | 'children'> {
   /**
    * Label text for the selector (always rendered for accessibility).
    */
@@ -389,6 +390,9 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
   labelTooltip,
   children,
   'data-testid': testId,
+  xstyle,
+  className,
+  style,
 }: XDSSelectorProps<T>) {
   const triggerId = useId();
   const listboxId = useId();
@@ -612,7 +616,10 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
             !selectedItem && styles.triggerPlaceholder,
             status && inputStatusBorderStyles[status.type],
             status && inputStatusHoverShadowStyles[status.type],
+            xstyle,
           ),
+          className,
+          style,
         )}>
         <span>{selectedItem?.label ?? placeholder}</span>
         {isBusy && <XDSSpinner size="sm" />}

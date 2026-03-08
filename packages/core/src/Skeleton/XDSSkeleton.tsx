@@ -170,6 +170,7 @@ export const XDSSkeleton = forwardRef<HTMLDivElement, XDSSkeletonProps>(
       radius: radiusProp = 'container',
       index = 0,
       'data-testid': testId,
+      xstyle,
       className,
       style,
       ...props
@@ -188,6 +189,7 @@ export const XDSSkeleton = forwardRef<HTMLDivElement, XDSSkeletonProps>(
             radiusStyles[radiusProp],
             dynamicStyles.dimensions(width, height),
             dynamicStyles.animationDelay(index),
+            xstyle,
           ),
           className,
           style,

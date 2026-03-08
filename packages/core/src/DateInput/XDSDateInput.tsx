@@ -125,8 +125,12 @@ export type {
   XDSInputStatusType as XDSDateInputStatusType,
 } from '../Field';
 import {xdsClassName, mergeProps} from '../utils';
+import {XDSBaseProps} from '../XDSBaseProps';
 
-export interface XDSDateInputProps {
+export interface XDSDateInputProps extends Omit<
+  XDSBaseProps,
+  'onChange' | 'defaultValue'
+> {
   /**
    * Label text for the input (required for accessibility).
    */
@@ -264,6 +268,9 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
       status,
       labelTooltip,
       numberOfMonths = 1,
+      xstyle,
+      className,
+      style,
     },
     ref,
   ) => {
@@ -467,7 +474,10 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
               status && inputStatusBorderStyles[status.type],
               status && inputStatusHoverShadowStyles[status.type],
               status && inputStatusFocusWithinStyles[status.type],
+              xstyle,
             ),
+            className,
+            style,
           )}>
           <button
             type="button"

@@ -36,6 +36,7 @@ import type {XDSIconType} from '../Icon';
 import type {XDSInputStatus} from '../Field/types';
 import {XDSSpinner} from '../Spinner';
 import {xdsClassName, mergeProps} from '../utils';
+import {XDSBaseProps} from '../XDSBaseProps';
 
 // Fixed dimensions: 40px width, 24px height, 16px thumb (off), 20px thumb (on)
 const SWITCH_WIDTH = 40;
@@ -154,7 +155,7 @@ export type XDSSwitchLabelPosition = 'start' | 'end';
 
 export type XDSSwitchLabelSpacing = 'default' | 'spread';
 
-export interface XDSSwitchProps {
+export interface XDSSwitchProps extends Omit<XDSBaseProps, 'onChange'> {
   /**
    * Label text for the switch (always rendered for accessibility).
    */
@@ -278,6 +279,9 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
       labelPosition = 'end',
       labelSpacing = 'default',
       status,
+      xstyle,
+      className,
+      style,
     },
     ref,
   ) => {
@@ -373,7 +377,13 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
     );
 
     return (
-      <div>
+      <div
+        {...mergeProps(
+          xdsClassName('switch-field'),
+          stylex.props(xstyle),
+          className,
+          style,
+        )}>
         <div
           {...stylex.props(
             styles.container,

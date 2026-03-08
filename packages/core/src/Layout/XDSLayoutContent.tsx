@@ -141,6 +141,7 @@ export const XDSLayoutContent = forwardRef<HTMLElement, XDSLayoutContentProps>(
       isScrollable = true,
       label,
       role,
+      xstyle,
       className,
       style,
       ...props
@@ -167,6 +168,7 @@ export const XDSLayoutContent = forwardRef<HTMLElement, XDSLayoutContentProps>(
             !hasFooter && !isFullBleed && styles.noFooter,
             isScrollable && styles.scrollable,
             isFullBleed && styles.fullBleed,
+            xstyle,
           ),
           className,
           style,

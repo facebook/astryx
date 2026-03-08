@@ -330,6 +330,7 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
       children,
       endSlot,
       tooltip,
+      xstyle,
       className,
       style,
       ...props
@@ -381,6 +382,7 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
             isLoadingState && loadingStyles.loading,
             edgePaddingSignal,
             edgeCompStyle,
+            xstyle,
           ),
           className,
           style,

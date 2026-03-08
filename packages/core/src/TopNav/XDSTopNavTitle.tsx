@@ -95,7 +95,7 @@ export interface XDSTopNavTitleProps extends XDSBaseProps<HTMLElement> {
  */
 export const XDSTopNavTitle = forwardRef<HTMLElement, XDSTopNavTitleProps>(
   function XDSTopNavTitle(
-    {title, logo, href, className, style, ...props},
+    {title, logo, href, xstyle, className, style, ...props},
     ref,
   ) {
     const Element = href ? 'a' : 'div';
@@ -106,7 +106,7 @@ export const XDSTopNavTitle = forwardRef<HTMLElement, XDSTopNavTitleProps>(
         href={href}
         {...mergeProps(
           xdsClassName('top-nav-title'),
-          stylex.props(styles.base, href != null && styles.clickable),
+          stylex.props(styles.base, href != null && styles.clickable, xstyle),
           className,
           style,
         )}

@@ -144,6 +144,7 @@ export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
       centerContent,
       endContent,
       label,
+      xstyle,
       className,
       style,
       ...props
@@ -162,6 +163,7 @@ export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
           stylex.props(
             styles.base,
             hasCenterContent ? styles.baseGrid : styles.baseFlex,
+            xstyle,
           ),
           className,
           style,

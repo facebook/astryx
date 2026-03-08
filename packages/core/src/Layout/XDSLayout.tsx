@@ -22,6 +22,7 @@ import {XDSLayoutSlotsContext, type LayoutSlots} from './XDSLayoutSlotsContext';
 import {stack} from '../Stack/stack.stylex';
 import {stackItem} from '../Stack/stackItem.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import {XDSBaseProps} from '../XDSBaseProps';
 
 /**
  * Height behavior for the layout.
@@ -57,7 +58,7 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSLayoutProps {
+export interface XDSLayoutProps extends Omit<XDSBaseProps, 'content'> {
   /**
    * Main content area (center).
    */
@@ -180,6 +181,7 @@ export function XDSLayout({
   height = 'fill',
   isFullBleed = false,
   start,
+  xstyle,
   className,
   style,
 }: XDSLayoutProps) {
@@ -201,7 +203,11 @@ export function XDSLayout({
       <div
         {...mergeProps(
           xdsClassName('layout', {height}),
-          stylex.props(styles.layoutOuter, isFill ? styles.fill : styles.auto),
+          stylex.props(
+            styles.layoutOuter,
+            isFill ? styles.fill : styles.auto,
+            xstyle,
+          ),
           className,
           style,
         )}>

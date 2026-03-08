@@ -157,6 +157,9 @@ export const XDSTopNavItem = forwardRef<HTMLAnchorElement, XDSTopNavItemProps>(
       isDisabled = false,
       icon,
       children,
+      xstyle,
+      className,
+      style,
       ...props
     },
     ref,
@@ -179,7 +182,10 @@ export const XDSTopNavItem = forwardRef<HTMLAnchorElement, XDSTopNavItemProps>(
             isSelected && styles.selected,
             isDisabled && styles.disabled,
             isIconOnly && styles.iconOnly,
+            xstyle,
           ),
+          className,
+          style,
         )}
         {...props}>
         {icon}

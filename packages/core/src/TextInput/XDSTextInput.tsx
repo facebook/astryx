@@ -88,8 +88,12 @@ export type {
   XDSInputStatusType as XDSTextInputStatusType,
 } from '../Field';
 import {xdsClassName, mergeProps} from '../utils';
+import {XDSBaseProps} from '../XDSBaseProps';
 
-export interface XDSTextInputProps {
+export interface XDSTextInputProps extends Omit<
+  XDSBaseProps,
+  'onChange' | 'defaultValue'
+> {
   /**
    * Label text for the input (always rendered for accessibility).
    */
@@ -200,6 +204,9 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
       labelTooltip,
       hasAutoFocus = false,
       htmlName,
+      xstyle,
+      className,
+      style,
     },
     ref,
   ) => {
@@ -275,7 +282,10 @@ export const XDSTextInput = forwardRef<HTMLInputElement, XDSTextInputProps>(
               status && inputStatusBorderStyles[status.type],
               status && inputStatusHoverShadowStyles[status.type],
               status && inputStatusFocusWithinStyles[status.type],
+              xstyle,
             ),
+            className,
+            style,
           )}>
           {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
           <input

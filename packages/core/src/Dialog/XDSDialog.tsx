@@ -230,6 +230,7 @@ export const XDSDialog = forwardRef<HTMLDialogElement, XDSDialogProps>(
       variant = 'standard',
       purpose = 'info',
       children,
+      xstyle,
       className,
       style,
       ...props
@@ -336,6 +337,7 @@ export const XDSDialog = forwardRef<HTMLDialogElement, XDSDialogProps>(
                 position?.left,
               ),
             isFullscreen && styles.fullscreen,
+            xstyle,
           ),
           className,
           style,

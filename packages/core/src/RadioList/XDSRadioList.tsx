@@ -234,8 +234,10 @@ export function XDSRadioList({
           stylex.props(
             styles.radiogroup,
             orientation === 'vertical' ? styles.vertical : styles.horizontal,
+            xstyle,
           ),
         )}>
+        className, style,
         <RadioListContext.Provider value={contextValue}>
           {children}
         </RadioListContext.Provider>

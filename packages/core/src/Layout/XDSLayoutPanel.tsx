@@ -173,6 +173,7 @@ export const XDSLayoutPanel = forwardRef<HTMLElement, XDSLayoutPanelProps>(
       label,
       role,
       width,
+      xstyle,
       className,
       style,
       ...props
@@ -222,6 +223,7 @@ export const XDSLayoutPanel = forwardRef<HTMLElement, XDSLayoutPanelProps>(
             isFullBleed && styles.fullBleed,
             hasDivider && dividerStyle,
             shouldCollapseSpacing && collapseStyle,
+            xstyle,
           ),
           className,
           style,
