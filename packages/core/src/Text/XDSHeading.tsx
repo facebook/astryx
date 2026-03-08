@@ -73,7 +73,6 @@ export interface XDSHeadingProps {
    *
    * @example
    * ```
-   * // Visually styled as h2, but semantically h3 in document outline
    * <XDSHeading level={2} accessibilityLevel={3}>Sidebar Section</XDSHeading>
    * ```
    */
@@ -191,11 +190,7 @@ const levelToTag = {
  * <XDSHeading level={2}>Section</XDSHeading>
  * <XDSHeading level={1} variant="editorial">Article Title</XDSHeading>
  * <XDSHeading level={2} accessibilityLevel={3}>Sidebar Section</XDSHeading>
- *
- * // With truncation
  * <XDSHeading level={2} maxLines={1}>Very Long Section Title...</XDSHeading>
- *
- * // With color
  * <XDSHeading level={3} color="secondary">Muted Heading</XDSHeading>
  * ```
  */

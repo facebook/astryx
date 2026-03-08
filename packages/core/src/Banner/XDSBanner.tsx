@@ -306,10 +306,7 @@ const statusStyles = stylex.create({
  *
  * @example
  * ```
- * // Simple banner — just the colored header
  * <XDSBanner status="info" title="New update available" />
- *
- * // With description and dismiss
  * <XDSBanner
  *   status="error"
  *   title="Something went wrong"
@@ -317,26 +314,20 @@ const statusStyles = stylex.create({
  *   isDismissable
  *   onDismiss={() => logDismiss()}
  * />
- *
- * // With collapsible content area
  * <XDSBanner
  *   status="error"
  *   title="Multiple errors found"
  *   description="The following issues need to be resolved:"
- *   isDismissable
- * >
+ *   isDismissable>
  *   <ul>
  *     <li>Email address is invalid</li>
  *     <li>Password must be at least 8 characters</li>
  *   </ul>
  * </XDSBanner>
- *
- * // Content area expanded by default
  * <XDSBanner
  *   status="warning"
  *   title="Configuration changes"
- *   defaultIsExpanded
- * >
+ *   defaultIsExpanded>
  *   <p>Details here...</p>
  * </XDSBanner>
  * ```

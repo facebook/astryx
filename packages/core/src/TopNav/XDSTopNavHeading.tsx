@@ -76,20 +76,15 @@ export interface XDSTopNavHeadingProps extends XDSBaseProps<HTMLElement> {
  *
  * @example
  * ```
- * // Logo with text
  * <XDSTopNavHeading
  *   heading="My App"
  *   logo={<img src="/logo.svg" alt="" width={24} height={24} />}
  *   href="/"
  * />
- *
- * // With circular icon
  * <XDSTopNavHeading
  *   heading="Dashboard"
  *   logo={<XDSNavIcon icon={<HomeIcon />} />}
  * />
- *
- * // Logo only
  * <XDSTopNavHeading logo={<BrandLogo />} href="/" />
  * ```
  */

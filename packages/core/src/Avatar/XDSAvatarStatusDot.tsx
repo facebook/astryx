@@ -138,14 +138,11 @@ const variantStyleMap: Record<XDSAvatarStatusDotVariant, stylex.StyleXStyles> =
  *
  * @example
  * ```
- * // Presence indicator
  * <XDSAvatar
  *   name="John Doe"
  *   size="medium"
  *   status={<XDSAvatarStatusDot variant="positive" label="Online" />}
  * />
- *
- * // With icon (e.g. verified badge)
  * <XDSAvatar
  *   name="Jane Smith"
  *   size="large"

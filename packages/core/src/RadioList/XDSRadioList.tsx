@@ -150,8 +150,7 @@ export interface XDSRadioListProps {
  * <XDSRadioList
  *   label="Notification preference"
  *   value={selected}
- *   onChange={setSelected}
- * >
+ *   onChange={setSelected}>
  *   <XDSRadioListItem label="Email" value="email" />
  *   <XDSRadioListItem label="SMS" value="sms" />
  *   <XDSRadioListItem label="Push" value="push" />

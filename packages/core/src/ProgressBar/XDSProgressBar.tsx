@@ -242,13 +242,8 @@ function defaultFormatValueLabel(value: number, max: number): string {
  *
  * @example
  * ```
- * // Determinate
  * <XDSProgressBar value={75} label="Upload progress" />
- *
- * // Indeterminate
  * <XDSProgressBar isIndeterminate label="Loading..." />
- *
- * // Custom format
  * <XDSProgressBar value={3.2} max={5} label="Disk usage" hasValueLabel
  *   formatValueLabel={(v, m) => `${v} GB / ${m} GB`} />
  * ```

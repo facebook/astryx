@@ -145,7 +145,6 @@ const listStyleTypes = stylex.create({
  *   <XDSListItem label="Notifications" description="Manage your alerts" />
  *   <XDSListItem label="Privacy" description="Control your data" />
  * </XDSList>
- *
  * <XDSList listStyle="decimal" density="compact">
  *   <XDSListItem label="First step" />
  *   <XDSListItem label="Second step" />

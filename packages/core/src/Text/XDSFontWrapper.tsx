@@ -48,7 +48,6 @@ export interface XDSFontWrapperProps {
  *
  * @example
  * ```
- * // Default variant (dense scale)
  * <XDSFontWrapper>
  *   <h1>Page Title</h1>
  *   <p>Body text with <strong>bold</strong> and <em>italic</em>.</p>
@@ -57,16 +56,10 @@ export interface XDSFontWrapperProps {
  *     <li>List item 2</li>
  *   </ul>
  * </XDSFontWrapper>
- *
- * // Editorial variant (larger heading scale)
  * <XDSFontWrapper variant="editorial">
  *   <h1>Article Title</h1>
  *   <p>Body text for long-form content.</p>
  * </XDSFontWrapper>
- *
- * // For global usage, apply to body:
- * // import '@xds/core/typography.css';
- * // <body className="xds-typography">
  * ```
  */
 export function XDSFontWrapper({

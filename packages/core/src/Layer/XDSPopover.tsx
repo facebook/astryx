@@ -235,22 +235,16 @@ const styles = stylex.create({
  *
  * @example
  * ```
- * // Basic popover
  * <XDSPopover label="Settings" content={<SettingsPanel />} placement="below">
  *   <XDSButton label="Settings" />
  * </XDSPopover>
- *
- * // Controlled popover
  * <XDSPopover
  *   isOpen={isOpen}
  *   onOpenChange={setIsOpen}
  *   label="Filter"
- *   content={<FilterForm />}
- * >
+ *   content={<FilterForm />}>
  *   <XDSButton label="Filter" />
  * </XDSPopover>
- *
- * // Sibling mode with anchorRef
  * <XDSPopover
  *   anchorRef={myButtonRef}
  *   label="Actions"

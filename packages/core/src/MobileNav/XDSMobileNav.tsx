@@ -223,8 +223,7 @@ export interface XDSMobileNavProps extends Omit<XDSBaseProps, 'title'> {
  * <XDSMobileNav
  *   isOpen={isOpen}
  *   onOpenChange={(open) => setIsOpen(open)}
- *   title="Navigation"
- * >
+ *   title="Navigation">
  *   <XDSSideNavSection title="Main">
  *     <XDSSideNavItem label="Home" icon={HomeIcon} isSelected href="/" />
  *     <XDSSideNavItem label="Settings" icon={SettingsIcon} href="/settings" />

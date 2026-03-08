@@ -10,7 +10,6 @@
  * @example
  * ```
  * import Link from 'next/link';
- *
  * <XDSLinkProvider component={Link}>
  *   <App />
  * </XDSLinkProvider>

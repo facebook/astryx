@@ -171,7 +171,6 @@ export interface XDSSideNavItemProps {
  *   isSelected
  *   href="/dashboard"
  * />
- *
  * <XDSSideNavItem label="Settings" icon={CogIcon}>
  *   <XDSSideNavItem label="General" href="/settings/general" />
  *   <XDSSideNavItem label="Security" href="/settings/security" />

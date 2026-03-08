@@ -313,10 +313,7 @@ function getPercent(val: number, min: number, max: number): number {
  *
  * @example
  * ```
- * // Single value
  * <XDSSlider label="Volume" value={50} onChange={setValue} />
- *
- * // Range
  * <XDSSlider label="Price range" value={[20, 80]} onChange={setRange} />
  * ```
  */

@@ -143,8 +143,7 @@ export interface XDSSideNavProps extends XDSBaseProps<HTMLElement> {
  * ```
  * <XDSSideNav
  *   header={<XDSSideNavHeading heading="My App" headingHref="/" />}
- *   topContent={<XDSButton label="Create new" variant="primary" />}
- * >
+ *   topContent={<XDSButton label="Create new" variant="primary" />}>
  *   <XDSSideNavSection heading="Main">
  *     <XDSSideNavItem label="Dashboard" isSelected href="/dashboard" />
  *     <XDSSideNavItem label="Projects" href="/projects" />

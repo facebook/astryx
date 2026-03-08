@@ -304,15 +304,9 @@ const edgeCompStyles = stylex.create({
  * <XDSButton label="Click me" />
  * <XDSButton label="Primary action" variant="primary" />
  * <XDSButton label="Delete" variant="destructive" />
- *
- * // Icon-only (square) — pass icon without children
  * <XDSButton label="Settings" icon={<GearIcon />} variant="ghost" />
  * <XDSButton label="Pick emoji" icon={<span>🚀</span>} variant="ghost" size="sm" />
- *
- * // Icon + visible label
  * <XDSButton label="Edit" icon={<PencilIcon />}>Edit</XDSButton>
- *
- * // With endSlot (badge or icon)
  * <XDSButton label="Messages" endSlot={<XDSBadge>3</XDSBadge>} />
  * <XDSButton label="Edit" icon={<PencilIcon />} endSlot={<XDSBadge>New</XDSBadge>}>Edit</XDSButton>
  * ```

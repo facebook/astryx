@@ -127,13 +127,11 @@ export interface XDSCollapsibleProps {
  * <XDSCollapsible trigger="Details">
  *   <XDSText type="body">Collapsible content</XDSText>
  * </XDSCollapsible>
- *
  * <XDSCard>
  *   <XDSCollapsible trigger="Settings">
  *     <SettingsForm />
  *   </XDSCollapsible>
  * </XDSCard>
- *
  * <XDSCollapsibleGroup type="single" defaultValue="general">
  *   <XDSVStack gap="space2">
  *     <XDSCard>

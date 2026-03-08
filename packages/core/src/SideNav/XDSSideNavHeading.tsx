@@ -240,10 +240,7 @@ function ChevronDownIcon() {
  *
  * @example
  * ```
- * // Single product
  * <XDSSideNavHeading icon={<AppIcon />} heading="My App" headingHref="/" />
- *
- * // Suite with menu
  * <XDSSideNavHeading
  *   icon={<SuiteIcon />}
  *   superheading="Suite Name"
@@ -252,8 +249,6 @@ function ChevronDownIcon() {
  *   headingHref="/product"
  *   menu={<ProductSwitcher />}
  * />
- *
- * // Account context with menu
  * <XDSSideNavHeading
  *   icon={<AppIcon />}
  *   heading="Product Name"

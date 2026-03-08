@@ -209,7 +209,6 @@ export interface XDSDialogProps extends XDSBaseProps<HTMLDialogElement> {
  * @example
  * ```
  * const [isOpen, setIsOpen] = useState(false);
- *
  * <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
  *   <XDSLayout
  *     header={<XDSDialogHeader title="Title" onOpenChange={open => setIsOpen(open)} />}

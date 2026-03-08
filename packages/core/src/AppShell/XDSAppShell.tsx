@@ -287,8 +287,7 @@ const styles = stylex.create({
  *     <XDSMobileNav isOpen={mobileOpen} onOpenChange={(open) => setMobileOpen(open)} title="My App">
  *       {navSections}
  *     </XDSMobileNav>
- *   }
- * >
+ *   }>
  *   <Content />
  * </XDSAppShell>
  * ```

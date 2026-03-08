@@ -131,13 +131,10 @@ export interface XDSStackProps extends XDSBaseProps<HTMLDivElement> {
  *
  * @example
  * ```
- * // Vertical stack
  * <XDSStack direction="vertical" gap="space2">
  *   <Item />
  *   <Item />
  * </XDSStack>
- *
- * // Horizontal stack
  * <XDSStack direction="horizontal" gap="space4" vAlign="center">
  *   <Item />
  *   <Item />

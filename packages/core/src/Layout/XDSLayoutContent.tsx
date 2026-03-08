@@ -109,8 +109,6 @@ export interface XDSLayoutContentProps extends XDSBaseProps<HTMLDivElement> {
  *     content={<XDSLayoutContent>Main body content</XDSLayoutContent>}
  *   />
  * </XDSLayoutContainer>
- *
- * // Full bleed for edge-to-edge content
  * <XDSLayoutContainer variant="card">
  *   <XDSLayout
  *     content={
@@ -120,8 +118,6 @@ export interface XDSLayoutContentProps extends XDSBaseProps<HTMLDivElement> {
  *     }
  *   />
  * </XDSLayoutContainer>
- *
- * // Non-scrollable for auto-height layouts with sticky elements
  * <XDSLayoutContainer variant="card">
  *   <XDSLayout
  *     content={

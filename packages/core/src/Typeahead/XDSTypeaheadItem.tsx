@@ -106,10 +106,7 @@ const styles = stylex.create({
  *
  * @example
  * ```
- * // Default usage (automatic)
  * <XDSTypeahead searchSource={source} value={v} onChange={setV} label="Search" />
- *
- * // Custom renderItem using XDSTypeaheadItem
  * <XDSTypeahead
  *   searchSource={source}
  *   value={v}

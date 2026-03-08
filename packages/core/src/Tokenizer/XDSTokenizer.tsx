@@ -213,9 +213,7 @@ const styles = stylex.create({
  *
  * @example
  * ```
- * // Basic
  * const [members, setMembers] = useState<UserItem[]>([]);
- *
  * <XDSTokenizer
  *   label="Team members"
  *   searchSource={userSource}
@@ -226,8 +224,6 @@ const styles = stylex.create({
  *   }}
  *   placeholder="Search people..."
  * />
- *
- * // Custom rendering
  * <XDSTokenizer
  *   label="Tags"
  *   searchSource={tagSource}

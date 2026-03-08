@@ -52,14 +52,10 @@ export interface XDSNavIconProps extends XDSBaseProps<HTMLDivElement> {
  * @example
  * ```
  * import {HomeIcon} from '@heroicons/react/24/solid';
- *
- * // In XDSTopNavHeading
  * <XDSTopNavHeading
  *   heading="Dashboard"
  *   logo={<XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />}
  * />
- *
- * // In XDSPageNavHeader
  * <XDSPageNavHeader
  *   icon={<XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />}
  *   heading="My App"

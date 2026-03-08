@@ -143,7 +143,6 @@ export interface XDSEmptyStateProps {
  *   title="No results found"
  *   description="Try adjusting your search or filters."
  * />
- *
  * <XDSEmptyState
  *   icon={<XDSIcon icon={InboxIcon} size="lg" />}
  *   title="No messages"

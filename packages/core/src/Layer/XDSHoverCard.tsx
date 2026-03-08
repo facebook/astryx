@@ -142,8 +142,7 @@ function mergeIds(...ids: (string | undefined | null)[]): string | undefined {
  * ```
  * <XDSHoverCard
  *   content={<ProfileCard user={user} />}
- *   placement="above"
- * >
+ *   placement="above">
  *   <XDSButton>Hover me</XDSButton>
  * </XDSHoverCard>
  * ```
