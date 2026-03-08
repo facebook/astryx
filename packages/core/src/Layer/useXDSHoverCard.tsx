@@ -13,14 +13,12 @@
 
 import {
   useCallback,
-  useContext,
   useEffect,
   useRef,
   type ReactNode,
   type RefCallback,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {ThemeContext} from '../theme/ThemeContext';
 import {
   useXDSLayer,
   type ContextRenderProps,
@@ -243,13 +241,6 @@ export function useXDSHoverCard(
     onHide,
   } = options;
 
-  // Get theme context for component-level overrides
-  const themeContext = useContext(ThemeContext);
-  const themeContainerOverride =
-    themeContext?.theme.components?.hoverCard?.container;
-  const themeContentOverride =
-    themeContext?.theme.components?.hoverCard?.content;
-
   // Select margin style based on placement axis
   const marginStyle =
     placement === 'above' || placement === 'below'
@@ -263,7 +254,7 @@ export function useXDSHoverCard(
   });
 
   // StyleX for the popover container
-  const popoverXstyle = [styles.container, marginStyle, themeContainerOverride];
+  const popoverXstyle = [styles.container, marginStyle];
 
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -426,7 +417,7 @@ export function useXDSHoverCard(
 
       return layer.render(
         <div
-          {...stylex.props(styles.content, themeContentOverride)}
+          {...stylex.props(styles.content)}
           onMouseEnter={() => {
             isHoveringContentRef.current = true;
             clearTimeouts();
@@ -471,15 +462,7 @@ export function useXDSHoverCard(
         renderProps,
       );
     },
-    [
-      layer,
-      placement,
-      alignment,
-      clearTimeouts,
-      scheduleHide,
-      themeContentOverride,
-      popoverXstyle,
-    ],
+    [layer, placement, alignment, clearTimeouts, scheduleHide, popoverXstyle],
   );
 
   return {

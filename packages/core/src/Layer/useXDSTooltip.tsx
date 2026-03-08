@@ -13,14 +13,12 @@
 
 import {
   useCallback,
-  useContext,
   useEffect,
   useRef,
   type ReactNode,
   type RefCallback,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {ThemeContext} from '../theme/ThemeContext';
 import {
   useXDSLayer,
   type ContextRenderProps,
@@ -250,12 +248,6 @@ export function useXDSTooltip(
     onHide,
   } = options;
 
-  // Get theme context for component-level overrides
-  const themeContext = useContext(ThemeContext);
-  const themeContainerOverride =
-    themeContext?.theme.components?.tooltip?.container;
-  const themeContentOverride = themeContext?.theme.components?.tooltip?.content;
-
   // Select margin style based on placement axis
   const marginStyle =
     placement === 'above' || placement === 'below'
@@ -269,7 +261,7 @@ export function useXDSTooltip(
   });
 
   // StyleX for the popover container
-  const popoverXstyle = [styles.container, marginStyle, themeContainerOverride];
+  const popoverXstyle = [styles.container, marginStyle];
 
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -391,13 +383,11 @@ export function useXDSTooltip(
       };
 
       return layer.render(
-        <div {...stylex.props(styles.content, themeContentOverride)}>
-          {children}
-        </div>,
+        <div {...stylex.props(styles.content)}>{children}</div>,
         renderProps,
       );
     },
-    [layer, placement, alignment, themeContentOverride, popoverXstyle],
+    [layer, placement, alignment, popoverXstyle],
   );
 
   return {

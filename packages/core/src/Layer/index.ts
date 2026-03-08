@@ -7,9 +7,6 @@
  * SYNC: When adding new Layer files, update exports here
  */
 
-// Component style type augmentations (side-effect import)
-import './componentStyles';
-
 // Core layer hook
 export {useXDSLayer} from './useXDSLayer';
 export type {

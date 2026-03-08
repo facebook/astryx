@@ -15,7 +15,6 @@
 
 import {
   forwardRef,
-  useContext,
   useEffect,
   useRef,
   type DialogHTMLAttributes,
@@ -28,8 +27,6 @@ import {
   transitionVars,
   elevationVars,
 } from '../theme/tokens.stylex';
-import {ThemeContext} from '../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {xdsClassName, mergeProps} from '../utils';
 
 /**
@@ -142,18 +139,6 @@ const dynamicStyles = stylex.create({
 function formatPosition(value: number | string | undefined): string | null {
   if (value === undefined) return null;
   return typeof value === 'number' ? `${value}px` : value;
-}
-
-// =============================================================================
-// Module Augmentation - Register Dialog's style surfaces with ComponentStyles
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    dialog?: {
-      root?: ThemeStyleXStyles;
-    };
-  }
 }
 
 export interface XDSDialogProps extends Omit<
@@ -337,10 +322,6 @@ export const XDSDialog = forwardRef<HTMLDialogElement, XDSDialogProps>(
     const isFullscreen = variant === 'fullscreen';
     const hasPosition = position != null && !isFullscreen;
 
-    // Get theme context for component-level overrides (optional)
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.dialog?.root;
-
     return (
       <dialog
         ref={setRefs}
@@ -361,7 +342,6 @@ export const XDSDialog = forwardRef<HTMLDialogElement, XDSDialogProps>(
                 position?.left,
               ),
             isFullscreen && styles.fullscreen,
-            rootOverride,
           ),
         )}
         {...props}>

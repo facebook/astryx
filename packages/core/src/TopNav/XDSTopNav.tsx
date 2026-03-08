@@ -13,16 +13,9 @@
 
 'use client';
 
-import {
-  forwardRef,
-  useContext,
-  type HTMLAttributes,
-  type ReactNode,
-} from 'react';
+import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
-import {ThemeContext} from '../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {edgeSignals} from '../Layout/edgeCompensation.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -89,18 +82,6 @@ const styles = stylex.create({
   },
 });
 
-// =============================================================================
-// Module Augmentation - Register component styles with ComponentStyles
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    topNav?: {
-      /** Root nav bar styles */
-      root?: ThemeStyleXStyles;
-    };
-  }
-}
 export interface XDSTopNavProps extends Omit<
   HTMLAttributes<HTMLElement>,
   'style' | 'className' | 'title'
@@ -156,8 +137,6 @@ export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
     {title, startContent, centerContent, endContent, label, ...props},
     ref,
   ) {
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.topNav?.root;
     const hasCenterContent = centerContent != null;
 
     return (
@@ -170,7 +149,6 @@ export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
           stylex.props(
             styles.base,
             hasCenterContent ? styles.baseGrid : styles.baseFlex,
-            rootOverride,
           ),
         )}
         {...props}>

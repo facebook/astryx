@@ -15,7 +15,6 @@
 
 import {
   forwardRef,
-  useContext,
   useId,
   useRef,
   useCallback,
@@ -35,31 +34,11 @@ import {
 import {XDSField} from '../Field/XDSField';
 import {XDSTooltip} from '../Layer/XDSTooltip';
 import type {XDSInputStatus} from '../Field/types';
-import {ThemeContext} from '../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-// =============================================================================
-// Module Augmentation - Register component styles with ComponentStyles
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    slider?: {
-      /** Root container styles */
-      root?: ThemeStyleXStyles;
-      /** Track styles */
-      track?: ThemeStyleXStyles;
-      /** Filled track styles */
-      filledTrack?: ThemeStyleXStyles;
-      /** Thumb styles */
-      thumb?: ThemeStyleXStyles;
-    };
-  }
-}
 export interface XDSSliderBaseProps {
   /** Label text for the slider (always rendered for accessibility). */
   label: string;
@@ -347,13 +326,6 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
       onChangeEnd,
     } = props;
 
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.slider?.root;
-    const trackOverride = themeContext?.theme.components?.slider?.track;
-    const filledTrackOverride =
-      themeContext?.theme.components?.slider?.filledTrack;
-    const thumbOverride = themeContext?.theme.components?.slider?.thumb;
-
     const isRange = Array.isArray(value);
     const minStepsBetweenThumbs =
       isRange && 'minStepsBetweenThumbs' in props
@@ -589,7 +561,6 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
             !isDisabled && styles.thumbHover,
             !isDisabled && styles.thumbFocusWithin,
             isDisabled && styles.thumbDisabled,
-            thumbOverride,
           )}
         />
       );
@@ -660,7 +631,7 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
         labelTooltip={labelTooltip}
         statusVariant="detached"
         {...stylex.props(xstyle)}>
-        <div {...stylex.props(styles.sliderRow, rootOverride)}>
+        <div {...stylex.props(styles.sliderRow)}>
           <div
             ref={node => {
               // Merge refs
@@ -689,7 +660,6 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
               {...stylex.props(
                 styles.track,
                 isHorizontal ? styles.trackHorizontal : styles.trackVertical,
-                trackOverride,
               )}
             />
 
@@ -701,7 +671,6 @@ export const XDSSlider = forwardRef<HTMLDivElement, XDSSliderProps>(
                 isHorizontal
                   ? styles.filledTrackHorizontal
                   : styles.filledTrackVertical,
-                filledTrackOverride,
               )}
             />
 

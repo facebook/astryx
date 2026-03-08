@@ -2,17 +2,12 @@
  * XDSTheme Provider Component
  *
  * Applies theme tokens and sets color-scheme for light-dark() to work.
- * Supports two theme types:
- * - XDSDefinedTheme (from defineTheme): generates CSS or uses pre-built styles
- * - Legacy Theme (StyleX): applies StyleX theme styles directly
- *
- * With defineTheme, components get their overrides via CSS (e.g. .xds-button)
- * scoped under the theme's data-xds-theme attribute — no context reads needed.
- * This unlocks RSC for all components.
+ * Themes are created with `defineTheme()` and applied via CSS:
+ * - Token overrides set as CSS custom properties on [data-xds-theme]
+ * - Component overrides scoped via @scope'd CSS selectors on .xds-* classes
  *
  * Usage:
  * ```tsx
- * // New API — defineTheme
  * const ocean = defineTheme({
  *   name: 'ocean',
  *   tokens: { '--color-accent': ['#0077B6', '#48CAE4'] },
@@ -23,47 +18,26 @@
  *
  * // Built theme — CSS imported separately
  * import { oceanTheme } from '@xds/theme-ocean';
- * import '@xds/theme-ocean/styles.css';
+ * import '@xds/theme-ocean/theme.css';
  * <XDSTheme theme={oceanTheme}><App /></XDSTheme>
- *
- * // Legacy API — StyleX theme object (still supported)
- * <XDSTheme theme={defaultTheme}><App /></XDSTheme>
  * ```
  */
 
 'use client';
 
-import React, {useContext, useMemo, useId, useInsertionEffect} from 'react';
+import React, {useId, useInsertionEffect} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {Theme as LegacyTheme, ThemeMode} from './types';
-import {ThemeContext, type ThemeContextValue} from './ThemeContext';
+import type {ThemeMode} from './types';
 import {colorVars, typographyVars} from './tokens.stylex';
 import {IconRegistryContext} from '../Icon/IconRegistry';
-import {
-  isDefinedTheme,
-  generateThemeCSS,
-  type XDSDefinedTheme,
-} from './defineTheme';
-
-// Re-export for backwards compatibility
-export {ThemeContext} from './ThemeContext';
-
-/**
- * Hook to access current theme
- */
-export function useXDSTheme(): ThemeContextValue | null {
-  return useContext(ThemeContext);
-}
-
-/** @deprecated Use useXDSTheme instead */
-export const useTheme = useXDSTheme;
+import {generateThemeCSS, type XDSDefinedTheme} from './defineTheme';
 
 /**
  * XDSTheme provider props
  */
 interface XDSThemeProps {
-  /** Theme — from defineTheme() or a legacy StyleX theme object */
-  theme: XDSDefinedTheme | LegacyTheme;
+  /** Theme from defineTheme() */
+  theme: XDSDefinedTheme;
   /** Color mode - 'system' follows OS preference */
   mode?: ThemeMode;
   /** Children to render */
@@ -99,32 +73,24 @@ const injectedThemes = new Set<string>();
 
 /**
  * Hook to inject theme CSS into the document.
- * Always called (React rules of hooks) but only does work for unbuilt
- * XDSDefinedTheme instances.
+ * Built themes (from `xds build-theme`) skip injection — their CSS
+ * is in a separate file imported by the consumer.
  */
-function useThemeStyleInjection(
-  theme: XDSDefinedTheme | LegacyTheme,
-  defined: boolean,
-): void {
+function useThemeStyleInjection(theme: XDSDefinedTheme): void {
   const id = useId();
 
   useInsertionEffect(() => {
-    // Only inject for unbuilt XDSDefinedTheme instances
-    if (!defined) return;
-
-    const dt = theme as XDSDefinedTheme;
-
     // Built themes have their CSS in a separate file — skip injection
-    if (dt.__built) return;
+    if (theme.__built) return;
 
-    const themeKey = `xds-theme-${dt.name}`;
+    const themeKey = `xds-theme-${theme.name}`;
     if (injectedThemes.has(themeKey)) return;
 
-    const css = generateThemeCSS(dt);
+    const css = generateThemeCSS(theme);
     if (!css) return;
 
     const style = document.createElement('style');
-    style.setAttribute('data-xds-theme', dt.name);
+    style.setAttribute('data-xds-theme', theme.name);
     style.setAttribute('data-xds-id', id);
     style.textContent = `@layer xds.theme {\n${css}\n}`;
     document.head.appendChild(style);
@@ -132,14 +98,14 @@ function useThemeStyleInjection(
 
     return () => {
       const existing = document.querySelector(
-        `style[data-xds-theme="${dt.name}"][data-xds-id="${id}"]`,
+        `style[data-xds-theme="${theme.name}"][data-xds-id="${id}"]`,
       );
       if (existing) {
         existing.remove();
         injectedThemes.delete(themeKey);
       }
     };
-  }, [theme, defined, id]);
+  }, [theme, id]);
 }
 
 // =============================================================================
@@ -149,37 +115,16 @@ function useThemeStyleInjection(
 /**
  * XDSTheme provider component
  *
- * For defineTheme themes: sets data-xds-theme attribute so @scope'd CSS
- * takes effect. Component overrides are pure CSS scoped under the theme
- * attribute — components just render with their .xds-* class and don't
- * need context. This enables RSC for all components.
- *
- * For legacy themes: applies StyleX theme styles via context (existing behavior).
+ * Sets data-xds-theme attribute so @scope'd CSS takes effect.
+ * Component overrides are pure CSS scoped under the theme attribute —
+ * components render with their .xds-* class and don't need context.
  */
 export function XDSTheme({
   theme,
   mode = 'system',
   children,
 }: XDSThemeProps): React.ReactElement {
-  const defined = isDefinedTheme(theme);
-
-  // Always call the hook (React rules) — it no-ops for legacy themes
-  useThemeStyleInjection(theme, defined);
-
-  // Build context value (still needed for legacy themes and useXDSTheme hook)
-  const contextValue = useMemo(() => {
-    if (defined) {
-      const dt = theme as XDSDefinedTheme;
-      const legacyTheme: LegacyTheme = {
-        name: dt.name,
-        styles: {},
-        icons: dt.icons,
-        raw: {},
-      };
-      return {theme: legacyTheme, mode};
-    }
-    return {theme: theme as LegacyTheme, mode};
-  }, [theme, mode, defined]);
+  useThemeStyleInjection(theme);
 
   // Get color-scheme style
   const colorSchemeStyle =
@@ -189,30 +134,8 @@ export function XDSTheme({
         ? wrapperStyles.light
         : wrapperStyles.system;
 
-  // StyleX props — defined themes only need base + color scheme,
-  // legacy themes also apply all token group styles
-  const stylexProps = defined
-    ? stylex.props(wrapperStyles.base, colorSchemeStyle)
-    : stylex.props(
-        wrapperStyles.base,
-        colorSchemeStyle,
-        (theme as LegacyTheme).styles.colors,
-        (theme as LegacyTheme).styles.spacing,
-        (theme as LegacyTheme).styles.size,
-        (theme as LegacyTheme).styles.radius,
-        (theme as LegacyTheme).styles.elevation,
-        (theme as LegacyTheme).styles.transition,
-        (theme as LegacyTheme).styles.typography,
-        (theme as LegacyTheme).styles.textSize,
-        (theme as LegacyTheme).styles.lineHeight,
-        (theme as LegacyTheme).styles.fontWeight,
-      );
-
-  // Icons — from either theme type
-  const icons = defined
-    ? (theme as XDSDefinedTheme).icons
-    : (theme as LegacyTheme).icons;
-
+  // Icons
+  const icons = theme.icons;
   let content: React.ReactNode = children;
   if (icons != null) {
     content = (
@@ -223,22 +146,13 @@ export function XDSTheme({
   }
 
   return (
-    <ThemeContext.Provider value={contextValue}>
-      <div
-        {...stylexProps}
-        data-xds-theme={
-          defined
-            ? (theme as XDSDefinedTheme).name
-            : (theme as LegacyTheme).name
-        }
-        data-theme={mode === 'system' ? undefined : mode}>
-        {content}
-      </div>
-    </ThemeContext.Provider>
+    <div
+      {...stylex.props(wrapperStyles.base, colorSchemeStyle)}
+      data-xds-theme={theme.name}
+      data-theme={mode === 'system' ? undefined : mode}>
+      {content}
+    </div>
   );
 }
 
 XDSTheme.displayName = 'XDSTheme';
-
-/** @deprecated Use XDSTheme instead */
-export const Theme = XDSTheme;

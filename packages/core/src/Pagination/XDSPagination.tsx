@@ -17,7 +17,7 @@
 
 'use client';
 
-import {forwardRef, useContext, useTransition} from 'react';
+import {forwardRef, useTransition} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -27,26 +27,11 @@ import {
   transitionVars,
   textSizeVars,
 } from '../theme/tokens.stylex';
-import {ThemeContext} from '../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
 import {XDSSelector} from '../Selector';
 import {XDSText} from '../Text';
 import {xdsClassName, mergeProps} from '../utils';
-
-// =============================================================================
-// Module Augmentation - Register component styles with ComponentStyles
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    pagination?: {
-      /** Root nav container styles */
-      root?: ThemeStyleXStyles;
-    };
-  }
-}
 
 // =============================================================================
 // Types
@@ -335,8 +320,6 @@ export const XDSPagination = forwardRef<HTMLElement, XDSPaginationProps>(
     ref,
   ) {
     const [isPending, startTransition] = useTransition();
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.pagination?.root;
 
     // Compute pagination state
     const computedTotalPages =
@@ -507,7 +490,7 @@ export const XDSPagination = forwardRef<HTMLElement, XDSPaginationProps>(
         data-testid={testId}
         {...mergeProps(
           xdsClassName('pagination', {variant, size}),
-          stylex.props(styles.root, rootOverride, xstyle),
+          stylex.props(styles.root, xstyle),
         )}>
         {pageSizeOptions != null && pageSizeOptions.length > 0 && (
           <div {...stylex.props(styles.pageSizeSelector)}>

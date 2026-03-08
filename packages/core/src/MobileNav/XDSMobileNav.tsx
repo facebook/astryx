@@ -26,15 +26,12 @@
 import {
   forwardRef,
   useCallback,
-  useContext,
   useEffect,
   useRef,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
-import {ThemeContext} from '../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
 import {XDSHeading} from '../Text/XDSHeading';
@@ -159,21 +156,6 @@ const dynamicStyles = stylex.create({
     maxWidth: '85vw',
   }),
 });
-
-// =============================================================================
-// Module Augmentation
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    mobileNav?: {
-      /** Root dialog styles */
-      root?: ThemeStyleXStyles;
-      /** Drawer panel styles */
-      drawer?: ThemeStyleXStyles;
-    };
-  }
-}
 
 // =============================================================================
 // Types
@@ -316,11 +298,6 @@ export const XDSMobileNav = forwardRef<HTMLDialogElement, XDSMobileNavProps>(
       [onOpenChange],
     );
 
-    // Get theme context for component-level overrides
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.mobileNav?.root;
-    const drawerOverride = themeContext?.theme.components?.mobileNav?.drawer;
-
     const isStart = side === 'start';
 
     return (
@@ -336,7 +313,6 @@ export const XDSMobileNav = forwardRef<HTMLDialogElement, XDSMobileNavProps>(
             styles.dialog,
             styles.backdrop,
             isOpen && styles.backdropOpen,
-            rootOverride,
           ),
         )}>
         {/* Drawer panel */}
@@ -348,7 +324,6 @@ export const XDSMobileNav = forwardRef<HTMLDialogElement, XDSMobileNavProps>(
             isStart && isOpen && styles.drawerStartOpen,
             !isStart && styles.drawerEnd,
             !isStart && isOpen && styles.drawerEndOpen,
-            drawerOverride,
           )}>
           {/* Header with optional title and close button */}
           <div {...stylex.props(styles.header, !title && styles.headerNoTitle)}>

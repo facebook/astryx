@@ -1,8 +1,8 @@
 /**
- * XDS Theme Type Definitions
+ * XDS Type Definitions
+ *
+ * Shared types used across XDS components.
  */
-
-import type {XDSIconRegistry} from '../Icon/IconRegistry';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type StyleXStyles = any;
@@ -128,110 +128,3 @@ export type ProseElement =
   | 'aHover'
   | 'firstChild'
   | 'lastChild';
-
-/**
- * Component-specific style overrides
- * Each component augments this interface to add its own entry
- * See Button.tsx for an example of module augmentation
- */
-export interface ComponentStyles {
-  // Core typography styles
-  /** Heading styles (h1-h6) */
-  heading?: {
-    /** Default heading styles */
-    styles?: Partial<Record<HeadingLevel, StyleXStyles>>;
-    /** Editorial heading styles (larger scale) */
-    editorialStyles?: Partial<Record<HeadingLevel, StyleXStyles>>;
-  };
-  /** Text styles */
-  text?: {
-    /** Semantic text styles (body, large, label, supporting, code) */
-    styles?: Partial<Record<XDSTextType, StyleXStyles>>;
-  };
-  /** Prose styles for XDSFontWrapper */
-  prose?: {
-    /** Base wrapper styles */
-    base?: StyleXStyles;
-    /** Prose element styles */
-    styles?: Partial<Record<ProseElement, StyleXStyles>>;
-  };
-
-  // Components add their entries via module augmentation
-  // Example in Button.tsx:
-  // declare module '../theme/types' {
-  //   interface ComponentStyles {
-  //     button?: { variants?: Partial<Record<ButtonVariant, StyleXStyles>> };
-  //   }
-  // }
-}
-
-/**
- * Theme styles - StyleX styles that set CSS variables.
- * All fields are optional — omitted groups use the defineVars defaults
- * from tokens.stylex.ts, enabling partial theme overrides.
- *
- * @deprecated Use `defineTheme()` from `@xds/core/theme` instead.
- * StyleX-based themes are being replaced by CSS-based theming.
- */
-export interface ThemeStyles {
-  /** Color CSS variables */
-  colors?: StyleXStyles;
-  /** Spacing CSS variables */
-  spacing?: StyleXStyles;
-  /** Size CSS variables (component heights: sm, md, lg) */
-  size?: StyleXStyles;
-  /** Radius CSS variables */
-  radius?: StyleXStyles;
-  /** Elevation CSS variables */
-  elevation?: StyleXStyles;
-  /** Transition CSS variables */
-  transition?: StyleXStyles;
-  /** Typography (font family) CSS variables */
-  typography?: StyleXStyles;
-  /** Text size CSS variables */
-  textSize?: StyleXStyles;
-  /** Line height CSS variables */
-  lineHeight?: StyleXStyles;
-  /** Font weight CSS variables */
-  fontWeight?: StyleXStyles;
-}
-
-/**
- * Raw token values for programmatic access.
- * Useful for charting libraries, theme editors, or parsing light-dark() values.
- * All fields are optional — partial themes only include overridden groups.
- *
- * @deprecated Use `defineTheme()` — token values are accessible via `theme.tokens`.
- */
-export interface ThemeRaw {
-  colors?: Record<string, string>;
-  spacing?: Record<string, string>;
-  size?: Record<string, string>;
-  radius?: Record<string, string>;
-  elevation?: Record<string, string>;
-  transition?: Record<string, string>;
-  typography?: Record<string, string>;
-  textSize?: Record<string, string>;
-  lineHeight?: Record<string, string>;
-  fontWeight?: Record<string, string>;
-}
-
-/**
- * Theme object - pre-compiled StyleX styles that set CSS variables.
- *
- * @deprecated Use `defineTheme()` from `@xds/core/theme` to create themes.
- * The `XDSDefinedTheme` type replaces this interface. All shipped themes
- * (default, neutral, brutalist) now use `defineTheme()`.
- */
-export interface Theme {
-  /** Theme name */
-  name: string;
-  /** StyleX styles containing CSS variable definitions */
-  styles: ThemeStyles;
-  /** Component-specific style overrides (optional) */
-  components?: ComponentStyles;
-  /** Optional icon registry for overriding built-in fallback icons */
-  icons?: Partial<XDSIconRegistry>;
-  /** Raw token values for programmatic access (optional) */
-  raw?: ThemeRaw;
-}

@@ -15,7 +15,6 @@
 
 import {
   forwardRef,
-  useContext,
   type AnchorHTMLAttributes,
   type MouseEventHandler,
   type ReactNode,
@@ -29,8 +28,6 @@ import {
   lineHeightVars,
   spacingVars,
 } from '../theme/tokens.stylex';
-import {ThemeContext} from '../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {XDSIcon} from '../Icon';
 import {XDSTooltip} from '../Layer';
 import {XDSText} from '../Text';
@@ -113,18 +110,6 @@ const linkColorStyles = stylex.create({
     color: 'inherit',
   },
 });
-
-// =============================================================================
-// Module Augmentation - Register Link's style surfaces with ComponentStyles
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    link?: {
-      root?: ThemeStyleXStyles;
-    };
-  }
-}
 
 export interface XDSLinkProps extends Omit<
   AnchorHTMLAttributes<HTMLAnchorElement>,
@@ -270,10 +255,6 @@ export const XDSLink = forwardRef<HTMLAnchorElement, XDSLinkProps>(
         : 'noopener noreferrer'
       : rel;
 
-    // Get theme context for component-level overrides (optional)
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.link?.root;
-
     const linkElement = (
       <LinkComponent
         ref={ref}
@@ -292,7 +273,6 @@ export const XDSLink = forwardRef<HTMLAnchorElement, XDSLinkProps>(
             hasUnderline && styles.hasUnderline,
             isStandalone && styles.standalone,
             isDisabled && styles.disabled,
-            rootOverride,
           ),
         )}
         {...props}>

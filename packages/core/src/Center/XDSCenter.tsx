@@ -12,17 +12,10 @@
 
 'use client';
 
-import {
-  forwardRef,
-  useContext,
-  type HTMLAttributes,
-  type ReactNode,
-} from 'react';
+import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {SizeValue} from '../utils/types';
-import {ThemeContext} from '../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {xdsClassName, mergeProps} from '../utils';
 
 const styles = stylex.create({
@@ -50,18 +43,6 @@ const dynamicStyles = stylex.create({
 
 export type CenterAxis = 'both' | 'horizontal' | 'vertical';
 
-// =============================================================================
-// Module Augmentation - Register component styles with ComponentStyles
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    center?: {
-      /** Root container styles */
-      root?: ThemeStyleXStyles;
-    };
-  }
-}
 export interface XDSCenterProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
   'style' | 'className'
@@ -130,9 +111,6 @@ export const XDSCenter = forwardRef<HTMLDivElement, XDSCenterProps>(
     },
     ref,
   ) {
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.center?.root;
-
     const stylexProps = mergeProps(
       xdsClassName('center', {axis}),
       stylex.props(
@@ -142,7 +120,6 @@ export const XDSCenter = forwardRef<HTMLDivElement, XDSCenterProps>(
           styles.justifyContentCenter,
         dynamicStyles.sizing(width ?? null, height ?? null),
         xstyle,
-        rootOverride,
       ),
     );
 

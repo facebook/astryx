@@ -17,7 +17,6 @@
 
 import {
   forwardRef,
-  useContext,
   useTransition,
   type ButtonHTMLAttributes,
   type ReactElement,
@@ -34,7 +33,6 @@ import {
   fontWeightVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
-import {ThemeContext} from '../theme/ThemeContext';
 import {XDSTooltip} from '../Layer/XDSTooltip';
 import {XDSSpinner} from '../Spinner';
 import type {XDSIconProps} from '../Icon/XDSIcon';
@@ -197,20 +195,6 @@ export type XDSButtonVariant = keyof typeof variants;
  */
 export type XDSButtonSize = keyof typeof sizeStyles;
 
-// =============================================================================
-// Module Augmentation - Register Button's variant type with ComponentStyles
-// =============================================================================
-// This allows themes to provide type-safe variant overrides for Button
-// without requiring theme/types.ts to import from Button (avoiding circular deps)
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    button?: {
-      variants?: Partial<Record<XDSButtonVariant, StyleXStyles>>;
-    };
-  }
-}
-
 export interface XDSButtonProps extends Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
   'children' | 'disabled'
@@ -346,11 +330,6 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
     const useLightSpinner = variant === 'primary' || variant === 'destructive';
     const isIconOnly = icon != null && children == null;
 
-    // Get theme context for component-level overrides (optional)
-    const themeContext = useContext(ThemeContext);
-    const themeVariantOverride =
-      themeContext?.theme.components?.button?.variants?.[variant];
-
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
       if (onClickAction) {
         e.preventDefault();
@@ -385,7 +364,6 @@ export const XDSButton = forwardRef<HTMLButtonElement, XDSButtonProps>(
             styles.base,
             sizeStyles[size],
             variants[variant],
-            themeVariantOverride,
             isIconOnly && styles.iconOnly,
             buttonDisabled && styles.disabled,
             isLoadingState && loadingStyles.loading,

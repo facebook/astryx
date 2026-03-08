@@ -3,7 +3,7 @@
  *
  * Exports:
  * - XDSTheme: Provider component that applies theme
- * - useXDSTheme: Hook to access current theme
+ * - defineTheme: Create themes with token + component overrides
  * - Token exports for direct use in StyleX
  *
  * Themes are in separate packages:
@@ -11,7 +11,7 @@
  *   import { neutralTheme } from '@xds/theme-neutral';
  */
 
-export {XDSTheme, useXDSTheme, Theme, useTheme} from './XDSTheme';
+export {XDSTheme} from './XDSTheme';
 export {
   defineTheme,
   generateThemeCSS,
@@ -51,20 +51,6 @@ export {
   fontWeightVars,
 } from './tokens.stylex';
 
-// Deprecated re-exports — use *Defaults instead
-export {
-  colorRaw,
-  spacingRaw,
-  sizeRaw,
-  radiusRaw,
-  elevationRaw,
-  transitionRaw,
-  typographyRaw,
-  textSizeRaw,
-  lineHeightRaw,
-  fontWeightRaw,
-} from './tokens.stylex';
-
 // Export token key types for theme authoring
 export type {
   ColorVarName,
@@ -80,11 +66,7 @@ export type {
 } from './tokens.stylex';
 
 export type {
-  Theme as ThemeType,
-  ThemeRaw,
   ThemeMode,
-  ComponentStyles,
-  ThemeStyles,
   HeadingLevel,
   XDSTextType,
   XDSTextSize,

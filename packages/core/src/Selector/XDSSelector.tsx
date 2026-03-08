@@ -53,8 +53,6 @@ import {
 } from './utils';
 import {useCombobox, useSelectedItemOffset} from './hooks';
 import {XDSSelectorOption} from './XDSSelectorOption';
-import {ThemeContext} from '../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {xdsClassName, mergeProps} from '../utils';
 
 const styles = stylex.create({
@@ -245,20 +243,6 @@ export interface XDSSelectorStatus {
   message?: string;
 }
 
-// =============================================================================
-// Module Augmentation - Register component styles with ComponentStyles
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    selector?: {
-      /** Trigger button styles */
-      trigger?: ThemeStyleXStyles;
-      /** Dropdown container styles */
-      dropdown?: ThemeStyleXStyles;
-    };
-  }
-}
 export interface XDSSelectorProps<
   T extends XDSSelectorOptionType = XDSSelectorOptionType,
 > {
@@ -406,10 +390,6 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
   children,
   'data-testid': testId,
 }: XDSSelectorProps<T>) {
-  const themeContext = React.useContext(ThemeContext);
-  const triggerOverride = themeContext?.theme.components?.selector?.trigger;
-  const dropdownOverride = themeContext?.theme.components?.selector?.dropdown;
-
   const triggerId = useId();
   const listboxId = useId();
   const descriptionId = useId();
@@ -632,7 +612,6 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
             !selectedItem && styles.triggerPlaceholder,
             status && inputStatusBorderStyles[status.type],
             status && inputStatusHoverShadowStyles[status.type],
-            triggerOverride,
           ),
         )}>
         <span>{selectedItem?.label ?? placeholder}</span>
@@ -665,7 +644,6 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
             styles.dropdown,
             !isPositioned && styles.dropdownHidden,
             styles.dropdownOffset(-selectedItemOffset),
-            dropdownOverride,
           )}>
           {renderOptions()}
         </div>,

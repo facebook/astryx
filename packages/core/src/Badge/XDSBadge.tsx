@@ -13,12 +13,7 @@
 
 'use client';
 
-import {
-  forwardRef,
-  useContext,
-  type HTMLAttributes,
-  type ReactNode,
-} from 'react';
+import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -28,8 +23,6 @@ import {
   fontWeightVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
-import {ThemeContext} from '../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {xdsClassName, mergeProps} from '../utils';
 
 /**
@@ -88,19 +81,6 @@ const variants = stylex.create({
  */
 export type XDSBadgeVariant = keyof typeof variants;
 
-// =============================================================================
-// Module Augmentation - Register Badge's style surfaces with ComponentStyles
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    badge?: {
-      root?: ThemeStyleXStyles;
-      variants?: Partial<Record<XDSBadgeVariant, ThemeStyleXStyles>>;
-    };
-  }
-}
-
 export interface XDSBadgeProps extends Omit<
   HTMLAttributes<HTMLSpanElement>,
   'className' | 'style'
@@ -139,24 +119,12 @@ export const XDSBadge = forwardRef<HTMLSpanElement, XDSBadgeProps>(
   ({variant = 'neutral', children, icon, ...props}, ref) => {
     const isDot = children == null && icon == null;
 
-    // Get theme context for component-level overrides (optional)
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.badge?.root;
-    const variantOverride =
-      themeContext?.theme.components?.badge?.variants?.[variant];
-
     return (
       <span
         ref={ref}
         {...mergeProps(
           xdsClassName('badge', {variant}),
-          stylex.props(
-            styles.base,
-            variants[variant],
-            rootOverride,
-            variantOverride,
-            isDot && styles.dot,
-          ),
+          stylex.props(styles.base, variants[variant], isDot && styles.dot),
         )}
         {...props}>
         {icon}

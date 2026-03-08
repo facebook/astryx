@@ -12,30 +12,11 @@
 
 'use client';
 
-import {
-  forwardRef,
-  useContext,
-  type HTMLAttributes,
-  type ReactNode,
-} from 'react';
+import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {ThemeContext} from '../theme/ThemeContext';
-import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {xdsClassName, mergeProps} from '../utils';
 
-// =============================================================================
-// Module Augmentation - Register component styles with ComponentStyles
-// =============================================================================
-
-declare module '../theme/types' {
-  interface ComponentStyles {
-    aspectRatio?: {
-      /** Root container styles */
-      root?: ThemeStyleXStyles;
-    };
-  }
-}
 export interface XDSAspectRatioProps extends Omit<
   HTMLAttributes<HTMLElement>,
   'style' | 'className'
@@ -87,14 +68,12 @@ const styles = stylex.create({
  */
 export const XDSAspectRatio = forwardRef<HTMLElement, XDSAspectRatioProps>(
   function XDSAspectRatio({ratio, children, xstyle, ...props}, ref) {
-    const themeContext = useContext(ThemeContext);
-    const rootOverride = themeContext?.theme.components?.aspectRatio?.root;
     return (
       <div
         ref={ref as React.Ref<HTMLDivElement>}
         {...mergeProps(
           xdsClassName('aspect-ratio'),
-          stylex.props(styles.container, xstyle, rootOverride),
+          stylex.props(styles.container, xstyle),
         )}
         style={{aspectRatio: ratio}}
         {...props}>

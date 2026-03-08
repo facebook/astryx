@@ -18,15 +18,12 @@ import {
   lazy,
   Suspense,
   useCallback,
-  useContext,
   useRef,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {ThemeContext} from '../theme/ThemeContext';
 import type {
-  HeadingLevel,
   XDSTextColor,
   XDSTextDisplay,
   XDSWordBreak,
@@ -168,15 +165,6 @@ const levelToTag = {
   6: 'h6',
 } as const;
 
-const levelToKey: Record<XDSHeadingLevel, HeadingLevel> = {
-  1: 'h1',
-  2: 'h2',
-  3: 'h3',
-  4: 'h4',
-  5: 'h5',
-  6: 'h6',
-};
-
 /**
  * XDSHeading - Semantic heading component
  *
@@ -216,16 +204,7 @@ export const XDSHeading = forwardRef<HTMLHeadingElement, XDSHeadingProps>(
     },
     forwardedRef,
   ) {
-    const themeContext = useContext(ThemeContext);
     const Component = levelToTag[level];
-    const levelKey = levelToKey[level];
-
-    const headingConfig = themeContext?.theme?.components?.heading;
-    const headingStyles =
-      variant === 'editorial'
-        ? headingConfig?.editorialStyles
-        : headingConfig?.styles;
-    const levelStyle = headingStyles?.[levelKey];
 
     // If accessibilityLevel differs from visual level, use aria-level
     const ariaProps =
@@ -281,7 +260,6 @@ export const XDSHeading = forwardRef<HTMLHeadingElement, XDSHeadingProps>(
           {...mergeProps(
             xdsClassName('heading', {variant, level}),
             stylex.props(
-              levelStyle,
               colorStyles[color],
               // Display: use truncation styles when maxLines > 0
               maxLines === 1

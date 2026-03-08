@@ -1,6 +1,6 @@
 /**
  * @file XDSFontWrapper.tsx
- * @input Uses React, StyleX, Theme, reset.css
+ * @input Uses React, reset.css
  * @output Exports XDSFontWrapper component
  * @position Typography component; provides base styles for wrapped content
  *
@@ -10,8 +10,6 @@
  */
 
 import * as React from 'react';
-import * as stylex from '@stylexjs/stylex';
-import {useTheme} from '../theme/XDSTheme';
 import '../typography.css';
 
 /**
@@ -76,22 +74,14 @@ export function XDSFontWrapper({
   children,
   'data-testid': testId,
 }: XDSFontWrapperProps): React.ReactElement {
-  const themeContext = useTheme();
-  const proseBase = themeContext?.theme.components?.prose?.base;
-
-  // Combine StyleX base styles with CSS typography class
+  // Combine CSS typography class for prose styling
   const typographyClass =
     variant === 'editorial'
       ? 'xds-typography xds-typography--editorial'
       : 'xds-typography xds-typography--default';
 
-  const stylexProps = stylex.props(proseBase);
-
   return (
-    <div
-      className={`${typographyClass} ${stylexProps.className ?? ''}`.trim()}
-      style={stylexProps.style}
-      data-testid={testId}>
+    <div className={typographyClass} data-testid={testId}>
       {children}
     </div>
   );
@@ -101,28 +91,15 @@ XDSFontWrapper.displayName = 'XDSFontWrapper';
 
 /**
  * Hook to access font wrapper styles from the current theme.
- * Use this for applying styles to native HTML elements programmatically.
  *
- * @example
- * ```
- * const { headingStyles, proseStyles } = useXDSFontWrapperStyles();
- *
- * <h1 {...stylex.props(headingStyles?.h1)}>Title</h1>
- * <p {...stylex.props(proseStyles?.p)}>Paragraph</p>
- * ```
+ * @deprecated Theme component styles are now applied via CSS classes.
+ * Use the `.xds-typography` class instead of reading styles from context.
  */
 export function useXDSFontWrapperStyles() {
-  const themeContext = useTheme();
-  const theme = themeContext?.theme;
-
   return {
-    /** Base wrapper styles */
-    base: theme?.components?.prose?.base,
-    /** Default heading styles (h1-h6) */
-    headingStyles: theme?.components?.heading?.styles,
-    /** Editorial heading styles (h1-h6, larger scale) */
-    editorialHeadingStyles: theme?.components?.heading?.editorialStyles,
-    /** Prose element styles (p, ul, ol, li, blockquote, code, pre, hr, etc.) */
-    proseStyles: theme?.components?.prose?.styles,
+    base: undefined,
+    headingStyles: undefined,
+    editorialHeadingStyles: undefined,
+    proseStyles: undefined,
   };
 }
