@@ -60,6 +60,12 @@ export const docs = {
     'Dividers are aria-hidden="true"',
     'Interactive items are keyboard-focusable via Tab',
   ],
+  theming: {
+    targets: [
+      {className: 'xds-list', visualProps: ['density', 'listStyle']},
+      {className: 'xds-list-item'},
+    ],
+  },
   notes: [
     'Invisible button pattern: when onClick is provided, an invisible <button> wraps the label + description for accessibility. The <li> is the visual container with hover/press styles. startContent and endContent are siblings to the button (not inside it). Container click fires onClick unless the click originated from an interactive child. :focus-within on the container shows the focus outline.',
     'When href is provided instead of onClick, the same invisible pattern uses an <a> element.',

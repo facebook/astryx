@@ -221,6 +221,11 @@ const isMobile = useMediaQuery('(max-width: 768px)');
     'Skip-to-content link is visually hidden but shown on focus for keyboard users.',
     'Escape key closes the mobile sideNav overlay.',
   ],
+  theming: {
+    targets: [
+      {className: 'xds-app-shell', visualProps: ['background', 'height']},
+    ],
+  },
   notes: [
     'When a TopNav is present, omit XDSSideNavHeader from the SideNav — the TopNav already provides app identity. Adding both would double the identity.',
     'When there is no TopNav, include XDSSideNavHeader inside the SideNav so the app name and logo are present.',

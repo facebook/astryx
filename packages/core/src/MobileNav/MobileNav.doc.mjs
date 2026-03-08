@@ -141,10 +141,8 @@ const navSections = (
   keyboard:
     'Escape closes the drawer; Tab/Shift+Tab cycles focus within the drawer (browser-native focus trapping)',
   theming: {
-    componentKey: 'mobileNav',
-    surfaces: [
-      {name: 'root', description: 'Root dialog element styles'},
-      {name: 'drawer', description: 'Drawer panel styles'},
+    targets: [
+      {className: 'xds-mobile-nav', visualProps: ['side']},
     ],
   },
 };

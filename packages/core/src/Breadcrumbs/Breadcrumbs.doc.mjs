@@ -44,6 +44,12 @@ export const docs = {
 </XDSBreadcrumbItem>`,
     },
   ],
+  theming: {
+    targets: [
+      {className: 'xds-breadcrumb-item'},
+      {className: 'xds-breadcrumbs', visualProps: ['variant']},
+    ],
+  },
   accessibility: [
     'Container renders as a <nav aria-label> landmark; the label defaults to "Breadcrumb" and is customizable via the label prop',
     'Items are placed inside an <ol> with individual <li> wrappers for correct list semantics',

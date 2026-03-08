@@ -95,10 +95,8 @@ export const docs = {
     },
   ],
   theming: {
-    componentKey: 'checkboxInput',
-    surfaces: [
-      {name: 'root', description: 'Root container styles'},
-      {name: 'checkbox', description: 'Visual checkbox element styles'},
+    targets: [
+      {className: 'xds-checkbox-input', visualProps: ['size']},
     ],
   },
   notes: [

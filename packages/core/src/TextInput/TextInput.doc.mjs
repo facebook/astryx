@@ -182,10 +182,8 @@ export const docs = {
     },
   ],
   theming: {
-    componentKey: 'textInput',
-    surfaces: [
-      {name: 'wrapper', description: 'Wrapper container element'},
-      {name: 'input', description: 'Input element'},
+    targets: [
+      {className: 'xds-text-input', visualProps: ['size']},
     ],
   },
   accessibility: [

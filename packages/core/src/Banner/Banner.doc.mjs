@@ -109,6 +109,11 @@ export const docs = {
     'Status icon is aria-hidden="true" — status is conveyed by the ARIA role instead',
   ],
 
+  theming: {
+    targets: [
+      {className: 'xds-banner', visualProps: ['variant']},
+    ],
+  },
   notes: [
     'Collapsible support is planned: the content area will support collapsing via useXDSCollapsible (issue #187)',
   ],

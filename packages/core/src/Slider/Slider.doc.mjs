@@ -215,15 +215,6 @@ export const docs = {
       description: 'Tooltip text for an info icon displayed next to the label.',
     },
   ],
-  theming: {
-    componentKey: 'slider',
-    surfaces: [
-      {name: 'root', description: 'Root container element'},
-      {name: 'track', description: 'Background track element'},
-      {name: 'filledTrack', description: 'Filled/active portion of the track'},
-      {name: 'thumb', description: 'Draggable thumb handle'},
-    ],
-  },
   accessibility: [
     'Uses `role="slider"` with `aria-valuenow`, `aria-valuemin`, `aria-valuemax`, and `aria-valuetext` on each thumb.',
     'The label is always rendered in the DOM for accessibility even when `isLabelHidden` is true.',

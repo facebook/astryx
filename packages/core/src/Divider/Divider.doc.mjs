@@ -8,7 +8,7 @@ export const docs = {
     'Optional label centered on the divider line',
     'Subtle and strong visual weight variants',
     'Full-bleed mode extends the divider to container edges via negative margins',
-    'Themeable via ComponentStyles — exposes root, line, and label surfaces',
+    'Themeable via className — target .xds-divider with variant and orientation classes',
   ],
   examples: [
     {
@@ -59,11 +59,8 @@ export const docs = {
     },
   ],
   theming: {
-    componentKey: 'divider',
-    surfaces: [
-      {name: 'root', description: 'Root container element'},
-      {name: 'line', description: 'Divider line element'},
-      {name: 'label', description: 'Label text element'},
+    targets: [
+      {className: 'xds-divider', visualProps: ['orientation', 'variant']},
     ],
   },
 };

@@ -10,7 +10,7 @@ export const docs = {
     'Title renders as an <h3> heading element for correct document outline',
     'Actions are laid out horizontally by default and stack vertically in compact mode',
     'Compact variant reduces spacing for constrained content areas',
-    'Accepts StyleX override styles via xstyle for custom container adjustments',
+    'Accepts xstyle, className, and style props for custom container adjustments',
     'Forwarded ref lands on the root <div> container',
   ],
   examples: [
@@ -77,6 +77,11 @@ export const docs = {
       default: 'false',
     },
   ],
+  theming: {
+    targets: [
+      {className: 'xds-emptystate'},
+    ],
+  },
   accessibility: [
     'Container uses role="status" to announce the empty state content to screen readers.',
     'Icon wrapper has aria-hidden="true" so decorative icons are ignored by assistive technology.',

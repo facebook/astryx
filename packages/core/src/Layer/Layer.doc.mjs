@@ -452,13 +452,8 @@ layer.show();
     },
   ],
   theming: {
-    componentKey: 'popover',
-    surfaces: [
-      {
-        name: 'container',
-        description:
-          'Inner content container of the popover (background, border-radius, shadow, padding).',
-      },
+    targets: [
+      {className: 'xds-popover'},
     ],
   },
 };

@@ -72,12 +72,8 @@ import {Home} from 'lucide-react';
     },
   ],
   theming: {
-    componentKey: 'icon',
-    surfaces: [
-      {
-        name: 'root',
-        description: 'Root SVG element styles',
-      },
+    targets: [
+      {className: 'xds-icon', visualProps: ['color', 'size']},
     ],
   },
   accessibility: [

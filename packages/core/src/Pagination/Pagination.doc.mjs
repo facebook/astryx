@@ -147,9 +147,8 @@ export const docs = {
     'All interactive elements are keyboard accessible.',
   ],
   theming: {
-    componentKey: 'pagination',
-    surfaces: [
-      {name: 'root', description: 'Root nav container styles'},
+    targets: [
+      {className: 'xds-pagination', visualProps: ['size', 'variant']},
     ],
   },
   notes: [

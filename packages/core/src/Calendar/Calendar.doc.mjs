@@ -117,12 +117,8 @@ export const docs = {
     },
   ],
   theming: {
-    componentKey: 'calendar',
-    surfaces: [
-      {
-        name: 'root',
-        description: 'Root container styles',
-      },
+    targets: [
+      {className: 'xds-calendar', visualProps: ['mode']},
     ],
   },
   notes: [

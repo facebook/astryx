@@ -193,10 +193,8 @@ export const docs = {
     },
   ],
   theming: {
-    componentKey: 'timeInput',
-    surfaces: [
-      {name: 'wrapper', description: 'Outer input wrapper div'},
-      {name: 'input', description: 'Text input element'},
+    targets: [
+      {className: 'xds-date-input', visualProps: ['size']},
     ],
   },
   accessibility: [

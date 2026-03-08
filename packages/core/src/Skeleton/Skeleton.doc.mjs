@@ -62,12 +62,8 @@ export const docs = {
     },
   ],
   theming: {
-    componentKey: 'skeleton',
-    surfaces: [
-      {
-        name: 'root',
-        description: 'Root skeleton element styles',
-      },
+    targets: [
+      {className: 'xds-skeleton'},
     ],
   },
   notes: [

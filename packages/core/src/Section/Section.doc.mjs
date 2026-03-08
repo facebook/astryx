@@ -91,4 +91,9 @@ export const docs = {
       default: 'false',
     },
   ],
+  theming: {
+    targets: [
+      {className: 'xds-section', visualProps: ['variant']},
+    ],
+  },
 };

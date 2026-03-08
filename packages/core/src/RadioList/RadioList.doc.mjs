@@ -85,8 +85,10 @@ export const docs = {
     },
   ],
   theming: {
-    componentKey: 'radioList',
-    surfaces: [{name: 'root', description: 'Root radio group styles'}],
+    targets: [
+      {className: 'xds-radio-list', visualProps: ['orientation', 'size']},
+      {className: 'xds-radio-list-item'},
+    ],
   },
   notes: [
     'XDSRadioList creates a RadioListContext that provides name, value, onChange, isDisabled, isRequired, size, and status to child items',

@@ -43,12 +43,8 @@ export const docs = {
     },
   ],
   theming: {
-    componentKey: 'aspectRatio',
-    surfaces: [
-      {
-        name: 'root',
-        description: 'Root container styles.',
-      },
+    targets: [
+      {className: 'xds-aspect-ratio'},
     ],
   },
 };

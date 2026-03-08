@@ -70,24 +70,27 @@ export interface Example {
 }
 
 /**
- * A themeable style surface that consumers can override via their theme's
- * `ComponentStyles`. Each component exposes named surfaces (e.g. `root`,
- * `trigger`, `track`) that map to internal styled elements.
+ * A theming target — a stable CSS class name that `defineTheme` can target
+ * via `@scope` selectors. Each component renders one or more class names
+ * via `xdsClassName()`, and themes can override styles for each.
  *
  * @example
  * ```
- * {name: 'root', description: 'Outer wrapper element'}
- * {name: 'track', description: 'Slider track background'}
+ * {className: 'xds-button', visualProps: ['variant', 'size']}
+ * {className: 'xds-avatar-status-dot', visualProps: ['variant']}
+ * {className: 'xds-card'}
  * ```
  */
-export interface ThemingSurface {
-  /** Surface key as used in the theme object, always camelCase.
-   *  e.g. `"root"`, `"track"`, `"filledTrack"`, `"headerRow"`, `"bodyCell"` */
-  name: string;
-  /** Short noun phrase describing the DOM element or visual region.
-   *  No trailing period. e.g. `"Outer wrapper element"`,
-   *  `"Animated circular thumb inside the track"` */
-  description: string;
+export interface ThemingTarget {
+  /** The stable CSS class name rendered by the component.
+   *  Always starts with `xds-`.
+   *  e.g. `"xds-button"`, `"xds-avatar-status-dot"`, `"xds-card"` */
+  className: string;
+  /** Visual prop names that produce variant classes on this element.
+   *  These are the props passed to `xdsClassName()` as the second argument.
+   *  Themes can target specific variants via `.xds-button.secondary`.
+   *  Omit if the component has no visual props (class name only). */
+  visualProps?: string[];
 }
 
 /**
@@ -135,15 +138,13 @@ interface BaseDoc {
    *  e.g. `"Variants: 'primary', 'secondary', 'ghost', 'destructive'"`,
    *  `"Single & range modes: pass a number or [number, number]"` */
   features?: string[];
-  /** Theming configuration. Include only if the component supports
-   *  style overrides via the theme's `ComponentStyles`. */
+  /** Theming configuration. Documents the stable CSS class names
+   *  rendered by this component that themes can target via `@scope`
+   *  selectors in `defineTheme`. */
   theming?: {
-    /** The key used in the theme's `components` object.
-     *  Always lowercase, matches the directory name.
-     *  e.g. `"button"`, `"switch"`, `"table"` */
-    componentKey: string;
-    /** All styleable surfaces this component exposes. */
-    surfaces: ThemingSurface[];
+    /** CSS class targets rendered by this component.
+     *  Each entry corresponds to an `xdsClassName()` call in the source. */
+    targets: ThemingTarget[];
   };
   /** Accessibility notes — ARIA patterns, screen reader behavior.
    *  Each string is one self-contained, declarative note.

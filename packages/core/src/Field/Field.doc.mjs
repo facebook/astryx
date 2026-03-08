@@ -68,10 +68,10 @@ const bioDescId = useId();
     },
   ],
   theming: {
-    componentKey: 'field',
-    surfaces: [
-      {name: 'root', description: 'Root container styles'},
-      {name: 'description', description: 'Description text styles'},
+    targets: [
+      {className: 'xds-field'},
+      {className: 'xds-field-label'},
+      {className: 'xds-field-status', visualProps: ['type', 'variant']},
     ],
   },
   notes: [

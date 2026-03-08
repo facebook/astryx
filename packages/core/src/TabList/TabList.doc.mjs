@@ -60,8 +60,10 @@ export const docs = {
     },
   ],
   theming: {
-    componentKey: 'tabList',
-    surfaces: [{name: 'root', description: 'Root nav container styles'}],
+    targets: [
+      {className: 'xds-tab-list', visualProps: ['size']},
+      {className: 'xds-tab'},
+    ],
   },
   accessibility: [
     'XDSTabList renders as a <nav> landmark with aria-label="Tabs"',

@@ -74,8 +74,9 @@ function MyComponent({as}: {as?: XDSLinkComponentType}) {
     },
   ],
   theming: {
-    componentKey: 'link',
-    surfaces: [{name: 'root', description: 'Root anchor element styles'}],
+    targets: [
+      {className: 'xds-link', visualProps: ['color']},
+    ],
   },
   notes: [
     'By default, links inherit font family, size, line-height, and weight from parent elements',

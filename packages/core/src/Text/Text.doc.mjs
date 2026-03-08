@@ -42,6 +42,12 @@ export const docs = {
     'Tabular number support for aligned numeric data',
     'All typography driven by CSS custom properties — fully themeable per-component',
   ],
+  theming: {
+    targets: [
+      {className: 'xds-heading', visualProps: ['level', 'variant']},
+      {className: 'xds-text', visualProps: ['type']},
+    ],
+  },
   accessibility: [
     'XDSHeading renders the correct semantic h1–h6 element based on the `level` prop.',
     'When `accessibilityLevel` differs from `level`, `aria-level` is set so screen readers announce the correct document outline position while preserving the visual style.',

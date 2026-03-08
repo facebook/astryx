@@ -97,10 +97,8 @@ export const docs = {
     },
   ],
   theming: {
-    componentKey: 'dropdownMenu',
-    surfaces: [
-      {name: 'root', description: 'Dropdown container styles'},
-      {name: 'item', description: 'Menu item styles'},
+    targets: [
+      {className: 'xds-dropdown-menu-item'},
     ],
   },
   keyboard:

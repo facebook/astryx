@@ -102,6 +102,11 @@ export const docs = {
       code: '<XDSToken label="User" icon={<UserIcon />} isLabelHidden />',
     },
   ],
+  theming: {
+    targets: [
+      {className: 'xds-token', visualProps: ['color']},
+    ],
+  },
   accessibility: [
     'When isLabelHidden is true, the label is clipped visually but exposed via aria-label on the root element so screen readers still announce it.',
     'The description prop maps to aria-description on the root element for supplementary context.',

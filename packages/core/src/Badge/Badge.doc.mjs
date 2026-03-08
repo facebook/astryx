@@ -43,17 +43,8 @@ export const docs = {
     },
   ],
   theming: {
-    componentKey: 'badge',
-    surfaces: [
-      {
-        name: 'root',
-        description: 'Root badge styles.',
-      },
-      {
-        name: 'variants',
-        description:
-          'Per-variant overrides (Partial<Record<XDSBadgeVariant, StyleXStyles>>).',
-      },
+    targets: [
+      {className: 'xds-badge', visualProps: ['variant']},
     ],
   },
 };

@@ -15,7 +15,7 @@ export const docs = {
     'Selection via useXDSTableSelection — checkboxes, select-all, aria-selected',
     'Body rows memoized with custom comparison — only changed rows re-render',
     'Auto-generated columns from data object keys when columns prop is omitted',
-    'Theming — root, headerRow, bodyRow, headerCell, bodyCell surfaces via ComponentStyles',
+    'Themeable via className — target .xds-base-table, .xds-table-row, .xds-table-cell, .xds-table-header-cell',
   ],
   examples: [
     {
@@ -182,13 +182,11 @@ const selectionPlugin = useXDSTableSelection<User>({
     },
   ],
   theming: {
-    componentKey: 'table',
-    surfaces: [
-      {name: 'root', description: 'Root table element styles'},
-      {name: 'headerRow', description: 'Header row styles'},
-      {name: 'bodyRow', description: 'Body row styles'},
-      {name: 'headerCell', description: 'Header cell styles'},
-      {name: 'bodyCell', description: 'Body cell styles'},
+    targets: [
+      {className: 'xds-base-table'},
+      {className: 'xds-table-row'},
+      {className: 'xds-table-cell'},
+      {className: 'xds-table-header-cell'},
     ],
   },
   accessibility: [

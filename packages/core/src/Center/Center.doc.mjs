@@ -58,12 +58,8 @@ export const docs = {
     },
   ],
   theming: {
-    componentKey: 'center',
-    surfaces: [
-      {
-        name: 'root',
-        description: 'Root container styles',
-      },
+    targets: [
+      {className: 'xds-center', visualProps: ['axis']},
     ],
   },
 };

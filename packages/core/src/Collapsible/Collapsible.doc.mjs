@@ -17,6 +17,11 @@ export const docs = {
     'Trigger renders as a <button> with aria-expanded reflecting the current open state',
     'A chevron indicator provides a visual affordance for the expanded/collapsed state',
   ],
+  theming: {
+    targets: [
+      {className: 'xds-collapsible'},
+    ],
+  },
   notes: [
     'XDSCollapsible manages its own open/close state by default (uncontrolled)',
     'When nested inside an XDSCollapsibleGroup with a matching value prop, it defers to the group context',

@@ -46,12 +46,8 @@ export const docs = {
     },
   ],
   theming: {
-    componentKey: 'spinner',
-    surfaces: [
-      {
-        name: 'root',
-        description: 'Root spinner element styles',
-      },
+    targets: [
+      {className: 'xds-spinner', visualProps: ['size']},
     ],
   },
   notes: [

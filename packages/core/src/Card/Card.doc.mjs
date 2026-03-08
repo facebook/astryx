@@ -87,10 +87,8 @@ export const docs = {
     },
   ],
   theming: {
-    componentKey: 'card',
-    surfaces: [
-      {name: 'container', description: 'Outer card wrapper element'},
-      {name: 'content', description: 'Inner content area with padding'},
+    targets: [
+      {className: 'xds-card'},
     ],
   },
 };

@@ -159,10 +159,8 @@ export const docs = {
     'Invalid input reverts to the previous valid value on blur.',
   ],
   theming: {
-    componentKey: 'dateInput',
-    surfaces: [
-      {name: 'wrapper', description: 'Input wrapper element styles'},
-      {name: 'input', description: 'Text input element styles'},
+    targets: [
+      {className: 'xds-date-input', visualProps: ['size']},
     ],
   },
 };

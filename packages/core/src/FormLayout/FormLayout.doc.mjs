@@ -72,6 +72,11 @@ export const docs = {
     'Nestable: inner FormLayout overrides context for its children',
     'Purely spatial: does not manage form state or render <form> — form submission is separate',
   ],
+  theming: {
+    targets: [
+      {className: 'xds-form-layout', visualProps: ['direction']},
+    ],
+  },
   notes: [
     'Renders a <div>, not a <form>. Use a separate <form> element and connect submit buttons via the HTML form attribute.',
     'XDSFormLayoutContext provides { direction } to children. Import from @xds/core/FormLayout to read layout direction in custom components.',

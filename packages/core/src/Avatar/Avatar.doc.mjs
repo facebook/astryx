@@ -43,10 +43,9 @@ export const docs = {
     },
   ],
   theming: {
-    componentKey: 'avatar',
-    surfaces: [
-      {name: 'root', description: 'Root wrapper styles'},
-      {name: 'fallback', description: 'Fallback/initials container styles'},
+    targets: [
+      {className: 'xds-avatar', visualProps: ['size']},
+      {className: 'xds-avatar-status-dot', visualProps: ['variant']},
     ],
   },
   notes: [

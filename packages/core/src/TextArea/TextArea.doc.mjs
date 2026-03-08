@@ -179,16 +179,8 @@ export const docs = {
     },
   ],
   theming: {
-    componentKey: 'textArea',
-    surfaces: [
-      {
-        name: 'wrapper',
-        description: 'Outer wrapper div that contains the textarea and icons.',
-      },
-      {
-        name: 'textarea',
-        description: 'The textarea element itself.',
-      },
+    targets: [
+      {className: 'xds-text-input', visualProps: ['size']},
     ],
   },
   accessibility: [

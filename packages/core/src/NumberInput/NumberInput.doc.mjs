@@ -219,10 +219,8 @@ export const docs = {
     },
   ],
   theming: {
-    componentKey: 'numberInput',
-    surfaces: [
-      {name: 'wrapper', description: 'Input wrapper styles'},
-      {name: 'input', description: 'Number input element styles'},
+    targets: [
+      {className: 'xds-number-input', visualProps: ['size']},
     ],
   },
   accessibility: [

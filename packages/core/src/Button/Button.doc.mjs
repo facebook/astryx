@@ -128,6 +128,11 @@ export const docs = {
     },
   ],
 
+  theming: {
+    targets: [
+      {className: 'xds-button', visualProps: ['size', 'variant']},
+    ],
+  },
   notes: [
     'XDSButtonVariant type is derived from the variants StyleX object using keyof typeof variants.',
     'Hover/active states use backgroundImage with linear-gradient to layer overlay colors on top of the base background.',

@@ -9,7 +9,7 @@ export const docs = {
     'Three-column centering — when centerContent is provided, switches to CSS grid (1fr auto 1fr) for true horizontal centering',
     'Companion components — XDSTopNavTitle, XDSTopNavItem, XDSTopNavMenu, XDSTopNavMegaMenu',
     'Accessible — uses role="navigation" with aria-label, aria-current="page" on selected items',
-    'Themeable — supports root style override via theme ComponentStyles',
+    'Themeable via className — target .xds-top-nav and sub-component classes',
     'Link customization — XDSTopNavItem accepts an as prop to swap the anchor element (e.g. for React Router)',
   ],
   examples: [
@@ -114,8 +114,12 @@ export const docs = {
     },
   ],
   theming: {
-    componentKey: 'topNav',
-    surfaces: [{name: 'root', description: 'Root nav bar element'}],
+    targets: [
+      {className: 'xds-top-nav'},
+      {className: 'xds-top-nav-item'},
+      {className: 'xds-top-nav-title'},
+      {className: 'xds-top-nav-mega-menu'},
+    ],
   },
   accessibility: [
     'XDSTopNav renders a <nav> element with role="navigation" and aria-label set from the label prop',

@@ -396,6 +396,11 @@ export const docs = {
   ],
   keyboard:
     'Arrow keys navigate dropdown items; Enter selects highlighted item; Escape closes dropdown or restores previous value in edit mode; Home/End jump to first/last item',
+  theming: {
+    targets: [
+      {className: 'xds-typeahead-item'},
+    ],
+  },
   notes: [
     'XDSSearchSource requires items to implement XDSSearchableItem ({ id: string; label: string; [key: string]: unknown }).',
     'Edit mode in XDSTypeahead: clicking the selected token removes it visually, populates the input with the label text, and selects all. Blurring without selecting restores the original token.',

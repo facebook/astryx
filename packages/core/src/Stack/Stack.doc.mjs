@@ -69,6 +69,12 @@ import * as stylex from '@stylexjs/stylex';
 </div>`,
     },
   ],
+  theming: {
+    targets: [
+      {className: 'xds-stack', visualProps: ['direction', 'gap', 'wrap']},
+      {className: 'xds-stack-item', visualProps: ['size']},
+    ],
+  },
   notes: [
     "Import from '@xds/core/Layout': XDSHStack, XDSVStack, XDSStackItem, stack, stackItem.",
     'The gap prop accepts spacing tokens: space0, space0.5, space1, space2, space3, space4, space5, space6, space7.',

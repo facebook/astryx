@@ -102,6 +102,11 @@ export const docs = {
       code: `<XDSProgressBar value={50} label="Loading" isLabelHidden />`,
     },
   ],
+  theming: {
+    targets: [
+      {className: 'xds-progressbar', visualProps: ['size', 'variant']},
+    ],
+  },
   accessibility: [
     'Determinate: uses role="meter" with aria-valuenow, aria-valuemin, aria-valuemax',
     'Indeterminate: uses role="progressbar" without value attributes',

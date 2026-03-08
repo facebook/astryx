@@ -21,10 +21,9 @@ export const docs = {
     'aria-activedescendant tracks the focused option.',
   ],
   theming: {
-    componentKey: 'selector',
-    surfaces: [
-      {name: 'trigger', description: 'Trigger button styles'},
-      {name: 'dropdown', description: 'Dropdown container styles'},
+    targets: [
+      {className: 'xds-selector', visualProps: ['size']},
+      {className: 'xds-selector-option'},
     ],
   },
   examples: [

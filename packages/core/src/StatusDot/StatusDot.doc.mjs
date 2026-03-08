@@ -54,6 +54,11 @@ export const docs = {
       code: `<XDSStatusDot variant="positive" label="Live" isPulsing />`,
     },
   ],
+  theming: {
+    targets: [
+      {className: 'xds-statusdot', visualProps: ['size', 'variant']},
+    ],
+  },
   accessibility: [
     'Renders as <span role="img" aria-label={label}> for screen reader support.',
     'Not focusable — intended as a decorative indicator only.',

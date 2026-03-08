@@ -52,8 +52,10 @@ export const docs = {
     },
   ],
   theming: {
-    componentKey: 'grid',
-    surfaces: [{name: 'root', description: 'Root grid container styles'}],
+    targets: [
+      {className: 'xds-grid', visualProps: ['align', 'columns', 'gap', 'justify']},
+      {className: 'xds-grid-span'},
+    ],
   },
   notes: [
     'Use XDSGrid for any grid layout instead of manual CSS grid (`display: "grid"`, `gridTemplateColumns`). It handles gap tokens and works with any column count.',

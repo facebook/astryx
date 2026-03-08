@@ -181,11 +181,8 @@ export const docs = {
     },
   ],
   theming: {
-    componentKey: 'switch',
-    surfaces: [
-      {name: 'root', description: 'Root container flex wrapper'},
-      {name: 'track', description: 'Switch track background element'},
-      {name: 'thumb', description: 'Animated circular thumb inside the track'},
+    targets: [
+      {className: 'xds-switch'},
     ],
   },
   accessibility: [

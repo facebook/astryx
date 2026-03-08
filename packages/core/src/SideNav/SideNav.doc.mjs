@@ -20,6 +20,14 @@ export const docs = {
     'isHeaderHidden visually hides the section title while keeping it accessible to screen readers',
   ],
   keyboard: 'Tab through items, Enter/Space to activate links',
+  theming: {
+    targets: [
+      {className: 'xds-side-nav'},
+      {className: 'xds-side-nav-header'},
+      {className: 'xds-side-nav-item'},
+      {className: 'xds-side-nav-section'},
+    ],
+  },
   notes: [
     'When used inside XDSAppShell alongside XDSTopNav, omit XDSSideNavHeader — the TopNav already provides app identity and including the header would duplicate it.',
     'Without a TopNav, include XDSSideNavHeader to provide app identity.',

@@ -56,6 +56,15 @@ export const docs = {
 </XDSCard>`,
     },
   ],
+  theming: {
+    targets: [
+      {className: 'xds-layout', visualProps: ['height']},
+      {className: 'xds-layout-content'},
+      {className: 'xds-layout-footer'},
+      {className: 'xds-layout-header'},
+      {className: 'xds-layout-panel'},
+    ],
+  },
   notes: [
     'Use XDSLayout for page shells and app layouts — any UI with a header bar, sidebar navigation, scrollable content area, or action footer. Do not use for simple stacking (use XDSVStack/XDSHStack instead).',
     'XDSLayoutContainer sets CSS variables that child components read: --layout-padding-outer-x (outer horizontal padding), --layout-padding-outer-y (outer vertical padding), --layout-padding-inner-x (inner horizontal padding used by Header, Footer, Content, Panel), --layout-padding-inner-y (inner vertical padding used by Header, Footer, Content, Panel).',

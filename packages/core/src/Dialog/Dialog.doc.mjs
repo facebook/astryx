@@ -102,10 +102,8 @@ function Example() {
     },
   ],
   theming: {
-    componentKey: 'dialog',
-    surfaces: [
-      {name: 'root', description: 'Dialog element styles'},
-      {name: 'backdrop', description: 'Backdrop overlay styles'},
+    targets: [
+      {className: 'xds-dialog', visualProps: ['variant']},
     ],
   },
   keyboard:

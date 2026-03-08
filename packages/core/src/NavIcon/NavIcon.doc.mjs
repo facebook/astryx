@@ -47,4 +47,9 @@ export const docs = {
 />`,
     },
   ],
+  theming: {
+    targets: [
+      {className: 'xds-navicon'},
+    ],
+  },
 };
