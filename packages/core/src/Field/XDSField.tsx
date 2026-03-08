@@ -32,6 +32,7 @@ import {
 import type {XDSIconType} from '../Icon';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 const styles = stylex.create({
   container: {
@@ -214,7 +215,10 @@ export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
     return (
       <div
         ref={ref}
-        {...stylex.props(styles.container, rootOverride)}
+        {...mergeProps(
+          xdsClassName('field'),
+          stylex.props(styles.container, rootOverride),
+        )}
         {...props}>
         <XDSFieldLabel
           label={label}

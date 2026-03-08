@@ -5,6 +5,9 @@
  * plus variant classes derived from visual props. These stable class names
  * enable CSS-based theming via @scope'd selectors in defineTheme.
  *
+ * <!-- SYNC: packages/cli/src/commands/build-theme.mjs (parseStyleKey + selector generation) -->
+ * <!-- SYNC: packages/core/src/utils/parseStyleKey.ts -->
+ *
  * Values starting with a digit get prefixed with the prop name since
  * CSS class names can't start with a number (e.g. level=1 → "level-1").
  *

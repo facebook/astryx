@@ -126,6 +126,7 @@ export type {
 } from '../Field';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Module Augmentation - Register component styles with ComponentStyles
@@ -477,14 +478,17 @@ export const XDSDateInput = forwardRef<HTMLInputElement, XDSDateInputProps>(
         labelTooltip={labelTooltip}>
         <div
           ref={popover.triggerRef}
-          {...stylex.props(
-            inputWrapperStyles.base,
-            sizeStyles[size],
-            isDisabled && inputWrapperStyles.disabled,
-            status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
-            status && inputStatusFocusWithinStyles[status.type],
-            wrapperOverride,
+          {...mergeProps(
+            xdsClassName('date-input', {size}),
+            stylex.props(
+              inputWrapperStyles.base,
+              sizeStyles[size],
+              isDisabled && inputWrapperStyles.disabled,
+              status && inputStatusBorderStyles[status.type],
+              status && inputStatusHoverShadowStyles[status.type],
+              status && inputStatusFocusWithinStyles[status.type],
+              wrapperOverride,
+            ),
           )}>
           <button
             type="button"

@@ -28,6 +28,7 @@ import {
 } from '../theme/tokens.stylex';
 import {useXDSCollapsible} from './useXDSCollapsible';
 import {useXDSIcon} from '../Icon/IconRegistry';
+import {xdsClassName, mergeProps} from '../utils';
 
 const styles = stylex.create({
   // Trigger button — full width, flex row, no browser button styling
@@ -176,7 +177,7 @@ export const XDSCollapsible = forwardRef<HTMLDivElement, XDSCollapsibleProps>(
     const chevronIcon = useXDSIcon('chevronDown');
 
     return (
-      <div ref={ref} {...props}>
+      <div ref={ref} className={xdsClassName('collapsible')} {...props}>
         <button
           type="button"
           onClick={toggle}

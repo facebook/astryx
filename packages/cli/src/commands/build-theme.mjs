@@ -44,6 +44,10 @@ function resolveTokenValue(value) {
  * - `variant:secondary` → '.secondary'
  * - `level:1` → '.level-1' (digits get prefixed)
  * - `variant:destructive+size:sm` → '.destructive.sm'
+ *
+ * <!-- SYNC: packages/core/src/utils/parseStyleKey.ts -->
+ * <!-- SYNC: packages/core/src/utils/xdsClassName.ts -->
+ * The digit-prefix and value-to-class logic must match across all three files.
  */
 function parseStyleKey(key) {
   if (key === 'base') return '';

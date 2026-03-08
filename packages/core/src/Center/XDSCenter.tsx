@@ -23,6 +23,7 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import type {SizeValue} from '../utils/types';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 const styles = stylex.create({
   base: {
@@ -132,13 +133,17 @@ export const XDSCenter = forwardRef<HTMLDivElement, XDSCenterProps>(
     const themeContext = useContext(ThemeContext);
     const rootOverride = themeContext?.theme.components?.center?.root;
 
-    const stylexProps = stylex.props(
-      isInline ? styles.inline : styles.base,
-      (axis === 'both' || axis === 'vertical') && styles.alignItemsCenter,
-      (axis === 'both' || axis === 'horizontal') && styles.justifyContentCenter,
-      dynamicStyles.sizing(width ?? null, height ?? null),
-      xstyle,
-      rootOverride,
+    const stylexProps = mergeProps(
+      xdsClassName('center', {axis}),
+      stylex.props(
+        isInline ? styles.inline : styles.base,
+        (axis === 'both' || axis === 'vertical') && styles.alignItemsCenter,
+        (axis === 'both' || axis === 'horizontal') &&
+          styles.justifyContentCenter,
+        dynamicStyles.sizing(width ?? null, height ?? null),
+        xstyle,
+        rootOverride,
+      ),
     );
 
     return (

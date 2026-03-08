@@ -31,6 +31,7 @@ import {XDSLayoutHeader} from '../Layout/XDSLayoutHeader';
 import {XDSLayoutPanel} from '../Layout/XDSLayoutPanel';
 import {XDSLayoutContent} from '../Layout/XDSLayoutContent';
 import {XDSMobileNav} from '../MobileNav/XDSMobileNav';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Constants
@@ -482,11 +483,14 @@ export const XDSAppShell = forwardRef<HTMLDivElement, XDSAppShellProps>(
       <div
         ref={setShellRef}
         data-testid={dataTestId}
-        {...stylex.props(
-          styles.root,
-          background === 'wash' ? styles.rootBgWash : styles.rootBgSurface,
-          isFill ? styles.rootFill : styles.rootAuto,
-          xstyle,
+        {...mergeProps(
+          xdsClassName('app-shell', {background, height}),
+          stylex.props(
+            styles.root,
+            background === 'wash' ? styles.rootBgWash : styles.rootBgSurface,
+            isFill ? styles.rootFill : styles.rootAuto,
+            xstyle,
+          ),
         )}>
         {/* Skip-to-content link */}
         <a

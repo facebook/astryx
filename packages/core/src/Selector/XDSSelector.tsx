@@ -55,6 +55,7 @@ import {useCombobox, useSelectedItemOffset} from './hooks';
 import {XDSSelectorOption} from './XDSSelectorOption';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 const styles = stylex.create({
   // Trigger button
@@ -622,14 +623,17 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
         onClick={onTriggerClick}
         onKeyDown={onKeyDown}
         data-testid={testId}
-        {...stylex.props(
-          styles.trigger,
-          sizeStyles[size],
-          isDisabled && styles.triggerDisabled,
-          !selectedItem && styles.triggerPlaceholder,
-          status && inputStatusBorderStyles[status.type],
-          status && inputStatusHoverShadowStyles[status.type],
-          triggerOverride,
+        {...mergeProps(
+          xdsClassName('selector', {size}),
+          stylex.props(
+            styles.trigger,
+            sizeStyles[size],
+            isDisabled && styles.triggerDisabled,
+            !selectedItem && styles.triggerPlaceholder,
+            status && inputStatusBorderStyles[status.type],
+            status && inputStatusHoverShadowStyles[status.type],
+            triggerOverride,
+          ),
         )}>
         <span>{selectedItem?.label ?? placeholder}</span>
         {isBusy && <XDSSpinner size="sm" />}

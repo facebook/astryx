@@ -24,6 +24,7 @@ import {
   fontWeightVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
+import {xdsClassName, mergeProps} from '../utils';
 // =============================================================================
 // Styles
 // =============================================================================
@@ -174,7 +175,10 @@ export function XDSSideNavSection({
       role="group"
       aria-labelledby={titleId}
       data-testid={testId}
-      {...stylex.props(styles.root)}>
+      {...mergeProps(
+        xdsClassName('side-nav-section'),
+        stylex.props(styles.root),
+      )}>
       <div
         style={isHeaderHidden ? visuallyHiddenStyle : undefined}
         {...stylex.props(styles.header)}>

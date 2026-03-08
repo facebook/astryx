@@ -26,6 +26,7 @@ import {
 } from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
 import {XDSTableContext} from './XDSTableContext';
+import {xdsClassName, mergeProps} from '../utils';
 
 /** Props for XDSTableHeaderCell — `<th>` wrapper with context-aware styling */
 export interface XDSTableHeaderCellProps extends ThHTMLAttributes<HTMLTableCellElement> {
@@ -108,7 +109,13 @@ export const XDSTableHeaderCell = forwardRef<
 
   if (!ctx) {
     return (
-      <th ref={ref} {...props} {...stylex.props(xstyle)}>
+      <th
+        ref={ref}
+        {...props}
+        {...mergeProps(
+          xdsClassName('table-header-cell'),
+          stylex.props(xstyle),
+        )}>
         {children}
       </th>
     );
@@ -133,7 +140,13 @@ export const XDSTableHeaderCell = forwardRef<
   }
 
   return (
-    <th ref={ref} {...props} {...stylex.props(...cellStyles)}>
+    <th
+      ref={ref}
+      {...props}
+      {...mergeProps(
+        xdsClassName('table-header-cell'),
+        stylex.props(...cellStyles),
+      )}>
       {children}
     </th>
   );

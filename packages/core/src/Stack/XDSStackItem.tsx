@@ -25,6 +25,7 @@ import {
   type StackItemCrossAlignSelf,
   type StackItemSize,
 } from './stackItem.stylex';
+import {xdsClassName, mergeProps} from '../utils';
 
 export interface XDSStackItemProps extends Omit<
   HTMLAttributes<HTMLElement>,
@@ -90,7 +91,7 @@ export const XDSStackItem = forwardRef<HTMLElement, XDSStackItemProps>(
       element,
       {
         ref: ref as Ref<Element>,
-        ...stylexProps,
+        ...mergeProps(xdsClassName('stack-item', {size}), stylexProps),
         ...props,
       },
       children,

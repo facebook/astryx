@@ -21,6 +21,7 @@ import {
   XDSFormLayoutContext,
   type XDSFormLayoutDirection,
 } from './XDSFormLayoutContext';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Responsive breakpoint for horizontal-labels collapse
@@ -126,11 +127,14 @@ export const XDSFormLayout = forwardRef<HTMLDivElement, XDSFormLayoutProps>(
       <XDSFormLayoutContext.Provider value={contextValue}>
         <div
           ref={ref}
-          {...stylex.props(
-            styles.base,
-            direction === 'horizontal' && styles.horizontal,
-            direction === 'horizontal-labels' && styles.horizontalLabels,
-            xstyle,
+          {...mergeProps(
+            xdsClassName('form-layout', {direction}),
+            stylex.props(
+              styles.base,
+              direction === 'horizontal' && styles.horizontal,
+              direction === 'horizontal-labels' && styles.horizontalLabels,
+              xstyle,
+            ),
           )}
           {...props}>
           {children}

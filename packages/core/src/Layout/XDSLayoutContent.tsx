@@ -17,6 +17,7 @@ import {forwardRef, useContext} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {XDSLayoutSlotsContext} from './XDSLayoutSlotsContext';
+import {xdsClassName, mergeProps} from '../utils';
 
 const styles = stylex.create({
   content: {
@@ -148,15 +149,18 @@ export const XDSLayoutContent = forwardRef<HTMLElement, XDSLayoutContentProps>(
         ref={ref as React.Ref<HTMLDivElement>}
         role={role}
         aria-label={label}
-        {...stylex.props(
-          styles.content,
-          // Outer padding on container edges (unless content is full bleed)
-          !hasStart && !isFullBleed && styles.noStart,
-          !hasEnd && !isFullBleed && styles.noEnd,
-          !hasHeader && !isFullBleed && styles.noHeader,
-          !hasFooter && !isFullBleed && styles.noFooter,
-          isScrollable && styles.scrollable,
-          isFullBleed && styles.fullBleed,
+        {...mergeProps(
+          xdsClassName('layout-content'),
+          stylex.props(
+            styles.content,
+            // Outer padding on container edges (unless content is full bleed)
+            !hasStart && !isFullBleed && styles.noStart,
+            !hasEnd && !isFullBleed && styles.noEnd,
+            !hasHeader && !isFullBleed && styles.noHeader,
+            !hasFooter && !isFullBleed && styles.noFooter,
+            isScrollable && styles.scrollable,
+            isFullBleed && styles.fullBleed,
+          ),
         )}
         {...props}>
         {children}

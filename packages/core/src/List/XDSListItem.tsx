@@ -25,6 +25,7 @@ import {
   transitionVars,
 } from '../theme/tokens.stylex';
 import {XDSListContext} from './XDSListContext';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Types
@@ -350,15 +351,18 @@ export const XDSListItem = forwardRef<HTMLLIElement, XDSListItemProps>(
         data-testid={testId}
         aria-selected={isSelected || undefined}
         aria-disabled={isDisabled || undefined}
-        {...stylex.props(
-          hasMarkers ? styles.itemWithMarker : styles.item,
-          densityStyles[density],
-          hasDividers ? styles.noRadius : styles.withRadius,
-          isInteractive && styles.interactive,
-          isInteractive && styles.focusWithinOutline,
-          isDisabled && styles.disabled,
-          isSelected && styles.selected,
-          xstyle,
+        {...mergeProps(
+          xdsClassName('list-item'),
+          stylex.props(
+            hasMarkers ? styles.itemWithMarker : styles.item,
+            densityStyles[density],
+            hasDividers ? styles.noRadius : styles.withRadius,
+            isInteractive && styles.interactive,
+            isInteractive && styles.focusWithinOutline,
+            isDisabled && styles.disabled,
+            isSelected && styles.selected,
+            xstyle,
+          ),
         )}
         onClick={isInteractive ? handleContainerClick : undefined}>
         {hasMarkers ? (

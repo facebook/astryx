@@ -10,6 +10,7 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
+import {xdsClassName, mergeProps} from '../utils';
 import {
   colorVars,
   lineHeightVars,
@@ -106,10 +107,13 @@ export function XDSFieldStatus({
   return (
     <div
       id={id}
-      {...stylex.props(
-        styles.base,
-        variant === 'attached' ? styles.attached : styles.detached,
-        colorStyles[type],
+      {...mergeProps(
+        xdsClassName('field-status', {type, variant}),
+        stylex.props(
+          styles.base,
+          variant === 'attached' ? styles.attached : styles.detached,
+          colorStyles[type],
+        ),
       )}>
       {message}
     </div>

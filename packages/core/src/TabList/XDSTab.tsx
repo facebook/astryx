@@ -28,6 +28,7 @@ import {useXDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 export interface XDSTabProps {
   /**
@@ -199,12 +200,15 @@ export function XDSTab({
 
   const sharedProps = {
     'aria-current': isSelected ? ('page' as const) : undefined,
-    ...stylex.props(
-      styles.base,
-      sizeStyles[size],
-      isSelected && styles.selected,
-      isSelected && styles.underlineSelected,
-      !isSelected && stylex.defaultMarker(),
+    ...mergeProps(
+      xdsClassName('tab'),
+      stylex.props(
+        styles.base,
+        sizeStyles[size],
+        isSelected && styles.selected,
+        isSelected && styles.underlineSelected,
+        !isSelected && stylex.defaultMarker(),
+      ),
     ),
   };
 

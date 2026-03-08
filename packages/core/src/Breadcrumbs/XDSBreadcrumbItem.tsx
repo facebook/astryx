@@ -24,6 +24,7 @@ import {
 import {BreadcrumbCtx} from './XDSBreadcrumbs';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Props
@@ -158,9 +159,12 @@ export function XDSBreadcrumbItem({
   if (isCurrent) {
     return (
       <li
-        {...stylex.props(
-          itemStyles.root,
-          isSupporting ? itemStyles.supportingSize : itemStyles.defaultSize,
+        {...mergeProps(
+          xdsClassName('breadcrumb-item'),
+          stylex.props(
+            itemStyles.root,
+            isSupporting ? itemStyles.supportingSize : itemStyles.defaultSize,
+          ),
         )}
         data-testid={testId}>
         <span
@@ -180,9 +184,12 @@ export function XDSBreadcrumbItem({
 
   return (
     <li
-      {...stylex.props(
-        itemStyles.root,
-        isSupporting ? itemStyles.supportingSize : itemStyles.defaultSize,
+      {...mergeProps(
+        xdsClassName('breadcrumb-item'),
+        stylex.props(
+          itemStyles.root,
+          isSupporting ? itemStyles.supportingSize : itemStyles.defaultSize,
+        ),
       )}
       data-testid={testId}>
       <LinkComponent

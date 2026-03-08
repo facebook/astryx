@@ -11,6 +11,7 @@
 
 import {forwardRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {xdsClassName, mergeProps} from '../utils';
 
 import {
   colorVars,
@@ -129,11 +130,14 @@ export const XDSFieldLabel = forwardRef<HTMLLabelElement, XDSFieldLabelProps>(
       <label
         ref={ref}
         htmlFor={inputID}
-        {...stylex.props(
-          styles.label,
-          !isDisabled && styles.labelClickable,
-          isDisabled && styles.labelDisabled,
-          isLabelHidden && styles.labelHidden,
+        {...mergeProps(
+          xdsClassName('field-label'),
+          stylex.props(
+            styles.label,
+            !isDisabled && styles.labelClickable,
+            isDisabled && styles.labelDisabled,
+            isLabelHidden && styles.labelHidden,
+          ),
         )}>
         {labelIcon && (
           <XDSIcon

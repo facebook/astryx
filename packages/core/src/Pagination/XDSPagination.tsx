@@ -33,6 +33,7 @@ import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
 import {XDSSelector} from '../Selector';
 import {XDSText} from '../Text';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Module Augmentation - Register component styles with ComponentStyles
@@ -504,7 +505,10 @@ export const XDSPagination = forwardRef<HTMLElement, XDSPaginationProps>(
         ref={ref}
         aria-label={label}
         data-testid={testId}
-        {...stylex.props(styles.root, rootOverride, xstyle)}>
+        {...mergeProps(
+          xdsClassName('pagination', {variant, size}),
+          stylex.props(styles.root, rootOverride, xstyle),
+        )}>
         {pageSizeOptions != null && pageSizeOptions.length > 0 && (
           <div {...stylex.props(styles.pageSizeSelector)}>
             <div {...stylex.props(styles.pageSizeSelectorControl)}>

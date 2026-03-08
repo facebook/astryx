@@ -38,6 +38,7 @@ import type {XDSInputStatus} from '../Field/types';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
 import {XDSSpinner} from '../Spinner';
+import {xdsClassName, mergeProps} from '../utils';
 
 const styles = stylex.create({
   container: {
@@ -354,7 +355,7 @@ export const XDSCheckboxInput = forwardRef<
       describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
 
     return (
-      <div>
+      <div className={xdsClassName('checkbox-input', {size})}>
         <div
           {...stylex.props(
             styles.container,

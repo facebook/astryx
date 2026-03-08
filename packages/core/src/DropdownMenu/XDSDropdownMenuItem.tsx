@@ -17,6 +17,7 @@ import {XDSIcon} from '../Icon';
 import type {XDSIconType} from '../Icon';
 import {XDSText} from '../Text';
 import {spacingVars} from '../theme/tokens.stylex';
+import {xdsClassName, mergeProps} from '../utils';
 
 const styles = stylex.create({
   root: {
@@ -90,7 +91,11 @@ export function XDSDropdownMenuItem({
   xstyle,
 }: XDSDropdownMenuItemProps) {
   return (
-    <span {...stylex.props(styles.root, xstyle)}>
+    <span
+      {...mergeProps(
+        xdsClassName('dropdown-menu-item'),
+        stylex.props(styles.root, xstyle),
+      )}>
       {icon && <XDSIcon icon={icon} size="sm" color="secondary" />}
       <span {...stylex.props(styles.content)}>
         {typeof label === 'string' ? (

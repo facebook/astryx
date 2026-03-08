@@ -49,6 +49,7 @@ import {
 } from './utils';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Types
@@ -360,7 +361,12 @@ export const XDSCalendar = forwardRef<XDSCalendarHandle, XDSCalendarProps>(
     );
 
     return (
-      <div {...stylex.props(calendarStyles.calendar, rootOverride)} {...rest}>
+      <div
+        {...mergeProps(
+          xdsClassName('calendar', {mode}),
+          stylex.props(calendarStyles.calendar, rootOverride),
+        )}
+        {...rest}>
         {/* Header with navigation */}
         <div {...stylex.props(calendarStyles.header)}>
           <XDSButton

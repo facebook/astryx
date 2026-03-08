@@ -25,6 +25,7 @@ import type {SpacingScale} from '../Layout';
 import type {SizeValue} from '../utils/types';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 /**
  * Grid alignment options for align-items and justify-items.
@@ -402,15 +403,18 @@ export const XDSGrid = forwardRef<HTMLElement, XDSGridProps>(function XDSGrid(
   return (
     <div
       ref={ref as React.Ref<HTMLDivElement>}
-      {...stylex.props(
-        baseStyles.grid,
-        gap != null && gapStyles[gap],
-        rowGap != null && rowGapStyles[rowGap],
-        columnGap != null && columnGapStyles[columnGap],
-        align != null && alignStyles[align],
-        justify != null && justifyStyles[justify],
-        xstyle,
-        rootOverride,
+      {...mergeProps(
+        xdsClassName('grid', {columns, gap, align, justify}),
+        stylex.props(
+          baseStyles.grid,
+          gap != null && gapStyles[gap],
+          rowGap != null && rowGapStyles[rowGap],
+          columnGap != null && columnGapStyles[columnGap],
+          align != null && alignStyles[align],
+          justify != null && justifyStyles[justify],
+          xstyle,
+          rootOverride,
+        ),
       )}
       style={inlineStyle}
       {...props}>

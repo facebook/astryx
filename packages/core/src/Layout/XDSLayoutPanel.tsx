@@ -18,6 +18,7 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {XDSLayoutAreaContext} from './XDSLayoutAreaContext';
 import {XDSLayoutSlotsContext} from './XDSLayoutSlotsContext';
+import {xdsClassName, mergeProps} from '../utils';
 
 const styles = stylex.create({
   panel: {
@@ -207,18 +208,21 @@ export const XDSLayoutPanel = forwardRef<HTMLElement, XDSLayoutPanelProps>(
         ref={ref as React.Ref<HTMLDivElement>}
         role={role}
         aria-label={label}
-        {...stylex.props(
-          styles.panel,
-          dynamicStyles.sizing(width ?? null),
-          // Outer padding on container edges (unless component is full bleed)
-          isStartPanel && !isFullBleed && styles.startPanel,
-          isEndPanel && !isFullBleed && styles.endPanel,
-          !hasHeader && !isFullBleed && styles.noHeader,
-          !hasFooter && !isFullBleed && styles.noFooter,
-          isScrollable && styles.scrollable,
-          isFullBleed && styles.fullBleed,
-          hasDivider && dividerStyle,
-          shouldCollapseSpacing && collapseStyle,
+        {...mergeProps(
+          xdsClassName('layout-panel'),
+          stylex.props(
+            styles.panel,
+            dynamicStyles.sizing(width ?? null),
+            // Outer padding on container edges (unless component is full bleed)
+            isStartPanel && !isFullBleed && styles.startPanel,
+            isEndPanel && !isFullBleed && styles.endPanel,
+            !hasHeader && !isFullBleed && styles.noHeader,
+            !hasFooter && !isFullBleed && styles.noFooter,
+            isScrollable && styles.scrollable,
+            isFullBleed && styles.fullBleed,
+            hasDivider && dividerStyle,
+            shouldCollapseSpacing && collapseStyle,
+          ),
         )}
         {...props}>
         {children}

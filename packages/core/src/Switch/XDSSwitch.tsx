@@ -350,12 +350,15 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
         />
         <div
           aria-hidden="true"
-          {...stylex.props(
-            styles.track,
-            isOn ? styles.trackOn : styles.trackOff,
-            isDisabled && styles.trackDisabled,
-            isDisabled && !isOn && styles.trackDisabledOff,
-            trackOverride,
+          {...mergeProps(
+            xdsClassName('switch'),
+            stylex.props(
+              styles.track,
+              isOn ? styles.trackOn : styles.trackOff,
+              isDisabled && styles.trackDisabled,
+              isDisabled && !isOn && styles.trackDisabledOff,
+              trackOverride,
+            ),
           )}>
           <div
             {...stylex.props(
@@ -395,7 +398,7 @@ export const XDSSwitch = forwardRef<HTMLInputElement, XDSSwitchProps>(
     );
 
     return (
-      <div className={xdsClassName('switch')}>
+      <div>
         <div
           {...stylex.props(
             styles.container,

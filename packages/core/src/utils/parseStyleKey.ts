@@ -4,6 +4,9 @@
  * Used by both defineTheme (CSS generation) and components (class name rendering)
  * to ensure the same convention is applied consistently.
  *
+ * <!-- SYNC: packages/cli/src/commands/build-theme.mjs (parseStyleKey) -->
+ * <!-- SYNC: packages/core/src/utils/xdsClassName.ts -->
+ *
  * Uses class names for visual prop values — shorter HTML, easier to inspect.
  * The component class (e.g. .xds-button) disambiguates any value overlaps.
  *

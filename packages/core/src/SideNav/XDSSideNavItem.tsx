@@ -29,6 +29,7 @@ import {XDSIcon} from '../Icon';
 import type {XDSIconType} from '../Icon';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Styles
@@ -263,7 +264,11 @@ export const XDSSideNavItem = forwardRef<HTMLElement, XDSSideNavItemProps>(
       );
 
     return (
-      <div {...stylex.props(styles.root)}>
+      <div
+        {...mergeProps(
+          xdsClassName('side-nav-item'),
+          stylex.props(styles.root),
+        )}>
         {itemElement}
         {hasChildren && (
           <div

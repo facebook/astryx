@@ -19,6 +19,7 @@ import {XDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
 import {ThemeContext} from '../theme/ThemeContext';
 import type {StyleXStyles as ThemeStyleXStyles} from '../theme/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Module Augmentation - Register component styles with ComponentStyles
@@ -105,10 +106,9 @@ export function XDSTabList({
     <XDSTabListContext.Provider value={contextValue}>
       <nav
         aria-label="Tabs"
-        {...stylex.props(
-          styles.nav,
-          hasDivider && styles.divider,
-          rootOverride,
+        {...mergeProps(
+          xdsClassName('tab-list', {size}),
+          stylex.props(styles.nav, hasDivider && styles.divider, rootOverride),
         )}>
         {children}
       </nav>
