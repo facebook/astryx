@@ -10,12 +10,13 @@
  * - /apps/storybook/stories/Grid.stories.tsx
  */
 
-import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
+import {forwardRef, type ReactNode} from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
-export interface XDSGridSpanProps extends HTMLAttributes<HTMLElement> {
+export interface XDSGridSpanProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * Number of columns to span, or 'full' to span all columns.
    * - Number: `grid-column: span N`

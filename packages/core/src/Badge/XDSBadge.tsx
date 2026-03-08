@@ -13,7 +13,8 @@
 
 'use client';
 
-import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
+import {forwardRef, type ReactNode} from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -81,10 +82,7 @@ const variants = stylex.create({
  */
 export type XDSBadgeVariant = keyof typeof variants;
 
-export interface XDSBadgeProps extends Omit<
-  HTMLAttributes<HTMLSpanElement>,
-  'className' | 'style'
-> {
+export interface XDSBadgeProps extends XDSBaseProps<HTMLSpanElement> {
   /**
    * The visual style variant of the badge.
    * @default 'neutral'
@@ -116,7 +114,7 @@ export interface XDSBadgeProps extends Omit<
  * ```
  */
 export const XDSBadge = forwardRef<HTMLSpanElement, XDSBadgeProps>(
-  ({variant = 'neutral', children, icon, ...props}, ref) => {
+  ({variant = 'neutral', children, icon, className, style, ...props}, ref) => {
     const isDot = children == null && icon == null;
 
     return (
@@ -125,6 +123,8 @@ export const XDSBadge = forwardRef<HTMLSpanElement, XDSBadgeProps>(
         {...mergeProps(
           xdsClassName('badge', {variant}),
           stylex.props(styles.base, variants[variant], isDot && styles.dot),
+          className,
+          style,
         )}
         {...props}>
         {icon}

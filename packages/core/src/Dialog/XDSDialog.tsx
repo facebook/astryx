@@ -13,13 +13,8 @@
 
 'use client';
 
-import {
-  forwardRef,
-  useEffect,
-  useRef,
-  type DialogHTMLAttributes,
-  type ReactNode,
-} from 'react';
+import {forwardRef, useEffect, useRef, type ReactNode} from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -141,10 +136,7 @@ function formatPosition(value: number | string | undefined): string | null {
   return typeof value === 'number' ? `${value}px` : value;
 }
 
-export interface XDSDialogProps extends Omit<
-  DialogHTMLAttributes<HTMLDialogElement>,
-  'children'
-> {
+export interface XDSDialogProps extends XDSBaseProps<HTMLDialogElement> {
   /**
    * Whether the dialog is open.
    */
@@ -238,6 +230,8 @@ export const XDSDialog = forwardRef<HTMLDialogElement, XDSDialogProps>(
       variant = 'standard',
       purpose = 'info',
       children,
+      className,
+      style,
       ...props
     },
     ref,
@@ -343,6 +337,8 @@ export const XDSDialog = forwardRef<HTMLDialogElement, XDSDialogProps>(
               ),
             isFullscreen && styles.fullscreen,
           ),
+          className,
+          style,
         )}
         {...props}>
         {children}

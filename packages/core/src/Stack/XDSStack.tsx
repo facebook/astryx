@@ -18,6 +18,7 @@ import {
   type ReactNode,
   type Ref,
 } from 'react';
+import {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -42,7 +43,7 @@ import {xdsClassName, mergeProps} from '../utils';
  */
 export type StackAlignment = StackMainAlignment | StackCrossAlignment;
 
-export interface XDSStackProps extends HTMLAttributes<HTMLElement> {
+export interface XDSStackProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * Direction of the stack layout.
    * - `horizontal`: Items flow left-to-right (like XDSHStack)

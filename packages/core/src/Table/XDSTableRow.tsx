@@ -11,12 +11,8 @@
 
 'use client';
 
-import {
-  forwardRef,
-  useContext,
-  type HTMLAttributes,
-  type ReactNode,
-} from 'react';
+import {forwardRef, useContext, type ReactNode} from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, transitionVars} from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
@@ -24,10 +20,7 @@ import {XDSTableContext} from './XDSTableContext';
 import {xdsClassName, mergeProps} from '../utils';
 
 /** Props for XDSTableRow — thin `<tr>` wrapper */
-export interface XDSTableRowProps extends Omit<
-  HTMLAttributes<HTMLTableRowElement>,
-  'className' | 'style'
-> {
+export interface XDSTableRowProps extends XDSBaseProps<HTMLTableRowElement> {
   children: ReactNode;
   xstyle?: StyleXStyles[];
 }

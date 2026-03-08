@@ -16,7 +16,8 @@
 
 'use client';
 
-import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
+import {forwardRef, type ReactNode} from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
@@ -80,7 +81,7 @@ const styles = stylex.create({
 // Types
 // =============================================================================
 
-export interface XDSSideNavProps extends HTMLAttributes<HTMLElement> {
+export interface XDSSideNavProps extends XDSBaseProps<HTMLElement> {
   /**
    * Header area — typically XDSSideNavHeader. Sticky at top.
    */

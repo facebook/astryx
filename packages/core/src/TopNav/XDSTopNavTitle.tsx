@@ -11,7 +11,8 @@
  * - /apps/storybook/stories/TopNav.stories.tsx
  */
 
-import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
+import {forwardRef, type ReactNode} from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -50,10 +51,7 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSTopNavTitleProps extends Omit<
-  HTMLAttributes<HTMLElement>,
-  'style' | 'className' | 'title'
-> {
+export interface XDSTopNavTitleProps extends XDSBaseProps<HTMLElement> {
   /**
    * The title text to display.
    */
@@ -96,7 +94,10 @@ export interface XDSTopNavTitleProps extends Omit<
  * ```
  */
 export const XDSTopNavTitle = forwardRef<HTMLElement, XDSTopNavTitleProps>(
-  function XDSTopNavTitle({title, logo, href, ...props}, ref) {
+  function XDSTopNavTitle(
+    {title, logo, href, className, style, ...props},
+    ref,
+  ) {
     const Element = href ? 'a' : 'div';
 
     return (
@@ -106,6 +107,8 @@ export const XDSTopNavTitle = forwardRef<HTMLElement, XDSTopNavTitleProps>(
         {...mergeProps(
           xdsClassName('top-nav-title'),
           stylex.props(styles.base, href != null && styles.clickable),
+          className,
+          style,
         )}
         {...props}>
         {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}

@@ -20,8 +20,8 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
-  type HTMLAttributes,
 } from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
@@ -81,7 +81,7 @@ export interface XDSCalendarHandle {
 // ─── Base Props (shared across all modes) ─────────────────────
 
 interface XDSCalendarBaseProps extends Omit<
-  HTMLAttributes<HTMLDivElement>,
+  XDSBaseProps<HTMLDivElement>,
   'onChange' | 'defaultValue'
 > {
   /** Number of months to display (default: 1) */
@@ -194,6 +194,8 @@ export const XDSCalendar = forwardRef<XDSCalendarHandle, XDSCalendarProps>(
       hasWeekNumbers = false,
       hasVariableRowCount = false,
       weekStartsOn = 0,
+      className,
+      style,
       ...rest
     } = props;
 
@@ -350,6 +352,8 @@ export const XDSCalendar = forwardRef<XDSCalendarHandle, XDSCalendarProps>(
         {...mergeProps(
           xdsClassName('calendar', {mode}),
           stylex.props(calendarStyles.calendar),
+          className,
+          style,
         )}
         {...rest}>
         {/* Header with navigation */}

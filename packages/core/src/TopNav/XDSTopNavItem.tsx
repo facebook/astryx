@@ -13,7 +13,8 @@
 
 'use client';
 
-import {forwardRef, type AnchorHTMLAttributes, type ReactNode} from 'react';
+import {forwardRef, type ReactNode} from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -84,10 +85,17 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSTopNavItemProps extends Omit<
-  AnchorHTMLAttributes<HTMLAnchorElement>,
-  'style' | 'className'
-> {
+export interface XDSTopNavItemProps extends XDSBaseProps<HTMLAnchorElement> {
+  /** Link destination URL. */
+  href?: string;
+  /** Where to open the linked document. */
+  target?: string;
+  /** Link relationship. */
+  rel?: string;
+  /** Causes the browser to download the linked URL. */
+  download?: string | boolean;
+  /** Referrer policy for the link. */
+  referrerPolicy?: React.HTMLAttributeReferrerPolicy;
   /**
    * Custom component to render instead of `<a>`.
    * Overrides the provider-level default set by XDSLinkProvider.

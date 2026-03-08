@@ -12,7 +12,8 @@
 
 'use client';
 
-import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
+import {forwardRef, type ReactNode} from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {SizeValue} from '../utils/types';
@@ -43,7 +44,7 @@ const dynamicStyles = stylex.create({
 
 export type CenterAxis = 'both' | 'horizontal' | 'vertical';
 
-export interface XDSCenterProps extends HTMLAttributes<HTMLDivElement> {
+export interface XDSCenterProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * Center axis - which direction(s) to center.
    * - `both`: Center both horizontally and vertically (default)

@@ -165,15 +165,4 @@ describe('XDSStack', () => {
     const element = screen.getByTestId('stack');
     expect(element).toHaveAttribute('aria-label', 'Stack container');
   });
-
-  it('passes through event handlers', () => {
-    const onClick = vi.fn();
-    render(
-      <XDSStack direction="vertical" data-testid="stack" onClick={onClick}>
-        <div>Item</div>
-      </XDSStack>,
-    );
-    screen.getByTestId('stack').click();
-    expect(onClick).toHaveBeenCalledTimes(1);
-  });
 });

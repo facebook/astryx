@@ -13,7 +13,8 @@
 
 'use client';
 
-import {forwardRef, useState, type HTMLAttributes, type ReactNode} from 'react';
+import {forwardRef, useState, type ReactNode} from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -157,10 +158,7 @@ const dynamicStyles = stylex.create({
   }),
 });
 
-export interface XDSAvatarProps extends Omit<
-  HTMLAttributes<HTMLDivElement>,
-  'children'
-> {
+export interface XDSAvatarProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * The alt text shown on hover and made accessible to screen readers.
    * Falls back to `name` if not provided.
@@ -252,6 +250,8 @@ export const XDSAvatar = forwardRef<HTMLDivElement, XDSAvatarProps>(
       size = 'small',
       src,
       status,
+      className,
+      style,
       ...props
     },
     ref,
@@ -277,6 +277,8 @@ export const XDSAvatar = forwardRef<HTMLDivElement, XDSAvatarProps>(
           {...mergeProps(
             xdsClassName('avatar', {size}),
             stylex.props(styles.wrapper),
+            className,
+            style,
           )}
           {...props}>
           <div

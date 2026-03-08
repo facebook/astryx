@@ -13,12 +13,8 @@
 
 'use client';
 
-import {
-  forwardRef,
-  type AnchorHTMLAttributes,
-  type MouseEventHandler,
-  type ReactNode,
-} from 'react';
+import {forwardRef, type MouseEventHandler, type ReactNode} from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 
 import {
@@ -111,10 +107,7 @@ const linkColorStyles = stylex.create({
   },
 });
 
-export interface XDSLinkProps extends Omit<
-  AnchorHTMLAttributes<HTMLAnchorElement>,
-  'children'
-> {
+export interface XDSLinkProps extends XDSBaseProps<HTMLAnchorElement> {
   /**
    * Custom component to render instead of `<a>`.
    * Overrides the provider-level default set by XDSLinkProvider.
@@ -153,9 +146,23 @@ export interface XDSLinkProps extends Omit<
    */
   target?: string;
   /**
-   * Click event handler.
+   * Link relationship (e.g. "noopener noreferrer").
+   * Automatically includes "noopener noreferrer" when isExternalLink is true.
    */
-  onClick?: MouseEventHandler<HTMLAnchorElement>;
+  rel?: string;
+  /**
+   * Causes the browser to download the linked URL. A string value
+   * specifies the suggested filename.
+   */
+  download?: string | boolean;
+  /**
+   * Referrer policy for the link.
+   */
+  referrerPolicy?: React.HTMLAttributeReferrerPolicy;
+  /**
+   * Click handler. Fires before navigation.
+   */
+  onClick?: React.MouseEventHandler<HTMLAnchorElement>;
   /**
    * Tooltip text to display on hover.
    */

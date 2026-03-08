@@ -18,6 +18,7 @@ import {
   type ReactNode,
   type Ref,
 } from 'react';
+import {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -27,7 +28,7 @@ import {
 } from './stackItem.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
-export interface XDSStackItemProps extends HTMLAttributes<HTMLElement> {
+export interface XDSStackItemProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * Overrides the default cross-alignment for this item.
    * (hAlign for VStack, vAlign for HStack)

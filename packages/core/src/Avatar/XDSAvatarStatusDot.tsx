@@ -12,7 +12,8 @@
 
 'use client';
 
-import {useContext, type HTMLAttributes, type ReactNode} from 'react';
+import {useContext, type ReactNode} from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {XDSAvatarSizeContext} from './XDSAvatarSizeContext';
@@ -50,10 +51,7 @@ function resolveStatusDotSize(avatarSize: number): {
 
 export type XDSAvatarStatusDotVariant = 'positive' | 'neutral' | 'negative';
 
-export interface XDSAvatarStatusDotProps extends Omit<
-  HTMLAttributes<HTMLDivElement>,
-  'children'
-> {
+export interface XDSAvatarStatusDotProps extends XDSBaseProps<HTMLSpanElement> {
   /**
    * The semantic color variant of the dot.
    * - `positive` — green dot (e.g. online, accepted)
@@ -159,6 +157,8 @@ export function XDSAvatarStatusDot({
   variant = 'positive',
   label,
   icon,
+  className,
+  style,
   ...props
 }: XDSAvatarStatusDotProps) {
   const avatarSize = useContext(XDSAvatarSizeContext);
@@ -174,6 +174,8 @@ export function XDSAvatarStatusDot({
           variantStyleMap[variant],
           dynamicStyles.size(dotSize, borderWidth),
         ),
+        className,
+        style,
       )}
       {...props}>
       {icon && iconSize > 0 && (

@@ -96,6 +96,14 @@ export interface XDSLayoutProps {
    * Start panel slot (left in LTR, right in RTL).
    */
   start?: ReactNode;
+  /**
+   * CSS class name(s) appended to the root element.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element.
+   */
+  style?: React.CSSProperties;
 }
 
 /**
@@ -172,6 +180,8 @@ export function XDSLayout({
   height = 'fill',
   isFullBleed = false,
   start,
+  className,
+  style,
 }: XDSLayoutProps) {
   const isFill = height === 'fill';
 
@@ -192,6 +202,8 @@ export function XDSLayout({
         {...mergeProps(
           xdsClassName('layout', {height}),
           stylex.props(styles.layoutOuter, isFill ? styles.fill : styles.auto),
+          className,
+          style,
         )}>
         <div
           {...stylex.props(

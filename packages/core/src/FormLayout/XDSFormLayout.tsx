@@ -13,7 +13,8 @@
 
 'use client';
 
-import {forwardRef, useMemo, type HTMLAttributes, type ReactNode} from 'react';
+import {forwardRef, useMemo, type ReactNode} from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
@@ -60,7 +61,7 @@ const styles = stylex.create({
 // Props
 // =============================================================================
 
-export interface XDSFormLayoutProps extends HTMLAttributes<HTMLDivElement> {
+export interface XDSFormLayoutProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * Form fields to arrange. Accepts XDS inputs (XDSTextInput, XDSSelector, etc.)
    * and XDSField-wrapped custom controls.

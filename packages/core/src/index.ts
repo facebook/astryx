@@ -7,6 +7,9 @@
  * SYNC: When modified, update this header and /packages/core/src/README.md
  */
 
+// Base types
+export type {XDSBaseProps} from './XDSBaseProps';
+
 // Components
 export * from './AppShell';
 export * from './AspectRatio';

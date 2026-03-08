@@ -11,12 +11,8 @@
 
 'use client';
 
-import {
-  forwardRef,
-  useContext,
-  type ThHTMLAttributes,
-  type ReactNode,
-} from 'react';
+import {forwardRef, useContext, type ReactNode} from 'react';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -29,7 +25,9 @@ import {XDSTableContext} from './XDSTableContext';
 import {xdsClassName, mergeProps} from '../utils';
 
 /** Props for XDSTableHeaderCell — `<th>` wrapper with context-aware styling */
-export interface XDSTableHeaderCellProps extends ThHTMLAttributes<HTMLTableCellElement> {
+export interface XDSTableHeaderCellProps extends XDSBaseProps<HTMLTableCellElement> {
+  /** Specifies which cells this header relates to. */
+  scope?: 'col' | 'row' | 'colgroup' | 'rowgroup';
   children?: ReactNode;
   xstyle?: StyleXStyles | StyleXStyles[];
 }
