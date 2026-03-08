@@ -113,8 +113,7 @@ export interface XDSSideNavProps extends HTMLAttributes<HTMLElement> {
    */
   xstyle?: StyleXStyles;
   /**
-   * CSS class name(s) to append to the root element. Applied after StyleX
-   * classes, so Tailwind or utility classes will win in specificity.
+   * CSS class name(s) appended to the root element.
    * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
    */
   className?: string;

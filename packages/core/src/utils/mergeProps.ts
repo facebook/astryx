@@ -5,7 +5,7 @@
  * class name into the className string so both StyleX styles and the
  * stable theme-targeting class are applied.
  *
- * Consumer className is appended last so utility classes (e.g. Tailwind) win.
+ * Consumer className is appended after StyleX and xds-* classes.
  * Consumer style is spread last so inline overrides win.
  *
  * @example
