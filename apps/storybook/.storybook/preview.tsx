@@ -3,6 +3,7 @@ import * as React from 'react';
 import {XDSTheme} from '@xds/core';
 import {defaultTheme} from '@xds/theme-default';
 import {neutralTheme} from '@xds/theme-neutral';
+import {brutalistTheme} from '@xds/theme-brutalist';
 
 // Import the base reset and typography stylesheets
 import '@xds/core/reset.css';
@@ -18,6 +19,7 @@ import '../../../packages/core/dist/index.css';
 const themes = {
   default: defaultTheme,
   neutral: neutralTheme,
+  brutalist: brutalistTheme,
 };
 
 /**
@@ -94,6 +96,7 @@ const preview: Preview = {
           {value: 'none', title: 'None (base tokens)', icon: 'close'},
           {value: 'default', title: 'Default', icon: 'circlehollow'},
           {value: 'neutral', title: 'Neutral', icon: 'circle'},
+          {value: 'brutalist', title: 'Brutalist', icon: 'lightning'},
         ],
         dynamicTitle: true,
       },
