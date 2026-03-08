@@ -9,9 +9,9 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.js"
     },
     "./theme.css": "./dist/theme.css"
   },
@@ -20,7 +20,7 @@
     "src"
   ],
   "scripts": {
-    "build": "xds build-theme src/neutralTheme.ts -o dist/theme.css"
+    "build": "xds build-theme src/neutralTheme.ts -o dist/theme.css && tsup && rm -f dist/neutral.js dist/neutral.d.ts"
   },
   "dependencies": {
     "lucide-react": "^0.575.0"
