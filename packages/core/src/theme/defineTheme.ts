@@ -28,7 +28,7 @@
  * ```
  */
 
-import type {XDSIconRegistry} from '../Icon/IconRegistry';
+import type {XDSIconRegistry} from '../Icon/globalIconRegistry';
 import {parseStyleKey} from '../utils/parseStyleKey';
 import {
   colorDefaults,

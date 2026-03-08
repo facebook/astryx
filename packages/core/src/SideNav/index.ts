@@ -13,11 +13,6 @@ export type {XDSSideNavProps} from './XDSSideNav';
 export {XDSSideNavHeading} from './XDSSideNavHeading';
 export type {XDSSideNavHeadingProps} from './XDSSideNavHeading';
 
-/** @deprecated Use XDSSideNavHeading instead */
-export {XDSSideNavHeading as XDSSideNavHeader} from './XDSSideNavHeading';
-/** @deprecated Use XDSSideNavHeadingProps instead */
-export type {XDSSideNavHeadingProps as XDSSideNavHeaderProps} from './XDSSideNavHeading';
-
 export {XDSSideNavItem} from './XDSSideNavItem';
 export type {XDSSideNavItemProps} from './XDSSideNavItem';
 

@@ -80,15 +80,6 @@ export function getIcon(name: XDSIconName): ReactNode {
 }
 
 /**
- * Get the raw global registry (internal use).
- * @internal
- * @deprecated Internal use only — will be removed when useXDSIcon is removed.
- */
-export function getGlobalRegistry(): Partial<XDSIconRegistry> {
-  return globalRegistry;
-}
-
-/**
  * Reset the global registry. For testing only.
  * @internal
  */

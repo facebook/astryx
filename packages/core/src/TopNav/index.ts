@@ -13,11 +13,6 @@ export type {XDSTopNavProps} from './XDSTopNav';
 export {XDSTopNavHeading} from './XDSTopNavHeading';
 export type {XDSTopNavHeadingProps} from './XDSTopNavHeading';
 
-/** @deprecated Use XDSTopNavHeading instead */
-export {XDSTopNavHeading as XDSTopNavTitle} from './XDSTopNavHeading';
-/** @deprecated Use XDSTopNavHeadingProps instead */
-export type {XDSTopNavHeadingProps as XDSTopNavTitleProps} from './XDSTopNavHeading';
-
 export {XDSTopNavItem} from './XDSTopNavItem';
 export type {XDSTopNavItemProps} from './XDSTopNavItem';
 
