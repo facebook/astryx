@@ -5,9 +5,7 @@
  * @position Global icon registry; works in both server and client environments
  *
  * This module has NO 'use client' directive — it's importable from RSC.
- * Components that need icons in server components use getIcon() directly.
- * Client components use useXDSIcon() from IconRegistryContext.tsx which
- * checks context first, then falls back to this global registry.
+ * All components use getIcon() to resolve icons from this global registry.
  */
 
 import type {ReactNode} from 'react';
@@ -74,17 +72,17 @@ export function registerIcons(icons: Partial<XDSIconRegistry>): void {
 /**
  * Get an icon by name from the global registry, falling back to defaults.
  *
- * Use this in server components where hooks aren't available.
- * In client components, prefer useXDSIcon() which also checks
- * the React Context registry.
+ * Works in both server and client environments.
+ * Falls back to built-in default icons when no override is registered.
  */
 export function getIcon(name: XDSIconName): ReactNode {
   return globalRegistry[name] ?? defaultIcons[name];
 }
 
 /**
- * Get the raw global registry (internal use by useXDSIcon).
+ * Get the raw global registry (internal use).
  * @internal
+ * @deprecated Internal use only — will be removed when useXDSIcon is removed.
  */
 export function getGlobalRegistry(): Partial<XDSIconRegistry> {
   return globalRegistry;

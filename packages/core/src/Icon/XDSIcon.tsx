@@ -22,7 +22,8 @@
 import {forwardRef, type ComponentType, type SVGProps} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
-import {useXDSIcon, type XDSIconName} from './IconRegistry';
+import {getIcon} from './globalIconRegistry';
+import type {XDSIconName} from './globalIconRegistry';
 import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
@@ -210,7 +211,7 @@ XDSIcon.displayName = 'XDSIcon';
  * Internal component that resolves a semantic icon name from the registry
  * and renders it in a styled span with proper sizing.
  *
- * Extracted as a separate component so the useXDSIcon hook is only called
+ * Extracted as a separate component so getIcon is only called
  * when the icon prop is a string.
  */
 function IconFromRegistry({
@@ -222,7 +223,7 @@ function IconFromRegistry({
   color: XDSIconColor;
   size: XDSIconSize;
 }) {
-  const resolvedIcon = useXDSIcon(name);
+  const resolvedIcon = getIcon(name);
 
   if (resolvedIcon == null) {
     return null;

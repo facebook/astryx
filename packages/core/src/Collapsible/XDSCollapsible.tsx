@@ -1,6 +1,6 @@
 /**
  * @file XDSCollapsible.tsx
- * @input Uses React, StyleX, useXDSCollapsible hook, useXDSIcon, theme tokens
+ * @input Uses React, StyleX, useXDSCollapsible hook, getIcon, theme tokens
  * @output Exports XDSCollapsible component and XDSCollapsibleProps
  * @position Collapsible content primitive — trigger toggles visibility of children
  *
@@ -27,7 +27,7 @@ import {
   spacingVars,
 } from '../theme/tokens.stylex';
 import {useXDSCollapsible} from './useXDSCollapsible';
-import {useXDSIcon} from '../Icon/IconRegistry';
+import {getIcon} from '../Icon/globalIconRegistry';
 import {xdsClassName, mergeProps} from '../utils';
 
 const styles = stylex.create({
@@ -172,7 +172,7 @@ export const XDSCollapsible = forwardRef<HTMLDivElement, XDSCollapsibleProps>(
       value,
     });
 
-    const chevronIcon = useXDSIcon('chevronDown');
+    const chevronIcon = getIcon('chevronDown');
 
     return (
       <div ref={ref} className={xdsClassName('collapsible')} {...props}>

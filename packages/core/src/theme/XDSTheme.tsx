@@ -29,7 +29,6 @@ import React, {useId, useInsertionEffect} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {ThemeMode} from './types';
 import {colorVars, typographyVars} from './tokens.stylex';
-import {IconRegistryContext} from '../Icon/IconRegistry';
 import {registerIcons} from '../Icon/globalIconRegistry';
 import {generateThemeCSS, type XDSDefinedTheme} from './defineTheme';
 
@@ -135,16 +134,10 @@ export function XDSTheme({
         ? wrapperStyles.light
         : wrapperStyles.system;
 
-  // Icons — register globally (for server components) AND via context (for tree-scoped overrides)
+  // Icons — register globally (works in both server and client environments)
   const icons = theme.icons;
-  let content: React.ReactNode = children;
   if (icons != null) {
     registerIcons(icons);
-    content = (
-      <IconRegistryContext.Provider value={icons}>
-        {content}
-      </IconRegistryContext.Provider>
-    );
   }
 
   return (
@@ -152,7 +145,7 @@ export function XDSTheme({
       {...stylex.props(wrapperStyles.base, colorSchemeStyle)}
       data-xds-theme={theme.name}
       data-theme={mode === 'system' ? undefined : mode}>
-      {content}
+      {children}
     </div>
   );
 }

@@ -1,11 +1,11 @@
 /**
  * @file IconRegistry.tsx
  * @input Uses React createContext, useContext
- * @output Exports IconRegistryContext, useXDSIcon hook
- * @position Client-side icon context; wraps the global registry with
- *   React Context support for tree-scoped overrides via XDSTheme.
+ * @output Exports IconRegistryContext, useXDSIcon hook (both deprecated)
+ * @position Legacy client-side icon context. Kept for backward compatibility.
  *
- * For server components, use getIcon() from globalIconRegistry.tsx instead.
+ * @deprecated All icon resolution now uses getIcon() from globalIconRegistry.tsx.
+ * Components should import { getIcon } from './globalIconRegistry' instead.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Icon/globalIconRegistry.tsx (global registry, types)
@@ -31,6 +31,9 @@ export type {XDSIconName, XDSIconRegistry} from './globalIconRegistry';
  * Context for providing theme icons to components.
  * Accepts a full or partial registry. When null, components fall back
  * to the global registry, then to built-in lightweight SVGs.
+ *
+ * @deprecated Icons are now global via registerIcons(). Context is no longer needed.
+ * Use registerIcons() from globalIconRegistry to set icons, and getIcon() to retrieve them.
  */
 export const IconRegistryContext =
   createContext<Partial<XDSIconRegistry> | null>(null);
@@ -47,11 +50,17 @@ export const IconRegistryContext =
  * 2. Global registry (via registerIcons())
  * 3. Built-in lightweight SVG fallback
  *
- * For server components, use getIcon() from iconRegistry.ts instead.
+ * @deprecated Use getIcon() from globalIconRegistry instead for RSC compatibility.
+ * getIcon() works in both server and client environments without React Context.
  *
  * @example
  * ```
+ * // Before (deprecated):
  * const closeIcon = useXDSIcon('close');
+ *
+ * // After (preferred):
+ * import { getIcon } from '@xds/core';
+ * const closeIcon = getIcon('close');
  * ```
  */
 export function useXDSIcon(name: XDSIconName): ReactNode {

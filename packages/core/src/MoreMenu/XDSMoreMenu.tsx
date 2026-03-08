@@ -1,6 +1,6 @@
 /**
  * @file XDSMoreMenu.tsx
- * @input Uses React, StyleX, useXDSLayer, XDSButton, useXDSIcon, XDSDropdownMenuItem, XDSDivider
+ * @input Uses React, StyleX, useXDSLayer, XDSButton, getIcon, XDSDropdownMenuItem, XDSDivider
  * @output Exports XDSMoreMenu component and XDSMoreMenuProps type
  * @position Core implementation; consumed by index.ts
  *
@@ -28,7 +28,7 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import {useXDSLayer} from '../Layer/useXDSLayer';
 import {XDSButton, type XDSButtonVariant, type XDSButtonSize} from '../Button';
-import {useXDSIcon} from '../Icon/IconRegistry';
+import {getIcon} from '../Icon/globalIconRegistry';
 import {XDSDropdownMenuItem} from '../DropdownMenu/XDSDropdownMenuItem';
 import {XDSDivider} from '../Divider';
 import type {
@@ -247,7 +247,7 @@ export const XDSMoreMenu = forwardRef<HTMLButtonElement, XDSMoreMenuProps>(
     },
     ref,
   ) => {
-    const moreIcon = useXDSIcon('moreHorizontal');
+    const moreIcon = getIcon('moreHorizontal');
     const buttonRef = useRef<HTMLButtonElement | null>(null);
     const menuId = useId();
     const [highlightedIndex, setHighlightedIndex] = useState(-1);

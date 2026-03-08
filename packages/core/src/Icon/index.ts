@@ -19,5 +19,6 @@ export type {
 export {registerIcons, getIcon, resetIcons} from './globalIconRegistry';
 export type {XDSIconName, XDSIconRegistry} from './globalIconRegistry';
 
-// Context registry (client-only)
+// Context registry (client-only, deprecated)
+/** @deprecated Use registerIcons() and getIcon() from globalIconRegistry instead. */
 export {IconRegistryContext, useXDSIcon} from './IconRegistry';
