@@ -1,6 +1,6 @@
 /**
  * @file XDSField.tsx
- * @input Uses React forwardRef, HTMLAttributes, ReactNode, XDSFieldLabel, XDSIconType
+ * @input Uses React, HTMLAttributes, ReactNode, XDSFieldLabel, XDSIconType
  * @output Exports XDSField component, XDSFieldProps
  * @position Core implementation; consumed by index.ts, tested by XDSField.test.tsx
  *
@@ -13,7 +13,7 @@
 
 'use client';
 
-import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
+import {type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSFieldLabel} from './XDSFieldLabel';
@@ -98,6 +98,8 @@ export interface XDSFieldProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
   'children'
 > {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * Label text for the field (always rendered for accessibility).
    */
@@ -189,85 +191,81 @@ export interface XDSFieldProps extends Omit<
  * </XDSField>
  * ```
  */
-export const XDSField = forwardRef<HTMLDivElement, XDSFieldProps>(
-  (
-    {
-      label,
-      isLabelHidden = false,
-      description,
-      inputID,
-      descriptionID,
-      isOptional = false,
-      isRequired = false,
-      labelIcon,
-      status,
-      labelTooltip,
-      statusVariant = 'attached',
-      xstyle,
-      children,
-      className,
-      style,
-      ...props
-    },
-    ref,
-  ) => {
-    return (
-      <div
-        ref={ref}
-        {...mergeProps(
-          xdsClassName('field'),
-          stylex.props(styles.container, xstyle),
-          className,
-          style,
-        )}
-        {...props}>
-        <XDSFieldLabel
-          label={label}
-          inputID={inputID}
-          isLabelHidden={isLabelHidden}
-          isOptional={isOptional}
-          isRequired={isRequired}
-          labelIcon={labelIcon}
-          labelTooltip={labelTooltip}
-        />
-        {description && (
-          <span
-            id={descriptionID}
-            {...stylex.props(
-              styles.description,
-              isLabelHidden && styles.labelHidden,
-            )}>
-            {description}
-          </span>
-        )}
-        {statusVariant === 'attached' ? (
-          <div {...stylex.props(styles.inputStatusWrapper)}>
-            {children}
-            {status?.message && (
-              <XDSFieldStatus
-                type={status.type}
-                message={status.message}
-                id={status.messageID}
-                variant="attached"
-              />
-            )}
-          </div>
-        ) : (
-          <>
-            {children}
-            {status?.message && (
-              <XDSFieldStatus
-                type={status.type}
-                message={status.message}
-                id={status.messageID}
-                variant="detached"
-              />
-            )}
-          </>
-        )}
-      </div>
-    );
-  },
-);
+export function XDSField({
+  label,
+  isLabelHidden = false,
+  description,
+  inputID,
+  descriptionID,
+  isOptional = false,
+  isRequired = false,
+  labelIcon,
+  status,
+  labelTooltip,
+  statusVariant = 'attached',
+  xstyle,
+  children,
+  className,
+  style,
+  ref,
+  ...props
+}: XDSFieldProps) {
+  return (
+    <div
+      ref={ref}
+      {...mergeProps(
+        xdsClassName('field'),
+        stylex.props(styles.container, xstyle),
+        className,
+        style,
+      )}
+      {...props}>
+      <XDSFieldLabel
+        label={label}
+        inputID={inputID}
+        isLabelHidden={isLabelHidden}
+        isOptional={isOptional}
+        isRequired={isRequired}
+        labelIcon={labelIcon}
+        labelTooltip={labelTooltip}
+      />
+      {description && (
+        <span
+          id={descriptionID}
+          {...stylex.props(
+            styles.description,
+            isLabelHidden && styles.labelHidden,
+          )}>
+          {description}
+        </span>
+      )}
+      {statusVariant === 'attached' ? (
+        <div {...stylex.props(styles.inputStatusWrapper)}>
+          {children}
+          {status?.message && (
+            <XDSFieldStatus
+              type={status.type}
+              message={status.message}
+              id={status.messageID}
+              variant="attached"
+            />
+          )}
+        </div>
+      ) : (
+        <>
+          {children}
+          {status?.message && (
+            <XDSFieldStatus
+              type={status.type}
+              message={status.message}
+              id={status.messageID}
+              variant="detached"
+            />
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
 XDSField.displayName = 'XDSField';

@@ -1,6 +1,6 @@
 /**
  * @file XDSBreadcrumbs.tsx
- * @input Uses React forwardRef, Children, createContext, stylex, theme tokens
+ * @input Uses React, Children, createContext, stylex, theme tokens
  * @output Exports XDSBreadcrumbs component, XDSBreadcrumbsProps, BreadcrumbCtx
  * @position Core container component; consumed by index.ts
  *
@@ -13,13 +13,7 @@
 
 'use client';
 
-import {
-  forwardRef,
-  Children,
-  isValidElement,
-  createContext,
-  type ReactNode,
-} from 'react';
+import {Children, isValidElement, createContext, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -62,6 +56,8 @@ export const BreadcrumbCtx = createContext<BreadcrumbContextValue>({
 // =============================================================================
 
 export interface XDSBreadcrumbsProps {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLElement>;
   /**
    * XDSBreadcrumbItem elements to render as breadcrumb trail.
    */
@@ -169,80 +165,76 @@ const separatorStyles = stylex.create({
  * </XDSBreadcrumbs>
  * ```
  */
-export const XDSBreadcrumbs = forwardRef<HTMLElement, XDSBreadcrumbsProps>(
-  function XDSBreadcrumbs(
-    {
-      children,
-      separator = '/',
-      variant = 'default',
-      xstyle,
-      className,
-      style,
-      label = 'Breadcrumb',
-      'data-testid': testId,
-    },
-    ref,
-  ) {
-    const items = Children.toArray(children);
-    const isSupporting = variant === 'supporting';
+export function XDSBreadcrumbs({
+  children,
+  separator = '/',
+  variant = 'default',
+  xstyle,
+  className,
+  style,
+  label = 'Breadcrumb',
+  'data-testid': testId,
+  ref,
+}: XDSBreadcrumbsProps) {
+  const items = Children.toArray(children);
+  const isSupporting = variant === 'supporting';
 
-    // Check if any child has isCurrent explicitly set
-    const hasExplicitCurrent = items.some(
-      child =>
-        isValidElement<XDSBreadcrumbItemProps>(child) &&
-        child.props.isCurrent === true,
+  // Check if any child has isCurrent explicitly set
+  const hasExplicitCurrent = items.some(
+    child =>
+      isValidElement<XDSBreadcrumbItemProps>(child) &&
+      child.props.isCurrent === true,
+  );
+
+  const rendered: ReactNode[] = [];
+
+  items.forEach((child, index) => {
+    const isLast = index === items.length - 1;
+
+    const ctxValue: BreadcrumbContextValue = {
+      isAutoLast: !hasExplicitCurrent && isLast,
+      variant,
+    };
+
+    rendered.push(
+      <BreadcrumbCtx.Provider key={`item-${index}`} value={ctxValue}>
+        {child}
+      </BreadcrumbCtx.Provider>,
     );
 
-    const rendered: ReactNode[] = [];
-
-    items.forEach((child, index) => {
-      const isLast = index === items.length - 1;
-
-      const ctxValue: BreadcrumbContextValue = {
-        isAutoLast: !hasExplicitCurrent && isLast,
-        variant,
-      };
-
+    // Add separator between items (not after the last one)
+    if (!isLast) {
       rendered.push(
-        <BreadcrumbCtx.Provider key={`item-${index}`} value={ctxValue}>
-          {child}
-        </BreadcrumbCtx.Provider>,
+        <li
+          key={`sep-${index}`}
+          role="presentation"
+          aria-hidden="true"
+          {...stylex.props(
+            separatorStyles.root,
+            isSupporting
+              ? separatorStyles.supportingSize
+              : separatorStyles.defaultSize,
+          )}>
+          {separator}
+        </li>,
       );
+    }
+  });
 
-      // Add separator between items (not after the last one)
-      if (!isLast) {
-        rendered.push(
-          <li
-            key={`sep-${index}`}
-            role="presentation"
-            aria-hidden="true"
-            {...stylex.props(
-              separatorStyles.root,
-              isSupporting
-                ? separatorStyles.supportingSize
-                : separatorStyles.defaultSize,
-            )}>
-            {separator}
-          </li>,
-        );
-      }
-    });
-
-    return (
-      <nav
-        ref={ref}
-        aria-label={label}
-        data-testid={testId}
-        {...mergeProps(
-          xdsClassName('breadcrumbs', {variant}),
-          stylex.props(navStyles.root, xstyle),
-          className,
-          style,
-        )}>
-        <ol {...stylex.props(listStyles.root)}>{rendered}</ol>
-      </nav>
-    );
-  },
-);
+  return (
+    <nav
+      ref={ref}
+      aria-label={label}
+      data-testid={testId}
+      {...mergeProps(
+        xdsClassName('breadcrumbs', {variant}),
+        stylex.props(navStyles.root, xstyle),
+        className,
+        style,
+      )}>
+      <ol {...stylex.props(listStyles.root)}>{rendered}</ol>
+    </nav>
+  );
+}
 
 XDSBreadcrumbs.displayName = 'XDSBreadcrumbs';

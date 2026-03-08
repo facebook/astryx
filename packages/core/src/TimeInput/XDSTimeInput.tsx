@@ -1,6 +1,6 @@
 /**
  * @file XDSTimeInput.tsx
- * @input Uses React forwardRef, useId, useState, useEffect, useCallback, useRef, XDSField, XDSIcon
+ * @input Uses React, useId, useState, useEffect, useCallback, useRef, XDSField, XDSIcon
  * @output Exports XDSTimeInput component, XDSTimeInputProps
  * @position Core implementation; consumed by index.ts, tested by XDSTimeInput.test.tsx
  *
@@ -14,7 +14,6 @@
 'use client';
 
 import {
-  forwardRef,
   useId,
   useState,
   useCallback,
@@ -129,6 +128,8 @@ export type {
 } from '../Field';
 
 export interface XDSTimeInputProps {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLInputElement>;
   /**
    * Label text for the input (required for accessibility).
    */
@@ -262,294 +263,290 @@ export interface XDSTimeInputProps {
  * />
  * ```
  */
-export const XDSTimeInput = forwardRef<HTMLInputElement, XDSTimeInputProps>(
-  (
-    {
-      label,
-      isLabelHidden = false,
-      description,
-      isOptional = false,
-      isRequired = false,
-      isDisabled = false,
-      value,
-      onChange,
-      onChangeAction,
-      isLoading = false,
-      min,
-      max,
-      hasSeconds = false,
-      hasClear = false,
-      hourFormat = '12h',
-      increment = 1,
-      placeholder = 'Select a time',
-      size = 'md',
-      status,
-      labelTooltip,
+export function XDSTimeInput({
+  label,
+  isLabelHidden = false,
+  description,
+  isOptional = false,
+  isRequired = false,
+  isDisabled = false,
+  value,
+  onChange,
+  onChangeAction,
+  isLoading = false,
+  min,
+  max,
+  hasSeconds = false,
+  hasClear = false,
+  hourFormat = '12h',
+  increment = 1,
+  placeholder = 'Select a time',
+  size = 'md',
+  status,
+  labelTooltip,
+  ref,
+}: XDSTimeInputProps) {
+  const id = useId();
+  const descriptionID = useId();
+  const statusMessageID = useId();
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const [, startTransition] = useTransition();
+  const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+  const isBusy = isLoading || optimisticValue !== value;
+
+  // Status icon mapping
+  const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
+    warning: 'warning',
+    error: 'xCircle',
+    success: 'checkCircle',
+  };
+
+  const statusIconColorMap: Record<
+    XDSInputStatusType,
+    'warning' | 'negative' | 'positive'
+  > = {
+    warning: 'warning',
+    error: 'negative',
+    success: 'positive',
+  };
+
+  const ariaDescribedBy =
+    [
+      description ? descriptionID : null,
+      status?.message ? statusMessageID : null,
+    ]
+      .filter(Boolean)
+      .join(' ') || undefined;
+
+  // Pending input while user is typing (null = show formatted value)
+  const [pendingInput, setPendingInput] = useState<string | null>(null);
+  const [isFocused, setIsFocused] = useState(false);
+
+  // Format function based on hourFormat
+  const formatDisplayTime =
+    hourFormat === '12h' ? formatDisplayTime12h : formatDisplayTime24h;
+
+  // Unified change handler that fires both onChange and onChangeAction
+  const fireChange = useCallback(
+    (newValue: ISOTimeString | undefined) => {
+      onChange?.(newValue);
+      if (onChangeAction) {
+        startTransition(async () => {
+          setOptimisticValue(newValue);
+          await onChangeAction(newValue);
+        });
+      }
     },
-    ref,
-  ) => {
-    const id = useId();
-    const descriptionID = useId();
-    const statusMessageID = useId();
-    const inputRef = useRef<HTMLInputElement | null>(null);
+    [onChange, onChangeAction, startTransition, setOptimisticValue],
+  );
 
-    const [, startTransition] = useTransition();
-    const [optimisticValue, setOptimisticValue] = useOptimistic(value);
-    const isBusy = isLoading || optimisticValue !== value;
+  // Display value: pending input if typing, otherwise formatted value
+  const displayValue = useMemo(() => {
+    if (pendingInput !== null) {
+      return pendingInput;
+    }
+    return optimisticValue
+      ? formatDisplayTime(optimisticValue, hasSeconds)
+      : '';
+  }, [pendingInput, value, formatDisplayTime, hasSeconds]);
 
-    // Status icon mapping
-    const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
-      warning: 'warning',
-      error: 'xCircle',
-      success: 'checkCircle',
-    };
+  // Check if current input is valid (for styling purposes)
+  const isInputValid = useMemo(() => {
+    // Only check pending input for validity styling
+    if (pendingInput === null || !pendingInput.trim()) {
+      return true;
+    }
+    const parsed = parseTimeInput(pendingInput, hasSeconds);
+    if (!parsed) {
+      return false;
+    }
+    // Also check min/max range
+    return isTimeInRange(parsed, min, max);
+  }, [pendingInput, hasSeconds, min, max]);
 
-    const statusIconColorMap: Record<
-      XDSInputStatusType,
-      'warning' | 'negative' | 'positive'
-    > = {
-      warning: 'warning',
-      error: 'negative',
-      success: 'positive',
-    };
+  // Placeholder that shows format hint when focused and empty
+  const displayPlaceholder = useMemo(() => {
+    if (isFocused && !displayValue) {
+      return hourFormat === '12h' ? 'e.g., 2:30 PM' : 'e.g., 14:30';
+    }
+    return placeholder;
+  }, [isFocused, displayValue, hourFormat, placeholder]);
 
-    const ariaDescribedBy =
-      [
-        description ? descriptionID : null,
-        status?.message ? statusMessageID : null,
-      ]
-        .filter(Boolean)
-        .join(' ') || undefined;
+  // Handle input text change - update immediately if valid
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = e.target.value;
+      setPendingInput(newValue);
 
-    // Pending input while user is typing (null = show formatted value)
-    const [pendingInput, setPendingInput] = useState<string | null>(null);
-    const [isFocused, setIsFocused] = useState(false);
+      // If the input is valid, update immediately (don't wait for blur)
+      const parsed = parseTimeInput(newValue, hasSeconds);
+      if (parsed && isTimeInRange(parsed, min, max) && parsed !== value) {
+        fireChange(parsed);
+      }
+    },
+    [hasSeconds, min, max, value, fireChange],
+  );
 
-    // Format function based on hourFormat
-    const formatDisplayTime =
-      hourFormat === '12h' ? formatDisplayTime12h : formatDisplayTime24h;
+  // Handle focus
+  const handleFocus = useCallback(() => {
+    setIsFocused(true);
+  }, []);
 
-    // Unified change handler that fires both onChange and onChangeAction
-    const fireChange = useCallback(
-      (newValue: ISOTimeString | undefined) => {
-        onChange?.(newValue);
-        if (onChangeAction) {
-          startTransition(async () => {
-            setOptimisticValue(newValue);
-            await onChangeAction(newValue);
-          });
+  // Handle blur - validate and clear pending input
+  const handleBlur = useCallback(
+    (_e: FocusEvent<HTMLInputElement>) => {
+      setIsFocused(false);
+
+      if (pendingInput === null) {
+        return;
+      }
+
+      if (!pendingInput.trim()) {
+        // Empty input clears the value
+        if (value !== undefined) {
+          fireChange(undefined);
         }
-      },
-      [onChange, onChangeAction, startTransition, setOptimisticValue],
-    );
-
-    // Display value: pending input if typing, otherwise formatted value
-    const displayValue = useMemo(() => {
-      if (pendingInput !== null) {
-        return pendingInput;
+        setPendingInput(null);
+        return;
       }
-      return optimisticValue
-        ? formatDisplayTime(optimisticValue, hasSeconds)
-        : '';
-    }, [pendingInput, value, formatDisplayTime, hasSeconds]);
 
-    // Check if current input is valid (for styling purposes)
-    const isInputValid = useMemo(() => {
-      // Only check pending input for validity styling
-      if (pendingInput === null || !pendingInput.trim()) {
-        return true;
-      }
       const parsed = parseTimeInput(pendingInput, hasSeconds);
-      if (!parsed) {
-        return false;
-      }
-      // Also check min/max range
-      return isTimeInRange(parsed, min, max);
-    }, [pendingInput, hasSeconds, min, max]);
-
-    // Placeholder that shows format hint when focused and empty
-    const displayPlaceholder = useMemo(() => {
-      if (isFocused && !displayValue) {
-        return hourFormat === '12h' ? 'e.g., 2:30 PM' : 'e.g., 14:30';
-      }
-      return placeholder;
-    }, [isFocused, displayValue, hourFormat, placeholder]);
-
-    // Handle input text change - update immediately if valid
-    const handleInputChange = useCallback(
-      (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newValue = e.target.value;
-        setPendingInput(newValue);
-
-        // If the input is valid, update immediately (don't wait for blur)
-        const parsed = parseTimeInput(newValue, hasSeconds);
-        if (parsed && isTimeInRange(parsed, min, max) && parsed !== value) {
+      if (parsed && isTimeInRange(parsed, min, max)) {
+        // Valid time - update if different
+        if (parsed !== value) {
           fireChange(parsed);
         }
-      },
-      [hasSeconds, min, max, value, fireChange],
-    );
+      }
+      // Clear pending input - display will revert to formatted value
+      setPendingInput(null);
+    },
+    [pendingInput, value, fireChange, hasSeconds, min, max],
+  );
 
-    // Handle focus
-    const handleFocus = useCallback(() => {
-      setIsFocused(true);
-    }, []);
+  // Handle keyboard navigation on input
+  const handleInputKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
 
-    // Handle blur - validate and clear pending input
-    const handleBlur = useCallback(
-      (_e: FocusEvent<HTMLInputElement>) => {
-        setIsFocused(false);
-
-        if (pendingInput === null) {
-          return;
+        // Get current time or default to now
+        let currentTime = value;
+        if (!currentTime) {
+          const now = new Date();
+          currentTime = formatISOTime(
+            {
+              hour: now.getHours(),
+              minute: now.getMinutes(),
+              second: now.getSeconds(),
+            },
+            hasSeconds,
+          );
         }
 
-        if (!pendingInput.trim()) {
-          // Empty input clears the value
-          if (value !== undefined) {
-            fireChange(undefined);
-          }
-          setPendingInput(null);
-          return;
+        const delta = e.key === 'ArrowUp' ? increment : -increment;
+        const newTime = adjustTime(currentTime, delta, hasSeconds);
+
+        // Check if within range
+        if (isTimeInRange(newTime, min, max)) {
+          fireChange(newTime);
         }
+      }
+    },
+    [value, hasSeconds, increment, min, max, fireChange],
+  );
 
-        const parsed = parseTimeInput(pendingInput, hasSeconds);
-        if (parsed && isTimeInRange(parsed, min, max)) {
-          // Valid time - update if different
-          if (parsed !== value) {
-            fireChange(parsed);
-          }
-        }
-        // Clear pending input - display will revert to formatted value
-        setPendingInput(null);
-      },
-      [pendingInput, value, fireChange, hasSeconds, min, max],
-    );
+  // Handle clear button click
+  const handleClear = useCallback(() => {
+    fireChange(undefined);
+    inputRef.current?.focus();
+  }, [fireChange]);
 
-    // Handle keyboard navigation on input
-    const handleInputKeyDown = useCallback(
-      (e: KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-          e.preventDefault();
+  // Combine refs
+  const setRefs = useCallback(
+    (el: HTMLInputElement | null) => {
+      inputRef.current = el;
+      if (typeof ref === 'function') {
+        ref(el);
+      } else if (ref) {
+        ref.current = el;
+      }
+    },
+    [ref],
+  );
 
-          // Get current time or default to now
-          let currentTime = value;
-          if (!currentTime) {
-            const now = new Date();
-            currentTime = formatISOTime(
-              {
-                hour: now.getHours(),
-                minute: now.getMinutes(),
-                second: now.getSeconds(),
-              },
-              hasSeconds,
-            );
-          }
-
-          const delta = e.key === 'ArrowUp' ? increment : -increment;
-          const newTime = adjustTime(currentTime, delta, hasSeconds);
-
-          // Check if within range
-          if (isTimeInRange(newTime, min, max)) {
-            fireChange(newTime);
-          }
-        }
-      },
-      [value, hasSeconds, increment, min, max, fireChange],
-    );
-
-    // Handle clear button click
-    const handleClear = useCallback(() => {
-      fireChange(undefined);
-      inputRef.current?.focus();
-    }, [fireChange]);
-
-    // Combine refs
-    const setRefs = useCallback(
-      (el: HTMLInputElement | null) => {
-        inputRef.current = el;
-        if (typeof ref === 'function') {
-          ref(el);
-        } else if (ref) {
-          ref.current = el;
-        }
-      },
-      [ref],
-    );
-
-    return (
-      <XDSField
-        label={label}
-        isLabelHidden={isLabelHidden}
-        description={description}
-        inputID={id}
-        descriptionID={description ? descriptionID : undefined}
-        isOptional={isOptional}
-        isRequired={isRequired}
-        status={
-          status
-            ? {
-                type: status.type,
-                message: status.message,
-                messageID: status.message ? statusMessageID : undefined,
-              }
-            : undefined
-        }
-        labelTooltip={labelTooltip}>
-        <div
-          {...stylex.props(
-            inputWrapperStyles.base,
-            sizeStyles[size],
-            isDisabled && inputWrapperStyles.disabled,
-            status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
-            status && inputStatusFocusWithinStyles[status.type],
-          )}>
-          <div {...stylex.props(styles.icon)}>
-            <XDSIcon icon="clock" size="sm" color="secondary" />
-          </div>
-          <input
-            ref={setRefs}
-            id={id}
-            type="text"
-            value={displayValue}
-            onChange={handleInputChange}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            onKeyDown={handleInputKeyDown}
-            placeholder={displayPlaceholder}
-            disabled={isDisabled}
-            aria-describedby={ariaDescribedBy}
-            aria-required={isRequired === true ? 'true' : undefined}
-            aria-invalid={status?.type === 'error' ? 'true' : undefined}
-            aria-busy={isBusy || undefined}
-            {...stylex.props(
-              styles.input,
-              isDisabled && styles.inputDisabled,
-              !isInputValid && styles.inputInvalid,
-            )}
-          />
-          {isBusy && <XDSSpinner size="sm" />}
-          {hasClear && value && !isDisabled && (
-            <button
-              type="button"
-              onClick={handleClear}
-              aria-label="Clear time"
-              {...stylex.props(styles.clearButton)}>
-              <XDSIcon icon="close" size="sm" color="secondary" />
-            </button>
-          )}
-          {status && (
-            <XDSIcon
-              icon={statusIconMap[status.type]}
-              size="md"
-              color={statusIconColorMap[status.type]}
-            />
-          )}
+  return (
+    <XDSField
+      label={label}
+      isLabelHidden={isLabelHidden}
+      description={description}
+      inputID={id}
+      descriptionID={description ? descriptionID : undefined}
+      isOptional={isOptional}
+      isRequired={isRequired}
+      status={
+        status
+          ? {
+              type: status.type,
+              message: status.message,
+              messageID: status.message ? statusMessageID : undefined,
+            }
+          : undefined
+      }
+      labelTooltip={labelTooltip}>
+      <div
+        {...stylex.props(
+          inputWrapperStyles.base,
+          sizeStyles[size],
+          isDisabled && inputWrapperStyles.disabled,
+          status && inputStatusBorderStyles[status.type],
+          status && inputStatusHoverShadowStyles[status.type],
+          status && inputStatusFocusWithinStyles[status.type],
+        )}>
+        <div {...stylex.props(styles.icon)}>
+          <XDSIcon icon="clock" size="sm" color="secondary" />
         </div>
-      </XDSField>
-    );
-  },
-);
+        <input
+          ref={setRefs}
+          id={id}
+          type="text"
+          value={displayValue}
+          onChange={handleInputChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onKeyDown={handleInputKeyDown}
+          placeholder={displayPlaceholder}
+          disabled={isDisabled}
+          aria-describedby={ariaDescribedBy}
+          aria-required={isRequired === true ? 'true' : undefined}
+          aria-invalid={status?.type === 'error' ? 'true' : undefined}
+          aria-busy={isBusy || undefined}
+          {...stylex.props(
+            styles.input,
+            isDisabled && styles.inputDisabled,
+            !isInputValid && styles.inputInvalid,
+          )}
+        />
+        {isBusy && <XDSSpinner size="sm" />}
+        {hasClear && value && !isDisabled && (
+          <button
+            type="button"
+            onClick={handleClear}
+            aria-label="Clear time"
+            {...stylex.props(styles.clearButton)}>
+            <XDSIcon icon="close" size="sm" color="secondary" />
+          </button>
+        )}
+        {status && (
+          <XDSIcon
+            icon={statusIconMap[status.type]}
+            size="md"
+            color={statusIconColorMap[status.type]}
+          />
+        )}
+      </div>
+    </XDSField>
+  );
+}
 
 XDSTimeInput.displayName = 'XDSTimeInput';

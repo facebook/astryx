@@ -1,6 +1,6 @@
 /**
  * @file XDSAspectRatio.tsx
- * @input Uses React forwardRef, stylex
+ * @input Uses React, stylex
  * @output Exports XDSAspectRatio component and XDSAspectRatioProps
  * @position AspectRatio component; maintains a specific aspect ratio for its children
  *
@@ -12,13 +12,15 @@
 
 'use client';
 
-import {forwardRef, type ReactNode} from 'react';
+import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
 
 export interface XDSAspectRatioProps extends XDSBaseProps<HTMLDivElement> {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLElement>;
   /**
    * The aspect ratio as width/height (e.g., 16/9 = 1.777..., 4/3 = 1.333..., 1 for square).
    */
@@ -81,25 +83,28 @@ const styles = stylex.create({
  * </XDSAspectRatio>
  * ```
  */
-export const XDSAspectRatio = forwardRef<HTMLElement, XDSAspectRatioProps>(
-  function XDSAspectRatio(
-    {ratio, children, xstyle, className, style, ...props},
-    ref,
-  ) {
-    return (
-      <div
-        ref={ref as React.Ref<HTMLDivElement>}
-        {...mergeProps(
-          xdsClassName('aspect-ratio'),
-          stylex.props(styles.container, xstyle),
-          className,
-          {...style, aspectRatio: ratio},
-        )}
-        {...props}>
-        <div {...stylex.props(styles.child)}>{children}</div>
-      </div>
-    );
-  },
-);
+export function XDSAspectRatio({
+  ratio,
+  children,
+  xstyle,
+  className,
+  style,
+  ref,
+  ...props
+}: XDSAspectRatioProps) {
+  return (
+    <div
+      ref={ref as React.Ref<HTMLDivElement>}
+      {...mergeProps(
+        xdsClassName('aspect-ratio'),
+        stylex.props(styles.container, xstyle),
+        className,
+        {...style, aspectRatio: ratio},
+      )}
+      {...props}>
+      <div {...stylex.props(styles.child)}>{children}</div>
+    </div>
+  );
+}
 
 XDSAspectRatio.displayName = 'XDSAspectRatio';

@@ -12,7 +12,7 @@
 
 'use client';
 
-import {forwardRef, type ReactNode} from 'react';
+import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars, elevationVars} from '../theme/tokens.stylex';
 import {container} from '../Layout/container.stylex';
@@ -67,6 +67,8 @@ const dynamicStyles = stylex.create({
 export type {SizeValue} from '../utils/types';
 
 export interface XDSCardProps extends XDSBaseProps {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * CSS class name(s) appended to the root element.
    */
@@ -132,61 +134,57 @@ export interface XDSCardProps extends XDSBaseProps {
  * </XDSCard>
  * ```
  */
-export const XDSCard = forwardRef<HTMLDivElement, XDSCardProps>(
-  function XDSCard(
-    {
-      width,
-      height,
-      maxWidth,
-      minHeight,
-      children,
-      isFullBleed = false,
-      xstyle,
-      className,
-      style,
-      ...props
-    },
-    ref,
-  ) {
-    // Only enable scrolling when card has a fixed height (not null/undefined and not "auto")
-    const hasFixedHeight = height != null && height !== 'auto';
+export function XDSCard({
+  width,
+  height,
+  maxWidth,
+  minHeight,
+  children,
+  isFullBleed = false,
+  xstyle,
+  className,
+  style,
+  ref,
+  ...props
+}: XDSCardProps) {
+  // Only enable scrolling when card has a fixed height (not null/undefined and not "auto")
+  const hasFixedHeight = height != null && height !== 'auto';
 
-    return (
-      <div
-        ref={ref}
-        {...mergeProps(
-          xdsClassName('card'),
-          stylex.props(
-            styles.cardOuter,
-            dynamicStyles.sizing(
-              width ?? null,
-              height ?? null,
-              maxWidth ?? null,
-              minHeight ?? null,
-            ),
-            xstyle,
+  return (
+    <div
+      ref={ref}
+      {...mergeProps(
+        xdsClassName('card'),
+        stylex.props(
+          styles.cardOuter,
+          dynamicStyles.sizing(
+            width ?? null,
+            height ?? null,
+            maxWidth ?? null,
+            minHeight ?? null,
           ),
-          className,
-          style,
-        )}
-        {...props}>
-        <div
-          {...stylex.props(
-            styles.cardInner,
-            hasFixedHeight && styles.scrollable,
-            ...container({
-              paddingInnerX: 'spacing4',
-              paddingInnerY: 'spacing4',
-              paddingOuterX: 'spacing4',
-              paddingOuterY: 'spacing4',
-            }),
-            isFullBleed && styles.fullBleed,
-          )}>
-          {children}
-        </div>
+          xstyle,
+        ),
+        className,
+        style,
+      )}
+      {...props}>
+      <div
+        {...stylex.props(
+          styles.cardInner,
+          hasFixedHeight && styles.scrollable,
+          ...container({
+            paddingInnerX: 'spacing4',
+            paddingInnerY: 'spacing4',
+            paddingOuterX: 'spacing4',
+            paddingOuterY: 'spacing4',
+          }),
+          isFullBleed && styles.fullBleed,
+        )}>
+        {children}
       </div>
-    );
-  },
-);
+    </div>
+  );
+}
 
 XDSCard.displayName = 'XDSCard';

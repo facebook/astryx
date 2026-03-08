@@ -17,7 +17,7 @@
 
 'use client';
 
-import {forwardRef, useTransition} from 'react';
+import {useTransition} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -49,6 +49,8 @@ export type XDSPaginationVariant =
 export type XDSPaginationSize = 'sm' | 'md';
 
 export interface XDSPaginationProps {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLElement>;
   // --- Core (required) ---
   /** Current page number (1-based). Page 1 is the first page. */
   page: number;
@@ -316,245 +318,239 @@ export function generatePageRange(
  * />
  * ```
  */
-export const XDSPagination = forwardRef<HTMLElement, XDSPaginationProps>(
-  function XDSPagination(
-    {
-      page,
-      onChange,
-      onChangeAction,
-      totalItems,
-      totalPages: totalPagesProp,
-      hasMore,
-      pageSize = 10,
-      pageSizeOptions,
-      onPageSizeChange,
-      variant = 'pages',
-      siblingCount = 1,
-      size = 'md',
-      isDisabled = false,
-      label = 'Pagination',
-      'data-testid': testId,
-      xstyle,
-      className,
-      style,
-    },
-    ref,
-  ) {
-    const [isPending, startTransition] = useTransition();
+export function XDSPagination({
+  page,
+  onChange,
+  onChangeAction,
+  totalItems,
+  totalPages: totalPagesProp,
+  hasMore,
+  pageSize = 10,
+  pageSizeOptions,
+  onPageSizeChange,
+  variant = 'pages',
+  siblingCount = 1,
+  size = 'md',
+  isDisabled = false,
+  label = 'Pagination',
+  'data-testid': testId,
+  xstyle,
+  className,
+  style,
+  ref,
+}: XDSPaginationProps) {
+  const [isPending, startTransition] = useTransition();
 
-    // Compute pagination state
-    const computedTotalPages =
-      totalPagesProp ??
-      (totalItems != null ? Math.ceil(totalItems / pageSize) : undefined);
+  // Compute pagination state
+  const computedTotalPages =
+    totalPagesProp ??
+    (totalItems != null ? Math.ceil(totalItems / pageSize) : undefined);
 
-    const hasPrevious = page > 1;
-    const hasNext =
-      computedTotalPages != null
-        ? page < computedTotalPages
-        : (hasMore ?? false);
+  const hasPrevious = page > 1;
+  const hasNext =
+    computedTotalPages != null ? page < computedTotalPages : (hasMore ?? false);
 
-    // Return null for empty state
-    if (totalItems != null && totalItems <= 0) {
-      return null;
+  // Return null for empty state
+  if (totalItems != null && totalItems <= 0) {
+    return null;
+  }
+  if (computedTotalPages != null && computedTotalPages <= 0) {
+    return null;
+  }
+
+  const handlePageChange = (newPage: number) => {
+    if (isDisabled || isPending) return;
+    onChange(newPage);
+    if (onChangeAction) {
+      startTransition(async () => {
+        await onChangeAction(newPage);
+      });
     }
-    if (computedTotalPages != null && computedTotalPages <= 0) {
-      return null;
+  };
+
+  const handlePrevious = () => {
+    if (hasPrevious) {
+      handlePageChange(page - 1);
     }
+  };
 
-    const handlePageChange = (newPage: number) => {
-      if (isDisabled || isPending) return;
-      onChange(newPage);
-      if (onChangeAction) {
-        startTransition(async () => {
-          await onChangeAction(newPage);
-        });
-      }
-    };
+  const handleNext = () => {
+    if (hasNext) {
+      handlePageChange(page + 1);
+    }
+  };
 
-    const handlePrevious = () => {
-      if (hasPrevious) {
-        handlePageChange(page - 1);
-      }
-    };
+  const handlePageSizeChange = (value: string) => {
+    const newSize = Number(value);
+    onPageSizeChange?.(newSize);
+    // Reset to page 1 when page size changes
+    onChange(1);
+    if (onChangeAction) {
+      startTransition(async () => {
+        await onChangeAction(1);
+      });
+    }
+  };
 
-    const handleNext = () => {
-      if (hasNext) {
-        handlePageChange(page + 1);
-      }
-    };
+  // Item range for count display
+  const rangeStart = (page - 1) * pageSize + 1;
+  const rangeEnd =
+    totalItems != null
+      ? Math.min(page * pageSize, totalItems)
+      : page * pageSize;
 
-    const handlePageSizeChange = (value: string) => {
-      const newSize = Number(value);
-      onPageSizeChange?.(newSize);
-      // Reset to page 1 when page size changes
-      onChange(1);
-      if (onChangeAction) {
-        startTransition(async () => {
-          await onChangeAction(1);
-        });
-      }
-    };
+  const buttonSize = size === 'sm' ? 'sm' : 'md';
+  const isSm = size === 'sm';
 
-    // Item range for count display
-    const rangeStart = (page - 1) * pageSize + 1;
-    const rangeEnd =
-      totalItems != null
-        ? Math.min(page * pageSize, totalItems)
-        : page * pageSize;
-
-    const buttonSize = size === 'sm' ? 'sm' : 'md';
-    const isSm = size === 'sm';
-
-    const renderIndicator = () => {
-      switch (variant) {
-        case 'pages': {
-          if (computedTotalPages == null) return null;
-          const pageRange = generatePageRange(
-            page,
-            computedTotalPages,
-            siblingCount,
-          );
-          return (
-            <>
-              {pageRange.map((item, index) => {
-                if (item === '...') {
-                  return (
-                    <span
-                      key={`ellipsis-${index}`}
-                      aria-hidden="true"
-                      {...stylex.props(
-                        styles.ellipsis,
-                        isSm && styles.ellipsisSm,
-                      )}>
-                      …
-                    </span>
-                  );
-                }
-                const isActive = item === page;
+  const renderIndicator = () => {
+    switch (variant) {
+      case 'pages': {
+        if (computedTotalPages == null) return null;
+        const pageRange = generatePageRange(
+          page,
+          computedTotalPages,
+          siblingCount,
+        );
+        return (
+          <>
+            {pageRange.map((item, index) => {
+              if (item === '...') {
                 return (
-                  <XDSButton
-                    key={item}
-                    label={`Go to page ${item}`}
-                    aria-label={`Go to page ${item}`}
-                    variant={isActive ? 'primary' : 'ghost'}
-                    size={buttonSize}
-                    onClick={() => handlePageChange(item)}
-                    isDisabled={isDisabled}
-                    aria-current={isActive ? 'page' : undefined}>
-                    {item}
-                  </XDSButton>
+                  <span
+                    key={`ellipsis-${index}`}
+                    aria-hidden="true"
+                    {...stylex.props(
+                      styles.ellipsis,
+                      isSm && styles.ellipsisSm,
+                    )}>
+                    …
+                  </span>
                 );
-              })}
-            </>
-          );
-        }
-
-        case 'count': {
-          if (totalItems == null) return null;
-          return (
-            <span {...stylex.props(styles.infoText)}>
-              <XDSText type="body" size="sm" color="secondary">
-                {`${rangeStart}\u2013${rangeEnd} of ${totalItems}`}
-              </XDSText>
-            </span>
-          );
-        }
-
-        case 'compact': {
-          if (computedTotalPages == null) return null;
-          return (
-            <span {...stylex.props(styles.infoText)}>
-              <XDSText type="body" size="sm" color="secondary">
-                {`Page ${page} of ${computedTotalPages}`}
-              </XDSText>
-            </span>
-          );
-        }
-
-        case 'dots': {
-          if (computedTotalPages == null) return null;
-          return (
-            <div
-              {...stylex.props(styles.dotsContainer)}
-              role="group"
-              aria-label="Page indicators">
-              {Array.from({length: computedTotalPages}, (_, i) => (
-                <button
-                  key={i + 1}
-                  type="button"
-                  aria-label={`Go to page ${i + 1}`}
-                  aria-current={i + 1 === page ? 'page' : undefined}
-                  onClick={() => handlePageChange(i + 1)}
-                  disabled={isDisabled}
-                  {...stylex.props(
-                    styles.dot,
-                    isSm && styles.dotSm,
-                    i + 1 === page && styles.dotActive,
-                    isDisabled && styles.dotDisabled,
-                  )}
-                />
-              ))}
-            </div>
-          );
-        }
-
-        case 'none':
-        default:
-          return null;
+              }
+              const isActive = item === page;
+              return (
+                <XDSButton
+                  key={item}
+                  label={`Go to page ${item}`}
+                  aria-label={`Go to page ${item}`}
+                  variant={isActive ? 'primary' : 'ghost'}
+                  size={buttonSize}
+                  onClick={() => handlePageChange(item)}
+                  isDisabled={isDisabled}
+                  aria-current={isActive ? 'page' : undefined}>
+                  {item}
+                </XDSButton>
+              );
+            })}
+          </>
+        );
       }
-    };
 
-    return (
-      <nav
-        ref={ref}
-        aria-label={label}
-        data-testid={testId}
-        {...mergeProps(
-          xdsClassName('pagination', {variant, size}),
-          stylex.props(styles.root, xstyle),
-          className,
-          style,
-        )}>
-        {pageSizeOptions != null && pageSizeOptions.length > 0 && (
-          <div {...stylex.props(styles.pageSizeSelector)}>
-            <div {...stylex.props(styles.pageSizeSelectorControl)}>
-              <XDSSelector
-                label="Items per page"
-                isLabelHidden
-                options={pageSizeOptions.map(opt => String(opt))}
-                value={String(pageSize)}
-                onChange={handlePageSizeChange}
-                size={buttonSize}
-                isDisabled={isDisabled}
+      case 'count': {
+        if (totalItems == null) return null;
+        return (
+          <span {...stylex.props(styles.infoText)}>
+            <XDSText type="body" size="sm" color="secondary">
+              {`${rangeStart}\u2013${rangeEnd} of ${totalItems}`}
+            </XDSText>
+          </span>
+        );
+      }
+
+      case 'compact': {
+        if (computedTotalPages == null) return null;
+        return (
+          <span {...stylex.props(styles.infoText)}>
+            <XDSText type="body" size="sm" color="secondary">
+              {`Page ${page} of ${computedTotalPages}`}
+            </XDSText>
+          </span>
+        );
+      }
+
+      case 'dots': {
+        if (computedTotalPages == null) return null;
+        return (
+          <div
+            {...stylex.props(styles.dotsContainer)}
+            role="group"
+            aria-label="Page indicators">
+            {Array.from({length: computedTotalPages}, (_, i) => (
+              <button
+                key={i + 1}
+                type="button"
+                aria-label={`Go to page ${i + 1}`}
+                aria-current={i + 1 === page ? 'page' : undefined}
+                onClick={() => handlePageChange(i + 1)}
+                disabled={isDisabled}
+                {...stylex.props(
+                  styles.dot,
+                  isSm && styles.dotSm,
+                  i + 1 === page && styles.dotActive,
+                  isDisabled && styles.dotDisabled,
+                )}
               />
-            </div>
+            ))}
           </div>
-        )}
+        );
+      }
 
-        <div {...stylex.props(styles.controls)}>
-          <XDSButton
-            label="Go to previous page"
-            variant="ghost"
-            size={buttonSize}
-            icon={<XDSIcon icon="chevronLeft" size={isSm ? 'sm' : 'md'} />}
-            onClick={handlePrevious}
-            isDisabled={isDisabled || !hasPrevious}
-          />
+      case 'none':
+      default:
+        return null;
+    }
+  };
 
-          {renderIndicator()}
-
-          <XDSButton
-            label="Go to next page"
-            variant="ghost"
-            size={buttonSize}
-            icon={<XDSIcon icon="chevronRight" size={isSm ? 'sm' : 'md'} />}
-            onClick={handleNext}
-            isDisabled={isDisabled || !hasNext}
-          />
+  return (
+    <nav
+      ref={ref}
+      aria-label={label}
+      data-testid={testId}
+      {...mergeProps(
+        xdsClassName('pagination', {variant, size}),
+        stylex.props(styles.root, xstyle),
+        className,
+        style,
+      )}>
+      {pageSizeOptions != null && pageSizeOptions.length > 0 && (
+        <div {...stylex.props(styles.pageSizeSelector)}>
+          <div {...stylex.props(styles.pageSizeSelectorControl)}>
+            <XDSSelector
+              label="Items per page"
+              isLabelHidden
+              options={pageSizeOptions.map(opt => String(opt))}
+              value={String(pageSize)}
+              onChange={handlePageSizeChange}
+              size={buttonSize}
+              isDisabled={isDisabled}
+            />
+          </div>
         </div>
-      </nav>
-    );
-  },
-);
+      )}
+
+      <div {...stylex.props(styles.controls)}>
+        <XDSButton
+          label="Go to previous page"
+          variant="ghost"
+          size={buttonSize}
+          icon={<XDSIcon icon="chevronLeft" size={isSm ? 'sm' : 'md'} />}
+          onClick={handlePrevious}
+          isDisabled={isDisabled || !hasPrevious}
+        />
+
+        {renderIndicator()}
+
+        <XDSButton
+          label="Go to next page"
+          variant="ghost"
+          size={buttonSize}
+          icon={<XDSIcon icon="chevronRight" size={isSm ? 'sm' : 'md'} />}
+          onClick={handleNext}
+          isDisabled={isDisabled || !hasNext}
+        />
+      </div>
+    </nav>
+  );
+}
 
 XDSPagination.displayName = 'XDSPagination';

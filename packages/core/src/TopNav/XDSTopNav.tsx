@@ -1,6 +1,6 @@
 /**
  * @file XDSTopNav.tsx
- * @input Uses React forwardRef, HTMLAttributes, ReactNode
+ * @input Uses React, HTMLAttributes, ReactNode
  * @output Exports XDSTopNav component and XDSTopNavProps
  * @position Core implementation; consumed by index.ts
  *
@@ -13,7 +13,7 @@
 
 'use client';
 
-import {forwardRef, type ReactNode} from 'react';
+import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
@@ -84,6 +84,8 @@ const styles = stylex.create({
 });
 
 export interface XDSTopNavProps extends XDSBaseProps<HTMLElement> {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLElement>;
   /**
    * Heading slot content — typically XDSTopNavHeading with logo and text.
    * Positioned at the left edge of the nav bar.
@@ -130,62 +132,58 @@ export interface XDSTopNavProps extends XDSBaseProps<HTMLElement> {
  * />
  * ```
  */
-export const XDSTopNav = forwardRef<HTMLElement, XDSTopNavProps>(
-  function XDSTopNav(
-    {
-      heading,
-      startContent,
-      centerContent,
-      endContent,
-      label,
-      xstyle,
-      className,
-      style,
-      ...props
-    },
-    ref,
-  ) {
-    const hasCenterContent = centerContent != null;
+export function XDSTopNav({
+  heading,
+  startContent,
+  centerContent,
+  endContent,
+  label,
+  xstyle,
+  className,
+  style,
+  ref,
+  ...props
+}: XDSTopNavProps) {
+  const hasCenterContent = centerContent != null;
 
-    return (
-      <nav
-        ref={ref}
-        role="navigation"
-        aria-label={label}
-        {...mergeProps(
-          xdsClassName('top-nav'),
-          stylex.props(
-            styles.base,
-            hasCenterContent ? styles.baseGrid : styles.baseFlex,
-            xstyle,
-          ),
-          className,
-          style,
+  return (
+    <nav
+      ref={ref}
+      role="navigation"
+      aria-label={label}
+      {...mergeProps(
+        xdsClassName('top-nav'),
+        stylex.props(
+          styles.base,
+          hasCenterContent ? styles.baseGrid : styles.baseFlex,
+          xstyle,
+        ),
+        className,
+        style,
+      )}
+      {...props}>
+      <div {...stylex.props(styles.leftSection, edgeSignals.start)}>
+        {heading && <div {...stylex.props(styles.heading)}>{heading}</div>}
+        {startContent && (
+          <div {...stylex.props(styles.startContent)}>{startContent}</div>
         )}
-        {...props}>
-        <div {...stylex.props(styles.leftSection, edgeSignals.start)}>
-          {heading && <div {...stylex.props(styles.heading)}>{heading}</div>}
-          {startContent && (
-            <div {...stylex.props(styles.startContent)}>{startContent}</div>
-          )}
+      </div>
+      {hasCenterContent && (
+        <div {...stylex.props(styles.centerContent)}>{centerContent}</div>
+      )}
+      {hasCenterContent ? (
+        <div {...stylex.props(styles.rightSection, edgeSignals.end)}>
+          {endContent}
         </div>
-        {hasCenterContent && (
-          <div {...stylex.props(styles.centerContent)}>{centerContent}</div>
-        )}
-        {hasCenterContent ? (
-          <div {...stylex.props(styles.rightSection, edgeSignals.end)}>
+      ) : (
+        endContent && (
+          <div {...stylex.props(styles.endContent, edgeSignals.end)}>
             {endContent}
           </div>
-        ) : (
-          endContent && (
-            <div {...stylex.props(styles.endContent, edgeSignals.end)}>
-              {endContent}
-            </div>
-          )
-        )}
-      </nav>
-    );
-  },
-);
+        )
+      )}
+    </nav>
+  );
+}
 
 XDSTopNav.displayName = 'XDSTopNav';

@@ -9,7 +9,6 @@
  * - /packages/core/src/Stack/XDSVStack.test.tsx
  */
 
-import {forwardRef} from 'react';
 import {XDSStack, type XDSStackProps} from './XDSStack';
 import type {StackCrossAlignment, StackMainAlignment} from './stack.stylex';
 
@@ -17,6 +16,8 @@ export interface XDSVStackProps extends Omit<
   XDSStackProps,
   'direction' | 'hAlign' | 'vAlign'
 > {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLElement>;
   /**
    * Horizontal alignment of items (cross-axis for vertical stack).
    * @default 'stretch'
@@ -47,10 +48,8 @@ export interface XDSVStackProps extends Omit<
  * </XDSVStack>
  * ```
  */
-export const XDSVStack = forwardRef<HTMLElement, XDSVStackProps>(
-  function XDSVStack(props, ref) {
-    return <XDSStack {...props} direction="vertical" ref={ref} />;
-  },
-);
+export function XDSVStack({ref, ...props}: XDSVStackProps) {
+  return <XDSStack {...props} direction="vertical" ref={ref} />;
+}
 
 XDSVStack.displayName = 'XDSVStack';

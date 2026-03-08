@@ -1,6 +1,6 @@
 /**
  * @file XDSGridSpan.tsx
- * @input Uses React forwardRef, stylex
+ * @input Uses React, stylex
  * @output Exports XDSGridSpan component and XDSGridSpanProps
  * @position Grid span component; controls grid item span
  *
@@ -10,13 +10,15 @@
  * - /apps/storybook/stories/Grid.stories.tsx
  */
 
-import {forwardRef, type ReactNode} from 'react';
+import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
 export interface XDSGridSpanProps extends XDSBaseProps<HTMLDivElement> {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLElement>;
   /**
    * Number of columns to span, or 'full' to span all columns.
    * - Number: `grid-column: span N`
@@ -82,35 +84,39 @@ const baseStyles = stylex.create({
  * </XDSGrid>
  * ```
  */
-export const XDSGridSpan = forwardRef<HTMLElement, XDSGridSpanProps>(
-  function XDSGridSpan(
-    {columns, rows, xstyle, className, style, children, ...props},
-    ref,
-  ) {
-    // Build inline style for grid spanning
-    const inlineStyle: React.CSSProperties = {
-      ...(columns != null && {
-        gridColumn: columns === 'full' ? '1 / -1' : `span ${columns}`,
-      }),
-      ...(rows != null && {
-        gridRow: `span ${rows}`,
-      }),
-    };
+export function XDSGridSpan({
+  columns,
+  rows,
+  xstyle,
+  className,
+  style,
+  children,
+  ref,
+  ...props
+}: XDSGridSpanProps) {
+  // Build inline style for grid spanning
+  const inlineStyle: React.CSSProperties = {
+    ...(columns != null && {
+      gridColumn: columns === 'full' ? '1 / -1' : `span ${columns}`,
+    }),
+    ...(rows != null && {
+      gridRow: `span ${rows}`,
+    }),
+  };
 
-    return (
-      <div
-        ref={ref as React.Ref<HTMLDivElement>}
-        {...mergeProps(
-          xdsClassName('grid-span'),
-          stylex.props(baseStyles.span, xstyle),
-          className,
-          {...style, ...inlineStyle},
-        )}
-        {...props}>
-        {children}
-      </div>
-    );
-  },
-);
+  return (
+    <div
+      ref={ref as React.Ref<HTMLDivElement>}
+      {...mergeProps(
+        xdsClassName('grid-span'),
+        stylex.props(baseStyles.span, xstyle),
+        className,
+        {...style, ...inlineStyle},
+      )}
+      {...props}>
+      {children}
+    </div>
+  );
+}
 
 XDSGridSpan.displayName = 'XDSGridSpan';

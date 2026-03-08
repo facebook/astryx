@@ -12,7 +12,6 @@
 
 'use client';
 
-import {forwardRef} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
@@ -113,6 +112,8 @@ export type XDSSkeletonRadius = keyof typeof radiusStyles;
 // =============================================================================
 
 export interface XDSSkeletonProps extends XDSBaseProps<HTMLDivElement> {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * Width of the skeleton.
    * Accepts a number (pixels) or string (any CSS value).
@@ -162,42 +163,38 @@ export interface XDSSkeletonProps extends XDSBaseProps<HTMLDivElement> {
  * <XDSSkeleton width={280} height={16} index={1} />
  * ```
  */
-export const XDSSkeleton = forwardRef<HTMLDivElement, XDSSkeletonProps>(
-  (
-    {
-      width = '100%',
-      height = '100%',
-      radius: radiusProp = 'container',
-      index = 0,
-      'data-testid': testId,
-      xstyle,
-      className,
-      style,
-      ...props
-    },
-    ref,
-  ) => {
-    return (
-      <div
-        ref={ref}
-        data-testid={testId}
-        {...mergeProps(
-          xdsClassName('skeleton'),
-          stylex.props(
-            styles.root,
-            styles.animate,
-            radiusStyles[radiusProp],
-            dynamicStyles.dimensions(width, height),
-            dynamicStyles.animationDelay(index),
-            xstyle,
-          ),
-          className,
-          style,
-        )}
-        {...props}
-      />
-    );
-  },
-);
+export function XDSSkeleton({
+  width = '100%',
+  height = '100%',
+  radius: radiusProp = 'container',
+  index = 0,
+  'data-testid': testId,
+  xstyle,
+  className,
+  style,
+  ref,
+  ...props
+}: XDSSkeletonProps) {
+  return (
+    <div
+      ref={ref}
+      data-testid={testId}
+      {...mergeProps(
+        xdsClassName('skeleton'),
+        stylex.props(
+          styles.root,
+          styles.animate,
+          radiusStyles[radiusProp],
+          dynamicStyles.dimensions(width, height),
+          dynamicStyles.animationDelay(index),
+          xstyle,
+        ),
+        className,
+        style,
+      )}
+      {...props}
+    />
+  );
+}
 
 XDSSkeleton.displayName = 'XDSSkeleton';

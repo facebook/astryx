@@ -16,7 +16,6 @@
 'use client';
 
 import React, {
-  forwardRef,
   useCallback,
   useEffect,
   useId,
@@ -249,31 +248,29 @@ const styles = stylex.create({
  * />
  * ```
  */
-export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
+export const XDSBaseTypeahead = function XDSBaseTypeahead<
   T extends XDSSearchableItem,
->(
-  {
-    searchSource,
-    value,
-    onChange,
-    renderItem,
-    placeholder = 'Search...',
-    hasEntriesOnFocus = false,
-    maxMenuItems = 10,
-    emptySearchResultsText = 'No results found',
-    isDisabled = false,
-    hasAutoFocus = false,
-    onChangeQuery,
-    onOpenChange,
-    inputId: externalInputId,
-    ariaDescribedBy,
-    inputXStyle,
-    anchorRef,
-    onKeyDown: externalOnKeyDown,
-    debounceMs = 150,
-  }: XDSBaseTypeaheadProps<T>,
-  ref: React.ForwardedRef<HTMLInputElement>,
-) {
+>({
+  searchSource,
+  value,
+  onChange,
+  renderItem,
+  placeholder = 'Search...',
+  hasEntriesOnFocus = false,
+  maxMenuItems = 10,
+  emptySearchResultsText = 'No results found',
+  isDisabled = false,
+  hasAutoFocus = false,
+  onChangeQuery,
+  onOpenChange,
+  inputId: externalInputId,
+  ariaDescribedBy,
+  inputXStyle,
+  anchorRef,
+  onKeyDown: externalOnKeyDown,
+  debounceMs = 150,
+  ref,
+}: XDSBaseTypeaheadProps<T> & {ref?: React.Ref<HTMLInputElement>}) {
   const generatedId = useId();
   const inputId = externalInputId ?? generatedId;
   const listboxId = useId();
@@ -619,7 +616,7 @@ export const XDSBaseTypeahead = forwardRef(function XDSBaseTypeahead<
       )}
     </>
   );
-}) as <T extends XDSSearchableItem>(
+} as <T extends XDSSearchableItem>(
   props: XDSBaseTypeaheadProps<T> & {ref?: React.Ref<HTMLInputElement>},
 ) => React.ReactElement;
 

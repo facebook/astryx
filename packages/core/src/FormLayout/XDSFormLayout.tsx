@@ -1,6 +1,6 @@
 /**
  * @file XDSFormLayout.tsx
- * @input Uses React forwardRef, XDSFormLayoutContext, StyleX
+ * @input Uses React, XDSFormLayoutContext, StyleX
  * @output Exports XDSFormLayout component and XDSFormLayoutProps
  * @position Core implementation; consumed by index.ts, tested by XDSFormLayout.test.tsx
  *
@@ -13,7 +13,7 @@
 
 'use client';
 
-import {forwardRef, useMemo, type ReactNode} from 'react';
+import {useMemo, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -62,6 +62,8 @@ const styles = stylex.create({
 // =============================================================================
 
 export interface XDSFormLayoutProps extends XDSBaseProps<HTMLDivElement> {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * Form fields to arrange. Accepts XDS inputs (XDSTextInput, XDSSelector, etc.)
    * and XDSField-wrapped custom controls.
@@ -131,34 +133,37 @@ export interface XDSFormLayoutProps extends XDSBaseProps<HTMLDivElement> {
  * </XDSFormLayout>
  * ```
  */
-export const XDSFormLayout = forwardRef<HTMLDivElement, XDSFormLayoutProps>(
-  function XDSFormLayout(
-    {children, direction = 'vertical', xstyle, className, style, ...props},
-    ref,
-  ) {
-    const contextValue = useMemo(() => ({direction}), [direction]);
+export function XDSFormLayout({
+  children,
+  direction = 'vertical',
+  xstyle,
+  className,
+  style,
+  ref,
+  ...props
+}: XDSFormLayoutProps) {
+  const contextValue = useMemo(() => ({direction}), [direction]);
 
-    return (
-      <XDSFormLayoutContext.Provider value={contextValue}>
-        <div
-          ref={ref}
-          {...mergeProps(
-            xdsClassName('form-layout', {direction}),
-            stylex.props(
-              styles.base,
-              direction === 'horizontal' && styles.horizontal,
-              direction === 'horizontal-labels' && styles.horizontalLabels,
-              xstyle,
-            ),
-            className,
-            style,
-          )}
-          {...props}>
-          {children}
-        </div>
-      </XDSFormLayoutContext.Provider>
-    );
-  },
-);
+  return (
+    <XDSFormLayoutContext.Provider value={contextValue}>
+      <div
+        ref={ref}
+        {...mergeProps(
+          xdsClassName('form-layout', {direction}),
+          stylex.props(
+            styles.base,
+            direction === 'horizontal' && styles.horizontal,
+            direction === 'horizontal-labels' && styles.horizontalLabels,
+            xstyle,
+          ),
+          className,
+          style,
+        )}
+        {...props}>
+        {children}
+      </div>
+    </XDSFormLayoutContext.Provider>
+  );
+}
 
 XDSFormLayout.displayName = 'XDSFormLayout';

@@ -18,7 +18,7 @@
 
 'use client';
 
-import {forwardRef, type ReactNode} from 'react';
+import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -72,6 +72,8 @@ const styles = stylex.create({
 });
 
 export interface XDSCollapsibleProps {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * Content shown in the trigger area (always visible).
    * Rendered inside a button with aria-expanded and a chevron indicator.
@@ -148,57 +150,53 @@ export interface XDSCollapsibleProps {
  * </XDSCollapsibleGroup>
  * ```
  */
-export const XDSCollapsible = forwardRef<HTMLDivElement, XDSCollapsibleProps>(
-  function XDSCollapsible(
-    {
-      trigger,
-      children,
-      defaultIsOpen,
-      isOpen: controlledIsOpen,
-      onOpenChange,
-      value,
-      ...props
-    },
-    ref,
-  ) {
-    // Build the config for the hook
-    const collapsibleConfig =
-      controlledIsOpen !== undefined
-        ? {isOpen: controlledIsOpen, onOpenChange}
-        : {defaultIsOpen: defaultIsOpen ?? true, onOpenChange};
+export function XDSCollapsible({
+  trigger,
+  children,
+  defaultIsOpen,
+  isOpen: controlledIsOpen,
+  onOpenChange,
+  value,
+  ref,
+  ...props
+}: XDSCollapsibleProps) {
+  // Build the config for the hook
+  const collapsibleConfig =
+    controlledIsOpen !== undefined
+      ? {isOpen: controlledIsOpen, onOpenChange}
+      : {defaultIsOpen: defaultIsOpen ?? true, onOpenChange};
 
-    const {isOpen, toggle} = useXDSCollapsible({
-      isCollapsible: collapsibleConfig,
-      value,
-    });
+  const {isOpen, toggle} = useXDSCollapsible({
+    isCollapsible: collapsibleConfig,
+    value,
+  });
 
-    const chevronIcon = getIcon('chevronDown');
+  const chevronIcon = getIcon('chevronDown');
 
-    return (
-      <div ref={ref} className={xdsClassName('collapsible')} {...props}>
-        <button
-          type="button"
-          onClick={toggle}
-          aria-expanded={isOpen}
-          {...stylex.props(styles.trigger)}>
-          <span>{trigger}</span>
-          <span
-            {...stylex.props(
-              styles.chevron,
-              isOpen ? styles.chevronOpen : styles.chevronClosed,
-            )}>
-            {chevronIcon}
-          </span>
-        </button>
-        <div
-          {...(isOpen
-            ? stylex.props(styles.content)
-            : stylex.props(styles.content, styles.contentHidden))}>
-          {children}
-        </div>
+  return (
+    <div ref={ref} className={xdsClassName('collapsible')} {...props}>
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={isOpen}
+        {...stylex.props(styles.trigger)}>
+        <span>{trigger}</span>
+        <span
+          {...stylex.props(
+            styles.chevron,
+            isOpen ? styles.chevronOpen : styles.chevronClosed,
+          )}>
+          {chevronIcon}
+        </span>
+      </button>
+      <div
+        {...(isOpen
+          ? stylex.props(styles.content)
+          : stylex.props(styles.content, styles.contentHidden))}>
+        {children}
       </div>
-    );
-  },
-);
+    </div>
+  );
+}
 
 XDSCollapsible.displayName = 'XDSCollapsible';

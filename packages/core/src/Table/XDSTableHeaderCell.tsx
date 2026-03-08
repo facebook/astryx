@@ -11,7 +11,7 @@
 
 'use client';
 
-import {forwardRef, useContext, type ReactNode} from 'react';
+import {useContext, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -26,6 +26,8 @@ import {xdsClassName, mergeProps} from '../utils';
 
 /** Props for XDSTableHeaderCell — `<th>` wrapper with context-aware styling */
 export interface XDSTableHeaderCellProps extends XDSBaseProps<HTMLTableCellElement> {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLTableCellElement>;
   /** Specifies which cells this header relates to. */
   scope?: 'col' | 'row' | 'colgroup' | 'rowgroup';
   children?: ReactNode;
@@ -99,10 +101,12 @@ const dividerColumnStyles = stylex.create({
  * </thead>
  * ```
  */
-export const XDSTableHeaderCell = forwardRef<
-  HTMLTableCellElement,
-  XDSTableHeaderCellProps
->(({children, xstyle, ...props}, ref) => {
+export function XDSTableHeaderCell({
+  children,
+  xstyle,
+  ref,
+  ...props
+}: XDSTableHeaderCellProps) {
   const ctx = useContext(XDSTableContext);
 
   if (!ctx) {
@@ -148,6 +152,6 @@ export const XDSTableHeaderCell = forwardRef<
       {children}
     </th>
   );
-});
+}
 
 XDSTableHeaderCell.displayName = 'XDSTableHeaderCell';

@@ -1,6 +1,6 @@
 /**
  * @file XDSStack.tsx
- * @input Uses React forwardRef, ElementType, stack utility
+ * @input Uses React, ElementType, stack utility
  * @output Exports XDSStack polymorphic component and XDSStackProps
  * @position Layout/Stack component; uses stack.stylex.ts
  *
@@ -11,7 +11,6 @@
  */
 
 import {
-  forwardRef,
   createElement,
   type ElementType,
   type HTMLAttributes,
@@ -44,6 +43,8 @@ import {xdsClassName, mergeProps} from '../utils';
 export type StackAlignment = StackMainAlignment | StackCrossAlignment;
 
 export interface XDSStackProps extends XDSBaseProps<HTMLDivElement> {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLElement>;
   /**
    * Direction of the stack layout.
    * - `horizontal`: Items flow left-to-right (like XDSHStack)
@@ -141,59 +142,55 @@ export interface XDSStackProps extends XDSBaseProps<HTMLDivElement> {
  * </XDSStack>
  * ```
  */
-export const XDSStack = forwardRef<HTMLElement, XDSStackProps>(
-  function XDSStack(
-    {
+export function XDSStack({
+  direction,
+  hAlign,
+  vAlign,
+  gap,
+  wrap,
+  element = 'div',
+  xstyle,
+  className,
+  style,
+  children,
+  ref,
+  ...props
+}: XDSStackProps) {
+  // Map hAlign/vAlign to mainAlign/crossAlign based on direction
+  const mainAlign =
+    direction === 'horizontal'
+      ? (hAlign as StackMainAlignment | undefined)
+      : (vAlign as StackMainAlignment | undefined);
+  const crossAlign =
+    direction === 'horizontal'
+      ? (vAlign as StackCrossAlignment | undefined)
+      : (hAlign as StackCrossAlignment | undefined);
+
+  const stylexProps = stylex.props(
+    ...stack({
       direction,
-      hAlign,
-      vAlign,
+      crossAlign,
+      mainAlign,
       gap,
       wrap,
-      element = 'div',
-      xstyle,
-      className,
-      style,
-      children,
-      ...props
+    }),
+    xstyle,
+  );
+
+  return createElement(
+    element,
+    {
+      ref: ref as Ref<Element>,
+      ...mergeProps(
+        xdsClassName('stack', {direction, gap, wrap}),
+        stylexProps,
+        className,
+        style,
+      ),
+      ...props,
     },
-    ref,
-  ) {
-    // Map hAlign/vAlign to mainAlign/crossAlign based on direction
-    const mainAlign =
-      direction === 'horizontal'
-        ? (hAlign as StackMainAlignment | undefined)
-        : (vAlign as StackMainAlignment | undefined);
-    const crossAlign =
-      direction === 'horizontal'
-        ? (vAlign as StackCrossAlignment | undefined)
-        : (hAlign as StackCrossAlignment | undefined);
-
-    const stylexProps = stylex.props(
-      ...stack({
-        direction,
-        crossAlign,
-        mainAlign,
-        gap,
-        wrap,
-      }),
-      xstyle,
-    );
-
-    return createElement(
-      element,
-      {
-        ref: ref as Ref<Element>,
-        ...mergeProps(
-          xdsClassName('stack', {direction, gap, wrap}),
-          stylexProps,
-          className,
-          style,
-        ),
-        ...props,
-      },
-      children,
-    );
-  },
-);
+    children,
+  );
+}
 
 XDSStack.displayName = 'XDSStack';

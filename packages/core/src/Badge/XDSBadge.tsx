@@ -1,6 +1,6 @@
 /**
  * @file XDSBadge.tsx
- * @input Uses React forwardRef, HTMLAttributes
+ * @input Uses React, HTMLAttributes
  * @output Exports XDSBadge component, XDSBadgeProps, XDSBadgeVariant types
  * @position Core implementation; consumed by index.ts
  *
@@ -13,7 +13,7 @@
 
 'use client';
 
-import {forwardRef, type ReactNode} from 'react';
+import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -83,6 +83,8 @@ const variants = stylex.create({
 export type XDSBadgeVariant = keyof typeof variants;
 
 export interface XDSBadgeProps extends XDSBaseProps<HTMLSpanElement> {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLSpanElement>;
   /**
    * The visual style variant of the badge.
    * @default 'neutral'
@@ -113,33 +115,37 @@ export interface XDSBadgeProps extends XDSBaseProps<HTMLSpanElement> {
  * <XDSBadge variant="info" /> // Dot indicator
  * ```
  */
-export const XDSBadge = forwardRef<HTMLSpanElement, XDSBadgeProps>(
-  (
-    {variant = 'neutral', children, icon, xstyle, className, style, ...props},
-    ref,
-  ) => {
-    const isDot = children == null && icon == null;
+export function XDSBadge({
+  variant = 'neutral',
+  children,
+  icon,
+  xstyle,
+  className,
+  style,
+  ref,
+  ...props
+}: XDSBadgeProps) {
+  const isDot = children == null && icon == null;
 
-    return (
-      <span
-        ref={ref}
-        {...mergeProps(
-          xdsClassName('badge', {variant}),
-          stylex.props(
-            styles.base,
-            variants[variant],
-            isDot && styles.dot,
-            xstyle,
-          ),
-          className,
-          style,
-        )}
-        {...props}>
-        {icon}
-        {children}
-      </span>
-    );
-  },
-);
+  return (
+    <span
+      ref={ref}
+      {...mergeProps(
+        xdsClassName('badge', {variant}),
+        stylex.props(
+          styles.base,
+          variants[variant],
+          isDot && styles.dot,
+          xstyle,
+        ),
+        className,
+        style,
+      )}
+      {...props}>
+      {icon}
+      {children}
+    </span>
+  );
+}
 
 XDSBadge.displayName = 'XDSBadge';

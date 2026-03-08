@@ -1,6 +1,6 @@
 /**
  * @file XDSDialogHeader.tsx
- * @input Uses React forwardRef, useEffect, useRef, XDSLayoutHeader, XDSButton, XDSIcon, XDSHeading, XDSText
+ * @input Uses React, useEffect, useRef, XDSLayoutHeader, XDSButton, XDSIcon, XDSHeading, XDSText
  * @output Exports XDSDialogHeader component and XDSDialogHeaderProps
  * @position Dialog header component; used with XDSDialog and XDSLayout
  *
@@ -13,7 +13,7 @@
 
 'use client';
 
-import {forwardRef, useEffect, useRef, type ReactNode} from 'react';
+import {useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {XDSLayoutHeader} from '../Layout/XDSLayoutHeader';
@@ -49,6 +49,8 @@ const styles = stylex.create({
 });
 
 export interface XDSDialogHeaderProps {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLElement>;
   /**
    * The title of the dialog.
    * This title receives focus when the dialog opens for screen reader accessibility.
@@ -105,64 +107,60 @@ export interface XDSDialogHeaderProps {
  * </XDSDialog>
  * ```
  */
-export const XDSDialogHeader = forwardRef<HTMLElement, XDSDialogHeaderProps>(
-  function XDSDialogHeader(
-    {
-      title,
-      subtitle,
-      onOpenChange,
-      startContent,
-      endContent,
-      hasDivider = true,
-    },
-    ref,
-  ) {
-    const titleRef = useRef<HTMLHeadingElement>(null);
+export function XDSDialogHeader({
+  title,
+  subtitle,
+  onOpenChange,
+  startContent,
+  endContent,
+  hasDivider = true,
+  ref,
+}: XDSDialogHeaderProps) {
+  const titleRef = useRef<HTMLHeadingElement>(null);
 
-    // Auto-focus the title when mounted for screen reader accessibility
-    useEffect(() => {
-      if (titleRef.current) {
-        titleRef.current.tabIndex = -1;
-        titleRef.current.focus();
-      }
-    }, []);
+  // Auto-focus the title when mounted for screen reader accessibility
+  useEffect(() => {
+    if (titleRef.current) {
+      titleRef.current.tabIndex = -1;
+      titleRef.current.focus();
+    }
+  }, []);
 
-    return (
-      <XDSLayoutHeader ref={ref} hasDivider={hasDivider}>
-        <div {...stylex.props(styles.container)}>
-          {startContent && (
-            <div {...stylex.props(styles.actions)}>{startContent}</div>
-          )}
-          <div {...stylex.props(styles.titleWrapper)}>
-            <XDSHeading ref={titleRef} level={2} xstyle={styles.titleFocusable}>
-              {title}
-            </XDSHeading>
-            {subtitle && (
-              <XDSText type="body" size="sm" color="secondary">
-                {subtitle}
-              </XDSText>
-            )}
-          </div>
-          {(endContent || onOpenChange) && (
-            <div {...stylex.props(styles.actions)}>
-              {endContent}
-              {onOpenChange && (
-                <div {...stylex.props(styles.closeButton)}>
-                  <XDSButton
-                    variant="ghost"
-                    label="Close"
-                    tooltip="Close"
-                    icon={<XDSIcon icon="close" color="inherit" />}
-                    onClick={() => onOpenChange?.(false)}
-                  />
-                </div>
-              )}
-            </div>
+  return (
+    <XDSLayoutHeader ref={ref} hasDivider={hasDivider}>
+      <div {...stylex.props(styles.container)}>
+        {startContent && (
+          <div {...stylex.props(styles.actions)}>{startContent}</div>
+        )}
+        <div {...stylex.props(styles.titleWrapper)}>
+          <XDSHeading ref={titleRef} level={2} xstyle={styles.titleFocusable}>
+            {title}
+          </XDSHeading>
+          {subtitle && (
+            <XDSText type="body" size="sm" color="secondary">
+              {subtitle}
+            </XDSText>
           )}
         </div>
-      </XDSLayoutHeader>
-    );
-  },
-);
+        {(endContent || onOpenChange) && (
+          <div {...stylex.props(styles.actions)}>
+            {endContent}
+            {onOpenChange && (
+              <div {...stylex.props(styles.closeButton)}>
+                <XDSButton
+                  variant="ghost"
+                  label="Close"
+                  tooltip="Close"
+                  icon={<XDSIcon icon="close" color="inherit" />}
+                  onClick={() => onOpenChange?.(false)}
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </XDSLayoutHeader>
+  );
+}
 
 XDSDialogHeader.displayName = 'XDSDialogHeader';

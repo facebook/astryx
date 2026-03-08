@@ -1,6 +1,6 @@
 /**
  * @file XDSStatusDot.tsx
- * @input Uses React forwardRef
+ * @input Uses React
  * @output Exports XDSStatusDot component, XDSStatusDotProps, XDSStatusDotVariant, XDSStatusDotSize types
  * @position Core implementation; consumed by index.ts
  *
@@ -11,7 +11,6 @@
  * - /apps/storybook/stories/StatusDot.stories.tsx (storybook stories)
  */
 
-import {forwardRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
@@ -94,6 +93,8 @@ export type XDSStatusDotVariant = keyof typeof variants;
 export type XDSStatusDotSize = 'sm' | 'md';
 
 export interface XDSStatusDotProps {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLSpanElement>;
   /**
    * The semantic color variant.
    */
@@ -153,42 +154,38 @@ export interface XDSStatusDotProps {
  * <XDSStatusDot variant="positive" label="Live" isPulsing />
  * ```
  */
-export const XDSStatusDot = forwardRef<HTMLSpanElement, XDSStatusDotProps>(
-  (
-    {
-      variant,
-      size = 'md',
-      label,
-      isPulsing = false,
-      xstyle,
-      className,
-      style,
-      ...props
-    },
-    ref,
-  ) => {
-    return (
-      <span
-        ref={ref}
-        role="img"
-        aria-label={label}
-        {...mergeProps(
-          xdsClassName('statusdot', {variant, size}),
-          stylex.props(
-            styles.base,
-            sizes[size],
-            variants[variant],
-            isPulsing && styles.pulsing,
-            isPulsing && styles.reducedMotion,
-            xstyle,
-          ),
-          className,
-          style,
-        )}
-        {...props}
-      />
-    );
-  },
-);
+export function XDSStatusDot({
+  variant,
+  size = 'md',
+  label,
+  isPulsing = false,
+  xstyle,
+  className,
+  style,
+  ref,
+  ...props
+}: XDSStatusDotProps) {
+  return (
+    <span
+      ref={ref}
+      role="img"
+      aria-label={label}
+      {...mergeProps(
+        xdsClassName('statusdot', {variant, size}),
+        stylex.props(
+          styles.base,
+          sizes[size],
+          variants[variant],
+          isPulsing && styles.pulsing,
+          isPulsing && styles.reducedMotion,
+          xstyle,
+        ),
+        className,
+        style,
+      )}
+      {...props}
+    />
+  );
+}
 
 XDSStatusDot.displayName = 'XDSStatusDot';
