@@ -109,12 +109,6 @@ export const docs = {
             'Height behavior — fill the container or grow with content.',
           default: "'fill'",
         },
-        {
-          name: 'isFullBleed',
-          type: 'boolean',
-          description: 'Remove padding at outer edges.',
-          default: 'false',
-        },
       ],
       examples: [
         {
@@ -164,12 +158,6 @@ export const docs = {
           description: 'Header height.',
         },
         {
-          name: 'isFullBleed',
-          type: 'boolean',
-          description: 'Remove internal padding.',
-          default: 'false',
-        },
-        {
           name: 'label',
           type: 'string',
           description: 'Accessible label for the landmark element.',
@@ -197,12 +185,6 @@ export const docs = {
           name: 'children',
           type: 'ReactNode',
           description: 'Content.',
-        },
-        {
-          name: 'isFullBleed',
-          type: 'boolean',
-          description: 'Remove internal padding.',
-          default: 'false',
         },
         {
           name: 'isScrollable',
@@ -251,12 +233,6 @@ export const docs = {
           description: 'Footer height.',
         },
         {
-          name: 'isFullBleed',
-          type: 'boolean',
-          description: 'Remove internal padding.',
-          default: 'false',
-        },
-        {
           name: 'label',
           type: 'string',
           description: 'Accessible label for the landmark element.',
@@ -289,12 +265,6 @@ export const docs = {
           name: 'hasDivider',
           type: 'boolean',
           description: 'Border on the appropriate edge.',
-          default: 'false',
-        },
-        {
-          name: 'isFullBleed',
-          type: 'boolean',
-          description: 'Remove internal padding.',
           default: 'false',
         },
         {

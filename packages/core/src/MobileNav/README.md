@@ -99,7 +99,7 @@ const isMobile = useMediaQuery('(max-width: 768px)');
 const [drawerOpen, setDrawerOpen] = useState(false);
 
 <XDSTopNav
-  title={<XDSTopNavTitle title="My App" />}
+  heading={<XDSTopNavHeading heading="My App" />}
   startContent={
     isMobile ? (
       <XDSButton

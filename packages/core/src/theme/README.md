@@ -145,8 +145,8 @@ See `.xds-docs/tokens.md` for the full token reference.
 
 ### How the icon registry works
 
-1. `XDSTheme` reads `theme.icons` and wraps children in `IconRegistryContext.Provider`
-2. `XDSIcon` with a semantic name string calls `useXDSIcon(name)` which checks the context
+1. `XDSTheme` calls `registerIcons(theme.icons)` to populate the global icon registry
+2. `XDSIcon` with a semantic name string calls `getIcon(name)` which checks the global registry
 3. If the theme provides that icon, it's used. Otherwise, the built-in fallback SVG renders.
 
 ### Adding a new semantic icon name

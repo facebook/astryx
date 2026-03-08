@@ -223,7 +223,7 @@ export const docs = {
   keyboard:
     'Arrow keys ±1 step, Page Up/Down ±10 steps, Home/End jump to min/max.',
   notes: [
-    'The component uses `forwardRef` — the ref is merged with an internal `trackRef` used for pointer position calculations.',
+    'The ref is merged with an internal `trackRef` used for pointer position calculations.',
     'Pointer capture is used during drag for smooth interaction even when the cursor leaves the track.',
     '`snapToStep` rounds to the nearest valid step value; `clamp` enforces min/max bounds.',
     'In range mode, the closest thumb to the click position is selected automatically.',

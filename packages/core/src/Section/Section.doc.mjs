@@ -84,12 +84,6 @@ export const docs = {
       type: "Array<'top' | 'bottom' | 'start' | 'end'>",
       description: 'Which sides of the section have divider borders.',
     },
-    {
-      name: 'isFullBleed',
-      type: 'boolean',
-      description: 'Removes internal padding so content extends edge-to-edge.',
-      default: 'false',
-    },
   ],
   theming: {
     targets: [
