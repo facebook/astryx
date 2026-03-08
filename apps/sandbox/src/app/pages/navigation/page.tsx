@@ -6,7 +6,7 @@ import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSDivider} from '@xds/core';
-import {XDSTopNav, XDSTopNavTitle, XDSTopNavItem} from '@xds/core/TopNav';
+import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 
 const styles = stylex.create({
   container: {
@@ -126,7 +126,7 @@ function NavPreview({alignment}: {alignment: Alignment}) {
   return (
     <XDSTopNav
       label={`${alignment}-aligned navigation`}
-      title={<XDSTopNavTitle title="My App" />}
+      heading={<XDSTopNavHeading heading="My App" />}
       startContent={alignment === 'start' ? navItems : undefined}
       centerContent={alignment === 'center' ? navItems : undefined}
       endContent={alignment === 'end' ? navItems : undefined}

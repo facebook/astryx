@@ -5,21 +5,21 @@ export const docs = {
   description:
     'Top navigation bar component for application headers with slot-based layout and companion nav item components.',
   features: [
-    'Slot-based layout — title, startContent, centerContent, and endContent slots for flexible organization',
+    'Slot-based layout — heading, startContent, centerContent, and endContent slots for flexible organization',
     'Three-column centering — when centerContent is provided, switches to CSS grid (1fr auto 1fr) for true horizontal centering',
-    'Companion components — XDSTopNavTitle, XDSTopNavItem, XDSTopNavMenu, XDSTopNavMegaMenu',
+    'Companion components — XDSTopNavHeading, XDSTopNavItem, XDSTopNavMenu, XDSTopNavMegaMenu',
     'Accessible — uses role="navigation" with aria-label, aria-current="page" on selected items',
     'Themeable via className — target .xds-top-nav and sub-component classes',
     'Link customization — XDSTopNavItem accepts an as prop to swap the anchor element (e.g. for React Router)',
   ],
   examples: [
     {
-      label: 'Basic nav with title and items',
+      label: 'Basic nav with heading and items',
       code: `<XDSTopNav
   label="Main navigation"
-  title={
-    <XDSTopNavTitle
-      title="My App"
+  heading={
+    <XDSTopNavHeading
+      heading="My App"
       logo={<XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />}
       href="/"
     />
@@ -51,7 +51,7 @@ export const docs = {
       label: 'With centered content (three-column layout)',
       code: `<XDSTopNav
   label="Main navigation"
-  title={<XDSTopNavTitle title="My App" href="/" />}
+  heading={<XDSTopNavHeading heading="My App" href="/" />}
   startContent={<XDSTopNavItem label="Home" href="/" isSelected />}
   centerContent={<SearchBar />}
   endContent={<Avatar />}
@@ -61,7 +61,7 @@ export const docs = {
       label: 'With hover menu and mega menu',
       code: `<XDSTopNav
   label="Main navigation"
-  title={<XDSTopNavTitle title="My App" href="/" />}
+  heading={<XDSTopNavHeading heading="My App" href="/" />}
   startContent={
     <>
       <XDSTopNavItem label="Home" href="/" isSelected />
@@ -95,7 +95,7 @@ export const docs = {
   header={
     <XDSTopNav
       label="Main navigation"
-      title={<XDSTopNavTitle title="My App" logo={<Logo />} href="/" />}
+      heading={<XDSTopNavHeading heading="My App" logo={<Logo />} href="/" />}
       startContent={
         <>
           <XDSTopNavItem label="Home" href="/" isSelected />
@@ -117,7 +117,7 @@ export const docs = {
     targets: [
       {className: 'xds-top-nav'},
       {className: 'xds-top-nav-item'},
-      {className: 'xds-top-nav-title'},
+      {className: 'xds-top-nav-heading'},
       {className: 'xds-top-nav-mega-menu'},
     ],
   },
@@ -136,7 +136,7 @@ export const docs = {
   notes: [
     'Default height is 48px (--spacing-12) with 16px horizontal padding',
     'Uses --color-navbar token for background (defaults to white)',
-    'Without centerContent: title and startContent grow to push endContent right (flex layout)',
+    'Without centerContent: heading and startContent grow to push endContent right (flex layout)',
     'With centerContent: switches to CSS grid (gridTemplateColumns: 1fr auto 1fr) — the right column is always rendered even when endContent is absent to maintain the three-column structure',
     'Positioning (sticky/fixed) is handled by the layout system (e.g. XDSAppShell), not TopNav itself',
     'Dividers are controlled by the layout system (e.g. XDSLayoutHeader hasDivider), not TopNav',
@@ -148,16 +148,16 @@ export const docs = {
       description: 'Main navigation bar container with slot-based layout.',
       props: [
         {
-          name: 'title',
+          name: 'heading',
           type: 'ReactNode',
           description:
-            'Title slot content (logo, brand) — positioned at the left edge of the nav bar.',
+            'Heading slot content (logo, brand) — positioned at the left edge of the nav bar.',
         },
         {
           name: 'startContent',
           type: 'ReactNode',
           description:
-            'Start content slot for navigation items or breadcrumbs — positioned after the title, left-aligned.',
+            'Start content slot for navigation items or breadcrumbs — positioned after the heading, left-aligned.',
         },
         {
           name: 'centerContent',
@@ -183,7 +183,7 @@ export const docs = {
           label: 'Basic',
           code: `<XDSTopNav
   label="Main navigation"
-  title={<XDSTopNavTitle title="My App" href="/" />}
+  heading={<XDSTopNavHeading heading="My App" href="/" />}
   startContent={<XDSTopNavItem label="Dashboard" href="/dashboard" isSelected />}
   endContent={<XDSButton label="Profile" variant="ghost" />}
 />`,
@@ -192,7 +192,7 @@ export const docs = {
           label: 'With centered content',
           code: `<XDSTopNav
   label="Main navigation"
-  title={<XDSTopNavTitle title="My App" href="/" />}
+  heading={<XDSTopNavHeading heading="My App" href="/" />}
   centerContent={<SearchInput placeholder="Search..." />}
   endContent={<Avatar />}
 />`,
@@ -200,20 +200,20 @@ export const docs = {
       ],
     },
     {
-      name: 'XDSTopNavTitle',
+      name: 'XDSTopNavHeading',
       description:
-        'Title component for the XDSTopNav title slot — displays a logo and/or title text, optionally as a clickable link.',
+        'Heading component for the XDSTopNav heading slot — displays a logo and/or heading text, optionally as a clickable link.',
       props: [
         {
-          name: 'title',
+          name: 'heading',
           type: 'string',
-          description: 'Title text to display.',
+          description: 'Heading text to display.',
         },
         {
           name: 'logo',
           type: 'ReactNode',
           description:
-            'Logo element to display before the title text. Can be an image, XDSNavIcon, or any ReactNode.',
+            'Logo element to display before the heading text. Can be an image, XDSNavIcon, or any ReactNode.',
         },
         {
           name: 'href',
@@ -225,23 +225,23 @@ export const docs = {
       examples: [
         {
           label: 'Logo with text link',
-          code: `<XDSTopNavTitle
-  title="My App"
+          code: `<XDSTopNavHeading
+  heading="My App"
   logo={<img src="/logo.svg" alt="" width={24} height={24} />}
   href="/"
 />`,
         },
         {
           label: 'With XDSNavIcon',
-          code: `<XDSTopNavTitle
-  title="Dashboard"
+          code: `<XDSTopNavHeading
+  heading="Dashboard"
   logo={<XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />}
   href="/"
 />`,
         },
         {
           label: 'Logo only',
-          code: `<XDSTopNavTitle logo={<BrandLogo />} href="/" />`,
+          code: `<XDSTopNavHeading logo={<BrandLogo />} href="/" />`,
         },
       ],
     },

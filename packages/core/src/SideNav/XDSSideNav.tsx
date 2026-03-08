@@ -83,7 +83,7 @@ const styles = stylex.create({
 
 export interface XDSSideNavProps extends XDSBaseProps<HTMLElement> {
   /**
-   * Header area — typically XDSSideNavHeader. Sticky at top.
+   * Header area — typically XDSSideNavHeading. Sticky at top.
    */
   header?: ReactNode;
   /**
@@ -142,10 +142,10 @@ export interface XDSSideNavProps extends XDSBaseProps<HTMLElement> {
  * @example
  * ```
  * <XDSSideNav
- *   header={<XDSSideNavHeader title="My App" titleHref="/" />}
+ *   header={<XDSSideNavHeading heading="My App" headingHref="/" />}
  *   topContent={<XDSButton label="Create new" variant="primary" />}
  * >
- *   <XDSSideNavSection title="Main">
+ *   <XDSSideNavSection heading="Main">
  *     <XDSSideNavItem label="Dashboard" isSelected href="/dashboard" />
  *     <XDSSideNavItem label="Projects" href="/projects" />
  *   </XDSSideNavSection>

@@ -12,7 +12,7 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {forwardRef, type ComponentPropsWithoutRef} from 'react';
 import {XDSTopNav} from './XDSTopNav';
-import {XDSTopNavTitle} from './XDSTopNavTitle';
+import {XDSTopNavHeading} from './XDSTopNavHeading';
 import {XDSNavIcon} from '../NavIcon';
 import {XDSTopNavItem} from './XDSTopNavItem';
 import {XDSLinkProvider} from '../Link/XDSLinkProvider';
@@ -40,8 +40,10 @@ describe('XDSTopNav', () => {
     );
   });
 
-  it('renders title slot content', () => {
-    render(<XDSTopNav title={<span data-testid="title-content">Logo</span>} />);
+  it('renders heading slot content', () => {
+    render(
+      <XDSTopNav heading={<span data-testid="title-content">Logo</span>} />,
+    );
     expect(screen.getByTestId('title-content')).toBeInTheDocument();
   });
 
@@ -73,7 +75,7 @@ describe('XDSTopNav', () => {
   it('renders all slots together', () => {
     render(
       <XDSTopNav
-        title={<span data-testid="title">Title</span>}
+        heading={<span data-testid="title">Title</span>}
         startContent={<span data-testid="start">Start</span>}
         centerContent={<span data-testid="center">Center</span>}
         endContent={<span data-testid="end">End</span>}
@@ -88,7 +90,7 @@ describe('XDSTopNav', () => {
   it('renders without centerContent (backward compatible)', () => {
     render(
       <XDSTopNav
-        title={<span data-testid="title">Title</span>}
+        heading={<span data-testid="title">Title</span>}
         startContent={<span data-testid="start">Start</span>}
         endContent={<span data-testid="end">End</span>}
       />,
@@ -101,7 +103,7 @@ describe('XDSTopNav', () => {
   it('renders centerContent without endContent', () => {
     render(
       <XDSTopNav
-        title={<span data-testid="title">Title</span>}
+        heading={<span data-testid="title">Title</span>}
         centerContent={<span data-testid="center">Center</span>}
       />,
     );
@@ -149,21 +151,21 @@ describe('XDSTopNav', () => {
   });
 });
 
-describe('XDSTopNavTitle', () => {
-  it('renders title text', () => {
-    render(<XDSTopNavTitle title="My App" />);
+describe('XDSTopNavHeading', () => {
+  it('renders heading text', () => {
+    render(<XDSTopNavHeading heading="My App" />);
     expect(screen.getByText('My App')).toBeInTheDocument();
   });
 
   it('renders logo element', () => {
-    render(<XDSTopNavTitle logo={<span data-testid="logo">Logo</span>} />);
+    render(<XDSTopNavHeading logo={<span data-testid="logo">Logo</span>} />);
     expect(screen.getByTestId('logo')).toBeInTheDocument();
   });
 
-  it('renders both logo and title', () => {
+  it('renders both logo and heading', () => {
     render(
-      <XDSTopNavTitle
-        title="Dashboard"
+      <XDSTopNavHeading
+        heading="Dashboard"
         logo={<span data-testid="logo">Logo</span>}
       />,
     );
@@ -172,19 +174,19 @@ describe('XDSTopNavTitle', () => {
   });
 
   it('renders as anchor when href is provided', () => {
-    render(<XDSTopNavTitle title="Home" href="/" />);
+    render(<XDSTopNavHeading heading="Home" href="/" />);
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('href', '/');
   });
 
   it('renders as div when no href', () => {
-    render(<XDSTopNavTitle title="Home" />);
+    render(<XDSTopNavHeading heading="Home" />);
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 
   it('forwards ref correctly', () => {
     const ref = vi.fn();
-    render(<XDSTopNavTitle title="Test" ref={ref} />);
+    render(<XDSTopNavHeading heading="Test" ref={ref} />);
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLElement));
   });
 });

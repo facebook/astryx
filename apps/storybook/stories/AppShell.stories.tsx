@@ -7,11 +7,11 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSText} from '@xds/core/Text';
 import {XDSMobileNav} from '@xds/core/MobileNav';
-import {XDSTopNav, XDSTopNavTitle, XDSTopNavItem} from '@xds/core/TopNav';
+import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {
   XDSSideNav,
-  XDSSideNavHeader,
+  XDSSideNavHeading,
   XDSSideNavItem,
   XDSSideNavSection,
 } from '@xds/core/SideNav';
@@ -84,15 +84,15 @@ function MockContent({paragraphs = 3}: {paragraphs?: number}) {
 
 /**
  * Standard TopNav used across multiple stories.
- * Provides app identity (logo + title) and top-level navigation.
+ * Provides app identity (logo + heading) and top-level navigation.
  */
 function AppTopNav({endContent}: {endContent?: React.ReactNode}) {
   return (
     <XDSTopNav
       label="Main navigation"
-      title={
-        <XDSTopNavTitle
-          title="Acme App"
+      heading={
+        <XDSTopNavHeading
+          heading="Acme App"
           logo={
             <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
@@ -168,16 +168,16 @@ function SideNavWithoutHeader() {
 
 /**
  * SideNav WITH header — for standalone use without a TopNav.
- * The header provides app identity (icon + title) since there's no TopNav.
+ * The heading provides app identity (icon + heading) since there's no TopNav.
  */
 function SideNavWithHeader() {
   return (
     <XDSSideNav
       header={
-        <XDSSideNavHeader
+        <XDSSideNavHeading
           icon={<XDSIcon icon={CubeIcon} size="lg" />}
-          title="Acme App"
-          titleHref="#"
+          heading="Acme App"
+          headingHref="#"
         />
       }>
       <XDSSideNavSection title="Main" isHeaderHidden>
@@ -276,7 +276,7 @@ export const TopNavWithSideNav: Story = {
 };
 
 /**
- * SideNav with its own header (icon + title) and no TopNav.
+ * SideNav with its own heading (icon + heading) and no TopNav.
  * Use this layout for simpler apps where a full top bar isn't needed.
  * The SideNav header provides the app identity instead.
  */
@@ -436,7 +436,7 @@ export const ControlledCollapse: Story = {
         topNav={
           <XDSTopNav
             label="Main navigation"
-            title={<XDSTopNavTitle title="Acme App" />}
+            heading={<XDSTopNavHeading heading="Acme App" />}
             endContent={
               <XDSButton
                 label="Toggle sidebar"
@@ -558,9 +558,9 @@ export const WithMobileNav: Story = {
         topNav={
           <XDSTopNav
             label="Main navigation"
-            title={
-              <XDSTopNavTitle
-                title="Acme App"
+            heading={
+              <XDSTopNavHeading
+                heading="Acme App"
                 logo={
                   <XDSNavIcon
                     icon={<CubeIcon style={{width: 16, height: 16}} />}

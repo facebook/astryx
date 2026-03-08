@@ -7,7 +7,7 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {
   XDSTopNav,
-  XDSTopNavTitle,
+  XDSTopNavHeading,
   XDSTopNavItem,
   XDSTopNavMegaMenu,
 } from '@xds/core/TopNav';
@@ -255,9 +255,9 @@ export default function MegaMenuPage() {
             )}>
             <XDSTopNav
               label="Marketing navigation"
-              title={
-                <XDSTopNavTitle
-                  title="Marketing"
+              heading={
+                <XDSTopNavHeading
+                  heading="Marketing"
                   logo={<XDSNavIcon icon={<LogoIcon />} />}
                   href="#"
                 />
@@ -314,7 +314,7 @@ export default function MegaMenuPage() {
             )}>
             <XDSTopNav
               label="Simple navigation"
-              title={<XDSTopNavTitle title="App" href="#" />}
+              heading={<XDSTopNavHeading heading="App" href="#" />}
               startContent={
                 <>
                   <XDSTopNavItem label="Home" href="#" isSelected />

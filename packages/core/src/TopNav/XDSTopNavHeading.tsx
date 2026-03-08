@@ -1,8 +1,8 @@
 /**
- * @file XDSTopNavTitle.tsx
+ * @file XDSTopNavHeading.tsx
  * @input Uses React forwardRef, HTMLAttributes, ReactNode
- * @output Exports XDSTopNavTitle component and XDSTopNavTitleProps
- * @position Companion component for XDSTopNav title slot
+ * @output Exports XDSTopNavHeading component and XDSTopNavHeadingProps
+ * @position Companion component for XDSTopNav heading slot
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/TopNav/TopNav.doc.mjs
@@ -24,7 +24,7 @@ import {
 import {xdsClassName, mergeProps} from '../utils';
 
 /**
- * Title styles
+ * Heading styles
  */
 const styles = stylex.create({
   base: {
@@ -34,7 +34,7 @@ const styles = stylex.create({
     textDecoration: 'none',
     color: colorVars['--color-text-primary'],
   },
-  titleText: {
+  headingText: {
     fontSize: textSizeVars['--text-lg'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     lineHeight: lineHeightVars['--leading-tight'],
@@ -51,51 +51,51 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSTopNavTitleProps extends XDSBaseProps<HTMLElement> {
+export interface XDSTopNavHeadingProps extends XDSBaseProps<HTMLElement> {
   /**
-   * The title text to display.
+   * The heading text to display.
    */
-  title?: string;
+  heading?: string;
   /**
-   * Logo element to display before the title.
+   * Logo element to display before the heading.
    * Can be an image, XDSNavIcon, or any ReactNode.
    */
   logo?: ReactNode;
   /**
-   * URL to navigate to when the title is clicked.
+   * URL to navigate to when the heading is clicked.
    * If provided, renders as an anchor element.
    */
   href?: string;
 }
 
 /**
- * Title component for XDSTopNav.
+ * Heading component for XDSTopNav.
  *
- * Displays a logo and/or title text, optionally as a clickable link.
+ * Displays a logo and/or heading text, optionally as a clickable link.
  * Use with XDSNavIcon to create a circular icon background.
  *
  * @example
  * ```
  * // Logo with text
- * <XDSTopNavTitle
- *   title="My App"
+ * <XDSTopNavHeading
+ *   heading="My App"
  *   logo={<img src="/logo.svg" alt="" width={24} height={24} />}
  *   href="/"
  * />
  *
  * // With circular icon
- * <XDSTopNavTitle
- *   title="Dashboard"
+ * <XDSTopNavHeading
+ *   heading="Dashboard"
  *   logo={<XDSNavIcon icon={<HomeIcon />} />}
  * />
  *
  * // Logo only
- * <XDSTopNavTitle logo={<BrandLogo />} href="/" />
+ * <XDSTopNavHeading logo={<BrandLogo />} href="/" />
  * ```
  */
-export const XDSTopNavTitle = forwardRef<HTMLElement, XDSTopNavTitleProps>(
-  function XDSTopNavTitle(
-    {title, logo, href, xstyle, className, style, ...props},
+export const XDSTopNavHeading = forwardRef<HTMLElement, XDSTopNavHeadingProps>(
+  function XDSTopNavHeading(
+    {heading, logo, href, xstyle, className, style, ...props},
     ref,
   ) {
     const Element = href ? 'a' : 'div';
@@ -105,17 +105,19 @@ export const XDSTopNavTitle = forwardRef<HTMLElement, XDSTopNavTitleProps>(
         ref={ref as React.Ref<HTMLAnchorElement & HTMLDivElement>}
         href={href}
         {...mergeProps(
-          xdsClassName('top-nav-title'),
+          xdsClassName('top-nav-heading'),
           stylex.props(styles.base, href != null && styles.clickable, xstyle),
           className,
           style,
         )}
         {...props}>
         {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
-        {title && <span {...stylex.props(styles.titleText)}>{title}</span>}
+        {heading && (
+          <span {...stylex.props(styles.headingText)}>{heading}</span>
+        )}
       </Element>
     );
   },
 );
 
-XDSTopNavTitle.displayName = 'XDSTopNavTitle';
+XDSTopNavHeading.displayName = 'XDSTopNavHeading';

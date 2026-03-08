@@ -1,7 +1,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {
   XDSSideNav,
-  XDSSideNavHeader,
+  XDSSideNavHeading,
   XDSSideNavItem,
   XDSSideNavSection,
 } from '@xds/core/SideNav';
@@ -58,12 +58,12 @@ export const Default: Story = {
   render: () => (
     <XDSSideNav
       header={
-        <XDSSideNavHeader
+        <XDSSideNavHeading
           icon={
             <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
-          title="My App"
-          titleHref="/"
+          heading="My App"
+          headingHref="/"
         />
       }>
       <XDSSideNavSection title="Main">
@@ -106,7 +106,7 @@ export const Default: Story = {
 export const TitleWithoutIcon: Story = {
   name: 'Title Without Icon',
   render: () => (
-    <XDSSideNav header={<XDSSideNavHeader title="My App" titleHref="/" />}>
+    <XDSSideNav header={<XDSSideNavHeading heading="My App" headingHref="/" />}>
       <XDSSideNavSection title="Main">
         <XDSSideNavItem
           label="Dashboard"
@@ -140,12 +140,12 @@ export const WithHeaderMenu: Story = {
   render: () => (
     <XDSSideNav
       header={
-        <XDSSideNavHeader
+        <XDSSideNavHeading
           icon={
             <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
-          title="Product Name"
-          subtitle="Business Account"
+          heading="Product Name"
+          subheading="Business Account"
           menu={
             <XDSList
               density="compact"
@@ -202,14 +202,14 @@ export const SuiteHeader: Story = {
   render: () => (
     <XDSSideNav
       header={
-        <XDSSideNavHeader
+        <XDSSideNavHeading
           icon={
             <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
-          supertitle="Suite Name"
-          supertitleHref="/suite"
-          title="Product Name"
-          titleHref="/product"
+          superheading="Suite Name"
+          superheadingHref="/suite"
+          heading="Product Name"
+          headingHref="/product"
           menu={
             <XDSList
               density="compact"
@@ -259,11 +259,11 @@ export const NestedItems: Story = {
   render: () => (
     <XDSSideNav
       header={
-        <XDSSideNavHeader
+        <XDSSideNavHeading
           icon={
             <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
-          title="My App"
+          heading="My App"
         />
       }>
       <XDSSideNavSection title="Main">
@@ -295,11 +295,11 @@ export const WithFooter: Story = {
   render: () => (
     <XDSSideNav
       header={
-        <XDSSideNavHeader
+        <XDSSideNavHeading
           icon={
             <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
-          title="My App"
+          heading="My App"
         />
       }
       footerIcons={
@@ -340,11 +340,11 @@ export const DisabledItem: Story = {
   render: () => (
     <XDSSideNav
       header={
-        <XDSSideNavHeader
+        <XDSSideNavHeading
           icon={
             <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
-          title="My App"
+          heading="My App"
         />
       }>
       <XDSSideNavSection title="Main">
@@ -374,11 +374,11 @@ export const HiddenSectionHeader: Story = {
   render: () => (
     <XDSSideNav
       header={
-        <XDSSideNavHeader
+        <XDSSideNavHeading
           icon={
             <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
-          title="My App"
+          heading="My App"
         />
       }>
       <XDSSideNavSection title="Main navigation" isHeaderHidden>

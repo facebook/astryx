@@ -6,7 +6,7 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {
   XDSTopNav,
-  XDSTopNavTitle,
+  XDSTopNavHeading,
   XDSTopNavItem,
   XDSTopNavMenu,
 } from '@xds/core/TopNav';
@@ -114,9 +114,9 @@ export default function TopNavMenuPage() {
           <div {...stylex.props(styles.navWrapper)}>
             <XDSTopNav
               label="Marketing navigation"
-              title={
-                <XDSTopNavTitle
-                  title="Marketing"
+              heading={
+                <XDSTopNavHeading
+                  heading="Marketing"
                   logo={<XDSNavIcon icon={<LogoIcon />} />}
                   href="#"
                 />
@@ -144,7 +144,7 @@ export default function TopNavMenuPage() {
           <div {...stylex.props(styles.navWrapper)}>
             <XDSTopNav
               label="Simple navigation"
-              title={<XDSTopNavTitle title="App" href="#" />}
+              heading={<XDSTopNavHeading heading="App" href="#" />}
               startContent={
                 <>
                   <XDSTopNavItem label="Home" href="#" isSelected />

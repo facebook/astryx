@@ -1,10 +1,10 @@
 /**
- * @file XDSSideNavHeader.tsx
+ * @file XDSSideNavHeading.tsx
  * @input Uses React forwardRef, useRef, useCallback, ReactNode, StyleX, useXDSPopover
- * @output Exports XDSSideNavHeader component and XDSSideNavHeaderProps
+ * @output Exports XDSSideNavHeading component and XDSSideNavHeadingProps
  * @position Core implementation; used inside XDSSideNav header slot
  *
- * Product/suite/account header with smart interaction boundary logic.
+ * Product/suite/account heading with smart interaction boundary logic.
  * Composes useXDSPopover internally when menu prop is provided.
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -83,7 +83,7 @@ const styles = stylex.create({
     flex: 1,
     minWidth: 0,
   },
-  supertitle: {
+  superheading: {
     fontSize: textSizeVars['--text-xsm'],
     lineHeight: lineHeightVars['--leading-snug'],
     color: colorVars['--color-text-secondary'],
@@ -92,7 +92,7 @@ const styles = stylex.create({
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
-  title: {
+  heading: {
     fontSize: textSizeVars['--text-base'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     lineHeight: lineHeightVars['--leading-snug'],
@@ -102,7 +102,7 @@ const styles = stylex.create({
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
-  subtitle: {
+  subheading: {
     fontSize: textSizeVars['--text-xsm'],
     lineHeight: lineHeightVars['--leading-snug'],
     color: colorVars['--color-text-secondary'],
@@ -136,7 +136,7 @@ const styles = stylex.create({
 // Types
 // =============================================================================
 
-export interface XDSSideNavHeaderProps {
+export interface XDSSideNavHeadingProps {
   /**
    * Product/app icon.
    */
@@ -144,27 +144,27 @@ export interface XDSSideNavHeaderProps {
   /**
    * Product/app name.
    */
-  title: string;
+  heading: string;
   /**
-   * Link for the title (e.g., product home).
+   * Link for the heading (e.g., product home).
    */
-  titleHref?: string;
+  headingHref?: string;
   /**
-   * Text above the title (e.g., suite name).
+   * Text above the heading (e.g., suite name).
    */
-  supertitle?: string;
+  superheading?: string;
   /**
-   * Link for the supertitle (e.g., suite home).
+   * Link for the superheading (e.g., suite home).
    */
-  supertitleHref?: string;
+  superheadingHref?: string;
   /**
-   * Text below the title (e.g., account context).
+   * Text below the heading (e.g., account context).
    */
-  subtitle?: string;
+  subheading?: string;
   /**
-   * Link for the subtitle.
+   * Link for the subheading.
    */
-  subtitleHref?: string;
+  subheadingHref?: string;
   /**
    * Menu content shown in a popover. When provided, the header composes
    * useXDSPopover internally and shows a dropdown chevron. The trigger
@@ -228,12 +228,12 @@ function ChevronDownIcon() {
 // =============================================================================
 
 /**
- * Product/suite/account header for XDSSideNav.
+ * Product/suite/account heading for XDSSideNav.
  *
  * Supports smart interaction boundary logic:
- * - No hrefs + menu → whole header is the popover trigger
- * - titleHref only, no menu → whole header is one link
- * - titleHref + supertitleHref, no menu → each is an independent link
+ * - No hrefs + menu → whole heading is the popover trigger
+ * - headingHref only, no menu → whole heading is one link
+ * - headingHref + superheadingHref, no menu → each is an independent link
  * - menu + hrefs → links are independent, chevron/remaining area is the trigger
  *
  * The chevron indicator is automatically shown when `menu` is provided.
@@ -241,39 +241,39 @@ function ChevronDownIcon() {
  * @example
  * ```
  * // Single product
- * <XDSSideNavHeader icon={<AppIcon />} title="My App" titleHref="/" />
+ * <XDSSideNavHeading icon={<AppIcon />} heading="My App" headingHref="/" />
  *
  * // Suite with menu
- * <XDSSideNavHeader
+ * <XDSSideNavHeading
  *   icon={<SuiteIcon />}
- *   supertitle="Suite Name"
- *   supertitleHref="/suite"
- *   title="Product Name"
- *   titleHref="/product"
+ *   superheading="Suite Name"
+ *   superheadingHref="/suite"
+ *   heading="Product Name"
+ *   headingHref="/product"
  *   menu={<ProductSwitcher />}
  * />
  *
  * // Account context with menu
- * <XDSSideNavHeader
+ * <XDSSideNavHeading
  *   icon={<AppIcon />}
- *   title="Product Name"
- *   subtitle="Business Account"
+ *   heading="Product Name"
+ *   subheading="Business Account"
  *   menu={<AccountSwitcher />}
  * />
  * ```
  */
-export const XDSSideNavHeader = forwardRef<
+export const XDSSideNavHeading = forwardRef<
   HTMLDivElement,
-  XDSSideNavHeaderProps
->(function XDSSideNavHeader(
+  XDSSideNavHeadingProps
+>(function XDSSideNavHeading(
   {
     icon,
-    title,
-    titleHref,
-    supertitle,
-    supertitleHref,
-    subtitle,
-    subtitleHref,
+    heading,
+    headingHref,
+    superheading,
+    superheadingHref,
+    subheading,
+    subheadingHref,
     menu,
     xstyle,
     className,
@@ -290,12 +290,12 @@ export const XDSSideNavHeader = forwardRef<
   });
 
   const showChevron = !!menu;
-  const hasAnyHref = !!(titleHref || supertitleHref || subtitleHref);
+  const hasAnyHref = !!(headingHref || superheadingHref || subheadingHref);
 
   // Determine interaction mode
-  const isWholeHeaderTrigger = !!menu && !hasAnyHref;
-  const isWholeHeaderLink =
-    !!titleHref && !menu && !supertitleHref && !subtitleHref;
+  const isWholeHeadingTrigger = !!menu && !hasAnyHref;
+  const isWholeHeadingLink =
+    !!headingHref && !menu && !superheadingHref && !subheadingHref;
 
   const handleToggle = useCallback(() => {
     popover.toggle();
@@ -322,40 +322,40 @@ export const XDSSideNavHeader = forwardRef<
   // Render text content
   const renderTextContent = () => (
     <span {...stylex.props(styles.textContainer)}>
-      {supertitle &&
-        (hasAnyHref && supertitleHref && menu ? (
+      {superheading &&
+        (hasAnyHref && superheadingHref && menu ? (
           <XDSLink
-            label={supertitle}
-            href={supertitleHref}
+            label={superheading}
+            href={superheadingHref}
             color="secondary"
             size="xsm">
-            {supertitle}
+            {superheading}
           </XDSLink>
         ) : (
-          <span {...stylex.props(styles.supertitle)}>{supertitle}</span>
+          <span {...stylex.props(styles.superheading)}>{superheading}</span>
         ))}
-      {hasAnyHref && titleHref && menu ? (
+      {hasAnyHref && headingHref && menu ? (
         <XDSLink
-          label={title}
-          href={titleHref}
+          label={heading}
+          href={headingHref}
           color="primary"
           weight="semibold">
-          {title}
+          {heading}
         </XDSLink>
       ) : (
-        <span {...stylex.props(styles.title)}>{title}</span>
+        <span {...stylex.props(styles.heading)}>{heading}</span>
       )}
-      {subtitle &&
-        (hasAnyHref && subtitleHref && menu ? (
+      {subheading &&
+        (hasAnyHref && subheadingHref && menu ? (
           <XDSLink
-            label={subtitle}
-            href={subtitleHref}
+            label={subheading}
+            href={subheadingHref}
             color="secondary"
             size="xsm">
-            {subtitle}
+            {subheading}
           </XDSLink>
         ) : (
-          <span {...stylex.props(styles.subtitle)}>{subtitle}</span>
+          <span {...stylex.props(styles.subheading)}>{subheading}</span>
         ))}
     </span>
   );
@@ -366,15 +366,15 @@ export const XDSSideNavHeader = forwardRef<
     </span>
   );
 
-  // Whole header is a link (no menu, single titleHref)
-  if (isWholeHeaderLink) {
+  // Whole heading is a link (no menu, single headingHref)
+  if (isWholeHeadingLink) {
     return (
       <a
         ref={ref as React.Ref<HTMLAnchorElement>}
-        href={titleHref}
+        href={headingHref}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('side-nav-header'),
+          xdsClassName('side-nav-heading'),
           stylex.props(
             styles.root,
             styles.interactive,
@@ -393,7 +393,7 @@ export const XDSSideNavHeader = forwardRef<
   }
 
   // Whole header is the popover trigger (menu, no hrefs)
-  if (isWholeHeaderTrigger) {
+  if (isWholeHeadingTrigger) {
     return (
       <>
         <button
@@ -403,7 +403,7 @@ export const XDSSideNavHeader = forwardRef<
           data-testid={testId}
           {...popover.triggerProps}
           {...mergeProps(
-            xdsClassName('side-nav-header'),
+            xdsClassName('side-nav-heading'),
             stylex.props(
               styles.root,
               styles.interactive,
@@ -426,7 +426,7 @@ export const XDSSideNavHeader = forwardRef<
   }
 
   // Mixed mode: independent links + chevron trigger for menu
-  // Popover anchors to the full header div, not the chevron, so it
+  // Popover anchors to the full heading div, not the chevron, so it
   // appears in the same position as the no-links case.
   if (menu && hasAnyHref) {
     return (
@@ -435,14 +435,14 @@ export const XDSSideNavHeader = forwardRef<
           ref={setRef}
           data-testid={testId}
           {...mergeProps(
-            xdsClassName('side-nav-header'),
+            xdsClassName('side-nav-heading'),
             stylex.props(styles.root, xstyle),
             className,
             style,
           )}>
           {icon &&
-            (titleHref ? (
-              <a href={titleHref} {...stylex.props(styles.icon)}>
+            (headingHref ? (
+              <a href={headingHref} {...stylex.props(styles.icon)}>
                 {icon}
               </a>
             ) : (
@@ -468,62 +468,62 @@ export const XDSSideNavHeader = forwardRef<
     );
   }
 
-  // Static header with independent links (no menu)
-  if (hasAnyHref && !isWholeHeaderLink) {
+  // Static heading with independent links (no menu)
+  if (hasAnyHref && !isWholeHeadingLink) {
     return (
       <div
         ref={ref}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('side-nav-header'),
+          xdsClassName('side-nav-heading'),
           stylex.props(styles.root, xstyle),
           className,
           style,
         )}
         {...props}>
         {icon &&
-          (titleHref ? (
-            <a href={titleHref} {...stylex.props(styles.icon)}>
+          (headingHref ? (
+            <a href={headingHref} {...stylex.props(styles.icon)}>
               {icon}
             </a>
           ) : (
             <span {...stylex.props(styles.icon)}>{icon}</span>
           ))}
         <span {...stylex.props(styles.textContainer)}>
-          {supertitle &&
-            (supertitleHref ? (
+          {superheading &&
+            (superheadingHref ? (
               <XDSLink
-                label={supertitle}
-                href={supertitleHref}
+                label={superheading}
+                href={superheadingHref}
                 color="secondary"
                 size="xsm">
-                {supertitle}
+                {superheading}
               </XDSLink>
             ) : (
-              <span {...stylex.props(styles.supertitle)}>{supertitle}</span>
+              <span {...stylex.props(styles.superheading)}>{superheading}</span>
             ))}
-          {titleHref ? (
+          {headingHref ? (
             <XDSLink
-              label={title}
-              href={titleHref}
+              label={heading}
+              href={headingHref}
               color="primary"
               weight="semibold">
-              {title}
+              {heading}
             </XDSLink>
           ) : (
-            <span {...stylex.props(styles.title)}>{title}</span>
+            <span {...stylex.props(styles.heading)}>{heading}</span>
           )}
-          {subtitle &&
-            (subtitleHref ? (
+          {subheading &&
+            (subheadingHref ? (
               <XDSLink
-                label={subtitle}
-                href={subtitleHref}
+                label={subheading}
+                href={subheadingHref}
                 color="secondary"
                 size="xsm">
-                {subtitle}
+                {subheading}
               </XDSLink>
             ) : (
-              <span {...stylex.props(styles.subtitle)}>{subtitle}</span>
+              <span {...stylex.props(styles.subheading)}>{subheading}</span>
             ))}
         </span>
         {chevronElement}
@@ -531,13 +531,13 @@ export const XDSSideNavHeader = forwardRef<
     );
   }
 
-  // Default: static header, no links, no menu
+  // Default: static heading, no links, no menu
   return (
     <div
       ref={ref}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('side-nav-header'),
+        xdsClassName('side-nav-heading'),
         stylex.props(styles.root, xstyle),
         className,
         style,
@@ -550,4 +550,4 @@ export const XDSSideNavHeader = forwardRef<
   );
 });
 
-XDSSideNavHeader.displayName = 'XDSSideNavHeader';
+XDSSideNavHeading.displayName = 'XDSSideNavHeading';
