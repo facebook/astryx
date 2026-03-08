@@ -30,6 +30,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {ThemeMode} from './types';
 import {colorVars, typographyVars} from './tokens.stylex';
 import {IconRegistryContext} from '../Icon/IconRegistry';
+import {registerIcons} from '../Icon/globalIconRegistry';
 import {generateThemeCSS, type XDSDefinedTheme} from './defineTheme';
 
 /**
@@ -134,10 +135,11 @@ export function XDSTheme({
         ? wrapperStyles.light
         : wrapperStyles.system;
 
-  // Icons
+  // Icons — register globally (for server components) AND via context (for tree-scoped overrides)
   const icons = theme.icons;
   let content: React.ReactNode = children;
   if (icons != null) {
+    registerIcons(icons);
     content = (
       <IconRegistryContext.Provider value={icons}>
         {content}
