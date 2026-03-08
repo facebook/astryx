@@ -1,49 +1,71 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
+import * as stylex from '@stylexjs/stylex';
 import {XDSField} from '@xds/core/Field';
+import {
+  colorVars,
+  spacingVars,
+  radiusVars,
+  typographyVars,
+} from '@xds/core/theme/tokens.stylex';
+
+// A minimal native input styled to match XDS aesthetics —
+// demonstrating that XDSField wraps any custom or native input.
+const inputStyles = stylex.create({
+  root: {
+    width: '100%',
+    boxSizing: 'border-box',
+    fontFamily: typographyVars['--font-body'],
+    fontSize: '14px',
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-divider'],
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-surface'],
+    color: colorVars['--color-text-primary'],
+    outline: 'none',
+    ':focus': {
+      borderColor: colorVars['--color-accent'],
+    },
+  },
+});
+
+const NativeInput = ({
+  id,
+  describedBy,
+  placeholder,
+  value,
+  onChange,
+}: {
+  id: string;
+  describedBy?: string;
+  placeholder?: string;
+  value: string;
+  onChange: (v: string) => void;
+}) => (
+  <input
+    id={id}
+    aria-describedby={describedBy}
+    placeholder={placeholder}
+    value={value}
+    onChange={e => onChange(e.target.value)}
+    {...stylex.props(inputStyles.root)}
+  />
+);
 
 const meta: Meta<typeof XDSField> = {
   title: 'Form/XDSField',
   component: XDSField,
   tags: ['autodocs'],
   argTypes: {
-    label: {
-      control: 'text',
-      description: 'Label text (required)',
-    },
-    isLabelHidden: {
-      control: 'boolean',
-      description:
-        'Visually hide the label (still accessible to screen readers)',
-    },
-    description: {
-      control: 'text',
-      description: 'Description text displayed between the label and input',
-    },
-    inputID: {
-      control: 'text',
-      description:
-        'ID for the input element (used for label htmlFor attribute)',
-    },
-    descriptionID: {
-      control: 'text',
-      description: 'ID for the description element (use for aria-describedby)',
-    },
-    isOptional: {
-      control: 'boolean',
-      description:
-        'Whether the field is optional (mutually exclusive with isRequired)',
-    },
-    isRequired: {
-      control: 'boolean',
-      description:
-        'Whether the field is required (mutually exclusive with isOptional)',
-    },
-    labelTooltip: {
-      control: 'text',
-      description:
-        'Tooltip text to display in an info icon at the end of the label',
-    },
+    label: {control: 'text'},
+    isLabelHidden: {control: 'boolean'},
+    description: {control: 'text'},
+    isOptional: {control: 'boolean'},
+    isRequired: {control: 'boolean'},
+    labelTooltip: {control: 'text'},
   },
 };
 
@@ -51,384 +73,210 @@ export default meta;
 type Story = StoryObj<typeof XDSField>;
 
 export const Default: Story = {
+  args: {label: 'Email'},
   render: args => {
     const [value, setValue] = useState('');
     return (
       <XDSField {...args} inputID="email-input">
-        <input
+        <NativeInput
           id="email-input"
+          placeholder="you@example.com"
           value={value}
-          onChange={e => setValue(e.target.value)}
-          style={{
-            padding: '8px',
-            fontSize: '14px',
-            width: '100%',
-            boxSizing: 'border-box',
-          }}
+          onChange={setValue}
         />
       </XDSField>
     );
-  },
-  args: {
-    label: 'Email',
   },
 };
 
 export const WithDescription: Story = {
+  args: {label: 'Email', description: "We'll never share your email."},
   render: args => {
     const [value, setValue] = useState('');
     return (
-      <XDSField {...args} inputID="email-input" descriptionID="email-desc">
-        <input
-          id="email-input"
-          aria-describedby="email-desc"
+      <XDSField {...args} inputID="email-desc-input" descriptionID="email-desc">
+        <NativeInput
+          id="email-desc-input"
+          describedBy="email-desc"
+          placeholder="you@example.com"
           value={value}
-          onChange={e => setValue(e.target.value)}
-          style={{
-            padding: '8px',
-            fontSize: '14px',
-            width: '100%',
-            boxSizing: 'border-box',
-          }}
+          onChange={setValue}
         />
       </XDSField>
     );
-  },
-  args: {
-    label: 'Email',
-    description: "We'll never share your email with anyone.",
   },
 };
 
 export const WithHiddenLabel: Story = {
+  args: {label: 'Search', isLabelHidden: true},
   render: args => {
     const [value, setValue] = useState('');
     return (
       <XDSField {...args} inputID="search-input">
-        <input
+        <NativeInput
           id="search-input"
-          value={value}
-          onChange={e => setValue(e.target.value)}
           placeholder="Search..."
-          style={{
-            padding: '8px',
-            fontSize: '14px',
-            width: '100%',
-            boxSizing: 'border-box',
-          }}
+          value={value}
+          onChange={setValue}
         />
       </XDSField>
     );
   },
+};
+
+export const OptionalField: Story = {
+  args: {label: 'Nickname', isOptional: true},
+  render: args => {
+    const [value, setValue] = useState('');
+    return (
+      <XDSField {...args} inputID="nickname-input">
+        <NativeInput
+          id="nickname-input"
+          placeholder="Enter your nickname"
+          value={value}
+          onChange={setValue}
+        />
+      </XDSField>
+    );
+  },
+};
+
+export const RequiredField: Story = {
+  args: {label: 'Username', isRequired: true},
+  render: args => {
+    const [value, setValue] = useState('');
+    return (
+      <XDSField {...args} inputID="username-input">
+        <NativeInput
+          id="username-input"
+          placeholder="Enter your username"
+          value={value}
+          onChange={setValue}
+        />
+      </XDSField>
+    );
+  },
+};
+
+export const WithTooltip: Story = {
   args: {
-    label: 'Search',
-    isLabelHidden: true,
+    label: 'API Key',
+    labelTooltip: 'Your unique API key. Keep this secret!',
+  },
+  render: args => {
+    const [value, setValue] = useState('');
+    return (
+      <XDSField {...args} inputID="api-key-input">
+        <NativeInput
+          id="api-key-input"
+          placeholder="sk-..."
+          value={value}
+          onChange={setValue}
+        />
+      </XDSField>
+    );
   },
 };
 
 export const AllVariations: Story = {
   render: () => {
-    const [value1, setValue1] = useState('');
-    const [value2, setValue2] = useState('');
-    const [value3, setValue3] = useState('');
-    const [value4, setValue4] = useState('');
-    const [value5, setValue5] = useState('');
+    const [vals, setVals] = useState({a: '', b: '', c: '', d: '', e: ''});
+    const set = (k: keyof typeof vals) => (v: string) =>
+      setVals(prev => ({...prev, [k]: v}));
     return (
       <div
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: '24px',
-          maxWidth: '300px',
+          gap: 24,
+          maxWidth: 320,
         }}>
-        <XDSField label="Default field" inputID="default-input">
-          <input
-            id="default-input"
-            value={value1}
-            onChange={e => setValue1(e.target.value)}
-            style={{
-              padding: '8px',
-              fontSize: '14px',
-              width: '100%',
-              boxSizing: 'border-box',
-            }}
-          />
+        <XDSField label="Default" inputID="v-a">
+          <NativeInput id="v-a" value={vals.a} onChange={set('a')} />
         </XDSField>
         <XDSField
           label="With description"
-          description="This is helpful information"
-          inputID="desc-input"
-          descriptionID="desc-text">
-          <input
-            id="desc-input"
-            aria-describedby="desc-text"
-            value={value2}
-            onChange={e => setValue2(e.target.value)}
-            style={{
-              padding: '8px',
-              fontSize: '14px',
-              width: '100%',
-              boxSizing: 'border-box',
-            }}
+          description="Some helpful info"
+          inputID="v-b"
+          descriptionID="v-b-desc">
+          <NativeInput
+            id="v-b"
+            describedBy="v-b-desc"
+            value={vals.b}
+            onChange={set('b')}
           />
         </XDSField>
-        <XDSField label="Optional field" isOptional inputID="optional-input">
-          <input
-            id="optional-input"
-            value={value3}
-            onChange={e => setValue3(e.target.value)}
-            style={{
-              padding: '8px',
-              fontSize: '14px',
-              width: '100%',
-              boxSizing: 'border-box',
-            }}
-          />
+        <XDSField label="Optional" isOptional inputID="v-c">
+          <NativeInput id="v-c" value={vals.c} onChange={set('c')} />
         </XDSField>
-        <XDSField label="Required field" isRequired inputID="required-input">
-          <input
-            id="required-input"
-            value={value4}
-            onChange={e => setValue4(e.target.value)}
-            style={{
-              padding: '8px',
-              fontSize: '14px',
-              width: '100%',
-              boxSizing: 'border-box',
-            }}
-          />
+        <XDSField label="Required" isRequired inputID="v-d">
+          <NativeInput id="v-d" value={vals.d} onChange={set('d')} />
         </XDSField>
         <XDSField
-          label="With description and optional"
-          description="Enter your nickname"
-          isOptional
-          inputID="desc-optional-input"
-          descriptionID="desc-optional-text">
-          <input
-            id="desc-optional-input"
-            aria-describedby="desc-optional-text"
-            value={value5}
-            onChange={e => setValue5(e.target.value)}
-            style={{
-              padding: '8px',
-              fontSize: '14px',
-              width: '100%',
-              boxSizing: 'border-box',
-            }}
-          />
+          label="With tooltip"
+          labelTooltip="Extra info here"
+          inputID="v-e">
+          <NativeInput id="v-e" value={vals.e} onChange={set('e')} />
         </XDSField>
       </div>
     );
   },
 };
 
-export const OptionalField: Story = {
-  render: args => {
-    const [value, setValue] = useState('');
-    return (
-      <XDSField {...args} inputID="nickname-input">
-        <input
-          id="nickname-input"
-          value={value}
-          onChange={e => setValue(e.target.value)}
-          placeholder="Enter your nickname"
-          style={{
-            padding: '8px',
-            fontSize: '14px',
-            width: '100%',
-            boxSizing: 'border-box',
-          }}
-        />
-      </XDSField>
-    );
-  },
-  args: {
-    label: 'Nickname',
-    isOptional: true,
-  },
-};
-
-export const RequiredField: Story = {
-  render: args => {
-    const [value, setValue] = useState('');
-    return (
-      <XDSField {...args} inputID="username-input">
-        <input
-          id="username-input"
-          value={value}
-          onChange={e => setValue(e.target.value)}
-          placeholder="Enter your username"
-          style={{
-            padding: '8px',
-            fontSize: '14px',
-            width: '100%',
-            boxSizing: 'border-box',
-          }}
-        />
-      </XDSField>
-    );
-  },
-  args: {
-    label: 'Username',
-    isRequired: true,
-  },
-};
-
-export const DescriptionWithOptional: Story = {
-  render: args => {
-    const [value, setValue] = useState('');
-    return (
-      <XDSField {...args} inputID="bio-input" descriptionID="bio-desc">
-        <input
-          id="bio-input"
-          aria-describedby="bio-desc"
-          value={value}
-          onChange={e => setValue(e.target.value)}
-          placeholder="Tell us about yourself"
-          style={{
-            padding: '8px',
-            fontSize: '14px',
-            width: '100%',
-            boxSizing: 'border-box',
-          }}
-        />
-      </XDSField>
-    );
-  },
-  args: {
-    label: 'Bio',
-    description: 'A short description about yourself',
-    isOptional: true,
-  },
-};
-
-export const WithTooltip: Story = {
-  render: args => {
-    const [value, setValue] = useState('');
-    return (
-      <XDSField {...args} inputID="tooltip-input">
-        <input
-          id="tooltip-input"
-          value={value}
-          onChange={e => setValue(e.target.value)}
-          placeholder="Enter value"
-          style={{
-            padding: '8px',
-            fontSize: '14px',
-            width: '100%',
-            boxSizing: 'border-box',
-          }}
-        />
-      </XDSField>
-    );
-  },
-  args: {
-    label: 'API Key',
-    labelTooltip: 'Your unique API key for authentication. Keep this secret!',
-  },
-};
-
-export const TooltipWithOptional: Story = {
-  render: args => {
-    const [value, setValue] = useState('');
-    return (
-      <XDSField {...args} inputID="tooltip-optional-input">
-        <input
-          id="tooltip-optional-input"
-          value={value}
-          onChange={e => setValue(e.target.value)}
-          placeholder="Enter value"
-          style={{
-            padding: '8px',
-            fontSize: '14px',
-            width: '100%',
-            boxSizing: 'border-box',
-          }}
-        />
-      </XDSField>
-    );
-  },
-  args: {
-    label: 'Webhook URL',
-    labelTooltip: 'The URL where we will send event notifications.',
-    isOptional: true,
-  },
-};
-
-// =============================================================================
-// Status Variants
-// =============================================================================
-
 export const StatusVariants: Story = {
   render: () => {
-    const [values, setValues] = useState({
+    const [vals, setVals] = useState({
       error: 'bad-email',
       warning: 'admin',
       success: 'valid-user',
     });
+    const set = (k: keyof typeof vals) => (v: string) =>
+      setVals(prev => ({...prev, [k]: v}));
     return (
       <div
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: '24px',
-          maxWidth: '400px',
+          gap: 24,
+          maxWidth: 400,
         }}>
         <XDSField
           label="Email"
-          description="Enter your work email address"
-          inputID="status-error-input"
+          description="Enter your work email"
+          inputID="s-error"
           status={{
             type: 'error',
             message: 'Please enter a valid email address',
           }}>
-          <input
-            id="status-error-input"
-            value={values.error}
-            onChange={e => setValues(v => ({...v, error: e.target.value}))}
-            style={{
-              padding: '8px',
-              fontSize: '14px',
-              width: '100%',
-              boxSizing: 'border-box',
-            }}
+          <NativeInput
+            id="s-error"
+            value={vals.error}
+            onChange={set('error')}
           />
         </XDSField>
         <XDSField
           label="Username"
           description="Choose a unique username"
-          inputID="status-warning-input"
+          inputID="s-warning"
           status={{
             type: 'warning',
             message: 'This username is reserved for administrators',
           }}>
-          <input
-            id="status-warning-input"
-            value={values.warning}
-            onChange={e => setValues(v => ({...v, warning: e.target.value}))}
-            style={{
-              padding: '8px',
-              fontSize: '14px',
-              width: '100%',
-              boxSizing: 'border-box',
-            }}
+          <NativeInput
+            id="s-warning"
+            value={vals.warning}
+            onChange={set('warning')}
           />
         </XDSField>
         <XDSField
           label="API Key"
           description="Paste your API key"
-          inputID="status-success-input"
+          inputID="s-success"
           status={{type: 'success', message: 'API key is valid and active'}}>
-          <input
-            id="status-success-input"
-            value={values.success}
-            onChange={e => setValues(v => ({...v, success: e.target.value}))}
-            style={{
-              padding: '8px',
-              fontSize: '14px',
-              width: '100%',
-              boxSizing: 'border-box',
-            }}
+          <NativeInput
+            id="s-success"
+            value={vals.success}
+            onChange={set('success')}
           />
         </XDSField>
       </div>
