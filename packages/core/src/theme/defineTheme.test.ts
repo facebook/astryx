@@ -7,7 +7,7 @@ describe('defineTheme', () => {
     expect(theme.name).toBe('test');
   });
 
-  it('merges overrides with defaults', () => {
+  it('stores only specified token overrides', () => {
     const theme = defineTheme({
       name: 'custom',
       tokens: {
@@ -16,11 +16,8 @@ describe('defineTheme', () => {
     });
     // Override should be present
     expect(theme.tokens['--color-accent']).toBe('#FF0000');
-    expect(theme.overrides['--color-accent']).toBe('#FF0000');
-    // Defaults should still be present
-    expect(theme.tokens['--color-surface']).toBeDefined();
-    // Defaults should NOT be in overrides
-    expect(theme.overrides['--color-surface']).toBeUndefined();
+    // Defaults should NOT be in tokens
+    expect(theme.tokens['--color-surface']).toBeUndefined();
   });
 
   it('converts [light, dark] tuples to light-dark()', () => {
@@ -31,9 +28,7 @@ describe('defineTheme', () => {
       },
     });
     expect(theme.tokens['--color-accent']).toBe('light-dark(#0077B6, #48CAE4)');
-    expect(theme.overrides['--color-accent']).toBe(
-      'light-dark(#0077B6, #48CAE4)',
-    );
+    expect(theme.tokens['--color-accent']).toBe('light-dark(#0077B6, #48CAE4)');
   });
 
   it('passes through string values as-is', () => {
@@ -55,11 +50,9 @@ describe('defineTheme', () => {
         '--font-heading': '"Georgia", serif',
       },
     });
-    expect(theme.overrides['--color-accent']).toBe(
-      'light-dark(#0077B6, #48CAE4)',
-    );
-    expect(theme.overrides['--radius-container']).toBe('16px');
-    expect(theme.overrides['--font-heading']).toBe('"Georgia", serif');
+    expect(theme.tokens['--color-accent']).toBe('light-dark(#0077B6, #48CAE4)');
+    expect(theme.tokens['--radius-container']).toBe('16px');
+    expect(theme.tokens['--font-heading']).toBe('"Georgia", serif');
   });
 
   it('warns on unknown token names', () => {
@@ -84,10 +77,9 @@ describe('defineTheme', () => {
     expect(theme.icons).toBe(icons);
   });
 
-  it('works with no tokens (defaults only)', () => {
+  it('works with no tokens', () => {
     const theme = defineTheme({name: 'bare'});
-    expect(Object.keys(theme.overrides)).toHaveLength(0);
-    expect(Object.keys(theme.tokens).length).toBeGreaterThan(100);
+    expect(Object.keys(theme.tokens)).toHaveLength(0);
   });
 });
 
