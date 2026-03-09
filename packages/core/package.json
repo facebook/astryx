@@ -21,6 +21,12 @@
     },
     "./reset.css": "./src/reset.css",
     "./typography.css": "./src/typography.css",
+    "./theme/tokens.stylex": {
+      "source": "./src/theme/tokens.stylex.ts",
+      "types": "./dist/theme/tokens.stylex.d.ts",
+      "import": "./dist/theme/tokens.stylex.mjs",
+      "require": "./dist/theme/tokens.stylex.js"
+    },
     "./xds.md": "./xds.md",
     "./AppShell": {
       "source": "./src/AppShell/index.ts",
