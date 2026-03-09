@@ -166,17 +166,21 @@ This exploration recommends option 2: keep ratio-derived font sizes (rounded to 
 | 2xl   | 3        | 31.25px | 31px    | 44px (1.42) |
 | 3xl   | 4        | 39.06px | 39px    | 48px (1.23) |
 
+## Decisions
+
+1. **Collision handling**: Enforce a **1px minimum step** between adjacent sizes. If two steps round to the same value, nudge the smaller one down or larger one up.
+
+2. **Escape hatch**: Still open — how do products specify exact sizes when the ratio doesn't produce what they need? Needs further discussion.
+
+3. **Token naming**: Keep **semantic names** (`--text-xs`, `--text-sm`, `--text-base`, etc.) — consistent with current XDS convention.
+
+4. **Build vs runtime**: Generate at **build time** — static CSS output, no runtime calc() overhead. Themes define base + ratio, the build step computes concrete pixel values.
+
 ## Open Questions
 
-1. **Collision handling**: With tight ratios (1.125), adjacent sizes can round to the same value. Enforce minimum step (2px)?
+1. **Escape hatch** — How do products specify exact sizes when the ratio doesn't produce what they need? Raw values break theming.
 
-2. **Escape hatch**: How do products specify exact sizes when needed? Raw values break theming.
-
-3. **Token naming**: Keep numeric (`--text-100`, `--text-200`) or switch to semantic (`--text-xs`, `--text-sm`)?
-
-4. **Runtime vs build-time**: Generate at build time (static CSS) or runtime (CSS custom properties with calc())?
-
-5. **Migration path**: How do existing consumers migrate from explicit tokens to ratio-based?
+2. **Migration path** — How do existing consumers migrate from explicit tokens to ratio-based?
 
 ## Prototype
 

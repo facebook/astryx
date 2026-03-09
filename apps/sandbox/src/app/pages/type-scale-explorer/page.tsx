@@ -47,7 +47,7 @@ function computeLineHeight(fontSize: number, grid: number): number {
 }
 
 function generateTypeScale(config: TypeScaleConfig): TypeScaleStep[] {
-  return SCALE_STEPS.map(step => {
+  const steps = SCALE_STEPS.map(step => {
     const rawSize = config.base * Math.pow(config.ratio, step.exponent);
     const fontSize = Math.round(rawSize);
     const lineHeight = computeLineHeight(fontSize, config.lineHeightGrid);
@@ -60,6 +60,20 @@ function generateTypeScale(config: TypeScaleConfig): TypeScaleStep[] {
       lineHeightRatio: lineHeight / fontSize,
     };
   });
+
+  // Enforce 1px minimum step between adjacent sizes
+  for (let i = 1; i < steps.length; i++) {
+    if (steps[i].fontSize <= steps[i - 1].fontSize) {
+      steps[i].fontSize = steps[i - 1].fontSize + 1;
+      steps[i].lineHeight = computeLineHeight(
+        steps[i].fontSize,
+        config.lineHeightGrid,
+      );
+      steps[i].lineHeightRatio = steps[i].lineHeight / steps[i].fontSize;
+    }
+  }
+
+  return steps;
 }
 
 // =============================================================================
