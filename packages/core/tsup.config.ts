@@ -17,6 +17,7 @@ export default defineConfig({
   splitting: true,
   clean: true,
   external: ['react', 'react-dom'],
+  noExternal: ['@stylexjs/stylex', 'styleq'],
   esbuildPlugins: [
     babel({
       filter: /\.[jt]sx?$/,

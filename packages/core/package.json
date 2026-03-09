@@ -387,9 +387,7 @@
     "@stylexjs/esbuild-plugin": "^0.11.1",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",
-    "esbuild-plugin-babel": "^0.2.3"
-  },
-  "dependencies": {
+    "esbuild-plugin-babel": "^0.2.3",
     "@stylexjs/stylex": "^0.17.4"
   }
 }
