@@ -5,9 +5,14 @@
  * @position Entry point for Layer module
  *
  * SYNC: When adding new Layer files, update exports here
+ *
+ * NOTE: Popover, HoverCard, and Tooltip have been moved to their own
+ * top-level directories. They are re-exported here for backward compatibility.
+ * New code should import from @xds/core/Popover, @xds/core/HoverCard,
+ * or @xds/core/Tooltip directly.
  */
 
-// Core layer hook
+// Core layer hook (remains in Layer)
 export {useXDSLayer} from './useXDSLayer';
 export type {
   LayerAlignment,
@@ -20,32 +25,28 @@ export type {
   FixedLayerReturn,
 } from './useXDSLayer';
 
-// Popover hook (combines layer + focus trap)
-export {useXDSPopover} from './useXDSPopover';
-export type {UseXDSPopoverOptions, UseXDSPopoverReturn} from './useXDSPopover';
+// Re-export Popover from new location (backward compat)
+export {useXDSPopover, XDSPopover} from '../Popover';
+export type {
+  UseXDSPopoverOptions,
+  UseXDSPopoverReturn,
+  XDSPopoverProps,
+} from '../Popover';
 
-// HoverCard hook and component
-export {useXDSHoverCard} from './useXDSHoverCard';
+// Re-export HoverCard from new location (backward compat)
+export {useXDSHoverCard, XDSHoverCard} from '../HoverCard';
 export type {
   HoverCardFocusTrigger,
   XDSHoverCardOptions,
   XDSHoverCardReturn,
-} from './useXDSHoverCard';
+  XDSHoverCardProps,
+} from '../HoverCard';
 
-export {XDSHoverCard} from './XDSHoverCard';
-export type {XDSHoverCardProps} from './XDSHoverCard';
-
-// Tooltip hook and component
-export {useXDSTooltip} from './useXDSTooltip';
+// Re-export Tooltip from new location (backward compat)
+export {useXDSTooltip, XDSTooltip} from '../Tooltip';
 export type {
   TooltipFocusTrigger,
   XDSTooltipOptions,
   XDSTooltipReturn,
-} from './useXDSTooltip';
-
-export {XDSTooltip} from './XDSTooltip';
-export type {XDSTooltipProps} from './XDSTooltip';
-
-// Popover component
-export {XDSPopover} from './XDSPopover';
-export type {XDSPopoverProps} from './XDSPopover';
+  XDSTooltipProps,
+} from '../Tooltip';

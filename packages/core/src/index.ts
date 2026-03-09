@@ -63,8 +63,27 @@ export * from './ProgressBar';
 // Layout utilities and components (includes XDSHStack, XDSVStack)
 export * from './Layout';
 
-// Layer utilities and components (includes XDSHoverCard)
-export * from './Layer';
+// Layer utilities (useXDSLayer hook and core types)
+export {useXDSLayer} from './Layer';
+export type {
+  LayerAlignment,
+  LayerPlacement,
+  ContextRenderProps,
+  FixedRenderProps,
+  ContextLayerOptions,
+  FixedLayerOptions,
+  ContextLayerReturn,
+  FixedLayerReturn,
+} from './Layer';
+
+// Popover component and hook
+export * from './Popover';
+
+// HoverCard component and hook
+export * from './HoverCard';
+
+// Tooltip component and hook
+export * from './Tooltip';
 
 // Skeleton loading placeholder
 export * from './Skeleton';

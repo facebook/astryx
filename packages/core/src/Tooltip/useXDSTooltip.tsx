@@ -5,8 +5,7 @@
  * @position Layer hook; builds on useXDSLayer for tooltip behavior
  *
  * SYNC: When modified, update:
- * - /packages/core/src/Layer/Layer.doc.mjs
- * - /packages/core/src/Layer/index.ts
+ * - /packages/core/src/Tooltip/index.ts
  */
 
 'use client';
@@ -24,7 +23,7 @@ import {
   type ContextRenderProps,
   type LayerAlignment,
   type LayerPlacement,
-} from './useXDSLayer';
+} from '../Layer/useXDSLayer';
 import {
   colorVars,
   radiusVars,

@@ -37,7 +37,7 @@ import type {LayerPlacement} from '../Layer';
 import {xdsClassName, mergeProps} from '../utils';
 
 const LazyXDSTooltip = lazy(() =>
-  import('../Layer/XDSTooltip').then(mod => ({default: mod.XDSTooltip})),
+  import('../Tooltip/XDSTooltip').then(mod => ({default: mod.XDSTooltip})),
 );
 
 /**

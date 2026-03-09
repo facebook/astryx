@@ -166,6 +166,24 @@
       "import": "./dist/Layer/index.mjs",
       "require": "./dist/Layer/index.js"
     },
+    "./Popover": {
+      "source": "./src/Popover/index.ts",
+      "types": "./dist/Popover/index.d.ts",
+      "import": "./dist/Popover/index.mjs",
+      "require": "./dist/Popover/index.js"
+    },
+    "./HoverCard": {
+      "source": "./src/HoverCard/index.ts",
+      "types": "./dist/HoverCard/index.d.ts",
+      "import": "./dist/HoverCard/index.mjs",
+      "require": "./dist/HoverCard/index.js"
+    },
+    "./Tooltip": {
+      "source": "./src/Tooltip/index.ts",
+      "types": "./dist/Tooltip/index.d.ts",
+      "import": "./dist/Tooltip/index.mjs",
+      "require": "./dist/Tooltip/index.js"
+    },
     "./Layout": {
       "source": "./src/Layout/index.ts",
       "types": "./dist/Layout/index.d.ts",

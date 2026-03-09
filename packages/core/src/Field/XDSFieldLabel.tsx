@@ -20,7 +20,7 @@ import {
   typographyVars,
 } from '../theme/tokens.stylex';
 import {XDSIcon, type XDSIconType} from '../Icon';
-import {XDSTooltip} from '../Layer';
+import {XDSTooltip} from '../Tooltip';
 
 const styles = stylex.create({
   label: {

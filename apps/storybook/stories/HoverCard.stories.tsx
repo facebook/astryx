@@ -1,5 +1,5 @@
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSHoverCard, useXDSHoverCard} from '@xds/core/Layer';
+import {XDSHoverCard, useXDSHoverCard} from '@xds/core/HoverCard';
 import {XDSButton} from '@xds/core/Button';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 

@@ -28,7 +28,7 @@ import {
   fontWeightVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
-import {XDSTooltip} from '../Layer/XDSTooltip';
+import {XDSTooltip} from '../Tooltip/XDSTooltip';
 import {XDSSpinner} from '../Spinner';
 import type {XDSIconProps} from '../Icon/XDSIcon';
 import type {XDSBadgeProps} from '../Badge/XDSBadge';

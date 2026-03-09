@@ -12,7 +12,7 @@
 
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {useXDSHoverCard} from '../Layer/useXDSHoverCard';
+import {useXDSHoverCard} from '../HoverCard/useXDSHoverCard';
 import {
   colorVars,
   spacingVars,

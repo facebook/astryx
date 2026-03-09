@@ -5,9 +5,8 @@
  * @position Layer component; uses display:contents wrapper to avoid cloneElement
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Layer/Layer.doc.mjs
- * - /packages/core/src/Layer/XDSHoverCard.test.tsx
- * - /packages/core/src/Layer/index.ts
+ * - /packages/core/src/HoverCard/XDSHoverCard.test.tsx
+ * - /packages/core/src/HoverCard/index.ts
  * - /apps/storybook/stories/HoverCard.stories.tsx
  */
 
@@ -21,7 +20,7 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useXDSHoverCard, type HoverCardFocusTrigger} from './useXDSHoverCard';
-import type {LayerAlignment, LayerPlacement} from './useXDSLayer';
+import type {LayerAlignment, LayerPlacement} from '../Layer/useXDSLayer';
 import {colorVars} from '../theme/tokens.stylex';
 
 export type {HoverCardFocusTrigger} from './useXDSHoverCard';

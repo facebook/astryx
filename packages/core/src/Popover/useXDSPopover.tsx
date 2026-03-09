@@ -8,8 +8,7 @@
  * Use this for interactive popover content that should trap focus.
  *
  * SYNC: When modified, update:
- * - /packages/core/src/Layer/Layer.doc.mjs
- * - /packages/core/src/Layer/index.ts
+ * - /packages/core/src/Popover/index.ts
  */
 
 'use client';
@@ -27,7 +26,7 @@ import {
   type ContextRenderProps,
   type LayerPlacement,
   type LayerAlignment,
-} from './useXDSLayer';
+} from '../Layer/useXDSLayer';
 import {useFocusTrap} from '../hooks/useFocusTrap';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -399,6 +398,3 @@ export function useXDSPopover(
     triggerProps,
   };
 }
-
-// Re-export types for convenience
-export type {LayerPlacement, LayerAlignment, ContextRenderProps};
