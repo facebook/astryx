@@ -67,9 +67,9 @@ function generateTypeScale(config: TypeScaleConfig): TypeScaleStep[] {
 // =============================================================================
 
 const PRESETS: Record<string, TypeScaleConfig> = {
-  dense: {base: 14, ratio: 1.125, lineHeightGrid: 4},
-  default: {base: 16, ratio: 1.25, lineHeightGrid: 4},
-  editorial: {base: 18, ratio: 1.333, lineHeightGrid: 4},
+  dense: {base: 12, ratio: 1.125, lineHeightGrid: 4},
+  default: {base: 14, ratio: 1.125, lineHeightGrid: 4},
+  editorial: {base: 16, ratio: 1.25, lineHeightGrid: 4},
 };
 
 const RATIOS: Record<string, number> = {

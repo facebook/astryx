@@ -64,11 +64,11 @@ base × ratio^3  = 31.25px → 31px (2xl)
 
 Products choose their density by adjusting two values:
 
-| Preset    | Base | Ratio                  | Character                 |
-| --------- | ---- | ---------------------- | ------------------------- |
-| Dense     | 14px | 1.125 (Minor Second)   | Tight, data-heavy         |
-| Default   | 16px | 1.25 (Major Third)     | Balanced                  |
-| Editorial | 18px | 1.333 (Perfect Fourth) | Dramatic, content-focused |
+| Preset    | Base | Ratio                | Character                 |
+| --------- | ---- | -------------------- | ------------------------- |
+| Dense     | 14px | 1.125 (Minor Second) | Tight, data-heavy         |
+| Default   | 16px | 1.25 (Major Third)   | Balanced                  |
+| Editorial | 16px | 1.25 (Major Third)   | Dramatic, content-focused |
 
 Same semantic tokens (`fontSize.md`, `fontSize.lg`), different computed output.
 
@@ -130,41 +130,41 @@ This exploration recommends option 2: keep ratio-derived font sizes (rounded to 
 
 ## Computed Examples
 
-### Dense Theme (14px base, 1.125 ratio)
+### Dense Theme (12px base, 1.125 ratio)
+
+| Token | Exponent | Raw     | Rounded | Line Height |
+| ----- | -------- | ------- | ------- | ----------- |
+| xs    | -2       | 9.48px  | 9px     | 16px (1.78) |
+| sm    | -1       | 10.67px | 11px    | 16px (1.45) |
+| md    | 0        | 12.00px | 12px    | 16px (1.33) |
+| lg    | 1        | 13.50px | 14px    | 20px (1.43) |
+| xl    | 2        | 15.19px | 15px    | 24px (1.60) |
+| 2xl   | 3        | 17.09px | 17px    | 24px (1.41) |
+| 3xl   | 4        | 19.22px | 19px    | 28px (1.47) |
+
+### Default Theme (14px base, 1.125 ratio)
 
 | Token | Exponent | Raw     | Rounded | Line Height |
 | ----- | -------- | ------- | ------- | ----------- |
 | xs    | -2       | 11.06px | 11px    | 16px (1.45) |
 | sm    | -1       | 12.44px | 12px    | 16px (1.33) |
-| md    | 0        | 14px    | 14px    | 20px (1.43) |
+| md    | 0        | 14.00px | 14px    | 20px (1.43) |
 | lg    | 1        | 15.75px | 16px    | 24px (1.50) |
-| xl    | 2        | 17.72px | 18px    | 24px (1.33) |
+| xl    | 2        | 17.72px | 18px    | 28px (1.56) |
 | 2xl   | 3        | 19.93px | 20px    | 28px (1.40) |
 | 3xl   | 4        | 22.43px | 22px    | 32px (1.45) |
 
-### Default Theme (16px base, 1.25 ratio)
+### Editorial Theme (16px base, 1.25 ratio)
 
 | Token | Exponent | Raw     | Rounded | Line Height |
 | ----- | -------- | ------- | ------- | ----------- |
 | xs    | -2       | 10.24px | 10px    | 16px (1.60) |
-| sm    | -1       | 12.8px  | 13px    | 20px (1.54) |
-| md    | 0        | 16px    | 16px    | 24px (1.50) |
-| lg    | 1        | 20px    | 20px    | 28px (1.40) |
-| xl    | 2        | 25px    | 25px    | 36px (1.44) |
+| sm    | -1       | 12.80px | 13px    | 20px (1.54) |
+| md    | 0        | 16.00px | 16px    | 24px (1.50) |
+| lg    | 1        | 20.00px | 20px    | 28px (1.40) |
+| xl    | 2        | 25.00px | 25px    | 36px (1.44) |
 | 2xl   | 3        | 31.25px | 31px    | 44px (1.42) |
-| 3xl   | 4        | 39.06px | 39px    | 52px (1.33) |
-
-### Editorial Theme (18px base, 1.333 ratio)
-
-| Token | Exponent | Raw     | Rounded | Line Height |
-| ----- | -------- | ------- | ------- | ----------- |
-| xs    | -2       | 10.13px | 10px    | 16px (1.60) |
-| sm    | -1       | 13.5px  | 14px    | 20px (1.43) |
-| md    | 0        | 18px    | 18px    | 28px (1.56) |
-| lg    | 1        | 23.99px | 24px    | 32px (1.33) |
-| xl    | 2        | 31.98px | 32px    | 40px (1.25) |
-| 2xl   | 3        | 42.63px | 43px    | 52px (1.21) |
-| 3xl   | 4        | 56.83px | 57px    | 68px (1.19) |
+| 3xl   | 4        | 39.06px | 39px    | 48px (1.23) |
 
 ## Open Questions
 
