@@ -373,7 +373,7 @@
     "lint": "eslint src",
     "typecheck:docs": "tsc --project tsconfig.docs.json",
     "build:css": "node ../../scripts/build-css.mjs",
-    "postbuild": "yarn build:css"
+    "postbuild": "yarn build:css && node ../../scripts/inline-stylex.mjs"
   },
   "peerDependencies": {
     "react": ">=19.0.0",
