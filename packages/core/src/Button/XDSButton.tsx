@@ -68,8 +68,8 @@ const styles = stylex.create({
     cursor: 'not-allowed',
     opacity: 0.5,
     transform: {
-      default: null,
-      ':active': null,
+      default: 'none',
+      ':active': 'none',
     },
   },
   iconOnly: {

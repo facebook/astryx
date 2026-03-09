@@ -15,6 +15,7 @@
 import booleanPropNamingRule from './boolean-prop-naming.js';
 import presentationalComponentRule from './presentational-component.js';
 import docblockExampleFormatRule from './docblock-example-format.js';
+import noStylexNullOverrideRule from './no-stylex-null-override.js';
 
 // =============================================================================
 // Rule: no-hardcoded-styles
@@ -218,6 +219,7 @@ const plugin = {
     'boolean-prop-naming': booleanPropNamingRule,
     'presentational-component': presentationalComponentRule,
     'docblock-example-format': docblockExampleFormatRule,
+    'no-stylex-null-override': noStylexNullOverrideRule,
   },
   configs: {},
 };
@@ -232,6 +234,7 @@ plugin.configs.strict = {
     '@xds/boolean-prop-naming': 'error',
     '@xds/presentational-component': 'error',
     '@xds/docblock-example-format': 'error',
+    '@xds/no-stylex-null-override': 'error',
   },
 };
 
@@ -245,6 +248,7 @@ plugin.configs.recommended = {
     '@xds/boolean-prop-naming': 'warn',
     '@xds/presentational-component': 'error',
     '@xds/docblock-example-format': 'warn',
+    '@xds/no-stylex-null-override': 'warn',
   },
 };
 

@@ -281,8 +281,10 @@ export const dayCellTheme = stylex.create({
   dayDisabled: {
     opacity: 0.3,
     backgroundImage: {
-      default: null,
-      ':hover': null,
+      default: 'none',
+      ':hover': {
+        '@media (hover: hover)': 'none',
+      },
     },
   },
 });
