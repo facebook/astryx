@@ -5,6 +5,7 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSDivider} from '@xds/core';
+import {XDSButton} from '@xds/core/Button';
 
 // =============================================================================
 // Type Scale Computation
@@ -16,44 +17,71 @@ interface TypeScaleConfig {
   lineHeightGrid: number;
 }
 
-interface TypeScaleStep {
+interface TypeStyle {
   name: string;
+  role: 'heading' | 'body' | 'supporting';
   exponent: number;
+  weight: number;
   rawSize: number;
   fontSize: number;
   lineHeight: number;
   lineHeightRatio: number;
 }
 
-const SCALE_STEPS = [
-  {name: 'xs', exponent: -2},
-  {name: 'sm', exponent: -1},
-  {name: 'md', exponent: 0},
-  {name: 'lg', exponent: 1},
-  {name: 'xl', exponent: 2},
-  {name: '2xl', exponent: 3},
-  {name: '3xl', exponent: 4},
+// Semantic type roles mapped to scale exponents
+const TYPE_ROLES: Array<{
+  name: string;
+  role: 'heading' | 'body' | 'supporting';
+  exponent: number;
+  weight: number;
+}> = [
+  {name: 'h1', role: 'heading', exponent: 4, weight: 600},
+  {name: 'h2', role: 'heading', exponent: 3, weight: 600},
+  {name: 'h3', role: 'heading', exponent: 2, weight: 600},
+  {name: 'h4', role: 'heading', exponent: 1, weight: 600},
+  {name: 'h5', role: 'heading', exponent: 0, weight: 600},
+  {name: 'h6', role: 'heading', exponent: -1, weight: 600},
+  {name: 'body-lg', role: 'body', exponent: 1, weight: 400},
+  {name: 'body', role: 'body', exponent: 0, weight: 400},
+  {name: 'body-sm', role: 'body', exponent: -1, weight: 400},
+  {name: 'label', role: 'body', exponent: 0, weight: 500},
+  {name: 'supporting', role: 'supporting', exponent: -1, weight: 400},
+  {name: 'caption', role: 'supporting', exponent: -2, weight: 400},
 ];
 
-function computeLineHeight(fontSize: number, grid: number): number {
-  // Target ratio varies by size (tighter for large text)
-  const targetRatio = fontSize < 20 ? 1.5 : fontSize < 32 ? 1.4 : 1.25;
+function computeLineHeight(
+  fontSize: number,
+  grid: number,
+  role: 'heading' | 'body' | 'supporting',
+): number {
+  // Tighter line heights for headings, more relaxed for body
+  let targetRatio: number;
+  if (role === 'heading') {
+    targetRatio = fontSize < 24 ? 1.3 : fontSize < 32 ? 1.25 : 1.2;
+  } else {
+    targetRatio = fontSize < 16 ? 1.4 : 1.5;
+  }
+
   const ideal = fontSize * targetRatio;
   const snapped = Math.round(ideal / grid) * grid;
 
   // Ensure minimum breathing room
-  const minimum = Math.ceil((fontSize + 4) / grid) * grid;
+  const minimum = Math.ceil((fontSize + 2) / grid) * grid;
   return Math.max(snapped, minimum);
 }
 
-function generateTypeScale(config: TypeScaleConfig): TypeScaleStep[] {
-  const steps = SCALE_STEPS.map(step => {
-    const rawSize = config.base * Math.pow(config.ratio, step.exponent);
+function generateTypeStyles(config: TypeScaleConfig): TypeStyle[] {
+  const styles = TYPE_ROLES.map(role => {
+    const rawSize = config.base * Math.pow(config.ratio, role.exponent);
     const fontSize = Math.round(rawSize);
-    const lineHeight = computeLineHeight(fontSize, config.lineHeightGrid);
+    const lineHeight = computeLineHeight(
+      fontSize,
+      config.lineHeightGrid,
+      role.role,
+    );
 
     return {
-      ...step,
+      ...role,
       rawSize,
       fontSize,
       lineHeight,
@@ -61,19 +89,22 @@ function generateTypeScale(config: TypeScaleConfig): TypeScaleStep[] {
     };
   });
 
-  // Enforce 1px minimum step between adjacent sizes
-  for (let i = 1; i < steps.length; i++) {
-    if (steps[i].fontSize <= steps[i - 1].fontSize) {
-      steps[i].fontSize = steps[i - 1].fontSize + 1;
-      steps[i].lineHeight = computeLineHeight(
-        steps[i].fontSize,
+  // Enforce 1px minimum step between heading sizes
+  const headings = styles.filter(s => s.role === 'heading');
+  for (let i = 1; i < headings.length; i++) {
+    if (headings[i].fontSize >= headings[i - 1].fontSize) {
+      headings[i].fontSize = headings[i - 1].fontSize - 1;
+      headings[i].lineHeight = computeLineHeight(
+        headings[i].fontSize,
         config.lineHeightGrid,
+        'heading',
       );
-      steps[i].lineHeightRatio = steps[i].lineHeight / steps[i].fontSize;
+      headings[i].lineHeightRatio =
+        headings[i].lineHeight / headings[i].fontSize;
     }
   }
 
-  return steps;
+  return styles;
 }
 
 // =============================================================================
@@ -103,7 +134,12 @@ const RATIOS: Record<string, number> = {
 
 const styles = stylex.create({
   container: {
-    maxWidth: 1200,
+    maxWidth: 1400,
+  },
+  twoColumn: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 32,
   },
   controls: {
     padding: 16,
@@ -162,23 +198,35 @@ const styles = stylex.create({
   table: {
     width: '100%',
     borderCollapse: 'collapse',
-    fontSize: 14,
+    fontSize: 13,
   },
   th: {
     textAlign: 'left',
-    padding: '12px 16px',
+    padding: '10px 12px',
     borderBottom: '2px solid light-dark(#ddd, #444)',
     fontWeight: 600,
     color: 'light-dark(#333, #eee)',
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
   },
   td: {
-    padding: '12px 16px',
+    padding: '10px 12px',
     borderBottom: '1px solid light-dark(#eee, #333)',
     color: 'light-dark(#333, #eee)',
   },
   tdMono: {
     fontFamily: 'SF Mono, Monaco, Consolas, monospace',
-    fontSize: 13,
+    fontSize: 12,
+  },
+  roleHeading: {
+    backgroundColor: 'light-dark(#f0f7ff, #1a2a3a)',
+  },
+  roleBody: {
+    backgroundColor: 'light-dark(#fff, #1f1f22)',
+  },
+  roleSupporting: {
+    backgroundColor: 'light-dark(#f9f9f9, #252528)',
   },
   preview: {
     padding: 24,
@@ -190,32 +238,116 @@ const styles = stylex.create({
     margin: 0,
     color: 'light-dark(#333, #eee)',
   },
-  badge: {
-    display: 'inline-block',
-    padding: '2px 6px',
-    fontSize: 10,
-    fontWeight: 600,
-    borderRadius: 4,
-    backgroundColor: 'light-dark(#e0e0e0, #444)',
-    color: 'light-dark(#666, #aaa)',
-    marginLeft: 8,
-  },
-  collisionWarning: {
-    backgroundColor: 'light-dark(#fff3cd, #4a3f00)',
-    color: 'light-dark(#856404, #ffc107)',
-  },
-  sectionHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-  },
   formula: {
     fontFamily: 'SF Mono, Monaco, Consolas, monospace',
-    fontSize: 13,
+    fontSize: 12,
     padding: '12px 16px',
     backgroundColor: 'light-dark(#f5f5f5, #2a2a2a)',
     borderRadius: 6,
     color: 'light-dark(#333, #eee)',
+  },
+  // Landing page preview styles
+  landingPreview: {
+    backgroundColor: 'light-dark(#fff, #111)',
+    borderRadius: 8,
+    border: '1px solid light-dark(#ddd, #333)',
+    overflow: 'hidden',
+    minHeight: 600,
+  },
+  landingNav: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '16px 24px',
+    borderBottom: '1px solid light-dark(#eee, #333)',
+  },
+  landingLogo: {
+    fontWeight: 700,
+    color: 'light-dark(#333, #eee)',
+  },
+  landingNavLinks: {
+    display: 'flex',
+    gap: 24,
+  },
+  landingNavLink: {
+    color: 'light-dark(#666, #aaa)',
+    textDecoration: 'none',
+    cursor: 'pointer',
+  },
+  landingHero: {
+    padding: '64px 24px',
+    textAlign: 'center',
+    maxWidth: 600,
+    margin: '0 auto',
+  },
+  landingHeroTitle: {
+    margin: '0 0 16px 0',
+    color: 'light-dark(#111, #fff)',
+  },
+  landingHeroSubtitle: {
+    margin: '0 0 32px 0',
+    color: 'light-dark(#666, #aaa)',
+  },
+  landingHeroButtons: {
+    display: 'flex',
+    gap: 12,
+    justifyContent: 'center',
+  },
+  landingFeatures: {
+    padding: '48px 24px',
+    backgroundColor: 'light-dark(#f9f9f9, #1a1a1a)',
+  },
+  landingFeaturesTitle: {
+    textAlign: 'center',
+    margin: '0 0 8px 0',
+    color: 'light-dark(#111, #fff)',
+  },
+  landingFeaturesSubtitle: {
+    textAlign: 'center',
+    margin: '0 0 32px 0',
+    color: 'light-dark(#666, #aaa)',
+  },
+  landingFeatureGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: 24,
+    maxWidth: 900,
+    margin: '0 auto',
+  },
+  landingFeatureCard: {
+    padding: 20,
+    backgroundColor: 'light-dark(#fff, #252528)',
+    borderRadius: 8,
+    border: '1px solid light-dark(#eee, #333)',
+  },
+  landingFeatureTitle: {
+    margin: '0 0 8px 0',
+    color: 'light-dark(#111, #fff)',
+  },
+  landingFeatureDesc: {
+    margin: 0,
+    color: 'light-dark(#666, #aaa)',
+  },
+  tabBar: {
+    display: 'flex',
+    gap: 0,
+    borderBottom: '1px solid light-dark(#ddd, #444)',
+    marginBottom: 16,
+  },
+  tab: {
+    padding: '12px 20px',
+    fontSize: 14,
+    fontWeight: 500,
+    color: 'light-dark(#666, #aaa)',
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderBottom: '2px solid transparent',
+    cursor: 'pointer',
+    marginBottom: -1,
+  },
+  tabActive: {
+    color: 'light-dark(#0064E0, #2694FE)',
+    borderBottomColor: 'light-dark(#0064E0, #2694FE)',
   },
 });
 
@@ -223,23 +355,18 @@ const styles = stylex.create({
 // Component
 // =============================================================================
 
+type PreviewTab = 'scale' | 'landing' | 'comparison';
+
 export default function TypeScaleExplorerPage() {
   const [config, setConfig] = useState<TypeScaleConfig>(PRESETS.default);
+  const [activeTab, setActiveTab] = useState<PreviewTab>('scale');
 
-  const scale = useMemo(() => generateTypeScale(config), [config]);
+  const typeStyles = useMemo(() => generateTypeStyles(config), [config]);
 
-  // Detect collisions (adjacent sizes that round to same value)
-  const collisions = useMemo(() => {
-    const seen = new Set<number>();
-    const collided = new Set<number>();
-    for (const step of scale) {
-      if (seen.has(step.fontSize)) {
-        collided.add(step.fontSize);
-      }
-      seen.add(step.fontSize);
-    }
-    return collided;
-  }, [scale]);
+  const headings = typeStyles.filter(s => s.role === 'heading');
+  const bodyStyles = typeStyles.filter(
+    s => s.role === 'body' || s.role === 'supporting',
+  );
 
   const activePreset = Object.entries(PRESETS).find(
     ([, preset]) =>
@@ -248,16 +375,18 @@ export default function TypeScaleExplorerPage() {
       preset.lineHeightGrid === config.lineHeightGrid,
   )?.[0];
 
+  const getStyle = (name: string) =>
+    typeStyles.find(s => s.name === name) || typeStyles[0];
+
   return (
     <div {...stylex.props(styles.container)}>
-      <XDSVStack gap={8}>
+      <XDSVStack gap={6}>
         {/* Header */}
         <XDSVStack gap={2}>
           <XDSHeading level={1}>Type Scale Explorer</XDSHeading>
           <XDSText type="body" color="secondary">
-            Experiment with ratio-based type scales. Adjust the base size and
-            ratio to see how they affect the generated scale. Line heights snap
-            to the nearest grid value.
+            Experiment with ratio-based type scales. Combines font size, line
+            height, and weight into semantic type styles.
           </XDSText>
         </XDSVStack>
 
@@ -317,7 +446,7 @@ export default function TypeScaleExplorerPage() {
                     setConfig(c => ({...c, ratio: RATIOS[e.target.value]}))
                   }
                   {...stylex.props(styles.select)}>
-                  {Object.entries(RATIOS).map(([name, value]) => (
+                  {Object.entries(RATIOS).map(([name]) => (
                     <option key={name} value={name}>
                       {name}
                     </option>
@@ -343,150 +472,341 @@ export default function TypeScaleExplorerPage() {
                 </select>
               </div>
             </XDSHStack>
-
-            {/* Formula */}
-            <div {...stylex.props(styles.formula)}>
-              fontSize = {config.base} × {config.ratio.toFixed(3)}
-              <sup>n</sup> → round to nearest pixel
-              <br />
-              lineHeight = snap(fontSize × 1.25–1.5, {config.lineHeightGrid}px
-              grid)
-            </div>
           </XDSVStack>
         </div>
 
-        <XDSDivider />
-
-        {/* Scale Table */}
-        <XDSVStack gap={3}>
-          <div {...stylex.props(styles.sectionHeader)}>
-            <XDSHeading level={2}>Computed Scale</XDSHeading>
-            {collisions.size > 0 && (
-              <span {...stylex.props(styles.badge, styles.collisionWarning)}>
-                ⚠️ {collisions.size} collision{collisions.size > 1 ? 's' : ''}
-              </span>
+        {/* Tab Bar */}
+        <div {...stylex.props(styles.tabBar)}>
+          <button
+            {...stylex.props(
+              styles.tab,
+              activeTab === 'scale' && styles.tabActive,
             )}
-          </div>
+            onClick={() => setActiveTab('scale')}>
+            Type Scale
+          </button>
+          <button
+            {...stylex.props(
+              styles.tab,
+              activeTab === 'landing' && styles.tabActive,
+            )}
+            onClick={() => setActiveTab('landing')}>
+            Landing Page
+          </button>
+          <button
+            {...stylex.props(
+              styles.tab,
+              activeTab === 'comparison' && styles.tabActive,
+            )}
+            onClick={() => setActiveTab('comparison')}>
+            Preset Comparison
+          </button>
+        </div>
 
-          <table {...stylex.props(styles.table)}>
-            <thead>
-              <tr>
-                <th {...stylex.props(styles.th)}>Token</th>
-                <th {...stylex.props(styles.th)}>Exponent</th>
-                <th {...stylex.props(styles.th)}>Raw</th>
-                <th {...stylex.props(styles.th)}>Font Size</th>
-                <th {...stylex.props(styles.th)}>Line Height</th>
-                <th {...stylex.props(styles.th)}>LH Ratio</th>
-              </tr>
-            </thead>
-            <tbody>
-              {scale.map(step => (
-                <tr key={step.name}>
-                  <td {...stylex.props(styles.td)}>
-                    <code>--text-{step.name}</code>
-                    {collisions.has(step.fontSize) && (
-                      <span
-                        {...stylex.props(
-                          styles.badge,
-                          styles.collisionWarning,
-                        )}>
-                        collision
-                      </span>
-                    )}
-                  </td>
-                  <td {...stylex.props(styles.td, styles.tdMono)}>
-                    {step.exponent >= 0 ? '+' : ''}
-                    {step.exponent}
-                  </td>
-                  <td {...stylex.props(styles.td, styles.tdMono)}>
-                    {step.rawSize.toFixed(2)}px
-                  </td>
-                  <td {...stylex.props(styles.td, styles.tdMono)}>
-                    {step.fontSize}px
-                  </td>
-                  <td {...stylex.props(styles.td, styles.tdMono)}>
-                    {step.lineHeight}px
-                  </td>
-                  <td {...stylex.props(styles.td, styles.tdMono)}>
-                    {step.lineHeightRatio.toFixed(2)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </XDSVStack>
-
-        <XDSDivider />
-
-        {/* Live Preview */}
-        <XDSVStack gap={3}>
-          <XDSHeading level={2}>Live Preview</XDSHeading>
-
-          <div {...stylex.props(styles.preview)}>
+        {/* Tab Content */}
+        {activeTab === 'scale' && (
+          <div {...stylex.props(styles.twoColumn)}>
+            {/* Scale Table */}
             <XDSVStack gap={4}>
-              {scale
-                .slice()
-                .reverse()
-                .map(step => (
-                  <p
-                    key={step.name}
-                    style={{
-                      fontSize: step.fontSize,
-                      lineHeight: `${step.lineHeight}px`,
-                    }}
-                    {...stylex.props(styles.sampleText)}>
-                    <strong>{step.name}</strong> — The quick brown fox jumps
-                    over the lazy dog ({step.fontSize}px / {step.lineHeight}px)
-                  </p>
-                ))}
+              <XDSHeading level={3}>Headings</XDSHeading>
+              <table {...stylex.props(styles.table)}>
+                <thead>
+                  <tr>
+                    <th {...stylex.props(styles.th)}>Style</th>
+                    <th {...stylex.props(styles.th)}>Size</th>
+                    <th {...stylex.props(styles.th)}>Line H</th>
+                    <th {...stylex.props(styles.th)}>Weight</th>
+                    <th {...stylex.props(styles.th)}>Preview</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {headings.map(style => (
+                    <tr key={style.name} {...stylex.props(styles.roleHeading)}>
+                      <td {...stylex.props(styles.td)}>{style.name}</td>
+                      <td {...stylex.props(styles.td, styles.tdMono)}>
+                        {style.fontSize}px
+                      </td>
+                      <td {...stylex.props(styles.td, styles.tdMono)}>
+                        {style.lineHeight}px
+                      </td>
+                      <td {...stylex.props(styles.td, styles.tdMono)}>
+                        {style.weight}
+                      </td>
+                      <td {...stylex.props(styles.td)}>
+                        <span
+                          style={{
+                            fontSize: style.fontSize,
+                            lineHeight: `${style.lineHeight}px`,
+                            fontWeight: style.weight,
+                          }}>
+                          Aa
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <XDSHeading level={3}>Body &amp; Supporting</XDSHeading>
+              <table {...stylex.props(styles.table)}>
+                <thead>
+                  <tr>
+                    <th {...stylex.props(styles.th)}>Style</th>
+                    <th {...stylex.props(styles.th)}>Size</th>
+                    <th {...stylex.props(styles.th)}>Line H</th>
+                    <th {...stylex.props(styles.th)}>Weight</th>
+                    <th {...stylex.props(styles.th)}>Preview</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bodyStyles.map(style => (
+                    <tr
+                      key={style.name}
+                      {...stylex.props(
+                        style.role === 'body'
+                          ? styles.roleBody
+                          : styles.roleSupporting,
+                      )}>
+                      <td {...stylex.props(styles.td)}>{style.name}</td>
+                      <td {...stylex.props(styles.td, styles.tdMono)}>
+                        {style.fontSize}px
+                      </td>
+                      <td {...stylex.props(styles.td, styles.tdMono)}>
+                        {style.lineHeight}px
+                      </td>
+                      <td {...stylex.props(styles.td, styles.tdMono)}>
+                        {style.weight}
+                      </td>
+                      <td {...stylex.props(styles.td)}>
+                        <span
+                          style={{
+                            fontSize: style.fontSize,
+                            lineHeight: `${style.lineHeight}px`,
+                            fontWeight: style.weight,
+                          }}>
+                          The quick brown fox
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </XDSVStack>
+
+            {/* Live Preview */}
+            <XDSVStack gap={4}>
+              <XDSHeading level={3}>Live Preview</XDSHeading>
+              <div {...stylex.props(styles.preview)}>
+                <XDSVStack gap={4}>
+                  {headings.map(style => (
+                    <p
+                      key={style.name}
+                      style={{
+                        fontSize: style.fontSize,
+                        lineHeight: `${style.lineHeight}px`,
+                        fontWeight: style.weight,
+                        margin: 0,
+                      }}
+                      {...stylex.props(styles.sampleText)}>
+                      {style.name}: A wizard&apos;s job is to vex chumps quickly
+                      in fog
+                    </p>
+                  ))}
+                  <XDSDivider />
+                  {bodyStyles.slice(0, 3).map(style => (
+                    <p
+                      key={style.name}
+                      style={{
+                        fontSize: style.fontSize,
+                        lineHeight: `${style.lineHeight}px`,
+                        fontWeight: style.weight,
+                        margin: 0,
+                      }}
+                      {...stylex.props(styles.sampleText)}>
+                      {style.name}: The quick brown fox jumps over the lazy dog.
+                      Pack my box with five dozen liquor jugs.
+                    </p>
+                  ))}
+                </XDSVStack>
+              </div>
             </XDSVStack>
           </div>
-        </XDSVStack>
+        )}
 
-        <XDSDivider />
+        {activeTab === 'landing' && (
+          <div {...stylex.props(styles.landingPreview)}>
+            {/* Nav */}
+            <nav {...stylex.props(styles.landingNav)}>
+              <span
+                style={{
+                  fontSize: getStyle('body').fontSize,
+                  fontWeight: 700,
+                }}
+                {...stylex.props(styles.landingLogo)}>
+                Acme Inc
+              </span>
+              <div {...stylex.props(styles.landingNavLinks)}>
+                {['Features', 'Pricing', 'About', 'Contact'].map(link => (
+                  <span
+                    key={link}
+                    style={{
+                      fontSize: getStyle('body-sm').fontSize,
+                      fontWeight: getStyle('body-sm').weight,
+                    }}
+                    {...stylex.props(styles.landingNavLink)}>
+                    {link}
+                  </span>
+                ))}
+              </div>
+            </nav>
 
-        {/* Side-by-Side Comparison */}
-        <XDSVStack gap={3}>
-          <XDSHeading level={2}>Preset Comparison</XDSHeading>
-          <XDSText type="supporting" color="secondary">
-            See how the same semantic tokens render across different theme
-            presets.
-          </XDSText>
+            {/* Hero */}
+            <div {...stylex.props(styles.landingHero)}>
+              <h1
+                style={{
+                  fontSize: getStyle('h1').fontSize,
+                  lineHeight: `${getStyle('h1').lineHeight}px`,
+                  fontWeight: getStyle('h1').weight,
+                }}
+                {...stylex.props(styles.landingHeroTitle)}>
+                Your digital transformation begins here
+              </h1>
+              <p
+                style={{
+                  fontSize: getStyle('body-lg').fontSize,
+                  lineHeight: `${getStyle('body-lg').lineHeight}px`,
+                  fontWeight: getStyle('body-lg').weight,
+                }}
+                {...stylex.props(styles.landingHeroSubtitle)}>
+                Unlock the full potential of your business. Start your journey
+                today and experience the future of business software.
+              </p>
+              <div {...stylex.props(styles.landingHeroButtons)}>
+                <XDSButton label="Explore features" variant="secondary" />
+                <XDSButton label="Get started" variant="primary" />
+              </div>
+              <p
+                style={{
+                  fontSize: getStyle('caption').fontSize,
+                  lineHeight: `${getStyle('caption').lineHeight}px`,
+                  fontWeight: getStyle('caption').weight,
+                  marginTop: 16,
+                  color: 'light-dark(#999, #666)',
+                }}>
+                No credit card required
+              </p>
+            </div>
 
-          <XDSHStack gap={4}>
-            {Object.entries(PRESETS).map(([name, preset]) => {
-              const presetScale = generateTypeScale(preset);
-              return (
-                <div key={name} style={{flex: 1}}>
-                  <XDSVStack gap={2}>
-                    <XDSText type="label">
-                      {name.charAt(0).toUpperCase() + name.slice(1)}
-                    </XDSText>
-                    <XDSText type="supporting" color="secondary">
-                      {preset.base}px base, {preset.ratio} ratio
-                    </XDSText>
-                    <div {...stylex.props(styles.preview)}>
-                      <XDSVStack gap={2}>
-                        {presetScale.slice(2, 6).map(step => (
-                          <p
-                            key={step.name}
-                            style={{
-                              fontSize: step.fontSize,
-                              lineHeight: `${step.lineHeight}px`,
-                              margin: 0,
-                            }}
-                            {...stylex.props(styles.sampleText)}>
-                            {step.name}: {step.fontSize}px
-                          </p>
-                        ))}
-                      </XDSVStack>
-                    </div>
-                  </XDSVStack>
-                </div>
-              );
-            })}
-          </XDSHStack>
-        </XDSVStack>
+            {/* Features */}
+            <div {...stylex.props(styles.landingFeatures)}>
+              <h2
+                style={{
+                  fontSize: getStyle('h2').fontSize,
+                  lineHeight: `${getStyle('h2').lineHeight}px`,
+                  fontWeight: getStyle('h2').weight,
+                }}
+                {...stylex.props(styles.landingFeaturesTitle)}>
+                SaaS solutions that drive results
+              </h2>
+              <p
+                style={{
+                  fontSize: getStyle('body').fontSize,
+                  lineHeight: `${getStyle('body').lineHeight}px`,
+                  fontWeight: getStyle('body').weight,
+                }}
+                {...stylex.props(styles.landingFeaturesSubtitle)}>
+                Explore our suite of powerful software solutions.
+              </p>
+
+              <div {...stylex.props(styles.landingFeatureGrid)}>
+                {[
+                  {
+                    title: 'Enterprise planning',
+                    desc: 'Seamlessly manage and integrate all core business processes.',
+                  },
+                  {
+                    title: 'Project management',
+                    desc: 'Ensure project success by efficiently planning and tracking.',
+                  },
+                  {
+                    title: 'Analytics dashboard',
+                    desc: 'Leverage data-driven insights to make informed decisions.',
+                  },
+                ].map(feature => (
+                  <div
+                    key={feature.title}
+                    {...stylex.props(styles.landingFeatureCard)}>
+                    <h3
+                      style={{
+                        fontSize: getStyle('h4').fontSize,
+                        lineHeight: `${getStyle('h4').lineHeight}px`,
+                        fontWeight: getStyle('h4').weight,
+                      }}
+                      {...stylex.props(styles.landingFeatureTitle)}>
+                      {feature.title}
+                    </h3>
+                    <p
+                      style={{
+                        fontSize: getStyle('body-sm').fontSize,
+                        lineHeight: `${getStyle('body-sm').lineHeight}px`,
+                        fontWeight: getStyle('body-sm').weight,
+                      }}
+                      {...stylex.props(styles.landingFeatureDesc)}>
+                      {feature.desc}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'comparison' && (
+          <XDSVStack gap={4}>
+            <XDSText type="supporting" color="secondary">
+              See how the same semantic styles render across different theme
+              presets.
+            </XDSText>
+
+            <XDSHStack gap={4}>
+              {Object.entries(PRESETS).map(([name, preset]) => {
+                const presetStyles = generateTypeStyles(preset);
+                const presetHeadings = presetStyles.filter(
+                  s => s.role === 'heading',
+                );
+                return (
+                  <div key={name} style={{flex: 1}}>
+                    <XDSVStack gap={2}>
+                      <XDSText type="label">
+                        {name.charAt(0).toUpperCase() + name.slice(1)}
+                      </XDSText>
+                      <XDSText type="supporting" color="secondary">
+                        {preset.base}px base, {preset.ratio} ratio
+                      </XDSText>
+                      <div {...stylex.props(styles.preview)}>
+                        <XDSVStack gap={2}>
+                          {presetHeadings.slice(0, 4).map(style => (
+                            <p
+                              key={style.name}
+                              style={{
+                                fontSize: style.fontSize,
+                                lineHeight: `${style.lineHeight}px`,
+                                fontWeight: style.weight,
+                                margin: 0,
+                              }}
+                              {...stylex.props(styles.sampleText)}>
+                              {style.name}: {style.fontSize}px
+                            </p>
+                          ))}
+                        </XDSVStack>
+                      </div>
+                    </XDSVStack>
+                  </div>
+                );
+              })}
+            </XDSHStack>
+          </XDSVStack>
+        )}
       </XDSVStack>
     </div>
   );
