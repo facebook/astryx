@@ -24,6 +24,7 @@ const pages = [
   {name: 'Mega Menu', href: '/pages/mega-menu/'},
   {name: 'Polymorphic Link', href: '/pages/polymorphic-link/'},
   {name: 'Table Overview', href: '/pages/table-overview/'},
+  {name: 'Type Scale Explorer', href: '/pages/type-scale-explorer/'},
 ];
 
 const styles = stylex.create({
