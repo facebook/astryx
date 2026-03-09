@@ -183,6 +183,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'xds-switch'},
+      {className: 'xds-switch-field'},
     ],
   },
   accessibility: [
