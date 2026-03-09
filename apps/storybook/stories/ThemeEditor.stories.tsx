@@ -15,7 +15,7 @@ import {XDSToken} from '@xds/core/Token';
 import {XDSSlider} from '@xds/core/Slider';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
-import {XDSRadioList} from '@xds/core/RadioList';
+import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSTheme, defineTheme} from '@xds/core/theme';
 import {
   colorDefaults,
@@ -643,13 +643,11 @@ function ComponentPreview() {
         <XDSRadioList
           label="Select an option"
           value={radioValue}
-          onChange={setRadioValue}
-          options={[
-            {value: 'option1', label: 'Option 1'},
-            {value: 'option2', label: 'Option 2'},
-            {value: 'option3', label: 'Option 3'},
-          ]}
-        />
+          onChange={setRadioValue}>
+          <XDSRadioListItem value="option1" label="Option 1" />
+          <XDSRadioListItem value="option2" label="Option 2" />
+          <XDSRadioListItem value="option3" label="Option 3" />
+        </XDSRadioList>
       </div>
 
       {/* Progress */}
@@ -707,22 +705,22 @@ function ComponentPreview() {
           <XDSBanner
             title="Information"
             description="This is an informational banner."
-            sentiment="info"
+            status="info"
           />
           <XDSBanner
             title="Success"
             description="Operation completed successfully."
-            sentiment="positive"
+            status="success"
           />
           <XDSBanner
             title="Warning"
             description="Please review before continuing."
-            sentiment="warning"
+            status="warning"
           />
           <XDSBanner
             title="Error"
             description="Something went wrong."
-            sentiment="negative"
+            status="error"
           />
         </div>
       </div>
