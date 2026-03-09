@@ -202,8 +202,8 @@ export interface XDSAvatarProps extends XDSBaseProps<HTMLDivElement> {
  * Takes the first letter of the first two words.
  * @example
  * ```
- * getInitials('John Doe') // 'JD'
- * getInitials('Alice') // 'A'
+ * getInitials('John Doe')
+ * getInitials('Alice')
  * ```
  */
 function getInitials(name: string): string {
