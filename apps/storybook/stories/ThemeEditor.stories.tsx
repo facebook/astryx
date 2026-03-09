@@ -16,6 +16,9 @@ import {XDSSlider} from '@xds/core/Slider';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
+import {XDSTable} from '@xds/core/Table';
+import type {XDSTableColumn} from '@xds/core/Table';
+import {XDSDivider} from '@xds/core/Divider';
 import {XDSTheme, defineTheme} from '@xds/core/theme';
 import {
   colorDefaults,
@@ -219,6 +222,64 @@ function parseLightDark(value: string): {light: string; dark: string} | null {
 }
 
 /**
+ * Parse a color value to extract hex and alpha components
+ * Handles: #RGB, #RRGGBB, #RRGGBBAA, rgba(), etc.
+ */
+function parseColorWithAlpha(
+  value: string,
+): {hex: string; alpha: number} | null {
+  // Handle #RRGGBBAA format
+  const hex8Match = value.match(/^#([0-9A-Fa-f]{8})$/);
+  if (hex8Match) {
+    const hex = '#' + hex8Match[1].slice(0, 6);
+    const alpha = parseInt(hex8Match[1].slice(6, 8), 16) / 255;
+    return {hex, alpha: Math.round(alpha * 100) / 100};
+  }
+
+  // Handle #RRGGBB format
+  const hex6Match = value.match(/^#([0-9A-Fa-f]{6})$/);
+  if (hex6Match) {
+    return {hex: value, alpha: 1};
+  }
+
+  // Handle #RGB format
+  const hex3Match = value.match(/^#([0-9A-Fa-f]{3})$/);
+  if (hex3Match) {
+    const r = hex3Match[1][0];
+    const g = hex3Match[1][1];
+    const b = hex3Match[1][2];
+    return {hex: `#${r}${r}${g}${g}${b}${b}`, alpha: 1};
+  }
+
+  // Handle rgba() format
+  const rgbaMatch = value.match(
+    /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/,
+  );
+  if (rgbaMatch) {
+    const r = parseInt(rgbaMatch[1], 10).toString(16).padStart(2, '0');
+    const g = parseInt(rgbaMatch[2], 10).toString(16).padStart(2, '0');
+    const b = parseInt(rgbaMatch[3], 10).toString(16).padStart(2, '0');
+    const alpha = rgbaMatch[4] ? parseFloat(rgbaMatch[4]) : 1;
+    return {hex: `#${r}${g}${b}`, alpha};
+  }
+
+  return null;
+}
+
+/**
+ * Convert hex + alpha back to a color string
+ */
+function colorWithAlphaToString(hex: string, alpha: number): string {
+  if (alpha >= 1) {
+    return hex.toUpperCase();
+  }
+  const alphaHex = Math.round(alpha * 255)
+    .toString(16)
+    .padStart(2, '0');
+  return `${hex}${alphaHex}`.toUpperCase();
+}
+
+/**
  * Get a human-readable label from a token name
  */
 function getTokenLabel(tokenName: string): string {
@@ -246,7 +307,27 @@ function ColorSwatch({tokenName, value, onChange, mode}: ColorSwatchProps) {
       ? parsed.light
       : parsed.dark
     : value;
-  const isHex = displayValue.startsWith('#');
+
+  // Parse color with alpha
+  const colorParsed = parseColorWithAlpha(displayValue);
+  const hasColorPicker = colorParsed !== null;
+
+  const handleColorChange = (newHex: string, newAlpha?: number) => {
+    const alpha = newAlpha ?? colorParsed?.alpha ?? 1;
+    const newColor = colorWithAlphaToString(newHex, alpha);
+    const newValue = parsed
+      ? mode === 'light'
+        ? `light-dark(${newColor}, ${parsed.dark})`
+        : `light-dark(${parsed.light}, ${newColor})`
+      : newColor;
+    onChange(tokenName, newValue);
+  };
+
+  const handleAlphaChange = (newAlpha: number) => {
+    if (colorParsed) {
+      handleColorChange(colorParsed.hex, newAlpha);
+    }
+  };
 
   return (
     <div
@@ -266,8 +347,26 @@ function ColorSwatch({tokenName, value, onChange, mode}: ColorSwatchProps) {
           backgroundColor: displayValue,
           border: '1px solid var(--color-divider-emphasized)',
           flexShrink: 0,
-        }}
-      />
+          // Checkerboard pattern for alpha preview
+          backgroundImage:
+            colorParsed && colorParsed.alpha < 1
+              ? `linear-gradient(45deg, #ccc 25%, transparent 25%), 
+                 linear-gradient(-45deg, #ccc 25%, transparent 25%), 
+                 linear-gradient(45deg, transparent 75%, #ccc 75%), 
+                 linear-gradient(-45deg, transparent 75%, #ccc 75%)`
+              : undefined,
+          backgroundSize: '8px 8px',
+          backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px',
+        }}>
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            borderRadius: '6px',
+            backgroundColor: displayValue,
+          }}
+        />
+      </div>
       <div style={{flex: 1, minWidth: 0}}>
         <div
           style={{
@@ -287,28 +386,50 @@ function ColorSwatch({tokenName, value, onChange, mode}: ColorSwatchProps) {
           {tokenName}
         </code>
       </div>
-      <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-        {isHex && (
-          <input
-            type="color"
-            value={displayValue.slice(0, 7)}
-            onChange={e => {
-              const newValue = parsed
-                ? mode === 'light'
-                  ? `light-dark(${e.target.value}, ${parsed.dark})`
-                  : `light-dark(${parsed.light}, ${e.target.value})`
-                : e.target.value;
-              onChange(tokenName, newValue);
-            }}
-            style={{
-              width: '28px',
-              height: '28px',
-              padding: 0,
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-          />
+      <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+        {hasColorPicker && colorParsed && (
+          <>
+            <input
+              type="color"
+              value={colorParsed.hex}
+              onChange={e => handleColorChange(e.target.value)}
+              style={{
+                width: '28px',
+                height: '28px',
+                padding: 0,
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+              }}
+            />
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+              value={Math.round(colorParsed.alpha * 100)}
+              onChange={e => handleAlphaChange(Number(e.target.value) / 100)}
+              title="Alpha %"
+              style={{
+                width: '50px',
+                padding: '4px 6px',
+                fontSize: '12px',
+                fontFamily: 'var(--font-code)',
+                border: '1px solid var(--color-divider-emphasized)',
+                borderRadius: '4px',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text-primary)',
+                textAlign: 'center',
+              }}
+            />
+            <span
+              style={{
+                fontSize: '11px',
+                color: 'var(--color-text-secondary)',
+              }}>
+              %
+            </span>
+          </>
         )}
         <input
           type="text"
@@ -547,6 +668,22 @@ function TypographyEditor({tokenName, value, onChange}: TypographyEditorProps) {
 // Component Preview
 // =============================================================================
 
+// =============================================================================
+// Spacing Table Data
+// =============================================================================
+
+interface SpacingRow extends Record<string, unknown> {
+  token: string;
+  value: string;
+  preview: React.ReactNode;
+}
+
+const spacingTableColumns: XDSTableColumn<SpacingRow>[] = [
+  {key: 'token', header: 'Token'},
+  {key: 'value', header: 'Value'},
+  {key: 'preview', header: 'Preview'},
+];
+
 function ComponentPreview() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [selectedTab, setSelectedTab] = React.useState('overview');
@@ -555,21 +692,204 @@ function ComponentPreview() {
   const [checkboxValue, setCheckboxValue] = React.useState(false);
   const [radioValue, setRadioValue] = React.useState('option1');
 
+  // Spacing data for table
+  const spacingData: SpacingRow[] = Object.entries(spacingDefaults).map(
+    ([token, value]) => ({
+      token,
+      value,
+      preview: (
+        <div
+          style={{
+            width: value,
+            height: '16px',
+            backgroundColor: 'var(--color-accent)',
+            borderRadius: '2px',
+          }}
+        />
+      ),
+    }),
+  );
+
   return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: '24px'}}>
-      {/* Buttons */}
+    <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
+      {/* Typography Scale - Article Example */}
+      <div>
+        <XDSText type="label" style={{marginBottom: '16px', display: 'block'}}>
+          Typography Scale
+        </XDSText>
+        <XDSCard padding="lg">
+          <article>
+            <XDSHeading level={1}>Building Design Systems</XDSHeading>
+            <XDSText
+              type="supporting"
+              style={{
+                marginTop: '8px',
+                marginBottom: '24px',
+                display: 'block',
+              }}>
+              A guide to creating consistent, scalable UI components
+            </XDSText>
+
+            <XDSText
+              type="large"
+              style={{marginBottom: '16px', display: 'block'}}>
+              Design systems provide a shared vocabulary between designers and
+              developers, enabling teams to build products faster and more
+              consistently.
+            </XDSText>
+
+            <XDSDivider style={{margin: '24px 0'}} />
+
+            <XDSHeading level={2} style={{marginBottom: '12px'}}>
+              Why Tokens Matter
+            </XDSHeading>
+            <XDSText
+              type="body"
+              style={{marginBottom: '16px', display: 'block'}}>
+              Design tokens are the visual design atoms of the design system —
+              specifically, they are named entities that store visual design
+              attributes. We use them in place of hard-coded values to ensure
+              flexibility and consistency.
+            </XDSText>
+
+            <XDSHeading level={3} style={{marginBottom: '8px'}}>
+              Example: Using Color Tokens
+            </XDSHeading>
+            <XDSText
+              type="body"
+              style={{marginBottom: '12px', display: 'block'}}>
+              Instead of using raw hex values, reference semantic tokens:
+            </XDSText>
+
+            {/* Code Block */}
+            <pre
+              style={{
+                padding: '16px',
+                borderRadius: 'var(--radius-element)',
+                backgroundColor: 'var(--color-wash)',
+                border: '1px solid var(--color-divider)',
+                fontFamily: 'var(--font-code)',
+                fontSize: 'var(--text-sm)',
+                lineHeight: 'var(--leading-normal)',
+                overflow: 'auto',
+                margin: '0 0 16px 0',
+              }}>
+              <code
+                style={{
+                  color: 'var(--color-text-primary)',
+                }}>
+                {`// ❌ Don't use raw values
+const styles = stylex.create({
+  button: {
+    backgroundColor: '#0064E0',
+    color: '#FFFFFF',
+  },
+});
+
+// ✅ Use semantic tokens
+const styles = stylex.create({
+  button: {
+    backgroundColor: colorVars['--color-accent'],
+    color: colorVars['--color-text-on-media'],
+  },
+});`}
+              </code>
+            </pre>
+
+            <XDSHeading level={4} style={{marginBottom: '8px'}}>
+              Benefits of This Approach
+            </XDSHeading>
+            <XDSText
+              type="body"
+              style={{marginBottom: '8px', display: 'block'}}>
+              Using tokens provides several advantages:
+            </XDSText>
+            <ul
+              style={{
+                margin: '0 0 16px 0',
+                paddingLeft: '24px',
+                color: 'var(--color-text-primary)',
+                fontSize: 'var(--text-base)',
+                lineHeight: 'var(--leading-base)',
+              }}>
+              <li>Automatic dark mode support via light-dark()</li>
+              <li>Centralized theme customization</li>
+              <li>Consistent visual language across components</li>
+              <li>Easy global updates when design changes</li>
+            </ul>
+
+            <XDSText type="supporting">
+              Last updated: March 2026 · 5 min read
+            </XDSText>
+          </article>
+        </XDSCard>
+      </div>
+
+      {/* Button Sizes */}
       <div>
         <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Buttons
+          Button Sizes
+        </XDSText>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+          }}>
+          <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+            <XDSText type="supporting" style={{width: '40px', flexShrink: 0}}>
+              sm
+            </XDSText>
+            <XDSButton label="Primary" variant="primary" size="sm" />
+            <XDSButton label="Secondary" variant="secondary" size="sm" />
+            <XDSButton label="Ghost" variant="ghost" size="sm" />
+            <XDSButton label="Destructive" variant="destructive" size="sm" />
+          </div>
+          <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+            <XDSText type="supporting" style={{width: '40px', flexShrink: 0}}>
+              md
+            </XDSText>
+            <XDSButton label="Primary" variant="primary" size="md" />
+            <XDSButton label="Secondary" variant="secondary" size="md" />
+            <XDSButton label="Ghost" variant="ghost" size="md" />
+            <XDSButton label="Destructive" variant="destructive" size="md" />
+          </div>
+          <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+            <XDSText type="supporting" style={{width: '40px', flexShrink: 0}}>
+              lg
+            </XDSText>
+            <XDSButton label="Primary" variant="primary" size="lg" />
+            <XDSButton label="Secondary" variant="secondary" size="lg" />
+            <XDSButton label="Ghost" variant="ghost" size="lg" />
+            <XDSButton label="Destructive" variant="destructive" size="lg" />
+          </div>
+        </div>
+      </div>
+
+      {/* Button States */}
+      <div>
+        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
+          Button States
         </XDSText>
         <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
-          <XDSButton label="Primary" variant="primary" />
-          <XDSButton label="Secondary" variant="secondary" />
-          <XDSButton label="Ghost" variant="ghost" />
-          <XDSButton label="Destructive" variant="destructive" />
+          <XDSButton label="Default" variant="primary" />
           <XDSButton label="Disabled" variant="primary" isDisabled />
           <XDSButton label="Loading" variant="primary" isLoading />
         </div>
+      </div>
+
+      {/* Spacing Table */}
+      <div>
+        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
+          Spacing Scale
+        </XDSText>
+        <XDSTable
+          columns={spacingTableColumns}
+          data={spacingData}
+          getRowKey={row => row.token}
+          density="compact"
+          dividers="rows"
+        />
       </div>
 
       {/* Badges */}
@@ -759,25 +1079,35 @@ function ComponentPreview() {
           isOpen={dialogOpen}
           onClose={() => setDialogOpen(false)}
           title="Sample Dialog">
-          <XDSStack gap="md">
-            <XDSText type="body">
-              This is a sample dialog to preview how dialogs look with the
-              current theme settings.
-            </XDSText>
-            <div
-              style={{display: 'flex', gap: '8px', justifyContent: 'flex-end'}}>
-              <XDSButton
-                label="Cancel"
-                variant="ghost"
-                onClick={() => setDialogOpen(false)}
+          <div style={{padding: '0 24px 24px 24px'}}>
+            <XDSStack gap="md">
+              <XDSText type="body">
+                This is a sample dialog to preview how dialogs look with the
+                current theme settings.
+              </XDSText>
+              <XDSTextInput
+                label="Example Input"
+                placeholder="Type something..."
               />
-              <XDSButton
-                label="Confirm"
-                variant="primary"
-                onClick={() => setDialogOpen(false)}
-              />
-            </div>
-          </XDSStack>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '8px',
+                  justifyContent: 'flex-end',
+                }}>
+                <XDSButton
+                  label="Cancel"
+                  variant="ghost"
+                  onClick={() => setDialogOpen(false)}
+                />
+                <XDSButton
+                  label="Confirm"
+                  variant="primary"
+                  onClick={() => setDialogOpen(false)}
+                />
+              </div>
+            </XDSStack>
+          </div>
         </XDSDialog>
       </div>
     </div>
