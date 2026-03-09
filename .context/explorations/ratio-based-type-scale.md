@@ -8,7 +8,7 @@
 
 XDS currently has two parallel type scale systems:
 
-1. **Default scale** — Dense, optimized for internal tools (base: 14px)
+1. **Default scale** — Functional, optimized for internal tools (base: 14px)
 2. **Editorial scale** — Larger, optimized for content-heavy pages
 
 This creates confusion:
@@ -17,7 +17,7 @@ This creates confusion:
 - "Do I need to support both in my component?"
 - "What if I want something in between?"
 
-Products have varying needs — some want dense admin UIs, others want more editorial layouts. Today, they must choose between two fixed scales or manually override tokens.
+Products have varying needs — some want functional admin UIs, others want more editorial layouts. Today, they must choose between two fixed scales or manually override tokens.
 
 ## Proposed Solution
 
@@ -64,11 +64,11 @@ base × ratio^3  = 31.25px → 31px (2xl)
 
 Products choose their density by adjusting two values:
 
-| Preset    | Base | Ratio                | Character                 |
-| --------- | ---- | -------------------- | ------------------------- |
-| Dense     | 14px | 1.125 (Minor Second) | Tight, data-heavy         |
-| Default   | 16px | 1.25 (Major Third)   | Balanced                  |
-| Editorial | 16px | 1.25 (Major Third)   | Dramatic, content-focused |
+| Preset     | Base | Ratio                | Character                 |
+| ---------- | ---- | -------------------- | ------------------------- |
+| Functional | 12px | 1.125 (Major Second) | Tight, data-heavy         |
+| Default    | 16px | 1.25 (Major Third)   | Balanced                  |
+| Editorial  | 16px | 1.25 (Major Third)   | Dramatic, content-focused |
 
 Same semantic tokens (`fontSize.md`, `fontSize.lg`), different computed output.
 
@@ -98,7 +98,7 @@ function computeLineHeight(fontSize: number, grid = 4): number {
 | **Unified system**            | Eliminates editorial vs default confusion — one scale, themed      |
 | **Mathematical harmony**      | Ratios create inherent visual rhythm — sizes feel "related"        |
 | **Simpler theming**           | Change 2 values (base, ratio) instead of 10+ individual tokens     |
-| **Density spectrum**          | Products can be anywhere on dense↔editorial spectrum               |
+| **Density spectrum**          | Products can be anywhere on functional↔editorial spectrum          |
 | **Scales naturally**          | Responsive scaling: change base at breakpoints, everything adjusts |
 | **Fewer arbitrary decisions** | "What should fontSize500 be?" is answered by math, not debate      |
 
@@ -130,7 +130,7 @@ This exploration recommends option 2: keep ratio-derived font sizes (rounded to 
 
 ## Computed Examples
 
-### Dense Theme (12px base, 1.125 ratio)
+### Functional Theme (12px base, 1.125 ratio)
 
 | Token | Exponent | Raw     | Rounded | Line Height |
 | ----- | -------- | ------- | ------- | ----------- |
@@ -197,7 +197,7 @@ This approach **makes sense for XDS** given the goal of themeable density:
 | Goal                                     | Achieved?                                       |
 | ---------------------------------------- | ----------------------------------------------- |
 | Eliminate editorial vs default confusion | ✅ Yes                                          |
-| Enable dense ↔ editorial spectrum        | ✅ Yes                                          |
+| Enable functional ↔ editorial spectrum   | ✅ Yes                                          |
 | Preserve 4px grid alignment              | ⚠️ Mostly (line heights snap, font sizes round) |
 | Simple theming                           | ✅ Yes (2 values vs 10+)                        |
 | Pixel-perfect control                    | ❌ No (trading precision for flexibility)       |
