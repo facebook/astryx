@@ -41,6 +41,12 @@ export const docs = {
       description: 'Content positioned absolutely to fill the container.',
       required: true,
     },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+    },
   ],
   theming: {
     targets: [

@@ -161,6 +161,12 @@ export const docs = {
           type: '(item: XDSSelectorItemData) => ReactNode',
           description: 'Custom render function for each item in the dropdown.',
         },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        },
       ],
       examples: [
         {

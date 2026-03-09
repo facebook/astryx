@@ -190,6 +190,12 @@ export const docs = {
           type: 'string',
           description: 'Tooltip text for an info icon next to the label.',
         },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        },
       ],
     },
     {

@@ -160,6 +160,12 @@ const bioDescId = useId();
           description:
             'Tooltip text to display in an info icon at the end of the label.',
         },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        },
       ],
     },
     {

@@ -57,6 +57,12 @@ export const docs = {
         'Extend the divider to container edges with negative margins.',
       default: 'false',
     },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+    },
   ],
   theming: {
     targets: [

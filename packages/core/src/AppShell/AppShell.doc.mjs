@@ -213,6 +213,12 @@ const isMobile = useMediaQuery('(max-width: 768px)');
       description: 'Width of the sideNav panel in pixels.',
       default: '260',
     },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+    },
   ],
   accessibility: [
     'Semantic HTML via XDSLayout slots — each slot maps to a proper landmark element.',

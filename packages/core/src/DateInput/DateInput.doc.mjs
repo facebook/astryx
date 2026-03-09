@@ -151,6 +151,12 @@ export const docs = {
         'Number of months displayed simultaneously in the calendar popover.',
       default: '1',
     },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+    },
   ],
   keyboard:
     'Tab moves between input and calendar icon button; Enter/Space on icon opens the calendar and moves focus into it; Escape closes the calendar popover; Arrow keys navigate between days; Page Up/Down navigate between months.',

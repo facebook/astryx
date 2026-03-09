@@ -143,6 +143,12 @@ export const docs = {
       type: '(query: string) => void',
       description: 'Callback fired when the search query text changes.',
     },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+    },
   ],
   examples: [
     {

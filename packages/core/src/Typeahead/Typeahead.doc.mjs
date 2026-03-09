@@ -194,6 +194,12 @@ export const docs = {
           type: '(isOpen: boolean) => void',
           description: 'Callback when the dropdown opens or closes.',
         },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        },
       ],
       examples: [
         {

@@ -49,6 +49,12 @@ export const docs = {
       description:
         'Custom render function for items. Only called for selectable items (not dividers/sections).',
     },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+    },
   ],
   examples: [
     {

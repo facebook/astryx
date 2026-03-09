@@ -18,6 +18,12 @@ export const docs = {
       description:
         'Form fields to arrange. Accepts XDS inputs (XDSTextInput, XDSSelector, etc.) and XDSField-wrapped custom controls.',
     },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+    },
   ],
   examples: [
     {

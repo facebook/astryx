@@ -264,6 +264,12 @@ const selectionPlugin = useXDSTableSelection<User>({
           description:
             'Children mode — render XDSTableRow/XDSTableCell directly instead of using data-driven rendering.',
         },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        },
       ],
       examples: [
         {

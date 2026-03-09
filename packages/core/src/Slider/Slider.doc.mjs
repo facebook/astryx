@@ -214,6 +214,12 @@ export const docs = {
       type: 'string',
       description: 'Tooltip text for an info icon displayed next to the label.',
     },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+    },
   ],
   accessibility: [
     'Uses `role="slider"` with `aria-valuenow`, `aria-valuemin`, `aria-valuemax`, and `aria-valuetext` on each thumb.',

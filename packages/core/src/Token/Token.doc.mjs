@@ -75,6 +75,12 @@ export const docs = {
         'Visually hides the label using a screen-reader-only clip technique; the label remains accessible.',
       default: 'false',
     },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+    },
   ],
   examples: [
     {

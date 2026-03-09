@@ -76,6 +76,12 @@ export const docs = {
         'Enables the compact variant with reduced spacing for constrained content areas.',
       default: 'false',
     },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+    },
   ],
   theming: {
     targets: [

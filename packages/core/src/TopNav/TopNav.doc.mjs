@@ -177,6 +177,12 @@ export const docs = {
           description:
             'Accessible label for the navigation landmark, applied as aria-label on the <nav> element.',
         },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        },
       ],
       examples: [
         {
