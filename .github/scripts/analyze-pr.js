@@ -369,19 +369,116 @@ function getComponentStats(componentName) {
   };
 }
 
-// Get total bundle stats
-function getTotalBundleStats() {
-  const distPath = path.join(process.cwd(), CORE_DIST);
-  const esmPath = path.join(distPath, 'index.mjs');
-  const cjsPath = path.join(distPath, 'index.js');
+// Sum file sizes matching a glob pattern in a directory
+function sumFileSizes(dir, ext) {
+  try {
+    const files = fs.readdirSync(dir).filter(f => f.endsWith(ext));
+    return files.reduce((sum, f) => {
+      const size = getFileSizeBytes(path.join(dir, f));
+      return sum + (size || 0);
+    }, 0);
+  } catch {
+    return 0;
+  }
+}
 
-  return {
-    esmSize: getFileSize(esmPath),
-    esmBytes: getFileSizeBytes(esmPath),
-    cjsSize: getFileSize(cjsPath),
-    cjsBytes: getFileSizeBytes(cjsPath),
-    gzipSize: getGzipSize(esmPath),
-  };
+// Format bytes to human readable
+function formatBytes(bytes) {
+  if (bytes == null) return 'N/A';
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)}MB`;
+}
+
+// Format a delta with sign and percentage
+function formatDelta(before, after) {
+  if (before == null || after == null) return 'N/A';
+  const delta = after - before;
+  const pct = before > 0 ? ((delta / before) * 100).toFixed(1) : '0.0';
+  const sign = delta > 0 ? '+' : '';
+  return `${sign}${formatBytes(Math.abs(delta))} (${sign}${pct}%)`;
+}
+
+// Get total bundle stats — measures ALL dist files, not just entry points
+function getTotalBundleStats() {
+  const packages = [
+    { name: '@xds/core', dist: path.join(process.cwd(), 'packages/core/dist') },
+    { name: '@xds/theme-default', dist: path.join(process.cwd(), 'packages/themes/default/dist') },
+    { name: '@xds/theme-neutral', dist: path.join(process.cwd(), 'packages/themes/neutral/dist') },
+  ];
+
+  const result = { packages: {}, total: { js: 0, css: 0 } };
+
+  for (const pkg of packages) {
+    if (!fs.existsSync(pkg.dist)) continue;
+
+    const jsBytes = sumFileSizes(pkg.dist, '.mjs') + sumFileSizes(pkg.dist, '.js');
+    const cssBytes = sumFileSizes(pkg.dist, '.css');
+
+    result.packages[pkg.name] = {
+      js: { bytes: jsBytes, size: formatBytes(jsBytes) },
+      css: { bytes: cssBytes, size: formatBytes(cssBytes) },
+    };
+    result.total.js += jsBytes;
+    result.total.css += cssBytes;
+  }
+
+  result.total.jsSize = formatBytes(result.total.js);
+  result.total.cssSize = formatBytes(result.total.css);
+  result.total.allBytes = result.total.js + result.total.css;
+  result.total.allSize = formatBytes(result.total.allBytes);
+
+  // Gzip the core ESM output
+  const coreDistPath = path.join(process.cwd(), 'packages/core/dist');
+  try {
+    const output = execSync(
+      `cat "${coreDistPath}"/*.mjs | gzip -c | wc -c`,
+      { encoding: 'utf8' }
+    );
+    result.total.gzip = { bytes: parseInt(output.trim(), 10), size: formatBytes(parseInt(output.trim(), 10)) };
+  } catch { /* ignore */ }
+
+  return result;
+}
+
+// Build base branch and measure for delta comparison
+function getBaseBundleStats() {
+  try {
+    const tmpDir = path.join(process.cwd(), '.base-build-tmp');
+    try {
+      console.log('Building base branch for bundle size comparison...');
+      execSync(`git worktree add "${tmpDir}" ${baseBranch} --detach`, { stdio: 'pipe' });
+      execSync('yarn install --frozen-lockfile', { cwd: tmpDir, stdio: 'pipe', timeout: 60000 });
+      execSync('yarn build', {
+        cwd: tmpDir, stdio: 'pipe', timeout: 120000,
+        env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=4096' },
+      });
+
+      const packages = [
+        { name: '@xds/core', dist: path.join(tmpDir, 'packages/core/dist') },
+        { name: '@xds/theme-default', dist: path.join(tmpDir, 'packages/themes/default/dist') },
+        { name: '@xds/theme-neutral', dist: path.join(tmpDir, 'packages/themes/neutral/dist') },
+      ];
+
+      const result = { packages: {}, total: { js: 0, css: 0 } };
+      for (const pkg of packages) {
+        if (!fs.existsSync(pkg.dist)) continue;
+        const jsBytes = sumFileSizes(pkg.dist, '.mjs') + sumFileSizes(pkg.dist, '.js');
+        const cssBytes = sumFileSizes(pkg.dist, '.css');
+        result.packages[pkg.name] = { js: { bytes: jsBytes }, css: { bytes: cssBytes } };
+        result.total.js += jsBytes;
+        result.total.css += cssBytes;
+      }
+      result.total.allBytes = result.total.js + result.total.css;
+      console.log('Base branch build complete.');
+      return result;
+    } finally {
+      try { execSync(`git worktree remove "${tmpDir}" --force`, { stdio: 'pipe' }); } catch {}
+    }
+  } catch (e) {
+    console.log(`Could not build base for delta: ${e.message}`);
+    return null;
+  }
 }
 
 // Main analysis
@@ -450,6 +547,7 @@ function analyze() {
     newExports,
     componentStats,
     totalBundle: getTotalBundleStats(),
+    baseBundleStats: getBaseBundleStats(),
     analyzedAt: new Date().toISOString(),
   };
 

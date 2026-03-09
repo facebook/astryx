@@ -128,16 +128,64 @@ if (analysis.modifiedComponents && analysis.modifiedComponents.length > 0) {
 // Build accessibility section using shared module
 const a11ySection = buildA11ySection(a11yReport);
 
-// Build bundle size section
-let bundleSection = '### Bundle Size Summary\n\n';
-bundleSection += `| Package | Size (ESM) | Size (CJS) | Gzipped |\n`;
-bundleSection += `|---------|------------|------------|----------|\n`;
-bundleSection += `| @xds/core | ${analysis.totalBundle?.esmSize || 'N/A'} | ${analysis.totalBundle?.cjsSize || 'N/A'} | ${analysis.totalBundle?.gzipSize || 'N/A'} |\n\n`;
+// Helper: format byte delta with sign and percentage
+function fmtDelta(before, after) {
+  if (before == null || after == null || before === 0) return '';
+  const delta = after - before;
+  if (delta === 0) return '—';
+  const sign = delta > 0 ? '+' : '';
+  const pct = ((delta / before) * 100).toFixed(1);
+  const abs = delta < 0 ? -delta : delta;
+  const size = abs < 1024 ? `${abs}B` : `${(abs / 1024).toFixed(1)}KB`;
+  return `${sign}${delta < 0 ? '-' : ''}${size} (${sign}${pct}%)`;
+}
 
-if (analysis.bundleDelta) {
-  const delta = analysis.bundleDelta;
-  const direction = delta > 0 ? 'increased' : delta < 0 ? 'decreased' : 'unchanged';
-  bundleSection += `**Bundle size ${direction}:** ${delta > 0 ? '+' : ''}${delta} bytes\n\n`;
+// Build bundle size section
+let bundleSection = '### Bundle Size\n\n';
+const bundle = analysis.totalBundle || {};
+const baseBundleStats = analysis.baseBundleStats;
+
+if (bundle.packages) {
+  const hasBase = baseBundleStats && baseBundleStats.packages;
+
+  if (hasBase) {
+    bundleSection += `| Package | JS | Δ | CSS | Δ |\n`;
+    bundleSection += `|---|---:|---:|---:|---:|\n`;
+  } else {
+    bundleSection += `| Package | JS | CSS |\n`;
+    bundleSection += `|---|---:|---:|\n`;
+  }
+
+  for (const [name, stats] of Object.entries(bundle.packages)) {
+    const baseStats = hasBase ? baseBundleStats.packages[name] : null;
+    const jsDelta = baseStats ? fmtDelta(baseStats.js.bytes, stats.js.bytes) : '';
+    const cssDelta = baseStats ? fmtDelta(baseStats.css.bytes, stats.css.bytes) : '';
+
+    if (hasBase) {
+      bundleSection += `| ${name} | ${stats.js.size} | ${jsDelta} | ${stats.css.size} | ${cssDelta} |\n`;
+    } else {
+      bundleSection += `| ${name} | ${stats.js.size} | ${stats.css.size} |\n`;
+    }
+  }
+
+  // Total row
+  if (hasBase) {
+    const totalJsDelta = fmtDelta(baseBundleStats.total.js, bundle.total.js);
+    const totalCssDelta = fmtDelta(baseBundleStats.total.css, bundle.total.css);
+    bundleSection += `| **Total** | **${bundle.total.jsSize}** | **${totalJsDelta}** | **${bundle.total.cssSize}** | **${totalCssDelta}** |\n`;
+  } else {
+    bundleSection += `| **Total** | **${bundle.total.jsSize}** | **${bundle.total.cssSize}** |\n`;
+  }
+
+  if (bundle.total.gzip) {
+    bundleSection += `\nGzipped (core ESM): ${bundle.total.gzip.size}\n`;
+  }
+  bundleSection += '\n';
+} else {
+  // Fallback for old format
+  bundleSection += `| Package | Size (ESM) | Size (CJS) | Gzipped |\n`;
+  bundleSection += `|---------|------------|------------|----------|\n`;
+  bundleSection += `| @xds/core | ${bundle.esmSize || 'N/A'} | ${bundle.cjsSize || 'N/A'} | ${bundle.gzipSize || 'N/A'} |\n\n`;
 }
 
 // Build screenshots section with embedded images
