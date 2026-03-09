@@ -44,6 +44,7 @@ const UTILITY_DIRS = new Set(['hooks', 'theme', 'utils']);
 const STATIC_EXPORTS = {
   './reset.css': './src/reset.css',
   './typography.css': './src/typography.css',
+  './xds.css': './dist/xds.css',
   './theme/tokens.stylex': {
     source: './src/theme/tokens.stylex.ts',
     types: './dist/theme/tokens.stylex.d.ts',
