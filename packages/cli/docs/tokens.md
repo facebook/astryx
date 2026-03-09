@@ -114,6 +114,16 @@ Control heights for consistent sizing across buttons, inputs, and selectors.
 - `--font-weight-semibold`: 600
 - `--font-weight-bold`: 700
 
+### Line Heights (Leading)
+
+| Token            | Value  | Usage                        |
+| ---------------- | ------ | ---------------------------- |
+| --leading-tight  | 1.25   | Display text, headings       |
+| --leading-snug   | 1.375  | Compact body text, headings  |
+| --leading-base   | 1.4286 | Body text with --text-base   |
+| --leading-normal | 1.5    | Body text, large body        |
+| --leading-relaxed| 1.625  | Editorial body, reading text |
+
 ## Usage in StyleX
 
 ```tsx
