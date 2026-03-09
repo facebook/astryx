@@ -75,6 +75,7 @@ const itemStyles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
     lineHeight: lineHeightVars['--leading-snug'],
+    margin: 0,
   },
   defaultSize: {
     fontSize: textSizeVars['--text-sm'],
@@ -87,7 +88,6 @@ const itemStyles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
     lineHeight: lineHeightVars['--leading-snug'],
-    paddingBlock: spacingVars['--spacing-1'],
   },
   link: {
     display: 'flex',
