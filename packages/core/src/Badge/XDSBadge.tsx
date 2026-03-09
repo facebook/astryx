@@ -112,7 +112,7 @@ export interface XDSBadgeProps extends XDSBaseProps<HTMLSpanElement> {
  * <XDSBadge>Default</XDSBadge>
  * <XDSBadge variant="success">Active</XDSBadge>
  * <XDSBadge variant="error">3</XDSBadge>
- * <XDSBadge variant="info" /> // Dot indicator
+ * <XDSBadge variant="info" />
  * ```
  */
 export function XDSBadge({
