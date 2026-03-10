@@ -19,32 +19,42 @@ interface TypeScaleConfig {
 
 interface TypeStyle {
   name: string;
-  role: 'heading' | 'body' | 'supporting';
+  role: 'display' | 'heading' | 'body' | 'supporting';
   exponent: number;
   weight: number;
   rawSize: number;
   fontSize: number;
   lineHeight: number;
   lineHeightRatio: number;
+  wasNudged: boolean;
 }
+
+type TypeRole = 'display' | 'heading' | 'body' | 'supporting';
 
 // Semantic type roles mapped to scale exponents
 const TYPE_ROLES: Array<{
   name: string;
-  role: 'heading' | 'body' | 'supporting';
+  role: TypeRole;
   exponent: number;
   weight: number;
 }> = [
+  // Display — hero, marketing, splash
+  {name: 'display-1', role: 'display', exponent: 7, weight: 700},
+  {name: 'display-2', role: 'display', exponent: 6, weight: 700},
+  {name: 'display-3', role: 'display', exponent: 5, weight: 600},
+  // Headings
   {name: 'h1', role: 'heading', exponent: 4, weight: 600},
   {name: 'h2', role: 'heading', exponent: 3, weight: 600},
   {name: 'h3', role: 'heading', exponent: 2, weight: 600},
   {name: 'h4', role: 'heading', exponent: 1, weight: 600},
   {name: 'h5', role: 'heading', exponent: 0, weight: 600},
   {name: 'h6', role: 'heading', exponent: -1, weight: 600},
+  // Body
   {name: 'body-lg', role: 'body', exponent: 1, weight: 400},
   {name: 'body', role: 'body', exponent: 0, weight: 400},
   {name: 'body-sm', role: 'body', exponent: -1, weight: 400},
   {name: 'label', role: 'body', exponent: 0, weight: 500},
+  // Supporting
   {name: 'supporting', role: 'supporting', exponent: -1, weight: 400},
   {name: 'caption', role: 'supporting', exponent: -2, weight: 400},
 ];
@@ -52,11 +62,12 @@ const TYPE_ROLES: Array<{
 function computeLineHeight(
   fontSize: number,
   grid: number,
-  role: 'heading' | 'body' | 'supporting',
+  role: TypeRole,
 ): number {
-  // Tighter line heights for headings, more relaxed for body
   let targetRatio: number;
-  if (role === 'heading') {
+  if (role === 'display') {
+    targetRatio = fontSize < 48 ? 1.15 : 1.1;
+  } else if (role === 'heading') {
     targetRatio = fontSize < 24 ? 1.3 : fontSize < 32 ? 1.25 : 1.2;
   } else {
     targetRatio = fontSize < 16 ? 1.4 : 1.5;
@@ -65,13 +76,12 @@ function computeLineHeight(
   const ideal = fontSize * targetRatio;
   const snapped = Math.round(ideal / grid) * grid;
 
-  // Ensure minimum breathing room
   const minimum = Math.ceil((fontSize + 2) / grid) * grid;
   return Math.max(snapped, minimum);
 }
 
 function generateTypeStyles(config: TypeScaleConfig): TypeStyle[] {
-  const styles = TYPE_ROLES.map(role => {
+  const allStyles = TYPE_ROLES.map(role => {
     const rawSize = config.base * Math.pow(config.ratio, role.exponent);
     const fontSize = Math.round(rawSize);
     const lineHeight = computeLineHeight(
@@ -86,25 +96,85 @@ function generateTypeStyles(config: TypeScaleConfig): TypeStyle[] {
       fontSize,
       lineHeight,
       lineHeightRatio: lineHeight / fontSize,
+      wasNudged: false,
     };
   });
 
-  // Enforce 1px minimum step between heading sizes
-  const headings = styles.filter(s => s.role === 'heading');
-  for (let i = 1; i < headings.length; i++) {
-    if (headings[i].fontSize >= headings[i - 1].fontSize) {
-      headings[i].fontSize = headings[i - 1].fontSize - 1;
-      headings[i].lineHeight = computeLineHeight(
-        headings[i].fontSize,
+  // Enforce 1px minimum step within each group that should be monotonically decreasing
+  const enforceMinStep = (group: TypeStyle[]) => {
+    for (let i = 1; i < group.length; i++) {
+      if (group[i].fontSize >= group[i - 1].fontSize) {
+        group[i].fontSize = group[i - 1].fontSize - 1;
+        group[i].lineHeight = computeLineHeight(
+          group[i].fontSize,
+          config.lineHeightGrid,
+          group[i].role,
+        );
+        group[i].lineHeightRatio = group[i].lineHeight / group[i].fontSize;
+        group[i].wasNudged = true;
+      }
+    }
+  };
+
+  // Also enforce display > h1 continuity
+  const displays = allStyles.filter(s => s.role === 'display');
+  const headings = allStyles.filter(s => s.role === 'heading');
+  enforceMinStep(displays);
+  enforceMinStep(headings);
+
+  // Ensure smallest display > largest heading
+  if (displays.length > 0 && headings.length > 0) {
+    const smallestDisplay = displays[displays.length - 1];
+    if (smallestDisplay.fontSize <= headings[0].fontSize) {
+      smallestDisplay.fontSize = headings[0].fontSize + 1;
+      smallestDisplay.lineHeight = computeLineHeight(
+        smallestDisplay.fontSize,
         config.lineHeightGrid,
-        'heading',
+        'display',
       );
-      headings[i].lineHeightRatio =
-        headings[i].lineHeight / headings[i].fontSize;
+      smallestDisplay.lineHeightRatio =
+        smallestDisplay.lineHeight / smallestDisplay.fontSize;
+      smallestDisplay.wasNudged = true;
+      // Re-enforce display chain upward
+      for (let i = displays.length - 2; i >= 0; i--) {
+        if (displays[i].fontSize <= displays[i + 1].fontSize) {
+          displays[i].fontSize = displays[i + 1].fontSize + 1;
+          displays[i].lineHeight = computeLineHeight(
+            displays[i].fontSize,
+            config.lineHeightGrid,
+            'display',
+          );
+          displays[i].lineHeightRatio =
+            displays[i].lineHeight / displays[i].fontSize;
+          displays[i].wasNudged = true;
+        }
+      }
     }
   }
 
-  return styles;
+  return allStyles;
+}
+
+// Raw scale steps for the calculations tab
+const RAW_SCALE_STEPS = Array.from({length: 12}, (_, i) => i - 3);
+
+interface RawScaleStep {
+  exponent: number;
+  rawSize: number;
+  roundedSize: number;
+  formula: string;
+}
+
+function generateRawScale(config: TypeScaleConfig): RawScaleStep[] {
+  return RAW_SCALE_STEPS.map(exp => {
+    const rawSize = config.base * Math.pow(config.ratio, exp);
+    return {
+      exponent: exp,
+      rawSize,
+      roundedSize: Math.round(rawSize),
+      formula: `${config.base} × ${config.ratio}^${exp}`,
+    };
+  });
 }
 
 // =============================================================================
@@ -132,7 +202,7 @@ const RATIOS: Record<string, number> = {
 // Styles
 // =============================================================================
 
-const styles = stylex.create({
+const s = stylex.create({
   container: {
     maxWidth: 1400,
   },
@@ -179,7 +249,7 @@ const styles = stylex.create({
     minWidth: 50,
     textAlign: 'right',
   },
-  presetButton: {
+  presetBtn: {
     padding: '8px 16px',
     fontSize: 13,
     fontWeight: 500,
@@ -190,7 +260,7 @@ const styles = stylex.create({
     cursor: 'pointer',
     transition: 'all 0.15s',
   },
-  presetButtonActive: {
+  presetBtnActive: {
     backgroundColor: 'light-dark(#0064E0, #2694FE)',
     borderColor: 'light-dark(#0064E0, #2694FE)',
     color: '#fff',
@@ -210,14 +280,23 @@ const styles = stylex.create({
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
   },
+  thRight: {
+    textAlign: 'right',
+  },
   td: {
     padding: '10px 12px',
     borderBottom: '1px solid light-dark(#eee, #333)',
     color: 'light-dark(#333, #eee)',
   },
+  tdRight: {
+    textAlign: 'right',
+  },
   tdMono: {
     fontFamily: 'SF Mono, Monaco, Consolas, monospace',
     fontSize: 12,
+  },
+  roleDisplay: {
+    backgroundColor: 'light-dark(#fef3f0, #2a1f1a)',
   },
   roleHeading: {
     backgroundColor: 'light-dark(#f0f7ff, #1a2a3a)',
@@ -238,15 +317,44 @@ const styles = stylex.create({
     margin: 0,
     color: 'light-dark(#333, #eee)',
   },
-  formula: {
+  nudgedBadge: {
+    display: 'inline-block',
+    padding: '1px 5px',
+    fontSize: 9,
+    fontWeight: 600,
+    borderRadius: 3,
+    backgroundColor: 'light-dark(#fff3cd, #4a3f00)',
+    color: 'light-dark(#856404, #ffc107)',
+    marginLeft: 6,
+  },
+  // Raw calc tab
+  rawFormula: {
     fontFamily: 'SF Mono, Monaco, Consolas, monospace',
     fontSize: 12,
-    padding: '12px 16px',
+    padding: '16px 20px',
     backgroundColor: 'light-dark(#f5f5f5, #2a2a2a)',
-    borderRadius: 6,
+    borderRadius: 8,
     color: 'light-dark(#333, #eee)',
+    lineHeight: 1.8,
   },
-  // Landing page preview styles
+  rawBar: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'light-dark(#0064E0, #2694FE)',
+    transition: 'width 0.2s ease',
+  },
+  rawBarContainer: {
+    width: 120,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'light-dark(#eee, #333)',
+    overflow: 'hidden',
+  },
+  rawHighlight: {
+    backgroundColor: 'light-dark(#e8f0fe, #1a2a3a)',
+    fontWeight: 600,
+  },
+  // Landing page
   landingPreview: {
     backgroundColor: 'light-dark(#fff, #111)',
     borderRadius: 8,
@@ -275,9 +383,9 @@ const styles = stylex.create({
     cursor: 'pointer',
   },
   landingHero: {
-    padding: '64px 24px',
+    padding: '80px 24px',
     textAlign: 'center',
-    maxWidth: 600,
+    maxWidth: 720,
     margin: '0 auto',
   },
   landingHeroTitle: {
@@ -328,6 +436,7 @@ const styles = stylex.create({
     margin: 0,
     color: 'light-dark(#666, #aaa)',
   },
+  // Tabs
   tabBar: {
     display: 'flex',
     gap: 0,
@@ -349,24 +458,50 @@ const styles = stylex.create({
     color: 'light-dark(#0064E0, #2694FE)',
     borderBottomColor: 'light-dark(#0064E0, #2694FE)',
   },
+  roleSectionLabel: {
+    fontSize: 10,
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+    color: 'light-dark(#999, #666)',
+    padding: '8px 12px 4px',
+  },
 });
+
+// =============================================================================
+// Helper to get role row style
+// =============================================================================
+
+function roleStyle(role: TypeRole) {
+  switch (role) {
+    case 'display':
+      return s.roleDisplay;
+    case 'heading':
+      return s.roleHeading;
+    case 'body':
+      return s.roleBody;
+    case 'supporting':
+      return s.roleSupporting;
+  }
+}
 
 // =============================================================================
 // Component
 // =============================================================================
 
-type PreviewTab = 'scale' | 'landing' | 'comparison';
+type PreviewTab = 'scale' | 'calculations' | 'landing' | 'comparison';
 
 export default function TypeScaleExplorerPage() {
   const [config, setConfig] = useState<TypeScaleConfig>(PRESETS.default);
   const [activeTab, setActiveTab] = useState<PreviewTab>('scale');
 
   const typeStyles = useMemo(() => generateTypeStyles(config), [config]);
+  const rawScale = useMemo(() => generateRawScale(config), [config]);
 
-  const headings = typeStyles.filter(s => s.role === 'heading');
-  const bodyStyles = typeStyles.filter(
-    s => s.role === 'body' || s.role === 'supporting',
-  );
+  const displays = typeStyles.filter(t => t.role === 'display');
+  const headings = typeStyles.filter(t => t.role === 'heading');
+  const bodyStyles = typeStyles.filter(t => t.role === 'body');
+  const supportingStyles = typeStyles.filter(t => t.role === 'supporting');
 
   const activePreset = Object.entries(PRESETS).find(
     ([, preset]) =>
@@ -376,10 +511,12 @@ export default function TypeScaleExplorerPage() {
   )?.[0];
 
   const getStyle = (name: string) =>
-    typeStyles.find(s => s.name === name) || typeStyles[0];
+    typeStyles.find(t => t.name === name) || typeStyles[0];
+
+  const maxRawSize = Math.max(...rawScale.map(r => r.roundedSize));
 
   return (
-    <div {...stylex.props(styles.container)}>
+    <div {...stylex.props(s.container)}>
       <XDSVStack gap={6}>
         {/* Header */}
         <XDSVStack gap={2}>
@@ -391,18 +528,17 @@ export default function TypeScaleExplorerPage() {
         </XDSVStack>
 
         {/* Controls */}
-        <div {...stylex.props(styles.controls)}>
+        <div {...stylex.props(s.controls)}>
           <XDSVStack gap={4}>
-            {/* Presets */}
-            <div {...stylex.props(styles.controlGroup)}>
-              <span {...stylex.props(styles.label)}>Presets</span>
+            <div {...stylex.props(s.controlGroup)}>
+              <span {...stylex.props(s.label)}>Presets</span>
               <XDSHStack gap={2}>
                 {Object.entries(PRESETS).map(([name, preset]) => (
                   <button
                     key={name}
                     {...stylex.props(
-                      styles.presetButton,
-                      activePreset === name && styles.presetButtonActive,
+                      s.presetBtn,
+                      activePreset === name && s.presetBtnActive,
                     )}
                     onClick={() => setConfig(preset)}>
                     {name.charAt(0).toUpperCase() + name.slice(1)}
@@ -412,9 +548,8 @@ export default function TypeScaleExplorerPage() {
             </div>
 
             <XDSHStack gap={6}>
-              {/* Base Size */}
-              <div {...stylex.props(styles.controlGroup)}>
-                <span {...stylex.props(styles.label)}>Base Size</span>
+              <div {...stylex.props(s.controlGroup)}>
+                <span {...stylex.props(s.label)}>Base Size</span>
                 <XDSHStack gap={3} vAlign="center">
                   <input
                     type="range"
@@ -425,17 +560,14 @@ export default function TypeScaleExplorerPage() {
                     onChange={e =>
                       setConfig(c => ({...c, base: Number(e.target.value)}))
                     }
-                    {...stylex.props(styles.slider)}
+                    {...stylex.props(s.slider)}
                   />
-                  <span {...stylex.props(styles.sliderValue)}>
-                    {config.base}px
-                  </span>
+                  <span {...stylex.props(s.sliderValue)}>{config.base}px</span>
                 </XDSHStack>
               </div>
 
-              {/* Ratio */}
-              <div {...stylex.props(styles.controlGroup)}>
-                <span {...stylex.props(styles.label)}>Scale Ratio</span>
+              <div {...stylex.props(s.controlGroup)}>
+                <span {...stylex.props(s.label)}>Scale Ratio</span>
                 <select
                   value={
                     Object.entries(RATIOS).find(
@@ -445,7 +577,7 @@ export default function TypeScaleExplorerPage() {
                   onChange={e =>
                     setConfig(c => ({...c, ratio: RATIOS[e.target.value]}))
                   }
-                  {...stylex.props(styles.select)}>
+                  {...stylex.props(s.select)}>
                   {Object.entries(RATIOS).map(([name]) => (
                     <option key={name} value={name}>
                       {name}
@@ -454,9 +586,8 @@ export default function TypeScaleExplorerPage() {
                 </select>
               </div>
 
-              {/* Grid */}
-              <div {...stylex.props(styles.controlGroup)}>
-                <span {...stylex.props(styles.label)}>Line Height Grid</span>
+              <div {...stylex.props(s.controlGroup)}>
+                <span {...stylex.props(s.label)}>Line Height Grid</span>
                 <select
                   value={config.lineHeightGrid}
                   onChange={e =>
@@ -465,7 +596,7 @@ export default function TypeScaleExplorerPage() {
                       lineHeightGrid: Number(e.target.value),
                     }))
                   }
-                  {...stylex.props(styles.select)}>
+                  {...stylex.props(s.select)}>
                   <option value={2}>2px</option>
                   <option value={4}>4px (default)</option>
                   <option value={8}>8px</option>
@@ -476,118 +607,80 @@ export default function TypeScaleExplorerPage() {
         </div>
 
         {/* Tab Bar */}
-        <div {...stylex.props(styles.tabBar)}>
-          <button
-            {...stylex.props(
-              styles.tab,
-              activeTab === 'scale' && styles.tabActive,
-            )}
-            onClick={() => setActiveTab('scale')}>
-            Type Scale
-          </button>
-          <button
-            {...stylex.props(
-              styles.tab,
-              activeTab === 'landing' && styles.tabActive,
-            )}
-            onClick={() => setActiveTab('landing')}>
-            Landing Page
-          </button>
-          <button
-            {...stylex.props(
-              styles.tab,
-              activeTab === 'comparison' && styles.tabActive,
-            )}
-            onClick={() => setActiveTab('comparison')}>
-            Preset Comparison
-          </button>
+        <div {...stylex.props(s.tabBar)}>
+          {(
+            [
+              ['scale', 'Type Scale'],
+              ['calculations', 'Raw Calculations'],
+              ['landing', 'Landing Page'],
+              ['comparison', 'Preset Comparison'],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              {...stylex.props(s.tab, activeTab === key && s.tabActive)}
+              onClick={() => setActiveTab(key)}>
+              {label}
+            </button>
+          ))}
         </div>
 
-        {/* Tab Content */}
+        {/* ================================================================= */}
+        {/* TYPE SCALE TAB                                                     */}
+        {/* ================================================================= */}
         {activeTab === 'scale' && (
-          <div {...stylex.props(styles.twoColumn)}>
-            {/* Scale Table */}
+          <div {...stylex.props(s.twoColumn)}>
+            {/* Tables */}
             <XDSVStack gap={4}>
-              <XDSHeading level={3}>Headings</XDSHeading>
-              <table {...stylex.props(styles.table)}>
+              <table {...stylex.props(s.table)}>
                 <thead>
                   <tr>
-                    <th {...stylex.props(styles.th)}>Style</th>
-                    <th {...stylex.props(styles.th)}>Size</th>
-                    <th {...stylex.props(styles.th)}>Line H</th>
-                    <th {...stylex.props(styles.th)}>Weight</th>
-                    <th {...stylex.props(styles.th)}>Preview</th>
+                    <th {...stylex.props(s.th)}>Style</th>
+                    <th {...stylex.props(s.th)}>Size</th>
+                    <th {...stylex.props(s.th)}>Line H</th>
+                    <th {...stylex.props(s.th)}>Weight</th>
+                    <th {...stylex.props(s.th)}>Preview</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {headings.map(style => (
-                    <tr key={style.name} {...stylex.props(styles.roleHeading)}>
-                      <td {...stylex.props(styles.td)}>{style.name}</td>
-                      <td {...stylex.props(styles.td, styles.tdMono)}>
-                        {style.fontSize}px
-                      </td>
-                      <td {...stylex.props(styles.td, styles.tdMono)}>
-                        {style.lineHeight}px
-                      </td>
-                      <td {...stylex.props(styles.td, styles.tdMono)}>
-                        {style.weight}
-                      </td>
-                      <td {...stylex.props(styles.td)}>
-                        <span
-                          style={{
-                            fontSize: style.fontSize,
-                            lineHeight: `${style.lineHeight}px`,
-                            fontWeight: style.weight,
-                          }}>
-                          Aa
-                        </span>
-                      </td>
-                    </tr>
+                  {/* Display */}
+                  <tr>
+                    <td colSpan={5} {...stylex.props(s.roleSectionLabel)}>
+                      Display
+                    </td>
+                  </tr>
+                  {displays.map(t => (
+                    <TypeRow key={t.name} style={t} />
                   ))}
-                </tbody>
-              </table>
 
-              <XDSHeading level={3}>Body &amp; Supporting</XDSHeading>
-              <table {...stylex.props(styles.table)}>
-                <thead>
+                  {/* Headings */}
                   <tr>
-                    <th {...stylex.props(styles.th)}>Style</th>
-                    <th {...stylex.props(styles.th)}>Size</th>
-                    <th {...stylex.props(styles.th)}>Line H</th>
-                    <th {...stylex.props(styles.th)}>Weight</th>
-                    <th {...stylex.props(styles.th)}>Preview</th>
+                    <td colSpan={5} {...stylex.props(s.roleSectionLabel)}>
+                      Headings
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {bodyStyles.map(style => (
-                    <tr
-                      key={style.name}
-                      {...stylex.props(
-                        style.role === 'body'
-                          ? styles.roleBody
-                          : styles.roleSupporting,
-                      )}>
-                      <td {...stylex.props(styles.td)}>{style.name}</td>
-                      <td {...stylex.props(styles.td, styles.tdMono)}>
-                        {style.fontSize}px
-                      </td>
-                      <td {...stylex.props(styles.td, styles.tdMono)}>
-                        {style.lineHeight}px
-                      </td>
-                      <td {...stylex.props(styles.td, styles.tdMono)}>
-                        {style.weight}
-                      </td>
-                      <td {...stylex.props(styles.td)}>
-                        <span
-                          style={{
-                            fontSize: style.fontSize,
-                            lineHeight: `${style.lineHeight}px`,
-                            fontWeight: style.weight,
-                          }}>
-                          The quick brown fox
-                        </span>
-                      </td>
-                    </tr>
+                  {headings.map(t => (
+                    <TypeRow key={t.name} style={t} />
+                  ))}
+
+                  {/* Body */}
+                  <tr>
+                    <td colSpan={5} {...stylex.props(s.roleSectionLabel)}>
+                      Body
+                    </td>
+                  </tr>
+                  {bodyStyles.map(t => (
+                    <TypeRow key={t.name} style={t} />
+                  ))}
+
+                  {/* Supporting */}
+                  <tr>
+                    <td colSpan={5} {...stylex.props(s.roleSectionLabel)}>
+                      Supporting
+                    </td>
+                  </tr>
+                  {supportingStyles.map(t => (
+                    <TypeRow key={t.name} style={t} />
                   ))}
                 </tbody>
               </table>
@@ -596,34 +689,47 @@ export default function TypeScaleExplorerPage() {
             {/* Live Preview */}
             <XDSVStack gap={4}>
               <XDSHeading level={3}>Live Preview</XDSHeading>
-              <div {...stylex.props(styles.preview)}>
-                <XDSVStack gap={4}>
-                  {headings.map(style => (
+              <div {...stylex.props(s.preview)}>
+                <XDSVStack gap={3}>
+                  {displays.map(t => (
                     <p
-                      key={style.name}
+                      key={t.name}
                       style={{
-                        fontSize: style.fontSize,
-                        lineHeight: `${style.lineHeight}px`,
-                        fontWeight: style.weight,
+                        fontSize: t.fontSize,
+                        lineHeight: `${t.lineHeight}px`,
+                        fontWeight: t.weight,
                         margin: 0,
                       }}
-                      {...stylex.props(styles.sampleText)}>
-                      {style.name}: A wizard&apos;s job is to vex chumps quickly
-                      in fog
+                      {...stylex.props(s.sampleText)}>
+                      {t.name}
                     </p>
                   ))}
                   <XDSDivider />
-                  {bodyStyles.slice(0, 3).map(style => (
+                  {headings.map(t => (
                     <p
-                      key={style.name}
+                      key={t.name}
                       style={{
-                        fontSize: style.fontSize,
-                        lineHeight: `${style.lineHeight}px`,
-                        fontWeight: style.weight,
+                        fontSize: t.fontSize,
+                        lineHeight: `${t.lineHeight}px`,
+                        fontWeight: t.weight,
                         margin: 0,
                       }}
-                      {...stylex.props(styles.sampleText)}>
-                      {style.name}: The quick brown fox jumps over the lazy dog.
+                      {...stylex.props(s.sampleText)}>
+                      {t.name}: A wizard&apos;s job is to vex chumps
+                    </p>
+                  ))}
+                  <XDSDivider />
+                  {[...bodyStyles, ...supportingStyles].map(t => (
+                    <p
+                      key={t.name}
+                      style={{
+                        fontSize: t.fontSize,
+                        lineHeight: `${t.lineHeight}px`,
+                        fontWeight: t.weight,
+                        margin: 0,
+                      }}
+                      {...stylex.props(s.sampleText)}>
+                      {t.name}: The quick brown fox jumps over the lazy dog.
                       Pack my box with five dozen liquor jugs.
                     </p>
                   ))}
@@ -633,19 +739,159 @@ export default function TypeScaleExplorerPage() {
           </div>
         )}
 
+        {/* ================================================================= */}
+        {/* RAW CALCULATIONS TAB                                               */}
+        {/* ================================================================= */}
+        {activeTab === 'calculations' && (
+          <XDSVStack gap={6}>
+            {/* Formula */}
+            <div {...stylex.props(s.rawFormula)}>
+              <strong>Formula:</strong> fontSize = base × ratio
+              <sup>exponent</sup>
+              <br />
+              base = {config.base}px &nbsp;|&nbsp; ratio = {config.ratio}
+              &nbsp;|&nbsp; grid = {config.lineHeightGrid}px
+            </div>
+
+            <div {...stylex.props(s.twoColumn)}>
+              {/* Raw scale */}
+              <XDSVStack gap={3}>
+                <XDSHeading level={3}>Raw Scale</XDSHeading>
+                <XDSText type="supporting" color="secondary">
+                  Pure mathematical output before any role mapping or collision
+                  handling.
+                </XDSText>
+                <table {...stylex.props(s.table)}>
+                  <thead>
+                    <tr>
+                      <th {...stylex.props(s.th)}>Exp</th>
+                      <th {...stylex.props(s.th)}>Formula</th>
+                      <th {...stylex.props(s.th, s.thRight)}>Raw</th>
+                      <th {...stylex.props(s.th, s.thRight)}>Rounded</th>
+                      <th {...stylex.props(s.th)}>Scale</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rawScale.map(step => {
+                      const isBase = step.exponent === 0;
+                      return (
+                        <tr
+                          key={step.exponent}
+                          {...stylex.props(isBase && s.rawHighlight)}>
+                          <td {...stylex.props(s.td, s.tdMono)}>
+                            {step.exponent >= 0 ? '+' : ''}
+                            {step.exponent}
+                          </td>
+                          <td {...stylex.props(s.td, s.tdMono)}>
+                            {step.formula}
+                          </td>
+                          <td {...stylex.props(s.td, s.tdMono, s.tdRight)}>
+                            {step.rawSize.toFixed(2)}px
+                          </td>
+                          <td {...stylex.props(s.td, s.tdMono, s.tdRight)}>
+                            {step.roundedSize}px
+                            {isBase && ' ●'}
+                          </td>
+                          <td {...stylex.props(s.td)}>
+                            <div {...stylex.props(s.rawBarContainer)}>
+                              <div
+                                {...stylex.props(s.rawBar)}
+                                style={{
+                                  width: `${(step.roundedSize / maxRawSize) * 100}%`,
+                                }}
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </XDSVStack>
+
+              {/* Role mapping */}
+              <XDSVStack gap={3}>
+                <XDSHeading level={3}>Role Mapping</XDSHeading>
+                <XDSText type="supporting" color="secondary">
+                  How raw scale steps map to semantic roles, with collision
+                  handling applied.
+                </XDSText>
+                <table {...stylex.props(s.table)}>
+                  <thead>
+                    <tr>
+                      <th {...stylex.props(s.th)}>Role</th>
+                      <th {...stylex.props(s.th)}>Exp</th>
+                      <th {...stylex.props(s.th, s.thRight)}>Raw</th>
+                      <th {...stylex.props(s.th, s.thRight)}>Final</th>
+                      <th {...stylex.props(s.th, s.thRight)}>LH</th>
+                      <th {...stylex.props(s.th)}>Wt</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {typeStyles.map(t => (
+                      <tr key={t.name} {...stylex.props(roleStyle(t.role))}>
+                        <td {...stylex.props(s.td)}>
+                          {t.name}
+                          {t.wasNudged && (
+                            <span {...stylex.props(s.nudgedBadge)}>nudged</span>
+                          )}
+                        </td>
+                        <td {...stylex.props(s.td, s.tdMono)}>
+                          {t.exponent >= 0 ? '+' : ''}
+                          {t.exponent}
+                        </td>
+                        <td {...stylex.props(s.td, s.tdMono, s.tdRight)}>
+                          {t.rawSize.toFixed(1)}
+                        </td>
+                        <td {...stylex.props(s.td, s.tdMono, s.tdRight)}>
+                          {t.fontSize}px
+                        </td>
+                        <td {...stylex.props(s.td, s.tdMono, s.tdRight)}>
+                          {t.lineHeight}px
+                        </td>
+                        <td {...stylex.props(s.td, s.tdMono)}>{t.weight}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </XDSVStack>
+            </div>
+
+            {/* Line height explanation */}
+            <div {...stylex.props(s.rawFormula)}>
+              <strong>Line Height Algorithm:</strong>
+              <br />
+              {'Display: target ≈ 1.1–1.15× → snap to '}
+              {config.lineHeightGrid}px grid
+              <br />
+              {'Heading: target ≈ 1.2–1.3× → snap to '}
+              {config.lineHeightGrid}px grid
+              <br />
+              {'Body/Supporting: target ≈ 1.4–1.5× → snap to '}
+              {config.lineHeightGrid}px grid
+              <br />
+              Minimum: ceil((fontSize + 2) / {config.lineHeightGrid}) ×{' '}
+              {config.lineHeightGrid}
+            </div>
+          </XDSVStack>
+        )}
+
+        {/* ================================================================= */}
+        {/* LANDING PAGE TAB                                                   */}
+        {/* ================================================================= */}
         {activeTab === 'landing' && (
-          <div {...stylex.props(styles.landingPreview)}>
+          <div {...stylex.props(s.landingPreview)}>
             {/* Nav */}
-            <nav {...stylex.props(styles.landingNav)}>
+            <nav {...stylex.props(s.landingNav)}>
               <span
                 style={{
                   fontSize: getStyle('body').fontSize,
                   fontWeight: 700,
                 }}
-                {...stylex.props(styles.landingLogo)}>
+                {...stylex.props(s.landingLogo)}>
                 Acme Inc
               </span>
-              <div {...stylex.props(styles.landingNavLinks)}>
+              <div {...stylex.props(s.landingNavLinks)}>
                 {['Features', 'Pricing', 'About', 'Contact'].map(link => (
                   <span
                     key={link}
@@ -653,7 +899,7 @@ export default function TypeScaleExplorerPage() {
                       fontSize: getStyle('body-sm').fontSize,
                       fontWeight: getStyle('body-sm').weight,
                     }}
-                    {...stylex.props(styles.landingNavLink)}>
+                    {...stylex.props(s.landingNavLink)}>
                     {link}
                   </span>
                 ))}
@@ -661,14 +907,25 @@ export default function TypeScaleExplorerPage() {
             </nav>
 
             {/* Hero */}
-            <div {...stylex.props(styles.landingHero)}>
+            <div {...stylex.props(s.landingHero)}>
+              <p
+                style={{
+                  fontSize: getStyle('supporting').fontSize,
+                  fontWeight: 500,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  margin: '0 0 12px 0',
+                  color: 'light-dark(#0064E0, #2694FE)',
+                }}>
+                Introducing Acme Platform
+              </p>
               <h1
                 style={{
-                  fontSize: getStyle('h1').fontSize,
-                  lineHeight: `${getStyle('h1').lineHeight}px`,
-                  fontWeight: getStyle('h1').weight,
+                  fontSize: getStyle('display-2').fontSize,
+                  lineHeight: `${getStyle('display-2').lineHeight}px`,
+                  fontWeight: getStyle('display-2').weight,
                 }}
-                {...stylex.props(styles.landingHeroTitle)}>
+                {...stylex.props(s.landingHeroTitle)}>
                 Your digital transformation begins here
               </h1>
               <p
@@ -677,11 +934,11 @@ export default function TypeScaleExplorerPage() {
                   lineHeight: `${getStyle('body-lg').lineHeight}px`,
                   fontWeight: getStyle('body-lg').weight,
                 }}
-                {...stylex.props(styles.landingHeroSubtitle)}>
+                {...stylex.props(s.landingHeroSubtitle)}>
                 Unlock the full potential of your business. Start your journey
-                today and experience the future of business software.
+                today and experience the future of enterprise software.
               </p>
-              <div {...stylex.props(styles.landingHeroButtons)}>
+              <div {...stylex.props(s.landingHeroButtons)}>
                 <XDSButton label="Explore features" variant="secondary" />
                 <XDSButton label="Get started" variant="primary" />
               </div>
@@ -693,19 +950,31 @@ export default function TypeScaleExplorerPage() {
                   marginTop: 16,
                   color: 'light-dark(#999, #666)',
                 }}>
-                No credit card required
+                No credit card required · Free 14-day trial
               </p>
             </div>
 
             {/* Features */}
-            <div {...stylex.props(styles.landingFeatures)}>
+            <div {...stylex.props(s.landingFeatures)}>
+              <p
+                style={{
+                  fontSize: getStyle('label').fontSize,
+                  fontWeight: 600,
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  textAlign: 'center',
+                  margin: '0 0 8px 0',
+                  color: 'light-dark(#0064E0, #2694FE)',
+                }}>
+                Features
+              </p>
               <h2
                 style={{
                   fontSize: getStyle('h2').fontSize,
                   lineHeight: `${getStyle('h2').lineHeight}px`,
                   fontWeight: getStyle('h2').weight,
                 }}
-                {...stylex.props(styles.landingFeaturesTitle)}>
+                {...stylex.props(s.landingFeaturesTitle)}>
                 SaaS solutions that drive results
               </h2>
               <p
@@ -714,35 +983,36 @@ export default function TypeScaleExplorerPage() {
                   lineHeight: `${getStyle('body').lineHeight}px`,
                   fontWeight: getStyle('body').weight,
                 }}
-                {...stylex.props(styles.landingFeaturesSubtitle)}>
-                Explore our suite of powerful software solutions.
+                {...stylex.props(s.landingFeaturesSubtitle)}>
+                Explore our suite of powerful software solutions designed to
+                streamline your operations.
               </p>
 
-              <div {...stylex.props(styles.landingFeatureGrid)}>
+              <div {...stylex.props(s.landingFeatureGrid)}>
                 {[
                   {
-                    title: 'Enterprise planning',
-                    desc: 'Seamlessly manage and integrate all core business processes.',
+                    title: 'Enterprise Planning',
+                    desc: 'Seamlessly manage and integrate all core business processes with our unified platform.',
                   },
                   {
-                    title: 'Project management',
-                    desc: 'Ensure project success by efficiently planning and tracking.',
+                    title: 'Project Management',
+                    desc: 'Ensure project success by efficiently planning, tracking, and delivering on time.',
                   },
                   {
-                    title: 'Analytics dashboard',
-                    desc: 'Leverage data-driven insights to make informed decisions.',
+                    title: 'Analytics Dashboard',
+                    desc: 'Leverage data-driven insights to make informed decisions and measure impact.',
                   },
                 ].map(feature => (
                   <div
                     key={feature.title}
-                    {...stylex.props(styles.landingFeatureCard)}>
+                    {...stylex.props(s.landingFeatureCard)}>
                     <h3
                       style={{
                         fontSize: getStyle('h4').fontSize,
                         lineHeight: `${getStyle('h4').lineHeight}px`,
                         fontWeight: getStyle('h4').weight,
                       }}
-                      {...stylex.props(styles.landingFeatureTitle)}>
+                      {...stylex.props(s.landingFeatureTitle)}>
                       {feature.title}
                     </h3>
                     <p
@@ -751,7 +1021,7 @@ export default function TypeScaleExplorerPage() {
                         lineHeight: `${getStyle('body-sm').lineHeight}px`,
                         fontWeight: getStyle('body-sm').weight,
                       }}
-                      {...stylex.props(styles.landingFeatureDesc)}>
+                      {...stylex.props(s.landingFeatureDesc)}>
                       {feature.desc}
                     </p>
                   </div>
@@ -761,6 +1031,9 @@ export default function TypeScaleExplorerPage() {
           </div>
         )}
 
+        {/* ================================================================= */}
+        {/* PRESET COMPARISON TAB                                              */}
+        {/* ================================================================= */}
         {activeTab === 'comparison' && (
           <XDSVStack gap={4}>
             <XDSText type="supporting" color="secondary">
@@ -771,9 +1044,13 @@ export default function TypeScaleExplorerPage() {
             <XDSHStack gap={4}>
               {Object.entries(PRESETS).map(([name, preset]) => {
                 const presetStyles = generateTypeStyles(preset);
-                const presetHeadings = presetStyles.filter(
-                  s => s.role === 'heading',
+                const pDisplays = presetStyles.filter(
+                  t => t.role === 'display',
                 );
+                const pHeadings = presetStyles.filter(
+                  t => t.role === 'heading',
+                );
+                const pBody = presetStyles.filter(t => t.name === 'body');
                 return (
                   <div key={name} style={{flex: 1}}>
                     <XDSVStack gap={2}>
@@ -783,19 +1060,46 @@ export default function TypeScaleExplorerPage() {
                       <XDSText type="supporting" color="secondary">
                         {preset.base}px base, {preset.ratio} ratio
                       </XDSText>
-                      <div {...stylex.props(styles.preview)}>
+                      <div {...stylex.props(s.preview)}>
                         <XDSVStack gap={2}>
-                          {presetHeadings.slice(0, 4).map(style => (
+                          {pDisplays.slice(1, 3).map(t => (
                             <p
-                              key={style.name}
+                              key={t.name}
                               style={{
-                                fontSize: style.fontSize,
-                                lineHeight: `${style.lineHeight}px`,
-                                fontWeight: style.weight,
+                                fontSize: t.fontSize,
+                                lineHeight: `${t.lineHeight}px`,
+                                fontWeight: t.weight,
                                 margin: 0,
                               }}
-                              {...stylex.props(styles.sampleText)}>
-                              {style.name}: {style.fontSize}px
+                              {...stylex.props(s.sampleText)}>
+                              {t.name}: {t.fontSize}px
+                            </p>
+                          ))}
+                          {pHeadings.slice(0, 4).map(t => (
+                            <p
+                              key={t.name}
+                              style={{
+                                fontSize: t.fontSize,
+                                lineHeight: `${t.lineHeight}px`,
+                                fontWeight: t.weight,
+                                margin: 0,
+                              }}
+                              {...stylex.props(s.sampleText)}>
+                              {t.name}: {t.fontSize}px
+                            </p>
+                          ))}
+                          {pBody.map(t => (
+                            <p
+                              key={t.name}
+                              style={{
+                                fontSize: t.fontSize,
+                                lineHeight: `${t.lineHeight}px`,
+                                fontWeight: t.weight,
+                                margin: 0,
+                                marginTop: 8,
+                              }}
+                              {...stylex.props(s.sampleText)}>
+                              Body text at {t.fontSize}px
                             </p>
                           ))}
                         </XDSVStack>
@@ -809,5 +1113,37 @@ export default function TypeScaleExplorerPage() {
         )}
       </XDSVStack>
     </div>
+  );
+}
+
+// =============================================================================
+// TypeRow Component
+// =============================================================================
+
+function TypeRow({style: t}: {style: TypeStyle}) {
+  return (
+    <tr {...stylex.props(roleStyle(t.role))}>
+      <td {...stylex.props(s.td)}>
+        {t.name}
+        {t.wasNudged && <span {...stylex.props(s.nudgedBadge)}>nudged</span>}
+      </td>
+      <td {...stylex.props(s.td, s.tdMono)}>{t.fontSize}px</td>
+      <td {...stylex.props(s.td, s.tdMono)}>{t.lineHeight}px</td>
+      <td {...stylex.props(s.td, s.tdMono)}>{t.weight}</td>
+      <td {...stylex.props(s.td)}>
+        <span
+          style={{
+            fontSize: t.fontSize,
+            lineHeight: `${t.lineHeight}px`,
+            fontWeight: t.weight,
+          }}>
+          {t.role === 'display'
+            ? 'Aa'
+            : t.role === 'heading'
+              ? 'Aa'
+              : 'The quick brown fox'}
+        </span>
+      </td>
+    </tr>
   );
 }
