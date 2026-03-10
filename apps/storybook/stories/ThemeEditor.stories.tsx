@@ -207,6 +207,92 @@ const COLOR_CATEGORIES = {
 } as const;
 
 // =============================================================================
+// Typography Categories - Organized by semantic usage
+// =============================================================================
+
+/**
+ * Typography tokens organized by semantic text styles.
+ * Each style shows which tokens it uses (size, weight, line-height).
+ */
+const TYPOGRAPHY_CATEGORIES = {
+  'Font Families': ['--font-body', '--font-heading', '--font-code'],
+  'Heading 1': {
+    description: 'Primary page title',
+    tokens: ['--text-2xl', '--font-weight-semibold', '--leading-tight'],
+  },
+  'Heading 2': {
+    description: 'Section title',
+    tokens: ['--text-xl', '--font-weight-semibold', '--leading-snug'],
+  },
+  'Heading 3': {
+    description: 'Subsection title',
+    tokens: ['--text-lg', '--font-weight-semibold', '--leading-tight'],
+  },
+  'Heading 4': {
+    description: 'Card/component title',
+    tokens: ['--text-base', '--font-weight-semibold', '--leading-base'],
+  },
+  'Heading 5': {
+    description: 'Minor heading',
+    tokens: ['--text-base', '--font-weight-semibold', '--leading-base'],
+  },
+  'Heading 6': {
+    description: 'Smallest heading',
+    tokens: ['--text-xsm', '--font-weight-semibold', '--leading-snug'],
+  },
+  'Body Text': {
+    description: 'Default paragraph text',
+    tokens: ['--text-base', '--font-weight-normal', '--leading-base'],
+  },
+  'Large Text': {
+    description: 'Intro/lead paragraphs',
+    tokens: ['--text-lg', '--font-weight-normal', '--leading-normal'],
+  },
+  'Label Text': {
+    description: 'Form labels, UI labels',
+    tokens: ['--text-base', '--font-weight-medium', '--leading-base'],
+  },
+  'Supporting Text': {
+    description: 'Captions, helper text',
+    tokens: ['--text-xsm', '--font-weight-normal', '--leading-snug'],
+  },
+  'Code Text': {
+    description: 'Inline code, code blocks',
+    tokens: ['--text-base', '--font-weight-normal', '--leading-base'],
+  },
+  'All Text Sizes': [
+    '--text-4xs',
+    '--text-3xs',
+    '--text-2xs',
+    '--text-xsm',
+    '--text-sm',
+    '--text-base',
+    '--text-lg',
+    '--text-xl',
+    '--text-2xl',
+    '--text-3xl',
+    '--text-4xl',
+  ],
+  'All Font Weights': [
+    '--font-weight-normal',
+    '--font-weight-medium',
+    '--font-weight-semibold',
+    '--font-weight-bold',
+  ],
+  'All Line Heights': [
+    '--leading-tight',
+    '--leading-snug',
+    '--leading-base',
+    '--leading-normal',
+    '--leading-relaxed',
+  ],
+} as const;
+
+type TypographyCategoryValue =
+  | string[]
+  | {description: string; tokens: string[]};
+
+// =============================================================================
 // Helper Functions
 // =============================================================================
 
@@ -1168,6 +1254,8 @@ function ThemeEditorComponent() {
   const [activeGroup, setActiveGroup] = React.useState<TokenGroupKey>('colors');
   const [activeColorCategory, setActiveColorCategory] =
     React.useState<string>('Core Semantic');
+  const [activeTypographyCategory, setActiveTypographyCategory] =
+    React.useState<string>('Heading 1');
   const [mode, setMode] = React.useState<'light' | 'dark'>('light');
   const [themeName, setThemeName] = React.useState('custom');
   const [showCode, setShowCode] = React.useState(false);
@@ -1295,9 +1383,113 @@ function ThemeEditorComponent() {
     }
 
     if (activeGroup === 'typography') {
+      const categoryValue = TYPOGRAPHY_CATEGORIES[
+        activeTypographyCategory as keyof typeof TYPOGRAPHY_CATEGORIES
+      ] as TypographyCategoryValue | undefined;
+
+      // Get the list of tokens for this category
+      const categoryTokens: string[] = categoryValue
+        ? Array.isArray(categoryValue)
+          ? categoryValue
+          : categoryValue.tokens
+        : [];
+
+      const categoryDescription =
+        categoryValue && !Array.isArray(categoryValue)
+          ? categoryValue.description
+          : null;
+
+      // Determine sample text rendering for semantic categories
+      const isSemanticStyle = categoryValue && !Array.isArray(categoryValue);
+
       return (
         <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-          {Object.keys(group.tokens).map(tokenName => (
+          {/* Typography category selector */}
+          <div style={{marginBottom: '8px'}}>
+            <select
+              value={activeTypographyCategory}
+              onChange={e => setActiveTypographyCategory(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                fontSize: '14px',
+                border: '1px solid var(--color-divider-emphasized)',
+                borderRadius: '8px',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text-primary)',
+              }}>
+              <optgroup label="Semantic Styles">
+                {Object.keys(TYPOGRAPHY_CATEGORIES)
+                  .filter(k => {
+                    const v = TYPOGRAPHY_CATEGORIES[
+                      k as keyof typeof TYPOGRAPHY_CATEGORIES
+                    ] as TypographyCategoryValue;
+                    return !Array.isArray(v);
+                  })
+                  .map(category => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+              </optgroup>
+              <optgroup label="Raw Tokens">
+                {Object.keys(TYPOGRAPHY_CATEGORIES)
+                  .filter(k => {
+                    const v = TYPOGRAPHY_CATEGORIES[
+                      k as keyof typeof TYPOGRAPHY_CATEGORIES
+                    ] as TypographyCategoryValue;
+                    return Array.isArray(v);
+                  })
+                  .map(category => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+              </optgroup>
+            </select>
+          </div>
+
+          {/* Description for semantic styles */}
+          {categoryDescription && (
+            <div
+              style={{
+                padding: '8px 12px',
+                borderRadius: '8px',
+                backgroundColor: 'var(--color-accent-deemphasized)',
+                fontSize: '12px',
+                color: 'var(--color-text-secondary)',
+                marginBottom: '4px',
+              }}>
+              {categoryDescription}
+            </div>
+          )}
+
+          {/* Sample text preview for semantic styles */}
+          {isSemanticStyle && (
+            <div
+              style={{
+                padding: '16px',
+                borderRadius: '8px',
+                backgroundColor: 'var(--color-wash)',
+                border: '1px solid var(--color-divider)',
+                marginBottom: '8px',
+              }}>
+              <div
+                style={{
+                  fontSize: tokens[categoryTokens[0]] || 'inherit',
+                  fontWeight: tokens[categoryTokens[1]] || 'inherit',
+                  lineHeight: tokens[categoryTokens[2]] || 'inherit',
+                  color: 'var(--color-text-primary)',
+                }}>
+                {activeTypographyCategory === 'Code Text'
+                  ? 'const theme = defineTheme({...});'
+                  : `The quick brown fox jumps over the lazy dog`}
+              </div>
+            </div>
+          )}
+
+          {/* Token editors */}
+          {categoryTokens.map(tokenName => (
             <TypographyEditor
               key={tokenName}
               tokenName={tokenName}
