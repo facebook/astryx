@@ -942,8 +942,8 @@ export default function TypeScaleExplorerPage() {
                   <span
                     key={link}
                     style={{
-                      fontSize: getStyle('body-sm').fontSize,
-                      fontWeight: getStyle('body-sm').weight,
+                      fontSize: getStyle('body').fontSize,
+                      fontWeight: getStyle('body').weight,
                     }}
                     {...stylex.props(st.landingNavLink)}>
                     {link}
@@ -955,7 +955,7 @@ export default function TypeScaleExplorerPage() {
             <div {...stylex.props(st.landingHero)}>
               <p
                 style={{
-                  fontSize: getStyle('supporting').fontSize,
+                  fontSize: getStyle('body-sm').fontSize,
                   fontWeight: 500,
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
@@ -989,9 +989,9 @@ export default function TypeScaleExplorerPage() {
               </div>
               <p
                 style={{
-                  fontSize: getStyle('caption').fontSize,
-                  lineHeight: `${getStyle('caption').lineHeight}px`,
-                  fontWeight: getStyle('caption').weight,
+                  fontSize: getStyle('body-sm').fontSize,
+                  lineHeight: `${getStyle('body-sm').lineHeight}px`,
+                  fontWeight: getStyle('body-sm').weight,
                   marginTop: 16,
                   color: 'light-dark(#999, #666)',
                 }}>
@@ -1061,9 +1061,9 @@ export default function TypeScaleExplorerPage() {
                     </h3>
                     <p
                       style={{
-                        fontSize: getStyle('body-sm').fontSize,
-                        lineHeight: `${getStyle('body-sm').lineHeight}px`,
-                        fontWeight: getStyle('body-sm').weight,
+                        fontSize: getStyle('body').fontSize,
+                        lineHeight: `${getStyle('body').lineHeight}px`,
+                        fontWeight: getStyle('body').weight,
                       }}
                       {...stylex.props(st.landingFeatureDesc)}>
                       {feature.desc}
@@ -1253,14 +1253,13 @@ const TABLE_DATA = [
 const BAR_HEIGHTS = [45, 62, 38, 78, 55, 42, 88, 65, 50, 72, 58, 82];
 
 function DashboardPreview({getStyle}: {getStyle: (name: string) => TypeStyle}) {
-  const caption = getStyle('caption');
-  const supporting = getStyle('supporting');
   const bodySm = getStyle('body-sm');
   const body = getStyle('body');
   const label = getStyle('label');
   const h3 = getStyle('h3');
   const h4 = getStyle('h4');
   const h1 = getStyle('h1');
+  const display3 = getStyle('display-3');
 
   return (
     <div {...stylex.props(st.dashPreview)}>
@@ -1272,7 +1271,7 @@ function DashboardPreview({getStyle}: {getStyle: (name: string) => TypeStyle}) {
           Analytics Dashboard
         </span>
         <span
-          style={{fontSize: caption.fontSize, fontWeight: caption.weight}}
+          style={{fontSize: bodySm.fontSize, fontWeight: bodySm.weight}}
           {...stylex.props(st.landingNavLink)}>
           Last 30 days · Jan 1 – Jan 30, 2026
         </span>
@@ -1294,9 +1293,9 @@ function DashboardPreview({getStyle}: {getStyle: (name: string) => TypeStyle}) {
             </h2>
             <p
               style={{
-                fontSize: supporting.fontSize,
-                lineHeight: `${supporting.lineHeight}px`,
-                fontWeight: supporting.weight,
+                fontSize: bodySm.fontSize,
+                lineHeight: `${bodySm.lineHeight}px`,
+                fontWeight: bodySm.weight,
                 margin: '4px 0 0 0',
                 color: 'light-dark(#666, #aaa)',
               }}>
@@ -1332,8 +1331,8 @@ function DashboardPreview({getStyle}: {getStyle: (name: string) => TypeStyle}) {
             <div key={kpi.label} {...stylex.props(st.dashKpiCard)}>
               <p
                 style={{
-                  fontSize: caption.fontSize,
-                  lineHeight: `${caption.lineHeight}px`,
+                  fontSize: bodySm.fontSize,
+                  lineHeight: `${bodySm.lineHeight}px`,
                   fontWeight: 500,
                   textTransform: 'uppercase',
                   letterSpacing: '0.04em',
@@ -1343,17 +1342,17 @@ function DashboardPreview({getStyle}: {getStyle: (name: string) => TypeStyle}) {
               </p>
               <p
                 style={{
-                  fontSize: h4.fontSize,
-                  lineHeight: `${h4.lineHeight}px`,
-                  fontWeight: h4.weight,
+                  fontSize: display3.fontSize,
+                  lineHeight: `${display3.lineHeight}px`,
+                  fontWeight: display3.weight,
                 }}
                 {...stylex.props(st.dashKpiValue)}>
                 {kpi.value}
               </p>
               <p
                 style={{
-                  fontSize: caption.fontSize,
-                  lineHeight: `${caption.lineHeight}px`,
+                  fontSize: bodySm.fontSize,
+                  lineHeight: `${bodySm.lineHeight}px`,
                   fontWeight: 500,
                   color: kpi.up
                     ? 'light-dark(#0D8626, #26A756)'
@@ -1396,21 +1395,21 @@ function DashboardPreview({getStyle}: {getStyle: (name: string) => TypeStyle}) {
               }}>
               <span
                 style={{
-                  fontSize: caption.fontSize,
+                  fontSize: bodySm.fontSize,
                   color: 'light-dark(#999, #666)',
                 }}>
                 Jan
               </span>
               <span
                 style={{
-                  fontSize: caption.fontSize,
+                  fontSize: bodySm.fontSize,
                   color: 'light-dark(#999, #666)',
                 }}>
                 Jun
               </span>
               <span
                 style={{
-                  fontSize: caption.fontSize,
+                  fontSize: bodySm.fontSize,
                   color: 'light-dark(#999, #666)',
                 }}>
                 Dec
@@ -1442,7 +1441,7 @@ function DashboardPreview({getStyle}: {getStyle: (name: string) => TypeStyle}) {
               </p>
               <p
                 style={{
-                  fontSize: caption.fontSize,
+                  fontSize: bodySm.fontSize,
                   margin: '2px 0 0 0',
                   color: 'light-dark(#666, #aaa)',
                 }}>
@@ -1472,7 +1471,7 @@ function DashboardPreview({getStyle}: {getStyle: (name: string) => TypeStyle}) {
             </h3>
             <span
               style={{
-                fontSize: caption.fontSize,
+                fontSize: bodySm.fontSize,
                 color: 'light-dark(#0064E0, #2694FE)',
                 cursor: 'pointer',
               }}>
@@ -1488,7 +1487,7 @@ function DashboardPreview({getStyle}: {getStyle: (name: string) => TypeStyle}) {
                       <th
                         key={col}
                         style={{
-                          fontSize: caption.fontSize,
+                          fontSize: bodySm.fontSize,
                           fontWeight: 600,
                           textTransform: 'uppercase',
                           letterSpacing: '0.04em',
