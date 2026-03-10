@@ -1,5 +1,5 @@
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSTooltip, useXDSTooltip} from '@xds/core/Layer';
+import {XDSTooltip, useXDSTooltip} from '@xds/core/Tooltip';
 import {XDSButton} from '@xds/core/Button';
 import {XDSHStack} from '@xds/core/Layout';
 

@@ -30,7 +30,7 @@ import {
 // TODO(#264): Lazy-load useXDSPopover so the popover/layer bundle is not
 // eagerly imported when `menu` is not provided. See XDSText for an example
 // of lazy loading layer resources.
-import {useXDSPopover} from '../Layer/useXDSPopover';
+import {useXDSPopover} from '../Popover/useXDSPopover';
 import {XDSLink} from '../Link';
 import {xdsClassName, mergeProps} from '../utils';
 

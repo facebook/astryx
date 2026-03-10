@@ -25,7 +25,7 @@ import {
   spacingVars,
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
-import {XDSTooltip} from '../Layer';
+import {XDSTooltip} from '../Tooltip';
 import {XDSText} from '../Text';
 import type {
   XDSTextType,

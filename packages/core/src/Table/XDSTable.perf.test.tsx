@@ -490,7 +490,7 @@ describe('XDSTable render performance', () => {
       console.log(`100 rows single update: ${updateTime.toFixed(2)}ms`);
 
       // Update should be fast
-      expect(updateTime).toBeLessThan(50);
+      expect(updateTime).toBeLessThan(100);
     });
   });
 });

@@ -7,9 +7,8 @@
  * For hover-triggered overlays, use XDSHoverCard instead.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Layer/Layer.doc.mjs
- * - /packages/core/src/Layer/XDSPopover.test.tsx
- * - /packages/core/src/Layer/index.ts
+ * - /packages/core/src/Popover/XDSPopover.test.tsx
+ * - /packages/core/src/Popover/index.ts
  * - /apps/storybook/stories/Popover.stories.tsx
  */
 
@@ -26,7 +25,7 @@ import * as stylex from '@stylexjs/stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {useXDSPopover} from './useXDSPopover';
-import type {LayerAlignment, LayerPlacement} from './useXDSLayer';
+import type {LayerAlignment, LayerPlacement} from '../Layer/useXDSLayer';
 import {
   colorVars,
   spacingVars,

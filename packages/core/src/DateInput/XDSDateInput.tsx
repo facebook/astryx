@@ -49,7 +49,7 @@ import {
   type ISODateString,
   type XDSCalendarHandle,
 } from '../Calendar';
-import {useXDSPopover} from '../Layer';
+import {useXDSPopover} from '../Popover';
 import {parseDateInput, formatDisplayDate} from '../utils';
 
 const styles = stylex.create({

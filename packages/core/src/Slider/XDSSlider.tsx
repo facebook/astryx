@@ -31,7 +31,7 @@ import {
   textSizeVars,
 } from '../theme/tokens.stylex';
 import {XDSField} from '../Field/XDSField';
-import {XDSTooltip} from '../Layer/XDSTooltip';
+import {XDSTooltip} from '../Tooltip/XDSTooltip';
 import type {XDSInputStatus} from '../Field/types';
 
 // =============================================================================

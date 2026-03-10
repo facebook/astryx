@@ -5,9 +5,7 @@
  * @position Layer component; uses display:contents wrapper to avoid cloneElement
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Layer/Layer.doc.mjs
- * - /packages/core/src/Layer/XDSTooltip.test.tsx
- * - /packages/core/src/Layer/index.ts
+ * - /packages/core/src/Tooltip/index.ts
  * - /apps/storybook/stories/Tooltip.stories.tsx
  */
 
@@ -21,7 +19,7 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useXDSTooltip, type TooltipFocusTrigger} from './useXDSTooltip';
-import type {LayerAlignment, LayerPlacement} from './useXDSLayer';
+import type {LayerAlignment, LayerPlacement} from '../Layer/useXDSLayer';
 import {colorVars} from '../theme/tokens.stylex';
 
 export type {TooltipFocusTrigger} from './useXDSTooltip';
