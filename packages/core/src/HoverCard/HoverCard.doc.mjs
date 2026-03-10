@@ -47,6 +47,20 @@ export const docs = {
       name: 'XDSHoverCard',
       description:
         'Component wrapper for hover card display — a richer, larger overlay triggered on hover or focus.',
+      examples: [
+        {
+          label: 'Basic',
+          code: `<XDSHoverCard content={<ProfileCard user={user} />} placement="above">
+  <XDSButton>Hover me</XDSButton>
+</XDSHoverCard>`,
+        },
+        {
+          label: 'With delay',
+          code: `<XDSHoverCard content={<ProfileCard user={user} />} delay={500} hideDelay={300}>
+  <span>Hover me</span>
+</XDSHoverCard>`,
+        },
+      ],
       props: [
         {
           name: 'children',
@@ -107,6 +121,17 @@ export const docs = {
       name: 'useXDSHoverCard',
       description:
         'Hook for hover card behavior with hover/focus triggers. Builds on useXDSLayer.',
+      examples: [
+        {
+          label: 'Basic hook usage',
+          code: `const hoverCard = useXDSHoverCard({placement: 'above'});
+
+<XDSButton ref={hoverCard.ref} aria-describedby={hoverCard.describedBy}>
+  Hover me
+</XDSButton>
+{hoverCard.renderHoverCard(<ProfileCard user={user} />)}`,
+        },
+      ],
       props: [
         {
           name: 'placement',

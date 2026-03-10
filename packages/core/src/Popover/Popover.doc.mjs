@@ -72,6 +72,25 @@ export const docs = {
       name: 'XDSPopover',
       description:
         'A click-triggered popover for displaying interactive content anchored to a trigger element.',
+      examples: [
+        {
+          label: 'Basic',
+          code: `<XDSPopover label="Settings" content={<SettingsPanel />} placement="below">
+  <XDSButton label="Settings" />
+</XDSPopover>`,
+        },
+        {
+          label: 'Controlled',
+          code: `<XDSPopover
+  isOpen={isOpen}
+  onOpenChange={setIsOpen}
+  label="Filter"
+  content={<FilterForm />}
+>
+  <XDSButton label="Filter" />
+</XDSPopover>`,
+        },
+      ],
       props: [
         {
           name: 'children',
@@ -136,6 +155,19 @@ export const docs = {
       name: 'useXDSPopover',
       description:
         'Hook for creating popover dialogs with focus trapping. Combines useXDSLayer with useFocusTrap.',
+      examples: [
+        {
+          label: 'Basic hook usage',
+          code: `const popover = useXDSPopover({
+  onHide: () => inputRef.current?.focus(),
+});
+
+<button ref={popover.triggerRef} onClick={popover.toggle} {...popover.triggerProps}>
+  Open
+</button>
+{popover.render(<MyContent />, { placement: 'below', alignment: 'start' })}`,
+        },
+      ],
       props: [
         {
           name: 'onShow',

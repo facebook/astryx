@@ -49,6 +49,18 @@ export const docs = {
       name: 'XDSTooltip',
       description:
         'Component wrapper for tooltip display triggered on hover or focus.',
+      examples: [
+        {
+          label: 'Basic',
+          code: `<XDSTooltip content="Save your changes" placement="above">
+  <XDSButton label="Save" variant="primary" />
+</XDSTooltip>`,
+        },
+        {
+          label: 'Sibling mode',
+          code: `<XDSTooltip anchorRef={buttonRef} content="Save your changes" placement="above" />`,
+        },
+      ],
       props: [
         {
           name: 'children',
@@ -113,6 +125,17 @@ export const docs = {
       name: 'useXDSTooltip',
       description:
         'Hook for tooltip behavior with hover/focus triggers. Builds on useXDSLayer.',
+      examples: [
+        {
+          label: 'Basic hook usage',
+          code: `const tooltip = useXDSTooltip({ placement: 'above' });
+
+<XDSButton ref={tooltip.ref} aria-describedby={tooltip.describedBy}>
+  Hover me
+</XDSButton>
+{tooltip.renderTooltip('Helpful tooltip text')}`,
+        },
+      ],
       props: [
         {
           name: 'placement',
