@@ -51,13 +51,13 @@ const TYPE_ROLES: Array<{
   {name: 'h5', role: 'heading', exponent: -1, weight: 600},
   {name: 'h6', role: 'heading', exponent: -2, weight: 600},
   // Body
-  {name: 'body-lg', role: 'body', exponent: 0, weight: 400},
-  {name: 'body', role: 'body', exponent: -1, weight: 400},
-  {name: 'body-sm', role: 'body', exponent: -2, weight: 400},
-  {name: 'label', role: 'body', exponent: -1, weight: 500},
+  {name: 'body-lg', role: 'body', exponent: 1, weight: 400},
+  {name: 'body', role: 'body', exponent: 0, weight: 400},
+  {name: 'body-sm', role: 'body', exponent: -1, weight: 400},
+  {name: 'label', role: 'body', exponent: 0, weight: 500},
   // Supporting
-  {name: 'supporting', role: 'supporting', exponent: -2, weight: 400},
-  {name: 'caption', role: 'supporting', exponent: -3, weight: 400},
+  {name: 'supporting', role: 'supporting', exponent: -1, weight: 400},
+  {name: 'caption', role: 'supporting', exponent: -2, weight: 400},
 ];
 
 function computeLineHeight(
