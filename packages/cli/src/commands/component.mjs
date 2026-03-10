@@ -11,7 +11,8 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {findCoreDir} from '../utils/paths.mjs';
+import {pathToFileURL} from 'node:url';
+import {findCoreDir, discoverExternalPackages} from '../utils/paths.mjs';
 
 /**
  * Map top-level src/ directories to display categories.
@@ -121,6 +122,33 @@ export function discoverComponents(coreDir) {
   }
 
   return ordered;
+}
+
+/**
+ * Discover components from an external package's docs directory.
+ * Scans for *.doc.mjs files and extracts component names.
+ */
+export function discoverExternalComponents(docsDir) {
+  if (!fs.existsSync(docsDir)) return [];
+
+  const components = [];
+
+  function scanDir(dirPath) {
+    if (!fs.existsSync(dirPath)) return;
+    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+    for (const entry of entries) {
+      if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
+      if (entry.isDirectory()) {
+        scanDir(path.join(dirPath, entry.name));
+      } else if (entry.name.endsWith('.doc.mjs')) {
+        const name = entry.name.replace('.doc.mjs', '');
+        components.push(name);
+      }
+    }
+  }
+
+  scanDir(docsDir);
+  return components.sort();
 }
 
 /**

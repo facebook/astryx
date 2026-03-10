@@ -86,3 +86,75 @@ export function listComponents(coreDir) {
     .map(e => e.name)
     .sort();
 }
+
+/**
+ * Discover external XDS-compatible packages from node_modules.
+ * Scans for packages with an "xds" field in their package.json.
+ *
+ * Returns array of:
+ *   { name: "@acme/charts", category: "Data Viz", docsDir: "/abs/path/to/src" }
+ */
+export function discoverExternalPackages(startDir = process.cwd()) {
+  const externals = [];
+  let dir = startDir;
+
+  // Find node_modules
+  let nodeModulesDir = null;
+  for (let i = 0; i < 5; i++) {
+    const candidate = path.join(dir, 'node_modules');
+    if (fs.existsSync(candidate)) {
+      nodeModulesDir = candidate;
+      break;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+
+  if (!nodeModulesDir) return externals;
+
+  // Scan scoped packages (@org/pkg) and top-level packages
+  const scanDir = (searchDir, prefix = '') => {
+    if (!fs.existsSync(searchDir)) return;
+    const entries = fs.readdirSync(searchDir, {withFileTypes: true});
+
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+
+      // Skip hidden dirs and common non-package dirs
+      if (entry.name.startsWith('.') || entry.name === '.bin') continue;
+
+      const fullPath = path.join(searchDir, entry.name);
+
+      // Handle scoped packages (@org/*)
+      if (entry.name.startsWith('@')) {
+        scanDir(fullPath, entry.name + '/');
+        continue;
+      }
+
+      // Check for xds field in package.json
+      const pkgJsonPath = path.join(fullPath, 'package.json');
+      if (!fs.existsSync(pkgJsonPath)) continue;
+
+      try {
+        const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
+
+        // Skip @xds/core itself
+        if (pkg.name === '@xds/core') continue;
+
+        if (pkg.xds && pkg.xds.docs) {
+          externals.push({
+            name: pkg.name,
+            category: pkg.xds.category || pkg.name,
+            docsDir: path.resolve(fullPath, pkg.xds.docs),
+          });
+        }
+      } catch {
+        // skip invalid JSON
+      }
+    }
+  };
+
+  scanDir(nodeModulesDir);
+  return externals;
+}

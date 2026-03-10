@@ -357,6 +357,12 @@
       "types": "./dist/utils/index.d.ts",
       "import": "./dist/utils/index.mjs",
       "require": "./dist/utils/index.js"
+    },
+    "./docs-types": {
+      "source": "./src/docs-types.ts",
+      "types": "./dist/docs-types.d.ts",
+      "import": "./dist/docs-types.mjs",
+      "require": "./dist/docs-types.js"
     }
   },
   "files": [
