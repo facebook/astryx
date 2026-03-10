@@ -12,6 +12,10 @@ const themeNeutralRoot = path.resolve(
   __dirname,
   '../../../packages/themes/neutral/src',
 );
+const themeBrutalistRoot = path.resolve(
+  __dirname,
+  '../../../packages/themes/brutalist/src',
+);
 
 /**
  * Browser targets for lightningcss.
@@ -93,6 +97,9 @@ const config: StorybookConfig = {
             '@xds/theme-neutral/*': [
               path.join(rootDir, 'packages/themes/neutral/src/*'),
             ],
+            '@xds/theme-brutalist/*': [
+              path.join(rootDir, 'packages/themes/brutalist/src/*'),
+            ],
           },
           unstable_moduleResolution: {
             type: 'commonJS',
@@ -119,6 +126,7 @@ const config: StorybookConfig = {
           '@xds/core': coreRoot,
           '@xds/theme-default': themeDefaultRoot,
           '@xds/theme-neutral': themeNeutralRoot,
+          '@xds/theme-brutalist': themeBrutalistRoot,
         },
       },
       css: {
