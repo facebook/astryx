@@ -181,6 +181,7 @@ function generateRawScale(config: TypeScaleConfig): RawScaleStep[] {
 const PRESETS: Record<string, TypeScaleConfig> = {
   functional: {base: 12, ratio: 1.125, lineHeightGrid: 4},
   default: {base: 14, ratio: 1.125, lineHeightGrid: 4},
+  'default-proposed': {base: 14, ratio: 1.2, lineHeightGrid: 4},
   editorial: {base: 16, ratio: 1.25, lineHeightGrid: 4},
 };
 
@@ -194,6 +195,16 @@ const RATIOS: Record<string, number> = {
   'Perfect Fifth (1.5)': 1.5,
   'Golden Ratio (1.618)': 1.618,
 };
+
+function presetLabel(key: string): string {
+  const labels: Record<string, string> = {
+    functional: 'Functional',
+    default: 'Default',
+    'default-proposed': 'Default (Proposed)',
+    editorial: 'Editorial',
+  };
+  return labels[key] ?? key.charAt(0).toUpperCase() + key.slice(1);
+}
 
 // =============================================================================
 // Styles
@@ -599,7 +610,7 @@ export default function TypeScaleExplorerPage() {
                       activePreset === name && st.presetBtnActive,
                     )}
                     onClick={() => setConfig(preset)}>
-                    {name.charAt(0).toUpperCase() + name.slice(1)}
+                    {presetLabel(name)}
                   </button>
                 ))}
               </XDSHStack>
@@ -1103,9 +1114,7 @@ export default function TypeScaleExplorerPage() {
                 return (
                   <div key={name} style={{flex: 1}}>
                     <XDSVStack gap={2}>
-                      <XDSText type="label">
-                        {name.charAt(0).toUpperCase() + name.slice(1)}
-                      </XDSText>
+                      <XDSText type="label">{presetLabel(name)}</XDSText>
                       <XDSText type="supporting" color="secondary">
                         {preset.base}px base, {preset.ratio} ratio
                       </XDSText>
