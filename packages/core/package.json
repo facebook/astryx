@@ -1,6 +1,6 @@
 {
   "name": "@xds/core",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Core XDS components",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
