@@ -39,32 +39,50 @@ export default defineConfig({
     rollupOptions: {
       input: path.resolve(__dirname, 'index.report.html'),
     },
-    cssMinify: 'lightningcss',
-  },
-  css: {
-    lightningcss: {
-      targets: lightningcssTargets,
-    },
+    // Don't use lightningcss for minification — it lowers light-dark()
+    // into --lightningcss-light/--lightningcss-dark polyfill variables
+    // which breaks theming. The pre-compiled CSS is already minified.
+    cssMinify: false,
   },
   resolve: {
-    alias: {
+    alias: [
       // Pre-compiled CSS — no StyleX build needed
-      'xds-css': path.resolve(repoRoot, 'packages/core/dist/xds.css'),
-      'xds-theme-css': path.resolve(
-        repoRoot,
-        'packages/themes/default/dist/theme.css',
-      ),
+      {
+        find: 'xds-css',
+        replacement: path.resolve(repoRoot, 'packages/core/dist/xds.css'),
+      },
+      {
+        find: 'xds-theme-css',
+        replacement: path.resolve(
+          repoRoot,
+          'packages/themes/default/dist/theme.css',
+        ),
+      },
+      // Core CSS files live in src/
+      {
+        find: /^@xds\/core\/(.+\.css)$/,
+        replacement: path.resolve(repoRoot, 'packages/core/src/$1'),
+      },
+      // Core subpath imports → dist (bypasses "source" condition in exports map)
+      {
+        find: /^@xds\/core\/(.+)$/,
+        replacement: path.resolve(repoRoot, 'packages/core/dist/$1/index.mjs'),
+      },
+      // Core root import
+      {
+        find: '@xds/core',
+        replacement: path.resolve(repoRoot, 'packages/core/dist/index.mjs'),
+      },
       // Theme: resolve to source (no StyleX usage, just defineTheme + icons).
-      // The dist is incomplete (missing icons.js), so source is needed.
-      '@xds/theme-default': path.resolve(
-        repoRoot,
-        'packages/themes/default/src',
-      ),
-      '@xds/theme/default': path.resolve(
-        repoRoot,
-        'packages/themes/default/src',
-      ),
-    },
+      {
+        find: '@xds/theme-default',
+        replacement: path.resolve(repoRoot, 'packages/themes/default/src'),
+      },
+      {
+        find: '@xds/theme/default',
+        replacement: path.resolve(repoRoot, 'packages/themes/default/src'),
+      },
+    ],
   },
   server: {port: 5174, strictPort: true},
 });
