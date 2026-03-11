@@ -236,3 +236,6 @@ export const docs = {
     'Units are displayed as a lighter grey suffix after the input value.',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

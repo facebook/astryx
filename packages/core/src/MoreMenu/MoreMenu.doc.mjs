@@ -152,3 +152,6 @@ export const docs = {
     'Use XDSMoreMenu for icon-only overflow actions in tight spaces (table rows, card headers). Use XDSDropdownMenu for labeled trigger buttons with chevrons.',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

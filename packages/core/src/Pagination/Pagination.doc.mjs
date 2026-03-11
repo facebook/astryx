@@ -165,3 +165,6 @@ export const docs = {
     'Also exports generatePageRange utility for computing visible page numbers with ellipsis.',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

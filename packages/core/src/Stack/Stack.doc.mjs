@@ -332,3 +332,6 @@ import * as stylex from '@stylexjs/stylex';
     },
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

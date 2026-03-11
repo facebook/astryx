@@ -144,3 +144,6 @@ export const docs = {
     'Icon-only buttons are suitable for toolbars, action grids, and compact controls.',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

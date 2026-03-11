@@ -88,3 +88,6 @@ layer.show();
     },
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

@@ -216,3 +216,6 @@ export const docs = {
   keyboard:
     'Backspace on empty input removes last token; Arrow keys navigate dropdown; Enter selects highlighted item; Escape closes dropdown',
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

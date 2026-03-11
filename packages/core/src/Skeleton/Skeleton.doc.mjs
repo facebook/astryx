@@ -74,3 +74,6 @@ export const docs = {
     'Animation timing constants: DELAY_TIME (1000ms) initial delay before animation starts, FADE_TIME (1000ms) duration of one opacity cycle, STAGGER_TIME (100ms) delay increment between sequential elements.',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

@@ -203,3 +203,6 @@ export const docs = {
     'Follows the same patterns as XDSCheckboxInput for structural consistency',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

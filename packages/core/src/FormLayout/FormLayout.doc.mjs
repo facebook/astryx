@@ -89,3 +89,6 @@ export const docs = {
     'Also accepts standard HTML div attributes (id, role, aria-*, etc.) via rest props.',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

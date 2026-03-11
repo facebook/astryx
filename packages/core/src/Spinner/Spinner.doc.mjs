@@ -59,3 +59,6 @@ export const docs = {
     'Size reference: sm = 10×10px / 3px border, md = 14×14px / 3px border, lg = 18×18px / 3px border.',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

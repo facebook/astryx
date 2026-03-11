@@ -91,3 +91,6 @@ import {Home} from 'lucide-react';
     'Size dimensions — xsm: 12x12px (dense UI, badges, indicators); sm: 16x16px (inline with text, compact UI); md: 20x20px (default, buttons, inputs); lg: 24x24px (emphasis, standalone icons).',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

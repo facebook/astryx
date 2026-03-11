@@ -71,3 +71,6 @@ export const docs = {
     'isPulsing animation respects prefers-reduced-motion: reduce.',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

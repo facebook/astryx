@@ -124,3 +124,6 @@ export const docs = {
     'Collapsible support is planned: the content area will support collapsing via useXDSCollapsible (issue #187)',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

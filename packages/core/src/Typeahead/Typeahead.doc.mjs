@@ -414,3 +414,6 @@ export const docs = {
     'If item has an element property, XDSTypeaheadItem renders it directly instead of the standard layout.',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

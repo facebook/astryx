@@ -237,3 +237,6 @@ export const docs = {
     'Vertical orientation inverts the Y axis so that bottom = min and top = max.',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

@@ -21,6 +21,7 @@ program
   .name('xds')
   .description('XDS design system CLI — components, themes, and tooling')
   .version('0.0.1')
+  .option('--dense', 'Output docs in Chinese Simplified (token-efficient for LLMs)')
   .addHelpCommand('help', 'Show all commands')
   .action(() => {
     program.help();

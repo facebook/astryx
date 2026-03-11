@@ -67,3 +67,6 @@ export const docs = {
     'Key display symbols follow macOS conventions (⌘, ⌥, ⇧, ⌃)',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

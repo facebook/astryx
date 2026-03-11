@@ -106,3 +106,6 @@ export const docs = {
     'Focus outline uses the standard XDS focus outline token.',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

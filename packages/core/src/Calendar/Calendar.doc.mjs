@@ -127,3 +127,6 @@ export const docs = {
     'DateRange interface: { start: ISODateString; end: ISODateString }',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

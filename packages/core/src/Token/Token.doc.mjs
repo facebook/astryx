@@ -123,3 +123,6 @@ export const docs = {
   keyboard:
     'Tab focuses the token (or its inner button when onClick is used). Enter/Space activate a clickable token or the remove button. Remove button is reachable as a separate Tab stop.',
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

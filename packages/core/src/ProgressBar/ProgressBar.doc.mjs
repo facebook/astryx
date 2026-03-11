@@ -121,3 +121,6 @@ export const docs = {
     'Indeterminate animation respects prefers-reduced-motion',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

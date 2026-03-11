@@ -199,3 +199,6 @@ export const docs = {
     'The character counter text turns red when value.length exceeds maxLength.',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

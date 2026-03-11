@@ -213,3 +213,6 @@ import {XDSLinkProvider} from '@xds/core/Link';
     },
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

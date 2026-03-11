@@ -94,3 +94,6 @@ export const docs = {
     'Title renders as an <h3> element, keeping it in the document heading outline.',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

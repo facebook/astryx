@@ -209,3 +209,6 @@ export const docs = {
   keyboard:
     'ArrowUp / ArrowDown adjust the current time by the configured increment in minutes. Typing a time string in common formats (e.g. "2:30 PM", "14:30") is parsed on blur. Pressing the clear button returns focus to the input.',
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};

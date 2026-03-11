@@ -200,3 +200,6 @@ export const docs = {
     'The size prop supports "sm", "md", and "lg".',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {...docs};
