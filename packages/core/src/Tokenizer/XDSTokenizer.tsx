@@ -33,6 +33,7 @@ import {
 } from '../Field';
 import {XDSToken} from '../Token';
 import {XDSIcon} from '../Icon';
+import type {XDSIconType} from '../Icon';
 import {
   colorVars,
   spacingVars,
@@ -84,6 +85,11 @@ export interface XDSTokenizerProps<T extends XDSSearchableItem> {
   isOptional?: boolean;
   /** Validation status. */
   status?: XDSInputStatus;
+  /**
+   * Icon to display at the start of the input.
+   * Pass an SVG icon component (e.g. from heroicons, lucide, etc.).
+   */
+  startIcon?: XDSIconType;
   /** Label tooltip. */
   labelTooltip?: string;
   /** Search source providing items. */
@@ -260,6 +266,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   isRequired = false,
   isOptional = false,
   status,
+  startIcon,
   labelTooltip,
   searchSource,
   value,
@@ -455,6 +462,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
           status && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
         )}>
+        {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
         {tokens}
         <XDSBaseTypeahead
           ref={inputRef}
