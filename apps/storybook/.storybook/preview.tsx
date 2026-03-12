@@ -32,6 +32,11 @@ const themes = {
  * and toggling the toolbar has no visible effect.
  */
 const withXDSTheme: Decorator = (Story, context) => {
+  // Allow stories to opt out of the theme decorator entirely
+  if (context.parameters?.xdsThemeDecorator?.disable) {
+    return <Story />;
+  }
+
   // Get theme selection from toolbar
   const themeKey = (context.globals?.xdsTheme || 'default') as string;
   const mode = context.globals?.colorMode === 'dark' ? 'dark' : 'light';

@@ -2095,58 +2095,6 @@ function ThemeEditorComponent() {
           flexDirection: 'column',
           backgroundColor: 'var(--color-surface)',
         }}>
-        {/* Header */}
-        <div
-          style={{
-            padding: '16px',
-            borderBottom: '1px solid var(--color-divider)',
-          }}>
-          <XDSHeading level={3}>Theme Editor</XDSHeading>
-          <XDSText type="supporting" style={{marginTop: '4px'}}>
-            Customize XDS design tokens
-          </XDSText>
-        </div>
-
-        {/* Theme name input */}
-        <div
-          style={{
-            padding: '12px 16px',
-            borderBottom: '1px solid var(--color-divider)',
-          }}>
-          <XDSTextInput
-            label="Theme Name"
-            value={themeName}
-            onChange={setThemeName}
-            size="sm"
-          />
-        </div>
-
-        {/* Mode toggle */}
-        <div
-          style={{
-            padding: '12px 16px',
-            borderBottom: '1px solid var(--color-divider)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}>
-          <XDSText type="label">Edit Mode</XDSText>
-          <div style={{display: 'flex', gap: '8px'}}>
-            <XDSButton
-              label="Light"
-              variant={mode === 'light' ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setMode('light')}
-            />
-            <XDSButton
-              label="Dark"
-              variant={mode === 'dark' ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setMode('dark')}
-            />
-          </div>
-        </div>
-
         {/* Token group tabs */}
         <div
           style={{
@@ -2247,6 +2195,20 @@ function ThemeEditorComponent() {
             <XDSHeading level={4}>Live Preview</XDSHeading>
             <XDSText type="supporting">See your changes in real-time</XDSText>
           </div>
+          <div style={{display: 'flex', gap: '8px'}}>
+            <XDSButton
+              label="Light"
+              variant={mode === 'light' ? 'primary' : 'ghost'}
+              size="sm"
+              onClick={() => setMode('light')}
+            />
+            <XDSButton
+              label="Dark"
+              variant={mode === 'dark' ? 'primary' : 'ghost'}
+              size="sm"
+              onClick={() => setMode('dark')}
+            />
+          </div>
         </div>
 
         {/* Code panel (collapsible) */}
@@ -2286,13 +2248,11 @@ function ThemeEditorComponent() {
           style={{
             flex: 1,
             overflow: 'auto',
-            padding: '24px',
           }}>
           <XDSTheme theme={currentTheme} mode={mode}>
             <div
               style={{
                 backgroundColor: 'var(--color-surface)',
-                borderRadius: '12px',
                 padding: '24px',
                 minHeight: '100%',
               }}>
@@ -2328,5 +2288,6 @@ export const ThemeEditor: Story = {
   parameters: {
     // Disable the theme decorator for this story since we manage our own theme
     xdsTheme: 'none',
+    xdsThemeDecorator: {disable: true},
   },
 };
