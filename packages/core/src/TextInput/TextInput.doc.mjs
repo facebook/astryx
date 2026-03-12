@@ -202,4 +202,203 @@ export const docs = {
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
-export const docsZh = {...docs};
+export const docsZh = {
+  name: 'TextInput',
+  description:
+    '用于收集用户文本输入的文本输入组件，带有标签、描述、验证状态和可选/必填指示器。',
+  features: [
+    '标签支持 — 必需的无障碍标签（可视觉隐藏）',
+    '描述 — 显示在标签和输入框之间的可选文本',
+    '可选/必填指示器 — 带圆点分隔符的"可选"或"必填"文本',
+    '标签工具提示 — 标签末尾带工具提示的可选信息图标',
+    '验证状态 — 错误、警告和成功状态，带彩色边框和图标',
+    '起始图标 — 显示在输入框起始位置的可选图标',
+    '加载状态 — 异步操作挂起时显示旋转器并设置 aria-busy',
+    '禁用状态 — 视觉上使输入框变暗并阻止交互',
+    '无障碍 — 标签始终通过 htmlFor/id 与输入框关联；根据需要设置 aria-invalid、aria-required、aria-busy 和 aria-describedby',
+    '使用 StyleX 样式化 — 使用 XDS 设计令牌实现一致的样式',
+  ],
+  examples: [
+    {
+      label: '基础用法',
+      code: '<XDSTextInput label="Name" value={name} onChange={setName} />',
+    },
+    {
+      label: '带占位符',
+      code: '<XDSTextInput label="Email" value={email} onChange={setEmail} placeholder="email@example.com" />',
+    },
+    {
+      label: '隐藏标签',
+      code: '<XDSTextInput label="Search" isLabelHidden value={query} onChange={setQuery} placeholder="Search..." />',
+    },
+    {
+      label: '带描述',
+      code: `<XDSTextInput
+  label="Email"
+  description="We'll never share your email"
+  value={email}
+  onChange={setEmail}
+/>`,
+    },
+    {
+      label: '可选和必填',
+      code: `<XDSTextInput label="Nickname" isOptional value={nickname} onChange={setNickname} />
+<XDSTextInput label="Username" isRequired value={username} onChange={setUsername} />`,
+    },
+    {
+      label: '验证状态',
+      code: `<XDSTextInput
+  label="Email"
+  value={email}
+  onChange={setEmail}
+  status={{type: 'error', message: 'Invalid email address'}}
+/>`,
+    },
+    {
+      label: '带起始图标',
+      code: `<XDSTextInput
+  label="Search"
+  value={query}
+  onChange={setQuery}
+  startIcon={MagnifyingGlassIcon}
+  placeholder="Search..."
+/>`,
+    },
+    {
+      label: '带加载状态的异步操作',
+      code: `<XDSTextInput
+  label="Username"
+  value={username}
+  onChange={setUsername}
+  onChangeAction={async (value) => {
+    await checkAvailability(value);
+  }}
+/>`,
+    },
+  ],
+  props: [
+    {
+      name: 'label',
+      type: 'string',
+      description:
+        '输入框的标签文本 — 始终渲染以确保无障碍性。',
+      required: true,
+    },
+    {
+      name: 'value',
+      type: 'string',
+      description: '输入框的当前值。',
+      required: true,
+    },
+    {
+      name: 'onChange',
+      type: '(value: string, e: ChangeEvent<HTMLInputElement>) => void',
+      description: '输入框值变化时触发的回调。',
+    },
+    {
+      name: 'onChangeAction',
+      type: '(value: string, e: ChangeEvent<HTMLInputElement>) => void | Promise<void>',
+      description:
+        '在 onChange 之后（如果未被阻止）触发的异步操作。触发乐观更新并在挂起时显示加载旋转器。',
+    },
+    {
+      name: 'size',
+      type: "'sm' | 'md' | 'lg'",
+      description: '输入框的尺寸变体。',
+      default: "'md'",
+    },
+    {
+      name: 'isLabelHidden',
+      type: 'boolean',
+      description:
+        '视觉上隐藏标签，同时保持屏幕阅读器的无障碍性。',
+      default: 'false',
+    },
+    {
+      name: 'description',
+      type: 'string',
+      description: '显示在标签和输入框之间的描述文本。',
+    },
+    {
+      name: 'isOptional',
+      type: 'boolean',
+      description:
+        '在标签旁显示"可选"指示器。与 isRequired 互斥。',
+      default: 'false',
+    },
+    {
+      name: 'isRequired',
+      type: 'boolean',
+      description:
+        '在标签旁显示"必填"指示器并设置 aria-required。与 isOptional 互斥。',
+      default: 'false',
+    },
+    {
+      name: 'isDisabled',
+      type: 'boolean',
+      description:
+        '禁用输入框，阻止交互并使元素变暗。',
+      default: 'false',
+    },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description:
+        '使输入框进入加载状态，显示旋转器并设置 aria-busy。',
+      default: 'false',
+    },
+    {
+      name: 'placeholder',
+      type: 'string',
+      description: '输入框为空时显示的占位符文本。',
+    },
+    {
+      name: 'labelTooltip',
+      type: 'string',
+      description:
+        '在标签末尾的信息图标中显示的工具提示文本。',
+    },
+    {
+      name: 'startIcon',
+      type: 'XDSIconType',
+      description:
+        '显示在输入框起始位置的 SVG 图标组件（例如来自 heroicons 或 lucide）。',
+    },
+    {
+      name: 'status',
+      type: "{type: 'error' | 'warning' | 'success', message?: string}",
+      description:
+        '验证状态 — 应用彩色边框和状态图标。如果提供了 message，在输入框下方显示浮动消息。错误类型还会设置 aria-invalid。',
+    },
+    {
+      name: 'hasAutoFocus',
+      type: 'boolean',
+      description: '挂载时自动聚焦输入框。',
+      default: 'false',
+    },
+    {
+      name: 'htmlName',
+      type: 'string',
+      description:
+        '输入框的 HTML name 属性，用于表单提交。',
+    },
+  ],
+  theming: {
+    targets: [
+      {className: 'xds-text-input', visualProps: ['size']},
+    ],
+  },
+  accessibility: [
+    '标签始终渲染并通过 htmlFor/id（使用 useId）与输入框关联。使用 isLabelHidden 视觉上隐藏它，同时保持屏幕阅读器的无障碍性。',
+    '当描述或状态消息存在时，自动设置 aria-describedby。',
+    '当 status.type 为 "error" 时，设置 aria-invalid="true"。',
+    '当 isRequired 为 true 时，设置 aria-required="true"。',
+    '乐观更新或 isLoading 活跃期间设置 aria-busy。',
+  ],
+  notes: [
+    'isOptional 和 isRequired 互斥 — 如果同时设置，显示"可选"。',
+    'onChangeAction 在 React transition 内于 onChange 之后触发，启用 useOptimistic 以在异步工作完成时实现即时 UI 更新。',
+    '组件包装 XDSField 以实现标签、描述和可选/必填的渲染。',
+    'size 属性支持 "sm"、"md" 和 "lg"。',
+  ],
+};

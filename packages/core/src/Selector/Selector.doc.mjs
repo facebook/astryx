@@ -233,4 +233,234 @@ export const docs = {
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
-export const docsZh = {...docs};
+export const docsZh = {
+  name: 'Selector',
+  description:
+    '用于从选项列表中进行选择的下拉选择器。遵循 XDS 输入规范，支持标签、状态和字段属性。',
+  features: [
+    '支持字符串选项（自动转换为 {value, label}）、带可选图标和禁用状态的对象选项、分隔线和带标签的分组',
+    '通过 children 渲染函数和 XDSSelectorItem 辅助组件实现自定义选项渲染',
+    '集成 XDS 字段规范：label、description、isRequired、isOptional、isLabelHidden、status',
+    '尺寸变体：sm、md、lg',
+    '完整的键盘导航，支持输入快速定位',
+    '无障碍 - 触发器使用 role="combobox"，下拉菜单使用 role="listbox"，分组使用 role="group"，焦点追踪使用 aria-activedescendant',
+  ],
+  keyboard:
+    '↑↓ 导航，Enter/Space 选择，Escape 关闭，Home/End 跳转，A-Z 输入快速定位。',
+  accessibility: [
+    '触发按钮使用 role="combobox"。',
+    '下拉菜单使用 role="listbox"。',
+    '分组使用 role="group"。',
+    'aria-activedescendant 追踪当前聚焦的选项。',
+  ],
+  theming: {
+    targets: [
+      {className: 'xds-selector', visualProps: ['size']},
+      {className: 'xds-selector-option'},
+    ],
+  },
+  examples: [
+    {
+      label: '基础用法',
+      code: `<XDSSelector
+  label="Fruit"
+  options={['Apple', 'Banana', 'Orange']}
+  value={value}
+  onChange={setValue}
+/>`,
+    },
+    {
+      label: '对象选项（图标、禁用）',
+      code: `<XDSSelector
+  label="Settings"
+  options={[
+    {value: 'profile', label: 'Profile', icon: UserIcon},
+    {value: 'settings', label: 'Settings', icon: CogIcon, disabled: true},
+  ]}
+  value={value}
+  onChange={setValue}
+/>`,
+    },
+    {
+      label: '分组',
+      code: `<XDSSelector
+  label="Fruit"
+  options={[
+    {value: 'apple', label: 'Apple'},
+    {type: 'section', title: 'Citrus', items: [
+      {value: 'orange', label: 'Orange'},
+    ]},
+  ]}
+  value={value}
+  onChange={setValue}
+/>`,
+    },
+    {
+      label: '使用 XDSSelectorItem 自定义渲染',
+      code: `<XDSSelector label="User" options={users} value={value} onChange={setValue}>
+  {user => (
+    <XDSSelectorItem
+      icon={UserIcon}
+      label={user.label}
+      description={user.email}
+    />
+  )}
+</XDSSelector>`,
+    },
+    {
+      label: '带状态和字段属性',
+      code: `<XDSSelector
+  label="Fruit"
+  isRequired
+  status={{type: 'error', message: 'Required'}}
+  options={['Apple', 'Banana']}
+  value={value}
+  onChange={setValue}
+/>`,
+    },
+  ],
+  components: [
+    {
+      name: 'XDSSelector',
+      description: '用于从选项列表中进行选择的下拉选择器。',
+      props: [
+        {
+          name: 'label',
+          type: 'string',
+          description: '无障碍标签文本。',
+          required: true,
+        },
+        {
+          name: 'options',
+          type: 'XDSSelectorOption[]',
+          description:
+            '选项数组 - 字符串、带 value/label/icon/disabled 的对象、分隔线（{type: "divider"}）或分组（{type: "section", title, items}）。',
+          required: true,
+        },
+        {
+          name: 'value',
+          type: 'string',
+          description: '当前选中的值。',
+        },
+        {
+          name: 'onChange',
+          type: '(value: string) => void',
+          description: '选择变更时触发的回调函数。',
+        },
+        {
+          name: 'placeholder',
+          type: 'string',
+          description: '未选择值时显示的占位文本。',
+          default: "'Select...'",
+        },
+        {
+          name: 'size',
+          type: "'sm' | 'md' | 'lg'",
+          description: '选择器的尺寸变体。',
+          default: "'md'",
+        },
+        {
+          name: 'isDisabled',
+          type: 'boolean',
+          description: '禁用选择器。',
+        },
+        {
+          name: 'isLabelHidden',
+          type: 'boolean',
+          description: '视觉上隐藏标签，同时保持无障碍可访问性。',
+        },
+        {
+          name: 'description',
+          type: 'string',
+          description: '显示在标签下方的辅助文本。',
+        },
+        {
+          name: 'isOptional',
+          type: 'boolean',
+          description: '将字段标记为可选。',
+        },
+        {
+          name: 'isRequired',
+          type: 'boolean',
+          description: '将字段标记为必填。',
+        },
+        {
+          name: 'status',
+          type: "{type: 'error' | 'warning' | 'success', message?: string}",
+          description: '验证状态，附带可选消息。',
+        },
+        {
+          name: 'children',
+          type: '(item: XDSSelectorItemData) => ReactNode',
+          description: '下拉菜单中每个选项的自定义渲染函数。',
+        },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            '用于布局自定义的 StyleX 样式（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+        },
+      ],
+      examples: [
+        {
+          label: '基础用法',
+          code: `<XDSSelector
+  label="Fruit"
+  options={['Apple', 'Banana', 'Orange']}
+  value={value}
+  onChange={setValue}
+/>`,
+        },
+        {
+          label: '对象选项',
+          code: `<XDSSelector
+  label="Settings"
+  options={[
+    {value: 'profile', label: 'Profile', icon: UserIcon},
+    {value: 'settings', label: 'Settings', icon: CogIcon, disabled: true},
+  ]}
+  value={value}
+  onChange={setValue}
+/>`,
+        },
+      ],
+    },
+    {
+      name: 'XDSSelectorItem',
+      description:
+        '用于在 XDSSelector 的 children 渲染函数中自定义选项渲染的辅助组件。',
+      props: [
+        {
+          name: 'label',
+          type: 'ReactNode',
+          description: '选项的主标签文本。',
+          required: true,
+        },
+        {
+          name: 'icon',
+          type: 'XDSIconType',
+          description: '显示在标签前的图标。',
+        },
+        {
+          name: 'description',
+          type: 'ReactNode',
+          description: '显示在标签下方的次要描述文本。',
+        },
+      ],
+      examples: [
+        {
+          label: '自定义选项渲染',
+          code: `<XDSSelector label="User" options={users} value={value} onChange={setValue}>
+  {user => (
+    <XDSSelectorItem
+      icon={UserIcon}
+      label={user.label}
+      description={user.email}
+    />
+  )}
+</XDSSelector>`,
+        },
+      ],
+    },
+  ],
+};

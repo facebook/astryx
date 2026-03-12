@@ -201,4 +201,202 @@ export const docs = {
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
-export const docsZh = {...docs};
+export const docsZh = {
+  name: 'TextArea',
+  description:
+    '用于收集较长用户输入的多行文本输入组件。',
+  features: [
+    '标签支持 — 必需的无障碍标签，可视觉隐藏',
+    '描述 — 显示在标签和文本域之间的可选文本',
+    '可选/必填指示器 — 显示带圆点分隔符的"可选"或"必填"文本',
+    '状态变体 — 警告、错误和成功状态，带彩色边框和图标',
+    '字符计数器 — 设置 maxLength 时显示当前/最大长度',
+    '起始图标 — 在输入框前端内部渲染的可选图标',
+    '标签工具提示 — 标签末尾带工具提示的可选信息图标',
+    '加载状态 — 显示旋转器并通过 useOptimistic 使用乐观更新',
+    '异步操作支持 — onChangeAction 在 React transition 内于 onChange 之后触发',
+    '禁用状态 — 视觉透明度和光标变化，无交互',
+    '无障碍 — 标签通过 htmlFor/id 关联，aria-describedby、aria-required、aria-invalid、aria-busy',
+    '可调整大小 — 默认启用垂直调整大小，最小高度 80px',
+    '拼写检查 — 默认启用浏览器拼写检查，可配置',
+  ],
+  examples: [
+    {
+      label: '基础用法',
+      code: '<XDSTextArea label="Description" value={description} onChange={setDescription} />',
+    },
+    {
+      label: '带占位符和自定义行数',
+      code: '<XDSTextArea label="Notes" rows={5} value={notes} onChange={setNotes} placeholder="Enter your notes..." />',
+    },
+    {
+      label: '隐藏标签',
+      code: '<XDSTextArea label="Comments" isLabelHidden value={comments} onChange={setComments} placeholder="Add a comment..." />',
+    },
+    {
+      label: '带描述和可选指示器',
+      code: '<XDSTextArea label="Bio" description="Tell us about yourself" isOptional value={bio} onChange={setBio} />',
+    },
+    {
+      label: '带消息的错误状态',
+      code: `<XDSTextArea
+  label="Feedback"
+  isRequired
+  value={feedback}
+  onChange={setFeedback}
+  status={{type: 'error', message: 'Feedback is required'}}
+/>`,
+    },
+    {
+      label: '带字符计数器',
+      code: '<XDSTextArea label="Summary" maxLength={280} value={summary} onChange={setSummary} />',
+    },
+    {
+      label: '禁用状态',
+      code: '<XDSTextArea label="Read-only notes" isDisabled value="Cannot edit this" onChange={() => {}} />',
+    },
+  ],
+  props: [
+    {
+      name: 'label',
+      type: 'string',
+      description:
+        '文本域的标签文本 — 始终渲染以确保无障碍性。',
+      required: true,
+    },
+    {
+      name: 'value',
+      type: 'string',
+      description: '文本域的当前值。',
+      required: true,
+    },
+    {
+      name: 'onChange',
+      type: '(value: string, e: ChangeEvent<HTMLTextAreaElement>) => void',
+      description: '文本域值变化时触发的回调。',
+    },
+    {
+      name: 'onChangeAction',
+      type: '(value: string, e: ChangeEvent<HTMLTextAreaElement>) => void | Promise<void>',
+      description:
+        '在 React transition 内于 onChange 之后触发的异步操作。通过 useOptimistic 启用乐观更新。',
+    },
+    {
+      name: 'isLabelHidden',
+      type: 'boolean',
+      description:
+        '视觉上隐藏标签，同时保持屏幕阅读器的无障碍性。',
+      default: 'false',
+    },
+    {
+      name: 'description',
+      type: 'string',
+      description: '显示在标签和文本域之间的辅助文本。',
+    },
+    {
+      name: 'isOptional',
+      type: 'boolean',
+      description:
+        '在标签旁显示"可选"指示器。与 isRequired 互斥。',
+      default: 'false',
+    },
+    {
+      name: 'isRequired',
+      type: 'boolean',
+      description:
+        '在标签旁显示"必填"指示器并设置 aria-required。与 isOptional 互斥。',
+      default: 'false',
+    },
+    {
+      name: 'isDisabled',
+      type: 'boolean',
+      description: '禁用文本域，阻止交互。',
+      default: 'false',
+    },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description:
+        '使文本域进入加载状态，在输入框内显示旋转器。',
+      default: 'false',
+    },
+    {
+      name: 'placeholder',
+      type: 'string',
+      description: '文本域为空时显示的占位符文本。',
+    },
+    {
+      name: 'rows',
+      type: 'number',
+      description: '可见文本行数。',
+      default: '3',
+    },
+    {
+      name: 'maxLength',
+      type: 'number',
+      description:
+        '允许的最大字符数。设置后，在文本域下方显示字符计数器（当前/最大）。',
+    },
+    {
+      name: 'status',
+      type: "{ type: 'warning' | 'error' | 'success'; message?: string }",
+      description:
+        '应用彩色边框和图标的状态指示器。可选消息显示在文本域下方的浮动框中。',
+    },
+    {
+      name: 'labelTooltip',
+      type: 'string',
+      description:
+        '在标签末尾的信息图标中显示的工具提示文本。',
+    },
+    {
+      name: 'startIcon',
+      type: 'XDSIconType',
+      description:
+        '在文本域包装器前端内部渲染的图标组件。',
+    },
+    {
+      name: 'hasSpellCheck',
+      type: 'boolean',
+      description: '启用或禁用浏览器拼写检查。',
+      default: 'true',
+    },
+    {
+      name: 'hasAutoFocus',
+      type: 'boolean',
+      description: '挂载时自动聚焦文本域。',
+      default: 'false',
+    },
+    {
+      name: 'onPaste',
+      type: '(e: ClipboardEvent<HTMLTextAreaElement>) => void',
+      description: '内容粘贴到文本域时触发的回调。',
+    },
+    {
+      name: 'htmlName',
+      type: 'string',
+      description:
+        '文本域元素的 HTML name 属性，用于表单提交。',
+    },
+  ],
+  theming: {
+    targets: [
+      {className: 'xds-text-input', visualProps: ['size']},
+    ],
+  },
+  accessibility: [
+    '标签始终在 DOM 中渲染；使用 isLabelHidden 视觉上隐藏它，同时保持无障碍性。',
+    '文本域 id 通过 useId 生成并通过 htmlFor 与其标签关联，确保正确的标签关联。',
+    '当描述和/或状态消息元素存在时，aria-describedby 设置为相应的 ID。',
+    '当 isRequired 为 true 时，设置 aria-required="true"。',
+    '当 status.type 为 "error" 时，设置 aria-invalid="true"。',
+    '乐观更新或加载状态活跃期间设置 aria-busy。',
+  ],
+  notes: [
+    'isOptional 和 isRequired 互斥；如果同时设置，"可选"优先。',
+    '当 onChangeAction 返回 Promise 时，组件使用 useOptimistic 实现即时 UI 反馈。',
+    '文本域通过 CSS 启用垂直调整大小，最小高度为 80px。',
+    '包装 XDSField 以实现一致的标签、描述和状态消息布局。',
+    '当 value.length 超过 maxLength 时，字符计数器文本变为红色。',
+  ],
+};

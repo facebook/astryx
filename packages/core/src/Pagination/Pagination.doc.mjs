@@ -167,4 +167,168 @@ export const docs = {
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
-export const docsZh = {...docs};
+export const docsZh = {
+  name: 'Pagination',
+  description:
+    '用于在内容页面之间导航的独立分页控件。支持多种显示变体，适用于已知总数或基于游标的分页。',
+  props: [
+    {
+      name: 'page',
+      type: 'number',
+      description: '当前页码（从 1 开始）。第 1 页为首页。',
+      required: true,
+    },
+    {
+      name: 'onChange',
+      type: '(page: number) => void',
+      description: '页码变化时调用。',
+      required: true,
+    },
+    {
+      name: 'onChangeAction',
+      type: '(page: number) => void | Promise<void>',
+      description:
+        '页码变化时的异步操作。在 onChange 之后触发，使用 React transitions 实现内置加载状态。',
+    },
+    {
+      name: 'totalItems',
+      type: 'number',
+      description:
+        '总项目数。用于计算页数。同时提供时优先于 totalPages。',
+    },
+    {
+      name: 'totalPages',
+      type: 'number',
+      description:
+        '总页数。当你知道页数但不知道项目数时使用。',
+    },
+    {
+      name: 'hasMore',
+      type: 'boolean',
+      description:
+        '当前页之后是否还有更多页。用于总数未知的游标分页。',
+    },
+    {
+      name: 'pageSize',
+      type: 'number',
+      description: '每页项目数。',
+      default: '10',
+    },
+    {
+      name: 'pageSizeOptions',
+      type: 'number[]',
+      description:
+        '可用的每页大小选项。提供时显示每页大小选择器下拉菜单。',
+    },
+    {
+      name: 'onPageSizeChange',
+      type: '(pageSize: number) => void',
+      description:
+        '每页大小变化时调用。自动重置到第 1 页。',
+    },
+    {
+      name: 'variant',
+      type: "'pages' | 'count' | 'compact' | 'dots' | 'none'",
+      description:
+        "控制上一页/下一页按钮之间显示内容的视觉变体。'pages' 显示带省略号的页码按钮，'count' 显示 'X-Y of Z' 文本，'compact' 显示 'Page X of Y'，'dots' 显示点指示器，'none' 仅显示上一页/下一页按钮。",
+      default: "'pages'",
+    },
+    {
+      name: 'siblingCount',
+      type: 'number',
+      description:
+        "当前页两侧显示的页码按钮数量。仅在 variant='pages' 时生效。",
+      default: '1',
+    },
+    {
+      name: 'size',
+      type: "'sm' | 'md'",
+      description: '分页控件的尺寸。',
+      default: "'md'",
+    },
+    {
+      name: 'isDisabled',
+      type: 'boolean',
+      description: '组件是否禁用。',
+      default: 'false',
+    },
+    {
+      name: 'label',
+      type: 'string',
+      description: '导航地标的无障碍标签。',
+      default: "'Pagination'",
+    },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        '用于布局自定义（外边距、定位、尺寸）的 StyleX 样式。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+    },
+  ],
+  examples: [
+    {
+      label: '页码按钮（默认）',
+      code: `<XDSPagination
+  page={page}
+  onChange={setPage}
+  totalItems={200}
+  pageSize={20}
+/>`,
+    },
+    {
+      label: '带每页大小选择器的计数显示',
+      code: `<XDSPagination
+  page={page}
+  onChange={setPage}
+  totalItems={200}
+  variant="count"
+  pageSizeOptions={[10, 20, 50]}
+  onPageSizeChange={setPageSize}
+/>`,
+    },
+    {
+      label: '基于游标的分页（总数未知）',
+      code: `<XDSPagination
+  page={page}
+  onChange={setPage}
+  hasMore={data.hasNextPage}
+/>`,
+    },
+    {
+      label: '轮播点',
+      code: `<XDSPagination
+  page={slideIndex}
+  onChange={setSlideIndex}
+  totalPages={slides.length}
+  variant="dots"
+/>`,
+    },
+  ],
+  features: [
+    "五种显示变体：'pages'、'count'、'compact'、'dots'、'none'",
+    '偏移量和游标分页：提供 totalItems/totalPages 用于已知总数，或 hasMore 用于游标分页',
+    '每页大小选择器：提供 pageSizeOptions 时显示下拉菜单',
+    '通过 generatePageRange 工具函数实现页码省略号截断',
+    'React transitions：onChangeAction 使用 useTransition 实现内置加载状态',
+    "尺寸：'sm' 和 'md'",
+  ],
+  accessibility: [
+    '根元素为 <nav>，带可配置的 aria-label。',
+    '当前页按钮具有 aria-current="page"。',
+    '上一页/下一页按钮具有描述性的 aria-label。',
+    '省略号元素为 aria-hidden。',
+    '所有交互元素均支持键盘访问。',
+  ],
+  theming: {
+    targets: [
+      {className: 'xds-pagination', visualProps: ['size', 'variant']},
+    ],
+  },
+  notes: [
+    "页码按钮使用 XDSButton（非活动状态 variant='ghost'，活动状态 variant='primary'）以兼容主题和 swizzle。",
+    "上一页/下一页按钮使用 XDSButton，variant='ghost' 且仅图标模式。",
+    '点指示器保持为自定义元素（有意与按钮采用不同的视觉处理）。',
+    '当 totalItems <= 0 或 totalPages <= 0 时返回 null。',
+    '还导出 generatePageRange 工具函数，用于计算带省略号的可见页码。',
+  ],
+};

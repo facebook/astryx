@@ -123,4 +123,124 @@ export const docs = {
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
-export const docsZh = {...docs};
+export const docsZh = {
+  name: 'ProgressBar',
+  description:
+    '用于显示确定或不确定进度的进度条组件。',
+  features: [
+    '确定模式使用 role="meter"，配合 aria-valuenow、aria-valuemin 和 aria-valuemax',
+    '不确定模式使用 role="progressbar"，不包含值属性',
+    '标签始终通过 aria-labelledby 关联',
+    'aria-valuetext 提供人类可读的值描述（仅限确定模式）',
+    '不确定动画遵循 prefers-reduced-motion 偏好设置',
+    '支持四种语义颜色变体：accent、positive、warning、negative',
+    '三种轨道高度尺寸：sm=4px、md=8px、lg=12px',
+    '支持通过 formatValueLabel 自定义值标签格式化器',
+  ],
+  props: [
+    {
+      name: 'label',
+      type: 'string',
+      description: '无障碍标签（必填）。',
+      required: true,
+    },
+    {
+      name: 'value',
+      type: 'number',
+      description: '当前值（不确定模式下忽略）。',
+      default: '0',
+    },
+    {
+      name: 'max',
+      type: 'number',
+      description: '最大值。',
+      default: '100',
+    },
+    {
+      name: 'isLabelHidden',
+      type: 'boolean',
+      description: '视觉上隐藏标签（仍保持无障碍可访问性）。',
+      default: 'false',
+    },
+    {
+      name: 'hasValueLabel',
+      type: 'boolean',
+      description: '显示格式化的值文本（不确定模式下忽略）。',
+      default: 'false',
+    },
+    {
+      name: 'formatValueLabel',
+      type: '(value: number, max: number) => string',
+      description:
+        '自定义值标签格式化器；默认为百分比字符串。',
+    },
+    {
+      name: 'variant',
+      type: "'accent' | 'positive' | 'warning' | 'negative'",
+      description: '语义颜色变体。',
+      default: "'accent'",
+    },
+    {
+      name: 'size',
+      type: "'sm' | 'md' | 'lg'",
+      description: '轨道高度：sm=4px、md=8px、lg=12px。',
+      default: "'md'",
+    },
+    {
+      name: 'isIndeterminate',
+      type: 'boolean',
+      description: '用于未知进度的动画加载指示器。',
+      default: 'false',
+    },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        '用于布局自定义的 StyleX 样式（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+    },
+  ],
+  examples: [
+    {
+      label: '确定进度条',
+      code: `<XDSProgressBar value={75} label="Upload progress" />`,
+    },
+    {
+      label: '带可见值标签',
+      code: `<XDSProgressBar value={75} label="Storage used" hasValueLabel />`,
+    },
+    {
+      label: '自定义值标签格式化器',
+      code: `<XDSProgressBar
+  value={3.2}
+  max={5}
+  label="Disk usage"
+  hasValueLabel
+  formatValueLabel={(value, max) => \`\${value} GB / \${max} GB\`}
+/>`,
+    },
+    {
+      label: '不确定加载',
+      code: `<XDSProgressBar isIndeterminate label="Loading..." />`,
+    },
+    {
+      label: '变体和尺寸',
+      code: `<XDSProgressBar value={92} label="Disk" variant="negative" size="sm" />`,
+    },
+    {
+      label: '隐藏标签（无障碍可访问但不可见）',
+      code: `<XDSProgressBar value={50} label="Loading" isLabelHidden />`,
+    },
+  ],
+  theming: {
+    targets: [
+      {className: 'xds-progressbar', visualProps: ['size', 'variant']},
+    ],
+  },
+  accessibility: [
+    '确定模式：使用 role="meter"，配合 aria-valuenow、aria-valuemin、aria-valuemax',
+    '不确定模式：使用 role="progressbar"，不包含值属性',
+    '标签始终通过 aria-labelledby 关联',
+    'aria-valuetext 提供人类可读的值描述（仅限确定模式）',
+    '不确定动画遵循 prefers-reduced-motion 偏好设置',
+  ],
+};

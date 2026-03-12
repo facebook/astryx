@@ -268,4 +268,269 @@ const bioDescId = useId();
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
-export const docsZh = {...docs};
+export const docsZh = {
+  name: 'Field',
+  description:
+    '表单字段包装组件，提供标签、描述以及可选/必填指示器。',
+  features: [
+    '标签支持 - 必需的标签用于无障碍访问（可视觉隐藏）',
+    '描述 - 可选的描述文本，显示在标签和输入框之间',
+    '可选/必填指示器 - 显示"Optional"或"Required"文本，带圆点分隔符',
+    '标签工具提示 - 可选的信息图标，在标签末尾显示工具提示',
+    '无障碍 - 通过 htmlFor/id 将标签与输入框正确关联',
+    '使用 StyleX 样式 - 使用 XDS 设计令牌实现一致的样式',
+  ],
+  examples: [
+    {
+      label: '基础用法',
+      code: `const id = useId();
+<XDSField label="Email" inputID={id}>
+  <input id={id} />
+</XDSField>`,
+    },
+    {
+      label: '带描述',
+      code: `const inputId = useId();
+const descId = useId();
+<XDSField
+  label="Email"
+  description="We'll never share your email"
+  inputID={inputId}
+  descriptionID={descId}>
+  <input id={inputId} aria-describedby={descId} />
+</XDSField>`,
+    },
+    {
+      label: '隐藏标签（仅屏幕阅读器可见）',
+      code: `const searchId = useId();
+<XDSField label="Search" isLabelHidden inputID={searchId}>
+  <input id={searchId} placeholder="Search..." />
+</XDSField>`,
+    },
+    {
+      label: '可选字段',
+      code: `const nicknameId = useId();
+<XDSField label="Nickname" isOptional inputID={nicknameId}>
+  <input id={nicknameId} placeholder="Enter your nickname" />
+</XDSField>`,
+    },
+    {
+      label: '必填字段',
+      code: `const usernameId = useId();
+<XDSField label="Username" isRequired inputID={usernameId}>
+  <input id={usernameId} placeholder="Enter your username" />
+</XDSField>`,
+    },
+    {
+      label: '带描述和可选指示器（显示圆点分隔符）',
+      code: `const bioId = useId();
+const bioDescId = useId();
+<XDSField
+  label="Bio"
+  description="Tell us about yourself"
+  isOptional
+  inputID={bioId}
+  descriptionID={bioDescId}>
+  <input id={bioId} aria-describedby={bioDescId} />
+</XDSField>`,
+    },
+  ],
+  theming: {
+    targets: [
+      {className: 'xds-field'},
+      {className: 'xds-field-label'},
+      {className: 'xds-field-status', visualProps: ['type', 'variant']},
+    ],
+  },
+  notes: [
+    '父组件负责生成 ID（使用 useId hook）。',
+    '标签始终渲染以确保无障碍访问；使用 isLabelHidden 进行视觉隐藏。',
+    '隐藏标签使用 CSS 技术，屏幕阅读器仍可访问。',
+    '提供 description 时会渲染描述文本；如果同时提供 descriptionID，描述元素会获得该 ID 用于 aria-describedby 关联。',
+    'isOptional 和 isRequired 互斥；同时设置两者将显示"Optional"。',
+    '可选/必填文本与标签显示在同一行。',
+  ],
+  components: [
+    {
+      name: 'XDSField',
+      description:
+        '表单字段包装器，提供标签、描述以及可选/必填指示器。',
+      examples: [
+        {
+          label: '基础用法',
+          code: `<XDSField label="Email" inputID={id}>
+  <input id={id} />
+</XDSField>`,
+        },
+      ],
+      props: [
+        {
+          name: 'label',
+          type: 'string',
+          description:
+            '字段的标签文本（始终渲染以确保无障碍访问）。',
+          required: true,
+        },
+        {
+          name: 'inputID',
+          type: 'string',
+          description:
+            '输入元素的 ID（用于标签的 htmlFor 属性）。',
+          required: true,
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: '要渲染的输入框或控件。',
+          required: true,
+        },
+        {
+          name: 'isLabelHidden',
+          type: 'boolean',
+          description:
+            '视觉隐藏标签（屏幕阅读器仍可访问）。',
+          default: 'false',
+        },
+        {
+          name: 'description',
+          type: 'string',
+          description:
+            '显示在标签和输入框之间的描述文本。',
+        },
+        {
+          name: 'descriptionID',
+          type: 'string',
+          description:
+            '描述元素的 ID（用于输入框的 aria-describedby）。',
+        },
+        {
+          name: 'isOptional',
+          type: 'boolean',
+          description:
+            '字段是否可选（与 isRequired 互斥）。',
+          default: 'false',
+        },
+        {
+          name: 'isRequired',
+          type: 'boolean',
+          description:
+            '字段是否必填（与 isOptional 互斥）。',
+          default: 'false',
+        },
+        {
+          name: 'labelIcon',
+          type: 'XDSIconType',
+          description: '显示在标签文本前的图标。',
+        },
+        {
+          name: 'labelTooltip',
+          type: 'string',
+          description:
+            '在标签末尾的信息图标中显示的工具提示文本。',
+        },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            '用于布局自定义（外边距、定位、尺寸）的 StyleX 样式。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+        },
+      ],
+    },
+    {
+      name: 'XDSFieldLabel',
+      description:
+        '独立的标签组件，支持可选/必填指示器和工具提示。',
+      examples: [
+        {
+          label: '基础用法',
+          code: '<XDSFieldLabel label="Username" inputID={id} isRequired />',
+        },
+      ],
+      props: [
+        {
+          name: 'label',
+          type: 'string',
+          description: '标签文本。',
+          required: true,
+        },
+        {
+          name: 'inputID',
+          type: 'string',
+          description: '此标签关联的输入框 ID。',
+          required: true,
+        },
+        {
+          name: 'isLabelHidden',
+          type: 'boolean',
+          description: '视觉隐藏标签。',
+          default: 'false',
+        },
+        {
+          name: 'isDisabled',
+          type: 'boolean',
+          description: '关联的输入框是否禁用。',
+          default: 'false',
+        },
+        {
+          name: 'isOptional',
+          type: 'boolean',
+          description: '显示"Optional"指示器。',
+          default: 'false',
+        },
+        {
+          name: 'isRequired',
+          type: 'boolean',
+          description: '显示"Required"指示器。',
+          default: 'false',
+        },
+        {
+          name: 'labelIcon',
+          type: 'XDSIconType',
+          description: '标签文本前的图标。',
+        },
+        {
+          name: 'labelTooltip',
+          type: 'string',
+          description: '标签末尾信息图标的工具提示文本。',
+        },
+      ],
+    },
+    {
+      name: 'XDSFieldStatus',
+      description:
+        '用于表单字段验证反馈的状态消息组件。',
+      examples: [
+        {
+          label: '错误状态',
+          code: '<XDSFieldStatus type="error" message="This field is required" />',
+        },
+      ],
+      props: [
+        {
+          name: 'type',
+          type: "'error' | 'warning' | 'success'",
+          description: '状态类型。',
+          required: true,
+        },
+        {
+          name: 'message',
+          type: 'string',
+          description: '状态消息文本。',
+          required: true,
+        },
+        {
+          name: 'id',
+          type: 'string',
+          description: '用于 aria-describedby 关联的 ID。',
+        },
+        {
+          name: 'variant',
+          type: "'attached' | 'detached'",
+          description:
+            '视觉变体 - attached 覆盖在输入框上，detached 浮动在下方。',
+          default: "'attached'",
+        },
+      ],
+    },
+  ],
+};

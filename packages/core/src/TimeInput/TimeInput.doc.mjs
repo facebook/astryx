@@ -211,4 +211,212 @@ export const docs = {
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
-export const docsZh = {...docs};
+export const docsZh = {
+  name: 'TimeInput',
+  description:
+    '支持自由文本输入、文本解析和方向键导航的时间输入组件。',
+  features: [
+    '接受自由文本时间输入并解析常见格式（例如 "2:30 PM"、"14:30"）',
+    '支持 12 小时和 24 小时显示格式',
+    '上/下方向键按可配置的分钟增量调整时间',
+    '通过 hasSeconds 可选显示秒',
+    '通过 hasClear 可选清除按钮',
+    '最小/最大范围约束拒绝超出范围的值',
+    '通过 onChangeAction 支持异步操作，带乐观 UI 和加载旋转器',
+    '无障碍 — 标签、描述和状态消息通过 aria-describedby 关联；aria-required 和 aria-invalid 反映字段状态',
+  ],
+  examples: [
+    {
+      label: '基础用法',
+      code: `<XDSTimeInput
+  label="Start time"
+  value={time}
+  onChange={setTime}
+/>`,
+    },
+    {
+      label: '24 小时格式带清除按钮',
+      code: `<XDSTimeInput
+  label="Meeting time"
+  value={time}
+  onChange={setTime}
+  hourFormat="24h"
+  hasClear
+/>`,
+    },
+    {
+      label: '最小/最大约束',
+      code: `<XDSTimeInput
+  label="Business hours"
+  value={time}
+  onChange={setTime}
+  min="09:00"
+  max="17:00"
+/>`,
+    },
+    {
+      label: '带秒和错误状态',
+      code: `<XDSTimeInput
+  label="Precise time"
+  value={time}
+  onChange={setTime}
+  hasSeconds
+  status={{type: 'error', message: 'Invalid time'}}
+/>`,
+    },
+    {
+      label: '带乐观更新的异步操作',
+      code: `<XDSTimeInput
+  label="Scheduled time"
+  value={time}
+  onChange={setTime}
+  onChangeAction={async (value) => {
+    await saveTime(value);
+  }}
+/>`,
+    },
+  ],
+  props: [
+    {
+      name: 'label',
+      type: 'string',
+      description: '输入框的标签文本（无障碍性所必需）。',
+      required: true,
+    },
+    {
+      name: 'isLabelHidden',
+      type: 'boolean',
+      description:
+        '视觉上隐藏标签，同时保持屏幕阅读器的无障碍性。',
+      default: 'false',
+    },
+    {
+      name: 'description',
+      type: 'string',
+      description: '显示在标签和输入框之间的描述文本。',
+    },
+    {
+      name: 'isOptional',
+      type: 'boolean',
+      description:
+        '在标签旁显示"（可选）"指示器。与 isRequired 互斥。',
+      default: 'false',
+    },
+    {
+      name: 'isRequired',
+      type: 'boolean',
+      description:
+        '将字段标记为必填并设置 aria-required。与 isOptional 互斥。',
+      default: 'false',
+    },
+    {
+      name: 'isDisabled',
+      type: 'boolean',
+      description: '禁用输入框并抑制交互。',
+      default: 'false',
+    },
+    {
+      name: 'value',
+      type: 'ISOTimeString',
+      description: 'ISO 格式的受控时间值（HH:MM 或 HH:MM:SS）。',
+    },
+    {
+      name: 'onChange',
+      type: '(value: ISOTimeString | undefined) => void',
+      description:
+        '时间变化时触发的回调。输入被清除时接收 undefined。',
+    },
+    {
+      name: 'onChangeAction',
+      type: '(value: ISOTimeString | undefined) => void | Promise<void>',
+      description:
+        '在 onChange 之后触发的异步操作。包装在 React transition 中以提供乐观 UI；挂起时触发加载旋转器。',
+    },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description: '使输入框进入加载状态，显示旋转器。',
+      default: 'false',
+    },
+    {
+      name: 'min',
+      type: 'ISOTimeString',
+      description:
+        'ISO 格式的最小可选时间。超出范围的值将被拒绝。',
+    },
+    {
+      name: 'max',
+      type: 'ISOTimeString',
+      description:
+        'ISO 格式的最大可选时间。超出范围的值将被拒绝。',
+    },
+    {
+      name: 'hasSeconds',
+      type: 'boolean',
+      description: '在时间显示和解析中包含秒。',
+      default: 'false',
+    },
+    {
+      name: 'hasClear',
+      type: 'boolean',
+      description:
+        '当有值且输入框未被禁用时显示清除按钮。',
+      default: 'false',
+    },
+    {
+      name: 'hourFormat',
+      type: "'12h' | '24h'",
+      description:
+        "控制显示格式。'12h' 显示 AM/PM（例如 '2:30 PM'）；'24h' 使用 24 小时制（例如 '14:30'）。",
+      default: "'12h'",
+    },
+    {
+      name: 'increment',
+      type: 'number',
+      description:
+        '用户按上或下方向键时增加或减少的分钟数。',
+      default: '1',
+    },
+    {
+      name: 'placeholder',
+      type: 'string',
+      description:
+        '未选择时间时显示的占位符文本。当输入框聚焦且为空时，格式提示会覆盖此文本。',
+      default: "'Select a time'",
+    },
+    {
+      name: 'size',
+      type: "'sm' | 'md' | 'lg'",
+      description: '控制输入框元素的高度。',
+      default: "'md'",
+    },
+    {
+      name: 'status',
+      type: 'XDSInputStatus',
+      description:
+        '为边框着色并显示图标的状态指示器。当提供消息时，消息渲染在输入框下方。',
+    },
+    {
+      name: 'labelTooltip',
+      type: 'string',
+      description:
+        '在标签行末尾以信息图标形式渲染的工具提示文本。',
+    },
+  ],
+  theming: {
+    targets: [
+      {className: 'xds-date-input', visualProps: ['size']},
+    ],
+  },
+  accessibility: [
+    '可见标签通过 htmlFor / id 与输入框关联。',
+    'isLabelHidden 视觉上隐藏标签，同时保持在无障碍树中。',
+    'description 和 status.message 通过 aria-describedby 与输入框关联。',
+    '当 isRequired 为 true 时设置 aria-required。',
+    '当 status.type 为 "error" 时设置 aria-invalid。',
+    'aria-busy 反映加载/乐观更新挂起状态。',
+    '清除按钮具有明确的 aria-label "Clear time"。',
+  ],
+  keyboard:
+    '上/下方向键按配置的分钟增量调整当前时间。以常见格式（例如 "2:30 PM"、"14:30"）输入时间字符串会在失焦时解析。按清除按钮将焦点返回到输入框。',
+};

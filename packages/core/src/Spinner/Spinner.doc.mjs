@@ -61,4 +61,62 @@ export const docs = {
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
-export const docsZh = {...docs};
+export const docsZh = {
+  name: 'Spinner',
+  description:
+    '用于指示加载状态的纯旋转器组件。无布局、无文本——仅有旋转指示器。',
+  features: [
+    'CSS 边框动画：基于边框的轻量级旋转器，平滑 360° 旋转',
+    '尺寸变体：三种尺寸（sm、md、lg），与现有内联旋转器匹配',
+    '色调支持：默认色调用于浅色背景，onMedia 用于深色/强调色背景',
+    '无障碍：默认使用 role="status" 和 aria-label="Loading"',
+  ],
+  props: [
+    {
+      name: 'size',
+      type: "'sm' | 'md' | 'lg'",
+      description: '旋转器尺寸（10px、14px、18px）。',
+      default: "'md'",
+    },
+    {
+      name: 'shade',
+      type: "'default' | 'onMedia'",
+      description: '浅色或深色背景的颜色色调。',
+      default: "'default'",
+    },
+  ],
+  examples: [
+    {
+      label: '默认',
+      code: `<XDSSpinner />`,
+    },
+    {
+      label: '小尺寸',
+      code: `<XDSSpinner size="sm" />`,
+    },
+    {
+      label: '深色背景上的大尺寸',
+      code: `<XDSSpinner size="lg" shade="onMedia" />`,
+    },
+    {
+      label: '与布局和文本组合',
+      code: `<XDSVStack gap={2} align="center">
+  <XDSSpinner size="lg" />
+  <XDSText color="secondary">Loading...</XDSText>
+</XDSVStack>`,
+    },
+  ],
+  theming: {
+    targets: [
+      {className: 'xds-spinner', visualProps: ['size']},
+    ],
+  },
+  notes: [
+    '使用 CSS 边框技术：三条可见边框 + 一条透明边框形成缺口。',
+    '动画：rotate(360deg)，0.75s linear infinite。',
+    '颜色继承自 currentColor，通过使用主题令牌的色调样式控制。',
+    '元素是一个 <span>，设置 display: inline-block 以支持内联组合。',
+    'XDSSpinner 设计上保持最小化——与布局和文本组件组合以实现完整的加载状态。',
+    '尺寸参考：sm = 10×10px / 3px 边框，md = 14×14px / 3px 边框，lg = 18×18px / 3px 边框。',
+  ],
+};

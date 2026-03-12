@@ -129,4 +129,130 @@ export const docs = {
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
-export const docsZh = {...docs};
+export const docsZh = {
+  name: 'Calendar',
+  description:
+    'XDSCalendar 日历组件，支持单选和范围选择模式的日期选取。',
+  features: [
+    "选择模式：'single'（默认）和 'range'",
+    '多月显示：并排显示 1 或 2 个月份',
+    '日期约束：min、max 和自定义 dateConstraints 函数',
+    '区域选项：weekStartsOn 可配置每周的起始日',
+    '周数：可选的 ISO 周数列',
+    '受控/非受控：通过 value/defaultValue 支持两种模式',
+  ],
+  examples: [
+    {
+      label: '单日期选择',
+      code: `<XDSCalendar
+  value="2026-01-28"
+  onChange={(value, valueAsDate) => console.log(value)}
+/>`,
+    },
+    {
+      label: '范围选择',
+      code: `<XDSCalendar
+  mode="range"
+  value={{ start: "2026-01-28", end: "2026-02-05" }}
+  onChange={(range) => console.log(range.start, range.end)}
+/>`,
+    },
+    {
+      label: '带约束的双月显示',
+      code: `<XDSCalendar
+  numberOfMonths={2}
+  min="2026-01-01"
+  max="2026-12-31"
+  weekStartsOn={1}
+/>`,
+    },
+  ],
+  props: [
+    {
+      name: 'mode',
+      type: "'single' | 'range'",
+      description: '选择模式。',
+      default: "'single'",
+    },
+    {
+      name: 'value',
+      type: 'ISODateString | DateRange',
+      description: '受控选中值。',
+    },
+    {
+      name: 'defaultValue',
+      type: 'ISODateString | DateRange',
+      description: '非受控默认值。',
+    },
+    {
+      name: 'onChange',
+      type: 'Function',
+      description: '选择回调函数。',
+    },
+    {
+      name: 'numberOfMonths',
+      type: '1 | 2',
+      description: '显示的月份数量。',
+      default: '1',
+    },
+    {
+      name: 'min',
+      type: 'ISODateString',
+      description: '可选择的最早日期。',
+    },
+    {
+      name: 'max',
+      type: 'ISODateString',
+      description: '可选择的最晚日期。',
+    },
+    {
+      name: 'dateConstraints',
+      type: 'Array<(date: Date) => boolean>',
+      description: '自定义约束函数。',
+    },
+    {
+      name: 'focusDate',
+      type: 'ISODateString',
+      description: '受控可见月份。',
+    },
+    {
+      name: 'onFocusDateChange',
+      type: '(focusDate: ISODateString) => void',
+      description: '导航回调函数。',
+    },
+    {
+      name: 'hasOutsideDays',
+      type: 'boolean',
+      description: '显示相邻月份的日期。',
+      default: 'true',
+    },
+    {
+      name: 'hasWeekNumbers',
+      type: 'boolean',
+      description: '显示 ISO 周数。',
+      default: 'false',
+    },
+    {
+      name: 'hasVariableRowCount',
+      type: 'boolean',
+      description: '可变行数与固定 6 行网格。',
+      default: 'false',
+    },
+    {
+      name: 'weekStartsOn',
+      type: '0 | 1 | 2 | 3 | 4 | 5 | 6',
+      description: '每周起始日（0=周日）。',
+      default: '0',
+    },
+  ],
+  theming: {
+    targets: [
+      {className: 'xds-calendar', visualProps: ['mode']},
+    ],
+  },
+  notes: [
+    'ISODateString 类型：`${number}${number}${number}${number}-${number}${number}-${number}${number}`',
+    'DayOfWeek 类型：0 | 1 | 2 | 3 | 4 | 5 | 6',
+    'DateRange 接口：{ start: ISODateString; end: ISODateString }',
+  ],
+};

@@ -221,4 +221,222 @@ export const docs = {
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
-export const docsZh = {...docs};
+export const docsZh = {
+  name: 'Collapsible',
+  description: '可折叠内容原语和分组协调。',
+  features: [
+    'XDSCollapsible 使任何内容可折叠——触发器切换内容区域的可见性',
+    '处理状态管理、无障碍（aria-expanded、键盘激活）和折叠指示器',
+    '支持非受控（defaultIsOpen）、受控（isOpen / onOpenChange）和分组协调模式',
+    'XDSCollapsibleGroup 协调多个 XDSCollapsible 实例，使同一时间只有一个（single 模式）或多个（multiple 模式）可以展开',
+    'XDSCollapsibleGroup 不渲染包裹 DOM 元素',
+    '在分组内时，XDSCollapsible 通过 value 属性将展开/收起状态委托给分组上下文',
+  ],
+  keyboard:
+    'Enter 或 Space 激活触发按钮以切换展开/收起状态。',
+  accessibility: [
+    '触发器渲染为带有 aria-expanded 的 <button>，反映当前展开状态',
+    '折叠指示器为展开/收起状态提供视觉提示',
+  ],
+  theming: {
+    targets: [
+      {className: 'xds-collapsible'},
+    ],
+  },
+  notes: [
+    'XDSCollapsible 默认自行管理展开/收起状态（非受控）',
+    '嵌套在具有匹配 value 属性的 XDSCollapsibleGroup 内时，委托给分组上下文',
+    'XDSCollapsibleGroup 通过 isOpen(value) 和 toggle(value) 方法提供上下文',
+    '分组不渲染包裹 DOM——布局由使用者负责（如 XDSVStack）',
+  ],
+  examples: [
+    {
+      label: '独立可折叠',
+      code: `// Inside a card
+<XDSCard>
+  <XDSCollapsible trigger="Details">
+    <p>This content can be collapsed</p>
+  </XDSCollapsible>
+</XDSCard>
+
+// Starts collapsed
+<XDSCard>
+  <XDSCollapsible trigger="Advanced" defaultIsOpen={false}>
+    <p>Hidden by default</p>
+  </XDSCollapsible>
+</XDSCard>
+
+// Controlled
+<XDSCard>
+  <XDSCollapsible trigger="Settings" isOpen={open} onOpenChange={setOpen}>
+    <p>Controlled externally</p>
+  </XDSCollapsible>
+</XDSCard>
+
+// Without a card — works anywhere
+<XDSCollapsible trigger="Show more">
+  <p>Expandable content</p>
+</XDSCollapsible>`,
+    },
+    {
+      label: '协调分组——single 模式（手风琴）',
+      code: `// Single mode — only one open at a time (FAQ, settings panels)
+<XDSCollapsibleGroup type="single" defaultValue="general">
+  <XDSVStack gap={2}>
+    <XDSCard>
+      <XDSCollapsible trigger="General Settings" value="general">
+        <GeneralContent />
+      </XDSCollapsible>
+    </XDSCard>
+    <XDSCard>
+      <XDSCollapsible trigger="Advanced Settings" value="advanced">
+        <AdvancedContent />
+      </XDSCollapsible>
+    </XDSCard>
+  </XDSVStack>
+</XDSCollapsibleGroup>`,
+    },
+    {
+      label: '协调分组——multiple 模式',
+      code: `// Multiple mode — any number open
+<XDSCollapsibleGroup type="multiple" defaultValue={["s1", "s2"]}>
+  <XDSVStack gap={2}>
+    <XDSCard>
+      <XDSCollapsible trigger="Section 1" value="s1">...</XDSCollapsible>
+    </XDSCard>
+    <XDSCard>
+      <XDSCollapsible trigger="Section 2" value="s2">...</XDSCollapsible>
+    </XDSCard>
+  </XDSVStack>
+</XDSCollapsibleGroup>`,
+    },
+    {
+      label: '配合 Layout（结构化头部）',
+      code: `<XDSCard>
+  <XDSCollapsible trigger="Report Details" value="report">
+    <XDSLayout
+      content={<XDSLayoutContent>Report body</XDSLayoutContent>}
+      footer={<XDSLayoutFooter hasDivider>Actions</XDSLayoutFooter>}
+    />
+  </XDSCollapsible>
+</XDSCard>`,
+    },
+  ],
+  components: [
+    {
+      name: 'XDSCollapsible',
+      description:
+        '使任何内容可折叠的原语——触发按钮切换内容区域的可见性，自行管理状态或委托给父级 XDSCollapsibleGroup。',
+      props: [
+        {
+          name: 'trigger',
+          type: 'ReactNode',
+          description: '触发区域中显示的内容（始终可见）。',
+          required: true,
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: '可折叠和展开的内容。',
+        },
+        {
+          name: 'defaultIsOpen',
+          type: 'boolean',
+          description: '默认展开状态（非受控）。',
+          default: 'true',
+        },
+        {
+          name: 'isOpen',
+          type: 'boolean',
+          description: '受控展开状态。',
+        },
+        {
+          name: 'onOpenChange',
+          type: '(isOpen: boolean) => void',
+          description: '展开状态变更时调用的回调。',
+        },
+        {
+          name: 'value',
+          type: 'string',
+          description:
+            '用于分组协调的标识符。放置在 XDSCollapsibleGroup 内时为必填。',
+        },
+      ],
+      examples: [
+        {
+          label: '基础用法',
+          code: `<XDSCollapsible trigger="Details">
+  <p>This content can be collapsed</p>
+</XDSCollapsible>`,
+        },
+        {
+          label: '默认收起',
+          code: `<XDSCollapsible trigger="Advanced" defaultIsOpen={false}>
+  <p>Hidden by default</p>
+</XDSCollapsible>`,
+        },
+        {
+          label: '受控模式',
+          code: `<XDSCollapsible trigger="Settings" isOpen={open} onOpenChange={setOpen}>
+  <p>Controlled externally</p>
+</XDSCollapsible>`,
+        },
+      ],
+    },
+    {
+      name: 'XDSCollapsibleGroup',
+      description:
+        '协调多个 XDSCollapsible 实例，使同一时间只有一个（single 模式）或任意数量（multiple 模式）可以展开。不渲染包裹 DOM 元素。',
+      props: [
+        {
+          name: 'type',
+          type: "'single' | 'multiple'",
+          description: '是否允许同时展开一个或多个项目。',
+          default: "'single'",
+        },
+        {
+          name: 'defaultValue',
+          type: 'string | string[]',
+          description:
+            '非受控模式下默认展开的项目。single 模式使用字符串，multiple 模式使用数组。',
+        },
+        {
+          name: 'value',
+          type: 'string | string[]',
+          description: '受控展开的项目。',
+        },
+        {
+          name: 'onChange',
+          type: '(value: string | string[]) => void',
+          description: '展开项目集合变更时调用的回调。',
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: '需要协调的 XDSCollapsible 实例。',
+          required: true,
+        },
+      ],
+      examples: [
+        {
+          label: 'Single 模式（手风琴）',
+          code: `<XDSCollapsibleGroup type="single" defaultValue="general">
+  <XDSCollapsible trigger="General" value="general">
+    <p>General settings</p>
+  </XDSCollapsible>
+  <XDSCollapsible trigger="Advanced" value="advanced">
+    <p>Advanced settings</p>
+  </XDSCollapsible>
+</XDSCollapsibleGroup>`,
+        },
+        {
+          label: 'Multiple 模式',
+          code: `<XDSCollapsibleGroup type="multiple" defaultValue={["s1", "s2"]}>
+  <XDSCollapsible trigger="Section 1" value="s1">...</XDSCollapsible>
+  <XDSCollapsible trigger="Section 2" value="s2">...</XDSCollapsible>
+</XDSCollapsibleGroup>`,
+        },
+      ],
+    },
+  ],
+};

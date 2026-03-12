@@ -239,4 +239,240 @@ export const docs = {
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
-export const docsZh = {...docs};
+export const docsZh = {
+  name: 'Slider',
+  description:
+    '用于选择数值或范围的滑块组件，支持完整的键盘和指针交互。',
+  features: [
+    '单值和范围模式：传入 `number` 用于单滑块，`[number, number]` 用于范围',
+    '方向：支持 `horizontal` 和 `vertical` 布局',
+    '值显示：工具提示（默认）、内联文本或无',
+    '刻度标记：在指定位置的可选标记，带标签',
+    '键盘导航：方向键、Page Up/Down、Home/End',
+    '拖拽交互：指针捕获实现平滑拖拽',
+    '自定义格式化：`formatValue` 函数用于显示和 `aria-valuetext`',
+    '字段集成：使用 `XDSField` 提供标签、描述、必填/可选和状态消息',
+    '无障碍：使用 `role="slider"` 配合完整的 ARIA 属性',
+  ],
+  examples: [
+    {
+      label: '基础单值',
+      code: '<XDSSlider label="Volume" value={50} onChange={setValue} />',
+    },
+    {
+      label: '范围滑块',
+      code: `<XDSSlider
+  label="Price range"
+  value={[20, 80]}
+  onChange={setRange}
+/>`,
+    },
+    {
+      label: '自定义格式化',
+      code: `<XDSSlider
+  label="Temperature"
+  value={72}
+  onChange={setTemp}
+  min={32}
+  max={212}
+  formatValue={(v) => \`\${v}°F\`}
+/>`,
+    },
+    {
+      label: '带步进和刻度标记',
+      code: `<XDSSlider
+  label="Rating"
+  value={3}
+  onChange={setRating}
+  min={1}
+  max={5}
+  step={1}
+  marks={[
+    { value: 1, label: 'Poor' },
+    { value: 3, label: 'Average' },
+    { value: 5, label: 'Excellent' },
+  ]}
+/>`,
+    },
+    {
+      label: '文本值显示',
+      code: `<XDSSlider
+  label="Opacity"
+  value={75}
+  onChange={setOpacity}
+  formatValue={(v) => \`\${v}%\`}
+  valueDisplay="text"
+/>`,
+    },
+    {
+      label: '带最小间距的范围',
+      code: `<XDSSlider
+  label="Date range"
+  value={[10, 90]}
+  onChange={setDateRange}
+  minStepsBetweenThumbs={5}
+/>`,
+    },
+    {
+      label: '使用 onChangeEnd 提交值',
+      code: `<XDSSlider
+  label="Brightness"
+  value={brightness}
+  onChange={setBrightness}
+  onChangeEnd={commitBrightness}
+/>`,
+    },
+    {
+      label: '垂直方向',
+      code: `<XDSSlider
+  label="Level"
+  value={60}
+  onChange={setLevel}
+  orientation="vertical"
+/>`,
+    },
+    {
+      label: '禁用',
+      code: `<XDSSlider
+  label="Locked"
+  value={50}
+  onChange={() => {}}
+  isDisabled
+/>`,
+    },
+  ],
+  props: [
+    {
+      name: 'label',
+      type: 'string',
+      description: '标签文本（始终渲染以确保无障碍可访问性）。',
+      required: true,
+    },
+    {
+      name: 'value',
+      type: 'number | [number, number]',
+      description:
+        '当前值——`number` 用于单滑块模式，`[number, number]` 用于范围模式。',
+      required: true,
+    },
+    {
+      name: 'onChange',
+      type: '(value: number) => void | (value: [number, number]) => void',
+      description: '拖拽过程中值变更时触发的回调。',
+    },
+    {
+      name: 'onChangeEnd',
+      type: '(value: number) => void | (value: [number, number]) => void',
+      description: '拖拽结束时触发的回调。',
+    },
+    {
+      name: 'min',
+      type: 'number',
+      description: '最小值。',
+      default: '0',
+    },
+    {
+      name: 'max',
+      type: 'number',
+      description: '最大值。',
+      default: '100',
+    },
+    {
+      name: 'step',
+      type: 'number',
+      description: '步进增量。',
+      default: '1',
+    },
+    {
+      name: 'orientation',
+      type: "'horizontal' | 'vertical'",
+      description: '滑块的方向。',
+      default: "'horizontal'",
+    },
+    {
+      name: 'formatValue',
+      type: '(value: number) => string',
+      description:
+        '自定义值格式化函数，用于显示和 `aria-valuetext`。',
+    },
+    {
+      name: 'valueDisplay',
+      type: "'tooltip' | 'text' | 'none'",
+      description: '当前值的显示方式。',
+      default: "'tooltip'",
+    },
+    {
+      name: 'marks',
+      type: 'Array<{ value: number; label?: string }>',
+      description: '在指定位置的刻度标记，带可选标签。',
+    },
+    {
+      name: 'minStepsBetweenThumbs',
+      type: 'number',
+      description:
+        '范围模式下滑块之间的最小步数；防止滑块重叠。',
+      default: '0',
+    },
+    {
+      name: 'isDisabled',
+      type: 'boolean',
+      description: '是否禁用滑块。',
+      default: 'false',
+    },
+    {
+      name: 'isOptional',
+      type: 'boolean',
+      description: '字段是否为可选。',
+      default: 'false',
+    },
+    {
+      name: 'isRequired',
+      type: 'boolean',
+      description: '字段是否为必填。',
+      default: 'false',
+    },
+    {
+      name: 'isLabelHidden',
+      type: 'boolean',
+      description: '是否在视觉上隐藏标签。',
+      default: 'false',
+    },
+    {
+      name: 'description',
+      type: 'string',
+      description: '标签下方渲染的描述文本。',
+    },
+    {
+      name: 'status',
+      type: 'XDSInputStatus',
+      description:
+        '验证反馈的状态指示器对象（`{ type, message }`）。',
+    },
+    {
+      name: 'labelTooltip',
+      type: 'string',
+      description: '标签旁信息图标的提示文本。',
+    },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        '用于布局自定义的 StyleX 样式（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+    },
+  ],
+  accessibility: [
+    '每个滑块使用 `role="slider"`，配合 `aria-valuenow`、`aria-valuemin`、`aria-valuemax` 和 `aria-valuetext`。',
+    '即使 `isLabelHidden` 为 true，标签也始终在 DOM 中渲染以确保无障碍可访问性。',
+    '工具提示显示使用 `XDSTooltip`，配合 `delay={0}` 和 `focusTrigger="always"`，使值在聚焦时始终可见。',
+  ],
+  keyboard:
+    '方向键 ±1 步，Page Up/Down ±10 步，Home/End 跳转到最小值/最大值。',
+  notes: [
+    'ref 与内部的 `trackRef` 合并，用于指针位置计算。',
+    '拖拽期间使用指针捕获，即使光标离开轨道也能平滑交互。',
+    '`snapToStep` 四舍五入到最近的有效步进值；`clamp` 强制执行最小/最大值边界。',
+    '在范围模式下，自动选择距离点击位置最近的滑块。',
+    '`minStepsBetweenThumbs` 强制范围滑块之间保持最小间距。',
+    '垂直方向反转 Y 轴，使底部为最小值，顶部为最大值。',
+  ],
+};

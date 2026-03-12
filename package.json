@@ -60,5 +60,8 @@
   "lint-staged": {
     "*.{ts,tsx}": "eslint --cache --fix",
     "*.{ts,tsx,md}": "prettier --write"
+  },
+  "dependencies": {
+    "tiktoken": "^1.0.22"
   }
 }
