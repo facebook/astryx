@@ -13,7 +13,7 @@ import {registerDocs} from './commands/docs.mjs';
 import {registerTemplate} from './commands/template.mjs';
 import {registerGapReport} from './commands/gap-report.mjs';
 import {registerUpgrade} from './commands/upgrade.mjs';
-import {registerBuildTheme} from './commands/build-theme.mjs';
+import {registerTheme} from './commands/build-theme.mjs';
 
 export const program = new Command();
 
@@ -34,7 +34,7 @@ registerAgentDocs(program);
 registerTemplate(program);
 registerGapReport(program);
 registerUpgrade(program);
-registerBuildTheme(program);
+registerTheme(program);
 
 // Hidden command used by package.json postinstall scripts
 program

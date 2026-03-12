@@ -144,7 +144,7 @@ Component overrides generate scoped CSS:
 ### Distribution
 
 - **Unbuilt**: `XDSTheme` generates CSS and injects `<style>` at runtime
-- **Built**: `npx xds build-theme` pre-compiles to a CSS file
+- **Built**: `npx xds theme build` pre-compiles to a CSS file
 
 ## Reference
 
