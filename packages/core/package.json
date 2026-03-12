@@ -227,6 +227,12 @@
       "import": "./dist/Popover/index.mjs",
       "require": "./dist/Popover/index.js"
     },
+    "./PowerSearch": {
+      "source": "./src/PowerSearch/index.ts",
+      "types": "./dist/PowerSearch/index.d.ts",
+      "import": "./dist/PowerSearch/index.mjs",
+      "require": "./dist/PowerSearch/index.js"
+    },
     "./ProgressBar": {
       "source": "./src/ProgressBar/index.ts",
       "types": "./dist/ProgressBar/index.d.ts",
