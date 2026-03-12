@@ -1,7 +1,7 @@
 'use client';
 
 import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
+
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText, XDSHeading} from '@xds/core/Text';
@@ -10,11 +10,11 @@ import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSDivider} from '@xds/core';
 
-const styles = stylex.create({
+const styles = {
   container: {
     maxWidth: 640,
   },
-});
+};
 
 /**
  * Example sandbox page.
@@ -30,7 +30,7 @@ export default function ExamplePage() {
   const [updates, setUpdates] = useState(false);
 
   return (
-    <div {...stylex.props(styles.container)}>
+    <div style={styles.container}>
       <XDSVStack gap={6}>
         <XDSVStack gap={2}>
           <XDSHeading level={1}>Example Page</XDSHeading>

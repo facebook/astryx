@@ -1,7 +1,7 @@
 'use client';
 
 import {useState, useMemo} from 'react';
-import * as stylex from '@stylexjs/stylex';
+
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
@@ -209,7 +209,7 @@ function StatCard({
 }) {
   return (
     <XDSCard>
-      <div {...stylex.props(styles.statCard)}>
+      <div style={styles.statCard}>
         <XDSText type="supporting" color="secondary">
           {emoji ? `${emoji} ` : ''}
           {label}
@@ -238,10 +238,10 @@ const columns: XDSTableColumn<ReviewRow>[] = [
           name={item.authorName}
           size="small"
         />
-        <div {...stylex.props(styles.authorInfo)}>
+        <div style={styles.authorInfo}>
           <XDSVStack gap={1}>
-            <span {...stylex.props(styles.titleLink)}>{item.title}</span>
-            <span {...stylex.props(styles.supportingLine)}>
+            <span style={styles.titleLink}>{item.title}</span>
+            <span style={styles.supportingLine}>
               <XDSText type="supporting" color="secondary">
                 {item.diffId} · {item.lines} lines {item.reviewTime}
               </XDSText>
@@ -256,11 +256,11 @@ const columns: XDSTableColumn<ReviewRow>[] = [
     header: 'Reviewers',
     width: pixel(120),
     renderCell: (item: ReviewRow) => (
-      <div {...stylex.props(styles.avatarGroup)}>
+      <div style={styles.avatarGroup}>
         {item.reviewerAvatars.map((src: string, i: number) => (
           <div
             key={i}
-            {...stylex.props(styles.avatarOverlap)}
+            style={styles.avatarOverlap}
             style={{
               marginLeft: i > 0 ? -8 : 0,
               zIndex: item.reviewerAvatars.length - i,
@@ -313,7 +313,7 @@ const columns: XDSTableColumn<ReviewRow>[] = [
 // Styles
 // =============================================================================
 
-const styles = stylex.create({
+const styles = {
   container: {
     maxWidth: 1100,
     width: '100%',
@@ -356,7 +356,7 @@ const styles = stylex.create({
     position: 'relative',
     display: 'inline-flex',
   },
-});
+};
 
 // =============================================================================
 // Section Table (table within a collapsible)
@@ -450,7 +450,7 @@ export default function TableOverviewPage() {
   const filteredAccepted = filterRows(acceptedAndReady);
 
   return (
-    <div {...stylex.props(styles.container)}>
+    <div style={styles.container}>
       <XDSVStack gap={6}>
         <XDSVStack gap={2}>
           <XDSHeading level={1}>Table Overview</XDSHeading>
@@ -470,7 +470,7 @@ export default function TableOverviewPage() {
         />
 
         {/* Stats Row */}
-        <div {...stylex.props(styles.statsRow)}>
+        <div style={styles.statsRow}>
           <StatCard emoji="🔥" label="Review streak" value="4 days" />
           <StatCard label="Reviews today" value={6} />
           <StatCard label="Diff reviews" value={28} />
