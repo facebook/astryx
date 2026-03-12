@@ -293,6 +293,518 @@ type TypographyCategoryValue =
   | {description: string; tokens: string[]};
 
 // =============================================================================
+// AI Theme Generation
+// =============================================================================
+
+const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
+const ANTHROPIC_MODEL = 'claude-sonnet-4-5-20250514';
+const LOCAL_STORAGE_KEY = 'xds-theme-editor-anthropic-key';
+
+interface AIChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+/**
+ * Build the system prompt that teaches Claude about XDS tokens.
+ * Includes the full token schema so it can generate valid overrides.
+ */
+function buildThemeSystemPrompt(): string {
+  return `You are an XDS design system theme generator. Given a description, you output a JSON object with token overrides that create the described theme.
+
+RULES:
+- Output ONLY valid JSON — no markdown fences, no explanation, just the JSON object.
+- Every color value MUST use the CSS light-dark(lightValue, darkValue) format.
+- Only include tokens you want to change from defaults.
+- Use the exact token names shown below (e.g. "--color-accent", "--spacing-4").
+- For spacing/size/radius values, use CSS units like "4px", "8px", "12px".
+- For font weights, use numeric strings like "400", "500", "600", "700".
+- For line heights, use unitless numbers as strings like "1.25", "1.5".
+- For font families, use standard CSS font stacks.
+- For transitions, use CSS shorthand like "0.15s ease".
+- For elevations, use CSS box-shadow syntax with light-dark() for colors.
+- Ensure good contrast ratios between text and background colors.
+- Ensure dark mode colors are appropriate (lighter text on darker backgrounds).
+
+AVAILABLE COLOR TOKENS:
+${JSON.stringify(colorDefaults, null, 2)}
+
+AVAILABLE SPACING TOKENS:
+${JSON.stringify(spacingDefaults, null, 2)}
+
+AVAILABLE RADIUS TOKENS:
+${JSON.stringify(radiusDefaults, null, 2)}
+
+AVAILABLE SIZE TOKENS:
+${JSON.stringify(sizeDefaults, null, 2)}
+
+AVAILABLE TYPOGRAPHY TOKENS:
+${JSON.stringify(typographyDefaults, null, 2)}
+
+AVAILABLE TEXT SIZE TOKENS:
+${JSON.stringify(textSizeDefaults, null, 2)}
+
+AVAILABLE LINE HEIGHT TOKENS:
+${JSON.stringify(lineHeightDefaults, null, 2)}
+
+AVAILABLE FONT WEIGHT TOKENS:
+${JSON.stringify(fontWeightDefaults, null, 2)}
+
+AVAILABLE ELEVATION TOKENS:
+${JSON.stringify(elevationDefaults, null, 2)}
+
+AVAILABLE TRANSITION TOKENS:
+${JSON.stringify(transitionDefaults, null, 2)}
+
+EXAMPLE OUTPUT for "warm sunset theme":
+{
+  "--color-accent": "light-dark(#E8590C, #FF8C42)",
+  "--color-accent-deemphasized": "light-dark(#E8590C33, #FF8C423F)",
+  "--color-accent-text": "light-dark(#C63B05, #FFB07C)",
+  "--color-surface": "light-dark(#FFFAF5, #1A1410)",
+  "--color-wash": "light-dark(#FFF3E8, #120E0A)",
+  "--color-text-link": "light-dark(#E8590C, #FF8C42)",
+  "--color-focus-outline": "light-dark(#E8590C, #FF8C42)",
+  "--radius-container": "16px",
+  "--radius-element": "10px"
+}
+
+Respond with ONLY the JSON object. No other text.`;
+}
+
+/**
+ * Call Anthropic's Messages API directly from the browser.
+ * Requires the "anthropic-dangerous-direct-browser-access" header for CORS.
+ */
+async function callClaude(
+  apiKey: string,
+  messages: AIChatMessage[],
+): Promise<string> {
+  const response = await fetch(ANTHROPIC_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: ANTHROPIC_MODEL,
+      max_tokens: 4096,
+      system: buildThemeSystemPrompt(),
+      messages: messages.map(m => ({role: m.role, content: m.content})),
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    const msg =
+      (error as {error?: {message?: string}}).error?.message ||
+      `API error: ${response.status}`;
+    throw new Error(msg);
+  }
+
+  const data = (await response.json()) as {
+    content: Array<{type: string; text?: string}>;
+  };
+  const textBlock = data.content.find((b: {type: string}) => b.type === 'text');
+  return textBlock?.text || '';
+}
+
+/**
+ * Parse Claude's response into token overrides.
+ * Handles cases where the response might have markdown fences.
+ */
+function parseTokenOverrides(response: string): Record<string, string> | null {
+  let cleaned = response.trim();
+  // Strip markdown code fences if present
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+  }
+  try {
+    const parsed = JSON.parse(cleaned);
+    if (typeof parsed === 'object' && parsed !== null) {
+      return parsed as Record<string, string>;
+    }
+  } catch {
+    // Try to extract JSON from the response
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[0]) as Record<string, string>;
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * AI Theme Generation Panel
+ */
+interface AIThemePanelProps {
+  onApplyTokens: (overrides: Record<string, string>) => void;
+  allDefaults: Record<string, string>;
+  onReset: () => void;
+}
+
+function AIThemePanel({
+  onApplyTokens,
+  allDefaults,
+  onReset,
+}: AIThemePanelProps) {
+  const [apiKey, setApiKey] = React.useState(() => {
+    try {
+      return localStorage.getItem(LOCAL_STORAGE_KEY) || '';
+    } catch {
+      return '';
+    }
+  });
+  const [keyInput, setKeyInput] = React.useState(apiKey);
+  const [isKeySet, setIsKeySet] = React.useState(!!apiKey);
+  const [messages, setMessages] = React.useState<AIChatMessage[]>([]);
+  const [input, setInput] = React.useState('');
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({behavior: 'smooth'});
+  }, [messages]);
+
+  const handleSaveKey = () => {
+    const trimmed = keyInput.trim();
+    if (trimmed) {
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, trimmed);
+      } catch {
+        // localStorage not available
+      }
+      setApiKey(trimmed);
+      setIsKeySet(true);
+      setError(null);
+    }
+  };
+
+  const handleClearKey = () => {
+    try {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+    } catch {
+      // localStorage not available
+    }
+    setApiKey('');
+    setKeyInput('');
+    setIsKeySet(false);
+    setMessages([]);
+  };
+
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
+
+    const userMessage: AIChatMessage = {role: 'user', content: input.trim()};
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
+    setInput('');
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await callClaude(apiKey, newMessages);
+      const overrides = parseTokenOverrides(response);
+
+      const assistantMessage: AIChatMessage = {
+        role: 'assistant',
+        content: overrides
+          ? `Applied ${Object.keys(overrides).length} token overrides.`
+          : response,
+      };
+      setMessages(prev => [...prev, assistantMessage]);
+
+      if (overrides) {
+        // Merge overrides with defaults so unmentioned tokens stay at default
+        const merged = {...allDefaults, ...overrides};
+        onApplyTokens(merged);
+      } else {
+        setError('Could not parse token overrides from response.');
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      setError(msg);
+      setMessages(prev => [
+        ...prev,
+        {role: 'assistant', content: `Error: ${msg}`},
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  // API key setup screen
+  if (!isKeySet) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          padding: '24px',
+          gap: '16px',
+        }}>
+        <div
+          style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '12px',
+            backgroundColor: 'var(--color-accent-deemphasized)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '24px',
+          }}>
+          ✨
+        </div>
+        <XDSHeading level={4}>AI Theme Generator</XDSHeading>
+        <XDSText
+          type="supporting"
+          style={{textAlign: 'center', maxWidth: '280px'}}>
+          Describe a theme in natural language and let Claude generate the token
+          values for you.
+        </XDSText>
+        <div style={{width: '100%', maxWidth: '320px'}}>
+          <XDSTextInput
+            label="Anthropic API Key"
+            value={keyInput}
+            onChange={setKeyInput}
+            placeholder="sk-ant-..."
+            type="password"
+            size="sm"
+          />
+          <XDSText
+            type="supporting"
+            style={{marginTop: '8px', display: 'block'}}>
+            Your key is stored in localStorage and sent directly to Anthropic.
+            It never leaves your browser otherwise.{' '}
+            <a
+              href="https://console.anthropic.com/settings/keys"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{color: 'var(--color-text-link)'}}>
+              Get an API key →
+            </a>
+          </XDSText>
+        </div>
+        <XDSButton
+          label="Save & Start"
+          variant="primary"
+          onClick={handleSaveKey}
+          isDisabled={!keyInput.trim()}
+        />
+      </div>
+    );
+  }
+
+  // Chat interface
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+      }}>
+      {/* Chat header */}
+      <div
+        style={{
+          padding: '8px 16px',
+          borderBottom: '1px solid var(--color-divider)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+        <XDSText type="label">AI Theme Generator</XDSText>
+        <div style={{display: 'flex', gap: '4px'}}>
+          <XDSButton
+            label="Reset Theme"
+            variant="ghost"
+            size="sm"
+            onClick={onReset}
+          />
+          <XDSButton
+            label="Change Key"
+            variant="ghost"
+            size="sm"
+            onClick={handleClearKey}
+          />
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div
+        style={{
+          flex: 1,
+          overflow: 'auto',
+          padding: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+        }}>
+        {messages.length === 0 && (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              gap: '12px',
+              opacity: 0.6,
+            }}>
+            <XDSText type="supporting" style={{textAlign: 'center'}}>
+              Describe a theme to generate token values.
+            </XDSText>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px',
+                width: '100%',
+              }}>
+              {[
+                'Dark cyberpunk theme with neon purple accents',
+                'Clean minimal theme with rounded corners',
+                'Warm earth-tones with serif typography',
+                'High contrast accessibility theme',
+              ].map(suggestion => (
+                <button
+                  key={suggestion}
+                  onClick={() => {
+                    setInput(suggestion);
+                  }}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--color-divider)',
+                    backgroundColor: 'var(--color-surface)',
+                    color: 'var(--color-text-secondary)',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}>
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {messages.map((msg, i) => (
+          <div
+            key={i}
+            style={{
+              display: 'flex',
+              justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+            }}>
+            <div
+              style={{
+                maxWidth: '85%',
+                padding: '8px 12px',
+                borderRadius:
+                  msg.role === 'user'
+                    ? '12px 12px 4px 12px'
+                    : '12px 12px 12px 4px',
+                backgroundColor:
+                  msg.role === 'user'
+                    ? 'var(--color-accent)'
+                    : 'var(--color-wash)',
+                color:
+                  msg.role === 'user'
+                    ? '#fff'
+                    : msg.content.startsWith('Error:')
+                      ? 'var(--color-negative)'
+                      : 'var(--color-text-primary)',
+                fontSize: '13px',
+                lineHeight: '1.4',
+                wordBreak: 'break-word',
+              }}>
+              {msg.content}
+            </div>
+          </div>
+        ))}
+        {isLoading && (
+          <div style={{display: 'flex', justifyContent: 'flex-start'}}>
+            <div
+              style={{
+                padding: '8px 12px',
+                borderRadius: '12px 12px 12px 4px',
+                backgroundColor: 'var(--color-wash)',
+                color: 'var(--color-text-secondary)',
+                fontSize: '13px',
+              }}>
+              Generating theme…
+            </div>
+          </div>
+        )}
+        {error && !messages.some(m => m.content.includes(error)) && (
+          <XDSText
+            type="supporting"
+            style={{color: 'var(--color-negative)', textAlign: 'center'}}>
+            {error}
+          </XDSText>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      <div
+        style={{
+          padding: '12px 16px',
+          borderTop: '1px solid var(--color-divider)',
+          display: 'flex',
+          gap: '8px',
+        }}>
+        <div style={{flex: 1}}>
+          <textarea
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Describe a theme..."
+            disabled={isLoading}
+            rows={1}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              fontSize: '13px',
+              fontFamily: 'var(--font-body)',
+              border: '1px solid var(--color-divider-emphasized)',
+              borderRadius: '8px',
+              backgroundColor: 'var(--color-surface)',
+              color: 'var(--color-text-primary)',
+              resize: 'none',
+              outline: 'none',
+            }}
+          />
+        </div>
+        <XDSButton
+          label={isLoading ? '...' : 'Send'}
+          variant="primary"
+          size="sm"
+          onClick={handleSend}
+          isDisabled={!input.trim() || isLoading}
+        />
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
 // Helper Functions
 // =============================================================================
 
@@ -1250,8 +1762,10 @@ ${tokenEntries}
 // Main Theme Editor Component
 // =============================================================================
 
+type EditorTab = TokenGroupKey | 'ai';
+
 function ThemeEditorComponent() {
-  const [activeGroup, setActiveGroup] = React.useState<TokenGroupKey>('colors');
+  const [activeGroup, setActiveGroup] = React.useState<EditorTab>('colors');
   const [activeColorCategory, setActiveColorCategory] =
     React.useState<string>('Core Semantic');
   const [activeTypographyCategory, setActiveTypographyCategory] =
@@ -1287,6 +1801,13 @@ function ThemeEditorComponent() {
     [],
   );
 
+  const handleApplyTokens = React.useCallback(
+    (overrides: Record<string, string>) => {
+      setTokens(overrides);
+    },
+    [],
+  );
+
   const handleReset = React.useCallback(() => {
     setTokens(allDefaults);
   }, [allDefaults]);
@@ -1307,6 +1828,9 @@ function ThemeEditorComponent() {
   }, [tokens, themeName, allDefaults]);
 
   const renderTokenEditor = () => {
+    // AI tab is handled separately
+    if (activeGroup === 'ai') return null;
+
     const group = TOKEN_GROUPS[activeGroup];
 
     if (activeGroup === 'colors') {
@@ -1632,6 +2156,13 @@ function ThemeEditorComponent() {
             gap: '4px',
             flexWrap: 'wrap',
           }}>
+          <XDSButton
+            key="ai"
+            label="✨ AI"
+            variant={activeGroup === 'ai' ? 'primary' : 'ghost'}
+            size="sm"
+            onClick={() => setActiveGroup('ai')}
+          />
           {(Object.keys(TOKEN_GROUPS) as TokenGroupKey[]).map(groupKey => (
             <XDSButton
               key={groupKey}
@@ -1643,26 +2174,39 @@ function ThemeEditorComponent() {
           ))}
         </div>
 
-        {/* Group description */}
-        <div
-          style={{
-            padding: '12px 16px',
-            borderBottom: '1px solid var(--color-divider)',
-          }}>
-          <XDSText type="supporting">
-            {TOKEN_GROUPS[activeGroup].description}
-          </XDSText>
-        </div>
+        {/* AI panel or token editor */}
+        {activeGroup === 'ai' ? (
+          <div style={{flex: 1, overflow: 'hidden'}}>
+            <AIThemePanel
+              onApplyTokens={handleApplyTokens}
+              allDefaults={allDefaults}
+              onReset={handleReset}
+            />
+          </div>
+        ) : (
+          <>
+            {/* Group description */}
+            <div
+              style={{
+                padding: '12px 16px',
+                borderBottom: '1px solid var(--color-divider)',
+              }}>
+              <XDSText type="supporting">
+                {TOKEN_GROUPS[activeGroup].description}
+              </XDSText>
+            </div>
 
-        {/* Token list */}
-        <div
-          style={{
-            flex: 1,
-            overflow: 'auto',
-            padding: '16px',
-          }}>
-          {renderTokenEditor()}
-        </div>
+            {/* Token list */}
+            <div
+              style={{
+                flex: 1,
+                overflow: 'auto',
+                padding: '16px',
+              }}>
+              {renderTokenEditor()}
+            </div>
+          </>
+        )}
 
         {/* Actions */}
         <div
