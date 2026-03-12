@@ -7,6 +7,7 @@ import type {
   PowerSearchChangeType,
 } from '@xds/core/PowerSearch';
 import type {XDSSearchSource, XDSSearchableItem} from '@xds/core/Typeahead';
+import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
 // =============================================================================
 // Sample data
@@ -892,4 +893,25 @@ export const WithNestedFilters: Story = {
     ),
   ],
   name: 'Nested Filters',
+};
+
+export const WithStartIcon: Story = {
+  render: args => {
+    const [filters, setFilters] = useState<PowerSearchFilter[]>([]);
+    return (
+      <XDSPowerSearch
+        {...args}
+        config={basicConfig}
+        filters={filters}
+        onChange={newFilters => setFilters([...newFilters])}
+        startIcon={MagnifyingGlassIcon}
+      />
+    );
+  },
+  args: {
+    label: 'Search',
+    isLabelHidden: true,
+    placeholder: 'Search...',
+  },
+  name: 'With Start Icon',
 };

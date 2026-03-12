@@ -2,6 +2,7 @@ import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSTokenizer} from '@xds/core/Tokenizer';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
+import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
 // Sample data
 const users: XDSSearchableItem[] = [
@@ -157,4 +158,32 @@ export const Disabled: Story = {
     label: 'Team Members',
     isDisabled: true,
   },
+};
+
+export const WithStartIcon: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    startIcon: MagnifyingGlassIcon,
+  },
+  name: 'With Start Icon',
+};
+
+export const WithStartIconAndTokens: Story = {
+  render: args => {
+    const [value, setValue] = useState([users[0], users[2]]);
+    return (
+      <XDSTokenizer
+        {...args}
+        searchSource={userSource}
+        value={value}
+        onChange={items => setValue(items)}
+      />
+    );
+  },
+  args: {
+    label: 'Team Members',
+    startIcon: MagnifyingGlassIcon,
+  },
+  name: 'With Start Icon and Tokens',
 };

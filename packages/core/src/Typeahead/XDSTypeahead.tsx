@@ -30,6 +30,7 @@ import {
 } from '../Field';
 import {XDSToken} from '../Token';
 import {XDSIcon} from '../Icon';
+import type {XDSIconType} from '../Icon';
 import {
   colorVars,
   spacingVars,
@@ -59,6 +60,11 @@ export interface XDSTypeaheadProps<T extends XDSSearchableItem> {
   isOptional?: boolean;
   /** Validation status. */
   status?: XDSInputStatus;
+  /**
+   * Icon to display at the start of the input.
+   * Pass an SVG icon component (e.g. from heroicons, lucide, etc.).
+   */
+  startIcon?: XDSIconType;
   /** Label tooltip. */
   labelTooltip?: string;
   /** Search source providing items. */
@@ -203,6 +209,7 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
   isRequired = false,
   isOptional = false,
   status,
+  startIcon,
   labelTooltip,
   searchSource,
   value,
@@ -377,6 +384,7 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
           status && inputStatusFocusWithinStyles[status.type],
           isDisabled && inputWrapperStyles.disabled,
         )}>
+        {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
         {showToken && (
           <XDSToken
             ref={tokenRef}

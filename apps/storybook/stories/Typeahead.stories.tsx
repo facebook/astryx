@@ -2,6 +2,7 @@ import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSTypeahead} from '@xds/core/Typeahead';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
+import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
 // Sample data
 const fruits: XDSSearchableItem[] = [
@@ -147,4 +148,14 @@ export const LimitedResults: Story = {
     maxMenuItems: 3,
   },
   name: 'Max 3 Results',
+};
+
+export const WithStartIcon: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    startIcon: MagnifyingGlassIcon,
+    hasEntriesOnFocus: true,
+  },
+  name: 'With Start Icon',
 };

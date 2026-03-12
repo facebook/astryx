@@ -25,6 +25,7 @@ import {XDSTokenizer, type XDSTokenizerHandle} from '../Tokenizer';
 import {XDSTypeaheadItem} from '../Typeahead/XDSTypeaheadItem';
 import {XDSToken} from '../Token';
 import {XDSIcon} from '../Icon';
+import type {XDSIconType} from '../Icon';
 import type {XDSIconName} from '../Icon/globalIconRegistry';
 import type {XDSInputStatus} from '../Field';
 import {useXDSLayer} from '../Layer';
@@ -319,6 +320,11 @@ export interface XDSPowerSearchProps {
   isReadOnly?: boolean;
   /** Whether the input is disabled. @default false */
   isDisabled?: boolean;
+  /**
+   * Icon to display at the start of the input.
+   * Pass an SVG icon component (e.g. from heroicons, lucide, etc.).
+   */
+  startIcon?: XDSIconType;
   /** Focus callback. */
   onFocus?: () => void;
   /** Blur callback. */
@@ -418,6 +424,7 @@ export function XDSPowerSearch({
   hasClear = true,
   isReadOnly = false,
   isDisabled = false,
+  startIcon,
   onFocus,
   onBlur,
   status,
@@ -709,6 +716,7 @@ export function XDSPowerSearch({
           placeholder={filters.length === 0 ? placeholder : ''}
           hasAutoFocus={hasAutoFocus}
           hasClear={hasClear && !isReadOnly}
+          startIcon={startIcon}
           isDisabled={isDisabled}
           hasEntriesOnFocus
           debounceMs={0}
