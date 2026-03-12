@@ -497,4 +497,498 @@ const selectionPlugin = useXDSTableSelection<User>({
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
-export const docsZh = {...docs};
+export const docsZh = {
+  name: 'Table',
+  description:
+    '数据驱动的表格，通过 renderCell 实现丰富的单元格内容。使用 XDSBadge、XDSStatusDot、XDSText、XDSAvatar 和布局基础组件组合单元格。XDSBaseTable 提供无样式的结构核心，配合可组合的插件管道。',
+  features: [
+    '数据驱动渲染 — 传入数据和列定义，行自动渲染',
+    '通过 renderCell 实现丰富的单元格内容 — 在表格单元格中组合 XDS 组件（XDSBadge、XDSStatusDot、XDSText、XDSAvatar）',
+    '子元素模式 — 直接组合 XDSTableRow/XDSTableCell 实现手动布局',
+    '插件系统 — 通过可组合的转换插件扩展表格行为',
+    '密度变体：紧凑、均衡、宽松',
+    '分隔线样式：行、列、网格、无',
+    '通过 XDSTableContext 实现偶数行条纹和悬停高亮',
+    '通过 useXDSTableSelection 实现选择功能 — 复选框、全选、aria-selected',
+    '主体行使用自定义比较进行记忆化 — 仅重新渲染更改的行',
+    '省略 columns 属性时，自动从数据对象键生成列',
+    '通过 className 实现主题化 — 目标选择器：.xds-base-table、.xds-table-row、.xds-table-cell、.xds-table-header-cell',
+  ],
+  examples: [
+    {
+      label: '基础数据驱动表格',
+      code: `<XDSTable
+  data={users}
+  columns={[
+    {
+      key: 'name',
+      header: 'Name',
+      renderCell: user => (
+        <XDSHStack gap={2} align="center">
+          <XDSAvatar name={user.name} size="small" />
+          <XDSVStack gap={1}>
+            <XDSText type="body" weight="semibold">
+              {user.name}
+            </XDSText>
+            <XDSText type="supporting" color="secondary">
+              {user.email}
+            </XDSText>
+          </XDSVStack>
+        </XDSHStack>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      width: pixel(140),
+      renderCell: user => (
+        <XDSHStack gap={2} align="center">
+          <XDSStatusDot status={user.isActive ? 'positive' : 'negative'} />
+          <XDSBadge variant={user.isActive ? 'success' : 'error'}>
+            {user.isActive ? 'Active' : 'Inactive'}
+          </XDSBadge>
+        </XDSHStack>
+      ),
+    },
+    {
+      key: 'role',
+      header: 'Role',
+      renderCell: user => (
+        <XDSText type="label" color="secondary">
+          {user.role}
+        </XDSText>
+      ),
+    },
+  ]}
+  density="balanced"
+  dividers="rows"
+  hasHover
+/>`,
+    },
+    {
+      label: '自动生成列',
+      code: `// Columns auto-generated from data keys with capitalized headers
+<XDSTable data={users} isStriped />`,
+    },
+    {
+      label: '通过 renderCell 实现丰富的单元格内容',
+      code: `<XDSTable
+  data={transactions}
+  columns={[
+    {
+      key: 'description',
+      header: 'Transaction',
+      renderCell: tx => (
+        <XDSVStack gap={1}>
+          <XDSText weight="semibold">{tx.description}</XDSText>
+          <XDSText type="supporting" color="secondary">
+            {tx.date}
+          </XDSText>
+        </XDSVStack>
+      ),
+    },
+    {
+      key: 'amount',
+      header: 'Amount',
+      renderCell: tx => (
+        <XDSText
+          weight="semibold"
+          color={tx.amount > 0 ? 'positive' : 'negative'}>
+          {tx.amount > 0 ? '+' : ''}
+          {tx.amount.toFixed(2)}
+        </XDSText>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      renderCell: tx => (
+        <XDSBadge
+          variant={
+            tx.status === 'completed'
+              ? 'success'
+              : tx.status === 'pending'
+                ? 'warning'
+                : 'error'
+          }>
+          {tx.status}
+        </XDSBadge>
+      ),
+    },
+  ]}
+  density="balanced"
+  dividers="rows"
+  hasHover
+/>`,
+    },
+    {
+      label: '子元素模式',
+      code: `<XDSTable density="balanced" dividers="rows" isStriped hasHover>
+  <XDSTableRow>
+    <XDSTableCell>
+      <XDSHStack gap={2} align="center">
+        <XDSAvatar name="Alice" size="small" />
+        <XDSText weight="semibold">Alice</XDSText>
+      </XDSHStack>
+    </XDSTableCell>
+    <XDSTableCell>
+      <XDSBadge variant="success">Active</XDSBadge>
+    </XDSTableCell>
+  </XDSTableRow>
+</XDSTable>`,
+    },
+    {
+      label: '选择插件',
+      code: `const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+
+const selectionPlugin = useXDSTableSelection<User>({
+  getIsItemSelected: item => selectedKeys.has(item.id),
+  onSelectItem: ({item, isSelected}) => {
+    const next = new Set(selectedKeys);
+    isSelected ? next.add(item.id) : next.delete(item.id);
+    setSelectedKeys(next);
+  },
+  onSelectAll: ({isAllSelected}) => {
+    setSelectedKeys(isAllSelected ? new Set(users.map(u => u.id)) : new Set());
+  },
+  getIsAllSelected: () => users.every(u => selectedKeys.has(u.id)),
+  getIsIndeterminate: () => {
+    const count = users.filter(u => selectedKeys.has(u.id)).length;
+    return count > 0 && count < users.length;
+  },
+});
+
+<XDSTable
+  data={users}
+  columns={columns}
+  plugins={{selection: selectionPlugin}}
+/>`,
+    },
+    {
+      label: '自定义插件',
+      code: `const highlightPlugin: TablePlugin<User> = {
+  transformBodyRow(props, item) {
+    if (item.isActive) {
+      return {...props, styles: [...props.styles, activeRowStyle]};
+    }
+    return props;
+  },
+};
+
+<XDSTable data={users} plugins={{highlight: highlightPlugin}} />`,
+    },
+  ],
+  theming: {
+    targets: [
+      {className: 'xds-base-table'},
+      {className: 'xds-table-row'},
+      {className: 'xds-table-cell'},
+      {className: 'xds-table-header-cell'},
+    ],
+  },
+  accessibility: [
+    '选择插件在选中的主体行上设置 aria-selected',
+    '全选和每行复选框通过 isLabelHidden 使用视觉隐藏标签（"Select all rows"、"Select row"）',
+    '不可选择的行（getIsItemSelectable 返回 false）不渲染复选框',
+    '禁用的行（getIsItemEnabled 返回 false）渲染禁用状态的复选框',
+  ],
+  notes: [
+    '双层设计：XDSBaseTable 提供无样式结构和插件管道；XDSTable 使用 XDSTableContext 和带样式的子组件对其进行包装。',
+    '样式由组件（XDSTableRow、XDSTableCell、XDSTableHeaderCell）控制，而非插件 — 每个组件读取 XDSTableContext 来应用密度、分隔线、条纹和悬停样式。',
+    'XDSTable 接受命名的 Record<string, TablePlugin<T>> 格式的插件，并在内部转换为有序数组；XDSBaseTable 直接接受有序数组。',
+    '选择插件使用 React Context，使 SelectAllCheckbox 和 SelectionRowCheckbox 独立于行内容重新渲染 — 仅当选择状态变化时更新 context 值。',
+    '主体行通过带有自定义比较的 React.memo 进行记忆化。为获得最佳性能，请在组件外部定义列或对其进行记忆化，以避免触发全量重新渲染。',
+    '可以使用 generateColumns() 从数据键自动生成列；列宽使用 proportional() 和 pixel() 辅助函数表达为比例值（类似 fr）或固定像素值。',
+    'XDSBaseTable 上的 tableProps 将额外的 HTML 属性直接传递给 <table> 元素。',
+  ],
+  components: [
+    {
+      name: 'XDSTable',
+      description:
+        '带样式的数据驱动表格，支持密度、分隔线、悬停高亮、条纹行和命名插件。',
+      props: [
+        {
+          name: 'data',
+          type: 'T[]',
+          description: '要渲染为行的数据项数组。',
+        },
+        {
+          name: 'columns',
+          type: 'XDSTableColumn<T>[]',
+          description:
+            '列定义。如果省略，将自动从数据对象键生成列。',
+        },
+        {
+          name: 'idKey',
+          type: '(keyof T & string) | ((item: T) => string | number)',
+          description:
+            '用于 React 协调的行键。传入属性名称字符串或函数。省略时回退到行索引。',
+        },
+        {
+          name: 'density',
+          type: "'compact' | 'balanced' | 'spacious'",
+          description: '行密度，控制单元格内边距和字体大小。',
+          default: "'balanced'",
+        },
+        {
+          name: 'dividers',
+          type: "'rows' | 'columns' | 'grid' | 'none'",
+          description: '单元格之间渲染的分隔线样式。',
+          default: "'rows'",
+        },
+        {
+          name: 'isStriped',
+          type: 'boolean',
+          description: '为偶数行应用背景底色。',
+          default: 'false',
+        },
+        {
+          name: 'hasHover',
+          type: 'boolean',
+          description:
+            '在指针设备上为行应用悬停高亮背景。',
+          default: 'false',
+        },
+        {
+          name: 'plugins',
+          type: 'Record<string, TablePlugin<T>>',
+          description:
+            '通过转换管道扩展表格行为的命名插件。在内部转换为有序数组。',
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description:
+            '子元素模式 — 直接渲染 XDSTableRow/XDSTableCell，而非使用数据驱动渲染。',
+        },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+        },
+      ],
+      examples: [
+        {
+          label: '数据驱动',
+          code: `<XDSTable
+  data={users}
+  columns={[
+    {key: 'name', header: 'Name'},
+    {key: 'email', header: 'Email', width: proportional(2)},
+  ]}
+  density="compact"
+  dividers="grid"
+  isStriped
+  hasHover
+/>`,
+        },
+        {
+          label: '子元素模式',
+          code: `<XDSTable density="balanced" dividers="rows">
+  <XDSTableRow>
+    <XDSTableCell>Alice</XDSTableCell>
+    <XDSTableCell>30</XDSTableCell>
+  </XDSTableRow>
+</XDSTable>`,
+        },
+      ],
+    },
+    {
+      name: 'XDSBaseTable',
+      description:
+        '无样式的结构表格组件，配有插件转换管道和 components 属性，用于替换自定义行/单元格渲染器。',
+      props: [
+        {
+          name: 'data',
+          type: 'T[]',
+          description: '要渲染为行的数据项数组。',
+        },
+        {
+          name: 'columns',
+          type: 'XDSTableColumn<T>[]',
+          description:
+            '列定义。如果省略，将自动从数据对象键生成列。',
+        },
+        {
+          name: 'idKey',
+          type: '(keyof T & string) | ((item: T) => string | number)',
+          description:
+            '用于 React 协调的行键。传入属性名称字符串或函数。省略时回退到行索引。',
+        },
+        {
+          name: 'plugins',
+          type: 'TablePlugin<T>[]',
+          description:
+            '作为顺序转换管道应用的有序插件数组。',
+        },
+        {
+          name: 'components',
+          type: '{Row?: ComponentType<TableRowComponentProps>; Cell?: ComponentType<TableCellComponentProps>; HeaderCell?: ComponentType<TableHeaderCellComponentProps>}',
+          description:
+            '行和单元格元素的组件覆盖。提供时，这些组件从插件转换中接收 xstyle。',
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description:
+            '子元素模式 — 在 tbody 中直接渲染行，而非使用数据驱动渲染。',
+        },
+        {
+          name: 'tableProps',
+          type: 'HTMLAttributes<HTMLTableElement>',
+          description:
+            '直接传递给根 <table> 元素的额外 HTML 属性。',
+        },
+      ],
+      examples: [
+        {
+          label: '使用带样式的组件',
+          code: `<XDSBaseTable
+  data={items}
+  columns={columns}
+  plugins={[myPlugin]}
+  components={{Row: XDSTableRow, Cell: XDSTableCell, HeaderCell: XDSTableHeaderCell}}
+/>`,
+        },
+      ],
+    },
+    {
+      name: 'XDSTableRow',
+      description:
+        '<tr> 包装器，读取 XDSTableContext 以在 XDSTable 内部使用时应用条纹、悬停和分隔线样式。',
+      props: [
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: '行单元格元素。',
+          required: true,
+        },
+      ],
+      examples: [
+        {
+          code: `<XDSTableRow>
+  <XDSTableCell>Alice</XDSTableCell>
+  <XDSTableCell>30</XDSTableCell>
+</XDSTableRow>`,
+        },
+      ],
+    },
+    {
+      name: 'XDSTableCell',
+      description:
+        '<td> 包装器，读取 XDSTableContext 以在 XDSTable 内部使用时应用密度内边距、字体大小和分隔线边框。',
+      props: [
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: '单元格内容。',
+        },
+      ],
+      examples: [
+        {
+          code: `<XDSTableCell>Cell content</XDSTableCell>`,
+        },
+      ],
+    },
+    {
+      name: 'XDSTableHeaderCell',
+      description:
+        '<th> 包装器，读取 XDSTableContext 以在 XDSTable 内部使用时应用密度内边距、半粗字重、次要文本颜色和分隔线边框。',
+      props: [
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: '表头单元格内容。',
+        },
+      ],
+      examples: [
+        {
+          code: `<XDSTableHeaderCell>Name</XDSTableHeaderCell>`,
+        },
+      ],
+    },
+    {
+      name: 'useXDSTableSelection',
+      description:
+        '返回 TablePlugin 的 Hook，实现带复选框、全选和 aria-selected 的行选择功能。使用 React Context 实现独立的复选框重新渲染。',
+      props: [
+        {
+          name: 'getIsItemSelected',
+          type: '(item: T) => boolean',
+          description: '返回给定项是否当前被选中。',
+          required: true,
+        },
+        {
+          name: 'onSelectItem',
+          type: '(event: {item: T; isSelected: boolean}) => void',
+          description:
+            '当行复选框被切换时调用。isSelected 为新的期望状态。',
+          required: true,
+        },
+        {
+          name: 'onSelectAll',
+          type: '(event: {isAllSelected: boolean}) => void',
+          description: '当全选表头复选框被切换时调用。',
+          required: true,
+        },
+        {
+          name: 'getIsAllSelected',
+          type: '() => boolean',
+          description:
+            '返回所有可选择项是否当前都被选中。',
+          required: true,
+        },
+        {
+          name: 'getIsIndeterminate',
+          type: '() => boolean',
+          description:
+            '返回选择是否为部分选中（部分但非全部）。将全选复选框渲染为不确定状态。',
+        },
+        {
+          name: 'getIsItemSelectable',
+          type: '(item: T) => boolean',
+          description:
+            '返回行是否应显示复选框。不可选择的行在选择单元格中不渲染任何内容。',
+          default: '() => true',
+        },
+        {
+          name: 'getIsItemEnabled',
+          type: '(item: T) => boolean',
+          description:
+            '返回行复选框是否可交互。禁用的行显示禁用状态的复选框。',
+          default: '() => true',
+        },
+      ],
+      examples: [
+        {
+          label: '基础选择',
+          code: `const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+
+const selectionPlugin = useXDSTableSelection<User>({
+  getIsItemSelected: item => selectedKeys.has(item.id),
+  onSelectItem: ({item, isSelected}) => {
+    const next = new Set(selectedKeys);
+    isSelected ? next.add(item.id) : next.delete(item.id);
+    setSelectedKeys(next);
+  },
+  onSelectAll: ({isAllSelected}) => {
+    setSelectedKeys(isAllSelected ? new Set(users.map(u => u.id)) : new Set());
+  },
+  getIsAllSelected: () => users.every(u => selectedKeys.has(u.id)),
+  getIsIndeterminate: () => {
+    const count = users.filter(u => selectedKeys.has(u.id)).length;
+    return count > 0 && count < users.length;
+  },
+});
+
+<XDSTable
+  data={users}
+  columns={columns}
+  plugins={{selection: selectionPlugin}}
+/>`,
+        },
+      ],
+    },
+  ],
+};

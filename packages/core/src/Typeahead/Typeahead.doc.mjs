@@ -416,4 +416,417 @@ export const docs = {
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
-export const docsZh = {...docs};
+export const docsZh = {
+  name: 'Typeahead',
+  description:
+    '可搜索的下拉组件，用于单项选择并支持键盘导航。通过 searchSource 接口支持异步和同步搜索。',
+  features: [
+    '通过 searchSource 接口支持异步和同步搜索，包含 search() 和 bootstrap() 方法',
+    '聚焦时在输入前显示引导结果（通过 hasEntriesOnFocus）',
+    '编辑模式：点击已选标记进入编辑模式，文本已预填并选中',
+    '组合框 ARIA 模式，实现完整的无障碍支持',
+    '防抖搜索，延迟可配置（默认 150ms，同步数据源设置为 0）',
+    '双层架构：XDSBaseTypeahead 提供引擎，XDSTypeahead 添加字段外观',
+  ],
+  examples: [
+    {
+      label: '基础预输入',
+      code: `const source = {
+  search: query => fruits.filter(f => f.label.includes(query)),
+  bootstrap: () => fruits.slice(0, 5),
+};
+
+<XDSTypeahead
+  label="Fruit"
+  searchSource={source}
+  value={selected}
+  onChange={setSelected}
+  placeholder="Search fruits..."
+/>`,
+    },
+    {
+      label: '自定义项目渲染',
+      code: `<XDSTypeahead
+  label="Assignee"
+  searchSource={userSource}
+  value={assignee}
+  onChange={setAssignee}
+  placeholder="Search users..."
+  hasEntriesOnFocus
+  renderItem={(item) => (
+    <XDSTypeaheadItem
+      item={item}
+      icon={<XDSAvatar src={item.auxiliaryData.avatar} size="sm" />}
+      description={item.auxiliaryData.role}
+    />
+  )}
+/>`,
+    },
+    {
+      label: '带验证状态',
+      code: `<XDSTypeahead
+  label="Manager"
+  searchSource={managerSource}
+  value={manager}
+  onChange={setManager}
+  isRequired
+  status={{ type: 'error', message: 'A manager is required' }}
+/>`,
+    },
+  ],
+  components: [
+    {
+      name: 'XDSTypeahead',
+      description:
+        '带有标签、描述、验证和所有字段功能的样式化预输入组件。使用 XDSField 包裹 XDSBaseTypeahead，适用于主要用例。',
+      props: [
+        {
+          name: 'label',
+          type: 'string',
+          description: '输入框的无障碍标签。',
+          required: true,
+        },
+        {
+          name: 'searchSource',
+          type: 'XDSSearchSource<T>',
+          description:
+            '提供搜索和引导方法的数据源，用于填充下拉列表。',
+          required: true,
+        },
+        {
+          name: 'value',
+          type: 'T | null',
+          description:
+            '当前选中的项目，未选择时为 null。',
+          required: true,
+        },
+        {
+          name: 'onChange',
+          type: '(item: T | null) => void',
+          description: '选择变更时调用。',
+          required: true,
+        },
+        {
+          name: 'placeholder',
+          type: 'string',
+          description: '输入框占位文本。',
+        },
+        {
+          name: 'hasEntriesOnFocus',
+          type: 'boolean',
+          description: '聚焦时在输入前显示引导结果。',
+          default: 'false',
+        },
+        {
+          name: 'hasClear',
+          type: 'boolean',
+          description: '显示清除按钮以取消选择当前值。',
+          default: 'true',
+        },
+        {
+          name: 'isDisabled',
+          type: 'boolean',
+          description: '禁用输入框。',
+          default: 'false',
+        },
+        {
+          name: 'maxMenuItems',
+          type: 'number',
+          description: '下拉列表显示的最大项目数。',
+          default: '10',
+        },
+        {
+          name: 'status',
+          type: 'XDSInputStatus',
+          description:
+            '验证状态对象，包含类型和消息，用于错误/警告/成功状态。',
+        },
+        {
+          name: 'renderItem',
+          type: '(item: T) => ReactNode',
+          description:
+            '下拉列表项的自定义渲染函数。默认渲染 XDSTypeaheadItem。',
+        },
+        {
+          name: 'isLabelHidden',
+          type: 'boolean',
+          description: '视觉隐藏标签，同时保持其可访问性。',
+          default: 'false',
+        },
+        {
+          name: 'description',
+          type: 'string',
+          description: '显示在标签下方的辅助文本。',
+        },
+        {
+          name: 'isRequired',
+          type: 'boolean',
+          description: '将字段标记为必填。',
+          default: 'false',
+        },
+        {
+          name: 'isOptional',
+          type: 'boolean',
+          description: '在标签上显示可选指示器。',
+          default: 'false',
+        },
+        {
+          name: 'labelTooltip',
+          type: 'string',
+          description: '标签上显示的工具提示文本。',
+        },
+        {
+          name: 'emptySearchResultsText',
+          type: 'string',
+          description: '搜索无结果时显示的文本。',
+          default: "'No results found'",
+        },
+        {
+          name: 'hasAutoFocus',
+          type: 'boolean',
+          description: '挂载时自动聚焦输入框。',
+          default: 'false',
+        },
+        {
+          name: 'size',
+          type: "'sm' | 'md'",
+          description: '输入框和标记的尺寸。',
+          default: "'md'",
+        },
+        {
+          name: 'debounceMs',
+          type: 'number',
+          description:
+            '触发搜索前的防抖延迟（毫秒）。同步数据源设置为 0。',
+          default: '150',
+        },
+        {
+          name: 'onChangeQuery',
+          type: '(query: string) => void',
+          description: '搜索查询文本变更时触发的回调。',
+        },
+        {
+          name: 'onOpenChange',
+          type: '(isOpen: boolean) => void',
+          description: '下拉列表打开或关闭时的回调。',
+        },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值 — 不能是内联样式对象如 style={{}}。',
+        },
+      ],
+      examples: [
+        {
+          label: '基础用法',
+          code: `<XDSTypeahead
+  label="Assignee"
+  searchSource={userSource}
+  value={assignee}
+  onChange={setAssignee}
+  placeholder="Search users..."
+/>`,
+        },
+        {
+          label: '聚焦时显示引导结果',
+          code: `<XDSTypeahead
+  label="Project"
+  searchSource={projectSource}
+  value={project}
+  onChange={setProject}
+  hasEntriesOnFocus
+  placeholder="Select a project..."
+/>`,
+        },
+      ],
+    },
+    {
+      name: 'XDSBaseTypeahead',
+      description:
+        '无样式的组合框引擎，提供输入、搜索、键盘导航和下拉列表。无包装 div，无边框样式，无标记渲染。由 XDSTypeahead 和 XDSTokenizer 用于自定义组合。',
+      props: [
+        {
+          name: 'searchSource',
+          type: 'XDSSearchSource<T>',
+          description: '提供搜索和引导方法的数据源。',
+          required: true,
+        },
+        {
+          name: 'value',
+          type: 'T | null',
+          description: '当前选中的项目。',
+          required: true,
+        },
+        {
+          name: 'onChange',
+          type: '(item: T | null) => void',
+          description: '选择变更时调用。',
+          required: true,
+        },
+        {
+          name: 'renderItem',
+          type: '(item: T) => ReactNode',
+          description: '下拉列表项的自定义渲染函数。',
+        },
+        {
+          name: 'placeholder',
+          type: 'string',
+          description: '输入框占位文本。',
+          default: "'Search...'",
+        },
+        {
+          name: 'hasEntriesOnFocus',
+          type: 'boolean',
+          description: '聚焦时在输入前显示引导结果。',
+          default: 'false',
+        },
+        {
+          name: 'maxMenuItems',
+          type: 'number',
+          description: '下拉列表显示的最大项目数。',
+          default: '10',
+        },
+        {
+          name: 'emptySearchResultsText',
+          type: 'string',
+          description: '搜索无结果时显示的文本。',
+          default: "'No results found'",
+        },
+        {
+          name: 'isDisabled',
+          type: 'boolean',
+          description: '输入框是否被禁用。',
+          default: 'false',
+        },
+        {
+          name: 'hasAutoFocus',
+          type: 'boolean',
+          description: '挂载时自动聚焦输入框。',
+          default: 'false',
+        },
+        {
+          name: 'debounceMs',
+          type: 'number',
+          description:
+            '触发搜索前的防抖延迟（毫秒）。同步数据源设置为 0。',
+          default: '150',
+        },
+        {
+          name: 'anchorRef',
+          type: 'RefObject<HTMLElement | null>',
+          description:
+            '用于下拉列表定位的锚点元素引用。未提供时使用输入框本身。',
+        },
+        {
+          name: 'inputXStyle',
+          type: 'StyleXStyles',
+          description: '输入元素的附加 StyleX 样式。',
+        },
+        {
+          name: 'onKeyDown',
+          type: '(e: React.KeyboardEvent<HTMLInputElement>) => void',
+          description:
+            '在内部键盘导航之前调用的附加 keydown 处理函数。调用 e.preventDefault() 可跳过内部处理。',
+        },
+        {
+          name: 'onChangeQuery',
+          type: '(query: string) => void',
+          description: '搜索查询文本变更时触发的回调。',
+        },
+        {
+          name: 'onOpenChange',
+          type: '(isOpen: boolean) => void',
+          description: '下拉列表打开或关闭时的回调。',
+        },
+        {
+          name: 'inputId',
+          type: 'string',
+          description: '输入元素的 ID（用于标签关联）。',
+        },
+        {
+          name: 'ariaDescribedBy',
+          type: 'string',
+          description: '附加的 aria-describedby ID。',
+        },
+      ],
+      examples: [
+        {
+          label: '使用自定义包装器',
+          code: `<XDSBaseTypeahead
+  searchSource={source}
+  value={selected}
+  onChange={setSelected}
+  anchorRef={wrapperRef}
+  placeholder="Search..."
+/>`,
+        },
+      ],
+    },
+    {
+      name: 'XDSTypeaheadItem',
+      description:
+        '预输入结果的默认下拉项渲染器。显示标签以及可选的图标、描述和头像。导出供自定义 renderItem 实现使用。',
+      props: [
+        {
+          name: 'item',
+          type: 'XDSSearchableItem',
+          description: '要渲染的搜索结果项。',
+          required: true,
+        },
+        {
+          name: 'icon',
+          type: 'ReactNode',
+          description: '在标签前显示的图标或头像。',
+        },
+        {
+          name: 'description',
+          type: 'string',
+          description: '显示在标签下方的描述文本。',
+        },
+        {
+          name: 'isDisabled',
+          type: 'boolean',
+          description: '此项是否在视觉上被禁用。',
+          default: 'false',
+        },
+        {
+          name: 'group',
+          type: 'string',
+          description: '用于视觉分组的分组标签。',
+        },
+      ],
+      examples: [
+        {
+          label: '带图标和描述的自定义 renderItem',
+          code: `<XDSTypeaheadItem
+  item={user}
+  icon={<XDSAvatar src={user.auxiliaryData.avatar} size="sm" />}
+  description={user.auxiliaryData.role}
+/>`,
+        },
+      ],
+    },
+  ],
+  accessibility: [
+    '使用组合框 ARIA 模式，包含 role="combobox"、aria-expanded、aria-autocomplete="list"。',
+    '下拉列表使用 role="listbox"，每个项使用 role="option"。',
+    'aria-activedescendant 追踪高亮选项。',
+    '选中项具有 aria-selected="true"。',
+    '加载状态具有 role="status" 和 aria-label="Loading"。',
+    'XDSTypeahead 包裹在 XDSField 中，用于标签和描述的关联。',
+  ],
+  keyboard:
+    '方向键导航下拉列表项目；Enter 选择高亮项目；Escape 关闭下拉列表或在编辑模式中恢复之前的值；Home/End 跳转到第一个/最后一个项目',
+  theming: {
+    targets: [
+      {className: 'xds-typeahead-item'},
+    ],
+  },
+  notes: [
+    'XDSSearchSource 要求项目实现 XDSSearchableItem（{ id: string; label: string; [key: string]: unknown }）。',
+    'XDSTypeahead 中的编辑模式：点击已选标记会视觉移除它，将标签文本填入输入框并全选。在未选择的情况下失焦会恢复原始标记。',
+    'XDSBaseTypeahead 仅渲染 <input> 和下拉弹出框 — 使用者需提供自己的包装器。',
+    '如果项目具有 element 属性，XDSTypeaheadItem 会直接渲染它而不是标准布局。',
+  ],
+};

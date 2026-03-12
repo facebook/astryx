@@ -71,4 +71,72 @@ export const docs = {
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
-export const docsZh = {...docs};
+export const docsZh = {
+  name: 'Center',
+  description: '使用 flexbox 将子元素水平和/或垂直居中。',
+  features: [
+    '支持双轴居中、仅水平居中或仅垂直居中',
+    '内联 flex 模式，用于居中文本和图标等内联内容',
+    '接受显式的宽度和高度来设置容器尺寸',
+  ],
+  examples: [
+    {
+      label: '双轴居中（默认）',
+      code: `<XDSCenter width={300} height={200}>
+  <Content />
+</XDSCenter>`,
+    },
+    {
+      label: '仅水平居中',
+      code: `<XDSCenter axis="horizontal">
+  <Logo />
+</XDSCenter>`,
+    },
+    {
+      label: '图标内联居中',
+      code: `<XDSCenter isInline>
+  <XDSIcon icon={StarIcon} />
+</XDSCenter>`,
+    },
+  ],
+  props: [
+    {
+      name: 'axis',
+      type: "'both' | 'horizontal' | 'vertical'",
+      description: '居中的方向。',
+      default: "'both'",
+    },
+    {
+      name: 'width',
+      type: 'number | string',
+      description: '容器宽度（px 或 CSS 值）。',
+    },
+    {
+      name: 'height',
+      type: 'number | string',
+      description: '容器高度（px 或 CSS 值）。',
+    },
+    {
+      name: 'isInline',
+      type: 'boolean',
+      description: '使用 inline-flex（适用于文本/图标）。',
+      default: 'false',
+    },
+    {
+      name: 'children',
+      type: 'ReactNode',
+      description: '要居中的内容。',
+    },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值——不能是 style={{}} 这样的内联样式对象。',
+    },
+  ],
+  theming: {
+    targets: [
+      {className: 'xds-center', visualProps: ['axis']},
+    ],
+  },
+};

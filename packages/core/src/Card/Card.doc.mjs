@@ -94,4 +94,65 @@ export const docs = {
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
-export const docsZh = {...docs};
+export const docsZh = {
+  name: 'Card',
+  description: '带有阴影层级和主题样式的卡片容器组件。',
+  features: [
+    '用于提升内容层级的顶层容器',
+    '提供卡片特有的外观效果：背景、阴影和圆角',
+    '为子布局组件设置 CSS 变量',
+    '支持可选的全出血模式，移除内边距以实现边到边的内容展示',
+    '可与 XDSLayout、XDSCollapsible 和 XDSCollapsibleGroup 组合使用',
+  ],
+  props: [
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description: '卡片的宽度（数字 = 像素，字符串 = 按原值使用）。',
+    },
+    {
+      name: 'height',
+      type: 'SizeValue',
+      description: '卡片的高度（数字 = 像素, 字符串 = 按原值使用）。',
+    },
+    {
+      name: 'maxWidth',
+      type: 'SizeValue',
+      description: '卡片的最大宽度。',
+    },
+    {
+      name: 'minHeight',
+      type: 'SizeValue',
+      description: '卡片的最小高度。',
+    },
+    {
+      name: 'children',
+      type: 'ReactNode',
+      description: '在卡片内部渲染的内容。',
+    },
+    {
+      name: 'padding',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: '使用间距比例尺的内边距。',
+      default: '4',
+    },
+  ],
+  examples: [
+    {
+      label: '带布局的基本卡片',
+      code: `<XDSCard width={400} height={300}>
+  <XDSLayout
+    header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
+    content={<XDSLayoutContent>Content</XDSLayoutContent>}
+    footer={<XDSLayoutFooter hasDivider>Actions</XDSLayoutFooter>}
+  />
+</XDSCard>`,
+    },
+    {
+      label: '简单内容',
+      code: `<XDSCard>
+  <p>Card content with default padding</p>
+</XDSCard>`,
+    },
+    {
+      label: '可折叠卦牷'
