@@ -40,7 +40,7 @@
   });
   ```
 
-  Build theme CSS with: `npx xds build-theme`
+  Build theme CSS with: `npx xds theme build`
 
   ### New: `className` and `style` props on all components
 

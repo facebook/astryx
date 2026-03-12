@@ -73,7 +73,7 @@ const injectedThemes = new Set<string>();
 
 /**
  * Hook to inject theme CSS into the document.
- * Built themes (from `xds build-theme`) skip injection — their CSS
+ * Built themes (from `xds theme build`) skip injection — their CSS
  * is in a separate file imported by the consumer.
  */
 function useThemeStyleInjection(theme: XDSDefinedTheme): void {
