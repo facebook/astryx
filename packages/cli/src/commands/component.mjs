@@ -1078,8 +1078,9 @@ export function registerComponent(program) {
     .option('--brief-all', 'Brief summaries of ALL components in one output')
     .option('--props', 'Print only the props table')
     .option('--source', 'Print component source code')
-    .action((name, options) => {
+    .action(async (name, options) => {
       const coreDir = findCoreDir(process.cwd());
+      const zh = program.opts().zh || false;
 
       if (!coreDir) {
         console.error(
@@ -1090,7 +1091,7 @@ export function registerComponent(program) {
       }
 
       if (options.briefAll) {
-        console.log(extractBriefAll(coreDir));
+        console.log(await formatBriefAll(coreDir, {zh}));
         return;
       }
 
@@ -1174,17 +1175,31 @@ export function registerComponent(program) {
         }
       }
 
-      const content = fs.readFileSync(readmePath, 'utf-8');
-
-      if (options.props) {
-        console.log(extractProps(content, resolvedName));
-      } else if (options.brief) {
-        console.log(extractBrief(content, resolvedName));
-      } else if (options.compact) {
-        const compact = extractCompact(content, resolvedName);
-        console.log(ensureImportStatement(compact, resolvedName, coreDir));
+      if (readmePath.endsWith('.doc.mjs')) {
+        const docs = await loadDocs(readmePath, {zh});
+        const importHint = resolveImportPath(coreDir, resolvedName);
+        if (options.props) {
+          console.log(formatProps(docs, resolvedName));
+        } else if (options.brief) {
+          console.log(formatBrief(docs, resolvedName, importHint));
+        } else if (options.compact) {
+          console.log(formatCompact(docs, resolvedName, importHint));
+        } else {
+          console.log(formatFull(docs));
+        }
       } else {
-        console.log(cleanReadme(content, resolvedName));
+        // Legacy path for README.md files
+        const content = fs.readFileSync(readmePath, 'utf-8');
+        if (options.props) {
+          console.log(extractProps(content, resolvedName));
+        } else if (options.brief) {
+          console.log(extractBrief(content, resolvedName));
+        } else if (options.compact) {
+          const compact = extractCompact(content, resolvedName);
+          console.log(ensureImportStatement(compact, resolvedName, coreDir));
+        } else {
+          console.log(cleanReadme(content, resolvedName));
+        }
       }
     });
 }
