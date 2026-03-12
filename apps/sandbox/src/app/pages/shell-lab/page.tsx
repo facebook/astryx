@@ -1,7 +1,7 @@
 'use client';
 
 import {useState, useCallback} from 'react';
-import * as stylex from '@stylexjs/stylex';
+
 import {XDSAppShell} from '@xds/core/AppShell';
 import {
   XDSSideNav,
@@ -9,15 +9,24 @@ import {
   XDSSideNavItem,
   XDSSideNavSection,
 } from '@xds/core/SideNav';
-import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
+import {
+  XDSTopNav,
+  XDSTopNavHeading,
+  XDSTopNavItem,
+  XDSTopNavMenu,
+  XDSTopNavMegaMenu,
+} from '@xds/core/TopNav';
 import {XDSMobileNav} from '@xds/core/MobileNav';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSSwitch} from '@xds/core/Switch';
-import {XDSSelector, XDSSelectorOption} from '@xds/core/Selector';
+import {XDSSelector} from '@xds/core/Selector';
 import {XDSCard} from '@xds/core/Card';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSBadge} from '@xds/core/Badge';
+import {XDSButton} from '@xds/core/Button';
+import {XDSNavIcon} from '@xds/core/NavIcon';
+import {XDSBanner} from '@xds/core/Banner';
 
 // =============================================================================
 // Configuration types
@@ -33,6 +42,7 @@ interface ShellConfig {
   showBanner: boolean;
   showFooterIcons: boolean;
   showTopContent: boolean;
+  showSideNavHeading: boolean;
   showNestedItems: boolean;
   defaultCollapsed: boolean;
   controlledCollapse: boolean;
@@ -40,6 +50,7 @@ interface ShellConfig {
   mobileNavMode: 'auto' | 'custom' | 'none';
   mobileNavSide: 'start' | 'end';
   topNavAlignment: 'start' | 'center' | 'end';
+  topNavStyle: 'items' | 'menus' | 'mega';
   showTopNavHeading: boolean;
 }
 
@@ -53,6 +64,7 @@ const DEFAULT_CONFIG: ShellConfig = {
   showBanner: false,
   showFooterIcons: true,
   showTopContent: true,
+  showSideNavHeading: true,
   showNestedItems: true,
   defaultCollapsed: false,
   controlledCollapse: false,
@@ -60,6 +72,7 @@ const DEFAULT_CONFIG: ShellConfig = {
   mobileNavMode: 'auto',
   mobileNavSide: 'start',
   topNavAlignment: 'start',
+  topNavStyle: 'items',
   showTopNavHeading: true,
 };
 
@@ -133,6 +146,11 @@ function ConfigPanel({
             label="Top Nav"
             value={config.showTopNav}
             onChange={v => onChange({showTopNav: v})}
+          />
+          <ToggleRow
+            label="SideNav Heading"
+            value={config.showSideNavHeading}
+            onChange={v => onChange({showSideNavHeading: v})}
           />
           <ToggleRow
             label="Banner"
@@ -238,6 +256,18 @@ function ConfigPanel({
               {value: 'end', label: 'End'},
             ]}
           />
+          <SelectorRow
+            label="Nav Style"
+            value={config.topNavStyle}
+            onChange={v =>
+              onChange({topNavStyle: v as 'items' | 'menus' | 'mega'})
+            }
+            options={[
+              {value: 'items', label: 'Items'},
+              {value: 'menus', label: 'Menus'},
+              {value: 'mega', label: 'Mega'},
+            ]}
+          />
         </XDSVStack>
       </XDSVStack>
     </XDSCard>
@@ -256,7 +286,7 @@ function ToggleRow({
   return (
     <XDSHStack gap={4} vAlign="center" hAlign="between">
       <XDSText type="body">{label}</XDSText>
-      <XDSSwitch isSelected={value} onChange={onChange} label={label} />
+      <XDSSwitch value={value} onChange={onChange} label={label} />
     </XDSHStack>
   );
 }
@@ -277,11 +307,13 @@ function SelectorRow({
       <XDSText type="body" style={{width: 140, flexShrink: 0}}>
         {label}
       </XDSText>
-      <XDSSelector value={value} onChange={onChange}>
-        {options.map(o => (
-          <XDSSelectorOption key={o.value} value={o.value} label={o.label} />
-        ))}
-      </XDSSelector>
+      <XDSSelector
+        label={label}
+        isLabelHidden
+        value={value}
+        onChange={onChange}
+        options={options.map(o => o.value)}
+      />
     </XDSHStack>
   );
 }
@@ -293,7 +325,28 @@ function SelectorRow({
 function SampleSideNav({config}: {config: ShellConfig}) {
   return (
     <XDSSideNav
-      header={<XDSSideNavHeading heading="Shell Lab" headingHref="#" />}
+      header={
+        config.showSideNavHeading ? (
+          <XDSSideNavHeading
+            icon={
+              <XDSNavIcon
+                icon={
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    width="16"
+                    height="16">
+                    <path d="M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44c-.36.2-.8.2-1.14 0l-7.9-4.44A.991.991 0 013 16.5v-9c0-.38.21-.71.53-.88l7.9-4.44c.36-.2.8-.2 1.14 0l7.9 4.44c.32.17.53.5.53.88v9z" />
+                  </svg>
+                }
+              />
+            }
+            heading="Shell Lab"
+            headingHref="#"
+          />
+        ) : undefined
+      }
       topContent={
         config.showTopContent ? (
           <XDSSideNavItem label="Create New" />
@@ -302,8 +355,41 @@ function SampleSideNav({config}: {config: ShellConfig}) {
       footerIcons={
         config.showFooterIcons ? (
           <>
-            <XDSSideNavItem label="Help" />
-            <XDSSideNavItem label="Settings" />
+            <XDSButton
+              label="Help"
+              icon={
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  width="20"
+                  height="20">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
+                  <circle cx="12" cy="17" r=".5" fill="currentColor" />
+                </svg>
+              }
+              variant="ghost"
+            />
+            <XDSButton
+              label="Settings"
+              icon={
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  width="20"
+                  height="20">
+                  <path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              }
+              variant="ghost"
+            />
           </>
         ) : undefined
       }>
@@ -312,7 +398,7 @@ function SampleSideNav({config}: {config: ShellConfig}) {
         <XDSSideNavItem
           label="Projects"
           href="#"
-          endContent={<XDSBadge label="3" />}
+          endContent={<XDSBadge>3</XDSBadge>}
         />
         <XDSSideNavItem label="Messages" href="#" />
         {config.showNestedItems && (
@@ -333,7 +419,7 @@ function SampleSideNav({config}: {config: ShellConfig}) {
 }
 
 function SampleTopNav({config}: {config: ShellConfig}) {
-  const navItems = (
+  const plainItems = (
     <>
       <XDSTopNavItem label="Home" href="#" isSelected />
       <XDSTopNavItem label="Products" href="#" />
@@ -342,12 +428,97 @@ function SampleTopNav({config}: {config: ShellConfig}) {
     </>
   );
 
+  const menuItems = (
+    <>
+      <XDSTopNavItem label="Home" href="#" isSelected />
+      <XDSTopNavMenu
+        label="Products"
+        items={[
+          {
+            title: 'Analytics',
+            description: 'View metrics and dashboards',
+            href: '#',
+          },
+          {
+            title: 'Reports',
+            description: 'Generate and export reports',
+            href: '#',
+          },
+          {
+            title: 'Pipelines',
+            description: 'Data processing workflows',
+            href: '#',
+          },
+        ]}
+      />
+      <XDSTopNavItem label="Team" href="#" />
+    </>
+  );
+
+  const megaItems = (
+    <>
+      <XDSTopNavItem label="Home" href="#" isSelected />
+      <XDSTopNavMegaMenu
+        label="Products"
+        items={[
+          {
+            title: 'Analytics',
+            description: 'View metrics and dashboards',
+            href: '#',
+          },
+          {
+            title: 'Reports',
+            description: 'Generate and export reports',
+            href: '#',
+          },
+          {
+            title: 'Pipelines',
+            description: 'Data processing workflows',
+            href: '#',
+          },
+          {title: 'Integrations', description: 'Connect your tools', href: '#'},
+        ]}
+        featured={{
+          title: 'New: AI Features',
+          description:
+            'Explore our latest AI-powered analytics tools for faster insights.',
+          linkText: 'Learn more →',
+          linkHref: '#',
+        }}
+      />
+      <XDSTopNavItem label="Team" href="#" />
+    </>
+  );
+
+  const navItems =
+    config.topNavStyle === 'mega'
+      ? megaItems
+      : config.topNavStyle === 'menus'
+        ? menuItems
+        : plainItems;
+
   return (
     <XDSTopNav
       label="Shell Lab Navigation"
       heading={
         config.showTopNavHeading ? (
-          <XDSTopNavHeading heading="Shell Lab" />
+          <XDSTopNavHeading
+            heading="Shell Lab"
+            logo={
+              <XDSNavIcon
+                icon={
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    width="16"
+                    height="16">
+                    <path d="M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44c-.36.2-.8.2-1.14 0l-7.9-4.44A.991.991 0 013 16.5v-9c0-.38.21-.71.53-.88l7.9-4.44c.36-.2.8-.2 1.14 0l7.9 4.44c.32.17.53.5.53.88v9z" />
+                  </svg>
+                }
+              />
+            }
+          />
         ) : undefined
       }
       startContent={config.topNavAlignment === 'start' ? navItems : undefined}
@@ -361,27 +532,28 @@ function SampleTopNav({config}: {config: ShellConfig}) {
 // Main Page
 // =============================================================================
 
-const pageStyles = stylex.create({
+// Inline styles (sandbox uses dist, no StyleX build)
+const pageStyles = {
   configOverlay: {
-    position: 'fixed',
+    position: 'fixed' as const,
     top: 16,
     right: 16,
     width: 360,
     maxHeight: 'calc(100vh - 32px)',
-    overflowY: 'auto',
+    overflowY: 'auto' as const,
     zIndex: 1000,
   },
   content: {
-    padding: '24px',
-    maxWidth: '800px',
+    padding: 24,
+    maxWidth: 800,
   },
   toggleButton: {
-    position: 'fixed',
+    position: 'fixed' as const,
     bottom: 16,
     right: 16,
     zIndex: 1001,
   },
-});
+};
 
 export default function ShellLabPage() {
   const [config, setConfig] = useState<ShellConfig>(DEFAULT_CONFIG);
@@ -433,20 +605,16 @@ export default function ShellLabPage() {
         mobileNav={mobileNav}
         banner={
           config.showBanner ? (
-            <div
-              style={{
-                padding: '8px 16px',
-                background: 'var(--color-accent)',
-                color: 'white',
-                textAlign: 'center',
-                fontSize: 14,
-              }}>
-              🔬 Shell Lab — System announcement banner
-            </div>
+            <XDSBanner
+              status="info"
+              title="Shell Lab — System announcement banner"
+              variant="section"
+              isDismissable
+            />
           ) : undefined
         }
         {...collapseProps}>
-        <div {...stylex.props(pageStyles.content)}>
+        <div style={pageStyles.content}>
           <XDSVStack gap={6}>
             <XDSVStack gap={2}>
               <XDSHeading level={1}>Shell Lab</XDSHeading>
@@ -491,13 +659,13 @@ export default function ShellLabPage() {
 
       {/* Floating config panel */}
       {showConfig && (
-        <div {...stylex.props(pageStyles.configOverlay)}>
+        <div style={pageStyles.configOverlay}>
           <ConfigPanel config={config} onChange={handleConfigChange} />
         </div>
       )}
 
       {/* Toggle config visibility */}
-      <div {...stylex.props(pageStyles.toggleButton)}>
+      <div style={pageStyles.toggleButton}>
         <button
           onClick={() => setShowConfig(v => !v)}
           style={{

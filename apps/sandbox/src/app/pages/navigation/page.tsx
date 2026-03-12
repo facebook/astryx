@@ -1,14 +1,14 @@
 'use client';
 
 import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
+
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSDivider} from '@xds/core';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 
-const styles = stylex.create({
+const styles = {
   container: {
     maxWidth: 960,
   },
@@ -17,7 +17,7 @@ const styles = stylex.create({
     borderRadius: 8,
     overflow: 'hidden',
   },
-});
+};
 
 type Alignment = 'start' | 'center' | 'end';
 
@@ -31,7 +31,7 @@ export default function NavigationPage() {
   const [alignment, setAlignment] = useState<Alignment>('start');
 
   return (
-    <div {...stylex.props(styles.container)}>
+    <div style={styles.container}>
       <XDSVStack gap={6}>
         <XDSVStack gap={2}>
           <XDSHeading level={1}>Navigation Alignment</XDSHeading>
@@ -71,7 +71,7 @@ export default function NavigationPage() {
         {/* Live preview */}
         <XDSVStack gap={3}>
           <XDSHeading level={2}>Preview</XDSHeading>
-          <div {...stylex.props(styles.navWrapper)}>
+          <div style={styles.navWrapper}>
             <NavPreview alignment={alignment} />
           </div>
         </XDSVStack>
@@ -86,7 +86,7 @@ export default function NavigationPage() {
             <XDSText type="supporting" weight="bold">
               Left-aligned (startContent)
             </XDSText>
-            <div {...stylex.props(styles.navWrapper)}>
+            <div style={styles.navWrapper}>
               <NavPreview alignment="start" />
             </div>
           </XDSVStack>
@@ -95,7 +95,7 @@ export default function NavigationPage() {
             <XDSText type="supporting" weight="bold">
               Center-aligned (centerContent)
             </XDSText>
-            <div {...stylex.props(styles.navWrapper)}>
+            <div style={styles.navWrapper}>
               <NavPreview alignment="center" />
             </div>
           </XDSVStack>
@@ -104,7 +104,7 @@ export default function NavigationPage() {
             <XDSText type="supporting" weight="bold">
               Right-aligned (endContent)
             </XDSText>
-            <div {...stylex.props(styles.navWrapper)}>
+            <div style={styles.navWrapper}>
               <NavPreview alignment="end" />
             </div>
           </XDSVStack>
