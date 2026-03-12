@@ -19,11 +19,11 @@ const XDS_MARKER_END = '<!-- XDS:END -->';
 /**
  * Compressed index for agent docs.
  * Directs agents to use CLI commands for retrieval.
- * When dense=true, outputs a Chinese Simplified version (placeholder: same content for now).
+ * When zh=true, outputs a Chinese Simplified version (placeholder: same content for now).
  */
-export function generateCompressedIndex(version, {dense = false} = {}) {
+export function generateCompressedIndex(version, {zh = false} = {}) {
   // TODO: Replace with actual Chinese Simplified translations
-  // For now, dense mode outputs the same English content as a placeholder
+  // For now, zh mode outputs the same English content as a placeholder
   return `${XDS_MARKER_START}
 [XDS v${version}]|IMPORTANT: Prefer retrieval-led reasoning. Run CLI to read docs before generating code.
 |npx xds component <Name> --compact|--source   Docs (props, usage) or source code
@@ -96,9 +96,9 @@ export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = fal
  * Inject or update XDS section in AGENTS.md.
  * Always creates the file if it doesn't exist.
  */
-export function injectAgentsMd(targetDir, version, {dense = false} = {}) {
+export function injectAgentsMd(targetDir, version, {zh = false} = {}) {
   const agentsPath = path.join(targetDir, AGENTS_MD);
-  const compressedIndex = generateCompressedIndex(version, {dense});
+  const compressedIndex = generateCompressedIndex(version, {zh});
   injectXdsBlock(agentsPath, compressedIndex, {
     createIfMissing: true,
     header: `# AGENTS.md\n\nProject-specific guidance for AI coding agents.`,
@@ -111,9 +111,9 @@ export function injectAgentsMd(targetDir, version, {dense = false} = {}) {
  *
  * @returns {boolean} Whether the file was written
  */
-export function injectClaudeMd(targetDir, version, {dense = false} = {}) {
+export function injectClaudeMd(targetDir, version, {zh = false} = {}) {
   const claudePath = path.join(targetDir, CLAUDE_MD);
-  const compressedIndex = generateCompressedIndex(version, {dense});
+  const compressedIndex = generateCompressedIndex(version, {zh});
   return injectXdsBlock(claudePath, compressedIndex);
 }
 
@@ -177,19 +177,19 @@ export function removeAgentDocs(targetDir) {
  * - If only AGENTS.md exists (or neither), inject into AGENTS.md
  * - If both exist, inject into both
  */
-export function installAgentDocs(targetDir, {dense = false} = {}) {
+export function installAgentDocs(targetDir, {zh = false} = {}) {
   const coreDir = findCoreDir(targetDir);
   const version = getXdsVersion(coreDir);
   const hasClaudeMd = fs.existsSync(path.join(targetDir, CLAUDE_MD));
   const hasAgentsMd = fs.existsSync(path.join(targetDir, AGENTS_MD));
 
   if (hasClaudeMd) {
-    injectClaudeMd(targetDir, version, {dense});
+    injectClaudeMd(targetDir, version, {zh});
     if (hasAgentsMd) {
-      injectAgentsMd(targetDir, version, {dense});
+      injectAgentsMd(targetDir, version, {zh});
     }
   } else {
-    injectAgentsMd(targetDir, version, {dense});
+    injectAgentsMd(targetDir, version, {zh});
   }
 }
 
@@ -202,7 +202,7 @@ export function registerAgentDocs(program) {
       const targetDir = process.cwd();
       const coreDir = findCoreDir(targetDir);
       const version = getXdsVersion(coreDir);
-      const dense = program.opts().dense || false;
+      const zh = program.opts().zh || false;
 
       if (options.remove) {
         console.log('\n🗑️  Removing XDS agent docs...\n');
@@ -218,16 +218,16 @@ export function registerAgentDocs(program) {
       const targets = [];
 
       if (hasClaudeMd) {
-        injectClaudeMd(targetDir, version, {dense});
+        injectClaudeMd(targetDir, version, {zh});
         console.log(`✓ Injected compressed index into ${CLAUDE_MD}`);
         targets.push(CLAUDE_MD);
         if (hasAgentsMd) {
-          injectAgentsMd(targetDir, version, {dense});
+          injectAgentsMd(targetDir, version, {zh});
           console.log(`✓ Injected compressed index into ${AGENTS_MD}`);
           targets.push(AGENTS_MD);
         }
       } else {
-        injectAgentsMd(targetDir, version, {dense});
+        injectAgentsMd(targetDir, version, {zh});
         console.log(`✓ Injected compressed index into ${AGENTS_MD}`);
         targets.push(AGENTS_MD);
       }

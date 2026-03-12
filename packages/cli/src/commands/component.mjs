@@ -126,11 +126,11 @@ export function discoverComponents(coreDir) {
 
 /**
  * Load the typed docs object from a .doc.mjs file.
- * When dense=true, returns docsZh export if available, falling back to docs.
+ * When zh=true, returns docsZh export if available, falling back to docs.
  */
-export async function loadDocs(readmePath, {dense = false} = {}) {
+export async function loadDocs(readmePath, {zh = false} = {}) {
   const mod = await import(pathToFileURL(readmePath).href);
-  if (dense && mod.docsZh) {
+  if (zh && mod.docsZh) {
     return mod.docsZh;
   }
   return mod.docs;
@@ -1046,7 +1046,7 @@ export function formatProps(docs, componentName) {
 /**
  * Format brief summaries for ALL components in one output.
  */
-export async function formatBriefAll(coreDir, {dense = false} = {}) {
+export async function formatBriefAll(coreDir, {zh = false} = {}) {
   const components = discoverComponents(coreDir);
   const output = [];
 
@@ -1055,7 +1055,7 @@ export async function formatBriefAll(coreDir, {dense = false} = {}) {
     for (const comp of comps) {
       const readmePath = findComponentReadme(coreDir, comp);
       if (readmePath) {
-        const docs = await loadDocs(readmePath, {dense});
+        const docs = await loadDocs(readmePath, {zh});
         const importPath = resolveImportPath(coreDir, comp);
         output.push(formatBrief(docs, comp, importPath));
       } else {
