@@ -3,7 +3,7 @@
  *
  * Two distribution modes:
  * - Unbuilt: XDSTheme generates CSS and injects a <style> tag at runtime
- * - Built: `npx xds build-theme` pre-compiles to a CSS file; XDSTheme just
+ * - Built: `npx xds theme build` pre-compiles to a CSS file; XDSTheme just
  *   sets the data-xds-theme attribute
  *
  * Token values can be:
@@ -145,7 +145,7 @@ export interface XDSDefinedTheme {
   components?: XDSComponentStyleMap;
   /** Icon registry */
   icons?: Partial<XDSIconRegistry>;
-  /** Whether this theme has been pre-compiled by build-theme CLI */
+  /** Whether this theme has been pre-compiled by theme build CLI */
   __built?: true;
 }
 
