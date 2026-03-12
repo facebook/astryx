@@ -15,6 +15,7 @@
 import React, {
   useCallback,
   useId,
+  useImperativeHandle,
   useMemo,
   useRef,
   type ReactNode,
@@ -59,6 +60,16 @@ export type XDSTokenizerChange<T extends XDSSearchableItem> =
   | {type: 'reorder'};
 
 export type XDSTokenizerSize = 'sm' | 'md';
+
+/**
+ * Imperative handle for XDSTokenizer.
+ */
+export interface XDSTokenizerHandle {
+  /** Focus the typeahead input. */
+  focus(): void;
+  /** Blur the typeahead input. */
+  blur(): void;
+}
 
 export interface XDSTokenizerProps<T extends XDSSearchableItem> {
   /** Accessible label (required). */
@@ -134,6 +145,8 @@ export interface XDSTokenizerProps<T extends XDSSearchableItem> {
   style?: React.CSSProperties;
   /** Test ID. */
   'data-testid'?: string;
+  /** Imperative handle ref for focus/blur control. */
+  ref?: React.Ref<XDSTokenizerHandle>;
 }
 
 // =============================================================================
@@ -268,12 +281,22 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   className,
   style,
   'data-testid': testId,
+  ref,
 }: XDSTokenizerProps<T>) {
   const inputId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    focus() {
+      inputRef.current?.focus();
+    },
+    blur() {
+      inputRef.current?.blur();
+    },
+  }));
 
   const isAtMax = maxEntries != null && value.length >= maxEntries;
 
