@@ -1,7 +1,8 @@
 import type {Metadata} from 'next';
 import '@xds/core/reset.css';
 import '@xds/core/typography.css';
-import './globals.css';
+import '@xds/core/xds.css';
+import '@xds/theme-default/theme.css';
 import {Providers} from './providers';
 import {Sidebar} from './Sidebar';
 
@@ -14,12 +15,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="en">
       <body>
-        <Providers>
-          <div style={{display: 'flex', minHeight: '100vh'}}>
-            <Sidebar />
-            <main style={{flex: 1, padding: '2rem'}}>{children}</main>
-          </div>
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
