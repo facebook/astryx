@@ -41,6 +41,7 @@ interface ShellConfig {
   showSideNav: boolean;
   showTopNav: boolean;
   showBanner: boolean;
+  showFooter: boolean;
   showFooterIcons: boolean;
   showTopContent: boolean;
   sideNavHeadingStyle: 'none' | 'simple' | 'link' | 'menu' | 'full';
@@ -63,6 +64,7 @@ const DEFAULT_CONFIG: ShellConfig = {
   showSideNav: true,
   showTopNav: true,
   showBanner: false,
+  showFooter: false,
   showFooterIcons: true,
   showTopContent: true,
   sideNavHeadingStyle: 'link',
@@ -107,8 +109,10 @@ function ConfigPanel({
               })
             }
             options={[
+              {value: 'section', label: 'Section'},
               {value: 'wash', label: 'Wash'},
               {value: 'surface', label: 'Surface'},
+              {value: 'elevated', label: 'Elevated'},
             ]}
           />
           <SelectorRow
@@ -172,6 +176,11 @@ function ConfigPanel({
             label="Banner"
             value={config.showBanner}
             onChange={v => onChange({showBanner: v})}
+          />
+          <ToggleRow
+            label="Footer"
+            value={config.showFooter}
+            onChange={v => onChange({showFooter: v})}
           />
           <ToggleRow
             label="Footer Icons"
@@ -380,9 +389,7 @@ function SampleSideNav({config}: {config: ShellConfig}) {
           config.sideNavHeadingStyle === 'full' ? '#' : undefined
         }
         subheading={
-          config.sideNavHeadingStyle === 'full'
-            ? 'Business Account'
-            : undefined
+          config.sideNavHeadingStyle === 'full' ? 'Business Account' : undefined
         }
         menu={
           config.sideNavHeadingStyle === 'menu' ||
@@ -399,6 +406,14 @@ function SampleSideNav({config}: {config: ShellConfig}) {
       topContent={
         config.showTopContent ? (
           <XDSSideNavItem label="Create New" />
+        ) : undefined
+      }
+      footer={
+        config.showFooter ? (
+          <XDSSideNavSection title="Account">
+            <XDSSideNavItem label="Jane Smith" />
+            <XDSSideNavItem label="Upgrade to Pro" />
+          </XDSSideNavSection>
         ) : undefined
       }
       footerIcons={
@@ -708,13 +723,22 @@ export default function ShellLabPage() {
 
       {/* Floating config panel */}
       {showConfig && (
-        <div {...stylex.props(styles.configOverlay)}>
+        <div
+          style={{
+            position: 'fixed',
+            top: 16,
+            right: 16,
+            width: 360,
+            maxHeight: 'calc(100vh - 32px)',
+            overflowY: 'auto' as const,
+            zIndex: 10000,
+          }}>
           <ConfigPanel config={config} onChange={handleConfigChange} />
         </div>
       )}
 
       {/* Toggle config visibility */}
-      <div {...stylex.props(styles.toggleButton)}>
+      <div style={{position: 'fixed', bottom: 16, right: 16, zIndex: 10001}}>
         <button
           onClick={() => setShowConfig(v => !v)}
           style={{

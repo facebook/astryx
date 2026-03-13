@@ -65,10 +65,6 @@ const styles = stylex.create({
       },
     },
   },
-  interactiveInset: {
-    marginInline: spacingVars['--spacing-2'],
-    marginBlock: spacingVars['--spacing-1'],
-  },
   icon: {
     flexShrink: 0,
     display: 'flex',
@@ -367,12 +363,7 @@ export function XDSSideNavHeading({
         data-testid={testId}
         {...mergeProps(
           xdsClassName('side-nav-heading'),
-          stylex.props(
-            styles.root,
-            styles.interactive,
-            styles.interactiveInset,
-            xstyle,
-          ),
+          stylex.props(styles.root, styles.interactive, xstyle),
           className,
           style,
         )}
@@ -396,12 +387,7 @@ export function XDSSideNavHeading({
           {...popover.triggerProps}
           {...mergeProps(
             xdsClassName('side-nav-heading'),
-            stylex.props(
-              styles.root,
-              styles.interactive,
-              styles.interactiveInset,
-              xstyle,
-            ),
+            stylex.props(styles.root, styles.interactive, xstyle),
             className,
             style,
           )}>

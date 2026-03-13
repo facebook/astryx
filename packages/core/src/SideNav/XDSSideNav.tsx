@@ -44,30 +44,41 @@ const styles = stylex.create({
     top: 0,
     zIndex: 1,
     backgroundColor: 'inherit',
-  },
-  topContent: {
-    paddingInline: spacingVars['--spacing-2'],
     paddingBlockStart: spacingVars['--spacing-2'],
+    paddingBlockEnd: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+    gap: spacingVars['--spacing-2'],
   },
+  topContent: {},
   scrollable: {
     flex: 1,
     overflowY: 'auto',
     overflowX: 'hidden',
     paddingInline: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-1'],
+  },
+  scrollableNoTop: {
+    paddingBlockStart: spacingVars['--spacing-2'],
+  },
+  scrollableWithTop: {
+    paddingBlockStart: spacingVars['--spacing-1'],
+  },
+  scrollableNoBottom: {
+    paddingBlockEnd: spacingVars['--spacing-2'],
+  },
+  scrollableWithBottom: {
+    paddingBlockEnd: spacingVars['--spacing-1'],
   },
   stickyBottom: {
+    display: 'flex',
+    flexDirection: 'column',
     flexShrink: 0,
     marginTop: 'auto',
     position: 'sticky',
     bottom: 0,
     backgroundColor: 'inherit',
-  },
-  stickyBottomInner: {
-    display: 'flex',
-    flexDirection: 'column',
     gap: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
+    paddingBlockStart: spacingVars['--spacing-1'],
     paddingBlockEnd: spacingVars['--spacing-2'],
     borderBlockStart: `1px solid ${colorVars['--color-divider']}`,
   },
@@ -191,15 +202,22 @@ export function XDSSideNav({
           )}
         </div>
       )}
-      <div {...stylex.props(styles.scrollable)}>{children}</div>
+      <div
+        {...stylex.props(
+          styles.scrollable,
+          hasStickyTop ? styles.scrollableWithTop : styles.scrollableNoTop,
+          hasStickyBottom
+            ? styles.scrollableWithBottom
+            : styles.scrollableNoBottom,
+        )}>
+        {children}
+      </div>
       {hasStickyBottom && (
         <div {...stylex.props(styles.stickyBottom)}>
-          <div {...stylex.props(styles.stickyBottomInner)}>
-            {footer}
-            {footerIcons && (
-              <div {...stylex.props(styles.footerIcons)}>{footerIcons}</div>
-            )}
-          </div>
+          {footer}
+          {footerIcons && (
+            <div {...stylex.props(styles.footerIcons)}>{footerIcons}</div>
+          )}
         </div>
       )}
     </nav>
