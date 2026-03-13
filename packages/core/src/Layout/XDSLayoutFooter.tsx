@@ -131,8 +131,12 @@ export function XDSLayoutFooter({
   ref,
   ...props
 }: XDSLayoutFooterProps) {
+  // padding={0} is semantically equivalent to isFullBleed
+  const isZeroPadding = isFullBleed || padding === 0;
+
   // When no divider, collapse spacing for seamless visual flow
-  const shouldCollapseSpacing = !hasDivider && !isFullBleed && padding == null;
+  const shouldCollapseSpacing =
+    !hasDivider && !isZeroPadding && padding == null;
 
   return (
     <div
@@ -144,7 +148,7 @@ export function XDSLayoutFooter({
         stylex.props(
           styles.footer,
           dynamicStyles.sizing(height ?? null),
-          isFullBleed && padding == null && styles.fullBleed,
+          isZeroPadding && styles.fullBleed,
           padding != null && paddingStyles[padding],
           padding != null && containerPaddingInlineVarStyles[padding],
           hasDivider && styles.divider,
