@@ -1,0 +1,127 @@
+name: Cleanup Preview Deployments
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Weekly Monday 6am UTC
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run — log but do not delete'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          fetch-depth: 0
+
+      - name: Cleanup stale preview directories
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
+        run: |
+          set -euo pipefail
+
+          MAX_AGE_DAYS=3
+          NOW=$(date +%s)
+          MAX_AGE_SECS=$((MAX_AGE_DAYS * 86400))
+
+          echo "🧹 Cleanup config:"
+          echo "   Max age: ${MAX_AGE_DAYS} days"
+          echo "   Dry run: ${DRY_RUN}"
+          echo ""
+
+          # Get all 7-char hex directories (preview deployments)
+          PREVIEW_DIRS=$(ls -d [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f] 2>/dev/null || true)
+          TOTAL=$(echo "$PREVIEW_DIRS" | grep -c . || echo 0)
+          echo "📁 Found ${TOTAL} preview directories"
+
+          if [ "$TOTAL" -eq 0 ]; then
+            echo "Nothing to clean up."
+            exit 0
+          fi
+
+          # Get open PR head commit short hashes (includes drafts)
+          OPEN_PR_HASHES=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --json headRefOid --jq '.[].headRefOid[:7]' || true)
+          echo "🔓 Open PR hashes: $(echo "$OPEN_PR_HASHES" | grep -c . || echo 0)"
+
+          # Find the latest deployment (most recently added directory)
+          LATEST_DIR=""
+          LATEST_TIME=0
+          for dir in $PREVIEW_DIRS; do
+            DIR_TIME=$(git log --format=%ct --diff-filter=A -- "${dir}/" 2>/dev/null | head -1)
+            if [ -n "$DIR_TIME" ] && [ "$DIR_TIME" -gt "$LATEST_TIME" ]; then
+              LATEST_TIME=$DIR_TIME
+              LATEST_DIR=$dir
+            fi
+          done
+          echo "📌 Latest deployment: ${LATEST_DIR}"
+          echo ""
+
+          DELETED=0
+          KEPT=0
+
+          for dir in $PREVIEW_DIRS; do
+            REASON=""
+
+            # Keep latest deployment
+            if [ "$dir" = "$LATEST_DIR" ]; then
+              REASON="latest deployment"
+            fi
+
+            # Keep if open PR
+            if [ -z "$REASON" ] && echo "$OPEN_PR_HASHES" | grep -q "^${dir}$"; then
+              REASON="open PR"
+            fi
+
+            # Keep if newer than MAX_AGE_DAYS
+            if [ -z "$REASON" ]; then
+              DIR_TIME=$(git log --format=%ct --diff-filter=A -- "${dir}/" 2>/dev/null | head -1)
+              if [ -n "$DIR_TIME" ]; then
+                AGE=$((NOW - DIR_TIME))
+                if [ "$AGE" -lt "$MAX_AGE_SECS" ]; then
+                  AGE_DAYS=$((AGE / 86400))
+                  REASON="recent (${AGE_DAYS}d old)"
+                fi
+              fi
+            fi
+
+            if [ -n "$REASON" ]; then
+              echo "  ✓ KEEP ${dir} — ${REASON}"
+              KEPT=$((KEPT + 1))
+            else
+              echo "  ✗ DELETE ${dir}"
+              if [ "$DRY_RUN" != "true" ]; then
+                git rm -rf "$dir"
+              fi
+              DELETED=$((DELETED + 1))
+            fi
+          done
+
+          echo ""
+          echo "📊 Summary: ${DELETED} deleted, ${KEPT} kept (of ${TOTAL})"
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "🏜️  Dry run — no changes committed"
+            exit 0
+          fi
+
+          if [ "$DELETED" -gt 0 ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore: cleanup ${DELETED} stale preview deployments"
+            git push origin gh-pages
+            echo "✅ Pushed cleanup commit"
+          else
+            echo "✅ Nothing to clean up"
+          fi

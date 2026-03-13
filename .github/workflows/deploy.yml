@@ -89,7 +89,6 @@ jobs:
 
       - name: Build Sandbox
         run: yarn workspace @xds/sandbox build
-        continue-on-error: true
         env:
           SANDBOX_BASE_PATH: /${{ steps.hash.outputs.short_hash }}/sandbox
 
