@@ -388,45 +388,62 @@ export const docsZh = {
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSList}from'@xds/core/List' //vertical list w/ items, dividers, markers
-C XDSList //list container w/ density, dividers, header
-P children:ReactNode list items (XDSListItem) | density:'compact'|'balanced'|'spacious'='balanced' spacing density | hasDividers:boolean='false' show dividers between items | header:ReactNode header, linked via aria-labelledby | listStyle:'none'|'disc'|'decimal'|'circle'='none' marker style; decimal renders <ol> | xstyle:StyleXStyles layout customization (margins, positioning, sizing)
-X <XDSList hasDividers header={<strong>Team Members</strong>}>
-  <XDSListItem label="Alice" description="Engineering" />
-  <XDSListItem label="Bob" description="Design" />
-</XDSList>
-C XDSListItem //item w/ label, description, start/end content, interactive patterns
-P label:string! primary text | description:string secondary text below label | startContent:ReactNode before label (icon, avatar) | endContent:ReactNode after label (badge, chevron) | onClick:(e: MouseEvent) => void click handler; enables invisible button pattern | href:string link URL; enables invisible anchor pattern | target:string link target, only w/ href | isDisabled:boolean='false' sets aria-disabled | isSelected:boolean='false' sets aria-selected
-X <XDSListItem
-  label="Settings"
-  description="Manage your preferences"
-  startContent={<XDSIcon icon={CogIcon} />}
-  onClick={() => navigate('/settings')}
-/>
-X <XDSList>
-  <XDSListItem label="Notifications" description="Manage your alerts" />
-  <XDSListItem label="Privacy" description="Control your data" />
-</XDSList>
-X <XDSList hasDividers header={<strong>Team Members</strong>}>
-  <XDSListItem
-    label="Alice Johnson"
-    description="Engineering"
-    startContent={<XDSIcon icon={UserIcon} />}
-  />
-  <XDSListItem
-    label="Bob Smith"
-    description="Design"
-    startContent={<XDSIcon icon={UserIcon} />}
-  />
-</XDSList>
-X <XDSList>
-  <XDSListItem label="Settings" onClick={() => navigate('/settings')} />
-  <XDSListItem label="Docs" href="/docs" target="_blank" />
-</XDSList>
-X <XDSList listStyle="decimal">
-  <XDSListItem label="First step" />
-  <XDSListItem label="Second step" />
-</XDSList>
-A Semantic <ul>/<ol> w/ <li> elements|role="list" added when listStyle='none' (Safari fix)|aria-labelledby links header to list|aria-selected on selected items|aria-disabled on disabled items|Dividers aria-hidden="true"|Interactive items keyboard-focusable via Tab
-N Invisible button pattern: onClick wraps label+description in invisible <button>; <li> visual container w/ hover/press styles; startContent+endContent siblings to button; container click fires onClick unless from interactive child; :focus-within shows focus outline|href uses same invisible pattern w/ <a> element`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'Vertical list for rendering item collections w/ consistent spacing, dividers, marker styles. Composition model: XDSList wraps XDSListItem sub-components.',
+  features: [
+    'Composition model; XDSList wraps XDSListItem sub-components',
+    'Density variants: compact, balanced, spacious',
+    'Optional dividers between items',
+    'Optional header associated via aria-labelledby',
+    'List marker styles: none, disc, decimal (renders <ol>), circle',
+    'Interactive items via invisible button or anchor pattern',
+    'Start + end content slots (icon, avatar, badge, chevron)',
+  ],
+  accessibility: [
+    'Semantic <ul> / <ol> w/ <li> elements',
+    "role=\"list\" added when listStyle='none' (Safari fix for list semantics removed by CSS list-style:none)",
+    'aria-labelledby links header element to list',
+    'aria-selected on selected items',
+    'aria-disabled on disabled items',
+    'Dividers are aria-hidden="true"',
+    'Interactive items keyboard-focusable via Tab',
+  ],
+  notes: [
+    'Invisible button pattern: onClick wraps label+description in invisible <button> for accessibility. <li> is visual container w/ hover/press styles. startContent + endContent siblings to button (not inside). Container click fires onClick unless from interactive child. :focus-within shows focus outline.',
+    'When href provided instead of onClick, same invisible pattern uses <a> element.',
+  ],
+  components: [
+    {
+      name: 'XDSList',
+      description: 'List container w/ density, dividers, header support.',
+      propDescriptions: {
+        children: 'List items (XDSListItem components).',
+        density: 'Spacing density for items.',
+        hasDividers: 'Show dividers between items.',
+        header: 'Header content, associated w/ list via aria-labelledby.',
+        listStyle:
+          "List marker style. 'decimal' renders <ol> instead of <ul>.",
+        xstyle:
+          'StyleX styles for layout customization (margins, positioning, sizing). Must be stylex.create() value.',
+      },
+    },
+    {
+      name: 'XDSListItem',
+      description:
+        'List item w/ label, description, start/end content slots, interactive patterns.',
+      propDescriptions: {
+        label: 'Primary text.',
+        description: 'Secondary text below label.',
+        startContent: 'Content before label area (e.g. icon, avatar).',
+        endContent: 'Content after label area (e.g. badge, chevron).',
+        onClick: 'Click handler; enables invisible button pattern.',
+        href: 'Link URL; enables invisible anchor pattern.',
+        target: 'Link target attribute, only when href provided.',
+        isDisabled: 'Disabled state; sets aria-disabled.',
+        isSelected: 'Selected state; sets aria-selected.',
+      },
+    },
+  ],
+};

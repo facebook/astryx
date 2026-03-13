@@ -185,11 +185,36 @@ import {Home} from 'lucide-react';
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSIcon}from'@xds/core/Icon' //renders icons w/ XDS colors+sizes
-P icon:XDSIconName|ComponentType<SVGProps>! semantic name or SVG component | color:'primary'|'secondary'|'tertiary'|'disabled'|'accent'|'positive'|'negative'|'warning'|'inherit'='primary' color variant mapped to XDS icon tokens | size:'xsm'|'sm'|'md'|'lg'='md' icon size
-X import { XDSIcon } from '@xds/core/Icon';\n\n// Semantic name — adapts to theme\n<XDSIcon icon="close" />\n<XDSIcon icon="chevronDown" size="sm" color="inherit" />\n<XDSIcon icon="checkCircle" color="positive" />\n\n// Great for building theme-adaptable UI\n<XDSIcon icon="info" size="sm" color="secondary" />
-X import { XDSIcon } from '@xds/core/Icon';\nimport { HomeIcon } from '@heroicons/react/24/outline';\nimport { HeartIcon } from '@heroicons/react/24/solid';\n\n// Direct component\n<XDSIcon icon={HomeIcon} />\n<XDSIcon icon={HomeIcon} color="accent" size="lg" />\n<XDSIcon icon={HeartIcon} color="negative" />\n\n// Accessible icon with label\n<XDSIcon icon={HomeIcon} aria-hidden={false} aria-label="Home" role="img" />
-X // Heroicons\nimport {HomeIcon} from '@heroicons/react/24/outline';\n\n// Lucide\nimport {Home} from 'lucide-react';\n\n// Any component matching ComponentType<SVGProps<SVGSVGElement>>
-A Icons hidden from screen readers by default via aria-hidden="true"; typically decorative|For meaningful icons: set aria-hidden={false}, role="img", aria-label for accessible context
-N Semantic name resolution: (1) theme registry if XDSTheme active; (2) built-in fallback inline SVG. Themes accept partial overrides|Component icon passes extra SVG props (aria-label, role) through to SVG element|flexShrink: 0 prevents shrinking in flex containers|String mode wraps in <span> w/ fontSize-based sizing for 1em registry icons|Component mode passes stylex.props directly to SVG for zero-overhead styling|Semantic names: close (CloseButton,TimeInput) chevronDown (DropdownMenu,Selector,TabMenu) chevronLeft/Right (Calendar) check (Selector,TabMenu) checkCircle/xCircle/warning (Input status) info (FieldLabel) calendar (DateInput) clock (TimeInput) externalLink (Link)|Color tokens: primary=--color-icon-primary; secondary=--color-icon-secondary; tertiary=--color-icon-tertiary; disabled=--color-icon-disabled; accent=--color-accent; positive=--color-positive; negative=--color-negative; warning=--color-warning; inherit=currentColor|Size: xsm=12x12px sm=16x16px md=20x20px lg=24x24px|12 built-in fallback SVGs (~1.4KB) ensure rendering w/o theme|Semantic icons auto-match active theme icon set|Direct icon components: heroicons, lucide, any SVG component`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'Renders icons w/ XDS design system colors + sizes. Supports direct SVG icon components + semantic icon names that adapt to active theme.',
+  features: [
+    "Semantic icon names: use 'close' or 'chevronDown'; resolved from theme icon registry",
+    'Direct icon components: pass any SVG component (heroicons, lucide, etc.)',
+    "Theme-adaptable: semantic icons auto-match active theme's icon set",
+    'Built-in fallbacks: 12 lightweight inline SVGs (~1.4KB) ensure rendering w/o theme',
+    'Theme colors: variants mapped to XDS icon color tokens',
+    'Consistent sizing: four size options aligned w/ common UI patterns',
+    'Accessible: icons hidden from screen readers by default (aria-hidden)',
+  ],
+  notes: [
+    'Semantic name resolution: (1) theme registry if XDSTheme active; (2) built-in fallback inline SVG. Themes accept partial overrides.',
+    'Component icon passes extra SVG props (aria-label, role) through to SVG element.',
+    'flexShrink: 0 prevents shrinking in flex containers.',
+    'String mode wraps in <span> w/ fontSize-based sizing for 1em registry icons.',
+    'Component mode passes stylex.props directly to SVG for zero-overhead styling.',
+    'Semantic names: close (CloseButton, TimeInput) chevronDown (DropdownMenu, Selector, TabMenu) chevronLeft/Right (Calendar) check (Selector, TabMenu) checkCircle/xCircle/warning (Input status) info (FieldLabel) calendar (DateInput) clock (TimeInput) externalLink (Link).',
+    'Color tokens: primary=--color-icon-primary; secondary=--color-icon-secondary; tertiary=--color-icon-tertiary; disabled=--color-icon-disabled; accent=--color-accent; positive=--color-positive; negative=--color-negative; warning=--color-warning; inherit=currentColor.',
+    'Size: xsm=12x12px sm=16x16px md=20x20px lg=24x24px.',
+  ],
+  accessibility: [
+    'Icons hidden from screen readers by default via aria-hidden="true"; typically decorative.',
+    'For meaningful icons: set aria-hidden={false}, role="img", aria-label for accessible context.',
+  ],
+  propDescriptions: {
+    icon: 'Semantic name or SVG icon component.',
+    color: 'Color variant mapped to XDS icon color tokens.',
+    size: 'Icon size.',
+  },
+};

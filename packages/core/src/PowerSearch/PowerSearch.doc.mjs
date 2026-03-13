@@ -195,61 +195,44 @@ const [filters, setFilters] = useState([]);
     'Type to search fields; Enter to select; Click token to edit; Backspace on empty input removes last filter; Escape closes popover',
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSPowerSearch}from'@xds/core/PowerSearch' //structured filter bar w/ token filters
-P config:PowerSearchConfig! available fields, operators, value types | filters:ReadonlyArray<PowerSearchFilter>! active filters | onChange:(filters: ReadonlyArray<PowerSearchFilter>, changeType: PowerSearchChangeType, index: number) => void! called on filter change; changeType is 'add','edit','remove'; index is affected position | label:string='Search' accessible input label | isLabelHidden:boolean='true' visually hides label, keeps accessible | placeholder:string='Search...' text when no filters selected | hasAutoFocus:boolean='false' auto-focus input on mount | hasClear:boolean='true' show clear-all button | isReadOnly:boolean='false' prevent add/edit/remove | isDisabled:boolean='false' disables entire component | status:XDSInputStatus validation status w/ type+optional message | maxTokenLength:number='40' max char length for token value display | popoverSaveButtonLabel:string='Apply' save button label in edit popover | timezoneID:string timezone ID for date formatting (e.g. "America/New_York") | ref:Ref<XDSPowerSearchHandle> imperative handle w/ focusTypeahead()+blurTypeahead() | endContent:ReactNode content at end of input row, for action buttons | resultCount:number | string result count; number formatted as "N results", string as-is | xstyle:StyleXStyles stylex.create() layout styles
-X const config = {
-  name: 'TaskSearch',
-  fields: [
-    {
-      key: 'status',
-      label: 'Status',
-      operators: [
-        {
-          key: 'is',
-          label: 'is',
-          value: {
-            type: 'enum',
-            values: [
-              { value: 'open', label: 'Open' },
-              { value: 'closed', label: 'Closed' },
-            ],
-          },
-        },
-      ],
-    },
-    {
-      key: 'title',
-      label: 'Title',
-      operators: [
-        {
-          key: 'contains',
-          label: 'contains',
-          value: { type: 'string' },
-        },
-      ],
-    },
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'Structured filter bar where each token represents filter (field+operator+value). Users select fields from typeahead dropdown, configure operators+values in edit popover, manage filters as removable tokens.',
+  features: [
+    'Typeahead field selection w/ search + aliases',
+    'Edit popover w/ field, operator, value selectors',
+    'Support for 13 value types: string, integer, float, enum, date, time, more',
+    'Token-based display w/ click-to-edit + remove',
+    'Imperative API for focus/blur control via ref',
+    'Read-only mode for displaying filters w/o editing',
   ],
+  accessibility: [
+    'Built on XDSTokenizer providing combobox pattern w/ aria-expanded + aria-autocomplete.',
+    'Filter tokens have accessible labels w/ field name, operator, value.',
+    'Edit popover uses XDSPopover w/ focus trapping + light dismiss.',
+    'Clear all button has accessible label.',
+  ],
+  keyboard:
+    'Type to search fields; Enter to select; Click token to edit; Backspace on empty input removes last filter; Escape closes popover',
+  propDescriptions: {
+    config: 'Configuration defining available fields, operators, value types.',
+    filters: 'Currently active filters.',
+    onChange: "Called on filter change. changeType is 'add', 'edit', or 'remove'. index is affected filter position.",
+    label: 'Accessible label for search input.',
+    isLabelHidden: 'Visually hides label while keeping accessible.',
+    placeholder: 'Text shown when no filters selected.',
+    hasAutoFocus: 'Auto-focus input on mount.',
+    hasClear: 'Show clear-all button for removing all filters.',
+    isReadOnly: 'Prevent adding, editing, or removing filters.',
+    isDisabled: 'Disables entire component.',
+    status: 'Validation status object w/ type + optional message.',
+    maxTokenLength: 'Max char length for filter value display in tokens.',
+    popoverSaveButtonLabel: 'Label for save button in edit popover.',
+    timezoneID: 'Timezone ID for date formatting (e.g. "America/New_York").',
+    ref: 'Imperative handle w/ focusTypeahead() + blurTypeahead() methods.',
+    endContent: 'Content at end of input row. Useful for action buttons or controls.',
+    resultCount: 'Result count matching current filters. Number formatted as "N results"; string displayed as-is.',
+    xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
+  },
 };
-
-const [filters, setFilters] = useState([]);
-<XDSPowerSearch
-  config={config}
-  filters={filters}
-  onChange={(newFilters) => setFilters(newFilters)}
-/> | const [filters, setFilters] = useState([
-  { field: 'status', operator: 'is', value: { type: 'enum', value: 'open' } },
-]);
-
-<XDSPowerSearch
-  config={config}
-  filters={filters}
-  onChange={(newFilters, changeType, index) => {
-    setFilters(newFilters);
-    console.log(changeType, 'at index', index);
-  }}
-  placeholder="Add filters..."
-/>
-A built on XDSTokenizer w/ combobox pattern, aria-expanded+aria-autocomplete|filter tokens have accessible labels w/ field name, operator, value|edit popover uses XDSPopover w/ focus trapping+light dismiss|clear all button has accessible label
-K Type=search fields;Enter=select;Click token=edit;Backspace on empty input=remove last filter;Escape=close popover
-N typeahead field selection w/ search+aliases|edit popover w/ field, operator, value selectors|13 value types: string, integer, float, enum, date, time, more|token display w/ click-to-edit+remove|imperative API for focus/blur via ref|read-only mode for display w/o editing`;

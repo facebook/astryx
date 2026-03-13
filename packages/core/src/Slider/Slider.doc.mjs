@@ -477,10 +477,54 @@ export const docsZh = {
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSSlider}from'@xds/core/Slider' //numeric value/range selection w/ keyboard
-P label:string! label text, always rendered for a11y | value:number | [number, number]! single thumb or range mode | onChange:(value: number) => void | (value: [number, number]) => void fired on drag | onChangeEnd:(value: number) => void | (value: [number, number]) => void fired when drag ends | min:number='0' | max:number='100' | step:number='1' | orientation:'horizontal' | 'vertical'='horizontal' | formatValue:(value: number) => string custom display + aria-valuetext | valueDisplay:'tooltip' | 'text' | 'none'='tooltip' | marks:Array<{ value: number; label?: string }> tick marks w/ optional labels | minStepsBetweenThumbs:number='0' min steps between range thumbs | isDisabled:boolean='false' | isOptional:boolean='false' | isRequired:boolean='false' | isLabelHidden:boolean='false' visually hide label | description:string below label | status:XDSInputStatus {type,message} validation feedback | labelTooltip:string info icon tooltip | xstyle:StyleXStyles layout styles, must be stylex.create() value
-X <XDSSlider label="Volume" value={50} onChange={setValue} /> | <XDSSlider\\n  label="Price range"\\n  value={[20, 80]}\\n  onChange={setRange}\\n/> | <XDSSlider\\n  label="Temperature"\\n  value={72}\\n  onChange={setTemp}\\n  min={32}\\n  max={212}\\n  formatValue={(v) => \\\`\\\${v}°F\\\`}\\n/> | <XDSSlider\\n  label="Rating"\\n  value={3}\\n  onChange={setRating}\\n  min={1}\\n  max={5}\\n  step={1}\\n  marks={[\\n    { value: 1, label: 'Poor' },\\n    { value: 3, label: 'Average' },\\n    { value: 5, label: 'Excellent' },\\n  ]}\\n/> | <XDSSlider\\n  label="Opacity"\\n  value={75}\\n  onChange={setOpacity}\\n  formatValue={(v) => \\\`\\\${v}%\\\`}\\n  valueDisplay="text"\\n/> | <XDSSlider\\n  label="Date range"\\n  value={[10, 90]}\\n  onChange={setDateRange}\\n  minStepsBetweenThumbs={5}\\n/> | <XDSSlider\\n  label="Brightness"\\n  value={brightness}\\n  onChange={setBrightness}\\n  onChangeEnd={commitBrightness}\\n/> | <XDSSlider\\n  label="Level"\\n  value={60}\\n  onChange={setLevel}\\n  orientation="vertical"\\n/> | <XDSSlider\\n  label="Locked"\\n  value={50}\\n  onChange={() => {}}\\n  isDisabled\\n/>
-A role="slider" w/ aria-valuenow, aria-valuemin, aria-valuemax, aria-valuetext on each thumb|label always in DOM for a11y even when isLabelHidden=true|tooltip uses XDSTooltip w/ delay={0} focusTrigger="always", value visible on focus
-K Arrow=±1 step;PageUp/PageDown=±10 steps;Home/End=jump to min/max
-N ref merged w/ internal trackRef for pointer position calc|pointer capture during drag for smooth interaction even when cursor leaves track|snapToStep rounds to nearest valid step; clamp enforces min/max|range mode auto-selects closest thumb to click position|minStepsBetweenThumbs enforces min gap between range thumbs|vertical orientation inverts Y axis, bottom=min top=max`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Numeric value/range selector w/ full keyboard + pointer support.',
+  features: [
+    'Single + range modes: number for single thumb, [number, number] for range',
+    'Orientation: horizontal + vertical layouts',
+    'Value display: tooltip (default), inline text, or none',
+    'Tick marks: optional marks at specified positions w/ labels',
+    'Keyboard nav: Arrow keys, Page Up/Down, Home/End',
+    'Drag: pointer capture for smooth dragging',
+    'Custom formatting: formatValue fn for display + aria-valuetext',
+    'Field integration: uses XDSField for label, description, required/optional, status messaging',
+    'Accessible: role="slider" w/ full ARIA attributes',
+  ],
+  notes: [
+    'ref merged w/ internal trackRef for pointer position calc.',
+    'Pointer capture during drag for smooth interaction even when cursor leaves track.',
+    'snapToStep rounds to nearest valid step; clamp enforces min/max bounds.',
+    'Range mode auto-selects closest thumb to click position.',
+    'minStepsBetweenThumbs enforces min gap between range thumbs.',
+    'Vertical orientation inverts Y axis; bottom=min, top=max.',
+  ],
+  accessibility: [
+    'role="slider" w/ aria-valuenow, aria-valuemin, aria-valuemax, aria-valuetext on each thumb.',
+    'Label always in DOM for a11y even when isLabelHidden=true.',
+    'Tooltip uses XDSTooltip w/ delay={0} focusTrigger="always"; value visible on focus.',
+  ],
+  keyboard: 'Arrow=\u00b11 step; PageUp/PageDown=\u00b110 steps; Home/End=jump to min/max.',
+  propDescriptions: {
+    label: 'Label text (always rendered for a11y).',
+    value: 'Current value; number for single thumb, [number, number] for range.',
+    onChange: 'Fired on value change during drag.',
+    onChangeEnd: 'Fired when drag ends.',
+    min: 'Minimum value.',
+    max: 'Maximum value.',
+    step: 'Step increment.',
+    orientation: 'Slider orientation.',
+    formatValue: 'Custom value formatting fn for display + aria-valuetext.',
+    valueDisplay: 'How current value is displayed.',
+    marks: 'Tick marks at specified positions w/ optional labels.',
+    minStepsBetweenThumbs: 'Min steps between thumbs in range mode; prevents overlap.',
+    isDisabled: 'Whether slider is disabled.',
+    isOptional: 'Whether field is optional.',
+    isRequired: 'Whether field is required.',
+    isLabelHidden: 'Visually hide label.',
+    description: 'Description text below label.',
+    status: 'Status indicator ({type, message}) for validation feedback.',
+    labelTooltip: 'Tooltip text for info icon next to label.',
+    xstyle: 'StyleX layout styles; must be stylex.create() value.',
+  },
+};

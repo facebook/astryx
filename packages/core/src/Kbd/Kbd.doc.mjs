@@ -137,12 +137,30 @@ export const docsZh = {
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSKbd}from'@xds/core/Kbd' //keyboard shortcut display as <kbd> elements
-P keys:string! shortcut string; "+" separates keys; special: mod (Cmd on Mac), ctrl, alt, shift, enter, backspace, escape, tab, up, down, left, right | xstyle:StyleXStyles stylex.create() layout styles | className:string CSS class for root; prefer xstyle | style:CSSProperties inline styles for root; prefer xstyle
-X <XDSKbd keys="mod+k" />
-X <XDSKbd keys="mod+shift+p" />
-X <span>\n  Search <XDSKbd keys="mod+k" />\n</span>
-A Renders w/ aria-hidden="true"; shortcuts are visual hints, not primary content|Uses semantic <kbd> elements for each key
-K Not interactive; purely presentational
-N Fixed 20px height, min-width 20px per key badge|Uses --color-wash background + --color-text-secondary text|Key display follows macOS conventions (⌘, ⌥, ⇧, ⌃)|Key parsing splits "mod+k" into styled <kbd> elements|Modifier symbols map mod/ctrl/alt/shift/enter/backspace/escape/arrows to platform symbols|Inline display as inline-flex for text, tooltips, menus|Accessible w/ aria-hidden="true"; shortcuts supplementary to labels`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'Displays keyboard shortcut as styled <kbd> elements. Use in tooltips, menus + docs to show key combinations.',
+  features: [
+    'Key parsing; splits "mod+k" into individual styled <kbd> elements',
+    'Modifier symbols; maps mod/ctrl/alt/shift/enter/backspace/escape/arrows to platform symbols',
+    'Inline display; renders as inline-flex for use inside text, tooltips + menus',
+    'Accessible; aria-hidden="true" since shortcuts supplementary to visible labels',
+  ],
+  notes: [
+    'Fixed 20px height w/ min-width 20px per key badge',
+    'Uses --color-wash background + --color-text-secondary text color',
+    'Key display symbols follow macOS conventions (\u2318, \u2325, \u21e7, \u2303)',
+  ],
+  accessibility: [
+    'Renders w/ aria-hidden="true"; keyboard shortcuts are visual hints, not primary content',
+    'Uses semantic <kbd> elements for each key',
+  ],
+  keyboard: 'Not interactive; purely presentational',
+  propDescriptions: {
+    keys: 'Shortcut string. "+" separates keys. Special: mod (Cmd on Mac), ctrl, alt, shift, enter, backspace, escape, tab, up, down, left, right.',
+    xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
+    className: 'CSS class for root element. Prefer xstyle; className for non-StyleX integration.',
+    style: 'Inline styles for root element. Prefer xstyle; inline styles bypass StyleX optimization.',
+  },
+};

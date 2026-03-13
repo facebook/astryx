@@ -141,11 +141,20 @@ export const docsZh = {
   },
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSCenter}from'@xds/core/Center' //centers children via flexbox
-P axis:'both' | 'horizontal' | 'vertical'='both' centering direction | isInline:boolean='false' use inline-flex
-P width:number | string container width (px or CSS) | height:number | string container height (px or CSS)
-P children:ReactNode | xstyle:StyleXStyles layout customization via stylex.create()
-X <XDSCenter width={300} height={200}><Content /></XDSCenter> | <XDSCenter axis="horizontal"><Logo /></XDSCenter>
-X <XDSCenter isInline><XDSIcon icon={StarIcon} /></XDSCenter>
-N supports both axes, horizontal, or vertical|inline-flex for text/icons|accepts explicit width+height`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'centers children horizontally+vertically via flexbox',
+  features: [
+    'centering on both axes, horizontal only, or vertical only',
+    'inline-flex mode for inline content like text+icons',
+    'accepts explicit width+height to size container',
+  ],
+  propDescriptions: {
+    axis: 'centering direction(s)',
+    width: 'container width (px or CSS)',
+    height: 'container height (px or CSS)',
+    isInline: 'use inline-flex for text/icons',
+    children: 'content to center',
+    xstyle: 'StyleX styles for layout (margins, positioning, sizing); must be stylex.create() value',
+  },
+};

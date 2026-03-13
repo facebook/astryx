@@ -403,9 +403,51 @@ export const docsZh = {
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSTextInput}from'@xds/core/TextInput' //text input w/ label+validation
-P label:string! label text, always rendered for a11y | value:string! | onChange:(value: string, e: ChangeEvent<HTMLInputElement>) => void fired on value change | onChangeAction:(value: string, e: ChangeEvent<HTMLInputElement>) => void | Promise<void> async action after onChange; triggers optimistic update+spinner | size:'sm' | 'md' | 'lg'='md' | isLabelHidden:boolean='false' visually hides label, keeps screen reader access | description:string text between label+input | isOptional:boolean='false' shows "Optional"; mutually exclusive w/ isRequired | isRequired:boolean='false' shows "Required"+aria-required; mutually exclusive w/ isOptional | isDisabled:boolean='false' disables input, prevents interaction | isLoading:boolean='false' loading state w/ spinner+aria-busy | placeholder:string placeholder when empty | labelTooltip:string tooltip in info icon at label end | startIcon:XDSIconType SVG icon at input start | status:{type: 'error' | 'warning' | 'success', message?: string} colored border+icon; message floats below; error sets aria-invalid | hasAutoFocus:boolean='false' auto-focus on mount | htmlName:string HTML name attr for form submissions
-X <XDSTextInput label="Name" value={name} onChange={setName} /> | <XDSTextInput label="Email" value={email} onChange={setEmail} placeholder="email@example.com" /> | <XDSTextInput label="Search" isLabelHidden value={query} onChange={setQuery} placeholder="Search..." /> | <XDSTextInput\\n  label="Email"\\n  description="We'll never share your email"\\n  value={email}\\n  onChange={setEmail}\\n/> | <XDSTextInput label="Nickname" isOptional value={nickname} onChange={setNickname} />\\n<XDSTextInput label="Username" isRequired value={username} onChange={setUsername} /> | <XDSTextInput\\n  label="Email"\\n  value={email}\\n  onChange={setEmail}\\n  status={{type: 'error', message: 'Invalid email address'}}\\n/> | <XDSTextInput\\n  label="Search"\\n  value={query}\\n  onChange={setQuery}\\n  startIcon={MagnifyingGlassIcon}\\n  placeholder="Search..."\\n/> | <XDSTextInput\\n  label="Username"\\n  value={username}\\n  onChange={setUsername}\\n  onChangeAction={async (value) => {\\n    await checkAvailability(value);\\n  }}\\n/>
-A Label always rendered+associated via htmlFor/id (useId); isLabelHidden hides visually, keeps screen reader access|aria-describedby auto-set when description or status message present|aria-invalid="true" when status.type is "error"|aria-required="true" when isRequired|aria-busy set during optimistic update or isLoading
-N isOptional+isRequired mutually exclusive; both set = "Optional" shown|onChangeAction fires after onChange in React transition, enables useOptimistic for instant UI update|wraps XDSField for label, description, optional/required rendering|size supports "sm", "md", "lg"`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Text input for collecting user text w/ label, description, validation status, optional/required indicators.',
+  features: [
+    'Label support; required for a11y (can be visually hidden)',
+    'Description; optional text between label+input',
+    'Optional/Required indicators; "Optional" or "Required" text w/ bullet separator',
+    'Label tooltip; optional info icon w/ tooltip at label end',
+    'Validation status; error, warning, success states w/ colored borders+icons',
+    'Start icon; optional icon at input start',
+    'Loading state; shows spinner+sets aria-busy while async action pending',
+    'Disabled state; dims input, prevents interaction',
+    'Accessible; label always associated via htmlFor/id; sets aria-invalid, aria-required, aria-busy, aria-describedby',
+    'Styled w/ StyleX; uses XDS design tokens for consistent styling',
+  ],
+  notes: [
+    'isOptional+isRequired mutually exclusive; both set = "Optional" shown.',
+    'onChangeAction fires after onChange in React transition, enables useOptimistic for instant UI update.',
+    'Wraps XDSField for label, description, optional/required rendering.',
+    'size supports "sm", "md", "lg".',
+  ],
+  accessibility: [
+    'Label always rendered+associated via htmlFor/id (useId). isLabelHidden hides visually, keeps screen reader access.',
+    'aria-describedby auto-set when description or status message present.',
+    'aria-invalid="true" when status.type is "error".',
+    'aria-required="true" when isRequired is true.',
+    'aria-busy set during optimistic update or isLoading.',
+  ],
+  propDescriptions: {
+    label: 'Label text for input; always rendered for a11y.',
+    value: 'Current input value.',
+    onChange: 'Fired on input value change.',
+    onChangeAction: 'Async action after onChange (if not prevented). Triggers optimistic update+spinner while pending.',
+    size: 'Size variant of input.',
+    isLabelHidden: 'Visually hides label; keeps screen reader access.',
+    description: 'Description text between label+input.',
+    isOptional: 'Shows "Optional" indicator. Mutually exclusive w/ isRequired.',
+    isRequired: 'Shows "Required" indicator+sets aria-required. Mutually exclusive w/ isOptional.',
+    isDisabled: 'Disables input, prevents interaction, dims element.',
+    isLoading: 'Loading state w/ spinner+aria-busy.',
+    placeholder: 'Placeholder when input empty.',
+    labelTooltip: 'Tooltip in info icon at label end.',
+    startIcon: 'SVG icon at input start (e.g. heroicons or lucide).',
+    status: 'Validation status; colored border+icon. Message floats below. Error sets aria-invalid.',
+    hasAutoFocus: 'Auto-focus input on mount.',
+    htmlName: 'HTML name attr for form submissions.',
+  },
+};

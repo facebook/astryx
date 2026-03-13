@@ -535,21 +535,67 @@ const bioDescId = useId();
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSField}from'@xds/core/Field' //form field w/ label, desc, indicators
-C XDSField //form field wrapper w/ label, description, optional/required indicators
-P label:string! label text for field | inputID:string! input element ID for htmlFor | children:ReactNode! input or control to render | isLabelHidden:boolean='false' visually hide label; still accessible | description:string desc text between label and input | descriptionID:string ID for description element; use for aria-describedby | isOptional:boolean='false' field optional; mutually exclusive w/ isRequired | isRequired:boolean='false' field required; mutually exclusive w/ isOptional | labelIcon:XDSIconType icon before label text | labelTooltip:string tooltip text in info icon at end of label | xstyle:StyleXStyles stylex.create() layout styles
-X <XDSField label="Email" inputID={id}>\n  <input id={id} />\n</XDSField>
-C XDSFieldLabel //standalone label w/ optional/required indicators and tooltip
-P label:string! label text | inputID:string! input ID this label is for | isLabelHidden:boolean='false' visually hide label | isDisabled:boolean='false' associated input disabled | isOptional:boolean='false' show "Optional" indicator | isRequired:boolean='false' show "Required" indicator | labelIcon:XDSIconType icon before label text | labelTooltip:string tooltip text for info icon
-X <XDSFieldLabel label="Username" inputID={id} isRequired />
-C XDSFieldStatus //status message for form field validation
-P type:'error'|'warning'|'success'! status type | message:string! status message text | id:string ID for aria-describedby | variant:'attached'|'detached'='attached' attached overlaps input, detached floats below
-X <XDSFieldStatus type="error" message="This field is required" />
-X const id = useId();\n<XDSField label="Email" inputID={id}>\n  <input id={id} />\n</XDSField>
-X const inputId = useId();\nconst descId = useId();\n<XDSField\n  label="Email"\n  description="We'll never share your email"\n  inputID={inputId}\n  descriptionID={descId}>\n  <input id={inputId} aria-describedby={descId} />\n</XDSField>
-X const searchId = useId();\n<XDSField label="Search" isLabelHidden inputID={searchId}>\n  <input id={searchId} placeholder="Search..." />\n</XDSField>
-X const nicknameId = useId();\n<XDSField label="Nickname" isOptional inputID={nicknameId}>\n  <input id={nicknameId} placeholder="Enter your nickname" />\n</XDSField>
-X const usernameId = useId();\n<XDSField label="Username" isRequired inputID={usernameId}>\n  <input id={usernameId} placeholder="Enter your username" />\n</XDSField>
-X const bioId = useId();\nconst bioDescId = useId();\n<XDSField\n  label="Bio"\n  description="Tell us about yourself"\n  isOptional\n  inputID={bioId}\n  descriptionID={bioDescId}>\n  <input id={bioId} aria-describedby={bioDescId} />\n</XDSField>
-N Parent components generate IDs (useId hook)|Label always rendered for a11y; use isLabelHidden to hide visually|Hidden label uses CSS technique accessible to screen readers|Description rendered when provided; descriptionID sets element ID for aria-describedby|isOptional and isRequired mutually exclusive; both set shows "Optional"|Optional/Required text on same line as label`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'Form field wrapper providing label, description + optional/required indicators.',
+  features: [
+    'Label support; required for a11y (can be visually hidden)',
+    'Optional description text between label + input',
+    'Optional/Required indicators w/ bullet separator',
+    'Label tooltip; optional info icon w/ tooltip at end of label',
+    'Label properly associated w/ input via htmlFor/id',
+    'Styled w/ StyleX; uses XDS design tokens for consistent styling',
+  ],
+  notes: [
+    'Parent components generate IDs (useId hook).',
+    'Label always rendered for a11y; use isLabelHidden to hide visually.',
+    'Hidden label uses CSS technique accessible to screen readers.',
+    'Description rendered when provided; descriptionID sets element ID for aria-describedby.',
+    'isOptional + isRequired mutually exclusive; both set shows "Optional".',
+    'Optional/Required text on same line as label.',
+  ],
+  components: [
+    {
+      name: 'XDSField',
+      description: 'Form field wrapper w/ label, description + optional/required indicators.',
+      propDescriptions: {
+        label: 'Label text for field (always rendered for a11y).',
+        inputID: 'Input element ID (used for label htmlFor).',
+        children: 'Input or control to render.',
+        isLabelHidden: 'Visually hide label (still accessible to screen readers).',
+        description: 'Description text between label + input.',
+        descriptionID: 'ID for description element (use for aria-describedby on input).',
+        isOptional: 'Field optional (mutually exclusive w/ isRequired).',
+        isRequired: 'Field required (mutually exclusive w/ isOptional).',
+        labelIcon: 'Icon before label text.',
+        labelTooltip: 'Tooltip text in info icon at end of label.',
+        xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
+      },
+    },
+    {
+      name: 'XDSFieldLabel',
+      description: 'Standalone label w/ optional/required indicators + tooltip support.',
+      propDescriptions: {
+        label: 'Label text.',
+        inputID: 'ID of input this label is for.',
+        isLabelHidden: 'Visually hide label.',
+        isDisabled: 'Associated input disabled.',
+        isOptional: 'Show "Optional" indicator.',
+        isRequired: 'Show "Required" indicator.',
+        labelIcon: 'Icon before label text.',
+        labelTooltip: 'Tooltip text for info icon at end of label.',
+      },
+    },
+    {
+      name: 'XDSFieldStatus',
+      description: 'Status message for form field validation feedback.',
+      propDescriptions: {
+        type: 'Status type.',
+        message: 'Status message text.',
+        id: 'ID for aria-describedby association.',
+        variant: 'Visual variant; attached overlaps input, detached floats below.',
+      },
+    },
+  ],
+};

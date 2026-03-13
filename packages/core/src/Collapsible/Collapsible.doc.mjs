@@ -441,28 +441,51 @@ export const docsZh = {
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSCollapsible}from'@xds/core/Collapsible' //collapsible content + group coordination
-C XDSCollapsible //toggles content visibility w/ trigger
-P trigger:ReactNode! always-visible trigger content | children:ReactNode collapsible content
-P defaultIsOpen:boolean='true' default open (uncontrolled) | isOpen:boolean controlled open state
-P onOpenChange:(isOpen: boolean) => void open state callback | value:string group coordination ID
-X <XDSCollapsible trigger="Details"><p>This content can be collapsed</p></XDSCollapsible>
-X <XDSCollapsible trigger="Advanced" defaultIsOpen={false}><p>Hidden by default</p></XDSCollapsible>
-X <XDSCollapsible trigger="Settings" isOpen={open} onOpenChange={setOpen}><p>Controlled externally</p></XDSCollapsible>
-C XDSCollapsibleGroup //coordinates multiple collapsibles, no wrapper DOM
-P type:'single' | 'multiple'='single' one or many open | defaultValue:string | string[] default open items
-P value:string | string[] controlled open items | onChange:(value: string | string[]) => void open items change callback
-P children:ReactNode! collapsible instances to coordinate
-X <XDSCollapsibleGroup type="single" defaultValue="general"><XDSCollapsible trigger="General" value="general"><p>General settings</p></XDSCollapsible><XDSCollapsible trigger="Advanced" value="advanced"><p>Advanced settings</p></XDSCollapsible></XDSCollapsibleGroup>
-X <XDSCollapsibleGroup type="multiple" defaultValue={["s1", "s2"]}><XDSCollapsible trigger="Section 1" value="s1">...</XDSCollapsible><XDSCollapsible trigger="Section 2" value="s2">...</XDSCollapsible></XDSCollapsibleGroup>
-X <XDSCard><XDSCollapsible trigger="Details"><p>This content can be collapsed</p></XDSCollapsible></XDSCard>
-X <XDSCard><XDSCollapsible trigger="Advanced" defaultIsOpen={false}><p>Hidden by default</p></XDSCollapsible></XDSCard>
-X <XDSCard><XDSCollapsible trigger="Settings" isOpen={open} onOpenChange={setOpen}><p>Controlled externally</p></XDSCollapsible></XDSCard>
-X <XDSCollapsible trigger="Show more"><p>Expandable content</p></XDSCollapsible>
-X <XDSCollapsibleGroup type="single" defaultValue="general"><XDSVStack gap={2}><XDSCard><XDSCollapsible trigger="General Settings" value="general"><GeneralContent /></XDSCollapsible></XDSCard><XDSCard><XDSCollapsible trigger="Advanced Settings" value="advanced"><AdvancedContent /></XDSCollapsible></XDSCard></XDSVStack></XDSCollapsibleGroup>
-X <XDSCollapsibleGroup type="multiple" defaultValue={["s1", "s2"]}><XDSVStack gap={2}><XDSCard><XDSCollapsible trigger="Section 1" value="s1">...</XDSCollapsible></XDSCard><XDSCard><XDSCollapsible trigger="Section 2" value="s2">...</XDSCollapsible></XDSCard></XDSVStack></XDSCollapsibleGroup>
-X <XDSCard><XDSCollapsible trigger="Report Details" value="report"><XDSLayout content={<XDSLayoutContent>Report body</XDSLayoutContent>} footer={<XDSLayoutFooter hasDivider>Actions</XDSLayoutFooter>} /></XDSCollapsible></XDSCard>
-A trigger renders as <button> w/ aria-expanded reflecting open state|chevron indicator shows expanded/collapsed state
-K Enter/Space=toggle open/close
-N manages own open/close state by default (uncontrolled)|nested in XDSCollapsibleGroup w/ matching value, defers to group context|group provides context w/ isOpen(value) + toggle(value) methods|group renders no wrapper DOM, layout is consumer responsibility (e.g. XDSVStack)`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'collapsible content primitive + group coordination',
+  features: [
+    'XDSCollapsible makes content collapsible; trigger toggles content visibility',
+    'handles state, a11y (aria-expanded, keyboard), chevron indicator',
+    'uncontrolled (defaultIsOpen), controlled (isOpen/onOpenChange), group-coordinated modes',
+    'XDSCollapsibleGroup coordinates multiple instances; single or multiple open at once',
+    'XDSCollapsibleGroup renders no wrapper DOM',
+    'inside group, defers open/close state to group context via value prop',
+  ],
+  keyboard: 'Enter/Space activates trigger to toggle open/close',
+  accessibility: [
+    'trigger renders as <button> w/ aria-expanded reflecting open state',
+    'chevron indicator shows expanded/collapsed visual affordance',
+  ],
+  notes: [
+    'manages own open/close state by default (uncontrolled)',
+    'nested in XDSCollapsibleGroup w/ matching value, defers to group context',
+    'group context exposes isOpen(value) + toggle(value) methods',
+    'group renders no wrapper DOM; layout is consumer responsibility (e.g. XDSVStack)',
+  ],
+  components: [
+    {
+      name: 'XDSCollapsible',
+      description: 'makes content collapsible; trigger toggles visibility, manages own state or defers to parent group',
+      propDescriptions: {
+        trigger: 'content in trigger area (always visible)',
+        children: 'content that collapses+expands',
+        defaultIsOpen: 'default open state (uncontrolled)',
+        isOpen: 'controlled open state',
+        onOpenChange: 'callback on open state change',
+        value: 'ID for group coordination; required inside XDSCollapsibleGroup',
+      },
+    },
+    {
+      name: 'XDSCollapsibleGroup',
+      description: 'coordinates multiple XDSCollapsible instances; single or multiple open. no wrapper DOM.',
+      propDescriptions: {
+        type: 'one or many items open simultaneously',
+        defaultValue: 'default open item(s) (uncontrolled); string for single, array for multiple',
+        value: 'controlled open item(s)',
+        onChange: 'callback on open items change',
+        children: 'XDSCollapsible instances to coordinate',
+      },
+    },
+  ],
+};

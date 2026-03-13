@@ -99,9 +99,12 @@ export const docsZh = {
   },
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSBadge}from'@xds/core/Badge' //status indicators, counts, or labels
-P variant:'neutral' | 'info' | 'success' | 'warning' | 'error'='neutral' visual style
-P children:ReactNode omit for dot indicator | icon:ReactNode optional leading icon
-X <XDSBadge>Default</XDSBadge> | <XDSBadge variant="info">42</XDSBadge> | <XDSBadge variant="success" />
-X <XDSBadge variant="success">Active</XDSBadge> <XDSBadge variant="error">Failed</XDSBadge> <XDSBadge variant="warning">Pending</XDSBadge>`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'badge for status indicators, counts, or labels',
+  propDescriptions: {
+    variant: 'visual style variant',
+    children: 'badge content; omit for dot indicator',
+    icon: 'optional leading icon',
+  },
+};

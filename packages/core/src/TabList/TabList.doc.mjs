@@ -479,18 +479,71 @@ export const docsZh = {
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSTabList,XDSTab,XDSTabMenu}from'@xds/core/TabList' //tab nav w/ overflow menu
-C XDSTabList //nav wrapper, provides context to children
-P value:string! currently selected tab | onChange:(value: string) => void! fired on tab select | size:'sm' | 'md' | 'lg'='md' applied to all child tabs | hasDivider:boolean='false' bottom border divider | children:ReactNode! XDSTab+XDSTabMenu items
-X <XDSTabList value={activeTab} onChange={setActiveTab}>\\n  <XDSTab value="home" label="Home" />\\n  <XDSTab value="settings" label="Settings" />\\n</XDSTabList> | <XDSTabList value={activeTab} onChange={setActiveTab} hasDivider size="sm">\\n  <XDSTab value="home" label="Home" />\\n  <XDSTab value="settings" label="Settings" />\\n</XDSTabList>
-C XDSTab //individual tab, button or anchor w/ selected styling
-P value:string! unique value matched against context | label:string! visible text | href:string renders as <a> when provided | as:XDSLinkComponentType custom link component, overrides XDSLinkProvider, only w/ href | icon:ReactNode shown when not selected | selectedIcon:ReactNode shown when selected, falls back to icon
-X <XDSTab value="home" label="Home" /> | <XDSTab value="home" label="Home" href="/home" icon={<HomeIcon />} selectedIcon={<HomeFilledIcon />} />
-C XDSTabMenu //overflow menu trigger w/ dropdown options
-P label:string! trigger text (when no option selected) + dropdown heading | options:XDSTabMenuOption[]! menu options array
-X <XDSTabMenu\\n  label="More"\\n  options={[\\n    {value: 'analytics', label: 'Analytics', icon: ChartBarIcon},\\n    {value: 'reports', label: 'Reports', icon: DocumentTextIcon},\\n  ]}\\n/> | <XDSTabMenu\\n  label="More"\\n  options={[\\n    {value: 'analytics', label: 'Analytics'},\\n    {value: 'reports', label: 'Reports'},\\n  ]}\\n/>
-X <XDSTabList value={activeTab} onChange={setActiveTab}>\\n  <XDSTab value="home" label="Home" href="/home" />\\n  <XDSTab value="settings" label="Settings" href="/settings" />\\n</XDSTabList> | <XDSTabList value={activeTab} onChange={setActiveTab}>\\n  <XDSTab value="home" label="Home" icon={<HomeIcon />} selectedIcon={<HomeFilledIcon />} />\\n  <XDSTab value="settings" label="Settings" icon={<CogIcon />} />\\n</XDSTabList> | <XDSTabList value={activeTab} onChange={setActiveTab} hasDivider>\\n  <XDSTab value="home" label="Home" />\\n  <XDSTab value="settings" label="Settings" />\\n</XDSTabList> | <XDSTabList value={activeTab} onChange={setActiveTab}>\\n  <XDSTab value="home" label="Home" />\\n  <XDSTab value="settings" label="Settings" />\\n  <XDSTabMenu\\n    label="More"\\n    options={[\\n      {value: 'analytics', label: 'Analytics', icon: ChartBarIcon},\\n      {value: 'reports', label: 'Reports', icon: DocumentTextIcon},\\n    ]}\\n  />\\n</XDSTabList>
-A XDSTabList renders <nav> w/ aria-label="Tabs"|XDSTab renders <button> or <a>, uses nav pattern not role="tab"|selected XDSTab has aria-current="page"|XDSTabMenu trigger has aria-haspopup="menu", aria-expanded, aria-controls|XDSTabMenu dropdown has role="menu" + aria-label matching label prop|XDSTabMenu heading divider has role="separator"|XDSTabMenu items have role="menuitem" + aria-current="true" when selected
-K Tab=move focus between items;ArrowUp/ArrowDown=navigate menu items (wrapping);Home/End=first/last item;Escape=close menu
-N XDSTab renders <button> by default, <a> when href provided|XDSTabMenu renders items internally from options prop, no child composition|trigger label: options.find(o => o.value === ctx.value)?.label ?? label|menu trigger underline scopes to label text span only, not chevron|icons on menu items via XDSIcon size="sm" color="secondary"|selected menu items show CheckIcon (matching XDSSelector pattern)|hasDivider controls bottom border (default: off)|size uses sizeVars tokens for tab heights (sm/md/lg)`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Tab navigation w/ overflow menu support; semantic nav landmark w/ button or anchor tab items.',
+  features: [
+    'Context-based: XDSTabListContext passes value/onChange/size from XDSTabList to children',
+    'Single-responsibility XDSTab: renders <button> or <a> (when href provided) in nav',
+    'Overflow menu: XDSTabMenu accepts options prop, renders menu items from dropdown',
+    "Dynamic trigger label: shows selected option's label when active",
+    "Menu heading: dropdown includes XDSDivider w/ menu's label as separator heading",
+    'Selection indicator: selected items show checkmark icon (matching XDSSelector pattern)',
+    'Keyboard nav: Tab between items, ArrowUp/Down in menu, Home/End, Escape closes (via useListFocus)',
+    'Hover state: unselected tabs show gray underline on hover; no bg hover overlay',
+    'Accessible: nav landmark, aria-current="page" on selected, role="menu" + aria-label on dropdown, aria-controls, role="menuitem", role="separator"',
+  ],
+  notes: [
+    'XDSTab renders <button> by default, <a> when href provided.',
+    'XDSTabMenu renders items internally from options prop; no child composition.',
+    'Trigger label: options.find(o => o.value === ctx.value)?.label ?? label.',
+    'Menu trigger underline scopes to label text span only, not chevron.',
+    'Icons on menu items via XDSIcon size="sm" color="secondary".',
+    'Selected menu items show CheckIcon (matching XDSSelector pattern).',
+    'hasDivider controls bottom border (default: off).',
+    'Size uses sizeVars tokens for tab heights (sm/md/lg).',
+  ],
+  accessibility: [
+    'XDSTabList renders <nav> w/ aria-label="Tabs".',
+    'XDSTab renders <button> or <a>; uses nav pattern, not role="tab".',
+    'Selected XDSTab has aria-current="page".',
+    'XDSTabMenu trigger has aria-haspopup="menu", aria-expanded, aria-controls.',
+    'XDSTabMenu dropdown has role="menu" + aria-label matching label prop.',
+    'XDSTabMenu heading divider has role="separator".',
+    'XDSTabMenu items have role="menuitem" + aria-current="true" when selected.',
+  ],
+  keyboard: 'Tab=move focus between items; ArrowUp/ArrowDown=navigate menu (wrapping); Home/End=first/last; Escape=close menu.',
+  components: [
+    {
+      name: 'XDSTabList',
+      description: 'Nav wrapper providing XDSTabListContext (value, onChange, size) to children.',
+      propDescriptions: {
+        value: 'Currently selected tab value.',
+        onChange: 'Fired when tab is selected.',
+        size: 'Size variant applied to all child tabs.',
+        hasDivider: 'Show bottom border divider under tab list.',
+        children: 'XDSTab + XDSTabMenu items inside nav.',
+      },
+    },
+    {
+      name: 'XDSTab',
+      description: 'Individual tab; renders as button or anchor w/ selected-state styling + optional icons.',
+      propDescriptions: {
+        value: 'Unique value matched against XDSTabListContext.value.',
+        label: 'Visible label text.',
+        href: 'URL; renders as <a> when provided.',
+        as: 'Custom link component overriding XDSLinkProvider; only w/ href.',
+        icon: 'Icon shown when not selected.',
+        selectedIcon: 'Icon shown when selected; falls back to icon.',
+      },
+    },
+    {
+      name: 'XDSTabMenu',
+      description: "Overflow menu trigger; dropdown of extra tab options, shows selected option's label as trigger text.",
+      propDescriptions: {
+        label: 'Trigger text (when no option selected) + dropdown heading.',
+        options: 'Menu options array rendered in dropdown.',
+      },
+    },
+  ],
+};

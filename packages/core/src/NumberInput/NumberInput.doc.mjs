@@ -475,31 +475,63 @@ export const docsZh = {
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSNumberInput}from'@xds/core/NumberInput' //number input w/ validation
-P label:string! label text (always rendered for a11y) | value:number|null|undefined! current value | onChange:(value: number) => void! callback on valid input change | size:'sm'|'md'|'lg'='md' size variant | isLabelHidden:boolean visually hide label (still accessible) | description:string text between label + input | isOptional:boolean field optional (mutually exclusive w/ isRequired) | isRequired:boolean field required (mutually exclusive w/ isOptional) | isDisabled:boolean input disabled | placeholder:string | labelTooltip:string tooltip in info icon at label end | startIcon:XDSIconType icon at input start | labelIcon:XDSIconType icon before label text | status:{type:'error'|'warning'|'success',message?:string} validation status w/ optional message | min:number|null minimum value | max:number|null maximum value | step:number|null='1' step increment | units:string|null units suffix (e.g. "%" or "GB") | isIntegerOnly:boolean only allow integers | htmlName:string HTML name for form submissions | autoComplete:string HTML autocomplete | hasAutoFocus:boolean focus on mount | onFocus:(e: FocusEvent<HTMLInputElement>) => void | onBlur:(e: FocusEvent<HTMLInputElement>) => void | onEnter:() => void callback on Enter key
-X <XDSNumberInput label="Quantity" value={quantity} onChange={setQuantity} />
-X <XDSNumberInput label="Age" value={age} onChange={setAge} placeholder="Enter your age" />
-X <XDSNumberInput label="Rating" value={rating} onChange={setRating} min={1} max={5} />
-X <XDSNumberInput label="Price" value={price} onChange={setPrice} min={0} step={0.01} />
-X <XDSNumberInput label="Discount" value={discount} onChange={setDiscount} units="%" />
-X <XDSNumberInput label="Count" value={count} onChange={setCount} isIntegerOnly />
-X <XDSNumberInput label="Quantity" description="Enter the number of items" value={qty} onChange={setQty} />
-X <XDSNumberInput label="Phone Extension" isOptional value={ext} onChange={setExt} />
-X <XDSNumberInput label="Amount" isRequired value={amount} onChange={setAmount} />
-X <XDSNumberInput
-  label="Age"
-  value={age}
-  onChange={setAge}
-  status={{ type: 'error', message: 'Age must be between 18 and 120' }}
-/>
-X <XDSNumberInput
-  label="Search"
-  value={search}
-  onChange={setSearch}
-  onEnter={() => handleSearch()}
-  onFocus={() => console.log('focused')}
-  onBlur={() => console.log('blurred')}
-/>
-A Label always rendered + associated via htmlFor/id using useId hook|isLabelHidden hides label visually, keeps screen reader access via CSS|Wraps XDSField for consistent label, description, optional/required handling
-N isOptional + isRequired mutually exclusive; both set shows "Optional"|Uses type="number" for native browser step controls|Validated onChange: only fires when value passes min/max/integer constraints|Internal pending state allows free-form typing, validates on commit|Units displayed as lighter grey suffix after input value`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Number input component for collecting numeric user input w/ validation.',
+  features: [
+    'Label support; required label for accessibility (can be visually hidden)',
+    'Description; optional text between label + input',
+    'Optional/Required indicators; display "Optional" or "Required" w/ bullet separator',
+    'Label tooltip; optional info icon w/ tooltip at label end',
+    'Label icon; optional icon before label text',
+    'Accessible; label associated w/ input via htmlFor/id',
+    'Styled w/ StyleX; uses XDS design tokens for consistent styling',
+    'Size variants; three sizes (sm, md, lg) for different contexts',
+    'Status handling; error, warning, success states w/ messages',
+    'Number constraints; support for min, max, step attributes',
+    'Validated onChange; only calls onChange when value passes validation',
+    'Units display; optional units suffix (e.g. "%" or "GB")',
+    'Integer mode; option to restrict to integers only',
+    'Native controls; uses type="number" for browser step controls',
+    'Event callbacks; onFocus, onBlur, onEnter handlers',
+  ],
+  accessibility: [
+    'Label always rendered + associated w/ input via htmlFor/id using useId hook.',
+    'Use isLabelHidden to hide label visually while keeping screen reader access via CSS.',
+    'Wraps XDSField for consistent label, description, optional/required indicator handling.',
+  ],
+  notes: [
+    'isOptional + isRequired mutually exclusive; both set shows "Optional".',
+    'Uses type="number" to enable native browser step controls (up/down arrows).',
+    'Validated onChange: only calls onChange when value is valid number passing min/max/integer constraints.',
+    'Uses internal pending state for free-form typing while validating on commit.',
+    'Units displayed as lighter grey suffix after input value.',
+  ],
+  propDescriptions: {
+    label: 'Label text (always rendered for accessibility).',
+    value: 'Current input value.',
+    onChange: 'Callback on valid input change.',
+    size: 'Size variant.',
+    isLabelHidden: 'Visually hide label (still accessible to screen readers).',
+    description: 'Text between label + input.',
+    isOptional: 'Field optional (mutually exclusive w/ isRequired).',
+    isRequired: 'Field required (mutually exclusive w/ isOptional).',
+    isDisabled: 'Input disabled.',
+    placeholder: 'Placeholder text.',
+    labelTooltip: 'Tooltip text in info icon at label end.',
+    startIcon: 'Icon at input start.',
+    labelIcon: 'Icon before label text.',
+    status: 'Validation status w/ optional message.',
+    min: 'Minimum value allowed.',
+    max: 'Maximum value allowed.',
+    step: 'Step increment.',
+    units: 'Units suffix (e.g. "%" or "GB").',
+    isIntegerOnly: 'Only allow integer values.',
+    htmlName: 'HTML name for form submissions.',
+    autoComplete: 'HTML autocomplete attribute.',
+    hasAutoFocus: 'Focus input on mount.',
+    onFocus: 'Callback on focus.',
+    onBlur: 'Callback on blur.',
+    onEnter: 'Callback on Enter key.',
+  },
+};

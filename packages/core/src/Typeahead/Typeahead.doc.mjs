@@ -831,18 +831,96 @@ export const docsZh = {
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSTypeahead}from'@xds/core/Typeahead' //searchable dropdown for single-item selection
-C XDSTypeahead //styled typeahead w/ label, description, validation; wraps XDSBaseTypeahead+XDSField
-P label:string! accessible label | searchSource:XDSSearchSource<T>! data source w/ search+bootstrap methods | value:T | null! selected item or null | onChange:(item: T | null) => void! called on selection change | placeholder:string input placeholder | hasEntriesOnFocus:boolean='false' show bootstrap results on focus before typing | hasClear:boolean='true' clear button to deselect | isDisabled:boolean='false' | maxMenuItems:number='10' max dropdown items | status:XDSInputStatus validation w/ type+message | renderItem:(item: T) => ReactNode custom dropdown item render; default XDSTypeaheadItem | isLabelHidden:boolean='false' visually hides label, keeps a11y | description:string helper text below label | isRequired:boolean='false' marks required | isOptional:boolean='false' shows optional indicator | labelTooltip:string tooltip on label | emptySearchResultsText:string='No results found' | hasAutoFocus:boolean='false' auto-focus on mount | size:'sm' | 'md'='md' input+token size | debounceMs:number='150' search debounce ms; 0 for sync | onChangeQuery:(query: string) => void fired on search query change | onOpenChange:(isOpen: boolean) => void fired on dropdown open/close | xstyle:StyleXStyles layout styles; must be stylex.create() value
-X <XDSTypeahead\n  label="Assignee"\n  searchSource={userSource}\n  value={assignee}\n  onChange={setAssignee}\n  placeholder="Search users..."\n/> | <XDSTypeahead\n  label="Project"\n  searchSource={projectSource}\n  value={project}\n  onChange={setProject}\n  hasEntriesOnFocus\n  placeholder="Select a project..."\n/>
-C XDSBaseTypeahead //unstyled combobox engine; input+search+keyboard nav+dropdown; no wrapper/border/token; used by XDSTypeahead+XDSTokenizer
-P searchSource:XDSSearchSource<T>! data source w/ search+bootstrap | value:T | null! selected item | onChange:(item: T | null) => void! called on selection change | renderItem:(item: T) => ReactNode custom dropdown item render | placeholder:string='Search...' | hasEntriesOnFocus:boolean='false' bootstrap on focus | maxMenuItems:number='10' | emptySearchResultsText:string='No results found' | isDisabled:boolean='false' | hasAutoFocus:boolean='false' | debounceMs:number='150' search debounce ms; 0 for sync | anchorRef:RefObject<HTMLElement | null> anchor for dropdown positioning; defaults to input | inputXStyle:StyleXStyles additional input styles | onKeyDown:(e: React.KeyboardEvent<HTMLInputElement>) => void keydown before internal nav; preventDefault() skips internal handling | onChangeQuery:(query: string) => void fired on query change | onOpenChange:(isOpen: boolean) => void fired on dropdown open/close | inputId:string input ID for label association | ariaDescribedBy:string additional aria-describedby IDs
-X <XDSBaseTypeahead\n  searchSource={source}\n  value={selected}\n  onChange={setSelected}\n  anchorRef={wrapperRef}\n  placeholder="Search..."\n/>
-C XDSTypeaheadItem //default dropdown item renderer; label w/ optional icon, description, avatar
-P item:XDSSearchableItem! search result item to render | icon:ReactNode icon/avatar before label | description:string text below label | isDisabled:boolean='false' visually disabled | group:string group label for visual grouping
-X <XDSTypeaheadItem\n  item={user}\n  icon={<XDSAvatar src={user.auxiliaryData.avatar} size="sm" />}\n  description={user.auxiliaryData.role}\n/>
-X const source = {\n  search: query => fruits.filter(f => f.label.includes(query)),\n  bootstrap: () => fruits.slice(0, 5),\n};\n\n<XDSTypeahead\n  label="Fruit"\n  searchSource={source}\n  value={selected}\n  onChange={setSelected}\n  placeholder="Search fruits..."\n/> | <XDSTypeahead\n  label="Assignee"\n  searchSource={userSource}\n  value={assignee}\n  onChange={setAssignee}\n  placeholder="Search users..."\n  hasEntriesOnFocus\n  renderItem={(item) => (\n    <XDSTypeaheadItem\n      item={item}\n      icon={<XDSAvatar src={item.auxiliaryData.avatar} size="sm" />}\n      description={item.auxiliaryData.role}\n    />\n  )}\n/> | <XDSTypeahead\n  label="Manager"\n  searchSource={managerSource}\n  value={manager}\n  onChange={setManager}\n  isRequired\n  status={{ type: 'error', message: 'A manager is required' }}\n/>
-A Uses combobox ARIA: role="combobox", aria-expanded, aria-autocomplete="list"|dropdown role="listbox" w/ role="option" on each item|aria-activedescendant tracks highlighted option|selected item has aria-selected="true"|loading state has role="status" w/ aria-label="Loading"|XDSTypeahead wraps in XDSField for label+description association
-K Arrow keys=navigate dropdown items;Enter=select highlighted item;Escape=close dropdown or restore previous value in edit mode;Home/End=jump to first/last item
-N XDSSearchSource requires items implementing XDSSearchableItem ({ id: string; label: string; [key: string]: unknown })|edit mode: clicking selected token removes it visually, populates input w/ label text, selects all; blur w/o selecting restores original|XDSBaseTypeahead renders only <input>+dropdown popover; consumers provide wrapper|if item has element property, XDSTypeaheadItem renders it directly instead of standard layout`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Searchable dropdown for single-item selection w/ keyboard navigation. Supports async+sync search via searchSource interface.',
+  features: [
+    'Async+sync search via searchSource w/ search()+bootstrap() methods',
+    'Bootstrap results shown on focus before typing (via hasEntriesOnFocus)',
+    'Edit mode: clicking selected token enters edit w/ text pre-populated+selected',
+    'Combobox ARIA pattern for full a11y',
+    'Debounced search w/ configurable delay (default 150ms, 0 for sync)',
+    'Two-layer architecture: XDSBaseTypeahead provides engine, XDSTypeahead adds field chrome',
+  ],
+  notes: [
+    'XDSSearchSource requires items implementing XDSSearchableItem ({ id: string; label: string; [key: string]: unknown }).',
+    'Edit mode: clicking selected token removes it visually, populates input w/ label text, selects all. Blur w/o selecting restores original.',
+    'XDSBaseTypeahead renders only <input>+dropdown popover; consumers provide wrapper.',
+    'If item has element property, XDSTypeaheadItem renders it directly instead of standard layout.',
+  ],
+  accessibility: [
+    'Combobox ARIA: role="combobox", aria-expanded, aria-autocomplete="list".',
+    'Dropdown role="listbox" w/ role="option" on each item.',
+    'aria-activedescendant tracks highlighted option.',
+    'Selected item has aria-selected="true".',
+    'Loading state has role="status" w/ aria-label="Loading".',
+    'XDSTypeahead wraps in XDSField for label+description association.',
+  ],
+  keyboard: 'Arrow keys navigate dropdown items. Enter selects highlighted item. Escape closes dropdown or restores previous value in edit mode. Home/End jump to first/last item.',
+  components: [
+    {
+      name: 'XDSTypeahead',
+      description: 'Styled typeahead w/ label, description, validation. Wraps XDSBaseTypeahead+XDSField.',
+      propDescriptions: {
+        label: 'Accessible label for input.',
+        searchSource: 'Data source w/ search+bootstrap methods for populating dropdown.',
+        value: 'Selected item or null.',
+        onChange: 'Fired on selection change.',
+        placeholder: 'Input placeholder text.',
+        hasEntriesOnFocus: 'Show bootstrap results on focus before typing.',
+        hasClear: 'Clear button to deselect current value.',
+        isDisabled: 'Disables input.',
+        maxMenuItems: 'Max dropdown items to display.',
+        status: 'Validation status w/ type+message for error/warning/success.',
+        renderItem: 'Custom dropdown item render. Default renders XDSTypeaheadItem.',
+        isLabelHidden: 'Visually hides label; keeps a11y.',
+        description: 'Helper text below label.',
+        isRequired: 'Marks field required.',
+        isOptional: 'Shows optional indicator on label.',
+        labelTooltip: 'Tooltip on label.',
+        emptySearchResultsText: 'Text when search returns no results.',
+        hasAutoFocus: 'Auto-focus input on mount.',
+        size: 'Input+token size.',
+        debounceMs: 'Search debounce ms. 0 for sync.',
+        onChangeQuery: 'Fired on search query text change.',
+        onOpenChange: 'Fired on dropdown open/close.',
+        xstyle: 'StyleX layout styles. Must be stylex.create() value.',
+      },
+    },
+    {
+      name: 'XDSBaseTypeahead',
+      description: 'Unstyled combobox engine; input+search+keyboard nav+dropdown. No wrapper/border/token. Used by XDSTypeahead+XDSTokenizer.',
+      propDescriptions: {
+        searchSource: 'Data source w/ search+bootstrap methods.',
+        value: 'Currently selected item.',
+        onChange: 'Fired on selection change.',
+        renderItem: 'Custom dropdown item render.',
+        placeholder: 'Input placeholder.',
+        hasEntriesOnFocus: 'Bootstrap results on focus.',
+        maxMenuItems: 'Max dropdown items.',
+        emptySearchResultsText: 'Text when no results.',
+        isDisabled: 'Whether input disabled.',
+        hasAutoFocus: 'Auto-focus on mount.',
+        debounceMs: 'Search debounce ms. 0 for sync.',
+        anchorRef: 'Anchor for dropdown positioning. Defaults to input.',
+        inputXStyle: 'Additional StyleX styles for input.',
+        onKeyDown: 'Keydown before internal nav. preventDefault() skips internal handling.',
+        onChangeQuery: 'Fired on query text change.',
+        onOpenChange: 'Fired on dropdown open/close.',
+        inputId: 'Input ID for label association.',
+        ariaDescribedBy: 'Additional aria-describedby IDs.',
+      },
+    },
+    {
+      name: 'XDSTypeaheadItem',
+      description: 'Default dropdown item renderer. Label w/ optional icon, description, avatar. Exported for custom renderItem.',
+      propDescriptions: {
+        item: 'Search result item to render.',
+        icon: 'Icon/avatar before label.',
+        description: 'Text below label.',
+        isDisabled: 'Visually disabled.',
+        group: 'Group label for visual grouping.',
+      },
+    },
+  ],
+};

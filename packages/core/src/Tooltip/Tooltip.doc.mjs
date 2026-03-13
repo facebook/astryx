@@ -377,14 +377,61 @@ export const docsZh = {
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSTooltip}from'@xds/core/Tooltip' //hover/focus tooltip for short text
-C XDSTooltip //component wrapper for tooltip on hover/focus
-P children:ReactNode trigger element(s) | anchorRef:RefObject<HTMLElement> external anchor ref for sibling mode | content:ReactNode tooltip content, typically short text | placement:LayerPlacement='above' position relative to anchor | alignment:LayerAlignment='center' alignment along placement axis | delay:number='200' show delay ms | hideDelay:number='0' hide delay ms | focusTrigger:'auto' | 'always' | 'never'='auto' controls focus event triggers | isEnabled:boolean='true' enables/disables triggers | hasHoverIndication:'auto' | boolean='auto' dashed underline on trigger
-X <XDSTooltip content="Save your changes" placement="above">\\n  <XDSButton label="Save" variant="primary" />\\n</XDSTooltip> | <XDSTooltip anchorRef={buttonRef} content="Save your changes" placement="above" />
-C useXDSTooltip //hook for tooltip w/ hover/focus triggers; builds on useXDSLayer
-P placement:LayerPlacement='above' position relative to anchor | alignment:LayerAlignment='center' alignment along placement axis | delay:number='200' show delay ms | hideDelay:number='0' hide delay ms | focusTrigger:'auto' | 'always' | 'never'='auto' controls focus event triggers | isEnabled:boolean='true' enables/disables all hover+focus triggers | onShow:() => void fired when tooltip visible | onHide:() => void fired when tooltip hidden
-X const tooltip = useXDSTooltip({ placement: 'above' });\\n\\n<XDSButton ref={tooltip.ref} aria-describedby={tooltip.describedBy}>\\n  Hover me\\n</XDSButton>\\n{tooltip.renderTooltip('Helpful tooltip text')}
-A Links tooltip content to trigger via aria-describedby|when composing multiple aria-describedby sources, merge w/ utility
-K Focus on trigger=show tooltip;Blur=hide tooltip
-N Unlike HoverCard, tooltips don't stay open when hovering tooltip content|shorter delays+inverted colors for high contrast|for interactive content use XDSHoverCard or XDSPopover|sibling mode (anchorRef) attaches to external ref instead of wrapping children|LayerPlacement: above|below|start|end; LayerAlignment: start|center|end`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Hover/focus triggered tooltip for displaying short, non-interactive text anchored to trigger element.',
+  features: [
+    'CSS Anchor Positioning for automatic placement relative to trigger',
+    'Popover API for top-layer rendering; no React portals needed',
+    'Hover triggers w/ configurable show+hide delays',
+    'Focus triggers w/ auto-detection for focusable elements',
+    'Inverted color palette (dark bg, light text) for high contrast',
+    'display:contents wrapper preserves children refs',
+    'Hover indication (dashed underline) for text-only triggers',
+    'Sibling mode via anchorRef for external trigger elements',
+  ],
+  notes: [
+    "Unlike HoverCard, tooltips don't stay open when hovering tooltip content.",
+    'Shorter delays+inverted colors for high contrast.',
+    'For interactive content use XDSHoverCard or XDSPopover.',
+    'Sibling mode (anchorRef) attaches to external ref instead of wrapping children.',
+    'LayerPlacement: above|below|start|end. LayerAlignment: start|center|end.',
+  ],
+  accessibility: [
+    'Links tooltip content to trigger via aria-describedby.',
+    'When composing multiple aria-describedby sources, merge w/ utility.',
+  ],
+  keyboard: 'Focus on trigger shows tooltip. Blur hides it.',
+  components: [
+    {
+      name: 'XDSTooltip',
+      description: 'Component wrapper for tooltip display on hover/focus.',
+      propDescriptions: {
+        children: 'Trigger element(s) that activate tooltip.',
+        anchorRef: 'External anchor ref for sibling mode.',
+        content: 'Tooltip content, typically short text.',
+        placement: 'Position relative to anchor.',
+        alignment: 'Alignment along placement axis.',
+        delay: 'Show delay in ms.',
+        hideDelay: 'Hide delay in ms.',
+        focusTrigger: 'Controls when focus events trigger tooltip.',
+        isEnabled: 'Enables/disables tooltip triggers.',
+        hasHoverIndication: 'Dashed underline on trigger element.',
+      },
+    },
+    {
+      name: 'useXDSTooltip',
+      description: 'Hook for tooltip w/ hover/focus triggers. Builds on useXDSLayer.',
+      propDescriptions: {
+        placement: 'Position relative to anchor.',
+        alignment: 'Alignment along placement axis.',
+        delay: 'Show delay in ms.',
+        hideDelay: 'Hide delay in ms.',
+        focusTrigger: 'Controls when focus events trigger tooltip.',
+        isEnabled: 'Enables/disables all hover+focus triggers.',
+        onShow: 'Fired when tooltip becomes visible.',
+        onHide: 'Fired when tooltip hidden.',
+      },
+    },
+  ],
+};

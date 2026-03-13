@@ -144,11 +144,21 @@ export const docsZh = {
   },
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSDivider}from'@xds/core/Divider' //visual separator w/ optional label
-P orientation:'horizontal' | 'vertical'='horizontal' | label:ReactNode centered label on divider
-P variant:'subtle' | 'strong'='subtle' visual weight | isFullBleed:boolean='false' extend to container edges via negative margins
-P xstyle:StyleXStyles layout customization via stylex.create()
-X <XDSDivider /> | <XDSDivider label="or" /> | <XDSDivider orientation="vertical" />
-X <XDSDivider variant="strong" /> | <XDSDivider isFullBleed />
-N horizontal+vertical orientations|optional centered label|subtle+strong weight variants|full-bleed extends to container edges|themeable via .xds-divider className`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'visual separator w/ optional label, using XDS design tokens',
+  features: [
+    'horizontal+vertical orientations',
+    'optional centered label on divider line',
+    'subtle+strong visual weight variants',
+    'full-bleed mode extends to container edges via negative margins',
+    'themeable via className; target .xds-divider w/ variant+orientation classes',
+  ],
+  propDescriptions: {
+    orientation: 'divider orientation',
+    label: 'optional centered label on divider',
+    variant: 'visual weight of divider line',
+    isFullBleed: 'extend to container edges w/ negative margins',
+    xstyle: 'StyleX styles for layout; must be stylex.create() value',
+  },
+};

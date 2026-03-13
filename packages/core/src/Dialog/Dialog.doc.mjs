@@ -511,24 +511,57 @@ function Example() {
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSDialog}from'@xds/core/Dialog' //native dialog w/ focus trap
-C XDSDialog //modal dialog using native <dialog>
-P isOpen:boolean! | onOpenChange:(isOpen: boolean) => unknown! visibility change callback | children:ReactNode!
-P width:number | string='400' dialog width | maxHeight:number | string='75vh'
-P position:XDSDialogPosition static position, centered by default | variant:'standard' | 'fullscreen'='standard'
-P purpose:'required' | 'form' | 'info'='info' dismissal behavior control
-X <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}><XDSLayout header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>} content={<XDSLayoutContent>Content goes here</XDSLayoutContent>} footer={<XDSLayoutFooter hasDivider><XDSButton label="Confirm" variant="primary" onClick={() => setIsOpen(false)} /></XDSLayoutFooter>} /></XDSDialog>
-C XDSDialogHeader //header w/ title, subtitle, close button, content slots
-P title:string dialog title (receives focus on open) | subtitle:string subtitle below title
-P onOpenChange:(isOpen: boolean) => unknown close button callback (omit=no button) | hasDivider:boolean='true' bottom border
-P startContent:ReactNode content before title (e.g. back button) | endContent:ReactNode content after title, before close
-X <XDSDialogHeader title="Step 2 of 3" startContent={<XDSButton label="Back" variant="secondary" onClick={goBack} />} onOpenChange={open => setIsOpen(open)} />
-X import {XDSDialog} from '@xds/core/Dialog'; import { XDSLayout, XDSLayoutHeader, XDSLayoutContent, XDSLayoutFooter, } from '@xds/core/Layout'; import {XDSButton} from '@xds/core/Button'; import {useState} from 'react'; function Example() { const [isOpen, setIsOpen] = useState(false); return ( <> <XDSButton label="Open Dialog" onClick={() => setIsOpen(true)} /> <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}> <XDSLayout header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>} content={<XDSLayoutContent>Content goes here</XDSLayoutContent>} footer={ <XDSLayoutFooter hasDivider> <XDSButton label="Cancel" variant="secondary" onClick={() => setIsOpen(false)} /> <XDSButton label="Confirm" variant="primary" onClick={() => setIsOpen(false)} /> </XDSLayoutFooter> } /> </XDSDialog> </> ); }
-X <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)} position={{top: 100, right: 20}}>{/* content */}</XDSDialog>
-X <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)} variant="fullscreen"><XDSLayout header={<XDSLayoutHeader hasDivider>Full-screen title</XDSLayoutHeader>} content={<XDSLayoutContent>Content goes here</XDSLayoutContent>} footer={<XDSLayoutFooter hasDivider><XDSButton label="Close" onClick={() => setIsOpen(false)} /></XDSLayoutFooter>} /></XDSDialog>
-X <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)} purpose="required">{/* user must take an explicit action to close */}</XDSDialog>
-X <XDSDialogHeader title="Confirm Action" subtitle="This cannot be undone" onOpenChange={open => setIsOpen(open)} />
-A uses native <dialog> w/ showModal() for correct ARIA modal semantics|focus automatically trapped by browser via showModal()|XDSDialogHeader title receives focus on dialog open
-K Escape=close dialog (unless purpose="required");focus trapped inside while open
-N height unset (grows w/ content), constrained by maxHeight|variant="fullscreen" ignores width, maxHeight, position|form purpose: backdrop click allowed only before user interaction|required=no Escape+no backdrop click; form=no backdrop click after interaction; info=both allowed|designed for use w/ XDSLayout as child`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'modal dialog using native <dialog> w/ auto focus trapping, backdrop, purpose-based dismissal',
+  features: [
+    'native <dialog>: browser built-in modal via showModal()',
+    'auto focus trap inside dialog (browser-native)',
+    'native ::backdrop pseudo-element w/ blur',
+    'variants: standard (configurable dims) + fullscreen (full viewport)',
+    'purpose-based dismissal: required, form, info control Escape+backdrop-click',
+    'static position via position prop',
+    'proper ARIA attrs + keyboard nav',
+  ],
+  keyboard: 'Escape closes dialog (unless purpose="required"); focus trapped inside while open',
+  accessibility: [
+    'native <dialog> w/ showModal() for correct ARIA modal semantics',
+    'focus auto-trapped by browser via showModal()',
+    'XDSDialogHeader title receives focus on open',
+  ],
+  notes: [
+    'height unset (grows w/ content), constrained by maxHeight',
+    'variant="fullscreen" ignores width, maxHeight, position',
+    'form purpose: backdrop click only allowed before user interaction',
+    'required=no Escape+no backdrop click; form=no backdrop click after interaction; info=both allowed',
+    'designed for use w/ XDSLayout as child',
+  ],
+  components: [
+    {
+      name: 'XDSDialog',
+      description: 'modal dialog using native <dialog>',
+      propDescriptions: {
+        isOpen: 'dialog open state',
+        onOpenChange: 'callback on visibility change',
+        children: 'dialog content',
+        width: 'dialog width (px or CSS)',
+        maxHeight: 'max dialog height',
+        position: 'static position; centered by default',
+        variant: 'standard or fullscreen (fills viewport)',
+        purpose: 'dismissal behavior: required=no dismiss; form=no backdrop after interaction; info=both allowed',
+      },
+    },
+    {
+      name: 'XDSDialogHeader',
+      description: 'dialog header w/ title, optional subtitle, close button, start/end content slots',
+      propDescriptions: {
+        title: 'dialog title (receives focus on open)',
+        subtitle: 'subtitle below title',
+        onOpenChange: 'close button callback (omit=no button)',
+        startContent: 'content before title (e.g. back button)',
+        endContent: 'content after title, before close button',
+        hasDivider: 'bottom border',
+      },
+    },
+  ],
+};

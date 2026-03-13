@@ -191,12 +191,30 @@ export const docsZh = {
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSEmptyState}from'@xds/core/EmptyState' //empty state placeholder w/ actions
-P title:string! primary msg as <h3> | description:string secondary text below title | icon:ReactNode icon/illustration above title; decorative aria-hidden="true" | actions:ReactNode action buttons below description; horizontal default, vertical when isCompact | isCompact:boolean='false' compact variant w/ reduced spacing | xstyle:StyleXStyles stylex.create() layout styles
-X <XDSEmptyState title="No results found" />
-X <XDSEmptyState\n  title="No results found"\n  description="Try adjusting your search or filters."\n/>
-X <XDSEmptyState\n  icon={<XDSIcon icon={InboxIcon} size="lg" />}\n  title="No messages"\n  description="You're all caught up!"\n  actions={<XDSButton label="Compose" variant="primary" />}\n/>
-X <XDSEmptyState\n  title="No items"\n  description="Nothing to show here."\n  isCompact\n/>
-A Container uses role="status" for screen reader announcements|Icon wrapper has aria-hidden="true" so decorative icons ignored by assistive tech|Title renders as <h3> for document heading outline
-N role="status" auto-announces to screen readers|Icon slot decorative (aria-hidden="true")|Title renders as <h3> for correct outline|Actions horizontal default, vertical in compact mode|Compact variant reduces spacing for constrained areas|Accepts xstyle, className, style for container adjustments|Forwarded ref on root <div>`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'Empty state placeholder for content areas w/ no data. Displays icon/illustration, title, optional description + action buttons.',
+  features: [
+    'role="status" so screen readers auto-announce empty state',
+    'Icon slot renders decorative (aria-hidden="true"); no extra labeling needed',
+    'Title renders as <h3> for correct document outline',
+    'Actions horizontal by default; stack vertically in compact mode',
+    'Compact variant reduces spacing for constrained areas',
+    'Accepts xstyle, className, style for container adjustments',
+    'Forwarded ref on root <div> container',
+  ],
+  accessibility: [
+    'Container uses role="status" to announce empty state to screen readers.',
+    'Icon wrapper has aria-hidden="true"; decorative icons ignored by assistive tech.',
+    'Title renders as <h3>, keeping it in document heading outline.',
+  ],
+  propDescriptions: {
+    title: 'Primary msg rendered as <h3> inside empty state.',
+    description: 'Optional secondary text w/ additional context below title.',
+    icon: 'Optional icon/illustration above title; rendered decorative (aria-hidden="true").',
+    actions: 'Optional action buttons below description; horizontal by default, vertical when isCompact.',
+    isCompact: 'Enables compact variant w/ reduced spacing for constrained areas.',
+    xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
+  },
+};

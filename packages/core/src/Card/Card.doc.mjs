@@ -187,13 +187,22 @@ export const docsZh = {
   },
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSCard}from'@xds/core/Card' //elevated container w/ themed styling
-P width:SizeValue card width (px or string) | height:SizeValue card height (px or string)
-P maxWidth:SizeValue | minHeight:SizeValue
-P children:ReactNode | padding:0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10='4' spacing scale
-X <XDSCard width={400} height={300}><XDSLayout header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>} content={<XDSLayoutContent>Content</XDSLayoutContent>} footer={<XDSLayoutFooter hasDivider>Actions</XDSLayoutFooter>} /></XDSCard>
-X <XDSCard><p>Card content with default padding</p></XDSCard>
-X <XDSCard><XDSCollapsible trigger="Details"><p>This content can be collapsed</p></XDSCollapsible></XDSCard>
-X <XDSCollapsibleGroup type="single" defaultValue="general"><XDSVStack gap={2}><XDSCard><XDSCollapsible trigger="General" value="general"><GeneralSettings /></XDSCollapsible></XDSCard><XDSCard><XDSCollapsible trigger="Advanced" value="advanced"><AdvancedSettings /></XDSCollapsible></XDSCard></XDSVStack></XDSCollapsibleGroup>
-N top-level container for elevated content|provides background, shadow, border-radius|sets CSS variables for child layout|supports full-bleed mode removing padding for edge-to-edge|composable w/ XDSLayout, XDSCollapsible, XDSCollapsibleGroup`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'elevated container w/ themed styling',
+  features: [
+    'top-level container for elevated content',
+    'card appearance: background, shadow, border-radius',
+    'sets CSS vars for child layout components',
+    'optional full-bleed mode removes padding for edge-to-edge content',
+    'composable w/ XDSLayout, XDSCollapsible, XDSCollapsibleGroup',
+  ],
+  propDescriptions: {
+    width: 'card width (number=px, string=as-is)',
+    height: 'card height (number=px, string=as-is)',
+    maxWidth: 'max card width',
+    minHeight: 'min card height',
+    children: 'content inside card',
+    padding: 'internal padding via spacing scale',
+  },
+};

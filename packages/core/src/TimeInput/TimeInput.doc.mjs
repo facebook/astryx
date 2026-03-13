@@ -421,9 +421,49 @@ export const docsZh = {
     '上/下方向键按配置的分钟增量调整当前时间。以常见格式（例如 "2:30 PM"、"14:30"）输入时间字符串会在失焦时解析。按清除按钮将焦点返回到输入框。',
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSTimeInput}from'@xds/core/TimeInput' //time input w/ parsing+arrow keys
-P label:string! label text (required for a11y) | isLabelHidden:boolean='false' visually hides label, keeps screen reader access | description:string text between label+input | isOptional:boolean='false' shows "(optional)"; mutually exclusive w/ isRequired | isRequired:boolean='false' marks required+aria-required; mutually exclusive w/ isOptional | isDisabled:boolean='false' disables input, suppresses interactions | value:ISOTimeString controlled time in ISO format (HH:MM or HH:MM:SS) | onChange:(value: ISOTimeString | undefined) => void fired on time change; undefined when cleared | onChangeAction:(value: ISOTimeString | undefined) => void | Promise<void> async action after onChange in React transition; triggers spinner | isLoading:boolean='false' loading state w/ spinner | min:ISOTimeString min selectable time; out-of-range rejected | max:ISOTimeString max selectable time; out-of-range rejected | hasSeconds:boolean='false' includes seconds in display+parsing | hasClear:boolean='false' clear button when value set+not disabled | hourFormat:'12h' | '24h'='12h' display format; 12h shows AM/PM, 24h uses 24-hour notation | increment:number='1' minutes to add/subtract on arrow up/down | placeholder:string='Select a time' placeholder when empty; focused+empty shows format hint | size:'sm' | 'md' | 'lg'='md' input height | status:XDSInputStatus colored border+icon; message rendered below input | labelTooltip:string tooltip as info icon at label row end
-X <XDSTimeInput\\n  label="Start time"\\n  value={time}\\n  onChange={setTime}\\n/> | <XDSTimeInput\\n  label="Meeting time"\\n  value={time}\\n  onChange={setTime}\\n  hourFormat="24h"\\n  hasClear\\n/> | <XDSTimeInput\\n  label="Business hours"\\n  value={time}\\n  onChange={setTime}\\n  min="09:00"\\n  max="17:00"\\n/> | <XDSTimeInput\\n  label="Precise time"\\n  value={time}\\n  onChange={setTime}\\n  hasSeconds\\n  status={{type: 'error', message: 'Invalid time'}}\\n/> | <XDSTimeInput\\n  label="Scheduled time"\\n  value={time}\\n  onChange={setTime}\\n  onChangeAction={async (value) => {\\n    await saveTime(value);\\n  }}\\n/>
-A Visible label associated w/ input via htmlFor/id|isLabelHidden hides label visually, keeps in a11y tree|description+status.message linked via aria-describedby|aria-required set when isRequired|aria-invalid set when status.type is "error"|aria-busy reflects loading/optimistic-pending state|clear button has aria-label "Clear time"
-K ArrowUp/ArrowDown=adjust time by configured increment in minutes;typing common formats (e.g. "2:30 PM", "14:30")=parsed on blur;clear button press=returns focus to input`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Time input w/ free-text entry, text parsing, arrow-key navigation.',
+  features: [
+    'Accepts free-text time entry; parses common formats (e.g. "2:30 PM", "14:30")',
+    'Supports 12-hour+24-hour display formats',
+    'ArrowUp/ArrowDown adjust time by configurable minute increment',
+    'Optional seconds display via hasSeconds',
+    'Optional clear button via hasClear',
+    'Min/max range constraints reject out-of-range values',
+    'Async action support via onChangeAction w/ optimistic UI+loading spinner',
+    'Accessible; label, description, status message wired to aria-describedby; aria-required+aria-invalid reflect field state',
+  ],
+  accessibility: [
+    'Visible label associated w/ input via htmlFor/id.',
+    'isLabelHidden hides label visually; keeps in a11y tree.',
+    'description+status.message linked to input via aria-describedby.',
+    'aria-required set when isRequired is true.',
+    'aria-invalid set when status.type is "error".',
+    'aria-busy reflects loading/optimistic-pending state.',
+    'Clear button has aria-label "Clear time".',
+  ],
+  keyboard: 'ArrowUp/ArrowDown adjust time by configured increment in minutes. Typing common formats (e.g. "2:30 PM", "14:30") parsed on blur. Clear button press returns focus to input.',
+  propDescriptions: {
+    label: 'Label text (required for a11y).',
+    isLabelHidden: 'Visually hides label; keeps screen reader access.',
+    description: 'Description text between label+input.',
+    isOptional: 'Shows "(optional)" indicator. Mutually exclusive w/ isRequired.',
+    isRequired: 'Marks required+sets aria-required. Mutually exclusive w/ isOptional.',
+    isDisabled: 'Disables input, suppresses interactions.',
+    value: 'Controlled time in ISO format (HH:MM or HH:MM:SS).',
+    onChange: 'Fired on time change. Receives undefined when cleared.',
+    onChangeAction: 'Async action after onChange in React transition; triggers spinner while pending.',
+    isLoading: 'Loading state w/ spinner.',
+    min: 'Min selectable time in ISO format. Out-of-range rejected.',
+    max: 'Max selectable time in ISO format. Out-of-range rejected.',
+    hasSeconds: 'Includes seconds in display+parsing.',
+    hasClear: 'Shows clear button when value set+not disabled.',
+    hourFormat: "Display format. '12h' shows AM/PM; '24h' uses 24-hour notation.",
+    increment: 'Minutes to add/subtract on arrow up/down.',
+    placeholder: 'Placeholder when empty. Focused+empty shows format hint.',
+    size: 'Input element height.',
+    status: 'Colored border+icon. Message rendered below input.',
+    labelTooltip: 'Tooltip as info icon at label row end.',
+  },
+};

@@ -993,26 +993,100 @@ const selectionPlugin = useXDSTableSelection<User>({
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSTable,XDSBaseTable,XDSTableRow,XDSTableCell,XDSTableHeaderCell,useXDSTableSelection}from'@xds/core/Table' //data-driven table w/ plugins
-C XDSTable //styled data-driven table w/ density, dividers, hover, striped, plugins
-P data:T[] row data array | columns:XDSTableColumn<T>[] column defs, auto-generated from keys if omitted | idKey:(keyof T & string) | ((item: T) => string | number) row key for reconciliation, falls back to index | density:'compact' | 'balanced' | 'spacious'='balanced' cell padding+font size | dividers:'rows' | 'columns' | 'grid' | 'none'='rows' | isStriped:boolean='false' bg wash on even rows | hasHover:boolean='false' hover highlight on pointer devices | plugins:Record<string, TablePlugin<T>> named plugins, converted to ordered array internally | children:ReactNode children mode, render XDSTableRow/XDSTableCell directly | xstyle:StyleXStyles layout styles, must be stylex.create() value
-X <XDSTable\\n  data={users}\\n  columns={[\\n    {key: 'name', header: 'Name'},\\n    {key: 'email', header: 'Email', width: proportional(2)},\\n  ]}\\n  density="compact"\\n  dividers="grid"\\n  isStriped\\n  hasHover\\n/> | <XDSTable density="balanced" dividers="rows">\\n  <XDSTableRow>\\n    <XDSTableCell>Alice</XDSTableCell>\\n    <XDSTableCell>30</XDSTableCell>\\n  </XDSTableRow>\\n</XDSTable>
-C XDSBaseTable //unstyled structural table w/ plugin pipeline + components prop
-P data:T[] row data array | columns:XDSTableColumn<T>[] column defs, auto-generated if omitted | idKey:(keyof T & string) | ((item: T) => string | number) row key, falls back to index | plugins:TablePlugin<T>[] ordered plugin array | components:{Row?: ComponentType<TableRowComponentProps>; Cell?: ComponentType<TableCellComponentProps>; HeaderCell?: ComponentType<TableHeaderCellComponentProps>} component overrides for row/cell | children:ReactNode children mode, render rows in tbody | tableProps:HTMLAttributes<HTMLTableElement> extra attrs on <table>
-X <XDSBaseTable\\n  data={items}\\n  columns={columns}\\n  plugins={[myPlugin]}\\n  components={{Row: XDSTableRow, Cell: XDSTableCell, HeaderCell: XDSTableHeaderCell}}\\n/>
-C XDSTableRow //<tr> wrapper, reads XDSTableContext for striped/hover/divider styles
-P children:ReactNode! row cells
-X <XDSTableRow>\\n  <XDSTableCell>Alice</XDSTableCell>\\n  <XDSTableCell>30</XDSTableCell>\\n</XDSTableRow>
-C XDSTableCell //<td> wrapper, reads context for density/font/dividers
-P children:ReactNode cell content
-X <XDSTableCell>Cell content</XDSTableCell>
-C XDSTableHeaderCell //<th> wrapper, reads context for density/semibold/secondary color/dividers
-P children:ReactNode header content
-X <XDSTableHeaderCell>Name</XDSTableHeaderCell>
-C useXDSTableSelection //hook returning TablePlugin for row selection w/ checkboxes
-P getIsItemSelected:(item: T) => boolean! | onSelectItem:(event: {item: T; isSelected: boolean}) => void! called on row checkbox toggle | onSelectAll:(event: {isAllSelected: boolean}) => void! called on select-all toggle | getIsAllSelected:() => boolean! | getIsIndeterminate:() => boolean partial selection, renders indeterminate checkbox | getIsItemSelectable:(item: T) => boolean='() => true' non-selectable rows render no checkbox | getIsItemEnabled:(item: T) => boolean='() => true' disabled rows show disabled checkbox
-X const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());\\n\\nconst selectionPlugin = useXDSTableSelection<User>({\\n  getIsItemSelected: item => selectedKeys.has(item.id),\\n  onSelectItem: ({item, isSelected}) => {\\n    const next = new Set(selectedKeys);\\n    isSelected ? next.add(item.id) : next.delete(item.id);\\n    setSelectedKeys(next);\\n  },\\n  onSelectAll: ({isAllSelected}) => {\\n    setSelectedKeys(isAllSelected ? new Set(users.map(u => u.id)) : new Set());\\n  },\\n  getIsAllSelected: () => users.every(u => selectedKeys.has(u.id)),\\n  getIsIndeterminate: () => {\\n    const count = users.filter(u => selectedKeys.has(u.id)).length;\\n    return count > 0 && count < users.length;\\n  },\\n});\\n\\n<XDSTable\\n  data={users}\\n  columns={columns}\\n  plugins={{selection: selectionPlugin}}\\n/>
-X <XDSTable\\n  data={users}\\n  columns={[\\n    {\\n      key: 'name',\\n      header: 'Name',\\n      renderCell: user => (\\n        <XDSHStack gap={2} align="center">\\n          <XDSAvatar name={user.name} size="small" />\\n          <XDSVStack gap={1}>\\n            <XDSText type="body" weight="semibold">\\n              {user.name}\\n            </XDSText>\\n            <XDSText type="supporting" color="secondary">\\n              {user.email}\\n            </XDSText>\\n          </XDSVStack>\\n        </XDSHStack>\\n      ),\\n    },\\n    {\\n      key: 'status',\\n      header: 'Status',\\n      width: pixel(140),\\n      renderCell: user => (\\n        <XDSHStack gap={2} align="center">\\n          <XDSStatusDot status={user.isActive ? 'positive' : 'negative'} />\\n          <XDSBadge variant={user.isActive ? 'success' : 'error'}>\\n            {user.isActive ? 'Active' : 'Inactive'}\\n          </XDSBadge>\\n        </XDSHStack>\\n      ),\\n    },\\n    {\\n      key: 'role',\\n      header: 'Role',\\n      renderCell: user => (\\n        <XDSText type="label" color="secondary">\\n          {user.role}\\n        </XDSText>\\n      ),\\n    },\\n  ]}\\n  density="balanced"\\n  dividers="rows"\\n  hasHover\\n/> | // Columns auto-generated from data keys with capitalized headers\\n<XDSTable data={users} isStriped /> | <XDSTable\\n  data={transactions}\\n  columns={[\\n    {\\n      key: 'description',\\n      header: 'Transaction',\\n      renderCell: tx => (\\n        <XDSVStack gap={1}>\\n          <XDSText weight="semibold">{tx.description}</XDSText>\\n          <XDSText type="supporting" color="secondary">\\n            {tx.date}\\n          </XDSText>\\n        </XDSVStack>\\n      ),\\n    },\\n    {\\n      key: 'amount',\\n      header: 'Amount',\\n      renderCell: tx => (\\n        <XDSText\\n          weight="semibold"\\n          color={tx.amount > 0 ? 'positive' : 'negative'}>\\n          {tx.amount > 0 ? '+' : ''}\\n          {tx.amount.toFixed(2)}\\n        </XDSText>\\n      ),\\n    },\\n    {\\n      key: 'status',\\n      header: 'Status',\\n      renderCell: tx => (\\n        <XDSBadge\\n          variant={\\n            tx.status === 'completed'\\n              ? 'success'\\n              : tx.status === 'pending'\\n                ? 'warning'\\n                : 'error'\\n          }>\\n          {tx.status}\\n        </XDSBadge>\\n      ),\\n    },\\n  ]}\\n  density="balanced"\\n  dividers="rows"\\n  hasHover\\n/> | <XDSTable density="balanced" dividers="rows" isStriped hasHover>\\n  <XDSTableRow>\\n    <XDSTableCell>\\n      <XDSHStack gap={2} align="center">\\n        <XDSAvatar name="Alice" size="small" />\\n        <XDSText weight="semibold">Alice</XDSText>\\n      </XDSHStack>\\n    </XDSTableCell>\\n    <XDSTableCell>\\n      <XDSBadge variant="success">Active</XDSBadge>\\n    </XDSTableCell>\\n  </XDSTableRow>\\n</XDSTable> | const highlightPlugin: TablePlugin<User> = {\\n  transformBodyRow(props, item) {\\n    if (item.isActive) {\\n      return {...props, styles: [...props.styles, activeRowStyle]};\\n    }\\n    return props;\\n  },\\n};\\n\\n<XDSTable data={users} plugins={{highlight: highlightPlugin}} />
-A selection plugin sets aria-selected on selected body rows|select-all+per-row checkboxes use visually hidden labels ("Select all rows", "Select row") via isLabelHidden|non-selectable rows (getIsItemSelectable=false) render no checkbox|disabled rows (getIsItemEnabled=false) render disabled checkbox
-N two-layer design: XDSBaseTable=unstyled structure+plugin pipeline; XDSTable wraps w/ XDSTableContext+styled sub-components|styling owned by components (XDSTableRow, XDSTableCell, XDSTableHeaderCell), not plugins, each reads XDSTableContext|XDSTable accepts plugins as Record<string, TablePlugin<T>>, converts to ordered array; XDSBaseTable accepts ordered array directly|selection plugin uses React Context so checkboxes re-render independently from row content|body rows memoized via React.memo w/ custom comparison; define columns outside component or memoize to avoid full re-renders|columns auto-generated from data keys via generateColumns(); widths via proportional() and pixel() helpers|tableProps on XDSBaseTable passes extra HTML attrs to <table> element`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Data-driven table w/ rich cell content via renderCell. Compose cells w/ XDSBadge, XDSStatusDot, XDSText, XDSAvatar, layout primitives. XDSBaseTable provides unstyled structural core w/ composable plugin pipeline.',
+  features: [
+    'Data-driven rendering; pass data + columns, rows render automatically',
+    'Rich cell content via renderCell; compose XDS components inside cells',
+    'Children mode; compose XDSTableRow/XDSTableCell directly for manual layouts',
+    'Plugin system; extend behavior w/ composable transform plugins',
+    'Density variants: compact, balanced, spacious',
+    'Divider styles: rows, columns, grid, none',
+    'Striped even rows + hover highlight via XDSTableContext',
+    'Selection via useXDSTableSelection; checkboxes, select-all, aria-selected',
+    'Body rows memoized w/ custom comparison; only changed rows re-render',
+    'Auto-generated columns from data object keys when columns omitted',
+    'Themeable via className; target .xds-base-table, .xds-table-row, .xds-table-cell, .xds-table-header-cell',
+  ],
+  notes: [
+    'Two-layer design: XDSBaseTable=unstyled structure + plugin pipeline; XDSTable wraps w/ XDSTableContext + styled sub-components.',
+    'Styling owned by components (XDSTableRow, XDSTableCell, XDSTableHeaderCell), not plugins; each reads XDSTableContext.',
+    'XDSTable accepts plugins as Record<string, TablePlugin<T>>, converts to ordered array; XDSBaseTable accepts ordered array directly.',
+    'Selection plugin uses React Context; checkboxes re-render independently from row content.',
+    'Body rows memoized via React.memo w/ custom comparison; define columns outside component or memoize to avoid full re-renders.',
+    'Columns auto-generated from data keys via generateColumns(); widths via proportional() + pixel() helpers.',
+    'tableProps on XDSBaseTable passes extra HTML attrs to <table> element.',
+  ],
+  accessibility: [
+    'Selection plugin sets aria-selected on selected body rows.',
+    'Select-all + per-row checkboxes use visually hidden labels ("Select all rows", "Select row") via isLabelHidden.',
+    'Non-selectable rows (getIsItemSelectable=false) render no checkbox.',
+    'Disabled rows (getIsItemEnabled=false) render disabled checkbox.',
+  ],
+  components: [
+    {
+      name: 'XDSTable',
+      description: 'Styled data-driven table w/ density, dividers, hover, striped rows, named plugin support.',
+      propDescriptions: {
+        data: 'Array of data items to render as rows.',
+        columns: 'Column defs; auto-generated from data keys if omitted.',
+        idKey: 'Row key for React reconciliation; property name or fn. Falls back to index.',
+        density: 'Row density controlling cell padding + font size.',
+        dividers: 'Divider style between cells.',
+        isStriped: 'Background wash on even rows.',
+        hasHover: 'Hover highlight on pointer devices.',
+        plugins: 'Named plugins extending behavior via transform pipeline; converted to ordered array.',
+        children: 'Children mode; render XDSTableRow/XDSTableCell directly.',
+        xstyle: 'StyleX layout styles; must be stylex.create() value.',
+      },
+    },
+    {
+      name: 'XDSBaseTable',
+      description: 'Unstyled structural table w/ plugin transform pipeline + components prop for custom row/cell renderers.',
+      propDescriptions: {
+        data: 'Array of data items to render as rows.',
+        columns: 'Column defs; auto-generated from data keys if omitted.',
+        idKey: 'Row key for React reconciliation; property name or fn. Falls back to index.',
+        plugins: 'Ordered plugin array applied as sequential transform pipeline.',
+        components: 'Component overrides for row/cell elements; receive xstyle from plugin transforms.',
+        children: 'Children mode; render rows in tbody directly.',
+        tableProps: 'Extra HTML attrs passed to root <table> element.',
+      },
+    },
+    {
+      name: 'XDSTableRow',
+      description: '<tr> wrapper; reads XDSTableContext for striped/hover/divider styles.',
+      propDescriptions: {
+        children: 'Row cell elements.',
+      },
+    },
+    {
+      name: 'XDSTableCell',
+      description: '<td> wrapper; reads XDSTableContext for density padding, font size, divider borders.',
+      propDescriptions: {
+        children: 'Cell content.',
+      },
+    },
+    {
+      name: 'XDSTableHeaderCell',
+      description: '<th> wrapper; reads XDSTableContext for density padding, semibold weight, secondary color, dividers.',
+      propDescriptions: {
+        children: 'Header cell content.',
+      },
+    },
+    {
+      name: 'useXDSTableSelection',
+      description: 'Hook returning TablePlugin for row selection w/ checkboxes, select-all, aria-selected. Uses React Context for independent checkbox re-renders.',
+      propDescriptions: {
+        getIsItemSelected: 'Returns whether item is selected.',
+        onSelectItem: 'Called on row checkbox toggle; isSelected = new desired state.',
+        onSelectAll: 'Called on select-all header checkbox toggle.',
+        getIsAllSelected: 'Returns whether all selectable items are selected.',
+        getIsIndeterminate: 'Returns partial selection state; renders indeterminate checkbox.',
+        getIsItemSelectable: 'Returns whether row shows checkbox; non-selectable rows render nothing.',
+        getIsItemEnabled: 'Returns whether row checkbox is interactive; disabled rows show disabled checkbox.',
+      },
+    },
+  ],
+};

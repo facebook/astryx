@@ -647,35 +647,81 @@ export const docsZh = {
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSDropdownMenu}from'@xds/core/DropdownMenu' //dropdown menu for actionable items
-C XDSDropdownMenu //trigger button + popup item list
-P button:XDSDropdownMenuButtonProps="{ label: 'Menu' }" trigger button props (XDSButton props except onClick)
-P items:XDSDropdownMenuOption[]! menu items, dividers, or sections | isMenuOpen:boolean controlled open state
-P onOpenChange:(isOpen: boolean) => void open state callback | menuWidth:number | string custom menu width, defaults to button width
-P onClick:() => void trigger button click callback | children:(item: XDSDropdownMenuItemData) => ReactNode custom render fn per item
-X <XDSDropdownMenu button={{ label: 'Actions' }} items={[{ label: 'Edit', icon: PencilIcon, onClick: () => handleEdit() }, { label: 'Delete', icon: TrashIcon, onClick: () => handleDelete() }]} />
-C XDSDropdownMenuItem //custom item rendering w/ consistent styling
-P icon:XDSIconType icon before label | label:ReactNode primary label
-P description:ReactNode secondary text below label | children:ReactNode additional content after label+description
-P xstyle:StyleXStyles root container styles
-X <XDSDropdownMenuItem icon={UserIcon} label="Alice Johnson" description="alice@example.com" />
-C XDSDropdownMenuItemData //data shape for actionable menu item
-P label:string! display label | onClick:() => void selection callback
-P isDisabled:boolean='false' disabled + skipped in keyboard nav | icon:XDSIconType icon before label
-X { label: 'Edit', onClick: () => handleEdit() } | { label: 'Delete', icon: TrashIcon, isDisabled: true }
-C XDSDropdownMenuDivider //visual divider between items
-P type:'divider'! discriminant value
-X items={[{ label: 'Edit', onClick: () => handleEdit() }, { type: 'divider' }, { label: 'Delete', onClick: () => handleDelete() }]}
-C XDSDropdownMenuSection //labeled group of items
-P type:'section'! discriminant value | title:string optional header text above section
-P items:XDSDropdownMenuItemData[]! section items
-X { type: 'section', title: 'Create', items: [{ label: 'New File', onClick: () => handleNew() }, { label: 'New Folder', onClick: () => handleNewFolder() }] }
-X <XDSDropdownMenu button={{ label: 'Actions' }} items={[{ label: 'Edit', onClick: () => handleEdit() }, { label: 'Delete', onClick: () => handleDelete() }]} />
-X <XDSDropdownMenu button={{ label: 'File', variant: 'ghost' }} items={[{ type: 'section', title: 'Create', items: [{ label: 'New File', onClick: () => handleNew() }, { label: 'New Folder', onClick: () => handleNewFolder() }] }, { type: 'section', title: 'Manage', items: [{ label: 'Rename', onClick: () => handleRename() }, { label: 'Delete', isDisabled: true }] }]} />
-X <XDSDropdownMenu button={{ label: 'Actions' }} items={[{ label: 'Edit', onClick: () => handleEdit() }, { type: 'divider' }, { label: 'Delete', onClick: () => handleDelete() }]} />
-X const [isOpen, setIsOpen] = useState(false); <XDSDropdownMenu button={{ label: 'Options' }} items={[...]} isMenuOpen={isOpen} onOpenChange={setIsOpen} />
-X <XDSDropdownMenu button={{ label: 'Users' }} items={users}>{item => (<XDSDropdownMenuItem icon={item.icon} label={item.label} description={item.email} />)}</XDSDropdownMenu>
-A uses ARIA roles: menu on popup, menuitem on each item|focus returns to trigger button on menu close|keyboard nav skips disabled items
-K Arrow keys=navigate items;Home/End=first/last;Enter/Space=select;Escape=close menu
-N uses useXDSLayer w/ mode:"context" for CSS anchor positioning|uses XDSButton internally w/ ChevronDownIcon inheriting text color|items tracked via items prop for keyboard nav|light dismiss enabled by default (click outside closes)`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'dropdown menu for actionable items in popup',
+  features: [
+    'customize trigger button via button prop (all XDSButton props)',
+    'data-driven items via items prop w/ sections+dividers',
+    'controlled (isMenuOpen/onOpenChange) + uncontrolled modes',
+    'custom menu width via menuWidth prop (default matches button)',
+    'group related items w/ optional headers via XDSDropdownMenuSection',
+    'full keyboard: Arrow keys, Home, End, Enter, Space, Escape',
+    'proper ARIA roles (menu, menuitem) + attrs',
+    'optional children render fn w/ XDSDropdownMenuItem helper',
+  ],
+  keyboard: 'Arrow keys=navigate items; Home/End=first/last; Enter/Space=select; Escape=close',
+  accessibility: [
+    'ARIA roles: menu on popup, menuitem on each item',
+    'focus returns to trigger button on menu close',
+    'keyboard nav skips disabled items',
+  ],
+  notes: [
+    'uses useXDSLayer w/ mode:"context" for CSS anchor positioning',
+    'uses XDSButton internally w/ ChevronDownIcon inheriting text color',
+    'items tracked via items prop for keyboard nav',
+    'light dismiss enabled by default (click outside closes)',
+  ],
+  components: [
+    {
+      name: 'XDSDropdownMenu',
+      description: 'trigger button + popup item list',
+      propDescriptions: {
+        button: 'trigger button props (XDSButton props except onClick)',
+        items: 'menu items, dividers, or sections in popup',
+        isMenuOpen: 'controlled open state',
+        onOpenChange: 'callback on open state change',
+        menuWidth: 'custom menu width; default matches trigger button',
+        onClick: 'trigger button click callback',
+        children: 'custom render fn per item',
+      },
+    },
+    {
+      name: 'XDSDropdownMenuItem',
+      description: 'helper for custom item rendering w/ consistent styling',
+      propDescriptions: {
+        icon: 'icon before label',
+        label: 'primary label text',
+        description: 'secondary text below label',
+        children: 'additional content after label+description',
+        xstyle: 'StyleX styles for root container',
+      },
+    },
+    {
+      name: 'XDSDropdownMenuItemData',
+      description: 'data shape for single actionable menu item via items prop',
+      propDescriptions: {
+        label: 'display label',
+        onClick: 'callback on selection',
+        isDisabled: 'disabled; skipped in keyboard nav',
+        icon: 'icon before label',
+      },
+    },
+    {
+      name: 'XDSDropdownMenuDivider',
+      description: 'visual divider between items in items array',
+      propDescriptions: {
+        type: 'discriminant identifying entry as divider',
+      },
+    },
+    {
+      name: 'XDSDropdownMenuSection',
+      description: 'labeled group of items in items array',
+      propDescriptions: {
+        type: 'discriminant identifying entry as section',
+        title: 'optional header text above section items',
+        items: 'actionable items in this section',
+      },
+    },
+  ],
+};

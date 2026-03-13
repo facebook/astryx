@@ -181,12 +181,25 @@ export const docsZh = {
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSFormLayout}from'@xds/core/FormLayout' //form field layout w/ spacing+direction
-P direction:'vertical'|'horizontal'|'horizontal-labels'='vertical' field arrangement; vertical stacks, horizontal equal flex-grow, horizontal-labels CSS Grid labels left of inputs (collapses <=480px) | children:ReactNode form fields to arrange | xstyle:StyleXStyles stylex.create() layout styles
-X <XDSFormLayout>\n  <XDSTextInput label="Name" value={name} onChange={setName} />\n  <XDSTextInput label="Email" value={email} onChange={setEmail} />\n</XDSFormLayout>
-X <XDSFormLayout direction="horizontal">\n  <XDSTextInput label="First Name" value={first} onChange={setFirst} />\n  <XDSTextInput label="Last Name" value={last} onChange={setLast} />\n</XDSFormLayout>
-X <XDSFormLayout direction="horizontal-labels">\n  <XDSTextInput label="Display Name" value={name} onChange={setName} />\n  <XDSSelector label="Timezone" value={tz} onChange={setTz} options={tzs} />\n</XDSFormLayout>
-X <XDSFormLayout direction="vertical">\n  <XDSFormLayout direction="horizontal">\n    <XDSTextInput label="First Name" value={first} onChange={setFirst} />\n    <XDSTextInput label="Last Name" value={last} onChange={setLast} />\n  </XDSFormLayout>\n  <XDSTextInput label="Email" value={email} onChange={setEmail} />\n</XDSFormLayout>
-X <XDSDialog>\n  <form id="edit-form" onSubmit={handleSubmit}>\n    <XDSFormLayout>\n      <XDSTextInput label="Name" value={name} onChange={setName} />\n    </XDSFormLayout>\n  </form>\n  <XDSDialogFooter>\n    <XDSButton label="Save" type="submit" form="edit-form" />\n  </XDSDialogFooter>\n</XDSDialog>
-N Renders <div> not <form>; use separate <form> + HTML form attribute for submit buttons|XDSFormLayoutContext provides { direction } to children; import from @xds/core/FormLayout|Accepts standard HTML div attributes (id, role, aria-*) via rest props|Three layout modes: vertical (default), horizontal, horizontal-labels|Direction context via XDSFormLayoutContext; children read current direction|Responsive: horizontal-labels collapses to vertical <=480px|Nestable: inner FormLayout overrides context for children|Purely spatial: no form state management or <form> rendering`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'Spatial layout container for arranging form fields w/ consistent spacing + direction.',
+  features: [
+    "Three layout modes: 'vertical' (default), 'horizontal', 'horizontal-labels'",
+    'Direction context via XDSFormLayoutContext; children read current layout direction',
+    'Responsive: horizontal-labels collapses to vertical on narrow viewports (<=480px)',
+    'Nestable: inner FormLayout overrides context for children',
+    'Purely spatial: no form state management or <form> rendering',
+  ],
+  notes: [
+    'Renders <div> not <form>. Use separate <form> + HTML form attribute for submit buttons.',
+    'XDSFormLayoutContext provides { direction } to children. Import from @xds/core/FormLayout.',
+    'Accepts standard HTML div attributes (id, role, aria-*) via rest props.',
+  ],
+  propDescriptions: {
+    direction: 'Field arrangement. Vertical stacks top-to-bottom, horizontal arranges left-to-right w/ equal flex-grow, horizontal-labels uses CSS Grid w/ labels left of inputs (collapses <=480px).',
+    children: 'Form fields to arrange. Accepts XDS inputs + XDSField-wrapped custom controls.',
+    xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
+  },
+};

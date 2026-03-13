@@ -401,9 +401,59 @@ export const docsZh = {
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSTextArea}from'@xds/core/TextArea' //multi-line text input w/ validation
-P label:string! label text, always rendered for a11y | value:string! | onChange:(value: string, e: ChangeEvent<HTMLTextAreaElement>) => void fired on value change | onChangeAction:(value: string, e: ChangeEvent<HTMLTextAreaElement>) => void | Promise<void> async action after onChange in React transition; enables useOptimistic | isLabelHidden:boolean='false' visually hides label, keeps screen reader access | description:string helper text between label+textarea | isOptional:boolean='false' shows "Optional" indicator; mutually exclusive w/ isRequired | isRequired:boolean='false' shows "Required" indicator+aria-required; mutually exclusive w/ isOptional | isDisabled:boolean='false' disables textarea, prevents interaction | isLoading:boolean='false' loading state w/ spinner | placeholder:string placeholder when empty | rows:number='3' visible text rows | maxLength:number max chars; shows counter (current/max) below textarea | status:{ type: 'warning' | 'error' | 'success'; message?: string } colored border+icon; optional floating message below | labelTooltip:string tooltip in info icon at label end | startIcon:XDSIconType icon inside leading edge of textarea wrapper | hasSpellCheck:boolean='true' browser spell checking | hasAutoFocus:boolean='false' auto-focus on mount | onPaste:(e: ClipboardEvent<HTMLTextAreaElement>) => void fired on paste | htmlName:string HTML name attr for form submissions
-X <XDSTextArea label="Description" value={description} onChange={setDescription} /> | <XDSTextArea label="Notes" rows={5} value={notes} onChange={setNotes} placeholder="Enter your notes..." /> | <XDSTextArea label="Comments" isLabelHidden value={comments} onChange={setComments} placeholder="Add a comment..." /> | <XDSTextArea label="Bio" description="Tell us about yourself" isOptional value={bio} onChange={setBio} /> | <XDSTextArea\\n  label="Feedback"\\n  isRequired\\n  value={feedback}\\n  onChange={setFeedback}\\n  status={{type: 'error', message: 'Feedback is required'}}\\n/> | <XDSTextArea label="Summary" maxLength={280} value={summary} onChange={setSummary} /> | <XDSTextArea label="Read-only notes" isDisabled value="Cannot edit this" onChange={() => {}} />
-A Label always in DOM; isLabelHidden hides visually, keeps a11y|textarea id via useId linked to label via htmlFor|aria-describedby set to description+status message IDs when present|aria-required="true" when isRequired|aria-invalid="true" when status.type is "error"|aria-busy set during optimistic update or loading
-N isOptional+isRequired mutually exclusive; both set = "Optional" wins|uses useOptimistic for instant UI feedback when onChangeAction returns Promise|vertical resize via CSS w/ min height 80px|wraps XDSField for consistent label, description, status layout|char counter text turns red when value.length exceeds maxLength`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Multi-line text input for collecting longer user input.',
+  features: [
+    'Label support; required for a11y, can be visually hidden',
+    'Description; optional text between label+textarea',
+    'Optional/Required indicators; displays "Optional" or "Required" w/ bullet separator',
+    'Status variants; warning, error, success states w/ colored borders+icons',
+    'Character counter; displays current/max length when maxLength set',
+    'Start icon; optional icon inside leading edge of input',
+    'Label tooltip; optional info icon w/ tooltip at label end',
+    'Loading state; shows spinner, uses optimistic updates via useOptimistic',
+    'Async action support; onChangeAction fires after onChange in React transition',
+    'Disabled state; visual opacity+cursor changes, no interaction',
+    'Accessible; label via htmlFor/id, aria-describedby, aria-required, aria-invalid, aria-busy',
+    'Resizable; vertical resize enabled by default, min height 80px',
+    'Spell check; browser spell checking enabled by default, configurable',
+  ],
+  notes: [
+    'isOptional+isRequired mutually exclusive; both set = "Optional" wins.',
+    'Uses useOptimistic for instant UI feedback when onChangeAction returns Promise.',
+    'Textarea has vertical resize via CSS w/ min height 80px.',
+    'Wraps XDSField for consistent label, description, status message layout.',
+    'Character counter text turns red when value.length exceeds maxLength.',
+  ],
+  accessibility: [
+    'Label always in DOM; isLabelHidden hides visually, keeps a11y.',
+    'Textarea id via useId linked to label via htmlFor for correct association.',
+    'aria-describedby set to description+status message IDs when present.',
+    'aria-required="true" when isRequired is true.',
+    'aria-invalid="true" when status.type is "error".',
+    'aria-busy set during optimistic update or loading state.',
+  ],
+  propDescriptions: {
+    label: 'Label text for textarea; always rendered for a11y.',
+    value: 'Current textarea value.',
+    onChange: 'Fired on textarea value change.',
+    onChangeAction: 'Async action after onChange in React transition. Enables useOptimistic.',
+    isLabelHidden: 'Visually hides label; keeps screen reader access.',
+    description: 'Helper text between label+textarea.',
+    isOptional: 'Shows "Optional" indicator. Mutually exclusive w/ isRequired.',
+    isRequired: 'Shows "Required" indicator+sets aria-required. Mutually exclusive w/ isOptional.',
+    isDisabled: 'Disables textarea, prevents interaction.',
+    isLoading: 'Loading state w/ spinner inside input.',
+    placeholder: 'Placeholder when textarea empty.',
+    rows: 'Visible text rows.',
+    maxLength: 'Max chars allowed. Shows counter (current/max) below textarea.',
+    status: 'Colored border+icon status. Optional floating message below textarea.',
+    labelTooltip: 'Tooltip in info icon at label end.',
+    startIcon: 'Icon inside leading edge of textarea wrapper.',
+    hasSpellCheck: 'Enables/disables browser spell checking.',
+    hasAutoFocus: 'Auto-focus textarea on mount.',
+    onPaste: 'Fired on paste into textarea.',
+    htmlName: 'HTML name attr for form submissions.',
+  },
+};

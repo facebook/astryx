@@ -306,67 +306,39 @@ export const docsZh = {
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSMoreMenu}from'@xds/core/MoreMenu' //overflow menu w/ three-dot trigger
-P items:XDSDropdownMenuOption[]! menu items (actions, dividers, sections); same type as XDSDropdownMenu | label:string='More options' accessible label (aria-label) + tooltip text | variant:XDSButtonVariant='ghost' trigger button style | size:XDSButtonSize='md' trigger button size | icon:ReactNode override default three-dot icon | isDisabled:boolean='false' trigger disabled | children:(item: XDSDropdownMenuItemData) => ReactNode custom render for selectable items (not dividers/sections) | xstyle:StyleXStyles layout customization (margins, positioning, sizing)
-X <XDSMoreMenu
-  items={[
-    { label: 'Edit', onClick: handleEdit },
-    { label: 'Delete', onClick: handleDelete },
-  ]}
-/>
-X <XDSMoreMenu
-  label="Row actions"
-  size="sm"
-  items={[
-    { label: 'Edit', icon: PencilIcon, onClick: () => handleEdit(row) },
-    { type: 'divider' },
-    { label: 'Delete', icon: TrashIcon, onClick: () => handleDelete(row) },
-  ]}
-/>
-X <XDSMoreMenu
-  label="Document actions"
-  items={[
-    {
-      type: 'section',
-      title: 'Actions',
-      items: [
-        { label: 'Edit', onClick: handleEdit },
-        { label: 'Duplicate', onClick: handleDuplicate },
-      ],
-    },
-    {
-      type: 'section',
-      title: 'Danger zone',
-      items: [
-        { label: 'Delete', onClick: handleDelete },
-      ],
-    },
-  ]}
-/>
-X <XDSHStack align="center" justify="between">
-  <XDSHeading level={3}>Card Title</XDSHeading>
-  <XDSMoreMenu
-    items={[
-      { label: 'Edit', onClick: handleEdit },
-      { label: 'Duplicate', onClick: handleDuplicate },
-      { type: 'divider' },
-      { label: 'Delete', onClick: handleDelete },
-    ]}
-  />
-</XDSHStack>
-X <XDSMoreMenu
-  label="User actions"
-  items={actions}
->
-  {item => (
-    <XDSDropdownMenuItem
-      icon={item.icon}
-      label={item.label}
-      description={item.description}
-    />
-  )}
-</XDSMoreMenu>
-A Proper ARIA roles: menu + menuitem on dropdown elements|Trigger has aria-haspopup="menu" + aria-expanded|aria-activedescendant tracks highlighted item|Disabled items have aria-disabled|Sections use role="group" w/ aria-label
-K ArrowKeys=navigate items;Home/End=first/last;Enter/Space=select highlighted;Escape=close menu
-N For full control, compose XDSButton + useXDSLayer + XDSDropdownMenuItem directly|Use XDSMoreMenu for icon-only overflow in tight spaces (table rows, card headers); use XDSDropdownMenu for labeled triggers w/ chevrons|Zero-config defaults: three-dot icon, 'More options' label, ghost variant; just pass items|Data-driven items: same items prop as XDSDropdownMenu|Icon-only trigger: always square icon button w/ aria-label|Tooltip: shows label on hover, hidden when menu open|Custom rendering: optional children render function`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'Overflow menu w/ three-dot icon trigger. Convenience wrapper composing icon-only XDSButton w/ dropdown menu, eliminating boilerplate for state management, positioning, accessibility.',
+  features: [
+    "Zero-config defaults: three-dot icon, 'More options' label, ghost variant; just pass items",
+    'Data-driven items: same items prop as XDSDropdownMenu (items, dividers, sections)',
+    'Icon-only trigger: always renders as square icon button w/ aria-label',
+    'Tooltip: shows label on hover, hidden when menu open',
+    'Custom rendering: optional children render function for custom item content',
+  ],
+  accessibility: [
+    'Proper ARIA roles: menu + menuitem on dropdown elements.',
+    'Trigger button has aria-haspopup="menu" + aria-expanded.',
+    'aria-activedescendant tracks highlighted menu item.',
+    'Disabled items have aria-disabled set.',
+    'Sections use role="group" w/ aria-label.',
+  ],
+  keyboard:
+    'Arrow keys navigate items; Home/End jump to first/last; Enter/Space select highlighted item; Escape closes menu',
+  notes: [
+    'For full control over trigger rendering or menu content, compose XDSButton + useXDSLayer + XDSDropdownMenuItem directly.',
+    'Use XDSMoreMenu for icon-only overflow actions in tight spaces (table rows, card headers). Use XDSDropdownMenu for labeled trigger buttons w/ chevrons.',
+  ],
+  propDescriptions: {
+    items: 'Menu items (actions, dividers, sections). Same type as XDSDropdownMenu items.',
+    label: 'Accessible label (aria-label) + tooltip text.',
+    variant: 'Trigger button visual style variant.',
+    size: 'Trigger button size.',
+    icon: 'Override default three-dot icon. Accepts any ReactNode.',
+    isDisabled: 'Whether menu trigger disabled.',
+    children: 'Custom render function for selectable items (not dividers/sections).',
+    xstyle:
+      'StyleX styles for layout customization (margins, positioning, sizing). Must be stylex.create() value.',
+  },
+};

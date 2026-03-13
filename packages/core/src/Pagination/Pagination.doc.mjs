@@ -333,33 +333,49 @@ export const docsZh = {
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSPagination}from'@xds/core/Pagination' //standalone pagination controls
-P page:number! current page (1-based) | onChange:(page: number) => void! called on page change | onChangeAction:(page: number) => void|Promise<void> async action; fires after onChange, uses React transitions for loading | totalItems:number total items; calculates page count; precedence over totalPages | totalPages:number total pages; use when page count known but not item count | hasMore:boolean more pages exist after current; for cursor-based pagination | pageSize:number='10' items per page | pageSizeOptions:number[] page size options; shows selector dropdown | onPageSizeChange:(pageSize: number) => void on page size change; auto resets to page 1 | variant:'pages'|'count'|'compact'|'dots'|'none'='pages' display between prev/next btns | siblingCount:number='1' page btns each side of current; only variant='pages' | size:'sm'|'md'='md' control size | isDisabled:boolean='false' | label:string='Pagination' accessible label for nav landmark | xstyle:StyleXStyles layout customization (margins, positioning, sizing)
-X <XDSPagination
-  page={page}
-  onChange={setPage}
-  totalItems={200}
-  pageSize={20}
-/>
-X <XDSPagination
-  page={page}
-  onChange={setPage}
-  totalItems={200}
-  variant="count"
-  pageSizeOptions={[10, 20, 50]}
-  onPageSizeChange={setPageSize}
-/>
-X <XDSPagination
-  page={page}
-  onChange={setPage}
-  hasMore={data.hasNextPage}
-/>
-X <XDSPagination
-  page={slideIndex}
-  onChange={setSlideIndex}
-  totalPages={slides.length}
-  variant="dots"
-/>
-A Root is <nav> w/ configurable aria-label|Current page btn has aria-current="page"|Prev/next btns have descriptive aria-label|Ellipsis elements aria-hidden|All interactive elements keyboard accessible
-N Page btns use XDSButton (ghost inactive, primary active) for theming + swizzle|Prev/next use XDSButton variant='ghost' icon-only|Dot indicators are custom elements (intentionally different from btns)|Returns null when totalItems <= 0 or totalPages <= 0|Exports generatePageRange utility for visible page numbers w/ ellipsis|Five variants: pages, count, compact, dots, none|Offset + cursor-based: totalItems/totalPages for known totals, hasMore for cursor|Page size selector dropdown when pageSizeOptions provided|Ellipsis truncation via generatePageRange|onChangeAction uses useTransition for loading state|Sizes: sm + md`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'Standalone pagination controls for navigating content pages. Supports multiple display variants + works w/ known totals or cursor-based pagination.',
+  features: [
+    "Five display variants: 'pages', 'count', 'compact', 'dots', 'none'",
+    'Offset + cursor-based pagination: totalItems/totalPages for known totals, hasMore for cursor-based',
+    'Page size selector: shows dropdown when pageSizeOptions provided',
+    'Ellipsis truncation for page numbers via generatePageRange utility',
+    'React transitions: onChangeAction uses useTransition for built-in loading state',
+    "Sizes: 'sm' and 'md'",
+  ],
+  accessibility: [
+    'Root is <nav> w/ configurable aria-label.',
+    'Current page button has aria-current="page".',
+    'Prev/next buttons have descriptive aria-label.',
+    'Ellipsis elements are aria-hidden.',
+    'All interactive elements keyboard accessible.',
+  ],
+  notes: [
+    "Page number buttons use XDSButton (variant='ghost' inactive, variant='primary' active) for theming + swizzle compatibility.",
+    "Prev/next buttons use XDSButton w/ variant='ghost' + icon-only mode.",
+    'Dot indicators remain custom elements (intentionally different visual treatment from buttons).',
+    'Returns null when totalItems <= 0 or totalPages <= 0.',
+    'Exports generatePageRange utility for computing visible page numbers w/ ellipsis.',
+  ],
+  propDescriptions: {
+    page: 'Current page number (1-based).',
+    onChange: 'Called on page change.',
+    onChangeAction:
+      'Async action on page change. Fires after onChange; uses React transitions for loading.',
+    totalItems: 'Total items. Calculates page count. Precedence over totalPages.',
+    totalPages: 'Total pages. Use when page count known but not item count.',
+    hasMore: 'More pages exist after current. For cursor-based pagination.',
+    pageSize: 'Items per page.',
+    pageSizeOptions: 'Page size options. Shows selector dropdown when provided.',
+    onPageSizeChange: 'Called on page size change. Auto resets to page 1.',
+    variant: 'Display between prev/next buttons.',
+    siblingCount: "Page buttons each side of current; only variant='pages'.",
+    size: 'Control size.',
+    isDisabled: 'Component disabled.',
+    label: 'Accessible label for nav landmark.',
+    xstyle:
+      'StyleX styles for layout customization (margins, positioning, sizing). Must be stylex.create() value.',
+  },
+};

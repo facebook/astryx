@@ -447,10 +447,50 @@ export const docsZh = {
     '在空输入框上按退格键移除最后一个标记；方向键导航下拉列表；Enter 选择高亮项目；Escape 关闭下拉列表',
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSTokenizer}from'@xds/core/Tokenizer' //multi-select typeahead w/ token chips
-P label:string! accessible label | searchSource:XDSSearchSource<T>! data source w/ search+bootstrap methods | value:T[]! array of selected items | onChange:(items: T[], change: XDSTokenizerChange<T>) => void! called on selection change; change has item+type ('add'|'remove'|'reorder') | placeholder:string shown when no tokens selected | maxEntries:number max selections; input hides at limit | hasClear:boolean='false' clear-all button for bulk removal | renderToken:(item: T, onRemove: () => void) => ReactNode custom token render; default renders XDSToken w/ label+onRemove | renderItem:(item: T) => ReactNode custom dropdown item render; default renders XDSTypeaheadItem | isDisabled:boolean='false' disables input+all token interactions | status:XDSInputStatus validation w/ type+message for error/warning/success | isLabelHidden:boolean='false' visually hides label, keeps a11y | description:string helper text below label | isRequired:boolean='false' marks required | isOptional:boolean='false' shows optional indicator | labelTooltip:string tooltip on label | hasEntriesOnFocus:boolean='false' show bootstrap results on focus before typing | maxMenuItems:number='10' max dropdown items | emptySearchResultsText:string='No results found' | hasAutoFocus:boolean='false' auto-focus on mount | size:'sm' | 'md'='md' input+token size | debounceMs:number='150' search debounce delay ms; 0 for sync sources | onChangeQuery:(query: string) => void fired on search query change | endContent:ReactNode content at input row end; for buttons, counts, controls | xstyle:StyleXStyles layout styles (margins, positioning); must be stylex.create() value
-X const source = {\\n  search: query => users.filter(u => u.label.includes(query)),\\n  bootstrap: () => users.slice(0, 5),\\n};\\n\\n<XDSTokenizer\\n  label="Team Members"\\n  searchSource={source}\\n  value={selected}\\n  onChange={(items, change) => {\\n    setSelected(items);\\n  }}\\n  placeholder="Search people..."\\n/> | <XDSTokenizer\\n  label="Tags"\\n  searchSource={tagSource}\\n  value={tags}\\n  onChange={(items) => setTags(items)}\\n  maxEntries={5}\\n  hasClear\\n  placeholder="Add up to 5 tags..."\\n/> | <XDSTokenizer\\n  label="Tags"\\n  searchSource={tagSource}\\n  value={tags}\\n  onChange={(items) => setTags(items)}\\n  renderToken={(item, onRemove) => (\\n    <XDSToken\\n      label={item.label}\\n      color={item.auxiliaryData.color}\\n      onRemove={onRemove}\\n    />\\n  )}\\n  maxEntries={10}\\n/>
-A Wrapped in XDSField for label, description, status message association|token container has role="group" w/ aria-label|clear all button has aria-label="Clear all"|combobox pattern via XDSBaseTypeahead w/ aria-expanded+aria-autocomplete
-K Backspace on empty input=remove last token;Arrow keys=navigate dropdown;Enter=select highlighted item;Escape=close dropdown
-N Token chips for each selected item w/ remove buttons|filtered search auto-excludes already-selected items|max entries limits selections; input hides at limit|clear all button for bulk removal|custom token+item rendering via renderToken+renderItem|Backspace on empty input removes last token|onChange receives second arg w/ type ('add'|'remove'|'reorder')`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Multi-select typeahead w/ token chips for selected items. Composes XDSBaseTypeahead for search+XDSToken for chips.',
+  features: [
+    'Token chips for each selected item w/ remove buttons',
+    'Filtered search auto-excludes already-selected items',
+    'Max entries limits selections; input hides at limit',
+    'Clear all button for bulk removal of all tokens',
+    'Custom token+item rendering via renderToken+renderItem',
+    'Backspace on empty input removes last token',
+    "Change metadata: onChange receives second arg w/ type ('add'|'remove'|'reorder')",
+  ],
+  accessibility: [
+    'Wrapped in XDSField for label, description, status message association.',
+    'Token container has role="group" w/ aria-label.',
+    'Clear all button has aria-label="Clear all".',
+    'Combobox pattern via XDSBaseTypeahead w/ aria-expanded+aria-autocomplete.',
+  ],
+  keyboard: 'Backspace on empty input removes last token. Arrow keys navigate dropdown. Enter selects highlighted item. Escape closes dropdown.',
+  propDescriptions: {
+    label: 'Accessible label for input.',
+    searchSource: 'Data source w/ search+bootstrap methods for populating dropdown.',
+    value: 'Array of currently selected items.',
+    onChange: "Fired on selection change. Change arg includes affected item+type ('add'|'remove'|'reorder').",
+    placeholder: 'Input placeholder. Only shown when no tokens selected.',
+    maxEntries: 'Max selections allowed. Input hidden at limit.',
+    hasClear: 'Clear-all button for bulk removal.',
+    renderToken: 'Custom token render. Default renders XDSToken w/ label+onRemove.',
+    renderItem: 'Custom dropdown item render. Default renders XDSTypeaheadItem.',
+    isDisabled: 'Disables input+all token interactions.',
+    status: 'Validation status w/ type+message for error/warning/success.',
+    isLabelHidden: 'Visually hides label; keeps a11y.',
+    description: 'Helper text below label.',
+    isRequired: 'Marks field required.',
+    isOptional: 'Shows optional indicator on label.',
+    labelTooltip: 'Tooltip on label.',
+    hasEntriesOnFocus: 'Show bootstrap results on focus before typing.',
+    maxMenuItems: 'Max dropdown items to display.',
+    emptySearchResultsText: 'Text when search returns no results.',
+    hasAutoFocus: 'Auto-focus input on mount.',
+    size: 'Input+token size.',
+    debounceMs: 'Search debounce delay ms. 0 for sync sources.',
+    onChangeQuery: 'Fired on search query text change.',
+    endContent: 'Content at input row end. For buttons, counts, controls.',
+    xstyle: 'StyleX layout styles (margins, positioning). Must be stylex.create() value.',
+  },
+};

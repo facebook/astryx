@@ -249,10 +249,37 @@ export const docsZh = {
     'Tab 聚焦标记（或使用 onClick 时聚焦其内部按钮）。Enter/Space 激活可点击标记或移除按钮。移除按钮作为单独的 Tab 停靠点可达。',
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSToken}from'@xds/core/Token' //chip/tag for inline entity display
-P label:string! text inside token | color:'default' | 'red' | 'orange' | 'yellow' | 'green' | 'teal' | 'cyan' | 'blue' | 'purple' | 'pink' | 'gray'='default' | icon:ReactNode icon before label | isDisabled:boolean='false' reduces opacity, blocks interactions | onRemove:(e: React.MouseEvent) => void renders X button when provided | onClick:(e: React.MouseEvent) => void renders <span> w/ invisible <button> inside for a11y | href:string renders as <a> element | description:string a11y desc via aria-description | endContent:ReactNode content after label, before remove button | isLabelHidden:boolean='false' visually hides label w/ screen-reader-only clip; label stays accessible | xstyle:StyleXStyles layout styles (margins, positioning); must be stylex.create() value
-X <XDSToken label="Tag" /> | <XDSToken label="Status" color="green" /> | <XDSToken label="Filter" onRemove={(e) => handleRemove(e)} /> | <XDSToken label="Category" onClick={() => navigate('/category')} /> | <XDSToken label="Profile" href="/user/123" /> | <XDSToken label="User" icon={<UserIcon />} isLabelHidden />
-A isLabelHidden clips label visually but exposes via aria-label so screen readers announce it|description maps to aria-description for supplementary context|onClick wraps content in real <button> so keyboard users activate w/ Enter/Space|remove button has auto aria-label "Remove <label>" + expanded touch target via ::after pseudo-element|href w/ isDisabled sets aria-disabled on <a>
-K Tab=focus token (or inner button w/ onClick);Enter/Space=activate clickable token or remove button;Remove button=separate Tab stop
-N Polymorphic: renders as <span> default, <a> w/ href, <span>+invisible <button> w/ onClick|invisible button preserves real button semantics w/ focus-within outline on full token|remove button has expanded 14px hit-area via ::after pseudo-element`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Chip/tag for displaying entities inline. Renders as <span> default, <a> w/ href, or <span> w/ invisible <button> when onClick provided.',
+  features: [
+    'Polymorphic; renders as <span>, <a>, or interactive <span>+<button> based on props',
+    'Invisible button pattern for onClick preserves real button semantics w/ focus-within outline on full token',
+    'Remove button w/ expanded 14px hit-area tap target via ::after pseudo-element',
+    'Eleven color variants including neutral default',
+    'Leading icon+trailing endContent slots',
+    'Label can be visually hidden; remains accessible to screen readers',
+    'Disabled state reduces opacity, blocks pointer events',
+  ],
+  accessibility: [
+    'isLabelHidden clips label visually but exposes via aria-label so screen readers announce it.',
+    'description maps to aria-description for supplementary context.',
+    'onClick wraps content in real <button> so keyboard users activate w/ Enter/Space.',
+    'Remove button has auto aria-label "Remove <label>"+expanded touch target via ::after pseudo-element.',
+    'href w/ isDisabled sets aria-disabled on <a>.',
+  ],
+  keyboard: 'Tab focuses token (or inner button w/ onClick). Enter/Space activate clickable token or remove button. Remove button is separate Tab stop.',
+  propDescriptions: {
+    label: 'Text label inside token.',
+    color: 'Color variant of token.',
+    icon: 'Optional icon before label.',
+    isDisabled: 'Reduces opacity, blocks interactions.',
+    onRemove: 'Fired on remove button click. Renders X button when provided.',
+    onClick: 'Click handler. Renders <span> w/ invisible <button> inside for a11y.',
+    href: 'Link URL. Renders as <a> element.',
+    description: 'A11y description via aria-description on root.',
+    endContent: 'Content after label, before remove button.',
+    isLabelHidden: 'Visually hides label w/ screen-reader-only clip; stays accessible.',
+    xstyle: 'StyleX layout styles (margins, positioning). Must be stylex.create() value.',
+  },
+};

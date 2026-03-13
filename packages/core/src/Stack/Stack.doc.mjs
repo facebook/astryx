@@ -667,22 +667,72 @@ import * as stylex from '@stylexjs/stylex';
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSHStack,XDSVStack,XDSStackItem}from'@xds/core/Layout' //flexbox stack layout primitives
-C XDSHStack //horizontal stack, left-to-right, polymorphic
-P gap:SpacingStep spacing steps: 0,0.5,1,1.5,2,3,4,5,6,8,10 | vAlign:'start' | 'center' | 'end' | 'stretch'='stretch' vertical cross-axis alignment | wrap:'nowrap' | 'wrap' | 'wrap-reverse'='nowrap' | element:ElementType='div' HTML element to render | children:ReactNode | xstyle:StyleXStyles layout styles, must be stylex.create() value
-X <XDSHStack gap={2}>\\n  <Item />\\n  <Item />\\n</XDSHStack> | <XDSHStack gap={4} vAlign="center">\\n  <Item />\\n  <Item />\\n</XDSHStack> | <XDSHStack element="nav" gap={2}>\\n  <Link />\\n  <Link />\\n</XDSHStack>
-C XDSVStack //vertical stack, top-to-bottom, polymorphic
-P gap:SpacingStep spacing steps: 0,0.5,1,1.5,2,3,4,5,6,8,10 | hAlign:'start' | 'center' | 'end' | 'stretch'='stretch' horizontal cross-axis alignment | wrap:'nowrap' | 'wrap' | 'wrap-reverse'='nowrap' | element:ElementType='div' HTML element to render | children:ReactNode
-X <XDSVStack gap={2}>\\n  <Item />\\n  <Item />\\n</XDSVStack> | <XDSVStack gap={4} hAlign="center">\\n  <Item />\\n  <Item />\\n</XDSVStack> | <XDSVStack element="main" gap={4}>\\n  <Header />\\n  <Content />\\n</XDSVStack>
-C XDSStackItem //individual item control, polymorphic
-P size:'static' | 'fill'='static' static=natural size, fill=expand | crossAlignSelf:'start' | 'center' | 'end' | 'stretch' override parent cross-axis alignment | element:ElementType='div' | children:ReactNode
-X <XDSHStack gap={2}>\\n  <XDSStackItem size="static">Logo</XDSStackItem>\\n  <XDSStackItem size="fill">Content</XDSStackItem>\\n  <XDSStackItem size="static">Actions</XDSStackItem>\\n</XDSHStack> | <XDSHStack vAlign="start">\\n  <XDSStackItem crossAlignSelf="center">Centered</XDSStackItem>\\n  <XDSStackItem>Top-aligned</XDSStackItem>\\n</XDSHStack> | <XDSStackItem element="section" size="fill">\\n  Section content\\n</XDSStackItem>
-C stack //low-level StyleX utility for flex containers
-P direction:'horizontal' | 'vertical'! | gap:SpacingStep spacing steps: 0,0.5,1,1.5,2,3,4,5,6,8,10 | crossAlign:'start' | 'center' | 'end' | 'stretch' | wrap:'nowrap' | 'wrap' | 'wrap-reverse'='nowrap'
-X import {stack} from '@xds/core/Layout';\\nimport * as stylex from '@stylexjs/stylex';\\n\\n<div {...stylex.props(...stack({direction: 'horizontal', gap: 2}))}>\\n  <Child />\\n  <Child />\\n</div>
-C stackItem //low-level StyleX utility for flex items
-P size:'static' | 'fill'='static' static=natural size, fill=expand | crossAlignSelf:'start' | 'center' | 'end' | 'stretch' override cross-axis alignment
-X import {stackItem} from '@xds/core/Layout';\\nimport * as stylex from '@stylexjs/stylex';\\n\\n<div {...stylex.props(...stackItem({size: 'fill'}))}>Content</div>
-X <XDSHStack element="header" gap={2}>\\n  <XDSStackItem size="static">\\n    <Logo />\\n  </XDSStackItem>\\n  <XDSStackItem size="fill">\\n    <Navigation />\\n  </XDSStackItem>\\n  <XDSStackItem size="static">\\n    <UserMenu />\\n  </XDSStackItem>\\n</XDSHStack> | <XDSHStack gap={4}>\\n  <XDSStackItem size="static">\\n    <Sidebar />\\n  </XDSStackItem>\\n  <XDSStackItem size="fill">\\n    <MainContent />\\n  </XDSStackItem>\\n</XDSHStack> | <XDSVStack element="main" gap={6}>\\n  <XDSStackItem size="static">\\n    <PageHeader />\\n  </XDSStackItem>\\n  <XDSStackItem size="fill">\\n    <PageContent />\\n  </XDSStackItem>\\n  <XDSStackItem size="static">\\n    <PageFooter />\\n  </XDSStackItem>\\n</XDSVStack>
-N import from '@xds/core/Layout': XDSHStack, XDSVStack, XDSStackItem, stack, stackItem|gap accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10|stack+stackItem are low-level StyleX utilities for advanced cases where component API is insufficient`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Stack layout primitives for horizontal/vertical sequences using flexbox w/ themed spacing tokens.',
+  features: [
+    'Horizontal (XDSHStack) + vertical (XDSVStack) stacking',
+    'Themed spacing via gap tokens from design system spacing scale',
+    'Individual item control via XDSStackItem',
+    'Polymorphic rendering via element prop',
+    'Low-level StyleX utilities (stack, stackItem) for advanced use',
+  ],
+  notes: [
+    "Import from '@xds/core/Layout': XDSHStack, XDSVStack, XDSStackItem, stack, stackItem.",
+    'gap accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
+    'stack + stackItem are low-level StyleX utilities for cases where component API is insufficient.',
+  ],
+  components: [
+    {
+      name: 'XDSHStack',
+      description: 'Horizontal stack; left-to-right, polymorphic rendering.',
+      propDescriptions: {
+        gap: 'Numeric spacing step for gap: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
+        vAlign: 'Vertical (cross-axis) alignment.',
+        wrap: 'Flex wrap behavior.',
+        element: 'HTML element to render as container.',
+        children: 'Stack content.',
+        xstyle: 'StyleX layout styles; must be stylex.create() value.',
+      },
+    },
+    {
+      name: 'XDSVStack',
+      description: 'Vertical stack; top-to-bottom, polymorphic rendering.',
+      propDescriptions: {
+        gap: 'Numeric spacing step for gap: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
+        hAlign: 'Horizontal (cross-axis) alignment.',
+        wrap: 'Flex wrap behavior.',
+        element: 'HTML element to render as container.',
+        children: 'Stack content.',
+      },
+    },
+    {
+      name: 'XDSStackItem',
+      description: 'Controls individual item behavior in stack; polymorphic rendering.',
+      propDescriptions: {
+        size: 'Flex grow: static=natural size, fill=expand to remaining space.',
+        crossAlignSelf: 'Override cross-axis alignment for this item, ignoring parent.',
+        element: 'HTML element to render as wrapper.',
+        children: 'Item content.',
+      },
+    },
+    {
+      name: 'stack',
+      description: 'Low-level StyleX utility for flex containers w/ stack behavior.',
+      propDescriptions: {
+        direction: 'Stack direction.',
+        gap: 'Numeric spacing step for gap: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
+        crossAlign: 'Cross-axis alignment of all items.',
+        wrap: 'Flex wrap behavior.',
+      },
+    },
+    {
+      name: 'stackItem',
+      description: 'Low-level StyleX utility for flex item behavior.',
+      propDescriptions: {
+        size: 'Flex grow: static=natural size, fill=expand to remaining space.',
+        crossAlignSelf: 'Override cross-axis alignment for this item.',
+      },
+    },
+  ],
+};

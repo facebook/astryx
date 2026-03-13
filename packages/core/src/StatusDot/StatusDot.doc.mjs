@@ -145,8 +145,26 @@ export const docsZh = {
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSStatusDot}from'@xds/core/StatusDot' //colored dot status indicator
-P variant:'positive' | 'warning' | 'negative' | 'info' | 'neutral'! semantic color | label:string! a11y label via aria-label | size:'sm' | 'md'='md' sm=8px, md=10px | isPulsing:boolean='false' pulse animation, respects prefers-reduced-motion | xstyle:StyleXStyles layout styles, must be stylex.create() value
-X <XDSStatusDot variant="positive" label="Online" />\\n<XDSStatusDot variant="negative" label="Offline" />\\n<XDSStatusDot variant="warning" label="Away" /> | <XDSStatusDot variant="positive" label="Active" size="sm" /> | <XDSStatusDot variant="positive" label="Live" isPulsing />
-A renders <span role="img" aria-label={label}> for screen readers|not focusable, decorative indicator only|isPulsing animation respects prefers-reduced-motion: reduce`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Small colored dot indicator for status display (online/offline, severity, etc).',
+  features: [
+    'Five semantic color variants: positive, warning, negative, info, neutral',
+    'Two sizes: sm (8px) + md (10px)',
+    'Optional pulse animation respecting prefers-reduced-motion',
+    'Accessible: <span role="img" aria-label={label}> for screen readers',
+    'Not focusable (decorative indicator)',
+  ],
+  accessibility: [
+    'Renders <span role="img" aria-label={label}> for screen readers.',
+    'Not focusable; decorative indicator only.',
+    'isPulsing animation respects prefers-reduced-motion: reduce.',
+  ],
+  propDescriptions: {
+    variant: 'Semantic color variant.',
+    label: 'Accessible label via aria-label.',
+    size: 'Dot size: sm=8px, md=10px.',
+    isPulsing: 'Pulse animation; respects prefers-reduced-motion: reduce.',
+    xstyle: 'StyleX layout styles; must be stylex.create() value.',
+  },
+};

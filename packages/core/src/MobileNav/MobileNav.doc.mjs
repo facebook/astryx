@@ -294,76 +294,35 @@ const navSections = (
   },
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSMobileNav}from'@xds/core/MobileNav' //slide-out drawer for mobile nav
-P isOpen:boolean! drawer open state | onOpenChange:(isOpen: boolean) => void! called on visibility change (backdrop, Escape, close btn) | children:ReactNode! drawer content (XDSSideNavSection/XDSSideNavItem or ReactNode) | title:string title at top of drawer | width:number='280' drawer width px, capped 85vw | side:'start'|'end'='start' slide direction; start=left LTR, right RTL
-X const [isOpen, setIsOpen] = useState(false);
-
-<XDSButton
-  label="Menu"
-  icon={<MenuIcon />}
-  variant="ghost"
-  onClick={() => setIsOpen(true)}
-/>
-
-<XDSMobileNav
-  isOpen={isOpen}
-  onOpenChange={() => setIsOpen(false)}
-  title="Navigation"
->
-  <XDSSideNavSection title="Main">
-    <XDSSideNavItem label="Dashboard" href="/dashboard" isSelected />
-    <XDSSideNavItem label="Analytics" href="/analytics" />
-    <XDSSideNavItem label="Settings" href="/settings" />
-  </XDSSideNavSection>
-</XDSMobileNav>
-X const isMobile = useMediaQuery('(max-width: 768px)');
-const [drawerOpen, setDrawerOpen] = useState(false);
-
-const navSections = (
-  <>
-    <XDSSideNavSection title="Main">
-      <XDSSideNavItem label="Dashboard" href="/" isSelected />
-      <XDSSideNavItem label="Projects" href="/projects" />
-    </XDSSideNavSection>
-    <XDSSideNavSection title="Settings">
-      <XDSSideNavItem label="General" href="/settings" />
-      <XDSSideNavItem label="Security" href="/security" />
-    </XDSSideNavSection>
-  </>
-);
-
-{isMobile ? (
-  <>
-    <XDSButton
-      label="Menu"
-      icon={<MenuIcon />}
-      variant="ghost"
-      onClick={() => setDrawerOpen(true)}
-    />
-    <XDSMobileNav
-      isOpen={drawerOpen}
-      onOpenChange={() => setDrawerOpen(false)}
-      title="My App"
-    >
-      {navSections}
-    </XDSMobileNav>
-  </>
-) : (
-  <XDSSideNav>{navSections}</XDSSideNav>
-)}
-X const sections = (
-  <XDSSideNavSection title="Main">
-    <XDSSideNavItem label="Home" href="/" />
-    <XDSSideNavItem label="Settings" href="/settings" />
-  </XDSSideNavSection>
-);
-
-// Desktop: sidebar
-<XDSSideNav>{sections}</XDSSideNav>
-
-// Mobile: drawer
-<XDSMobileNav isOpen={open} onOpenChange={close}>{sections}</XDSMobileNav>
-A Native <dialog> w/ showModal() for correct ARIA modal semantics|aria-label set to title or 'Navigation' fallback|Focus trapping via showModal() (browser-native)|Escape closes via native cancel event|Backdrop click closes drawer|Body scroll locked while open
-K Escape=close drawer;Tab/Shift+Tab=cycle focus within drawer (browser-native trapping)
-N Native <dialog> w/ showModal() for top-layer rendering, no z-index issues|Animated slide-in from start/end edge w/ backdrop fade|Shares children w/ XDSSideNav; extract nav sections into variable for both|RTL-aware: auto mirrors slide direction|Respects prefers-reduced-motion`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'Slide-out drawer overlay for mobile navigation. Mobile counterpart to XDSSideNav; accepts same children (XDSSideNavSection, XDSSideNavItem, or any ReactNode).',
+  features: [
+    'Native <dialog> w/ showModal() for top-layer rendering; no z-index stacking issues',
+    'Animated slide-in from start or end edge w/ backdrop fade',
+    'Shares children w/ XDSSideNav; extract nav sections into variable + render in both',
+    'RTL-aware: auto mirrors slide direction for right-to-left layouts',
+    'Respects prefers-reduced-motion: reduces animation duration',
+  ],
+  accessibility: [
+    'Uses native <dialog> w/ showModal() for correct ARIA modal semantics.',
+    "aria-label set to title or 'Navigation' as fallback.",
+    'Focus trapping provided by showModal() (browser-native).',
+    'Escape key closes via native cancel event.',
+    'Backdrop click closes drawer.',
+    'Body scroll locked while modal open.',
+  ],
+  keyboard:
+    'Escape closes drawer; Tab/Shift+Tab cycles focus within drawer (browser-native focus trapping)',
+  propDescriptions: {
+    isOpen: 'Whether drawer is open.',
+    onOpenChange:
+      'Called when drawer visibility changes (backdrop click, Escape key, close button).',
+    children:
+      'Drawer content; typically XDSSideNavSection/XDSSideNavItem or any ReactNode.',
+    title: 'Optional title at top of drawer.',
+    width: 'Drawer width px. Capped at 85vw to prevent overflow on small screens.',
+    side: 'Slide direction. Start=left LTR, right RTL.',
+  },
+};

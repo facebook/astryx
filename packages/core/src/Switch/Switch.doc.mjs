@@ -409,10 +409,53 @@ export const docsZh = {
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSSwitch}from'@xds/core/Switch' //boolean toggle w/ label support
-P label:string! label text, always rendered for a11y | value:boolean! on/off state | onChange:(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void | onChangeAction:(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void | Promise<void> async action w/ optimistic UI + loading spinner | isLoading:boolean='false' shows spinner in thumb | isLabelHidden:boolean='false' visually hidden, still accessible | description:string below label | isDisabled:boolean='false' | isOptional:boolean='false' mutually exclusive w/ isRequired | isRequired:boolean='false' mutually exclusive w/ isOptional | status:XDSInputStatus {type,message} colored message box, sets aria-invalid on error | onFocus:(e: FocusEvent<HTMLInputElement>) => void | onBlur:(e: FocusEvent<HTMLInputElement>) => void | labelIcon:XDSIconType icon before label | labelTooltip:string info icon tooltip at label end | labelPosition:'start' | 'end'='end' which side label appears | labelSpacing:'default' | 'spread'='default' spread pushes to opposite ends
-X <XDSSwitch\\n  label="Enable notifications"\\n  value={enabled}\\n  onChange={setEnabled}\\n/> | <XDSSwitch\\n  label="Dark mode"\\n  description="Switch to a darker color scheme"\\n  value={darkMode}\\n  onChange={setDarkMode}\\n/> | <XDSSwitch\\n  label="Auto-save"\\n  labelIcon={CloudArrowUpIcon}\\n  labelTooltip="Automatically save changes"\\n  value={autoSave}\\n  onChange={setAutoSave}\\n/> | <XDSSwitch\\n  label="Enable notifications"\\n  value={enabled}\\n  onChange={setEnabled}\\n  labelPosition="start"\\n  labelSpacing="spread"\\n/> | <XDSSwitch\\n  label="Sync to cloud"\\n  value={syncEnabled}\\n  onChange={setSyncEnabled}\\n  onChangeAction={async (checked) => {\\n    await updateSetting('sync', checked);\\n  }}\\n/> | <XDSSwitch\\n  label="Two-factor authentication"\\n  value={twoFactor}\\n  onChange={setTwoFactor}\\n  status={{type: 'error', message: 'Failed to save setting'}}\\n/>
-A native <input type="checkbox" role="switch"> for correct semantics|label always associated via htmlFor/id even when visually hidden|description linked via aria-describedby on input|status messages linked via aria-describedby; aria-invalid set on error type|aria-busy set during async onChangeAction
-K Space=toggle;Tab/Shift+Tab=move focus in/out
-N fixed 40px wide, 24px high, 16px thumb (off), 20px thumb (on)|track+thumb use CSS transitions for background-color, transform, width, height|hover tints via stylex.when.ancestor w/ @media (hover: hover) guard|onChangeAction uses React useTransition+useOptimistic for seamless async|labelPosition="start" + labelSpacing="spread" = settings panel layout|follows same patterns as XDSCheckboxInput for structural consistency`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Toggle switch for boolean values w/ integrated label support.',
+  features: [
+    'Boolean toggle; fixed 40x24px track w/ animated 16px (off) / 20px (on) thumb',
+    'Label integration; uses XDSFieldLabel for accessible labels w/ optional tooltip + icon',
+    'Label position; label before or after switch via labelPosition',
+    'Label spacing; spread layout pushes label + switch to opposite ends',
+    'Description; optional text below label',
+    'Optional/required indicators; visual markers for field status',
+    'Status messages; error, warning, success, or info boxes below switch',
+    'Async action support; onChangeAction w/ optimistic UI + built-in loading spinner',
+    'Accessible; native checkbox w/ role="switch", aria-describedby, aria-invalid, aria-busy',
+  ],
+  notes: [
+    'Fixed dimensions: 40px wide, 24px high, 16px thumb (off), 20px thumb (on).',
+    'Track + thumb use CSS transitions for background-color, transform, width, height.',
+    'Hover tints via stylex.when.ancestor w/ @media (hover: hover) guard.',
+    'onChangeAction uses React useTransition + useOptimistic for seamless async toggling.',
+    'labelPosition="start" + labelSpacing="spread" produces settings panel layout.',
+    'Follows same patterns as XDSCheckboxInput for structural consistency.',
+  ],
+  accessibility: [
+    'Native <input type="checkbox" role="switch"> for correct semantics.',
+    'Label always associated via htmlFor/id even when visually hidden.',
+    'Description linked via aria-describedby on input element.',
+    'Status messages linked via aria-describedby; aria-invalid set on error type.',
+    'aria-busy set during async onChangeAction execution.',
+  ],
+  keyboard: 'Space=toggle; Tab/Shift+Tab=move focus in/out.',
+  propDescriptions: {
+    label: 'Label text (always rendered for a11y).',
+    value: 'Whether switch is on or off.',
+    onChange: 'Fired when switch state changes.',
+    onChangeAction: 'Async action after onChange; triggers optimistic UI + loading spinner until resolved.',
+    isLoading: 'Loading state; shows spinner in thumb.',
+    isLabelHidden: 'Visually hides label; still accessible to screen readers.',
+    description: 'Description text below label.',
+    isDisabled: 'Whether switch is disabled.',
+    isOptional: 'Whether field is optional; mutually exclusive w/ isRequired.',
+    isRequired: 'Whether switch is required; mutually exclusive w/ isOptional.',
+    status: 'Status indicator w/ type + message; colored message box, sets aria-invalid on error.',
+    onFocus: 'Fired when switch receives focus.',
+    onBlur: 'Fired when switch loses focus.',
+    labelIcon: 'Icon before label text.',
+    labelTooltip: 'Tooltip text in info icon at label end.',
+    labelPosition: 'Which side label appears; "start" places before switch.',
+    labelSpacing: 'Spacing behavior; "spread" pushes to opposite ends (full width).',
+  },
+};

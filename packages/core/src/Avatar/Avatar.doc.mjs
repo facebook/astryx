@@ -303,20 +303,48 @@ export const docsZh = {
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSAvatar}from'@xds/core/Avatar' //user avatar w/ fallback support
-C XDSAvatar //user avatar w/ image, initials, status
-P src:string primary image URL | fallbackSrc:string fallback image on primary fail
-P name:string user name for initials+alt | alt:string alt text (falls back to name)
-P size:XDSAvatarSize='small' named or numeric px | status:ReactNode corner status indicator
-X <XDSAvatar src="/user.jpg" name="John Doe" size="medium" />
-C XDSAvatarStatusDot //size-aware status dot, scales w/ avatar
-P variant:'positive' | 'neutral' | 'negative'='positive' semantic color
-P label:string screen reader label | icon:ReactNode icon inside dot (hidden at tiny sizes)
-X <XDSAvatarStatusDot variant="positive" label="Online" /> | <XDSAvatarStatusDot variant="negative" label="Busy" /> | <XDSAvatarStatusDot variant="neutral" label="Away" />
-X <XDSAvatar src="/user.jpg" name="John Doe" />
-X <XDSAvatar name="Jane Smith" size="large" />
-X <XDSAvatar src="/user.jpg" name="John Doe" size="medium" status={<XDSAvatarStatusDot variant="positive" label="Online" />} />
-X <XDSAvatar name="AB" size="tiny" status={<XDSAvatarStatusDot />} /> <XDSAvatar name="CD" size="large" status={<XDSAvatarStatusDot />} />
-X <XDSAvatar name="EF" status={<XDSAvatarStatusDot variant="negative" label="Busy" />} /> <XDSAvatar name="GH" status={<XDSAvatarStatusDot variant="neutral" label="Away" />} />
-N always circular (border-radius: 50%)|color.deemphasized + color.textSecondary for fallback bg|initials from first+last word of name|XDSAvatarSizeContext provides resolved numeric size to sub-components|status dot uses CIRCLE_EDGE_OFFSET_RATIO for 45° circle edge positioning|fallback cascade: src→fallbackSrc→initials from name→generic person icon|status dot tiers: avatar ≤36px→8px dot 1px border; 40-72px→16px dot 2px border; ≥96px→24px dot 4px border`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'user avatar w/ profile pictures + fallback support',
+  features: [
+    'image loading: primary + fallback sources',
+    'initials fallback: auto-generates from user name',
+    'default icon: generic person icon w/o image or name',
+    'sizes: tiny(20px), xsmall(24px), small(36px), medium(48px), large(128px) + numeric px',
+    'status slot: corner position for indicators/badges',
+    'size-aware status dot: XDSAvatarStatusDot scales proportionally w/ avatar',
+    'proper role + aria-label support',
+  ],
+  notes: [
+    'always circular (border-radius: 50%)',
+    'color.deemphasized + color.textSecondary for fallback bg',
+    'initials from first+last word of name',
+    'XDSAvatarSizeContext gives resolved numeric size to sub-components',
+    'status dot uses CIRCLE_EDGE_OFFSET_RATIO for 45 deg circle edge positioning',
+    'fallback cascade: src, fallbackSrc, initials from name, generic person icon',
+    'status dot tiers: avatar <=36px: 8px dot 1px border; 40-72px: 16px dot 2px border; >=96px: 24px dot 4px border',
+  ],
+  components: [
+    {
+      name: 'XDSAvatar',
+      description: 'user avatar w/ image, initials fallback, optional status indicator',
+      propDescriptions: {
+        src: 'primary image URL',
+        fallbackSrc: 'fallback image on primary fail',
+        name: 'user name for initials+alt text',
+        alt: 'alt text (falls back to name)',
+        size: 'avatar size (named or numeric px)',
+        status: 'corner content for status indicators',
+      },
+    },
+    {
+      name: 'XDSAvatarStatusDot',
+      description: 'size-aware status dot, reads avatar size from context + scales proportionally',
+      propDescriptions: {
+        variant: 'semantic color variant',
+        label: 'accessible label for screen readers',
+        icon: 'icon centered in dot (hidden at tiny sizes)',
+      },
+    },
+  ],
+};

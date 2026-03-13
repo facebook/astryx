@@ -179,12 +179,38 @@ layer.show();
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSLayer}from'@xds/core/Layer' //core overlay positioning hook
-C useXDSLayer //core layer hook w/ type-safe modes for positioning (context=anchor, fixed=coordinates)
-P mode:'context'|'fixed'! positioning strategy; context=CSS anchor relative to trigger ref, fixed=explicit x/y | onShow:()=>void callback when layer visible | onHide:()=>void callback when layer hidden | xstyle:StyleXStyles layout styles
-X const layer = useXDSLayer({mode: 'context'});\n\n<button ref={layer.ref}>Trigger</button>\n{layer.render(<Content />, {placement: 'above', alignment: 'center'})}
-X const layer = useXDSLayer({mode: 'fixed'});\n\nlayer.show();\n{layer.render(<Content />, {x: mouseX, y: mouseY})}
-A Layer hook provides positioning+visibility foundation; ARIA patterns implemented by higher-level components (XDSPopover, XDSHoverCard, XDSTooltip)
-K Escape=close any open layer
-N CSS Anchor Positioning fully supported in Chrome+Safari; Firefox supports Popover API but not anchor positioning (acceptable degradation)|Context mode: pass ref to trigger, call render(children, { placement?, alignment? }); Fixed mode: call show() then render(children, { x, y })|LayerPlacement: above/below/start/end; LayerAlignment: start/center/end|For click popovers use XDSPopover (@xds/core/Popover); hover overlays use XDSHoverCard (@xds/core/HoverCard); tooltips use XDSTooltip (@xds/core/Tooltip)|CSS Anchor Positioning for auto-placement relative to triggers|Popover API for top-layer rendering; no React portals|Type-safe mode system: context (anchor) + fixed (manual coordinates)|TypeScript enforces correct render props per mode at compile time|Graceful degradation in Firefox|Full support in Chrome + Safari`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'Core hook for overlay positioning using CSS Anchor Positioning + Popover API; no React portals needed. Popover, HoverCard, Tooltip build on this.',
+  features: [
+    'CSS Anchor Positioning for auto-placement relative to triggers',
+    'Popover API for top-layer rendering; no React portals needed',
+    'Type-safe mode system: context (anchor positioning) + fixed (manual coordinates)',
+    'TypeScript enforces correct render props per mode at compile time',
+    'Graceful degradation in Firefox: Popover API works, anchor positioning degrades acceptably',
+    'Full support in Chrome + Safari',
+  ],
+  notes: [
+    'CSS Anchor Positioning fully supported in Chrome + Safari. Firefox supports Popover API but not anchor positioning; acceptable degradation.',
+    'Context mode: pass ref to trigger, call render(children, { placement?, alignment? }). Fixed mode: call show() then render(children, { x, y }).',
+    'LayerPlacement: above | below | start | end. LayerAlignment: start | center | end.',
+    'For click popovers use XDSPopover (@xds/core/Popover). Hover overlays use XDSHoverCard (@xds/core/HoverCard). Tooltips use XDSTooltip (@xds/core/Tooltip).',
+  ],
+  accessibility: [
+    'Layer hook provides positioning + visibility foundation. ARIA patterns implemented by higher-level components (XDSPopover, XDSHoverCard, XDSTooltip).',
+  ],
+  keyboard: 'Escape closes any open layer.',
+  components: [
+    {
+      name: 'useXDSLayer',
+      description: 'Core layer hook w/ type-safe modes for positioning (context=anchor, fixed=coordinates).',
+      propDescriptions: {
+        mode: 'Positioning strategy: context uses CSS anchor positioning relative to trigger ref; fixed uses explicit x/y coordinates.',
+        onShow: 'Callback when layer becomes visible.',
+        onHide: 'Callback when layer hidden.',
+        xstyle: 'StyleX styles for layout customization.',
+      },
+    },
+  ],
+};

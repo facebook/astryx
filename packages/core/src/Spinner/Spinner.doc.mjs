@@ -121,8 +121,25 @@ export const docsZh = {
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSSpinner}from'@xds/core/Spinner' //loading indicator, pure spinner
-P size:'sm' | 'md' | 'lg'='md' 10px/14px/18px | shade:'default' | 'onMedia'='default' color for light/dark bg
-X <XDSSpinner /> | <XDSSpinner size="sm" /> | <XDSSpinner size="lg" shade="onMedia" /> | <XDSVStack gap={2} align="center">\\n  <XDSSpinner size="lg" />\\n  <XDSText color="secondary">Loading...</XDSText>\\n</XDSVStack>
-N CSS border technique: 3 visible borders + 1 transparent for gap|animation: rotate(360deg) 0.75s linear infinite|color inherits currentColor, controlled by shade styles w/ theme tokens|element is <span> w/ display: inline-block for inline composability|intentionally minimal, compose w/ layout+text components for full loading states|size ref: sm=10x10px/3px border, md=14x14px/3px border, lg=18x18px/3px border`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Pure spinner for loading state. No layout, no text; just spinning indicator.',
+  features: [
+    'CSS border animation: lightweight border-based spinner w/ smooth 360\u00b0 rotation',
+    'Size variants: sm (10px), md (14px), lg (18px) matching inline spinners',
+    'Shade support: default for light bg, onMedia for dark/accent bg',
+    'Accessible: role="status" + aria-label="Loading" by default',
+  ],
+  notes: [
+    'CSS border technique: 3 visible borders + 1 transparent for gap.',
+    'Animation: rotate(360deg) at 0.75s linear infinite.',
+    'Color inherits currentColor, controlled by shade styles w/ theme tokens.',
+    'Element is <span> w/ display: inline-block for inline composability.',
+    'Intentionally minimal; compose w/ layout + text components for full loading states.',
+    'Size ref: sm=10x10px/3px border, md=14x14px/3px border, lg=18x18px/3px border.',
+  ],
+  propDescriptions: {
+    size: 'Spinner size (10px, 14px, 18px).',
+    shade: 'Color shade for light or dark backgrounds.',
+  },
+};

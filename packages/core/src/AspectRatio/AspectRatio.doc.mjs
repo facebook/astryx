@@ -111,10 +111,17 @@ export const docsZh = {
   },
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSAspectRatio}from'@xds/core/AspectRatio' //maintains aspect ratio for children
-P ratio:number! width/height ratio (e.g. 16/9, 1) | children:ReactNode!
-P xstyle:StyleXStyles layout customization via stylex.create()
-X <XDSAspectRatio ratio={16 / 9}>   <img src="image.jpg" alt="Widescreen image" style={{objectFit: 'cover'}} /> </XDSAspectRatio>
-X <XDSAspectRatio ratio={1}>   <Avatar /> </XDSAspectRatio> | <XDSAspectRatio ratio={4 / 3}>   <video src="video.mp4" /> </XDSAspectRatio>
-N any numeric ratio as width/height|children positioned absolutely to fill container|themeable via aspectRatio component key`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'maintains specific aspect ratio for children',
+  features: [
+    'any numeric ratio as width/height (e.g. 16/9, 4/3, 1)',
+    'children positioned absolutely to fill container',
+    'themeable via aspectRatio component key',
+  ],
+  propDescriptions: {
+    ratio: 'width/height ratio (e.g. 16/9, 1)',
+    children: 'content positioned absolutely to fill container',
+    xstyle: 'StyleX layout customization via stylex.create()',
+  },
+};

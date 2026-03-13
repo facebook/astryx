@@ -339,15 +339,47 @@ export const docsZh = {
   ],
 };
 
-/** @type {string} */
-export const docsDense = `import{XDSGrid}from'@xds/core/Grid' //CSS Grid layout w/ responsive auto-fit
-C XDSGrid //grid container w/ fixed or responsive auto-fit columns
-P columns:number max columns | minChildWidth:number min item width px; enables responsive auto-fit | width:number|string container width | height:number|string container height | gap:SpacingStep spacing between all items | rowGap:SpacingStep row spacing; overrides gap for row axis | columnGap:SpacingStep column spacing; overrides gap for column axis | align:GridAlignment='stretch' vertical alignment | justify:GridAlignment='stretch' horizontal alignment | children:ReactNode grid content | xstyle:StyleXStyles stylex.create() layout styles
-X <XDSGrid columns={3} gap={4}>\n  <Item />\n  <Item />\n  <Item />\n</XDSGrid>
-C XDSGridSpan //grid item spanning multiple columns or rows
-P columns:number|'full' columns to span; 'full' spans entire row | rows:number rows to span | children:ReactNode
-X <XDSGrid columns={3} gap={4}>\n  <XDSGridSpan columns={2}>Wide item</XDSGridSpan>\n  <div>Normal item</div>\n</XDSGrid>
-X <XDSGrid minChildWidth={200} gap={4}>\n  <Card />\n  <Card />\n  <Card />\n</XDSGrid>
-X <XDSGrid minChildWidth={200} columns={4} gap={4}>\n  <Card />\n</XDSGrid>
-X <XDSGrid columns={6} gap={2}>\n  {items.map(item => (\n    <XDSButton key={item.id} label={item.label} icon={item.icon} variant="ghost" size="sm" />\n  ))}\n</XDSGrid>
-N Use XDSGrid for any grid layout instead of manual CSS grid; handles gap tokens w/ any column count|Fixed-column grids via columns prop|Responsive auto-fit via minChildWidth; items wrap based on available space|Combine minChildWidth + columns to cap max columns|Gap tokens via SpacingScale for gap, rowGap, columnGap|Vertical/horizontal alignment via align + justify|XDSGridSpan spans multiple columns/rows|Theming support via grid component key`;
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'CSS Grid-based layout w/ responsive auto-fit support.',
+  features: [
+    'Fixed-column grids via columns prop',
+    'Responsive auto-fit columns via minChildWidth; items wrap based on available space',
+    'Combine minChildWidth + columns to cap max columns',
+    'Gap tokens via SpacingScale for gap, rowGap, columnGap',
+    'Vertical + horizontal item alignment via align + justify',
+    'XDSGridSpan lets items span multiple columns/rows',
+    'Theming support; override root styles via grid component key',
+  ],
+  notes: [
+    'Use XDSGrid for any grid layout instead of manual CSS grid. Handles gap tokens w/ any column count.',
+  ],
+  components: [
+    {
+      name: 'XDSGrid',
+      description: 'Grid container w/ fixed or responsive auto-fit columns.',
+      propDescriptions: {
+        columns: 'Max number of columns.',
+        minChildWidth: 'Min item width in px; enables responsive auto-fit.',
+        width: 'Container width.',
+        height: 'Container height.',
+        gap: 'Spacing between all items.',
+        rowGap: 'Row spacing; overrides gap for row axis.',
+        columnGap: 'Column spacing; overrides gap for column axis.',
+        align: 'Vertical alignment of items.',
+        justify: 'Horizontal alignment of items.',
+        children: 'Grid content.',
+        xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
+      },
+    },
+    {
+      name: 'XDSGridSpan',
+      description: 'Grid item spanning multiple columns/rows.',
+      propDescriptions: {
+        columns: "Columns to span; 'full' spans entire row.",
+        rows: 'Rows to span.',
+        children: 'Content.',
+      },
+    },
+  ],
+};
