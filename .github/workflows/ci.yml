@@ -1,4 +1,4 @@
-# PR CI: test, build, analyze, screenshot, a11y audit, and comment
+# PR CI: test, build, analyze, a11y audit, and comment
 # Everything runs in parallel where possible
 #
 # Merge queue: test + build also run on merge_group events so the
@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   # Lightweight check — does the PR touch any core components?
-  # Gates pr-screenshots and pr-a11y to avoid unnecessary work
+  # Gates pr-a11y to avoid unnecessary work
   check-components:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -171,7 +171,7 @@ jobs:
           retention-days: 1
 
   # Post PR comment with preview links + analysis as soon as build finishes
-  # Does NOT wait for test, screenshots, or a11y — those update the comment later
+  # Does NOT wait for test or a11y — those update the comment later
   pr-comment:
     if: github.event_name == 'pull_request'
     needs: [build]
@@ -242,98 +242,7 @@ jobs:
               });
             }
 
-  # Capture component screenshots and videos (parallel with a11y)
-  # Skipped when no components changed.
-  pr-screenshots:
-    needs: [build, check-components]
-    if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'yarn'
-
-      - name: Download analysis artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: pr-analysis
-
-      - name: Download Storybook artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: storybook-${{ needs.build.outputs.short_hash }}
-          path: apps/storybook/dist
-
-      - name: Install Playwright
-        run: yarn install --frozen-lockfile && npx playwright install chromium
-
-      - name: Install ffmpeg for video conversion
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
-
-      - name: Capture component screenshots and videos
-        run: |
-          COMPONENTS=$(cat analysis.json | jq -r '(.newComponents + .modifiedComponents) | join(",")')
-          node .github/scripts/capture-screenshots.js \
-            --storybook-dir apps/storybook/dist \
-            --output-dir screenshots \
-            --components "$COMPONENTS" \
-            --video
-
-      - name: Upload screenshots and videos to GitHub
-        env:
-          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          npm install -g @dvcorg/cml
-
-          echo '{}' > screenshot-urls.json
-
-          for file in screenshots/*.png; do
-            if [ -f "$file" ]; then
-              filename=$(basename "$file")
-              url=$(cml publish "$file")
-              echo "Uploaded $filename -> $url"
-              jq --arg name "$filename" --arg url "$url" \
-                '. + {($name): $url}' screenshot-urls.json > tmp.json && mv tmp.json screenshot-urls.json
-            fi
-          done
-
-          for file in screenshots/*.gif; do
-            if [ -f "$file" ]; then
-              filename=$(basename "$file")
-              url=$(cml publish "$file")
-              echo "Uploaded $filename -> $url"
-              jq --arg name "$filename" --arg url "$url" \
-                '. + {($name): $url}' screenshot-urls.json > tmp.json && mv tmp.json screenshot-urls.json
-            fi
-          done
-
-          for file in screenshots/*.mp4; do
-            if [ -f "$file" ]; then
-              filename=$(basename "$file")
-              url=$(cml publish "$file")
-              echo "Uploaded $filename -> $url"
-              jq --arg name "$filename" --arg url "$url" \
-                '. + {($name): $url}' screenshot-urls.json > tmp.json && mv tmp.json screenshot-urls.json
-            fi
-          done
-
-          cat screenshot-urls.json
-
-      - name: Upload screenshots artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: component-screenshots
-          path: |
-            screenshots/
-            screenshot-urls.json
-          retention-days: 30
-
-  # Accessibility audit (parallel with screenshots)
+  # Accessibility audit
   # Skipped when no components changed.
   pr-a11y:
     needs: [build, check-components]
@@ -378,9 +287,9 @@ jobs:
           path: a11y-report.json
           retention-days: 1
 
-  # Update PR comment with screenshots + a11y results once they're ready
+  # Update PR comment with a11y results once they're ready
   pr-comment-update:
-    needs: [build, check-components, pr-screenshots, pr-a11y]
+    needs: [build, check-components, pr-a11y]
     if: always() && github.event_name == 'pull_request' && needs.build.result == 'success' && needs.check-components.outputs.has_components == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -397,13 +306,6 @@ jobs:
         with:
           name: pr-analysis
 
-      - name: Download screenshots artifact
-        if: needs.pr-screenshots.result == 'success'
-        uses: actions/download-artifact@v4
-        with:
-          name: component-screenshots
-          path: screenshots-artifact
-
       - name: Download a11y artifact
         if: needs.pr-a11y.result == 'success'
         uses: actions/download-artifact@v4
@@ -418,20 +320,9 @@ jobs:
             echo '{"components":{},"summary":{"componentsAudited":0,"totalViolations":0}}' > a11y-report.json
           fi
 
-          SCREENSHOTS_ARG=""
-          SCREENSHOT_URLS_ARG=""
-          if [ -f screenshots-artifact/screenshots/screenshots.json ]; then
-            SCREENSHOTS_ARG="--screenshots screenshots-artifact/screenshots/screenshots.json"
-          fi
-          if [ -f screenshots-artifact/screenshot-urls.json ]; then
-            SCREENSHOT_URLS_ARG="--screenshot-urls screenshots-artifact/screenshot-urls.json"
-          fi
-
           COMMENT_BODY=$(node .github/scripts/generate-pr-comment.js \
             --analysis analysis.json \
             --a11y a11y-report.json \
-            $SCREENSHOTS_ARG \
-            $SCREENSHOT_URLS_ARG \
             --storybook-url "${{ needs.build.outputs.storybook_url }}" \
             --sandbox-url "${{ needs.build.outputs.sandbox_url }}" \
             --run-url "$RUN_URL" \
