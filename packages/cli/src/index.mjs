@@ -1,19 +1,15 @@
 /**
  * @file XDS CLI — Commander program setup
  *
- * Registers all commands: init, swizzle, agent-docs, component, docs, template.
+ * Registers all commands via lazy loading. If one command fails to load
+ * (bad import, syntax error), the other commands still work.
  */
 
 import {Command} from 'commander';
-import {registerInit} from './commands/init.mjs';
-import {registerSwizzle} from './commands/swizzle.mjs';
-import {registerAgentDocs} from './commands/agent-docs.mjs';
-import {registerComponent} from './commands/component.mjs';
-import {registerDocs} from './commands/docs.mjs';
-import {registerTemplate} from './commands/template.mjs';
-import {registerGapReport} from './commands/gap-report.mjs';
-import {registerUpgrade} from './commands/upgrade.mjs';
-import {registerTheme} from './commands/build-theme.mjs';
+import {fileURLToPath} from 'node:url';
+import * as path from 'node:path';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const program = new Command();
 
@@ -29,15 +25,38 @@ program
     program.help();
   });
 
-registerInit(program);
-registerComponent(program);
-registerDocs(program);
-registerSwizzle(program);
-registerAgentDocs(program);
-registerTemplate(program);
-registerGapReport(program);
-registerUpgrade(program);
-registerTheme(program);
+/**
+ * Command registry — each command is lazy-loaded so a broken command
+ * doesn't take down the entire CLI.
+ */
+const commands = [
+  {name: 'init', path: './commands/init.mjs', register: 'registerInit'},
+  {name: 'component', path: './commands/component/index.mjs', register: 'registerComponent'},
+  {name: 'docs', path: './commands/docs.mjs', register: 'registerDocs'},
+  {name: 'swizzle', path: './commands/swizzle.mjs', register: 'registerSwizzle'},
+  {name: 'agent-docs', path: './commands/agent-docs.mjs', register: 'registerAgentDocs'},
+  {name: 'template', path: './commands/template.mjs', register: 'registerTemplate'},
+  {name: 'gap-report', path: './commands/gap-report.mjs', register: 'registerGapReport'},
+  {name: 'upgrade', path: './commands/upgrade.mjs', register: 'registerUpgrade'},
+  {name: 'theme', path: './commands/build-theme.mjs', register: 'registerTheme'},
+];
+
+for (const cmd of commands) {
+  try {
+    const mod = await import(cmd.path);
+    mod[cmd.register](program);
+  } catch (e) {
+    // Command fails to load but CLI still works
+    program
+      .command(cmd.name)
+      .description(`(failed to load: ${e.message})`)
+      .action(() => {
+        console.error(`Command "${cmd.name}" failed to load:`);
+        console.error(e.message);
+        process.exit(1);
+      });
+  }
+}
 
 // Hidden command used by package.json postinstall scripts
 program
