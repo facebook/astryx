@@ -290,6 +290,9 @@ const styles = stylex.create({
   contentBgWash: {
     backgroundColor: colorVars['--color-wash'],
   },
+  contentAutoMinHeight: {
+    minHeight: 'calc(100dvh - var(--appshell-header-height, 0px))',
+  },
   contentBgTransparent: {
     backgroundColor: 'transparent',
     isolation: 'isolate',
@@ -567,7 +570,7 @@ export function XDSAppShell({
       role="main"
       id={MAIN_CONTENT_ID}
       isScrollable={isFill}
-      xstyle={contentAreaStyle}>
+      xstyle={[contentAreaStyle, isAuto && styles.contentAutoMinHeight]}>
       {children}
     </XDSLayoutContent>
   );
