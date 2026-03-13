@@ -163,6 +163,7 @@ The XDS Layout System provides a structured way to build page and component layo
     header: {table: {disable: true}},
     height: {table: {disable: true}},
     isFullBleed: {table: {disable: true}},
+    padding: {table: {disable: true}},
     start: {table: {disable: true}},
   },
 };
@@ -179,18 +180,18 @@ interface PlaygroundArgs {
   cardWidth: number;
   cardHeight: number;
   // Layout props
-  layoutIsFullBleed: boolean;
+  layoutPadding: number;
   // Header props
   showHeader: boolean;
   headerHasDivider: boolean;
-  headerIsFullBleed: boolean;
+  headerPadding: number;
   // Content props
-  contentIsFullBleed: boolean;
+  contentPadding: number;
   contentIsScrollable: boolean;
   // Footer props
   showFooter: boolean;
   footerHasDivider: boolean;
-  footerIsFullBleed: boolean;
+  footerPadding: number;
   // Start panel props
   showStartPanel: boolean;
   startPanelWidth: number;
@@ -210,18 +211,18 @@ export const Playground = {
     cardWidth: 700,
     cardHeight: 400,
     // Layout defaults
-    layoutIsFullBleed: false,
+    layoutPadding: 4,
     // Header defaults
     showHeader: true,
     headerHasDivider: true,
-    headerIsFullBleed: false,
+    headerPadding: 4,
     // Content defaults
-    contentIsFullBleed: false,
+    contentPadding: 4,
     contentIsScrollable: true,
     // Footer defaults
     showFooter: true,
     footerHasDivider: true,
-    footerIsFullBleed: false,
+    footerPadding: 4,
     // Start panel defaults
     showStartPanel: true,
     startPanelWidth: 160,
@@ -246,9 +247,9 @@ export const Playground = {
       table: {category: 'Card'},
     },
     // Layout controls
-    layoutIsFullBleed: {
-      control: 'boolean',
-      description: 'Remove padding at layout outer edges (affects all slots)',
+    layoutPadding: {
+      control: {type: 'range', min: 0, max: 8, step: 1},
+      description: 'Padding at layout outer edges (0 for full bleed)',
       table: {category: 'Layout'},
     },
     // Header controls
@@ -262,15 +263,15 @@ export const Playground = {
       description: 'Add a border below the header',
       table: {category: 'Header'},
     },
-    headerIsFullBleed: {
-      control: 'boolean',
-      description: 'Remove header padding',
+    headerPadding: {
+      control: {type: 'range', min: 0, max: 8, step: 1},
+      description: 'Header padding (0 for full bleed)',
       table: {category: 'Header'},
     },
     // Content controls
-    contentIsFullBleed: {
-      control: 'boolean',
-      description: 'Remove content padding for edge-to-edge content',
+    contentPadding: {
+      control: {type: 'range', min: 0, max: 8, step: 1},
+      description: 'Content padding (0 for edge-to-edge content)',
       table: {category: 'Content'},
     },
     contentIsScrollable: {
@@ -289,9 +290,9 @@ export const Playground = {
       description: 'Add a border above the footer',
       table: {category: 'Footer'},
     },
-    footerIsFullBleed: {
-      control: 'boolean',
-      description: 'Remove footer padding',
+    footerPadding: {
+      control: {type: 'range', min: 0, max: 8, step: 1},
+      description: 'Footer padding (0 for full bleed)',
       table: {category: 'Footer'},
     },
     // Start panel controls
@@ -341,12 +342,12 @@ export const Playground = {
     <div {...stylex.props(styles.pageWrapper)}>
       <XDSCard width={args.cardWidth} height={args.cardHeight}>
         <XDSLayout
-          isFullBleed={args.layoutIsFullBleed}
+          padding={args.layoutPadding}
           header={
             args.showHeader ? (
               <XDSLayoutHeader
                 hasDivider={args.headerHasDivider}
-                isFullBleed={args.headerIsFullBleed}>
+                padding={args.headerPadding}>
                 <h3 {...stylex.props(styles.heading)}>Layout Header</h3>
               </XDSLayoutHeader>
             ) : undefined
@@ -367,7 +368,7 @@ export const Playground = {
           }
           content={
             <XDSLayoutContent
-              isFullBleed={args.contentIsFullBleed}
+              padding={args.contentPadding}
               isScrollable={args.contentIsScrollable}>
               <h4 {...stylex.props(styles.subheading)}>Main Content Area</h4>
               <br />
@@ -377,9 +378,9 @@ export const Playground = {
               </p>
               <br />
               <p {...stylex.props(styles.bodyText)}>
-                Try enabling &quot;isFullBleed&quot; to see how content can
-                extend to the edges, or toggle &quot;isScrollable&quot; to
-                change overflow behavior.
+                Try setting padding to 0 to see how content can extend to the
+                edges, or toggle &quot;isScrollable&quot; to change overflow
+                behavior.
               </p>
               <br />
               <div {...stylex.props(styles.placeholder)}>
@@ -405,7 +406,7 @@ export const Playground = {
             args.showFooter ? (
               <XDSLayoutFooter
                 hasDivider={args.footerHasDivider}
-                isFullBleed={args.footerIsFullBleed}>
+                padding={args.footerPadding}>
                 <XDSHStack gap={2} hAlign="end">
                   <XDSButton label="Cancel" variant="secondary">
                     Cancel
@@ -604,9 +605,9 @@ export const FullBleedContent: Story = {
             </XDSLayoutHeader>
           }
           content={
-            <XDSLayoutContent isFullBleed>
+            <XDSLayoutContent padding={0}>
               <div {...stylex.props(styles.placeholderFullBleed)}>
-                This content uses isFullBleed to remove padding, allowing it to
+                This content uses padding=0 to remove padding, allowing it to
                 touch the edges. Useful for tables, images, or other
                 edge-to-edge content.
               </div>

@@ -499,7 +499,7 @@ export function XDSAppShell({
   const headerInner =
     hasTopNav || hasBanner ? (
       <XDSLayoutHeader
-        isFullBleed
+        padding={0}
         hasDivider={navHasDividers && hasTopNav}
         xstyle={navAreaStyle}>
         {hasBanner && <div {...stylex.props(styles.banner)}>{banner}</div>}
@@ -524,7 +524,7 @@ export function XDSAppShell({
   // =========================================================================
   const sideNavPanel = showSideNavInline ? (
     <XDSLayoutPanel
-      isFullBleed
+      padding={0}
       hasDivider={navHasDividers}
       width={sideNavWidth}
       role="navigation"
@@ -551,7 +551,7 @@ export function XDSAppShell({
 
   const mainInner = (
     <XDSLayoutContent
-      isFullBleed
+      padding={0}
       role="main"
       id={MAIN_CONTENT_ID}
       isScrollable={isFill}
@@ -605,8 +605,8 @@ export function XDSAppShell({
       </a>
 
       <XDSLayout
-        isFullBleed
         height={height}
+        padding={0}
         header={headerContent}
         start={sideNavContent}
         content={mainContent}
