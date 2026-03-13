@@ -4,7 +4,6 @@ import '@xds/core/typography.css';
 import '@xds/core/xds.css';
 import '@xds/theme-default/theme.css';
 import {Providers} from './providers';
-import {Sidebar} from './Sidebar';
 
 export const metadata: Metadata = {
   title: 'XDS Sandbox',
