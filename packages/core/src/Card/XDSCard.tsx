@@ -106,13 +106,6 @@ export interface XDSCardProps extends XDSBaseProps {
   children?: ReactNode;
 
   /**
-   * Removes internal padding, allowing content to touch the edges.
-   * @deprecated Use `padding={0}` instead.
-   * @default false
-   */
-  isFullBleed?: boolean;
-
-  /**
    * Internal padding of the card using the spacing scale.
    * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
    * @default 4 (16px)
@@ -146,7 +139,6 @@ export function XDSCard({
   maxWidth,
   minHeight,
   children,
-  isFullBleed = false,
   padding,
   xstyle,
   className,
@@ -157,8 +149,7 @@ export function XDSCard({
   // Only enable scrolling when card has a fixed height (not null/undefined and not "auto")
   const hasFixedHeight = height != null && height !== 'auto';
 
-  // Resolve effective padding: isFullBleed maps to padding=0
-  const effectivePadding = isFullBleed ? 0 : (padding ?? 4);
+  const effectivePadding = padding ?? 4;
   const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
 
   return (

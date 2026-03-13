@@ -9,7 +9,7 @@ export const docs = {
     'Automatically escapes parent container padding for edge-to-edge fills',
     'Supports divider borders on any combination of sides (top, bottom, start, end)',
     'Flexible sizing via SizeValue for width, height, maxWidth, and minHeight',
-    'Full-bleed mode removes internal padding for edge-to-edge content',
+    'Supports `padding={0}` for edge-to-edge content',
   ],
   examples: [
     {
@@ -102,7 +102,7 @@ export const docsZh = {
     '自动突破父容器内边距实现全宽填充',
     '支持在任意边的组合上设置分隔线边框（top、bottom、start、end）',
     '通过 SizeValue 灵活设置宽度、高度、最大宽度和最小高度',
-    '全出血模式移除内部内边距以实现全宽内容',
+    '支持 `padding={0}` 实现全宽内容',
   ],
   examples: [
     {

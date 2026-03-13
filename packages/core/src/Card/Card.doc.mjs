@@ -7,7 +7,7 @@ export const docs = {
     'Top-level container for elevated content',
     'Provides card-specific appearance: background, shadow, and border-radius',
     'Sets CSS variables for child layout components',
-    'Supports optional full-bleed mode to remove internal padding for edge-to-edge content',
+    'Supports `padding={0}` for edge-to-edge content',
     'Composable with XDSLayout, XDSCollapsible, and XDSCollapsibleGroup',
   ],
   props: [
@@ -101,7 +101,7 @@ export const docsZh = {
     '用于承载内容的顶层容器',
     '提供卡片特有的外观：背景、阴影和圆角',
     '为子布局组件设置 CSS 变量',
-    '支持可选的全出血模式，移除内边距以实现边到边内容',
+    '支持 `padding={0}` 实现边到边内容',
     '可与 XDSLayout、XDSCollapsible 和 XDSCollapsibleGroup 组合使用',
   ],
   props: [

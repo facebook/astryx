@@ -64,13 +64,6 @@ const nestedStyles = stylex.create({
     '--container-padding': '0px',
     height: '100%',
   },
-  // Full bleed: removes all internal padding
-  fullBleed: {
-    paddingInlineStart: 0,
-    paddingInlineEnd: 0,
-    paddingBlockStart: 0,
-    paddingBlockEnd: 0,
-  },
 });
 
 // Divider styles for each side
@@ -164,13 +157,6 @@ export interface XDSSectionProps {
   dividers?: Array<'top' | 'bottom' | 'start' | 'end'>;
 
   /**
-   * Removes internal padding, allowing content to touch the edges.
-   * @deprecated Use `padding={0}` instead.
-   * @default false
-   */
-  isFullBleed?: boolean;
-
-  /**
    * Internal padding of the section using the spacing scale.
    * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
    * @default 4 (16px)
@@ -204,13 +190,11 @@ export function XDSSection({
   minHeight,
   children,
   dividers,
-  isFullBleed = false,
   padding,
   ref,
   ...props
 }: XDSSectionProps) {
-  // Resolve effective padding: isFullBleed maps to padding=0
-  const effectivePadding = isFullBleed ? 0 : (padding ?? 4);
+  const effectivePadding = padding ?? 4;
   const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
   return (
     <div
