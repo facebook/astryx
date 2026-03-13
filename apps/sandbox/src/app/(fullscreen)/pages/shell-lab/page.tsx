@@ -43,7 +43,7 @@ interface ShellConfig {
   showBanner: boolean;
   showFooterIcons: boolean;
   showTopContent: boolean;
-  showSideNavHeading: boolean;
+  sideNavHeadingStyle: 'none' | 'simple' | 'link' | 'menu' | 'full';
   showNestedItems: boolean;
   defaultCollapsed: boolean;
   controlledCollapse: boolean;
@@ -65,7 +65,7 @@ const DEFAULT_CONFIG: ShellConfig = {
   showBanner: false,
   showFooterIcons: true,
   showTopContent: true,
-  showSideNavHeading: true,
+  sideNavHeadingStyle: 'link',
   showNestedItems: true,
   defaultCollapsed: false,
   controlledCollapse: false,
@@ -152,10 +152,21 @@ function ConfigPanel({
             value={config.showTopNav}
             onChange={v => onChange({showTopNav: v})}
           />
-          <ToggleRow
+          <SelectorRow
             label="SideNav Heading"
-            value={config.showSideNavHeading}
-            onChange={v => onChange({showSideNavHeading: v})}
+            value={config.sideNavHeadingStyle}
+            onChange={v =>
+              onChange({
+                sideNavHeadingStyle: v as ShellConfig['sideNavHeadingStyle'],
+              })
+            }
+            options={[
+              {value: 'none', label: 'None'},
+              {value: 'simple', label: 'Simple'},
+              {value: 'link', label: 'Link'},
+              {value: 'menu', label: 'Menu'},
+              {value: 'full', label: 'Full'},
+            ]}
           />
           <ToggleRow
             label="Banner"
@@ -328,30 +339,63 @@ function SelectorRow({
 // =============================================================================
 
 function SampleSideNav({config}: {config: ShellConfig}) {
+  const appIcon = (
+    <XDSNavIcon
+      icon={
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          width="16"
+          height="16">
+          <path d="M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44c-.36.2-.8.2-1.14 0l-7.9-4.44A.991.991 0 013 16.5v-9c0-.38.21-.71.53-.88l7.9-4.44c.36-.2.8-.2 1.14 0l7.9 4.44c.32.17.53.5.53.88v9z" />
+        </svg>
+      }
+    />
+  );
+
+  const headingMenu = (
+    <XDSVStack gap={1}>
+      <XDSSideNavItem label="Switch to Project A" />
+      <XDSSideNavItem label="Switch to Project B" />
+      <XDSSideNavItem label="Switch to Project C" />
+    </XDSVStack>
+  );
+
+  const heading =
+    config.sideNavHeadingStyle === 'none' ? undefined : (
+      <XDSSideNavHeading
+        icon={appIcon}
+        heading="Shell Lab"
+        headingHref={
+          config.sideNavHeadingStyle === 'link' ||
+          config.sideNavHeadingStyle === 'full'
+            ? '#'
+            : undefined
+        }
+        superheading={
+          config.sideNavHeadingStyle === 'full' ? 'Acme Suite' : undefined
+        }
+        superheadingHref={
+          config.sideNavHeadingStyle === 'full' ? '#' : undefined
+        }
+        subheading={
+          config.sideNavHeadingStyle === 'full'
+            ? 'Business Account'
+            : undefined
+        }
+        menu={
+          config.sideNavHeadingStyle === 'menu' ||
+          config.sideNavHeadingStyle === 'full'
+            ? headingMenu
+            : undefined
+        }
+      />
+    );
+
   return (
     <XDSSideNav
-      header={
-        config.showSideNavHeading ? (
-          <XDSSideNavHeading
-            icon={
-              <XDSNavIcon
-                icon={
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    width="16"
-                    height="16">
-                    <path d="M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44c-.36.2-.8.2-1.14 0l-7.9-4.44A.991.991 0 013 16.5v-9c0-.38.21-.71.53-.88l7.9-4.44c.36-.2.8-.2 1.14 0l7.9 4.44c.32.17.53.5.53.88v9z" />
-                  </svg>
-                }
-              />
-            }
-            heading="Shell Lab"
-            headingHref="#"
-          />
-        ) : undefined
-      }
+      header={heading}
       topContent={
         config.showTopContent ? (
           <XDSSideNavItem label="Create New" />
