@@ -7,6 +7,7 @@ import type {
   PowerSearchChangeType,
 } from '@xds/core/PowerSearch';
 import type {XDSSearchSource, XDSSearchableItem} from '@xds/core/Typeahead';
+import {XDSButton} from '@xds/core/Button';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
 // =============================================================================
@@ -914,4 +915,50 @@ export const WithStartIcon: Story = {
     placeholder: 'Search...',
   },
   name: 'With Start Icon',
+};
+
+export const WithResultCount: Story = {
+  render: args => {
+    const [filters, setFilters] = useState<PowerSearchFilter[]>([
+      {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
+    ]);
+    return (
+      <XDSPowerSearch
+        {...args}
+        config={basicConfig}
+        filters={filters}
+        onChange={newFilters => setFilters([...newFilters])}
+        resultCount={1234}
+        startIcon={MagnifyingGlassIcon}
+      />
+    );
+  },
+  args: {
+    label: 'Search',
+    isLabelHidden: true,
+    placeholder: 'Search...',
+  },
+  name: 'With Result Count',
+};
+
+export const WithEndContentPowerSearch: Story = {
+  render: args => {
+    const [filters, setFilters] = useState<PowerSearchFilter[]>([]);
+    return (
+      <XDSPowerSearch
+        {...args}
+        config={basicConfig}
+        filters={filters}
+        onChange={newFilters => setFilters([...newFilters])}
+        resultCount={42}
+        endContent={<XDSButton label="Save" variant="primary" size="sm" />}
+      />
+    );
+  },
+  args: {
+    label: 'Search',
+    isLabelHidden: true,
+    placeholder: 'Search...',
+  },
+  name: 'With End Content and Result Count',
 };

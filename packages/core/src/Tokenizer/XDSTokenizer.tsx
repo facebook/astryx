@@ -116,6 +116,11 @@ export interface XDSTokenizerProps<T extends XDSSearchableItem> {
   isDisabled?: boolean;
   /** Show clear button (clears all tokens). @default false */
   hasClear?: boolean;
+  /**
+   * Content to display at the end of the input row.
+   * Useful for buttons, result counts, or other controls.
+   */
+  endContent?: ReactNode;
   /** Auto-focus on mount. @default false */
   hasAutoFocus?: boolean;
   /** Input size. @default 'md' */
@@ -192,6 +197,12 @@ const styles = stylex.create({
         '@media (hover: hover)': 1,
       },
     },
+    flexShrink: 0,
+  },
+  endSection: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
     marginInlineStart: 'auto',
     flexShrink: 0,
   },
@@ -280,6 +291,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   emptySearchResultsText,
   isDisabled = false,
   hasClear = false,
+  endContent,
   hasAutoFocus,
   size = 'md',
   debounceMs,
@@ -490,17 +502,22 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
                 : undefined
           }
         />
-        {hasClear && value.length > 0 && !isDisabled && (
-          <button
-            type="button"
-            aria-label="Clear all"
-            onClick={e => {
-              e.stopPropagation();
-              handleClearAll();
-            }}
-            {...stylex.props(styles.clearAllButton)}>
-            <XDSIcon icon="close" size="sm" />
-          </button>
+        {(endContent || (hasClear && value.length > 0 && !isDisabled)) && (
+          <div {...stylex.props(styles.endSection)}>
+            {endContent}
+            {hasClear && value.length > 0 && !isDisabled && (
+              <button
+                type="button"
+                aria-label="Clear all"
+                onClick={e => {
+                  e.stopPropagation();
+                  handleClearAll();
+                }}
+                {...stylex.props(styles.clearAllButton)}>
+                <XDSIcon icon="close" size="sm" />
+              </button>
+            )}
+          </div>
         )}
       </div>
     </XDSField>

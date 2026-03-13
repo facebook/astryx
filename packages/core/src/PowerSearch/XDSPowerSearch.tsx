@@ -29,7 +29,12 @@ import type {XDSIconType} from '../Icon';
 import type {XDSIconName} from '../Icon/globalIconRegistry';
 import type {XDSInputStatus} from '../Field';
 import {useXDSLayer} from '../Layer';
-import {spacingVars} from '../theme/tokens.stylex';
+import {
+  spacingVars,
+  colorVars,
+  textSizeVars,
+  lineHeightVars,
+} from '../theme/tokens.stylex';
 import {useInternalConfig} from './useInternalConfig';
 import {usePowerSearchSource} from './usePowerSearchSource';
 import {formatFilterValue} from './formatFilterValue';
@@ -83,6 +88,15 @@ const popoverLayerStyles = stylex.create({
     width: 'anchor-size(width)',
     minWidth: 400,
     marginTop: spacingVars['--spacing-1'],
+  },
+});
+
+const resultCountStyles = stylex.create({
+  text: {
+    fontSize: textSizeVars['--text-sm'],
+    lineHeight: lineHeightVars['--leading-snug'],
+    color: colorVars['--color-text-secondary'],
+    whiteSpace: 'nowrap',
   },
 });
 
@@ -341,6 +355,16 @@ export interface XDSPowerSearchProps {
   popoverSaveButtonLabel?: string;
   /** Timezone ID for date formatting. */
   timezoneID?: string;
+  /**
+   * Content to display at the end of the input row.
+   * Useful for action buttons or other controls.
+   */
+  endContent?: React.ReactNode;
+  /**
+   * Number of results matching the current filters.
+   * When a number, formatted as "N results". When a string, displayed as-is.
+   */
+  resultCount?: number | string;
   /** Imperative handle ref. */
   ref?: React.Ref<XDSPowerSearchHandle>;
   /** Test ID. */
@@ -431,6 +455,8 @@ export function XDSPowerSearch({
   maxTokenLength = 40,
   popoverSaveButtonLabel = 'Apply',
   timezoneID,
+  endContent,
+  resultCount,
   ref,
   'data-testid': testId,
   xstyle,
@@ -701,6 +727,35 @@ export function XDSPowerSearch({
   const popoverPartialFilter =
     popoverState.type !== 'idle' ? popoverState.partialFilter : null;
 
+  // Build combined endContent from resultCount + endContent props
+  const combinedEndContent = useMemo(() => {
+    let resultCountNode: React.ReactNode = null;
+    if (resultCount != null) {
+      if (typeof resultCount === 'number') {
+        const formatted = new Intl.NumberFormat().format(resultCount);
+        resultCountNode = (
+          <span {...stylex.props(resultCountStyles.text)}>
+            {formatted} {resultCount === 1 ? 'result' : 'results'}
+          </span>
+        );
+      } else {
+        resultCountNode = (
+          <span {...stylex.props(resultCountStyles.text)}>{resultCount}</span>
+        );
+      }
+    }
+
+    if (resultCountNode && endContent) {
+      return (
+        <>
+          {resultCountNode}
+          {endContent}
+        </>
+      );
+    }
+    return resultCountNode || endContent || undefined;
+  }, [resultCount, endContent]);
+
   return (
     <>
       <div ref={layer.ref}>
@@ -717,6 +772,7 @@ export function XDSPowerSearch({
           hasAutoFocus={hasAutoFocus}
           hasClear={hasClear && !isReadOnly}
           startIcon={startIcon}
+          endContent={combinedEndContent}
           isDisabled={isDisabled}
           hasEntriesOnFocus
           debounceMs={0}
