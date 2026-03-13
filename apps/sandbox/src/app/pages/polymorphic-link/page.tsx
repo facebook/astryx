@@ -15,12 +15,13 @@ import {XDSSideNav, XDSSideNavItem} from '@xds/core/SideNav';
 import {XDSBreadcrumbs, XDSBreadcrumbItem} from '@xds/core/Breadcrumbs';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSLink, XDSLinkProvider} from '@xds/core/Link';
+import * as stylex from '@stylexjs/stylex';
 
 // =============================================================================
 // Simulated framework link components
 // =============================================================================
 
-const styles = {
+const styles = stylex.create({
   container: {
     maxWidth: 960,
   },
@@ -49,7 +50,7 @@ const styles = {
     borderRadius: 8,
     overflow: 'hidden',
   },
-};
+});
 
 /**
  * Simulated Next.js-like Link for demo purposes.
@@ -70,7 +71,7 @@ const SimulatedNextLink = forwardRef<
         console.log(`[SimulatedNextLink] Client-side navigate to: ${href}`);
         onClick?.(e);
       }}
-      style={styles.customLinkIndicator}
+      {...stylex.props(styles.customLinkIndicator)}
       {...props}>
       {children}
     </a>
@@ -110,7 +111,7 @@ export default function PolymorphicLinkPage() {
   const [tab, setTab] = useState('overview');
 
   return (
-    <div style={styles.container}>
+    <div {...stylex.props(styles.container)}>
       <XDSVStack gap={6}>
         <XDSVStack gap={2}>
           <XDSHeading level={1}>Polymorphic Link</XDSHeading>
@@ -148,7 +149,7 @@ export default function PolymorphicLinkPage() {
                 <XDSText type="supporting" weight="bold">
                   XDSTopNav
                 </XDSText>
-                <div style={styles.navWrapper}>
+                <div {...stylex.props(styles.navWrapper)}>
                   <XDSTopNav
                     label="Provider demo navigation"
                     heading={<XDSTopNavHeading heading="My App" />}
@@ -194,7 +195,7 @@ export default function PolymorphicLinkPage() {
                 <XDSText type="supporting" weight="bold">
                   XDSSideNav
                 </XDSText>
-                <div style={styles.sidenavWrapper}>
+                <div {...stylex.props(styles.sidenavWrapper)}>
                   <XDSSideNav aria-label="Provider sidenav">
                     <XDSSideNavItem
                       label="Dashboard"
@@ -242,7 +243,7 @@ export default function PolymorphicLinkPage() {
           </XDSText>
 
           <XDSLinkProvider component={SimulatedNextLink}>
-            <div style={styles.navWrapper}>
+            <div {...stylex.props(styles.navWrapper)}>
               <XDSTopNav
                 label="Override demo navigation"
                 heading={<XDSTopNavHeading heading="Override Demo" />}
@@ -277,7 +278,7 @@ export default function PolymorphicLinkPage() {
             prop, components render native {'<a>'} elements as usual.
           </XDSText>
 
-          <div style={styles.navWrapper}>
+          <div {...stylex.props(styles.navWrapper)}>
             <XDSTopNav
               label="Default navigation"
               heading={<XDSTopNavHeading heading="Default" />}

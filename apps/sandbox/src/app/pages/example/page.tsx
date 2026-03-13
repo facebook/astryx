@@ -9,12 +9,13 @@ import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSDivider} from '@xds/core';
+import * as stylex from '@stylexjs/stylex';
 
-const styles = {
+const styles = stylex.create({
   container: {
     maxWidth: 640,
   },
-};
+});
 
 /**
  * Example sandbox page.
@@ -30,7 +31,7 @@ export default function ExamplePage() {
   const [updates, setUpdates] = useState(false);
 
   return (
-    <div style={styles.container}>
+    <div {...stylex.props(styles.container)}>
       <XDSVStack gap={6}>
         <XDSVStack gap={2}>
           <XDSHeading level={1}>Example Page</XDSHeading>

@@ -1,9 +1,23 @@
-/* global module */
+/* global module, process, __dirname */
+const path = require('path');
 
-/**
- * Sandbox uses pre-compiled dist — no StyleX plugin needed.
- * Component styles come from @xds/core/dist/xds.css.
- */
+const rootDir = path.resolve(__dirname, '../..');
+
 module.exports = {
   presets: ['next/babel'],
+  plugins: [
+    [
+      '@stylexjs/babel-plugin',
+      {
+        dev: process.env.NODE_ENV === 'development',
+        runtimeInjection: false,
+        genConditionalClasses: true,
+        treeshakeCompensation: true,
+        unstable_moduleResolution: {
+          type: 'commonJS',
+          rootDir,
+        },
+      },
+    ],
+  ],
 };

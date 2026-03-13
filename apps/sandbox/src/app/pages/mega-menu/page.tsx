@@ -1,6 +1,7 @@
 'use client';
 
 import {useState} from 'react';
+import * as stylex from '@stylexjs/stylex';
 
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
@@ -13,7 +14,7 @@ import {
 } from '@xds/core/TopNav';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 
-const styles = {
+const styles = stylex.create({
   container: {
     maxWidth: 960,
   },
@@ -37,7 +38,7 @@ const styles = {
     boxShadow:
       '0 -1px 3px rgba(0, 0, 0, 0.06), -1px 0 3px rgba(0, 0, 0, 0.04), 1px 0 3px rgba(0, 0, 0, 0.04)',
   },
-};
+});
 
 // =============================================================================
 // Icons
@@ -234,7 +235,7 @@ export default function MegaMenuPage() {
   const isAnyOpen1 = menuOpen1 || menuOpen2;
 
   return (
-    <div style={styles.container}>
+    <div {...stylex.props(styles.container)}>
       <XDSVStack gap={6}>
         <XDSVStack gap={2}>
           <XDSHeading level={1}>Mega Menu</XDSHeading>
@@ -248,7 +249,7 @@ export default function MegaMenuPage() {
         {/* Full mega menu with featured content */}
         <XDSVStack gap={3}>
           <XDSHeading level={2}>With Featured Content</XDSHeading>
-          <div style={styles.navWrapper}>
+          <div {...stylex.props(styles.navWrapper)}>
             <XDSTopNav
               label="Marketing navigation"
               heading={
@@ -303,7 +304,7 @@ export default function MegaMenuPage() {
         {/* Without featured content */}
         <XDSVStack gap={3}>
           <XDSHeading level={2}>Without Featured Content</XDSHeading>
-          <div style={styles.navWrapper}>
+          <div {...stylex.props(styles.navWrapper)}>
             <XDSTopNav
               label="Simple navigation"
               heading={<XDSTopNavHeading heading="App" href="#" />}

@@ -10,8 +10,9 @@ import {
   XDSTopNavMenu,
 } from '@xds/core/TopNav';
 import {XDSNavIcon} from '@xds/core/NavIcon';
+import * as stylex from '@stylexjs/stylex';
 
-const styles = {
+const styles = stylex.create({
   container: {
     maxWidth: 960,
   },
@@ -20,7 +21,7 @@ const styles = {
     overflow: 'hidden',
     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
   },
-};
+});
 
 const LogoIcon = () => (
   <svg
@@ -97,7 +98,7 @@ const scienceItems = [
  */
 export default function TopNavMenuPage() {
   return (
-    <div style={styles.container}>
+    <div {...stylex.props(styles.container)}>
       <XDSVStack gap={6}>
         <XDSVStack gap={2}>
           <XDSHeading level={1}>TopNav Menu</XDSHeading>
@@ -110,7 +111,7 @@ export default function TopNavMenuPage() {
         {/* Marketing-style nav with overflow menus */}
         <XDSVStack gap={3}>
           <XDSHeading level={2}>Marketing Nav</XDSHeading>
-          <div style={styles.navWrapper}>
+          <div {...stylex.props(styles.navWrapper)}>
             <XDSTopNav
               label="Marketing navigation"
               heading={
@@ -140,7 +141,7 @@ export default function TopNavMenuPage() {
         {/* Simple nav with one overflow menu */}
         <XDSVStack gap={3}>
           <XDSHeading level={2}>Simple Nav</XDSHeading>
-          <div style={styles.navWrapper}>
+          <div {...stylex.props(styles.navWrapper)}>
             <XDSTopNav
               label="Simple navigation"
               heading={<XDSTopNavHeading heading="App" href="#" />}

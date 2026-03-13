@@ -1,6 +1,7 @@
 'use client';
 
 import {useState, useCallback} from 'react';
+import * as stylex from '@stylexjs/stylex';
 
 import {XDSAppShell} from '@xds/core/AppShell';
 import {
@@ -33,9 +34,9 @@ import {XDSBanner} from '@xds/core/Banner';
 // =============================================================================
 
 interface ShellConfig {
-  background: 'wash' | 'surface';
+  variant: 'wash' | 'surface' | 'section' | 'elevated';
   height: 'fill' | 'auto';
-  sideNavBreakpoint: 'sm' | 'md' | 'lg' | 'xl';
+  sideNavBreakpoint: 'sm' | 'md' | 'lg' | 'none';
   sideNavWidth: number;
   showSideNav: boolean;
   showTopNav: boolean;
@@ -55,7 +56,7 @@ interface ShellConfig {
 }
 
 const DEFAULT_CONFIG: ShellConfig = {
-  background: 'wash',
+  variant: 'section',
   height: 'fill',
   sideNavBreakpoint: 'md',
   sideNavWidth: 260,
@@ -89,7 +90,7 @@ function ConfigPanel({
 }) {
   return (
     <XDSCard>
-      <XDSVStack gap={5} padding={4}>
+      <XDSVStack gap={5} xstyle={styles.padding4}>
         <XDSHeading level={3}>Shell Configuration</XDSHeading>
 
         {/* AppShell */}
@@ -98,9 +99,9 @@ function ConfigPanel({
             AppShell
           </XDSText>
           <SelectorRow
-            label="Background"
-            value={config.background}
-            onChange={v => onChange({background: v as 'wash' | 'surface'})}
+            label="Variant"
+            value={config.variant}
+            onChange={v => onChange({variant: v as 'wash' | 'surface' | 'section' | 'elevated'})}
             options={[
               {value: 'wash', label: 'Wash'},
               {value: 'surface', label: 'Surface'},
@@ -119,13 +120,13 @@ function ConfigPanel({
             label="Breakpoint"
             value={config.sideNavBreakpoint}
             onChange={v =>
-              onChange({sideNavBreakpoint: v as 'sm' | 'md' | 'lg' | 'xl'})
+              onChange({sideNavBreakpoint: v as 'sm' | 'md' | 'lg' | 'none'})
             }
             options={[
               {value: 'sm', label: 'sm'},
               {value: 'md', label: 'md'},
               {value: 'lg', label: 'lg'},
-              {value: 'xl', label: 'xl'},
+              {value: 'none', label: 'none'},
             ]}
           />
         </XDSVStack>
@@ -393,7 +394,7 @@ function SampleSideNav({config}: {config: ShellConfig}) {
           </>
         ) : undefined
       }>
-      <XDSSideNavSection heading="Navigation">
+      <XDSSideNavSection title="Navigation">
         <XDSSideNavItem label="Dashboard" isSelected href="#" />
         <XDSSideNavItem
           label="Projects"
@@ -409,7 +410,7 @@ function SampleSideNav({config}: {config: ShellConfig}) {
           </XDSSideNavItem>
         )}
       </XDSSideNavSection>
-      <XDSSideNavSection heading="Resources">
+      <XDSSideNavSection title="Resources">
         <XDSSideNavItem label="Documentation" href="#" />
         <XDSSideNavItem label="API Reference" href="#" />
         <XDSSideNavItem label="Support" href="#" />
@@ -532,15 +533,14 @@ function SampleTopNav({config}: {config: ShellConfig}) {
 // Main Page
 // =============================================================================
 
-// Inline styles (sandbox uses dist, no StyleX build)
-const pageStyles = {
+const styles = stylex.create({
   configOverlay: {
-    position: 'fixed' as const,
+    position: 'fixed',
     top: 16,
     right: 16,
     width: 360,
     maxHeight: 'calc(100vh - 32px)',
-    overflowY: 'auto' as const,
+    overflowY: 'auto',
     zIndex: 1000,
   },
   content: {
@@ -548,12 +548,15 @@ const pageStyles = {
     maxWidth: 800,
   },
   toggleButton: {
-    position: 'fixed' as const,
+    position: 'fixed',
     bottom: 16,
     right: 16,
     zIndex: 1001,
   },
-};
+  padding4: {
+    padding: 16,
+  },
+});
 
 export default function ShellLabPage() {
   const [config, setConfig] = useState<ShellConfig>(DEFAULT_CONFIG);
@@ -579,7 +582,7 @@ export default function ShellLabPage() {
         onOpenChange={setIsMobileNavOpen}
         title="Navigation"
         side={config.mobileNavSide}>
-        <XDSSideNavSection heading="Navigation">
+        <XDSSideNavSection title="Navigation">
           <XDSSideNavItem label="Dashboard" isSelected href="#" />
           <XDSSideNavItem label="Projects" href="#" />
           <XDSSideNavItem label="Messages" href="#" />
@@ -592,7 +595,7 @@ export default function ShellLabPage() {
   return (
     <>
       <XDSAppShell
-        background={config.background}
+        variant={config.variant}
         height={config.height}
         sideNavBreakpoint={config.sideNavBreakpoint}
         sideNavWidth={config.sideNavWidth}
@@ -614,7 +617,7 @@ export default function ShellLabPage() {
           ) : undefined
         }
         {...collapseProps}>
-        <div style={pageStyles.content}>
+        <div {...stylex.props(styles.content)}>
           <XDSVStack gap={6}>
             <XDSVStack gap={2}>
               <XDSHeading level={1}>Shell Lab</XDSHeading>
@@ -626,7 +629,7 @@ export default function ShellLabPage() {
             </XDSVStack>
 
             <XDSCard>
-              <XDSVStack gap={3} padding={4}>
+              <XDSVStack gap={3} xstyle={styles.padding4}>
                 <XDSHeading level={3}>Active Config</XDSHeading>
                 <pre
                   style={{
@@ -643,7 +646,7 @@ export default function ShellLabPage() {
 
             {Array.from({length: 10}, (_, i) => (
               <XDSCard key={i}>
-                <XDSVStack gap={2} padding={4}>
+                <XDSVStack gap={2} xstyle={styles.padding4}>
                   <XDSHeading level={4}>Content Block {i + 1}</XDSHeading>
                   <XDSText type="body" color="secondary">
                     Sample content to test scroll behavior in fill vs auto
@@ -659,13 +662,13 @@ export default function ShellLabPage() {
 
       {/* Floating config panel */}
       {showConfig && (
-        <div style={pageStyles.configOverlay}>
+        <div {...stylex.props(styles.configOverlay)}>
           <ConfigPanel config={config} onChange={handleConfigChange} />
         </div>
       )}
 
       {/* Toggle config visibility */}
-      <div style={pageStyles.toggleButton}>
+      <div {...stylex.props(styles.toggleButton)}>
         <button
           onClick={() => setShowConfig(v => !v)}
           style={{
