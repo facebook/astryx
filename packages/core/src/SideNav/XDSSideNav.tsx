@@ -47,7 +47,7 @@ const styles = stylex.create({
   },
   topContent: {
     paddingInline: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-1'],
+    paddingBlockStart: spacingVars['--spacing-2'],
   },
   scrollable: {
     flex: 1,
@@ -63,17 +63,18 @@ const styles = stylex.create({
     bottom: 0,
     backgroundColor: 'inherit',
   },
-  footer: {
+  stickyBottomInner: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-2'],
+    paddingBlockEnd: spacingVars['--spacing-2'],
+    borderBlockStart: `1px solid ${colorVars['--color-divider']}`,
   },
   footerIcons: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
-    paddingInline: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-2'],
-    borderBlockStart: `1px solid ${colorVars['--color-divider']}`,
   },
 });
 
@@ -193,10 +194,12 @@ export function XDSSideNav({
       <div {...stylex.props(styles.scrollable)}>{children}</div>
       {hasStickyBottom && (
         <div {...stylex.props(styles.stickyBottom)}>
-          {footer && <div {...stylex.props(styles.footer)}>{footer}</div>}
-          {footerIcons && (
-            <div {...stylex.props(styles.footerIcons)}>{footerIcons}</div>
-          )}
+          <div {...stylex.props(styles.stickyBottomInner)}>
+            {footer}
+            {footerIcons && (
+              <div {...stylex.props(styles.footerIcons)}>{footerIcons}</div>
+            )}
+          </div>
         </div>
       )}
     </nav>
