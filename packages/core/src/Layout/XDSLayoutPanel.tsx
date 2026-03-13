@@ -106,13 +106,6 @@ export interface XDSLayoutPanelProps extends XDSBaseProps<HTMLDivElement> {
   hasDivider?: boolean;
 
   /**
-   * Removes internal padding, allowing content to touch the edges.
-   * @deprecated Use `padding={0}` instead.
-   * @default false
-   */
-  isFullBleed?: boolean;
-
-  /**
    * Internal padding of the panel using the spacing scale.
    * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
    * Overrides the default padding from the layout container.
@@ -153,7 +146,7 @@ export interface XDSLayoutPanelProps extends XDSBaseProps<HTMLDivElement> {
  * Divider position is auto-detected based on which slot the panel is in.
  *
  * Already provides its own padding and scroll — don't add padding or
- * overflow to children. Use `isFullBleed` if you need edge-to-edge content.
+ * overflow to children. Use `padding={0}` if you need edge-to-edge content.
  *
  * @example
  * ```
@@ -177,7 +170,6 @@ export interface XDSLayoutPanelProps extends XDSBaseProps<HTMLDivElement> {
 export function XDSLayoutPanel({
   children,
   hasDivider = false,
-  isFullBleed = false,
   isScrollable = true,
   label,
   padding,
@@ -196,8 +188,7 @@ export function XDSLayoutPanel({
   const isStartPanel = area === 'start';
   const isEndPanel = area === 'end';
 
-  // padding={0} is semantically equivalent to isFullBleed
-  const isZeroPadding = isFullBleed || padding === 0;
+  const isZeroPadding = padding === 0;
 
   // When no divider, collapse spacing for seamless visual flow
   const shouldCollapseSpacing =

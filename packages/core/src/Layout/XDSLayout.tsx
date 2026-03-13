@@ -93,13 +93,6 @@ export interface XDSLayoutProps extends Omit<XDSBaseProps, 'content'> {
   height?: XDSLayoutHeight;
 
   /**
-   * Removes padding at layout's outer edges, making layout touch container edges.
-   * @deprecated Use `padding={0}` instead.
-   * @default false
-   */
-  isFullBleed?: boolean;
-
-  /**
    * Padding at the layout's outer edges using the spacing scale.
    * Controls both `--layout-padding-outer-x` and `--layout-padding-outer-y`.
    * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
@@ -192,7 +185,6 @@ export function XDSLayout({
   footer,
   header,
   height = 'fill',
-  isFullBleed = false,
   padding,
   start,
   xstyle,
@@ -230,7 +222,7 @@ export function XDSLayout({
             styles.layoutInner,
             ...stack({direction: 'vertical'}),
             isFill ? styles.fill : styles.auto,
-            isFullBleed && padding == null && styles.fullBleed,
+            padding === 0 && styles.fullBleed,
             padding != null && layoutPaddingOuterXVarStyles[padding],
             padding != null && layoutPaddingOuterYVarStyles[padding],
           )}>

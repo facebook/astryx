@@ -72,10 +72,7 @@ const meta: Meta<typeof XDSCard> = {
       control: {type: 'range', min: 100, max: 600, step: 10},
       description: 'Minimum height in pixels',
     },
-    isFullBleed: {
-      control: 'boolean',
-      description: 'Removes internal padding (deprecated, use padding={0})',
-    },
+
   },
 };
 

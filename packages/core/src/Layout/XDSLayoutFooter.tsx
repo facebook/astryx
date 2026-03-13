@@ -74,13 +74,6 @@ export interface XDSLayoutFooterProps extends XDSBaseProps<HTMLDivElement> {
   height?: number | string;
 
   /**
-   * Removes internal padding, allowing content to touch the edges.
-   * @deprecated Use `padding={0}` instead.
-   * @default false
-   */
-  isFullBleed?: boolean;
-
-  /**
    * Internal padding of the footer using the spacing scale.
    * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
    * Overrides the default padding from the layout container.
@@ -105,7 +98,7 @@ export interface XDSLayoutFooterProps extends XDSBaseProps<HTMLDivElement> {
  * Renders in the footer slot with optional divider and padding control.
  *
  * Already provides its own padding — don't add padding to children.
- * Use `isFullBleed` if your content manages its own padding.
+ * Use `padding={0}` if your content manages its own padding.
  *
  * @example
  * ```
@@ -121,7 +114,6 @@ export function XDSLayoutFooter({
   children,
   hasDivider = false,
   height,
-  isFullBleed = false,
   label,
   padding,
   role,
@@ -131,8 +123,7 @@ export function XDSLayoutFooter({
   ref,
   ...props
 }: XDSLayoutFooterProps) {
-  // padding={0} is semantically equivalent to isFullBleed
-  const isZeroPadding = isFullBleed || padding === 0;
+  const isZeroPadding = padding === 0;
 
   // When no divider, collapse spacing for seamless visual flow
   const shouldCollapseSpacing =

@@ -70,14 +70,6 @@ export interface XDSLayoutContentProps extends XDSBaseProps<HTMLDivElement> {
   children?: ReactNode;
 
   /**
-   * Removes internal padding, allowing content to touch the edges.
-   * Useful for edge-to-edge content like tables.
-   * @deprecated Use `padding={0}` instead.
-   * @default false
-   */
-  isFullBleed?: boolean;
-
-  /**
    * Internal padding of the content area using the spacing scale.
    * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
    * Overrides the default padding from the layout container.
@@ -110,7 +102,7 @@ export interface XDSLayoutContentProps extends XDSBaseProps<HTMLDivElement> {
  * with automatic scroll containment and context-aware padding.
  *
  * Already provides its own padding and scroll — don't add padding or
- * overflow to children. Use `isFullBleed` if you need edge-to-edge content.
+ * overflow to children. Use `padding={0}` if you need edge-to-edge content.
  *
  * @example
  * ```
@@ -123,7 +115,7 @@ export interface XDSLayoutContentProps extends XDSBaseProps<HTMLDivElement> {
  * <XDSLayoutContainer variant="card">
  *   <XDSLayout
  *     content={
- *       <XDSLayoutContent isFullBleed>
+ *       <XDSLayoutContent padding={0}>
  *         <Table />
  *       </XDSLayoutContent>
  *     }
@@ -142,7 +134,6 @@ export interface XDSLayoutContentProps extends XDSBaseProps<HTMLDivElement> {
  */
 export function XDSLayoutContent({
   children,
-  isFullBleed = false,
   isScrollable = true,
   padding,
   label,
@@ -157,8 +148,7 @@ export function XDSLayoutContent({
     XDSLayoutSlotsContext,
   );
 
-  // padding={0} is semantically equivalent to isFullBleed
-  const isZeroPadding = isFullBleed || padding === 0;
+  const isZeroPadding = padding === 0;
 
   return (
     <div

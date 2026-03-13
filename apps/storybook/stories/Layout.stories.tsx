@@ -162,7 +162,6 @@ The XDS Layout System provides a structured way to build page and component layo
     footer: {table: {disable: true}},
     header: {table: {disable: true}},
     height: {table: {disable: true}},
-    isFullBleed: {table: {disable: true}},
     padding: {table: {disable: true}},
     start: {table: {disable: true}},
   },
