@@ -120,3 +120,6 @@ export const docsZh = {
     '尺寸参考：sm = 10×10px / 3px 边框，md = 14×14px / 3px 边框，lg = 18×18px / 3px 边框。',
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

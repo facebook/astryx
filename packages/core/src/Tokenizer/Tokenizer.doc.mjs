@@ -446,3 +446,6 @@ export const docsZh = {
   keyboard:
     '在空输入框上按退格键移除最后一个标记；方向键导航下拉列表；Enter 选择高亮项目；Escape 关闭下拉列表',
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

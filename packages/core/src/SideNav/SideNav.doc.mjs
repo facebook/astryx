@@ -728,3 +728,6 @@ export const docsZh = {
     },
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

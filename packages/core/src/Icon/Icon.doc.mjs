@@ -184,3 +184,6 @@ import {Home} from 'lucide-react';
     '尺寸规格——xsm：12x12px（密集 UI、徽章、指示器）；sm：16x16px（与文本内联、紧凑 UI）；md：20x20px（默认，按钮、输入框）；lg：24x24px（强调、独立图标）。',
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

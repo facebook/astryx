@@ -420,3 +420,6 @@ export const docsZh = {
   keyboard:
     '上/下方向键按配置的分钟增量调整当前时间。以常见格式（例如 "2:30 PM"、"14:30"）输入时间字符串会在失焦时解析。按清除按钮将焦点返回到输入框。',
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

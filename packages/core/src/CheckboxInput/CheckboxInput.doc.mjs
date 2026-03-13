@@ -214,3 +214,6 @@ export const docsZh = {
     '焦点轮廓使用标准的 XDS 焦点轮廓令牌。',
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

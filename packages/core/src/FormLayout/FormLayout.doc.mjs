@@ -180,3 +180,6 @@ export const docsZh = {
     '还通过 rest props 接受标准 HTML div 属性（id、role、aria-* 等）。',
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

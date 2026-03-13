@@ -144,3 +144,6 @@ export const docsZh = {
     'isPulsing 动画尊重 prefers-reduced-motion: reduce 设置。',
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

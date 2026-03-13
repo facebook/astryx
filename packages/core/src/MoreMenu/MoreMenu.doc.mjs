@@ -305,3 +305,6 @@ export const docsZh = {
     '在紧凑空间（表格行、卡片标题）中使用 XDSMoreMenu 作为仅图标的溢出操作。使用 XDSDropdownMenu 作为带标签和箭头的触发按钮。',
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

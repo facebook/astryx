@@ -244,3 +244,6 @@ export const docsZh = {
     '不确定动画遵循 prefers-reduced-motion 偏好设置',
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

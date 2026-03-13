@@ -474,3 +474,6 @@ export const docsZh = {
     '单位以浅灰色后缀显示在输入值之后。',
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

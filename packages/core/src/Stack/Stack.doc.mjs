@@ -666,3 +666,6 @@ import * as stylex from '@stylexjs/stylex';
     },
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

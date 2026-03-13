@@ -510,3 +510,6 @@ function Example() {
     },
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

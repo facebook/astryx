@@ -248,3 +248,6 @@ export const docsZh = {
   keyboard:
     'Tab 聚焦标记（或使用 onClick 时聚焦其内部按钮）。Enter/Space 激活可点击标记或移除按钮。移除按钮作为单独的 Tab 停靠点可达。',
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

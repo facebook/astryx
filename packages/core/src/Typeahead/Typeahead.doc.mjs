@@ -830,3 +830,6 @@ export const docsZh = {
     '如果项目具有 element 属性，XDSTypeaheadItem 会直接渲染它而不是标准布局。',
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

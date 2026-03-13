@@ -400,3 +400,6 @@ export const docsZh = {
     '当 value.length 超过 maxLength 时，字符计数器文本变为红色。',
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

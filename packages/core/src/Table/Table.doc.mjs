@@ -992,3 +992,6 @@ const selectionPlugin = useXDSTableSelection<User>({
     },
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

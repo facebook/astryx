@@ -194,3 +194,6 @@ const [filters, setFilters] = useState([]);
   keyboard:
     'Type to search fields; Enter to select; Click token to edit; Backspace on empty input removes last filter; Escape closes popover',
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

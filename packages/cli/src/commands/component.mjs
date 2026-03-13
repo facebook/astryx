@@ -126,10 +126,14 @@ export function discoverComponents(coreDir) {
 
 /**
  * Load the typed docs object from a .doc.mjs file.
+ * When dense=true, returns docsDense string if available.
  * When zh=true, returns docsZh export if available, falling back to docs.
  */
-export async function loadDocs(readmePath, {zh = false} = {}) {
+export async function loadDocs(readmePath, {zh = false, dense = false} = {}) {
   const mod = await import(pathToFileURL(readmePath).href);
+  if (dense && mod.docsDense) {
+    return mod.docsDense;
+  }
   if (zh && mod.docsZh) {
     return mod.docsZh;
   }
@@ -1046,7 +1050,7 @@ export function formatProps(docs, componentName) {
 /**
  * Format brief summaries for ALL components in one output.
  */
-export async function formatBriefAll(coreDir, {zh = false} = {}) {
+export async function formatBriefAll(coreDir, {zh = false, dense = false} = {}) {
   const components = discoverComponents(coreDir);
   const output = [];
 
@@ -1055,9 +1059,13 @@ export async function formatBriefAll(coreDir, {zh = false} = {}) {
     for (const comp of comps) {
       const readmePath = findComponentReadme(coreDir, comp);
       if (readmePath) {
-        const docs = await loadDocs(readmePath, {zh});
-        const importPath = resolveImportPath(coreDir, comp);
-        output.push(formatBrief(docs, comp, importPath));
+        const docs = await loadDocs(readmePath, {zh, dense});
+        if (typeof docs === 'string') {
+          output.push(docs);
+        } else {
+          const importPath = resolveImportPath(coreDir, comp);
+          output.push(formatBrief(docs, comp, importPath));
+        }
       } else {
         output.push(`XDS${comp}\n  (no docs)\n`);
       }
@@ -1081,6 +1089,7 @@ export function registerComponent(program) {
     .action(async (name, options) => {
       const coreDir = findCoreDir(process.cwd());
       const zh = program.opts().zh || false;
+      const dense = program.opts().dense || false;
 
       if (!coreDir) {
         console.error(
@@ -1091,7 +1100,7 @@ export function registerComponent(program) {
       }
 
       if (options.briefAll) {
-        console.log(await formatBriefAll(coreDir, {zh}));
+        console.log(await formatBriefAll(coreDir, {zh, dense}));
         return;
       }
 
@@ -1176,9 +1185,12 @@ export function registerComponent(program) {
       }
 
       if (readmePath.endsWith('.doc.mjs')) {
-        const docs = await loadDocs(readmePath, {zh});
+        const docs = await loadDocs(readmePath, {zh, dense});
         const importHint = resolveImportPath(coreDir, resolvedName);
-        if (options.props) {
+        // When dense returns a raw string, print it directly
+        if (typeof docs === 'string') {
+          console.log(docs);
+        } else if (options.props) {
           console.log(formatProps(docs, resolvedName));
         } else if (options.brief) {
           console.log(formatBrief(docs, resolvedName, importHint));

@@ -476,3 +476,6 @@ export const docsZh = {
     '垂直方向反转 Y 轴，使底部为最小值，顶部为最大值。',
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

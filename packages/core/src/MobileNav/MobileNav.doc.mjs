@@ -293,3 +293,6 @@ const navSections = (
     ],
   },
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

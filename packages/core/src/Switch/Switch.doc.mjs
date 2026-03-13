@@ -408,3 +408,6 @@ export const docsZh = {
     '遵循与 XDSCheckboxInput 相同的模式以保持结构一致性',
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

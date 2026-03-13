@@ -136,3 +136,6 @@ export const docsZh = {
     '按键显示符号遵循 macOS 惯例（⌘、⌥、⇧、⌃）',
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

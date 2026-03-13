@@ -290,3 +290,6 @@ export const docsZh = {
     '纯图标按钮适用于工具栏、操作网格和紧凑控件。',
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

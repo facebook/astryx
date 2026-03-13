@@ -498,3 +498,6 @@ const isMobile = useMediaQuery('(max-width: 768px)');
     '在 "fill" 高度模式下，外壳填满 100dvh，TopNav 固定在顶部，SideNav 和内容区域各有独立的滚动容器。',
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

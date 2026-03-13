@@ -150,3 +150,6 @@ export const docsZh = {
     '动画时序常量：DELAY_TIME（1000ms）动画开始前的初始延迟，FADE_TIME（1000ms）一个透明度循环的持续时间，STAGGER_TIME（100ms）连续元素之间的延迟增量。',
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

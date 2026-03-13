@@ -332,3 +332,6 @@ export const docsZh = {
     '还导出 generatePageRange 工具函数，用于计算带省略号的可见页码。',
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

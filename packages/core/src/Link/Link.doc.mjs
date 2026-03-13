@@ -428,3 +428,6 @@ import {XDSLinkProvider} from '@xds/core/Link';
     },
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

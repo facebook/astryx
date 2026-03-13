@@ -250,3 +250,6 @@ export const docsZh = {
     '折叠支持已规划：内容区将通过 useXDSCollapsible 支持折叠（issue #187）',
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

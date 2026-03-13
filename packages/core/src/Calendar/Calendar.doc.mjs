@@ -256,3 +256,6 @@ export const docsZh = {
     'DateRange 接口：{ start: ISODateString; end: ISODateString }',
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

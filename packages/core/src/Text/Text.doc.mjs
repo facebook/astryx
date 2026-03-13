@@ -726,3 +726,6 @@ function Article() {
     },
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

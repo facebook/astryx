@@ -534,3 +534,6 @@ const bioDescId = useId();
     },
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

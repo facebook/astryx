@@ -190,3 +190,6 @@ export const docsZh = {
     '标题渲染为 <h3> 元素，保持在文档标题大纲中。',
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;

@@ -402,3 +402,6 @@ export const docsZh = {
     'size 属性支持 "sm"、"md" 和 "lg"。',
   ],
 };
+
+/** @type {string} */
+export const docsDense = `TODO: apply dense protocol`;
