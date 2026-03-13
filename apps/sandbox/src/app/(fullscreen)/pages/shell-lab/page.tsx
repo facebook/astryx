@@ -101,7 +101,11 @@ function ConfigPanel({
           <SelectorRow
             label="Variant"
             value={config.variant}
-            onChange={v => onChange({variant: v as 'wash' | 'surface' | 'section' | 'elevated'})}
+            onChange={v =>
+              onChange({
+                variant: v as 'wash' | 'surface' | 'section' | 'elevated',
+              })
+            }
             options={[
               {value: 'wash', label: 'Wash'},
               {value: 'surface', label: 'Surface'},
@@ -536,22 +540,21 @@ function SampleTopNav({config}: {config: ShellConfig}) {
 const styles = stylex.create({
   configOverlay: {
     position: 'fixed',
-    top: 16,
-    right: 16,
+    top: '16px',
+    right: '16px',
     width: 360,
     maxHeight: 'calc(100vh - 32px)',
     overflowY: 'auto',
-    zIndex: 1000,
+    zIndex: 10000,
   },
   content: {
-    padding: 24,
     maxWidth: 800,
   },
   toggleButton: {
     position: 'fixed',
-    bottom: 16,
-    right: 16,
-    zIndex: 1001,
+    bottom: '16px',
+    right: '16px',
+    zIndex: 10001,
   },
   padding4: {
     padding: 16,
@@ -597,6 +600,7 @@ export default function ShellLabPage() {
       <XDSAppShell
         variant={config.variant}
         height={config.height}
+        contentPadding={6}
         sideNavBreakpoint={config.sideNavBreakpoint}
         sideNavWidth={config.sideNavWidth}
         topNav={
@@ -617,47 +621,45 @@ export default function ShellLabPage() {
           ) : undefined
         }
         {...collapseProps}>
-        <div {...stylex.props(styles.content)}>
-          <XDSVStack gap={6}>
-            <XDSVStack gap={2}>
-              <XDSHeading level={1}>Shell Lab</XDSHeading>
-              <XDSText type="body" color="secondary">
-                Use the configuration panel to experiment with different shell
-                and navigation setups. Resize the browser to test responsive
-                behavior and collapse breakpoints.
-              </XDSText>
-            </XDSVStack>
+        <XDSVStack gap={6} xstyle={styles.content}>
+          <XDSVStack gap={2}>
+            <XDSHeading level={1}>Shell Lab</XDSHeading>
+            <XDSText type="body" color="secondary">
+              Use the configuration panel to experiment with different shell and
+              navigation setups. Resize the browser to test responsive behavior
+              and collapse breakpoints.
+            </XDSText>
+          </XDSVStack>
 
-            <XDSCard>
-              <XDSVStack gap={3} xstyle={styles.padding4}>
-                <XDSHeading level={3}>Active Config</XDSHeading>
-                <pre
-                  style={{
-                    fontSize: 12,
-                    overflow: 'auto',
-                    padding: 12,
-                    borderRadius: 8,
-                    background: 'var(--color-wash)',
-                  }}>
-                  {JSON.stringify(config, null, 2)}
-                </pre>
+          <XDSCard>
+            <XDSVStack gap={3} xstyle={styles.padding4}>
+              <XDSHeading level={3}>Active Config</XDSHeading>
+              <pre
+                style={{
+                  fontSize: 12,
+                  overflow: 'auto',
+                  padding: 12,
+                  borderRadius: 8,
+                  background: 'var(--color-wash)',
+                }}>
+                {JSON.stringify(config, null, 2)}
+              </pre>
+            </XDSVStack>
+          </XDSCard>
+
+          {Array.from({length: 10}, (_, i) => (
+            <XDSCard key={i}>
+              <XDSVStack gap={2} xstyle={styles.padding4}>
+                <XDSHeading level={4}>Content Block {i + 1}</XDSHeading>
+                <XDSText type="body" color="secondary">
+                  Sample content to test scroll behavior in fill vs auto height
+                  mode. The shell should handle overflow correctly regardless of
+                  content length.
+                </XDSText>
               </XDSVStack>
             </XDSCard>
-
-            {Array.from({length: 10}, (_, i) => (
-              <XDSCard key={i}>
-                <XDSVStack gap={2} xstyle={styles.padding4}>
-                  <XDSHeading level={4}>Content Block {i + 1}</XDSHeading>
-                  <XDSText type="body" color="secondary">
-                    Sample content to test scroll behavior in fill vs auto
-                    height mode. The shell should handle overflow correctly
-                    regardless of content length.
-                  </XDSText>
-                </XDSVStack>
-              </XDSCard>
-            ))}
-          </XDSVStack>
-        </div>
+          ))}
+        </XDSVStack>
       </XDSAppShell>
 
       {/* Floating config panel */}

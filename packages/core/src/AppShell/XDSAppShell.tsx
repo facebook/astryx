@@ -29,6 +29,7 @@ import {XDSLayoutHeader} from '../Layout/XDSLayoutHeader';
 import {XDSLayoutPanel} from '../Layout/XDSLayoutPanel';
 import {XDSLayoutContent} from '../Layout/XDSLayoutContent';
 import {XDSMobileNav} from '../MobileNav/XDSMobileNav';
+import type {SpacingStep} from '../utils/types';
 import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
@@ -92,6 +93,16 @@ export interface XDSAppShellProps {
    * Main content area (rendered as `<main>`).
    */
   children: ReactNode;
+
+  /**
+   * Padding for the main content area using the spacing scale.
+   * Set based on the dominant content pattern for the page:
+   * - `4` (16px) — standard padding for forms, settings, text-heavy pages
+   * - `0` — no padding, for dashboards, maps, tables that need edge-to-edge
+   * Override individual sections with `<XDSSection padding={...}>`.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   */
+  contentPadding?: SpacingStep;
 
   /**
    * Test ID for the root element.
@@ -344,6 +355,7 @@ export function XDSAppShell({
   variant = 'section',
   banner,
   children,
+  contentPadding,
   'data-testid': dataTestId,
   height = 'fill',
   defaultIsSideNavCollapsed = false,
@@ -551,7 +563,7 @@ export function XDSAppShell({
 
   const mainInner = (
     <XDSLayoutContent
-      padding={0}
+      padding={contentPadding ?? 0}
       role="main"
       id={MAIN_CONTENT_ID}
       isScrollable={isFill}

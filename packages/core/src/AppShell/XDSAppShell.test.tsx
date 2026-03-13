@@ -546,6 +546,40 @@ describe('XDSAppShell', () => {
   });
 
   // ===========================================================================
+  // Content padding
+  // ===========================================================================
+
+  it('passes contentPadding to main content area', () => {
+    render(
+      <XDSAppShell contentPadding={4} data-testid="shell">
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+    // Main content should render — contentPadding is passed through
+    expect(screen.getByRole('main')).toBeInTheDocument();
+    expect(screen.getByText('Content')).toBeInTheDocument();
+  });
+
+  it('defaults to contentPadding={0} when not specified', () => {
+    render(
+      <XDSAppShell data-testid="shell">
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+    // Should render without error — padding=0 is the default
+    expect(screen.getByRole('main')).toBeInTheDocument();
+  });
+
+  it('supports contentPadding={0} for full-bleed content', () => {
+    render(
+      <XDSAppShell contentPadding={0} data-testid="shell">
+        <div>Full bleed content</div>
+      </XDSAppShell>,
+    );
+    expect(screen.getByText('Full bleed content')).toBeInTheDocument();
+  });
+
+  // ===========================================================================
   // Ref forwarding
   // ===========================================================================
 

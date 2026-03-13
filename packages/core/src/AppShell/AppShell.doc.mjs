@@ -113,6 +113,43 @@ export const docs = {
 </XDSAppShell>`,
     },
     {
+      label: 'Padded settings page (contentPadding={4})',
+      code: `<XDSAppShell
+  contentPadding={4}
+  topNav={<XDSTopNav label="App" heading={<XDSTopNavHeading heading="Settings" />} />}
+  sideNav={<XDSSideNav>...</XDSSideNav>}
+>
+  <XDSHeading level={1}>General</XDSHeading>
+  <XDSTextInput label="App Name" />
+</XDSAppShell>`,
+    },
+    {
+      label: 'Mostly padded with a full-bleed chart (contentPadding={4})',
+      code: `<XDSAppShell
+  contentPadding={4}
+  topNav={<XDSTopNav label="App" heading={<XDSTopNavHeading heading="Dashboard" />} />}
+>
+  <XDSHeading level={1}>Overview</XDSHeading>
+  <XDSSection padding={0}>
+    <FullWidthChart />
+  </XDSSection>
+  <XDSCard>Details</XDSCard>
+</XDSAppShell>`,
+    },
+    {
+      label: 'Mostly full-bleed with padded details (contentPadding={0})',
+      code: `<XDSAppShell
+  contentPadding={0}
+  topNav={<XDSTopNav label="App" heading={<XDSTopNavHeading heading="Player" />} />}
+>
+  <FullWidthVideoPlayer />
+  <XDSSection padding={4}>
+    <XDSHeading level={1}>Video Title</XDSHeading>
+    <XDSText>Video description</XDSText>
+  </XDSSection>
+</XDSAppShell>`,
+    },
+    {
       label: 'Responsive: SideNav + MobileNav',
       code: `const [mobileOpen, setMobileOpen] = useState(false);
 const isMobile = useMediaQuery('(max-width: 768px)');
@@ -154,6 +191,13 @@ const isMobile = useMediaQuery('(max-width: 768px)');
       name: 'children',
       type: 'ReactNode',
       description: 'Main content area, rendered inside a <main> element.',
+    },
+    {
+      name: 'contentPadding',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description:
+        'Padding for the main content area. Set based on the dominant content pattern: 4 (16px) for forms/settings/text, 0 for dashboards/maps/tables. Override individual sections with XDSSection.',
+      default: '0',
     },
     {
       name: 'topNav',
@@ -404,6 +448,13 @@ const isMobile = useMediaQuery('(max-width: 768px)');
       name: 'children',
       type: 'ReactNode',
       description: '主内容区域，渲染在 <main> 元素内部。',
+    },
+    {
+      name: 'contentPadding',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description:
+        '主内容区域的内边距。根据页面主要内容模式设置：4（16px）适用于表单/设置/文本页面，0 适用于仪表盘/地图/表格。可通过 XDSSection 覆盖个别区域。',
+      default: '0',
     },
     {
       name: 'topNav',
