@@ -430,4 +430,33 @@ import {XDSLinkProvider} from '@xds/core/Link';
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSLink}from'@xds/core/Link' //styled links + polymorphic link infra
+C XDSLink //styled anchor w/ variants, external link, polymorphic rendering
+P as:XDSLinkComponentType custom component instead of <a> | label:string! accessible label | href:string link destination URL | hasUnderline:boolean='false' always show underline | isDisabled:boolean='false' disables link | isExternalLink:boolean='false' opens new tab w/ external icon | target:string where to open linked doc | onClick:MouseEventHandler click handler | tooltip:string tooltip on hover | isStandalone:boolean='false' applies base font sizing | children:ReactNode! link content
+X <XDSLink label="Documentation" href="/docs">Documentation</XDSLink>
+X <XDSLink label="GitHub" href="https://github.com" isExternalLink>GitHub</XDSLink>
+X <XDSLink label="Settings" href="/settings" tooltip="Configure your preferences">
+  Settings
+</XDSLink>
+X <XDSLink label="Docs" href="/docs" as={RouterLink}>
+  Docs
+</XDSLink>
+C XDSLinkProvider //sets default link component for all XDS links in subtree
+P component:XDSLinkComponentType! component for all link elements | children:ReactNode! subtree
+X import Link from 'next/link';
+import {XDSLinkProvider} from '@xds/core/Link';
+
+<XDSLinkProvider component={Link}>
+  <App />
+</XDSLinkProvider>
+X <XDSLink label="Privacy Policy" href="/privacy" hasUnderline>Privacy Policy</XDSLink>
+X <XDSText>Read the <XDSLink label="docs" href="/docs">documentation</XDSLink> for more info.</XDSText>
+X <XDSLink label="Settings" href="/settings" isStandalone>Settings</XDSLink>
+X <XDSLink label="Disabled" href="/disabled" isDisabled>Disabled Link</XDSLink>
+X import {useXDSLinkComponent} from '@xds/core/Link';
+
+function MyComponent({as}: {as?: XDSLinkComponentType}) {
+  const LinkComponent = useXDSLinkComponent(as);
+  return <LinkComponent href="/foo">Click me</LinkComponent>;
+}
+N Links inherit font family, size, line-height, weight from parent|Use isStandalone when link not inline within text|isExternalLink auto-sets target="_blank" + rel="noopener noreferrer"|Disabled uses aria-disabled + pointer-events:none|Tooltip wraps link in XDSTooltip|XDSLinkComponentType is React.ElementType (string tags + custom components)|XDSLinkContext separated from XDSLinkProvider (mirrors ThemeContext/XDSTheme)|XDSLinkProvider memoizes context value|Resolution order: (1) per-component as prop, (2) XDSLinkProvider context, (3) native <a>|All XDS link components (XDSLink, XDSTopNavItem, XDSSideNavItem, XDSBreadcrumbItem, XDSTab) support custom link rendering`;

@@ -258,4 +258,17 @@ export const docsZh = {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSCalendar}from'@xds/core/Calendar' //date selection, single + range modes
+P mode:'single' | 'range'='single' selection mode
+P value:ISODateString | DateRange controlled value | defaultValue:ISODateString | DateRange uncontrolled default
+P onChange:Function selection callback
+P numberOfMonths:1 | 2='1' months displayed side by side
+P min:ISODateString minimum selectable date | max:ISODateString maximum selectable date
+P dateConstraints:Array<(date: Date) => boolean> custom constraint fns
+P focusDate:ISODateString controlled visible month | onFocusDateChange:(focusDate: ISODateString) => void nav callback
+P hasOutsideDays:boolean='true' show adjacent month days | hasWeekNumbers:boolean='false' ISO week numbers
+P hasVariableRowCount:boolean='false' variable vs fixed 6-row grid | weekStartsOn:0 | 1 | 2 | 3 | 4 | 5 | 6='0' first day (0=Sunday)
+X <XDSCalendar value="2026-01-28" onChange={(value, valueAsDate) => console.log(value)} />
+X <XDSCalendar mode="range" value={{ start: "2026-01-28", end: "2026-02-05" }} onChange={(range) => console.log(range.start, range.end)} />
+X <XDSCalendar numberOfMonths={2} min="2026-01-01" max="2026-12-31" weekStartsOn={1} />
+N ISODateString type: \`\${number}\${number}\${number}\${number}-\${number}\${number}-\${number}\${number}\`|DayOfWeek type: 0 | 1 | 2 | 3 | 4 | 5 | 6|DateRange interface: { start: ISODateString; end: ISODateString }|single (default) + range selection modes|multi-month: 1 or 2 side by side|date constraints: min, max, custom fns|weekStartsOn for configurable first day|optional ISO week number column|controlled/uncontrolled via value/defaultValue`;

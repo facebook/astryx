@@ -250,4 +250,9 @@ export const docsZh = {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSToken}from'@xds/core/Token' //chip/tag for inline entity display
+P label:string! text inside token | color:'default' | 'red' | 'orange' | 'yellow' | 'green' | 'teal' | 'cyan' | 'blue' | 'purple' | 'pink' | 'gray'='default' | icon:ReactNode icon before label | isDisabled:boolean='false' reduces opacity, blocks interactions | onRemove:(e: React.MouseEvent) => void renders X button when provided | onClick:(e: React.MouseEvent) => void renders <span> w/ invisible <button> inside for a11y | href:string renders as <a> element | description:string a11y desc via aria-description | endContent:ReactNode content after label, before remove button | isLabelHidden:boolean='false' visually hides label w/ screen-reader-only clip; label stays accessible | xstyle:StyleXStyles layout styles (margins, positioning); must be stylex.create() value
+X <XDSToken label="Tag" /> | <XDSToken label="Status" color="green" /> | <XDSToken label="Filter" onRemove={(e) => handleRemove(e)} /> | <XDSToken label="Category" onClick={() => navigate('/category')} /> | <XDSToken label="Profile" href="/user/123" /> | <XDSToken label="User" icon={<UserIcon />} isLabelHidden />
+A isLabelHidden clips label visually but exposes via aria-label so screen readers announce it|description maps to aria-description for supplementary context|onClick wraps content in real <button> so keyboard users activate w/ Enter/Space|remove button has auto aria-label "Remove <label>" + expanded touch target via ::after pseudo-element|href w/ isDisabled sets aria-disabled on <a>
+K Tab=focus token (or inner button w/ onClick);Enter/Space=activate clickable token or remove button;Remove button=separate Tab stop
+N Polymorphic: renders as <span> default, <a> w/ href, <span>+invisible <button> w/ onClick|invisible button preserves real button semantics w/ focus-within outline on full token|remove button has expanded 14px hit-area via ::after pseudo-element`;

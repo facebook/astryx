@@ -192,4 +192,11 @@ export const docsZh = {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSEmptyState}from'@xds/core/EmptyState' //empty state placeholder w/ actions
+P title:string! primary msg as <h3> | description:string secondary text below title | icon:ReactNode icon/illustration above title; decorative aria-hidden="true" | actions:ReactNode action buttons below description; horizontal default, vertical when isCompact | isCompact:boolean='false' compact variant w/ reduced spacing | xstyle:StyleXStyles stylex.create() layout styles
+X <XDSEmptyState title="No results found" />
+X <XDSEmptyState\n  title="No results found"\n  description="Try adjusting your search or filters."\n/>
+X <XDSEmptyState\n  icon={<XDSIcon icon={InboxIcon} size="lg" />}\n  title="No messages"\n  description="You're all caught up!"\n  actions={<XDSButton label="Compose" variant="primary" />}\n/>
+X <XDSEmptyState\n  title="No items"\n  description="Nothing to show here."\n  isCompact\n/>
+A Container uses role="status" for screen reader announcements|Icon wrapper has aria-hidden="true" so decorative icons ignored by assistive tech|Title renders as <h3> for document heading outline
+N role="status" auto-announces to screen readers|Icon slot decorative (aria-hidden="true")|Title renders as <h3> for correct outline|Actions horizontal default, vertical in compact mode|Compact variant reduces spacing for constrained areas|Accepts xstyle, className, style for container adjustments|Forwarded ref on root <div>`;

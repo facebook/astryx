@@ -730,4 +730,106 @@ export const docsZh = {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSSideNav}from'@xds/core/SideNav' //sidebar navigation w/ sections+nested items
+C XDSSideNav //container w/ 5 zones: header, topContent, children (scrollable), footer, footerIcons
+P header:ReactNode header area (typically XDSSideNavHeading), sticky | topContent:ReactNode content below header, e.g. create button | children:ReactNode nav sections+items, scrollable | footer:ReactNode footer above icon bar | footerIcons:ReactNode footer icon bar | xstyle:StyleXStyles stylex.create() layout styles
+X <XDSSideNav
+  header={<XDSSideNavHeading icon={<AppIcon />} heading="My App" headingHref="/" />}
+  topContent={<XDSButton label="Create new" variant="primary" />}>
+  <XDSSideNavSection title="Main">
+    <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
+    <XDSSideNavItem label="Projects" icon={FolderIcon} href="/projects" />
+  </XDSSideNavSection>
+</XDSSideNav>
+C XDSSideNavHeading //product/suite heading w/ smart interaction boundary for links+menu popover
+P heading:string! product/app name | icon:ReactNode product/app icon | headingHref:string link for heading | superheading:string text above heading | superheadingHref:string link for superheading | subheading:string text below heading | subheadingHref:string link for subheading | menu:ReactNode menu content in popover
+X <XDSSideNavHeading icon={<AppIcon />} heading="My App" headingHref="/" /> | <XDSSideNavHeading
+  icon={<AppIcon />}
+  superheading="Acme Corp"
+  superheadingHref="/org"
+  heading="My App"
+  headingHref="/"
+  subheading="v2.0"
+/> | <XDSSideNavHeading
+  icon={<AppIcon />}
+  heading="My App"
+  headingHref="/"
+  menu={<WorkspaceSwitcher />}
+/>
+C XDSSideNavItem //nav item w/ icon, selected state, end content, nesting via children
+P label:string! item label | as:XDSLinkComponentType custom link component | icon:XDSIconType outline (unselected) icon | selectedIcon:XDSIconType filled icon when selected | isSelected:boolean='false' marks current page | isDisabled:boolean='false' disabled state | href:string navigation URL | onClick:(e: MouseEvent) => void click handler | endContent:ReactNode right-side content (badges, counts) | children:ReactNode sub-items for nesting
+X <XDSSideNavItem label="Dashboard" icon={HomeIcon} href="/dashboard" /> | <XDSSideNavItem
+  label="Dashboard"
+  icon={HomeIcon}
+  selectedIcon={HomeIconSolid}
+  isSelected
+  href="/dashboard"
+  endContent={<XDSBadge>3</XDSBadge>}
+/> | <XDSSideNavItem label="Settings" icon={GearIcon} href="/settings">
+  <XDSSideNavItem label="General" href="/settings/general" />
+  <XDSSideNavItem label="Security" href="/settings/security" />
+</XDSSideNavItem>
+C XDSSideNavSection //section grouping w/ optional title, subtitle, end content
+P title:string! section title | subtitle:string section subtitle | children:ReactNode section items | endContent:ReactNode right-side content in section header | isHeaderHidden:boolean='false' visually hides header, keeps accessible to screen readers
+X <XDSSideNavSection title="Main">
+  <XDSSideNavItem label="Dashboard" href="/dashboard" />
+  <XDSSideNavItem label="Projects" href="/projects" />
+</XDSSideNavSection> | <XDSSideNavSection title="Settings" endContent={<XDSBadge>New</XDSBadge>}>
+  <XDSSideNavItem label="General" href="/settings/general" />
+  <XDSSideNavItem label="Security" href="/settings/security" />
+</XDSSideNavSection> | <XDSSideNavSection title="Main" isHeaderHidden>
+  <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
+</XDSSideNavSection>
+X // TopNav provides identity → SideNav has no header
+<XDSAppShell
+  topNav={<XDSTopNav heading={<XDSTopNavHeading heading="My App" />} />}
+  sideNav={
+    <XDSSideNav>
+      <XDSSideNavSection title="Main" isHeaderHidden>
+        <XDSSideNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          isSelected
+          href="/dashboard"
+        />
+        <XDSSideNavItem label="Projects" icon={FolderIcon} href="/projects" />
+      </XDSSideNavSection>
+    </XDSSideNav>
+  }>
+  <Content />
+</XDSAppShell> | // No TopNav → SideNav header provides identity
+<XDSAppShell
+  sideNav={
+    <XDSSideNav
+      header={
+        <XDSSideNavHeading icon={<AppIcon />} heading="My App" headingHref="/" />
+      }
+      topContent={<XDSButton label="Create new" variant="primary" />}
+      footerIcons={<XDSButton icon={HelpIcon} variant="ghost" label="Help" />}>
+      <XDSSideNavSection title="Main">
+        <XDSSideNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          selectedIcon={HomeIconSolid}
+          isSelected
+          href="/dashboard"
+        />
+        <XDSSideNavItem
+          label="Projects"
+          icon={FolderIcon}
+          href="/projects"
+          endContent={<XDSBadge>3</XDSBadge>}
+        />
+      </XDSSideNavSection>
+
+      <XDSSideNavSection title="Settings">
+        <XDSSideNavItem label="General" href="/settings/general" />
+        <XDSSideNavItem label="Security" href="/settings/security" />
+      </XDSSideNavSection>
+    </XDSSideNav>
+  }>
+  <Content />
+</XDSAppShell>
+A <nav aria-label="Side navigation"> wraps entire component|aria-current="page" on selected item|sections use role="group" w/ aria-labelledby pointing to section title|isHeaderHidden visually hides section title, keeps accessible to screen readers
+K Tab=through items;Enter/Space=activate links
+N w/ XDSAppShell+XDSTopNav, omit XDSSideNavHeading since TopNav provides app identity|w/o TopNav, include XDSSideNavHeading for app identity|header interaction: headingHref only=whole header is one link; headingHref+superheadingHref no menu=each text independent link; menu only no hrefs=whole header is popover trigger; menu+hrefs=links are independent <a>, chevron/remaining is popover trigger|depends on useXDSPopover for header menu+XDSIcon for nav item icons|5-zone layout: header, topContent, children (scrollable), footer, footerIcons|smart header interaction boundary logic|nested items via children on XDSSideNavItem|selected state w/ optional alternate icon for filled/outline variants|section grouping w/ optional title, subtitle, end content|accessible: nav landmark, aria-current="page", role="group" w/ aria-labelledby|keyboard navigable: Tab through items, Enter/Space activate`;

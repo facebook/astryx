@@ -512,4 +512,23 @@ function Example() {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSDialog}from'@xds/core/Dialog' //native dialog w/ focus trap
+C XDSDialog //modal dialog using native <dialog>
+P isOpen:boolean! | onOpenChange:(isOpen: boolean) => unknown! visibility change callback | children:ReactNode!
+P width:number | string='400' dialog width | maxHeight:number | string='75vh'
+P position:XDSDialogPosition static position, centered by default | variant:'standard' | 'fullscreen'='standard'
+P purpose:'required' | 'form' | 'info'='info' dismissal behavior control
+X <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}><XDSLayout header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>} content={<XDSLayoutContent>Content goes here</XDSLayoutContent>} footer={<XDSLayoutFooter hasDivider><XDSButton label="Confirm" variant="primary" onClick={() => setIsOpen(false)} /></XDSLayoutFooter>} /></XDSDialog>
+C XDSDialogHeader //header w/ title, subtitle, close button, content slots
+P title:string dialog title (receives focus on open) | subtitle:string subtitle below title
+P onOpenChange:(isOpen: boolean) => unknown close button callback (omit=no button) | hasDivider:boolean='true' bottom border
+P startContent:ReactNode content before title (e.g. back button) | endContent:ReactNode content after title, before close
+X <XDSDialogHeader title="Step 2 of 3" startContent={<XDSButton label="Back" variant="secondary" onClick={goBack} />} onOpenChange={open => setIsOpen(open)} />
+X import {XDSDialog} from '@xds/core/Dialog'; import { XDSLayout, XDSLayoutHeader, XDSLayoutContent, XDSLayoutFooter, } from '@xds/core/Layout'; import {XDSButton} from '@xds/core/Button'; import {useState} from 'react'; function Example() { const [isOpen, setIsOpen] = useState(false); return ( <> <XDSButton label="Open Dialog" onClick={() => setIsOpen(true)} /> <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}> <XDSLayout header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>} content={<XDSLayoutContent>Content goes here</XDSLayoutContent>} footer={ <XDSLayoutFooter hasDivider> <XDSButton label="Cancel" variant="secondary" onClick={() => setIsOpen(false)} /> <XDSButton label="Confirm" variant="primary" onClick={() => setIsOpen(false)} /> </XDSLayoutFooter> } /> </XDSDialog> </> ); }
+X <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)} position={{top: 100, right: 20}}>{/* content */}</XDSDialog>
+X <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)} variant="fullscreen"><XDSLayout header={<XDSLayoutHeader hasDivider>Full-screen title</XDSLayoutHeader>} content={<XDSLayoutContent>Content goes here</XDSLayoutContent>} footer={<XDSLayoutFooter hasDivider><XDSButton label="Close" onClick={() => setIsOpen(false)} /></XDSLayoutFooter>} /></XDSDialog>
+X <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)} purpose="required">{/* user must take an explicit action to close */}</XDSDialog>
+X <XDSDialogHeader title="Confirm Action" subtitle="This cannot be undone" onOpenChange={open => setIsOpen(open)} />
+A uses native <dialog> w/ showModal() for correct ARIA modal semantics|focus automatically trapped by browser via showModal()|XDSDialogHeader title receives focus on dialog open
+K Escape=close dialog (unless purpose="required");focus trapped inside while open
+N height unset (grows w/ content), constrained by maxHeight|variant="fullscreen" ignores width, maxHeight, position|form purpose: backdrop click allowed only before user interaction|required=no Escape+no backdrop click; form=no backdrop click after interaction; info=both allowed|designed for use w/ XDSLayout as child`;

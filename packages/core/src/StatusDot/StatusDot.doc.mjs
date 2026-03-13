@@ -146,4 +146,7 @@ export const docsZh = {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSStatusDot}from'@xds/core/StatusDot' //colored dot status indicator
+P variant:'positive' | 'warning' | 'negative' | 'info' | 'neutral'! semantic color | label:string! a11y label via aria-label | size:'sm' | 'md'='md' sm=8px, md=10px | isPulsing:boolean='false' pulse animation, respects prefers-reduced-motion | xstyle:StyleXStyles layout styles, must be stylex.create() value
+X <XDSStatusDot variant="positive" label="Online" />\\n<XDSStatusDot variant="negative" label="Offline" />\\n<XDSStatusDot variant="warning" label="Away" /> | <XDSStatusDot variant="positive" label="Active" size="sm" /> | <XDSStatusDot variant="positive" label="Live" isPulsing />
+A renders <span role="img" aria-label={label}> for screen readers|not focusable, decorative indicator only|isPulsing animation respects prefers-reduced-motion: reduce`;

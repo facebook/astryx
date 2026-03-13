@@ -246,4 +246,14 @@ export const docsZh = {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSProgressBar}from'@xds/core/ProgressBar' //determinate or indeterminate progress bar
+P label:string! accessible label | value:number='0' current value (ignored when indeterminate) | max:number='100' maximum value | isLabelHidden:boolean='false' visually hide label, remains accessible | hasValueLabel:boolean='false' show formatted value text (ignored when indeterminate) | formatValueLabel:(value: number, max: number) => string custom formatter; defaults to percentage | variant:'accent' | 'positive' | 'warning' | 'negative'='accent' semantic color | size:'sm' | 'md' | 'lg'='md' track height: sm=4px, md=8px, lg=12px | isIndeterminate:boolean='false' animated loading for unknown progress | xstyle:StyleXStyles stylex.create() layout styles
+X <XDSProgressBar value={75} label="Upload progress" /> | <XDSProgressBar value={75} label="Storage used" hasValueLabel /> | <XDSProgressBar
+  value={3.2}
+  max={5}
+  label="Disk usage"
+  hasValueLabel
+  formatValueLabel={(value, max) => \\\`\\\${value} GB / \\\${max} GB\\\`}
+/> | <XDSProgressBar isIndeterminate label="Loading..." /> | <XDSProgressBar value={92} label="Disk" variant="negative" size="sm" /> | <XDSProgressBar value={50} label="Loading" isLabelHidden />
+A determinate: role="meter" w/ aria-valuenow, aria-valuemin, aria-valuemax|indeterminate: role="progressbar" w/o value attributes|label always connected via aria-labelledby|aria-valuetext provides human-readable value desc (determinate only)|indeterminate animation respects prefers-reduced-motion
+N determinate uses role="meter" w/ aria-valuenow, aria-valuemin, aria-valuemax|indeterminate uses role="progressbar" w/o value attributes|label always connected via aria-labelledby|aria-valuetext for human-readable value (determinate only)|indeterminate animation respects prefers-reduced-motion|4 semantic color variants: accent, positive, warning, negative|3 track heights: sm=4px, md=8px, lg=12px|custom value label formatter via formatValueLabel`;

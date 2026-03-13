@@ -504,4 +504,68 @@ export const docsZh = {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSRadioList}from'@xds/core/RadioList' //radio group for single-value selection
+C XDSRadioList //radio group container w/ field integration
+P label:string! group label (always rendered for a11y) | value:string! currently selected value | onChange:(value: string) => void! selection change callback | children:ReactNode! XDSRadioListItem elements | isLabelHidden:boolean='false' visually hide label | description:string text below label | orientation:'vertical' | 'horizontal'='vertical' layout direction | isDisabled:boolean='false' disable all items | isRequired:boolean='false' group required | isOptional:boolean='false' field optional (mutually exclusive w/ isRequired) | status:XDSInputStatus status indicator ({ type, message }) | size:'sm' | 'md'='md' radio control size | labelTooltip:string tooltip for info icon next to label | xstyle:StyleXStyles stylex.create() layout styles
+X <XDSRadioList label="Notification preference" value={selected} onChange={setSelected}>
+  <XDSRadioListItem label="Email" value="email" />
+  <XDSRadioListItem label="SMS" value="sms" />
+</XDSRadioList>
+C XDSRadioListItem //individual radio item w/ label, description, content slots
+P label:string! item label | value:string! item value | description:string text below label | isDisabled:boolean='false' disable this item | startContent:ReactNode content before radio circle | endContent:ReactNode content after label
+X <XDSRadioListItem
+  label="Pro"
+  value="pro"
+  description="All features, unlimited usage"
+/>
+X <XDSRadioList
+  label="Notification preference"
+  value={selected}
+  onChange={setSelected}
+>
+  <XDSRadioListItem label="Email" value="email" />
+  <XDSRadioListItem label="SMS" value="sms" />
+  <XDSRadioListItem label="Push" value="push" />
+</XDSRadioList> | <XDSRadioList
+  label="Plan"
+  value={plan}
+  onChange={setPlan}
+>
+  <XDSRadioListItem
+    label="Free"
+    value="free"
+    description="Basic features, limited usage"
+  />
+  <XDSRadioListItem
+    label="Pro"
+    value="pro"
+    description="All features, unlimited usage"
+  />
+</XDSRadioList> | <XDSRadioList
+  label="Size"
+  value={size}
+  onChange={setSize}
+  orientation="horizontal"
+>
+  <XDSRadioListItem label="Small" value="sm" />
+  <XDSRadioListItem label="Medium" value="md" />
+  <XDSRadioListItem label="Large" value="lg" />
+</XDSRadioList> | <XDSRadioList
+  label="Required choice"
+  value={choice}
+  onChange={setChoice}
+  isRequired
+  status={{ type: 'error', message: 'Please select an option' }}
+>
+  <XDSRadioListItem label="Option A" value="a" />
+  <XDSRadioListItem label="Option B" value="b" />
+</XDSRadioList> | <XDSRadioList
+  label="Locked selection"
+  value="locked"
+  onChange={() => {}}
+  isDisabled
+>
+  <XDSRadioListItem label="Locked" value="locked" />
+  <XDSRadioListItem label="Unavailable" value="unavailable" />
+</XDSRadioList>
+N XDSRadioList creates RadioListContext providing name, value, onChange, isDisabled, isRequired, size, status to children|XDSRadioListItem must be within XDSRadioList, throws if context missing|uses hidden native <input type="radio"> w/ custom visual overlay for consistent styling|focus outline uses standard XDS focus outline token w/ 2px offset|hover states use color-mix() for consistent overlay tinting|size variants match CheckboxInput dimensions for visual consistency|accessible: native <input type="radio"> w/ role="radiogroup"+ARIA attributes|vertical+horizontal layouts|sm (18px radio, 20px wrapper)+md (22px radio, 24px wrapper)|optional description per item|startContent+endContent slots per item|disable entire group or individual items|XDSField integration for label, description, required/optional, status`;

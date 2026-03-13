@@ -216,4 +216,13 @@ export const docsZh = {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSCheckboxInput}from'@xds/core/CheckboxInput' //checkbox for toggling boolean values
+P label:string! always rendered for a11y | isLabelHidden:boolean='false' visually hide label
+P description:string text below label | value:boolean | 'indeterminate'! checked/unchecked/indeterminate
+P onChange:(checked: boolean, e: ChangeEvent) => void state change callback | isDisabled:boolean='false'
+X <XDSCheckboxInput label="Accept terms and conditions" value={accepted} onChange={setAccepted} />
+X <XDSCheckboxInput label="Subscribe to newsletter" description="Receive weekly updates about new features" value={subscribed} onChange={setSubscribed} />
+X <XDSCheckboxInput label="Select all items" value="indeterminate" onChange={setSelectAll} />
+X <XDSCheckboxInput label="Select row" isLabelHidden value={selected} onChange={setSelected} />
+X <XDSCheckboxInput label="Premium feature" description="Upgrade to enable this option" value={false} onChange={() => {}} isDisabled />
+N hidden native <input type="checkbox"> w/ custom visual overlay|visual checkbox responds to hover, focus, checked via CSS sibling selectors|label clickable + associated via htmlFor/id|focus outline uses XDS focus outline token`;

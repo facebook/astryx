@@ -344,4 +344,18 @@ export const docsZh = {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSDateInput}from'@xds/core/DateInput' //text input w/ calendar popover
+P label:string! | isLabelHidden:boolean='false' visually hide label | description:string helper text below label
+P isOptional:boolean='false' show "(optional)" indicator | isRequired:boolean='false' mark field required | isDisabled:boolean='false'
+P value:ISODateString selected date YYYY-MM-DD | onChange:(value: ISODateString | undefined) => void date change callback
+P min:ISODateString earliest selectable date | max:ISODateString latest selectable date
+P dateConstraints:Array<(date: Date) => boolean> custom constraint fns to disable dates | placeholder:string='Select a date'
+P size:'sm' | 'md' | 'lg'='md' input size | status:XDSInputStatus error/warning/success w/ message
+P numberOfMonths:1 | 2='1' months shown in calendar | xstyle:StyleXStyles layout customization via stylex.create()
+X <XDSDateInput label="Event date" value={date} onChange={setDate} />
+X <XDSDateInput label="Departure date" value={date} onChange={setDate} min="2026-01-01" max="2026-12-31" placeholder="Pick a date" />
+X <XDSDateInput label="Check-in date" value={date} onChange={setDate} numberOfMonths={2} />
+X <XDSDateInput label="Due date" description="When should this task be completed?" isRequired value={date} onChange={setDate} />
+X <XDSDateInput label="Event date" value={date} onChange={setDate} status={{ type: 'error', message: 'This date is not available', }} />
+K Tab=move between input+calendar icon;Enter/Space on icon=open calendar;Escape=close calendar;Arrow keys=navigate days;Page Up/Down=navigate months
+N accepts multiple date formats: ISO (2026-01-28), US (01/28/2026, 1/28/2026), written (Jan 28, 2026 / January 28 2026)|invalid input reverts to previous valid value on blur`;

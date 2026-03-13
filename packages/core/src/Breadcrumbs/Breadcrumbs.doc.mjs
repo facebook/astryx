@@ -340,4 +340,19 @@ export const docsZh = {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSBreadcrumbs}from'@xds/core/Breadcrumbs' //navigation breadcrumb trail, semantic HTML
+C XDSBreadcrumbs //nav container w/ ordered breadcrumb list
+P children:ReactNode! | separator:ReactNode='/' between items
+P variant:'default' | 'supporting'='default' supporting=smaller secondary text
+P label:string='Breadcrumb' nav landmark aria-label | xstyle:StyleXStyles layout customization via stylex.create()
+C XDSBreadcrumbItem //individual breadcrumb, link or text
+P children:ReactNode! | href:string link URL; omit for non-navigable
+P onClick:(e: MouseEvent) => void | isCurrent:boolean='false' marks current page w/ aria-current="page"
+P startIcon:ReactNode icon before label
+X <XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem> | <XDSBreadcrumbItem isCurrent>My Project</XDSBreadcrumbItem>
+X <XDSBreadcrumbs> <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem> <XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem> <XDSBreadcrumbItem isCurrent>My Project</XDSBreadcrumbItem> </XDSBreadcrumbs>
+X <XDSBreadcrumbs variant="supporting"> <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem> <XDSBreadcrumbItem isCurrent>Page</XDSBreadcrumbItem> </XDSBreadcrumbs>
+X <XDSBreadcrumbs> <XDSBreadcrumbItem href="/" startIcon={<XDSIcon icon={HomeIcon} size="sm" />}> Home </XDSBreadcrumbItem> <XDSBreadcrumbItem isCurrent>Settings</XDSBreadcrumbItem> </XDSBreadcrumbs>
+X <XDSBreadcrumbItem href="/settings" startIcon={<XDSIcon icon={CogIcon} size="sm" />}> Settings </XDSBreadcrumbItem>
+A <nav aria-label> landmark, label defaults to "Breadcrumb" customizable via label prop|items in <ol> w/ <li> wrappers for list semantics|current page gets aria-current="page"|separators aria-hidden="true" so screen readers skip|auto-detects last child as current when no isCurrent set
+N renders <nav> landmark w/ ordered list|configurable separator (default /)|two variants: default + supporting (smaller secondary text)|current page marked aria-current="page"|separators hidden from assistive tech|startIcon before item labels|auto-detects last child as current page`;

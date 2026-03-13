@@ -786,4 +786,80 @@ export const docsZh = {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSLayout}from'@xds/core/Layout' //composable layout utilities + components
+C XDSLayout //page shell w/ header, sidebars, content, footer
+P content:ReactNode main content area | header:ReactNode | footer:ReactNode | start:ReactNode start panel (left LTR) | end:ReactNode end panel (right LTR) | height:'fill'|'auto'='fill' fill container or grow w/ content
+X <XDSLayout
+  header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}
+  content={<XDSLayoutContent>Body content</XDSLayoutContent>}
+  footer={<XDSLayoutFooter hasDivider>Footer</XDSLayoutFooter>}
+/>
+X <XDSLayout
+  header={<XDSLayoutHeader hasDivider>App Name</XDSLayoutHeader>}
+  start={
+    <XDSLayoutPanel hasDivider width={240} role="navigation">
+      <Navigation />
+    </XDSLayoutPanel>
+  }
+  content={
+    <XDSLayoutContent role="main">
+      <MainContent />
+    </XDSLayoutContent>
+  }
+/>
+C XDSLayoutHeader //top bar for titles, app bars, toolbars
+P children:ReactNode | hasDivider:boolean='false' border at bottom | height:number|string | label:string accessible label | role:AriaRole ARIA landmark role
+X <XDSLayoutHeader hasDivider role="banner">
+  Page Title
+</XDSLayoutHeader>
+C XDSLayoutContent //scrollable main content area
+P children:ReactNode | isScrollable:boolean='true' scrollable overflow | label:string accessible label | role:AriaRole ARIA landmark role
+X <XDSLayoutContent role="main">
+  <MainContent />
+</XDSLayoutContent>
+C XDSLayoutFooter //bottom bar for actions, pagination, status
+P children:ReactNode | hasDivider:boolean='false' border at top | height:number|string | label:string accessible label | role:AriaRole ARIA landmark role
+X <XDSLayoutFooter hasDivider>
+  <XDSButton label="Save" variant="primary" />
+</XDSLayoutFooter>
+C XDSLayoutPanel //sidebar for nav, settings, inspector panels
+P children:ReactNode | hasDivider:boolean='false' border on edge | isScrollable:boolean='true' scrollable overflow | label:string accessible label | role:AriaRole ARIA landmark role
+X <XDSLayoutPanel hasDivider width={240} role="navigation">
+  <Navigation />
+</XDSLayoutPanel>
+C XDSLayoutContainer //primitive setting CSS padding vars; base for XDSCard + XDSSection
+X <XDSLayoutContainer>Content</XDSLayoutContainer>
+C XDSCard //card w/ elevation + themed styling on XDSLayoutContainer
+X <XDSCard>Card content</XDSCard>
+X <XDSCard>
+  <XDSLayout
+    header={<XDSLayoutHeader hasDivider>Title</XDSLayoutHeader>}
+    content={<XDSLayoutContent>Body content</XDSLayoutContent>}
+    footer={
+      <XDSLayoutFooter hasDivider>
+        <XDSHStack gap={2} hAlign="end">
+          <XDSButton variant="secondary">Cancel</XDSButton>
+          <XDSButton variant="primary">Save</XDSButton>
+        </XDSHStack>
+      </XDSLayoutFooter>
+    }
+  />
+</XDSCard>
+C XDSSection //section w/ background variants (section, transparent, wash) on XDSLayoutContainer
+X <XDSSection>Section content</XDSSection>
+C XDSHStack //horizontal stack, children left-to-right
+X <XDSHStack gap={2} hAlign="end">
+  <XDSButton variant="secondary">Cancel</XDSButton>
+  <XDSButton variant="primary">Save</XDSButton>
+</XDSHStack>
+C XDSVStack //vertical stack, children top-to-bottom
+X <XDSVStack gap={4}>
+  <XDSCard>First</XDSCard>
+  <XDSCard>Second</XDSCard>
+</XDSVStack>
+C XDSStackItem //fill + alignment control inside XDSHStack/XDSVStack
+X <XDSHStack>
+  <XDSStackItem grow>Main content</XDSStackItem>
+  <XDSButton variant="primary">Action</XDSButton>
+</XDSHStack>
+N Use for page shells + app layouts (header, sidebar, scrollable content, footer); not for simple stacking (use XDSVStack/XDSHStack)|XDSLayoutContainer sets CSS vars: --layout-padding-outer-x, --layout-padding-outer-y, --layout-padding-inner-x, --layout-padding-inner-y|Architecture: Higher-Order (XDSCard, XDSSection) > Layout Structure (XDSLayout + Header/Footer/Content/Panel) > Primitive (XDSLayoutContainer) > Utilities (XDSHStack, XDSVStack, stack(), stackItem())|All exported from @xds/core/Layout`;

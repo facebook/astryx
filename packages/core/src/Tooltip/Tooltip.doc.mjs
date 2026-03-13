@@ -378,4 +378,13 @@ export const docsZh = {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSTooltip}from'@xds/core/Tooltip' //hover/focus tooltip for short text
+C XDSTooltip //component wrapper for tooltip on hover/focus
+P children:ReactNode trigger element(s) | anchorRef:RefObject<HTMLElement> external anchor ref for sibling mode | content:ReactNode tooltip content, typically short text | placement:LayerPlacement='above' position relative to anchor | alignment:LayerAlignment='center' alignment along placement axis | delay:number='200' show delay ms | hideDelay:number='0' hide delay ms | focusTrigger:'auto' | 'always' | 'never'='auto' controls focus event triggers | isEnabled:boolean='true' enables/disables triggers | hasHoverIndication:'auto' | boolean='auto' dashed underline on trigger
+X <XDSTooltip content="Save your changes" placement="above">\\n  <XDSButton label="Save" variant="primary" />\\n</XDSTooltip> | <XDSTooltip anchorRef={buttonRef} content="Save your changes" placement="above" />
+C useXDSTooltip //hook for tooltip w/ hover/focus triggers; builds on useXDSLayer
+P placement:LayerPlacement='above' position relative to anchor | alignment:LayerAlignment='center' alignment along placement axis | delay:number='200' show delay ms | hideDelay:number='0' hide delay ms | focusTrigger:'auto' | 'always' | 'never'='auto' controls focus event triggers | isEnabled:boolean='true' enables/disables all hover+focus triggers | onShow:() => void fired when tooltip visible | onHide:() => void fired when tooltip hidden
+X const tooltip = useXDSTooltip({ placement: 'above' });\\n\\n<XDSButton ref={tooltip.ref} aria-describedby={tooltip.describedBy}>\\n  Hover me\\n</XDSButton>\\n{tooltip.renderTooltip('Helpful tooltip text')}
+A Links tooltip content to trigger via aria-describedby|when composing multiple aria-describedby sources, merge w/ utility
+K Focus on trigger=show tooltip;Blur=hide tooltip
+N Unlike HoverCard, tooltips don't stay open when hovering tooltip content|shorter delays+inverted colors for high contrast|for interactive content use XDSHoverCard or XDSPopover|sibling mode (anchorRef) attaches to external ref instead of wrapping children|LayerPlacement: above|below|start|end; LayerAlignment: start|center|end`;

@@ -466,4 +466,52 @@ export const docsZh = {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSSelector}from'@xds/core/Selector' //dropdown selector for choosing from options
+C XDSSelector //dropdown selector for option list
+P label:string! accessible label | options:XDSSelectorOption[]! strings, objects w/ value/label/icon/disabled, dividers ({type:"divider"}), sections ({type:"section",title,items}) | value:string selected value | onChange:(value: string) => void selection change callback | placeholder:string='Select...' text when no value selected | size:'sm' | 'md' | 'lg'='md' size variant | isDisabled:boolean disables selector | isLabelHidden:boolean visually hides label, keeps accessible | description:string helper text below label | isOptional:boolean marks field optional | isRequired:boolean marks field required | status:{type: 'error' | 'warning' | 'success', message?: string} validation status | children:(item: XDSSelectorItemData) => ReactNode custom render for dropdown items | xstyle:StyleXStyles stylex.create() layout styles
+X <XDSSelector
+  label="Fruit"
+  options={['Apple', 'Banana', 'Orange']}
+  value={value}
+  onChange={setValue}
+/> | <XDSSelector
+  label="Settings"
+  options={[
+    {value: 'profile', label: 'Profile', icon: UserIcon},
+    {value: 'settings', label: 'Settings', icon: CogIcon, disabled: true},
+  ]}
+  value={value}
+  onChange={setValue}
+/>
+C XDSSelectorItem //helper for custom item rendering inside XDSSelector children render prop
+P label:ReactNode! primary label | icon:XDSIconType icon before label | description:ReactNode secondary text below label
+X <XDSSelector label="User" options={users} value={value} onChange={setValue}>
+  {user => (
+    <XDSSelectorItem
+      icon={UserIcon}
+      label={user.label}
+      description={user.email}
+    />
+  )}
+</XDSSelector>
+X <XDSSelector
+  label="Fruit"
+  options={[
+    {value: 'apple', label: 'Apple'},
+    {type: 'section', title: 'Citrus', items: [
+      {value: 'orange', label: 'Orange'},
+    ]},
+  ]}
+  value={value}
+  onChange={setValue}
+/> | <XDSSelector
+  label="Fruit"
+  isRequired
+  status={{type: 'error', message: 'Required'}}
+  options={['Apple', 'Banana']}
+  value={value}
+  onChange={setValue}
+/>
+A role="combobox" on trigger button|dropdown uses role="listbox"|section groups use role="group"|aria-activedescendant tracks focused option
+K ↑↓=navigate;Enter/Space=select;Escape=close;Home/End=jump;A-Z=typeahead
+N strings auto-converted to {value,label}; objects w/ optional icon+disabled; dividers+labeled sections|custom item rendering via children render prop+XDSSelectorItem|XDS field conventions: label, description, isRequired, isOptional, isLabelHidden, status|size variants: sm, md, lg|full keyboard nav w/ typeahead|accessible: role="combobox" trigger, role="listbox" dropdown, role="group" sections, aria-activedescendant`;

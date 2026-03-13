@@ -186,4 +186,23 @@ export const docsZh = {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSSection}from'@xds/core/Section' //container w/ background variants, edge-to-edge fills
+P variant:'section' | 'transparent' | 'wash'='section' background variant | width:SizeValue section width; number=px, string=as-is | height:SizeValue section height; number=px, string=as-is | maxWidth:SizeValue max width | minHeight:SizeValue min height | children:ReactNode content inside section | dividers:Array<'top' | 'bottom' | 'start' | 'end'> sides w/ divider borders
+X <XDSSection variant="wash" width={300} height={250}>
+  <XDSLayout
+    content={<XDSLayoutContent>Content in wash section</XDSLayoutContent>}
+  />
+</XDSSection> | <XDSSection variant="transparent">
+  <XDSLayout
+    content={<XDSLayoutContent>Transparent background</XDSLayoutContent>}
+  />
+</XDSSection> | <XDSSection variant="section" dividers={['top', 'bottom']}>
+  <XDSLayout
+    content={<XDSLayoutContent>Section with top and bottom borders</XDSLayoutContent>}
+  />
+</XDSSection> | <XDSSection variant="wash" padding={0}>
+  <XDSLayout
+    content={<XDSLayoutContent>Edge-to-edge content</XDSLayoutContent>}
+  />
+</XDSSection>
+N background variants: section, transparent, wash|auto-escapes parent container padding for edge-to-edge fills|divider borders on any combination of sides (top, bottom, start, end)|flexible sizing via SizeValue for width, height, maxWidth, minHeight|full-bleed mode removes internal padding for edge-to-edge content`;

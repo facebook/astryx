@@ -145,4 +145,10 @@ export const docsZh = {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSDivider}from'@xds/core/Divider' //visual separator w/ optional label
+P orientation:'horizontal' | 'vertical'='horizontal' | label:ReactNode centered label on divider
+P variant:'subtle' | 'strong'='subtle' visual weight | isFullBleed:boolean='false' extend to container edges via negative margins
+P xstyle:StyleXStyles layout customization via stylex.create()
+X <XDSDivider /> | <XDSDivider label="or" /> | <XDSDivider orientation="vertical" />
+X <XDSDivider variant="strong" /> | <XDSDivider isFullBleed />
+N horizontal+vertical orientations|optional centered label|subtle+strong weight variants|full-bleed extends to container edges|themeable via .xds-divider className`;

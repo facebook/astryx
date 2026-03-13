@@ -196,4 +196,60 @@ const [filters, setFilters] = useState([]);
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSPowerSearch}from'@xds/core/PowerSearch' //structured filter bar w/ token filters
+P config:PowerSearchConfig! available fields, operators, value types | filters:ReadonlyArray<PowerSearchFilter>! active filters | onChange:(filters: ReadonlyArray<PowerSearchFilter>, changeType: PowerSearchChangeType, index: number) => void! called on filter change; changeType is 'add','edit','remove'; index is affected position | label:string='Search' accessible input label | isLabelHidden:boolean='true' visually hides label, keeps accessible | placeholder:string='Search...' text when no filters selected | hasAutoFocus:boolean='false' auto-focus input on mount | hasClear:boolean='true' show clear-all button | isReadOnly:boolean='false' prevent add/edit/remove | isDisabled:boolean='false' disables entire component | status:XDSInputStatus validation status w/ type+optional message | maxTokenLength:number='40' max char length for token value display | popoverSaveButtonLabel:string='Apply' save button label in edit popover | timezoneID:string timezone ID for date formatting (e.g. "America/New_York") | ref:Ref<XDSPowerSearchHandle> imperative handle w/ focusTypeahead()+blurTypeahead() | endContent:ReactNode content at end of input row, for action buttons | resultCount:number | string result count; number formatted as "N results", string as-is | xstyle:StyleXStyles stylex.create() layout styles
+X const config = {
+  name: 'TaskSearch',
+  fields: [
+    {
+      key: 'status',
+      label: 'Status',
+      operators: [
+        {
+          key: 'is',
+          label: 'is',
+          value: {
+            type: 'enum',
+            values: [
+              { value: 'open', label: 'Open' },
+              { value: 'closed', label: 'Closed' },
+            ],
+          },
+        },
+      ],
+    },
+    {
+      key: 'title',
+      label: 'Title',
+      operators: [
+        {
+          key: 'contains',
+          label: 'contains',
+          value: { type: 'string' },
+        },
+      ],
+    },
+  ],
+};
+
+const [filters, setFilters] = useState([]);
+<XDSPowerSearch
+  config={config}
+  filters={filters}
+  onChange={(newFilters) => setFilters(newFilters)}
+/> | const [filters, setFilters] = useState([
+  { field: 'status', operator: 'is', value: { type: 'enum', value: 'open' } },
+]);
+
+<XDSPowerSearch
+  config={config}
+  filters={filters}
+  onChange={(newFilters, changeType, index) => {
+    setFilters(newFilters);
+    console.log(changeType, 'at index', index);
+  }}
+  placeholder="Add filters..."
+/>
+A built on XDSTokenizer w/ combobox pattern, aria-expanded+aria-autocomplete|filter tokens have accessible labels w/ field name, operator, value|edit popover uses XDSPopover w/ focus trapping+light dismiss|clear all button has accessible label
+K Type=search fields;Enter=select;Click token=edit;Backspace on empty input=remove last filter;Escape=close popover
+N typeahead field selection w/ search+aliases|edit popover w/ field, operator, value selectors|13 value types: string, integer, float, enum, date, time, more|token display w/ click-to-edit+remove|imperative API for focus/blur via ref|read-only mode for display w/o editing`;

@@ -476,4 +476,30 @@ export const docsZh = {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSNumberInput}from'@xds/core/NumberInput' //number input w/ validation
+P label:string! label text (always rendered for a11y) | value:number|null|undefined! current value | onChange:(value: number) => void! callback on valid input change | size:'sm'|'md'|'lg'='md' size variant | isLabelHidden:boolean visually hide label (still accessible) | description:string text between label + input | isOptional:boolean field optional (mutually exclusive w/ isRequired) | isRequired:boolean field required (mutually exclusive w/ isOptional) | isDisabled:boolean input disabled | placeholder:string | labelTooltip:string tooltip in info icon at label end | startIcon:XDSIconType icon at input start | labelIcon:XDSIconType icon before label text | status:{type:'error'|'warning'|'success',message?:string} validation status w/ optional message | min:number|null minimum value | max:number|null maximum value | step:number|null='1' step increment | units:string|null units suffix (e.g. "%" or "GB") | isIntegerOnly:boolean only allow integers | htmlName:string HTML name for form submissions | autoComplete:string HTML autocomplete | hasAutoFocus:boolean focus on mount | onFocus:(e: FocusEvent<HTMLInputElement>) => void | onBlur:(e: FocusEvent<HTMLInputElement>) => void | onEnter:() => void callback on Enter key
+X <XDSNumberInput label="Quantity" value={quantity} onChange={setQuantity} />
+X <XDSNumberInput label="Age" value={age} onChange={setAge} placeholder="Enter your age" />
+X <XDSNumberInput label="Rating" value={rating} onChange={setRating} min={1} max={5} />
+X <XDSNumberInput label="Price" value={price} onChange={setPrice} min={0} step={0.01} />
+X <XDSNumberInput label="Discount" value={discount} onChange={setDiscount} units="%" />
+X <XDSNumberInput label="Count" value={count} onChange={setCount} isIntegerOnly />
+X <XDSNumberInput label="Quantity" description="Enter the number of items" value={qty} onChange={setQty} />
+X <XDSNumberInput label="Phone Extension" isOptional value={ext} onChange={setExt} />
+X <XDSNumberInput label="Amount" isRequired value={amount} onChange={setAmount} />
+X <XDSNumberInput
+  label="Age"
+  value={age}
+  onChange={setAge}
+  status={{ type: 'error', message: 'Age must be between 18 and 120' }}
+/>
+X <XDSNumberInput
+  label="Search"
+  value={search}
+  onChange={setSearch}
+  onEnter={() => handleSearch()}
+  onFocus={() => console.log('focused')}
+  onBlur={() => console.log('blurred')}
+/>
+A Label always rendered + associated via htmlFor/id using useId hook|isLabelHidden hides label visually, keeps screen reader access via CSS|Wraps XDSField for consistent label, description, optional/required handling
+N isOptional + isRequired mutually exclusive; both set shows "Optional"|Uses type="number" for native browser step controls|Validated onChange: only fires when value passes min/max/integer constraints|Internal pending state allows free-form typing, validates on commit|Units displayed as lighter grey suffix after input value`;

@@ -252,4 +252,15 @@ export const docsZh = {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSBanner}from'@xds/core/Banner' //persistent status notification component
+P status:'info' | 'warning' | 'error' | 'success'! controls icon+color | title:ReactNode! header title
+P description:ReactNode below title in header | icon:ReactNode override default status icon
+P isDismissable:boolean='false' user can dismiss | onDismiss:() => void dismiss callback; banner self-hides regardless
+P endContent:ReactNode end-aligned action in header, typically button/link
+P variant:'card' | 'section'='card' card=border-radius; section=full-width no radius
+P children:ReactNode content below colored header | xstyle:StyleXStyles layout customization via stylex.create()
+X <XDSBanner status="info" title="New update available" />
+X <XDSBanner status="error" title="Something went wrong" description="Please try again later." isDismissable onDismiss={() => logDismiss()} />
+X <XDSBanner status="error" title="Multiple errors found" description="The following issues need to be resolved:" > <ul> <li>Email address is invalid</li> <li>Password must be at least 8 characters</li> </ul> </XDSBanner>
+A role="alert" for error+warning|role="status" for info+success|dismiss button has aria-label="Dismiss"|status icon aria-hidden="true", status conveyed by ARIA role
+N collapsible support planned via useXDSCollapsible (issue #187)|two-part layout: colored header + optional card-background content area|self-managed dismiss state, no external state wiring needed|default icons from @heroicons/react/24/solid: InformationCircleIcon, ExclamationTriangleIcon, XCircleIcon, CheckCircleIcon|status colors: info=accent-deemphasized, warning=warning-deemphasized, error=negative-deemphasized, success=positive-deemphasized|card variant has border-radius w/ optional content area; section variant full-width no radius|w/o children only colored header renders`;

@@ -138,4 +138,11 @@ export const docsZh = {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSKbd}from'@xds/core/Kbd' //keyboard shortcut display as <kbd> elements
+P keys:string! shortcut string; "+" separates keys; special: mod (Cmd on Mac), ctrl, alt, shift, enter, backspace, escape, tab, up, down, left, right | xstyle:StyleXStyles stylex.create() layout styles | className:string CSS class for root; prefer xstyle | style:CSSProperties inline styles for root; prefer xstyle
+X <XDSKbd keys="mod+k" />
+X <XDSKbd keys="mod+shift+p" />
+X <span>\n  Search <XDSKbd keys="mod+k" />\n</span>
+A Renders w/ aria-hidden="true"; shortcuts are visual hints, not primary content|Uses semantic <kbd> elements for each key
+K Not interactive; purely presentational
+N Fixed 20px height, min-width 20px per key badge|Uses --color-wash background + --color-text-secondary text|Key display follows macOS conventions (⌘, ⌥, ⇧, ⌃)|Key parsing splits "mod+k" into styled <kbd> elements|Modifier symbols map mod/ctrl/alt/shift/enter/backspace/escape/arrows to platform symbols|Inline display as inline-flex for text, tooltips, menus|Accessible w/ aria-hidden="true"; shortcuts supplementary to labels`;

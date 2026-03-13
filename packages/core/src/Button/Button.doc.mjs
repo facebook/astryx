@@ -292,4 +292,22 @@ export const docsZh = {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSButton}from'@xds/core/Button' //button w/ variants, sizes, loading
+P label:string! accessible label; aria-label for icon-only
+P variant:'primary' | 'secondary' | 'ghost' | 'destructive'='secondary' visual style
+P size:'sm' | 'md' | 'lg'='md' sm=28px md=32px lg=36px
+P isLoading:boolean='false' shows spinner, disables interaction | isDisabled:boolean='false'
+P icon:ReactNode icon element; w/o children renders square icon-only button
+P children:ReactNode w/ icon, text rendered next to icon
+P endSlot:ReactElement<XDSIconProps> | ReactElement<XDSBadgeProps> trailing icon/badge after label; ignored for icon-only; color inherited
+P tooltip:string hover tooltip
+P onClick:(e: MouseEvent) => void | onClickAction:(e: MouseEvent) => void | Promise<void> async handler, shows loading while pending
+X <XDSButton label="Click me" variant="primary" /> | <XDSButton label="Large button" variant="primary" size="lg" />
+X <XDSButton label="Saving..." variant="primary" isLoading /> | <XDSButton label="Delete" variant="destructive" />
+X // Pass \`icon\` without \`children\` \u2014 \`label\` becomes the aria-label <XDSButton label="Settings" icon={<GearIcon />} variant="ghost" />
+X <XDSButton label="Select rocket emoji" icon={<span>🚀</span>} variant="ghost" size="sm" />
+X <XDSButton label="Edit" icon={<PencilIcon />}>Edit</XDSButton>
+X <XDSButton label="Messages" endSlot={<XDSBadge>3</XDSBadge>} />
+X <XDSButton label="Edit" icon={<PencilIcon />} endSlot={<XDSBadge>New</XDSBadge>}>Edit</XDSButton>
+X <XDSButton label="Settings" icon={<GearIcon />} endSlot={<XDSBadge>New</XDSBadge>}> Settings </XDSButton>
+N XDSButtonVariant derived from keyof typeof variants StyleX object|hover/active use backgroundImage linear-gradient overlay on base bg|destructive variant uses colorTokens.negative for focus outline|endSlot wrapped in <span> w/ color:inherit, matches button text across variants|icon w/o children=icon-only: square (aspectRatio:1/1), label=aria-label, any ReactNode as icon|endSlot ignored for icon-only to preserve square ratio|prefer XDSButton over <div onClick> for a11y: keyboard nav, focus management, screen reader|icon-only buttons suit toolbars, action grids, compact controls`;

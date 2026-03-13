@@ -500,4 +500,20 @@ const isMobile = useMediaQuery('(max-width: 768px)');
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSAppShell}from'@xds/core/AppShell' //app layout w/ nav + content
+P children:ReactNode | topNav:ReactNode | sideNav:ReactNode
+P mobileNav:ReactNode mobile nav, rendered below sideNavBreakpoint | banner:ReactNode system-wide announcements above topNav
+P height:'fill' | 'auto'='fill' fill=viewport 100dvh w/ independent scroll; auto=content-driven w/ sticky nav
+P isSideNavCollapsed:boolean collapsed (controlled) | defaultIsSideNavCollapsed:boolean='false' initial collapsed (uncontrolled)
+P onSideNavCollapsedChange:(isCollapsed: boolean) => void collapse state callback
+P sideNavBreakpoint:'sm' | 'md' | 'lg' | 'none'='md' auto-collapse breakpoint; "none" disables | sideNavWidth:number='260' panel width px
+P variant:'wash' | 'surface' | 'section' | 'elevated'='section' nav background style
+P xstyle:StyleXStyles layout customization via stylex.create()
+X <XDSAppShell topNav={ <XDSTopNav label="Main navigation" heading={<XDSTopNavHeading heading="My App" logo={<Logo />} />} startContent={ <> <XDSTopNavItem label="Home" href="/" isSelected /> <XDSTopNavItem label="Products" href="/products" /> </> } /> } sideNav={ // No header — TopNav has the app identity <XDSSideNav> <XDSSideNavSection title="Main" isHeaderHidden> <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" /> <XDSSideNavItem label="Analytics" icon={ChartBarIcon} href="/analytics" /> </XDSSideNavSection> <XDSSideNavSection title="Settings"> <XDSSideNavItem label="General" icon={CogIcon} href="/settings" /> </XDSSideNavSection> </XDSSideNav> }> <DashboardContent /> </XDSAppShell>
+X <XDSAppShell sideNav={ <XDSSideNav header={ <XDSSideNavHeading icon={<AppIcon />} heading="My App" headingHref="/" /> }> <XDSSideNavSection title="Main" isHeaderHidden> <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" /> <XDSSideNavItem label="Analytics" icon={ChartBarIcon} href="/analytics" /> </XDSSideNavSection> </XDSSideNav> }> <DashboardContent /> </XDSAppShell>
+X <XDSAppShell topNav={ <XDSTopNav label="Navigation" heading={<XDSTopNavHeading heading="Landing Page" />} /> }> <LandingContent /> </XDSAppShell>
+X <XDSAppShell topNav={<XDSTopNav label="Docs" heading={<XDSTopNavHeading heading="Docs" />} />} sideNav={<XDSSideNav>...</XDSSideNav>} height="auto" > <LongDocumentContent /> </XDSAppShell>
+X <XDSAppShell topNav={<XDSTopNav label="App" heading={<XDSTopNavHeading heading="App" />} />} sideNav={<XDSSideNav>...</XDSSideNav>} isSideNavCollapsed={collapsed} onSideNavCollapsedChange={setCollapsed} > <Content /> </XDSAppShell>
+X const [mobileOpen, setMobileOpen] = useState(false); const isMobile = useMediaQuery('(max-width: 768px)');  <XDSAppShell topNav={ <XDSTopNav label="Navigation" heading={<XDSTopNavHeading heading="My App" />} startContent={ isMobile ? ( <XDSButton label="Menu" icon={<XDSIcon icon="menu" color="inherit" />} variant="ghost" onClick={() => setMobileOpen(true)} /> ) : ( <XDSTopNavItem label="Home" href="/" isSelected /> ) } /> } sideNav={<XDSSideNav>{navSections}</XDSSideNav>} mobileNav={ <XDSMobileNav isOpen={mobileOpen} onOpenChange={open => setMobileOpen(open)} title="My App"> {navSections} </XDSMobileNav> }> <Content /> </XDSAppShell>
+A semantic HTML via XDSLayout slots, each slot maps to landmark element|<main> has role="main" for landmark nav|SideNav has role="navigation" w/ aria-label="Application navigation"|skip-to-content link visually hidden, shown on focus for keyboard users|Escape closes mobile sideNav overlay
+N w/ TopNav, omit SideNavHeading from SideNav to avoid double identity|w/o TopNav, include SideNavHeading for app name+logo|composes XDSLayout: topNav+banner→XDSLayoutHeader, sideNav→XDSLayoutPanel, children→XDSLayoutContent|collapse animations snap open/closed; ViewTransitions planned|"auto" height: TopNav sticky top:0, SideNav sticky top:<header-height>|"fill" height: 100dvh, TopNav pinned, SideNav+content have independent scroll`;

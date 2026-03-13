@@ -142,4 +142,10 @@ export const docsZh = {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSCenter}from'@xds/core/Center' //centers children via flexbox
+P axis:'both' | 'horizontal' | 'vertical'='both' centering direction | isInline:boolean='false' use inline-flex
+P width:number | string container width (px or CSS) | height:number | string container height (px or CSS)
+P children:ReactNode | xstyle:StyleXStyles layout customization via stylex.create()
+X <XDSCenter width={300} height={200}><Content /></XDSCenter> | <XDSCenter axis="horizontal"><Logo /></XDSCenter>
+X <XDSCenter isInline><XDSIcon icon={StarIcon} /></XDSCenter>
+N supports both axes, horizontal, or vertical|inline-flex for text/icons|accepts explicit width+height`;

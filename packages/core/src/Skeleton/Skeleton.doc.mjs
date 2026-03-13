@@ -152,4 +152,11 @@ export const docsZh = {
 };
 
 /** @type {string} */
-export const docsDense = `TODO: apply dense protocol`;
+export const docsDense = `import{XDSSkeleton}from'@xds/core/Skeleton' //animated placeholder loading component
+P width:number | string='100%' px (number) or CSS value (string) | height:number | string='100%' px (number) or CSS value (string) | radius:'none' | 'inner' | 'content' | 'element' | 'container' | 'rounded'='container' border radius via design tokens; none=sharp, rounded=full (avatars, pills) | index:number='0' staggered animation timing; element n starts at DELAY_TIME+(STAGGER_TIME*n)
+X <XDSSkeleton width={200} height={16} /> | <XDSSkeleton width={40} height={40} radius="rounded" /> | <XDSSkeleton width="100%" height={20} /> | <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+  <XDSSkeleton width={300} height={16} index={0} />
+  <XDSSkeleton width={280} height={16} index={1} />
+  <XDSSkeleton width={320} height={16} index={2} />
+</div>
+N uses steps(10, end) timing for subtle shimmer|animation alternates between 0.25+1.0 opacity|background from glimmer token, glimmerHighContrast for a11y|numeric dimensions=px; strings passed as-is|timing constants: DELAY_TIME (1000ms) initial delay, FADE_TIME (1000ms) one opacity cycle, STAGGER_TIME (100ms) delay between sequential elements|smooth opacity pulsing animation|staggered animation for wave effect|high contrast support via prefers-contrast: more|flexible sizing: px or CSS values|token-aligned border radius options`;
