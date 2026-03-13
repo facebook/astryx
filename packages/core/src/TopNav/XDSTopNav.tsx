@@ -29,7 +29,6 @@ const styles = stylex.create({
     width: '100%',
     height: spacingVars['--spacing-12'],
     paddingInline: spacingVars['--spacing-4'],
-    backgroundColor: colorVars['--color-navbar'],
     boxSizing: 'border-box',
     // Publish inline padding for edge compensation (ghost buttons at edges).
     // Uses --container-padding-inline (not --container-padding) because TopNav

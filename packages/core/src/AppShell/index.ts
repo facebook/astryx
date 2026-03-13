@@ -8,4 +8,8 @@
  */
 
 export {XDSAppShell} from './XDSAppShell';
-export type {XDSAppShellProps, XDSAppShellBreakpoint} from './XDSAppShell';
+export type {
+  XDSAppShellProps,
+  XDSAppShellBreakpoint,
+  XDSAppShellVariant,
+} from './XDSAppShell';

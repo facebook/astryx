@@ -135,7 +135,6 @@ export const docs = {
     'Tab to navigate between items; Escape closes XDSTopNavMegaMenu panels',
   notes: [
     'Default height is 48px (--spacing-12) with 16px horizontal padding',
-    'Uses --color-navbar token for background (defaults to white)',
     'Without centerContent: heading and startContent grow to push endContent right (flex layout)',
     'With centerContent: switches to CSS grid (gridTemplateColumns: 1fr auto 1fr) — the right column is always rendered even when endContent is absent to maintain the three-column structure',
     'Positioning (sticky/fixed) is handled by the layout system (e.g. XDSAppShell), not TopNav itself',

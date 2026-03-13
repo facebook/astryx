@@ -130,7 +130,6 @@ function deriveColorPalette({accent, positive, negative, warning, mode}) {
     // Surface variants
     '--color-card': ld('#FFFFFF', '#1F1F22'),
     '--color-popover': ld('#FFFFFF', '#28292C'),
-    '--color-navbar': ld('#FFFFFF', '#1F1F22'),
 
     // Status
     '--color-positive': ld(positive, positive),

@@ -18,7 +18,12 @@
 import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {colorVars, fontWeightVars, textSizeVars} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  fontWeightVars,
+  radiusVars,
+  textSizeVars,
+} from '../theme/tokens.stylex';
 import {XDSLayout} from '../Layout/XDSLayout';
 import {XDSLayoutHeader} from '../Layout/XDSLayoutHeader';
 import {XDSLayoutPanel} from '../Layout/XDSLayoutPanel';
@@ -54,16 +59,28 @@ const MAIN_CONTENT_ID = 'xds-app-shell-main';
  */
 export type XDSAppShellBreakpoint = 'sm' | 'md' | 'lg' | 'none';
 
+/**
+ * Navigation background style:
+ * - `wash`: Nav areas use wash background, no dividers
+ * - `surface`: Nav areas use surface background, no dividers
+ * - `section`: Dividers between nav and content (classic look)
+ * - `elevated`: Wash nav background with elevated surface content + border radius
+ * @default 'section'
+ */
+export type XDSAppShellVariant = 'wash' | 'surface' | 'section' | 'elevated';
+
 export interface XDSAppShellProps {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /**
-   * Background color of the shell.
-   * - `wash`: Page-level background — subtle gray in light, near-black in dark
-   * - `surface`: Card/panel background — white in light, dark gray in dark
-   * @default 'surface'
+   * Navigation background style controlling how nav areas contrast with content.
+   * - `wash`: Nav uses wash background, no dividers
+   * - `surface`: Nav uses surface background, no dividers
+   * - `section`: Dividers between nav and content (classic look)
+   * - `elevated`: Wash nav with elevated surface content area + border radius
+   * @default 'section'
    */
-  background?: 'wash' | 'surface';
+  variant?: XDSAppShellVariant;
 
   /**
    * Optional banner slot for system-wide announcements.
@@ -172,15 +189,20 @@ const styles = stylex.create({
     flexDirection: 'column',
     position: 'relative',
   },
-  rootBgWash: {
+  variantWash: {
     backgroundColor: colorVars['--color-wash'],
   },
-  rootBgSurface: {
+  variantSurface: {
     backgroundColor: colorVars['--color-surface'],
+  },
+  variantSection: {
+    backgroundColor: colorVars['--color-surface'],
+  },
+  variantElevated: {
+    backgroundColor: colorVars['--color-wash'],
   },
   rootFill: {
     height: '100dvh',
-    overflow: 'hidden',
   },
   rootAuto: {
     minHeight: '100dvh',
@@ -236,6 +258,37 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-semibold'],
     fontSize: textSizeVars['--text-base'],
   },
+
+  elevatedBackdrop: {
+    position: 'absolute',
+    inset: 0,
+    backgroundColor: colorVars['--color-surface'],
+    borderStartStartRadius: radiusVars['--radius-page'],
+    pointerEvents: 'none',
+  },
+  elevatedContentWrapper: {
+    position: 'relative',
+    display: 'flex',
+    flex: 1,
+    minHeight: 0,
+    height: '100%',
+  },
+  contentBgSurface: {
+    backgroundColor: colorVars['--color-surface'],
+  },
+  contentBgWash: {
+    backgroundColor: colorVars['--color-wash'],
+  },
+  contentBgTransparent: {
+    backgroundColor: 'transparent',
+    isolation: 'isolate',
+  },
+  navAreaWash: {
+    backgroundColor: colorVars['--color-wash'],
+  },
+  navAreaSurface: {
+    backgroundColor: colorVars['--color-surface'],
+  },
   banner: {
     flexShrink: 0,
   },
@@ -288,7 +341,7 @@ const styles = stylex.create({
  * ```
  */
 export function XDSAppShell({
-  background = 'surface',
+  variant = 'section',
   banner,
   children,
   'data-testid': dataTestId,
@@ -322,10 +375,28 @@ export function XDSAppShell({
 
   const isFill = height === 'fill';
   const isAuto = height === 'auto';
+
+  // Nav style derived values
+  const hasBanner = banner != null;
+  const hasTopNav = topNav != null;
   const hasSideNav = sideNav != null;
   const hasMobileNav = mobileNav != null;
-  const hasTopNav = topNav != null;
-  const hasBanner = banner != null;
+  const navHasDividers = variant === 'section';
+  const isElevated = variant === 'elevated';
+  const navAreaStyle =
+    variant === 'wash' || variant === 'elevated'
+      ? styles.navAreaWash
+      : variant === 'surface'
+        ? styles.navAreaSurface
+        : undefined;
+  const contentAreaStyle =
+    variant === 'wash'
+      ? styles.contentBgWash
+      : variant === 'elevated' && hasTopNav && hasSideNav
+        ? styles.contentBgTransparent
+        : variant === 'surface' || variant === 'elevated'
+          ? styles.contentBgSurface
+          : undefined;
 
   // =========================================================================
   // Header height measurement for sticky sideNav offset (auto mode)
@@ -427,7 +498,10 @@ export function XDSAppShell({
   // =========================================================================
   const headerInner =
     hasTopNav || hasBanner ? (
-      <XDSLayoutHeader isFullBleed hasDivider={hasTopNav}>
+      <XDSLayoutHeader
+        isFullBleed
+        hasDivider={navHasDividers && hasTopNav}
+        xstyle={navAreaStyle}>
         {hasBanner && <div {...stylex.props(styles.banner)}>{banner}</div>}
         {hasTopNav && topNav}
       </XDSLayoutHeader>
@@ -451,11 +525,12 @@ export function XDSAppShell({
   const sideNavPanel = showSideNavInline ? (
     <XDSLayoutPanel
       isFullBleed
-      hasDivider
+      hasDivider={navHasDividers}
       width={sideNavWidth}
       role="navigation"
       label="Application navigation"
-      isScrollable={isFill}>
+      isScrollable={isFill}
+      xstyle={navAreaStyle}>
       {sideNav}
     </XDSLayoutPanel>
   ) : undefined;
@@ -472,14 +547,26 @@ export function XDSAppShell({
   // =========================================================================
   // Build main content
   // =========================================================================
-  const mainContent = (
+  const shouldElevateWithCorner = isElevated && hasTopNav && showSideNavInline;
+
+  const mainInner = (
     <XDSLayoutContent
       isFullBleed
       role="main"
       id={MAIN_CONTENT_ID}
-      isScrollable={isFill}>
+      isScrollable={isFill}
+      xstyle={contentAreaStyle}>
       {children}
     </XDSLayoutContent>
+  );
+
+  const mainContent = shouldElevateWithCorner ? (
+    <div {...stylex.props(styles.elevatedContentWrapper)}>
+      <div {...stylex.props(styles.elevatedBackdrop)} />
+      {mainInner}
+    </div>
+  ) : (
+    mainInner
   );
 
   // =========================================================================
@@ -493,10 +580,16 @@ export function XDSAppShell({
       ref={setShellRef}
       data-testid={dataTestId}
       {...mergeProps(
-        xdsClassName('app-shell', {background, height}),
+        xdsClassName('app-shell', {height, variant}),
         stylex.props(
           styles.root,
-          background === 'wash' ? styles.rootBgWash : styles.rootBgSurface,
+          variant === 'wash'
+            ? styles.variantWash
+            : variant === 'surface'
+              ? styles.variantSurface
+              : variant === 'section'
+                ? styles.variantSection
+                : styles.variantElevated,
           isFill ? styles.rootFill : styles.rootAuto,
           xstyle,
         ),
@@ -512,8 +605,8 @@ export function XDSAppShell({
       </a>
 
       <XDSLayout
-        height={height}
         isFullBleed
+        height={height}
         header={headerContent}
         start={sideNavContent}
         content={mainContent}

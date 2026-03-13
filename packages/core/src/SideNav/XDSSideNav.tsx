@@ -32,7 +32,7 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
-    backgroundColor: colorVars['--color-surface'],
+    backgroundColor: 'inherit',
     boxSizing: 'border-box',
     overflow: 'hidden',
   },
@@ -43,7 +43,7 @@ const styles = stylex.create({
     position: 'sticky',
     top: 0,
     zIndex: 1,
-    backgroundColor: colorVars['--color-surface'],
+    backgroundColor: 'inherit',
   },
   topContent: {
     paddingInline: spacingVars['--spacing-2'],
@@ -61,7 +61,7 @@ const styles = stylex.create({
     marginTop: 'auto',
     position: 'sticky',
     bottom: 0,
-    backgroundColor: colorVars['--color-surface'],
+    backgroundColor: 'inherit',
   },
   footer: {
     paddingInline: spacingVars['--spacing-2'],
