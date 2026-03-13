@@ -98,6 +98,18 @@ export const docs = {
         'Imperative handle with focusTypeahead() and blurTypeahead() methods.',
     },
     {
+      name: 'endContent',
+      type: 'ReactNode',
+      description:
+        'Content to display at the end of the input row. Useful for action buttons or other controls.',
+    },
+    {
+      name: 'resultCount',
+      type: 'number | string',
+      description:
+        'Number of results matching the current filters. When a number, formatted as "N results". When a string, displayed as-is.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
