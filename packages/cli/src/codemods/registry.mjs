@@ -7,6 +7,7 @@
 
 const registry = new Map([
   ['0.0.2', () => import('./transforms/v0.0.2/index.mjs')],
+  ['0.0.3', () => import('./transforms/v0.0.3/index.mjs')],
 ]);
 
 /**
