@@ -144,6 +144,12 @@ export const docs = {
       description: 'Callback fired when the search query text changes.',
     },
     {
+      name: 'endContent',
+      type: 'ReactNode',
+      description:
+        'Content to display at the end of the input row. Useful for buttons, result counts, or other controls.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -360,6 +366,12 @@ export const docsZh = {
       name: 'onChangeQuery',
       type: '(query: string) => void',
       description: '搜索查询文本变更时触发的回调。',
+    },
+    {
+      name: 'endContent',
+      type: 'ReactNode',
+      description:
+        '在输入行末尾显示的内容。适用于按钮、结果计数或其他控件。',
     },
     {
       name: 'xstyle',

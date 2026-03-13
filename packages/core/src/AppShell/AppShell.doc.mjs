@@ -214,6 +214,13 @@ const isMobile = useMediaQuery('(max-width: 768px)');
       default: '260',
     },
     {
+      name: 'variant',
+      type: "'wash' | 'surface' | 'section' | 'elevated'",
+      description:
+        "Navigation background style controlling how nav areas contrast with content. 'wash' uses wash background, 'surface' uses surface background, 'section' adds dividers between nav and content, 'elevated' uses wash nav with elevated surface content and border radius.",
+      default: "'section'",
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -229,7 +236,7 @@ const isMobile = useMediaQuery('(max-width: 768px)');
   ],
   theming: {
     targets: [
-      {className: 'xds-app-shell', visualProps: ['background', 'height']},
+      {className: 'xds-app-shell', visualProps: ['variant', 'height']},
     ],
   },
   notes: [
@@ -457,6 +464,13 @@ const isMobile = useMediaQuery('(max-width: 768px)');
       default: '260',
     },
     {
+      name: 'variant',
+      type: "'wash' | 'surface' | 'section' | 'elevated'",
+      description:
+        "导航背景样式，控制导航区域与内容之间的对比。'wash' 使用 wash 背景，'surface' 使用 surface 背景，'section' 在导航和内容之间添加分隔线，'elevated' 使用 wash 导航配合凸起的 surface 内容区域和圆角。",
+      default: "'section'",
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -472,7 +486,7 @@ const isMobile = useMediaQuery('(max-width: 768px)');
   ],
   theming: {
     targets: [
-      {className: 'xds-app-shell', visualProps: ['background', 'height']},
+      {className: 'xds-app-shell', visualProps: ['variant', 'height']},
     ],
   },
   notes: [
