@@ -199,3 +199,46 @@ export interface MultiComponentDoc extends BaseDoc {
  * Use MultiComponentDoc (with `components`) for multi-component directories.
  */
 export type ComponentDoc = SingleComponentDoc | MultiComponentDoc;
+
+/**
+ * Translation overlay for component documentation.
+ *
+ * Contains only the prose fields that change between languages/formats.
+ * The CLI merges this onto the base `docs` at read time — props, examples,
+ * types, defaults, and code all come from `docs`.
+ *
+ * Used by both `docsZh` (Chinese translation) and `docsDense` (compressed format).
+ *
+ * @example
+ * ```
+ * export const docsDense = {
+ *   description: 'multi-variant btn w/ loading',
+ *   features: ['4 variants: primary secondary ghost destructive'],
+ *   propDescriptions: { label: 'a11y label; aria-label for icon-only' },
+ *   notes: ['prefer over div onClick for a11y'],
+ * };
+ * ```
+ */
+export interface TranslationDoc {
+  /** Compressed/translated component description. */
+  description: string;
+  /** Compressed/translated feature strings. Must match docs.features length and order. */
+  features?: string[];
+  /** Compressed/translated note strings. Must match docs.notes length and order. */
+  notes?: string[];
+  /** Compressed/translated accessibility strings. Must match docs.accessibility length and order. */
+  accessibility?: string[];
+  /** Compressed/translated keyboard string. */
+  keyboard?: string;
+  /** Prop descriptions keyed by prop name. Only include props that have descriptions. */
+  propDescriptions?: Record<string, string>;
+  /** Sub-component translations. Must match docs.components length and order (if present). */
+  components?: Array<{
+    /** Exact name from docs.components[n].name */
+    name: string;
+    /** Compressed/translated sub-component description. */
+    description: string;
+    /** Prop descriptions keyed by prop name. */
+    propDescriptions?: Record<string, string>;
+  }>;
+}

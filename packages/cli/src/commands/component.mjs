@@ -125,19 +125,76 @@ export function discoverComponents(coreDir) {
 }
 
 /**
- * Load the typed docs object from a .doc.mjs file.
- * When dense=true, returns docsDense string if available.
- * When zh=true, returns docsZh export if available, falling back to docs.
+ * Merge a TranslationDoc overlay onto a base ComponentDoc.
+ * Replaces prose fields (description, features, notes, accessibility, keyboard,
+ * prop descriptions) while keeping structure (props, examples, types, defaults).
  */
-export async function loadDocs(readmePath, {zh = false, dense = false} = {}) {
+function mergeTranslation(docs, translation) {
+  if (!translation) return docs;
+
+  const merged = {...docs};
+  if (translation.description) merged.description = translation.description;
+  if (translation.features) merged.features = translation.features;
+  if (translation.notes) merged.notes = translation.notes;
+  if (translation.accessibility) merged.accessibility = translation.accessibility;
+  if (translation.keyboard) merged.keyboard = translation.keyboard;
+
+  // Merge prop descriptions for single-component docs
+  if (translation.propDescriptions && merged.props) {
+    merged.props = merged.props.map(prop => {
+      const desc = translation.propDescriptions[prop.name];
+      return desc != null ? {...prop, description: desc} : prop;
+    });
+  }
+
+  // Merge sub-component translations
+  if (translation.components && merged.components) {
+    merged.components = merged.components.map((comp, i) => {
+      const trans = translation.components.find(t => t.name === comp.name)
+        || translation.components[i];
+      if (!trans) return comp;
+
+      const mergedComp = {...comp};
+      if (trans.description) mergedComp.description = trans.description;
+      if (trans.propDescriptions && comp.props) {
+        mergedComp.props = comp.props.map(prop => {
+          const desc = trans.propDescriptions[prop.name];
+          return desc != null ? {...prop, description: desc} : prop;
+        });
+      }
+      return mergedComp;
+    });
+  }
+
+  return merged;
+}
+
+/**
+ * Load the typed docs object from a .doc.mjs file.
+ * Supports --lang flag: 'zh' for Chinese, 'dense' for compressed format.
+ * Also supports legacy --zh and --dense flags.
+ * Translations are merged onto the base docs, keeping structure intact.
+ */
+export async function loadDocs(readmePath, {zh = false, dense = false, lang} = {}) {
   const mod = await import(pathToFileURL(readmePath).href);
-  if (dense && mod.docsDense) {
-    return mod.docsDense;
+  const docs = mod.docs;
+
+  // Resolve which translation to use (--lang takes priority over legacy flags)
+  const locale = lang || (dense ? 'dense' : zh ? 'zh' : null);
+  if (!locale) return docs;
+
+  const translationKey = locale === 'zh' ? 'docsZh' : locale === 'dense' ? 'docsDense' : null;
+  if (!translationKey || !mod[translationKey]) return docs;
+
+  const translation = mod[translationKey];
+
+  // If the translation is a full ComponentDoc (legacy docsZh shape), return it directly
+  if (translation.props || translation.components?.some(c => c.props)) {
+    return translation;
   }
-  if (zh && mod.docsZh) {
-    return mod.docsZh;
-  }
-  return mod.docs;
+
+  // Otherwise it's a TranslationDoc — merge it onto docs
+  return mergeTranslation(docs, translation);
 }
 
 /**
@@ -1050,7 +1107,7 @@ export function formatProps(docs, componentName) {
 /**
  * Format brief summaries for ALL components in one output.
  */
-export async function formatBriefAll(coreDir, {zh = false, dense = false} = {}) {
+export async function formatBriefAll(coreDir, {zh = false, lang} = {}) {
   const components = discoverComponents(coreDir);
   const output = [];
 
@@ -1058,14 +1115,15 @@ export async function formatBriefAll(coreDir, {zh = false, dense = false} = {}) 
     output.push(`## ${category}\n`);
     for (const comp of comps) {
       const readmePath = findComponentReadme(coreDir, comp);
-      if (readmePath) {
-        const docs = await loadDocs(readmePath, {zh, dense});
-        if (typeof docs === 'string') {
-          output.push(docs);
-        } else {
-          const importPath = resolveImportPath(coreDir, comp);
-          output.push(formatBrief(docs, comp, importPath));
-        }
+      if (readmePath && readmePath.endsWith('.doc.mjs')) {
+        const docs = await loadDocs(readmePath, {zh, lang});
+        const importPath = resolveImportPath(coreDir, comp);
+        output.push(formatBrief(docs, comp, importPath));
+      } else if (readmePath) {
+        // Legacy README.md path
+        const content = fs.readFileSync(readmePath, 'utf-8');
+        const importPath = resolveImportPath(coreDir, comp);
+        output.push(extractBrief(content, comp, importPath));
       } else {
         output.push(`XDS${comp}\n  (no docs)\n`);
       }
@@ -1090,6 +1148,7 @@ export function registerComponent(program) {
       const coreDir = findCoreDir(process.cwd());
       const zh = program.opts().zh || false;
       const dense = program.opts().dense || false;
+      const lang = program.opts().lang || null;
 
       if (!coreDir) {
         console.error(
@@ -1100,7 +1159,7 @@ export function registerComponent(program) {
       }
 
       if (options.briefAll) {
-        console.log(await formatBriefAll(coreDir, {zh, dense}));
+        console.log(await formatBriefAll(coreDir, {zh, lang}));
         return;
       }
 
@@ -1185,12 +1244,9 @@ export function registerComponent(program) {
       }
 
       if (readmePath.endsWith('.doc.mjs')) {
-        const docs = await loadDocs(readmePath, {zh, dense});
+        const docs = await loadDocs(readmePath, {zh, dense, lang});
         const importHint = resolveImportPath(coreDir, resolvedName);
-        // When dense returns a raw string, print it directly
-        if (typeof docs === 'string') {
-          console.log(docs);
-        } else if (options.props) {
+        if (options.props) {
           console.log(formatProps(docs, resolvedName));
         } else if (options.brief) {
           console.log(formatBrief(docs, resolvedName, importHint));
