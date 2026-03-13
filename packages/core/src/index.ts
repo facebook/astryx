@@ -49,6 +49,7 @@ export * from './Token';
 export * from './Typeahead';
 export * from './Tokenizer';
 export * from './PowerSearch';
+export * from './TreeList';
 
 // Keyboard shortcut display
 export * from './Kbd';
