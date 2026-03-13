@@ -54,7 +54,6 @@ export const neutralTheme = defineTheme({
     // Surface variants
     '--color-card': ['oklch(1 0 0)', 'oklch(0.205 0 0)'],
     '--color-popover': ['oklch(1 0 0)', 'oklch(0.269 0 0)'],
-    '--color-navbar': ['oklch(0.985 0 0)', 'oklch(0.205 0 0)'],
 
     // Status/Sentiment
     '--color-positive': ['oklch(0.6 0.15 145)', 'oklch(0.7 0.15 145)'],

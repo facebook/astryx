@@ -48,7 +48,6 @@ export const colorDefaults = {
   // Surface variants
   '--color-card': 'light-dark(#FFFFFF, #1F1F22)',
   '--color-popover': 'light-dark(#FFFFFF, #28292C)',
-  '--color-navbar': 'light-dark(#FFFFFF, #1F1F22)',
 
   // Status/Sentiment
   '--color-positive': 'light-dark(#0D8626, #0D8626)',
@@ -192,6 +191,7 @@ export const radiusDefaults = {
   '--radius-element': '8px',
   '--radius-content': '4px',
   '--radius-inner': '0px',
+  '--radius-page': '20px',
 } as const;
 
 /** @deprecated Use radiusDefaults */
