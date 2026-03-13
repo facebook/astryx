@@ -196,8 +196,12 @@ export function XDSLayoutPanel({
   const isStartPanel = area === 'start';
   const isEndPanel = area === 'end';
 
+  // padding={0} is semantically equivalent to isFullBleed
+  const isZeroPadding = isFullBleed || padding === 0;
+
   // When no divider, collapse spacing for seamless visual flow
-  const shouldCollapseSpacing = !hasDivider && !isFullBleed && padding == null;
+  const shouldCollapseSpacing =
+    !hasDivider && !isZeroPadding && padding == null;
 
   // Select divider style based on position
   const dividerStyle = isStartPanel
@@ -224,12 +228,15 @@ export function XDSLayoutPanel({
           styles.panel,
           dynamicStyles.sizing(width ?? null),
           // Outer padding on container edges (unless component is full bleed)
-          isStartPanel && !isFullBleed && padding == null && styles.startPanel,
-          isEndPanel && !isFullBleed && padding == null && styles.endPanel,
-          !hasHeader && !isFullBleed && padding == null && styles.noHeader,
-          !hasFooter && !isFullBleed && padding == null && styles.noFooter,
+          isStartPanel &&
+            !isZeroPadding &&
+            padding == null &&
+            styles.startPanel,
+          isEndPanel && !isZeroPadding && padding == null && styles.endPanel,
+          !hasHeader && !isZeroPadding && padding == null && styles.noHeader,
+          !hasFooter && !isZeroPadding && padding == null && styles.noFooter,
           isScrollable && styles.scrollable,
-          isFullBleed && padding == null && styles.fullBleed,
+          isZeroPadding && styles.fullBleed,
           padding != null && paddingStyles[padding],
           padding != null && containerPaddingInlineVarStyles[padding],
           hasDivider && dividerStyle,

@@ -157,6 +157,9 @@ export function XDSLayoutContent({
     XDSLayoutSlotsContext,
   );
 
+  // padding={0} is semantically equivalent to isFullBleed
+  const isZeroPadding = isFullBleed || padding === 0;
+
   return (
     <div
       ref={ref as React.Ref<HTMLDivElement>}
@@ -167,12 +170,12 @@ export function XDSLayoutContent({
         stylex.props(
           styles.content,
           // Outer padding on container edges (unless content is full bleed)
-          !hasStart && !isFullBleed && padding == null && styles.noStart,
-          !hasEnd && !isFullBleed && padding == null && styles.noEnd,
-          !hasHeader && !isFullBleed && padding == null && styles.noHeader,
-          !hasFooter && !isFullBleed && padding == null && styles.noFooter,
+          !hasStart && !isZeroPadding && padding == null && styles.noStart,
+          !hasEnd && !isZeroPadding && padding == null && styles.noEnd,
+          !hasHeader && !isZeroPadding && padding == null && styles.noHeader,
+          !hasFooter && !isZeroPadding && padding == null && styles.noFooter,
           isScrollable && styles.scrollable,
-          isFullBleed && padding == null && styles.fullBleed,
+          isZeroPadding && styles.fullBleed,
           padding != null && paddingStyles[padding],
           padding != null && containerPaddingInlineVarStyles[padding],
           xstyle,
