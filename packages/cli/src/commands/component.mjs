@@ -11,6 +11,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {pathToFileURL} from 'node:url';
 import {findCoreDir} from '../utils/paths.mjs';
 
 /**
@@ -125,9 +126,13 @@ export function discoverComponents(coreDir) {
 
 /**
  * Load the typed docs object from a .doc.mjs file.
+ * When zh=true, returns docsZh export if available, falling back to docs.
  */
-export async function loadDocs(readmePath) {
+export async function loadDocs(readmePath, {zh = false} = {}) {
   const mod = await import(pathToFileURL(readmePath).href);
+  if (zh && mod.docsZh) {
+    return mod.docsZh;
+  }
   return mod.docs;
 }
 
@@ -1041,7 +1046,7 @@ export function formatProps(docs, componentName) {
 /**
  * Format brief summaries for ALL components in one output.
  */
-export async function formatBriefAll(coreDir) {
+export async function formatBriefAll(coreDir, {zh = false} = {}) {
   const components = discoverComponents(coreDir);
   const output = [];
 
@@ -1050,7 +1055,7 @@ export async function formatBriefAll(coreDir) {
     for (const comp of comps) {
       const readmePath = findComponentReadme(coreDir, comp);
       if (readmePath) {
-        const docs = await loadDocs(readmePath);
+        const docs = await loadDocs(readmePath, {zh});
         const importPath = resolveImportPath(coreDir, comp);
         output.push(formatBrief(docs, comp, importPath));
       } else {
@@ -1073,8 +1078,9 @@ export function registerComponent(program) {
     .option('--brief-all', 'Brief summaries of ALL components in one output')
     .option('--props', 'Print only the props table')
     .option('--source', 'Print component source code')
-    .action((name, options) => {
+    .action(async (name, options) => {
       const coreDir = findCoreDir(process.cwd());
+      const zh = program.opts().zh || false;
 
       if (!coreDir) {
         console.error(
@@ -1085,7 +1091,7 @@ export function registerComponent(program) {
       }
 
       if (options.briefAll) {
-        console.log(extractBriefAll(coreDir));
+        console.log(await formatBriefAll(coreDir, {zh}));
         return;
       }
 
@@ -1169,17 +1175,31 @@ export function registerComponent(program) {
         }
       }
 
-      const content = fs.readFileSync(readmePath, 'utf-8');
-
-      if (options.props) {
-        console.log(extractProps(content, resolvedName));
-      } else if (options.brief) {
-        console.log(extractBrief(content, resolvedName));
-      } else if (options.compact) {
-        const compact = extractCompact(content, resolvedName);
-        console.log(ensureImportStatement(compact, resolvedName, coreDir));
+      if (readmePath.endsWith('.doc.mjs')) {
+        const docs = await loadDocs(readmePath, {zh});
+        const importHint = resolveImportPath(coreDir, resolvedName);
+        if (options.props) {
+          console.log(formatProps(docs, resolvedName));
+        } else if (options.brief) {
+          console.log(formatBrief(docs, resolvedName, importHint));
+        } else if (options.compact) {
+          console.log(formatCompact(docs, resolvedName, importHint));
+        } else {
+          console.log(formatFull(docs));
+        }
       } else {
-        console.log(cleanReadme(content, resolvedName));
+        // Legacy path for README.md files
+        const content = fs.readFileSync(readmePath, 'utf-8');
+        if (options.props) {
+          console.log(extractProps(content, resolvedName));
+        } else if (options.brief) {
+          console.log(extractBrief(content, resolvedName));
+        } else if (options.compact) {
+          const compact = extractCompact(content, resolvedName);
+          console.log(ensureImportStatement(compact, resolvedName, coreDir));
+        } else {
+          console.log(cleanReadme(content, resolvedName));
+        }
       }
     });
 }

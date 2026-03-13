@@ -363,3 +363,368 @@ export const docs = {
     },
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {
+  name: 'SideNav',
+  description:
+    '应用页面的侧边栏导航组件。支持分组、嵌套项、选中状态、图标和响应式折叠。',
+  features: [
+    '五区域布局：header、topContent、children（可滚动）、footer、footerIcons',
+    '智能头部交互边界逻辑——链接和菜单触发器共存而不重叠',
+    '通过 XDSSideNavItem 的 children 实现嵌套项',
+    '选中状态支持可选的替代图标，用于填充/轮廓变体',
+    '分组支持可选的标题、副标题和尾部内容',
+    '无障碍 - nav 地标、aria-current="page"、分组使用 role="group" 配合 aria-labelledby',
+    '键盘可导航 - Tab 切换项目，Enter/Space 激活',
+  ],
+  accessibility: [
+    '<nav aria-label="Side navigation"> 包裹整个组件',
+    'aria-current="page" 应用于选中项',
+    '分组使用 role="group"，aria-labelledby 指向分组标题',
+    'isHeaderHidden 在视觉上隐藏分组标题，同时保持屏幕阅读器可访问',
+  ],
+  keyboard: 'Tab 切换项目，Enter/Space 激活链接',
+  theming: {
+    targets: [
+      {className: 'xds-side-nav'},
+      {className: 'xds-side-nav-heading'},
+      {className: 'xds-side-nav-item'},
+      {className: 'xds-side-nav-section'},
+    ],
+  },
+  notes: [
+    '在 XDSAppShell 中与 XDSTopNav 一起使用时，省略 XDSSideNavHeading——TopNav 已提供应用标识，包含头部会导致重复。',
+    '没有 TopNav 时，包含 XDSSideNavHeading 以提供应用标识。',
+    '头部交互模型：仅 headingHref → 整个头部是一个链接；headingHref + superheadingHref，无菜单 → 每段文本是独立链接；仅菜单，无 href → 整个头部是弹出框触发器；菜单 + href → 链接是独立的 <a> 元素，箭头/剩余区域是弹出框触发器。',
+    '依赖 useXDSPopover 实现头部菜单弹出框，依赖 XDSIcon 在导航项中渲染图标组件。',
+  ],
+  examples: [
+    {
+      label: '配合 XDSAppShell + TopNav（无头部）',
+      code: `// TopNav provides identity → SideNav has no header
+<XDSAppShell
+  topNav={<XDSTopNav heading={<XDSTopNavHeading heading="My App" />} />}
+  sideNav={
+    <XDSSideNav>
+      <XDSSideNavSection title="Main" isHeaderHidden>
+        <XDSSideNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          isSelected
+          href="/dashboard"
+        />
+        <XDSSideNavItem label="Projects" icon={FolderIcon} href="/projects" />
+      </XDSSideNavSection>
+    </XDSSideNav>
+  }>
+  <Content />
+</XDSAppShell>`,
+    },
+    {
+      label: '独立使用（无 TopNav）',
+      code: `// No TopNav → SideNav header provides identity
+<XDSAppShell
+  sideNav={
+    <XDSSideNav
+      header={
+        <XDSSideNavHeading icon={<AppIcon />} heading="My App" headingHref="/" />
+      }
+      topContent={<XDSButton label="Create new" variant="primary" />}
+      footerIcons={<XDSButton icon={HelpIcon} variant="ghost" label="Help" />}>
+      <XDSSideNavSection title="Main">
+        <XDSSideNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          selectedIcon={HomeIconSolid}
+          isSelected
+          href="/dashboard"
+        />
+        <XDSSideNavItem
+          label="Projects"
+          icon={FolderIcon}
+          href="/projects"
+          endContent={<XDSBadge>3</XDSBadge>}
+        />
+      </XDSSideNavSection>
+
+      <XDSSideNavSection title="Settings">
+        <XDSSideNavItem label="General" href="/settings/general" />
+        <XDSSideNavItem label="Security" href="/settings/security" />
+      </XDSSideNavSection>
+    </XDSSideNav>
+  }>
+  <Content />
+</XDSAppShell>`,
+    },
+  ],
+  components: [
+    {
+      name: 'XDSSideNav',
+      description:
+        '包含五个区域的容器：header、topContent、children（可滚动）、footer 和 footerIcons。',
+      props: [
+        {
+          name: 'header',
+          type: 'ReactNode',
+          description: '头部区域（通常为 XDSSideNavHeading）。固定定位。',
+        },
+        {
+          name: 'topContent',
+          type: 'ReactNode',
+          description: '头部下方的内容，例如创建按钮。',
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: '导航分组和项目。可滚动。',
+        },
+        {
+          name: 'footer',
+          type: 'ReactNode',
+          description: '图标栏上方的底部区域。',
+        },
+        {
+          name: 'footerIcons',
+          type: 'ReactNode',
+          description: '底部图标栏。',
+        },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            '用于布局自定义的 StyleX 样式（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+        },
+      ],
+      examples: [
+        {
+          label: '基础用法',
+          code: `<XDSSideNav
+  header={<XDSSideNavHeading icon={<AppIcon />} heading="My App" headingHref="/" />}
+  topContent={<XDSButton label="Create new" variant="primary" />}>
+  <XDSSideNavSection title="Main">
+    <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
+    <XDSSideNavItem label="Projects" icon={FolderIcon} href="/projects" />
+  </XDSSideNavSection>
+</XDSSideNav>`,
+        },
+      ],
+    },
+    {
+      name: 'XDSSideNavHeading',
+      description:
+        '产品/套件/账户头部，具有智能交互边界逻辑，支持链接和菜单弹出框。',
+      props: [
+        {
+          name: 'heading',
+          type: 'string',
+          description: '产品/应用名称。',
+          required: true,
+        },
+        {
+          name: 'icon',
+          type: 'ReactNode',
+          description: '产品/应用图标。',
+        },
+        {
+          name: 'headingHref',
+          type: 'string',
+          description: '标题的链接。',
+        },
+        {
+          name: 'superheading',
+          type: 'string',
+          description: '标题上方的文本。',
+        },
+        {
+          name: 'superheadingHref',
+          type: 'string',
+          description: '上方标题的链接。',
+        },
+        {
+          name: 'subheading',
+          type: 'string',
+          description: '标题下方的文本。',
+        },
+        {
+          name: 'subheadingHref',
+          type: 'string',
+          description: '下方标题的链接。',
+        },
+        {
+          name: 'menu',
+          type: 'ReactNode',
+          description: '在弹出框内渲染的菜单内容。',
+        },
+      ],
+      examples: [
+        {
+          label: '仅标题链接',
+          code: `<XDSSideNavHeading icon={<AppIcon />} heading="My App" headingHref="/" />`,
+        },
+        {
+          label: '带上方标题和下方标题',
+          code: `<XDSSideNavHeading
+  icon={<AppIcon />}
+  superheading="Acme Corp"
+  superheadingHref="/org"
+  heading="My App"
+  headingHref="/"
+  subheading="v2.0"
+/>`,
+        },
+        {
+          label: '带菜单',
+          code: `<XDSSideNavHeading
+  icon={<AppIcon />}
+  heading="My App"
+  headingHref="/"
+  menu={<WorkspaceSwitcher />}
+/>`,
+        },
+      ],
+    },
+    {
+      name: 'XDSSideNavItem',
+      description:
+        '导航项，支持图标、选中状态、可选尾部内容，以及通过 children 实现嵌套。',
+      props: [
+        {
+          name: 'label',
+          type: 'string',
+          description: '项目标签。',
+          required: true,
+        },
+        {
+          name: 'as',
+          type: 'XDSLinkComponentType',
+          description: '自定义链接组件。',
+        },
+        {
+          name: 'icon',
+          type: 'XDSIconType',
+          description: '轮廓（未选中）变体中显示的图标。',
+        },
+        {
+          name: 'selectedIcon',
+          type: 'XDSIconType',
+          description:
+            '选中时显示的图标（填充变体）。',
+        },
+        {
+          name: 'isSelected',
+          type: 'boolean',
+          description: '将此项标记为当前页面。',
+          default: 'false',
+        },
+        {
+          name: 'isDisabled',
+          type: 'boolean',
+          description: '禁用状态。',
+          default: 'false',
+        },
+        {
+          name: 'href',
+          type: 'string',
+          description: '导航 URL。',
+        },
+        {
+          name: 'onClick',
+          type: '(e: MouseEvent) => void',
+          description: '点击处理函数。',
+        },
+        {
+          name: 'endContent',
+          type: 'ReactNode',
+          description: '右侧内容，如徽章或计数。',
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: '用于嵌套的子项。',
+        },
+      ],
+      examples: [
+        {
+          label: '基础链接',
+          code: `<XDSSideNavItem label="Dashboard" icon={HomeIcon} href="/dashboard" />`,
+        },
+        {
+          label: '选中状态，带替代图标和徽章',
+          code: `<XDSSideNavItem
+  label="Dashboard"
+  icon={HomeIcon}
+  selectedIcon={HomeIconSolid}
+  isSelected
+  href="/dashboard"
+  endContent={<XDSBadge>3</XDSBadge>}
+/>`,
+        },
+        {
+          label: '嵌套项',
+          code: `<XDSSideNavItem label="Settings" icon={GearIcon} href="/settings">
+  <XDSSideNavItem label="General" href="/settings/general" />
+  <XDSSideNavItem label="Security" href="/settings/security" />
+</XDSSideNavItem>`,
+        },
+      ],
+    },
+    {
+      name: 'XDSSideNavSection',
+      description:
+        '分组，支持可选的标题、副标题和尾部内容。',
+      props: [
+        {
+          name: 'title',
+          type: 'string',
+          description: '分组标题。',
+          required: true,
+        },
+        {
+          name: 'subtitle',
+          type: 'string',
+          description: '分组副标题。',
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: '分组项目。',
+        },
+        {
+          name: 'endContent',
+          type: 'ReactNode',
+          description: '分组头部的右侧内容。',
+        },
+        {
+          name: 'isHeaderHidden',
+          type: 'boolean',
+          description:
+            '视觉上隐藏分组头部，同时保持屏幕阅读器可访问。',
+          default: 'false',
+        },
+      ],
+      examples: [
+        {
+          label: '基础分组',
+          code: `<XDSSideNavSection title="Main">
+  <XDSSideNavItem label="Dashboard" href="/dashboard" />
+  <XDSSideNavItem label="Projects" href="/projects" />
+</XDSSideNavSection>`,
+        },
+        {
+          label: '带尾部内容和隐藏头部',
+          code: `<XDSSideNavSection title="Settings" endContent={<XDSBadge>New</XDSBadge>}>
+  <XDSSideNavItem label="General" href="/settings/general" />
+  <XDSSideNavItem label="Security" href="/settings/security" />
+</XDSSideNavSection>`,
+        },
+        {
+          label: '隐藏头部（配合 TopNav 使用）',
+          code: `<XDSSideNavSection title="Main" isHeaderHidden>
+  <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
+</XDSSideNavSection>`,
+        },
+      ],
+    },
+  ],
+};

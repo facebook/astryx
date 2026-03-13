@@ -362,3 +362,367 @@ function Article() {
     },
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {
+  name: 'Text',
+  description:
+    'XDS 设计系统的排版组件，包括语义化正文文本、标题以及将排版样式应用于原生 HTML 的包装器。',
+  examples: [
+    {
+      label: '正文文本',
+      code: '<XDSText type="body">Body text content.</XDSText>',
+    },
+    {
+      label: '辅助文本',
+      code: '<XDSText type="supporting">Helper text beneath a field.</XDSText>',
+    },
+    {
+      label: '标题',
+      code: '<XDSHeading level={1}>Page Title</XDSHeading>',
+    },
+    {
+      label: '编辑风格标题',
+      code: '<XDSHeading level={1} variant="editorial">Article Title</XDSHeading>',
+    },
+    {
+      label: '带工具提示的截断文本',
+      code: '<XDSText type="body" maxLines={2}>Very long text that will be clamped after two lines and show a tooltip on hover.</XDSText>',
+    },
+    {
+      label: '原生 HTML 字体包装器',
+      code: `<XDSFontWrapper variant="editorial">
+  <article dangerouslySetInnerHTML={{__html: markdownContent}} />
+</XDSFontWrapper>`,
+    },
+  ],
+  features: [
+    '语义化文本类型（body、large、label、supporting、code），由主题令牌驱动',
+    '标题使用原生 h1–h6 元素，支持可选的 aria-level 覆盖，实现视觉层级与文档层级的解耦',
+    '行截断，带自动溢出检测工具提示',
+    '光学对齐（text-box-trim / capsize），实现精确的垂直节奏',
+    'XDSFontWrapper 将排版样式应用于原生 HTML — 适用于用户生成内容和 Markdown 输出',
+    'useXDSFontWrapperStyles hook 用于以编程方式通过 StyleX 访问标题和散文样式',
+    '表格数字支持，用于对齐的数值数据',
+    '所有排版由 CSS 自定义属性驱动 — 每个组件均可完全主题化',
+  ],
+  theming: {
+    targets: [
+      {className: 'xds-heading', visualProps: ['level', 'variant']},
+      {className: 'xds-text', visualProps: ['type']},
+    ],
+  },
+  accessibility: [
+    'XDSHeading 根据 `level` 属性渲染正确的语义化 h1–h6 元素。',
+    '当 `accessibilityLevel` 与 `level` 不同时，会设置 `aria-level`，使屏幕阅读器播报正确的文档大纲位置，同时保留视觉样式。',
+    '截断文本设置原生 `title` 属性作为后备方案，并为有视力的键盘用户延迟渲染 XDSTooltip。',
+  ],
+  components: [
+    {
+      name: 'XDSText',
+      description:
+        '语义化正文文本组件，使用来自主题的基于类型的样式渲染文本，支持可选的截断、装饰和布局属性。',
+      examples: [
+        {
+          label: '基础用法',
+          code: '<XDSText type="body">Body text</XDSText>',
+        },
+        {
+          label: '所有类型',
+          code: `<XDSText type="body">Body</XDSText>
+<XDSText type="large">Large body</XDSText>
+<XDSText type="label">Label</XDSText>
+<XDSText type="supporting">Supporting</XDSText>
+<XDSText type="code">{'const x = 1;'}</XDSText>`,
+        },
+        {
+          label: '截断',
+          code: '<XDSText type="body" maxLines={2}>Clamped to two lines with a tooltip on hover.</XDSText>',
+        },
+        {
+          label: '样式化文本',
+          code: '<XDSText type="body" color="secondary" weight="bold" hasTabularNumbers>42,000</XDSText>',
+        },
+        {
+          label: '块级删除线',
+          code: '<XDSText type="body" display="block" hasStrikethrough>Deprecated item</XDSText>',
+        },
+      ],
+      props: [
+        {
+          name: 'type',
+          type: "'body' | 'large' | 'label' | 'supporting' | 'code'",
+          description:
+            '语义化文本类型。从主题中确定大小、字重和行高。',
+          required: true,
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: '文本内容。',
+          required: true,
+        },
+        {
+          name: 'size',
+          type: "'4xs' | '3xs' | '2xs' | 'xsm' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl'",
+          description:
+            '显式字体大小覆盖。覆盖来自 `type` 的大小但保留其他类型属性。建议单独使用 `type`。',
+        },
+        {
+          name: 'color',
+          type: "'primary' | 'secondary' | 'disabled' | 'placeholder' | 'active' | 'inherit'",
+          description:
+            "文本颜色。'supporting' 类型默认为 'secondary'，其他类型默认为 'primary'。",
+        },
+        {
+          name: 'weight',
+          type: "'normal' | 'medium' | 'semibold' | 'bold'",
+          description: '字重覆盖。',
+        },
+        {
+          name: 'display',
+          type: "'inline' | 'block'",
+          description:
+            "显示类型。当 maxLines > 0 或 hasCapsize 为 true 时，会静默覆盖为 'block'。",
+          default: "'inline'",
+        },
+        {
+          name: 'as',
+          type: "'span' | 'p' | 'div' | 'label'",
+          description: '要渲染的 HTML 元素。',
+          default: "'span'",
+        },
+        {
+          name: 'maxLines',
+          type: 'number',
+          description:
+            '截断前的最大行数。0 表示不截断。设置后，如果内容被截断，悬停时会显示工具提示。',
+          default: '0',
+        },
+        {
+          name: 'hasTruncateTooltip',
+          type: 'boolean | LayerPlacement',
+          description:
+            '控制截断文本的工具提示行为。true 在默认位置显示工具提示，false 禁用它，或者 LayerPlacement 字符串设置特定位置。',
+          default: 'true',
+        },
+        {
+          name: 'wordBreak',
+          type: "'break-word' | 'break-all'",
+          description:
+            "截断时的断词行为。单行截断默认为 'break-all'，其他情况默认为 'break-word'。",
+        },
+        {
+          name: 'textWrap',
+          type: "'wrap' | 'nowrap' | 'balance' | 'pretty'",
+          description: '文本换行行为。',
+        },
+        {
+          name: 'hasCapsize',
+          type: 'boolean',
+          description:
+            '使用 text-box-trim 启用光学对齐。强制块级显示。',
+          default: 'false',
+        },
+        {
+          name: 'hasStrikethrough',
+          type: 'boolean',
+          description: '应用删除线文本装饰。',
+          default: 'false',
+        },
+        {
+          name: 'hasTabularNumbers',
+          type: 'boolean',
+          description:
+            '使用表格（等宽）数字以实现对齐的数值数据。',
+          default: 'false',
+        },
+        {
+          name: 'id',
+          type: 'string',
+          description: 'HTML id 属性。',
+        },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+        },
+      ],
+    },
+    {
+      name: 'XDSHeading',
+      description:
+        '语义化标题组件，渲染带主题样式的 h1–h6 元素，支持可选的编辑风格比例和行截断。',
+      examples: [
+        {
+          label: '基础用法',
+          code: '<XDSHeading level={1}>Page Title</XDSHeading>',
+        },
+        {
+          label: '编辑风格比例',
+          code: '<XDSHeading level={1} variant="editorial">Article Title</XDSHeading>',
+        },
+        {
+          label: '无障碍级别覆盖',
+          code: '<XDSHeading level={2} accessibilityLevel={3}>Sidebar Section</XDSHeading>',
+        },
+        {
+          label: '截断标题',
+          code: '<XDSHeading level={2} maxLines={1}>Very Long Section Title That Gets Clipped</XDSHeading>',
+        },
+        {
+          label: '柔和标题',
+          code: '<XDSHeading level={3} color="secondary">Muted Heading</XDSHeading>',
+        },
+      ],
+      props: [
+        {
+          name: 'level',
+          type: '1 | 2 | 3 | 4 | 5 | 6',
+          description:
+            '视觉标题级别。同时决定 HTML 元素（h1–h6）和来自主题的样式。',
+          required: true,
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: '标题内容。',
+          required: true,
+        },
+        {
+          name: 'accessibilityLevel',
+          type: '1 | 2 | 3 | 4 | 5 | 6',
+          description:
+            '无障碍级别覆盖。当设置且与 `level` 不同时，应用 `aria-level` 使文档大纲与视觉样式不同。',
+        },
+        {
+          name: 'variant',
+          type: "'default' | 'editorial'",
+          description:
+            "视觉变体。'default' 使用紧凑比例用于内部工具（h1: 20px）；'editorial' 使用更大比例用于内容密集页面（h1: 32px）。",
+          default: "'default'",
+        },
+        {
+          name: 'color',
+          type: "'primary' | 'secondary' | 'disabled' | 'placeholder' | 'active' | 'inherit'",
+          description: '文本颜色。',
+          default: "'primary'",
+        },
+        {
+          name: 'display',
+          type: "'inline' | 'block'",
+          description:
+            "显示类型。当 maxLines > 0 或 hasCapsize 为 true 时，会静默覆盖为 'block'。",
+          default: "'block'",
+        },
+        {
+          name: 'maxLines',
+          type: 'number',
+          description:
+            '截断前的最大行数。0 表示不截断。设置后，如果内容被截断，悬停时会显示工具提示。',
+          default: '0',
+        },
+        {
+          name: 'hasTruncateTooltip',
+          type: 'boolean | LayerPlacement',
+          description:
+            '控制截断文本的工具提示行为。true 在默认位置显示工具提示，false 禁用它，或者 LayerPlacement 字符串设置特定位置。',
+          default: 'true',
+        },
+        {
+          name: 'wordBreak',
+          type: "'break-word' | 'break-all'",
+          description:
+            "截断时的断词行为。单行截断默认为 'break-all'，其他情况默认为 'break-word'。",
+        },
+        {
+          name: 'textWrap',
+          type: "'wrap' | 'nowrap' | 'balance' | 'pretty'",
+          description: '文本换行行为。',
+        },
+        {
+          name: 'hasCapsize',
+          type: 'boolean',
+          description:
+            '使用 text-box-trim 启用光学对齐。强制块级显示。',
+          default: 'false',
+        },
+        {
+          name: 'hasStrikethrough',
+          type: 'boolean',
+          description: '应用删除线文本装饰。',
+          default: 'false',
+        },
+        {
+          name: 'id',
+          type: 'string',
+          description: 'HTML id 属性。',
+        },
+      ],
+    },
+    {
+      name: 'XDSFontWrapper',
+      description:
+        '将 XDS 排版样式应用于其作用域内原生 HTML 元素的包装器。适用于用户生成内容、Markdown 输出以及无法直接使用 XDSText 和 XDSHeading 的其他场景。',
+      examples: [
+        {
+          label: '默认变体',
+          code: `<XDSFontWrapper>
+  <h1>Page Title</h1>
+  <p>Body text with <strong>bold</strong> and <em>italic</em>.</p>
+  <ul>
+    <li>List item 1</li>
+    <li>List item 2</li>
+  </ul>
+</XDSFontWrapper>`,
+        },
+        {
+          label: '编辑风格变体',
+          code: `<XDSFontWrapper variant="editorial">
+  <article dangerouslySetInnerHTML={{__html: markdownContent}} />
+</XDSFontWrapper>`,
+        },
+      ],
+      props: [
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: '要应用 XDS 排版样式的内容。',
+          required: true,
+        },
+        {
+          name: 'variant',
+          type: "'default' | 'editorial'",
+          description:
+            "标题比例变体。'default' 使用紧凑比例用于内部工具；'editorial' 使用更大比例用于内容密集页面。",
+          default: "'default'",
+        },
+      ],
+    },
+    {
+      name: 'useXDSFontWrapperStyles',
+      description:
+        '返回当前主题中标题和散文元素的 StyleX 样式对象的 Hook，用于以编程方式将排版样式应用于原生 HTML。',
+      examples: [
+        {
+          label: '基础用法',
+          code: `import {useXDSFontWrapperStyles} from '@xds/core';
+import * as stylex from '@stylexjs/stylex';
+
+function Article() {
+  const {headingStyles, proseStyles} = useXDSFontWrapperStyles();
+
+  return (
+    <article>
+      <h1 {...stylex.props(headingStyles?.h1)}>Title</h1>
+      <p {...stylex.props(proseStyles?.p)}>Content...</p>
+    </article>
+  );
+}`,
+        },
+      ],
+      props: [],
+    },
+  ],
+};

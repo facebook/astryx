@@ -332,3 +332,337 @@ import * as stylex from '@stylexjs/stylex';
     },
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {
+  name: 'Stack',
+  description:
+    '堆叠布局原语，使用基于 flexbox 的布局和主题化间距令牌，将元素排列为水平或垂直序列。',
+  features: [
+    '水平（XDSHStack）和垂直（XDSVStack）堆叠',
+    '通过设计系统间距比例中的 gap 令牌实现主题化间距',
+    '通过 XDSStackItem 实现单个元素的控制',
+    '通过 element 属性支持多态渲染',
+    '底层 StyleX 工具函数（stack、stackItem）用于高级用例',
+  ],
+  examples: [
+    {
+      label: '头部布局',
+      code: `<XDSHStack element="header" gap={2}>
+  <XDSStackItem size="static">
+    <Logo />
+  </XDSStackItem>
+  <XDSStackItem size="fill">
+    <Navigation />
+  </XDSStackItem>
+  <XDSStackItem size="static">
+    <UserMenu />
+  </XDSStackItem>
+</XDSHStack>`,
+    },
+    {
+      label: '侧边栏布局',
+      code: `<XDSHStack gap={4}>
+  <XDSStackItem size="static">
+    <Sidebar />
+  </XDSStackItem>
+  <XDSStackItem size="fill">
+    <MainContent />
+  </XDSStackItem>
+</XDSHStack>`,
+    },
+    {
+      label: '页面布局',
+      code: `<XDSVStack element="main" gap={6}>
+  <XDSStackItem size="static">
+    <PageHeader />
+  </XDSStackItem>
+  <XDSStackItem size="fill">
+    <PageContent />
+  </XDSStackItem>
+  <XDSStackItem size="static">
+    <PageFooter />
+  </XDSStackItem>
+</XDSVStack>`,
+    },
+    {
+      label: '按元素覆盖对齐方式',
+      code: `<XDSHStack vAlign="start">
+  <XDSStackItem crossAlignSelf="center">Centered</XDSStackItem>
+  <XDSStackItem>Top-aligned</XDSStackItem>
+</XDSHStack>`,
+    },
+    {
+      label: 'StyleX 工具函数 — 高级用法',
+      code: `import {stack} from '@xds/core/Layout';
+import * as stylex from '@stylexjs/stylex';
+
+<div {...stylex.props(...stack({direction: 'horizontal', gap: 2}))}>
+  <Child />
+  <Child />
+</div>`,
+    },
+  ],
+  theming: {
+    targets: [
+      {className: 'xds-stack', visualProps: ['direction', 'gap', 'wrap']},
+      {className: 'xds-stack-item', visualProps: ['size']},
+    ],
+  },
+  notes: [
+    "从 '@xds/core/Layout' 导入：XDSHStack、XDSVStack、XDSStackItem、stack、stackItem。",
+    'gap 属性接受数值间距步进：0、0.5、1、1.5、2、3、4、5、6、8、10。',
+    'stack 和 stackItem 是底层 StyleX 工具函数，用于组件 API 无法满足需求的高级场景。',
+  ],
+  components: [
+    {
+      name: 'XDSHStack',
+      description:
+        '水平堆叠组件，将元素从左到右排列。支持多态渲染。',
+      props: [
+        {
+          name: 'gap',
+          type: 'SpacingStep',
+          description:
+            '控制元素间距的数值间距步进：0、0.5、1、1.5、2、3、4、5、6、8、10。',
+        },
+        {
+          name: 'vAlign',
+          type: "'start' | 'center' | 'end' | 'stretch'",
+          description: '元素的垂直（交叉轴）对齐方式。',
+          default: "'stretch'",
+        },
+        {
+          name: 'wrap',
+          type: "'nowrap' | 'wrap' | 'wrap-reverse'",
+          description: 'Flex 换行行为。',
+          default: "'nowrap'",
+        },
+        {
+          name: 'element',
+          type: 'ElementType',
+          description: '作为堆叠容器渲染的 HTML 元素。',
+          default: "'div'",
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: '堆叠内容。',
+        },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+        },
+      ],
+      examples: [
+        {
+          label: '基础水平堆叠',
+          code: `<XDSHStack gap={2}>
+  <Item />
+  <Item />
+</XDSHStack>`,
+        },
+        {
+          label: '带垂直对齐',
+          code: `<XDSHStack gap={4} vAlign="center">
+  <Item />
+  <Item />
+</XDSHStack>`,
+        },
+        {
+          label: '多态渲染',
+          code: `<XDSHStack element="nav" gap={2}>
+  <Link />
+  <Link />
+</XDSHStack>`,
+        },
+      ],
+    },
+    {
+      name: 'XDSVStack',
+      description:
+        '垂直堆叠组件，将元素从上到下排列。支持多态渲染。',
+      props: [
+        {
+          name: 'gap',
+          type: 'SpacingStep',
+          description:
+            '控制元素间距的数值间距步进：0、0.5、1、1.5、2、3、4、5、6、8、10。',
+        },
+        {
+          name: 'hAlign',
+          type: "'start' | 'center' | 'end' | 'stretch'",
+          description: '元素的水平（交叉轴）对齐方式。',
+          default: "'stretch'",
+        },
+        {
+          name: 'wrap',
+          type: "'nowrap' | 'wrap' | 'wrap-reverse'",
+          description: 'Flex 换行行为。',
+          default: "'nowrap'",
+        },
+        {
+          name: 'element',
+          type: 'ElementType',
+          description: '作为堆叠容器渲染的 HTML 元素。',
+          default: "'div'",
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: '堆叠内容。',
+        },
+      ],
+      examples: [
+        {
+          label: '基础垂直堆叠',
+          code: `<XDSVStack gap={2}>
+  <Item />
+  <Item />
+</XDSVStack>`,
+        },
+        {
+          label: '带水平对齐',
+          code: `<XDSVStack gap={4} hAlign="center">
+  <Item />
+  <Item />
+</XDSVStack>`,
+        },
+        {
+          label: '多态渲染',
+          code: `<XDSVStack element="main" gap={4}>
+  <Header />
+  <Content />
+</XDSVStack>`,
+        },
+      ],
+    },
+    {
+      name: 'XDSStackItem',
+      description:
+        '堆叠子元素，用于控制堆叠中单个元素的行为。支持多态渲染。',
+      props: [
+        {
+          name: 'size',
+          type: "'static' | 'fill'",
+          description:
+            'Flex 增长行为：static 保持自然尺寸，fill 扩展以占据剩余空间。',
+          default: "'static'",
+        },
+        {
+          name: 'crossAlignSelf',
+          type: "'start' | 'center' | 'end' | 'stretch'",
+          description:
+            '覆盖此元素的交叉轴对齐方式，忽略父堆叠的对齐设置。',
+        },
+        {
+          name: 'element',
+          type: 'ElementType',
+          description: '作为子元素包装器渲染的 HTML 元素。',
+          default: "'div'",
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: '子元素内容。',
+        },
+      ],
+      examples: [
+        {
+          label: '静态和填充尺寸',
+          code: `<XDSHStack gap={2}>
+  <XDSStackItem size="static">Logo</XDSStackItem>
+  <XDSStackItem size="fill">Content</XDSStackItem>
+  <XDSStackItem size="static">Actions</XDSStackItem>
+</XDSHStack>`,
+        },
+        {
+          label: '按元素覆盖对齐方式',
+          code: `<XDSHStack vAlign="start">
+  <XDSStackItem crossAlignSelf="center">Centered</XDSStackItem>
+  <XDSStackItem>Top-aligned</XDSStackItem>
+</XDSHStack>`,
+        },
+        {
+          label: '多态渲染',
+          code: `<XDSStackItem element="section" size="fill">
+  Section content
+</XDSStackItem>`,
+        },
+      ],
+    },
+    {
+      name: 'stack',
+      description:
+        '底层 StyleX 工具函数，用于创建具有堆叠行为的 flex 容器。在组件 API 无法满足需求时使用。',
+      props: [
+        {
+          name: 'direction',
+          type: "'horizontal' | 'vertical'",
+          description: '堆叠方向。',
+          required: true,
+        },
+        {
+          name: 'gap',
+          type: 'SpacingStep',
+          description:
+            '控制元素间距的数值间距步进：0、0.5、1、1.5、2、3、4、5、6、8、10。',
+        },
+        {
+          name: 'crossAlign',
+          type: "'start' | 'center' | 'end' | 'stretch'",
+          description: '所有元素的交叉轴对齐方式。',
+        },
+        {
+          name: 'wrap',
+          type: "'nowrap' | 'wrap' | 'wrap-reverse'",
+          description: 'Flex 换行行为。',
+          default: "'nowrap'",
+        },
+      ],
+      examples: [
+        {
+          label: 'StyleX 水平容器',
+          code: `import {stack} from '@xds/core/Layout';
+import * as stylex from '@stylexjs/stylex';
+
+<div {...stylex.props(...stack({direction: 'horizontal', gap: 2}))}>
+  <Child />
+  <Child />
+</div>`,
+        },
+      ],
+    },
+    {
+      name: 'stackItem',
+      description:
+        '底层 StyleX 工具函数，用于控制 flex 子元素的行为。在组件 API 无法满足需求时使用。',
+      props: [
+        {
+          name: 'size',
+          type: "'static' | 'fill'",
+          description:
+            'Flex 增长行为：static 保持自然尺寸，fill 扩展以占据剩余空间。',
+          default: "'static'",
+        },
+        {
+          name: 'crossAlignSelf',
+          type: "'start' | 'center' | 'end' | 'stretch'",
+          description:
+            '覆盖此元素的交叉轴对齐方式。',
+        },
+      ],
+      examples: [
+        {
+          label: 'StyleX 填充子元素',
+          code: `import {stackItem} from '@xds/core/Layout';
+import * as stylex from '@stylexjs/stylex';
+
+<div {...stylex.props(...stackItem({size: 'fill'}))}>Content</div>`,
+        },
+      ],
+    },
+  ],
+};

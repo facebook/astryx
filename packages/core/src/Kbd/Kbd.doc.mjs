@@ -67,3 +67,72 @@ export const docs = {
     'Key display symbols follow macOS conventions (⌘, ⌥, ⇧, ⌃)',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {
+  name: 'Kbd',
+  description:
+    '将键盘快捷键显示为样式化的 <kbd> 元素。适用于工具提示、菜单和文档中展示按键组合。',
+  features: [
+    '按键解析 — 将 "mod+k" 拆分为独立的样式化 <kbd> 元素',
+    '修饰符符号 — 将 mod/ctrl/alt/shift/enter/backspace/escape/箭头键映射为平台符号',
+    '内联显示 — 以 inline-flex 方式渲染，适用于文本、工具提示和菜单中',
+    '无障碍 — 使用 aria-hidden="true"，因为快捷键是可见标签的补充信息',
+  ],
+  examples: [
+    {
+      label: '单个快捷键',
+      code: '<XDSKbd keys="mod+k" />',
+    },
+    {
+      label: '多键快捷键',
+      code: '<XDSKbd keys="mod+shift+p" />',
+    },
+    {
+      label: '在工具提示或标签中使用',
+      code: `<span>
+  Search <XDSKbd keys="mod+k" />
+</span>`,
+    },
+  ],
+  props: [
+    {
+      name: 'keys',
+      type: 'string',
+      description:
+        '键盘快捷键字符串。使用 "+" 分隔各按键。特殊按键：mod（Mac 上为 Cmd）、ctrl、alt、shift、enter、backspace、escape、tab、up、down、left、right。',
+      required: true,
+    },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        '用于布局自定义的 StyleX 样式（边距、定位、尺寸）。必须是 stylex.create() 的值 — 这不能是 style={{}} 这样的内联样式对象。',
+    },
+    {
+      name: 'className',
+      type: 'string',
+      description:
+        '根元素的 CSS 类名。建议优先使用 xstyle 进行样式设置 — className 用于与非 StyleX 系统的集成。',
+    },
+    {
+      name: 'style',
+      type: 'CSSProperties',
+      description:
+        '根元素的内联样式。建议优先使用 xstyle 进行样式设置 — 内联样式会绕过 StyleX 优化。',
+    },
+  ],
+  theming: {
+    targets: [{className: 'xds-kbd'}],
+  },
+  accessibility: [
+    '使用 aria-hidden="true" 渲染 — 键盘快捷键是视觉提示，不是主要内容',
+    '每个按键使用语义化的 <kbd> 元素',
+  ],
+  keyboard: '非交互式 — 纯展示用途',
+  notes: [
+    '固定 20px 高度，每个按键徽章最小宽度 20px',
+    '使用 --color-wash 背景色和 --color-text-secondary 文字颜色',
+    '按键显示符号遵循 macOS 惯例（⌘、⌥、⇧、⌃）',
+  ],
+};

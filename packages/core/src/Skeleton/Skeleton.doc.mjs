@@ -74,3 +74,79 @@ export const docs = {
     'Animation timing constants: DELAY_TIME (1000ms) initial delay before animation starts, FADE_TIME (1000ms) duration of one opacity cycle, STAGGER_TIME (100ms) delay increment between sequential elements.',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {
+  name: 'Skeleton',
+  description:
+    '占位加载组件，在内容加载时显示动画脉冲效果。',
+  features: [
+    '脉冲动画：使用分步计时的平滑透明度动画，呈现细腻的闪烁效果',
+    '交错动画：连续的骨架屏可以交错排列以创建波浪效果',
+    '高对比度支持：自动适配 prefers-contrast: more 用户偏好',
+    '灵活尺寸：宽度和高度属性接受像素值或任意 CSS 值',
+    '令牌对齐圆角：边框圆角选项直接映射到设计令牌',
+  ],
+  props: [
+    {
+      name: 'width',
+      type: 'number | string',
+      description: '像素宽度（数字）或 CSS 值（字符串）。',
+      default: "'100%'",
+    },
+    {
+      name: 'height',
+      type: 'number | string',
+      description: '像素高度（数字）或 CSS 值（字符串）。',
+      default: "'100%'",
+    },
+    {
+      name: 'radius',
+      type: "'none' | 'inner' | 'content' | 'element' | 'container' | 'rounded'",
+      description:
+        '使用设计令牌的边框圆角。使用 none 表示直角，rounded 表示完全圆角（头像、药丸形、圆形）。',
+      default: "'container'",
+    },
+    {
+      name: 'index',
+      type: 'number',
+      description:
+        '交错动画时序的索引。对于索引为 n 的元素，动画在 DELAY_TIME + (STAGGER_TIME × n) 时开始。',
+      default: '0',
+    },
+  ],
+  examples: [
+    {
+      label: '基础文本占位',
+      code: '<XDSSkeleton width={200} height={16} />',
+    },
+    {
+      label: '圆形头像占位',
+      code: '<XDSSkeleton width={40} height={40} radius="rounded" />',
+    },
+    {
+      label: '百分比全宽',
+      code: '<XDSSkeleton width="100%" height={20} />',
+    },
+    {
+      label: '多个骨架屏的交错动画',
+      code: `<div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+  <XDSSkeleton width={300} height={16} index={0} />
+  <XDSSkeleton width={280} height={16} index={1} />
+  <XDSSkeleton width={320} height={16} index={2} />
+</div>`,
+    },
+  ],
+  theming: {
+    targets: [
+      {className: 'xds-skeleton'},
+    ],
+  },
+  notes: [
+    '使用 steps(10, end) 计时函数实现细腻的闪烁效果。',
+    '动画在 0.25 和 1.0 透明度之间交替。',
+    '背景颜色来自 glimmer 令牌，无障碍场景使用 glimmerHighContrast。',
+    '数字类型的尺寸会转换为像素值；字符串类型按原样传递。',
+    '动画时序常量：DELAY_TIME（1000ms）动画开始前的初始延迟，FADE_TIME（1000ms）一个透明度循环的持续时间，STAGGER_TIME（100ms）连续元素之间的延迟增量。',
+  ],
+};

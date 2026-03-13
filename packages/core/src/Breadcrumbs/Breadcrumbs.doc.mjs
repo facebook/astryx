@@ -168,3 +168,173 @@ export const docs = {
     },
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {
+  name: 'Breadcrumbs',
+  description: '带语义化 HTML 的导航面包屑路径。',
+  features: [
+    '渲染包含有序面包屑项列表的 <nav> 地标元素',
+    '可配置项目间的分隔符（默认为 /）',
+    '两种视觉变体：default 和 supporting（更小，次要文本样式）',
+    '当前页面项标记为 aria-current="page"',
+    '分隔符通过 aria-hidden 对辅助技术隐藏',
+    '通过 startIcon 支持在项目标签前显示图标',
+    '未设置 isCurrent 时自动检测最后一个子元素为当前页面',
+  ],
+  examples: [
+    {
+      label: '基础用法',
+      code: `<XDSBreadcrumbs>
+  <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
+  <XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem>
+  <XDSBreadcrumbItem isCurrent>My Project</XDSBreadcrumbItem>
+</XDSBreadcrumbs>`,
+    },
+    {
+      label: 'Supporting 变体',
+      code: `<XDSBreadcrumbs variant="supporting">
+  <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
+  <XDSBreadcrumbItem isCurrent>Page</XDSBreadcrumbItem>
+</XDSBreadcrumbs>`,
+    },
+    {
+      label: '带图标',
+      code: `<XDSBreadcrumbs>
+  <XDSBreadcrumbItem href="/" startIcon={<XDSIcon icon={HomeIcon} size="sm" />}>
+    Home
+  </XDSBreadcrumbItem>
+  <XDSBreadcrumbItem isCurrent>Settings</XDSBreadcrumbItem>
+</XDSBreadcrumbs>`,
+    },
+    {
+      label: '带图标和点击处理的项目',
+      code: `<XDSBreadcrumbItem href="/settings" startIcon={<XDSIcon icon={CogIcon} size="sm" />}>
+  Settings
+</XDSBreadcrumbItem>`,
+    },
+  ],
+  theming: {
+    targets: [
+      {className: 'xds-breadcrumb-item'},
+      {className: 'xds-breadcrumbs', visualProps: ['variant']},
+    ],
+  },
+  accessibility: [
+    '容器渲染为 <nav aria-label> 地标元素；标签默认为 "Breadcrumb"，可通过 label 属性自定义',
+    '项目放置在 <ol> 内，每个项目用 <li> 包裹以确保正确的列表语义',
+    '当前页面项接收 aria-current="page"',
+    '分隔符使用 aria-hidden="true" 渲染，屏幕阅读器会跳过它们',
+    '未显式设置 isCurrent 属性时，自动检测最后一个子元素为当前项',
+  ],
+  components: [
+    {
+      name: 'XDSBreadcrumbs',
+      description:
+        '导航容器，渲染包含有序面包屑项列表的 <nav> 元素。',
+      props: [
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description:
+            '在面包屑路径内渲染的 XDSBreadcrumbItem 元素。',
+          required: true,
+        },
+        {
+          name: 'separator',
+          type: 'ReactNode',
+          description: '面包屑项之间渲染的分隔符。',
+          default: "'/'",
+        },
+        {
+          name: 'variant',
+          type: "'default' | 'supporting'",
+          description:
+            '视觉变体——supporting 更小，使用次要文本样式。',
+          default: "'default'",
+        },
+        {
+          name: 'label',
+          type: 'string',
+          description: 'nav 地标的无障碍标签（aria-label）。',
+          default: "'Breadcrumb'",
+        },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+        },
+      ],
+      examples: [
+        {
+          label: '基础用法',
+          code: `<XDSBreadcrumbs>
+  <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
+  <XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem>
+  <XDSBreadcrumbItem isCurrent>My Project</XDSBreadcrumbItem>
+</XDSBreadcrumbs>`,
+        },
+        {
+          label: 'Supporting 变体',
+          code: `<XDSBreadcrumbs variant="supporting">
+  <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
+  <XDSBreadcrumbItem isCurrent>Page</XDSBreadcrumbItem>
+</XDSBreadcrumbs>`,
+        },
+      ],
+    },
+    {
+      name: 'XDSBreadcrumbItem',
+      description:
+        '单个面包屑项，提供 href 时渲染为链接，当前页面渲染为纯文本。',
+      props: [
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: '面包屑项的标签内容。',
+          required: true,
+        },
+        {
+          name: 'href',
+          type: 'string',
+          description:
+            '面包屑链接的 URL；不可导航的项目请省略。',
+        },
+        {
+          name: 'onClick',
+          type: '(e: MouseEvent) => void',
+          description: '面包屑项的点击处理函数。',
+        },
+        {
+          name: 'isCurrent',
+          type: 'boolean',
+          description:
+            '将此项标记为当前页面，应用 aria-current="page"。',
+          default: 'false',
+        },
+        {
+          name: 'startIcon',
+          type: 'ReactNode',
+          description: '在项目标签前渲染的图标。',
+        },
+      ],
+      examples: [
+        {
+          label: '链接项',
+          code: `<XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem>`,
+        },
+        {
+          label: '当前页面项',
+          code: `<XDSBreadcrumbItem isCurrent>My Project</XDSBreadcrumbItem>`,
+        },
+        {
+          label: '带图标',
+          code: `<XDSBreadcrumbItem href="/settings" startIcon={<XDSIcon icon={CogIcon} size="sm" />}>
+  Settings
+</XDSBreadcrumbItem>`,
+        },
+      ],
+    },
+  ],
+};

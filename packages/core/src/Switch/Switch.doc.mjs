@@ -203,3 +203,208 @@ export const docs = {
     'Follows the same patterns as XDSCheckboxInput for structural consistency',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {
+  name: 'Switch',
+  description:
+    '用于布尔值的开关切换组件，集成标签支持。',
+  features: [
+    '布尔值切换 — 固定 40x24px 轨道，带动画效果的 16px（关闭）/ 20px（开启）滑块',
+    '标签集成 — 使用 XDSFieldLabel 实现无障碍标签，支持可选的工具提示和图标',
+    '标签位置 — 通过 labelPosition 可将标签放置在开关前面或后面',
+    '标签间距 — 支持分散布局，将标签和开关推到容器两端',
+    '描述 — 可选的描述文本，显示在标签下方',
+    '可选/必填指示器 — 字段状态的可视标记',
+    '状态消息 — 开关下方的错误、警告、成功或信息消息框',
+    '异步操作支持 — onChangeAction 支持乐观 UI 和内置加载旋转器',
+    '无障碍 — 原生复选框，具有 role="switch"、aria-describedby、aria-invalid、aria-busy',
+  ],
+  examples: [
+    {
+      label: '基础用法',
+      code: `<XDSSwitch
+  label="Enable notifications"
+  value={enabled}
+  onChange={setEnabled}
+/>`,
+    },
+    {
+      label: '带描述',
+      code: `<XDSSwitch
+  label="Dark mode"
+  description="Switch to a darker color scheme"
+  value={darkMode}
+  onChange={setDarkMode}
+/>`,
+    },
+    {
+      label: '带标签图标和工具提示',
+      code: `<XDSSwitch
+  label="Auto-save"
+  labelIcon={CloudArrowUpIcon}
+  labelTooltip="Automatically save changes"
+  value={autoSave}
+  onChange={setAutoSave}
+/>`,
+    },
+    {
+      label: '设置面板样式（标签在前，分散间距）',
+      code: `<XDSSwitch
+  label="Enable notifications"
+  value={enabled}
+  onChange={setEnabled}
+  labelPosition="start"
+  labelSpacing="spread"
+/>`,
+    },
+    {
+      label: '带异步操作和乐观 UI',
+      code: `<XDSSwitch
+  label="Sync to cloud"
+  value={syncEnabled}
+  onChange={setSyncEnabled}
+  onChangeAction={async (checked) => {
+    await updateSetting('sync', checked);
+  }}
+/>`,
+    },
+    {
+      label: '带错误状态',
+      code: `<XDSSwitch
+  label="Two-factor authentication"
+  value={twoFactor}
+  onChange={setTwoFactor}
+  status={{type: 'error', message: 'Failed to save setting'}}
+/>`,
+    },
+  ],
+  props: [
+    {
+      name: 'label',
+      type: 'string',
+      description:
+        '开关的标签文本（始终渲染以确保无障碍性）。',
+      required: true,
+    },
+    {
+      name: 'value',
+      type: 'boolean',
+      description: '开关是开启还是关闭。',
+      required: true,
+    },
+    {
+      name: 'onChange',
+      type: '(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void',
+      description: '开关状态变化时触发的回调。',
+    },
+    {
+      name: 'onChangeAction',
+      type: '(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void | Promise<void>',
+      description:
+        '在 onChange 之后触发的异步操作。触发乐观 UI 并显示加载旋转器直到 Promise 完成。',
+    },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description:
+        '开关是否处于加载状态，在滑块内显示旋转器。',
+      default: 'false',
+    },
+    {
+      name: 'isLabelHidden',
+      type: 'boolean',
+      description:
+        '视觉上隐藏标签，同时保持屏幕阅读器的无障碍性。',
+      default: 'false',
+    },
+    {
+      name: 'description',
+      type: 'string',
+      description: '显示在标签下方的描述文本。',
+    },
+    {
+      name: 'isDisabled',
+      type: 'boolean',
+      description: '开关是否被禁用。',
+      default: 'false',
+    },
+    {
+      name: 'isOptional',
+      type: 'boolean',
+      description:
+        '字段是否为可选。与 isRequired 互斥。',
+      default: 'false',
+    },
+    {
+      name: 'isRequired',
+      type: 'boolean',
+      description:
+        '开关是否为必填。与 isOptional 互斥。',
+      default: 'false',
+    },
+    {
+      name: 'status',
+      type: 'XDSInputStatus',
+      description:
+        '带类型和消息的状态指示器。在开关下方显示彩色消息框，当类型为 "error" 时设置 aria-invalid。',
+    },
+    {
+      name: 'onFocus',
+      type: '(e: FocusEvent<HTMLInputElement>) => void',
+      description: '开关获得焦点时触发的回调。',
+    },
+    {
+      name: 'onBlur',
+      type: '(e: FocusEvent<HTMLInputElement>) => void',
+      description: '开关失去焦点时触发的回调。',
+    },
+    {
+      name: 'labelIcon',
+      type: 'XDSIconType',
+      description: '显示在标签文本前面的图标。',
+    },
+    {
+      name: 'labelTooltip',
+      type: 'string',
+      description:
+        '在标签末尾的信息图标中显示的工具提示文本。',
+    },
+    {
+      name: 'labelPosition',
+      type: "'start' | 'end'",
+      description:
+        '标签出现在开关的哪一侧。"start" 将标签放在开关前面。',
+      default: "'end'",
+    },
+    {
+      name: 'labelSpacing',
+      type: "'default' | 'spread'",
+      description:
+        '标签和开关之间的间距行为。"spread" 将它们推到容器的两端（全宽）。',
+      default: "'default'",
+    },
+  ],
+  theming: {
+    targets: [
+      {className: 'xds-switch'},
+      {className: 'xds-switch-field'},
+    ],
+  },
+  accessibility: [
+    '渲染原生 <input type="checkbox" role="switch"> 以确保正确的开关语义',
+    '标签始终通过 htmlFor/id 关联，即使视觉上被隐藏',
+    '描述文本通过输入元素上的 aria-describedby 关联',
+    '状态消息通过 aria-describedby 关联；当状态类型为 "error" 时设置 aria-invalid',
+    '异步 onChangeAction 执行期间设置 aria-busy',
+  ],
+  keyboard: '空格键切换开关；Tab/Shift+Tab 移入和移出焦点',
+  notes: [
+    '固定尺寸：40px 宽，24px 高，16px 滑块（关闭），20px 滑块（开启）',
+    '轨道和滑块使用 CSS 过渡实现 background-color、transform、width 和 height 的动画',
+    '悬停色调通过 stylex.when.ancestor 应用，带有 @media (hover: hover) 守卫',
+    'onChangeAction 使用 React useTransition 和 useOptimistic 实现无缝异步切换',
+    'labelPosition="start" 配合 labelSpacing="spread" 生成设置面板样式的布局',
+    '遵循与 XDSCheckboxInput 相同的模式以保持结构一致性',
+  ],
+};

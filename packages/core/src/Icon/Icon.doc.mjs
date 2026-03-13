@@ -91,3 +91,96 @@ import {Home} from 'lucide-react';
     'Size dimensions — xsm: 12x12px (dense UI, badges, indicators); sm: 16x16px (inline with text, compact UI); md: 20x20px (default, buttons, inputs); lg: 24x24px (emphasis, standalone icons).',
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {
+  name: 'Icon',
+  description:
+    '使用 XDS 设计系统颜色和尺寸渲染图标。支持直接使用 SVG 图标组件和语义图标名称（可自动适配当前主题）。',
+  features: [
+    "语义图标名称：使用 'close' 或 'chevronDown' 等名称，从主题的图标注册表中解析",
+    '直接图标组件：直接传入任何 SVG 图标组件（heroicons、lucide 等）',
+    '主题适配：语义图标自动匹配当前活动主题的图标集',
+    '内置回退：12 个轻量级内联 SVG（约 1.4KB）确保在无主题时也能正常渲染',
+    '主题颜色：颜色变体映射到 XDS 图标颜色令牌',
+    '一致的尺寸：四种尺寸选项，与常见 UI 模式对齐',
+    '无障碍：图标默认对屏幕阅读器隐藏（aria-hidden）',
+  ],
+  props: [
+    {
+      name: 'icon',
+      type: 'XDSIconName | ComponentType<SVGProps>',
+      description: '语义名称或 SVG 图标组件。',
+      required: true,
+    },
+    {
+      name: 'color',
+      type: "'primary' | 'secondary' | 'tertiary' | 'disabled' | 'accent' | 'positive' | 'negative' | 'warning' | 'inherit'",
+      description: '映射到 XDS 图标颜色令牌的颜色变体。',
+      default: "'primary'",
+    },
+    {
+      name: 'size',
+      type: "'xsm' | 'sm' | 'md' | 'lg'",
+      description: '图标尺寸。',
+      default: "'md'",
+    },
+  ],
+  examples: [
+    {
+      label: '语义图标名称（主题适配）',
+      code: `import { XDSIcon } from '@xds/core/Icon';
+
+// Semantic name — adapts to theme
+<XDSIcon icon="close" />
+<XDSIcon icon="chevronDown" size="sm" color="inherit" />
+<XDSIcon icon="checkCircle" color="positive" />
+
+// Great for building theme-adaptable UI
+<XDSIcon icon="info" size="sm" color="secondary" />`,
+    },
+    {
+      label: '直接图标组件',
+      code: `import { XDSIcon } from '@xds/core/Icon';
+import { HomeIcon } from '@heroicons/react/24/outline';
+import { HeartIcon } from '@heroicons/react/24/solid';
+
+// Direct component
+<XDSIcon icon={HomeIcon} />
+<XDSIcon icon={HomeIcon} color="accent" size="lg" />
+<XDSIcon icon={HeartIcon} color="negative" />
+
+// Accessible icon with label
+<XDSIcon icon={HomeIcon} aria-hidden={false} aria-label="Home" role="img" />`,
+    },
+    {
+      label: '图标来源',
+      code: `// Heroicons
+import {HomeIcon} from '@heroicons/react/24/outline';
+
+// Lucide
+import {Home} from 'lucide-react';
+
+// Any component matching ComponentType<SVGProps<SVGSVGElement>>`,
+    },
+  ],
+  theming: {
+    targets: [
+      {className: 'xds-icon', visualProps: ['color', 'size']},
+    ],
+  },
+  accessibility: [
+    '图标默认通过 aria-hidden="true" 对屏幕阅读器隐藏，因为图标通常是装饰性的。',
+    '对于有意义的图标，设置 aria-hidden={false}、role="img" 和 aria-label 以提供无障碍上下文。',
+  ],
+  notes: [
+    '当 icon 为语义名称字符串时，解析顺序为：(1) 主题注册表——如果 XDSTheme 处于活动状态并为该名称提供了图标，则使用该图标；(2) 内置回退——否则渲染轻量级内联 SVG。组件始终能完整渲染，即使没有主题。主题可以覆盖任意或所有图标；注册表接受部分覆盖。',
+    '当 icon 为组件时，额外的 SVG 属性（如 aria-label、role）会透传到底层 SVG 元素。',
+    'flexShrink: 0 防止图标在 flex 容器中被压缩。',
+    '字符串模式将解析后的图标包装在 <span> 中，使用基于 fontSize 的尺寸，使基于 1em 的注册表图标正确缩放。',
+    '组件模式将 stylex.props 直接传递给 SVG 元素，实现零开销样式。',
+    '语义图标名称及其用途——close（CloseButton、TimeInput）：✕ 关闭/消除；chevronDown（DropdownMenu、Selector、TabMenu）：▾ 展开/下拉；chevronLeft（Calendar）：‹ 上一个；chevronRight（Calendar）：› 下一个；check（Selector、TabMenu）：✓ 已选项；checkCircle（Input 状态）：✓○ 成功；xCircle（Input 状态）：✕○ 错误；warning（Input 状态）：△! 警告；info（FieldLabel）：ⓘ 信息提示；calendar（DateInput）：📅 日期选择器；clock（TimeInput）：🕐 时间选择器；externalLink（Link）：↗ 在新窗口中打开。',
+    '颜色令牌映射——primary：--color-icon-primary（默认）；secondary：--color-icon-secondary（弱化）；tertiary：--color-icon-tertiary（微妙/背景）；disabled：--color-icon-disabled（禁用状态）；accent：--color-accent（交互/可操作）；positive：--color-positive（成功/确认）；negative：--color-negative（错误/危险）；warning：--color-warning（警告/注意）；inherit：currentColor（继承父文本颜色）。',
+    '尺寸规格——xsm：12x12px（密集 UI、徽章、指示器）；sm：16x16px（与文本内联、紧凑 UI）；md：20x20px（默认，按钮、输入框）；lg：24x24px（强调、独立图标）。',
+  ],
+};

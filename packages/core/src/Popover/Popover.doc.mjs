@@ -211,3 +211,216 @@ export const docs = {
     ],
   },
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {
+  name: 'Popover',
+  description:
+    '一个点击触发的弹出框，用于显示锚定到触发元素的交互式内容，实现了按钮 + 对话框的 ARIA 模式。',
+  features: [
+    '使用 CSS 锚点定位，相对于触发元素自动放置',
+    '使用 Popover API 进行顶层渲染——无需 React 传送门',
+    '受控和非受控模式',
+    '轻量关闭支持（点击外部或按 Escape 关闭）',
+    '在打开的弹出框内捕获焦点',
+    'ARIA 按钮 + 对话框模式自动应用于触发元素',
+    '通过 anchorRef 实现兄弟模式，用于外部触发元素',
+    '稳定的锚点包装器，不受按压状态变换的影响',
+  ],
+  notes: [
+    'XDSPopover 通过搜索 <button> 或 [role="button"] 来定位子元素中的触发按钮——子树中必须包含一个。它会自动应用 click/keydown 处理程序以及 aria-haspopup、aria-expanded、aria-controls 属性。',
+    'XDSPopover 使用 inline-flex 锚点包装器，以确保触发器上的按压状态变换（如 :active scale）不会偏移锚点位置并导致弹出框抖动。',
+    '在兄弟模式下（anchorRef 属性），XDSPopover 附加到外部 ref 而不是包裹子元素——适用于触发器和浮层不是父子关系的情况。',
+    'LayerPlacement 值：above | below | start | end。LayerAlignment 值：start | center | end。',
+  ],
+  accessibility: [
+    '实现了按钮 + 对话框的 ARIA 模式：aria-haspopup、aria-expanded 和 aria-controls 会自动设置在触发按钮上。',
+    '在弹出框对话框打开时，焦点被捕获在其内部。',
+    '支持 role="button" 元素的键盘激活（Enter 和 Space），以及原生 <button> 的点击合成。',
+  ],
+  keyboard:
+    'Escape 关闭弹出框。当触发器获得焦点时，Enter/Space 打开弹出框。焦点被捕获在打开的弹出框内。',
+  examples: [
+    {
+      label: 'XDSPopover — 基本用法',
+      code: `<XDSPopover label="Settings" content={<SettingsPanel />} placement="below">
+  <XDSButton label="Settings" />
+</XDSPopover>`,
+    },
+    {
+      label: 'XDSPopover — 受控模式',
+      code: `<XDSPopover
+  isOpen={isOpen}
+  onOpenChange={setIsOpen}
+  label="Filter"
+  content={<FilterForm />}
+>
+  <XDSButton label="Filter" />
+</XDSPopover>`,
+    },
+    {
+      label: 'XDSPopover — 使用 anchorRef 的兄弟模式',
+      code: `<XDSPopover
+  anchorRef={myButtonRef}
+  label="Actions"
+  content={<ActionMenu />}
+  placement="below"
+/>`,
+    },
+    {
+      label: 'useXDSPopover 钩子',
+      code: `const popover = useXDSPopover({
+  onHide: () => inputRef.current?.focus(),
+  closeButtonLabel: 'Close calendar',
+});
+
+<button ref={popover.triggerRef} onClick={popover.toggle} {...popover.triggerProps}>
+  Open Calendar
+</button>
+{popover.render(<Calendar />, { placement: 'below', alignment: 'start' })}`,
+    },
+  ],
+  components: [
+    {
+      name: 'XDSPopover',
+      description:
+        '一个点击触发的弹出框，用于显示锚定到触发元素的交互式内容。',
+      examples: [
+        {
+          label: '基本用法',
+          code: `<XDSPopover label="Settings" content={<SettingsPanel />} placement="below">
+  <XDSButton label="Settings" />
+</XDSPopover>`,
+        },
+        {
+          label: '受控模式',
+          code: `<XDSPopover
+  isOpen={isOpen}
+  onOpenChange={setIsOpen}
+  label="Filter"
+  content={<FilterForm />}
+>
+  <XDSButton label="Filter" />
+</XDSPopover>`,
+        },
+      ],
+      props: [
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description:
+            '触发元素。必须包含一个 <button> 或 [role="button"] 元素。',
+        },
+        {
+          name: 'anchorRef',
+          type: 'React.RefObject<HTMLElement>',
+          description:
+            '在兄弟模式下用作弹出框锚点的外部 ref。',
+        },
+        {
+          name: 'content',
+          type: 'ReactNode',
+          description: '在弹出框内显示的内容。',
+          required: true,
+        },
+        {
+          name: 'placement',
+          type: 'LayerPlacement',
+          description: '相对于触发器的位置放置方式。',
+          default: "'below'",
+        },
+        {
+          name: 'alignment',
+          type: 'LayerAlignment',
+          description: '沿放置轴的对齐方式。',
+          default: "'start'",
+        },
+        {
+          name: 'isOpen',
+          type: 'boolean',
+          description: '在受控模式下弹出框是否显示。',
+        },
+        {
+          name: 'onOpenChange',
+          type: '(isOpen: boolean) => void',
+          description: '弹出框可见性变化时触发的回调。',
+        },
+        {
+          name: 'isEnabled',
+          type: 'boolean',
+          description: '设为 false 时，忽略触发器交互。',
+          default: 'true',
+        },
+        {
+          name: 'width',
+          type: 'number | string',
+          description: '弹出框容器的宽度。',
+          default: "'auto'",
+        },
+        {
+          name: 'label',
+          type: 'string',
+          description: '弹出框对话框的无障碍标签。',
+        },
+      ],
+    },
+    {
+      name: 'useXDSPopover',
+      description:
+        '用于创建带焦点捕获的弹出框对话框的钩子。将 useXDSLayer 与 useFocusTrap 结合使用。',
+      examples: [
+        {
+          label: '基本钩子用法',
+          code: `const popover = useXDSPopover({
+  onHide: () => inputRef.current?.focus(),
+});
+
+<button ref={popover.triggerRef} onClick={popover.toggle} {...popover.triggerProps}>
+  Open
+</button>
+{popover.render(<MyContent />, { placement: 'below', alignment: 'start' })}`,
+        },
+      ],
+      props: [
+        {
+          name: 'onShow',
+          type: '() => void',
+          description: '弹出框显示时触发的回调。',
+        },
+        {
+          name: 'onHide',
+          type: '() => void',
+          description: '弹出框隐藏时触发的回调。',
+        },
+        {
+          name: 'hasLightDismiss',
+          type: 'boolean',
+          description: '点击外部是否应关闭弹出框。',
+          default: 'true',
+        },
+        {
+          name: 'hasAutoFocus',
+          type: 'boolean',
+          description: '打开时是否自动聚焦第一个可聚焦元素。',
+          default: 'true',
+        },
+        {
+          name: 'hasCloseButton',
+          type: 'boolean',
+          description: '是否包含用于无障碍访问的隐藏关闭按钮。',
+          default: 'true',
+        },
+        {
+          name: 'dialogLabel',
+          type: 'string',
+          description: '对话框的无障碍标签。',
+        },
+      ],
+    },
+  ],
+  theming: {
+    targets: [
+      {className: 'xds-popover'},
+    ],
+  },
+};

@@ -48,3 +48,53 @@ export const docs = {
     ],
   },
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {
+  name: 'Badge',
+  description:
+    '用于显示状态指示器、计数或标签的徽章组件。',
+  props: [
+    {
+      name: 'variant',
+      type: "'neutral' | 'info' | 'success' | 'warning' | 'error'",
+      description: '视觉样式变体。',
+      default: "'neutral'",
+    },
+    {
+      name: 'children',
+      type: 'ReactNode',
+      description: '徽章内容。省略则显示圆点指示器。',
+    },
+    {
+      name: 'icon',
+      type: 'ReactNode',
+      description: '可选的前置图标。',
+    },
+  ],
+  examples: [
+    {
+      label: '文本徽章',
+      code: '<XDSBadge>Default</XDSBadge>',
+    },
+    {
+      label: '状态变体',
+      code: `<XDSBadge variant="success">Active</XDSBadge>
+<XDSBadge variant="error">Failed</XDSBadge>
+<XDSBadge variant="warning">Pending</XDSBadge>`,
+    },
+    {
+      label: '计数徽章',
+      code: '<XDSBadge variant="info">42</XDSBadge>',
+    },
+    {
+      label: '圆点指示器（无子元素）',
+      code: '<XDSBadge variant="success" />',
+    },
+  ],
+  theming: {
+    targets: [
+      {className: 'xds-badge', visualProps: ['variant']},
+    ],
+  },
+};

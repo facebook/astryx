@@ -187,3 +187,192 @@ export const docs = {
     },
   ],
 };
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {
+  name: 'Tooltip',
+  description:
+    '悬停/聚焦触发的工具提示，用于显示锚定在触发元素上的简短、非交互式文本。',
+  features: [
+    'CSS 锚点定位，自动相对于触发元素放置',
+    'Popover API 实现顶层渲染 — 无需 React 传送门',
+    '悬停触发，支持可配置的显示和隐藏延迟',
+    '聚焦触发，自动检测可聚焦元素',
+    '反转色调（深色背景、浅色文字）以实现高对比度',
+    'display:contents 包装器保留子元素引用',
+    '悬停指示（虚线下划线）用于纯文本触发器',
+    '通过 anchorRef 的兄弟模式用于外部触发元素',
+  ],
+  notes: [
+    '与 HoverCard 不同，悬停工具提示内容时工具提示不会保持打开状态。',
+    '工具提示具有更短的延迟，并使用反转颜色以实现高对比度。',
+    '工具提示用于简短的非交互式文本。对于交互式内容，请使用 XDSHoverCard 或 XDSPopover。',
+    '在兄弟模式下（anchorRef 属性），XDSTooltip 附加到外部引用而不是包裹子元素。',
+    'LayerPlacement 值：above | below | start | end。LayerAlignment 值：start | center | end。',
+  ],
+  accessibility: [
+    '通过 aria-describedby 将工具提示内容链接到触发器。',
+    '当组合多个 aria-describedby 来源时，使用工具函数合并它们。',
+  ],
+  keyboard:
+    '聚焦触发器显示工具提示。失焦隐藏工具提示。',
+  examples: [
+    {
+      label: 'XDSTooltip — 基础用法',
+      code: `<XDSTooltip content="Save your changes" placement="above">
+  <XDSButton label="Save" variant="primary" />
+</XDSTooltip>`,
+    },
+    {
+      label: 'useXDSTooltip 钩子',
+      code: `const tooltip = useXDSTooltip({ placement: 'above' });
+
+<XDSButton ref={tooltip.ref} aria-describedby={tooltip.describedBy}>
+  Hover me
+</XDSButton>
+{tooltip.renderTooltip('Helpful tooltip text')}`,
+    },
+  ],
+  components: [
+    {
+      name: 'XDSTooltip',
+      description:
+        '工具提示显示的组件包装器，通过悬停或聚焦触发。',
+      examples: [
+        {
+          label: '基础用法',
+          code: `<XDSTooltip content="Save your changes" placement="above">
+  <XDSButton label="Save" variant="primary" />
+</XDSTooltip>`,
+        },
+        {
+          label: '兄弟模式',
+          code: `<XDSTooltip anchorRef={buttonRef} content="Save your changes" placement="above" />`,
+        },
+      ],
+      props: [
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: '激活工具提示的触发元素。',
+        },
+        {
+          name: 'anchorRef',
+          type: 'RefObject<HTMLElement>',
+          description: '兄弟模式的外部锚点引用。',
+        },
+        {
+          name: 'content',
+          type: 'ReactNode',
+          description: '工具提示内容，通常是简短文本。',
+        },
+        {
+          name: 'placement',
+          type: 'LayerPlacement',
+          description: '相对于锚点元素的位置。',
+          default: "'above'",
+        },
+        {
+          name: 'alignment',
+          type: 'LayerAlignment',
+          description: '沿放置轴的对齐方式。',
+          default: "'center'",
+        },
+        {
+          name: 'delay',
+          type: 'number',
+          description: '显示延迟（毫秒）。',
+          default: '200',
+        },
+        {
+          name: 'hideDelay',
+          type: 'number',
+          description: '隐藏延迟（毫秒）。',
+          default: '0',
+        },
+        {
+          name: 'focusTrigger',
+          type: "'auto' | 'always' | 'never'",
+          description: '控制聚焦事件何时触发工具提示。',
+          default: "'auto'",
+        },
+        {
+          name: 'isEnabled',
+          type: 'boolean',
+          description: '启用或禁用工具提示触发器。',
+          default: 'true',
+        },
+        {
+          name: 'hasHoverIndication',
+          type: "'auto' | boolean",
+          description: '在触发元素上显示虚线下划线。',
+          default: "'auto'",
+        },
+      ],
+    },
+    {
+      name: 'useXDSTooltip',
+      description:
+        '用于悬停/聚焦触发的工具提示行为的钩子。基于 useXDSLayer 构建。',
+      examples: [
+        {
+          label: '基础钩子用法',
+          code: `const tooltip = useXDSTooltip({ placement: 'above' });
+
+<XDSButton ref={tooltip.ref} aria-describedby={tooltip.describedBy}>
+  Hover me
+</XDSButton>
+{tooltip.renderTooltip('Helpful tooltip text')}`,
+        },
+      ],
+      props: [
+        {
+          name: 'placement',
+          type: 'LayerPlacement',
+          description: '相对于锚点元素的位置。',
+          default: "'above'",
+        },
+        {
+          name: 'alignment',
+          type: 'LayerAlignment',
+          description: '沿放置轴的对齐方式。',
+          default: "'center'",
+        },
+        {
+          name: 'delay',
+          type: 'number',
+          description: '显示延迟（毫秒）。',
+          default: '200',
+        },
+        {
+          name: 'hideDelay',
+          type: 'number',
+          description: '隐藏延迟（毫秒）。',
+          default: '0',
+        },
+        {
+          name: 'focusTrigger',
+          type: "'auto' | 'always' | 'never'",
+          description: '控制聚焦事件何时触发工具提示。',
+          default: "'auto'",
+        },
+        {
+          name: 'isEnabled',
+          type: 'boolean',
+          description: '启用或禁用所有悬停和聚焦触发器。',
+          default: 'true',
+        },
+        {
+          name: 'onShow',
+          type: '() => void',
+          description: '工具提示变为可见时触发的回调。',
+        },
+        {
+          name: 'onHide',
+          type: '() => void',
+          description: '工具提示隐藏时触发的回调。',
+        },
+      ],
+    },
+  ],
+};
