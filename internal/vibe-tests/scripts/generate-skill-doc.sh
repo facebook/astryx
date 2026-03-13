@@ -3,8 +3,7 @@
 # @position internal/vibe-tests/scripts/generate-skill-doc.sh
 #
 # Generates a skill doc by combining CLI outputs:
-#   - agent-docs framing (AGENTS.md index)
-#   - component --brief-all (component catalog)
+#   - component list (component catalog with brief summaries)
 #   - docs principles (design rules)
 #   - docs tokens (token reference)
 #   - docs theme (theme system)
@@ -19,9 +18,6 @@ REPO_ROOT="$(cd "$VIBE_DIR/../.." && pwd)"
 CLI="$REPO_ROOT/packages/cli/bin/xds.mjs"
 OUT_DIR="$VIBE_DIR/.generated"
 OUT_FILE="$OUT_DIR/xds-skill.md"
-
-# No CLI rebuild needed — the CLI uses raw .mjs files and discovers
-# components by scanning packages/core/src/ directly via readdirSync.
 
 mkdir -p "$OUT_DIR"
 
@@ -38,9 +34,12 @@ React design system for building internal tools. All components use the `XDS` pr
 ## CLI Reference
 
 Run these commands to get detailed docs on any component:
-- `npx xds component <Name>` — full docs (props, usage, examples)
-- `npx xds component <Name> --compact` — condensed reference
-- `npx xds component --list` — all components by category
+- `npx xds component metadata <Name>` — description, features, notes, a11y
+- `npx xds component props <Name>` — props table
+- `npx xds component examples <Name>` — list example titles
+- `npx xds component example <Name> N` — get example code
+- `npx xds component list` — all components by category
+- `npx xds component search "<query>"` — find by name or description
 - `npx xds docs principles` — design rules and anti-patterns
 - `npx xds docs tokens` — token reference (spacing, color, radius)
 - `npx xds docs theme` — theme system reference
@@ -53,12 +52,12 @@ echo "" >> "$OUT_FILE"
 node "$CLI" docs principles 2>/dev/null | tail -n +3 >> "$OUT_FILE"
 echo "" >> "$OUT_FILE"
 
-# Component catalog
+# Component catalog (brief summaries)
 echo "## Component Catalog" >> "$OUT_FILE"
 echo "" >> "$OUT_FILE"
-echo "Brief summaries of all available components. Run \`npx xds component <Name>\` for full docs." >> "$OUT_FILE"
+echo "Brief summaries of all available components. Run \`npx xds component metadata <Name>\` for full docs." >> "$OUT_FILE"
 echo "" >> "$OUT_FILE"
-node "$CLI" component --brief-all 2>/dev/null >> "$OUT_FILE"
+node "$CLI" component catalog 2>/dev/null >> "$OUT_FILE"
 echo "" >> "$OUT_FILE"
 
 # Tokens

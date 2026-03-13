@@ -29,9 +29,10 @@ import {XDSButton} from '@xds/core/Button';
 
 Run these commands to get detailed docs on any component:
 
-- `npx xds component <Name>` — full docs (props, usage, examples)
-- `npx xds component <Name> --compact` — condensed reference
-- `npx xds component --list` — all components by category
+- `npx xds component metadata <Name>` — description, features, notes, a11y
+- `npx xds component props <Name>` — props table
+- `npx xds component list` — all components by category
+- `npx xds component catalog` — brief summaries of all components
 - `npx xds docs tokens` — token reference (spacing, color, radius)
 - `npx xds docs theme` — theme system reference
 
@@ -68,7 +69,7 @@ Use Tailwind utilities for:
 
 ## Component Catalog
 
-Brief summaries of all available components. Run `npx xds component <Name>` for full docs.
+Brief summaries of all available components. Run `npx xds component metadata <Name>` for full docs.
 
 ### Layout
 

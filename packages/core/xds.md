@@ -7,10 +7,11 @@ XDS is a design system for building internal tools and products.
 Use the XDS CLI for component docs, scaffolding, and tooling:
 
 ```bash
-npx xds component --list          # browse all components by category
-npx xds component Button          # full docs for a component
-npx xds component --brief-all     # LLM-optimized summary of all components
-npx xds docs                      # principles and tokens reference
+npx xds component list                # browse all components by category
+npx xds component metadata Button     # description, features, notes for a component
+npx xds component props Button        # props table
+npx xds component list --detail summary  # brief summary of all components
+npx xds docs                          # principles and tokens reference
 ```
 
 ### For AI-assisted development

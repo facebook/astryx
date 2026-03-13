@@ -26,8 +26,10 @@ export function generateCompressedIndex(version, {zh = false, lang} = {}) {
   // For now, zh mode outputs the same English content as a placeholder
   return `${XDS_MARKER_START}
 [XDS v${version}]|IMPORTANT: Prefer retrieval-led reasoning. Run CLI to read docs before generating code.
-|npx xds component <Name> --compact|--source   Docs (props, usage) or source code
-|npx xds component --list             All components by category
+|npx xds component metadata <Name>    Docs (description, features, notes, a11y)
+|npx xds component props <Name>       Props table
+|npx xds component list               All components by category
+|npx xds component search "<query>"   Find components by name or description
 |npx xds docs principles              Design rules, anti-patterns, StyleX patterns
 |npx xds docs tokens                  Token reference (spacing, color, radius, type)
 |npx xds docs theme                   Theme system: XDSTheme, custom themes, overrides, nesting
@@ -238,7 +240,7 @@ export function registerAgentDocs(program) {
 
 Your AI coding agent will now:
   • See the XDS component index in ${targets.join(' and ')}
-  • Run \`npx xds component <name>\` to read detailed docs
+  • Run \`npx xds component metadata <name>\` to read detailed docs
   • Run \`npx xds docs principles\` for design principles
   • Run \`npx xds docs tokens\` for design token reference
   • Follow XDS patterns and avoid anti-patterns

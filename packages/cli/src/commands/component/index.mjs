@@ -98,14 +98,15 @@ function getLangOpts(program) {
 export function registerComponent(program) {
   const component = program
     .command('component')
-    .description('XDS component documentation');
+    .description('XDS component documentation')
+    ;
 
   // --- list ---
   component
     .command('list')
     .description('List all components grouped by category')
     .option('--category <category>', 'Filter to a specific category')
-    .option('--detail <level>', 'Output detail level: brief or normal', 'normal')
+    .option('--detail <level>', 'Output detail: brief (names only) or normal (by category)', 'normal')
     .action((options) => {
       const coreDir = requireCoreDir();
       const components = discoverComponents(coreDir);
@@ -131,7 +132,6 @@ export function registerComponent(program) {
       }
 
       if (options.detail === 'brief') {
-        // Just names, no categories
         const all = Object.values(components).flat();
         for (const comp of all) {
           console.log(comp);
@@ -149,11 +149,20 @@ export function registerComponent(program) {
       }
     });
 
+  // --- catalog ---
+  component
+    .command('catalog')
+    .description('Brief summaries of all components (name, description, key props, one example)')
+    .action(async () => {
+      const coreDir = requireCoreDir();
+      const langOpts = getLangOpts(program);
+      console.log(await formatBriefAll(coreDir, langOpts));
+    });
+
   // --- search ---
   component
     .command('search <query>')
     .description('Search components by name or description')
-    .option('--detail <level>', 'Output detail level: brief or normal', 'normal')
     .action(async (query, options) => {
       const coreDir = requireCoreDir();
       const langOpts = getLangOpts(program);
@@ -202,7 +211,6 @@ export function registerComponent(program) {
   component
     .command('metadata <name>')
     .description('Get component description, features, notes, accessibility, keyboard')
-    .option('--detail <level>', 'Output detail level: brief or normal', 'normal')
     .action(async (name, options) => {
       const coreDir = requireCoreDir();
       const langOpts = getLangOpts(program);
@@ -274,7 +282,6 @@ export function registerComponent(program) {
   component
     .command('props <name>')
     .description('List props for a component')
-    .option('--detail <level>', 'Output detail level: brief or normal', 'normal')
     .action(async (name, options) => {
       const coreDir = requireCoreDir();
       const langOpts = getLangOpts(program);

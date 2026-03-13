@@ -108,11 +108,16 @@ The CLI merges this onto `docs`: compressed descriptions replace English ones, b
 ## CLI Flags
 
 ```bash
-npx xds component Button              # English docs (default)
-npx xds component Button --compact    # Token-optimized format
-npx xds component Button --brief      # Minimal one-line summary
-npx xds --lang zh component Button    # Chinese prose, same structure
-npx xds --lang dense component Button # Compressed prose, same structure
+npx xds component metadata Button             # description, features, notes, a11y
+npx xds component metadata Button --detail brief  # just the description
+npx xds component props Button                # full props table
+npx xds component props Button --detail brief # name: type per line
+npx xds component examples Button             # list example titles
+npx xds component example Button 3            # one example's code
+npx xds component list                        # all components by category
+npx xds component search "date"               # find by name or description
+npx xds --lang zh component metadata Button   # Chinese prose
+npx xds --lang dense component props Button   # Compressed prose
 ```
 
-`--lang` controls which prose translation is used. `--compact`, `--brief`, `--full` control how much detail. They compose independently.
+`--lang` controls which prose translation is used. `--detail brief` gives condensed output. They compose independently.

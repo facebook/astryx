@@ -5,8 +5,9 @@ Project-specific guidance for AI coding agents.
 <!-- XDS-TAILWIND:START -->
 
 [XDS + Tailwind v0.0.1]|IMPORTANT: Prefer retrieval-led reasoning. Run CLI to read docs before generating code.
-|npx xds component <Name> --compact Docs (props, usage)
-|npx xds component --list All components by category
+|npx xds component metadata <Name> Docs (description, features, notes, a11y)
+|npx xds component props <Name> Props table
+|npx xds component list All components by category
 |npx xds docs tokens Token reference (spacing, color, radius)
 |npx xds docs theme Theme system: XDSTheme, custom themes, overrides, nesting
 |RULE: Use XDS components for structure, behavior, and accessibility.
