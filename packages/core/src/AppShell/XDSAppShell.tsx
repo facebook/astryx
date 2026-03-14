@@ -316,12 +316,19 @@ const styles = stylex.create({
   sideNavAutoWrapper: {
     alignSelf: 'stretch',
   },
+  // Panel fill for auto mode — panel fills the sticky container vertically
+  panelAutoFill: {
+    flex: 1,
+  },
   // Sticky sideNav for auto height mode — sticks within the wrapper
   sideNavSticky: {
     position: 'sticky',
     top: 'var(--appshell-header-height, 0px)',
-    height: 'calc(100vh - var(--appshell-header-height, 0px))',
+    height: 'calc(100dvh - var(--appshell-header-height, 0px))',
     overflow: 'auto',
+    // Ensure children (XDSLayoutPanel → XDSSideNav) fill the sticky container
+    display: 'flex',
+    flexDirection: 'column',
   },
 });
 
@@ -410,6 +417,11 @@ export function XDSAppShell({
           ? styles.contentBgSurface
           : undefined;
 
+  // Background for sticky elements in auto mode — must be opaque so content
+  // doesn't show through when scrolling underneath. Uses the nav area bg if
+  // set, otherwise falls back to the shell variant bg (always surface for section).
+  const stickyBgStyle = navAreaStyle ?? styles.navAreaSurface;
+
   // =========================================================================
   // Header height measurement for sticky sideNav offset (auto mode)
   // =========================================================================
@@ -419,12 +431,11 @@ export function XDSAppShell({
   // Merge forwarded ref with internal shell ref
   const setShellRef = useCallback(
     (node: HTMLDivElement | null) => {
-      (shellRef as React.MutableRefObject<HTMLDivElement | null>).current =
-        node;
+      (shellRef as React.RefObject<HTMLDivElement | null>).current = node;
       if (typeof ref === 'function') {
         ref(node);
       } else if (ref) {
-        (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        (ref as React.RefObject<HTMLDivElement | null>).current = node;
       }
     },
     [ref],
@@ -521,7 +532,12 @@ export function XDSAppShell({
 
   const headerContent =
     headerInner != null ? (
-      <div ref={headerRef} {...stylex.props(isAuto && styles.headerSticky)}>
+      <div
+        ref={headerRef}
+        {...stylex.props(
+          isAuto && styles.headerSticky,
+          isAuto && stickyBgStyle,
+        )}>
         {headerInner}
       </div>
     ) : undefined;
@@ -539,10 +555,8 @@ export function XDSAppShell({
       padding={0}
       hasDivider={navHasDividers}
       width={sideNavWidth}
-      role="navigation"
-      label="Application navigation"
       isScrollable={isFill}
-      xstyle={navAreaStyle}>
+      xstyle={[navAreaStyle, isAuto && styles.panelAutoFill]}>
       {sideNav}
     </XDSLayoutPanel>
   ) : undefined;
@@ -550,7 +564,9 @@ export function XDSAppShell({
   const sideNavContent =
     sideNavPanel != null && isAuto ? (
       <div {...stylex.props(styles.sideNavAutoWrapper)}>
-        <div {...stylex.props(styles.sideNavSticky)}>{sideNavPanel}</div>
+        <div {...stylex.props(styles.sideNavSticky, stickyBgStyle)}>
+          {sideNavPanel}
+        </div>
       </div>
     ) : (
       sideNavPanel
