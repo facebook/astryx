@@ -19,6 +19,7 @@ import {
 import {render, screen, fireEvent, act} from '@testing-library/react';
 import {XDSAppShell} from './XDSAppShell';
 import {XDSMobileNav} from '../MobileNav';
+import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '../SideNav';
 
 // jsdom doesn't implement showModal/close on <dialog>, so we mock them
 beforeAll(() => {
@@ -46,6 +47,19 @@ class MockResizeObserver {
 }
 
 vi.stubGlobal('ResizeObserver', MockResizeObserver);
+
+// Helper: minimal SideNav that provides the navigation landmark
+function TestSideNav({children}: {children?: React.ReactNode}) {
+  return (
+    <XDSSideNav>
+      <XDSSideNavSection title="Test" isHeaderHidden>
+        <XDSSideNavItem
+          label={typeof children === 'string' ? children : 'Nav'}
+        />
+      </XDSSideNavSection>
+    </XDSSideNav>
+  );
+}
 
 // Mock matchMedia
 function createMockMatchMedia(matches: boolean) {
@@ -134,13 +148,13 @@ describe('XDSAppShell', () => {
 
   it('renders sideNav in a nav element', () => {
     render(
-      <XDSAppShell sideNav={<div>Side Nav</div>}>
+      <XDSAppShell sideNav={<TestSideNav />}>
         <div>Content</div>
       </XDSAppShell>,
     );
     const nav = screen.getByRole('navigation');
     expect(nav).toBeInTheDocument();
-    expect(screen.getByText('Side Nav')).toBeInTheDocument();
+    expect(screen.getByText('Nav')).toBeInTheDocument();
   });
 
   it('renders without optional slots', () => {
@@ -194,12 +208,12 @@ describe('XDSAppShell', () => {
 
   it('sideNav has aria-label', () => {
     render(
-      <XDSAppShell sideNav={<div>Nav</div>}>
+      <XDSAppShell sideNav={<TestSideNav />}>
         <div>Content</div>
       </XDSAppShell>,
     );
     const nav = screen.getByRole('navigation');
-    expect(nav).toHaveAttribute('aria-label', 'Application navigation');
+    expect(nav).toHaveAttribute('aria-label', 'Side navigation');
   });
 
   // ===========================================================================
@@ -208,19 +222,17 @@ describe('XDSAppShell', () => {
 
   it('sideNav is visible by default (uncontrolled)', () => {
     render(
-      <XDSAppShell sideNav={<div>Nav Items</div>}>
+      <XDSAppShell sideNav={<TestSideNav />}>
         <div>Content</div>
       </XDSAppShell>,
     );
-    expect(screen.getByText('Nav Items')).toBeInTheDocument();
+    expect(screen.getByText('Nav')).toBeInTheDocument();
     expect(screen.getByRole('navigation')).toBeInTheDocument();
   });
 
   it('sideNav is hidden when defaultIsSideNavCollapsed is true', () => {
     render(
-      <XDSAppShell
-        sideNav={<div>Nav Items</div>}
-        defaultIsSideNavCollapsed={true}>
+      <XDSAppShell sideNav={<TestSideNav />} defaultIsSideNavCollapsed={true}>
         <div>Content</div>
       </XDSAppShell>,
     );
@@ -234,7 +246,7 @@ describe('XDSAppShell', () => {
   it('sideNav is hidden when isSideNavCollapsed is true (controlled)', () => {
     render(
       <XDSAppShell
-        sideNav={<div>Nav Items</div>}
+        sideNav={<TestSideNav />}
         isSideNavCollapsed={true}
         onSideNavCollapsedChange={() => {}}>
         <div>Content</div>
@@ -246,7 +258,7 @@ describe('XDSAppShell', () => {
   it('sideNav is visible when isSideNavCollapsed is false (controlled)', () => {
     render(
       <XDSAppShell
-        sideNav={<div>Nav Items</div>}
+        sideNav={<TestSideNav />}
         isSideNavCollapsed={false}
         onSideNavCollapsedChange={() => {}}>
         <div>Content</div>
@@ -263,7 +275,7 @@ describe('XDSAppShell', () => {
     const onChange = vi.fn();
     render(
       <XDSAppShell
-        sideNav={<div>Nav</div>}
+        sideNav={<TestSideNav />}
         sideNavBreakpoint="md"
         onSideNavCollapsedChange={onChange}>
         <div>Content</div>
@@ -282,7 +294,7 @@ describe('XDSAppShell', () => {
     const onChange = vi.fn();
     render(
       <XDSAppShell
-        sideNav={<div>Nav</div>}
+        sideNav={<TestSideNav />}
         sideNavBreakpoint="none"
         onSideNavCollapsedChange={onChange}>
         <div>Content</div>
@@ -303,7 +315,7 @@ describe('XDSAppShell', () => {
 
     render(
       <XDSAppShell
-        sideNav={<div>Nav Items</div>}
+        sideNav={<TestSideNav />}
         isSideNavCollapsed={false}
         onSideNavCollapsedChange={() => {}}>
         <div>Content</div>
@@ -313,7 +325,7 @@ describe('XDSAppShell', () => {
     // Should show default mobile nav (XDSMobileNav wrapping sideNav)
     expect(screen.getByTestId('sidenav-mobile')).toBeInTheDocument();
     // Should show nav content inside the mobile nav
-    expect(screen.getByText('Nav Items')).toBeInTheDocument();
+    expect(screen.getByText('Nav')).toBeInTheDocument();
   });
 
   it('default mobile nav calls onSideNavCollapsedChange on close', () => {
@@ -323,7 +335,7 @@ describe('XDSAppShell', () => {
     const onChange = vi.fn();
     render(
       <XDSAppShell
-        sideNav={<div>Nav</div>}
+        sideNav={<TestSideNav />}
         isSideNavCollapsed={false}
         onSideNavCollapsedChange={onChange}>
         <div>Content</div>
@@ -473,7 +485,7 @@ describe('XDSAppShell', () => {
   it('renders mobileNav slot content', () => {
     render(
       <XDSAppShell
-        sideNav={<div>Side Nav</div>}
+        sideNav={<TestSideNav />}
         mobileNav={
           <XDSMobileNav
             isOpen={true}
@@ -492,7 +504,7 @@ describe('XDSAppShell', () => {
 
   it('does not render mobileNav when not provided', () => {
     render(
-      <XDSAppShell sideNav={<div>Side Nav</div>}>
+      <XDSAppShell sideNav={<TestSideNav />}>
         <div>Content</div>
       </XDSAppShell>,
     );
@@ -505,7 +517,7 @@ describe('XDSAppShell', () => {
 
     render(
       <XDSAppShell
-        sideNav={<div>Side Nav</div>}
+        sideNav={<TestSideNav />}
         mobileNav={
           <XDSMobileNav
             isOpen={false}
@@ -529,7 +541,7 @@ describe('XDSAppShell', () => {
     const onClose = vi.fn();
     render(
       <XDSAppShell
-        sideNav={<div>Side Nav</div>}
+        sideNav={<TestSideNav />}
         mobileNav={
           <XDSMobileNav isOpen={true} onOpenChange={onClose} title="Nav">
             <div>Mobile Nav</div>
