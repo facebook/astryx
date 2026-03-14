@@ -149,6 +149,11 @@ export const docs = {
           type: 'string',
           description: 'Accessible label for the popover dialog.',
         },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        },
       ],
     },
     {

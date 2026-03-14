@@ -24,6 +24,10 @@ export interface XDSTableRowProps extends XDSBaseProps<HTMLTableRowElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLTableRowElement>;
   children: ReactNode;
+  /**
+   * StyleX styles for layout customization (margins, positioning, sizing).
+   * Must be a `stylex.create()` value — not an inline style object.
+   */
   xstyle?: StyleXStyles[];
 }
 

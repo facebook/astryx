@@ -31,6 +31,10 @@ export interface XDSTableHeaderCellProps extends XDSBaseProps<HTMLTableCellEleme
   /** Specifies which cells this header relates to. */
   scope?: 'col' | 'row' | 'colgroup' | 'rowgroup';
   children?: ReactNode;
+  /**
+   * StyleX styles for layout customization (margins, positioning, sizing).
+   * Must be a `stylex.create()` value — not an inline style object.
+   */
   xstyle?: StyleXStyles | StyleXStyles[];
 }
 
