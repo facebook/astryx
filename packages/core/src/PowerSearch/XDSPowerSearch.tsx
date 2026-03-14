@@ -369,7 +369,10 @@ export interface XDSPowerSearchProps {
   ref?: React.Ref<XDSPowerSearchHandle>;
   /** Test ID. */
   'data-testid'?: string;
-  /** StyleX styles. */
+  /**
+   * StyleX styles for layout customization (margins, positioning, sizing).
+   * Must be a `stylex.create()` value — not an inline style object.
+   */
   xstyle?: StyleXStyles;
   /** CSS class name. */
   className?: string;
@@ -428,7 +431,6 @@ type PopoverState =
  *     },
  *   ],
  * };
- *
  * const [filters, setFilters] = useState([]);
  * <XDSPowerSearch
  *   config={config}

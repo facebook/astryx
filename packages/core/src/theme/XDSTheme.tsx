@@ -6,7 +6,7 @@
  * - Token overrides set as CSS custom properties on [data-xds-theme]
  * - Component overrides scoped via @scope'd CSS selectors on .xds-* classes
  *
- * Usage:
+ * @example
  * ```
  * const ocean = defineTheme({
  *   name: 'ocean',
@@ -15,11 +15,6 @@
  *   icons: oceanIcons,
  * });
  * <XDSTheme theme={ocean}><App /></XDSTheme>
- *
- * // Built theme — CSS imported separately
- * import { oceanTheme } from '@xds/theme-ocean';
- * import '@xds/theme-ocean/theme.css';
- * <XDSTheme theme={oceanTheme}><App /></XDSTheme>
  * ```
  */
 
