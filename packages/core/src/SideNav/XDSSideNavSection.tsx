@@ -77,6 +77,7 @@ const styles = stylex.create({
   items: {
     display: 'flex',
     flexDirection: 'column',
+    gap: spacingVars['--spacing-0-5'],
   },
 });
 

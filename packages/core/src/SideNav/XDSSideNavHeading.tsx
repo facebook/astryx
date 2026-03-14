@@ -32,6 +32,7 @@ import {
 // of lazy loading layer resources.
 import {useXDSPopover} from '../Popover/useXDSPopover';
 import {XDSLink} from '../Link';
+import {getIcon} from '../Icon/globalIconRegistry';
 import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
@@ -44,7 +45,7 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-3'],
+    paddingBlock: spacingVars['--spacing-2'],
     boxSizing: 'border-box',
     textDecoration: 'none',
     color: 'inherit',
@@ -64,10 +65,6 @@ const styles = stylex.create({
         backgroundColor: colorVars['--color-hover-overlay'],
       },
     },
-  },
-  interactiveInset: {
-    marginInline: spacingVars['--spacing-2'],
-    marginBlock: spacingVars['--spacing-1'],
   },
   icon: {
     flexShrink: 0,
@@ -116,11 +113,12 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: spacingVars['--spacing-4'],
-    height: spacingVars['--spacing-4'],
+    minWidth: spacingVars['--spacing-7'],
+    minHeight: spacingVars['--spacing-7'],
     color: colorVars['--color-icon-secondary'],
   },
   popoverContent: {
+    padding: spacingVars['--spacing-1'],
     borderRadius: radiusVars['--radius-element'],
     backgroundColor: colorVars['--color-surface'],
     boxShadow: `0 4px 12px ${colorVars['--color-shadow-elevation']}`,
@@ -203,27 +201,6 @@ export interface XDSSideNavHeadingProps {
 }
 
 // =============================================================================
-// Chevron SVG
-// =============================================================================
-
-function ChevronDownIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      aria-hidden="true">
-      <path
-        d="M4 6L8 10L12 6"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 // =============================================================================
 // Component
@@ -353,9 +330,7 @@ export function XDSSideNavHeading({
   );
 
   const chevronElement = showChevron && (
-    <span {...stylex.props(styles.chevron)}>
-      <ChevronDownIcon />
-    </span>
+    <span {...stylex.props(styles.chevron)}>{getIcon('chevronDown')}</span>
   );
 
   // Whole heading is a link (no menu, single headingHref)
@@ -367,12 +342,7 @@ export function XDSSideNavHeading({
         data-testid={testId}
         {...mergeProps(
           xdsClassName('side-nav-heading'),
-          stylex.props(
-            styles.root,
-            styles.interactive,
-            styles.interactiveInset,
-            xstyle,
-          ),
+          stylex.props(styles.root, styles.interactive, xstyle),
           className,
           style,
         )}
@@ -396,12 +366,7 @@ export function XDSSideNavHeading({
           {...popover.triggerProps}
           {...mergeProps(
             xdsClassName('side-nav-heading'),
-            stylex.props(
-              styles.root,
-              styles.interactive,
-              styles.interactiveInset,
-              xstyle,
-            ),
+            stylex.props(styles.root, styles.interactive, xstyle),
             className,
             style,
           )}>
@@ -448,7 +413,7 @@ export function XDSSideNavHeading({
               aria-label="Open menu"
               {...popover.triggerProps}
               {...stylex.props(styles.chevron, styles.interactive)}>
-              <ChevronDownIcon />
+              {getIcon('chevronDown')}
             </button>
           )}
         </div>

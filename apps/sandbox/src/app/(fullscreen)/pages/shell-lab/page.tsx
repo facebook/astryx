@@ -41,9 +41,10 @@ interface ShellConfig {
   showSideNav: boolean;
   showTopNav: boolean;
   showBanner: boolean;
+  showFooter: boolean;
   showFooterIcons: boolean;
   showTopContent: boolean;
-  showSideNavHeading: boolean;
+  sideNavHeadingStyle: 'none' | 'simple' | 'link' | 'menu' | 'full';
   showNestedItems: boolean;
   defaultCollapsed: boolean;
   controlledCollapse: boolean;
@@ -63,9 +64,10 @@ const DEFAULT_CONFIG: ShellConfig = {
   showSideNav: true,
   showTopNav: true,
   showBanner: false,
+  showFooter: false,
   showFooterIcons: true,
   showTopContent: true,
-  showSideNavHeading: true,
+  sideNavHeadingStyle: 'link',
   showNestedItems: true,
   defaultCollapsed: false,
   controlledCollapse: false,
@@ -107,8 +109,10 @@ function ConfigPanel({
               })
             }
             options={[
+              {value: 'section', label: 'Section'},
               {value: 'wash', label: 'Wash'},
               {value: 'surface', label: 'Surface'},
+              {value: 'elevated', label: 'Elevated'},
             ]}
           />
           <SelectorRow
@@ -152,15 +156,31 @@ function ConfigPanel({
             value={config.showTopNav}
             onChange={v => onChange({showTopNav: v})}
           />
-          <ToggleRow
+          <SelectorRow
             label="SideNav Heading"
-            value={config.showSideNavHeading}
-            onChange={v => onChange({showSideNavHeading: v})}
+            value={config.sideNavHeadingStyle}
+            onChange={v =>
+              onChange({
+                sideNavHeadingStyle: v as ShellConfig['sideNavHeadingStyle'],
+              })
+            }
+            options={[
+              {value: 'none', label: 'None'},
+              {value: 'simple', label: 'Simple'},
+              {value: 'link', label: 'Link'},
+              {value: 'menu', label: 'Menu'},
+              {value: 'full', label: 'Full'},
+            ]}
           />
           <ToggleRow
             label="Banner"
             value={config.showBanner}
             onChange={v => onChange({showBanner: v})}
+          />
+          <ToggleRow
+            label="Footer"
+            value={config.showFooter}
+            onChange={v => onChange({showFooter: v})}
           />
           <ToggleRow
             label="Footer Icons"
@@ -328,33 +348,72 @@ function SelectorRow({
 // =============================================================================
 
 function SampleSideNav({config}: {config: ShellConfig}) {
+  const appIcon = (
+    <XDSNavIcon
+      icon={
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          width="16"
+          height="16">
+          <path d="M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44c-.36.2-.8.2-1.14 0l-7.9-4.44A.991.991 0 013 16.5v-9c0-.38.21-.71.53-.88l7.9-4.44c.36-.2.8-.2 1.14 0l7.9 4.44c.32.17.53.5.53.88v9z" />
+        </svg>
+      }
+    />
+  );
+
+  const headingMenu = (
+    <XDSVStack gap={1}>
+      <XDSSideNavItem label="Switch to Project A" />
+      <XDSSideNavItem label="Switch to Project B" />
+      <XDSSideNavItem label="Switch to Project C" />
+    </XDSVStack>
+  );
+
+  const heading =
+    config.sideNavHeadingStyle === 'none' ? undefined : (
+      <XDSSideNavHeading
+        icon={appIcon}
+        heading="Shell Lab"
+        headingHref={
+          config.sideNavHeadingStyle === 'link' ||
+          config.sideNavHeadingStyle === 'full'
+            ? '#'
+            : undefined
+        }
+        superheading={
+          config.sideNavHeadingStyle === 'full' ? 'Acme Suite' : undefined
+        }
+        superheadingHref={
+          config.sideNavHeadingStyle === 'full' ? '#' : undefined
+        }
+        subheading={
+          config.sideNavHeadingStyle === 'full' ? 'Business Account' : undefined
+        }
+        menu={
+          config.sideNavHeadingStyle === 'menu' ||
+          config.sideNavHeadingStyle === 'full'
+            ? headingMenu
+            : undefined
+        }
+      />
+    );
+
   return (
     <XDSSideNav
-      header={
-        config.showSideNavHeading ? (
-          <XDSSideNavHeading
-            icon={
-              <XDSNavIcon
-                icon={
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    width="16"
-                    height="16">
-                    <path d="M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44c-.36.2-.8.2-1.14 0l-7.9-4.44A.991.991 0 013 16.5v-9c0-.38.21-.71.53-.88l7.9-4.44c.36-.2.8-.2 1.14 0l7.9 4.44c.32.17.53.5.53.88v9z" />
-                  </svg>
-                }
-              />
-            }
-            heading="Shell Lab"
-            headingHref="#"
-          />
-        ) : undefined
-      }
+      header={heading}
       topContent={
         config.showTopContent ? (
           <XDSSideNavItem label="Create New" />
+        ) : undefined
+      }
+      footer={
+        config.showFooter ? (
+          <XDSSideNavSection title="Account">
+            <XDSSideNavItem label="Jane Smith" />
+            <XDSSideNavItem label="Upgrade to Pro" />
+          </XDSSideNavSection>
         ) : undefined
       }
       footerIcons={
@@ -664,13 +723,22 @@ export default function ShellLabPage() {
 
       {/* Floating config panel */}
       {showConfig && (
-        <div {...stylex.props(styles.configOverlay)}>
+        <div
+          style={{
+            position: 'fixed',
+            top: 16,
+            right: 16,
+            width: 360,
+            maxHeight: 'calc(100vh - 32px)',
+            overflowY: 'auto' as const,
+            zIndex: 10000,
+          }}>
           <ConfigPanel config={config} onChange={handleConfigChange} />
         </div>
       )}
 
       {/* Toggle config visibility */}
-      <div {...stylex.props(styles.toggleButton)}>
+      <div style={{position: 'fixed', bottom: 16, right: 16, zIndex: 10001}}>
         <button
           onClick={() => setShowConfig(v => !v)}
           style={{
