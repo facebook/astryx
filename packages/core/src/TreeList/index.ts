@@ -8,9 +8,5 @@
  */
 
 export {XDSTreeList} from './XDSTreeList';
-export type {
-  XDSTreeListProps,
-  XDSTreeListDensity,
-  XDSTreeListBranchAlignment,
-} from './XDSTreeList';
+export type {XDSTreeListProps, XDSTreeListDensity} from './XDSTreeList';
 export type {XDSTreeListItemData} from './XDSTreeListTypes';

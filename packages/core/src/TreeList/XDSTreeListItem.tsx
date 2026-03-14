@@ -22,11 +22,11 @@ import {
   transitionVars,
 } from '../theme/tokens.stylex';
 import {getIcon} from '../Icon/globalIconRegistry';
-import {XDSTreeListBranches} from './XDSTreeListBranches';
-import type {
-  XDSTreeListBranchAlignment,
-  XDSTreeListDensity,
-} from './XDSTreeListTypes';
+import {
+  XDSTreeListBranches,
+  XDSTreeListHorizontalConnector,
+} from './XDSTreeListBranches';
+import type {XDSTreeListDensity} from './XDSTreeListTypes';
 
 // =============================================================================
 // Constants
@@ -56,6 +56,9 @@ const styles = stylex.create({
   },
   treeBranches: {
     paddingInlineStart: BRANCH_MARGIN_LEFT,
+  },
+  rowWrapper: {
+    position: 'relative',
   },
   contentWrapper: {
     borderRadius: radiusVars['--radius-content'],
@@ -249,7 +252,6 @@ export interface XDSTreeListItemInternalProps {
   isExpanded: boolean;
   onToggle?: (id: string) => void;
   density: XDSTreeListDensity;
-  branchAlignment: XDSTreeListBranchAlignment;
   /** Pre-rendered children subtree (rendered by the parent recursion) */
   renderedChildren?: ReactNode;
 }
@@ -276,7 +278,6 @@ export function XDSTreeListItem({
   isExpanded,
   onToggle,
   density,
-  branchAlignment,
   renderedChildren,
 }: XDSTreeListItemInternalProps) {
   const labelId = useId();
@@ -404,29 +405,34 @@ export function XDSTreeListItem({
       <div {...stylex.props(styles.treeBranches)}>
         <XDSTreeListBranches
           ancestorsIsLast={ancestorsIsLast}
-          branchAlignment={branchAlignment}
-          density={density}
-          hasChildren={hasChildren}
           isLast={isLast}
           levelIndent={INDENT}
           marginLeft={BRANCH_MARGIN_LEFT}
           nestedLevel={nestedLevel}
         />
       </div>
-      <div
-        {...stylex.props(
-          styles.contentWrapper,
-          densityStyles[density],
-          (isInteractive || (hasChildren && onClick == null)) &&
-            styles.interactive,
-          (isInteractive || (hasChildren && onClick == null)) &&
-            styles.focusWithinOutline,
-          isDisabled && styles.disabled,
-          isSelected && styles.selected,
-        )}
-        style={{marginLeft: computedMarginLeft}}
-        onClick={handleClick}>
-        {innerContent}
+      <div {...stylex.props(styles.rowWrapper)}>
+        <XDSTreeListHorizontalConnector
+          hasChildren={hasChildren}
+          levelIndent={INDENT}
+          marginLeft={BRANCH_MARGIN_LEFT}
+          nestedLevel={nestedLevel}
+        />
+        <div
+          {...stylex.props(
+            styles.contentWrapper,
+            densityStyles[density],
+            (isInteractive || (hasChildren && onClick == null)) &&
+              styles.interactive,
+            (isInteractive || (hasChildren && onClick == null)) &&
+              styles.focusWithinOutline,
+            isDisabled && styles.disabled,
+            isSelected && styles.selected,
+          )}
+          style={{marginLeft: computedMarginLeft}}
+          onClick={handleClick}>
+          {innerContent}
+        </div>
       </div>
       {isExpanded && renderedChildren != null && (
         <ul role="group" {...stylex.props(styles.childGroup)}>

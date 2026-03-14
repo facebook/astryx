@@ -20,11 +20,6 @@ const meta: Meta<typeof XDSTreeList> = {
       options: ['compact', 'balanced', 'spacious'],
       description: 'Spacing density for tree list items',
     },
-    branchAlignment: {
-      control: 'select',
-      options: ['center', 'top'],
-      description: 'Where branch lines connect to items',
-    },
   },
 };
 
@@ -219,7 +214,6 @@ export const TopAligned: Story = {
       {id: 'pkg', label: 'package.json'},
       {id: 'readme', label: 'README.md'},
     ],
-    branchAlignment: 'top',
   },
 };
 
