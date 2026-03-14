@@ -1,5 +1,34 @@
 # @xds/core
 
+## 0.0.4
+
+### New Components
+
+- **XDSTreeList** — Hierarchical tree list component with expand/collapse (#609)
+- **XDSPowerSearch** — Advanced search component with result count, filtering (#561, #593)
+
+### Features
+
+- **AppShell variant system** — New `variant` prop (`wash`, `surface`, `section`, `elevated`) replaces `background` prop (#597)
+- **AppShell contentPadding** — New `contentPadding` prop for controlling content area padding (#612)
+- **AppShell auto height mode** — Sidenav and sticky backgrounds in auto height mode (#615)
+- **startIcon** — Added startIcon support (#584)
+
+### Fixes
+
+- Removed deprecated `isFullBleed` prop from Card and Section — use `padding={0}` instead (#610, #598)
+- Layout: `padding={0}` treated as equivalent to `isFullBleed` (#595)
+- SideNav: consistent spacing regardless of header/topContent visibility (#601)
+- Nav: consistent gap and heading text sizes (#616)
+
+### Refactors
+
+- Popover, HoverCard, Tooltip moved to top-level directories (#557)
+
+## 0.0.3
+
+### Patch Changes
+
 ## 0.1.0
 
 ### Minor Changes

@@ -1,5 +1,21 @@
 # @xds/cli
 
+## 0.0.4
+
+### Features
+
+- **`xds theme build`** — Renamed from `build-theme` to `theme build`, establishing `xds theme` command group (#570)
+- **`--lang` flag** — TranslationDoc support for i18n/compressed docs (#611)
+- **`--zh` flag** — Chinese Simplified doc output (#567)
+
+### Refactors
+
+- Split `component.mjs` into `lib/` modules with lazy command registry (#613)
+
+## 0.0.3
+
+### Patch Changes
+
 ## 0.1.0
 
 ### Minor Changes

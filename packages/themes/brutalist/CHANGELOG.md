@@ -1,7 +1,8 @@
 # @xds/theme-brutalist
 
-## 0.0.3
+## 0.0.4
 
-### Patch Changes
+### Minor Changes
 
-- Initial release — aligned with @xds/core@0.0.3
+- Initial release — brutalist theme with zero radius, monospace typography, heavy borders
+- Added to Storybook (#560)
