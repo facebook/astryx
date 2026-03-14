@@ -90,7 +90,7 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
   },
   heading: {
-    fontSize: textSizeVars['--text-base'],
+    fontSize: textSizeVars['--text-lg'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     lineHeight: lineHeightVars['--leading-snug'],
     color: colorVars['--color-text-primary'],
@@ -98,6 +98,10 @@ const styles = stylex.create({
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+  },
+  // When super/sub headings are present, scale down the app name
+  headingCompact: {
+    fontSize: textSizeVars['--text-base'],
   },
   subheading: {
     fontSize: textSizeVars['--text-xsm'],
@@ -260,6 +264,7 @@ export function XDSSideNavHeading({
 
   const showChevron = !!menu;
   const hasAnyHref = !!(headingHref || superheadingHref || subheadingHref);
+  const hasCompactHeading = !!(superheading || subheading);
 
   // Determine interaction mode
   const isWholeHeadingTrigger = !!menu && !hasAnyHref;
@@ -312,7 +317,13 @@ export function XDSSideNavHeading({
           {heading}
         </XDSLink>
       ) : (
-        <span {...stylex.props(styles.heading)}>{heading}</span>
+        <span
+          {...stylex.props(
+            styles.heading,
+            hasCompactHeading && styles.headingCompact,
+          )}>
+          {heading}
+        </span>
       )}
       {subheading &&
         (hasAnyHref && subheadingHref && menu ? (
@@ -468,7 +479,13 @@ export function XDSSideNavHeading({
               {heading}
             </XDSLink>
           ) : (
-            <span {...stylex.props(styles.heading)}>{heading}</span>
+            <span
+              {...stylex.props(
+                styles.heading,
+                hasCompactHeading && styles.headingCompact,
+              )}>
+              {heading}
+            </span>
           )}
           {subheading &&
             (subheadingHref ? (
