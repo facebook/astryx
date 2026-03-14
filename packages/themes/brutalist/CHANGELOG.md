@@ -1,8 +1,7 @@
 # @xds/theme-brutalist
 
-## 1.0.0
+## 0.0.3
 
 ### Patch Changes
 
-- Updated dependencies [76ac780]
-  - @xds/core@0.1.0
+- Initial release — aligned with @xds/core@0.0.3

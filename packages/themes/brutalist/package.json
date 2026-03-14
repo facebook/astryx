@@ -1,6 +1,6 @@
 {
   "name": "@xds/theme-brutalist",
-  "version": "1.0.0",
+  "version": "0.0.3",
   "private": false,
   "description": "Brutalist theme for XDS — zero radius, monospace, heavy borders",
   "license": "MIT",
