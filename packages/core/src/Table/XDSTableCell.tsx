@@ -28,6 +28,10 @@ export interface XDSTableCellProps extends XDSBaseProps<HTMLTableCellElement> {
   /** Space-separated list of header cell IDs this cell is described by. */
   headers?: string;
   children?: ReactNode;
+  /**
+   * StyleX styles for layout customization (margins, positioning, sizing).
+   * Must be a `stylex.create()` value — not an inline style object.
+   */
   xstyle?: StyleXStyles | StyleXStyles[];
 }
 
