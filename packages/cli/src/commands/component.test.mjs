@@ -11,7 +11,7 @@ import {
   findComponentSource,
   levenshteinDistance,
   findClosestComponents,
-} from './component.mjs';
+} from './component/index.mjs';
 
 let tmpDir;
 
