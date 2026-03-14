@@ -359,6 +359,12 @@
       "import": "./dist/TopNav/index.mjs",
       "require": "./dist/TopNav/index.js"
     },
+    "./TreeList": {
+      "source": "./src/TreeList/index.ts",
+      "types": "./dist/TreeList/index.d.ts",
+      "import": "./dist/TreeList/index.mjs",
+      "require": "./dist/TreeList/index.js"
+    },
     "./Typeahead": {
       "source": "./src/Typeahead/index.ts",
       "types": "./dist/Typeahead/index.d.ts",
