@@ -1,6 +1,15 @@
-# XDS Principles
+/**
+ * @file principles reference doc
+ *
+ * English source of truth. Dense/zh translations only override prose.
+ * The CLI merges translations at read time.
+ */
 
-React design system for internal tools. Components use `XDS` prefix.
+/** @type {content: string} */
+export const docs = {
+  content: `# XDS Principles
+
+React design system for internal tools. Components use \`XDS\` prefix.
 
 ## Rules
 
@@ -12,19 +21,19 @@ React design system for internal tools. Components use `XDS` prefix.
 
 ## Style Overrides: xstyle prop
 
-Most XDS components accept an `xstyle` prop for customizing styles.
+Most XDS components accept an \`xstyle\` prop for customizing styles.
 It supports three formats — pick the one that fits:
 
 **Inline styles** — for simple one-off overrides:
 
-```tsx
+\`\`\`tsx
 <XDSTextInput label="Name" xstyle={{ maxWidth: 300 }} />
 <XDSCard xstyle={{ height: 200, padding: 16 }} />
-```
+\`\`\`
 
 **StyleX styles** — for complex, reusable, or pseudo-class overrides:
 
-```tsx
+\`\`\`tsx
 import * as stylex from '@stylexjs/stylex';
 const overrides = stylex.create({
   hoverCard: {
@@ -35,32 +44,32 @@ const overrides = stylex.create({
   },
 });
 <XDSCard xstyle={overrides.hoverCard} />;
-```
+\`\`\`
 
 **CSS class name** — for Tailwind, CSS Modules, or external CSS:
 
-```tsx
+\`\`\`tsx
 <XDSCard xstyle="my-custom-card" />
 <XDSCard xstyle={styles.customCard} />  // CSS Module
-```
+\`\`\`
 
 Rules of thumb:
 
 - 1-2 simple properties → inline
-- 3+ properties, reusable, or named → `stylex.create`
-- Pseudo-classes (`:hover`, `:focus-visible`) → `stylex.create` (required)
-- All `:hover` MUST use `@media (hover: hover)` guards
+- 3+ properties, reusable, or named → \`stylex.create\`
+- Pseudo-classes (\`:hover\`, \`:focus-visible\`) → \`stylex.create\` (required)
+- All \`:hover\` MUST use \`@media (hover: hover)\` guards
 
 ## Anti-Patterns
 
-❌ Inline styles on raw elements → Use `xstyle` on XDS components
+❌ Inline styles on raw elements → Use \`xstyle\` on XDS components
 ❌ Hardcoded colors (#fff) → Use var(--color-_)
 ❌ Hardcoded spacing (16px) → Use spacing tokens or var(--spacing-_)
 ❌ Inventing props → Read component docs first
 
 ## StyleX Usage
 
-```tsx
+\`\`\`tsx
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
@@ -72,12 +81,19 @@ const styles = stylex.create({
 });
 
 <div {...stylex.props(styles.container)}>
-```
+\`\`\`
 
 ## Quick Token Reference
 
-See `tokens.md` for the full list. Key values:
+See \`tokens.md\` for the full list. Key values:
 
 **Spacing**: 0=0px | 0.5=2px | 1=4px | 2=8px | 3=12px | 4=16px | 5=20px | 6=24px | 7=32px
 **Radius**: rounded=pill | container=12px | element=8px | content=4px
 **Colors**: accent, surface, wash, positive, negative, warning
+`,
+};
+
+/** @type {content: string} */
+export const docsDense = {
+  content: docs.content, // TODO: apply dense protocol
+};

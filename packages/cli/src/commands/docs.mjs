@@ -3,10 +3,11 @@
  *
  * `xds docs` lists available topics.
  * `xds docs <topic>` prints the doc content.
+ * Supports --lang for translations (dense, zh).
  */
 
-import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {pathToFileURL} from 'node:url';
 import {CLI_ROOT} from '../utils/paths.mjs';
 
 const DOCS_DIR = path.join(CLI_ROOT, 'docs');
@@ -17,11 +18,27 @@ const TOPICS = {
   theme: 'Theme system: XDSTheme, custom themes, overrides, light/dark mode',
 };
 
+/**
+ * Load a reference doc, respecting --lang for translations.
+ */
+async function loadRefDoc(topic, {lang} = {}) {
+  const docPath = path.join(DOCS_DIR, `${topic}.doc.mjs`);
+  const mod = await import(pathToFileURL(docPath).href);
+
+  const locale = lang || null;
+  if (!locale) return mod.docs.content;
+
+  const translationKey = locale === 'zh' ? 'docsZh' : locale === 'dense' ? 'docsDense' : null;
+  if (!translationKey || !mod[translationKey]) return mod.docs.content;
+
+  return mod[translationKey].content;
+}
+
 export function registerDocs(program) {
   program
     .command('docs [topic]')
-    .description('Print XDS reference docs (principles, tokens)')
-    .action(topic => {
+    .description('Print XDS reference docs (principles, tokens, theme)')
+    .action(async (topic) => {
       if (!topic) {
         console.log('\nAvailable docs:\n');
         for (const [name, desc] of Object.entries(TOPICS)) {
@@ -41,14 +58,8 @@ export function registerDocs(program) {
         process.exit(1);
       }
 
-      const docPath = path.join(DOCS_DIR, `${normalized}.md`);
-
-      if (!fs.existsSync(docPath)) {
-        console.error(`Error: Doc file not found at ${docPath}`);
-        process.exit(1);
-      }
-
-      const content = fs.readFileSync(docPath, 'utf-8');
+      const lang = program.opts().lang || null;
+      const content = await loadRefDoc(normalized, {lang});
       console.log(content);
     });
 }

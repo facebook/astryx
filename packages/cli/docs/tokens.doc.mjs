@@ -1,6 +1,15 @@
-# XDS Design Tokens
+/**
+ * @file tokens reference doc
+ *
+ * English source of truth. Dense/zh translations only override prose.
+ * The CLI merges translations at read time.
+ */
 
-All design tokens are defined in `packages/core/src/theme/tokens.stylex.ts`.
+/** @type {content: string} */
+export const docs = {
+  content: `# XDS Design Tokens
+
+All design tokens are defined in \`packages/core/src/theme/tokens.stylex.ts\`.
 
 ## Spacing Tokens
 
@@ -21,7 +30,7 @@ All design tokens are defined in `packages/core/src/theme/tokens.stylex.ts`.
 | --spacing-11  | 44px  | Ultra spacious   |
 | --spacing-12  | 48px  | Maximum spacing  |
 
-Component gap props use `space0`-`space12` which map to these tokens.
+Component gap props use \`space0\`-\`space12\` which map to these tokens.
 
 ## Size Tokens
 
@@ -87,9 +96,9 @@ Control heights for consistent sizing across buttons, inputs, and selectors.
 
 ### Font Families
 
-- `--font-body`: System UI font stack
-- `--font-code`: Monospace font stack
-- `--font-heading`: System UI font stack
+- \`--font-body\`: System UI font stack
+- \`--font-code\`: Monospace font stack
+- \`--font-heading\`: System UI font stack
 
 ### Text Sizes
 
@@ -109,10 +118,10 @@ Control heights for consistent sizing across buttons, inputs, and selectors.
 
 ### Font Weights
 
-- `--font-weight-normal`: 400
-- `--font-weight-medium`: 500
-- `--font-weight-semibold`: 600
-- `--font-weight-bold`: 700
+- \`--font-weight-normal\`: 400
+- \`--font-weight-medium\`: 500
+- \`--font-weight-semibold\`: 600
+- \`--font-weight-bold\`: 700
 
 ### Line Heights (Leading)
 
@@ -126,7 +135,7 @@ Control heights for consistent sizing across buttons, inputs, and selectors.
 
 ## Usage in StyleX
 
-```tsx
+\`\`\`tsx
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, sizeVars, radiusVars} from '@xds/core';
 
@@ -140,11 +149,11 @@ const styles = stylex.create({
     height: sizeVars['--size-md'],
   },
 });
-```
+\`\`\`
 
 Or use CSS custom properties directly:
 
-```tsx
+\`\`\`tsx
 const styles = stylex.create({
   card: {
     padding: 'var(--spacing-4)',
@@ -152,4 +161,11 @@ const styles = stylex.create({
     borderRadius: 'var(--radius-container)',
   },
 });
-```
+\`\`\`
+`,
+};
+
+/** @type {content: string} */
+export const docsDense = {
+  content: docs.content, // TODO: apply dense protocol
+};
