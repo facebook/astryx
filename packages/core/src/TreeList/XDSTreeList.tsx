@@ -18,20 +18,13 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSTreeListItem} from './XDSTreeListItem';
-import type {
-  XDSTreeListItemData,
-  XDSTreeListDensity,
-  XDSTreeListBranchAlignment,
-} from './XDSTreeListTypes';
+import type {XDSTreeListItemData, XDSTreeListDensity} from './XDSTreeListTypes';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export {
-  type XDSTreeListDensity,
-  type XDSTreeListBranchAlignment,
-} from './XDSTreeListTypes';
+export {type XDSTreeListDensity} from './XDSTreeListTypes';
 
 export interface XDSTreeListProps {
   /** Ref forwarded to the root element */
@@ -51,14 +44,6 @@ export interface XDSTreeListProps {
    * @default 'balanced'
    */
   density?: XDSTreeListDensity;
-
-  /**
-   * Controls where tree branch lines connect to items.
-   * - 'center': Lines terminate at vertical center of items
-   * - 'top': Lines terminate at the top of items
-   * @default 'center'
-   */
-  branchAlignment?: XDSTreeListBranchAlignment;
 
   /**
    * Header content rendered above the tree list.
@@ -155,7 +140,6 @@ function collectExpandedKeys(items: XDSTreeListItemData[]): string[] {
 export function XDSTreeList({
   items,
   density = 'balanced',
-  branchAlignment = 'center',
   header,
   xstyle,
   className,
@@ -223,7 +207,6 @@ export function XDSTreeList({
           isExpanded={isExpanded}
           onToggle={handleToggle}
           density={density}
-          branchAlignment={branchAlignment}
           renderedChildren={renderedChildren}
         />
       );
@@ -235,7 +218,7 @@ export function XDSTreeList({
       ref={ref}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('tree-list', {density, branchAlignment}),
+        xdsClassName('tree-list', {density}),
         stylex.props(styles.root, xstyle),
         className,
         style,

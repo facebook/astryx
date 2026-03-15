@@ -307,15 +307,6 @@ describe('XDSTreeList', () => {
   });
 
   // ===========================================================================
-  // Branch alignment
-  // ===========================================================================
-
-  it('renders with top branch alignment', () => {
-    render(<XDSTreeList items={nestedItemsExpanded} branchAlignment="top" />);
-    expect(screen.getByText('Child 1')).toBeInTheDocument();
-  });
-
-  // ===========================================================================
   // xds class name
   // ===========================================================================
 
