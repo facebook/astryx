@@ -230,73 +230,26 @@ describe('XDSAppShell', () => {
     expect(screen.getByRole('navigation')).toBeInTheDocument();
   });
 
-  it('sideNav is hidden when defaultIsSideNavCollapsed is true', () => {
-    render(
-      <XDSAppShell sideNav={<TestSideNav />} defaultIsSideNavCollapsed={true}>
-        <div>Content</div>
-      </XDSAppShell>,
-    );
-    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
-  });
-
-  // ===========================================================================
-  // SideNav collapse — controlled
-  // ===========================================================================
-
-  it('sideNav is hidden when isSideNavCollapsed is true (controlled)', () => {
-    render(
-      <XDSAppShell
-        sideNav={<TestSideNav />}
-        isSideNavCollapsed={true}
-        onSideNavCollapsedChange={() => {}}>
-        <div>Content</div>
-      </XDSAppShell>,
-    );
-    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
-  });
-
-  it('sideNav is visible when isSideNavCollapsed is false (controlled)', () => {
-    render(
-      <XDSAppShell
-        sideNav={<TestSideNav />}
-        isSideNavCollapsed={false}
-        onSideNavCollapsedChange={() => {}}>
-        <div>Content</div>
-      </XDSAppShell>,
-    );
-    expect(screen.getByRole('navigation')).toBeInTheDocument();
-  });
+  // (Collapse tests removed — collapse is now managed by XDSSideNav, not AppShell)
 
   // ===========================================================================
   // Responsive breakpoint
   // ===========================================================================
 
-  it('auto-collapses sideNav below breakpoint', () => {
-    const onChange = vi.fn();
+  it('tracks breakpoint changes', () => {
     render(
-      <XDSAppShell
-        sideNav={<TestSideNav />}
-        sideNavBreakpoint="md"
-        onSideNavCollapsedChange={onChange}>
+      <XDSAppShell sideNav={<TestSideNav />} sideNavBreakpoint="md">
         <div>Content</div>
       </XDSAppShell>,
     );
 
-    // Simulate going below breakpoint
-    act(() => {
-      mockMql._setMatches(true);
-    });
-
-    expect(onChange).toHaveBeenCalledWith(true);
+    // matchMedia should have been called for the breakpoint
+    expect(window.matchMedia).toHaveBeenCalled();
   });
 
-  it('does not auto-collapse when sideNavBreakpoint is none', () => {
-    const onChange = vi.fn();
+  it('does not track breakpoint when sideNavBreakpoint is none', () => {
     render(
-      <XDSAppShell
-        sideNav={<TestSideNav />}
-        sideNavBreakpoint="none"
-        onSideNavCollapsedChange={onChange}>
+      <XDSAppShell sideNav={<TestSideNav />} sideNavBreakpoint="none">
         <div>Content</div>
       </XDSAppShell>,
     );
@@ -314,10 +267,7 @@ describe('XDSAppShell', () => {
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
 
     render(
-      <XDSAppShell
-        sideNav={<TestSideNav />}
-        isSideNavCollapsed={false}
-        onSideNavCollapsedChange={() => {}}>
+      <XDSAppShell sideNav={<TestSideNav />}>
         <div>Content</div>
       </XDSAppShell>,
     );
@@ -328,24 +278,18 @@ describe('XDSAppShell', () => {
     expect(screen.getByText('Nav')).toBeInTheDocument();
   });
 
-  it('default mobile nav calls onSideNavCollapsedChange on close', () => {
+  it('renders default mobile nav when below breakpoint', () => {
     mockMql = createMockMatchMedia(true);
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
 
-    const onChange = vi.fn();
     render(
-      <XDSAppShell
-        sideNav={<TestSideNav />}
-        isSideNavCollapsed={false}
-        onSideNavCollapsedChange={onChange}>
+      <XDSAppShell sideNav={<TestSideNav />}>
         <div>Content</div>
       </XDSAppShell>,
     );
 
-    // Click the close button inside the default mobile nav
-    const closeButton = screen.getByRole('button', {name: /close/i});
-    fireEvent.click(closeButton);
-    expect(onChange).toHaveBeenCalledWith(true);
+    // Default mobile nav should be rendered when below breakpoint
+    expect(screen.getByTestId('sidenav-mobile')).toBeInTheDocument();
   });
 
   // ===========================================================================
@@ -525,9 +469,7 @@ describe('XDSAppShell', () => {
             data-testid="appshell-mobile-nav">
             <div>Mobile Nav</div>
           </XDSMobileNav>
-        }
-        isSideNavCollapsed={false}
-        onSideNavCollapsedChange={() => {}}>
+        }>
         <div>Content</div>
       </XDSAppShell>,
     );

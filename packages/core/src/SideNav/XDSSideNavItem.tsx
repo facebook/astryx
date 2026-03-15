@@ -30,6 +30,7 @@ import type {XDSIconType} from '../Icon';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
+import {useSideNavCollapse} from './SideNavCollapseContext';
 
 // =============================================================================
 // Styles
@@ -193,11 +194,17 @@ export function XDSSideNavItem({
   'data-testid': testId,
   ref,
 }: XDSSideNavItemProps) {
+  const {isCollapsed} = useSideNavCollapse();
   const id = useId();
   const hasChildren = !!children;
   const LinkComponent = useXDSLinkComponent(as);
 
   const displayIcon = isSelected && selectedIcon ? selectedIcon : icon;
+
+  // In collapsed mode: hide items without icons, hide children (sub-items)
+  if (isCollapsed && !icon) {
+    return null;
+  }
 
   const handleClick = (e: React.MouseEvent) => {
     if (isDisabled) {
@@ -216,8 +223,8 @@ export function XDSSideNavItem({
           color={isSelected ? 'primary' : isDisabled ? 'disabled' : 'secondary'}
         />
       )}
-      <span {...stylex.props(styles.label)}>{label}</span>
-      {endContent && (
+      {!isCollapsed && <span {...stylex.props(styles.label)}>{label}</span>}
+      {!isCollapsed && endContent && (
         <span {...stylex.props(styles.endContent)}>{endContent}</span>
       )}
     </>
@@ -263,7 +270,7 @@ export function XDSSideNavItem({
     <div
       {...mergeProps(xdsClassName('side-nav-item'), stylex.props(styles.root))}>
       {itemElement}
-      {hasChildren && (
+      {hasChildren && !isCollapsed && (
         <div
           role="group"
           aria-labelledby={`${id}-label`}

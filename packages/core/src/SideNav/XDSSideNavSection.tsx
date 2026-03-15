@@ -25,6 +25,7 @@ import {
   lineHeightVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import {useSideNavCollapse} from './SideNavCollapseContext';
 // =============================================================================
 // Styles
 // =============================================================================
@@ -140,6 +141,7 @@ export function XDSSideNavSection({
   isHeaderHidden = false,
   'data-testid': testId,
 }: XDSSideNavSectionProps) {
+  const {isCollapsed} = useSideNavCollapse();
   const id = useId();
   const titleId = `${id}-title`;
 
@@ -157,7 +159,9 @@ export function XDSSideNavSection({
     </>
   );
 
-  const visuallyHiddenStyle: React.CSSProperties = isHeaderHidden
+  const shouldHideHeader = isHeaderHidden || isCollapsed;
+
+  const visuallyHiddenStyle: React.CSSProperties = shouldHideHeader
     ? {
         position: 'absolute',
         width: 1,
@@ -181,7 +185,7 @@ export function XDSSideNavSection({
         stylex.props(styles.root),
       )}>
       <div
-        style={isHeaderHidden ? visuallyHiddenStyle : undefined}
+        style={shouldHideHeader ? visuallyHiddenStyle : undefined}
         {...stylex.props(styles.header)}>
         {headerContent}
       </div>
