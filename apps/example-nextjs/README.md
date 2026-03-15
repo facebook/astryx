@@ -84,11 +84,20 @@ module.exports = {
 @stylex;
 ```
 
-Import it in your root layout:
+Import it in your root layout, along with the base CSS and theme CSS:
 
 ```tsx
+import '@xds/core/reset.css';
+import '@xds/core/typography.css';
+import '@xds/theme-default/theme.css';
 import './globals.css';
 ```
+
+The CSS import order matters:
+1. `reset.css` — baseline resets (`@layer reset`)
+2. `typography.css` — prose styles (`@layer typography`)
+3. `theme.css` — theme component overrides (`@layer xds.theme`)
+4. `globals.css` — StyleX extraction (`@stylex;` directive)
 
 ### 5. Next.js config
 

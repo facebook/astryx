@@ -45,7 +45,6 @@ export const defaultTheme = defineTheme({
         fontWeight: 'var(--font-weight-semibold)',
         lineHeight: '1.2',
         color: 'var(--color-text-primary)',
-        margin: '0',
       },
       'level:2': {
         fontFamily: 'var(--font-heading)',
@@ -53,7 +52,6 @@ export const defaultTheme = defineTheme({
         fontWeight: 'var(--font-weight-semibold)',
         lineHeight: '1.333',
         color: 'var(--color-text-primary)',
-        margin: '0',
       },
       'level:3': {
         fontFamily: 'var(--font-heading)',
@@ -61,7 +59,6 @@ export const defaultTheme = defineTheme({
         fontWeight: 'var(--font-weight-semibold)',
         lineHeight: '1.25',
         color: 'var(--color-text-primary)',
-        margin: '0',
       },
       'level:4': {
         fontFamily: 'var(--font-heading)',
@@ -69,7 +66,6 @@ export const defaultTheme = defineTheme({
         fontWeight: 'var(--font-weight-semibold)',
         lineHeight: 'var(--leading-base)',
         color: 'var(--color-text-primary)',
-        margin: '0',
       },
       'level:5': {
         fontFamily: 'var(--font-heading)',
@@ -77,7 +73,6 @@ export const defaultTheme = defineTheme({
         fontWeight: 'var(--font-weight-semibold)',
         lineHeight: 'var(--leading-base)',
         color: 'var(--color-text-primary)',
-        margin: '0',
       },
       'level:6': {
         fontFamily: 'var(--font-heading)',
@@ -85,7 +80,6 @@ export const defaultTheme = defineTheme({
         fontWeight: 'var(--font-weight-semibold)',
         lineHeight: '1.333',
         color: 'var(--color-text-primary)',
-        margin: '0',
       },
       // Editorial variant — larger scale for content-heavy pages
       'variant:editorial+level:1': {
@@ -94,7 +88,6 @@ export const defaultTheme = defineTheme({
         fontWeight: 'var(--font-weight-semibold)',
         lineHeight: '1.5',
         color: 'var(--color-text-primary)',
-        margin: '0',
       },
       'variant:editorial+level:2': {
         fontFamily: 'var(--font-heading)',
@@ -102,7 +95,6 @@ export const defaultTheme = defineTheme({
         fontWeight: 'var(--font-weight-semibold)',
         lineHeight: '1.333',
         color: 'var(--color-text-primary)',
-        margin: '0',
       },
       'variant:editorial+level:3': {
         fontFamily: 'var(--font-heading)',
@@ -110,7 +102,6 @@ export const defaultTheme = defineTheme({
         fontWeight: 'var(--font-weight-semibold)',
         lineHeight: '1.4',
         color: 'var(--color-text-primary)',
-        margin: '0',
       },
       'variant:editorial+level:4': {
         fontFamily: 'var(--font-heading)',
@@ -118,7 +109,6 @@ export const defaultTheme = defineTheme({
         fontWeight: 'var(--font-weight-semibold)',
         lineHeight: '1.5',
         color: 'var(--color-text-primary)',
-        margin: '0',
       },
       'variant:editorial+level:5': {
         fontFamily: 'var(--font-heading)',
@@ -126,7 +116,6 @@ export const defaultTheme = defineTheme({
         fontWeight: 'var(--font-weight-semibold)',
         lineHeight: 'var(--leading-base)',
         color: 'var(--color-text-primary)',
-        margin: '0',
       },
       'variant:editorial+level:6': {
         fontFamily: 'var(--font-heading)',
@@ -134,7 +123,6 @@ export const defaultTheme = defineTheme({
         fontWeight: 'var(--font-weight-semibold)',
         lineHeight: '1.333',
         color: 'var(--color-text-primary)',
-        margin: '0',
       },
     },
 
@@ -148,15 +136,13 @@ export const defaultTheme = defineTheme({
         fontWeight: 'var(--font-weight-normal)',
         lineHeight: 'var(--leading-base)',
         color: 'var(--color-text-primary)',
-        margin: '0',
       },
       'type:large': {
         fontFamily: 'var(--font-heading)',
         fontSize: 'var(--text-lg)',
-        fontWeight: 'var(--font-weight-normal)',
+        fontWeight: 'var(--font-weight-semibold)',
         lineHeight: '1.5',
         color: 'var(--color-text-primary)',
-        margin: '0',
       },
       'type:label': {
         fontFamily: 'var(--font-heading)',
@@ -164,7 +150,6 @@ export const defaultTheme = defineTheme({
         fontWeight: 'var(--font-weight-medium)',
         lineHeight: 'var(--leading-base)',
         color: 'var(--color-text-primary)',
-        margin: '0',
       },
       'type:supporting': {
         fontFamily: 'var(--font-heading)',
@@ -172,7 +157,6 @@ export const defaultTheme = defineTheme({
         fontWeight: 'var(--font-weight-normal)',
         lineHeight: '1.333',
         color: 'var(--color-text-secondary)',
-        margin: '0',
       },
       'type:code': {
         fontFamily: 'var(--font-code)',
@@ -180,7 +164,6 @@ export const defaultTheme = defineTheme({
         fontWeight: 'var(--font-weight-normal)',
         lineHeight: 'var(--leading-base)',
         color: 'var(--color-text-primary)',
-        margin: '0',
       },
     },
   },
