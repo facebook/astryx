@@ -22,6 +22,13 @@ const lightningcssTargets = {
 
 // https://vite.dev/config/
 export default defineConfig({
+  build: {
+    // Don't use lightningcss for CSS minification — it lowers light-dark()
+    // into --lightningcss-light/--lightningcss-dark polyfill variables that
+    // are never initialized, silently breaking all XDS theming colors.
+    // XDS dist CSS is already minified, so this costs nothing.
+    cssMinify: false,
+  },
   plugins: [
     stylex.vite({
       dev: process.env.NODE_ENV === 'development',

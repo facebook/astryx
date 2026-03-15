@@ -37,6 +37,10 @@ import stylex from '@stylexjs/unplugin';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+  build: {
+    // Prevent lightningcss from lowering light-dark() into broken polyfills
+    cssMinify: false,
+  },
   plugins: [
     stylex.vite({
       dev: process.env.NODE_ENV === 'development',
@@ -109,12 +113,30 @@ npm run preview
 
 ## Gotchas
 
-| Issue                   | Symptom                                 | Fix                                                                       |
-| ----------------------- | --------------------------------------- | ------------------------------------------------------------------------- |
-| Missing resolve aliases | Module not found errors for `@xds/core` | Add `resolve.alias` pointing to source directory                          |
-| Missing CSS entry point | StyleX has no CSS asset to append to    | Create a minimal `index.css` and import it in `main.tsx`                  |
-| Plugin order            | Styles not extracted or HMR broken      | `stylex.vite()` must come before `react()` in the plugins array           |
-| Duplicate React types   | JSX component type errors in monorepo   | Known monorepo issue with `@types/react` hoisting; doesn't affect runtime |
+| Issue                           | Symptom                                       | Fix                                                                       |
+| ------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------- |
+| LightningCSS mangles light-dark | All colors invisible or broken theming         | Add `build: { cssMinify: false }` — see below                            |
+| Missing resolve aliases         | Module not found errors for `@xds/core`        | Add `resolve.alias` pointing to source directory                          |
+| Missing CSS entry point         | StyleX has no CSS asset to append to           | Create a minimal `index.css` and import it in `main.tsx`                  |
+| Plugin order                    | Styles not extracted or HMR broken             | `stylex.vite()` must come before `react()` in the plugins array           |
+| Duplicate React types           | JSX component type errors in monorepo          | Known monorepo issue with `@types/react` hoisting; doesn't affect runtime |
+
+### ⚠️ LightningCSS and `light-dark()`
+
+XDS tokens use the native CSS `light-dark()` function for theming. Vite's default CSS minifier (LightningCSS) "lowers" `light-dark()` into `--lightningcss-light` / `--lightningcss-dark` polyfill variables. These polyfill variables are **never initialized**, so every color silently becomes empty — all theming breaks with no visible error.
+
+**The fix is simple:** disable CSS minification in your Vite build config:
+
+```ts
+export default defineConfig({
+  build: {
+    cssMinify: false,
+  },
+  // ... plugins, resolve, etc.
+});
+```
+
+This is safe because XDS dist CSS is already minified. Setting `lightningcssTargets` on the StyleX plugin is **not sufficient** — Vite's build-phase CSS minifier runs separately from the StyleX plugin and will still mangle `light-dark()` values.
 
 ## Related
 

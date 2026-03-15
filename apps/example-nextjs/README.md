@@ -127,6 +127,14 @@ export function Providers({children}) {
 | No `'use client'` on theme provider | Server component error from `createContext` | Mark the provider file with `'use client'`                       |
 | StyleX as preset instead of plugin  | Build errors or missing styles              | Use `plugins` array, not `presets`, for `@stylexjs/babel-plugin` |
 
+### ⚠️ CSS Minifiers and `light-dark()`
+
+XDS tokens use the native CSS `light-dark()` function for theming. If you use a CSS minifier that "lowers" modern CSS (such as LightningCSS), it will convert `light-dark()` into `--lightningcss-light` / `--lightningcss-dark` polyfill variables that are never initialized — silently breaking all colors.
+
+Next.js uses PostCSS for CSS processing (not LightningCSS), so this issue **does not apply** to the standard Next.js setup shown here. However, if you add a custom CSS minifier or use `next.config.mjs` experimental CSS features that invoke LightningCSS, you may encounter this. The safest approach is to avoid post-processing XDS-generated CSS through any tool that doesn't support native `light-dark()`.
+
+For Vite-based setups, see the [Vite example's README](../example-vite/) for the specific fix (`cssMinify: false`).
+
 ## Related
 
 - [Issue #145 — Add example-nextjs project](https://github.com/facebookexperimental/xds/issues/145)
