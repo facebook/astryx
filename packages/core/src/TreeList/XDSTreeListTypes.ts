@@ -14,9 +14,6 @@ import type {ReactNode} from 'react';
 /** Spacing density for tree list items. */
 export type XDSTreeListDensity = 'compact' | 'balanced' | 'spacious';
 
-/** Branch alignment mode for tree connector lines. */
-export type XDSTreeListBranchAlignment = 'center' | 'top';
-
 /** Recursive item configuration for XDSTreeList. */
 export interface XDSTreeListItemData {
   /** Unique identifier for the item. Used as React key and for expansion tracking. */

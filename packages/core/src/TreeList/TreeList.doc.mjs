@@ -61,7 +61,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-tree-list', visualProps: ['density', 'branchAlignment']},
+      {className: 'xds-tree-list', visualProps: ['density']},
     ],
   },
   notes: [
@@ -100,12 +100,6 @@ export const docs = {
           type: "'compact' | 'balanced' | 'spacious'",
           description: 'Spacing density for items.',
           default: "'balanced'",
-        },
-        {
-          name: 'branchAlignment',
-          type: "'center' | 'top'",
-          description: 'Where branch lines connect to items.',
-          default: "'center'",
         },
         {
           name: 'header',

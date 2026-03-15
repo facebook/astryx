@@ -16,11 +16,13 @@ import {XDSButton} from '../Button';
 import {XDSSelector} from '../Selector';
 import {XDSHStack, XDSVStack} from '../Stack';
 import {XDSIcon} from '../Icon';
+import {XDSTreeList, type XDSTreeListItemData} from '../TreeList';
 import {
   spacingVars,
   colorVars,
   radiusVars,
   elevationVars,
+  textSizeVars,
 } from '../theme/tokens.stylex';
 import {PowerSearchValueEditor} from './PowerSearchValueEditor';
 import type {InternalConfig} from './useInternalConfig';
@@ -59,6 +61,17 @@ const styles = stylex.create({
     minWidth: 0,
   },
   // Nested editor styles
+  nestedRootLabel: {
+    fontSize: textSizeVars['--text-base'],
+  },
+  nestedFieldSelector: {
+    flexShrink: 0,
+    width: 200,
+  },
+  nestedOperatorSelector: {
+    flexShrink: 0,
+    width: 180,
+  },
   nestedRow: {
     width: '100%',
   },
@@ -110,7 +123,6 @@ interface NestedSubFilterRowProps {
   config: InternalConfig;
   subFilter: PartialFilter;
   onChange: (subFilter: PartialFilter) => void;
-  onRemove: () => void;
   isReadOnly: boolean;
 }
 
@@ -118,7 +130,6 @@ function NestedSubFilterRow({
   config,
   subFilter,
   onChange,
-  onRemove,
   isReadOnly,
 }: NestedSubFilterRowProps) {
   // Exclude nested fields from sub-filter field options to avoid infinite nesting
@@ -189,7 +200,7 @@ function NestedSubFilterRow({
 
   return (
     <XDSHStack gap={2} vAlign="center">
-      <div {...stylex.props(styles.fieldSelector)}>
+      <div {...stylex.props(styles.nestedFieldSelector)}>
         <XDSSelector
           label="Field"
           isLabelHidden
@@ -201,7 +212,7 @@ function NestedSubFilterRow({
         />
       </div>
       {operatorOptions.length > 0 && (
-        <div {...stylex.props(styles.operatorSelector)}>
+        <div {...stylex.props(styles.nestedOperatorSelector)}>
           <XDSSelector
             label="Operator"
             isLabelHidden
@@ -223,15 +234,6 @@ function NestedSubFilterRow({
             isDisabled={isReadOnly}
           />
         </div>
-      )}
-      {!isReadOnly && (
-        <button
-          type="button"
-          aria-label="Remove filter"
-          onClick={onRemove}
-          {...stylex.props(styles.removeButton)}>
-          <XDSIcon icon="close" size="sm" />
-        </button>
       )}
     </XDSHStack>
   );
@@ -349,9 +351,46 @@ function NestedEditor({
     });
   }, [config, syncToParent]);
 
-  return (
-    <XDSVStack gap={2}>
-      {operatorOptions.length > 1 && (
+  const treeChildren: XDSTreeListItemData[] = subFilters.map(
+    (subFilter, idx) => ({
+      id: `filter-${idx}`,
+      label: (
+        <NestedSubFilterRow
+          config={config}
+          subFilter={subFilter}
+          onChange={updated => handleSubFilterChange(idx, updated)}
+          isReadOnly={isReadOnly}
+        />
+      ),
+      endContent: !isReadOnly ? (
+        <button
+          type="button"
+          aria-label="Remove filter"
+          onClick={() => handleSubFilterRemove(idx)}
+          {...stylex.props(styles.removeButton)}>
+          <XDSIcon icon="close" size="sm" />
+        </button>
+      ) : undefined,
+    }),
+  );
+
+  if (!isReadOnly) {
+    treeChildren.push({
+      id: 'add-filter',
+      label: (
+        <XDSButton
+          label="+ Add filter"
+          onClick={handleAddSubFilter}
+          variant="ghost"
+          size="sm"
+        />
+      ),
+    });
+  }
+
+  const rootLabel = (
+    <div {...stylex.props(styles.nestedRootLabel)}>
+      {operatorOptions.length > 1 ? (
         <div {...stylex.props(styles.operatorSelector)}>
           <XDSSelector
             label="Group operator"
@@ -363,27 +402,22 @@ function NestedEditor({
             size="md"
           />
         </div>
+      ) : (
+        (operatorOptions[0]?.label ?? 'Group')
       )}
-      {subFilters.map((subFilter, idx) => (
-        <NestedSubFilterRow
-          key={idx}
-          config={config}
-          subFilter={subFilter}
-          onChange={updated => handleSubFilterChange(idx, updated)}
-          onRemove={() => handleSubFilterRemove(idx)}
-          isReadOnly={isReadOnly}
-        />
-      ))}
-      {!isReadOnly && (
-        <XDSButton
-          label="+ Add filter"
-          onClick={handleAddSubFilter}
-          variant="ghost"
-          size="sm"
-        />
-      )}
-    </XDSVStack>
+    </div>
   );
+
+  const items: XDSTreeListItemData[] = [
+    {
+      id: 'nested-root',
+      label: rootLabel,
+      isExpanded: true,
+      children: treeChildren,
+    },
+  ];
+
+  return <XDSTreeList items={items} density="balanced" />;
 }
 
 // =============================================================================
