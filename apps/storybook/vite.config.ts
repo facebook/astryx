@@ -7,7 +7,7 @@
  * SYNC: When modified, update this header and /apps/storybook/README.md
  */
 
-import { defineConfig } from 'vite';
+import {defineConfig} from 'vite';
 import react from '@vitejs/plugin-react';
 import stylex from '@stylexjs/unplugin';
 import path from 'path';
@@ -16,13 +16,6 @@ const rootDir = path.resolve(__dirname, '../..');
 const coreRoot = path.resolve(__dirname, '../../packages/core/src');
 
 export default defineConfig({
-  build: {
-    // Don't use lightningcss for CSS minification — it lowers light-dark()
-    // into --lightningcss-light/--lightningcss-dark polyfill variables that
-    // are never initialized, silently breaking all XDS theming colors.
-    // The pre-compiled dist CSS imported by preview.tsx is already minified.
-    cssMinify: false,
-  },
   plugins: [
     stylex.vite({
       // Use production mode with CSS extraction

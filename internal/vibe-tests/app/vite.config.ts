@@ -23,12 +23,7 @@ const lightningcssTargets = {
 };
 
 export default defineConfig({
-  build: {
-    // Don't use lightningcss for minification — it lowers light-dark()
-    // into --lightningcss-light/--lightningcss-dark polyfill variables
-    // which breaks theming. The StyleX plugin handles its own CSS.
-    cssMinify: false,
-  },
+  build: {},
   plugins: [
     stylex.vite({
       dev: process.env.NODE_ENV === 'development',

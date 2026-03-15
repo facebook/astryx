@@ -654,7 +654,15 @@ export function registerTheme(program) {
         return;
       }
 
-      const css = `@layer xds.theme {\n${scopeBlocks.join('\n\n')}\n}\n`;
+      // If any scope block uses light-dark(), include a color-scheme declaration
+      // so that CSS tools that lower light-dark() (e.g. LightningCSS) can inject
+      // their polyfill toggle variables in the same file. Without this, the
+      // polyfill vars are used but never defined, silently breaking all colors.
+      const joined = scopeBlocks.join('\n\n');
+      const colorSchemeDecl = joined.includes('light-dark(')
+        ? '  :root { color-scheme: light dark; }\n\n'
+        : '';
+      const css = `@layer xds.theme {\n${colorSchemeDecl}${joined}\n}\n`;
 
       // Determine output path
       const outPath = options.out

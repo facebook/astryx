@@ -39,10 +39,6 @@ export default defineConfig({
     rollupOptions: {
       input: path.resolve(__dirname, 'index.report.html'),
     },
-    // Don't use lightningcss for minification — it lowers light-dark()
-    // into --lightningcss-light/--lightningcss-dark polyfill variables
-    // which breaks theming. The pre-compiled CSS is already minified.
-    cssMinify: false,
   },
   resolve: {
     alias: [

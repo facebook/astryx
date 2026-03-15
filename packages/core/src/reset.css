@@ -66,11 +66,18 @@
   /*
    * Consistent line-height, prevent text size adjustment on orientation
    * change in iOS, and set a readable tab size.
+   *
+   * color-scheme: light dark — declares that this page supports both modes,
+   * enabling CSS light-dark() to resolve correctly. Also ensures that CSS
+   * tools (e.g. LightningCSS) which polyfill light-dark() for older browsers
+   * inject their toggle-variable initialization in the same CSS bundle.
+   * XDSTheme overrides color-scheme per-wrapper as needed.
    */
   :where(html) {
     line-height: 1.5;
     -webkit-text-size-adjust: 100%;
     tab-size: 4;
+    color-scheme: light dark;
   }
 
   /*

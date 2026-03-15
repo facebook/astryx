@@ -22,13 +22,6 @@ const lightningcssTargets = {
 
 // https://vite.dev/config/
 export default defineConfig({
-  build: {
-    // Don't use lightningcss for CSS minification — it lowers light-dark()
-    // into --lightningcss-light/--lightningcss-dark polyfill variables that
-    // are never initialized, silently breaking all XDS theming colors.
-    // XDS dist CSS is already minified, so this costs nothing.
-    cssMinify: false,
-  },
   plugins: [
     stylex.vite({
       dev: process.env.NODE_ENV === 'development',
@@ -50,9 +43,15 @@ export default defineConfig({
       // from TypeScript source rather than requiring a pre-built dist/.
       '@xds/core/theme/tokens.stylex': path.resolve(
         __dirname,
-        '../../packages/core/src/theme/tokens.stylex.ts',
+        'node_modules/@xds/core/src/theme/tokens.stylex.ts',
       ),
-      '@xds/core': path.resolve(__dirname, '../../packages/core/src'),
+      '@xds/core': path.resolve(__dirname, 'node_modules/@xds/core/src'),
     },
+  },
+  // Prevent Vite from pre-bundling XDS with esbuild. XDS ships as source
+  // that must be compiled by the StyleX plugin — pre-bundling strips the
+  // stylex.create/defineVars calls and causes a runtime error.
+  optimizeDeps: {
+    exclude: ['@xds/core', '@xds/theme-default'],
   },
 });

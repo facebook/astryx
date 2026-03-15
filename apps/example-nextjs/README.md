@@ -96,13 +96,21 @@ import './globals.css';
 
 ```js
 const nextConfig = {
-  transpilePackages: ['@xds/core', '@xds/theme'],
+  transpilePackages: ['@xds/core', '@xds/theme-default'],
   typescript: {ignoreBuildErrors: true},
 };
 export default nextConfig;
 ```
 
-> **Note (monorepo only):** When consuming `@xds/core` inside the XDS monorepo, you may need a webpack alias to resolve `@xds/core/theme/tokens.stylex` to the source file. See `next.config.mjs` in this example for details. External consumers using the source tarball won't need this.
+Also add a `browserslist` to `package.json` to set proper CSS build targets. The StyleX babel plugin uses lightningcss internally, and without modern targets it will lower `light-dark()` into broken polyfill variables:
+
+```json
+{
+  "browserslist": ["last 1 Chrome version"]
+}
+```
+
+> For internal tools targeting latest Chrome, `"last 1 Chrome version"` is sufficient. For broader browser support, use targets that include Chrome 123+ (when `light-dark()` shipped).
 
 ### 6. Theme provider (client boundary)
 
@@ -110,7 +118,7 @@ export default nextConfig;
 // src/app/providers.tsx
 'use client';
 import {XDSTheme} from '@xds/core/theme';
-import {defaultTheme} from '@xds/theme/default';
+import {defaultTheme} from '@xds/theme-default';
 
 export function Providers({children}) {
   return <XDSTheme theme={defaultTheme}>{children}</XDSTheme>;
@@ -127,13 +135,11 @@ export function Providers({children}) {
 | No `'use client'` on theme provider | Server component error from `createContext` | Mark the provider file with `'use client'`                       |
 | StyleX as preset instead of plugin  | Build errors or missing styles              | Use `plugins` array, not `presets`, for `@stylexjs/babel-plugin` |
 
-### ⚠️ CSS Minifiers and `light-dark()`
+## Testing outside the monorepo
 
-XDS tokens use the native CSS `light-dark()` function for theming. If you use a CSS minifier that "lowers" modern CSS (such as LightningCSS), it will convert `light-dark()` into `--lightningcss-light` / `--lightningcss-dark` polyfill variables that are never initialized — silently breaking all colors.
+This example lives in the XDS monorepo for convenience, but it should be representative of a real app consuming `@xds/core` from npm. Monorepo workspace resolution can silently bypass issues that external consumers hit (missing dependencies, wrong include paths, different CSS pipeline behavior).
 
-Next.js uses PostCSS for CSS processing (not LightningCSS), so this issue **does not apply** to the standard Next.js setup shown here. However, if you add a custom CSS minifier or use `next.config.mjs` experimental CSS features that invoke LightningCSS, you may encounter this. The safest approach is to avoid post-processing XDS-generated CSS through any tool that doesn't support native `light-dark()`.
-
-For Vite-based setups, see the [Vite example's README](../example-vite/) for the specific fix (`cssMinify: false`).
+**Before merging changes to this example, test it as an external consumer** — see the [Testing Example Apps](https://github.com/facebookexperimental/xds/wiki/Testing-Example-Apps) wiki page for the full procedure.
 
 ## Related
 
