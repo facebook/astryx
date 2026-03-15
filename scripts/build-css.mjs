@@ -1,14 +1,14 @@
 /**
  * @file build-css.mjs
  * Post-build script that extracts StyleX CSS from compiled source files
- * and outputs a single xds.css wrapped in @layer xds.
+ * and outputs a single xds.css wrapped in @layer xds.core.base.
  *
  * Usage: node scripts/build-css.mjs
  *
  * This script:
  * 1. Runs Babel with the StyleX plugin over all source files
  * 2. Collects the CSS rules StyleX generates
- * 3. Wraps them in @layer xds { ... }
+ * 3. Wraps them in @layer xds.core.base { ... }
  * 4. Writes to packages/core/dist/xds.css
  *
  * The resulting CSS file can be imported by consumers who don't have
@@ -92,12 +92,12 @@ async function collectStyleXCSS() {
   // Use StyleX's built-in CSS processor to sort and dedupe rules
   const css = stylexBabelPlugin.processStylexRules(allRules, false);
 
-  // Wrap in @layer xds
+  // Wrap in @layer xds.core.base
   const layeredCSS = `/* XDS Pre-compiled StyleX CSS */
 /* This file is auto-generated. Do not edit manually. */
 /* Consumer styles (unlayered) always override these styles. */
 
-@layer xds {
+@layer xds.core.base {
 ${css.split('\n').map(line => '  ' + line).join('\n')}
 }
 `;
