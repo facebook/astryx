@@ -16,12 +16,13 @@
 
 'use client';
 
-import {type ReactNode} from 'react';
+import {useCallback, useState, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import {SideNavCollapseContext} from './SideNavCollapseContext';
 
 // =============================================================================
 // Styles
@@ -141,6 +142,30 @@ export interface XDSSideNavProps extends XDSBaseProps<HTMLElement> {
    * Test ID for the root element.
    */
   'data-testid'?: string;
+
+  /**
+   * Enables collapse behavior. When true, provides collapse context to
+   * descendant XDSSideNavCollapseButton components and renders a default
+   * toggle if no XDSSideNavCollapseButton is placed manually.
+   * @default false
+   */
+  isCollapsible?: boolean;
+
+  /**
+   * Initial collapsed state (uncontrolled mode).
+   * @default false
+   */
+  defaultIsCollapsed?: boolean;
+
+  /**
+   * Controlled collapsed state.
+   */
+  isCollapsed?: boolean;
+
+  /**
+   * Callback when collapsed state changes.
+   */
+  onCollapsedChange?: (isCollapsed: boolean) => void;
 }
 
 // =============================================================================
@@ -171,6 +196,10 @@ export function XDSSideNav({
   children,
   footer,
   footerIcons,
+  isCollapsible = false,
+  defaultIsCollapsed = false,
+  isCollapsed: controlledCollapsed,
+  onCollapsedChange,
   xstyle,
   className,
   style,
@@ -178,10 +207,30 @@ export function XDSSideNav({
   ref,
   ...props
 }: XDSSideNavProps) {
+  // Collapse state (controlled + uncontrolled)
+  const isControlled = controlledCollapsed !== undefined;
+  const [uncontrolledCollapsed, setUncontrolledCollapsed] =
+    useState(defaultIsCollapsed);
+  const collapsed = isControlled ? controlledCollapsed : uncontrolledCollapsed;
+
+  const toggle = useCallback(() => {
+    const newValue = !collapsed;
+    if (!isControlled) {
+      setUncontrolledCollapsed(newValue);
+    }
+    onCollapsedChange?.(newValue);
+  }, [collapsed, isControlled, onCollapsedChange]);
+
+  const collapseContext = {
+    isCollapsed: collapsed,
+    toggle,
+    isCollapsible,
+  };
+
   const hasStickyTop = !!(header || topContent);
   const hasStickyBottom = !!(footer || footerIcons);
 
-  return (
+  const content = (
     <nav
       ref={ref}
       role="navigation"
@@ -222,6 +271,16 @@ export function XDSSideNav({
       )}
     </nav>
   );
+
+  if (isCollapsible) {
+    return (
+      <SideNavCollapseContext value={collapseContext}>
+        {content}
+      </SideNavCollapseContext>
+    );
+  }
+
+  return content;
 }
 
 XDSSideNav.displayName = 'XDSSideNav';
