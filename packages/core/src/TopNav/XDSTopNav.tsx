@@ -19,6 +19,7 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {edgeSignals} from '../Layout/edgeCompensation.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import {TopNavSlotContext} from './TopNavContext';
 
 /**
  * Base TopNav styles
@@ -164,20 +165,24 @@ export function XDSTopNav({
       <div {...stylex.props(styles.leftSection, edgeSignals.start)}>
         {heading && <div {...stylex.props(styles.heading)}>{heading}</div>}
         {startContent && (
-          <div {...stylex.props(styles.startContent)}>{startContent}</div>
+          <TopNavSlotContext value="start">
+            <div {...stylex.props(styles.startContent)}>{startContent}</div>
+          </TopNavSlotContext>
         )}
       </div>
       {hasCenterContent && (
-        <div {...stylex.props(styles.centerContent)}>{centerContent}</div>
+        <TopNavSlotContext value="center">
+          <div {...stylex.props(styles.centerContent)}>{centerContent}</div>
+        </TopNavSlotContext>
       )}
       {hasCenterContent ? (
         <div {...stylex.props(styles.rightSection, edgeSignals.end)}>
-          {endContent}
+          <TopNavSlotContext value="end">{endContent}</TopNavSlotContext>
         </div>
       ) : (
         endContent && (
           <div {...stylex.props(styles.endContent, edgeSignals.end)}>
-            {endContent}
+            <TopNavSlotContext value="end">{endContent}</TopNavSlotContext>
           </div>
         )
       )}

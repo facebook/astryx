@@ -45,6 +45,8 @@ interface ShellConfig {
   showFooterIcons: boolean;
   showTopContent: boolean;
   sideNavHeadingStyle: 'none' | 'simple' | 'link' | 'menu' | 'full';
+  showSuperheading: boolean;
+  showSubheading: boolean;
   showNestedItems: boolean;
   defaultCollapsed: boolean;
   controlledCollapse: boolean;
@@ -68,6 +70,8 @@ const DEFAULT_CONFIG: ShellConfig = {
   showFooterIcons: true,
   showTopContent: true,
   sideNavHeadingStyle: 'link',
+  showSuperheading: false,
+  showSubheading: false,
   showNestedItems: true,
   defaultCollapsed: false,
   controlledCollapse: false,
@@ -171,6 +175,16 @@ function ConfigPanel({
               {value: 'menu', label: 'Menu'},
               {value: 'full', label: 'Full'},
             ]}
+          />
+          <ToggleRow
+            label="Superheading"
+            value={config.showSuperheading}
+            onChange={v => onChange({showSuperheading: v})}
+          />
+          <ToggleRow
+            label="Subheading"
+            value={config.showSubheading}
+            onChange={v => onChange({showSubheading: v})}
           />
           <ToggleRow
             label="Banner"
@@ -382,15 +396,9 @@ function SampleSideNav({config}: {config: ShellConfig}) {
             ? '#'
             : undefined
         }
-        superheading={
-          config.sideNavHeadingStyle === 'full' ? 'Acme Suite' : undefined
-        }
-        superheadingHref={
-          config.sideNavHeadingStyle === 'full' ? '#' : undefined
-        }
-        subheading={
-          config.sideNavHeadingStyle === 'full' ? 'Business Account' : undefined
-        }
+        superheading={config.showSuperheading ? 'Acme Suite' : undefined}
+        superheadingHref={config.showSuperheading ? '#' : undefined}
+        subheading={config.showSubheading ? 'Business Account' : undefined}
         menu={
           config.sideNavHeadingStyle === 'menu' ||
           config.sideNavHeadingStyle === 'full'

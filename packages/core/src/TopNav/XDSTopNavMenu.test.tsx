@@ -33,7 +33,7 @@ describe('XDSTopNavMenu', () => {
   it('trigger has aria-haspopup attribute', () => {
     render(<XDSTopNavMenu label="Products" items={mockItems} />);
     const trigger = screen.getByRole('button', {name: 'Products'});
-    expect(trigger).toHaveAttribute('aria-haspopup', 'true');
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
   });
 
   it('renders with custom items', () => {

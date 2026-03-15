@@ -178,6 +178,16 @@ export interface XDSHoverCardReturn {
     children: ReactNode,
     props?: ContextRenderProps,
   ) => ReactNode;
+
+  /**
+   * Imperatively show the hover card (bypassing hover delay).
+   */
+  show: () => void;
+
+  /**
+   * Imperatively hide the hover card.
+   */
+  hide: () => void;
 }
 
 /**
@@ -471,5 +481,7 @@ export function useXDSHoverCard(
     anchorId: layer.anchorId,
     describedBy: layer.id,
     renderHoverCard,
+    show: layer.show,
+    hide: layer.hide,
   };
 }

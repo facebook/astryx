@@ -333,7 +333,6 @@ export default function MegaMenuPage() {
                         href: '#api',
                       },
                     ]}
-                    isSingleColumn
                     onOpenChange={setMenuOpen3}
                   />
                   <XDSTopNavItem label="Pricing" href="#" />

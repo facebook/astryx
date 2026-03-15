@@ -10,9 +10,13 @@
  * - /packages/core/src/TopNav/index.ts
  */
 
-import {type ReactNode} from 'react';
+import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {useXDSHoverCard} from '../HoverCard/useXDSHoverCard';
+import {useXDSPopover} from '../Popover/useXDSPopover';
+import {useListFocus} from '../hooks/useListFocus';
+import {getIcon} from '../Icon/globalIconRegistry';
+import {xdsClassName, mergeProps} from '../utils';
+import {useTopNavSlot} from './TopNavContext';
 import {
   colorVars,
   spacingVars,
@@ -21,6 +25,7 @@ import {
   textSizeVars,
   fontWeightVars,
   lineHeightVars,
+  elevationVars,
 } from '../theme/tokens.stylex';
 
 // =============================================================================
@@ -60,11 +65,32 @@ const styles = stylex.create({
     border: 'none',
     fontFamily: 'inherit',
   },
+  triggerOpen: {
+    color: colorVars['--color-text-primary'],
+    backgroundColor: colorVars['--color-hover-overlay'],
+  },
+  chevron: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    transitionProperty: 'transform',
+    transitionDuration: transitionVars['--transition-fast'],
+  },
+  chevronOpen: {
+    transform: 'rotate(180deg)',
+  },
   menuContainer: {
     display: 'flex',
     flexDirection: 'column',
-    gap: spacingVars['--spacing-2'],
+    gap: spacingVars['--spacing-1'],
     minWidth: 280,
+    padding: spacingVars['--spacing-1'],
+    backgroundColor: colorVars['--color-popover'],
+    borderRadius: radiusVars['--radius-container'],
+    boxShadow: elevationVars['--elevation-menu'],
+  },
+  menuOffset: {
+    marginBlockStart: spacingVars['--spacing-1'],
+    backgroundColor: 'transparent',
   },
   menuItem: {
     display: 'flex',
@@ -220,34 +246,128 @@ export interface XDSTopNavMenuProps {
  * />
  * ```
  */
+
 export function XDSTopNavMenu({
   label,
   items,
   delay = 150,
   hideDelay = 200,
 }: XDSTopNavMenuProps) {
-  const hoverCard = useXDSHoverCard({
-    placement: 'below',
-    alignment: 'start',
-    delay,
-    hideDelay,
-    focusTrigger: 'always',
+  const slot = useTopNavSlot();
+  const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
+  const clickLockedRef = useRef(false);
+
+  const popover = useXDSPopover({
+    dialogLabel: label,
+    xstyle: styles.menuOffset,
   });
+
+  const {
+    listRef: menuRef,
+    handleKeyDown: handleListKeyDown,
+    focusFirst,
+  } = useListFocus({
+    onEscape: () => {
+      clearTimeouts();
+      clickLockedRef.current = false;
+      popover.hide();
+      triggerButtonRef.current?.focus();
+    },
+  });
+
+  const clearTimeouts = useCallback(() => {
+    if (showTimeoutRef.current) {
+      clearTimeout(showTimeoutRef.current);
+      showTimeoutRef.current = null;
+    }
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+  }, []);
+
+  const scheduleShow = useCallback(() => {
+    clearTimeouts();
+    showTimeoutRef.current = setTimeout(() => {
+      popover.show({skipAutoFocus: true});
+    }, delay);
+  }, [clearTimeouts, popover, delay]);
+
+  const scheduleHide = useCallback(() => {
+    clearTimeouts();
+    hideTimeoutRef.current = setTimeout(() => {
+      popover.hide();
+    }, hideDelay);
+  }, [clearTimeouts, popover, hideDelay]);
+
+  const handleMouseEnter = useCallback(() => {
+    if (!clickLockedRef.current) scheduleShow();
+  }, [scheduleShow]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (!clickLockedRef.current) scheduleHide();
+  }, [scheduleHide]);
+
+  const handleClick = useCallback(() => {
+    clearTimeouts();
+    if (popover.isOpen) {
+      clickLockedRef.current = false;
+      popover.hide();
+      triggerButtonRef.current?.focus();
+    } else {
+      clickLockedRef.current = true;
+      popover.show();
+      requestAnimationFrame(() => focusFirst());
+    }
+  }, [popover, clearTimeouts, focusFirst]);
+
+  // Combine refs — popover.triggerRef for anchor, triggerButtonRef for focus
+  const setTriggerRef = useCallback(
+    (el: HTMLButtonElement | null) => {
+      (
+        triggerButtonRef as React.MutableRefObject<HTMLButtonElement | null>
+      ).current = el;
+      popover.triggerRef(el);
+    },
+    [popover],
+  );
+
+  useEffect(() => {
+    return () => clearTimeouts();
+  }, [clearTimeouts]);
 
   return (
     <>
       <button
-        ref={hoverCard.ref}
+        ref={setTriggerRef}
         type="button"
-        aria-haspopup="true"
-        aria-describedby={hoverCard.describedBy}
-        {...stylex.props(styles.trigger)}>
+        {...popover.triggerProps}
+        onClick={handleClick}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        {...mergeProps(
+          xdsClassName('top-nav-menu'),
+          stylex.props(styles.trigger, popover.isOpen && styles.triggerOpen),
+        )}>
         {label}
+        <span
+          {...stylex.props(
+            styles.chevron,
+            popover.isOpen && styles.chevronOpen,
+          )}>
+          {getIcon('chevronDown')}
+        </span>
       </button>
-      {hoverCard.renderHoverCard(
+      {popover.render(
         <div
+          ref={menuRef as React.RefObject<HTMLDivElement>}
           role="menu"
           aria-label={label}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          onKeyDown={handleListKeyDown}
           {...stylex.props(styles.menuContainer)}>
           {items.map((item, index) => {
             const Element = item.href ? 'a' : 'div';
@@ -255,7 +375,7 @@ export function XDSTopNavMenu({
               <Element
                 key={index}
                 role="menuitem"
-                tabIndex={0}
+                tabIndex={popover.isOpen ? 0 : -1}
                 href={item.href}
                 onClick={item.onClick}
                 {...stylex.props(styles.menuItem)}>
@@ -274,6 +394,11 @@ export function XDSTopNavMenu({
             );
           })}
         </div>,
+        {
+          placement: 'below',
+          alignment: slot,
+          xstyle: styles.menuOffset,
+        },
       )}
     </>
   );
