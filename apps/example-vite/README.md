@@ -47,10 +47,25 @@ const lightningcssTargets = {
 
 export default defineConfig({
   plugins: [
+    // Declare CSS layer order so theme overrides beat component base styles.
+    {
+      name: 'xds-css-layer-order',
+      transformIndexHtml() {
+        return [
+          {
+            tag: 'style',
+            children:
+              '@layer reset, typography, priority1, priority2, priority3, priority4, priority5, priority6, priority7, priority8, priority9, xds.theme;',
+            injectTo: 'head-prepend',
+          },
+        ];
+      },
+    },
     stylex.vite({
       dev: process.env.NODE_ENV === 'development',
       runtimeInjection: false,
       treeshakeCompensation: true,
+      useCSSLayers: true,
       unstable_moduleResolution: {
         type: 'commonJS',
         rootDir: __dirname,
@@ -91,11 +106,20 @@ export default defineConfig({
 }
 ```
 
-Import it in `src/main.tsx`:
+Import it in `src/main.tsx`, along with the base CSS and theme CSS:
 
 ```tsx
+import '@xds/core/reset.css';
+import '@xds/core/typography.css';
+import '@xds/theme-default/theme.css';
 import './index.css';
 ```
+
+The CSS import order matters:
+1. `reset.css` — baseline resets (`@layer reset`)
+2. `typography.css` — prose styles (`@layer typography`)
+3. `theme.css` — theme component overrides (`@layer xds.theme`)
+4. `index.css` — StyleX extraction placeholder
 
 ### 4. Theme provider
 
