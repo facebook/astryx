@@ -15,7 +15,7 @@
 
 'use client';
 
-import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
+import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -27,17 +27,17 @@ import {
   lineHeightVars,
   elevationVars,
 } from '../theme/tokens.stylex';
-import {useXDSLayer} from '../Layer';
+import {useXDSPopover} from '../Popover/useXDSPopover';
+import {XDSGrid} from '../Grid/XDSGrid';
+import {getIcon} from '../Icon/globalIconRegistry';
 import {xdsClassName, mergeProps} from '../utils';
+import {useTopNavSlot} from './TopNavContext';
 
 // =============================================================================
 // Styles
 // =============================================================================
 
 const styles = stylex.create({
-  wrapper: {
-    position: 'static',
-  },
   trigger: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -86,6 +86,7 @@ const styles = stylex.create({
   // Animation styles applied to the layer's popover element.
   // Uses :popover-open for enter and @starting-style for initial state.
   panelAnimation: {
+    backgroundColor: 'transparent',
     opacity: {
       default: 0,
       ':popover-open': 1,
@@ -116,20 +117,17 @@ const styles = stylex.create({
   },
   panelContent: {
     display: 'flex',
+    flexWrap: 'wrap',
     gap: spacingVars['--spacing-6'],
     paddingBlock: spacingVars['--spacing-6'],
     paddingInline: spacingVars['--spacing-6'],
     maxWidth: 960,
-    marginInline: 'auto',
   },
-  menuSection: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: spacingVars['--spacing-2'],
-    flex: 1,
-  },
-  menuSectionSingle: {
-    gridTemplateColumns: '1fr',
+  menuWrapper: {
+    flexGrow: 2,
+    flexShrink: 1,
+    flexBasis: 300,
+    minWidth: 0,
   },
   menuItem: {
     display: 'flex',
@@ -189,8 +187,9 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   featured: {
-    width: 280,
-    flexShrink: 0,
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 200,
     borderRadius: radiusVars['--radius-container'],
     backgroundColor: colorVars['--color-deemphasized'],
     overflow: 'hidden',
@@ -229,16 +228,6 @@ const styles = stylex.create({
     textDecoration: 'none',
     cursor: 'pointer',
     marginBlockStart: spacingVars['--spacing-1'],
-  },
-  divider: {
-    width: 1,
-    backgroundColor: colorVars['--color-divider'],
-    flexShrink: 0,
-  },
-  // Anchor positioning: stretch panel to match the anchor width.
-  anchorStretch: {
-    left: 'anchor(left)' as unknown as string,
-    right: 'anchor(right)' as unknown as string,
   },
 });
 
@@ -296,7 +285,6 @@ export interface XDSTopNavMegaMenuProps {
   /** Delay before hiding the menu after mouse leaves (ms). @default 250 */
   hideDelay?: number;
   /** Whether to use single-column layout for items. @default false */
-  isSingleColumn?: boolean;
   /**
    * Callback fired when the mega menu opens or closes.
    * Useful for coordinating wrapper styles (e.g. hiding other shadows).
@@ -305,25 +293,6 @@ export interface XDSTopNavMegaMenuProps {
 }
 
 // =============================================================================
-// Chevron Icon
-// =============================================================================
-
-function ChevronDown() {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 12 12"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round">
-      <path d="M3 4.5L6 7.5L9 4.5" />
-    </svg>
-  );
-}
-
 // =============================================================================
 // XDSTopNavMegaMenu
 // =============================================================================
@@ -337,32 +306,27 @@ function ChevronDown() {
  *
  * The panel is promoted to the top layer via the Popover API (through
  * useXDSLayer) and positioned via CSS anchor positioning relative to the
- * nearest positioned ancestor (typically the nav bar wrapper).
- *
- * For correct full-width behavior, wrap the XDSTopNav in a container with
- * `position: relative`.
+ * parent `<nav>` element (the XDSTopNav).
  *
  * @example
  * ```
- * <div style={{ position: 'relative' }}>
- *   <XDSTopNav
- *     startContent={
- *       <XDSTopNavMegaMenu
- *         label="Products"
- *         items={[
- *           { title: 'Analytics', description: 'Track behavior', icon: <ChartIcon /> },
- *           { title: 'Messaging', description: 'Real-time comms', icon: <ChatIcon /> },
- *         ]}
- *         featured={{
- *           title: 'New: AI Features',
- *           description: 'Explore our latest AI-powered tools.',
- *           linkText: 'Learn more \u2192',
- *           linkHref: '/ai',
- *         }}
- *       />
- *     }
- *   />
- * </div>
+ * <XDSTopNav
+ *   startContent={
+ *     <XDSTopNavMegaMenu
+ *       label="Products"
+ *       items={[
+ *         { title: 'Analytics', description: 'Track behavior', icon: <ChartIcon /> },
+ *         { title: 'Messaging', description: 'Real-time comms', icon: <ChatIcon /> },
+ *       ]}
+ *       featured={{
+ *         title: 'New: AI Features',
+ *         description: 'Explore our latest AI-powered tools.',
+ *         linkText: 'Learn more \u2192',
+ *         linkHref: '/ai',
+ *       }}
+ *     />
+ *   }
+ * />
  * ```
  */
 export function XDSTopNavMegaMenu({
@@ -371,59 +335,31 @@ export function XDSTopNavMegaMenu({
   featured,
   delay = 150,
   hideDelay = 250,
-  isSingleColumn = false,
   onOpenChange,
 }: XDSTopNavMegaMenuProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const slot = useTopNavSlot();
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
+  const clickLockedRef = useRef(false);
 
-  // useXDSLayer handles: Popover API (top layer), CSS anchor positioning,
-  // toggle event sync, and popover element rendering.
-  const layer = useXDSLayer({
-    mode: 'context',
-    lightDismiss: false, // Hover-driven, not click-to-dismiss
+  const popover = useXDSPopover({
+    dialogLabel: label,
+    xstyle: styles.panelAnimation,
     onShow: () => onOpenChange?.(true),
     onHide: () => onOpenChange?.(false),
   });
 
-  // Set the CSS anchor to the nearest positioned ancestor (the nav wrapper).
-  // The panel spans this element's full width.
+  // Set the CSS anchor to the parent <nav> element (the XDSTopNav).
   useEffect(() => {
-    const wrapper = wrapperRef.current;
-    if (!wrapper) return;
-
-    let el: HTMLElement | null = wrapper.parentElement;
-    while (el) {
-      const position = getComputedStyle(el).position;
-      if (
-        position === 'relative' ||
-        position === 'absolute' ||
-        position === 'fixed'
-      ) {
-        layer.ref(el);
-        break;
-      }
-      el = el.parentElement;
+    const nav = triggerButtonRef.current?.closest('nav');
+    if (nav) {
+      popover.triggerRef(nav as HTMLElement);
     }
-
     return () => {
-      layer.ref(null);
+      popover.triggerRef(null);
     };
-  }, [layer]);
-
-  const setOpen = useCallback(
-    (open: boolean) => {
-      setIsOpen(open);
-      if (open) {
-        layer.show();
-      } else {
-        layer.hide();
-      }
-    },
-    [layer],
-  );
+  }, [popover]);
 
   const clearTimeouts = useCallback(() => {
     if (showTimeoutRef.current) {
@@ -439,35 +375,36 @@ export function XDSTopNavMegaMenu({
   const scheduleShow = useCallback(() => {
     clearTimeouts();
     showTimeoutRef.current = setTimeout(() => {
-      setOpen(true);
+      popover.show({skipAutoFocus: true});
     }, delay);
-  }, [clearTimeouts, setOpen, delay]);
+  }, [clearTimeouts, popover, delay]);
 
   const scheduleHide = useCallback(() => {
     clearTimeouts();
     hideTimeoutRef.current = setTimeout(() => {
-      setOpen(false);
+      popover.hide();
     }, hideDelay);
-  }, [clearTimeouts, setOpen, hideDelay]);
+  }, [clearTimeouts, popover, hideDelay]);
 
   const handleMouseEnter = useCallback(() => {
-    scheduleShow();
+    if (!clickLockedRef.current) scheduleShow();
   }, [scheduleShow]);
 
   const handleMouseLeave = useCallback(() => {
-    scheduleHide();
+    if (!clickLockedRef.current) scheduleHide();
   }, [scheduleHide]);
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        clearTimeouts();
-        setOpen(false);
-      }
-    },
-    [clearTimeouts, setOpen],
-  );
+  const handleClick = useCallback(() => {
+    clearTimeouts();
+    if (popover.isOpen) {
+      clickLockedRef.current = false;
+      popover.hide();
+      triggerButtonRef.current?.focus();
+    } else {
+      clickLockedRef.current = true;
+      popover.show();
+    }
+  }, [popover, clearTimeouts]);
 
   useEffect(() => {
     return () => {
@@ -476,26 +413,29 @@ export function XDSTopNavMegaMenu({
   }, [clearTimeouts]);
 
   return (
-    <div
-      ref={wrapperRef}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onKeyDown={handleKeyDown}
-      {...mergeProps(
-        xdsClassName('top-nav-mega-menu'),
-        stylex.props(styles.wrapper),
-      )}>
+    <>
       <button
+        ref={triggerButtonRef}
         type="button"
         aria-haspopup="true"
-        aria-expanded={isOpen}
-        {...stylex.props(styles.trigger, isOpen && styles.triggerOpen)}>
+        aria-expanded={popover.isOpen}
+        onClick={handleClick}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        {...mergeProps(
+          xdsClassName('top-nav-mega-menu'),
+          stylex.props(styles.trigger, popover.isOpen && styles.triggerOpen),
+        )}>
         {label}
-        <span {...stylex.props(styles.chevron, isOpen && styles.chevronOpen)}>
-          <ChevronDown />
+        <span
+          {...stylex.props(
+            styles.chevron,
+            popover.isOpen && styles.chevronOpen,
+          )}>
+          {getIcon('chevronDown')}
         </span>
       </button>
-      {layer.render(
+      {popover.render(
         <div
           role="menu"
           aria-label={label}
@@ -504,90 +444,85 @@ export function XDSTopNavMegaMenu({
           {...stylex.props(styles.panelContainer)}>
           <div {...stylex.props(styles.panelContent)}>
             {/* Menu items section */}
-            <div
-              {...stylex.props(
-                styles.menuSection,
-                isSingleColumn && styles.menuSectionSingle,
-              )}>
-              {items.map((item, index) => {
-                const Element = item.href ? 'a' : 'div';
-                return (
-                  <Element
-                    key={index}
-                    role="menuitem"
-                    tabIndex={isOpen ? 0 : -1}
-                    href={item.href}
-                    onClick={item.onClick}
-                    {...stylex.props(styles.menuItem)}>
-                    {item.icon && (
-                      <div {...stylex.props(styles.menuItemIcon)}>
-                        {item.icon}
-                      </div>
-                    )}
-                    <div {...stylex.props(styles.menuItemContent)}>
-                      <span {...stylex.props(styles.menuItemTitle)}>
-                        {item.title}
-                      </span>
-                      {item.description && (
-                        <span {...stylex.props(styles.menuItemDescription)}>
-                          {item.description}
-                        </span>
+            <div {...stylex.props(styles.menuWrapper)}>
+              <XDSGrid columns={2} minChildWidth={200} gap={2}>
+                {items.map((item, index) => {
+                  const Element = item.href ? 'a' : 'div';
+                  return (
+                    <Element
+                      key={index}
+                      role="menuitem"
+                      tabIndex={popover.isOpen ? 0 : -1}
+                      href={item.href}
+                      onClick={item.onClick}
+                      {...stylex.props(styles.menuItem)}>
+                      {item.icon && (
+                        <div {...stylex.props(styles.menuItemIcon)}>
+                          {item.icon}
+                        </div>
                       )}
-                    </div>
-                  </Element>
-                );
-              })}
+                      <div {...stylex.props(styles.menuItemContent)}>
+                        <span {...stylex.props(styles.menuItemTitle)}>
+                          {item.title}
+                        </span>
+                        {item.description && (
+                          <span {...stylex.props(styles.menuItemDescription)}>
+                            {item.description}
+                          </span>
+                        )}
+                      </div>
+                    </Element>
+                  );
+                })}
+              </XDSGrid>
             </div>
 
             {/* Featured section */}
             {featured && (
-              <>
-                <div {...stylex.props(styles.divider)} />
-                <div {...stylex.props(styles.featured)}>
-                  {featured.children ? (
-                    featured.children
-                  ) : (
-                    <>
-                      {featured.image && (
-                        <img
-                          src={featured.image}
-                          alt={featured.imageAlt ?? ''}
-                          {...stylex.props(styles.featuredImage)}
-                        />
-                      )}
-                      <div {...stylex.props(styles.featuredBody)}>
-                        <span {...stylex.props(styles.featuredTitle)}>
-                          {featured.title}
+              <div {...stylex.props(styles.featured)}>
+                {featured.children ? (
+                  featured.children
+                ) : (
+                  <>
+                    {featured.image && (
+                      <img
+                        src={featured.image}
+                        alt={featured.imageAlt ?? ''}
+                        {...stylex.props(styles.featuredImage)}
+                      />
+                    )}
+                    <div {...stylex.props(styles.featuredBody)}>
+                      <span {...stylex.props(styles.featuredTitle)}>
+                        {featured.title}
+                      </span>
+                      {featured.description && (
+                        <span {...stylex.props(styles.featuredDescription)}>
+                          {featured.description}
                         </span>
-                        {featured.description && (
-                          <span {...stylex.props(styles.featuredDescription)}>
-                            {featured.description}
-                          </span>
-                        )}
-                        {featured.linkText && (
-                          <a
-                            href={featured.linkHref}
-                            onClick={featured.onLinkClick}
-                            tabIndex={isOpen ? 0 : -1}
-                            {...stylex.props(styles.featuredLink)}>
-                            {featured.linkText}
-                          </a>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
-              </>
+                      )}
+                      {featured.linkText && (
+                        <a
+                          href={featured.linkHref}
+                          onClick={featured.onLinkClick}
+                          tabIndex={popover.isOpen ? 0 : -1}
+                          {...stylex.props(styles.featuredLink)}>
+                          {featured.linkText}
+                        </a>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
             )}
           </div>
         </div>,
         {
           placement: 'below',
-          alignment: 'center',
-          xstyle: [styles.panelAnimation, styles.anchorStretch],
+          alignment: slot,
+          xstyle: styles.panelAnimation,
         },
       )}
-    </div>
+    </>
   );
 }
 
