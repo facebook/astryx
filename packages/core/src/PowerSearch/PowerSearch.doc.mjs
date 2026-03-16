@@ -195,6 +195,202 @@ const [filters, setFilters] = useState([]);
     'Type to search fields; Enter to select; Click token to edit; Backspace on empty input removes last filter; Escape closes popover',
 };
 
+// -------------------------------------------------------
+// Auto-generated translations below. Do not edit manually.
+// Regenerate with the dense compression protocol.
+// See .context/decisions/dense-compression-protocol.md
+// -------------------------------------------------------
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {
+  name: 'PowerSearch',
+  description:
+    '结构化过滤栏，每个令牌代表一个过滤器（字段 + 运算符 + 值）。用户从预输入下拉菜单中选择字段，在编辑弹出窗口中配置运算符和值，并将过滤器作为可移除的令牌进行管理。',
+  props: [
+    {
+      name: 'config',
+      type: 'PowerSearchConfig',
+      description: '定义可用字段、运算符及其值类型的配置。',
+      required: true,
+    },
+    {
+      name: 'filters',
+      type: 'ReadonlyArray<PowerSearchFilter>',
+      description: '当前活跃的过滤器。',
+      required: true,
+    },
+    {
+      name: 'onChange',
+      type: '(filters: ReadonlyArray<PowerSearchFilter>, changeType: PowerSearchChangeType, index: number) => void',
+      description:
+        "当过滤器变更时调用。changeType 为 'add'、'edit' 或 'remove'。index 为受影响的过滤器位置。",
+      required: true,
+    },
+    {
+      name: 'label',
+      type: 'string',
+      description: '搜索输入框的无障碍标签。',
+      default: "'Search'",
+    },
+    {
+      name: 'isLabelHidden',
+      type: 'boolean',
+      description: '视觉上隐藏标签，同时保持无障碍性。',
+      default: 'true',
+    },
+    {
+      name: 'placeholder',
+      type: 'string',
+      description: '未选择过滤器时显示的占位文本。',
+      default: "'Search...'",
+    },
+    {
+      name: 'hasAutoFocus',
+      type: 'boolean',
+      description: '挂载时自动聚焦输入框。',
+      default: 'false',
+    },
+    {
+      name: 'hasClear',
+      type: 'boolean',
+      description: '显示清除全部按钮以移除所有过滤器。',
+      default: 'true',
+    },
+    {
+      name: 'isReadOnly',
+      type: 'boolean',
+      description: '阻止添加、编辑或移除过滤器。',
+      default: 'false',
+    },
+    {
+      name: 'isDisabled',
+      type: 'boolean',
+      description: '禁用整个组件。',
+      default: 'false',
+    },
+    {
+      name: 'status',
+      type: 'XDSInputStatus',
+      description: '带有类型和可选消息的验证状态对象。',
+    },
+    {
+      name: 'maxTokenLength',
+      type: 'number',
+      description: '令牌中过滤器值显示的最大字符长度。',
+      default: '40',
+    },
+    {
+      name: 'popoverSaveButtonLabel',
+      type: 'string',
+      description: '编辑弹出窗口中保存按钮的标签。',
+      default: "'Apply'",
+    },
+    {
+      name: 'timezoneID',
+      type: 'string',
+      description: '用于日期格式化的时区 ID（例如 "America/New_York"）。',
+    },
+    {
+      name: 'ref',
+      type: 'Ref<XDSPowerSearchHandle>',
+      description: '提供 focusTypeahead() 和 blurTypeahead() 方法的命令式句柄。',
+    },
+    {
+      name: 'endContent',
+      type: 'ReactNode',
+      description: '显示在输入行末尾的内容。适用于操作按钮或其他控件。',
+    },
+    {
+      name: 'resultCount',
+      type: 'number | string',
+      description:
+        '匹配当前过滤器的结果数量。数字类型时格式化为"N results"。字符串类型时按原样显示。',
+    },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description: '用于布局自定义的 StyleX 样式。必须是 stylex.create() 值。',
+    },
+  ],
+  examples: [
+    {
+      label: '枚举过滤器的基本用法',
+      code: `const config = {
+  name: 'TaskSearch',
+  fields: [
+    {
+      key: 'status',
+      label: 'Status',
+      operators: [
+        {
+          key: 'is',
+          label: 'is',
+          value: {
+            type: 'enum',
+            values: [
+              { value: 'open', label: 'Open' },
+              { value: 'closed', label: 'Closed' },
+            ],
+          },
+        },
+      ],
+    },
+    {
+      key: 'title',
+      label: 'Title',
+      operators: [
+        {
+          key: 'contains',
+          label: 'contains',
+          value: { type: 'string' },
+        },
+      ],
+    },
+  ],
+};
+
+const [filters, setFilters] = useState([]);
+<XDSPowerSearch
+  config={config}
+  filters={filters}
+  onChange={(newFilters) => setFilters(newFilters)}
+/>`,
+    },
+    {
+      label: '带初始过滤器',
+      code: `const [filters, setFilters] = useState([
+  { field: 'status', operator: 'is', value: { type: 'enum', value: 'open' } },
+]);
+
+<XDSPowerSearch
+  config={config}
+  filters={filters}
+  onChange={(newFilters, changeType, index) => {
+    setFilters(newFilters);
+    console.log(changeType, 'at index', index);
+  }}
+  placeholder="Add filters..."
+/>`,
+    },
+  ],
+  features: [
+    '预输入字段选择，支持搜索和别名',
+    '编辑弹出窗口，包含字段、运算符和值选择器',
+    '支持 13 种值类型：字符串、整数、浮点数、枚举、日期、时间等',
+    '令牌式显示，支持点击编辑和移除',
+    '通过 ref 提供命令式 API 控制聚焦/失焦',
+    '只读模式，显示过滤器但不允许编辑',
+  ],
+  accessibility: [
+    '基于 XDSTokenizer 构建，提供 combobox 模式，包含 aria-expanded 和 aria-autocomplete。',
+    '过滤器令牌具有包含字段名、运算符和值的无障碍标签。',
+    '编辑弹出窗口使用 XDSPopover，支持焦点捕获和轻量关闭。',
+    '清除全部按钮具有无障碍标签。',
+  ],
+  keyboard:
+    '输入搜索字段；回车选择；点击令牌编辑；空输入时退格删除最后一个过滤器；Escape 关闭弹出窗口',
+};
+
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:

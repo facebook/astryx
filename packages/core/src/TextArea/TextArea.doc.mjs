@@ -178,11 +178,6 @@ export const docs = {
         'HTML name attribute for the textarea element, useful for form submissions.',
     },
   ],
-  theming: {
-    targets: [
-      {className: 'xds-text-input', visualProps: ['size']},
-    ],
-  },
   accessibility: [
     'Label is always rendered in the DOM; use isLabelHidden to hide it visually while keeping it accessible.',
     'The textarea id is generated via useId and linked to its label via htmlFor, ensuring correct label association.',
@@ -379,11 +374,6 @@ export const docsZh = {
         '文本域元素的 HTML name 属性，用于表单提交。',
     },
   ],
-  theming: {
-    targets: [
-      {className: 'xds-text-input', visualProps: ['size']},
-    ],
-  },
   accessibility: [
     '标签始终在 DOM 中渲染；使用 isLabelHidden 视觉上隐藏它，同时保持无障碍性。',
     '文本域 id 通过 useId 生成并通过 htmlFor 与其标签关联，确保正确的标签关联。',

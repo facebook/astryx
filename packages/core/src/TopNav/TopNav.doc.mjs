@@ -119,6 +119,7 @@ export const docs = {
       {className: 'xds-top-nav-item'},
       {className: 'xds-top-nav-heading'},
       {className: 'xds-top-nav-mega-menu'},
+      {className: 'xds-top-nav-menu'},
     ],
   },
   accessibility: [
@@ -603,6 +604,7 @@ export const docsZh = {
       {className: 'xds-top-nav-item'},
       {className: 'xds-top-nav-heading'},
       {className: 'xds-top-nav-mega-menu'},
+      {className: 'xds-top-nav-menu'},
     ],
   },
   accessibility: [
@@ -619,7 +621,6 @@ export const docsZh = {
     'Tab 在项目之间导航；Escape 关闭 XDSTopNavMegaMenu 面板',
   notes: [
     '默认高度为 48px（--spacing-12），水平内边距 16px',
-    '使用 --color-navbar 令牌作为背景色（默认为白色）',
     '无 centerContent 时：heading 和 startContent 增长以将 endContent 推向右侧（flex 布局）',
     '有 centerContent 时：切换为 CSS grid（gridTemplateColumns: 1fr auto 1fr）— 即使 endContent 不存在，右列也始终渲染以维持三列结构',
     '定位（sticky/fixed）由布局系统处理（例如 XDSAppShell），而非 TopNav 本身',
