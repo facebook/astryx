@@ -18,6 +18,13 @@ import type {
 } from './types';
 
 /**
+ * Default minimum column width in pixels.
+ * Applied to proportional-width columns that don't specify a custom minWidth.
+ * Pixel-width columns use their pixel value as the implicit minimum.
+ */
+export const DEFAULT_MIN_COLUMN_WIDTH = 60;
+
+/**
  * Create a proportional column width (fr-like).
  * Columns share available space proportionally.
  *
@@ -79,6 +86,37 @@ export function defaultCellRenderer<T extends Record<string, unknown>>(
   const value = item[key];
   if (value == null) return '';
   return String(value);
+}
+
+/**
+ * Resolve the effective minimum width (in px) for a single column.
+ *
+ * Priority:
+ * 1. Explicit `minWidth` on the column definition
+ * 2. Pixel-width columns use their pixel value as the implicit minimum
+ * 3. Falls back to `DEFAULT_MIN_COLUMN_WIDTH`
+ */
+export function resolveColumnMinWidth<T extends Record<string, unknown>>(
+  column: XDSTableColumn<T>,
+): number {
+  if (column.minWidth != null) return column.minWidth;
+  if (column.width?.type === 'pixel') return column.width.value;
+  return DEFAULT_MIN_COLUMN_WIDTH;
+}
+
+/**
+ * Compute the total minimum table width from all columns.
+ * Returns undefined if the total equals 0 (no columns).
+ */
+export function computeTableMinWidth<T extends Record<string, unknown>>(
+  columns: XDSTableColumn<T>[],
+): number | undefined {
+  if (columns.length === 0) return undefined;
+  const total = columns.reduce(
+    (sum, col) => sum + resolveColumnMinWidth(col),
+    0,
+  );
+  return total > 0 ? total : undefined;
 }
 
 /**

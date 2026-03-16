@@ -20,6 +20,9 @@ export {
   pixel,
   generateColumns,
   columnWidthToCSS,
+  resolveColumnMinWidth,
+  computeTableMinWidth,
+  DEFAULT_MIN_COLUMN_WIDTH,
 } from './columnUtils';
 export type {
   XDSTableColumn,

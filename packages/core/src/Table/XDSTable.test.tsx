@@ -19,6 +19,9 @@ import {
   generateColumns,
   columnWidthToCSS,
   capitalize,
+  resolveColumnMinWidth,
+  computeTableMinWidth,
+  DEFAULT_MIN_COLUMN_WIDTH,
 } from './columnUtils';
 import type {TablePlugin, XDSTableColumn} from './types';
 
@@ -117,6 +120,48 @@ describe('columnUtils', () => {
       for (const col of cols) {
         expect(col.width).toEqual({type: 'proportional', value: 1});
       }
+    });
+  });
+
+  describe('resolveColumnMinWidth', () => {
+    it('returns explicit minWidth when set', () => {
+      expect(resolveColumnMinWidth({key: 'a', minWidth: 120})).toBe(120);
+    });
+
+    it('returns pixel width value as implicit minimum', () => {
+      expect(resolveColumnMinWidth({key: 'a', width: pixel(200)})).toBe(200);
+    });
+
+    it('prefers explicit minWidth over pixel width', () => {
+      expect(
+        resolveColumnMinWidth({key: 'a', width: pixel(200), minWidth: 100}),
+      ).toBe(100);
+    });
+
+    it('returns DEFAULT_MIN_COLUMN_WIDTH for proportional columns', () => {
+      expect(resolveColumnMinWidth({key: 'a', width: proportional(1)})).toBe(
+        DEFAULT_MIN_COLUMN_WIDTH,
+      );
+    });
+
+    it('returns DEFAULT_MIN_COLUMN_WIDTH when no width is set', () => {
+      expect(resolveColumnMinWidth({key: 'a'})).toBe(DEFAULT_MIN_COLUMN_WIDTH);
+    });
+  });
+
+  describe('computeTableMinWidth', () => {
+    it('sums resolved min-widths across all columns', () => {
+      const cols: XDSTableColumn<User>[] = [
+        {key: 'name', minWidth: 120},
+        {key: 'age', width: pixel(80)},
+        {key: 'email'},
+      ];
+      // 120 + 80 + 60 (default) = 260
+      expect(computeTableMinWidth(cols)).toBe(260);
+    });
+
+    it('returns undefined for empty columns', () => {
+      expect(computeTableMinWidth([])).toBeUndefined();
     });
   });
 });
@@ -251,9 +296,53 @@ describe('XDSBaseTable', () => {
     expect(screen.getAllByRole('row')).toHaveLength(1);
   });
 
-  it('does not render colgroup', () => {
+  it('renders colgroup with col elements for column min-widths', () => {
     const {container} = render(<XDSBaseTable data={users} columns={columns} />);
-    expect(container.querySelector('colgroup')).toBeNull();
+    const colgroup = container.querySelector('colgroup');
+    expect(colgroup).toBeInTheDocument();
+    const cols = colgroup?.querySelectorAll('col');
+    expect(cols).toHaveLength(3);
+  });
+
+  describe('mobile responsiveness', () => {
+    it('wraps the table in a scroll container', () => {
+      const {container} = render(
+        <XDSBaseTable data={users} columns={columns} />,
+      );
+      const table = container.querySelector('table');
+      expect(table?.parentElement?.tagName).toBe('DIV');
+    });
+
+    it('sets min-width on the table based on column minimums', () => {
+      const cols: XDSTableColumn<User>[] = [
+        {key: 'name', minWidth: 150},
+        {key: 'age', width: pixel(80)},
+        {key: 'email', minWidth: 200},
+      ];
+      const {container} = render(<XDSBaseTable data={users} columns={cols} />);
+      const table = container.querySelector('table');
+      // 150 + 80 + 200 = 430
+      expect(table?.style.minWidth).toBe('430px');
+    });
+
+    it('renders colgroup with min-width on col elements', () => {
+      const cols: XDSTableColumn<User>[] = [
+        {key: 'name', minWidth: 150},
+        {key: 'age', width: pixel(80)},
+      ];
+      const {container} = render(<XDSBaseTable data={users} columns={cols} />);
+      const colElements = container.querySelectorAll('col');
+      expect(colElements).toHaveLength(2);
+      expect(colElements[0]?.style.minWidth).toBe('150px');
+      expect(colElements[1]?.style.minWidth).toBe('80px');
+    });
+
+    it('applies default minWidth to columns without explicit minWidth', () => {
+      const cols: XDSTableColumn<User>[] = [{key: 'name'}];
+      const {container} = render(<XDSBaseTable data={users} columns={cols} />);
+      const colElement = container.querySelector('col');
+      expect(colElement?.style.minWidth).toBe(`${DEFAULT_MIN_COLUMN_WIDTH}px`);
+    });
   });
 
   it('forwards ref to the table element', () => {

@@ -60,6 +60,15 @@ export interface XDSTableColumn<T extends Record<string, unknown>> {
   /** Column width. Defaults to `proportional(1)`. */
   width?: ColumnWidth;
   /**
+   * Minimum column width in pixels. Prevents columns from compressing
+   * below this threshold on small screens. When the sum of all column
+   * minimums exceeds the container width, the table scrolls horizontally.
+   *
+   * @default 60 (px) for proportional-width columns; pixel-width columns
+   *   use their pixel value as the implicit minimum.
+   */
+  minWidth?: number;
+  /**
    * Custom cell renderer. Receives the row item and returns rich JSX content.
    * Defaults to `String(item[key])` — use renderCell for rich content like
    * badges, status dots, formatted text, icons, or composed layouts.

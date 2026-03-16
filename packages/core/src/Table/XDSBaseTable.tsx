@@ -25,13 +25,22 @@ import type {
   TableCellComponentProps,
   TableHeaderCellComponentProps,
 } from './types';
-import {generateColumns, defaultCellRenderer} from './columnUtils';
+import {
+  generateColumns,
+  defaultCellRenderer,
+  resolveColumnMinWidth,
+  computeTableMinWidth,
+} from './columnUtils';
 import {XDSTableRow} from './XDSTableRow';
 import {XDSTableCell} from './XDSTableCell';
 import {XDSTableHeaderCell} from './XDSTableHeaderCell';
 import {xdsClassName, mergeProps} from '../utils';
 
 const styles = stylex.create({
+  scrollWrapper: {
+    overflowX: 'auto',
+    width: '100%',
+  },
   table: {
     width: '100%',
     borderCollapse: 'collapse',
@@ -208,6 +217,9 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
     styles: [styles.table],
   } as TableRenderProps);
 
+  // --- Compute table min-width for scroll behavior ---
+  const tableMinWidth = computeTableMinWidth(resolvedColumns);
+
   // --- Plugin pipeline: header cells ---
   const headerCells = resolvedColumns.map(col => {
     const cellRenderProps = applyPlugins(
@@ -227,6 +239,22 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
     );
   });
 
+  // --- Colgroup for column min-widths ---
+  const hasMinWidths = resolvedColumns.length > 0;
+  const colgroup = hasMinWidths ? (
+    <colgroup>
+      {resolvedColumns.map(col => {
+        const minW = resolveColumnMinWidth(col);
+        return (
+          <col
+            key={col.key}
+            style={minW > 0 ? {minWidth: `${minW}px`} : undefined}
+          />
+        );
+      })}
+    </colgroup>
+  ) : null;
+
   // --- Plugin pipeline: header row ---
   const headerRowRenderProps = applyPlugins(
     plugins,
@@ -242,53 +270,68 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
   const hasData = data != null && data.length > 0;
   const hasColumns = resolvedColumns.length > 0;
 
+  // Table min-width style — only set when columns define minimums
+  const tableMinWidthStyle = tableMinWidth
+    ? {minWidth: `${tableMinWidth}px`}
+    : undefined;
+
   let tableElement: ReactNode = (
-    <table
-      ref={ref}
-      {...tableRenderProps.htmlProps}
-      {...mergeProps(
-        xdsClassName('base-table'),
-        stylex.props(...tableRenderProps.styles),
-      )}>
-      {/* thead */}
-      {hasColumns && (
-        <thead>
-          <RowComponent
-            {...headerRowRenderProps.htmlProps}
-            xstyle={headerRowRenderProps.styles}>
-            {headerRowRenderProps.children}
-          </RowComponent>
-        </thead>
-      )}
+    <div {...stylex.props(styles.scrollWrapper)}>
+      <table
+        ref={ref}
+        {...tableRenderProps.htmlProps}
+        {...mergeProps(
+          xdsClassName('base-table'),
+          stylex.props(...tableRenderProps.styles),
+        )}
+        style={{
+          ...((tableRenderProps.htmlProps as Record<string, unknown>).style as
+            | React.CSSProperties
+            | undefined),
+          ...tableMinWidthStyle,
+        }}>
+        {/* colgroup for column min-widths */}
+        {colgroup}
+        {/* thead */}
+        {hasColumns && (
+          <thead>
+            <RowComponent
+              {...headerRowRenderProps.htmlProps}
+              xstyle={headerRowRenderProps.styles}>
+              {headerRowRenderProps.children}
+            </RowComponent>
+          </thead>
+        )}
 
-      {/* tbody — data-driven or children mode */}
-      <tbody>
-        {children
-          ? children
-          : hasData &&
-            data.map((item, rowIndex) => {
-              const rowKey =
-                idKey == null
-                  ? rowIndex
-                  : typeof idKey === 'function'
-                    ? idKey(item)
-                    : String(item[idKey]);
+        {/* tbody — data-driven or children mode */}
+        <tbody>
+          {children
+            ? children
+            : hasData &&
+              data.map((item, rowIndex) => {
+                const rowKey =
+                  idKey == null
+                    ? rowIndex
+                    : typeof idKey === 'function'
+                      ? idKey(item)
+                      : String(item[idKey]);
 
-              return (
-                <MemoizedTableRow<T>
-                  key={rowKey}
-                  item={item}
-                  rowIndex={rowIndex}
-                  rowKey={rowKey}
-                  columns={resolvedColumns}
-                  plugins={plugins}
-                  RowComponent={RowComponent}
-                  CellComponent={CellComponent}
-                />
-              );
-            })}
-      </tbody>
-    </table>
+                return (
+                  <MemoizedTableRow<T>
+                    key={rowKey}
+                    item={item}
+                    rowIndex={rowIndex}
+                    rowKey={rowKey}
+                    columns={resolvedColumns}
+                    plugins={plugins}
+                    RowComponent={RowComponent}
+                    CellComponent={CellComponent}
+                  />
+                );
+              })}
+        </tbody>
+      </table>
+    </div>
   );
 
   // Apply transformTableContext from each plugin (outermost-first)
