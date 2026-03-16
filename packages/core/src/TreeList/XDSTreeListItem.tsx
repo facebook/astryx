@@ -133,15 +133,9 @@ const styles = stylex.create({
   },
   label: {
     color: colorVars['--color-text-primary'],
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
   },
   description: {
     color: colorVars['--color-text-secondary'],
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
   },
   startContent: {
     flexShrink: 0,

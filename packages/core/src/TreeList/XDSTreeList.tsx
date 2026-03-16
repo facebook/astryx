@@ -12,7 +12,7 @@
 
 'use client';
 
-import {useId, useState, useCallback, type ReactNode} from 'react';
+import {useId, useState, useMemo, useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
@@ -148,21 +148,31 @@ export function XDSTreeList({
   ref,
 }: XDSTreeListProps) {
   const headerId = useId();
-  const [expandedKeys, setExpandedKeys] = useState(
+
+  // Expanded keys from data: recomputed whenever items change.
+  const expandedKeysFromProps = useMemo(
     () => new Set(collectExpandedKeys(items)),
+    [items],
   );
 
-  const handleToggle = useCallback((id: string) => {
-    setExpandedKeys(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }, []);
+  // User overrides: only stores IDs the user has explicitly toggled.
+  const [expandedKeysOverride, setExpandedKeysOverride] = useState<
+    Map<string, boolean>
+  >(() => new Map());
+
+  const handleToggle = useCallback(
+    (id: string) => {
+      setExpandedKeysOverride(prev => {
+        const next = new Map(prev);
+        const isCurrentlyExpanded = prev.has(id)
+          ? prev.get(id)!
+          : expandedKeysFromProps.has(id);
+        next.set(id, !isCurrentlyExpanded);
+        return next;
+      });
+    },
+    [expandedKeysFromProps],
+  );
 
   function renderItems(
     items: XDSTreeListItemData[],
@@ -171,7 +181,9 @@ export function XDSTreeList({
   ): ReactNode {
     return items.map((item, index) => {
       const isLast = index === items.length - 1;
-      const isExpanded = expandedKeys.has(item.id);
+      const isExpanded = expandedKeysOverride.has(item.id)
+        ? expandedKeysOverride.get(item.id)!
+        : expandedKeysFromProps.has(item.id);
       const hasChildren = item.children != null && item.children.length > 0;
 
       const ancestorsIsLastForChildren = hasChildren

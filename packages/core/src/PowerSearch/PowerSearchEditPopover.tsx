@@ -80,23 +80,6 @@ const styles = stylex.create({
     flexShrink: 1,
     minWidth: 0,
   },
-  removeButton: {
-    all: 'unset',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    padding: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-rounded'],
-    color: colorVars['--color-text-secondary'],
-    flexShrink: 0,
-    opacity: {
-      default: 0.6,
-      ':hover': {
-        '@media (hover: hover)': 1,
-      },
-    },
-  },
 });
 
 export interface PowerSearchEditPopoverProps {
@@ -116,13 +99,137 @@ export interface PowerSearchEditPopoverProps {
 }
 
 // =============================================================================
+// Editable filter state for recursive nesting
+// =============================================================================
+
+interface EditablePartialFilter {
+  field: string;
+  operator?: string;
+  value?: FilterValue;
+  _subFilters?: EditablePartialFilter[];
+}
+
+function initEditableFilter(
+  config: InternalConfig,
+  filter: PowerSearchFilter,
+): EditablePartialFilter {
+  const op = config.getOperator(filter.field, filter.operator);
+  if (op?.value.type === 'nested' && filter.value?.type === 'nested') {
+    return {
+      field: filter.field,
+      operator: filter.operator,
+      value: filter.value,
+      _subFilters: filter.value.value.map(f => initEditableFilter(config, f)),
+    };
+  }
+  return {
+    field: filter.field,
+    operator: filter.operator,
+    value: filter.value,
+  };
+}
+
+function isEditableFilterComplete(
+  config: InternalConfig,
+  ef: EditablePartialFilter,
+): boolean {
+  if (!ef.field || !ef.operator) return false;
+  const op = config.getOperator(ef.field, ef.operator);
+  if (op?.value.type === 'nested') {
+    const subs = ef._subFilters ?? [];
+    return (
+      subs.length > 0 && subs.every(s => isEditableFilterComplete(config, s))
+    );
+  }
+  return ef.value != null;
+}
+
+function editableToCompleteFilter(
+  config: InternalConfig,
+  ef: EditablePartialFilter,
+): PowerSearchFilter {
+  const op = config.getOperator(ef.field, ef.operator!);
+  if (op?.value.type === 'nested') {
+    return {
+      field: ef.field,
+      operator: ef.operator!,
+      value: {
+        type: 'nested',
+        value: (ef._subFilters ?? []).map(s =>
+          editableToCompleteFilter(config, s),
+        ),
+      },
+    };
+  }
+  return {
+    field: ef.field,
+    operator: ef.operator!,
+    value: ef.value!,
+  };
+}
+
+function updateAtPath(
+  filters: EditablePartialFilter[],
+  path: number[],
+  updater: (filter: EditablePartialFilter) => EditablePartialFilter,
+): EditablePartialFilter[] {
+  const [idx, ...rest] = path;
+  const next = [...filters];
+  if (rest.length === 0) {
+    next[idx] = updater(next[idx]);
+  } else {
+    const sf = next[idx];
+    next[idx] = {
+      ...sf,
+      _subFilters: updateAtPath(sf._subFilters ?? [], rest, updater),
+    };
+  }
+  return next;
+}
+
+function removeAtPath(
+  filters: EditablePartialFilter[],
+  path: number[],
+): EditablePartialFilter[] {
+  const [idx, ...rest] = path;
+  if (rest.length === 0) {
+    return filters.filter((_, i) => i !== idx);
+  }
+  const next = [...filters];
+  const sf = next[idx];
+  next[idx] = {
+    ...sf,
+    _subFilters: removeAtPath(sf._subFilters ?? [], rest),
+  };
+  return next;
+}
+
+function addAtPath(
+  filters: EditablePartialFilter[],
+  parentPath: number[],
+  newFilter: EditablePartialFilter,
+): EditablePartialFilter[] {
+  if (parentPath.length === 0) {
+    return [...filters, newFilter];
+  }
+  const [idx, ...rest] = parentPath;
+  const next = [...filters];
+  const sf = next[idx];
+  next[idx] = {
+    ...sf,
+    _subFilters: addAtPath(sf._subFilters ?? [], rest, newFilter),
+  };
+  return next;
+}
+
+// =============================================================================
 // Nested sub-filter row
 // =============================================================================
 
 interface NestedSubFilterRowProps {
   config: InternalConfig;
-  subFilter: PartialFilter;
-  onChange: (subFilter: PartialFilter) => void;
+  subFilter: EditablePartialFilter;
+  onChange: (subFilter: EditablePartialFilter) => void;
   isReadOnly: boolean;
 }
 
@@ -132,30 +239,21 @@ function NestedSubFilterRow({
   onChange,
   isReadOnly,
 }: NestedSubFilterRowProps) {
-  // Exclude nested fields from sub-filter field options to avoid infinite nesting
   const fieldOptions = useMemo(
     () =>
-      config
-        .getVisibleFields()
-        .filter(field => {
-          const ops = config.getVisibleOperators(field.key);
-          return !ops.every(op => op.value.type === 'nested');
-        })
-        .map(field => ({
-          value: field.key,
-          label: field.label,
-        })),
+      config.getVisibleFields().map(field => ({
+        value: field.key,
+        label: field.label,
+      })),
     [config],
   );
 
   const operatorOptions = useMemo(() => {
     const operators = config.getVisibleOperators(subFilter.field);
-    return operators
-      .filter(op => op.value.type !== 'nested')
-      .map(op => ({
-        value: op.key,
-        label: op.label,
-      }));
+    return operators.map(op => ({
+      value: op.key,
+      label: op.label,
+    }));
   }, [config, subFilter.field]);
 
   const currentOperator = subFilter.operator
@@ -164,14 +262,19 @@ function NestedSubFilterRow({
 
   const operatorValue: OperatorValue | undefined = currentOperator?.value;
   const isEmptyType = operatorValue?.type === 'empty';
+  const isNestedType = operatorValue?.type === 'nested';
 
   const handleFieldChange = useCallback(
     (fieldKey: string) => {
       const defaultOp = config.getDefaultOperator(fieldKey);
+      const newOp = defaultOp
+        ? config.getOperator(fieldKey, defaultOp.key)
+        : undefined;
       onChange({
         field: fieldKey,
         operator: defaultOp?.key,
         value: undefined,
+        _subFilters: newOp?.value.type === 'nested' ? [] : undefined,
       });
     },
     [config, onChange],
@@ -186,6 +289,10 @@ function NestedSubFilterRow({
         ...subFilter,
         operator: operatorKey,
         value: keepValue ? subFilter.value : undefined,
+        _subFilters:
+          newOp?.value.type === 'nested'
+            ? (subFilter._subFilters ?? [])
+            : undefined,
       });
     },
     [config, subFilter, currentOperator, onChange],
@@ -224,7 +331,7 @@ function NestedSubFilterRow({
           />
         </div>
       )}
-      {operatorValue && !isEmptyType && (
+      {operatorValue && !isEmptyType && !isNestedType && (
         <div {...stylex.props(styles.nestedRowValueEditor)}>
           <PowerSearchValueEditor
             operatorValue={operatorValue}
@@ -260,40 +367,27 @@ function NestedEditor({
   onPartialFilterChange,
   isReadOnly,
 }: NestedEditorProps) {
-  // Local state for sub-filters — preserved even when some are incomplete
-  const [subFilters, setSubFilters] = useState<PartialFilter[]>(() => {
+  const [subFilters, setSubFilters] = useState<EditablePartialFilter[]>(() => {
     if (partialFilter.value && partialFilter.value.type === 'nested') {
-      return partialFilter.value.value.map(f => ({
-        field: f.field,
-        operator: f.operator,
-        value: f.value,
-      }));
+      return partialFilter.value.value.map(f => initEditableFilter(config, f));
     }
     return [];
   });
 
   const syncToParent = useCallback(
-    (newSubFilters: PartialFilter[]) => {
-      // Build complete filters from all valid sub-filters
-      const completeFilters: PowerSearchFilter[] = [];
-      for (const sf of newSubFilters) {
-        if (sf.field && sf.operator && sf.value) {
-          completeFilters.push({
-            field: sf.field,
-            operator: sf.operator,
-            value: sf.value,
-          });
-        }
-      }
-
-      // Only update parent value if all sub-filters are complete and there's at least one
+    (newSubFilters: EditablePartialFilter[]) => {
       if (
-        completeFilters.length === newSubFilters.length &&
-        completeFilters.length > 0
+        newSubFilters.length > 0 &&
+        newSubFilters.every(sf => isEditableFilterComplete(config, sf))
       ) {
         onPartialFilterChange({
           ...partialFilter,
-          value: {type: 'nested', value: completeFilters},
+          value: {
+            type: 'nested',
+            value: newSubFilters.map(sf =>
+              editableToCompleteFilter(config, sf),
+            ),
+          },
         });
       } else {
         onPartialFilterChange({
@@ -302,14 +396,13 @@ function NestedEditor({
         });
       }
     },
-    [partialFilter, onPartialFilterChange],
+    [config, partialFilter, onPartialFilterChange],
   );
 
-  const handleSubFilterChange = useCallback(
-    (index: number, updated: PartialFilter) => {
+  const handleUpdate = useCallback(
+    (path: number[], updated: EditablePartialFilter) => {
       setSubFilters(prev => {
-        const next = [...prev];
-        next[index] = updated;
+        const next = updateAtPath(prev, path, () => updated);
         syncToParent(next);
         return next;
       });
@@ -317,10 +410,10 @@ function NestedEditor({
     [syncToParent],
   );
 
-  const handleSubFilterRemove = useCallback(
-    (index: number) => {
+  const handleRemove = useCallback(
+    (path: number[]) => {
       setSubFilters(prev => {
-        const next = prev.filter((_, i) => i !== index);
+        const next = removeAtPath(prev, path);
         syncToParent(next);
         return next;
       });
@@ -328,51 +421,112 @@ function NestedEditor({
     [syncToParent],
   );
 
-  const handleAddSubFilter = useCallback(() => {
-    // Pick the first non-nested field as default
-    const nonNestedFields = config.getVisibleFields().filter(field => {
-      const ops = config.getVisibleOperators(field.key);
-      return !ops.every(op => op.value.type === 'nested');
-    });
-    const defaultField = nonNestedFields[0];
-    if (!defaultField) return;
+  const handleAdd = useCallback(
+    (parentPath: number[]) => {
+      const fields = config.getVisibleFields();
+      const defaultField = fields[0];
+      if (!defaultField) return;
 
-    const defaultOp = config.getDefaultOperator(defaultField.key);
-    const newSubFilter: PartialFilter = {
-      field: defaultField.key,
-      operator: defaultOp?.key,
-      value: undefined,
-    };
+      const defaultOp = config.getDefaultOperator(defaultField.key);
+      const op = defaultOp
+        ? config.getOperator(defaultField.key, defaultOp.key)
+        : undefined;
 
-    setSubFilters(prev => {
-      const next = [...prev, newSubFilter];
-      syncToParent(next);
-      return next;
-    });
-  }, [config, syncToParent]);
+      const newSubFilter: EditablePartialFilter = {
+        field: defaultField.key,
+        operator: defaultOp?.key,
+        value: undefined,
+        _subFilters: op?.value.type === 'nested' ? [] : undefined,
+      };
 
-  const treeChildren: XDSTreeListItemData[] = subFilters.map(
-    (subFilter, idx) => ({
-      id: `filter-${idx}`,
-      label: (
-        <NestedSubFilterRow
-          config={config}
-          subFilter={subFilter}
-          onChange={updated => handleSubFilterChange(idx, updated)}
-          isReadOnly={isReadOnly}
-        />
-      ),
-      endContent: !isReadOnly ? (
-        <button
-          type="button"
-          aria-label="Remove filter"
-          onClick={() => handleSubFilterRemove(idx)}
-          {...stylex.props(styles.removeButton)}>
-          <XDSIcon icon="close" size="sm" />
-        </button>
-      ) : undefined,
-    }),
+      setSubFilters(prev => {
+        const next = addAtPath(prev, parentPath, newSubFilter);
+        syncToParent(next);
+        return next;
+      });
+    },
+    [config, syncToParent],
   );
+
+  function buildTreeItems(
+    filters: EditablePartialFilter[],
+    parentPath: number[],
+  ): XDSTreeListItemData[] {
+    const items: XDSTreeListItemData[] = filters.map((sf, idx) => {
+      const itemPath = [...parentPath, idx];
+      const op = sf.operator
+        ? config.getOperator(sf.field, sf.operator)
+        : undefined;
+      const isNested = op?.value.type === 'nested';
+
+      if (isNested) {
+        const children = buildTreeItems(sf._subFilters ?? [], itemPath);
+
+        if (!isReadOnly) {
+          children.push({
+            id: `${itemPath.join('-')}-add`,
+            label: (
+              <XDSButton
+                label="+ Add filter"
+                onClick={() => handleAdd(itemPath)}
+                variant="ghost"
+                size="sm"
+              />
+            ),
+          });
+        }
+
+        return {
+          id: `filter-${itemPath.join('-')}`,
+          label: (
+            <NestedSubFilterRow
+              config={config}
+              subFilter={sf}
+              onChange={updated => handleUpdate(itemPath, updated)}
+              isReadOnly={isReadOnly}
+            />
+          ),
+          isExpanded: true,
+          children,
+          endContent: !isReadOnly ? (
+            <XDSButton
+              label="Remove filter"
+              icon={<XDSIcon icon="close" size="sm" />}
+              variant="ghost"
+              size="sm"
+              onClick={() => handleRemove(itemPath)}
+            />
+          ) : undefined,
+        };
+      }
+
+      return {
+        id: `filter-${itemPath.join('-')}`,
+        isExpanded: true,
+        label: (
+          <NestedSubFilterRow
+            config={config}
+            subFilter={sf}
+            onChange={updated => handleUpdate(itemPath, updated)}
+            isReadOnly={isReadOnly}
+          />
+        ),
+        endContent: !isReadOnly ? (
+          <XDSButton
+            label="Remove filter"
+            icon={<XDSIcon icon="close" size="sm" />}
+            variant="ghost"
+            size="sm"
+            onClick={() => handleRemove(itemPath)}
+          />
+        ) : undefined,
+      };
+    });
+
+    return items;
+  }
+
+  const treeChildren = buildTreeItems(subFilters, []);
 
   if (!isReadOnly) {
     treeChildren.push({
@@ -380,7 +534,7 @@ function NestedEditor({
       label: (
         <XDSButton
           label="+ Add filter"
-          onClick={handleAddSubFilter}
+          onClick={() => handleAdd([])}
           variant="ghost"
           size="sm"
         />
