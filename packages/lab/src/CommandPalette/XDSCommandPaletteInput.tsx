@@ -27,7 +27,7 @@ import {
   spacingVars,
   typographyVars,
   textSizeVars,
-} from '../../../../core/src/theme/tokens.stylex';
+} from '@xds/core/theme/tokens.stylex';
 import {useCommandPaletteContext} from './CommandPaletteContext';
 
 const styles = stylex.create({

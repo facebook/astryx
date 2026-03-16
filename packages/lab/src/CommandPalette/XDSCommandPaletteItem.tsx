@@ -26,7 +26,7 @@ import {
   radiusVars,
   typographyVars,
   textSizeVars,
-} from '../../../../core/src/theme/tokens.stylex';
+} from '@xds/core/theme/tokens.stylex';
 import {useCommandPaletteContext} from './CommandPaletteContext';
 
 const HOVER_HOVER = '@media (hover: hover)';

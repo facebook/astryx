@@ -18,7 +18,7 @@ import {
   spacingVars,
   textSizeVars,
   typographyVars,
-} from '../../../../core/src/theme/tokens.stylex';
+} from '@xds/core/theme/tokens.stylex';
 import {XDSDivider} from '@xds/core/Divider';
 
 const styles = stylex.create({

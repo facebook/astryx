@@ -14,7 +14,7 @@
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {spacingVars} from '../../../../core/src/theme/tokens.stylex';
+import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {useCommandPaletteContext} from './CommandPaletteContext';
 
 const styles = stylex.create({

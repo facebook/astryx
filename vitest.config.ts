@@ -7,8 +7,11 @@
  * SYNC: When modified, update this header and root README.md
  */
 
+import path from 'path';
 import {defineConfig} from 'vitest/config';
 import react from '@vitejs/plugin-react';
+
+const rootDir = path.resolve(__dirname, '.');
 
 export default defineConfig({
   plugins: [
@@ -22,9 +25,13 @@ export default defineConfig({
               runtimeInjection: true,
               genConditionalClasses: true,
               treeshakeCompensation: true,
+              aliases: {
+                '@xds/core/*': [path.join(rootDir, 'packages/core/src/*')],
+                '@xds/core': [path.join(rootDir, 'packages/core/src')],
+              },
               unstable_moduleResolution: {
                 type: 'commonJS',
-                rootDir: '.',
+                rootDir: rootDir,
               },
             },
           ],

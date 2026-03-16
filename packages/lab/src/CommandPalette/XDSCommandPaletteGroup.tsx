@@ -20,7 +20,7 @@ import {
   textSizeVars,
   typographyVars,
   fontWeightVars,
-} from '../../../../core/src/theme/tokens.stylex';
+} from '@xds/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   group: {
