@@ -274,22 +274,19 @@ export function XDSSideNav({
         )}>
         {children}
       </div>
-      {(hasStickyBottom || collapsed) && (
+      {(hasStickyBottom || isCollapsible) && (
         <div
           {...stylex.props(
             styles.stickyBottom,
             collapsed && styles.stickyBottomCollapsed,
           )}>
           {!collapsed && footer}
-          {footerIcons && (
-            <div
-              {...stylex.props(
-                styles.footerIcons,
-                collapsed && styles.footerIconsCollapsed,
-              )}>
-              {footerIcons}
-            </div>
-          )}
+          <div {...stylex.props(styles.footerRow, collapsed && styles.footerRowCollapsed)}>
+            {isCollapsible && <XDSSideNavCollapseButton />}
+            {!collapsed && footerIcons && (
+              <div {...stylex.props(styles.footerIcons)}>{footerIcons}</div>
+            )}
+          </div>
         </div>
       )}
     </nav>
