@@ -45,6 +45,13 @@ export function registerComponent(program) {
       const lang = program.opts().lang || null;
       const detail = program.opts().detail || 'full';
 
+      const validDetails = ['full', 'compact', 'brief'];
+      if (!validDetails.includes(detail)) {
+        console.error(`Error: Invalid --detail value "${detail}".`);
+        console.error(`Valid levels: ${validDetails.join(', ')}`);
+        process.exit(1);
+      }
+
       if (!coreDir) {
         console.error(
           'Error: Could not find @xds/core package.\n' +
