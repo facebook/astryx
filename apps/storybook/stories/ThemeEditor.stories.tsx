@@ -77,12 +77,6 @@ const TOKEN_GROUPS = {
     description: 'Shadow and elevation tokens',
     tokens: elevationDefaults,
   },
-  typeScale: {
-    label: 'Type Scale',
-    description:
-      'Configure typography sizing from a base size and ratio. All heading and text sizes are computed from these two values.',
-    tokens: typeScaleDefaults,
-  },
   transition: {
     label: 'Transition',
     description: 'Animation timing tokens',
@@ -1302,8 +1296,38 @@ function ThemeEditorComponent() {
     React.useState<string>('Core Semantic');
   const [activeTypographyCategory, setActiveTypographyCategory] =
     React.useState<string>('Heading 1');
-  const [mode, setMode] = React.useState<'light' | 'dark'>('light');
-  const [themeName, setThemeName] = React.useState('custom');
+  const [themeName] = React.useState('custom');
+
+  // Derive mode from storybook's global dark mode toggle
+  const [mode, setMode] = React.useState<'light' | 'dark'>(() =>
+    typeof window !== 'undefined' &&
+    (document.documentElement.classList.contains('dark') ||
+      window.matchMedia('(prefers-color-scheme: dark)').matches)
+      ? 'dark'
+      : 'light',
+  );
+  React.useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const observer = new MutationObserver(() => {
+      setMode(
+        document.documentElement.classList.contains('dark') ||
+          document.body.classList.contains('dark')
+          ? 'dark'
+          : 'light',
+      );
+    });
+    const handleChange = (e: MediaQueryListEvent) =>
+      setMode(e.matches ? 'dark' : 'light');
+    mq.addEventListener('change', handleChange);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+    return () => {
+      mq.removeEventListener('change', handleChange);
+      observer.disconnect();
+    };
+  }, []);
   const [showCode, setShowCode] = React.useState(false);
 
   // Collect all defaults
@@ -1435,152 +1459,132 @@ function ThemeEditorComponent() {
       );
     }
 
-    if (activeGroup === 'typeScale') {
-      // Apply type scale changes to token state
+    if (activeGroup === 'typography') {
+      // Type scale controls
       const applyTypeScale = (base: number, ratio: number) => {
-        const generated = expandTypeScale({base, ratio});
-        setTokens(prev => ({...prev, ...generated}));
         setTypeScaleBase(base);
         setTypeScaleRatio(ratio);
+        setTokens(prev => ({...prev, ...expandTypeScale({base, ratio})}));
       };
 
-      return (
-        <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
-          {/* Base + Ratio controls */}
+      const typeScaleSection = (
+        <div
+          style={{
+            padding: '12px',
+            borderRadius: '8px',
+            backgroundColor: 'var(--color-wash)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            marginBottom: '16px',
+          }}>
           <div
             style={{
-              padding: '16px',
-              borderRadius: '8px',
-              backgroundColor: 'var(--color-wash)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px',
+              fontSize: '11px',
+              fontWeight: 600,
+              color: 'var(--color-text-secondary)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
             }}>
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  color: 'var(--color-text-primary)',
-                  marginBottom: '4px',
-                }}>
-                Base Size: {typeScaleBase}px
-              </label>
-              <input
-                type="range"
-                min="10"
-                max="24"
-                step="1"
-                value={typeScaleBase}
-                onChange={e =>
-                  applyTypeScale(Number(e.target.value), typeScaleRatio)
-                }
-                style={{width: '100%'}}
-              />
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  fontSize: '11px',
-                  color: 'var(--color-text-secondary)',
-                }}>
-                <span>10px</span>
-                <span>24px</span>
-              </div>
-            </div>
-
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  color: 'var(--color-text-primary)',
-                  marginBottom: '4px',
-                }}>
-                Scale Ratio: {typeScaleRatio.toFixed(3)}
-              </label>
-              <input
-                type="range"
-                min="1.05"
-                max="1.5"
-                step="0.005"
-                value={typeScaleRatio}
-                onChange={e =>
-                  applyTypeScale(typeScaleBase, Number(e.target.value))
-                }
-                style={{width: '100%'}}
-              />
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  fontSize: '11px',
-                  color: 'var(--color-text-secondary)',
-                }}>
-                <span>1.050</span>
-                <span>1.500</span>
-              </div>
-            </div>
-
-            {/* Preset buttons */}
-            <div style={{display: 'flex', gap: '4px', flexWrap: 'wrap'}}>
-              <XDSButton
-                label="Dense (12 / 1.125)"
-                variant={
-                  typeScaleBase === 12 && typeScaleRatio === 1.125
-                    ? 'primary'
-                    : 'ghost'
-                }
-                size="sm"
-                onClick={() => applyTypeScale(12, 1.125)}
-              />
-              <XDSButton
-                label="Default (14 / 1.2)"
-                variant={
-                  typeScaleBase === 14 && typeScaleRatio === 1.2
-                    ? 'primary'
-                    : 'ghost'
-                }
-                size="sm"
-                onClick={() => applyTypeScale(14, 1.2)}
-              />
-              <XDSButton
-                label="Airy (16 / 1.25)"
-                variant={
-                  typeScaleBase === 16 && typeScaleRatio === 1.25
-                    ? 'primary'
-                    : 'ghost'
-                }
-                size="sm"
-                onClick={() => applyTypeScale(16, 1.25)}
-              />
-            </div>
+            Type Scale
           </div>
-
-          {/* Live type scale preview */}
+          <div>
+            <label
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontSize: '13px',
+                fontWeight: 500,
+                color: 'var(--color-text-primary)',
+                marginBottom: '2px',
+              }}>
+              <span>Base Size</span>
+              <span style={{fontFamily: 'var(--font-code)'}}>
+                {typeScaleBase}px
+              </span>
+            </label>
+            <input
+              type="range"
+              min="10"
+              max="24"
+              step="1"
+              value={typeScaleBase}
+              onChange={e =>
+                applyTypeScale(Number(e.target.value), typeScaleRatio)
+              }
+              style={{width: '100%'}}
+            />
+          </div>
+          <div>
+            <label
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontSize: '13px',
+                fontWeight: 500,
+                color: 'var(--color-text-primary)',
+                marginBottom: '2px',
+              }}>
+              <span>Ratio</span>
+              <span style={{fontFamily: 'var(--font-code)'}}>
+                {typeScaleRatio.toFixed(3)}
+              </span>
+            </label>
+            <input
+              type="range"
+              min="1.05"
+              max="1.5"
+              step="0.005"
+              value={typeScaleRatio}
+              onChange={e =>
+                applyTypeScale(typeScaleBase, Number(e.target.value))
+              }
+              style={{width: '100%'}}
+            />
+          </div>
+          <div style={{display: 'flex', gap: '4px', flexWrap: 'wrap'}}>
+            <XDSButton
+              label="Dense"
+              variant={
+                typeScaleBase === 12 && typeScaleRatio === 1.125
+                  ? 'primary'
+                  : 'ghost'
+              }
+              size="sm"
+              onClick={() => applyTypeScale(12, 1.125)}
+            />
+            <XDSButton
+              label="Default"
+              variant={
+                typeScaleBase === 14 && typeScaleRatio === 1.2
+                  ? 'primary'
+                  : 'ghost'
+              }
+              size="sm"
+              onClick={() => applyTypeScale(14, 1.2)}
+            />
+            <XDSButton
+              label="Airy"
+              variant={
+                typeScaleBase === 16 && typeScaleRatio === 1.25
+                  ? 'primary'
+                  : 'ghost'
+              }
+              size="sm"
+              onClick={() => applyTypeScale(16, 1.25)}
+            />
+          </div>
+          {/* Compact heading preview */}
           <div
             style={{
-              padding: '16px',
-              borderRadius: '8px',
+              padding: '8px 12px',
+              borderRadius: '6px',
               border: '1px solid var(--color-divider)',
               backgroundColor: 'var(--color-surface)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '4px',
+              gap: '2px',
             }}>
-            <div
-              style={{
-                fontSize: '11px',
-                fontWeight: 500,
-                color: 'var(--color-text-secondary)',
-                marginBottom: '8px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-              }}>
-              Heading Scale
-            </div>
             {[1, 2, 3, 4, 5, 6].map(level => {
               const size = tokens[`--heading-${level}-size`] || '';
               return (
@@ -1589,15 +1593,14 @@ function ThemeEditorComponent() {
                   style={{
                     display: 'flex',
                     alignItems: 'baseline',
-                    gap: '12px',
-                    padding: '4px 0',
+                    gap: '8px',
                   }}>
                   <span
                     style={{
-                      fontSize: '11px',
+                      fontSize: '10px',
                       color: 'var(--color-text-secondary)',
                       fontFamily: 'var(--font-code)',
-                      width: '24px',
+                      width: '18px',
                       flexShrink: 0,
                     }}>
                     h{level}
@@ -1608,68 +1611,15 @@ function ThemeEditorComponent() {
                       fontWeight: 600,
                       lineHeight: 1.3,
                       color: 'var(--color-text-primary)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
                     }}>
-                    Heading {level}
+                    Heading
                   </span>
                   <span
                     style={{
-                      fontSize: '11px',
-                      color: 'var(--color-text-secondary)',
-                      fontFamily: 'var(--font-code)',
-                      marginLeft: 'auto',
-                      flexShrink: 0,
-                    }}>
-                    {size}
-                  </span>
-                </div>
-              );
-            })}
-
-            <div
-              style={{
-                fontSize: '11px',
-                fontWeight: 500,
-                color: 'var(--color-text-secondary)',
-                marginTop: '12px',
-                marginBottom: '8px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-              }}>
-              Text Types
-            </div>
-            {['large', 'body', 'label', 'code', 'supporting'].map(type => {
-              const size = tokens[`--text-${type}-size`] || '';
-              return (
-                <div
-                  key={type}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'baseline',
-                    gap: '12px',
-                    padding: '4px 0',
-                  }}>
-                  <span
-                    style={{
-                      fontSize: '11px',
-                      color: 'var(--color-text-secondary)',
-                      fontFamily: 'var(--font-code)',
-                      width: '80px',
-                      flexShrink: 0,
-                    }}>
-                    {type}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: size,
-                      fontFamily:
-                        type === 'code' ? 'var(--font-code)' : 'inherit',
-                      color: 'var(--color-text-primary)',
-                    }}>
-                    {type === 'code' ? 'const x = 42;' : 'The quick brown fox'}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: '11px',
+                      fontSize: '10px',
                       color: 'var(--color-text-secondary)',
                       fontFamily: 'var(--font-code)',
                       marginLeft: 'auto',
@@ -1681,107 +1631,18 @@ function ThemeEditorComponent() {
               );
             })}
           </div>
-
-          {/* Prose preview with FontWrapper */}
           <div
             style={{
-              padding: '16px',
-              borderRadius: '8px',
-              border: '1px solid var(--color-divider)',
-              backgroundColor: 'var(--color-surface)',
-            }}>
-            <div
-              style={{
-                fontSize: '11px',
-                fontWeight: 500,
-                color: 'var(--color-text-secondary)',
-                marginBottom: '12px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-              }}>
-              Prose Preview (XDSFontWrapper)
-            </div>
-            <XDSFontWrapper>
-              <h1>Article Title</h1>
-              <p>
-                This is body text rendered inside XDSFontWrapper. It uses the
-                type scale tokens from the current theme for consistent sizing.
-              </p>
-              <h2>Section Heading</h2>
-              <p>
-                The type scale is a geometric progression from a base size. Each
-                heading level steps up or down by the ratio.
-              </p>
-              <h3>Subsection</h3>
-              <ul>
-                <li>h4 anchors to the base size</li>
-                <li>h1–h3 scale up by the ratio</li>
-                <li>h5–h6 scale down by the ratio</li>
-              </ul>
-            </XDSFontWrapper>
-          </div>
-
-          {/* Formula display */}
-          <div
-            style={{
-              padding: '12px',
-              borderRadius: '8px',
-              backgroundColor: 'var(--color-accent-deemphasized)',
-              fontSize: '12px',
+              fontSize: '11px',
               fontFamily: 'var(--font-code)',
               color: 'var(--color-text-secondary)',
             }}>
-            size = {typeScaleBase} × {typeScaleRatio.toFixed(3)}^step
-            <br />
-            h4 = step 0 (anchor), h1 = step +3, h6 = step −2
+            size = {typeScaleBase} × {typeScaleRatio.toFixed(3)}^step · h4 =
+            anchor
           </div>
-
-          {/* Raw token values (collapsed) */}
-          <details>
-            <summary
-              style={{
-                fontSize: '13px',
-                fontWeight: 500,
-                color: 'var(--color-text-primary)',
-                cursor: 'pointer',
-                padding: '8px 0',
-              }}>
-              Raw Token Values ({Object.keys(typeScaleDefaults).length} tokens)
-            </summary>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '4px',
-                marginTop: '8px',
-              }}>
-              {Object.keys(typeScaleDefaults).map(tokenName => (
-                <div
-                  key={tokenName}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    padding: '4px 8px',
-                    fontSize: '12px',
-                    fontFamily: 'var(--font-code)',
-                    borderRadius: '4px',
-                    backgroundColor: 'var(--color-wash)',
-                  }}>
-                  <span style={{color: 'var(--color-text-secondary)'}}>
-                    {tokenName}
-                  </span>
-                  <span style={{color: 'var(--color-text-primary)'}}>
-                    {tokens[tokenName] || ''}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </details>
         </div>
       );
-    }
 
-    if (activeGroup === 'typography') {
       const categoryValue = TYPOGRAPHY_CATEGORIES[
         activeTypographyCategory as keyof typeof TYPOGRAPHY_CATEGORIES
       ] as TypographyCategoryValue | undefined;
@@ -1803,6 +1664,8 @@ function ThemeEditorComponent() {
 
       return (
         <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+          {typeScaleSection}
+
           {/* Typography category selector */}
           <div style={{marginBottom: '8px'}}>
             <select
@@ -1958,7 +1821,8 @@ function ThemeEditorComponent() {
     <div
       style={{
         display: 'flex',
-        height: '100vh',
+        position: 'absolute',
+        inset: 0,
         backgroundColor: 'var(--color-wash)',
       }}>
       {/* Left Panel - Token Editor */}
@@ -1970,58 +1834,6 @@ function ThemeEditorComponent() {
           flexDirection: 'column',
           backgroundColor: 'var(--color-surface)',
         }}>
-        {/* Header */}
-        <div
-          style={{
-            padding: '16px',
-            borderBottom: '1px solid var(--color-divider)',
-          }}>
-          <XDSHeading level={3}>Theme Editor</XDSHeading>
-          <XDSText type="supporting" style={{marginTop: '4px'}}>
-            Customize XDS design tokens
-          </XDSText>
-        </div>
-
-        {/* Theme name input */}
-        <div
-          style={{
-            padding: '12px 16px',
-            borderBottom: '1px solid var(--color-divider)',
-          }}>
-          <XDSTextInput
-            label="Theme Name"
-            value={themeName}
-            onChange={setThemeName}
-            size="sm"
-          />
-        </div>
-
-        {/* Mode toggle */}
-        <div
-          style={{
-            padding: '12px 16px',
-            borderBottom: '1px solid var(--color-divider)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}>
-          <XDSText type="label">Edit Mode</XDSText>
-          <div style={{display: 'flex', gap: '8px'}}>
-            <XDSButton
-              label="Light"
-              variant={mode === 'light' ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setMode('light')}
-            />
-            <XDSButton
-              label="Dark"
-              variant={mode === 'dark' ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setMode('dark')}
-            />
-          </div>
-        </div>
-
         {/* Token group tabs */}
         <div
           style={{
@@ -2147,15 +1959,12 @@ function ThemeEditorComponent() {
           style={{
             flex: 1,
             overflow: 'auto',
-            padding: '24px',
           }}>
           <XDSTheme theme={currentTheme} mode={mode}>
             <div
               style={{
                 backgroundColor: 'var(--color-surface)',
-                borderRadius: '12px',
                 padding: '24px',
-                minHeight: '100%',
               }}>
               <ComponentPreview />
             </div>
