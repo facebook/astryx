@@ -509,7 +509,6 @@ export function XDSAppShell({
     <XDSLayoutPanel
       padding={0}
       hasDivider={navHasDividers}
-      width={sideNavWidth}
       isScrollable={isFill}
       xstyle={[navAreaStyle, isAuto && styles.panelAutoFill]}>
       {sideNav}

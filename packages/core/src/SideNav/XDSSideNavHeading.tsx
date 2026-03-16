@@ -52,6 +52,10 @@ const styles = stylex.create({
     color: 'inherit',
     cursor: 'default',
   },
+  rootCollapsed: {
+    justifyContent: 'center',
+    paddingInline: spacingVars['--spacing-0-5'],
+  },
   interactive: {
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-element'],
@@ -294,7 +298,7 @@ export function XDSSideNavHeading({
         data-testid={testId}
         {...mergeProps(
           xdsClassName('side-nav-heading'),
-          stylex.props(styles.root, xstyle),
+          stylex.props(styles.root, styles.rootCollapsed, xstyle),
           className,
           style,
         )}

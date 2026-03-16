@@ -48,6 +48,7 @@ interface ShellConfig {
   showSuperheading: boolean;
   showSubheading: boolean;
   showNestedItems: boolean;
+  isCollapsible: boolean;
   defaultCollapsed: boolean;
   controlledCollapse: boolean;
   isCollapsed: boolean;
@@ -73,6 +74,7 @@ const DEFAULT_CONFIG: ShellConfig = {
   showSuperheading: false,
   showSubheading: false,
   showNestedItems: true,
+  isCollapsible: true,
   defaultCollapsed: false,
   controlledCollapse: false,
   isCollapsed: false,
@@ -212,7 +214,12 @@ function ConfigPanel({
             onChange={v => onChange({showNestedItems: v})}
           />
           <ToggleRow
-            label="TopNav Heading"
+            label="Collapsible"
+            value={config.isCollapsible}
+            onChange={v => onChange({isCollapsible: v})}
+          />
+          <ToggleRow
+            label="TopNav Heading""
             value={config.showTopNavHeading}
             onChange={v => onChange({showTopNavHeading: v})}
           />
@@ -410,6 +417,7 @@ function SampleSideNav({config}: {config: ShellConfig}) {
 
   return (
     <XDSSideNav
+      isCollapsible={config.isCollapsible}
       header={heading}
       topContent={
         config.showTopContent ? (

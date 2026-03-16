@@ -23,6 +23,7 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {SideNavCollapseContext} from './SideNavCollapseContext';
+import {XDSSideNavCollapseButton} from './XDSSideNavCollapseButton';
 
 // =============================================================================
 // Styles
@@ -33,6 +34,7 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
+    width: 260,
     backgroundColor: 'inherit',
     boxSizing: 'border-box',
     overflow: 'hidden',
