@@ -232,18 +232,15 @@ export interface UseXDSPopoverReturn {
  *     onHide: () => inputRef.current?.focus(),
  *     closeButtonLabel: 'Close calendar',
  *   });
- *
  *   return (
  *     <>
  *       <input ref={inputRef} />
  *       <button
  *         ref={popover.triggerRef}
  *         onClick={popover.toggle}
- *         {...popover.triggerProps}
- *       >
+ *         {...popover.triggerProps}>
  *         Open Calendar
  *       </button>
- *
  *       {popover.render(
  *         <Calendar />,
  *         { placement: 'below', alignment: 'start' }

@@ -223,17 +223,11 @@ function isFocusable(element: HTMLElement): boolean {
  *
  * @example
  * ```
- * // Simple case: use combined ref
  * const hoverCard = useXDSHoverCard({ placement: 'above' });
- *
  * <XDSButton ref={hoverCard.ref} aria-describedby={hoverCard.describedBy}>
  *   Hover me
  * </XDSButton>
- *
  * {hoverCard.renderHoverCard(<ProfileCard user={user} />)}
- *
- * // Separate refs when position and interaction differ (e.g., display:contents wrapper)
- * // Use positionRef for anchor, interactionRef for event listeners
  * ```
  */
 export function useXDSHoverCard(

@@ -225,11 +225,9 @@ function isFocusable(element: HTMLElement): boolean {
  * @example
  * ```
  * const tooltip = useXDSTooltip({ placement: 'above' });
- *
  * <XDSButton ref={tooltip.ref} aria-describedby={tooltip.describedBy}>
  *   Hover me
  * </XDSButton>
- *
  * {tooltip.renderTooltip('Helpful tooltip text')}
  * ```
  */

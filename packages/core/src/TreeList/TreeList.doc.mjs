@@ -117,3 +117,177 @@ export const docs = {
     },
   ],
 };
+
+// -------------------------------------------------------
+// Auto-generated translations below. Do not edit manually.
+// Regenerate with the dense compression protocol.
+// See .context/decisions/dense-compression-protocol.md
+// -------------------------------------------------------
+
+/** @type {import('../docs-types').ComponentDoc} */
+export const docsZh = {
+  name: 'TreeList',
+  description:
+    '数据驱动的树列表组件，用于渲染层级数据，支持展开/折叠、分支线条和交互式项目。使用扁平 items 数组配合递归 children，无需组合模式，无需 cloneElement。',
+  features: [
+    '数据驱动 API — items 数组配合递归 children',
+    '内部展开状态 — 通过每项的 isExpanded 设置初始值',
+    '分支连接线，支持居中/顶部对齐',
+    '密度变体：compact、balanced、spacious',
+    '交互式项目，通过不可见按钮或锚点模式',
+    '起始和结束内容插槽（图标、头像、徽章）',
+    '可选标题，通过 aria-labelledby 关联',
+    '无需位置数据上下文 — 渲染时计算',
+  ],
+  examples: [
+    {
+      label: '基本树',
+      code: `<XDSTreeList
+  items={[
+    { id: 'src', label: 'src', isExpanded: true, children: [
+      { id: 'app', label: 'App.tsx' },
+      { id: 'index', label: 'index.tsx' },
+    ]},
+    { id: 'pkg', label: 'package.json' },
+  ]}
+/>`,
+    },
+    {
+      label: '带图标和标题',
+      code: `<XDSTreeList
+  header={<strong>Project Files</strong>}
+  density="compact"
+  items={[
+    { id: 'src', label: 'src', isExpanded: true, startContent: <FolderIcon />, children: [
+      { id: 'app', label: 'App.tsx', startContent: <FileIcon /> },
+    ]},
+  ]}
+/>`,
+    },
+    {
+      label: '交互式项目',
+      code: `<XDSTreeList
+  items={[
+    { id: 'settings', label: 'Settings', onClick: () => navigate('/settings') },
+    { id: 'docs', label: 'Docs', href: '/docs', target: '_blank' },
+  ]}
+/>`,
+    },
+  ],
+  accessibility: [
+    '语义化 <ul role="tree"> 配合 <li role="treeitem"> 元素',
+    '嵌套子项使用 <ul role="group">',
+    '有子项的元素设置 aria-expanded',
+    'aria-labelledby 将标题元素与树关联',
+    '选中项设置 aria-selected',
+    '禁用项设置 aria-disabled',
+    '折叠切换按钮带有 aria-label="Toggle children"',
+    '交互式项目可通过 Tab 键获得焦点',
+  ],
+  theming: {
+    targets: [
+      {className: 'xds-tree-list', visualProps: ['density']},
+    ],
+  },
+  notes: [
+    '数据驱动模式：与使用 children 组合的 XDSList 不同，XDSTreeList 接受 items 数组。这避免了 cloneElement，使组件能在渲染时计算位置数据（nestedLevel、isLast、ancestorsIsLast）。',
+    '展开控制：展开状态在内部管理。通过在数据中设置 isExpanded: true 来设定初始状态。',
+    '性能：通过 key={id} 进行 React 协调意味着展开节点只会导致该子树的 DOM 更新。具有稳定 key 和相同 props 的兄弟节点会被 React 跳过。',
+  ],
+  components: [
+    {
+      name: 'XDSTreeList',
+      description:
+        '树列表容器。接受 items 数据和渲染配置。展开状态在内部管理。',
+      examples: [
+        {
+          label: '基本树',
+          code: `<XDSTreeList
+  items={[
+    { id: 'src', label: 'src', isExpanded: true, children: [
+      { id: 'app', label: 'App.tsx' },
+    ]},
+    { id: 'pkg', label: 'package.json' },
+  ]}
+/>`,
+        },
+      ],
+      props: [
+        {
+          name: 'items',
+          type: 'XDSTreeListItemData[]',
+          description:
+            '递归树项数据。每项有 id、label、可选 children 数组和可选 isExpanded 布尔值用于设置初始状态。',
+          required: true,
+        },
+        {
+          name: 'density',
+          type: "'compact' | 'balanced' | 'spacious'",
+          description: '项目的间距密度。',
+          default: "'balanced'",
+        },
+        {
+          name: 'header',
+          type: 'ReactNode',
+          description:
+            '标题内容，通过 aria-labelledby 与树关联。',
+        },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            '用于布局自定义的 StyleX 样式。必须是 stylex.create() 值。',
+        },
+      ],
+    },
+  ],
+};
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'Data-driven tree list for hierarchical data w/ expand/collapse, branch lines, interactive items. Flat items array w/ recursive children, no composition, no cloneElement.',
+  features: [
+    'Data-driven API; items array w/ recursive children',
+    'Internal expansion state; seed via isExpanded per item',
+    'Branch connector lines w/ center/top alignment',
+    'Density variants: compact, balanced, spacious',
+    'Interactive items via invisible button or anchor pattern',
+    'Start + end content slots (icon, avatar, badge)',
+    'Optional header via aria-labelledby',
+    'No context for positional data; computed at render time',
+  ],
+  accessibility: [
+    'Semantic <ul role="tree"> w/ <li role="treeitem">',
+    '<ul role="group"> for nested children',
+    'aria-expanded on items w/ children',
+    'aria-labelledby links header to tree',
+    'aria-selected on selected items',
+    'aria-disabled on disabled items',
+    'Chevron toggle btn w/ aria-label="Toggle children"',
+    'Interactive items keyboard-focusable via Tab',
+  ],
+  notes: [
+    'Data-driven: accepts items array (not children composition), avoids cloneElement, computes positional data at render time.',
+    'Expansion managed internally. Seed initial state via isExpanded: true on items.',
+    'Perf: key={id} reconciliation means expanding node only updates that subtree.',
+  ],
+  propDescriptions: {
+    items: 'Recursive tree item data w/ id, label, optional children + isExpanded.',
+    density: 'Spacing density for items.',
+    header: 'Header content, linked to tree via aria-labelledby.',
+    xstyle: 'StyleX styles for layout. Must be stylex.create() value.',
+  },
+  components: [
+    {
+      name: 'XDSTreeList',
+      description: 'Tree list container. Accepts items data + rendering config. Expansion managed internally.',
+      propDescriptions: {
+        items: 'Recursive tree item data w/ id, label, optional children + isExpanded.',
+        density: 'Spacing density for items.',
+        header: 'Header content, linked to tree via aria-labelledby.',
+        xstyle: 'StyleX styles for layout. Must be stylex.create() value.',
+      },
+    },
+  ],
+};

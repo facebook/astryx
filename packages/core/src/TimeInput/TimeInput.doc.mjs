@@ -192,11 +192,6 @@ export const docs = {
         'Tooltip text rendered as an info icon at the end of the label row.',
     },
   ],
-  theming: {
-    targets: [
-      {className: 'xds-date-input', visualProps: ['size']},
-    ],
-  },
   accessibility: [
     'The visible label is associated with the input via htmlFor / id.',
     'isLabelHidden visually hides the label while keeping it in the accessibility tree.',
@@ -403,11 +398,6 @@ export const docsZh = {
         '在标签行末尾以信息图标形式渲染的工具提示文本。',
     },
   ],
-  theming: {
-    targets: [
-      {className: 'xds-date-input', visualProps: ['size']},
-    ],
-  },
   accessibility: [
     '可见标签通过 htmlFor / id 与输入框关联。',
     'isLabelHidden 视觉上隐藏标签，同时保持在无障碍树中。',
