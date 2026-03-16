@@ -8,6 +8,10 @@
  * Only tokens that differ from the built-in defaults need to be specified,
  * but the default theme is explicit as a reference.
  *
+ * Typography sizing is driven by type scale tokens (--heading-{n}-size, --text-{type}-size).
+ * The default type scale is base=14, ratio=1.2 with h4 anchored to base.
+ * To customize, pass a `typeScale` config to defineTheme.
+ *
  * Component overrides use CSS class selectors:
  *   .xds-button.secondary { ... }
  *   .xds-heading.level-1 { ... }
@@ -36,133 +40,90 @@ export const defaultTheme = defineTheme({
     },
 
     // =========================================================================
-    // Heading — default variant (dense scale for internal tools)
+    // Heading — sized by type scale tokens
     // =========================================================================
     heading: {
       'level:1': {
         fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--text-2xl)',
-        fontWeight: 'var(--font-weight-semibold)',
-        lineHeight: '1.2',
+        fontSize: 'var(--heading-1-size)',
+        fontWeight: 'var(--heading-1-weight)',
+        lineHeight: 'var(--heading-1-leading)',
         color: 'var(--color-text-primary)',
       },
       'level:2': {
         fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--text-xl)',
-        fontWeight: 'var(--font-weight-semibold)',
-        lineHeight: '1.333',
+        fontSize: 'var(--heading-2-size)',
+        fontWeight: 'var(--heading-2-weight)',
+        lineHeight: 'var(--heading-2-leading)',
         color: 'var(--color-text-primary)',
       },
       'level:3': {
         fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--text-lg)',
-        fontWeight: 'var(--font-weight-semibold)',
-        lineHeight: '1.25',
+        fontSize: 'var(--heading-3-size)',
+        fontWeight: 'var(--heading-3-weight)',
+        lineHeight: 'var(--heading-3-leading)',
         color: 'var(--color-text-primary)',
       },
       'level:4': {
         fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--text-base)',
-        fontWeight: 'var(--font-weight-semibold)',
-        lineHeight: 'var(--leading-base)',
+        fontSize: 'var(--heading-4-size)',
+        fontWeight: 'var(--heading-4-weight)',
+        lineHeight: 'var(--heading-4-leading)',
         color: 'var(--color-text-primary)',
       },
       'level:5': {
         fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--text-base)',
-        fontWeight: 'var(--font-weight-semibold)',
-        lineHeight: 'var(--leading-base)',
+        fontSize: 'var(--heading-5-size)',
+        fontWeight: 'var(--heading-5-weight)',
+        lineHeight: 'var(--heading-5-leading)',
         color: 'var(--color-text-primary)',
       },
       'level:6': {
         fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--text-xsm)',
-        fontWeight: 'var(--font-weight-semibold)',
-        lineHeight: '1.333',
-        color: 'var(--color-text-primary)',
-      },
-      // Editorial variant — larger scale for content-heavy pages
-      'variant:editorial+level:1': {
-        fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--text-4xl)',
-        fontWeight: 'var(--font-weight-semibold)',
-        lineHeight: '1.5',
-        color: 'var(--color-text-primary)',
-      },
-      'variant:editorial+level:2': {
-        fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--text-3xl)',
-        fontWeight: 'var(--font-weight-semibold)',
-        lineHeight: '1.333',
-        color: 'var(--color-text-primary)',
-      },
-      'variant:editorial+level:3': {
-        fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--text-2xl)',
-        fontWeight: 'var(--font-weight-semibold)',
-        lineHeight: '1.4',
-        color: 'var(--color-text-primary)',
-      },
-      'variant:editorial+level:4': {
-        fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--text-lg)',
-        fontWeight: 'var(--font-weight-semibold)',
-        lineHeight: '1.5',
-        color: 'var(--color-text-primary)',
-      },
-      'variant:editorial+level:5': {
-        fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--text-base)',
-        fontWeight: 'var(--font-weight-semibold)',
-        lineHeight: 'var(--leading-base)',
-        color: 'var(--color-text-primary)',
-      },
-      'variant:editorial+level:6': {
-        fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--text-xsm)',
-        fontWeight: 'var(--font-weight-semibold)',
-        lineHeight: '1.333',
+        fontSize: 'var(--heading-6-size)',
+        fontWeight: 'var(--heading-6-weight)',
+        lineHeight: 'var(--heading-6-leading)',
         color: 'var(--color-text-primary)',
       },
     },
 
     // =========================================================================
-    // Text — semantic text styles
+    // Text — semantic text styles, sized by type scale tokens
     // =========================================================================
     text: {
       'type:body': {
         fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--text-base)',
-        fontWeight: 'var(--font-weight-normal)',
-        lineHeight: 'var(--leading-base)',
+        fontSize: 'var(--text-body-size)',
+        fontWeight: 'var(--text-body-weight)',
+        lineHeight: 'var(--text-body-leading)',
         color: 'var(--color-text-primary)',
       },
       'type:large': {
         fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--text-lg)',
-        fontWeight: 'var(--font-weight-semibold)',
-        lineHeight: '1.5',
+        fontSize: 'var(--text-large-size)',
+        fontWeight: 'var(--text-large-weight)',
+        lineHeight: 'var(--text-large-leading)',
         color: 'var(--color-text-primary)',
       },
       'type:label': {
         fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--text-base)',
-        fontWeight: 'var(--font-weight-medium)',
-        lineHeight: 'var(--leading-base)',
+        fontSize: 'var(--text-label-size)',
+        fontWeight: 'var(--text-label-weight)',
+        lineHeight: 'var(--text-label-leading)',
         color: 'var(--color-text-primary)',
       },
       'type:supporting': {
         fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--text-xsm)',
-        fontWeight: 'var(--font-weight-normal)',
-        lineHeight: '1.333',
+        fontSize: 'var(--text-supporting-size)',
+        fontWeight: 'var(--text-supporting-weight)',
+        lineHeight: 'var(--text-supporting-leading)',
         color: 'var(--color-text-secondary)',
       },
       'type:code': {
         fontFamily: 'var(--font-code)',
-        fontSize: 'var(--text-base)',
-        fontWeight: 'var(--font-weight-normal)',
-        lineHeight: 'var(--leading-base)',
+        fontSize: 'var(--text-code-size)',
+        fontWeight: 'var(--text-code-weight)',
+        lineHeight: 'var(--text-code-leading)',
         color: 'var(--color-text-primary)',
       },
     },

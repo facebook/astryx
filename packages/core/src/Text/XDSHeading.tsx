@@ -1,7 +1,7 @@
 /**
  * @file XDSHeading.tsx
  * @input Uses React, HTMLAttributes, ReactNode
- * @output Exports XDSHeading component, XDSHeadingProps, XDSHeadingLevel, XDSHeadingVariant types
+ * @output Exports XDSHeading component, XDSHeadingProps, XDSHeadingLevel types
  * @position Core implementation; consumed by index.ts, tested by XDSHeading.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -45,11 +45,6 @@ const LazyXDSTooltip = lazy(() =>
  */
 export type XDSHeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 
-/**
- * Heading variant determines the size scale used
- */
-export type XDSHeadingVariant = 'default' | 'editorial';
-
 export interface XDSHeadingProps {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLHeadingElement>;
@@ -72,14 +67,6 @@ export interface XDSHeadingProps {
    * ```
    */
   accessibilityLevel?: XDSHeadingLevel;
-
-  /**
-   * Visual variant. Themes define different scales for each variant.
-   * - 'default': Dense scale for internal tools (h1: 20px)
-   * - 'editorial': Larger scale for content-heavy pages (h1: 32px)
-   * @default 'default'
-   */
-  variant?: XDSHeadingVariant;
 
   /**
    * Text color.
@@ -183,7 +170,6 @@ const levelToTag = {
  * ```
  * <XDSHeading level={1}>Page Title</XDSHeading>
  * <XDSHeading level={2}>Section</XDSHeading>
- * <XDSHeading level={1} variant="editorial">Article Title</XDSHeading>
  * <XDSHeading level={2} accessibilityLevel={3}>Sidebar Section</XDSHeading>
  * <XDSHeading level={2} maxLines={1}>Very Long Section Title...</XDSHeading>
  * <XDSHeading level={3} color="secondary">Muted Heading</XDSHeading>
@@ -192,7 +178,6 @@ const levelToTag = {
 export function XDSHeading({
   level,
   accessibilityLevel,
-  variant = 'default',
   color = 'primary',
   display = 'block',
   maxLines = 0,
@@ -262,7 +247,7 @@ export function XDSHeading({
       <Component
         ref={mergedRef}
         {...mergeProps(
-          xdsClassName('heading', {variant, level}),
+          xdsClassName('heading', {level}),
           stylex.props(
             colorStyles[color],
             // Display: use truncation styles when maxLines > 0

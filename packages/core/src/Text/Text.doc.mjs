@@ -19,7 +19,7 @@ export const docs = {
     },
     {
       label: 'Editorial heading',
-      code: '<XDSHeading level={1} variant="editorial">Article Title</XDSHeading>',
+      code: '<XDSHeading level={1}>Page Title</XDSHeading>',
     },
     {
       label: 'Truncated text with tooltip',
@@ -189,7 +189,7 @@ export const docs = {
     {
       name: 'XDSHeading',
       description:
-        'Semantic heading component that renders h1–h6 elements with themed styling, optional editorial scale, and line-clamp truncation.',
+        'Semantic heading component that renders h1–h6 elements with themed styling, themed sizing via type scale tokens, and line-clamp truncation.',
       examples: [
         {
           label: 'Basic',
@@ -197,7 +197,7 @@ export const docs = {
         },
         {
           label: 'Editorial scale',
-          code: '<XDSHeading level={1} variant="editorial">Article Title</XDSHeading>',
+          code: '<XDSHeading level={1}>Page Title</XDSHeading>',
         },
         {
           label: 'Accessibility level override',
@@ -234,9 +234,7 @@ export const docs = {
         },
         {
           name: 'variant',
-          type: "'default' | 'editorial'",
-          description:
-            "Visual variant. 'default' uses a dense scale for internal tools (h1: 20px); 'editorial' uses a larger scale for content-heavy pages (h1: 32px).",
+
           default: "'default'",
         },
         {
@@ -329,9 +327,7 @@ export const docs = {
         },
         {
           name: 'variant',
-          type: "'default' | 'editorial'",
-          description:
-            "Heading scale variant. 'default' uses a dense scale for internal tools; 'editorial' uses a larger scale for content-heavy pages.",
+
           default: "'default'",
         },
       ],
@@ -383,7 +379,7 @@ export const docsZh = {
     },
     {
       label: '编辑风格标题',
-      code: '<XDSHeading level={1} variant="editorial">Article Title</XDSHeading>',
+      code: '<XDSHeading level={1}>Page Title</XDSHeading>',
     },
     {
       label: '带工具提示的截断文本',
@@ -561,7 +557,7 @@ export const docsZh = {
         },
         {
           label: '编辑风格比例',
-          code: '<XDSHeading level={1} variant="editorial">Article Title</XDSHeading>',
+          code: '<XDSHeading level={1}>Page Title</XDSHeading>',
         },
         {
           label: '无障碍级别覆盖',
@@ -598,9 +594,7 @@ export const docsZh = {
         },
         {
           name: 'variant',
-          type: "'default' | 'editorial'",
-          description:
-            "视觉变体。'default' 使用紧凑比例用于内部工具（h1: 20px）；'editorial' 使用更大比例用于内容密集页面（h1: 32px）。",
+
           default: "'default'",
         },
         {
@@ -693,9 +687,7 @@ export const docsZh = {
         },
         {
           name: 'variant',
-          type: "'default' | 'editorial'",
-          description:
-            "标题比例变体。'default' 使用紧凑比例用于内部工具；'editorial' 使用更大比例用于内容密集页面。",
+
           default: "'default'",
         },
       ],
@@ -770,12 +762,12 @@ export const docsDense = {
     },
     {
       name: 'XDSHeading',
-      description: 'Semantic h1\u20136 w/ themed styling, optional editorial scale, line-clamp truncation.',
+      description: 'Semantic h1\u20136 w/ themed styling, themed sizing via type scale tokens, line-clamp truncation.',
       propDescriptions: {
         level: 'Visual heading level; determines HTML element + styling from theme.',
         children: 'Heading content.',
         accessibilityLevel: 'aria-level override when different from level for document outline.',
-        variant: "Visual variant; 'default'=dense scale (h1:20px), 'editorial'=larger (h1:32px).",
+        
         color: 'Text color.',
         display: "Display type; overridden to 'block' when maxLines>0 or hasCapsize.",
         maxLines: 'Max lines before truncation; 0=none. Shows tooltip if truncated.',
@@ -792,7 +784,7 @@ export const docsDense = {
       description: 'Wrapper applying XDS typography to native HTML scope; for UGC, markdown, cases where XDSText/XDSHeading cannot be used directly.',
       propDescriptions: {
         children: 'Content to style w/ XDS typography.',
-        variant: "Heading scale; 'default'=dense for tools, 'editorial'=larger for content pages.",
+        
       },
     },
     {

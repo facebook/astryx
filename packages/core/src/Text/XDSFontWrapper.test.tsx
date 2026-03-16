@@ -21,7 +21,7 @@ describe('XDSFontWrapper', () => {
     expect(screen.getByText('Test paragraph')).toBeInTheDocument();
   });
 
-  it('applies default variant classes', () => {
+  it('applies typography class', () => {
     render(
       <XDSFontWrapper data-testid="wrapper">
         <p>Content</p>
@@ -31,20 +31,18 @@ describe('XDSFontWrapper', () => {
     const wrapper = screen.getByTestId('wrapper');
     expect(wrapper).toBeInTheDocument();
     expect(wrapper).toHaveClass('xds-typography');
-    expect(wrapper).toHaveClass('xds-typography--default');
   });
 
-  it('applies editorial variant classes', () => {
+  it('does not include variant classes', () => {
     render(
-      <XDSFontWrapper variant="editorial" data-testid="wrapper">
+      <XDSFontWrapper data-testid="wrapper">
         <p>Content</p>
       </XDSFontWrapper>,
     );
 
     const wrapper = screen.getByTestId('wrapper');
-    expect(wrapper).toBeInTheDocument();
-    expect(wrapper).toHaveClass('xds-typography');
-    expect(wrapper).toHaveClass('xds-typography--editorial');
+    expect(wrapper.className).not.toContain('--default');
+    expect(wrapper.className).not.toContain('--editorial');
   });
 
   it('renders all prose elements', () => {

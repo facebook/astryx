@@ -12,11 +12,6 @@ const meta: Meta<typeof XDSHeading> = {
       options: [1, 2, 3, 4, 5, 6],
       description: 'Visual heading level (1-6)',
     },
-    variant: {
-      control: 'select',
-      options: ['default', 'editorial'],
-      description: 'Heading scale variant',
-    },
     color: {
       control: 'select',
       options: [
@@ -68,48 +63,48 @@ export default meta;
 type Story = StoryObj<typeof XDSHeading>;
 
 // =============================================================================
-// Heading Levels - Default Variant
+// Heading Levels
 // =============================================================================
 
 export const Level1: Story = {
   args: {
     level: 1,
-    children: 'Heading Level 1 (20px)',
+    children: 'Heading Level 1 (24px)',
   },
 };
 
 export const Level2: Story = {
   args: {
     level: 2,
-    children: 'Heading Level 2 (18px)',
+    children: 'Heading Level 2 (20px)',
   },
 };
 
 export const Level3: Story = {
   args: {
     level: 3,
-    children: 'Heading Level 3 (16px)',
+    children: 'Heading Level 3 (17px)',
   },
 };
 
 export const Level4: Story = {
   args: {
     level: 4,
-    children: 'Heading Level 4 (14px)',
+    children: 'Heading Level 4 (14px — base)',
   },
 };
 
 export const Level5: Story = {
   args: {
     level: 5,
-    children: 'Heading Level 5 (14px)',
+    children: 'Heading Level 5 (12px)',
   },
 };
 
 export const Level6: Story = {
   args: {
     level: 6,
-    children: 'Heading Level 6 (12px)',
+    children: 'Heading Level 6 (10px)',
   },
 };
 
@@ -120,94 +115,24 @@ export const Level6: Story = {
 export const AllLevels: Story = {
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
-      <div>
-        <XDSText type="label" display="block">
-          Default Variant (Internal Tools):
-        </XDSText>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-            marginTop: '8px',
-          }}>
-          <XDSHeading level={1}>Heading 1 - 20px</XDSHeading>
-          <XDSHeading level={2}>Heading 2 - 18px</XDSHeading>
-          <XDSHeading level={3}>Heading 3 - 16px</XDSHeading>
-          <XDSHeading level={4}>Heading 4 - 14px</XDSHeading>
-          <XDSHeading level={5}>Heading 5 - 14px</XDSHeading>
-          <XDSHeading level={6}>Heading 6 - 12px</XDSHeading>
-        </div>
-      </div>
-      <div style={{marginTop: '24px'}}>
-        <XDSText type="label" display="block">
-          Editorial Variant (Content-Heavy Pages):
-        </XDSText>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-            marginTop: '8px',
-          }}>
-          <XDSHeading level={1} variant="editorial">
-            Heading 1 - 32px
-          </XDSHeading>
-          <XDSHeading level={2} variant="editorial">
-            Heading 2 - 24px
-          </XDSHeading>
-          <XDSHeading level={3} variant="editorial">
-            Heading 3 - 20px
-          </XDSHeading>
-          <XDSHeading level={4} variant="editorial">
-            Heading 4 - 16px
-          </XDSHeading>
-          <XDSHeading level={5} variant="editorial">
-            Heading 5 - 14px
-          </XDSHeading>
-          <XDSHeading level={6} variant="editorial">
-            Heading 6 - 12px
-          </XDSHeading>
-        </div>
-      </div>
-    </div>
-  ),
-};
-
-// =============================================================================
-// Variants
-// =============================================================================
-
-export const DefaultVariant: Story = {
-  render: () => (
-    <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
       <XDSText type="supporting" display="block">
-        Default variant uses a denser scale suitable for internal tools and
-        dashboards
+        Type scale: base=14px, ratio=1.2, h4 anchored to base. Sizes are
+        computed from the geometric progression: size = base × ratio^step
       </XDSText>
-      <XDSHeading level={1}>Page Title (20px)</XDSHeading>
-      <XDSHeading level={2}>Section Title (18px)</XDSHeading>
-      <XDSHeading level={3}>Subsection Title (16px)</XDSHeading>
-    </div>
-  ),
-};
-
-export const EditorialVariant: Story = {
-  render: () => (
-    <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-      <XDSText type="supporting" display="block">
-        Editorial variant uses a larger scale for content-heavy pages like
-        articles
-      </XDSText>
-      <XDSHeading level={1} variant="editorial">
-        Article Title (32px)
-      </XDSHeading>
-      <XDSHeading level={2} variant="editorial">
-        Section Title (24px)
-      </XDSHeading>
-      <XDSHeading level={3} variant="editorial">
-        Subsection Title (20px)
-      </XDSHeading>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+          marginTop: '8px',
+        }}>
+        <XDSHeading level={1}>Heading 1 — 24px</XDSHeading>
+        <XDSHeading level={2}>Heading 2 — 20px</XDSHeading>
+        <XDSHeading level={3}>Heading 3 — 17px</XDSHeading>
+        <XDSHeading level={4}>Heading 4 — 14px (base)</XDSHeading>
+        <XDSHeading level={5}>Heading 5 — 12px</XDSHeading>
+        <XDSHeading level={6}>Heading 6 — 10px</XDSHeading>
+      </div>
     </div>
   ),
 };
@@ -298,16 +223,6 @@ export const MultiLineTruncation: Story = {
   ),
 };
 
-export const TruncationWithoutTooltip: Story = {
-  render: () => (
-    <div style={{width: '300px', border: '1px solid #ccc', padding: '12px'}}>
-      <XDSHeading level={2} maxLines={1} hasTruncateTooltip={false}>
-        Truncated Heading Without Tooltip On Hover
-      </XDSHeading>
-    </div>
-  ),
-};
-
 // =============================================================================
 // Accessibility Level Override
 // =============================================================================
@@ -329,78 +244,6 @@ export const AccessibilityLevel: Story = {
         <XDSHeading level={2} accessibilityLevel={3}>
           Sidebar Section (looks like h2, aria-level=3)
         </XDSHeading>
-      </div>
-    </div>
-  ),
-};
-
-// =============================================================================
-// Text Wrap
-// =============================================================================
-
-export const TextWrapVariants: Story = {
-  render: () => (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px',
-        maxWidth: '300px',
-      }}>
-      <div>
-        <XDSText type="label" display="block">
-          wrap (default):
-        </XDSText>
-        <XDSHeading level={2} textWrap="wrap">
-          This Heading Wraps Normally At Word Boundaries
-        </XDSHeading>
-      </div>
-      <div>
-        <XDSText type="label" display="block">
-          balance:
-        </XDSText>
-        <XDSHeading level={2} textWrap="balance">
-          This Heading Is Balanced For Better Visual Appearance
-        </XDSHeading>
-      </div>
-      <div>
-        <XDSText type="label" display="block">
-          pretty:
-        </XDSText>
-        <XDSHeading level={2} textWrap="pretty">
-          This Heading Uses Pretty Wrap To Avoid Orphans
-        </XDSHeading>
-      </div>
-    </div>
-  ),
-};
-
-// =============================================================================
-// Word Break
-// =============================================================================
-
-export const WordBreakVariants: Story = {
-  render: () => (
-    <div style={{display: 'flex', gap: '16px'}}>
-      <div style={{flex: 1, maxWidth: '200px'}}>
-        <XDSText type="label" display="block">
-          break-word:
-        </XDSText>
-        <div style={{border: '1px solid #ccc', padding: '8px'}}>
-          <XDSHeading level={3} maxLines={2} wordBreak="break-word">
-            Supercalifragilisticexpialidocious
-          </XDSHeading>
-        </div>
-      </div>
-      <div style={{flex: 1, maxWidth: '200px'}}>
-        <XDSText type="label" display="block">
-          break-all:
-        </XDSText>
-        <div style={{border: '1px solid #ccc', padding: '8px'}}>
-          <XDSHeading level={3} maxLines={2} wordBreak="break-all">
-            Supercalifragilisticexpialidocious
-          </XDSHeading>
-        </div>
       </div>
     </div>
   ),
@@ -471,16 +314,6 @@ export const PageLayout: Story = {
           <br />• Task completed
         </XDSText>
       </div>
-
-      <div style={{marginTop: '24px'}}>
-        <XDSHeading level={3}>Yesterday</XDSHeading>
-        <XDSText type="body" display="block">
-          • Meeting scheduled
-          <br />
-          • Document shared
-          <br />• Status update posted
-        </XDSText>
-      </div>
     </div>
   ),
 };
@@ -518,118 +351,6 @@ export const CardGrid: Story = {
           </XDSText>
         </div>
       ))}
-    </div>
-  ),
-};
-
-export const ArticleLayout: Story = {
-  render: () => (
-    <div style={{maxWidth: '600px'}}>
-      <XDSHeading level={1} variant="editorial">
-        The Future of Design Systems
-      </XDSHeading>
-      <XDSText type="supporting" display="block">
-        Published on January 28, 2026 by Jane Doe
-      </XDSText>
-
-      <div style={{marginTop: '24px'}}>
-        <XDSText type="large" display="block">
-          Design systems are evolving rapidly, and understanding these changes
-          is crucial for modern product development.
-        </XDSText>
-      </div>
-
-      <div style={{marginTop: '32px'}}>
-        <XDSHeading level={2} variant="editorial">
-          Introduction
-        </XDSHeading>
-        <XDSText type="body" display="block">
-          In this article, we'll explore the key trends shaping design systems
-          in 2026 and beyond.
-        </XDSText>
-      </div>
-
-      <div style={{marginTop: '24px'}}>
-        <XDSHeading level={3} variant="editorial">
-          Component Architecture
-        </XDSHeading>
-        <XDSText type="body" display="block">
-          Modern component architecture prioritizes flexibility and consistency.
-        </XDSText>
-      </div>
-
-      <div style={{marginTop: '24px'}}>
-        <XDSHeading level={3} variant="editorial">
-          Token-Based Theming
-        </XDSHeading>
-        <XDSText type="body" display="block">
-          Design tokens enable scalable theming across platforms and products.
-        </XDSText>
-      </div>
-    </div>
-  ),
-};
-
-export const SidebarLayout: Story = {
-  render: () => (
-    <div style={{display: 'flex', gap: '24px', maxWidth: '800px'}}>
-      <div style={{flex: 1}}>
-        <XDSHeading level={1}>Main Content</XDSHeading>
-        <XDSText type="body" display="block">
-          This is the main page content with a proper document outline.
-        </XDSText>
-
-        <div style={{marginTop: '24px'}}>
-          <XDSHeading level={2}>Section 1</XDSHeading>
-          <XDSText type="body" display="block">
-            Content for section 1.
-          </XDSText>
-        </div>
-
-        <div style={{marginTop: '24px'}}>
-          <XDSHeading level={2}>Section 2</XDSHeading>
-          <XDSText type="body" display="block">
-            Content for section 2.
-          </XDSText>
-        </div>
-      </div>
-
-      <div
-        style={{
-          width: '200px',
-          padding: '16px',
-          backgroundColor: '#f5f5f5',
-          borderRadius: '8px',
-        }}>
-        <XDSHeading level={2} accessibilityLevel={3}>
-          Sidebar Info
-        </XDSHeading>
-        <XDSText type="supporting" display="block">
-          This heading looks like H2 but is semantically H3 so it doesn't
-          disrupt the main content outline.
-        </XDSText>
-      </div>
-    </div>
-  ),
-};
-
-export const ErrorState: Story = {
-  render: () => (
-    <div
-      style={{
-        padding: '24px',
-        borderRadius: '8px',
-        backgroundColor: '#fff5f5',
-        border: '1px solid #feb2b2',
-        maxWidth: '400px',
-      }}>
-      <XDSHeading level={2} color="active">
-        Error: Connection Failed
-      </XDSHeading>
-      <XDSText type="body" display="block">
-        We couldn't connect to the server. Please check your internet connection
-        and try again.
-      </XDSText>
     </div>
   ),
 };

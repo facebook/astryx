@@ -229,3 +229,58 @@ describe('generateThemeCSS with components', () => {
     expect(css).toContain('border-width: 1px');
   });
 });
+
+describe('typeScale', () => {
+  it('generates typography token overrides when typeScale is provided', () => {
+    const theme = defineTheme({
+      name: 'dense',
+      typeScale: {base: 12, ratio: 1.125},
+    });
+    expect(theme.tokens['--heading-4-size']).toBe('12px');
+    expect(theme.tokens['--text-body-size']).toBe('12px');
+  });
+
+  it('generates all 33 type scale tokens', () => {
+    const theme = defineTheme({
+      name: 'custom',
+      typeScale: {base: 14, ratio: 1.2},
+    });
+    // 6 heading levels × 3 props + 5 text types × 3 props = 33
+    const typeScaleKeys = Object.keys(theme.tokens).filter(
+      k => k.startsWith('--heading-') || k.startsWith('--text-'),
+    );
+    expect(typeScaleKeys).toHaveLength(33);
+  });
+
+  it('explicit tokens override typeScale-generated values', () => {
+    const theme = defineTheme({
+      name: 'override-test',
+      typeScale: {base: 14, ratio: 1.2},
+      tokens: {
+        '--heading-1-size': '40px',
+      },
+    });
+    // Explicit token should win over typeScale
+    expect(theme.tokens['--heading-1-size']).toBe('40px');
+    // Non-overridden typeScale token should still be present
+    expect(theme.tokens['--heading-4-size']).toBe('14px');
+  });
+
+  it('works without typeScale (backwards compatible)', () => {
+    const theme = defineTheme({name: 'no-scale'});
+    // No type scale tokens should be present
+    expect(theme.tokens['--heading-1-size']).toBeUndefined();
+  });
+
+  it('combines typeScale with other token overrides', () => {
+    const theme = defineTheme({
+      name: 'combo',
+      typeScale: {base: 16, ratio: 1.25},
+      tokens: {
+        '--color-accent': '#FF0000',
+      },
+    });
+    expect(theme.tokens['--color-accent']).toBe('#FF0000');
+    expect(theme.tokens['--heading-4-size']).toBe('16px');
+  });
+});

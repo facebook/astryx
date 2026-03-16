@@ -51,22 +51,6 @@ describe('XDSHeading', () => {
     });
   });
 
-  describe('variants', () => {
-    it('uses default variant by default', () => {
-      render(<XDSHeading level={1}>Default Heading</XDSHeading>);
-      expect(screen.getByText('Default Heading')).toBeInTheDocument();
-    });
-
-    it('supports editorial variant', () => {
-      render(
-        <XDSHeading level={1} variant="editorial">
-          Editorial Heading
-        </XDSHeading>,
-      );
-      expect(screen.getByText('Editorial Heading')).toBeInTheDocument();
-    });
-  });
-
   describe('props', () => {
     it('forwards additional props', () => {
       render(
@@ -178,5 +162,12 @@ describe('XDSHeading', () => {
     const element = screen.getByText('Themed Heading');
     expect(element.className).toContain('xds-heading');
     expect(element.className).toContain('level-2');
+  });
+
+  it('does not include variant in class names', () => {
+    render(<XDSHeading level={1}>No Variant</XDSHeading>);
+    const element = screen.getByText('No Variant');
+    expect(element.className).not.toContain('default');
+    expect(element.className).not.toContain('editorial');
   });
 });

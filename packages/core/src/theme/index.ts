@@ -27,6 +27,9 @@ export type {
   XDSStyleOverrides,
 } from './defineTheme';
 
+export {expandTypeScale} from './expandTypeScale';
+export type {XDSTypeScaleConfig, TypeScaleTokens} from './expandTypeScale';
+
 // Export token defaults and vars for use in custom components and themes
 export {
   colorDefaults,
@@ -39,6 +42,7 @@ export {
   textSizeDefaults,
   lineHeightDefaults,
   fontWeightDefaults,
+  typeScaleDefaults,
   colorVars,
   spacingVars,
   sizeVars,
@@ -49,6 +53,7 @@ export {
   textSizeVars,
   lineHeightVars,
   fontWeightVars,
+  typeScaleVars,
 } from './tokens.stylex';
 
 // Export token key types for theme authoring
@@ -63,6 +68,7 @@ export type {
   TextSizeVarName,
   LineHeightVarName,
   FontWeightVarName,
+  TypeScaleVarName,
 } from './tokens.stylex';
 
 export type {

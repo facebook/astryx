@@ -1,8 +1,12 @@
 /**
  * XDS Typography Styles
  *
- * Base typography styles for native HTML elements using CSS custom properties
- * from the XDS theme. Styles automatically adapt to the current theme.
+ * Base typography styles for native HTML elements using type scale tokens.
+ * Styles automatically adapt to the current theme's typeScale configuration.
+ *
+ * Token reference (set by theme or defaults from tokens.stylex.ts):
+ *   --heading-{1-6}-{size|weight|leading}
+ *   --text-{body|large|label|code|supporting}-{size|weight|leading}
  *
  * Usage:
  *
@@ -16,11 +20,6 @@
  *    <body className="xds-typography">
  *
  * Requires a parent <Theme> component to set the CSS custom properties.
- *
- * Similar to:
- * - Tailwind's @tailwindcss/typography plugin
- * - GitHub Primer's primer-typography
- * - Radix Themes' prose styles
  */
 
 @layer typography {
@@ -29,141 +28,71 @@
      =========================================================================== */
 
   .xds-typography {
-    font-size: var(--text-base);
+    font-size: var(--text-body-size);
     font-family: var(--font-body);
-    line-height: 1.4285714285714286;
+    line-height: var(--text-body-leading);
     color: var(--color-text-primary);
   }
 
   /* ===========================================================================
-     Heading Styles - Default Scale
+     Heading Styles — driven by type scale tokens
      =========================================================================== */
 
-  .xds-typography h1,
-  .xds-typography--default h1 {
+  .xds-typography h1 {
     font-family: var(--font-heading);
-    font-size: var(--text-2xl);
-    font-weight: var(--font-weight-semibold);
-    line-height: 1.2;
+    font-size: var(--heading-1-size);
+    font-weight: var(--heading-1-weight);
+    line-height: var(--heading-1-leading);
     color: var(--color-text-primary);
     margin-top: var(--spacing-6);
     margin-bottom: var(--spacing-3);
   }
 
-  .xds-typography h2,
-  .xds-typography--default h2 {
+  .xds-typography h2 {
     font-family: var(--font-heading);
-    font-size: var(--text-xl);
-    font-weight: var(--font-weight-semibold);
-    line-height: 1.333;
+    font-size: var(--heading-2-size);
+    font-weight: var(--heading-2-weight);
+    line-height: var(--heading-2-leading);
     color: var(--color-text-primary);
     margin-top: var(--spacing-5);
     margin-bottom: var(--spacing-3);
   }
 
-  .xds-typography h3,
-  .xds-typography--default h3 {
+  .xds-typography h3 {
     font-family: var(--font-heading);
-    font-size: var(--text-lg);
-    font-weight: var(--font-weight-semibold);
-    line-height: 1.25;
+    font-size: var(--heading-3-size);
+    font-weight: var(--heading-3-weight);
+    line-height: var(--heading-3-leading);
     color: var(--color-text-primary);
     margin-top: var(--spacing-4);
     margin-bottom: var(--spacing-2);
   }
 
-  .xds-typography h4,
-  .xds-typography--default h4 {
+  .xds-typography h4 {
     font-family: var(--font-heading);
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-semibold);
-    line-height: 1.428;
+    font-size: var(--heading-4-size);
+    font-weight: var(--heading-4-weight);
+    line-height: var(--heading-4-leading);
     color: var(--color-text-primary);
     margin-top: var(--spacing-4);
     margin-bottom: var(--spacing-2);
   }
 
-  .xds-typography h5,
-  .xds-typography--default h5 {
+  .xds-typography h5 {
     font-family: var(--font-heading);
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-semibold);
-    line-height: 1.428;
+    font-size: var(--heading-5-size);
+    font-weight: var(--heading-5-weight);
+    line-height: var(--heading-5-leading);
     color: var(--color-text-primary);
     margin-top: var(--spacing-3);
     margin-bottom: var(--spacing-2);
   }
 
-  .xds-typography h6,
-  .xds-typography--default h6 {
+  .xds-typography h6 {
     font-family: var(--font-heading);
-    font-size: var(--text-xsm);
-    font-weight: var(--font-weight-semibold);
-    line-height: 1.333;
-    color: var(--color-text-primary);
-    margin-top: var(--spacing-3);
-    margin-bottom: var(--spacing-2);
-  }
-
-  /* ===========================================================================
-     Heading Styles - Editorial Scale
-     =========================================================================== */
-
-  .xds-typography--editorial h1 {
-    font-family: var(--font-heading);
-    font-size: var(--text-4xl);
-    font-weight: var(--font-weight-semibold);
-    line-height: 1.5;
-    color: var(--color-text-primary);
-    margin-top: var(--spacing-7);
-    margin-bottom: var(--spacing-4);
-  }
-
-  .xds-typography--editorial h2 {
-    font-family: var(--font-heading);
-    font-size: var(--text-3xl);
-    font-weight: var(--font-weight-semibold);
-    line-height: 1.333;
-    color: var(--color-text-primary);
-    margin-top: var(--spacing-6);
-    margin-bottom: var(--spacing-3);
-  }
-
-  .xds-typography--editorial h3 {
-    font-family: var(--font-heading);
-    font-size: var(--text-2xl);
-    font-weight: var(--font-weight-semibold);
-    line-height: 1.4;
-    color: var(--color-text-primary);
-    margin-top: var(--spacing-5);
-    margin-bottom: var(--spacing-3);
-  }
-
-  .xds-typography--editorial h4 {
-    font-family: var(--font-heading);
-    font-size: var(--text-lg);
-    font-weight: var(--font-weight-semibold);
-    line-height: 1.5;
-    color: var(--color-text-primary);
-    margin-top: var(--spacing-4);
-    margin-bottom: var(--spacing-2);
-  }
-
-  .xds-typography--editorial h5 {
-    font-family: var(--font-heading);
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-semibold);
-    line-height: 1.428;
-    color: var(--color-text-primary);
-    margin-top: var(--spacing-4);
-    margin-bottom: var(--spacing-2);
-  }
-
-  .xds-typography--editorial h6 {
-    font-family: var(--font-heading);
-    font-size: var(--text-xsm);
-    font-weight: var(--font-weight-semibold);
-    line-height: 1.333;
+    font-size: var(--heading-6-size);
+    font-weight: var(--heading-6-weight);
+    line-height: var(--heading-6-leading);
     color: var(--color-text-primary);
     margin-top: var(--spacing-3);
     margin-bottom: var(--spacing-2);
@@ -215,7 +144,7 @@
 
   .xds-typography pre {
     font-family: var(--font-code);
-    font-size: var(--text-sm);
+    font-size: var(--text-supporting-size);
     line-height: 1.5;
     margin-top: 0;
     margin-bottom: var(--spacing-3);

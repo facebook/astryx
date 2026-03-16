@@ -41,7 +41,9 @@ import {
   textSizeDefaults,
   lineHeightDefaults,
   fontWeightDefaults,
+  typeScaleDefaults,
 } from './tokens.stylex';
+import {expandTypeScale, type XDSTypeScaleConfig} from './expandTypeScale';
 
 // =============================================================================
 // Types
@@ -58,7 +60,8 @@ export type XDSTokenName =
   | keyof typeof typographyDefaults
   | keyof typeof textSizeDefaults
   | keyof typeof lineHeightDefaults
-  | keyof typeof fontWeightDefaults;
+  | keyof typeof fontWeightDefaults
+  | keyof typeof typeScaleDefaults;
 
 /**
  * Token value — either a single string or a [light, dark] tuple.
@@ -106,6 +109,27 @@ export type XDSComponentStyleMap = Record<
 export interface XDSDefineThemeInput {
   /** Theme name — used for data-xds-theme attribute and identification */
   name: string;
+  /**
+   * Optional type scale configuration. Generates typography token overrides
+   * from a base size and scaling ratio using a geometric progression.
+   *
+   * h4 is anchored to `base`. Headings h1–h3 scale up, h5–h6 scale down.
+   * Text types: body/label/code at base, large one step up, supporting one step down.
+   *
+   * When omitted, themes use the hardcoded defaults (base=14, ratio=1.2).
+   * Explicit `tokens` overrides take precedence over typeScale-generated values.
+   *
+   * @example
+   * ```tsx
+   * typeScale: { base: 14, ratio: 1.2 }
+   *
+   * // Suggested starting points:
+   * //   Dense/functional: { base: 12, ratio: 1.125 }
+   * //   Default:          { base: 14, ratio: 1.2 }
+   * //   Airy/editorial:   { base: 16, ratio: 1.25 }
+   * ```
+   */
+  typeScale?: XDSTypeScaleConfig;
   /** Token overrides — flat map of CSS custom property names to values.
    *  Values can be a string or [light, dark] tuple.
    *  Only include tokens you want to override; defaults fill the rest. */
@@ -165,6 +189,7 @@ export const xdsTokenDefaults: Record<string, string> = {
   ...textSizeDefaults,
   ...lineHeightDefaults,
   ...fontWeightDefaults,
+  ...typeScaleDefaults,
 };
 
 // =============================================================================
@@ -188,10 +213,23 @@ function resolveTokenValue(value: XDSTokenValue): string {
  *
  * Pass only the tokens you want to override — everything else
  * inherits from the XDS defaults.
+ *
+ * When `typeScale` is provided, it generates typography token overrides
+ * that are merged into the token map. Explicit `tokens` entries take
+ * precedence over typeScale-generated values.
  */
 export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
   const tokens: Record<string, string> = {};
 
+  // 1. Apply typeScale-generated tokens first (lowest precedence)
+  if (input.typeScale) {
+    const typeScaleTokens = expandTypeScale(input.typeScale);
+    for (const [key, value] of Object.entries(typeScaleTokens)) {
+      tokens[key] = value;
+    }
+  }
+
+  // 2. Apply explicit token overrides (highest precedence — overwrites typeScale)
   if (input.tokens) {
     for (const [key, value] of Object.entries(input.tokens)) {
       if (value !== undefined) {

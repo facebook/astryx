@@ -1,8 +1,15 @@
 /**
  * @file XDSFontWrapper.tsx
- * @input Uses React, reset.css
+ * @input Uses React, typography.css
  * @output Exports XDSFontWrapper component
- * @position Typography component; provides base styles for wrapped content
+ * @position Typography component; provides prose styles for wrapped HTML content
+ *
+ * XDSFontWrapper applies base typography styles to native HTML elements
+ * (h1-h6, p, ul, ol, blockquote, code, etc.) within its scope. Sizing is
+ * driven by type scale tokens set by the theme's typeScale configuration.
+ *
+ * For different density regions, nest <XDSTheme> with a different typeScale
+ * rather than using a variant prop.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Text/Text.doc.mjs
@@ -13,22 +20,9 @@ import * as React from 'react';
 import '../typography.css';
 
 /**
- * Heading scale variant
- */
-export type XDSFontWrapperVariant = 'default' | 'editorial';
-
-/**
  * Props for XDSFontWrapper
  */
 export interface XDSFontWrapperProps {
-  /**
-   * Heading scale variant
-   * - 'default': Dense scale for internal tools (h1: 20px)
-   * - 'editorial': Larger scale for content-heavy pages (h1: 32px)
-   * @default 'default'
-   */
-  variant?: XDSFontWrapperVariant;
-
   /**
    * Children to render
    */
@@ -44,7 +38,11 @@ export interface XDSFontWrapperProps {
  * XDSFontWrapper
  *
  * Applies base typography styles to native HTML elements within its scope.
- * Uses the reset.css stylesheet which references theme CSS custom properties.
+ * Uses typography.css which references theme CSS custom properties (type scale tokens).
+ *
+ * Typography sizing is controlled by the theme's `typeScale` configuration.
+ * For mixed density regions, nest a `<XDSTheme>` with a different `typeScale`
+ * instead of using a variant prop.
  *
  * @example
  * ```
@@ -56,25 +54,14 @@ export interface XDSFontWrapperProps {
  *     <li>List item 2</li>
  *   </ul>
  * </XDSFontWrapper>
- * <XDSFontWrapper variant="editorial">
- *   <h1>Article Title</h1>
- *   <p>Body text for long-form content.</p>
- * </XDSFontWrapper>
  * ```
  */
 export function XDSFontWrapper({
-  variant = 'default',
   children,
   'data-testid': testId,
 }: XDSFontWrapperProps): React.ReactElement {
-  // Combine CSS typography class for prose styling
-  const typographyClass =
-    variant === 'editorial'
-      ? 'xds-typography xds-typography--editorial'
-      : 'xds-typography xds-typography--default';
-
   return (
-    <div className={typographyClass} data-testid={testId}>
+    <div className="xds-typography" data-testid={testId}>
       {children}
     </div>
   );
@@ -92,7 +79,6 @@ export function useXDSFontWrapperStyles() {
   return {
     base: undefined,
     headingStyles: undefined,
-    editorialHeadingStyles: undefined,
     proseStyles: undefined,
   };
 }
