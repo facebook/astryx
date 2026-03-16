@@ -88,6 +88,14 @@ const styles = stylex.create({
     paddingBlockEnd: spacingVars['--spacing-2'],
     borderBlockStart: `1px solid ${colorVars['--color-divider']}`,
   },
+  footerRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+  },
+  footerRowCollapsed: {
+    flexDirection: 'column-reverse',
+  },
   footerIcons: {
     display: 'flex',
     alignItems: 'center',
@@ -281,11 +289,13 @@ export function XDSSideNav({
             collapsed && styles.stickyBottomCollapsed,
           )}>
           {!collapsed && footer}
-          <div {...stylex.props(styles.footerRow, collapsed && styles.footerRowCollapsed)}>
+          <div
+            {...stylex.props(
+              styles.footerRow,
+              collapsed && styles.footerRowCollapsed,
+            )}>
             {isCollapsible && <XDSSideNavCollapseButton />}
-            {!collapsed && footerIcons && (
-              <div {...stylex.props(styles.footerIcons)}>{footerIcons}</div>
-            )}
+            {footerIcons}
           </div>
         </div>
       )}
