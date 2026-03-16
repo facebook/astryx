@@ -20,6 +20,7 @@ program
   .option('--zh', 'Output docs in Chinese Simplified')
   .option('--dense', 'Output docs in compressed dense format (token-efficient)')
   .option('--lang <locale>', 'Output docs in specified language/format (en, zh, dense)')
+  .option('--detail <level>', 'Output detail level (full, compact, brief)', 'full')
   .addHelpCommand('help', 'Show all commands')
   .action(() => {
     program.help();

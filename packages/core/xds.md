@@ -9,7 +9,7 @@ Use the XDS CLI for component docs, scaffolding, and tooling:
 ```bash
 npx xds component --list          # browse all components by category
 npx xds component Button          # full docs for a component
-npx xds component --brief-all     # LLM-optimized summary of all components
+npx xds --detail brief component --list  # brief summaries of all components
 npx xds docs                      # principles and tokens reference
 ```
 

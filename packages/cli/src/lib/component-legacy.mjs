@@ -168,7 +168,7 @@ export function extractCompact(content, componentName) {
  * Extract a brief, LLM-optimized summary from a README.
  *
  * Format: component signature + key props + one usage example.
- * Targets ~200-400 chars per component (vs ~2-3KB for --compact).
+ * Targets ~200-400 chars per component (vs ~2-3KB for --detail compact).
  *
  * Example output:
  *   Button(variant: primary|secondary|ghost|destructive, size: sm|md|lg)

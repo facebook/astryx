@@ -254,7 +254,7 @@ export const myTheme: Theme = {
 | Text      | `text`    | `styles` (body, large, label, supporting, code)                            | Font, size, weight, color per type     |
 | Prose     | `prose`   | `base`, `styles` (p, ul, ol, li, blockquote, code, pre, hr, strong, em, a) | Prose element styling                  |
 
-Run `npx xds component <Name> --compact` to see a component's themeable slots.
+Run `npx xds --detail compact component <Name>` to see a component's themeable slots.
 
 ### The `as Theme['components']` cast
 

@@ -108,11 +108,12 @@ The CLI merges this onto `docs`: compressed descriptions replace English ones, b
 ## CLI Flags
 
 ```bash
-npx xds component Button              # English docs (default)
-npx xds component Button --compact    # Token-optimized format
-npx xds component Button --brief      # Minimal one-line summary
-npx xds --lang zh component Button    # Chinese prose, same structure
-npx xds --lang dense component Button # Compressed prose, same structure
+npx xds component Button                       # Full docs (default)
+npx xds --detail compact component Button       # Token-optimized format
+npx xds --detail brief component Button         # Minimal one-line summary
+npx xds --lang zh component Button              # Chinese prose, same structure
+npx xds --lang dense component Button           # Compressed prose, same structure
+npx xds --detail compact --lang dense component Button  # Compact + compressed
 ```
 
-`--lang` controls which prose translation is used. `--compact`, `--brief`, `--full` control how much detail. They compose independently.
+`--lang` controls which prose translation is used. `--detail` controls how much detail (full, compact, brief). They compose independently.

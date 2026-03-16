@@ -220,7 +220,7 @@ function generateThemeFile({name, exportName, colors, includeComponentOverrides,
 // Each component reads its overrides from theme.components.<name>.
 //
 // To discover what's themeable for a component, run:
-//   npx xds component <Name> --compact
+//   npx xds --detail compact component <Name>
 // and look for the "Theme Overrides" section.
 
 // --- Button ---
