@@ -219,7 +219,7 @@ function ConfigPanel({
             onChange={v => onChange({isCollapsible: v})}
           />
           <ToggleRow
-            label="TopNav Heading""
+            label="TopNav Heading"
             value={config.showTopNavHeading}
             onChange={v => onChange({showTopNavHeading: v})}
           />
