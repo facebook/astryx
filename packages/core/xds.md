@@ -15,10 +15,10 @@ npx xds docs                      # principles and tokens reference
 
 ### For AI-assisted development
 
-Run `xds agent-docs` in your project to install the XDS component catalog into your AGENTS.md:
+Run `xds init --features agents` in your project to install the XDS component catalog into your AGENTS.md:
 
 ```bash
-npx xds agent-docs
+npx xds init --features agents
 ```
 
 This adds an auto-generated component index that AI coding agents use to discover and correctly use XDS components. Re-run after updating XDS to keep the index current.

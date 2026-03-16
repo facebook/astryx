@@ -155,7 +155,7 @@ export function registerUpgrade(program) {
           p.log.success('Agent docs updated to match new version.');
         } catch {
           p.log.warn(
-            'Could not update agent docs. Run `npx xds agent-docs` to update manually.',
+            'Could not update agent docs. Run `npx xds init --features agents` to update manually.',
           );
         }
       }

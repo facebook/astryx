@@ -35,7 +35,7 @@ const commands = [
   {name: 'component', path: './commands/component/index.mjs', register: 'registerComponent'},
   {name: 'docs', path: './commands/docs.mjs', register: 'registerDocs'},
   {name: 'swizzle', path: './commands/swizzle.mjs', register: 'registerSwizzle'},
-  {name: 'agent-docs', path: './commands/agent-docs.mjs', register: 'registerAgentDocs'},
+  // agent-docs folded into init — functions still importable from agent-docs.mjs
   {name: 'template', path: './commands/template.mjs', register: 'registerTemplate'},
   {name: 'gap-report', path: './commands/gap-report.mjs', register: 'registerGapReport'},
   {name: 'upgrade', path: './commands/upgrade.mjs', register: 'registerUpgrade'},
@@ -73,7 +73,7 @@ program
   │     npx xds --help        See all commands        │
   │                                                   │
   │   Or run directly:                                │
-  │     npx xds agent-docs    Install AI agent docs   │
+  │     npx xds init           Setup + AI agent docs   │
   │     npx xds component     Browse component docs   │
   │     npx xds docs          Design system reference │
   │     npx xds swizzle       Customize a component   │

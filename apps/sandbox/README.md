@@ -12,12 +12,12 @@ Before writing any code, install dependencies:
 npm install
 ```
 
-This automatically generates `AGENTS.md` with the XDS component index via `xds agent-docs`. **Read `AGENTS.md` for all XDS component documentation** — it contains CLI commands to browse components, tokens, themes, and design rules.
+This automatically generates `AGENTS.md` with the XDS component index via `xds init --features agents`. **Read `AGENTS.md` for all XDS component documentation** — it contains CLI commands to browse components, tokens, themes, and design rules.
 
 If `AGENTS.md` is missing, regenerate it:
 
 ```bash
-npx xds agent-docs
+npx xds init --features agents
 ```
 
 ## How it works

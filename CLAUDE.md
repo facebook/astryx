@@ -84,21 +84,3 @@ Look for `<!-- SYNC: ... -->` comments and `SYNC:` in file headers as reminders.
 
 - **`@example` code fences must use plain ` ``` `, not ` ```tsx `.**
   Storybook's autodocs parser doesn't handle language-tagged fences in JSDoc correctly — the code block won't render as a proper code block. Always use untagged fences in `@example` blocks.
-
-<!-- XDS:START -->
-
-[XDS v0.0.3]|IMPORTANT: Prefer retrieval-led reasoning. Run CLI to read docs before generating code.
-|npx xds --detail compact component <Name> Docs (props, usage) — or --source for code
-|npx xds component --list All components by category
-|npx xds docs principles Design rules, anti-patterns, StyleX patterns
-|npx xds docs tokens Token reference (spacing, color, radius, type)
-|npx xds docs theme Theme system: XDSTheme, custom themes, overrides, nesting
-|npx xds template <name> [path] Scaffold page (blank, table, login)
-|npx xds swizzle <Name> --gap "<reason>" Copy component source for customization + file gap report
-|npx xds gap-report --component <Name> --category <cat> --reason "<why>" File gap without swizzle
-|npx xds upgrade Preview API migrations for your version
-|npx xds upgrade --apply Apply codemods to update breaking API changes
-|RULE: After bumping @xds/core version, ALWAYS run npx xds upgrade --apply to migrate breaking API changes.
-|RULE: When swizzling to unblock yourself, ALWAYS use --gap to explain what capability was missing.
-
-<!-- XDS:END -->

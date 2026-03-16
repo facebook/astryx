@@ -3,7 +3,7 @@
 # @position internal/vibe-tests/scripts/generate-skill-doc.sh
 #
 # Generates a skill doc by combining CLI outputs:
-#   - agent-docs framing (AGENTS.md index)
+#   - init --features agents framing (AGENTS.md index)
 #   - component list --detail brief (component catalog)
 #   - docs principles (design rules)
 #   - docs tokens (token reference)
