@@ -2,7 +2,7 @@
  * @file gap-report command — File a gap report for missing XDS capabilities
  *
  * Interactive and non-interactive modes for reporting gaps in the design system.
- * Creates GitHub issues with the `gap-report` label.
+ * Supports GitHub Issues (OSS default) and GSD Tasks (Meta internal via custom script).
  *
  * Includes `gap-report setup` subcommand for configuring gap report delivery.
  */
@@ -16,6 +16,7 @@ import {
   loadGapReportConfig,
   GAP_CATEGORIES,
 } from '../utils/github.mjs';
+import {CLI_ROOT} from '../utils/paths.mjs';
 
 function isCancel(value) {
   if (p.isCancel(value)) {
@@ -23,6 +24,21 @@ function isCancel(value) {
     process.exit(0);
   }
   return value;
+}
+
+/**
+ * Copy the GSD gap report script into the target project.
+ */
+function installGapReportScript(targetDir) {
+  const scriptSrc = path.join(CLI_ROOT, 'scripts', 'xds-gap-report.sh');
+  const scriptsDir = path.join(targetDir, 'scripts');
+  const scriptDest = path.join(scriptsDir, 'xds-gap-report.sh');
+
+  fs.mkdirSync(scriptsDir, {recursive: true});
+  fs.copyFileSync(scriptSrc, scriptDest);
+  fs.chmodSync(scriptDest, 0o755);
+
+  return scriptDest;
 }
 
 /**
@@ -94,6 +110,11 @@ export function registerGapReport(program) {
               hint: 'Creates issues on facebookexperimental/xds (requires gh CLI)',
             },
             {
+              value: 'gsd',
+              label: 'GSD Tasks (Meta internal)',
+              hint: 'Creates tasks on the XDS Component Requests board (requires meta CLI)',
+            },
+            {
               value: 'custom',
               label: 'Custom command',
               hint: 'Run a script that receives the report as JSON on stdin',
@@ -114,6 +135,18 @@ export function registerGapReport(program) {
         configValue = 'false';
         writeGapReportConfig(targetDir, configValue);
         p.log.success('Gap reporting disabled.');
+      } else if (mode === 'gsd') {
+        installGapReportScript(targetDir);
+        configValue = "{ command: './scripts/xds-gap-report.sh' }";
+        writeGapReportConfig(targetDir, configValue);
+        p.log.success(
+          'Gap reports will create GSD tasks on the XDS Component Requests board.',
+        );
+        p.note(
+          'Set XDS_GAP_PROJECT_ID to target a different GSD project.\n' +
+            'Default: 911001608406378 (XDS Component Requests)',
+          'Custom project',
+        );
       } else if (mode === 'custom') {
         const command = isCancel(
           await p.text({
@@ -211,7 +244,7 @@ export function registerGapReport(program) {
             source: 'cli',
           });
           if (url) {
-            console.log(`\n✓ Gap report filed: ${url}\n`);
+            console.log(`\n\u2713 Gap report filed: ${url}\n`);
           } else {
             console.log('\nGap reporting is disabled via configuration.\n');
           }
