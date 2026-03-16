@@ -49,9 +49,6 @@ interface ShellConfig {
   showSubheading: boolean;
   showNestedItems: boolean;
   isCollapsible: boolean;
-  defaultCollapsed: boolean;
-  controlledCollapse: boolean;
-  isCollapsed: boolean;
   mobileNavMode: 'auto' | 'custom' | 'none';
   mobileNavSide: 'start' | 'end';
   topNavAlignment: 'start' | 'center' | 'end';
@@ -75,9 +72,6 @@ const DEFAULT_CONFIG: ShellConfig = {
   showSubheading: false,
   showNestedItems: true,
   isCollapsible: true,
-  defaultCollapsed: false,
-  controlledCollapse: false,
-  isCollapsed: false,
   mobileNavMode: 'auto',
   mobileNavSide: 'start',
   topNavAlignment: 'start',
@@ -109,11 +103,7 @@ function ConfigPanel({
           <SelectorRow
             label="Variant"
             value={config.variant}
-            onChange={v =>
-              onChange({
-                variant: v as 'wash' | 'surface' | 'section' | 'elevated',
-              })
-            }
+            onChange={v => onChange({variant: v as ShellConfig['variant']})}
             options={[
               {value: 'section', label: 'Section'},
               {value: 'wash', label: 'Wash'},
@@ -130,40 +120,27 @@ function ConfigPanel({
               {value: 'auto', label: 'Auto'},
             ]}
           />
-          <SelectorRow
-            label="Breakpoint"
-            value={config.sideNavBreakpoint}
-            onChange={v =>
-              onChange({sideNavBreakpoint: v as 'sm' | 'md' | 'lg' | 'none'})
-            }
-            options={[
-              {value: 'sm', label: 'sm'},
-              {value: 'md', label: 'md'},
-              {value: 'lg', label: 'lg'},
-              {value: 'none', label: 'none'},
-            ]}
+          <ToggleRow
+            label="Banner"
+            value={config.showBanner}
+            onChange={v => onChange({showBanner: v})}
           />
         </XDSVStack>
 
         <XDSDivider />
 
-        {/* Visibility */}
+        {/* SideNav */}
         <XDSVStack gap={3}>
           <XDSText type="label" weight="bold">
-            Visibility
+            SideNav
           </XDSText>
           <ToggleRow
-            label="Side Nav"
+            label="Show"
             value={config.showSideNav}
             onChange={v => onChange({showSideNav: v})}
           />
-          <ToggleRow
-            label="Top Nav"
-            value={config.showTopNav}
-            onChange={v => onChange({showTopNav: v})}
-          />
           <SelectorRow
-            label="SideNav Heading"
+            label="Heading"
             value={config.sideNavHeadingStyle}
             onChange={v =>
               onChange({
@@ -189,9 +166,14 @@ function ConfigPanel({
             onChange={v => onChange({showSubheading: v})}
           />
           <ToggleRow
-            label="Banner"
-            value={config.showBanner}
-            onChange={v => onChange({showBanner: v})}
+            label="Top Content"
+            value={config.showTopContent}
+            onChange={v => onChange({showTopContent: v})}
+          />
+          <ToggleRow
+            label="Nested Items"
+            value={config.showNestedItems}
+            onChange={v => onChange({showNestedItems: v})}
           />
           <ToggleRow
             label="Footer"
@@ -204,83 +186,25 @@ function ConfigPanel({
             onChange={v => onChange({showFooterIcons: v})}
           />
           <ToggleRow
-            label="Top Content"
-            value={config.showTopContent}
-            onChange={v => onChange({showTopContent: v})}
-          />
-          <ToggleRow
-            label="Nested Items"
-            value={config.showNestedItems}
-            onChange={v => onChange({showNestedItems: v})}
-          />
-          <ToggleRow
             label="Collapsible"
             value={config.isCollapsible}
             onChange={v => onChange({isCollapsible: v})}
           />
-          <ToggleRow
-            label="TopNav Heading"
-            value={config.showTopNavHeading}
-            onChange={v => onChange({showTopNavHeading: v})}
-          />
-        </XDSVStack>
-
-        <XDSDivider />
-
-        {/* Collapse */}
-        <XDSVStack gap={3}>
-          <XDSText type="label" weight="bold">
-            Collapse
-          </XDSText>
-          <ToggleRow
-            label="Default Collapsed"
-            value={config.defaultCollapsed}
-            onChange={v => onChange({defaultCollapsed: v})}
-          />
-          <ToggleRow
-            label="Controlled"
-            value={config.controlledCollapse}
-            onChange={v => onChange({controlledCollapse: v})}
-          />
-          {config.controlledCollapse && (
-            <ToggleRow
-              label="Is Collapsed"
-              value={config.isCollapsed}
-              onChange={v => onChange({isCollapsed: v})}
-            />
-          )}
-        </XDSVStack>
-
-        <XDSDivider />
-
-        {/* Mobile */}
-        <XDSVStack gap={3}>
-          <XDSText type="label" weight="bold">
-            Mobile Nav
-          </XDSText>
           <SelectorRow
-            label="Mode"
-            value={config.mobileNavMode}
+            label="Breakpoint"
+            value={config.sideNavBreakpoint}
             onChange={v =>
-              onChange({mobileNavMode: v as 'auto' | 'custom' | 'none'})
+              onChange({
+                sideNavBreakpoint: v as ShellConfig['sideNavBreakpoint'],
+              })
             }
             options={[
-              {value: 'auto', label: 'Auto'},
-              {value: 'custom', label: 'Custom'},
+              {value: 'sm', label: 'SM'},
+              {value: 'md', label: 'MD'},
+              {value: 'lg', label: 'LG'},
               {value: 'none', label: 'None'},
             ]}
           />
-          {config.mobileNavMode === 'custom' && (
-            <SelectorRow
-              label="Drawer Side"
-              value={config.mobileNavSide}
-              onChange={v => onChange({mobileNavSide: v as 'start' | 'end'})}
-              options={[
-                {value: 'start', label: 'Start'},
-                {value: 'end', label: 'End'},
-              ]}
-            />
-          )}
         </XDSVStack>
 
         <XDSDivider />
@@ -290,11 +214,21 @@ function ConfigPanel({
           <XDSText type="label" weight="bold">
             TopNav
           </XDSText>
+          <ToggleRow
+            label="Show"
+            value={config.showTopNav}
+            onChange={v => onChange({showTopNav: v})}
+          />
+          <ToggleRow
+            label="Heading"
+            value={config.showTopNavHeading}
+            onChange={v => onChange({showTopNavHeading: v})}
+          />
           <SelectorRow
-            label="Nav Alignment"
+            label="Alignment"
             value={config.topNavAlignment}
             onChange={v =>
-              onChange({topNavAlignment: v as 'start' | 'center' | 'end'})
+              onChange({topNavAlignment: v as ShellConfig['topNavAlignment']})
             }
             options={[
               {value: 'start', label: 'Start'},
@@ -303,10 +237,10 @@ function ConfigPanel({
             ]}
           />
           <SelectorRow
-            label="Nav Style"
+            label="Style"
             value={config.topNavStyle}
             onChange={v =>
-              onChange({topNavStyle: v as 'items' | 'menus' | 'mega'})
+              onChange({topNavStyle: v as ShellConfig['topNavStyle']})
             }
             options={[
               {value: 'items', label: 'Items'},
@@ -314,6 +248,38 @@ function ConfigPanel({
               {value: 'mega', label: 'Mega'},
             ]}
           />
+        </XDSVStack>
+
+        <XDSDivider />
+
+        {/* Mobile Nav */}
+        <XDSVStack gap={3}>
+          <XDSText type="label" weight="bold">
+            Mobile Nav
+          </XDSText>
+          <SelectorRow
+            label="Mode"
+            value={config.mobileNavMode}
+            onChange={v =>
+              onChange({mobileNavMode: v as ShellConfig['mobileNavMode']})
+            }
+            options={[
+              {value: 'auto', label: 'Auto'},
+              {value: 'custom', label: 'Custom'},
+              {value: 'none', label: 'None'},
+            ]}
+          />
+          {config.mobileNavMode === 'custom' && (
+            <SelectorRow
+              label="Side"
+              value={config.mobileNavSide}
+              onChange={v => onChange({mobileNavSide: v as 'start' | 'end'})}
+              options={[
+                {value: 'start', label: 'Start'},
+                {value: 'end', label: 'End'},
+              ]}
+            />
+          )}
         </XDSVStack>
       </XDSVStack>
     </XDSCard>
@@ -645,14 +611,6 @@ export default function ShellLabPage() {
     setConfig(prev => ({...prev, ...update}));
   }, []);
 
-  const collapseProps = config.controlledCollapse
-    ? {
-        isSideNavCollapsed: config.isCollapsed,
-        onSideNavCollapsedChange: (v: boolean) =>
-          handleConfigChange({isCollapsed: v}),
-      }
-    : {defaultIsSideNavCollapsed: config.defaultCollapsed};
-
   const mobileNav =
     config.mobileNavMode === 'custom' ? (
       <XDSMobileNav
@@ -694,8 +652,7 @@ export default function ShellLabPage() {
               isDismissable
             />
           ) : undefined
-        }
-        {...collapseProps}>
+        }>
         <XDSVStack gap={6} xstyle={styles.content}>
           <XDSVStack gap={2}>
             <XDSHeading level={1}>Shell Lab</XDSHeading>
