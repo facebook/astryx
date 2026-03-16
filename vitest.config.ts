@@ -12,6 +12,7 @@ import {defineConfig} from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
 const rootDir = path.resolve(__dirname, '.');
+const coreSrc = path.resolve(__dirname, 'packages/core/src');
 
 export default defineConfig({
   plugins: [
@@ -39,6 +40,14 @@ export default defineConfig({
       },
     }),
   ],
+  resolve: {
+    alias: [
+      // Map @xds/core subpath imports to source for lab package tests.
+      // Must use regex to match subpaths like @xds/core/Dialog, @xds/core/theme/tokens.stylex
+      // while not breaking core's own relative imports.
+      { find: /^@xds\/core\/(.*)$/, replacement: path.join(coreSrc, '$1') },
+    ],
+  },
   test: {
     globals: true,
     environment: 'jsdom',
