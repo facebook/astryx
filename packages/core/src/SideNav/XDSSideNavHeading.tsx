@@ -33,6 +33,7 @@ import {
 import {useXDSPopover} from '../Popover/useXDSPopover';
 import {XDSLink} from '../Link';
 import {getIcon} from '../Icon/globalIconRegistry';
+import {useSideNavCollapse} from './SideNavCollapseContext';
 import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
@@ -256,28 +257,17 @@ export function XDSSideNavHeading({
   ref,
   ...props
 }: XDSSideNavHeadingProps) {
+  const {isCollapsed} = useSideNavCollapse();
   const rootRef = useRef<HTMLDivElement>(null);
 
   const popover = useXDSPopover({
     dialogLabel: 'Navigation menu',
   });
 
-  const showChevron = !!menu;
-  const hasAnyHref = !!(headingHref || superheadingHref || subheadingHref);
-  const hasCompactHeading = !!(superheading || subheading);
-
-  // Determine interaction mode
-  const isWholeHeadingTrigger = !!menu && !hasAnyHref;
-  const isWholeHeadingLink =
-    !!headingHref && !menu && !superheadingHref && !subheadingHref;
-
   const handleToggle = useCallback(() => {
     popover.toggle();
   }, [popover]);
 
-  // Combine refs — always anchor popover to the full header element
-  // so the popover appears in the same position regardless of whether
-  // links are present (mixed mode) or not (whole-header trigger mode).
   const setRef = useCallback(
     (el: HTMLDivElement | null) => {
       (rootRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
@@ -292,6 +282,36 @@ export function XDSSideNavHeading({
     },
     [ref, popover, menu],
   );
+
+  // In collapsed mode: hide if no icon, show icon-only if has icon
+  if (isCollapsed && !icon) {
+    return null;
+  }
+  if (isCollapsed && icon) {
+    return (
+      <div
+        ref={ref}
+        data-testid={testId}
+        {...mergeProps(
+          xdsClassName('side-nav-heading'),
+          stylex.props(styles.root, xstyle),
+          className,
+          style,
+        )}
+        {...props}>
+        <span {...stylex.props(styles.icon)}>{icon}</span>
+      </div>
+    );
+  }
+
+  const showChevron = !!menu;
+  const hasAnyHref = !!(headingHref || superheadingHref || subheadingHref);
+  const hasCompactHeading = !!(superheading || subheading);
+
+  // Determine interaction mode
+  const isWholeHeadingTrigger = !!menu && !hasAnyHref;
+  const isWholeHeadingLink =
+    !!headingHref && !menu && !superheadingHref && !subheadingHref;
 
   // Render text content
   const renderTextContent = () => (

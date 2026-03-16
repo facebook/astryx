@@ -37,6 +37,9 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     overflow: 'hidden',
   },
+  rootCollapsed: {
+    width: 52,
+  },
   stickyTop: {
     display: 'flex',
     flexDirection: 'column',
@@ -87,6 +90,14 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
+  },
+  footerIconsCollapsed: {
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  stickyBottomCollapsed: {
+    borderBlockStart: 'none',
+    paddingBlockStart: 0,
   },
 });
 
@@ -238,7 +249,7 @@ export function XDSSideNav({
       data-testid={testId}
       {...mergeProps(
         xdsClassName('side-nav'),
-        stylex.props(styles.root, xstyle),
+        stylex.props(styles.root, collapsed && styles.rootCollapsed, xstyle),
         className,
         style,
       )}
@@ -246,7 +257,7 @@ export function XDSSideNav({
       {hasStickyTop && (
         <div {...stylex.props(styles.stickyTop)}>
           {header}
-          {topContent && (
+          {!collapsed && topContent && (
             <div {...stylex.props(styles.topContent)}>{topContent}</div>
           )}
         </div>
@@ -261,11 +272,21 @@ export function XDSSideNav({
         )}>
         {children}
       </div>
-      {hasStickyBottom && (
-        <div {...stylex.props(styles.stickyBottom)}>
-          {footer}
+      {(hasStickyBottom || collapsed) && (
+        <div
+          {...stylex.props(
+            styles.stickyBottom,
+            collapsed && styles.stickyBottomCollapsed,
+          )}>
+          {!collapsed && footer}
           {footerIcons && (
-            <div {...stylex.props(styles.footerIcons)}>{footerIcons}</div>
+            <div
+              {...stylex.props(
+                styles.footerIcons,
+                collapsed && styles.footerIconsCollapsed,
+              )}>
+              {footerIcons}
+            </div>
           )}
         </div>
       )}
