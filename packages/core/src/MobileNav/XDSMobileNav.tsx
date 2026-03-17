@@ -141,6 +141,7 @@ const styles = stylex.create({
     flex: 1,
     overflowY: 'auto',
     overflowX: 'hidden',
+    overscrollBehavior: 'contain',
     paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-1'],
   },
