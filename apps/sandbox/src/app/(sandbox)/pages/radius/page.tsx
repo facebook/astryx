@@ -111,7 +111,7 @@ export default function RadiusPage() {
                 style={{maxWidth: 360}}
               />
               <span {...stylex.props(styles.sliderValue)}>
-                {multiplier}&times;
+                base number: 4 &times; {multiplier}
               </span>
             </XDSHStack>
             <XDSHStack gap={2}>
