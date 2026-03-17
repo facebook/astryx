@@ -20,6 +20,9 @@ import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {edgeSignals} from '../Layout/edgeCompensation.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {TopNavSlotContext} from './TopNavContext';
+import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
+import {XDSMobileNav} from '../MobileNav/XDSMobileNav';
+import {XDSMobileNavToggle} from '../MobileNav/XDSMobileNavToggle';
 
 /**
  * Base TopNav styles
@@ -80,6 +83,27 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
     flexShrink: 0,
     marginInlineStart: 'auto',
+  },
+  // Mobile bar mode — simplified top bar with heading + toggle + endContent
+  mobileBar: {
+    display: 'flex',
+    alignItems: 'center',
+    width: '100%',
+    height: spacingVars['--spacing-12'],
+    paddingInline: spacingVars['--spacing-4'],
+    boxSizing: 'border-box',
+  },
+  mobileBarEnd: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+    marginInlineStart: 'auto',
+  },
+  // Drawer mode — vertical list of nav items
+  drawerItems: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-0-5'],
   },
 });
 
@@ -144,7 +168,55 @@ export function XDSTopNav({
   ref,
   ...props
 }: XDSTopNavProps) {
+  const renderMode = useXDSTopNavRenderMode();
   const hasCenterContent = centerContent != null;
+  const hasCollapsibleContent = startContent != null || centerContent != null;
+
+  // =========================================================================
+  // Mobile bar mode — heading + endContent + toggle, hide nav items
+  // =========================================================================
+  if (renderMode === 'mobile-bar') {
+    return (
+      <nav
+        ref={ref}
+        role="navigation"
+        aria-label={label}
+        {...mergeProps(
+          xdsClassName('top-nav', {mode: 'mobile-bar'}),
+          stylex.props(styles.mobileBar, xstyle),
+          className,
+          style,
+        )}
+        {...props}>
+        {heading && <div {...stylex.props(styles.heading)}>{heading}</div>}
+        <div {...stylex.props(styles.mobileBarEnd)}>
+          {endContent}
+          {hasCollapsibleContent && <XDSMobileNavToggle />}
+        </div>
+      </nav>
+    );
+  }
+
+  // =========================================================================
+  // Drawer mode — render nav items vertically inside a MobileNav
+  // =========================================================================
+  if (renderMode === 'drawer') {
+    // Only render if there are collapsible items
+    if (!hasCollapsibleContent) return null;
+
+    return (
+      <XDSMobileNav header={heading}>
+        <div {...stylex.props(styles.drawerItems)}>
+          {startContent}
+          {centerContent}
+        </div>
+      </XDSMobileNav>
+    );
+  }
+
+  // =========================================================================
+  // Default mode — full top bar
+  // =========================================================================
 
   return (
     <nav

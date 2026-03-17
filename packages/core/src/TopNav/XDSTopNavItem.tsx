@@ -27,6 +27,7 @@ import {
 } from '../theme/tokens.stylex';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
+import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
 import {xdsClassName, mergeProps} from '../utils';
 
 /**
@@ -82,6 +83,44 @@ const styles = stylex.create({
   },
   iconOnly: {
     paddingInline: spacingVars['--spacing-2'],
+  },
+  // Drawer mode — SideNavItem-style vertical list element
+  drawerItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-3'],
+    width: '100%',
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
+    borderRadius: radiusVars['--radius-element'],
+    fontSize: textSizeVars['--text-base'],
+    lineHeight: lineHeightVars['--leading-base'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    color: colorVars['--color-text-secondary'],
+    textDecoration: 'none',
+    cursor: 'pointer',
+    boxSizing: 'border-box',
+    backgroundColor: {
+      default: 'transparent',
+      ':hover': {
+        '@media (hover: hover)': colorVars['--color-hover-overlay'],
+      },
+      ':active': colorVars['--color-pressed-overlay'],
+    },
+    outline: {
+      default: null,
+      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+    },
+  },
+  drawerItemSelected: {
+    color: colorVars['--color-text-primary'],
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    backgroundColor: {
+      default: colorVars['--color-deemphasized'],
+      ':hover': {
+        '@media (hover: hover)': colorVars['--color-deemphasized'],
+      },
+    },
   },
 });
 
@@ -164,8 +203,41 @@ export function XDSTopNavItem({
   ...props
 }: XDSTopNavItemProps) {
   const LinkComponent = useXDSLinkComponent(as);
+  const renderMode = useXDSTopNavRenderMode();
   const isIconOnly = icon != null && children == null && !label;
   const showLabel = !isIconOnly;
+
+  // =========================================================================
+  // Drawer mode — render as a SideNavItem-style vertical list element
+  // =========================================================================
+  if (renderMode === 'drawer') {
+    return (
+      <LinkComponent
+        ref={ref}
+        aria-current={isSelected ? 'page' : undefined}
+        aria-disabled={isDisabled || undefined}
+        tabIndex={isDisabled ? -1 : undefined}
+        {...mergeProps(
+          xdsClassName('top-nav-item', {mode: 'drawer'}),
+          stylex.props(
+            styles.drawerItem,
+            isSelected && styles.drawerItemSelected,
+            isDisabled && styles.disabled,
+            xstyle,
+          ),
+          className,
+          style,
+        )}
+        {...props}>
+        {icon}
+        {children ?? label}
+      </LinkComponent>
+    );
+  }
+
+  // =========================================================================
+  // Default / mobile-bar mode — standard horizontal nav item
+  // =========================================================================
 
   return (
     <LinkComponent

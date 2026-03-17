@@ -25,3 +25,9 @@ export type {
   XDSTopNavMegaMenuItemData,
   XDSTopNavMegaMenuFeatured,
 } from './XDSTopNavMegaMenu';
+
+export {
+  XDSTopNavRenderContext,
+  useXDSTopNavRenderMode,
+} from './XDSTopNavRenderContext';
+export type {XDSTopNavRenderMode} from './XDSTopNavRenderContext';
