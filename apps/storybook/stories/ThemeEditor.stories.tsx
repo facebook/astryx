@@ -1298,36 +1298,7 @@ function ThemeEditorComponent() {
     React.useState<string>('Heading 1');
   const [themeName] = React.useState('custom');
 
-  // Derive mode from storybook's global dark mode toggle
-  const [mode, setMode] = React.useState<'light' | 'dark'>(() =>
-    typeof window !== 'undefined' &&
-    (document.documentElement.classList.contains('dark') ||
-      window.matchMedia('(prefers-color-scheme: dark)').matches)
-      ? 'dark'
-      : 'light',
-  );
-  React.useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const observer = new MutationObserver(() => {
-      setMode(
-        document.documentElement.classList.contains('dark') ||
-          document.body.classList.contains('dark')
-          ? 'dark'
-          : 'light',
-      );
-    });
-    const handleChange = (e: MediaQueryListEvent) =>
-      setMode(e.matches ? 'dark' : 'light');
-    mq.addEventListener('change', handleChange);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-    });
-    return () => {
-      mq.removeEventListener('change', handleChange);
-      observer.disconnect();
-    };
-  }, []);
+  const [mode, setMode] = React.useState<'light' | 'dark'>('light');
   const [showCode, setShowCode] = React.useState(false);
 
   // Collect all defaults
@@ -1482,6 +1453,21 @@ function ThemeEditorComponent() {
         setTokens(prev => ({...prev, ...expandTypeScale({base, ratio})}));
       };
 
+      // Named ratio options from musical/mathematical intervals
+      const RATIO_OPTIONS = [
+        {value: 1.067, label: '1.067 — Minor Second'},
+        {value: 1.125, label: '1.125 — Major Second'},
+        {value: 1.2, label: '1.200 — Minor Third'},
+        {value: 1.25, label: '1.250 — Major Third'},
+        {value: 1.333, label: '1.333 — Perfect Fourth'},
+        {value: 1.414, label: '1.414 — Augmented Fourth'},
+        {value: 1.5, label: '1.500 — Perfect Fifth'},
+        {value: 1.618, label: '1.618 — Golden Ratio'},
+      ];
+      const isCustomRatio = !RATIO_OPTIONS.some(
+        o => Math.abs(o.value - typeScaleRatio) < 0.001,
+      );
+
       const typeScaleSection = (
         <div
           style={{
@@ -1493,31 +1479,19 @@ function ThemeEditorComponent() {
             gap: '10px',
             marginBottom: '16px',
           }}>
-          <div
-            style={{
-              fontSize: '11px',
-              fontWeight: 600,
-              color: 'var(--color-text-secondary)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-            }}>
+          <XDSText type="label" color="secondary">
             Type Scale
-          </div>
+          </XDSText>
           <div>
-            <label
+            <div
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                fontSize: '13px',
-                fontWeight: 500,
-                color: 'var(--color-text-primary)',
                 marginBottom: '2px',
               }}>
-              <span>Base Size</span>
-              <span style={{fontFamily: 'var(--font-code)'}}>
-                {typeScaleBase}px
-              </span>
-            </label>
+              <XDSText type="label">Base Size</XDSText>
+              <XDSText type="code">{typeScaleBase}px</XDSText>
+            </div>
             <input
               type="range"
               min="10"
@@ -1531,63 +1505,89 @@ function ThemeEditorComponent() {
             />
           </div>
           <div>
-            <label
+            <XDSText type="label" display="block" style={{marginBottom: '4px'}}>
+              Scale Ratio
+            </XDSText>
+            <select
+              value={isCustomRatio ? 'custom' : String(typeScaleRatio)}
+              onChange={e => {
+                if (e.target.value === 'custom') return;
+                applyTypeScale(typeScaleBase, Number(e.target.value));
+              }}
               style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: '13px',
-                fontWeight: 500,
+                width: '100%',
+                padding: '6px 8px',
+                fontSize: '14px',
+                fontFamily: 'var(--font-body)',
+                border: '1px solid var(--color-divider-emphasized)',
+                borderRadius: 'var(--radius-element)',
+                backgroundColor: 'var(--color-surface)',
                 color: 'var(--color-text-primary)',
-                marginBottom: '2px',
               }}>
-              <span>Ratio</span>
-              <span style={{fontFamily: 'var(--font-code)'}}>
-                {typeScaleRatio.toFixed(3)}
-              </span>
-            </label>
-            <input
-              type="range"
-              min="1.05"
-              max="1.5"
-              step="0.005"
-              value={typeScaleRatio}
-              onChange={e =>
-                applyTypeScale(typeScaleBase, Number(e.target.value))
-              }
-              style={{width: '100%'}}
-            />
+              {RATIO_OPTIONS.map(opt => (
+                <option key={opt.value} value={String(opt.value)}>
+                  {opt.label}
+                </option>
+              ))}
+              <option value="custom">
+                {isCustomRatio
+                  ? `Custom — ${typeScaleRatio.toFixed(3)}`
+                  : 'Custom…'}
+              </option>
+            </select>
+            {isCustomRatio && (
+              <input
+                type="range"
+                min="1.05"
+                max="1.7"
+                step="0.001"
+                value={typeScaleRatio}
+                onChange={e =>
+                  applyTypeScale(typeScaleBase, Number(e.target.value))
+                }
+                style={{width: '100%', marginTop: '6px'}}
+              />
+            )}
           </div>
-          <div style={{display: 'flex', gap: '4px', flexWrap: 'wrap'}}>
-            <XDSButton
-              label="Dense"
-              variant={
-                typeScaleBase === 12 && typeScaleRatio === 1.125
-                  ? 'primary'
-                  : 'ghost'
-              }
-              size="sm"
-              onClick={() => applyTypeScale(12, 1.125)}
-            />
-            <XDSButton
-              label="Default"
-              variant={
-                typeScaleBase === 14 && typeScaleRatio === 1.2
-                  ? 'primary'
-                  : 'ghost'
-              }
-              size="sm"
-              onClick={() => applyTypeScale(14, 1.2)}
-            />
-            <XDSButton
-              label="Airy"
-              variant={
-                typeScaleBase === 16 && typeScaleRatio === 1.25
-                  ? 'primary'
-                  : 'ghost'
-              }
-              size="sm"
-              onClick={() => applyTypeScale(16, 1.25)}
-            />
+          <div>
+            <XDSText
+              type="supporting"
+              display="block"
+              style={{marginBottom: '4px'}}>
+              Recommended values
+            </XDSText>
+            <div style={{display: 'flex', gap: '4px', flexWrap: 'wrap'}}>
+              <XDSButton
+                label="Functional"
+                variant={
+                  typeScaleBase === 12 && typeScaleRatio === 1.125
+                    ? 'primary'
+                    : 'ghost'
+                }
+                size="sm"
+                onClick={() => applyTypeScale(12, 1.125)}
+              />
+              <XDSButton
+                label="Default"
+                variant={
+                  typeScaleBase === 14 && typeScaleRatio === 1.2
+                    ? 'primary'
+                    : 'ghost'
+                }
+                size="sm"
+                onClick={() => applyTypeScale(14, 1.2)}
+              />
+              <XDSButton
+                label="Editorial"
+                variant={
+                  typeScaleBase === 16 && typeScaleRatio === 1.25
+                    ? 'primary'
+                    : 'ghost'
+                }
+                size="sm"
+                onClick={() => applyTypeScale(16, 1.25)}
+              />
+            </div>
           </div>
           {/* Compact heading preview */}
           <div
@@ -1610,16 +1610,12 @@ function ThemeEditorComponent() {
                     alignItems: 'baseline',
                     gap: '8px',
                   }}>
-                  <span
-                    style={{
-                      fontSize: '10px',
-                      color: 'var(--color-text-secondary)',
-                      fontFamily: 'var(--font-code)',
-                      width: '18px',
-                      flexShrink: 0,
-                    }}>
+                  <XDSText
+                    type="code"
+                    color="secondary"
+                    style={{width: '18px', flexShrink: 0}}>
                     h{level}
-                  </span>
+                  </XDSText>
                   <span
                     style={{
                       fontSize: size,
@@ -1632,29 +1628,20 @@ function ThemeEditorComponent() {
                     }}>
                     Heading
                   </span>
-                  <span
-                    style={{
-                      fontSize: '10px',
-                      color: 'var(--color-text-secondary)',
-                      fontFamily: 'var(--font-code)',
-                      marginLeft: 'auto',
-                      flexShrink: 0,
-                    }}>
+                  <XDSText
+                    type="code"
+                    color="secondary"
+                    style={{marginLeft: 'auto', flexShrink: 0}}>
                     {size}
-                  </span>
+                  </XDSText>
                 </div>
               );
             })}
           </div>
-          <div
-            style={{
-              fontSize: '11px',
-              fontFamily: 'var(--font-code)',
-              color: 'var(--color-text-secondary)',
-            }}>
+          <XDSText type="code" color="secondary">
             size = {typeScaleBase} × {typeScaleRatio.toFixed(3)}^step · h4 =
             anchor
-          </div>
+          </XDSText>
         </div>
       );
 
@@ -1839,6 +1826,7 @@ function ThemeEditorComponent() {
         position: 'absolute',
         inset: 0,
         margin: -16,
+        overflow: 'hidden',
         backgroundColor: 'var(--color-wash)',
       }}>
       {/* Left Panel - Token Editor */}
@@ -1919,16 +1907,27 @@ function ThemeEditorComponent() {
         {/* Preview header */}
         <div
           style={{
-            padding: '16px 24px',
+            padding: '12px 24px',
             borderBottom: '1px solid var(--color-divider)',
             backgroundColor: 'var(--color-surface)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
           }}>
-          <div>
-            <XDSHeading level={4}>Live Preview</XDSHeading>
-            <XDSText type="supporting">See your changes in real-time</XDSText>
+          <XDSHeading level={4}>Live Preview</XDSHeading>
+          <div style={{display: 'flex', gap: '4px'}}>
+            <XDSButton
+              label="Light"
+              variant={mode === 'light' ? 'primary' : 'ghost'}
+              size="sm"
+              onClick={() => setMode('light')}
+            />
+            <XDSButton
+              label="Dark"
+              variant={mode === 'dark' ? 'primary' : 'ghost'}
+              size="sm"
+              onClick={() => setMode('dark')}
+            />
           </div>
         </div>
 
