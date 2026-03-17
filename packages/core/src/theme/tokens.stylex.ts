@@ -369,16 +369,16 @@ export const typeScaleDefaults = {
   // Text tokens — body/label/code at base, large one step up, supporting one step down
   '--text-body-size': 'var(--text-base)', // 14px
   '--text-body-weight': 'var(--font-weight-normal)',
-  '--text-body-leading': '1.7143',
+  '--text-body-leading': '1.4286',
   '--text-large-size': '17px', // 14 × 1.2¹ (no matching --text-* token)
   '--text-large-weight': 'var(--font-weight-semibold)',
-  '--text-large-leading': '1.6471',
+  '--text-large-leading': '1.4118',
   '--text-label-size': 'var(--text-base)', // 14px
   '--text-label-weight': 'var(--font-weight-medium)',
   '--text-label-leading': '1.4286',
   '--text-code-size': 'var(--text-base)', // 14px
   '--text-code-weight': 'var(--font-weight-normal)',
-  '--text-code-leading': '1.7143',
+  '--text-code-leading': '1.4286',
   '--text-supporting-size': 'var(--text-xsm)', // 12px
   '--text-supporting-weight': 'var(--font-weight-normal)',
   '--text-supporting-leading': '1.6667',
