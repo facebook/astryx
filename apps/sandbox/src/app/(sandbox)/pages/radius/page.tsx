@@ -6,6 +6,7 @@ import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSDivider} from '@xds/core';
 import {XDSButton} from '@xds/core/Button';
+import {XDSToken} from '@xds/core/Token';
 // =============================================================================
 // Constants
 // =============================================================================
@@ -453,10 +454,11 @@ export default function RadiusPage() {
             </XDSHStack>
             <div {...stylex.props(styles.tokenBar)}>
               {Object.entries(tokens).map(([n, val]) => (
-                <div key={n} {...stylex.props(styles.tokenChip)}>
-                  <span {...stylex.props(styles.tokenName)}>{n}</span>
-                  <span {...stylex.props(styles.tokenVal)}>{val}px</span>
-                </div>
+                <XDSToken
+                  key={n}
+                  label={`${n}  ${val}px`}
+                  color="gray"
+                />
               ))}
             </div>
           </XDSVStack>
