@@ -272,21 +272,6 @@ function ConfigPanel({
               ]}
             />
           )}
-          <SelectorRow
-            label="Breakpoint"
-            value={config.sideNavBreakpoint}
-            onChange={v =>
-              onChange({
-                sideNavBreakpoint: v as ShellConfig['sideNavBreakpoint'],
-              })
-            }
-            options={[
-              {value: 'sm', label: 'SM'},
-              {value: 'md', label: 'MD'},
-              {value: 'lg', label: 'LG'},
-              {value: 'none', label: 'None'},
-            ]}
-          />
         </XDSVStack>
 
         <XDSDivider />
@@ -352,11 +337,28 @@ function ConfigPanel({
             ]}
           />
           {config.mobileNavMode !== 'disabled' && (
-            <ToggleRow
-              label="Has Toggle"
-              value={config.mobileNavHasToggle}
-              onChange={v => onChange({mobileNavHasToggle: v})}
-            />
+            <>
+              <SelectorRow
+                label="Breakpoint"
+                value={config.sideNavBreakpoint}
+                onChange={v =>
+                  onChange({
+                    sideNavBreakpoint: v as ShellConfig['sideNavBreakpoint'],
+                  })
+                }
+                options={[
+                  {value: 'sm', label: 'SM'},
+                  {value: 'md', label: 'MD'},
+                  {value: 'lg', label: 'LG'},
+                  {value: 'none', label: 'None'},
+                ]}
+              />
+              <ToggleRow
+                label="Has Toggle"
+                value={config.mobileNavHasToggle}
+                onChange={v => onChange({mobileNavHasToggle: v})}
+              />
+            </>
           )}
           {config.mobileNavMode === 'custom' && (
             <SelectorRow
