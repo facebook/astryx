@@ -18,6 +18,9 @@ import {
   XDSTopNavItem,
   XDSTopNavMenu,
   XDSTopNavMegaMenu,
+  XDSTopNavMegaMenuGroup,
+  XDSTopNavMegaMenuItem,
+  XDSTopNavMegaMenuFeatured,
 } from '@xds/core/TopNav';
 import {XDSMobileNav, XDSMobileNavToggle} from '@xds/core/MobileNav';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
@@ -616,34 +619,54 @@ function SampleTopNav({
   const megaItems = (
     <>
       <XDSTopNavItem label="Home" href="#" isSelected />
-      <XDSTopNavMegaMenu
-        label="Products"
-        items={[
-          {
-            title: 'Analytics',
-            description: 'View metrics and dashboards',
-            href: '#',
-          },
-          {
-            title: 'Reports',
-            description: 'Generate and export reports',
-            href: '#',
-          },
-          {
-            title: 'Pipelines',
-            description: 'Data processing workflows',
-            href: '#',
-          },
-          {title: 'Integrations', description: 'Connect your tools', href: '#'},
-        ]}
-        featured={{
-          title: 'New: AI Features',
-          description:
-            'Explore our latest AI-powered analytics tools for faster insights.',
-          linkText: 'Learn more →',
-          linkHref: '#',
-        }}
-      />
+      <XDSTopNavMegaMenu label="Products">
+        <XDSTopNavMegaMenuGroup>
+          <XDSTopNavMegaMenuItem
+            title="Analytics"
+            description="View metrics and dashboards"
+            href="#"
+          />
+          <XDSTopNavMegaMenuItem
+            title="Reports"
+            description="Generate and export reports"
+            href="#"
+          />
+          <XDSTopNavMegaMenuItem
+            title="Pipelines"
+            description="Data processing workflows"
+            href="#"
+          />
+          <XDSTopNavMegaMenuItem
+            title="Integrations"
+            description="Connect your tools"
+            href="#"
+          />
+        </XDSTopNavMegaMenuGroup>
+        <XDSTopNavMegaMenuFeatured>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+              padding: 16,
+            }}>
+            <strong>New: AI Features</strong>
+            <span style={{fontSize: 14, color: 'var(--color-text-secondary)'}}>
+              Explore our latest AI-powered analytics tools for faster insights.
+            </span>
+            <a
+              href="#"
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: 'var(--color-accent-text)',
+                textDecoration: 'none',
+              }}>
+              Learn more →
+            </a>
+          </div>
+        </XDSTopNavMegaMenuFeatured>
+      </XDSTopNavMegaMenu>
       <XDSTopNavItem label="Team" href="#" />
     </>
   );

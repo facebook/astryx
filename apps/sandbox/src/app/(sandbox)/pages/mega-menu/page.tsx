@@ -11,6 +11,9 @@ import {
   XDSTopNavHeading,
   XDSTopNavItem,
   XDSTopNavMegaMenu,
+  XDSTopNavMegaMenuGroup,
+  XDSTopNavMegaMenuItem,
+  XDSTopNavMegaMenuFeatured,
 } from '@xds/core/TopNav';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 
@@ -28,15 +31,38 @@ const styles = stylex.create({
     transitionDuration: '0.2s',
     transitionTimingFunction: 'ease-out',
   },
-  // When the mega menu opens, the wrapper becomes the top half of the
-  // unified card: drop the bottom radius so it flows seamlessly into the
-  // panel, and remove the wrapper shadow (the panel provides its own
-  // shadow that visually wraps the dropdown area).
   navWrapperMenuOpen: {
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
     boxShadow:
       '0 -1px 3px rgba(0, 0, 0, 0.06), -1px 0 3px rgba(0, 0, 0, 0.04), 1px 0 3px rgba(0, 0, 0, 0.04)',
+  },
+  featuredBody: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+    padding: 16,
+  },
+  featuredTitle: {
+    fontSize: 16,
+    fontWeight: 600,
+    color: 'var(--color-text-primary)',
+  },
+  featuredDescription: {
+    fontSize: 14,
+    color: 'var(--color-text-secondary)',
+  },
+  featuredLink: {
+    fontSize: 14,
+    fontWeight: 600,
+    color: 'var(--color-accent-text)',
+    textDecoration: 'none',
+  },
+  featuredImage: {
+    width: '100%',
+    height: 140,
+    objectFit: 'cover',
+    display: 'block',
   },
 });
 
@@ -157,82 +183,13 @@ const GlobeIcon = () => (
 );
 
 // =============================================================================
-// Demo Data
-// =============================================================================
-
-const productItems = [
-  {
-    title: 'Analytics',
-    description: 'Track and analyze user behavior across your applications',
-    icon: <ChartIcon />,
-    href: '#analytics',
-  },
-  {
-    title: 'Platform',
-    description: 'End-to-end infrastructure for building at scale',
-    icon: <LayersIcon />,
-    href: '#platform',
-  },
-  {
-    title: 'Security',
-    description: 'Enterprise-grade protection for your data and users',
-    icon: <ShieldIcon />,
-    href: '#security',
-  },
-  {
-    title: 'Automation',
-    description: 'Streamline workflows with intelligent automation tools',
-    icon: <ZapIcon />,
-    href: '#automation',
-  },
-  {
-    title: 'Developer Tools',
-    description: 'APIs, SDKs, and CLI tools for seamless integration',
-    icon: <CodeIcon />,
-    href: '#dev-tools',
-  },
-  {
-    title: 'Global Network',
-    description: 'Low-latency edge infrastructure in 40+ regions',
-    icon: <GlobeIcon />,
-    href: '#network',
-  },
-];
-
-const solutionItems = [
-  {
-    title: 'Enterprise',
-    description: 'Solutions for large-scale organizations',
-    icon: <LayersIcon />,
-    href: '#enterprise',
-  },
-  {
-    title: 'Startups',
-    description: 'Get started fast with startup-friendly pricing',
-    icon: <ZapIcon />,
-    href: '#startups',
-  },
-  {
-    title: 'Developers',
-    description: 'Build with powerful APIs and documentation',
-    icon: <CodeIcon />,
-    href: '#developers',
-  },
-];
-
-// =============================================================================
 // Page
 // =============================================================================
 
-/**
- * Demo page for XDSTopNavMegaMenu — a nav item with a full-width mega menu.
- */
 export default function MegaMenuPage() {
   const [menuOpen1, setMenuOpen1] = useState(false);
   const [menuOpen2, setMenuOpen2] = useState(false);
   const [menuOpen3, setMenuOpen3] = useState(false);
-
-  const isAnyOpen1 = menuOpen1 || menuOpen2;
 
   return (
     <div {...stylex.props(styles.container)}>
@@ -241,8 +198,8 @@ export default function MegaMenuPage() {
           <XDSHeading level={1}>Mega Menu</XDSHeading>
           <XDSText type="body" color="secondary">
             A top nav variation with a full-width mega menu that appears on
-            hover. The nav bar and dropdown panel appear as one unified card.
-            Hover over &quot;Products&quot; or &quot;Solutions&quot; to see it.
+            hover. Uses the composed children API with XDSTopNavMegaMenuGroup,
+            XDSTopNavMegaMenuItem, and XDSTopNavMegaMenuFeatured.
           </XDSText>
         </XDSVStack>
 
@@ -263,31 +220,107 @@ export default function MegaMenuPage() {
                 <>
                   <XDSTopNavMegaMenu
                     label="Products"
-                    items={productItems}
-                    onOpenChange={setMenuOpen1}
-                    featured={{
-                      image:
-                        'https://images.unsplash.com/photo-1551434678-e076c223a692?w=560&h=280&fit=crop',
-                      imageAlt: 'Team collaboration',
-                      title: 'What\u2019s new in v4.0',
-                      description:
-                        'Explore the latest features including AI-powered analytics and real-time collaboration.',
-                      linkText: 'Read the announcement \u2192',
-                      linkHref: '#announcement',
-                    }}
-                  />
+                    onOpenChange={setMenuOpen1}>
+                    <XDSTopNavMegaMenuGroup>
+                      <XDSTopNavMegaMenuItem
+                        title="Analytics"
+                        description="Track and analyze user behavior across your applications"
+                        icon={<ChartIcon />}
+                        href="#analytics"
+                      />
+                      <XDSTopNavMegaMenuItem
+                        title="Platform"
+                        description="End-to-end infrastructure for building at scale"
+                        icon={<LayersIcon />}
+                        href="#platform"
+                      />
+                      <XDSTopNavMegaMenuItem
+                        title="Security"
+                        description="Enterprise-grade protection for your data and users"
+                        icon={<ShieldIcon />}
+                        href="#security"
+                      />
+                      <XDSTopNavMegaMenuItem
+                        title="Automation"
+                        description="Streamline workflows with intelligent automation tools"
+                        icon={<ZapIcon />}
+                        href="#automation"
+                      />
+                      <XDSTopNavMegaMenuItem
+                        title="Developer Tools"
+                        description="APIs, SDKs, and CLI tools for seamless integration"
+                        icon={<CodeIcon />}
+                        href="#dev-tools"
+                      />
+                      <XDSTopNavMegaMenuItem
+                        title="Global Network"
+                        description="Low-latency edge infrastructure in 40+ regions"
+                        icon={<GlobeIcon />}
+                        href="#network"
+                      />
+                    </XDSTopNavMegaMenuGroup>
+                    <XDSTopNavMegaMenuFeatured>
+                      <img
+                        src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=560&h=280&fit=crop"
+                        alt="Team collaboration"
+                        {...stylex.props(styles.featuredImage)}
+                      />
+                      <div {...stylex.props(styles.featuredBody)}>
+                        <span {...stylex.props(styles.featuredTitle)}>
+                          What&apos;s new in v4.0
+                        </span>
+                        <span {...stylex.props(styles.featuredDescription)}>
+                          Explore the latest features including AI-powered
+                          analytics and real-time collaboration.
+                        </span>
+                        <a
+                          href="#announcement"
+                          {...stylex.props(styles.featuredLink)}>
+                          Read the announcement →
+                        </a>
+                      </div>
+                    </XDSTopNavMegaMenuFeatured>
+                  </XDSTopNavMegaMenu>
                   <XDSTopNavMegaMenu
                     label="Solutions"
-                    items={solutionItems}
-                    onOpenChange={setMenuOpen2}
-                    featured={{
-                      title: 'Customer Stories',
-                      description:
-                        'See how leading companies are building with our platform.',
-                      linkText: 'View case studies \u2192',
-                      linkHref: '#case-studies',
-                    }}
-                  />
+                    onOpenChange={setMenuOpen2}>
+                    <XDSTopNavMegaMenuGroup>
+                      <XDSTopNavMegaMenuItem
+                        title="Enterprise"
+                        description="Solutions for large-scale organizations"
+                        icon={<LayersIcon />}
+                        href="#enterprise"
+                      />
+                      <XDSTopNavMegaMenuItem
+                        title="Startups"
+                        description="Get started fast with startup-friendly pricing"
+                        icon={<ZapIcon />}
+                        href="#startups"
+                      />
+                      <XDSTopNavMegaMenuItem
+                        title="Developers"
+                        description="Build with powerful APIs and documentation"
+                        icon={<CodeIcon />}
+                        href="#developers"
+                      />
+                    </XDSTopNavMegaMenuGroup>
+                    <XDSTopNavMegaMenuFeatured>
+                      <div {...stylex.props(styles.featuredBody)}>
+                        <span {...stylex.props(styles.featuredTitle)}>
+                          Customer Stories
+                        </span>
+                        <span {...stylex.props(styles.featuredDescription)}>
+                          See how leading companies are building with our
+                          platform.
+                        </span>
+                        <a
+                          href="#case-studies"
+                          {...stylex.props(styles.featuredLink)}>
+                          View case studies →
+                        </a>
+                      </div>
+                    </XDSTopNavMegaMenuFeatured>
+                  </XDSTopNavMegaMenu>
                   <XDSTopNavItem label="Learn" href="#" />
                 </>
               }
@@ -313,28 +346,28 @@ export default function MegaMenuPage() {
                   <XDSTopNavItem label="Home" href="#" isSelected />
                   <XDSTopNavMegaMenu
                     label="Features"
-                    items={[
-                      {
-                        title: 'Dashboard',
-                        description: 'Overview of your key metrics',
-                        icon: <ChartIcon />,
-                        href: '#dashboard',
-                      },
-                      {
-                        title: 'Integrations',
-                        description: 'Connect with your favorite tools',
-                        icon: <CodeIcon />,
-                        href: '#integrations',
-                      },
-                      {
-                        title: 'API Access',
-                        description: 'Programmatic access to all features',
-                        icon: <GlobeIcon />,
-                        href: '#api',
-                      },
-                    ]}
-                    onOpenChange={setMenuOpen3}
-                  />
+                    onOpenChange={setMenuOpen3}>
+                    <XDSTopNavMegaMenuGroup>
+                      <XDSTopNavMegaMenuItem
+                        title="Dashboard"
+                        description="Overview of your key metrics"
+                        icon={<ChartIcon />}
+                        href="#dashboard"
+                      />
+                      <XDSTopNavMegaMenuItem
+                        title="Integrations"
+                        description="Connect with your favorite tools"
+                        icon={<CodeIcon />}
+                        href="#integrations"
+                      />
+                      <XDSTopNavMegaMenuItem
+                        title="API Access"
+                        description="Programmatic access to all features"
+                        icon={<GlobeIcon />}
+                        href="#api"
+                      />
+                    </XDSTopNavMegaMenuGroup>
+                  </XDSTopNavMegaMenu>
                   <XDSTopNavItem label="Pricing" href="#" />
                 </>
               }

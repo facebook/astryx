@@ -72,19 +72,19 @@ export const docs = {
           {title: 'Reports', description: 'Generate reports', href: '/reports'},
         ]}
       />
-      <XDSTopNavMegaMenu
-        label="Solutions"
-        items={[
-          {title: 'Enterprise', description: 'For large teams', icon: <BuildingIcon />, href: '/enterprise'},
-          {title: 'Startups', description: 'Move fast', icon: <RocketIcon />, href: '/startups'},
-        ]}
-        featured={{
-          title: 'New: AI Features',
-          description: 'Explore our latest AI-powered tools.',
-          linkText: 'Learn more \u2192',
-          linkHref: '/ai',
-        }}
-      />
+      <XDSTopNavMegaMenu label="Solutions">
+        <XDSTopNavMegaMenuGroup>
+          <XDSTopNavMegaMenuItem title="Enterprise" description="For large teams" icon={<BuildingIcon />} href="/enterprise" />
+          <XDSTopNavMegaMenuItem title="Startups" description="Move fast" icon={<RocketIcon />} href="/startups" />
+        </XDSTopNavMegaMenuGroup>
+        <XDSTopNavMegaMenuFeatured>
+          <div style={{padding: 16}}>
+            <strong>New: AI Features</strong>
+            <p>Explore our latest AI-powered tools.</p>
+            <a href="/ai">Learn more \u2192</a>
+          </div>
+        </XDSTopNavMegaMenuFeatured>
+      </XDSTopNavMegaMenu>
     </>
   }
 />`,
@@ -396,7 +396,7 @@ export const docs = {
     {
       name: 'XDSTopNavMegaMenu',
       description:
-        'Navigation item that displays a full-width mega menu panel on hover, with items in a two-column grid and an optional featured content area.',
+        'Navigation item that displays a full-width mega menu panel on hover. Uses composed children API with XDSTopNavMegaMenuGroup, XDSTopNavMegaMenuItem, and XDSTopNavMegaMenuFeatured. Supports mobile drawer drill-down via render mode context.',
       props: [
         {
           name: 'label',
@@ -405,16 +405,9 @@ export const docs = {
           required: true,
         },
         {
-          name: 'items',
-          type: 'XDSTopNavMegaMenuItemData[]',
-          description: 'Menu items to display in the mega menu panel.',
-          required: true,
-        },
-        {
-          name: 'featured',
-          type: 'XDSTopNavMegaMenuFeatured',
-          description:
-            'Optional featured content displayed on the right side of the mega menu panel.',
+          name: 'children',
+          type: 'ReactNode',
+          description: 'Composed children: XDSTopNavMegaMenuGroup and XDSTopNavMegaMenuFeatured.',
         },
         {
           name: 'delay',
@@ -431,13 +424,6 @@ export const docs = {
           default: '250',
         },
         {
-          name: 'isSingleColumn',
-          type: 'boolean',
-          description:
-            'Whether to use a single-column layout for menu items instead of two columns.',
-          default: 'false',
-        },
-        {
           name: 'onOpenChange',
           type: '(isOpen: boolean) => void',
           description:
@@ -450,34 +436,32 @@ export const docs = {
           code: `<div style={{position: 'relative'}}>
   <XDSTopNav
     startContent={
-      <XDSTopNavMegaMenu
-        label="Solutions"
-        items={[
-          {title: 'Enterprise', description: 'For large teams', icon: <BuildingIcon />, href: '/enterprise'},
-          {title: 'Startups', description: 'Move fast', icon: <RocketIcon />, href: '/startups'},
-        ]}
-        featured={{
-          title: 'New: AI Features',
-          description: 'Explore our latest AI-powered tools.',
-          linkText: 'Learn more \u2192',
-          linkHref: '/ai',
-        }}
-      />
+      <XDSTopNavMegaMenu label="Solutions">
+        <XDSTopNavMegaMenuGroup>
+          <XDSTopNavMegaMenuItem title="Enterprise" description="For large teams" icon={<BuildingIcon />} href="/enterprise" />
+          <XDSTopNavMegaMenuItem title="Startups" description="Move fast" icon={<RocketIcon />} href="/startups" />
+        </XDSTopNavMegaMenuGroup>
+        <XDSTopNavMegaMenuFeatured>
+          <div style={{padding: 16}}>
+            <strong>New: AI Features</strong>
+            <p>Explore our latest AI-powered tools.</p>
+            <a href="/ai">Learn more \u2192</a>
+          </div>
+        </XDSTopNavMegaMenuFeatured>
+      </XDSTopNavMegaMenu>
     }
   />
 </div>`,
         },
         {
-          label: 'Single column layout',
-          code: `<XDSTopNavMegaMenu
-  label="Products"
-  isSingleColumn
-  items={[
-    {title: 'Analytics', description: 'Track behavior', icon: <ChartIcon />, href: '/analytics'},
-    {title: 'Messaging', description: 'Real-time comms', icon: <ChatIcon />, href: '/messaging'},
-    {title: 'Storage', description: 'Manage your data', icon: <DatabaseIcon />, href: '/storage'},
-  ]}
-/>`,
+          label: 'Without featured content',
+          code: `<XDSTopNavMegaMenu label="Products">
+  <XDSTopNavMegaMenuGroup>
+    <XDSTopNavMegaMenuItem title="Analytics" description="Track behavior" icon={<ChartIcon />} href="/analytics" />
+    <XDSTopNavMegaMenuItem title="Messaging" description="Real-time comms" icon={<ChatIcon />} href="/messaging" />
+    <XDSTopNavMegaMenuItem title="Storage" description="Manage your data" icon={<DatabaseIcon />} href="/storage" />
+  </XDSTopNavMegaMenuGroup>
+</XDSTopNavMegaMenu>`,
         },
       ],
     },
@@ -557,19 +541,19 @@ export const docsZh = {
           {title: 'Reports', description: 'Generate reports', href: '/reports'},
         ]}
       />
-      <XDSTopNavMegaMenu
-        label="Solutions"
-        items={[
-          {title: 'Enterprise', description: 'For large teams', icon: <BuildingIcon />, href: '/enterprise'},
-          {title: 'Startups', description: 'Move fast', icon: <RocketIcon />, href: '/startups'},
-        ]}
-        featured={{
-          title: 'New: AI Features',
-          description: 'Explore our latest AI-powered tools.',
-          linkText: 'Learn more \u2192',
-          linkHref: '/ai',
-        }}
-      />
+      <XDSTopNavMegaMenu label="Solutions">
+        <XDSTopNavMegaMenuGroup>
+          <XDSTopNavMegaMenuItem title="Enterprise" description="For large teams" icon={<BuildingIcon />} href="/enterprise" />
+          <XDSTopNavMegaMenuItem title="Startups" description="Move fast" icon={<RocketIcon />} href="/startups" />
+        </XDSTopNavMegaMenuGroup>
+        <XDSTopNavMegaMenuFeatured>
+          <div style={{padding: 16}}>
+            <strong>New: AI Features</strong>
+            <p>Explore our latest AI-powered tools.</p>
+            <a href="/ai">Learn more \u2192</a>
+          </div>
+        </XDSTopNavMegaMenuFeatured>
+      </XDSTopNavMegaMenu>
     </>
   }
 />`,
@@ -881,7 +865,7 @@ export const docsZh = {
     {
       name: 'XDSTopNavMegaMenu',
       description:
-        '导航项，在悬停时显示全宽超级菜单面板，包含双列网格布局的项目和可选的特色内容区域。',
+        '导航项，在悬停时显示全宽超级菜单面板。使用组合子组件 API：XDSTopNavMegaMenuGroup、XDSTopNavMegaMenuItem 和 XDSTopNavMegaMenuFeatured。支持移动端抽屉钻取导航。',
       props: [
         {
           name: 'label',
@@ -890,16 +874,9 @@ export const docsZh = {
           required: true,
         },
         {
-          name: 'items',
-          type: 'XDSTopNavMegaMenuItemData[]',
-          description: '在超级菜单面板中显示的菜单项。',
-          required: true,
-        },
-        {
-          name: 'featured',
-          type: 'XDSTopNavMegaMenuFeatured',
-          description:
-            '在超级菜单面板右侧显示的可选特色内容。',
+          name: 'children',
+          type: 'ReactNode',
+          description: '组合子组件：XDSTopNavMegaMenuGroup 和 XDSTopNavMegaMenuFeatured。',
         },
         {
           name: 'delay',
@@ -916,13 +893,6 @@ export const docsZh = {
           default: '250',
         },
         {
-          name: 'isSingleColumn',
-          type: 'boolean',
-          description:
-            '是否对菜单项使用单列布局而非双列。',
-          default: 'false',
-        },
-        {
           name: 'onOpenChange',
           type: '(isOpen: boolean) => void',
           description:
@@ -935,34 +905,32 @@ export const docsZh = {
           code: `<div style={{position: 'relative'}}>
   <XDSTopNav
     startContent={
-      <XDSTopNavMegaMenu
-        label="Solutions"
-        items={[
-          {title: 'Enterprise', description: 'For large teams', icon: <BuildingIcon />, href: '/enterprise'},
-          {title: 'Startups', description: 'Move fast', icon: <RocketIcon />, href: '/startups'},
-        ]}
-        featured={{
-          title: 'New: AI Features',
-          description: 'Explore our latest AI-powered tools.',
-          linkText: 'Learn more \u2192',
-          linkHref: '/ai',
-        }}
-      />
+      <XDSTopNavMegaMenu label="Solutions">
+        <XDSTopNavMegaMenuGroup>
+          <XDSTopNavMegaMenuItem title="Enterprise" description="For large teams" icon={<BuildingIcon />} href="/enterprise" />
+          <XDSTopNavMegaMenuItem title="Startups" description="Move fast" icon={<RocketIcon />} href="/startups" />
+        </XDSTopNavMegaMenuGroup>
+        <XDSTopNavMegaMenuFeatured>
+          <div style={{padding: 16}}>
+            <strong>New: AI Features</strong>
+            <p>Explore our latest AI-powered tools.</p>
+            <a href="/ai">Learn more \u2192</a>
+          </div>
+        </XDSTopNavMegaMenuFeatured>
+      </XDSTopNavMegaMenu>
     }
   />
 </div>`,
         },
         {
-          label: '单列布局',
-          code: `<XDSTopNavMegaMenu
-  label="Products"
-  isSingleColumn
-  items={[
-    {title: 'Analytics', description: 'Track behavior', icon: <ChartIcon />, href: '/analytics'},
-    {title: 'Messaging', description: 'Real-time comms', icon: <ChatIcon />, href: '/messaging'},
-    {title: 'Storage', description: 'Manage your data', icon: <DatabaseIcon />, href: '/storage'},
-  ]}
-/>`,
+          label: '无特色内容',
+          code: `<XDSTopNavMegaMenu label="Products">
+  <XDSTopNavMegaMenuGroup>
+    <XDSTopNavMegaMenuItem title="Analytics" description="Track behavior" icon={<ChartIcon />} href="/analytics" />
+    <XDSTopNavMegaMenuItem title="Messaging" description="Real-time comms" icon={<ChatIcon />} href="/messaging" />
+    <XDSTopNavMegaMenuItem title="Storage" description="Manage your data" icon={<DatabaseIcon />} href="/storage" />
+  </XDSTopNavMegaMenuGroup>
+</XDSTopNavMegaMenu>`,
         },
       ],
     },
@@ -1046,14 +1014,12 @@ export const docsDense = {
     },
     {
       name: 'XDSTopNavMegaMenu',
-      description: 'Nav item w/ full-width mega menu panel on hover; 2-column grid+optional featured area.',
+      description: 'Nav item w/ full-width mega menu panel on hover. Composed children API w/ Group, MenuItem, Featured. Mobile drawer drill-down.',
       propDescriptions: {
         label: 'Trigger button visible label.',
-        items: 'Menu items in mega panel.',
-        featured: 'Optional featured content on right side of mega panel.',
+        children: 'Composed children: XDSTopNavMegaMenuGroup+XDSTopNavMegaMenuFeatured.',
         delay: 'Show delay ms on hover.',
         hideDelay: 'Hide delay ms after mouse leaves.',
-        isSingleColumn: 'Single-column layout instead of two columns.',
         onOpenChange: 'Fired on open/close. For coordinating wrapper styles.',
       },
     },

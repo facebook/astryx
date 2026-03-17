@@ -1,12 +1,17 @@
 /**
  * @file XDSTopNavMegaMenu.tsx
- * @input Uses React, StyleX, useXDSLayer (Popover API + CSS anchor positioning)
+ * @input Uses React, StyleX, useXDSPopover (Popover API + CSS anchor positioning)
  * @output Exports XDSTopNavMegaMenu component and related types
  * @position Navigation item with hover-triggered full-width mega menu for XDSTopNav
  *
- * Uses useXDSLayer to promote the panel to the top layer via the Popover API,
+ * Uses useXDSPopover to promote the panel to the top layer via the Popover API,
  * eliminating z-index stacking. CSS anchor positioning places the panel below
  * the nav wrapper.
+ *
+ * Supports three render modes via XDSTopNavRenderContext:
+ * - 'default': desktop popover mega menu (hover/click triggered)
+ * - 'mobile-bar': returns null (hidden in compact mobile bar)
+ * - 'drawer': drill-down navigation with back button
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/TopNav/TopNav.doc.mjs
@@ -15,7 +20,15 @@
 
 'use client';
 
-import {useCallback, useEffect, useRef, type ReactNode} from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  Children,
+  isValidElement,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -32,6 +45,10 @@ import {XDSGrid} from '../Grid/XDSGrid';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {xdsClassName, mergeProps} from '../utils';
 import {useTopNavSlot} from './TopNavContext';
+import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
+import type {XDSTopNavMegaMenuGroupProps} from './XDSTopNavMegaMenuGroup';
+import type {XDSTopNavMegaMenuItemProps} from './XDSTopNavMegaMenuItem';
+import type {XDSTopNavMegaMenuFeaturedProps} from './XDSTopNavMegaMenuFeatured';
 
 // =============================================================================
 // Styles
@@ -84,7 +101,6 @@ const styles = stylex.create({
     transform: 'rotate(180deg)',
   },
   // Animation styles applied to the layer's popover element.
-  // Uses :popover-open for enter and @starting-style for initial state.
   panelAnimation: {
     backgroundColor: 'transparent',
     opacity: {
@@ -196,38 +212,125 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
   },
-  featuredImage: {
+  // =========================================================================
+  // Drawer mode styles
+  // =========================================================================
+  drawerTrigger: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     width: '100%',
-    height: 140,
-    objectFit: 'cover',
-    display: 'block',
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
+    borderRadius: radiusVars['--radius-element'],
+    fontSize: textSizeVars['--text-base'],
+    lineHeight: lineHeightVars['--leading-base'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    color: colorVars['--color-text-secondary'],
+    textDecoration: 'none',
+    cursor: 'pointer',
+    boxSizing: 'border-box',
+    border: 'none',
+    fontFamily: 'inherit',
+    backgroundColor: {
+      default: 'transparent',
+      ':hover': {
+        '@media (hover: hover)': colorVars['--color-hover-overlay'],
+      },
+      ':active': colorVars['--color-pressed-overlay'],
+    },
+    outline: {
+      default: null,
+      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+    },
   },
-  featuredBody: {
+  drawerChevron: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    color: colorVars['--color-icon-secondary'],
+  },
+  drawerPanel: {
     display: 'flex',
     flexDirection: 'column',
-    gap: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-4'],
-    paddingInline: spacingVars['--spacing-4'],
+    width: '100%',
   },
-  featuredTitle: {
+  drawerBackButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
+    borderRadius: radiusVars['--radius-element'],
     fontSize: textSizeVars['--text-base'],
     lineHeight: lineHeightVars['--leading-base'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-primary'],
-  },
-  featuredDescription: {
-    fontSize: textSizeVars['--text-sm'],
-    lineHeight: lineHeightVars['--leading-snug'],
-    color: colorVars['--color-text-secondary'],
-  },
-  featuredLink: {
-    fontSize: textSizeVars['--text-sm'],
-    lineHeight: lineHeightVars['--leading-snug'],
-    fontWeight: fontWeightVars['--font-weight-semibold'],
-    color: colorVars['--color-accent-text'],
     textDecoration: 'none',
     cursor: 'pointer',
-    marginBlockStart: spacingVars['--spacing-1'],
+    boxSizing: 'border-box',
+    border: 'none',
+    fontFamily: 'inherit',
+    backgroundColor: {
+      default: 'transparent',
+      ':hover': {
+        '@media (hover: hover)': colorVars['--color-hover-overlay'],
+      },
+      ':active': colorVars['--color-pressed-overlay'],
+    },
+    outline: {
+      default: null,
+      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+    },
+  },
+  drawerBackIcon: {
+    display: 'inline-flex',
+    alignItems: 'center',
+  },
+  drawerItemList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-1'],
+    paddingInlineStart: spacingVars['--spacing-3'],
+  },
+  drawerItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-3'],
+    width: '100%',
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
+    borderRadius: radiusVars['--radius-element'],
+    fontSize: textSizeVars['--text-base'],
+    lineHeight: lineHeightVars['--leading-base'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    color: colorVars['--color-text-secondary'],
+    textDecoration: 'none',
+    cursor: 'pointer',
+    boxSizing: 'border-box',
+    border: 'none',
+    fontFamily: 'inherit',
+    backgroundColor: {
+      default: 'transparent',
+      ':hover': {
+        '@media (hover: hover)': colorVars['--color-hover-overlay'],
+      },
+      ':active': colorVars['--color-pressed-overlay'],
+    },
+    outline: {
+      default: null,
+      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+    },
+  },
+  drawerItemIcon: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 32,
+    height: 32,
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-deemphasized'],
+    flexShrink: 0,
+    color: colorVars['--color-icon-secondary'],
   },
 });
 
@@ -235,56 +338,15 @@ const styles = stylex.create({
 // Types
 // =============================================================================
 
-/**
- * An item in the mega menu.
- */
-export interface XDSTopNavMegaMenuItemData {
-  /** Display title for the menu item. */
-  title: string;
-  /** Optional description text displayed below the title. */
-  description?: string;
-  /** Optional icon element displayed to the left. */
-  icon?: ReactNode;
-  /** URL to navigate to when clicked. */
-  href?: string;
-  /** Callback when item is clicked. */
-  onClick?: () => void;
-}
-
-/**
- * Featured content for the right side of the mega menu.
- */
-export interface XDSTopNavMegaMenuFeatured {
-  /** Image URL for the featured area. */
-  image?: string;
-  /** Alt text for the featured image. */
-  imageAlt?: string;
-  /** Featured content title. */
-  title: string;
-  /** Featured content description. */
-  description?: string;
-  /** Call-to-action link text. */
-  linkText?: string;
-  /** Call-to-action link URL. */
-  linkHref?: string;
-  /** Callback when CTA is clicked. */
-  onLinkClick?: () => void;
-  /** Custom content to render instead of the default layout. */
-  children?: ReactNode;
-}
-
 export interface XDSTopNavMegaMenuProps {
   /** The visible label for the nav item trigger. */
   label: string;
-  /** Menu items to display in the mega menu panel. */
-  items: XDSTopNavMegaMenuItemData[];
-  /** Optional featured content on the right side. */
-  featured?: XDSTopNavMegaMenuFeatured;
+  /** Composed children: XDSTopNavMegaMenuGroup and XDSTopNavMegaMenuFeatured. */
+  children?: ReactNode;
   /** Delay before showing the menu on hover (ms). @default 150 */
   delay?: number;
   /** Delay before hiding the menu after mouse leaves (ms). @default 250 */
   hideDelay?: number;
-  /** Whether to use single-column layout for items. @default false */
   /**
    * Callback fired when the mega menu opens or closes.
    * Useful for coordinating wrapper styles (e.g. hiding other shadows).
@@ -293,6 +355,47 @@ export interface XDSTopNavMegaMenuProps {
 }
 
 // =============================================================================
+// Helpers — extract children by displayName
+// =============================================================================
+
+interface ParsedChildren {
+  groups: Array<{items: XDSTopNavMegaMenuItemProps[]}>;
+  featuredContent: ReactNode | null;
+}
+
+function parseChildren(children: ReactNode): ParsedChildren {
+  const groups: Array<{items: XDSTopNavMegaMenuItemProps[]}> = [];
+  let featuredContent: ReactNode | null = null;
+
+  Children.forEach(children, child => {
+    if (!isValidElement(child)) return;
+
+    const displayName =
+      (child.type as {displayName?: string}).displayName ?? '';
+
+    if (displayName === 'XDSTopNavMegaMenuGroup') {
+      const groupProps = child.props as XDSTopNavMegaMenuGroupProps;
+      const items: XDSTopNavMegaMenuItemProps[] = [];
+
+      Children.forEach(groupProps.children, groupChild => {
+        if (!isValidElement(groupChild)) return;
+        const itemDisplayName =
+          (groupChild.type as {displayName?: string}).displayName ?? '';
+        if (itemDisplayName === 'XDSTopNavMegaMenuItem') {
+          items.push(groupChild.props as XDSTopNavMegaMenuItemProps);
+        }
+      });
+
+      groups.push({items});
+    } else if (displayName === 'XDSTopNavMegaMenuFeatured') {
+      const featuredProps = child.props as XDSTopNavMegaMenuFeaturedProps;
+      featuredContent = featuredProps.children;
+    }
+  });
+
+  return {groups, featuredContent};
+}
+
 // =============================================================================
 // XDSTopNavMegaMenu
 // =============================================================================
@@ -300,39 +403,90 @@ export interface XDSTopNavMegaMenuProps {
 /**
  * A navigation item that displays a full-width mega menu on hover.
  *
- * Renders as a nav item trigger in XDSTopNav's startContent slot. On hover,
- * shows a full-width panel below the nav bar with menu items organized in
- * columns and an optional featured content area on the right.
+ * Uses a composed children API with sub-components:
+ * - `XDSTopNavMegaMenuGroup` — wraps items in a responsive grid
+ * - `XDSTopNavMegaMenuItem` — individual menu item
+ * - `XDSTopNavMegaMenuFeatured` — featured content area
  *
- * The panel is promoted to the top layer via the Popover API (through
- * useXDSLayer) and positioned via CSS anchor positioning relative to the
- * parent `<nav>` element (the XDSTopNav).
+ * Supports three render modes via XDSTopNavRenderContext:
+ * - `'default'`: desktop popover with hover/click trigger
+ * - `'mobile-bar'`: hidden (returns null)
+ * - `'drawer'`: inline drill-down with back button
  *
  * @example
  * ```
  * <XDSTopNav
  *   startContent={
- *     <XDSTopNavMegaMenu
- *       label="Products"
- *       items={[
- *         { title: 'Analytics', description: 'Track behavior', icon: <ChartIcon /> },
- *         { title: 'Messaging', description: 'Real-time comms', icon: <ChatIcon /> },
- *       ]}
- *       featured={{
- *         title: 'New: AI Features',
- *         description: 'Explore our latest AI-powered tools.',
- *         linkText: 'Learn more \u2192',
- *         linkHref: '/ai',
- *       }}
- *     />
+ *     <XDSTopNavMegaMenu label="Products">
+ *       <XDSTopNavMegaMenuGroup>
+ *         <XDSTopNavMegaMenuItem
+ *           title="Analytics"
+ *           description="Track behavior"
+ *           icon={<ChartIcon />}
+ *           href="/analytics"
+ *         />
+ *         <XDSTopNavMegaMenuItem
+ *           title="Messaging"
+ *           description="Real-time comms"
+ *           icon={<ChatIcon />}
+ *           href="/messaging"
+ *         />
+ *       </XDSTopNavMegaMenuGroup>
+ *       <XDSTopNavMegaMenuFeatured>
+ *         <strong>New: AI Features</strong>
+ *         <p>Explore our latest AI-powered tools.</p>
+ *       </XDSTopNavMegaMenuFeatured>
+ *     </XDSTopNavMegaMenu>
  *   }
  * />
  * ```
  */
 export function XDSTopNavMegaMenu({
   label,
-  items,
-  featured,
+  children,
+  delay = 150,
+  hideDelay = 250,
+  onOpenChange,
+}: XDSTopNavMegaMenuProps) {
+  const renderMode = useXDSTopNavRenderMode();
+
+  // =========================================================================
+  // Mobile-bar mode — hidden
+  // =========================================================================
+  if (renderMode === 'mobile-bar') {
+    return null;
+  }
+
+  // =========================================================================
+  // Drawer mode — drill-down
+  // =========================================================================
+  if (renderMode === 'drawer') {
+    return <DrawerMegaMenu label={label}>{children}</DrawerMegaMenu>;
+  }
+
+  // =========================================================================
+  // Default mode — desktop popover
+  // =========================================================================
+  return (
+    <DefaultMegaMenu
+      label={label}
+      delay={delay}
+      hideDelay={hideDelay}
+      onOpenChange={onOpenChange}>
+      {children}
+    </DefaultMegaMenu>
+  );
+}
+
+XDSTopNavMegaMenu.displayName = 'XDSTopNavMegaMenu';
+
+// =============================================================================
+// DefaultMegaMenu — desktop popover mode
+// =============================================================================
+
+function DefaultMegaMenu({
+  label,
+  children,
   delay = 150,
   hideDelay = 250,
   onOpenChange,
@@ -412,6 +566,11 @@ export function XDSTopNavMegaMenu({
     };
   }, [clearTimeouts]);
 
+  const {groups, featuredContent} = parseChildren(children);
+
+  // Flatten all items from all groups for the grid
+  const allItems = groups.flatMap(g => g.items);
+
   return (
     <>
       <button
@@ -444,75 +603,44 @@ export function XDSTopNavMegaMenu({
           {...stylex.props(styles.panelContainer)}>
           <div {...stylex.props(styles.panelContent)}>
             {/* Menu items section */}
-            <div {...stylex.props(styles.menuWrapper)}>
-              <XDSGrid columns={2} minChildWidth={200} gap={2}>
-                {items.map((item, index) => {
-                  const Element = item.href ? 'a' : 'div';
-                  return (
-                    <Element
-                      key={index}
-                      role="menuitem"
-                      tabIndex={popover.isOpen ? 0 : -1}
-                      href={item.href}
-                      onClick={item.onClick}
-                      {...stylex.props(styles.menuItem)}>
-                      {item.icon && (
-                        <div {...stylex.props(styles.menuItemIcon)}>
-                          {item.icon}
-                        </div>
-                      )}
-                      <div {...stylex.props(styles.menuItemContent)}>
-                        <span {...stylex.props(styles.menuItemTitle)}>
-                          {item.title}
-                        </span>
-                        {item.description && (
-                          <span {...stylex.props(styles.menuItemDescription)}>
-                            {item.description}
-                          </span>
+            {allItems.length > 0 && (
+              <div {...stylex.props(styles.menuWrapper)}>
+                <XDSGrid columns={2} minChildWidth={200} gap={2}>
+                  {allItems.map((item, index) => {
+                    const Element = item.href ? 'a' : 'div';
+                    return (
+                      <Element
+                        key={index}
+                        role="menuitem"
+                        tabIndex={popover.isOpen ? 0 : -1}
+                        href={item.href}
+                        onClick={item.onClick}
+                        {...stylex.props(styles.menuItem)}>
+                        {item.icon && (
+                          <div {...stylex.props(styles.menuItemIcon)}>
+                            {item.icon}
+                          </div>
                         )}
-                      </div>
-                    </Element>
-                  );
-                })}
-              </XDSGrid>
-            </div>
+                        <div {...stylex.props(styles.menuItemContent)}>
+                          <span {...stylex.props(styles.menuItemTitle)}>
+                            {item.title}
+                          </span>
+                          {item.description && (
+                            <span {...stylex.props(styles.menuItemDescription)}>
+                              {item.description}
+                            </span>
+                          )}
+                        </div>
+                      </Element>
+                    );
+                  })}
+                </XDSGrid>
+              </div>
+            )}
 
             {/* Featured section */}
-            {featured && (
-              <div {...stylex.props(styles.featured)}>
-                {featured.children ? (
-                  featured.children
-                ) : (
-                  <>
-                    {featured.image && (
-                      <img
-                        src={featured.image}
-                        alt={featured.imageAlt ?? ''}
-                        {...stylex.props(styles.featuredImage)}
-                      />
-                    )}
-                    <div {...stylex.props(styles.featuredBody)}>
-                      <span {...stylex.props(styles.featuredTitle)}>
-                        {featured.title}
-                      </span>
-                      {featured.description && (
-                        <span {...stylex.props(styles.featuredDescription)}>
-                          {featured.description}
-                        </span>
-                      )}
-                      {featured.linkText && (
-                        <a
-                          href={featured.linkHref}
-                          onClick={featured.onLinkClick}
-                          tabIndex={popover.isOpen ? 0 : -1}
-                          {...stylex.props(styles.featuredLink)}>
-                          {featured.linkText}
-                        </a>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
+            {featuredContent != null && (
+              <div {...stylex.props(styles.featured)}>{featuredContent}</div>
             )}
           </div>
         </div>,
@@ -526,4 +654,74 @@ export function XDSTopNavMegaMenu({
   );
 }
 
-XDSTopNavMegaMenu.displayName = 'XDSTopNavMegaMenu';
+// =============================================================================
+// DrawerMegaMenu — mobile drawer drill-down mode
+// =============================================================================
+
+function DrawerMegaMenu({
+  label,
+  children,
+}: Pick<XDSTopNavMegaMenuProps, 'label' | 'children'>) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const {groups} = parseChildren(children);
+  const allItems = groups.flatMap(g => g.items);
+
+  if (isExpanded) {
+    return (
+      <div {...stylex.props(styles.drawerPanel)}>
+        {/* Back button */}
+        <button
+          type="button"
+          onClick={() => setIsExpanded(false)}
+          {...mergeProps(
+            xdsClassName('top-nav-mega-menu', {mode: 'drawer-back'}),
+            stylex.props(styles.drawerBackButton),
+          )}>
+          <span {...stylex.props(styles.drawerBackIcon)}>
+            {getIcon('chevronLeft')}
+          </span>
+          {label}
+        </button>
+
+        {/* Items list */}
+        <div {...stylex.props(styles.drawerItemList)}>
+          {allItems.map((item, index) => {
+            const Element = item.href ? 'a' : 'button';
+            const elementProps =
+              Element === 'button' ? {type: 'button' as const} : {};
+            return (
+              <Element
+                key={index}
+                href={item.href}
+                onClick={item.onClick}
+                {...elementProps}
+                {...stylex.props(styles.drawerItem)}>
+                {item.icon && (
+                  <div {...stylex.props(styles.drawerItemIcon)}>
+                    {item.icon}
+                  </div>
+                )}
+                {item.title}
+              </Element>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setIsExpanded(true)}
+      {...mergeProps(
+        xdsClassName('top-nav-mega-menu', {mode: 'drawer'}),
+        stylex.props(styles.drawerTrigger),
+      )}>
+      {label}
+      <span {...stylex.props(styles.drawerChevron)}>
+        {getIcon('chevronRight')}
+      </span>
+    </button>
+  );
+}
