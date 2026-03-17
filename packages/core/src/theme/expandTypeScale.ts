@@ -200,8 +200,14 @@ export function expandTypeScale(config: XDSTypeScaleConfig): TypeScaleTokens {
   const tokens: TypeScaleTokens = {};
 
   // Merge weight overrides with defaults
-  const headingWeights = {...DEFAULT_HEADING_WEIGHTS, ...weights?.heading};
-  const textWeights = {...DEFAULT_TEXT_WEIGHTS, ...weights?.text};
+  const headingWeights = {
+    ...DEFAULT_HEADING_WEIGHTS,
+    ...(weights?.heading as Record<number, string> | undefined),
+  };
+  const textWeights = {
+    ...DEFAULT_TEXT_WEIGHTS,
+    ...(weights?.text as Record<string, string> | undefined),
+  };
 
   // Heading tokens
   for (const [levelStr, step] of Object.entries(HEADING_STEPS)) {
