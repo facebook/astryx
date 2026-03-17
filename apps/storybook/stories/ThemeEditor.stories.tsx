@@ -13,6 +13,8 @@ import {XDSTabList} from '@xds/core/TabList';
 import {XDSDialog} from '@xds/core/Dialog';
 import {XDSToken} from '@xds/core/Token';
 import {XDSSlider} from '@xds/core/Slider';
+import {XDSSelector} from '@xds/core/Selector';
+import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
@@ -1381,26 +1383,16 @@ function ThemeEditorComponent() {
       return (
         <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
           {/* Color category selector */}
-          <div style={{marginBottom: '8px'}}>
-            <select
-              value={activeColorCategory}
-              onChange={e => setActiveColorCategory(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                fontSize: '14px',
-                border: '1px solid var(--color-divider-emphasized)',
-                borderRadius: '8px',
-                backgroundColor: 'var(--color-surface)',
-                color: 'var(--color-text-primary)',
-              }}>
-              {Object.keys(COLOR_CATEGORIES).map(category => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-          </div>
+          <XDSSelector
+            label="Color Category"
+            isLabelHidden
+            options={Object.keys(COLOR_CATEGORIES).map(category => ({
+              value: category,
+              label: category,
+            }))}
+            value={activeColorCategory}
+            onChange={v => setActiveColorCategory(v)}
+          />
 
           {categoryTokens.map(tokenName => (
             <ColorSwatch
@@ -1482,73 +1474,49 @@ function ThemeEditorComponent() {
           <XDSText type="label" color="secondary">
             Type Scale
           </XDSText>
-          <div>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                marginBottom: '2px',
-              }}>
-              <XDSText type="label">Base Size</XDSText>
-              <XDSText type="code">{typeScaleBase}px</XDSText>
-            </div>
-            <input
-              type="range"
-              min="10"
-              max="24"
-              step="1"
-              value={typeScaleBase}
-              onChange={e =>
-                applyTypeScale(Number(e.target.value), typeScaleRatio)
-              }
-              style={{width: '100%'}}
-            />
-          </div>
-          <div>
-            <XDSText type="label" display="block" style={{marginBottom: '4px'}}>
-              Scale Ratio
-            </XDSText>
-            <select
-              value={isCustomRatio ? 'custom' : String(typeScaleRatio)}
-              onChange={e => {
-                if (e.target.value === 'custom') return;
-                applyTypeScale(typeScaleBase, Number(e.target.value));
-              }}
-              style={{
-                width: '100%',
-                padding: '6px 8px',
-                fontSize: '14px',
-                fontFamily: 'var(--font-body)',
-                border: '1px solid var(--color-divider-emphasized)',
-                borderRadius: 'var(--radius-element)',
-                backgroundColor: 'var(--color-surface)',
-                color: 'var(--color-text-primary)',
-              }}>
-              {RATIO_OPTIONS.map(opt => (
-                <option key={opt.value} value={String(opt.value)}>
-                  {opt.label}
-                </option>
-              ))}
-              <option value="custom">
-                {isCustomRatio
+          <XDSSlider
+            label="Base Size"
+            min={10}
+            max={24}
+            step={1}
+            value={typeScaleBase}
+            onChange={v => applyTypeScale(v, typeScaleRatio)}
+            formatValue={v => `${v}px`}
+            valueDisplay="text"
+          />
+          <XDSSelector
+            label="Scale Ratio"
+            options={[
+              ...RATIO_OPTIONS.map(opt => ({
+                value: String(opt.value),
+                label: opt.label,
+              })),
+              {
+                value: 'custom',
+                label: isCustomRatio
                   ? `Custom — ${typeScaleRatio.toFixed(3)}`
-                  : 'Custom…'}
-              </option>
-            </select>
-            {isCustomRatio && (
-              <input
-                type="range"
-                min="1.05"
-                max="1.7"
-                step="0.001"
-                value={typeScaleRatio}
-                onChange={e =>
-                  applyTypeScale(typeScaleBase, Number(e.target.value))
-                }
-                style={{width: '100%', marginTop: '6px'}}
-              />
-            )}
-          </div>
+                  : 'Custom…',
+              },
+            ]}
+            value={isCustomRatio ? 'custom' : String(typeScaleRatio)}
+            onChange={v => {
+              if (v === 'custom') return;
+              applyTypeScale(typeScaleBase, Number(v));
+            }}
+          />
+          {isCustomRatio && (
+            <XDSSlider
+              label="Custom Ratio"
+              isLabelHidden
+              min={1050}
+              max={1700}
+              step={1}
+              value={Math.round(typeScaleRatio * 1000)}
+              onChange={v => applyTypeScale(typeScaleBase, v / 1000)}
+              formatValue={v => (v / 1000).toFixed(3)}
+              valueDisplay="text"
+            />
+          )}
           <div>
             <XDSText
               type="supporting"
@@ -1669,63 +1637,50 @@ function ThemeEditorComponent() {
           {typeScaleSection}
 
           {/* Typography category selector */}
-          <div style={{marginBottom: '8px'}}>
-            <select
-              value={activeTypographyCategory}
-              onChange={e => setActiveTypographyCategory(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                fontSize: '14px',
-                border: '1px solid var(--color-divider-emphasized)',
-                borderRadius: '8px',
-                backgroundColor: 'var(--color-surface)',
-                color: 'var(--color-text-primary)',
-              }}>
-              <optgroup label="Semantic Styles">
-                {Object.keys(TYPOGRAPHY_CATEGORIES)
-                  .filter(k => {
-                    const v = TYPOGRAPHY_CATEGORIES[
-                      k as keyof typeof TYPOGRAPHY_CATEGORIES
-                    ] as TypographyCategoryValue;
-                    return !Array.isArray(v);
-                  })
-                  .map(category => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-              </optgroup>
-              <optgroup label="Raw Tokens">
-                {Object.keys(TYPOGRAPHY_CATEGORIES)
-                  .filter(k => {
-                    const v = TYPOGRAPHY_CATEGORIES[
-                      k as keyof typeof TYPOGRAPHY_CATEGORIES
-                    ] as TypographyCategoryValue;
-                    return Array.isArray(v);
-                  })
-                  .map(category => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-              </optgroup>
-            </select>
-          </div>
+          <XDSSelector
+            label="Typography Category"
+            isLabelHidden
+            options={[
+              {
+                type: 'section' as const,
+                title: 'Semantic Styles',
+                options: Object.keys(TYPOGRAPHY_CATEGORIES)
+                  .filter(
+                    k =>
+                      !Array.isArray(
+                        TYPOGRAPHY_CATEGORIES[
+                          k as keyof typeof TYPOGRAPHY_CATEGORIES
+                        ],
+                      ),
+                  )
+                  .map(category => ({value: category, label: category})),
+              },
+              {
+                type: 'section' as const,
+                title: 'Raw Tokens',
+                options: Object.keys(TYPOGRAPHY_CATEGORIES)
+                  .filter(k =>
+                    Array.isArray(
+                      TYPOGRAPHY_CATEGORIES[
+                        k as keyof typeof TYPOGRAPHY_CATEGORIES
+                      ],
+                    ),
+                  )
+                  .map(category => ({value: category, label: category})),
+              },
+            ]}
+            value={activeTypographyCategory}
+            onChange={v => setActiveTypographyCategory(v)}
+          />
 
           {/* Description for semantic styles */}
           {categoryDescription && (
-            <div
-              style={{
-                padding: '8px 12px',
-                borderRadius: '8px',
-                backgroundColor: 'var(--color-accent-deemphasized)',
-                fontSize: '12px',
-                color: 'var(--color-text-secondary)',
-                marginBottom: '4px',
-              }}>
+            <XDSText
+              type="supporting"
+              display="block"
+              style={{marginBottom: '4px'}}>
               {categoryDescription}
-            </div>
+            </XDSText>
           )}
 
           {/* Sample text preview for semantic styles */}
@@ -1841,7 +1796,7 @@ function ThemeEditorComponent() {
         {/* Token group tabs */}
         <div
           style={{
-            padding: '12px 16px',
+            padding: '16px 16px 12px',
             borderBottom: '1px solid var(--color-divider)',
             display: 'flex',
             gap: '4px',
