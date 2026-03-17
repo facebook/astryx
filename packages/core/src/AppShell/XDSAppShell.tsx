@@ -763,15 +763,7 @@ export function XDSAppShell({
             2. Config content: render inside AppShell-managed drawer
             3. Auto: wrap sideNav in a managed drawer */}
         {shouldRenderMobileNavReactNode && mobileNavReactNode}
-        {shouldRenderConfigContent && (
-          <XDSMobileNav
-            isOpen={isMobileNavOpen}
-            onOpenChange={open => setMobileNavOpen(open)}
-            width={sideNavWidth}
-            data-testid="mobile-nav-custom">
-            {mobileNavConfigContent}
-          </XDSMobileNav>
-        )}
+        {shouldRenderConfigContent && mobileNavConfigContent}
         {shouldRenderAutoMobileNav && (
           <XDSMobileNav
             isOpen={isMobileNavOpen}
