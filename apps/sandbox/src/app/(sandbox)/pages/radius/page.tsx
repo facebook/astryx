@@ -2,7 +2,7 @@
 
 import {useMemo, useState, useCallback} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSTextInput} from '@xds/core/TextInput';
@@ -424,18 +424,18 @@ export default function RadiusPage() {
   return (
     <div {...stylex.props(s.page)}>
       <XDSTheme theme={theme}>
-        <XDSVStack gap={10}>
+        <div style={{display: 'flex', flexDirection: 'column', gap: 48}}>
           {/* ── Header ── */}
-          <XDSVStack gap={2}>
+          <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
             <XDSHeading level={1}>Border Radius</XDSHeading>
             <XDSText type="body" color="secondary">
               Dynamic radius with semantic usage
             </XDSText>
-          </XDSVStack>
+          </div>
 
           {/* ── Controls ── */}
           <div {...stylex.props(s.controls)}>
-            <XDSVStack gap={4}>
+            <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
               <div>
                 <span {...stylex.props(s.label)}>Radius Multiplier</span>
               </div>
@@ -466,7 +466,7 @@ export default function RadiusPage() {
                   />
                 ))}
               </XDSHStack>
-            </XDSVStack>
+            </div>
           </div>
 
           {/* ── Token readout ── */}
@@ -657,7 +657,7 @@ export default function RadiusPage() {
 
               <div {...stylex.props(s.group)}>
                 <div {...stylex.props(s.groupLabel)}>Toasts</div>
-                <XDSVStack gap={2}>
+                <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
                   <div {...stylex.props(s.toast)}>
                     <XDSStatusDot variant="positive" label="Success" />
                     <span>Saved successfully</span>
@@ -666,7 +666,7 @@ export default function RadiusPage() {
                     <XDSStatusDot variant="negative" label="Error" />
                     <span>Something went wrong</span>
                   </div>
-                </XDSVStack>
+                </div>
               </div>
             </div>
           </div>
@@ -704,7 +704,7 @@ export default function RadiusPage() {
 
               <div {...stylex.props(s.group)}>
                 <div {...stylex.props(s.groupLabel)}>Status dots</div>
-                <XDSVStack gap={2}>
+                <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
                   <XDSHStack gap={2} vAlign="center">
                     <XDSStatusDot variant="positive" label="Online" />
                     <XDSText type="supporting" color="secondary">Online</XDSText>
@@ -717,7 +717,7 @@ export default function RadiusPage() {
                     <XDSStatusDot variant="negative" label="Busy" />
                     <XDSText type="supporting" color="secondary">Busy</XDSText>
                   </XDSHStack>
-                </XDSVStack>
+                </div>
               </div>
 
               <div {...stylex.props(s.group)}>
@@ -797,7 +797,7 @@ export default function RadiusPage() {
               </div>
             </div>
           </div>
-        </XDSVStack>
+        </div>
       </XDSTheme>
     </div>
   );
