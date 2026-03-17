@@ -182,18 +182,23 @@ export interface XDSSideNavItemProps {
    */
   children?: ReactNode;
   /**
-   * Whether sub-items are expanded. Uncontrolled by default.
-   * @default true
+   * Enables collapse behavior for items with children.
+   * When true, clicking the item toggles visibility of sub-items.
+   *
+   * - `true` — collapsible with defaults (starts expanded)
+   * - Object — controlled/configured:
+   *   - `defaultIsCollapsed` — start collapsed (default: false)
+   *   - `isCollapsed` + `onCollapsedChange` — controlled mode
+   *
+   * @default false
    */
-  defaultIsExpanded?: boolean;
-  /**
-   * Controlled expanded state for sub-items.
-   */
-  isExpanded?: boolean;
-  /**
-   * Callback when expand/collapse state changes.
-   */
-  onExpandedChange?: (expanded: boolean) => void;
+  collapsible?:
+    | boolean
+    | {
+        defaultIsCollapsed?: boolean;
+        isCollapsed?: boolean;
+        onCollapsedChange?: (isCollapsed: boolean) => void;
+      };
   /**
    * Test ID for the item element.
    */
@@ -235,9 +240,7 @@ export function XDSSideNavItem({
   onClick,
   endContent,
   children,
-  defaultIsExpanded = true,
-  isExpanded: controlledExpanded,
-  onExpandedChange,
+  collapsible: itemCollapsible = false,
   'data-testid': testId,
   ref,
 }: XDSSideNavItemProps) {
@@ -247,21 +250,26 @@ export function XDSSideNavItem({
   const LinkComponent = useXDSLinkComponent(as);
   const itemRef = useRef<HTMLDivElement>(null);
 
-  // Expand/collapse state for items with children
-  const isExpandControlled = controlledExpanded !== undefined;
-  const [uncontrolledExpanded, setUncontrolledExpanded] =
-    useState(defaultIsExpanded);
-  const isItemExpanded = isExpandControlled
-    ? controlledExpanded
-    : uncontrolledExpanded;
+  // Collapse state for items with children
+  const itemCollapsibleConfig =
+    typeof itemCollapsible === 'object' ? itemCollapsible : {};
+  const isItemCollapsible = hasChildren && !!itemCollapsible;
+  const itemControlledCollapsed = itemCollapsibleConfig.isCollapsed;
+  const isItemControlled = itemControlledCollapsed !== undefined;
+  const [uncontrolledCollapsed, setUncontrolledCollapsed] = useState(
+    itemCollapsibleConfig.defaultIsCollapsed ?? false,
+  );
+  const isItemCollapsed = isItemControlled
+    ? itemControlledCollapsed
+    : uncontrolledCollapsed;
 
-  const toggleExpand = useCallback(() => {
-    const next = !isItemExpanded;
-    if (!isExpandControlled) {
-      setUncontrolledExpanded(next);
+  const toggleItemCollapse = useCallback(() => {
+    const next = !isItemCollapsed;
+    if (!isItemControlled) {
+      setUncontrolledCollapsed(next);
     }
-    onExpandedChange?.(next);
-  }, [isItemExpanded, isExpandControlled, onExpandedChange]);
+    itemCollapsibleConfig.onCollapsedChange?.(next);
+  }, [isItemCollapsed, isItemControlled, itemCollapsibleConfig]);
 
   const displayIcon = isSelected && selectedIcon ? selectedIcon : icon;
 
@@ -275,9 +283,9 @@ export function XDSSideNavItem({
       e.preventDefault();
       return;
     }
-    if (hasChildren && !isCollapsed) {
+    if (isItemCollapsible && !isCollapsed) {
       e.preventDefault();
-      toggleExpand();
+      toggleItemCollapse();
       return;
     }
     onClick?.(e);
@@ -296,11 +304,11 @@ export function XDSSideNavItem({
       {!isCollapsed && endContent && (
         <span {...stylex.props(styles.endContent)}>{endContent}</span>
       )}
-      {!isCollapsed && hasChildren && (
+      {!isCollapsed && isItemCollapsible && (
         <span
           {...stylex.props(
             styles.expandChevron,
-            !isItemExpanded && styles.expandChevronCollapsed,
+            isItemCollapsed && styles.expandChevronCollapsed,
           )}>
           {getIcon('chevronDown')}
         </span>
@@ -355,10 +363,10 @@ export function XDSSideNavItem({
         <div
           role="group"
           aria-labelledby={`${id}-label`}
-          aria-hidden={!isItemExpanded}
+          aria-hidden={isItemCollapsed}
           {...stylex.props(
             styles.childrenCollapsible,
-            !isItemExpanded && styles.childrenCollapsed,
+            isItemCollapsed && styles.childrenCollapsed,
           )}>
           <div {...stylex.props(styles.childrenInner)}>
             <span id={`${id}-label`} hidden>
