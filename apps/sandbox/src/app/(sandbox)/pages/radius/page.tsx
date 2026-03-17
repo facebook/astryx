@@ -36,6 +36,7 @@ const s = stylex.create({
     borderRadius: 12,
     width: '50%',
     minWidth: 340,
+    marginTop: 16,
   },
   label: {
     fontSize: 12,
@@ -63,6 +64,7 @@ const s = stylex.create({
     display: 'flex',
     gap: 8,
     flexWrap: 'wrap',
+    marginTop: 16,
   },
   tokenChip: {
     display: 'inline-flex',
@@ -109,18 +111,19 @@ const s = stylex.create({
     gap: 16,
     flexWrap: 'wrap',
     alignItems: 'flex-start',
+    marginTop: 16,
   },
   group: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 4,
+    gap: 8,
   },
   groupLabel: {
     fontSize: 10,
     color: colorVars['--color-text-secondary'],
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    marginBottom: 4,
+    marginBottom: 8,
   },
 
   // radius-none: table
