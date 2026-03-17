@@ -162,9 +162,8 @@ export interface XDSMobileNavProps extends Omit<XDSBaseProps, 'title'> {
   ref?: React.Ref<HTMLDialogElement>;
   /**
    * Whether the drawer is open.
-   * When omitted, reads from XDSAppShellMobileContext (managed by AppShell).
-   * Provide explicitly for standalone use outside AppShell or for the
-   * ReactNode escape hatch.
+   * Inside XDSAppShell, this is managed automatically via context.
+   * Outside XDSAppShell, provide this prop to control the drawer yourself.
    */
   isOpen?: boolean;
 
@@ -172,7 +171,8 @@ export interface XDSMobileNavProps extends Omit<XDSBaseProps, 'title'> {
    * Callback fired when the drawer visibility changes.
    * Called with `false` when the drawer should close
    * (backdrop click, escape, close button).
-   * When omitted, reads from XDSAppShellMobileContext (managed by AppShell).
+   * Inside XDSAppShell, this is managed automatically via context.
+   * Outside XDSAppShell, provide this prop to control the drawer yourself.
    */
   onOpenChange?: (isOpen: boolean) => void;
 
