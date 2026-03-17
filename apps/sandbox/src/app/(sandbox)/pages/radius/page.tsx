@@ -522,16 +522,18 @@ export default function RadiusPage() {
                   <div {...stylex.props(s.tableRow)}>
                     <span>Alice</span>
                     <span>Design</span>
-                    <XDSText type="supporting" color="positive">
+                    <span
+                      style={{color: 'var(--color-positive)', fontSize: 12}}>
                       Active
-                    </XDSText>
+                    </span>
                   </div>
                   <div {...stylex.props(s.tableRow)}>
                     <span>Bob</span>
                     <span>Eng</span>
-                    <XDSText type="supporting" color="positive">
+                    <span
+                      style={{color: 'var(--color-positive)', fontSize: 12}}>
                       Active
-                    </XDSText>
+                    </span>
                   </div>
                 </div>
               </div>
