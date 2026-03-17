@@ -106,6 +106,9 @@ const styles = stylex.create({
     flexDirection: 'column',
     gap: spacingVars['--spacing-0-5'],
   },
+  drawerExtraContent: {
+    marginBlockStart: spacingVars['--spacing-4'],
+  },
 });
 
 export interface XDSTopNavProps extends XDSBaseProps<HTMLElement> {
@@ -215,7 +218,11 @@ export function XDSTopNav({
             {centerContent}
           </div>
         )}
-        {mobileContent}
+        {mobileContent && (
+          <div {...stylex.props(styles.drawerExtraContent)}>
+            {mobileContent}
+          </div>
+        )}
       </XDSMobileNav>
     );
   }
