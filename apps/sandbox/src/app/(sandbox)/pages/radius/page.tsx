@@ -1,268 +1,14 @@
 'use client';
 
-import {useMemo, useState} from 'react';
+import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSTheme, defineTheme} from '@xds/core/theme';
-import {colorVars, radiusVars} from '@xds/core/theme/tokens.stylex';
+import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSText, XDSHeading} from '@xds/core/Text';
+import {XDSDivider} from '@xds/core';
 
-const s = stylex.create({
-  page: {maxWidth: 900, paddingBottom: 80},
-  pageDesc: {marginBottom: 32},
-  controls: {
-    backgroundColor: colorVars['--color-wash'],
-    paddingBlock: 16,
-    paddingInline: 32,
-    marginLeft: -32,
-    width: '100vw',
-    marginBottom: 32,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 16,
-    position: 'sticky',
-    top: 0,
-    zIndex: 100,
-  },
-  controlsLabel: {
-    fontSize: 12, fontWeight: 600,
-    color: colorVars['--color-text-secondary'],
-    textTransform: 'uppercase', letterSpacing: '0.05em',
-  },
-  sliderRow: {display: 'flex', alignItems: 'center', gap: 16, maxWidth: 400},
-  sliderVal: {
-    fontSize: 14, fontWeight: 600, minWidth: 40,
-    textAlign: 'right' as const, fontVariantNumeric: 'tabular-nums',
-  },
-  presets: {display: 'flex', gap: 6},
-  presetBtn: {
-    paddingBlock: 6, paddingInline: 14, borderRadius: 8,
-    borderWidth: 1, borderStyle: 'solid',
-    borderColor: colorVars['--color-divider-emphasized'],
-    backgroundColor: '#fff', color: colorVars['--color-text-primary'],
-    fontSize: 13, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer',
-  },
-  presetBtnActive: {
-    backgroundColor: colorVars['--color-accent'],
-    borderColor: colorVars['--color-accent'], color: '#fff',
-  },
-  tokenBar: {display: 'flex', gap: 8, flexWrap: 'wrap'},
-  tokenChip: {
-    display: 'inline-flex', alignItems: 'center', gap: 6,
-    paddingBlock: 4, paddingInline: 10,
-    backgroundColor: '#fff',
-    borderWidth: 1, borderStyle: 'solid',
-    borderColor: colorVars['--color-divider-emphasized'],
-    borderRadius: 6, fontFamily: 'monospace', fontSize: 11,
-  },
-  tokenName: {color: colorVars['--color-text-secondary']},
-  tokenVal: {color: colorVars['--color-accent'], fontWeight: 600},
-  section: {marginBottom: 48},
-  sectionHeader: {display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 20},
-  sectionTitle: {
-    fontSize: 13, fontWeight: 600, textTransform: 'uppercase',
-    letterSpacing: 1, color: colorVars['--color-text-secondary'],
-  },
-  sectionToken: {fontSize: 11, color: colorVars['--color-text-secondary'], fontFamily: 'monospace'},
-  sectionNote: {fontSize: 11, color: colorVars['--color-text-secondary'], marginLeft: 'auto'},
-  divider: {height: 1, backgroundColor: colorVars['--color-divider'], marginBottom: 48},
-  componentRow: {display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start'},
-  componentGroup: {display: 'flex', flexDirection: 'column', gap: 8},
-  componentLabel: {
-    fontSize: 10, color: colorVars['--color-text-secondary'],
-    textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4,
-  },
-  // radius-none
-  table: {
-    borderWidth: 1, borderStyle: 'solid', borderColor: colorVars['--color-divider-emphasized'],
-    borderRadius: 0, overflow: 'hidden', fontSize: 13, width: 320,
-  },
-  tableHeader: {
-    display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
-    backgroundColor: colorVars['--color-deemphasized'],
-    paddingBlock: 8, paddingInline: 12, fontWeight: 600, fontSize: 11,
-    color: colorVars['--color-text-secondary'],
-    textTransform: 'uppercase', letterSpacing: 0.5,
-    borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: colorVars['--color-divider'],
-  },
-  tableRow: {
-    display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
-    paddingBlock: 8, paddingInline: 12,
-    borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: colorVars['--color-divider'],
-  },
-  tableRowLast: {
-    display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', paddingBlock: 8, paddingInline: 12,
-  },
-  sidePanel: {
-    backgroundColor: colorVars['--color-surface'], borderRadius: 0,
-    borderWidth: 1, borderStyle: 'solid', borderColor: colorVars['--color-divider-emphasized'],
-    padding: 16, width: 180, display: 'flex', flexDirection: 'column', gap: 2,
-  },
-  sideItem: {
-    paddingBlock: 6, paddingInline: 10, fontSize: 12,
-    color: colorVars['--color-text-secondary'],
-    borderRadius: radiusVars['--radius-element'], cursor: 'pointer',
-  },
-  sideItemActive: {
-    backgroundColor: colorVars['--color-accent-deemphasized'],
-    color: colorVars['--color-accent-text'],
-  },
-  btnGroup: {display: 'flex'},
-  btn: {
-    paddingBlock: 8, paddingInline: 16, borderRadius: radiusVars['--radius-element'],
-    fontSize: 14, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer',
-    borderWidth: 1, borderStyle: 'solid', borderColor: 'transparent',
-  },
-  btnSm: {paddingBlock: 6, paddingInline: 14, fontSize: 13},
-  btnPrimary: {backgroundColor: colorVars['--color-accent'], color: '#fff'},
-  btnSecondary: {
-    backgroundColor: colorVars['--color-deemphasized'],
-    color: colorVars['--color-text-primary'],
-    borderColor: colorVars['--color-divider-emphasized'],
-  },
-  btnFlat: {backgroundColor: 'transparent', color: colorVars['--color-text-primary']},
-  btnGroupFirst: {
-    borderStartStartRadius: radiusVars['--radius-element'],
-    borderEndStartRadius: radiusVars['--radius-element'],
-    borderStartEndRadius: 0, borderEndEndRadius: 0,
-  },
-  btnGroupMiddle: {borderRadius: 0, marginLeft: -1},
-  btnGroupLast: {
-    borderStartStartRadius: 0, borderEndStartRadius: 0,
-    borderStartEndRadius: radiusVars['--radius-element'],
-    borderEndEndRadius: radiusVars['--radius-element'],
-    marginLeft: -1,
-  },
-  input: {
-    paddingBlock: 8, paddingInline: 12, borderRadius: radiusVars['--radius-element'],
-    borderWidth: 1, borderStyle: 'solid', borderColor: colorVars['--color-divider-emphasized'],
-    backgroundColor: '#fff', color: colorVars['--color-text-primary'],
-    fontSize: 14, fontFamily: 'inherit', outline: 'none', width: 180,
-  },
-  textarea: {
-    paddingBlock: 8, paddingInline: 12, borderRadius: radiusVars['--radius-element'],
-    borderWidth: 1, borderStyle: 'solid', borderColor: colorVars['--color-divider-emphasized'],
-    backgroundColor: '#fff', color: colorVars['--color-text-primary'],
-    fontSize: 14, fontFamily: 'inherit', outline: 'none', width: 200, height: 60,
-    resize: 'vertical' as const,
-  },
-  codeBlock: {
-    backgroundColor: colorVars['--color-deemphasized'],
-    borderWidth: 1, borderStyle: 'solid', borderColor: colorVars['--color-divider'],
-    borderRadius: radiusVars['--radius-content'],
-    paddingBlock: 12, paddingInline: 14, fontFamily: 'monospace',
-    fontSize: 12, color: colorVars['--color-text-secondary'], lineHeight: 1.6, width: 300,
-  },
-  thumb: {width: 48, height: 48, borderRadius: radiusVars['--radius-content'], flexShrink: 0},
-  xdsToken: {
-    display: 'inline-flex', alignItems: 'center', gap: 4, paddingInline: 8, height: 24,
-    borderRadius: radiusVars['--radius-content'],
-    backgroundColor: colorVars['--color-deemphasized'], fontSize: 13, fontWeight: 500,
-  },
-  xdsTokenX: {fontSize: 13, opacity: 0.5, cursor: 'pointer'},
-  xdsCard: {
-    backgroundColor: colorVars['--color-card'], borderRadius: radiusVars['--radius-container'],
-    borderWidth: 1, borderStyle: 'solid', borderColor: colorVars['--color-divider-emphasized'],
-    boxShadow: '0 0 1px rgba(5,54,89,0.1)', overflow: 'hidden', width: 200,
-  },
-  cardMedia: {width: '100%', height: 100, background: 'linear-gradient(135deg, #0064E0, #5B08D8)'},
-  cardBody: {padding: 12},
-  cardTitle: {fontWeight: 600, fontSize: 14, marginBottom: 4},
-  cardDesc: {fontSize: 12, color: colorVars['--color-text-secondary']},
-  modal: {
-    backgroundColor: colorVars['--color-surface'],
-    borderWidth: 1, borderStyle: 'solid', borderColor: colorVars['--color-divider-emphasized'],
-    borderRadius: radiusVars['--radius-container'], width: 260, overflow: 'hidden',
-    boxShadow: '0 12px 40px rgba(0,0,0,0.08)',
-  },
-  modalHeader: {
-    paddingTop: 14, paddingBottom: 10, paddingInline: 16,
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-  },
-  modalTitle: {fontSize: 14, fontWeight: 600},
-  modalClose: {color: colorVars['--color-text-secondary'], cursor: 'pointer'},
-  modalBody: {paddingInline: 16, paddingBottom: 14, fontSize: 13, color: colorVars['--color-text-secondary'], lineHeight: 1.5},
-  modalFooter: {
-    paddingBlock: 10, paddingInline: 16,
-    borderTopWidth: 1, borderTopStyle: 'solid', borderTopColor: colorVars['--color-divider'],
-    display: 'flex', justifyContent: 'flex-end', gap: 8,
-  },
-  dropdown: {
-    backgroundColor: colorVars['--color-surface'],
-    borderWidth: 1, borderStyle: 'solid', borderColor: colorVars['--color-divider-emphasized'],
-    borderRadius: radiusVars['--radius-container'], padding: 4, width: 170,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-  },
-  dropdownItem: {
-    paddingBlock: 7, paddingInline: 10, fontSize: 13, cursor: 'pointer',
-    borderRadius: `max(0px, calc(${radiusVars['--radius-container']} - 4px))`,
-  },
-  dropdownItemActive: {backgroundColor: colorVars['--color-hover-overlay']},
-  toast: {
-    backgroundColor: colorVars['--color-surface'],
-    borderWidth: 1, borderStyle: 'solid', borderColor: colorVars['--color-divider-emphasized'],
-    borderRadius: radiusVars['--radius-container'],
-    paddingBlock: 10, paddingInline: 14, display: 'flex', alignItems: 'center', gap: 10,
-    fontSize: 13, width: 240, boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-  },
-  toastDot: {width: 10, height: 10, borderRadius: '50%', flexShrink: 0},
-  badge: {display: 'inline-flex', paddingBlock: 2, paddingInline: 8, borderRadius: radiusVars['--radius-rounded'], fontSize: 11, fontWeight: 600},
-  badgeInfo: {backgroundColor: colorVars['--color-blue-background'], color: colorVars['--color-blue-text']},
-  badgeSuccess: {backgroundColor: colorVars['--color-green-background'], color: colorVars['--color-green-text']},
-  badgeError: {backgroundColor: colorVars['--color-red-background'], color: colorVars['--color-red-text']},
-  badgeWarning: {backgroundColor: colorVars['--color-orange-background'], color: colorVars['--color-orange-text']},
-  avatar: {
-    width: 36, height: 36, borderRadius: radiusVars['--radius-rounded'],
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 13, fontWeight: 600, color: '#fff',
-  },
-  statusDot: {width: 10, height: 10, borderRadius: '50%'},
-  statusRow: {display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: colorVars['--color-text-secondary']},
-  switchEl: {width: 40, height: 24, borderRadius: radiusVars['--radius-rounded'], padding: 4, cursor: 'pointer'},
-  switchOff: {backgroundColor: 'rgba(10,19,23,0.12)'},
-  switchOn: {backgroundColor: colorVars['--color-accent']},
-  switchThumb: {width: 16, height: 16, borderRadius: radiusVars['--radius-rounded'], backgroundColor: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'},
-  switchThumbOn: {transform: 'translateX(16px)'},
-  switchRow: {display: 'flex', alignItems: 'center', gap: 8, fontSize: 14},
-  concentricCard: {
-    backgroundColor: colorVars['--color-surface'],
-    borderWidth: 1, borderStyle: 'solid', borderColor: colorVars['--color-divider-emphasized'],
-    borderRadius: radiusVars['--radius-container'], padding: 10, width: 190,
-    display: 'flex', flexDirection: 'column',
-  },
-  concentricMedia: {
-    width: '100%', height: 80, background: 'linear-gradient(135deg, #0064E0, #5B08D8)',
-    borderRadius: `max(0px, calc(${radiusVars['--radius-container']} - 10px))`, marginBottom: 8,
-  },
-  concentricMediaTight: {
-    width: '100%', height: 80, background: 'linear-gradient(135deg, #0064E0, #5B08D8)',
-    borderRadius: `max(0px, calc(${radiusVars['--radius-container']} - 8px))`, marginBottom: 8,
-  },
-  concentricTitle: {fontSize: 13, fontWeight: 500, marginBottom: 2},
-  concentricDetail: {fontSize: 11, fontFamily: 'monospace', color: colorVars['--color-text-secondary'], lineHeight: 1.5},
-  concentricBtn: {
-    display: 'block', width: '100%', paddingBlock: 6, paddingInline: 14, marginTop: 8,
-    backgroundColor: colorVars['--color-accent'], color: '#fff',
-    borderWidth: 0, fontSize: 12, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer',
-    borderRadius: `max(0px, calc(${radiusVars['--radius-container']} - 10px))`,
-  },
-  concentricBtnTight: {borderRadius: `max(0px, calc(${radiusVars['--radius-container']} - 8px))`},
-  flushCard: {
-    backgroundColor: colorVars['--color-surface'],
-    borderWidth: 1, borderStyle: 'solid', borderColor: colorVars['--color-divider-emphasized'],
-    borderRadius: radiusVars['--radius-container'], width: 190, overflow: 'hidden',
-    display: 'flex', flexDirection: 'column',
-  },
-  flushMedia: {width: '100%', height: 80, background: 'linear-gradient(135deg, #0064E0, #5B08D8)'},
-  flushBody: {padding: 4, flex: 1},
-  flushBtn: {
-    display: 'block', width: 'calc(100% - 8px)', marginTop: 0, marginBottom: 4, marginInline: 4,
-    paddingBlock: 6, paddingInline: 14,
-    backgroundColor: colorVars['--color-accent'], color: '#fff',
-    borderWidth: 0, fontSize: 12, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer',
-    borderRadius: `max(0px, calc(${radiusVars['--radius-container']} - 4px))`,
-  },
-  slider: {flex: 1, height: 4, borderRadius: 2},
-});
+// =============================================================================
+// Constants
+// =============================================================================
 
 const PRESETS = [
   {name: 'Sharp', value: 0},
@@ -270,7 +16,7 @@ const PRESETS = [
   {name: 'Default', value: 1},
   {name: 'Rounded', value: 1.5},
   {name: 'Pill', value: 2},
-] as const;
+];
 
 const BASE = {content: 4, element: 8, container: 12};
 
@@ -284,313 +30,801 @@ function computeTokens(m: number) {
   };
 }
 
-function makeTheme(m: number) {
-  return defineTheme({
-    name: `radius-${m}`,
-    tokens: {
-      '--radius-content': `${BASE.content * m}px`,
-      '--radius-element': `${BASE.element * m}px`,
-      '--radius-container': `${BASE.container * m}px`,
-    },
-  });
-}
+// =============================================================================
+// Styles (following Ernest's pattern: light-dark, simple values)
+// =============================================================================
+
+const styles = stylex.create({
+  container: {
+    maxWidth: 1200,
+  },
+  controls: {
+    padding: 16,
+    backgroundColor: 'light-dark(#f5f5f5, #2a2a2a)',
+    borderRadius: 8,
+  },
+  controlGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: 'light-dark(#666, #aaa)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+  },
+  slider: {
+    width: '100%',
+    accentColor: 'light-dark(#0064E0, #2694FE)',
+  },
+  sliderValue: {
+    fontSize: 14,
+    fontWeight: 600,
+    color: 'light-dark(#333, #eee)',
+    minWidth: 40,
+    textAlign: 'right',
+    fontVariantNumeric: 'tabular-nums',
+  },
+  presetButton: {
+    padding: '6px 14px',
+    fontSize: 13,
+    fontWeight: 500,
+    borderRadius: 6,
+    border: '1px solid light-dark(#ddd, #444)',
+    backgroundColor: 'light-dark(#fff, #333)',
+    color: 'light-dark(#333, #eee)',
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+  },
+  presetButtonActive: {
+    backgroundColor: 'light-dark(#0064E0, #2694FE)',
+    borderColor: 'light-dark(#0064E0, #2694FE)',
+    color: '#fff',
+  },
+  tokenBar: {
+    display: 'flex',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  tokenChip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    padding: '4px 10px',
+    backgroundColor: 'light-dark(#fff, #333)',
+    border: '1px solid light-dark(#ddd, #444)',
+    borderRadius: 6,
+    fontFamily: 'SF Mono, Monaco, Consolas, monospace',
+    fontSize: 11,
+  },
+  tokenName: {
+    color: 'light-dark(#666, #aaa)',
+  },
+  tokenVal: {
+    color: 'light-dark(#0064E0, #2694FE)',
+    fontWeight: 600,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+    color: 'light-dark(#666, #aaa)',
+  },
+  sectionToken: {
+    fontSize: 11,
+    color: 'light-dark(#888, #777)',
+    fontFamily: 'SF Mono, Monaco, Consolas, monospace',
+  },
+  sectionNote: {
+    fontSize: 11,
+    color: 'light-dark(#888, #777)',
+    marginLeft: 'auto',
+  },
+  componentRow: {
+    display: 'flex',
+    gap: 24,
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+  },
+  componentGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+  },
+  componentLabel: {
+    fontSize: 10,
+    color: 'light-dark(#888, #777)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+  },
+  // Components
+  table: {
+    border: '1px solid light-dark(#ddd, #444)',
+    borderRadius: 0,
+    overflow: 'hidden',
+    fontSize: 13,
+    width: 320,
+  },
+  tableHeader: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr 1fr',
+    padding: '8px 12px',
+    backgroundColor: 'light-dark(#f5f5f5, #2a2a2a)',
+    fontWeight: 600,
+    fontSize: 11,
+    color: 'light-dark(#666, #aaa)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    borderBottom: '1px solid light-dark(#ddd, #444)',
+  },
+  tableRow: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr 1fr',
+    padding: '8px 12px',
+    borderBottom: '1px solid light-dark(#eee, #333)',
+  },
+  tableRowLast: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr 1fr',
+    padding: '8px 12px',
+  },
+  sidePanel: {
+    border: '1px solid light-dark(#ddd, #444)',
+    borderRadius: 0,
+    padding: 16,
+    width: 180,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+  },
+  sideItem: {
+    padding: '6px 10px',
+    fontSize: 12,
+    color: 'light-dark(#666, #aaa)',
+    cursor: 'pointer',
+  },
+  sideItemActive: {
+    backgroundColor: 'light-dark(rgba(0,100,224,0.08), rgba(38,148,254,0.12))',
+    color: 'light-dark(#0064E0, #2694FE)',
+  },
+  btn: {
+    padding: '8px 16px',
+    fontSize: 14,
+    fontWeight: 500,
+    border: '1px solid transparent',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  },
+  btnSm: {
+    padding: '6px 14px',
+    fontSize: 13,
+  },
+  btnPrimary: {
+    backgroundColor: 'light-dark(#0064E0, #2694FE)',
+    color: '#fff',
+  },
+  btnSecondary: {
+    backgroundColor: 'light-dark(#f0f0f0, #333)',
+    color: 'light-dark(#333, #eee)',
+    borderColor: 'light-dark(#ddd, #444)',
+  },
+  btnFlat: {
+    backgroundColor: 'transparent',
+    color: 'light-dark(#333, #eee)',
+  },
+  input: {
+    padding: '8px 12px',
+    border: '1px solid light-dark(#ddd, #444)',
+    backgroundColor: 'light-dark(#fff, #333)',
+    color: 'light-dark(#333, #eee)',
+    fontSize: 14,
+    fontFamily: 'inherit',
+    outline: 'none',
+    width: 180,
+  },
+  textarea: {
+    padding: '8px 12px',
+    border: '1px solid light-dark(#ddd, #444)',
+    backgroundColor: 'light-dark(#fff, #333)',
+    color: 'light-dark(#333, #eee)',
+    fontSize: 14,
+    fontFamily: 'inherit',
+    outline: 'none',
+    width: 200,
+    height: 60,
+    resize: 'vertical',
+  },
+  codeBlock: {
+    backgroundColor: 'light-dark(#f5f5f5, #2a2a2a)',
+    border: '1px solid light-dark(#ddd, #444)',
+    padding: '12px 14px',
+    fontFamily: 'SF Mono, Monaco, Consolas, monospace',
+    fontSize: 12,
+    color: 'light-dark(#666, #ccc)',
+    lineHeight: 1.6,
+    width: 300,
+  },
+  thumb: {
+    width: 48,
+    height: 48,
+    flexShrink: 0,
+  },
+  token: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    padding: '0 8px',
+    height: 24,
+    backgroundColor: 'light-dark(#f0f0f0, #333)',
+    fontSize: 13,
+    fontWeight: 500,
+  },
+  tokenX: {
+    fontSize: 13,
+    opacity: 0.5,
+    cursor: 'pointer',
+  },
+  card: {
+    border: '1px solid light-dark(#ddd, #444)',
+    overflow: 'hidden',
+    width: 200,
+    boxShadow: '0 0 1px rgba(0,0,0,0.1)',
+  },
+  cardMedia: {
+    width: '100%',
+    height: 100,
+    background: 'linear-gradient(135deg, #0064E0, #5B08D8)',
+  },
+  cardBody: {
+    padding: 12,
+  },
+  cardTitle: {
+    fontWeight: 600,
+    fontSize: 14,
+    marginBottom: 4,
+    color: 'light-dark(#333, #eee)',
+  },
+  cardDesc: {
+    fontSize: 12,
+    color: 'light-dark(#666, #aaa)',
+  },
+  modal: {
+    border: '1px solid light-dark(#ddd, #444)',
+    width: 260,
+    overflow: 'hidden',
+    boxShadow: '0 12px 40px rgba(0,0,0,0.08)',
+    backgroundColor: 'light-dark(#fff, #1a1a1a)',
+  },
+  modalHeader: {
+    padding: '14px 16px 10px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 14,
+    fontWeight: 600,
+    color: 'light-dark(#333, #eee)',
+  },
+  modalClose: {
+    color: 'light-dark(#999, #666)',
+    cursor: 'pointer',
+  },
+  modalBody: {
+    padding: '0 16px 14px',
+    fontSize: 13,
+    color: 'light-dark(#666, #aaa)',
+    lineHeight: 1.5,
+  },
+  modalFooter: {
+    padding: '10px 16px',
+    borderTop: '1px solid light-dark(#eee, #333)',
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
+  dropdown: {
+    border: '1px solid light-dark(#ddd, #444)',
+    padding: 4,
+    width: 170,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+    backgroundColor: 'light-dark(#fff, #1a1a1a)',
+  },
+  dropdownItem: {
+    padding: '7px 10px',
+    fontSize: 13,
+    cursor: 'pointer',
+    color: 'light-dark(#333, #eee)',
+  },
+  dropdownItemActive: {
+    backgroundColor: 'light-dark(rgba(0,0,0,0.04), rgba(255,255,255,0.06))',
+  },
+  toast: {
+    border: '1px solid light-dark(#ddd, #444)',
+    padding: '10px 14px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    fontSize: 13,
+    width: 240,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+    backgroundColor: 'light-dark(#fff, #1a1a1a)',
+    color: 'light-dark(#333, #eee)',
+  },
+  toastDot: {
+    width: 10,
+    height: 10,
+    borderRadius: '50%',
+    flexShrink: 0,
+  },
+  badge: {
+    display: 'inline-flex',
+    padding: '2px 8px',
+    fontSize: 11,
+    fontWeight: 600,
+  },
+  badgeInfo: {
+    backgroundColor: 'light-dark(rgba(0,100,224,0.1), rgba(38,148,254,0.15))',
+    color: 'light-dark(#0064E0, #4BA9FE)',
+  },
+  badgeSuccess: {
+    backgroundColor: 'light-dark(rgba(13,134,38,0.1), rgba(13,134,38,0.15))',
+    color: 'light-dark(#0D8626, #26A756)',
+  },
+  badgeError: {
+    backgroundColor: 'light-dark(rgba(227,25,59,0.1), rgba(227,25,59,0.15))',
+    color: 'light-dark(#E3193B, #F5394F)',
+  },
+  badgeWarning: {
+    backgroundColor: 'light-dark(rgba(233,175,8,0.1), rgba(233,175,8,0.15))',
+    color: 'light-dark(#B8860B, #E9AF08)',
+  },
+  avatar: {
+    width: 36,
+    height: 36,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 13,
+    fontWeight: 600,
+    color: '#fff',
+  },
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: '50%',
+  },
+  statusRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    fontSize: 12,
+    color: 'light-dark(#666, #aaa)',
+  },
+  switchEl: {
+    width: 40,
+    height: 24,
+    padding: 4,
+    cursor: 'pointer',
+  },
+  switchOff: {
+    backgroundColor: 'light-dark(rgba(0,0,0,0.12), rgba(255,255,255,0.12))',
+  },
+  switchOn: {
+    backgroundColor: 'light-dark(#0064E0, #2694FE)',
+  },
+  switchThumb: {
+    width: 16,
+    height: 16,
+    backgroundColor: '#fff',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+  },
+  switchThumbOn: {
+    transform: 'translateX(16px)',
+  },
+  switchRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    fontSize: 14,
+    color: 'light-dark(#333, #eee)',
+  },
+  concentricCard: {
+    border: '1px solid light-dark(#ddd, #444)',
+    padding: 10,
+    width: 190,
+    display: 'flex',
+    flexDirection: 'column',
+    backgroundColor: 'light-dark(#fff, #1a1a1a)',
+  },
+  concentricMedia: {
+    width: '100%',
+    height: 80,
+    background: 'linear-gradient(135deg, #0064E0, #5B08D8)',
+    marginBottom: 8,
+  },
+  concentricTitle: {
+    fontSize: 13,
+    fontWeight: 500,
+    marginBottom: 2,
+    color: 'light-dark(#333, #eee)',
+  },
+  concentricDetail: {
+    fontSize: 11,
+    fontFamily: 'SF Mono, Monaco, Consolas, monospace',
+    color: 'light-dark(#888, #777)',
+    lineHeight: 1.5,
+  },
+  concentricBtn: {
+    display: 'block',
+    width: '100%',
+    padding: '6px 14px',
+    marginTop: 8,
+    backgroundColor: 'light-dark(#0064E0, #2694FE)',
+    color: '#fff',
+    border: 'none',
+    fontSize: 12,
+    fontWeight: 500,
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+  },
+  flushCard: {
+    border: '1px solid light-dark(#ddd, #444)',
+    width: 190,
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    backgroundColor: 'light-dark(#fff, #1a1a1a)',
+  },
+  flushMedia: {
+    width: '100%',
+    height: 80,
+    background: 'linear-gradient(135deg, #0064E0, #5B08D8)',
+  },
+  flushBody: {
+    padding: 4,
+    flex: 1,
+  },
+  flushBtn: {
+    display: 'block',
+    width: 'calc(100% - 8px)',
+    margin: '0 4px 4px',
+    padding: '6px 14px',
+    backgroundColor: 'light-dark(#0064E0, #2694FE)',
+    color: '#fff',
+    border: 'none',
+    fontSize: 12,
+    fontWeight: 500,
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+  },
+});
+
+// =============================================================================
+// Page
+// =============================================================================
 
 export default function RadiusPage() {
   const [multiplier, setMultiplier] = useState(1);
   const tokens = useMemo(() => computeTokens(multiplier), [multiplier]);
-  const theme = useMemo(() => makeTheme(multiplier), [multiplier]);
   const ct = tokens['radius-container'];
+  const el = tokens['radius-element'];
+  const co = tokens['radius-content'];
 
   return (
-    <div {...stylex.props(s.page)}>
-      <XDSHeading level={1}>Corner Radius</XDSHeading>
-      <div {...stylex.props(s.pageDesc)}>
-        <XDSText type="body" color="secondary">Dynamic radius with semantic usage</XDSText>
-      </div>
+    <div {...stylex.props(styles.container)}>
+      <XDSVStack gap={8}>
+        {/* Header */}
+        <XDSVStack gap={2}>
+          <XDSHeading level={1}>Corner Radius</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Dynamic radius with semantic usage
+          </XDSText>
+        </XDSVStack>
 
-      <XDSTheme theme={theme}>
         {/* Controls */}
-        <div {...stylex.props(s.controls)}>
-          <span {...stylex.props(s.controlsLabel)}>Radius Multiplier</span>
-          <div {...stylex.props(s.sliderRow)}>
-            <input
-              {...stylex.props(s.slider)}
-              type="range" min={0} max={2} step={0.05} value={multiplier}
-              onChange={(e) => setMultiplier(parseFloat(e.target.value))}
-              style={{accentColor: 'var(--color-accent)'}}
-            />
-            <span {...stylex.props(s.sliderVal)}>{multiplier}&times;</span>
-          </div>
-          <div {...stylex.props(s.presets)}>
-            {PRESETS.map((p) => (
-              <button key={p.name} {...stylex.props(s.presetBtn, multiplier === p.value && s.presetBtnActive)} onClick={() => setMultiplier(p.value)}>
-                {p.name}
-              </button>
-            ))}
-          </div>
-          <div {...stylex.props(s.tokenBar)}>
-            {Object.entries(tokens).map(([n, val]) => (
-              <div key={n} {...stylex.props(s.tokenChip)}>
-                <span {...stylex.props(s.tokenName)}>{n}</span>
-                <span {...stylex.props(s.tokenVal)}>{val}px</span>
-              </div>
-            ))}
-          </div>
+        <div {...stylex.props(styles.controls)}>
+          <XDSVStack gap={4}>
+            <div {...stylex.props(styles.controlGroup)}>
+              <span {...stylex.props(styles.label)}>Radius Multiplier</span>
+              <XDSHStack gap={3} vAlign="center">
+                <input
+                  type="range"
+                  min={0}
+                  max={2}
+                  step={0.05}
+                  value={multiplier}
+                  onChange={e => setMultiplier(parseFloat(e.target.value))}
+                  {...stylex.props(styles.slider)}
+                  style={{maxWidth: 360}}
+                />
+                <span {...stylex.props(styles.sliderValue)}>
+                  {multiplier}&times;
+                </span>
+              </XDSHStack>
+            </div>
+            <XDSHStack gap={2}>
+              {PRESETS.map(p => (
+                <button
+                  key={p.name}
+                  {...stylex.props(
+                    styles.presetButton,
+                    multiplier === p.value && styles.presetButtonActive,
+                  )}
+                  onClick={() => setMultiplier(p.value)}>
+                  {p.name}
+                </button>
+              ))}
+            </XDSHStack>
+            <div {...stylex.props(styles.tokenBar)}>
+              {Object.entries(tokens).map(([n, val]) => (
+                <div key={n} {...stylex.props(styles.tokenChip)}>
+                  <span {...stylex.props(styles.tokenName)}>{n}</span>
+                  <span {...stylex.props(styles.tokenVal)}>{val}px</span>
+                </div>
+              ))}
+            </div>
+          </XDSVStack>
         </div>
 
-        <div {...stylex.props(s.divider)} />
+        <XDSDivider />
 
         {/* radius-none */}
-        <div {...stylex.props(s.section)}>
-          <div {...stylex.props(s.sectionHeader)}>
-            <span {...stylex.props(s.sectionTitle)}>radius-none</span>
-            <span {...stylex.props(s.sectionToken)}>0dp</span>
-            <span {...stylex.props(s.sectionNote)}>Always 0 &middot; ignores multiplier</span>
+        <XDSVStack gap={3}>
+          <XDSHStack gap={3} vAlign="center">
+            <span {...stylex.props(styles.sectionTitle)}>radius-none</span>
+            <span {...stylex.props(styles.sectionToken)}>0dp</span>
+            <span {...stylex.props(styles.sectionNote)}>Always 0 &middot; ignores multiplier</span>
+          </XDSHStack>
+          <div {...stylex.props(styles.componentRow)}>
+            <div {...stylex.props(styles.componentGroup)}>
+              <div {...stylex.props(styles.componentLabel)}>Table cells</div>
+              <div {...stylex.props(styles.table)}>
+                <div {...stylex.props(styles.tableHeader)}><span>Name</span><span>Role</span><span>Status</span></div>
+                <div {...stylex.props(styles.tableRow)}><span>Alice</span><span>Design</span><span style={{color: '#0D8626'}}>Active</span></div>
+                <div {...stylex.props(styles.tableRowLast)}><span>Bob</span><span>Eng</span><span style={{color: '#0D8626'}}>Active</span></div>
+              </div>
+            </div>
+            <div {...stylex.props(styles.componentGroup)}>
+              <div {...stylex.props(styles.componentLabel)}>Side panel</div>
+              <div {...stylex.props(styles.sidePanel)}>
+                <div {...stylex.props(styles.sideItem, styles.sideItemActive)} style={{borderRadius: el}}>Dashboard</div>
+                <div {...stylex.props(styles.sideItem)} style={{borderRadius: el}}>Analytics</div>
+                <div {...stylex.props(styles.sideItem)} style={{borderRadius: el}}>Settings</div>
+              </div>
+            </div>
+            <div {...stylex.props(styles.componentGroup)}>
+              <div {...stylex.props(styles.componentLabel)}>Shared edges (button group)</div>
+              <div style={{display: 'flex'}}>
+                <button {...stylex.props(styles.btn, styles.btnSm, styles.btnPrimary)} style={{borderRadius: `${el}px 0 0 ${el}px`}}>Day</button>
+                <button {...stylex.props(styles.btn, styles.btnSm, styles.btnSecondary)} style={{borderRadius: 0, marginLeft: -1}}>Week</button>
+                <button {...stylex.props(styles.btn, styles.btnSm, styles.btnSecondary)} style={{borderRadius: `0 ${el}px ${el}px 0`, marginLeft: -1}}>Month</button>
+              </div>
+            </div>
           </div>
-          <div {...stylex.props(s.componentRow)}>
-            <div {...stylex.props(s.componentGroup)}>
-              <div {...stylex.props(s.componentLabel)}>Table cells</div>
-              <div {...stylex.props(s.table)}>
-                <div {...stylex.props(s.tableHeader)}><span>Name</span><span>Role</span><span>Status</span></div>
-                <div {...stylex.props(s.tableRow)}><span>Alice</span><span>Design</span><span style={{color: 'var(--color-positive)'}}>Active</span></div>
-                <div {...stylex.props(s.tableRowLast)}><span>Bob</span><span>Eng</span><span style={{color: 'var(--color-positive)'}}>Active</span></div>
-              </div>
-            </div>
-            <div {...stylex.props(s.componentGroup)}>
-              <div {...stylex.props(s.componentLabel)}>Side panel</div>
-              <div {...stylex.props(s.sidePanel)}>
-                <div {...stylex.props(s.sideItem, s.sideItemActive)}>Dashboard</div>
-                <div {...stylex.props(s.sideItem)}>Analytics</div>
-                <div {...stylex.props(s.sideItem)}>Settings</div>
-              </div>
-            </div>
-            <div {...stylex.props(s.componentGroup)}>
-              <div {...stylex.props(s.componentLabel)}>Shared edges (button group)</div>
-              <div {...stylex.props(s.btnGroup)}>
-                <button {...stylex.props(s.btn, s.btnSm, s.btnPrimary, s.btnGroupFirst)}>Day</button>
-                <button {...stylex.props(s.btn, s.btnSm, s.btnSecondary, s.btnGroupMiddle)}>Week</button>
-                <button {...stylex.props(s.btn, s.btnSm, s.btnSecondary, s.btnGroupLast)}>Month</button>
-              </div>
-            </div>
-          </div>
-        </div>
+        </XDSVStack>
 
-        <div {...stylex.props(s.divider)} />
+        <XDSDivider />
 
         {/* radius-content */}
-        <div {...stylex.props(s.section)}>
-          <div {...stylex.props(s.sectionHeader)}>
-            <span {...stylex.props(s.sectionTitle)}>radius-content</span>
-            <span {...stylex.props(s.sectionToken)}>4dp &times; multiplier</span>
-          </div>
-          <div {...stylex.props(s.componentRow)}>
-            <div {...stylex.props(s.componentGroup)}>
-              <div {...stylex.props(s.componentLabel)}>Code block</div>
-              <div {...stylex.props(s.codeBlock)}>
+        <XDSVStack gap={3}>
+          <XDSHStack gap={3} vAlign="center">
+            <span {...stylex.props(styles.sectionTitle)}>radius-content</span>
+            <span {...stylex.props(styles.sectionToken)}>4dp &times; multiplier</span>
+          </XDSHStack>
+          <div {...stylex.props(styles.componentRow)}>
+            <div {...stylex.props(styles.componentGroup)}>
+              <div {...stylex.props(styles.componentLabel)}>Code block</div>
+              <div {...stylex.props(styles.codeBlock)} style={{borderRadius: co}}>
                 <span style={{color: '#5B08D8'}}>const</span> radius = <span style={{color: '#0064E0'}}>max</span>(<span style={{color: '#E9AF08'}}>0</span>, outer - padding);<br />
                 <span style={{color: '#5B08D8'}}>const</span> theme = <span style={{color: '#0D8626'}}>&apos;default&apos;</span>;
               </div>
             </div>
-            <div {...stylex.props(s.componentGroup)}>
-              <div {...stylex.props(s.componentLabel)}>Thumbnails</div>
+            <div {...stylex.props(styles.componentGroup)}>
+              <div {...stylex.props(styles.componentLabel)}>Thumbnails</div>
               <div style={{display: 'flex', gap: 8}}>
-                <div {...stylex.props(s.thumb)} style={{background: 'linear-gradient(135deg,#E9AF08,#E3193B)'}} />
-                <div {...stylex.props(s.thumb)} style={{background: 'linear-gradient(135deg,#0064E0,#0D8626)'}} />
-                <div {...stylex.props(s.thumb)} style={{background: 'linear-gradient(135deg,#5B08D8,#E3193B)'}} />
-                <div {...stylex.props(s.thumb)} style={{background: 'linear-gradient(135deg,#0D8626,#0064E0)'}} />
+                <div {...stylex.props(styles.thumb)} style={{borderRadius: co, background: 'linear-gradient(135deg,#E9AF08,#E3193B)'}} />
+                <div {...stylex.props(styles.thumb)} style={{borderRadius: co, background: 'linear-gradient(135deg,#0064E0,#0D8626)'}} />
+                <div {...stylex.props(styles.thumb)} style={{borderRadius: co, background: 'linear-gradient(135deg,#5B08D8,#E3193B)'}} />
+                <div {...stylex.props(styles.thumb)} style={{borderRadius: co, background: 'linear-gradient(135deg,#0D8626,#0064E0)'}} />
               </div>
             </div>
           </div>
-        </div>
+        </XDSVStack>
 
-        <div {...stylex.props(s.divider)} />
+        <XDSDivider />
 
         {/* radius-element */}
-        <div {...stylex.props(s.section)}>
-          <div {...stylex.props(s.sectionHeader)}>
-            <span {...stylex.props(s.sectionTitle)}>radius-element</span>
-            <span {...stylex.props(s.sectionToken)}>8dp &times; multiplier</span>
-          </div>
-          <div {...stylex.props(s.componentRow)}>
-            <div {...stylex.props(s.componentGroup)}>
-              <div {...stylex.props(s.componentLabel)}>Buttons</div>
+        <XDSVStack gap={3}>
+          <XDSHStack gap={3} vAlign="center">
+            <span {...stylex.props(styles.sectionTitle)}>radius-element</span>
+            <span {...stylex.props(styles.sectionToken)}>8dp &times; multiplier</span>
+          </XDSHStack>
+          <div {...stylex.props(styles.componentRow)}>
+            <div {...stylex.props(styles.componentGroup)}>
+              <div {...stylex.props(styles.componentLabel)}>Buttons</div>
               <div style={{display: 'flex', gap: 8}}>
-                <button {...stylex.props(s.btn, s.btnPrimary)}>Primary</button>
-                <button {...stylex.props(s.btn, s.btnSecondary)}>Secondary</button>
-                <button {...stylex.props(s.btn, s.btnFlat)}>Flat</button>
+                <button {...stylex.props(styles.btn, styles.btnPrimary)} style={{borderRadius: el}}>Primary</button>
+                <button {...stylex.props(styles.btn, styles.btnSecondary)} style={{borderRadius: el}}>Secondary</button>
+                <button {...stylex.props(styles.btn, styles.btnFlat)} style={{borderRadius: el}}>Flat</button>
               </div>
             </div>
-            <div {...stylex.props(s.componentGroup)}>
-              <div {...stylex.props(s.componentLabel)}>Input</div>
-              <input {...stylex.props(s.input)} placeholder="Enter text..." />
+            <div {...stylex.props(styles.componentGroup)}>
+              <div {...stylex.props(styles.componentLabel)}>Input</div>
+              <input {...stylex.props(styles.input)} style={{borderRadius: el}} placeholder="Enter text..." />
             </div>
-            <div {...stylex.props(s.componentGroup)}>
-              <div {...stylex.props(s.componentLabel)}>Text area</div>
-              <textarea {...stylex.props(s.textarea)} placeholder="Write something..." />
+            <div {...stylex.props(styles.componentGroup)}>
+              <div {...stylex.props(styles.componentLabel)}>Text area</div>
+              <textarea {...stylex.props(styles.textarea)} style={{borderRadius: el}} placeholder="Write something..." />
             </div>
-            <div {...stylex.props(s.componentGroup)}>
-              <div {...stylex.props(s.componentLabel)}>Tokens</div>
+            <div {...stylex.props(styles.componentGroup)}>
+              <div {...stylex.props(styles.componentLabel)}>Tokens</div>
               <div style={{display: 'flex', gap: 6}}>
-                <span {...stylex.props(s.xdsToken)}>Design <span {...stylex.props(s.xdsTokenX)}>&times;</span></span>
-                <span {...stylex.props(s.xdsToken)}>System <span {...stylex.props(s.xdsTokenX)}>&times;</span></span>
-                <span {...stylex.props(s.xdsToken)}>Radius <span {...stylex.props(s.xdsTokenX)}>&times;</span></span>
+                <span {...stylex.props(styles.token)} style={{borderRadius: co}}>Design <span {...stylex.props(styles.tokenX)}>&times;</span></span>
+                <span {...stylex.props(styles.token)} style={{borderRadius: co}}>System <span {...stylex.props(styles.tokenX)}>&times;</span></span>
+                <span {...stylex.props(styles.token)} style={{borderRadius: co}}>Radius <span {...stylex.props(styles.tokenX)}>&times;</span></span>
               </div>
             </div>
           </div>
-        </div>
+        </XDSVStack>
 
-        <div {...stylex.props(s.divider)} />
+        <XDSDivider />
 
         {/* radius-container */}
-        <div {...stylex.props(s.section)}>
-          <div {...stylex.props(s.sectionHeader)}>
-            <span {...stylex.props(s.sectionTitle)}>radius-container</span>
-            <span {...stylex.props(s.sectionToken)}>12dp &times; multiplier</span>
+        <XDSVStack gap={3}>
+          <XDSHStack gap={3} vAlign="center">
+            <span {...stylex.props(styles.sectionTitle)}>radius-container</span>
+            <span {...stylex.props(styles.sectionToken)}>12dp &times; multiplier</span>
+          </XDSHStack>
+          <div {...stylex.props(styles.componentRow)}>
+            <div {...stylex.props(styles.componentGroup)}>
+              <div {...stylex.props(styles.componentLabel)}>Card</div>
+              <div {...stylex.props(styles.card)} style={{borderRadius: ct}}>
+                <div {...stylex.props(styles.cardMedia)} />
+                <div {...stylex.props(styles.cardBody)}>
+                  <div {...stylex.props(styles.cardTitle)}>Card title</div>
+                  <div {...stylex.props(styles.cardDesc)}>Grouped content.</div>
+                </div>
+              </div>
+            </div>
+            <div {...stylex.props(styles.componentGroup)}>
+              <div {...stylex.props(styles.componentLabel)}>Modal</div>
+              <div {...stylex.props(styles.modal)} style={{borderRadius: ct}}>
+                <div {...stylex.props(styles.modalHeader)}>
+                  <span {...stylex.props(styles.modalTitle)}>Confirm action</span>
+                  <span {...stylex.props(styles.modalClose)}>&times;</span>
+                </div>
+                <div {...stylex.props(styles.modalBody)}>Are you sure? This cannot be undone.</div>
+                <div {...stylex.props(styles.modalFooter)}>
+                  <button {...stylex.props(styles.btn, styles.btnSm, styles.btnSecondary)} style={{borderRadius: el}}>Cancel</button>
+                  <button {...stylex.props(styles.btn, styles.btnSm, styles.btnPrimary)} style={{borderRadius: el}}>Confirm</button>
+                </div>
+              </div>
+            </div>
+            <div {...stylex.props(styles.componentGroup)}>
+              <div {...stylex.props(styles.componentLabel)}>Dropdown</div>
+              <div {...stylex.props(styles.dropdown)} style={{borderRadius: ct}}>
+                <div {...stylex.props(styles.dropdownItem, styles.dropdownItemActive)} style={{borderRadius: Math.max(0, ct - 4)}}>Dashboard</div>
+                <div {...stylex.props(styles.dropdownItem)} style={{borderRadius: Math.max(0, ct - 4)}}>Settings</div>
+                <div {...stylex.props(styles.dropdownItem)} style={{borderRadius: Math.max(0, ct - 4)}}>Profile</div>
+                <div {...stylex.props(styles.dropdownItem)} style={{borderRadius: Math.max(0, ct - 4)}}>Log out</div>
+              </div>
+            </div>
+            <div {...stylex.props(styles.componentGroup)}>
+              <div {...stylex.props(styles.componentLabel)}>Toasts</div>
+              <XDSVStack gap={2}>
+                <div {...stylex.props(styles.toast)} style={{borderRadius: ct}}><div {...stylex.props(styles.toastDot)} style={{background: '#0D8626'}} /><span>Saved successfully</span></div>
+                <div {...stylex.props(styles.toast)} style={{borderRadius: ct}}><div {...stylex.props(styles.toastDot)} style={{background: '#E3193B'}} /><span>Something went wrong</span></div>
+              </XDSVStack>
+            </div>
           </div>
-          <div {...stylex.props(s.componentRow)}>
-            <div {...stylex.props(s.componentGroup)}>
-              <div {...stylex.props(s.componentLabel)}>Card</div>
-              <div {...stylex.props(s.xdsCard)}>
-                <div {...stylex.props(s.cardMedia)} />
-                <div {...stylex.props(s.cardBody)}>
-                  <div {...stylex.props(s.cardTitle)}>Card title</div>
-                  <div {...stylex.props(s.cardDesc)}>Grouped content.</div>
-                </div>
-              </div>
-            </div>
-            <div {...stylex.props(s.componentGroup)}>
-              <div {...stylex.props(s.componentLabel)}>Modal</div>
-              <div {...stylex.props(s.modal)}>
-                <div {...stylex.props(s.modalHeader)}>
-                  <span {...stylex.props(s.modalTitle)}>Confirm action</span>
-                  <span {...stylex.props(s.modalClose)}>&times;</span>
-                </div>
-                <div {...stylex.props(s.modalBody)}>Are you sure? This cannot be undone.</div>
-                <div {...stylex.props(s.modalFooter)}>
-                  <button {...stylex.props(s.btn, s.btnSm, s.btnSecondary)}>Cancel</button>
-                  <button {...stylex.props(s.btn, s.btnSm, s.btnPrimary)}>Confirm</button>
-                </div>
-              </div>
-            </div>
-            <div {...stylex.props(s.componentGroup)}>
-              <div {...stylex.props(s.componentLabel)}>Dropdown</div>
-              <div {...stylex.props(s.dropdown)}>
-                <div {...stylex.props(s.dropdownItem, s.dropdownItemActive)}>Dashboard</div>
-                <div {...stylex.props(s.dropdownItem)}>Settings</div>
-                <div {...stylex.props(s.dropdownItem)}>Profile</div>
-                <div {...stylex.props(s.dropdownItem)}>Log out</div>
-              </div>
-            </div>
-            <div {...stylex.props(s.componentGroup)}>
-              <div {...stylex.props(s.componentLabel)}>Toasts</div>
-              <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
-                <div {...stylex.props(s.toast)}><div {...stylex.props(s.toastDot)} style={{background: 'var(--color-positive)'}} /><span>Saved successfully</span></div>
-                <div {...stylex.props(s.toast)}><div {...stylex.props(s.toastDot)} style={{background: 'var(--color-negative)'}} /><span>Something went wrong</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
+        </XDSVStack>
 
-        <div {...stylex.props(s.divider)} />
+        <XDSDivider />
 
         {/* radius-rounded */}
-        <div {...stylex.props(s.section)}>
-          <div {...stylex.props(s.sectionHeader)}>
-            <span {...stylex.props(s.sectionTitle)}>radius-rounded</span>
-            <span {...stylex.props(s.sectionToken)}>9999px</span>
-            <span {...stylex.props(s.sectionNote)}>Always pill &middot; ignores multiplier</span>
-          </div>
-          <div {...stylex.props(s.componentRow)}>
-            <div {...stylex.props(s.componentGroup)}>
-              <div {...stylex.props(s.componentLabel)}>Badges</div>
+        <XDSVStack gap={3}>
+          <XDSHStack gap={3} vAlign="center">
+            <span {...stylex.props(styles.sectionTitle)}>radius-rounded</span>
+            <span {...stylex.props(styles.sectionToken)}>9999px</span>
+            <span {...stylex.props(styles.sectionNote)}>Always pill &middot; ignores multiplier</span>
+          </XDSHStack>
+          <div {...stylex.props(styles.componentRow)}>
+            <div {...stylex.props(styles.componentGroup)}>
+              <div {...stylex.props(styles.componentLabel)}>Badges</div>
               <div style={{display: 'flex', gap: 6}}>
-                <span {...stylex.props(s.badge, s.badgeInfo)}>New</span>
-                <span {...stylex.props(s.badge, s.badgeSuccess)}>Active</span>
-                <span {...stylex.props(s.badge, s.badgeError)}>Error</span>
-                <span {...stylex.props(s.badge, s.badgeWarning)}>Pending</span>
+                <span {...stylex.props(styles.badge, styles.badgeInfo)} style={{borderRadius: 9999}}>New</span>
+                <span {...stylex.props(styles.badge, styles.badgeSuccess)} style={{borderRadius: 9999}}>Active</span>
+                <span {...stylex.props(styles.badge, styles.badgeError)} style={{borderRadius: 9999}}>Error</span>
+                <span {...stylex.props(styles.badge, styles.badgeWarning)} style={{borderRadius: 9999}}>Pending</span>
               </div>
             </div>
-            <div {...stylex.props(s.componentGroup)}>
-              <div {...stylex.props(s.componentLabel)}>Avatars</div>
+            <div {...stylex.props(styles.componentGroup)}>
+              <div {...stylex.props(styles.componentLabel)}>Avatars</div>
               <div style={{display: 'flex', gap: 8}}>
-                <div {...stylex.props(s.avatar)} style={{background: 'linear-gradient(135deg,#5B08D8,#E3193B)'}}>JD</div>
-                <div {...stylex.props(s.avatar)} style={{background: 'linear-gradient(135deg,#0064E0,#0D8626)'}}>AB</div>
-                <div {...stylex.props(s.avatar)} style={{background: 'linear-gradient(135deg,#E9AF08,#E3193B)'}}>KL</div>
+                <div {...stylex.props(styles.avatar)} style={{borderRadius: 9999, background: 'linear-gradient(135deg,#5B08D8,#E3193B)'}}>JD</div>
+                <div {...stylex.props(styles.avatar)} style={{borderRadius: 9999, background: 'linear-gradient(135deg,#0064E0,#0D8626)'}}>AB</div>
+                <div {...stylex.props(styles.avatar)} style={{borderRadius: 9999, background: 'linear-gradient(135deg,#E9AF08,#E3193B)'}}>KL</div>
               </div>
             </div>
-            <div {...stylex.props(s.componentGroup)}>
-              <div {...stylex.props(s.componentLabel)}>Status dots</div>
-              <div style={{display: 'flex', flexDirection: 'column', gap: 6}}>
-                <div {...stylex.props(s.statusRow)}><div {...stylex.props(s.statusDot)} style={{background: 'var(--color-positive)'}} />Online</div>
-                <div {...stylex.props(s.statusRow)}><div {...stylex.props(s.statusDot)} style={{background: 'var(--color-warning)'}} />Away</div>
-                <div {...stylex.props(s.statusRow)}><div {...stylex.props(s.statusDot)} style={{background: 'var(--color-negative)'}} />Busy</div>
-              </div>
+            <div {...stylex.props(styles.componentGroup)}>
+              <div {...stylex.props(styles.componentLabel)}>Status dots</div>
+              <XDSVStack gap={2}>
+                <div {...stylex.props(styles.statusRow)}><div {...stylex.props(styles.statusDot)} style={{background: '#0D8626'}} />Online</div>
+                <div {...stylex.props(styles.statusRow)}><div {...stylex.props(styles.statusDot)} style={{background: '#E9AF08'}} />Away</div>
+                <div {...stylex.props(styles.statusRow)}><div {...stylex.props(styles.statusDot)} style={{background: '#E3193B'}} />Busy</div>
+              </XDSVStack>
             </div>
-            <div {...stylex.props(s.componentGroup)}>
-              <div {...stylex.props(s.componentLabel)}>Toggles</div>
-              <div style={{display: 'flex', flexDirection: 'column', gap: 10}}>
-                <div {...stylex.props(s.switchRow)}><div {...stylex.props(s.switchEl, s.switchOn)}><div {...stylex.props(s.switchThumb, s.switchThumbOn)} /></div><span>Notifications</span></div>
-                <div {...stylex.props(s.switchRow)}><div {...stylex.props(s.switchEl, s.switchOff)}><div {...stylex.props(s.switchThumb)} /></div><span>Dark mode</span></div>
-              </div>
+            <div {...stylex.props(styles.componentGroup)}>
+              <div {...stylex.props(styles.componentLabel)}>Toggles</div>
+              <XDSVStack gap={2}>
+                <div {...stylex.props(styles.switchRow)}><div {...stylex.props(styles.switchEl, styles.switchOn)} style={{borderRadius: 9999}}><div {...stylex.props(styles.switchThumb, styles.switchThumbOn)} style={{borderRadius: 9999}} /></div><span>Notifications</span></div>
+                <div {...stylex.props(styles.switchRow)}><div {...stylex.props(styles.switchEl, styles.switchOff)} style={{borderRadius: 9999}}><div {...stylex.props(styles.switchThumb)} style={{borderRadius: 9999}} /></div><span>Dark mode</span></div>
+              </XDSVStack>
             </div>
           </div>
-        </div>
+        </XDSVStack>
 
-        <div {...stylex.props(s.divider)} />
+        <XDSDivider />
 
         {/* Concentric Radius */}
-        <div {...stylex.props(s.section)}>
-          <div {...stylex.props(s.sectionHeader)}>
-            <span {...stylex.props(s.sectionTitle)}>Concentric Radius</span>
-            <span {...stylex.props(s.sectionToken)}>max(0, outerRadius &minus; padding)</span>
-          </div>
-          <p style={{fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 16}}>Inner radius = outer minus padding. Nested elements get concentric corners.</p>
-          <div {...stylex.props(s.componentRow)}>
-            <div {...stylex.props(s.componentGroup)}>
-              <div {...stylex.props(s.componentLabel)}>Nested elements</div>
+        <XDSVStack gap={3}>
+          <XDSHStack gap={3} vAlign="center">
+            <span {...stylex.props(styles.sectionTitle)}>Concentric Radius</span>
+            <span {...stylex.props(styles.sectionToken)}>max(0, outerRadius &minus; padding)</span>
+          </XDSHStack>
+          <XDSText type="supporting" color="secondary">
+            Inner radius = outer minus padding. Nested elements get concentric corners.
+          </XDSText>
+          <div {...stylex.props(styles.componentRow)}>
+            <div {...stylex.props(styles.componentGroup)}>
+              <div {...stylex.props(styles.componentLabel)}>Nested elements</div>
               <div style={{display: 'flex', gap: 24, flexWrap: 'wrap'}}>
-                <div {...stylex.props(s.concentricCard)}>
-                  <div {...stylex.props(s.concentricMedia)} />
+                <div {...stylex.props(styles.concentricCard)} style={{borderRadius: ct}}>
+                  <div {...stylex.props(styles.concentricMedia)} style={{borderRadius: Math.max(0, ct - 10)}} />
                   <div style={{paddingInline: 2, flex: 1}}>
-                    <div {...stylex.props(s.concentricTitle)}>Inset media</div>
-                    <div {...stylex.props(s.concentricDetail)}>card: {ct}px, pad: 10px<br />&rarr; inner: {Math.max(0, +(ct - 10).toFixed(1))}px</div>
+                    <div {...stylex.props(styles.concentricTitle)}>Inset media</div>
+                    <div {...stylex.props(styles.concentricDetail)}>card: {ct}px, pad: 10px<br />&rarr; inner: {Math.max(0, +(ct - 10).toFixed(1))}px</div>
                   </div>
-                  <button {...stylex.props(s.concentricBtn)}>Action</button>
-                  <div {...stylex.props(s.concentricDetail)} style={{marginTop: 4}}>btn: max(0, {ct} - 10) = {Math.max(0, +(ct - 10).toFixed(1))}px</div>
+                  <button {...stylex.props(styles.concentricBtn)} style={{borderRadius: Math.max(0, ct - 10)}}>Action</button>
+                  <div {...stylex.props(styles.concentricDetail)} style={{marginTop: 4}}>btn: max(0, {ct} - 10) = {Math.max(0, +(ct - 10).toFixed(1))}px</div>
                 </div>
-                <div {...stylex.props(s.concentricCard)} style={{padding: 8}}>
-                  <div {...stylex.props(s.concentricMediaTight)} />
+                <div {...stylex.props(styles.concentricCard)} style={{borderRadius: ct, padding: 8}}>
+                  <div {...stylex.props(styles.concentricMedia)} style={{borderRadius: Math.max(0, ct - 8)}} />
                   <div style={{paddingInline: 2, flex: 1}}>
-                    <div {...stylex.props(s.concentricTitle)}>Tighter pad</div>
-                    <div {...stylex.props(s.concentricDetail)}>card: {ct}px, pad: 8px<br />&rarr; inner: {Math.max(0, +(ct - 8).toFixed(1))}px</div>
+                    <div {...stylex.props(styles.concentricTitle)}>Tighter pad</div>
+                    <div {...stylex.props(styles.concentricDetail)}>card: {ct}px, pad: 8px<br />&rarr; inner: {Math.max(0, +(ct - 8).toFixed(1))}px</div>
                   </div>
-                  <button {...stylex.props(s.concentricBtn, s.concentricBtnTight)}>Action</button>
-                  <div {...stylex.props(s.concentricDetail)} style={{marginTop: 4}}>btn: max(0, {ct} - 8) = {Math.max(0, +(ct - 8).toFixed(1))}px</div>
+                  <button {...stylex.props(styles.concentricBtn)} style={{borderRadius: Math.max(0, ct - 8)}}>Action</button>
+                  <div {...stylex.props(styles.concentricDetail)} style={{marginTop: 4}}>btn: max(0, {ct} - 8) = {Math.max(0, +(ct - 8).toFixed(1))}px</div>
                 </div>
-                <div {...stylex.props(s.flushCard)}>
-                  <div {...stylex.props(s.flushMedia)} />
-                  <div {...stylex.props(s.flushBody)}>
-                    <div {...stylex.props(s.concentricTitle)}>Flush media</div>
-                    <div {...stylex.props(s.concentricDetail)}>card: {ct}px, pad: 0<br />&rarr; inherits card</div>
+                <div {...stylex.props(styles.flushCard)} style={{borderRadius: ct}}>
+                  <div {...stylex.props(styles.flushMedia)} />
+                  <div {...stylex.props(styles.flushBody)}>
+                    <div {...stylex.props(styles.concentricTitle)}>Flush media</div>
+                    <div {...stylex.props(styles.concentricDetail)}>card: {ct}px, pad: 0<br />&rarr; inherits card</div>
                   </div>
-                  <button {...stylex.props(s.flushBtn)}>Action</button>
-                  <div {...stylex.props(s.concentricDetail)} style={{margin: '4px 4px 0'}}>btn: max(0, {ct} - 4) = {Math.max(0, +(ct - 4).toFixed(1))}px</div>
+                  <button {...stylex.props(styles.flushBtn)} style={{borderRadius: Math.max(0, ct - 4)}}>Action</button>
+                  <div {...stylex.props(styles.concentricDetail)} style={{margin: '4px 4px 0'}}>btn: max(0, {ct} - 4) = {Math.max(0, +(ct - 4).toFixed(1))}px</div>
                 </div>
               </div>
             </div>
-            <div {...stylex.props(s.componentGroup)}>
-              <div {...stylex.props(s.componentLabel)}>Dropdown (4px pad)</div>
-              <div {...stylex.props(s.dropdown)} style={{width: 190}}>
-                <div {...stylex.props(s.dropdownItem, s.dropdownItemActive)}>Dashboard</div>
-                <div {...stylex.props(s.dropdownItem)}>Settings</div>
-                <div {...stylex.props(s.dropdownItem)}>Profile</div>
-                <div {...stylex.props(s.dropdownItem)}>Log out</div>
+            <div {...stylex.props(styles.componentGroup)}>
+              <div {...stylex.props(styles.componentLabel)}>Dropdown (4px pad)</div>
+              <div {...stylex.props(styles.dropdown)} style={{borderRadius: ct, width: 190}}>
+                <div {...stylex.props(styles.dropdownItem, styles.dropdownItemActive)} style={{borderRadius: Math.max(0, ct - 4)}}>Dashboard</div>
+                <div {...stylex.props(styles.dropdownItem)} style={{borderRadius: Math.max(0, ct - 4)}}>Settings</div>
+                <div {...stylex.props(styles.dropdownItem)} style={{borderRadius: Math.max(0, ct - 4)}}>Profile</div>
+                <div {...stylex.props(styles.dropdownItem)} style={{borderRadius: Math.max(0, ct - 4)}}>Log out</div>
               </div>
-              <div {...stylex.props(s.concentricDetail)} style={{marginTop: 6}}>menu: {ct}px, pad: 4px<br />&rarr; item: {Math.max(0, +(ct - 4).toFixed(1))}px</div>
+              <div {...stylex.props(styles.concentricDetail)} style={{marginTop: 6}}>menu: {ct}px, pad: 4px<br />&rarr; item: {Math.max(0, +(ct - 4).toFixed(1))}px</div>
             </div>
           </div>
-        </div>
-      </XDSTheme>
+        </XDSVStack>
+      </XDSVStack>
     </div>
   );
 }
