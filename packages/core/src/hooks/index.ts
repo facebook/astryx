@@ -17,3 +17,6 @@ export {useListFocus} from './useListFocus';
 export type {UseListFocusOptions, UseListFocusReturn} from './useListFocus';
 
 export {useMediaQuery} from './useMediaQuery';
+
+export {useOverflow} from './useOverflow';
+export type {UseOverflowOptions, UseOverflowReturn} from './useOverflow';

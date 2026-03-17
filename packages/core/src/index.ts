@@ -96,6 +96,9 @@ export * from './StatusDot';
 // Spinner loading indicator
 export * from './Spinner';
 
+// Overflow list
+export * from './OverflowList';
+
 // Hooks
 export * from './hooks';
 
