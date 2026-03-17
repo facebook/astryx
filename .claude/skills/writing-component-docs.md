@@ -117,3 +117,26 @@ npx xds --detail compact --lang dense component Button  # Compact + compressed
 ```
 
 `--lang` controls which prose translation is used. `--detail` controls how much detail (full, compact, brief). They compose independently.
+
+## Reference Docs (non-component)
+
+Reference docs (tokens, principles, theme) use a different type: `ReferenceDoc` from `docs-types.ts`.
+
+They live in `packages/cli/docs/` as `.doc.mjs` files with translations in `*.doc.dense.mjs` and `*.doc.zh.mjs`.
+
+Content is structured as sections with ordered content blocks:
+
+- `prose` — translatable text
+- `code` — code examples (not translated)
+- `table` — data tables (not translated)
+- `list` — rules, anti-patterns, tips (translatable)
+
+To add a new reference doc: create `packages/cli/docs/mytopic.doc.mjs` exporting a `docs` constant. It auto-discovers.
+
+```bash
+npx xds docs                          # list topics
+npx xds docs tokens                   # full output
+npx xds docs tokens spacing           # single section
+npx xds --detail compact docs tokens  # agent-friendly
+npx xds --lang dense docs tokens      # compressed prose
+```
