@@ -23,7 +23,7 @@
 
 'use client';
 
-import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
+import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {XDSButton} from '../Button';
@@ -280,10 +280,6 @@ export function XDSMobileNav({
 
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
-  // Tracks whether the open animation styles should be applied.
-  // Deferred by one frame after showModal() so the browser paints the
-  // closed state first, enabling the CSS transition to play on open.
-  const [showOpen, setShowOpen] = useState(false);
 
   // Merge refs
   const setRefs = useCallback(
@@ -300,12 +296,10 @@ export function XDSMobileNav({
   );
 
   // Open/close the dialog via showModal()/close()
-  // showOpen is deferred by one frame so CSS transitions animate on open.
-  // close() is delayed so the slide-out animation can play before removal.
+  // close() is delayed so the slide-out transition can play.
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    let rafId: number;
 
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current);
@@ -316,24 +310,17 @@ export function XDSMobileNav({
       if (!dialog.open) {
         dialog.showModal();
       }
-      rafId = requestAnimationFrame(() => {
-        setShowOpen(true);
-      });
-    } else {
-      setShowOpen(false);
-      if (dialog.open) {
-        const duration = window.matchMedia('(prefers-reduced-motion: reduce)')
-          .matches
-          ? 10
-          : 250;
-        closeTimeoutRef.current = setTimeout(() => {
-          dialog.close();
-        }, duration);
-      }
+    } else if (dialog.open) {
+      const duration = window.matchMedia('(prefers-reduced-motion: reduce)')
+        .matches
+        ? 10
+        : 250;
+      closeTimeoutRef.current = setTimeout(() => {
+        dialog.close();
+      }, duration);
     }
 
     return () => {
-      cancelAnimationFrame(rafId);
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
       }
@@ -375,7 +362,7 @@ export function XDSMobileNav({
         stylex.props(
           styles.dialog,
           styles.backdrop,
-          showOpen && styles.backdropOpen,
+          isOpen && styles.backdropOpen,
           xstyle,
         ),
       )}>
@@ -385,9 +372,9 @@ export function XDSMobileNav({
           styles.drawer,
           dynamicStyles.width(width),
           isStart && styles.drawerStart,
-          isStart && showOpen && styles.drawerStartOpen,
+          isStart && isOpen && styles.drawerStartOpen,
           !isStart && styles.drawerEnd,
-          !isStart && showOpen && styles.drawerEndOpen,
+          !isStart && isOpen && styles.drawerEndOpen,
         )}>
         {/* Header — custom content or title + close button */}
         <div
