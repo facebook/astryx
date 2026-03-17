@@ -10,6 +10,12 @@
 export {XDSPowerSearch} from './XDSPowerSearch';
 export type {XDSPowerSearchProps} from './XDSPowerSearch';
 
+export {
+  createPowerSearchConfig,
+  usePowerSearchConfig,
+} from './usePowerSearchConfig';
+export type {FieldDefinition, InferData} from './usePowerSearchConfig';
+
 export type {
   // Config types
   PowerSearchConfig,
