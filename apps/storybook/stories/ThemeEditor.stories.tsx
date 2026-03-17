@@ -1778,9 +1778,8 @@ function ThemeEditorComponent() {
     <div
       style={{
         display: 'flex',
-        position: 'absolute',
+        position: 'fixed',
         inset: 0,
-        margin: -16,
         overflow: 'hidden',
         backgroundColor: 'var(--color-wash)',
       }}>
@@ -1966,7 +1965,8 @@ type Story = StoryObj;
 export const ThemeEditor: Story = {
   render: () => <ThemeEditorComponent />,
   parameters: {
-    // Disable the theme decorator for this story since we manage our own theme
-    xdsTheme: 'none',
+    // Use default theme for the editor chrome (left panel).
+    // The preview panel wraps its own <XDSTheme theme={currentTheme}>.
+    xdsTheme: 'default',
   },
 };
