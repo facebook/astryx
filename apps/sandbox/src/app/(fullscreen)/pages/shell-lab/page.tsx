@@ -18,7 +18,7 @@ import {
   XDSTopNavMenu,
   XDSTopNavMegaMenu,
 } from '@xds/core/TopNav';
-import {XDSMobileNav} from '@xds/core/MobileNav';
+import {XDSMobileNav, XDSMobileNavToggle} from '@xds/core/MobileNav';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSSwitch} from '@xds/core/Switch';
@@ -115,9 +115,8 @@ interface ShellConfig {
   showNestedItems: boolean;
   isCollapsible: boolean;
   collapseToggleLocation: 'sidenav' | 'topnav';
-  mobileNavMode: 'auto' | 'custom' | 'disabled';
+  mobileNavMode: 'auto' | 'customContent' | 'customToggle' | 'disabled';
   mobileNavSide: 'start' | 'end';
-  mobileNavHasToggle: boolean;
   topNavAlignment: 'start' | 'center' | 'end';
   topNavStyle: 'items' | 'menus' | 'mega';
   showTopNavHeading: boolean;
@@ -142,7 +141,6 @@ const DEFAULT_CONFIG: ShellConfig = {
   collapseToggleLocation: 'sidenav',
   mobileNavMode: 'auto',
   mobileNavSide: 'start',
-  mobileNavHasToggle: true,
   topNavAlignment: 'start',
   topNavStyle: 'items',
   showTopNavHeading: true,
@@ -332,35 +330,29 @@ function ConfigPanel({
             }
             options={[
               {value: 'auto', label: 'Auto'},
-              {value: 'custom', label: 'Custom'},
+              {value: 'customContent', label: 'Custom Content'},
+              {value: 'customToggle', label: 'Custom Toggle'},
               {value: 'disabled', label: 'Disabled'},
             ]}
           />
           {config.mobileNavMode !== 'disabled' && (
-            <>
-              <SelectorRow
-                label="Breakpoint"
-                value={config.sideNavBreakpoint}
-                onChange={v =>
-                  onChange({
-                    sideNavBreakpoint: v as ShellConfig['sideNavBreakpoint'],
-                  })
-                }
-                options={[
-                  {value: 'sm', label: 'SM'},
-                  {value: 'md', label: 'MD'},
-                  {value: 'lg', label: 'LG'},
-                  {value: 'none', label: 'None'},
-                ]}
-              />
-              <ToggleRow
-                label="Has Toggle"
-                value={config.mobileNavHasToggle}
-                onChange={v => onChange({mobileNavHasToggle: v})}
-              />
-            </>
+            <SelectorRow
+              label="Breakpoint"
+              value={config.sideNavBreakpoint}
+              onChange={v =>
+                onChange({
+                  sideNavBreakpoint: v as ShellConfig['sideNavBreakpoint'],
+                })
+              }
+              options={[
+                {value: 'sm', label: 'SM'},
+                {value: 'md', label: 'MD'},
+                {value: 'lg', label: 'LG'},
+                {value: 'none', label: 'None'},
+              ]}
+            />
           )}
-          {config.mobileNavMode === 'custom' && (
+          {config.mobileNavMode === 'customContent' && (
             <SelectorRow
               label="Side"
               value={config.mobileNavSide}
@@ -744,6 +736,10 @@ const styles = stylex.create({
   padding4: {
     padding: 16,
   },
+  customSearchBar: {
+    paddingInline: 8,
+    paddingBlock: 4,
+  },
 });
 
 export default function ShellLabPage() {
@@ -763,11 +759,29 @@ export default function ShellLabPage() {
     | undefined =
     config.mobileNavMode === 'disabled'
       ? false
-      : config.mobileNavMode === 'custom'
+      : config.mobileNavMode === 'customContent'
         ? {
-            hasToggle: config.mobileNavHasToggle,
             content: (
-              <XDSMobileNav title="Navigation" side={config.mobileNavSide}>
+              <XDSMobileNav title="Custom Nav" side={config.mobileNavSide}>
+                <XDSVStack gap={2} xstyle={styles.customSearchBar}>
+                  <input
+                    type="search"
+                    placeholder="Search navigation..."
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: 8,
+                      border: '1px solid var(--color-divider)',
+                      background: 'var(--color-wash)',
+                      fontSize: 14,
+                      outline: 'none',
+                    }}
+                  />
+                </XDSVStack>
+                <XDSSideNavSection title="Quick Links">
+                  <XDSSideNavItem label="Docs" href="#" />
+                  <XDSSideNavItem label="Help Center" href="#" />
+                </XDSSideNavSection>
                 <XDSSideNavSection title="Navigation">
                   <XDSSideNavItem
                     label="Dashboard"
@@ -789,9 +803,9 @@ export default function ShellLabPage() {
               </XDSMobileNav>
             ),
           }
-        : config.mobileNavHasToggle
-          ? undefined // auto with toggle — default behavior
-          : {hasToggle: false}; // auto without toggle
+        : config.mobileNavMode === 'customToggle'
+          ? {hasToggle: false} // auto drawer content, but no auto toggle
+          : undefined; // auto with toggle — full default behavior
 
   return (
     <>
@@ -836,7 +850,12 @@ export default function ShellLabPage() {
         }>
         <XDSVStack gap={6} xstyle={styles.content}>
           <XDSVStack gap={2}>
-            <XDSHeading level={1}>Shell Lab</XDSHeading>
+            <XDSHStack gap={3} vAlign="center">
+              {config.mobileNavMode === 'customToggle' && (
+                <XDSMobileNavToggle label="Open navigation" />
+              )}
+              <XDSHeading level={1}>Shell Lab</XDSHeading>
+            </XDSHStack>
             <XDSText type="body" color="secondary">
               Use the configuration panel to experiment with different shell and
               navigation setups. Resize the browser to test responsive behavior
