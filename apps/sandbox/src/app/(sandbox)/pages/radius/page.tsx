@@ -401,6 +401,29 @@ const styles = stylex.create({
     cursor: 'pointer',
     transition: 'border-radius 0.2s',
   },
+  // Table styles (shared)
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontSize: 14,
+  },
+  th: {
+    textAlign: 'left',
+    padding: '12px 16px',
+    borderBottom: '2px solid light-dark(#ddd, #444)',
+    fontWeight: 600,
+    color: 'light-dark(#333, #eee)',
+    backgroundColor: 'light-dark(#f5f5f5, #2a2a2a)',
+  },
+  td: {
+    padding: '12px 16px',
+    borderBottom: '1px solid light-dark(#eee, #333)',
+    color: 'light-dark(#333, #eee)',
+  },
+  tdMono: {
+    fontFamily: 'SF Mono, Monaco, Consolas, monospace',
+    fontSize: 13,
+  },
   // Demo table for radius-none
   demoTable: {
     borderCollapse: 'collapse',
