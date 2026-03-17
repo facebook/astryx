@@ -316,12 +316,34 @@ function toKebabCase(str: string): string {
  * Generate CSS rules for a defined theme.
  * Includes token overrides and component style overrides.
  */
-export function generateThemeCSS(theme: XDSDefinedTheme): string {
+/**
+ * Generate the intermediary CSS rules for a theme.
+ *
+ * Returns an array of CSS rule strings — the shared format used by both
+ * the runtime path (useInsertionEffect) and the build path (xds theme build).
+ *
+ * Options:
+ * - computedValues: when true, prose rules use computed px values from tokens
+ *   (for the build path where CSS must be self-contained).
+ *   When false (default), prose rules use var() references to token custom properties
+ *   (for the runtime path where tokens are set on :scope).
+ */
+export function generateThemeRules(
+  theme: XDSDefinedTheme,
+  options: { computedValues?: boolean } = {},
+): string[] {
   const parts: string[] = [];
-  const scopeSelector = `[data-xds-theme="${theme.name}"]`;
+  const { computedValues = false } = options;
+  const tokens = theme.tokens;
 
-  // Token overrides — applied to the scope root itself
-  const tokenEntries = Object.entries(theme.tokens);
+  // Helper: resolve a token to its computed value or var() reference
+  const val = (key: string): string => {
+    if (computedValues && tokens[key]) return tokens[key];
+    return `var(${key})`;
+  };
+
+  // 1. Token block — CSS custom properties on :scope
+  const tokenEntries = Object.entries(tokens);
   if (tokenEntries.length > 0) {
     const declarations = tokenEntries
       .map(([prop, value]) => `    ${prop}: ${value};`)
@@ -329,10 +351,10 @@ export function generateThemeCSS(theme: XDSDefinedTheme): string {
     parts.push(`  :scope {\n${declarations}\n  }`);
   }
 
-  // Component overrides
+  // 2. Component overrides (.xds-* class rules)
   if (theme.components) {
     for (const [component, rules] of Object.entries(theme.components)) {
-      for (const [key, styles] of Object.entries(rules)) {
+      for (const [key, styles] of Object.entries(rules as Record<string, Record<string, string>>)) {
         const entries = Object.entries(styles);
         if (entries.length > 0) {
           const suffix = parseStyleKey(key);
@@ -345,9 +367,86 @@ export function generateThemeCSS(theme: XDSDefinedTheme): string {
     }
   }
 
-  if (parts.length === 0) return '';
+  // 3. Prose HTML element rules (h1-h6, p, small, code, hr)
+  parts.push(`  :is(h1, h2, h3, h4, h5, h6) {
+    font-family: var(--font-heading);
+    color: var(--color-text-primary);
+  }`);
 
-  const inner = parts.join('\n\n');
+  for (let level = 1; level <= 6; level++) {
+    parts.push(`  h${level} {
+    font-size: ${val(`--heading-${level}-size`)};
+    font-weight: ${val(`--heading-${level}-weight`)};
+    line-height: ${val(`--heading-${level}-leading`)};
+  }`);
+  }
+
+  parts.push(`  p {
+    font-family: var(--font-heading);
+    font-size: ${val('--text-body-size')};
+    font-weight: ${val('--text-body-weight')};
+    line-height: ${val('--text-body-leading')};
+    color: var(--color-text-primary);
+  }`);
+
+  parts.push(`  small {
+    font-size: ${val('--text-supporting-size')};
+    font-weight: ${val('--text-supporting-weight')};
+    line-height: ${val('--text-supporting-leading')};
+    color: var(--color-text-secondary);
+  }`);
+
+  parts.push(`  code, pre {
+    font-family: var(--font-code);
+    font-size: ${val('--text-code-size')};
+    line-height: ${val('--text-code-leading')};
+  }`);
+
+  parts.push(`  hr {
+    border: none;
+    border-top: 1px solid var(--color-divider);
+  }`);
+
+  // 4. Prop-level color overrides (for text/heading/link specificity)
+  const TEXT_COLOR_MAP: Record<string, string> = {
+    primary: 'var(--color-text-primary)',
+    secondary: 'var(--color-text-secondary)',
+    disabled: 'var(--color-text-disabled)',
+    placeholder: 'var(--color-text-placeholder)',
+    active: 'var(--color-accent)',
+  };
+
+  const components = theme.components || {};
+  const touchesText = 'text' in components;
+  const touchesHeading = 'heading' in components;
+  const touchesLink = 'link' in components;
+
+  if (touchesText || touchesHeading || touchesLink) {
+    for (const [colorName, colorValue] of Object.entries(TEXT_COLOR_MAP)) {
+      if (touchesText) {
+        parts.push(`  .xds-text.${colorName} { color: ${colorValue}; }`);
+      }
+      if (touchesHeading) {
+        parts.push(`  .xds-heading.${colorName} { color: ${colorValue}; }`);
+      }
+      if (touchesLink) {
+        parts.push(`  .xds-link.${colorName} { color: ${colorValue}; }`);
+      }
+    }
+  }
+
+  return parts;
+}
+
+/**
+ * Generate the full CSS string for a theme — runtime path.
+ * Wraps rules in @scope (no @layer — runtime injects into <style> tag).
+ */
+export function generateThemeCSS(theme: XDSDefinedTheme): string {
+  const rules = generateThemeRules(theme);
+  if (rules.length === 0) return '';
+  const scopeSelector = `[data-xds-theme="${theme.name}"]`;
+  const inner = rules.join('\n\n');
   return `@scope (${scopeSelector}) to ([data-xds-theme]) {\n${inner}\n}`;
 }
 

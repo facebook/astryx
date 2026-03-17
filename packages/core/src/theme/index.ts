@@ -15,6 +15,7 @@ export {XDSTheme} from './XDSTheme';
 export {
   defineTheme,
   generateThemeCSS,
+  generateThemeRules,
   isDefinedTheme,
   xdsTokenDefaults,
 } from './defineTheme';
