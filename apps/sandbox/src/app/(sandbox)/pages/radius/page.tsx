@@ -151,38 +151,6 @@ const styles = stylex.create({
     letterSpacing: '0.08em',
   },
   // radius-none
-  table: {
-    border: '1px solid light-dark(#ddd, #444)',
-    borderRadius: 0,
-    overflow: 'hidden',
-    fontSize: 13,
-    width: 320,
-  },
-  tableHeader: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
-    padding: '8px 12px',
-    backgroundColor: 'light-dark(#f5f5f5, #2a2a2a)',
-    fontWeight: 600,
-    fontSize: 11,
-    color: 'light-dark(#666, #aaa)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    borderBottom: '1px solid light-dark(#ddd, #444)',
-  },
-  tableRow: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
-    padding: '8px 12px',
-    color: 'light-dark(#333, #eee)',
-    borderBottom: '1px solid light-dark(#eee, #333)',
-  },
-  tableRowLast: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
-    padding: '8px 12px',
-    color: 'light-dark(#333, #eee)',
-  },
   sidePanel: {
     border: '1px solid light-dark(#ddd, #444)',
     borderRadius: 0,
