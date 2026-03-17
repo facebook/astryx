@@ -15,6 +15,7 @@ import {XDSSideNav} from './XDSSideNav';
 import {XDSSideNavHeading} from './XDSSideNavHeading';
 import {XDSSideNavItem} from './XDSSideNavItem';
 import {XDSSideNavSection} from './XDSSideNavSection';
+import {XDSSideNavCollapseProvider} from './XDSSideNavCollapseContext';
 import {XDSLinkProvider} from '../Link/XDSLinkProvider';
 
 const CustomLink = forwardRef<HTMLAnchorElement, ComponentPropsWithoutRef<'a'>>(
@@ -25,6 +26,29 @@ const CustomLink = forwardRef<HTMLAnchorElement, ComponentPropsWithoutRef<'a'>>(
   ),
 );
 CustomLink.displayName = 'CustomLink';
+
+// Stub icon for testing
+const StubIcon = () => <svg data-testid="stub-icon" />;
+
+/** Helper to render inside a collapsed SideNav context */
+function renderCollapsed(ui: React.ReactElement) {
+  return render(
+    <XDSSideNavCollapseProvider
+      value={{isCollapsed: true, toggle: () => {}, isCollapsible: true}}>
+      {ui}
+    </XDSSideNavCollapseProvider>,
+  );
+}
+
+/** Helper to render inside an expanded SideNav context */
+function renderExpanded(ui: React.ReactElement) {
+  return render(
+    <XDSSideNavCollapseProvider
+      value={{isCollapsed: false, toggle: () => {}, isCollapsible: true}}>
+      {ui}
+    </XDSSideNavCollapseProvider>,
+  );
+}
 
 // =============================================================================
 // XDSSideNav
@@ -174,7 +198,6 @@ describe('XDSSideNavHeading', () => {
     render(
       <XDSSideNavHeading heading="My App" menu={<div>Menu content</div>} />,
     );
-    // The chevron SVG should be rendered
     const button = screen.getByRole('button');
     expect(button).toBeInTheDocument();
   });
@@ -326,6 +349,134 @@ describe('XDSSideNavItem', () => {
     );
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('data-custom-link');
+  });
+});
+
+// =============================================================================
+// XDSSideNavItem — Collapsed mode
+// =============================================================================
+
+describe('XDSSideNavItem (collapsed)', () => {
+  it('hides items without icons when collapsed', () => {
+    const {container} = renderCollapsed(
+      <XDSSideNavItem label="No Icon Item" />,
+    );
+    expect(screen.queryByText('No Icon Item')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-xds="side-nav-item"]')).toBeNull();
+  });
+
+  it('renders icon-only button when collapsed with icon and no children', () => {
+    renderCollapsed(
+      <XDSSideNavItem label="Dashboard" icon={StubIcon} data-testid="item" />,
+    );
+    const button = screen.getByRole('button');
+    expect(button).toHaveAttribute('aria-label', 'Dashboard');
+    // Label text should not be visible (icon-only mode)
+    expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
+  });
+
+  it('renders collapsed link when href is provided', () => {
+    renderCollapsed(
+      <XDSSideNavItem
+        label="Dashboard"
+        icon={StubIcon}
+        href="/dashboard"
+        data-testid="item"
+      />,
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('href', '/dashboard');
+    expect(link).toHaveAttribute('aria-label', 'Dashboard');
+  });
+
+  it('renders popover trigger when collapsed with icon and children', () => {
+    renderCollapsed(
+      <XDSSideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+        <XDSSideNavItem label="General" />
+        <XDSSideNavItem label="Security" />
+      </XDSSideNavItem>,
+    );
+    const trigger = screen.getByTestId('parent');
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveAttribute('aria-label', 'Settings');
+  });
+
+  it('opens popover on click showing children in expanded form', async () => {
+    const user = userEvent.setup();
+    renderCollapsed(
+      <XDSSideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+        <XDSSideNavItem label="General" data-testid="child-general" />
+        <XDSSideNavItem label="Security" data-testid="child-security" />
+      </XDSSideNavItem>,
+    );
+    const trigger = screen.getByTestId('parent');
+    await user.click(trigger);
+
+    // Popover should be open
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // Children should be visible inside the popover with their labels
+    expect(screen.getByText('General')).toBeInTheDocument();
+    expect(screen.getByText('Security')).toBeInTheDocument();
+  });
+
+  it('renders children as expanded items inside popover (not collapsed)', async () => {
+    const user = userEvent.setup();
+    renderCollapsed(
+      <XDSSideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+        <XDSSideNavItem
+          label="General"
+          href="/general"
+          data-testid="child-general"
+        />
+      </XDSSideNavItem>,
+    );
+    await user.click(screen.getByTestId('parent'));
+
+    // The child should render as a link with visible label text (expanded form)
+    const childLink = screen.getByTestId('child-general');
+    expect(childLink).toBeInTheDocument();
+    expect(childLink.tagName).toBe('A');
+    expect(screen.getByText('General')).toBeInTheDocument();
+  });
+
+  it('shows parent label as header in the popover', async () => {
+    const user = userEvent.setup();
+    renderCollapsed(
+      <XDSSideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+        <XDSSideNavItem label="General" />
+      </XDSSideNavItem>,
+    );
+    await user.click(screen.getByTestId('parent'));
+
+    // The parent label should appear as a header in the popover
+    expect(screen.getByText('Settings')).toBeInTheDocument();
+  });
+
+  it('does not render children without icon when collapsed', () => {
+    renderCollapsed(
+      <XDSSideNavItem label="Settings">
+        <XDSSideNavItem label="General" />
+        <XDSSideNavItem label="Security" />
+      </XDSSideNavItem>,
+    );
+    expect(screen.queryByText('Settings')).not.toBeInTheDocument();
+    expect(screen.queryByText('General')).not.toBeInTheDocument();
+    expect(screen.queryByText('Security')).not.toBeInTheDocument();
+  });
+
+  it('renders normally when not collapsed', () => {
+    renderExpanded(
+      <XDSSideNavItem label="Dashboard" icon={StubIcon}>
+        <XDSSideNavItem label="General" />
+      </XDSSideNavItem>,
+    );
+    // In expanded mode, label text is visible and children render inline
+    expect(screen.getAllByText('Dashboard').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('General')).toBeInTheDocument();
+    // Children group should be rendered inline (not in a popover)
+    expect(screen.getByRole('group')).toBeInTheDocument();
   });
 });
 
