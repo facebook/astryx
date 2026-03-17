@@ -22,7 +22,6 @@ import {XDSTable} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSTheme, defineTheme, expandTypeScale} from '@xds/core/theme';
-import {XDSFontWrapper} from '@xds/core/Text';
 import {
   colorDefaults,
   spacingDefaults,

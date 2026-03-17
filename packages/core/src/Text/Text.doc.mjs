@@ -23,9 +23,9 @@ export const docs = {
     },
     {
       label: 'Font wrapper for native HTML',
-      code: `<XDSFontWrapper>
+      code: `<div className="xds-typography">
   <article dangerouslySetInnerHTML={{__html: markdownContent}} />
-</XDSFontWrapper>`,
+</div>`,
     },
   ],
   features: [
@@ -33,8 +33,6 @@ export const docs = {
     'Headings use native h1–h6 elements with optional aria-level override for decoupled visual vs document hierarchy',
     'Line-clamp truncation with automatic overflow-detecting tooltip',
     'Optical alignment (text-box-trim / capsize) for precise vertical rhythm',
-    'XDSFontWrapper applies typography styles to native HTML — useful for user-generated content and markdown output',
-    'useXDSFontWrapperStyles hook for programmatic StyleX access to heading and prose styles',
     'Tabular number support for aligned numeric data',
     'All typography driven by CSS custom properties — fully themeable per-component',
   ],
@@ -282,43 +280,8 @@ export const docs = {
         },
       ],
     },
-    {
-      name: 'XDSFontWrapper',
-      description:
-        'Wrapper that applies XDS typography styles to native HTML elements within its scope. Useful for user-generated content, markdown output, and other scenarios where XDSText and XDSHeading cannot be used directly.',
-      examples: [
-
-      ],
-      props: [
-        {
-          name: 'children',
-          type: 'ReactNode',
-          description: 'Content to style with XDS typography.',
-          required: true,
-        },
       ],
     },
-    {
-      name: 'useXDSFontWrapperStyles',
-      description:
-        'Hook that returns StyleX style objects from the current theme for headings and prose elements, for use when applying typography styles to native HTML programmatically.',
-      examples: [
-        {
-          label: 'Basic usage',
-          code: `import {useXDSFontWrapperStyles} from '@xds/core';
-import * as stylex from '@stylexjs/stylex';
-
-function Article() {
-  const {headingStyles, proseStyles} = useXDSFontWrapperStyles();
-
-  return (
-    <article>
-      <h1 {...stylex.props(headingStyles?.h1)}>Title</h1>
-      <p {...stylex.props(proseStyles?.p)}>Content...</p>
-    </article>
-  );
-}`,
-        },
       ],
       props: [],
     },
@@ -353,9 +316,9 @@ export const docsZh = {
     },
     {
       label: '原生 HTML 字体包装器',
-      code: `<XDSFontWrapper>
+      code: `<div className="xds-typography">
   <article dangerouslySetInnerHTML={{__html: markdownContent}} />
-</XDSFontWrapper>`,
+</div>`,
     },
   ],
   features: [
@@ -363,8 +326,6 @@ export const docsZh = {
     '标题使用原生 h1–h6 元素，支持可选的 aria-level 覆盖，实现视觉层级与文档层级的解耦',
     '行截断，带自动溢出检测工具提示',
     '光学对齐（text-box-trim / capsize），实现精确的垂直节奏',
-    'XDSFontWrapper 将排版样式应用于原生 HTML — 适用于用户生成内容和 Markdown 输出',
-    'useXDSFontWrapperStyles hook 用于以编程方式通过 StyleX 访问标题和散文样式',
     '表格数字支持，用于对齐的数值数据',
     '所有排版由 CSS 自定义属性驱动 — 每个组件均可完全主题化',
   ],
@@ -616,27 +577,11 @@ export const docsZh = {
         },
       ],
     },
-    {
-      name: 'XDSFontWrapper',
-      description:
-        '将 XDS 排版样式应用于其作用域内原生 HTML 元素的包装器。适用于用户生成内容、Markdown 输出以及无法直接使用 XDSText 和 XDSHeading 的其他场景。',
-      examples: [
-        {
-          label: '默认变体',
-          code: `<XDSFontWrapper>
-  <h1>Page Title</h1>
-  <p>Body text with <strong>bold</strong> and <em>italic</em>.</p>
-  <ul>
-    <li>List item 1</li>
-    <li>List item 2</li>
-  </ul>
-</XDSFontWrapper>`,
-        },
         {
           label: '编辑风格变体',
-          code: `<XDSFontWrapper>
+          code: `<div className="xds-typography">
   <article dangerouslySetInnerHTML={{__html: markdownContent}} />
-</XDSFontWrapper>`,
+</div>`,
         },
       ],
       props: [
@@ -648,27 +593,6 @@ export const docsZh = {
         },
       ],
     },
-    {
-      name: 'useXDSFontWrapperStyles',
-      description:
-        '返回当前主题中标题和散文元素的 StyleX 样式对象的 Hook，用于以编程方式将排版样式应用于原生 HTML。',
-      examples: [
-        {
-          label: '基础用法',
-          code: `import {useXDSFontWrapperStyles} from '@xds/core';
-import * as stylex from '@stylexjs/stylex';
-
-function Article() {
-  const {headingStyles, proseStyles} = useXDSFontWrapperStyles();
-
-  return (
-    <article>
-      <h1 {...stylex.props(headingStyles?.h1)}>Title</h1>
-      <p {...stylex.props(proseStyles?.p)}>Content...</p>
-    </article>
-  );
-}`,
-        },
       ],
       props: [],
     },
@@ -683,8 +607,6 @@ export const docsDense = {
     'Headings use native h1\u20136 w/ optional aria-level override for decoupled visual vs document hierarchy',
     'Line-clamp truncation w/ automatic overflow-detecting tooltip',
     'Optical alignment (text-box-trim / capsize) for precise vertical rhythm',
-    'XDSFontWrapper applies typography styles to native HTML; useful for UGC + markdown output',
-    'useXDSFontWrapperStyles hook for programmatic StyleX access to heading + prose styles',
     'Tabular number support for aligned numeric data',
     'All typography driven by CSS custom properties; fully themeable per-component',
   ],
@@ -735,17 +657,6 @@ export const docsDense = {
         id: 'HTML id attribute.',
       },
     },
-    {
-      name: 'XDSFontWrapper',
-      description: 'Wrapper applying XDS typography to native HTML scope; for UGC, markdown, cases where XDSText/XDSHeading cannot be used directly.',
-      propDescriptions: {
-        children: 'Content to style w/ XDS typography.',
-        
-      },
-    },
-    {
-      name: 'useXDSFontWrapperStyles',
-      description: 'Hook returning StyleX style objects for headings + prose from current theme, for programmatic typography on native HTML.',
     },
   ],
 };

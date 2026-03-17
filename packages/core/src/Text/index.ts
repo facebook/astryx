@@ -14,11 +14,6 @@ export {
   type XDSHeadingProps,
   type XDSHeadingLevel,
 } from './XDSHeading';
-export {
-  XDSFontWrapper,
-  useXDSFontWrapperStyles,
-  type XDSFontWrapperProps,
-} from './XDSFontWrapper';
 
 // Re-export shared types from theme for convenience
 export type {

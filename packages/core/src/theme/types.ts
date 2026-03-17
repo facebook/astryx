@@ -109,7 +109,7 @@ export type XDSTextXStyleAllowed = {
 };
 
 /**
- * Prose element types for XDSFontWrapper
+ * Prose element types for typography CSS
  */
 export type ProseElement =
   | 'p'
