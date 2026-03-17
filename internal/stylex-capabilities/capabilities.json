@@ -1,0 +1,419 @@
+{
+  "version": "0.17.5",
+  "generatedAt": "2026-03-17T11:04:09.868Z",
+  "total": 59,
+  "supported": 57,
+  "results": [
+    {
+      "category": "At-Rules",
+      "name": "@media",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1e2nbdu{color:red}\",\nltr: \"@media (max-width: 768px){.x1v9tpll.x1v9tpll{color:blue}}\","
+    },
+    {
+      "category": "At-Rules",
+      "name": "@media (hover: hover)",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1e2nbdu{color:red}\",\nltr: \"@media (hover: hover){.x1qg27m4.x1qg27m4{color:blue}}\","
+    },
+    {
+      "category": "At-Rules",
+      "name": "@media (prefers-reduced-motion)",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x4afe7t{animation-duration:.3s}\",\nltr: \"@media (prefers-reduced-motion: reduce){.x9urbn7.x9urbn7{animation-duration:.01s}}\","
+    },
+    {
+      "category": "At-Rules",
+      "name": "@media (prefers-color-scheme)",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1mqxbix{color:black}\",\nltr: \"@media (prefers-color-scheme: dark){.xat0y86.xat0y86{color:white}}\","
+    },
+    {
+      "category": "At-Rules",
+      "name": "@supports",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x78zum5{display:flex}\",\nltr: \"@supports (display: grid){.xr4m3m1.xr4m3m1{display:grid}}\","
+    },
+    {
+      "category": "At-Rules",
+      "name": "@container",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".xif65rj{font-size:14px}\",\nltr: \"@container (min-width: 400px){.x5ca7px.x5ca7px{font-size:16px}}\","
+    },
+    {
+      "category": "At-Rules",
+      "name": "@container (named)",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".xif65rj{font-size:14px}\",\nltr: \"@container sidebar (min-width: 400px){.x1gydygj.x1gydygj{font-size:16px}}\","
+    },
+    {
+      "category": "At-Rules",
+      "name": "@layer",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \"@layer{.x1e70b1w.x1e70b1w{@layer:utilities}}\",\nltr: \".x1e2nbdu{color:red}\","
+    },
+    {
+      "category": "At-Rules",
+      "name": "@starting-style",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1hc1fzr{opacity:1}\",\nltr: \"@starting-style{.x4itv7f.x4itv7f{opacity:0}}\","
+    },
+    {
+      "category": "At-Rules",
+      "name": "@starting-style (transform)",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".xbryuvx{transform:translateX(0)}\",\nltr: \"@starting-style{.x1yqmsfc.x1yqmsfc{transform:translateX(100%)}}\","
+    },
+    {
+      "category": "Pseudo-Classes",
+      "name": ":hover",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1e2nbdu{color:red}\",\nltr: \".x17z2mba:hover{color:blue}\","
+    },
+    {
+      "category": "Pseudo-Classes",
+      "name": ":focus",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1e2nbdu{color:red}\",\nltr: \".x1cg8fzh:focus{color:blue}\","
+    },
+    {
+      "category": "Pseudo-Classes",
+      "name": ":focus-visible",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1a2a7pz{outline:none}\",\nltr: \".xp1qbqn:focus-visible{outline:2px solid blue}\","
+    },
+    {
+      "category": "Pseudo-Classes",
+      "name": ":focus-within",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".xzppbbw{border-color:gray}\",\nltr: \".x1v09i5w:focus-within{border-color:blue}\","
+    },
+    {
+      "category": "Pseudo-Classes",
+      "name": ":active",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1e2nbdu{color:red}\",\nltr: \".x4oye9d:active{color:blue}\","
+    },
+    {
+      "category": "Pseudo-Classes",
+      "name": ":disabled",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1hc1fzr{opacity:1}\",\nltr: \".xijokvz:disabled{opacity:.5}\","
+    },
+    {
+      "category": "Pseudo-Classes",
+      "name": ":first-child",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1xmf6yo{margin-top:8px}\",\nltr: \".x14l7nz5:first-child{margin-top:0}\","
+    },
+    {
+      "category": "Pseudo-Classes",
+      "name": ":last-child",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1e56ztr{margin-bottom:8px}\",\nltr: \".xzboxd6:last-child{margin-bottom:0}\","
+    },
+    {
+      "category": "Pseudo-Classes",
+      "name": ":nth-child()",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x12peec7{background-color:white}\",\nltr: \".x91ra16:nth-child(even){background-color:#f5f5f5}\","
+    },
+    {
+      "category": "Pseudo-Classes",
+      "name": ":where()",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1s85apg{display:none}\",\nltr: \".xf1xu1x.xf1xu1x:where([open]){display:flex}\","
+    },
+    {
+      "category": "Pseudo-Classes",
+      "name": ":is()",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1e2nbdu{color:red}\",\nltr: \".xdxic9:is(:hover, :focus){color:blue}\","
+    },
+    {
+      "category": "Pseudo-Classes",
+      "name": ":has()",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".xzppbbw{border-color:gray}\",\nltr: \".x1vswxf2:has(:focus){border-color:blue}\","
+    },
+    {
+      "category": "Pseudo-Classes",
+      "name": ":not()",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1lliihq{display:block}\",\nltr: \".x41xwj8:not(:last-child){display:block}\","
+    },
+    {
+      "category": "Pseudo-Classes",
+      "name": ":placeholder-shown",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1mqxbix{color:black}\",\nltr: \".x8yzjlm:placeholder-shown{color:gray}\","
+    },
+    {
+      "category": "Pseudo-Classes",
+      "name": ":checked",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x12peec7{background-color:white}\",\nltr: \".x5ry8ap:checked{background-color:blue}\","
+    },
+    {
+      "category": "Pseudo-Classes",
+      "name": ":empty",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1lliihq{display:block}\",\nltr: \".xjl7jj:empty{display:none}\","
+    },
+    {
+      "category": "Pseudo-Elements",
+      "name": "::before",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1cpjm7i::before{content:\\\"\\\"}\",\nltr: \".x1fgarty::before{display:block}\","
+    },
+    {
+      "category": "Pseudo-Elements",
+      "name": "::after",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1s928wv::after{content:\\\"\\\"}\",\nltr: \".xhkezso::after{display:block}\","
+    },
+    {
+      "category": "Pseudo-Elements",
+      "name": "::placeholder",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x6yu8oj::placeholder{color:gray}\",\nltr: \".xefv9yz::placeholder{font-style:italic}\","
+    },
+    {
+      "category": "Pseudo-Elements",
+      "name": "::selection",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1hr2xla::selection{background-color:blue}\",\nltr: \".x50npbo::selection{color:white}\","
+    },
+    {
+      "category": "Pseudo-Elements",
+      "name": "::backdrop",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x17fofgw::backdrop{background-color:rgba(0,0,0,.5)}\","
+    },
+    {
+      "category": "Pseudo-Elements",
+      "name": "::marker",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".xab66pc::marker{color:blue}\","
+    },
+    {
+      "category": "Pseudo-Elements",
+      "name": "::file-selector-button",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1905k51::file-selector-button{background-color:blue}\",\nltr: \".xjdbxwa::file-selector-button{color:white}\","
+    },
+    {
+      "category": "Compound Selectors",
+      "name": "Pseudo-class on pseudo-element (::backdrop + condition)",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".xph5o2a::backdrop{opacity:0}\",\nltr: \".x1pgog5j.x1pgog5j::backdrop:where([data-open])::backdrop{opacity:1}\","
+    },
+    {
+      "category": "Compound Selectors",
+      "name": "RTL context (:is([dir=\"rtl\"] *))",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x5i6ehr{transform:translateX(-100%)}\",\nltr: \".xttggg:is([dir=\\\"rtl\\\"] *){transform:translateX(100%)}\","
+    },
+    {
+      "category": "Compound Selectors",
+      "name": "Nested @media + pseudo",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1e2nbdu{color:red}\",\nltr: \".x17z2mba:hover{color:blue}\",\nltr: \"@media (hover: hover){.xnvl49l.xnvl49l:hover{color:green}}\","
+    },
+    {
+      "category": "CSS Values",
+      "name": "CSS variables (custom properties)",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x14qql8p{color:var(--color-primary)}\","
+    },
+    {
+      "category": "CSS Values",
+      "name": "calc()",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".xkxa9zd{width:calc(100% - 32px)}\","
+    },
+    {
+      "category": "CSS Values",
+      "name": "clamp()",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".xdq3cbq{font-size:clamp(14px,2vw,18px)}\","
+    },
+    {
+      "category": "CSS Values",
+      "name": "light-dark()",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".xarbrzd{color:light-dark(black,white)}\","
+    },
+    {
+      "category": "CSS Values",
+      "name": "color-mix()",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x10zuzju{color:color-mix(in srgb,red 50%,blue)}\","
+    },
+    {
+      "category": "CSS Values",
+      "name": "container-type",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x12h1iku{container-type:inline-size}\","
+    },
+    {
+      "category": "CSS Values",
+      "name": "container-name",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x4s5kx9{container-name:sidebar}\","
+    },
+    {
+      "category": "Transitions & Animations",
+      "name": "transition (shorthand)",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".xqz5vs7{transition:opacity .3s ease}\","
+    },
+    {
+      "category": "Transitions & Animations",
+      "name": "transition (individual properties)",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x19991ni{transition-property:opacity}\",\nltr: \".x1d8287x{transition-duration:.3s}\",\nltr: \".xwji4o3{transition-timing-function:ease}\","
+    },
+    {
+      "category": "Transitions & Animations",
+      "name": "transitionBehavior: allow-discrete",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".xd00j3c{transition-behavior:allow-discrete}\","
+    },
+    {
+      "category": "Transitions & Animations",
+      "name": "animation (shorthand)",
+      "supported": true,
+      "hasInject": false,
+      "output": ""
+    },
+    {
+      "category": "Transitions & Animations",
+      "name": "stylex.keyframes",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \"@keyframes x1wc8ddo-B{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}\",\nltr: \".x1aerksh{animation-name:x1wc8ddo-B}\","
+    },
+    {
+      "category": "Dynamic Styles",
+      "name": "Dynamic values (function in stylex.create)",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x5lhr3w{width:var(--x-width)}\",\nltr: \"@property --x-width { syntax: \\\"*\\\"; inherits: false;}\","
+    },
+    {
+      "category": "Variables",
+      "name": "stylex.defineVars",
+      "supported": false,
+      "error": "/vercel/sandbox/repos/xds-worktrees/stylex-caps/test.tsx: Unable to generate hash for defineVars(). Check that the file has a valid extension and that unstable_moduleResolution is configured."
+    },
+    {
+      "category": "Variables",
+      "name": "stylex.createTheme",
+      "supported": false,
+      "error": "/vercel/sandbox/repos/xds-worktrees/stylex-caps/test.tsx: Unable to generate hash for defineVars(). Check that the file has a valid extension and that unstable_moduleResolution is configured."
+    },
+    {
+      "category": "Logical Properties",
+      "name": "paddingInline / paddingBlock",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1hr3lfm{padding-inline:16px}\",\nltr: \".x1vvogim{padding-block:8px}\","
+    },
+    {
+      "category": "Logical Properties",
+      "name": "insetInlineStart / insetInlineEnd",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x1o0tod{inset-inline-start:0}\",\nltr: \".x1woyocn{inset-inline-end:auto}\","
+    },
+    {
+      "category": "Logical Properties",
+      "name": "borderInlineStart",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".xpilrb4{border-inline-start-width:1px}\",\nltr: \".x1t7ytsu{border-inline-start-style:solid}\",\nltr: \".x17t5hbb{border-inline-start-color:gray}\","
+    },
+    {
+      "category": "Logical Properties",
+      "name": "marginInlineStart: auto",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".xvc5jky{margin-inline-start:auto}\","
+    },
+    {
+      "category": "Layout",
+      "name": "display: grid",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".xrvj5dj{display:grid}\",\nltr: \".x1o61qjw{grid-template-columns:1fr 1fr}\",\nltr: \".xou54vl{gap:16px}\","
+    },
+    {
+      "category": "Layout",
+      "name": "display: flex + gap",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x78zum5{display:flex}\",\nltr: \".xou54vl{gap:16px}\","
+    },
+    {
+      "category": "Layout",
+      "name": "aspect-ratio",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".x186iv6y{aspect-ratio:16 / 9}\","
+    },
+    {
+      "category": "Layout",
+      "name": "overscrollBehavior",
+      "supported": true,
+      "hasInject": true,
+      "output": "ltr: \".xish69e{overscroll-behavior:contain}\","
+    }
+  ]
+}
