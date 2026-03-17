@@ -17,7 +17,7 @@ const styles = stylex.create({
     padding: 16,
     backgroundColor: colorVars['--color-wash'],
     borderRadius: 12,
-    maxWidth: 450,
+    width: '50%',
   },
   controlGroup: {
     display: 'flex',
