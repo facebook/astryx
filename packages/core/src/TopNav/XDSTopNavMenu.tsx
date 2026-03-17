@@ -10,13 +10,14 @@
  * - /packages/core/src/TopNav/index.ts
  */
 
-import {useCallback, useEffect, useRef, type ReactNode} from 'react';
+import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useXDSPopover} from '../Popover/useXDSPopover';
 import {useListFocus} from '../hooks/useListFocus';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {xdsClassName, mergeProps} from '../utils';
 import {useTopNavSlot} from './TopNavContext';
+import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
 import {
   colorVars,
   spacingVars,
@@ -149,6 +150,97 @@ const styles = stylex.create({
   },
 });
 
+const drawerStyles = stylex.create({
+  section: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
+    borderRadius: radiusVars['--radius-element'],
+    fontSize: textSizeVars['--text-base'],
+    lineHeight: lineHeightVars['--leading-base'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    color: colorVars['--color-text-secondary'],
+    cursor: 'pointer',
+    border: 'none',
+    background: 'none',
+    fontFamily: 'inherit',
+    boxSizing: 'border-box',
+    backgroundColor: {
+      default: 'transparent',
+      ':hover': {
+        '@media (hover: hover)': colorVars['--color-hover-overlay'],
+      },
+      ':active': colorVars['--color-pressed-overlay'],
+    },
+  },
+  chevron: {
+    display: 'inline-flex',
+    transitionProperty: 'transform',
+    transitionDuration: transitionVars['--transition-fast'],
+  },
+  chevronExpanded: {
+    transform: 'rotate(180deg)',
+  },
+  items: {
+    display: 'grid',
+    gridTemplateRows: '0fr',
+    transitionProperty: 'grid-template-rows',
+    transitionDuration: transitionVars['--transition-normal'],
+  },
+  itemsExpanded: {
+    gridTemplateRows: '1fr',
+  },
+  itemsInner: {
+    overflow: 'hidden',
+    minHeight: 0,
+  },
+  item: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-3'],
+    width: '100%',
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
+    paddingInlineStart: spacingVars['--spacing-6'],
+    borderRadius: radiusVars['--radius-element'],
+    fontSize: textSizeVars['--text-base'],
+    lineHeight: lineHeightVars['--leading-base'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    color: colorVars['--color-text-secondary'],
+    textDecoration: 'none',
+    boxSizing: 'border-box',
+    backgroundColor: {
+      default: 'transparent',
+      ':hover': {
+        '@media (hover: hover)': colorVars['--color-hover-overlay'],
+      },
+      ':active': colorVars['--color-pressed-overlay'],
+    },
+  },
+  itemIcon: {
+    flexShrink: 0,
+    width: 20,
+    height: 20,
+  },
+  itemText: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-0-5'],
+  },
+  itemDescription: {
+    fontSize: textSizeVars['--text-sm'],
+    color: colorVars['--color-text-secondary'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
+  },
+});
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -253,6 +345,66 @@ export function XDSTopNavMenu({
   delay = 150,
   hideDelay = 200,
 }: XDSTopNavMenuProps) {
+  const renderMode = useXDSTopNavRenderMode();
+  const [drawerExpanded, setDrawerExpanded] = useState(false);
+
+  // Mobile bar: hide menus entirely
+  if (renderMode === 'mobile-bar') {
+    return null;
+  }
+
+  // Drawer mode: collapsible section
+  if (renderMode === 'drawer') {
+    return (
+      <div {...stylex.props(drawerStyles.section)}>
+        <button
+          type="button"
+          onClick={() => setDrawerExpanded(v => !v)}
+          aria-expanded={drawerExpanded}
+          {...stylex.props(drawerStyles.header)}>
+          {label}
+          <span
+            {...stylex.props(
+              drawerStyles.chevron,
+              drawerExpanded && drawerStyles.chevronExpanded,
+            )}>
+            {getIcon('chevronDown')}
+          </span>
+        </button>
+        <div
+          {...stylex.props(
+            drawerStyles.items,
+            drawerExpanded && drawerStyles.itemsExpanded,
+          )}>
+          <div {...stylex.props(drawerStyles.itemsInner)}>
+            {items.map((item, i) => (
+              <a
+                key={i}
+                href={item.href}
+                onClick={item.onClick}
+                {...stylex.props(drawerStyles.item)}>
+                {item.icon && (
+                  <span {...stylex.props(drawerStyles.itemIcon)}>
+                    {item.icon}
+                  </span>
+                )}
+                <span {...stylex.props(drawerStyles.itemText)}>
+                  {item.title}
+                  {item.description && (
+                    <span {...stylex.props(drawerStyles.itemDescription)}>
+                      {item.description}
+                    </span>
+                  )}
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Default: desktop popover
   const slot = useTopNavSlot();
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
