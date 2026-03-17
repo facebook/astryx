@@ -22,6 +22,7 @@ import {
   colorVars,
   fontWeightVars,
   radiusVars,
+  spacingVars,
   textSizeVars,
 } from '../theme/tokens.stylex';
 import {XDSLayout} from '../Layout/XDSLayout';
@@ -216,9 +217,13 @@ const styles = stylex.create({
       default: '1px',
       ':focus': 'auto',
     },
-    padding: {
+    paddingBlock: {
       default: 0,
-      ':focus': '8px 16px',
+      ':focus': spacingVars['--spacing-2'],
+    },
+    paddingInline: {
+      default: 0,
+      ':focus': spacingVars['--spacing-4'],
     },
     margin: {
       default: '-1px',
@@ -240,11 +245,11 @@ const styles = stylex.create({
     // Focus styles
     top: {
       default: 0,
-      ':focus': '8px',
+      ':focus': spacingVars['--spacing-2'],
     },
     insetInlineStart: {
       default: 0,
-      ':focus': '8px',
+      ':focus': spacingVars['--spacing-2'],
     },
     backgroundColor: colorVars['--color-surface'],
     color: colorVars['--color-accent-text'],
