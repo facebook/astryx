@@ -183,8 +183,21 @@ export interface XDSMobileNavProps extends Omit<XDSBaseProps, 'title'> {
 
   /**
    * Optional title shown at the top of the drawer.
+   * For simple text headers. Use `header` for custom content.
    */
   title?: string;
+
+  /**
+   * Custom header content rendered in the drawer header area.
+   * Replaces the `title` text when provided. The close button
+   * always renders alongside the header.
+   *
+   * @example
+   * ```
+   * <XDSMobileNav header={<XDSSideNavHeading heading="My App" icon={<Logo />} />}>
+   * ```
+   */
+  header?: ReactNode;
 
   /**
    * Width of the drawer in pixels.
@@ -242,6 +255,7 @@ export function XDSMobileNav({
   onOpenChange: onOpenChangeProp,
   children,
   title,
+  header,
   width = 280,
   side = 'start',
   'data-testid': testId,
@@ -345,9 +359,14 @@ export function XDSMobileNav({
           !isStart && styles.drawerEnd,
           !isStart && isOpen && styles.drawerEndOpen,
         )}>
-        {/* Header with optional title and close button */}
-        <div {...stylex.props(styles.header, !title && styles.headerNoTitle)}>
-          {title && <XDSHeading level={2}>{title}</XDSHeading>}
+        {/* Header with optional title/header content and close button */}
+        <div
+          {...stylex.props(
+            styles.header,
+            !title && !header && styles.headerNoTitle,
+          )}>
+          {header ??
+            (title ? <XDSHeading level={2}>{title}</XDSHeading> : null)}
           <XDSButton
             variant="ghost"
             label="Close navigation"
