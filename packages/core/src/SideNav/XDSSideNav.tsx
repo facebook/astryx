@@ -300,7 +300,7 @@ export function XDSSideNav({
   // =========================================================================
   if (renderMode === 'drawer') {
     return (
-      <XDSMobileNav header={header} side="end" data-testid={testId}>
+      <XDSMobileNav header={header} data-testid={testId}>
         {topContent}
         {children}
         {footer}

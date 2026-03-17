@@ -201,7 +201,7 @@ export interface XDSMobileNavProps extends Omit<XDSBaseProps, 'title'> {
 
   /**
    * Which side the drawer slides from.
-   * @default 'start'
+   * @default 'end'
    */
   side?: 'start' | 'end';
 
@@ -256,7 +256,7 @@ export function XDSMobileNav({
   title,
   header,
   width = 280,
-  side = 'start',
+  side = 'end',
   label,
   'data-testid': testId,
   xstyle,
