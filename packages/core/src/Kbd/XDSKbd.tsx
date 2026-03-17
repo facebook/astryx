@@ -16,10 +16,10 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
-  textSizeVars,
   typographyVars,
   fontWeightVars,
   lineHeightVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 
 const styles = stylex.create({
@@ -43,7 +43,7 @@ const styles = stylex.create({
     borderBottomColor: colorVars['--color-border'],
     color: colorVars['--color-text-secondary'],
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     lineHeight: lineHeightVars['--leading-tight'],
     userSelect: 'none',

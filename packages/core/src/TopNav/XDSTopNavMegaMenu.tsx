@@ -28,10 +28,10 @@ import {
   radiusVars,
   durationVars,
   easeVars,
-  textSizeVars,
   fontWeightVars,
   lineHeightVars,
   shadowVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {useXDSPopover} from '../Popover/useXDSPopover';
 import {XDSGrid} from '../Grid/XDSGrid';
@@ -53,7 +53,7 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
     borderRadius: radiusVars['--radius-2'],
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     lineHeight: lineHeightVars['--leading-base'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
@@ -134,7 +134,6 @@ const styles = stylex.create({
     flexBasis: 300,
     minWidth: 0,
   },
-
   featured: {
     flexGrow: 1,
     flexShrink: 1,

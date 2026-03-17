@@ -20,11 +20,11 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
-  textSizeVars,
   fontWeightVars,
   lineHeightVars,
   durationVars,
   easeVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -154,13 +154,13 @@ const styles = stylex.create({
     alignItems: 'baseline',
   },
   label: {
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-snug'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-primary'],
   },
   valueLabel: {
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-snug'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],

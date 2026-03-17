@@ -28,9 +28,7 @@ import {
   durationVars,
   easeVars,
   typographyVars,
-  textSizeVars,
-  lineHeightVars,
-  fontWeightVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {XDSFieldLabel} from '../Field/XDSFieldLabel';
 import {XDSFieldStatus} from '../Field/XDSFieldStatus';
@@ -166,9 +164,7 @@ const styles = stylex.create({
   },
   description: {
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-xsm'],
-    lineHeight: lineHeightVars['--leading-relaxed'],
-    fontWeight: fontWeightVars['--font-weight-normal'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     color: colorVars['--color-text-secondary'],
   },
 });

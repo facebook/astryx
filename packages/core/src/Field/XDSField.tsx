@@ -22,8 +22,8 @@ import {
   colorVars,
   fontWeightVars,
   spacingVars,
-  textSizeVars,
   typographyVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {XDSIconType} from '../Icon';
 import {xdsClassName, mergeProps} from '../utils';
@@ -41,7 +41,7 @@ const styles = stylex.create({
   },
   label: {
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-body-size'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-primary'],
   },
@@ -62,12 +62,12 @@ const styles = stylex.create({
   },
   description: {
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     color: colorVars['--color-text-secondary'],
   },
   optionalRequired: {
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     color: colorVars['--color-text-secondary'],
     marginInlineStart: spacingVars['--spacing-1'],
   },

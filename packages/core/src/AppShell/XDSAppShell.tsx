@@ -31,7 +31,7 @@ import {
   fontWeightVars,
   radiusVars,
   spacingVars,
-  textSizeVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {XDSLayout} from '../Layout/XDSLayout';
 import {XDSLayoutHeader} from '../Layout/XDSLayoutHeader';
@@ -305,7 +305,7 @@ const styles = stylex.create({
     zIndex: 9999,
     textDecoration: 'none',
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-body-size'],
   },
 
   elevatedBackdrop: {

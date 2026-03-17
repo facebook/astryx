@@ -18,7 +18,7 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
-  textSizeVars,
+  typeScaleVars,
   fontWeightVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
@@ -57,7 +57,7 @@ export const navItemStyles = stylex.create({
     textDecoration: 'none',
     cursor: 'pointer',
     fontFamily: 'inherit',
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     lineHeight: lineHeightVars['--leading-base'],
     textAlign: 'start',

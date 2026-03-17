@@ -25,7 +25,7 @@ import {
   typographyVars,
   fontWeightVars,
   spacingVars,
-  textSizeVars,
+  typeScaleVars,
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
@@ -44,7 +44,7 @@ const styles = stylex.create({
     width: '100%',
     cursor: 'pointer',
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-lg'],
+    fontSize: typeScaleVars['--text-large-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-primary'],
     textAlign: 'start',

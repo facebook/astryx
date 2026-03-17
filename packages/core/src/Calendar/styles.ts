@@ -19,8 +19,8 @@ import {
   radiusVars,
   durationVars,
   easeVars,
-  textSizeVars,
   fontWeightVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 
 // =============================================================================
@@ -44,7 +44,7 @@ export const calendarStyles = stylex.create({
     flex: 1,
     textAlign: 'center',
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     color: colorVars['--color-text-primary'],
   },
   monthsContainer: {
@@ -79,7 +79,7 @@ export const monthGridStyles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
   },
@@ -99,7 +99,7 @@ export const monthGridStyles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     color: colorVars['--color-text-secondary'],
   },
   weekRow: {
@@ -187,7 +187,7 @@ export const dayCellStyles = stylex.create({
     borderStyle: 'none',
     cursor: 'pointer',
     fontFamily: 'inherit',
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     padding: 0,
     position: 'relative',
     zIndex: 1,

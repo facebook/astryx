@@ -22,7 +22,7 @@ import {
   colorVars,
   radiusVars,
   shadowVars,
-  textSizeVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {PowerSearchValueEditor} from './PowerSearchValueEditor';
 import type {InternalConfig} from './useInternalConfig';
@@ -62,7 +62,7 @@ const styles = stylex.create({
   },
   // Nested editor styles
   nestedRootLabel: {
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
   },
   nestedFieldSelector: {
     flexShrink: 0,

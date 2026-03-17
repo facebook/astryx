@@ -25,9 +25,9 @@ import {
   radiusVars,
   durationVars,
   easeVars,
-  textSizeVars,
   fontWeightVars,
   lineHeightVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {XDSTooltip} from '../Tooltip/XDSTooltip';
 import {XDSSpinner} from '../Spinner';
@@ -55,7 +55,7 @@ const styles = stylex.create({
     '--button-radius': radiusVars['--radius-2'],
     borderRadius: 'var(--button-radius)',
     fontFamily: 'inherit',
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     lineHeight: lineHeightVars['--leading-base'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     cursor: 'pointer',

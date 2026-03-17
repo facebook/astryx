@@ -21,9 +21,9 @@ import {
   colorVars,
   durationVars,
   easeVars,
-  textSizeVars,
   lineHeightVars,
   spacingVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
 import {XDSTooltip} from '../Tooltip';
@@ -79,7 +79,7 @@ const styles = stylex.create({
     pointerEvents: 'none',
   },
   standalone: {
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-body-size'],
     lineHeight: lineHeightVars['--leading-base'],
   },
 });

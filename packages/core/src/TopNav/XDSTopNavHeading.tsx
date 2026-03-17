@@ -17,9 +17,9 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
-  textSizeVars,
   fontWeightVars,
   lineHeightVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -35,7 +35,7 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
   },
   headingText: {
-    fontSize: textSizeVars['--text-lg'],
+    fontSize: typeScaleVars['--text-large-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     lineHeight: lineHeightVars['--leading-tight'],
     whiteSpace: 'nowrap',

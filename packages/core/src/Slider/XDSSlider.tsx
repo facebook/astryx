@@ -29,7 +29,7 @@ import {
   durationVars,
   easeVars,
   typographyVars,
-  textSizeVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {XDSField} from '../Field/XDSField';
 import {XDSTooltip} from '../Tooltip/XDSTooltip';
@@ -239,7 +239,7 @@ const styles = stylex.create({
   },
   textValue: {
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     color: colorVars['--color-text-primary'],
     whiteSpace: 'nowrap',
     flexShrink: 0,
@@ -275,7 +275,7 @@ const styles = stylex.create({
   markLabel: {
     position: 'absolute',
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     color: colorVars['--color-text-secondary'],
     whiteSpace: 'nowrap',
   },

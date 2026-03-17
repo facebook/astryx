@@ -17,9 +17,9 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
-  textSizeVars,
   fontWeightVars,
   lineHeightVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -42,25 +42,25 @@ const styles = stylex.create({
   title: {
     margin: 0,
     fontFamily: 'inherit',
-    fontSize: textSizeVars['--text-lg'],
+    fontSize: typeScaleVars['--text-large-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     lineHeight: lineHeightVars['--leading-snug'],
     color: colorVars['--color-text-primary'],
   },
   titleCompact: {
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
   },
   description: {
     margin: 0,
     fontFamily: 'inherit',
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-body-size'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     lineHeight: lineHeightVars['--leading-base'],
     color: colorVars['--color-text-secondary'],
     maxWidth: '360px',
   },
   descriptionCompact: {
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
   },
   textGroup: {
     display: 'flex',

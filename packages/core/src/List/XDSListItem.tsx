@@ -20,10 +20,10 @@ import {
   colorVars,
   radiusVars,
   spacingVars,
-  textSizeVars,
   lineHeightVars,
   durationVars,
   easeVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {XDSListContext} from './XDSListContext';
 import {xdsClassName, mergeProps} from '../utils';
@@ -243,34 +243,34 @@ const densityStyles = stylex.create({
   compact: {
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-2'],
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-snug'],
   },
   balanced: {
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-snug'],
   },
   spacious: {
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-body-size'],
     lineHeight: lineHeightVars['--leading-normal'],
   },
 });
 
 const descriptionSizeStyles = stylex.create({
   compact: {
-    fontSize: textSizeVars['--text-2xs'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-snug'],
   },
   balanced: {
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-snug'],
   },
   spacious: {
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-normal'],
   },
 });

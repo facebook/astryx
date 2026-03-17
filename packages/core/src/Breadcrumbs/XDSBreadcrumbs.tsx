@@ -19,8 +19,8 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
-  textSizeVars,
   lineHeightVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {XDSBreadcrumbItemProps} from './XDSBreadcrumbItem';
 import {xdsClassName, mergeProps} from '../utils';
@@ -138,10 +138,10 @@ const separatorStyles = stylex.create({
     userSelect: 'none',
   },
   defaultSize: {
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
   },
   supportingSize: {
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
   },
 });
 

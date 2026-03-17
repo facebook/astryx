@@ -22,10 +22,10 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
-  textSizeVars,
   fontWeightVars,
   lineHeightVars,
   radiusVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 // TODO(#264): Lazy-load useXDSPopover so the popover/layer bundle is not
 // eagerly imported when `menu` is not provided. See XDSText for an example
@@ -86,7 +86,7 @@ const styles = stylex.create({
     minWidth: 0,
   },
   superheading: {
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-snug'],
     color: colorVars['--color-text-secondary'],
     textDecoration: 'none',
@@ -95,7 +95,7 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
   },
   heading: {
-    fontSize: textSizeVars['--text-lg'],
+    fontSize: typeScaleVars['--text-large-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     lineHeight: lineHeightVars['--leading-snug'],
     color: colorVars['--color-text-primary'],
@@ -106,10 +106,10 @@ const styles = stylex.create({
   },
   // When super/sub headings are present, scale down the app name
   headingCompact: {
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
   },
   subheading: {
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-snug'],
     color: colorVars['--color-text-secondary'],
     textDecoration: 'none',

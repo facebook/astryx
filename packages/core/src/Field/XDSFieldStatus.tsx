@@ -16,15 +16,15 @@ import {
   lineHeightVars,
   radiusVars,
   spacingVars,
-  textSizeVars,
   typographyVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {XDSInputStatusType} from './types';
 
 const styles = stylex.create({
   base: {
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-snug'],
   },
   attached: {

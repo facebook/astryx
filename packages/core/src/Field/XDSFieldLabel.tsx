@@ -16,8 +16,8 @@ import {
   colorVars,
   fontWeightVars,
   spacingVars,
-  textSizeVars,
   typographyVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {XDSIcon, type XDSIconType} from '../Icon';
 import {XDSTooltip} from '../Tooltip';
@@ -28,7 +28,7 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-primary'],
   },
@@ -56,7 +56,7 @@ const styles = stylex.create({
   },
   optionalRequired: {
     fontWeight: fontWeightVars['--font-weight-normal'],
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     color: colorVars['--color-text-secondary'],
   },
 });

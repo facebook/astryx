@@ -18,8 +18,8 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
-  textSizeVars,
   lineHeightVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {BreadcrumbCtx} from './XDSBreadcrumbs';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
@@ -78,10 +78,10 @@ const itemStyles = stylex.create({
     margin: 0,
   },
   defaultSize: {
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
   },
   supportingSize: {
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
   },
   contentWrapper: {
     display: 'flex',

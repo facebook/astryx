@@ -31,8 +31,8 @@ import {useXDSLayer} from '../Layer';
 import {
   spacingVars,
   colorVars,
-  textSizeVars,
   lineHeightVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {useInternalConfig} from './useInternalConfig';
 import {usePowerSearchSource} from './usePowerSearchSource';
@@ -92,7 +92,7 @@ const popoverLayerStyles = stylex.create({
 
 const resultCountStyles = stylex.create({
   text: {
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-snug'],
     color: colorVars['--color-text-secondary'],
     whiteSpace: 'nowrap',

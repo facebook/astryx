@@ -24,9 +24,9 @@ import {
   durationVars,
   easeVars,
   shadowVars,
-  textSizeVars,
   fontWeightVars,
   lineHeightVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {useXDSLayer} from '../Layer/useXDSLayer';
 import {useListFocus} from '../hooks/useListFocus';
@@ -72,7 +72,7 @@ const styles = stylex.create({
     borderStyle: 'none',
     borderRadius: radiusVars['--radius-2'],
     fontFamily: 'inherit',
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     lineHeight: lineHeightVars['--leading-base'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
@@ -173,7 +173,7 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-3'],
     borderRadius: radiusVars['--radius-1'],
     fontFamily: 'inherit',
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     lineHeight: lineHeightVars['--leading-base'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-primary'],

@@ -32,10 +32,10 @@ import {
   radiusVars,
   durationVars,
   easeVars,
-  textSizeVars,
   fontWeightVars,
   lineHeightVars,
   shadowVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 
 // =============================================================================
@@ -50,7 +50,7 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
     borderRadius: radiusVars['--radius-2'],
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     lineHeight: lineHeightVars['--leading-base'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
@@ -148,13 +148,13 @@ const styles = stylex.create({
     minWidth: 0,
   },
   menuItemTitle: {
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     lineHeight: lineHeightVars['--leading-base'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-primary'],
   },
   menuItemDescription: {
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-snug'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
@@ -209,7 +209,7 @@ const drawerStyles = stylex.create({
     gap: spacingVars['--spacing-0-5'],
   },
   itemDescription: {
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     color: colorVars['--color-text-secondary'],
     fontWeight: fontWeightVars['--font-weight-normal'],
   },

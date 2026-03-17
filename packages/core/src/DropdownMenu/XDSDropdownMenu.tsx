@@ -37,7 +37,7 @@ import {
   durationVars,
   easeVars,
   typographyVars,
-  textSizeVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -96,7 +96,7 @@ const styles = stylex.create({
     borderRadius:
       'max(0px, calc(var(--dropdown-radius) - var(--dropdown-padding)))',
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
     border: 'none',

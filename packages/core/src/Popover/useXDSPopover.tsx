@@ -33,7 +33,7 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
-  textSizeVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 
 const styles = stylex.create({
@@ -70,7 +70,7 @@ const styles = stylex.create({
     // Inverted color palette (like tooltip): dark background, light text
     backgroundColor: colorVars['--color-text-primary'],
     color: colorVars['--color-surface'],
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     borderRadius: radiusVars['--radius-2'],
     cursor: 'pointer',
     borderWidth: 0,

@@ -20,7 +20,7 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
-  textSizeVars,
+  typeScaleVars,
   fontWeightVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
@@ -47,18 +47,18 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-4'],
   },
   title: {
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     lineHeight: lineHeightVars['--leading-base'],
     color: colorVars['--color-text-primary'],
   },
   description: {
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-snug'],
     color: colorVars['--color-text-secondary'],
   },
   link: {
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     lineHeight: lineHeightVars['--leading-snug'],
     color: colorVars['--color-text-link'],

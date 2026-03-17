@@ -26,8 +26,8 @@ import {
   colorVars,
   spacingVars,
   typographyVars,
-  textSizeVars,
   lineHeightVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {
   XDSField,
@@ -53,7 +53,7 @@ const styles = stylex.create({
     borderStyle: 'none',
     padding: 0,
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-body-size'],
     lineHeight: lineHeightVars['--leading-base'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
@@ -72,7 +72,7 @@ const styles = stylex.create({
     justifyContent: 'flex-end',
     marginTop: spacingVars['--spacing-1'],
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     color: colorVars['--color-text-secondary'],
   },
   counterError: {

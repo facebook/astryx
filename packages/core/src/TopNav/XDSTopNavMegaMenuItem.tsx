@@ -20,7 +20,7 @@ import {
   radiusVars,
   durationVars,
   easeVars,
-  textSizeVars,
+  typeScaleVars,
   fontWeightVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
@@ -87,13 +87,13 @@ const styles = stylex.create({
     minWidth: 0,
   },
   desktopTitle: {
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     lineHeight: lineHeightVars['--leading-base'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-primary'],
   },
   desktopDescription: {
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-snug'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
@@ -123,7 +123,7 @@ const styles = stylex.create({
     minWidth: 0,
   },
   drawerItemDescription: {
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-snug'],
     color: colorVars['--color-text-secondary'],
     fontWeight: fontWeightVars['--font-weight-normal'],

@@ -20,9 +20,9 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
-  textSizeVars,
   fontWeightVars,
   lineHeightVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
@@ -53,7 +53,7 @@ const styles = stylex.create({
     minWidth: 0,
   },
   title: {
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     lineHeight: lineHeightVars['--leading-snug'],
     color: colorVars['--color-text-secondary'],
@@ -62,7 +62,7 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
   },
   subtitle: {
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-snug'],
     color: colorVars['--color-text-secondary'],
     overflow: 'hidden',

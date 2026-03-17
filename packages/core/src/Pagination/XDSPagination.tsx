@@ -26,7 +26,7 @@ import {
   spacingVars,
   durationVars,
   easeVars,
-  textSizeVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
@@ -169,13 +169,13 @@ const styles = stylex.create({
     minWidth: sizeVars['--size-md'],
     height: sizeVars['--size-md'],
     color: colorVars['--color-text-secondary'],
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     userSelect: 'none',
   },
   ellipsisSm: {
     minWidth: sizeVars['--size-sm'],
     height: sizeVars['--size-sm'],
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
   },
   infoText: {
     display: 'flex',

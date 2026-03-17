@@ -19,8 +19,8 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
-  textSizeVars,
   lineHeightVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -119,7 +119,7 @@ const labelStyles = stylex.create({
     paddingInline: spacingVars['--spacing-3'],
     backgroundColor: colorVars['--color-surface'],
     // Small secondary text styling
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-normal'],
     color: colorVars['--color-text-secondary'],
   },

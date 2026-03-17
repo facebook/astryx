@@ -31,7 +31,7 @@ import {
   radiusVars,
   spacingVars,
   typographyVars,
-  textSizeVars,
+  typeScaleVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName} from '../utils';
@@ -45,7 +45,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-2'],
     // Typography
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-body-size'],
     lineHeight: lineHeightVars['--leading-base'],
     // Animation: closed state (default) and open state
     opacity: {

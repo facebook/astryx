@@ -37,9 +37,9 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
-  textSizeVars,
   fontWeightVars,
   lineHeightVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -223,7 +223,7 @@ const styles = stylex.create({
   title: {
     margin: 0,
     fontFamily: 'inherit',
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     lineHeight: lineHeightVars['--leading-base'],
     color: colorVars['--color-text-primary'],
@@ -231,7 +231,7 @@ const styles = stylex.create({
   description: {
     margin: 0,
     fontFamily: 'inherit',
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     lineHeight: lineHeightVars['--leading-base'],
     color: colorVars['--color-text-secondary'],

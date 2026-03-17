@@ -21,9 +21,8 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
-  textSizeVars,
   fontWeightVars,
-  lineHeightVars,
+  typeScaleVars,
   durationVars,
   easeVars,
   shadowVars,
@@ -113,10 +112,10 @@ const styles = stylex.create({
   popoverHeader: {
     paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-1'],
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-secondary'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
   },
 });
 

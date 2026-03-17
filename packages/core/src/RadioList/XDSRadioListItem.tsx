@@ -18,11 +18,11 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
-  textSizeVars,
   durationVars,
   easeVars,
   typographyVars,
   fontWeightVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {RadioListContext} from './XDSRadioList';
 import {xdsClassName, mergeProps} from '../utils';
@@ -121,7 +121,7 @@ const styles = stylex.create({
   },
   label: {
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-primary'],
     cursor: 'pointer',
@@ -132,7 +132,7 @@ const styles = stylex.create({
   },
   description: {
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     color: colorVars['--color-text-secondary'],
   },
   startContent: {

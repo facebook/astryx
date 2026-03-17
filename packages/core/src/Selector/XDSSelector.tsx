@@ -40,9 +40,9 @@ import {
   durationVars,
   easeVars,
   typographyVars,
-  textSizeVars,
   fontWeightVars,
   lineHeightVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {type XDSSelectorOptionType, type XDSSelectorOptionData} from './types';
 import {
@@ -79,7 +79,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-2'],
     backgroundColor: colorVars['--color-surface'],
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     lineHeight: lineHeightVars['--leading-base'],
     color: colorVars['--color-text-primary'],
     cursor: 'pointer',
@@ -173,7 +173,7 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-1'],
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
     border: 'none',

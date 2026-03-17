@@ -14,9 +14,9 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
-  textSizeVars,
   lineHeightVars,
   fontWeightVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {XDSSearchableItem} from './types';
 import {xdsClassName, mergeProps} from '../utils';
@@ -73,7 +73,7 @@ const styles = stylex.create({
     minWidth: 0,
   },
   label: {
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     lineHeight: lineHeightVars['--leading-base'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-primary'],
@@ -82,7 +82,7 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
   },
   description: {
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-snug'],
     color: colorVars['--color-text-secondary'],
     overflow: 'hidden',

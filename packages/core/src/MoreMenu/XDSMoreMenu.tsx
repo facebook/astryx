@@ -43,8 +43,8 @@ import {
   durationVars,
   easeVars,
   typographyVars,
-  textSizeVars,
   shadowVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -88,7 +88,7 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-1'],
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
     border: 'none',
