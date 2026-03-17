@@ -1,6 +1,6 @@
 /**
  * @file expandTypeScale.ts
- * @input Type scale configuration { base, ratio }
+ * @input Type scale configuration { base, ratio, weights? }
  * @output Token overrides for heading and text typography
  * @position Theme utility; consumed by defineTheme.ts
  *
@@ -10,7 +10,8 @@
  * The heading scale is anchored at h4 = base. Headings h1–h3 scale up,
  * h5–h6 scale down. Text types are mapped to fixed steps relative to base.
  *
- * Line heights are snapped to a 4px grid for visual rhythm.
+ * Line heights are unitless ratios, snapped so the computed px value
+ * aligns to a 4px grid for visual rhythm.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/theme/expandTypeScale.test.ts
@@ -21,6 +22,26 @@
 // Types
 // =============================================================================
 
+/** Font weight value — either a CSS string or a var() reference. */
+export type FontWeightValue = string;
+
+/**
+ * Weight overrides for heading levels.
+ * Keys are heading levels 1–6, values are CSS font-weight values
+ * (e.g. '600', 'var(--font-weight-bold)').
+ */
+export type HeadingWeightOverrides = Partial<
+  Record<1 | 2 | 3 | 4 | 5 | 6, FontWeightValue>
+>;
+
+/**
+ * Weight overrides for text types.
+ * Keys are text type names, values are CSS font-weight values.
+ */
+export type TextWeightOverrides = Partial<
+  Record<'body' | 'large' | 'label' | 'code' | 'supporting', FontWeightValue>
+>;
+
 /**
  * Type scale configuration.
  *
@@ -28,6 +49,16 @@
  * ```
  * // Default XDS type scale
  * { base: 14, ratio: 1.2 }
+ *
+ * // With custom weights
+ * {
+ *   base: 14,
+ *   ratio: 1.2,
+ *   weights: {
+ *     heading: { 1: 'var(--font-weight-bold)', 3: 'var(--font-weight-bold)' },
+ *     text: { large: 'var(--font-weight-normal)' },
+ *   },
+ * }
  *
  * // Suggested starting points:
  * //   Dense/functional: { base: 12, ratio: 1.125 }
@@ -40,6 +71,13 @@ export interface XDSTypeScaleConfig {
   base: number;
   /** Scaling ratio for the geometric progression. */
   ratio: number;
+  /** Optional weight overrides for headings and text types. */
+  weights?: {
+    /** Per-level heading weight overrides. Unset levels use the defaults. */
+    heading?: HeadingWeightOverrides;
+    /** Per-type text weight overrides. Unset types use the defaults. */
+    text?: TextWeightOverrides;
+  };
 }
 
 /**
@@ -79,8 +117,9 @@ const TEXT_STEPS: Record<string, number> = {
 
 /**
  * Default font weights per heading level.
+ * Themes can override individual levels via weights.heading in the config.
  */
-const HEADING_WEIGHTS: Record<number, string> = {
+const DEFAULT_HEADING_WEIGHTS: Record<number, string> = {
   1: 'var(--font-weight-semibold)',
   2: 'var(--font-weight-semibold)',
   3: 'var(--font-weight-semibold)',
@@ -91,8 +130,9 @@ const HEADING_WEIGHTS: Record<number, string> = {
 
 /**
  * Default font weights per text type.
+ * Themes can override individual types via weights.text in the config.
  */
-const TEXT_WEIGHTS: Record<string, string> = {
+const DEFAULT_TEXT_WEIGHTS: Record<string, string> = {
   body: 'var(--font-weight-normal)',
   large: 'var(--font-weight-semibold)',
   label: 'var(--font-weight-medium)',
@@ -124,13 +164,17 @@ function computeSize(base: number, ratio: number, step: number): number {
 }
 
 /**
- * Snap a line height to a 4px grid.
- * Ensures minimum of fontSize + 4px for readability.
+ * Compute a unitless line-height ratio, snapped so the computed px value
+ * aligns to a 4px grid. Ensures a minimum of fontSize + 4px for readability.
+ *
+ * Returns a unitless number (e.g. 1.3333) — not a px value — so line-height
+ * scales proportionally when StyleX converts font sizes to relative units.
  */
-function snapLineHeight(fontSize: number, lhRatio: number): number {
-  const raw = fontSize * lhRatio;
-  const snapped = Math.ceil(raw / 4) * 4;
-  return Math.max(snapped, fontSize + 4);
+function computeLeading(fontSize: number, targetRatio: number): number {
+  const rawLh = fontSize * targetRatio;
+  const snappedLh = Math.max(Math.ceil(rawLh / 4) * 4, fontSize + 4);
+  // Round to 4 decimal places for clean CSS output
+  return Math.round((snappedLh / fontSize) * 10000) / 10000;
 }
 
 /**
@@ -138,38 +182,46 @@ function snapLineHeight(fontSize: number, lhRatio: number): number {
  *
  * Generates 33 tokens: 6 heading levels × 3 properties + 5 text types × 3 properties.
  *
+ * Font sizes are emitted as px values (e.g. '24px').
+ * Line heights are emitted as unitless ratios (e.g. '1.3333').
+ * Font weights are emitted as var() references (e.g. 'var(--font-weight-semibold)').
+ *
  * @example
  * ```
  * const tokens = expandTypeScale({ base: 14, ratio: 1.2 });
  * // tokens['--heading-1-size'] === '24px'
+ * // tokens['--heading-1-leading'] === '1.3333'
  * // tokens['--heading-4-size'] === '14px'  (anchor)
  * // tokens['--text-body-size'] === '14px'
  * ```
  */
 export function expandTypeScale(config: XDSTypeScaleConfig): TypeScaleTokens {
-  const {base, ratio} = config;
+  const {base, ratio, weights} = config;
   const tokens: TypeScaleTokens = {};
+
+  // Merge weight overrides with defaults
+  const headingWeights = {...DEFAULT_HEADING_WEIGHTS, ...weights?.heading};
+  const textWeights = {...DEFAULT_TEXT_WEIGHTS, ...weights?.text};
 
   // Heading tokens
   for (const [levelStr, step] of Object.entries(HEADING_STEPS)) {
     const level = Number(levelStr);
     const size = computeSize(base, ratio, step);
-    const lh = snapLineHeight(size, HEADING_LH_RATIO);
+    const leading = computeLeading(size, HEADING_LH_RATIO);
 
     tokens[`--heading-${level}-size`] = `${size}px`;
-    tokens[`--heading-${level}-weight`] = HEADING_WEIGHTS[level];
-    tokens[`--heading-${level}-leading`] = `${lh}px`;
+    tokens[`--heading-${level}-weight`] = headingWeights[level];
+    tokens[`--heading-${level}-leading`] = `${leading}`;
   }
 
   // Text tokens
   for (const [type, step] of Object.entries(TEXT_STEPS)) {
     const size = computeSize(base, ratio, step);
-    const lhRatio = TEXT_LH_RATIOS[type];
-    const lh = snapLineHeight(size, lhRatio);
+    const leading = computeLeading(size, TEXT_LH_RATIOS[type]);
 
     tokens[`--text-${type}-size`] = `${size}px`;
-    tokens[`--text-${type}-weight`] = TEXT_WEIGHTS[type];
-    tokens[`--text-${type}-leading`] = `${lh}px`;
+    tokens[`--text-${type}-weight`] = textWeights[type];
+    tokens[`--text-${type}-leading`] = `${leading}`;
   }
 
   return tokens;

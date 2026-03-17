@@ -16,6 +16,10 @@ import {neutralIconRegistry} from './icons';
 export const neutralTheme = defineTheme({
   name: 'neutral',
 
+  // Type scale: same as default (base=14, ratio=1.2).
+  // Neutral theme customizes weights via component overrides below.
+  typeScale: {base: 14, ratio: 1.2},
+
   tokens: {
     // =========================================================================
     // Colors — neutral grayscale palette using oklch

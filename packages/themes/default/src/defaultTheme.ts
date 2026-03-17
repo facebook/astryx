@@ -23,9 +23,12 @@ import {defaultIconRegistry} from './icons';
 export const defaultTheme = defineTheme({
   name: 'default',
 
+  // Type scale: base=14px, ratio=1.2, h4 anchored to base.
+  // Generates all --heading-*-{size|weight|leading} and --text-*-{size|weight|leading} tokens.
+  typeScale: {base: 14, ratio: 1.2},
+
   // The default theme uses the built-in token defaults from tokens.stylex.ts.
-  // No token overrides needed — defineTheme fills in defaults automatically.
-  // See packages/core/src/theme/tokens.stylex.ts for all token values.
+  // No additional token overrides needed.
   tokens: {},
 
   components: {

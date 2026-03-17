@@ -47,24 +47,39 @@ describe('expandTypeScale', () => {
       expect(tokens['--text-supporting-size']).toBe('12px');
     });
 
-    it('snaps line heights to 4px grid', () => {
-      // All line heights should be divisible by 4
+    it('emits unitless line-height ratios', () => {
+      // Line heights should be unitless numbers, not px values
       for (const [key, value] of Object.entries(tokens)) {
         if (key.endsWith('-leading')) {
-          const px = parseInt(value);
-          expect(px % 4).toBe(0);
+          expect(value).not.toContain('px');
+          const num = parseFloat(value);
+          expect(num).toBeGreaterThan(1);
+          expect(num).toBeLessThan(2);
         }
       }
     });
 
-    it('ensures line height is at least fontSize + 4', () => {
+    it('snaps line heights to 4px grid', () => {
+      // Each leading ratio × font size should be divisible by 4
       for (const [key, value] of Object.entries(tokens)) {
         if (key.endsWith('-leading')) {
-          const lh = parseInt(value);
-          // Find the corresponding size token
           const sizeKey = key.replace('-leading', '-size');
           const fontSize = parseInt(tokens[sizeKey]);
-          expect(lh).toBeGreaterThanOrEqual(fontSize + 4);
+          const ratio = parseFloat(value);
+          const computedLh = Math.round(fontSize * ratio);
+          expect(computedLh % 4).toBe(0);
+        }
+      }
+    });
+
+    it('ensures computed line height is at least fontSize + 4', () => {
+      for (const [key, value] of Object.entries(tokens)) {
+        if (key.endsWith('-leading')) {
+          const sizeKey = key.replace('-leading', '-size');
+          const fontSize = parseInt(tokens[sizeKey]);
+          const ratio = parseFloat(value);
+          const computedLh = Math.round(fontSize * ratio);
+          expect(computedLh).toBeGreaterThanOrEqual(fontSize + 4);
         }
       }
     });
@@ -123,6 +138,57 @@ describe('expandTypeScale', () => {
 
     it('keeps body at base', () => {
       expect(tokens['--text-body-size']).toBe('16px');
+    });
+  });
+
+  describe('weight overrides', () => {
+    it('applies heading weight overrides', () => {
+      const tokens = expandTypeScale({
+        base: 14,
+        ratio: 1.2,
+        weights: {
+          heading: {1: 'var(--font-weight-bold)', 3: 'var(--font-weight-bold)'},
+        },
+      });
+      expect(tokens['--heading-1-weight']).toBe('var(--font-weight-bold)');
+      expect(tokens['--heading-2-weight']).toBe('var(--font-weight-semibold)');
+      expect(tokens['--heading-3-weight']).toBe('var(--font-weight-bold)');
+    });
+
+    it('applies text weight overrides', () => {
+      const tokens = expandTypeScale({
+        base: 14,
+        ratio: 1.2,
+        weights: {
+          text: {large: 'var(--font-weight-normal)'},
+        },
+      });
+      expect(tokens['--text-large-weight']).toBe('var(--font-weight-normal)');
+      expect(tokens['--text-body-weight']).toBe('var(--font-weight-normal)');
+    });
+
+    it('applies both heading and text weight overrides', () => {
+      const tokens = expandTypeScale({
+        base: 14,
+        ratio: 1.2,
+        weights: {
+          heading: {1: '700'},
+          text: {body: '500'},
+        },
+      });
+      expect(tokens['--heading-1-weight']).toBe('700');
+      expect(tokens['--text-body-weight']).toBe('500');
+    });
+
+    it('uses defaults for unspecified weights', () => {
+      const tokens = expandTypeScale({
+        base: 14,
+        ratio: 1.2,
+        weights: {heading: {1: '700'}},
+      });
+      // Only h1 is overridden, rest use defaults
+      expect(tokens['--heading-2-weight']).toBe('var(--font-weight-semibold)');
+      expect(tokens['--text-body-weight']).toBe('var(--font-weight-normal)');
     });
   });
 
