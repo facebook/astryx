@@ -284,33 +284,58 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
+  // Track active pointer to defer layer.show() past click events.
+  // With popover="auto", showing the popover between pointerdown and
+  // pointerup/click causes the browser's light-dismiss to immediately
+  // close it (the click is seen as "outside" the newly-opened popover).
+  const pointerActiveRef = useRef(false);
+
   // Debounce ref
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Layer for dropdown
+  const handleLayerShow = useCallback(() => {
+    onOpenChange?.(true);
+  }, [onOpenChange]);
+
+  const handleLayerHide = useCallback(() => {
+    onOpenChange?.(false);
+    setHighlightedIndex(-1);
+    searchSource.cancel?.();
+  }, [onOpenChange, searchSource]);
+
   const layer = useXDSLayer({
     mode: 'context',
     lightDismiss: true,
-    onShow: () => onOpenChange?.(true),
-    onHide: () => {
-      onOpenChange?.(false);
-      setHighlightedIndex(-1);
-      searchSource.cancel?.();
-    },
+    onShow: handleLayerShow,
+    onHide: handleLayerHide,
   });
+
+  // Show the layer, deferring past the active click if a pointer is down.
+  // Without this, popover="auto" light-dismiss immediately closes the
+  // dropdown when it opens between pointerdown and pointerup/click.
+  const showLayer = useCallback(() => {
+    if (pointerActiveRef.current) {
+      document.addEventListener(
+        'click',
+        () => requestAnimationFrame(() => layer.show()),
+        {once: true},
+      );
+    } else {
+      layer.show();
+    }
+  }, [layer]);
 
   // Merge refs: forward ref + internal ref + fallback anchor ref
   const setInputRef = useCallback(
     (el: HTMLInputElement | null) => {
-      (inputRef as React.MutableRefObject<HTMLInputElement | null>).current =
+      (inputRef as React.RefObject<HTMLInputElement | null>).current = el;
+      (fallbackAnchorRef as React.RefObject<HTMLInputElement | null>).current =
         el;
-      (
-        fallbackAnchorRef as React.MutableRefObject<HTMLInputElement | null>
-      ).current = el;
       if (typeof ref === 'function') {
         ref(el);
       } else if (ref) {
-        (ref as React.MutableRefObject<HTMLInputElement | null>).current = el;
+        (ref as React.RefObject<HTMLInputElement | null>).current = el;
       }
     },
     [ref],
@@ -338,7 +363,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
         setResults(searchResults.slice(0, maxMenuItems));
         setHighlightedIndex(searchResults.length > 0 ? 0 : -1);
         if (searchResults.length > 0 || searchQuery.length > 0) {
-          layer.show();
+          showLayer();
         }
       } catch {
         setResults([]);
@@ -347,7 +372,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
         setIsLoading(false);
       }
     },
-    [searchSource, maxMenuItems, layer],
+    [searchSource, maxMenuItems, showLayer],
   );
 
   // Perform bootstrap
@@ -358,14 +383,14 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
       setResults(bootstrapResults.slice(0, maxMenuItems));
       setHighlightedIndex(bootstrapResults.length > 0 ? 0 : -1);
       if (bootstrapResults.length > 0) {
-        layer.show();
+        showLayer();
       }
     } catch {
       setResults([]);
     } finally {
       setIsLoading(false);
     }
-  }, [searchSource, maxMenuItems, layer]);
+  }, [searchSource, maxMenuItems, showLayer]);
 
   // Handle query change
   const handleQueryChange = useCallback(
@@ -434,8 +459,8 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
     if (isDisabled) return;
     if (hasEntriesOnFocus && results.length === 0 && query.length === 0) {
       performBootstrap();
-    } else if (query.length > 0 && results.length > 0) {
-      layer.show();
+    } else if (results.length > 0 && (query.length > 0 || hasEntriesOnFocus)) {
+      showLayer();
     }
   }, [
     isDisabled,
@@ -443,7 +468,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
     results.length,
     query.length,
     performBootstrap,
-    layer,
+    showLayer,
   ]);
 
   // Keyboard navigation
@@ -548,6 +573,16 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
         aria-describedby={ariaDescribedBy}
         value={query}
         onChange={handleInputChange}
+        onPointerDown={() => {
+          pointerActiveRef.current = true;
+          document.addEventListener(
+            'click',
+            () => {
+              pointerActiveRef.current = false;
+            },
+            {once: true},
+          );
+        }}
         onFocus={handleFocus}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}

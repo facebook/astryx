@@ -327,14 +327,16 @@ export function XDSDateInput({
   }, [pendingInput]);
 
   // Use XDSPopover for popover rendering, positioning, and focus trapping
+  const handlePopoverHide = useCallback(() => {
+    // Return focus to input when popover closes
+    inputRef.current?.focus();
+  }, []);
+
   const popover = useXDSPopover({
     xstyle: styles.popover,
     dialogLabel: 'Choose date',
     closeButtonLabel: 'Close calendar',
-    onHide: () => {
-      // Return focus to input when popover closes
-      inputRef.current?.focus();
-    },
+    onHide: handlePopoverHide,
   });
 
   // Handle opening the popover from button click (focus calendar)

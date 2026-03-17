@@ -136,12 +136,14 @@ export interface XDSTooltipOptions {
   isEnabled?: boolean;
 
   /**
-   * Callback fired when tooltip is shown
+   * Callback fired when tooltip is shown.
+   * Wrap in useCallback for stable identity.
    */
   onShow?: () => void;
 
   /**
-   * Callback fired when tooltip is hidden
+   * Callback fired when tooltip is hidden.
+   * Wrap in useCallback for stable identity.
    */
   onHide?: () => void;
 }

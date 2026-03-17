@@ -87,13 +87,15 @@ const styles = stylex.create({
  */
 export interface UseXDSPopoverOptions {
   /**
-   * Callback fired when popover is shown
+   * Callback fired when popover is shown.
+   * Wrap in useCallback for stable identity.
    */
   onShow?: () => void;
 
   /**
    * Callback fired when popover is hidden.
    * Use this to return focus to the trigger element.
+   * Wrap in useCallback for stable identity.
    */
   onHide?: () => void;
 
