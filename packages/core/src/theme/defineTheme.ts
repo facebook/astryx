@@ -330,17 +330,13 @@ function toKebabCase(str: string): string {
  */
 export function generateThemeRules(
   theme: XDSDefinedTheme,
-  options: { computedValues?: boolean } = {},
 ): string[] {
   const parts: string[] = [];
-  const { computedValues = false } = options;
   const tokens = theme.tokens;
 
-  // Helper: resolve a token to its computed value or var() reference
-  const val = (key: string): string => {
-    if (computedValues && tokens[key]) return tokens[key];
-    return `var(${key})`;
-  };
+  // Helper: resolve a token value — tokens always have computed values
+  // since defineTheme runs expandTypeScale to produce them.
+  const val = (key: string): string => tokens[key] || `var(${key})`;
 
   // 1. Token block — CSS custom properties on :scope
   const tokenEntries = Object.entries(tokens);

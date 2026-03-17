@@ -661,7 +661,7 @@ export function registerTheme(program) {
           tokens: themeDef.tokens,
           components: themeDef.components,
         });
-        const rules = _generateThemeRules(resolvedTheme, { computedValues: true });
+        const rules = _generateThemeRules(resolvedTheme);
         if (rules.length === 0) {
           console.log('No overrides found — nothing to build.');
           return;
