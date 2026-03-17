@@ -16,7 +16,7 @@ import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSStatusDot} from '@xds/core/StatusDot';
 import {XDSSlider} from '@xds/core/Slider';
 import {XDSDivider} from '@xds/core';
-import {XDSBanner} from '@xds/core/Banner';
+
 import {XDSTheme, defineTheme} from '@xds/core/theme';
 import {colorVars, radiusVars} from '@xds/core/theme/tokens.stylex';
 
@@ -325,6 +325,15 @@ const s = stylex.create({
     paddingBlock: 2,
     paddingInline: 6,
     borderRadius: radiusVars['--radius-content'],
+  },
+  banner: {
+    backgroundColor: colorVars['--color-accent-deemphasized'],
+    borderRadius: radiusVars['--radius-container'],
+    paddingBlock: 12,
+    paddingInline: 16,
+    fontSize: 13,
+    color: colorVars['--color-accent-text'],
+    maxWidth: 300,
   },
   section: {
     // no-op — just used for grouping
@@ -793,10 +802,8 @@ export default function RadiusPage() {
                 <XDSText type="supporting" color="secondary" weight="bold">
                   Banner
                 </XDSText>
-                <div style={{maxWidth: 300}}>
-                  <XDSBanner variant="info">
-                    Radius tokens scale with the multiplier.
-                  </XDSBanner>
+                <div {...stylex.props(s.banner)}>
+                  Radius tokens scale with the multiplier.
                 </div>
               </div>
             </div>
