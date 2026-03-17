@@ -38,6 +38,7 @@ import {XDSLayoutPanel} from '../Layout/XDSLayoutPanel';
 import {XDSLayoutContent} from '../Layout/XDSLayoutContent';
 import {XDSMobileNav} from '../MobileNav/XDSMobileNav';
 import {XDSMobileNavToggle} from '../MobileNav/XDSMobileNavToggle';
+import {XDSSideNavRenderContext} from '../SideNav/XDSSideNavRenderContext';
 import {XDSAppShellMobileContext} from './XDSAppShellMobileContext';
 import type {XDSAppShellMobileContextValue} from './XDSAppShellMobileContext';
 import type {SpacingStep} from '../utils/types';
@@ -694,9 +695,10 @@ export function XDSAppShell({
   const shouldShowAutoToggle =
     mobileNavEnabled && mobileNavHasToggle && isBelowBreakpoint;
 
-  // For sidenav-only layouts with no TopNav, render a minimal top bar
+  // For sidenav-only layouts with no TopNav, render the sideNav in topbar
+  // mode — it shows heading + footer icons horizontally, with the hamburger
   const autoMobileTopBar =
-    shouldShowAutoToggle && !hasTopNav ? (
+    shouldShowAutoToggle && !hasTopNav && hasSideNav ? (
       <XDSLayoutHeader
         padding={0}
         hasDivider={navHasDividers}
@@ -705,6 +707,9 @@ export function XDSAppShell({
           {...stylex.props(styles.autoMobileTopBar)}
           role="navigation"
           aria-label="Mobile navigation">
+          <XDSSideNavRenderContext value="topbar">
+            {sideNav}
+          </XDSSideNavRenderContext>
           <XDSMobileNavToggle />
         </div>
       </XDSLayoutHeader>
@@ -773,7 +778,9 @@ export function XDSAppShell({
             onOpenChange={open => setMobileNavOpen(open)}
             width={sideNavWidth}
             data-testid="sidenav-mobile">
-            {sideNav}
+            <XDSSideNavRenderContext value="drawer">
+              {sideNav}
+            </XDSSideNavRenderContext>
           </XDSMobileNav>
         )}
       </div>
