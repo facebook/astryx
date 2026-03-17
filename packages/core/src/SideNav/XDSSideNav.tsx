@@ -309,6 +309,20 @@ export function XDSSideNav({
   }
 
   // =========================================================================
+  // Drawer-content mode — render just items (no XDSMobileNav wrapper)
+  // Used when TopNav owns the drawer and SideNav items are nested inside
+  // =========================================================================
+  if (renderMode === 'drawer-content') {
+    return (
+      <>
+        {topContent}
+        {children}
+        {footer}
+      </>
+    );
+  }
+
+  // =========================================================================
   // Default mode — full sidebar
   // =========================================================================
   const hasStickyTop = !!(header || topContent);

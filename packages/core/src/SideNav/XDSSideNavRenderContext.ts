@@ -13,7 +13,11 @@
 
 import {createContext, useContext} from 'react';
 
-export type XDSSideNavRenderMode = 'default' | 'topbar' | 'drawer';
+export type XDSSideNavRenderMode =
+  | 'default'
+  | 'topbar'
+  | 'drawer'
+  | 'drawer-content';
 
 export const XDSSideNavRenderContext =
   createContext<XDSSideNavRenderMode>('default');

@@ -21,6 +21,7 @@ import {edgeSignals} from '../Layout/edgeCompensation.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {TopNavSlotContext} from './TopNavContext';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
+import {useXDSTopNavMobileContent} from './XDSTopNavMobileContentContext';
 import {XDSMobileNav} from '../MobileNav/XDSMobileNav';
 import {XDSMobileNavToggle} from '../MobileNav/XDSMobileNavToggle';
 
@@ -169,6 +170,7 @@ export function XDSTopNav({
   ...props
 }: XDSTopNavProps) {
   const renderMode = useXDSTopNavRenderMode();
+  const mobileContent = useXDSTopNavMobileContent();
   const hasCenterContent = centerContent != null;
   const hasCollapsibleContent = startContent != null || centerContent != null;
 
@@ -198,18 +200,22 @@ export function XDSTopNav({
   }
 
   // =========================================================================
-  // Drawer mode — render nav items vertically inside a MobileNav
+  // Drawer mode — render nav items vertically inside a MobileNav,
+  // plus any additional content passed via context (e.g. SideNav items)
   // =========================================================================
   if (renderMode === 'drawer') {
-    // Only render if there are collapsible items
-    if (!hasCollapsibleContent) return null;
+    // Only render if there are collapsible items or extra content
+    if (!hasCollapsibleContent && !mobileContent) return null;
 
     return (
       <XDSMobileNav header={heading}>
-        <div {...stylex.props(styles.drawerItems)}>
-          {startContent}
-          {centerContent}
-        </div>
+        {hasCollapsibleContent && (
+          <div {...stylex.props(styles.drawerItems)}>
+            {startContent}
+            {centerContent}
+          </div>
+        )}
+        {mobileContent}
       </XDSMobileNav>
     );
   }

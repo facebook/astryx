@@ -41,6 +41,7 @@ import {XDSMobileNav} from '../MobileNav/XDSMobileNav';
 import {XDSMobileNavToggle} from '../MobileNav/XDSMobileNavToggle';
 import {XDSSideNavRenderContext} from '../SideNav/XDSSideNavRenderContext';
 import {XDSTopNavRenderContext} from '../TopNav/XDSTopNavRenderContext';
+import {XDSTopNavMobileContentContext} from '../TopNav/XDSTopNavMobileContentContext';
 import {XDSAppShellMobileContext} from './XDSAppShellMobileContext';
 import type {XDSAppShellMobileContextValue} from './XDSAppShellMobileContext';
 import type {SpacingStep} from '../utils/types';
@@ -591,8 +592,12 @@ export function XDSAppShell({
   // TopNav-only auto mobile (no SideNav) — TopNav handles its own drawer
   const shouldRenderTopNavDrawer =
     shouldRenderAutoMobileNav && hasTopNav && !hasSideNav;
-  // SideNav auto mobile (with or without TopNav)
-  const shouldRenderSideNavDrawer = shouldRenderAutoMobileNav && hasSideNav;
+  // TopNav + SideNav combined — TopNav owns drawer, SideNav content via context
+  const shouldRenderCombinedDrawer =
+    shouldRenderAutoMobileNav && hasTopNav && hasSideNav;
+  // SideNav-only auto mobile (no TopNav) — SideNav handles its own drawer
+  const shouldRenderSideNavDrawer =
+    shouldRenderAutoMobileNav && !hasTopNav && hasSideNav;
 
   // =========================================================================
   // Mobile context — shared with XDSMobileNavToggle and future TopNav mobile
@@ -783,14 +788,27 @@ export function XDSAppShell({
         {/* Mobile nav — rendering modes:
             1. ReactNode shorthand: render user's element as-is
             2. Config content: render directly
-            3. Auto TopNav-only: TopNav renders its own drawer
-            4. Auto SideNav (±TopNav): SideNav renders drawer, TopNav items inside */}
+            3. TopNav-only: TopNav renders its own drawer
+            4. TopNav+SideNav: TopNav owns drawer, SideNav passed via context
+            5. SideNav-only: SideNav renders its own drawer */}
         {shouldRenderMobileNavReactNode && mobileNavReactNode}
         {shouldRenderConfigContent && mobileNavConfigContent}
         {shouldRenderTopNavDrawer && (
           <XDSTopNavRenderContext value="drawer">
             {topNav}
           </XDSTopNavRenderContext>
+        )}
+        {shouldRenderCombinedDrawer && (
+          <XDSTopNavMobileContentContext
+            value={
+              <XDSSideNavRenderContext value="drawer-content">
+                {sideNav}
+              </XDSSideNavRenderContext>
+            }>
+            <XDSTopNavRenderContext value="drawer">
+              {topNav}
+            </XDSTopNavRenderContext>
+          </XDSTopNavMobileContentContext>
         )}
         {shouldRenderSideNavDrawer && (
           <XDSSideNavRenderContext value="drawer">
