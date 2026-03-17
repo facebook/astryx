@@ -6,6 +6,7 @@ import {usePathname} from 'next/navigation';
 const pages = [
   {name: 'Home', href: '/'},
   {name: '🔬 Shell Lab', href: '/pages/shell-lab/'},
+  {name: '🔘 Radius System', href: '/pages/radius/'},
   {name: 'Example', href: '/pages/example/'},
   {name: 'Navigation', href: '/pages/navigation/'},
   {name: 'TopNav Menu', href: '/pages/topnav-menu/'},
