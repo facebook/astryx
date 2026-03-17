@@ -464,6 +464,59 @@ export default function RadiusPage() {
           </XDSVStack>
         </div>
 
+        {/* Default Radius Table */}
+        <XDSVStack gap={3}>
+          <XDSHeading level={2}>Default Radius</XDSHeading>
+          <table {...stylex.props(styles.table)}>
+            <thead>
+              <tr>
+                <th {...stylex.props(styles.th)}>Token</th>
+                <th {...stylex.props(styles.th)}>Base Value</th>
+                <th {...stylex.props(styles.th)}>Scales?</th>
+                <th {...stylex.props(styles.th)}>Visual</th>
+                <th {...stylex.props(styles.th)}>Example Components</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td {...stylex.props(styles.td)}><code>radius-none</code></td>
+                <td {...stylex.props(styles.td, styles.tdMono)}>0dp</td>
+                <td {...stylex.props(styles.td)}>No &mdash; always 0</td>
+                <td {...stylex.props(styles.td)}><div style={{width: 40, height: 40, backgroundColor: 'light-dark(#ccc, #555)', borderRadius: 0}} /></td>
+                <td {...stylex.props(styles.td)}>dividers, table cells, side panels, shared edges (button groups)</td>
+              </tr>
+              <tr>
+                <td {...stylex.props(styles.td)}><code>radius-content</code></td>
+                <td {...stylex.props(styles.td, styles.tdMono)}>4dp</td>
+                <td {...stylex.props(styles.td)}>Yes</td>
+                <td {...stylex.props(styles.td)}><div style={{width: 40, height: 40, backgroundColor: 'light-dark(#ccc, #555)', borderRadius: co}} /></td>
+                <td {...stylex.props(styles.td)}>code blocks, thumbnails</td>
+              </tr>
+              <tr>
+                <td {...stylex.props(styles.td)}><code>radius-element</code></td>
+                <td {...stylex.props(styles.td, styles.tdMono)}>8dp</td>
+                <td {...stylex.props(styles.td)}>Yes</td>
+                <td {...stylex.props(styles.td)}><div style={{width: 40, height: 40, backgroundColor: 'light-dark(#ccc, #555)', borderRadius: el}} /></td>
+                <td {...stylex.props(styles.td)}>buttons, inputs, text areas, tokens, checkboxes</td>
+              </tr>
+              <tr>
+                <td {...stylex.props(styles.td)}><code>radius-container</code></td>
+                <td {...stylex.props(styles.td, styles.tdMono)}>12dp</td>
+                <td {...stylex.props(styles.td)}>Yes</td>
+                <td {...stylex.props(styles.td)}><div style={{width: 40, height: 40, backgroundColor: 'light-dark(#ccc, #555)', borderRadius: ct}} /></td>
+                <td {...stylex.props(styles.td)}>cards, modals, popovers, dropdown menus, toasts</td>
+              </tr>
+              <tr>
+                <td {...stylex.props(styles.td)}><code>radius-rounded</code></td>
+                <td {...stylex.props(styles.td, styles.tdMono)}>9999dp</td>
+                <td {...stylex.props(styles.td)}>No &mdash; always pill</td>
+                <td {...stylex.props(styles.td)}><div style={{width: 40, height: 40, backgroundColor: 'light-dark(#ccc, #555)', borderRadius: 9999}} /></td>
+                <td {...stylex.props(styles.td)}>badges, avatars, status dots, toggles</td>
+              </tr>
+            </tbody>
+          </table>
+        </XDSVStack>
+
         <XDSDivider />
 
         {/* radius-none */}
