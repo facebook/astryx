@@ -4,17 +4,11 @@
  * The reference theme — provides the standard XDS visual language.
  * Uses defineTheme for CSS-based theming (no StyleX build required for consumers).
  *
- * Token values use [light, dark] tuples for automatic light-dark() conversion.
- * Only tokens that differ from the built-in defaults need to be specified,
- * but the default theme is explicit as a reference.
+ * Typography sizing is driven by typeScale, which auto-generates both
+ * the token values (--heading-1-size, --text-body-size, etc.) and the
+ * component override rules (.xds-heading.level-1 { font-size: ... }).
  *
- * Typography sizing is driven by type scale tokens (--heading-{n}-size, --text-{type}-size).
- * The default type scale is base=14, ratio=1.2 with h4 anchored to base.
- * To customize, pass a `typeScale` config to defineTheme.
- *
- * Component overrides use CSS class selectors:
- *   .xds-button.secondary { ... }
- *   .xds-heading.level-1 { ... }
+ * Only non-typography component overrides need to be specified manually.
  */
 
 import {defineTheme} from '@xds/core/theme';
@@ -24,7 +18,7 @@ export const defaultTheme = defineTheme({
   name: 'default',
 
   // Type scale: base=14px, ratio=1.2, h4 anchored to base.
-  // Generates all --heading-*-{size|weight|leading} and --text-*-{size|weight|leading} tokens.
+  // Generates all heading + text tokens AND component overrides automatically.
   typeScale: {base: 14, ratio: 1.2},
 
   // The default theme uses the built-in token defaults from tokens.stylex.ts.
@@ -42,94 +36,8 @@ export const defaultTheme = defineTheme({
       },
     },
 
-    // =========================================================================
-    // Heading — sized by type scale tokens
-    // =========================================================================
-    heading: {
-      'level:1': {
-        fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--heading-1-size)',
-        fontWeight: 'var(--heading-1-weight)',
-        lineHeight: 'var(--heading-1-leading)',
-        color: 'var(--color-text-primary)',
-      },
-      'level:2': {
-        fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--heading-2-size)',
-        fontWeight: 'var(--heading-2-weight)',
-        lineHeight: 'var(--heading-2-leading)',
-        color: 'var(--color-text-primary)',
-      },
-      'level:3': {
-        fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--heading-3-size)',
-        fontWeight: 'var(--heading-3-weight)',
-        lineHeight: 'var(--heading-3-leading)',
-        color: 'var(--color-text-primary)',
-      },
-      'level:4': {
-        fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--heading-4-size)',
-        fontWeight: 'var(--heading-4-weight)',
-        lineHeight: 'var(--heading-4-leading)',
-        color: 'var(--color-text-primary)',
-      },
-      'level:5': {
-        fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--heading-5-size)',
-        fontWeight: 'var(--heading-5-weight)',
-        lineHeight: 'var(--heading-5-leading)',
-        color: 'var(--color-text-primary)',
-      },
-      'level:6': {
-        fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--heading-6-size)',
-        fontWeight: 'var(--heading-6-weight)',
-        lineHeight: 'var(--heading-6-leading)',
-        color: 'var(--color-text-primary)',
-      },
-    },
-
-    // =========================================================================
-    // Text — semantic text styles, sized by type scale tokens
-    // =========================================================================
-    text: {
-      'type:body': {
-        fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--text-body-size)',
-        fontWeight: 'var(--text-body-weight)',
-        lineHeight: 'var(--text-body-leading)',
-        color: 'var(--color-text-primary)',
-      },
-      'type:large': {
-        fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--text-large-size)',
-        fontWeight: 'var(--text-large-weight)',
-        lineHeight: 'var(--text-large-leading)',
-        color: 'var(--color-text-primary)',
-      },
-      'type:label': {
-        fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--text-label-size)',
-        fontWeight: 'var(--text-label-weight)',
-        lineHeight: 'var(--text-label-leading)',
-        color: 'var(--color-text-primary)',
-      },
-      'type:supporting': {
-        fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--text-supporting-size)',
-        fontWeight: 'var(--text-supporting-weight)',
-        lineHeight: 'var(--text-supporting-leading)',
-        color: 'var(--color-text-secondary)',
-      },
-      'type:code': {
-        fontFamily: 'var(--font-code)',
-        fontSize: 'var(--text-code-size)',
-        fontWeight: 'var(--text-code-weight)',
-        lineHeight: 'var(--text-code-leading)',
-        color: 'var(--color-text-primary)',
-      },
-    },
+    // Heading and text component overrides are auto-generated by typeScale.
+    // No manual heading: { ... } or text: { ... } blocks needed.
   },
 
   icons: defaultIconRegistry,

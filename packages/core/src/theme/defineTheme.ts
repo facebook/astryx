@@ -43,7 +43,11 @@ import {
   fontWeightDefaults,
   typeScaleDefaults,
 } from './tokens.stylex';
-import {expandTypeScale, type XDSTypeScaleConfig} from './expandTypeScale';
+import {
+  expandTypeScale,
+  generateTypeScaleComponents,
+  type XDSTypeScaleConfig,
+} from './expandTypeScale';
 
 // =============================================================================
 // Types
@@ -209,6 +213,43 @@ function resolveTokenValue(value: XDSTokenValue): string {
 }
 
 /**
+ * Deep-merge two component style maps.
+ * Properties in `overrides` take precedence over `base`.
+ * This allows typeScale-generated rules to be overridden by explicit components.
+ */
+function deepMergeComponents(
+  base?: XDSComponentStyleMap,
+  overrides?: XDSComponentStyleMap,
+): XDSComponentStyleMap | undefined {
+  if (!base && !overrides) return undefined;
+  if (!base) return overrides;
+  if (!overrides) return base;
+
+  const result: XDSComponentStyleMap = {};
+
+  // Start with all base entries
+  for (const [component, rules] of Object.entries(base)) {
+    result[component] = {...rules};
+  }
+
+  // Merge overrides on top
+  for (const [component, rules] of Object.entries(overrides)) {
+    if (!result[component]) {
+      result[component] = {...rules};
+    } else {
+      for (const [key, styles] of Object.entries(rules)) {
+        result[component][key] = {
+          ...result[component][key],
+          ...styles,
+        };
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
  * Create an XDS theme.
  *
  * Pass only the tokens you want to override — everything else
@@ -244,10 +285,17 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
     }
   }
 
+  // 3. Generate component overrides: typeScale-generated (lowest) + explicit (highest)
+  let components = input.components;
+  if (input.typeScale) {
+    const generated = generateTypeScaleComponents(input.typeScale);
+    components = deepMergeComponents(generated, input.components);
+  }
+
   return {
     name: input.name,
     tokens,
-    components: input.components,
+    components,
     icons: input.icons,
   };
 }

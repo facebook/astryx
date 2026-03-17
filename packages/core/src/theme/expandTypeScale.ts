@@ -232,3 +232,70 @@ export function expandTypeScale(config: XDSTypeScaleConfig): TypeScaleTokens {
 
   return tokens;
 }
+
+// =============================================================================
+// Component override generation
+// =============================================================================
+
+/**
+ * Font family mapping for auto-generated component overrides.
+ * Code text uses the code font; everything else uses the heading/body font.
+ */
+const TEXT_FONT_FAMILIES: Record<string, string> = {
+  body: 'var(--font-body)',
+  large: 'var(--font-body)',
+  label: 'var(--font-body)',
+  code: 'var(--font-code)',
+  supporting: 'var(--font-body)',
+};
+
+/**
+ * Generate component style overrides for heading and text components
+ * from a type scale configuration.
+ *
+ * Produces rules like:
+ *   heading: { 'level:1': { fontFamily, fontSize, fontWeight, lineHeight } }
+ *   text:    { 'type:body': { fontFamily, fontSize, fontWeight, lineHeight } }
+ *
+ * Color is intentionally excluded — it's handled by component internals
+ * (XDSHeading defaults to primary, XDSText has per-type defaults).
+ * Including color here would duplicate component logic and risk specificity
+ * conflicts with the color prop.
+ *
+ * @example
+ * ```
+ * const components = generateTypeScaleComponents({ base: 14, ratio: 1.2 });
+ * // components.heading['level:1'].fontSize === 'var(--heading-1-size)'
+ * ```
+ */
+export function generateTypeScaleComponents(
+  config: XDSTypeScaleConfig,
+): Record<string, Record<string, Record<string, string>>> {
+  const components: Record<string, Record<string, Record<string, string>>> = {};
+
+  // Heading overrides
+  const headingRules: Record<string, Record<string, string>> = {};
+  for (const level of [1, 2, 3, 4, 5, 6]) {
+    headingRules[`level:${level}`] = {
+      fontFamily: 'var(--font-heading)',
+      fontSize: `var(--heading-${level}-size)`,
+      fontWeight: `var(--heading-${level}-weight)`,
+      lineHeight: `var(--heading-${level}-leading)`,
+    };
+  }
+  components.heading = headingRules;
+
+  // Text overrides
+  const textRules: Record<string, Record<string, string>> = {};
+  for (const type of ['body', 'large', 'label', 'code', 'supporting']) {
+    textRules[`type:${type}`] = {
+      fontFamily: TEXT_FONT_FAMILIES[type],
+      fontSize: `var(--text-${type}-size)`,
+      fontWeight: `var(--text-${type}-weight)`,
+      lineHeight: `var(--text-${type}-leading)`,
+    };
+  }
+  components.text = textRules;
+
+  return components;
+}

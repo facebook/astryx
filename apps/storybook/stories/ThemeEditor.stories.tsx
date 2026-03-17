@@ -36,7 +36,7 @@ import {
   elevationDefaults,
   transitionDefaults,
 } from '@xds/core/theme';
-import {defaultTheme, defaultIconRegistry} from '@xds/theme-default';
+import {defaultIconRegistry} from '@xds/theme-default';
 
 // =============================================================================
 // Token Groups for the Editor
@@ -1365,8 +1365,8 @@ function ThemeEditorComponent() {
     }
     return defineTheme({
       name: themeName,
+      typeScale: {base: typeScaleBase, ratio: typeScaleRatio},
       tokens: tokenOverrides as Partial<Record<string, string>>,
-      components: defaultTheme.components,
       icons: defaultIconRegistry,
     });
   }, [tokens, themeName, allDefaults]);

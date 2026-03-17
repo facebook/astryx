@@ -27,7 +27,7 @@ export type {
   XDSStyleOverrides,
 } from './defineTheme';
 
-export {expandTypeScale} from './expandTypeScale';
+export {expandTypeScale, generateTypeScaleComponents} from './expandTypeScale';
 export type {XDSTypeScaleConfig, TypeScaleTokens} from './expandTypeScale';
 
 // Export token defaults and vars for use in custom components and themes

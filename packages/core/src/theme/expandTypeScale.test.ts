@@ -4,7 +4,7 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {expandTypeScale} from './expandTypeScale';
+import {expandTypeScale, generateTypeScaleComponents} from './expandTypeScale';
 
 describe('expandTypeScale', () => {
   describe('default scale (base=14, ratio=1.2)', () => {
@@ -210,5 +210,57 @@ describe('expandTypeScale', () => {
         expect(tokens).toHaveProperty(`--text-${type}-leading`);
       }
     });
+  });
+});
+
+describe('generateTypeScaleComponents', () => {
+  it('generates heading and text component keys', () => {
+    const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
+    expect(components).toHaveProperty('heading');
+    expect(components).toHaveProperty('text');
+  });
+
+  it('generates rules for all 6 heading levels', () => {
+    const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
+    for (let level = 1; level <= 6; level++) {
+      expect(components.heading).toHaveProperty(`level:${level}`);
+    }
+  });
+
+  it('generates rules for all 5 text types', () => {
+    const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
+    for (const type of ['body', 'large', 'label', 'code', 'supporting']) {
+      expect(components.text).toHaveProperty(`type:${type}`);
+    }
+  });
+
+  it('heading rules include fontFamily, fontSize, fontWeight, lineHeight', () => {
+    const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
+    const h1 = components.heading['level:1'];
+    expect(h1.fontFamily).toBe('var(--font-heading)');
+    expect(h1.fontSize).toBe('var(--heading-1-size)');
+    expect(h1.fontWeight).toBe('var(--heading-1-weight)');
+    expect(h1.lineHeight).toBe('var(--heading-1-leading)');
+  });
+
+  it('text rules include fontFamily, fontSize, fontWeight, lineHeight', () => {
+    const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
+    const body = components.text['type:body'];
+    expect(body.fontFamily).toBe('var(--font-body)');
+    expect(body.fontSize).toBe('var(--text-body-size)');
+    expect(body.fontWeight).toBe('var(--text-body-weight)');
+    expect(body.lineHeight).toBe('var(--text-body-leading)');
+  });
+
+  it('code text uses font-code family', () => {
+    const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
+    expect(components.text['type:code'].fontFamily).toBe('var(--font-code)');
+  });
+
+  it('does NOT include color (handled by component internals)', () => {
+    const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
+    expect(components.heading['level:1'].color).toBeUndefined();
+    expect(components.text['type:body'].color).toBeUndefined();
+    expect(components.text['type:supporting'].color).toBeUndefined();
   });
 });
