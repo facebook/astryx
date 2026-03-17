@@ -29,6 +29,7 @@ import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
 import {XDSHeading} from '../Text/XDSHeading';
+import {useXDSAppShellMobile} from '../AppShell/XDSAppShellMobileContext';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSBaseProps} from '../XDSBaseProps';
 
@@ -161,15 +162,19 @@ export interface XDSMobileNavProps extends Omit<XDSBaseProps, 'title'> {
   ref?: React.Ref<HTMLDialogElement>;
   /**
    * Whether the drawer is open.
+   * When omitted, reads from XDSAppShellMobileContext (managed by AppShell).
+   * Provide explicitly for standalone use outside AppShell or for the
+   * ReactNode escape hatch.
    */
-  isOpen: boolean;
+  isOpen?: boolean;
 
   /**
    * Callback fired when the drawer visibility changes.
    * Called with `false` when the drawer should close
    * (backdrop click, escape, close button).
+   * When omitted, reads from XDSAppShellMobileContext (managed by AppShell).
    */
-  onOpenChange: (isOpen: boolean) => void;
+  onOpenChange?: (isOpen: boolean) => void;
 
   /**
    * Drawer content — typically XDSSideNavSection/XDSSideNavItem, or any ReactNode.
@@ -214,22 +219,27 @@ export interface XDSMobileNavProps extends Omit<XDSBaseProps, 'title'> {
  * which provides built-in focus trapping, body scroll lock, and `::backdrop`.
  * No manual z-index needed — the browser's top layer handles stacking.
  *
+ * When used inside XDSAppShell, `isOpen` and `onOpenChange` are managed
+ * automatically via context. When used standalone, provide them as props.
+ *
  * @example
  * ```
- * <XDSMobileNav
- *   isOpen={isOpen}
- *   onOpenChange={(open) => setIsOpen(open)}
- *   title="Navigation">
- *   <XDSSideNavSection title="Main">
- *     <XDSSideNavItem label="Home" icon={HomeIcon} isSelected href="/" />
- *     <XDSSideNavItem label="Settings" icon={SettingsIcon} href="/settings" />
- *   </XDSSideNavSection>
+ * // Inside AppShell — state managed by AppShell
+ * <XDSAppShell mobileNav={
+ *   <XDSMobileNav title="Navigation">
+ *     <XDSSideNavItem label="Home" href="/" />
+ *   </XDSMobileNav>
+ * }>
+ *
+ * // Standalone — manage state yourself
+ * <XDSMobileNav isOpen={isOpen} onOpenChange={setIsOpen} title="Navigation">
+ *   <XDSSideNavItem label="Home" href="/" />
  * </XDSMobileNav>
  * ```
  */
 export function XDSMobileNav({
-  isOpen,
-  onOpenChange,
+  isOpen: isOpenProp,
+  onOpenChange: onOpenChangeProp,
   children,
   title,
   width = 280,
@@ -240,6 +250,19 @@ export function XDSMobileNav({
   style,
   ref,
 }: XDSMobileNavProps) {
+  // Read from AppShell context as fallback
+  const appShellMobile = useXDSAppShellMobile();
+  const isOpen = isOpenProp ?? appShellMobile.isMobileNavOpen;
+  const onOpenChange =
+    onOpenChangeProp ??
+    ((open: boolean) => {
+      if (open) {
+        appShellMobile.openMobileNav();
+      } else {
+        appShellMobile.closeMobileNav();
+      }
+    });
+
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   // Merge refs

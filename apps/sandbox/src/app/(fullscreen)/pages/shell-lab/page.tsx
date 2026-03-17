@@ -115,8 +115,9 @@ interface ShellConfig {
   showNestedItems: boolean;
   isCollapsible: boolean;
   collapseToggleLocation: 'sidenav' | 'topnav';
-  mobileNavMode: 'auto' | 'custom' | 'none';
+  mobileNavMode: 'auto' | 'custom' | 'disabled';
   mobileNavSide: 'start' | 'end';
+  mobileNavHasToggle: boolean;
   topNavAlignment: 'start' | 'center' | 'end';
   topNavStyle: 'items' | 'menus' | 'mega';
   showTopNavHeading: boolean;
@@ -141,6 +142,7 @@ const DEFAULT_CONFIG: ShellConfig = {
   collapseToggleLocation: 'sidenav',
   mobileNavMode: 'auto',
   mobileNavSide: 'start',
+  mobileNavHasToggle: true,
   topNavAlignment: 'start',
   topNavStyle: 'items',
   showTopNavHeading: true,
@@ -346,9 +348,16 @@ function ConfigPanel({
             options={[
               {value: 'auto', label: 'Auto'},
               {value: 'custom', label: 'Custom'},
-              {value: 'none', label: 'None'},
+              {value: 'disabled', label: 'Disabled'},
             ]}
           />
+          {config.mobileNavMode !== 'disabled' && (
+            <ToggleRow
+              label="Has Toggle"
+              value={config.mobileNavHasToggle}
+              onChange={v => onChange({mobileNavHasToggle: v})}
+            />
+          )}
           {config.mobileNavMode === 'custom' && (
             <SelectorRow
               label="Side"
@@ -737,7 +746,6 @@ const styles = stylex.create({
 
 export default function ShellLabPage() {
   const [config, setConfig] = useState<ShellConfig>(DEFAULT_CONFIG);
-  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [showConfig, setShowConfig] = useState(true);
   const [externalCollapsed, setExternalCollapsed] = useState(false);
 
@@ -745,27 +753,43 @@ export default function ShellLabPage() {
     setConfig(prev => ({...prev, ...update}));
   }, []);
 
-  const mobileNav =
-    config.mobileNavMode === 'custom' ? (
-      <XDSMobileNav
-        isOpen={isMobileNavOpen}
-        onOpenChange={setIsMobileNavOpen}
-        title="Navigation"
-        side={config.mobileNavSide}>
-        <XDSSideNavSection title="Navigation">
-          <XDSSideNavItem
-            label="Dashboard"
-            isSelected
-            href="#"
-            icon={DashboardIcon}
-          />
-          <XDSSideNavItem label="Projects" href="#" icon={ProjectsIcon} />
-          <XDSSideNavItem label="Messages" href="#" icon={MessagesIcon} />
-        </XDSSideNavSection>
-      </XDSMobileNav>
-    ) : config.mobileNavMode === 'none' ? (
-      <></>
-    ) : undefined;
+  // Build the mobileNav prop based on config
+  const mobileNav:
+    | false
+    | {hasToggle?: boolean; content?: React.ReactNode}
+    | React.ReactNode
+    | undefined =
+    config.mobileNavMode === 'disabled'
+      ? false
+      : config.mobileNavMode === 'custom'
+        ? {
+            hasToggle: config.mobileNavHasToggle,
+            content: (
+              <XDSMobileNav title="Navigation" side={config.mobileNavSide}>
+                <XDSSideNavSection title="Navigation">
+                  <XDSSideNavItem
+                    label="Dashboard"
+                    isSelected
+                    href="#"
+                    icon={DashboardIcon}
+                  />
+                  <XDSSideNavItem
+                    label="Projects"
+                    href="#"
+                    icon={ProjectsIcon}
+                  />
+                  <XDSSideNavItem
+                    label="Messages"
+                    href="#"
+                    icon={MessagesIcon}
+                  />
+                </XDSSideNavSection>
+              </XDSMobileNav>
+            ),
+          }
+        : config.mobileNavHasToggle
+          ? undefined // auto with toggle — default behavior
+          : {hasToggle: false}; // auto without toggle
 
   return (
     <>
