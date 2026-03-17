@@ -15,7 +15,15 @@
 
 'use client';
 
-import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
+import {
+  isValidElement,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -29,6 +37,9 @@ import {XDSLayoutHeader} from '../Layout/XDSLayoutHeader';
 import {XDSLayoutPanel} from '../Layout/XDSLayoutPanel';
 import {XDSLayoutContent} from '../Layout/XDSLayoutContent';
 import {XDSMobileNav} from '../MobileNav/XDSMobileNav';
+import {XDSMobileNavToggle} from '../MobileNav/XDSMobileNavToggle';
+import {XDSAppShellMobileContext} from './XDSAppShellMobileContext';
+import type {XDSAppShellMobileContextValue} from './XDSAppShellMobileContext';
 import type {SpacingStep} from '../utils/types';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -69,6 +80,37 @@ export type XDSAppShellBreakpoint = 'sm' | 'md' | 'lg' | 'none';
  * @default 'section'
  */
 export type XDSAppShellVariant = 'wash' | 'surface' | 'section' | 'elevated';
+
+/**
+ * Configuration object for mobile navigation behavior.
+ * Used when you need to customize the auto mobile nav without replacing it entirely.
+ */
+export interface XDSMobileNavConfig {
+  /**
+   * Whether to auto-render the hamburger toggle.
+   * When false, use `<XDSMobileNavToggle />` to place it yourself.
+   * @default true
+   */
+  hasToggle?: boolean;
+
+  /**
+   * Controlled open state. When provided, AppShell doesn't manage
+   * mobile nav state internally.
+   */
+  isOpen?: boolean;
+
+  /**
+   * Callback when the mobile nav drawer open state changes.
+   */
+  onOpenChange?: (isOpen: boolean) => void;
+
+  /**
+   * Custom drawer content. Replaces the auto-generated drawer.
+   * Can be an `<XDSMobileNav>` for full drawer config (title, width, side)
+   * or raw children.
+   */
+  content?: ReactNode;
+}
 
 export interface XDSAppShellProps {
   /** Ref forwarded to the root element */
@@ -118,16 +160,37 @@ export interface XDSAppShellProps {
   height?: 'fill' | 'auto';
 
   /**
-   * Mobile navigation — typically an XDSMobileNav.
+   * Mobile navigation configuration.
    *
-   * When provided, replaces the default mobile drawer that AppShell renders
-   * for sideNav below the breakpoint. The consumer owns the XDSMobileNav
-   * element and its open/close state, just like topNav and sideNav.
+   * Accepts three shapes:
+   * - **`false`** — Disable mobile nav entirely.
+   * - **`MobileNavConfig` object** — Configure auto behavior (toggle, controlled state, custom content).
+   * - **`ReactNode`** — Full escape hatch: provide your own `<XDSMobileNav>` (you own everything).
    *
-   * When not provided, AppShell automatically wraps sideNav in an
-   * XDSMobileNav for the mobile breakpoint.
+   * When omitted, AppShell automatically generates a mobile drawer with
+   * sideNav content (and TopNav items in the future) below the breakpoint.
+   *
+   * @example
+   * ```
+   * // Auto (default) — no prop needed
+   * <XDSAppShell topNav={...} sideNav={...}>
+   *
+   * // Controlled state, auto content
+   * <XDSAppShell mobileNav={{ isOpen, onOpenChange }}>
+   *
+   * // Custom toggle placement
+   * <XDSAppShell mobileNav={{ hasToggle: false }}>
+   *   <XDSMobileNavToggle />
+   * </XDSAppShell>
+   *
+   * // Full custom drawer
+   * <XDSAppShell mobileNav={<XDSMobileNav title="Menu">...</XDSMobileNav>}>
+   *
+   * // Disable
+   * <XDSAppShell mobileNav={false}>
+   * ```
    */
-  mobileNav?: ReactNode;
+  mobileNav?: false | XDSMobileNavConfig | ReactNode;
 
   /**
    * Side navigation — typically an XDSSideNav.
@@ -290,6 +353,12 @@ const styles = stylex.create({
   hidden: {
     display: 'none',
   },
+  autoMobileTopBar: {
+    display: 'flex',
+    alignItems: 'center',
+    height: 48,
+    paddingInline: 8,
+  },
   // Sticky header for auto height mode
   headerSticky: {
     position: 'sticky',
@@ -360,11 +429,47 @@ export function XDSAppShell({
   ref,
 }: XDSAppShellProps) {
   // =========================================================================
-  // SideNav collapse state (controlled + uncontrolled)
+  // Parse mobileNav prop — normalize to config, custom element, or disabled
   // =========================================================================
-  // Track whether we're below the breakpoint
+  const mobileNavDisabled = mobileNav === false;
+  const mobileNavConfig: XDSMobileNavConfig | null =
+    mobileNav != null &&
+    mobileNav !== false &&
+    typeof mobileNav === 'object' &&
+    !isValidElement(mobileNav)
+      ? (mobileNav as XDSMobileNavConfig)
+      : null;
+  // ReactNode shorthand — user provides <XDSMobileNav> directly as the prop
+  const mobileNavReactNode: ReactNode | null =
+    mobileNav != null &&
+    mobileNav !== false &&
+    (isValidElement(mobileNav) || typeof mobileNav === 'string')
+      ? mobileNav
+      : null;
+  // Custom content from config object
+  const mobileNavConfigContent: ReactNode | null =
+    mobileNavConfig?.content ?? null;
+  const mobileNavHasToggle = mobileNavConfig?.hasToggle !== false;
+  const mobileNavIsControlled = mobileNavConfig?.isOpen !== undefined;
+
+  // =========================================================================
+  // Mobile nav open state (controlled + uncontrolled)
+  // =========================================================================
   const [isBelowBreakpoint, setIsBelowBreakpoint] = useState(false);
-  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [uncontrolledMobileOpen, setUncontrolledMobileOpen] = useState(false);
+  const isMobileNavOpen = mobileNavIsControlled
+    ? mobileNavConfig!.isOpen!
+    : uncontrolledMobileOpen;
+
+  const setMobileNavOpen = useCallback(
+    (open: boolean) => {
+      if (!mobileNavIsControlled) {
+        setUncontrolledMobileOpen(open);
+      }
+      mobileNavConfig?.onOpenChange?.(open);
+    },
+    [mobileNavIsControlled, mobileNavConfig],
+  );
 
   const isFill = height === 'fill';
   const isAuto = height === 'auto';
@@ -373,7 +478,8 @@ export function XDSAppShell({
   const hasBanner = banner != null;
   const hasTopNav = topNav != null;
   const hasSideNav = sideNav != null;
-  const hasMobileNav = mobileNav != null;
+  const hasNavContent = hasSideNav || hasTopNav;
+  const mobileNavEnabled = !mobileNavDisabled && hasNavContent;
   const navHasDividers = variant === 'section';
   const isElevated = variant === 'elevated';
   const navAreaStyle =
@@ -462,10 +568,34 @@ export function XDSAppShell({
   // Determine if sideNav should show as overlay (mobile) or inline
   // =========================================================================
   const showSideNavInline = hasSideNav && !isBelowBreakpoint;
-  // Default mobile nav: when no explicit mobileNav is provided, AppShell
-  // internally renders an XDSMobileNav wrapping the sideNav content.
-  // This shares the same <dialog>-based behavior as explicit mobileNav.
-  const useDefaultMobileNav = hasSideNav && !hasMobileNav && isBelowBreakpoint;
+  // Three mobile nav rendering modes:
+  // 1. ReactNode shorthand — render the user's element as-is (they own the drawer)
+  const shouldRenderMobileNavReactNode = mobileNavReactNode != null;
+  // 2. Config with custom content — render inside AppShell-managed drawer
+  const shouldRenderConfigContent =
+    mobileNavEnabled && mobileNavConfigContent != null && isBelowBreakpoint;
+  // 3. Auto — wrap sideNav content in a managed drawer
+  const shouldRenderAutoMobileNav =
+    mobileNavEnabled &&
+    !mobileNavReactNode &&
+    !mobileNavConfigContent &&
+    isBelowBreakpoint &&
+    hasSideNav;
+
+  // =========================================================================
+  // Mobile context — shared with XDSMobileNavToggle and future TopNav mobile
+  // =========================================================================
+  const mobileContextValue = useMemo<XDSAppShellMobileContextValue>(
+    () => ({
+      isMobile: isBelowBreakpoint,
+      isMobileNavOpen,
+      toggleMobileNav: () => setMobileNavOpen(!isMobileNavOpen),
+      openMobileNav: () => setMobileNavOpen(true),
+      closeMobileNav: () => setMobileNavOpen(false),
+      isMobileNavEnabled: mobileNavEnabled,
+    }),
+    [isBelowBreakpoint, isMobileNavOpen, setMobileNavOpen, mobileNavEnabled],
+  );
 
   // =========================================================================
   // Build header content (topNav + banner)
@@ -557,55 +687,97 @@ export function XDSAppShell({
   // TODO: Include root providers (ThemeProvider, ProseProvider, LayerProvider)
   // at the app level once they're available for wrapping.
   // =========================================================================
-  return (
-    <div
-      ref={setShellRef}
-      data-testid={dataTestId}
-      {...mergeProps(
-        xdsClassName('app-shell', {height, variant}),
-        stylex.props(
-          styles.root,
-          variant === 'wash'
-            ? styles.variantWash
-            : variant === 'surface'
-              ? styles.variantSurface
-              : variant === 'section'
-                ? styles.variantSection
-                : styles.variantElevated,
-          isFill ? styles.rootFill : styles.rootAuto,
-          xstyle,
-        ),
-        className,
-        style,
-      )}>
-      {/* Skip-to-content link */}
-      <a
-        href={`#${MAIN_CONTENT_ID}`}
-        {...stylex.props(styles.skipLink)}
-        data-testid="skip-to-content">
-        Skip to content
-      </a>
+  // =========================================================================
+  // Build auto mobile nav hamburger for TopNav
+  // Injected into the headerContent when mobileNav is enabled and hasToggle
+  // =========================================================================
+  const shouldShowAutoToggle =
+    mobileNavEnabled && mobileNavHasToggle && isBelowBreakpoint;
 
-      <XDSLayout
-        height={height}
+  // For sidenav-only layouts with no TopNav, render a minimal top bar
+  const autoMobileTopBar =
+    shouldShowAutoToggle && !hasTopNav ? (
+      <XDSLayoutHeader
         padding={0}
-        header={headerContent}
-        start={sideNavContent}
-        content={mainContent}
-      />
+        hasDivider={navHasDividers}
+        xstyle={navAreaStyle}>
+        <div
+          {...stylex.props(styles.autoMobileTopBar)}
+          role="navigation"
+          aria-label="Mobile navigation">
+          <XDSMobileNavToggle />
+        </div>
+      </XDSLayoutHeader>
+    ) : undefined;
 
-      {/* Mobile nav — either explicit mobileNav or default wrapping sideNav */}
-      {mobileNav}
-      {useDefaultMobileNav && (
-        <XDSMobileNav
-          isOpen={isMobileNavOpen}
-          onOpenChange={open => setIsMobileNavOpen(open)}
-          width={sideNavWidth}
-          data-testid="sidenav-mobile">
-          {sideNav}
-        </XDSMobileNav>
-      )}
-    </div>
+  return (
+    <XDSAppShellMobileContext.Provider value={mobileContextValue}>
+      <div
+        ref={setShellRef}
+        data-testid={dataTestId}
+        {...mergeProps(
+          xdsClassName('app-shell', {height, variant}),
+          stylex.props(
+            styles.root,
+            variant === 'wash'
+              ? styles.variantWash
+              : variant === 'surface'
+                ? styles.variantSurface
+                : variant === 'section'
+                  ? styles.variantSection
+                  : styles.variantElevated,
+            isFill ? styles.rootFill : styles.rootAuto,
+            xstyle,
+          ),
+          className,
+          style,
+        )}>
+        {/* Skip-to-content link */}
+        <a
+          href={`#${MAIN_CONTENT_ID}`}
+          {...stylex.props(styles.skipLink)}
+          data-testid="skip-to-content">
+          Skip to content
+        </a>
+
+        <XDSLayout
+          height={height}
+          padding={0}
+          header={
+            <>
+              {headerContent}
+              {autoMobileTopBar}
+            </>
+          }
+          start={sideNavContent}
+          content={mainContent}
+        />
+
+        {/* Mobile nav — three modes:
+            1. ReactNode shorthand: render user's element as-is
+            2. Config content: render inside AppShell-managed drawer
+            3. Auto: wrap sideNav in a managed drawer */}
+        {shouldRenderMobileNavReactNode && mobileNavReactNode}
+        {shouldRenderConfigContent && (
+          <XDSMobileNav
+            isOpen={isMobileNavOpen}
+            onOpenChange={open => setMobileNavOpen(open)}
+            width={sideNavWidth}
+            data-testid="mobile-nav-custom">
+            {mobileNavConfigContent}
+          </XDSMobileNav>
+        )}
+        {shouldRenderAutoMobileNav && (
+          <XDSMobileNav
+            isOpen={isMobileNavOpen}
+            onOpenChange={open => setMobileNavOpen(open)}
+            width={sideNavWidth}
+            data-testid="sidenav-mobile">
+            {sideNav}
+          </XDSMobileNav>
+        )}
+      </div>
+    </XDSAppShellMobileContext.Provider>
   );
 }
 

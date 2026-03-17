@@ -12,4 +12,10 @@ export type {
   XDSAppShellProps,
   XDSAppShellBreakpoint,
   XDSAppShellVariant,
+  XDSMobileNavConfig,
 } from './XDSAppShell';
+export {
+  useXDSAppShellMobile,
+  XDSAppShellMobileContext,
+} from './XDSAppShellMobileContext';
+export type {XDSAppShellMobileContextValue} from './XDSAppShellMobileContext';
