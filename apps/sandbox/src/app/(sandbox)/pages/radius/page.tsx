@@ -5,7 +5,7 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSDivider} from '@xds/core';
-
+import {XDSButton} from '@xds/core/Button';
 // =============================================================================
 // Constants
 // =============================================================================
@@ -442,11 +442,13 @@ export default function RadiusPage() {
             </div>
             <XDSHStack gap={2}>
               {Object.entries(PRESETS).map(([name, value]) => (
-                <button key={name}
-                  {...stylex.props(styles.presetButton, activePreset === name && styles.presetButtonActive)}
-                  onClick={() => setMultiplier(value)}>
-                  {name.charAt(0).toUpperCase() + name.slice(1)}
-                </button>
+                <XDSButton
+                  key={name}
+                  label={name.charAt(0).toUpperCase() + name.slice(1)}
+                  variant={activePreset === name ? 'primary' : 'secondary'}
+                  size="sm"
+                  onClick={() => setMultiplier(value)}
+                />
               ))}
             </XDSHStack>
             <div {...stylex.props(styles.tokenBar)}>
