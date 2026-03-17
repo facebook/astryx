@@ -127,8 +127,8 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
+    height: 48,
     paddingInline: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-2'],
     flexShrink: 0,
     borderBlockEndWidth: 1,
     borderBlockEndStyle: 'solid',
@@ -195,7 +195,7 @@ export interface XDSMobileNavProps extends Omit<XDSBaseProps, 'title'> {
 
   /**
    * Width of the drawer in pixels.
-   * @default 280
+   * @default 320
    */
   width?: number;
 
@@ -255,7 +255,7 @@ export function XDSMobileNav({
   children,
   title,
   header,
-  width = 280,
+  width = 320,
   side = 'end',
   label,
   'data-testid': testId,
