@@ -20,6 +20,7 @@ import {transitionVars} from '../theme/tokens.stylex';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {XDSButton} from '../Button';
 import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
+import {useXDSAppShellMobile} from '../AppShell/XDSAppShellMobileContext';
 
 // =============================================================================
 // Styles
@@ -92,6 +93,7 @@ export function XDSSideNavCollapseButton({
   children,
 }: XDSSideNavCollapseButtonProps) {
   const {isCollapsed, toggle, isCollapsible} = useXDSSideNavCollapse();
+  const {isMobile} = useXDSAppShellMobile();
 
   const handleClick = useCallback(() => {
     toggle();
@@ -101,7 +103,9 @@ export function XDSSideNavCollapseButton({
   // For now, the button only works via context (inside sidenav or
   // when AppShell provides the context at the shell level).
 
-  if (!isCollapsible) {
+  // Hide when not collapsible, or when in mobile mode (sidenav is in
+  // the mobile drawer — collapse doesn't apply there)
+  if (!isCollapsible || isMobile) {
     return null;
   }
 
