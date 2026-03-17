@@ -12,6 +12,20 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {createRequire} from 'node:module';
+
+// Import shared theme processing from core — ensures build and runtime
+// use the same logic for typeScale expansion, prose, and component rules.
+const _require = createRequire(import.meta.url);
+let _defineTheme = null;
+let _generateThemeRules = null;
+try {
+  const coreTheme = _require('@xds/core/theme');
+  _defineTheme = coreTheme.defineTheme;
+  _generateThemeRules = coreTheme.generateThemeRules;
+} catch {
+  // Core not available — fall back to legacy generation
+}
 
 /**
  * Convert camelCase CSS property to kebab-case
@@ -634,35 +648,48 @@ export function registerTheme(program) {
         console.warn(`  ⚠ ${w}`);
       }
 
-      // Generate CSS
-      const noProse = options.prose === false;
-      const scopeBlocks = [];
-
-      // Prose defaults first — baseline HTML element styles from tokens.
-      // These come before component overrides so overrides win by source order.
-      if (!noProse) {
+      // Generate CSS using the shared generateThemeRules from core.
+      // This ensures build and runtime produce identical rule sets.
+      let css;
+      if (_defineTheme && _generateThemeRules) {
+        // Shared path: run through defineTheme (expands typeScale, merges
+        // components) then generateThemeRules with computedValues for
+        // self-contained CSS output.
+        const resolvedTheme = _defineTheme({
+          name: themeDef.name,
+          typeScale: themeDef.typeScale,
+          tokens: themeDef.tokens,
+          components: themeDef.components,
+        });
+        const rules = _generateThemeRules(resolvedTheme, { computedValues: true });
+        if (rules.length === 0) {
+          console.log('No overrides found — nothing to build.');
+          return;
+        }
+        const scopeSelector = `[data-xds-theme="${themeDef.name}"]`;
+        const inner = rules.join('\n\n');
+        const scopeBlock = `@scope (${scopeSelector}) to ([data-xds-theme]) {\n${inner}\n}`;
+        const colorSchemeDecl = scopeBlock.includes('light-dark(')
+          ? '  :root { color-scheme: light dark; }\n\n'
+          : '';
+        css = `@layer xds.theme {\n${colorSchemeDecl}${scopeBlock}\n}\n`;
+      } else {
+        // Legacy fallback when core isn't built yet
+        const scopeBlocks = [];
         const proseCss = generateProseCSS(themeDef);
         if (proseCss) scopeBlocks.push(proseCss);
+        const mainCss = generateCSS(themeDef);
+        if (mainCss) scopeBlocks.push(mainCss);
+        if (scopeBlocks.length === 0) {
+          console.log('No overrides found — nothing to build.');
+          return;
+        }
+        const joined = scopeBlocks.join('\n\n');
+        const colorSchemeDecl = joined.includes('light-dark(')
+          ? '  :root { color-scheme: light dark; }\n\n'
+          : '';
+        css = `@layer xds.theme {\n${colorSchemeDecl}${joined}\n}\n`;
       }
-
-      // Tokens + component overrides (with prose co-selection) come after
-      const mainCss = generateCSS(themeDef, {prose: !noProse});
-      if (mainCss) scopeBlocks.push(mainCss);
-
-      if (scopeBlocks.length === 0) {
-        console.log('No overrides found — nothing to build.');
-        return;
-      }
-
-      // If any scope block uses light-dark(), include a color-scheme declaration
-      // so that CSS tools that lower light-dark() (e.g. LightningCSS) can inject
-      // their polyfill toggle variables in the same file. Without this, the
-      // polyfill vars are used but never defined, silently breaking all colors.
-      const joined = scopeBlocks.join('\n\n');
-      const colorSchemeDecl = joined.includes('light-dark(')
-        ? '  :root { color-scheme: light dark; }\n\n'
-        : '';
-      const css = `@layer xds.theme {\n${colorSchemeDecl}${joined}\n}\n`;
 
       // Determine output path
       const outPath = options.out
