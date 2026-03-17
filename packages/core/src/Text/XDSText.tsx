@@ -258,7 +258,7 @@ export function XDSText({
       <Component
         ref={mergedRef}
         {...mergeProps(
-          xdsClassName('text', {type}),
+          xdsClassName('text', {type, color: resolvedColor}),
           stylex.props(
             colorStyles[resolvedColor],
             weight && weightStyles[weight],

@@ -247,7 +247,7 @@ export function XDSHeading({
       <Component
         ref={mergedRef}
         {...mergeProps(
-          xdsClassName('heading', {level}),
+          xdsClassName('heading', {level, color}),
           stylex.props(
             colorStyles[color],
             // Display: use truncation styles when maxLines > 0
