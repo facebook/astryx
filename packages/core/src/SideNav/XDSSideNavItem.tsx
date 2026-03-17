@@ -15,7 +15,7 @@
 
 'use client';
 
-import {useId, useRef, type ReactNode} from 'react';
+import {useCallback, useId, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -24,6 +24,7 @@ import {
   textSizeVars,
   fontWeightVars,
   lineHeightVars,
+  transitionVars,
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
 import type {XDSIconType} from '../Icon';
@@ -32,6 +33,7 @@ import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSTooltip} from '../Tooltip';
 import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
+import {getIcon} from '../Icon/globalIconRegistry';
 
 // =============================================================================
 // Styles
@@ -102,6 +104,30 @@ const styles = stylex.create({
   children: {
     paddingInlineStart: spacingVars['--spacing-6'],
   },
+  childrenCollapsible: {
+    display: 'grid',
+    gridTemplateRows: '1fr',
+    transitionProperty: 'grid-template-rows',
+    transitionDuration: transitionVars['--transition-normal'],
+  },
+  childrenCollapsed: {
+    gridTemplateRows: '0fr',
+  },
+  childrenInner: {
+    overflow: 'hidden',
+    minHeight: 0,
+    paddingInlineStart: spacingVars['--spacing-6'],
+  },
+  expandChevron: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    transitionProperty: 'transform',
+    transitionDuration: transitionVars['--transition-fast'],
+    flexShrink: 0,
+  },
+  expandChevronCollapsed: {
+    transform: 'rotate(-90deg)',
+  },
 });
 
 // =============================================================================
@@ -156,6 +182,19 @@ export interface XDSSideNavItemProps {
    */
   children?: ReactNode;
   /**
+   * Whether sub-items are expanded. Uncontrolled by default.
+   * @default true
+   */
+  defaultIsExpanded?: boolean;
+  /**
+   * Controlled expanded state for sub-items.
+   */
+  isExpanded?: boolean;
+  /**
+   * Callback when expand/collapse state changes.
+   */
+  onExpandedChange?: (expanded: boolean) => void;
+  /**
    * Test ID for the item element.
    */
   'data-testid'?: string;
@@ -196,6 +235,9 @@ export function XDSSideNavItem({
   onClick,
   endContent,
   children,
+  defaultIsExpanded = true,
+  isExpanded: controlledExpanded,
+  onExpandedChange,
   'data-testid': testId,
   ref,
 }: XDSSideNavItemProps) {
@@ -204,6 +246,22 @@ export function XDSSideNavItem({
   const hasChildren = !!children;
   const LinkComponent = useXDSLinkComponent(as);
   const itemRef = useRef<HTMLDivElement>(null);
+
+  // Expand/collapse state for items with children
+  const isExpandControlled = controlledExpanded !== undefined;
+  const [uncontrolledExpanded, setUncontrolledExpanded] =
+    useState(defaultIsExpanded);
+  const isItemExpanded = isExpandControlled
+    ? controlledExpanded
+    : uncontrolledExpanded;
+
+  const toggleExpand = useCallback(() => {
+    const next = !isItemExpanded;
+    if (!isExpandControlled) {
+      setUncontrolledExpanded(next);
+    }
+    onExpandedChange?.(next);
+  }, [isItemExpanded, isExpandControlled, onExpandedChange]);
 
   const displayIcon = isSelected && selectedIcon ? selectedIcon : icon;
 
@@ -215,6 +273,11 @@ export function XDSSideNavItem({
   const handleClick = (e: React.MouseEvent) => {
     if (isDisabled) {
       e.preventDefault();
+      return;
+    }
+    if (hasChildren && !isCollapsed) {
+      e.preventDefault();
+      toggleExpand();
       return;
     }
     onClick?.(e);
@@ -232,6 +295,15 @@ export function XDSSideNavItem({
       {!isCollapsed && <span {...stylex.props(styles.label)}>{label}</span>}
       {!isCollapsed && endContent && (
         <span {...stylex.props(styles.endContent)}>{endContent}</span>
+      )}
+      {!isCollapsed && hasChildren && (
+        <span
+          {...stylex.props(
+            styles.expandChevron,
+            !isItemExpanded && styles.expandChevronCollapsed,
+          )}>
+          {getIcon('chevronDown')}
+        </span>
       )}
     </>
   );
@@ -283,11 +355,17 @@ export function XDSSideNavItem({
         <div
           role="group"
           aria-labelledby={`${id}-label`}
-          {...stylex.props(styles.children)}>
-          <span id={`${id}-label`} hidden>
-            {label}
-          </span>
-          {children}
+          aria-hidden={!isItemExpanded}
+          {...stylex.props(
+            styles.childrenCollapsible,
+            !isItemExpanded && styles.childrenCollapsed,
+          )}>
+          <div {...stylex.props(styles.childrenInner)}>
+            <span id={`${id}-label`} hidden>
+              {label}
+            </span>
+            {children}
+          </div>
         </div>
       )}
     </div>
