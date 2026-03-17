@@ -118,17 +118,6 @@ export interface XDSAppShellProps {
   height?: 'fill' | 'auto';
 
   /**
-   * Default collapsed state for uncontrolled usage.
-   * @default false
-   */
-  defaultIsSideNavCollapsed?: boolean;
-
-  /**
-   * Whether the side nav is collapsed (controlled).
-   */
-  isSideNavCollapsed?: boolean;
-
-  /**
    * Mobile navigation — typically an XDSMobileNav.
    *
    * When provided, replaces the default mobile drawer that AppShell renders
@@ -139,11 +128,6 @@ export interface XDSAppShellProps {
    * XDSMobileNav for the mobile breakpoint.
    */
   mobileNav?: ReactNode;
-
-  /**
-   * Callback when side nav collapsed state changes.
-   */
-  onSideNavCollapsedChange?: (isCollapsed: boolean) => void;
 
   /**
    * Side navigation — typically an XDSSideNav.
@@ -365,10 +349,7 @@ export function XDSAppShell({
   contentPadding,
   'data-testid': dataTestId,
   height = 'fill',
-  defaultIsSideNavCollapsed = false,
-  isSideNavCollapsed: controlledCollapsed,
   mobileNav,
-  onSideNavCollapsedChange,
   sideNav,
   sideNavBreakpoint = 'md',
   sideNavWidth = DEFAULT_SIDENAV_WIDTH,
@@ -381,16 +362,9 @@ export function XDSAppShell({
   // =========================================================================
   // SideNav collapse state (controlled + uncontrolled)
   // =========================================================================
-  const isControlled = controlledCollapsed !== undefined;
-  const [uncontrolledCollapsed, setUncontrolledCollapsed] = useState(
-    defaultIsSideNavCollapsed,
-  );
-  const isCollapsed = isControlled
-    ? controlledCollapsed
-    : uncontrolledCollapsed;
-
   // Track whether we're below the breakpoint
   const [isBelowBreakpoint, setIsBelowBreakpoint] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   const isFill = height === 'fill';
   const isAuto = height === 'auto';
@@ -475,13 +449,6 @@ export function XDSAppShell({
     const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
       const matches = 'matches' in e ? e.matches : false;
       setIsBelowBreakpoint(matches);
-      if (matches) {
-        // Auto-collapse below breakpoint
-        if (!isControlled) {
-          setUncontrolledCollapsed(true);
-        }
-        onSideNavCollapsedChange?.(true);
-      }
     };
 
     // Check initial state
@@ -489,24 +456,12 @@ export function XDSAppShell({
 
     mql.addEventListener('change', handleChange);
     return () => mql.removeEventListener('change', handleChange);
-  }, [sideNavBreakpoint, hasSideNav, isControlled, onSideNavCollapsedChange]);
-
-  // =========================================================================
-  // Toggle handler — snaps open/closed (no transitions for now)
-  // TODO: Add ViewTransitions support with React transition API
-  // =========================================================================
-  const handleToggleCollapse = useCallback(() => {
-    const newValue = !isCollapsed;
-    if (!isControlled) {
-      setUncontrolledCollapsed(newValue);
-    }
-    onSideNavCollapsedChange?.(newValue);
-  }, [isCollapsed, isControlled, onSideNavCollapsedChange]);
+  }, [sideNavBreakpoint, hasSideNav]);
 
   // =========================================================================
   // Determine if sideNav should show as overlay (mobile) or inline
   // =========================================================================
-  const showSideNavInline = hasSideNav && !isCollapsed && !isBelowBreakpoint;
+  const showSideNavInline = hasSideNav && !isBelowBreakpoint;
   // Default mobile nav: when no explicit mobileNav is provided, AppShell
   // internally renders an XDSMobileNav wrapping the sideNav content.
   // This shares the same <dialog>-based behavior as explicit mobileNav.
@@ -554,7 +509,6 @@ export function XDSAppShell({
     <XDSLayoutPanel
       padding={0}
       hasDivider={navHasDividers}
-      width={sideNavWidth}
       isScrollable={isFill}
       xstyle={[navAreaStyle, isAuto && styles.panelAutoFill]}>
       {sideNav}
@@ -644,8 +598,8 @@ export function XDSAppShell({
       {mobileNav}
       {useDefaultMobileNav && (
         <XDSMobileNav
-          isOpen={!isCollapsed}
-          onOpenChange={() => handleToggleCollapse()}
+          isOpen={isMobileNavOpen}
+          onOpenChange={open => setIsMobileNavOpen(open)}
           width={sideNavWidth}
           data-testid="sidenav-mobile">
           {sideNav}

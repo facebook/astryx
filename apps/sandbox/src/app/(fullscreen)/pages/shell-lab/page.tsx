@@ -9,6 +9,7 @@ import {
   XDSSideNavHeading,
   XDSSideNavItem,
   XDSSideNavSection,
+  XDSSideNavCollapseButton,
 } from '@xds/core/SideNav';
 import {
   XDSTopNav,
@@ -33,6 +34,70 @@ import {XDSBanner} from '@xds/core/Banner';
 // Configuration types
 // =============================================================================
 
+// Simple icon components for shell lab demo
+const DashboardIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.5}
+    {...props}>
+    <rect x="3" y="3" width="7" height="7" rx="1" />
+    <rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" />
+    <rect x="14" y="14" width="7" height="7" rx="1" />
+  </svg>
+);
+const MessagesIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.5}
+    {...props}>
+    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+  </svg>
+);
+const SettingsIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.5}
+    {...props}>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z" />
+  </svg>
+);
+const ProjectsIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.5}
+    {...props}>
+    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+  </svg>
+);
+const DocsIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.5}
+    {...props}>
+    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+  </svg>
+);
+
 interface ShellConfig {
   variant: 'wash' | 'surface' | 'section' | 'elevated';
   height: 'fill' | 'auto';
@@ -48,9 +113,8 @@ interface ShellConfig {
   showSuperheading: boolean;
   showSubheading: boolean;
   showNestedItems: boolean;
-  defaultCollapsed: boolean;
-  controlledCollapse: boolean;
-  isCollapsed: boolean;
+  isCollapsible: boolean;
+  collapseToggleLocation: 'sidenav' | 'topnav';
   mobileNavMode: 'auto' | 'custom' | 'none';
   mobileNavSide: 'start' | 'end';
   topNavAlignment: 'start' | 'center' | 'end';
@@ -73,9 +137,8 @@ const DEFAULT_CONFIG: ShellConfig = {
   showSuperheading: false,
   showSubheading: false,
   showNestedItems: true,
-  defaultCollapsed: false,
-  controlledCollapse: false,
-  isCollapsed: false,
+  isCollapsible: true,
+  collapseToggleLocation: 'sidenav',
   mobileNavMode: 'auto',
   mobileNavSide: 'start',
   topNavAlignment: 'start',
@@ -107,11 +170,7 @@ function ConfigPanel({
           <SelectorRow
             label="Variant"
             value={config.variant}
-            onChange={v =>
-              onChange({
-                variant: v as 'wash' | 'surface' | 'section' | 'elevated',
-              })
-            }
+            onChange={v => onChange({variant: v as ShellConfig['variant']})}
             options={[
               {value: 'section', label: 'Section'},
               {value: 'wash', label: 'Wash'},
@@ -128,40 +187,27 @@ function ConfigPanel({
               {value: 'auto', label: 'Auto'},
             ]}
           />
-          <SelectorRow
-            label="Breakpoint"
-            value={config.sideNavBreakpoint}
-            onChange={v =>
-              onChange({sideNavBreakpoint: v as 'sm' | 'md' | 'lg' | 'none'})
-            }
-            options={[
-              {value: 'sm', label: 'sm'},
-              {value: 'md', label: 'md'},
-              {value: 'lg', label: 'lg'},
-              {value: 'none', label: 'none'},
-            ]}
+          <ToggleRow
+            label="Banner"
+            value={config.showBanner}
+            onChange={v => onChange({showBanner: v})}
           />
         </XDSVStack>
 
         <XDSDivider />
 
-        {/* Visibility */}
+        {/* SideNav */}
         <XDSVStack gap={3}>
           <XDSText type="label" weight="bold">
-            Visibility
+            SideNav
           </XDSText>
           <ToggleRow
-            label="Side Nav"
+            label="Show"
             value={config.showSideNav}
             onChange={v => onChange({showSideNav: v})}
           />
-          <ToggleRow
-            label="Top Nav"
-            value={config.showTopNav}
-            onChange={v => onChange({showTopNav: v})}
-          />
           <SelectorRow
-            label="SideNav Heading"
+            label="Heading"
             value={config.sideNavHeadingStyle}
             onChange={v =>
               onChange({
@@ -187,9 +233,14 @@ function ConfigPanel({
             onChange={v => onChange({showSubheading: v})}
           />
           <ToggleRow
-            label="Banner"
-            value={config.showBanner}
-            onChange={v => onChange({showBanner: v})}
+            label="Top Content"
+            value={config.showTopContent}
+            onChange={v => onChange({showTopContent: v})}
+          />
+          <ToggleRow
+            label="Nested Items"
+            value={config.showNestedItems}
+            onChange={v => onChange({showNestedItems: v})}
           />
           <ToggleRow
             label="Footer"
@@ -202,78 +253,38 @@ function ConfigPanel({
             onChange={v => onChange({showFooterIcons: v})}
           />
           <ToggleRow
-            label="Top Content"
-            value={config.showTopContent}
-            onChange={v => onChange({showTopContent: v})}
+            label="Collapsible"
+            value={config.isCollapsible}
+            onChange={v => onChange({isCollapsible: v})}
           />
-          <ToggleRow
-            label="Nested Items"
-            value={config.showNestedItems}
-            onChange={v => onChange({showNestedItems: v})}
-          />
-          <ToggleRow
-            label="TopNav Heading"
-            value={config.showTopNavHeading}
-            onChange={v => onChange({showTopNavHeading: v})}
-          />
-        </XDSVStack>
-
-        <XDSDivider />
-
-        {/* Collapse */}
-        <XDSVStack gap={3}>
-          <XDSText type="label" weight="bold">
-            Collapse
-          </XDSText>
-          <ToggleRow
-            label="Default Collapsed"
-            value={config.defaultCollapsed}
-            onChange={v => onChange({defaultCollapsed: v})}
-          />
-          <ToggleRow
-            label="Controlled"
-            value={config.controlledCollapse}
-            onChange={v => onChange({controlledCollapse: v})}
-          />
-          {config.controlledCollapse && (
-            <ToggleRow
-              label="Is Collapsed"
-              value={config.isCollapsed}
-              onChange={v => onChange({isCollapsed: v})}
-            />
-          )}
-        </XDSVStack>
-
-        <XDSDivider />
-
-        {/* Mobile */}
-        <XDSVStack gap={3}>
-          <XDSText type="label" weight="bold">
-            Mobile Nav
-          </XDSText>
-          <SelectorRow
-            label="Mode"
-            value={config.mobileNavMode}
-            onChange={v =>
-              onChange({mobileNavMode: v as 'auto' | 'custom' | 'none'})
-            }
-            options={[
-              {value: 'auto', label: 'Auto'},
-              {value: 'custom', label: 'Custom'},
-              {value: 'none', label: 'None'},
-            ]}
-          />
-          {config.mobileNavMode === 'custom' && (
+          {config.isCollapsible && (
             <SelectorRow
-              label="Drawer Side"
-              value={config.mobileNavSide}
-              onChange={v => onChange({mobileNavSide: v as 'start' | 'end'})}
+              label="Toggle Location"
+              value={config.collapseToggleLocation}
+              onChange={v =>
+                onChange({collapseToggleLocation: v as 'sidenav' | 'topnav'})
+              }
               options={[
-                {value: 'start', label: 'Start'},
-                {value: 'end', label: 'End'},
+                {value: 'sidenav', label: 'SideNav'},
+                {value: 'topnav', label: 'TopNav'},
               ]}
             />
           )}
+          <SelectorRow
+            label="Breakpoint"
+            value={config.sideNavBreakpoint}
+            onChange={v =>
+              onChange({
+                sideNavBreakpoint: v as ShellConfig['sideNavBreakpoint'],
+              })
+            }
+            options={[
+              {value: 'sm', label: 'SM'},
+              {value: 'md', label: 'MD'},
+              {value: 'lg', label: 'LG'},
+              {value: 'none', label: 'None'},
+            ]}
+          />
         </XDSVStack>
 
         <XDSDivider />
@@ -283,11 +294,21 @@ function ConfigPanel({
           <XDSText type="label" weight="bold">
             TopNav
           </XDSText>
+          <ToggleRow
+            label="Show"
+            value={config.showTopNav}
+            onChange={v => onChange({showTopNav: v})}
+          />
+          <ToggleRow
+            label="Heading"
+            value={config.showTopNavHeading}
+            onChange={v => onChange({showTopNavHeading: v})}
+          />
           <SelectorRow
-            label="Nav Alignment"
+            label="Alignment"
             value={config.topNavAlignment}
             onChange={v =>
-              onChange({topNavAlignment: v as 'start' | 'center' | 'end'})
+              onChange({topNavAlignment: v as ShellConfig['topNavAlignment']})
             }
             options={[
               {value: 'start', label: 'Start'},
@@ -296,10 +317,10 @@ function ConfigPanel({
             ]}
           />
           <SelectorRow
-            label="Nav Style"
+            label="Style"
             value={config.topNavStyle}
             onChange={v =>
-              onChange({topNavStyle: v as 'items' | 'menus' | 'mega'})
+              onChange({topNavStyle: v as ShellConfig['topNavStyle']})
             }
             options={[
               {value: 'items', label: 'Items'},
@@ -307,6 +328,38 @@ function ConfigPanel({
               {value: 'mega', label: 'Mega'},
             ]}
           />
+        </XDSVStack>
+
+        <XDSDivider />
+
+        {/* Mobile Nav */}
+        <XDSVStack gap={3}>
+          <XDSText type="label" weight="bold">
+            Mobile Nav
+          </XDSText>
+          <SelectorRow
+            label="Mode"
+            value={config.mobileNavMode}
+            onChange={v =>
+              onChange({mobileNavMode: v as ShellConfig['mobileNavMode']})
+            }
+            options={[
+              {value: 'auto', label: 'Auto'},
+              {value: 'custom', label: 'Custom'},
+              {value: 'none', label: 'None'},
+            ]}
+          />
+          {config.mobileNavMode === 'custom' && (
+            <SelectorRow
+              label="Side"
+              value={config.mobileNavSide}
+              onChange={v => onChange({mobileNavSide: v as 'start' | 'end'})}
+              options={[
+                {value: 'start', label: 'Start'},
+                {value: 'end', label: 'End'},
+              ]}
+            />
+          )}
         </XDSVStack>
       </XDSVStack>
     </XDSCard>
@@ -361,7 +414,15 @@ function SelectorRow({
 // Sample Nav Content
 // =============================================================================
 
-function SampleSideNav({config}: {config: ShellConfig}) {
+function SampleSideNav({
+  config,
+  externalCollapsed,
+  setExternalCollapsed,
+}: {
+  config: ShellConfig;
+  externalCollapsed?: boolean;
+  setExternalCollapsed?: (v: boolean) => void;
+}) {
   const appIcon = (
     <XDSNavIcon
       icon={
@@ -410,6 +471,17 @@ function SampleSideNav({config}: {config: ShellConfig}) {
 
   return (
     <XDSSideNav
+      collapsible={
+        config.isCollapsible
+          ? config.collapseToggleLocation === 'topnav'
+            ? {
+                isCollapsed: externalCollapsed,
+                onCollapsedChange: setExternalCollapsed,
+                hasButton: false,
+              }
+            : true
+          : false
+      }
       header={heading}
       topContent={
         config.showTopContent ? (
@@ -436,8 +508,8 @@ function SampleSideNav({config}: {config: ShellConfig}) {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth={1.5}
-                  width="20"
-                  height="20">
+                  width="16"
+                  height="16">
                   <circle cx="12" cy="12" r="10" />
                   <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
                   <circle cx="12" cy="17" r=".5" fill="currentColor" />
@@ -454,8 +526,8 @@ function SampleSideNav({config}: {config: ShellConfig}) {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth={1.5}
-                  width="20"
-                  height="20">
+                  width="16"
+                  height="16">
                   <path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z" />
                   <circle cx="12" cy="12" r="3" />
                 </svg>
@@ -466,15 +538,21 @@ function SampleSideNav({config}: {config: ShellConfig}) {
         ) : undefined
       }>
       <XDSSideNavSection title="Navigation">
-        <XDSSideNavItem label="Dashboard" isSelected href="#" />
+        <XDSSideNavItem
+          label="Dashboard"
+          isSelected
+          href="#"
+          icon={DashboardIcon}
+        />
         <XDSSideNavItem
           label="Projects"
           href="#"
+          icon={ProjectsIcon}
           endContent={<XDSBadge>3</XDSBadge>}
         />
-        <XDSSideNavItem label="Messages" href="#" />
+        <XDSSideNavItem label="Messages" href="#" icon={MessagesIcon} />
         {config.showNestedItems && (
-          <XDSSideNavItem label="Settings" href="#">
+          <XDSSideNavItem label="Settings" href="#" icon={SettingsIcon}>
             <XDSSideNavItem label="General" href="#" />
             <XDSSideNavItem label="Security" href="#" />
             <XDSSideNavItem label="Notifications" href="#" />
@@ -482,7 +560,7 @@ function SampleSideNav({config}: {config: ShellConfig}) {
         )}
       </XDSSideNavSection>
       <XDSSideNavSection title="Resources">
-        <XDSSideNavItem label="Documentation" href="#" />
+        <XDSSideNavItem label="Documentation" href="#" icon={DocsIcon} />
         <XDSSideNavItem label="API Reference" href="#" />
         <XDSSideNavItem label="Support" href="#" />
       </XDSSideNavSection>
@@ -490,7 +568,13 @@ function SampleSideNav({config}: {config: ShellConfig}) {
   );
 }
 
-function SampleTopNav({config}: {config: ShellConfig}) {
+function SampleTopNav({
+  config,
+  onToggleCollapse,
+}: {
+  config: ShellConfig;
+  onToggleCollapse?: () => void;
+}) {
   const plainItems = (
     <>
       <XDSTopNavItem label="Home" href="#" isSelected />
@@ -595,7 +679,30 @@ function SampleTopNav({config}: {config: ShellConfig}) {
       }
       startContent={config.topNavAlignment === 'start' ? navItems : undefined}
       centerContent={config.topNavAlignment === 'center' ? navItems : undefined}
-      endContent={config.topNavAlignment === 'end' ? navItems : undefined}
+      endContent={
+        <>
+          {config.topNavAlignment === 'end' && navItems}
+          {onToggleCollapse && (
+            <XDSButton
+              label="Toggle sidebar"
+              variant="ghost"
+              icon={
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  width={16}
+                  height={16}>
+                  <path d="M3 12h18M3 6h18M3 18h18" />
+                </svg>
+              }
+              onClick={onToggleCollapse}
+            />
+          )}
+        </>
+      }
     />
   );
 }
@@ -632,18 +739,11 @@ export default function ShellLabPage() {
   const [config, setConfig] = useState<ShellConfig>(DEFAULT_CONFIG);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [showConfig, setShowConfig] = useState(true);
+  const [externalCollapsed, setExternalCollapsed] = useState(false);
 
   const handleConfigChange = useCallback((update: Partial<ShellConfig>) => {
     setConfig(prev => ({...prev, ...update}));
   }, []);
-
-  const collapseProps = config.controlledCollapse
-    ? {
-        isSideNavCollapsed: config.isCollapsed,
-        onSideNavCollapsedChange: (v: boolean) =>
-          handleConfigChange({isCollapsed: v}),
-      }
-    : {defaultIsSideNavCollapsed: config.defaultCollapsed};
 
   const mobileNav =
     config.mobileNavMode === 'custom' ? (
@@ -653,9 +753,14 @@ export default function ShellLabPage() {
         title="Navigation"
         side={config.mobileNavSide}>
         <XDSSideNavSection title="Navigation">
-          <XDSSideNavItem label="Dashboard" isSelected href="#" />
-          <XDSSideNavItem label="Projects" href="#" />
-          <XDSSideNavItem label="Messages" href="#" />
+          <XDSSideNavItem
+            label="Dashboard"
+            isSelected
+            href="#"
+            icon={DashboardIcon}
+          />
+          <XDSSideNavItem label="Projects" href="#" icon={ProjectsIcon} />
+          <XDSSideNavItem label="Messages" href="#" icon={MessagesIcon} />
         </XDSSideNavSection>
       </XDSMobileNav>
     ) : config.mobileNavMode === 'none' ? (
@@ -671,10 +776,26 @@ export default function ShellLabPage() {
         sideNavBreakpoint={config.sideNavBreakpoint}
         sideNavWidth={config.sideNavWidth}
         topNav={
-          config.showTopNav ? <SampleTopNav config={config} /> : undefined
+          config.showTopNav ? (
+            <SampleTopNav
+              config={config}
+              onToggleCollapse={
+                config.isCollapsible &&
+                config.collapseToggleLocation === 'topnav'
+                  ? () => setExternalCollapsed(v => !v)
+                  : undefined
+              }
+            />
+          ) : undefined
         }
         sideNav={
-          config.showSideNav ? <SampleSideNav config={config} /> : undefined
+          config.showSideNav ? (
+            <SampleSideNav
+              config={config}
+              externalCollapsed={externalCollapsed}
+              setExternalCollapsed={setExternalCollapsed}
+            />
+          ) : undefined
         }
         mobileNav={mobileNav}
         banner={
@@ -686,8 +807,7 @@ export default function ShellLabPage() {
               isDismissable
             />
           ) : undefined
-        }
-        {...collapseProps}>
+        }>
         <XDSVStack gap={6} xstyle={styles.content}>
           <XDSVStack gap={2}>
             <XDSHeading level={1}>Shell Lab</XDSHeading>

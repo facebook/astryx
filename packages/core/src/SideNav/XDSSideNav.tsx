@@ -16,12 +16,14 @@
 
 'use client';
 
-import {type ReactNode} from 'react';
+import {useCallback, useState, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import {XDSSideNavCollapseContext} from './XDSSideNavCollapseContext';
+import {XDSSideNavCollapseButton} from './XDSSideNavCollapseButton';
 
 // =============================================================================
 // Styles
@@ -32,9 +34,13 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
+    width: 260,
     backgroundColor: 'inherit',
     boxSizing: 'border-box',
     overflow: 'hidden',
+  },
+  rootCollapsed: {
+    width: 52,
   },
   stickyTop: {
     display: 'flex',
@@ -82,10 +88,26 @@ const styles = stylex.create({
     paddingBlockEnd: spacingVars['--spacing-2'],
     borderBlockStart: `1px solid ${colorVars['--color-divider']}`,
   },
+  footerRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+  },
+  footerRowCollapsed: {
+    flexDirection: 'column-reverse',
+  },
   footerIcons: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
+  },
+  footerIconsCollapsed: {
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  stickyBottomCollapsed: {
+    borderBlockStart: 'none',
+    paddingBlockStart: 0,
   },
 });
 
@@ -141,6 +163,29 @@ export interface XDSSideNavProps extends XDSBaseProps<HTMLElement> {
    * Test ID for the root element.
    */
   'data-testid'?: string;
+
+  /**
+   * Enables collapse behavior. The sidebar can be collapsed to a narrow
+   * icon-only toolbar.
+   *
+   * - `true` — enables collapse with default toggle button and uncontrolled state
+   * - Object — enables collapse with advanced configuration:
+   *   - `defaultIsCollapsed` — start collapsed (uncontrolled)
+   *   - `isCollapsed` + `onCollapsedChange` — controlled mode
+   *   - `hasButton` — render built-in collapse button (default: true)
+   *   - `buttonLabel` — accessibility label for the collapse button
+   *
+   * @default false
+   */
+  collapsible?:
+    | boolean
+    | {
+        defaultIsCollapsed?: boolean;
+        isCollapsed?: boolean;
+        onCollapsedChange?: (isCollapsed: boolean) => void;
+        hasButton?: boolean;
+        buttonLabel?: string;
+      };
 }
 
 // =============================================================================
@@ -171,6 +216,7 @@ export function XDSSideNav({
   children,
   footer,
   footerIcons,
+  collapsible = false,
   xstyle,
   className,
   style,
@@ -178,10 +224,38 @@ export function XDSSideNav({
   ref,
   ...props
 }: XDSSideNavProps) {
+  // Parse collapsible prop
+  const collapsibleConfig = typeof collapsible === 'object' ? collapsible : {};
+  const isCollapsible = !!collapsible;
+  const hasCollapseButton = collapsibleConfig.hasButton ?? true;
+  const defaultIsCollapsed = collapsibleConfig.defaultIsCollapsed ?? false;
+  const controlledCollapsed = collapsibleConfig.isCollapsed;
+  const onCollapsedChange = collapsibleConfig.onCollapsedChange;
+
+  // Collapse state (controlled + uncontrolled)
+  const isControlled = controlledCollapsed !== undefined;
+  const [uncontrolledCollapsed, setUncontrolledCollapsed] =
+    useState(defaultIsCollapsed);
+  const collapsed = isControlled ? controlledCollapsed : uncontrolledCollapsed;
+
+  const toggle = useCallback(() => {
+    const newValue = !collapsed;
+    if (!isControlled) {
+      setUncontrolledCollapsed(newValue);
+    }
+    onCollapsedChange?.(newValue);
+  }, [collapsed, isControlled, onCollapsedChange]);
+
+  const collapseContext = {
+    isCollapsed: collapsed,
+    toggle,
+    isCollapsible,
+  };
+
   const hasStickyTop = !!(header || topContent);
   const hasStickyBottom = !!(footer || footerIcons);
 
-  return (
+  const content = (
     <nav
       ref={ref}
       role="navigation"
@@ -189,7 +263,7 @@ export function XDSSideNav({
       data-testid={testId}
       {...mergeProps(
         xdsClassName('side-nav'),
-        stylex.props(styles.root, xstyle),
+        stylex.props(styles.root, collapsed && styles.rootCollapsed, xstyle),
         className,
         style,
       )}
@@ -212,16 +286,35 @@ export function XDSSideNav({
         )}>
         {children}
       </div>
-      {hasStickyBottom && (
-        <div {...stylex.props(styles.stickyBottom)}>
+      {(hasStickyBottom || isCollapsible) && (
+        <div
+          {...stylex.props(
+            styles.stickyBottom,
+            collapsed && styles.stickyBottomCollapsed,
+          )}>
           {footer}
-          {footerIcons && (
-            <div {...stylex.props(styles.footerIcons)}>{footerIcons}</div>
-          )}
+          <div
+            {...stylex.props(
+              styles.footerRow,
+              collapsed && styles.footerRowCollapsed,
+            )}>
+            {isCollapsible && hasCollapseButton && <XDSSideNavCollapseButton />}
+            {footerIcons}
+          </div>
         </div>
       )}
     </nav>
   );
+
+  if (isCollapsible) {
+    return (
+      <XDSSideNavCollapseContext value={collapseContext}>
+        {content}
+      </XDSSideNavCollapseContext>
+    );
+  }
+
+  return content;
 }
 
 XDSSideNav.displayName = 'XDSSideNav';
