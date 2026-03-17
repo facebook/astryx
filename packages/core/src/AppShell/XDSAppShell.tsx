@@ -765,15 +765,9 @@ export function XDSAppShell({
         {shouldRenderMobileNavReactNode && mobileNavReactNode}
         {shouldRenderConfigContent && mobileNavConfigContent}
         {shouldRenderAutoMobileNav && (
-          <XDSMobileNav
-            isOpen={isMobileNavOpen}
-            onOpenChange={open => setMobileNavOpen(open)}
-            width={sideNavWidth}
-            data-testid="sidenav-mobile">
-            <XDSSideNavRenderContext value="drawer">
-              {sideNav}
-            </XDSSideNavRenderContext>
-          </XDSMobileNav>
+          <XDSSideNavRenderContext value="drawer">
+            {sideNav}
+          </XDSSideNavRenderContext>
         )}
       </div>
     </XDSAppShellMobileContext.Provider>

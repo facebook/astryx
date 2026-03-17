@@ -273,7 +273,7 @@ describe('XDSAppShell', () => {
     );
 
     // Should show default mobile nav (XDSMobileNav wrapping sideNav)
-    expect(screen.getByTestId('sidenav-mobile')).toBeInTheDocument();
+    expect(screen.getByRole('dialog', {hidden: true})).toBeInTheDocument();
     // Should show nav content inside the mobile nav
     expect(screen.getByText('Nav')).toBeInTheDocument();
   });
@@ -289,7 +289,7 @@ describe('XDSAppShell', () => {
     );
 
     // Default mobile nav should be rendered when below breakpoint
-    expect(screen.getByTestId('sidenav-mobile')).toBeInTheDocument();
+    expect(screen.getByRole('dialog', {hidden: true})).toBeInTheDocument();
   });
 
   // ===========================================================================
@@ -473,8 +473,10 @@ describe('XDSAppShell', () => {
         <div>Content</div>
       </XDSAppShell>,
     );
-    // Default mobile nav should NOT appear
-    expect(screen.queryByTestId('sidenav-mobile')).not.toBeInTheDocument();
+    // Default auto-generated mobile nav should NOT appear — only the explicit one
+    // (The explicit mobileNav is rendered as a ReactNode, so only one dialog exists)
+    const dialogs = screen.getAllByRole('dialog', {hidden: true});
+    expect(dialogs).toHaveLength(1);
     // Explicit mobileNav slot should be rendered
     expect(screen.getByTestId('appshell-mobile-nav')).toBeInTheDocument();
   });

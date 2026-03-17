@@ -25,6 +25,7 @@ import {xdsClassName, mergeProps} from '../utils';
 import {XDSSideNavCollapseContext} from './XDSSideNavCollapseContext';
 import {XDSSideNavCollapseButton} from './XDSSideNavCollapseButton';
 import {useXDSSideNavRenderMode} from './XDSSideNavRenderContext';
+import {XDSMobileNav} from '../MobileNav/XDSMobileNav';
 
 // =============================================================================
 // Styles
@@ -127,6 +128,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
+    marginInlineStart: 'auto',
   },
 });
 
@@ -294,24 +296,15 @@ export function XDSSideNav({
   }
 
   // =========================================================================
-  // Drawer mode — children only, skip heading + footerIcons
+  // Drawer mode — render inside XDSMobileNav with heading as header
   // =========================================================================
   if (renderMode === 'drawer') {
     return (
-      <div
-        data-testid={testId}
-        role="navigation"
-        aria-label="Side navigation"
-        {...mergeProps(
-          xdsClassName('side-nav', {mode: 'drawer'}),
-          stylex.props(xstyle),
-          className,
-          style,
-        )}>
+      <XDSMobileNav header={header} data-testid={testId}>
         {topContent}
         {children}
         {footer}
-      </div>
+      </XDSMobileNav>
     );
   }
 

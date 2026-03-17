@@ -188,14 +188,8 @@ export interface XDSMobileNavProps extends Omit<XDSBaseProps, 'title'> {
   title?: string;
 
   /**
-   * Custom header content rendered in the drawer header area.
-   * Replaces the `title` text when provided. The close button
-   * always renders alongside the header.
-   *
-   * @example
-   * ```
-   * <XDSMobileNav header={<XDSSideNavHeading heading="My App" icon={<Logo />} />}>
-   * ```
+   * Custom header content rendered in the header area next to the close button.
+   * Replaces `title` when provided. Use for logos, SideNavHeading, search bars, etc.
    */
   header?: ReactNode;
 
@@ -210,6 +204,11 @@ export interface XDSMobileNavProps extends Omit<XDSBaseProps, 'title'> {
    * @default 'start'
    */
   side?: 'start' | 'end';
+
+  /**
+   * Accessible label for the drawer. Falls back to title, then 'Navigation'.
+   */
+  label?: string;
 
   /**
    * Test ID for the root element.
@@ -258,6 +257,7 @@ export function XDSMobileNav({
   header,
   width = 280,
   side = 'start',
+  label,
   'data-testid': testId,
   xstyle,
   className,
@@ -336,7 +336,7 @@ export function XDSMobileNav({
     <dialog
       ref={setRefs}
       data-testid={testId}
-      aria-label={title ?? 'Navigation'}
+      aria-label={label ?? title ?? 'Navigation'}
       onClick={handleDialogClick}
       onCancel={handleCancel}
       {...mergeProps(
@@ -348,7 +348,6 @@ export function XDSMobileNav({
           xstyle,
         ),
       )}>
-      xstyle, className, style,
       {/* Drawer panel */}
       <div
         {...stylex.props(
@@ -359,7 +358,7 @@ export function XDSMobileNav({
           !isStart && styles.drawerEnd,
           !isStart && isOpen && styles.drawerEndOpen,
         )}>
-        {/* Header with optional title/header content and close button */}
+        {/* Header — custom content or title + close button */}
         <div
           {...stylex.props(
             styles.header,
