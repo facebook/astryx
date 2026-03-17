@@ -165,28 +165,27 @@ export interface XDSSideNavProps extends XDSBaseProps<HTMLElement> {
   'data-testid'?: string;
 
   /**
-   * Enables collapse behavior. When true, provides collapse context to
-   * descendant XDSSideNavCollapseButton components and renders a default
-   * toggle if no XDSSideNavCollapseButton is placed manually.
+   * Enables collapse behavior. The sidebar can be collapsed to a narrow
+   * icon-only toolbar.
+   *
+   * - `true` — enables collapse with default toggle button and uncontrolled state
+   * - Object — enables collapse with advanced configuration:
+   *   - `defaultIsCollapsed` — start collapsed (uncontrolled)
+   *   - `isCollapsed` + `onCollapsedChange` — controlled mode
+   *   - `hasButton` — render built-in collapse button (default: true)
+   *   - `buttonLabel` — accessibility label for the collapse button
+   *
    * @default false
    */
-  isCollapsible?: boolean;
-
-  /**
-   * Initial collapsed state (uncontrolled mode).
-   * @default false
-   */
-  defaultIsCollapsed?: boolean;
-
-  /**
-   * Controlled collapsed state.
-   */
-  isCollapsed?: boolean;
-
-  /**
-   * Callback when collapsed state changes.
-   */
-  onCollapsedChange?: (isCollapsed: boolean) => void;
+  collapsible?:
+    | boolean
+    | {
+        defaultIsCollapsed?: boolean;
+        isCollapsed?: boolean;
+        onCollapsedChange?: (isCollapsed: boolean) => void;
+        hasButton?: boolean;
+        buttonLabel?: string;
+      };
 }
 
 // =============================================================================
@@ -217,10 +216,7 @@ export function XDSSideNav({
   children,
   footer,
   footerIcons,
-  isCollapsible = false,
-  defaultIsCollapsed = false,
-  isCollapsed: controlledCollapsed,
-  onCollapsedChange,
+  collapsible = false,
   xstyle,
   className,
   style,
@@ -228,6 +224,14 @@ export function XDSSideNav({
   ref,
   ...props
 }: XDSSideNavProps) {
+  // Parse collapsible prop
+  const collapsibleConfig = typeof collapsible === 'object' ? collapsible : {};
+  const isCollapsible = !!collapsible;
+  const hasCollapseButton = collapsibleConfig.hasButton ?? true;
+  const defaultIsCollapsed = collapsibleConfig.defaultIsCollapsed ?? false;
+  const controlledCollapsed = collapsibleConfig.isCollapsed;
+  const onCollapsedChange = collapsibleConfig.onCollapsedChange;
+
   // Collapse state (controlled + uncontrolled)
   const isControlled = controlledCollapsed !== undefined;
   const [uncontrolledCollapsed, setUncontrolledCollapsed] =
@@ -294,7 +298,7 @@ export function XDSSideNav({
               styles.footerRow,
               collapsed && styles.footerRowCollapsed,
             )}>
-            {isCollapsible && <XDSSideNavCollapseButton />}
+            {isCollapsible && hasCollapseButton && <XDSSideNavCollapseButton />}
             {footerIcons}
           </div>
         </div>

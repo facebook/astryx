@@ -9,6 +9,7 @@ import {
   XDSSideNavHeading,
   XDSSideNavItem,
   XDSSideNavSection,
+  XDSSideNavCollapseButton,
 } from '@xds/core/SideNav';
 import {
   XDSTopNav,
@@ -413,7 +414,15 @@ function SelectorRow({
 // Sample Nav Content
 // =============================================================================
 
-function SampleSideNav({config}: {config: ShellConfig}) {
+function SampleSideNav({
+  config,
+  externalCollapsed,
+  setExternalCollapsed,
+}: {
+  config: ShellConfig;
+  externalCollapsed?: boolean;
+  setExternalCollapsed?: (v: boolean) => void;
+}) {
   const appIcon = (
     <XDSNavIcon
       icon={
@@ -462,7 +471,17 @@ function SampleSideNav({config}: {config: ShellConfig}) {
 
   return (
     <XDSSideNav
-      isCollapsible={config.isCollapsible}
+      collapsible={
+        config.isCollapsible
+          ? config.collapseToggleLocation === 'topnav'
+            ? {
+                isCollapsed: externalCollapsed,
+                onCollapsedChange: setExternalCollapsed,
+                hasButton: false,
+              }
+            : true
+          : false
+      }
       header={heading}
       topContent={
         config.showTopContent ? (
@@ -549,7 +568,13 @@ function SampleSideNav({config}: {config: ShellConfig}) {
   );
 }
 
-function SampleTopNav({config}: {config: ShellConfig}) {
+function SampleTopNav({
+  config,
+  onToggleCollapse,
+}: {
+  config: ShellConfig;
+  onToggleCollapse?: () => void;
+}) {
   const plainItems = (
     <>
       <XDSTopNavItem label="Home" href="#" isSelected />
@@ -654,7 +679,30 @@ function SampleTopNav({config}: {config: ShellConfig}) {
       }
       startContent={config.topNavAlignment === 'start' ? navItems : undefined}
       centerContent={config.topNavAlignment === 'center' ? navItems : undefined}
-      endContent={config.topNavAlignment === 'end' ? navItems : undefined}
+      endContent={
+        <>
+          {config.topNavAlignment === 'end' && navItems}
+          {onToggleCollapse && (
+            <XDSButton
+              label="Toggle sidebar"
+              variant="ghost"
+              icon={
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  width={16}
+                  height={16}>
+                  <path d="M3 12h18M3 6h18M3 18h18" />
+                </svg>
+              }
+              onClick={onToggleCollapse}
+            />
+          )}
+        </>
+      }
     />
   );
 }
@@ -691,6 +739,7 @@ export default function ShellLabPage() {
   const [config, setConfig] = useState<ShellConfig>(DEFAULT_CONFIG);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [showConfig, setShowConfig] = useState(true);
+  const [externalCollapsed, setExternalCollapsed] = useState(false);
 
   const handleConfigChange = useCallback((update: Partial<ShellConfig>) => {
     setConfig(prev => ({...prev, ...update}));
@@ -727,10 +776,26 @@ export default function ShellLabPage() {
         sideNavBreakpoint={config.sideNavBreakpoint}
         sideNavWidth={config.sideNavWidth}
         topNav={
-          config.showTopNav ? <SampleTopNav config={config} /> : undefined
+          config.showTopNav ? (
+            <SampleTopNav
+              config={config}
+              onToggleCollapse={
+                config.isCollapsible &&
+                config.collapseToggleLocation === 'topnav'
+                  ? () => setExternalCollapsed(v => !v)
+                  : undefined
+              }
+            />
+          ) : undefined
         }
         sideNav={
-          config.showSideNav ? <SampleSideNav config={config} /> : undefined
+          config.showSideNav ? (
+            <SampleSideNav
+              config={config}
+              externalCollapsed={externalCollapsed}
+              setExternalCollapsed={setExternalCollapsed}
+            />
+          ) : undefined
         }
         mobileNav={mobileNav}
         banner={
