@@ -40,6 +40,8 @@ import {XDSLayoutContent} from '../Layout/XDSLayoutContent';
 import {XDSMobileNav} from '../MobileNav/XDSMobileNav';
 import {XDSMobileNavToggle} from '../MobileNav/XDSMobileNavToggle';
 import {XDSSideNavRenderContext} from '../SideNav/XDSSideNavRenderContext';
+import {XDSTopNavRenderContext} from '../TopNav/XDSTopNavRenderContext';
+import {XDSTopNavMobileContentContext} from '../TopNav/XDSTopNavMobileContentContext';
 import {XDSAppShellMobileContext} from './XDSAppShellMobileContext';
 import type {XDSAppShellMobileContextValue} from './XDSAppShellMobileContext';
 import type {SpacingStep} from '../utils/types';
@@ -553,7 +555,7 @@ export function XDSAppShell({
   // efficient and does not over-trigger.
   // =========================================================================
   useEffect(() => {
-    if (sideNavBreakpoint === 'none' || !hasSideNav) return;
+    if (sideNavBreakpoint === 'none' || !hasNavContent) return;
 
     const breakpointPx = BREAKPOINT_VALUES[sideNavBreakpoint];
     const mql = window.matchMedia(`(max-width: ${breakpointPx}px)`);
@@ -568,7 +570,7 @@ export function XDSAppShell({
 
     mql.addEventListener('change', handleChange);
     return () => mql.removeEventListener('change', handleChange);
-  }, [sideNavBreakpoint, hasSideNav]);
+  }, [sideNavBreakpoint, hasNavContent]);
 
   // =========================================================================
   // Determine if sideNav should show as overlay (mobile) or inline
@@ -577,16 +579,25 @@ export function XDSAppShell({
   // Three mobile nav rendering modes:
   // 1. ReactNode shorthand — render the user's element as-is (they own the drawer)
   const shouldRenderMobileNavReactNode = mobileNavReactNode != null;
-  // 2. Config with custom content — render inside AppShell-managed drawer
+  // 2. Config with custom content — render directly
   const shouldRenderConfigContent =
     mobileNavEnabled && mobileNavConfigContent != null && isBelowBreakpoint;
-  // 3. Auto — wrap sideNav content in a managed drawer
+  // 3. Auto — render nav content in drawer mode
   const shouldRenderAutoMobileNav =
     mobileNavEnabled &&
     !mobileNavReactNode &&
     !mobileNavConfigContent &&
     isBelowBreakpoint &&
-    hasSideNav;
+    hasNavContent;
+  // TopNav-only auto mobile (no SideNav) — TopNav handles its own drawer
+  const shouldRenderTopNavDrawer =
+    shouldRenderAutoMobileNav && hasTopNav && !hasSideNav;
+  // TopNav + SideNav combined — TopNav owns drawer, SideNav content via context
+  const shouldRenderCombinedDrawer =
+    shouldRenderAutoMobileNav && hasTopNav && hasSideNav;
+  // SideNav-only auto mobile (no TopNav) — SideNav handles its own drawer
+  const shouldRenderSideNavDrawer =
+    shouldRenderAutoMobileNav && !hasTopNav && hasSideNav;
 
   // =========================================================================
   // Mobile context — shared with XDSMobileNavToggle and future TopNav mobile
@@ -610,6 +621,17 @@ export function XDSAppShell({
   // stays pinned while the page scrolls. The ref is used to measure header
   // height for the sideNav's sticky offset.
   // =========================================================================
+  // When below breakpoint, TopNav renders in mobile-bar mode (heading + endContent + toggle)
+  const topNavContent = hasTopNav ? (
+    isBelowBreakpoint && mobileNavEnabled ? (
+      <XDSTopNavRenderContext value="mobile-bar">
+        {topNav}
+      </XDSTopNavRenderContext>
+    ) : (
+      topNav
+    )
+  ) : null;
+
   const headerInner =
     hasTopNav || hasBanner ? (
       <XDSLayoutHeader
@@ -617,7 +639,7 @@ export function XDSAppShell({
         hasDivider={navHasDividers && hasTopNav}
         xstyle={navAreaStyle}>
         {hasBanner && <div {...stylex.props(styles.banner)}>{banner}</div>}
-        {hasTopNav && topNav}
+        {topNavContent}
       </XDSLayoutHeader>
     ) : undefined;
 
@@ -763,13 +785,32 @@ export function XDSAppShell({
           content={mainContent}
         />
 
-        {/* Mobile nav — three modes:
+        {/* Mobile nav — rendering modes:
             1. ReactNode shorthand: render user's element as-is
-            2. Config content: render inside AppShell-managed drawer
-            3. Auto: wrap sideNav in a managed drawer */}
+            2. Config content: render directly
+            3. TopNav-only: TopNav renders its own drawer
+            4. TopNav+SideNav: TopNav owns drawer, SideNav passed via context
+            5. SideNav-only: SideNav renders its own drawer */}
         {shouldRenderMobileNavReactNode && mobileNavReactNode}
         {shouldRenderConfigContent && mobileNavConfigContent}
-        {shouldRenderAutoMobileNav && (
+        {shouldRenderTopNavDrawer && (
+          <XDSTopNavRenderContext value="drawer">
+            {topNav}
+          </XDSTopNavRenderContext>
+        )}
+        {shouldRenderCombinedDrawer && (
+          <XDSTopNavMobileContentContext
+            value={
+              <XDSSideNavRenderContext value="drawer-content">
+                {sideNav}
+              </XDSSideNavRenderContext>
+            }>
+            <XDSTopNavRenderContext value="drawer">
+              {topNav}
+            </XDSTopNavRenderContext>
+          </XDSTopNavMobileContentContext>
+        )}
+        {shouldRenderSideNavDrawer && (
           <XDSSideNavRenderContext value="drawer">
             {sideNav}
           </XDSSideNavRenderContext>
