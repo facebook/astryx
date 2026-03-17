@@ -137,6 +137,9 @@ const styles = stylex.create({
   headerNoTitle: {
     justifyContent: 'flex-end',
   },
+  headerText: {
+    marginInlineStart: spacingVars['--spacing-1'],
+  },
   content: {
     flex: 1,
     overflowY: 'auto',
@@ -373,7 +376,9 @@ export function XDSMobileNav({
         {/* Header — content + close button */}
         <div {...stylex.props(styles.header, !header && styles.headerNoTitle)}>
           {typeof header === 'string' ? (
-            <XDSHeading level={2}>{header}</XDSHeading>
+            <span {...stylex.props(styles.headerText)}>
+              <XDSHeading level={2}>{header}</XDSHeading>
+            </span>
           ) : (
             (header ?? null)
           )}
