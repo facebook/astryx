@@ -23,23 +23,46 @@ import {colorVars, radiusVars} from '@xds/core/theme/tokens.stylex';
 // =============================================================================
 
 const s = stylex.create({
-  page: {maxWidth: 960},
+  page: {
+    maxWidth: 900,
+    width: '100%',
+    paddingBottom: 80,
+  },
   controlBar: {
     position: 'sticky',
-    top: 0,
+    top: 16,
     zIndex: 10,
-    backgroundColor: colorVars['--color-wash'],
-    paddingBlock: 16,
-    paddingInline: 20,
+    backgroundColor: colorVars['--color-surface'],
+    paddingBlock: 20,
+    paddingInline: 24,
     borderRadius: radiusVars['--radius-container'],
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: colorVars['--color-divider'],
+    borderColor: colorVars['--color-divider-emphasized'],
+    boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
   },
-  presets: {display: 'flex', gap: 4, flexWrap: 'wrap'},
-  tokenBar: {display: 'flex', gap: 6, flexWrap: 'wrap'},
-  tokenChip: {
+  sliderWrap: {
+    flex: 1,
+    maxWidth: 360,
+    minWidth: 200,
+  },
+  multiplierVal: {
+    minWidth: 48,
+    textAlign: 'right' as const,
+    fontVariantNumeric: 'tabular-nums',
+  },
+  presets: {
     display: 'flex',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  tokenBar: {
+    display: 'flex',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  tokenChip: {
+    display: 'inline-flex',
     alignItems: 'center',
     gap: 6,
     paddingBlock: 4,
@@ -54,11 +77,15 @@ const s = stylex.create({
   sectionNote: {fontFamily: 'monospace', fontSize: 11},
   row: {
     display: 'flex',
-    gap: 16,
+    gap: 20,
     flexWrap: 'wrap',
     alignItems: 'flex-start',
   },
-  group: {display: 'flex', flexDirection: 'column', gap: 8},
+  group: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+  },
   formula: {
     fontFamily: 'monospace',
     fontSize: 12,
@@ -82,6 +109,7 @@ const s = stylex.create({
     color: colorVars['--color-text-secondary'],
     lineHeight: 1.6,
     maxWidth: 320,
+    whiteSpace: 'pre',
   },
   thumbnail: {
     width: 48,
@@ -100,11 +128,10 @@ const s = stylex.create({
     backgroundColor: colorVars['--color-surface'],
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: colorVars['--color-divider'],
+    borderColor: colorVars['--color-divider-emphasized'],
     borderRadius: radiusVars['--radius-container'],
     padding: 10,
     width: 200,
-    overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
   },
@@ -127,6 +154,7 @@ const s = stylex.create({
     fontFamily: 'monospace',
     color: colorVars['--color-text-secondary'],
     lineHeight: 1.5,
+    marginTop: 4,
   },
   concentricBtnInset: {
     borderRadius: `max(0px, calc(${radiusVars['--radius-container']} - 10px))`,
@@ -140,10 +168,10 @@ const s = stylex.create({
     backgroundColor: colorVars['--color-surface'],
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: colorVars['--color-divider'],
+    borderColor: colorVars['--color-divider-emphasized'],
     borderRadius: radiusVars['--radius-container'],
     width: 200,
-    overflow: 'hidden',
+    overflow: 'clip',
     display: 'flex',
     flexDirection: 'column',
   },
@@ -164,11 +192,11 @@ const s = stylex.create({
     backgroundColor: colorVars['--color-surface'],
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: colorVars['--color-divider'],
+    borderColor: colorVars['--color-divider-emphasized'],
     borderRadius: radiusVars['--radius-container'],
     padding: 4,
     width: 180,
-    boxShadow: `0 8px 24px ${colorVars['--color-shadow-elevation']}`,
+    boxShadow: `0 4px 12px ${colorVars['--color-shadow-elevation']}`,
   },
   dropdownItem: {
     paddingBlock: 7,
@@ -266,14 +294,15 @@ export default function RadiusPage() {
   return (
     <div {...stylex.props(s.page)}>
       <XDSTheme theme={theme}>
-        <XDSVStack gap={8}>
+        <XDSVStack gap={10}>
           {/* Header */}
-          <XDSVStack gap={2}>
+          <XDSVStack gap={3}>
             <XDSHeading level={1}>Dynamic Radius System</XDSHeading>
             <XDSText type="body" color="secondary">
-              Five semantic tokens. A continuous multiplier scales the middle
-              three while <code>none</code> and <code>rounded</code> stay fixed.
-              Nested elements use:{' '}
+              Five semantic tokens — hierarchy-based, not size-based. A
+              continuous multiplier scales the middle three while{' '}
+              <code>none</code> and <code>rounded</code> stay fixed. Nested
+              elements use the concentric function:{' '}
               <span {...stylex.props(s.formula)}>max(0, outer − padding)</span>
             </XDSText>
           </XDSVStack>
@@ -281,8 +310,8 @@ export default function RadiusPage() {
           {/* Controls */}
           <div {...stylex.props(s.controlBar)}>
             <XDSVStack gap={4}>
-              <XDSHStack gap={6} vAlign="center">
-                <div style={{flex: 1, maxWidth: 400}}>
+              <XDSHStack gap={4} vAlign="center">
+                <div {...stylex.props(s.sliderWrap)}>
                   <XDSSlider
                     label="Radius Multiplier"
                     value={multiplier}
@@ -292,9 +321,11 @@ export default function RadiusPage() {
                     step={0.05}
                   />
                 </div>
-                <XDSText type="large" weight="bold" color="active">
-                  {multiplier}×
-                </XDSText>
+                <div {...stylex.props(s.multiplierVal)}>
+                  <XDSText type="large" weight="bold" color="active">
+                    {multiplier}×
+                  </XDSText>
+                </div>
               </XDSHStack>
 
               <div {...stylex.props(s.presets)}>
@@ -333,12 +364,22 @@ export default function RadiusPage() {
               Dividers, table cells, side panels, shared edges (button groups)
             </XDSText>
             <div {...stylex.props(s.row)}>
-              <XDSDivider />
-              <XDSHStack gap={0}>
-                <XDSButton label="Day" variant="primary" size="sm" />
-                <XDSButton label="Week" variant="secondary" size="sm" />
-                <XDSButton label="Month" variant="secondary" size="sm" />
-              </XDSHStack>
+              <div {...stylex.props(s.group)}>
+                <XDSText type="supporting" color="secondary" weight="bold">
+                  Divider
+                </XDSText>
+                <XDSDivider />
+              </div>
+              <div {...stylex.props(s.group)}>
+                <XDSText type="supporting" color="secondary" weight="bold">
+                  Button group (shared edges)
+                </XDSText>
+                <XDSHStack gap={0}>
+                  <XDSButton label="Day" variant="primary" size="sm" />
+                  <XDSButton label="Week" variant="secondary" size="sm" />
+                  <XDSButton label="Month" variant="secondary" size="sm" />
+                </XDSHStack>
+              </div>
             </div>
           </XDSVStack>
 
@@ -355,14 +396,20 @@ export default function RadiusPage() {
             </XDSText>
             <div {...stylex.props(s.row)}>
               <div {...stylex.props(s.group)}>
+                <XDSText type="supporting" color="secondary" weight="bold">
+                  Code block
+                </XDSText>
                 <div {...stylex.props(s.codeBlock)}>
-                  <span style={{color: '#5B08D8'}}>const</span> radius ={' '}
-                  <span style={{color: '#0064E0'}}>max</span>(
-                  <span style={{color: '#E9AF08'}}>0</span>, outer - padding);
+                  {
+                    'const radius = max(0, outer - padding);\nconst theme = "default";'
+                  }
                 </div>
               </div>
 
               <div {...stylex.props(s.group)}>
+                <XDSText type="supporting" color="secondary" weight="bold">
+                  Thumbnails
+                </XDSText>
                 <XDSHStack gap={2}>
                   <div
                     {...stylex.props(s.thumbnail)}
@@ -386,6 +433,9 @@ export default function RadiusPage() {
               </div>
 
               <div {...stylex.props(s.group)}>
+                <XDSText type="supporting" color="secondary" weight="bold">
+                  Checkboxes
+                </XDSText>
                 <XDSCheckboxInput
                   label="Enabled"
                   value={checked1}
@@ -413,6 +463,9 @@ export default function RadiusPage() {
             </XDSText>
             <div {...stylex.props(s.row)}>
               <div {...stylex.props(s.group)}>
+                <XDSText type="supporting" color="secondary" weight="bold">
+                  Buttons
+                </XDSText>
                 <XDSHStack gap={2}>
                   <XDSButton label="Primary" variant="primary" />
                   <XDSButton label="Secondary" variant="secondary" />
@@ -421,8 +474,12 @@ export default function RadiusPage() {
               </div>
 
               <div {...stylex.props(s.group)}>
+                <XDSText type="supporting" color="secondary" weight="bold">
+                  Input
+                </XDSText>
                 <XDSTextInput
                   label="Name"
+                  isLabelHidden
                   placeholder="Enter text..."
                   value={name}
                   onChange={setName}
@@ -430,6 +487,9 @@ export default function RadiusPage() {
               </div>
 
               <div {...stylex.props(s.group)}>
+                <XDSText type="supporting" color="secondary" weight="bold">
+                  Tokens
+                </XDSText>
                 <XDSHStack gap={2}>
                   <XDSToken label="Design" onRemove={() => {}} />
                   <XDSToken label="System" onRemove={() => {}} />
@@ -451,17 +511,36 @@ export default function RadiusPage() {
               Cards, modals, popovers, dropdown menus, toasts
             </XDSText>
             <div {...stylex.props(s.row)}>
-              <XDSCard width={220} padding={0}>
-                <div {...stylex.props(s.cardMedia)} />
-                <div style={{padding: 14}}>
-                  <XDSText type="body" weight="bold">
-                    Card title
-                  </XDSText>
-                  <XDSText type="supporting" color="secondary">
-                    A container for grouped content.
-                  </XDSText>
+              <div {...stylex.props(s.group)}>
+                <XDSText type="supporting" color="secondary" weight="bold">
+                  Card
+                </XDSText>
+                <XDSCard width={220} padding={0}>
+                  <div {...stylex.props(s.cardMedia)} />
+                  <div style={{padding: 14}}>
+                    <XDSText type="body" weight="bold">
+                      Card title
+                    </XDSText>
+                    <XDSText type="supporting" color="secondary">
+                      A container for grouped content.
+                    </XDSText>
+                  </div>
+                </XDSCard>
+              </div>
+
+              <div {...stylex.props(s.group)}>
+                <XDSText type="supporting" color="secondary" weight="bold">
+                  Dropdown menu
+                </XDSText>
+                <div {...stylex.props(s.dropdownMenu)}>
+                  <div {...stylex.props(s.dropdownItem, s.dropdownItemActive)}>
+                    Dashboard
+                  </div>
+                  <div {...stylex.props(s.dropdownItem)}>Settings</div>
+                  <div {...stylex.props(s.dropdownItem)}>Profile</div>
+                  <div {...stylex.props(s.dropdownItem)}>Log out</div>
                 </div>
-              </XDSCard>
+              </div>
             </div>
           </XDSVStack>
 
@@ -479,6 +558,9 @@ export default function RadiusPage() {
             </XDSText>
             <div {...stylex.props(s.row)}>
               <div {...stylex.props(s.group)}>
+                <XDSText type="supporting" color="secondary" weight="bold">
+                  Badges
+                </XDSText>
                 <XDSHStack gap={2}>
                   <XDSBadge variant="info">New</XDSBadge>
                   <XDSBadge variant="success">Active</XDSBadge>
@@ -488,6 +570,9 @@ export default function RadiusPage() {
               </div>
 
               <div {...stylex.props(s.group)}>
+                <XDSText type="supporting" color="secondary" weight="bold">
+                  Avatars
+                </XDSText>
                 <XDSHStack gap={2}>
                   <XDSAvatar name="John Doe" />
                   <XDSAvatar name="Alice Brown" />
@@ -496,6 +581,9 @@ export default function RadiusPage() {
               </div>
 
               <div {...stylex.props(s.group)}>
+                <XDSText type="supporting" color="secondary" weight="bold">
+                  Status dots
+                </XDSText>
                 <XDSHStack gap={3}>
                   <XDSStatusDot variant="positive" label="Online" />
                   <XDSStatusDot variant="warning" label="Away" />
@@ -504,6 +592,9 @@ export default function RadiusPage() {
               </div>
 
               <div {...stylex.props(s.group)}>
+                <XDSText type="supporting" color="secondary" weight="bold">
+                  Toggles
+                </XDSText>
                 <XDSSwitch
                   label="Notifications"
                   value={switchOn}
@@ -527,8 +618,8 @@ export default function RadiusPage() {
               token="max(0, outer − padding)"
             />
             <XDSText type="body" color="secondary">
-              Inner radius computed from outer minus padding. Works with CSS{' '}
-              <code>calc()</code>:{' '}
+              Inner radius = outer radius minus padding. Nested elements get
+              visually concentric corners. Works in CSS:{' '}
               <span {...stylex.props(s.formula)}>
                 calc(max(0px, var(--radius-container) - 10px))
               </span>
@@ -537,6 +628,9 @@ export default function RadiusPage() {
             <div {...stylex.props(s.row)}>
               {/* Inset media */}
               <div {...stylex.props(s.group)}>
+                <XDSText type="supporting" color="secondary" weight="bold">
+                  Inset media (10px pad)
+                </XDSText>
                 <div {...stylex.props(s.concentricCard)}>
                   <div {...stylex.props(s.concentricMedia)} />
                   <div style={{paddingInline: 2, flex: 1}}>
@@ -562,6 +656,9 @@ export default function RadiusPage() {
 
               {/* Tighter padding */}
               <div {...stylex.props(s.group)}>
+                <XDSText type="supporting" color="secondary" weight="bold">
+                  Tighter padding (8px pad)
+                </XDSText>
                 <div {...stylex.props(s.concentricCard)} style={{padding: 8}}>
                   <div {...stylex.props(s.concentricMediaTight)} />
                   <div style={{paddingInline: 2, flex: 1}}>
@@ -587,6 +684,9 @@ export default function RadiusPage() {
 
               {/* Flush media */}
               <div {...stylex.props(s.group)}>
+                <XDSText type="supporting" color="secondary" weight="bold">
+                  Flush media (0px pad)
+                </XDSText>
                 <div {...stylex.props(s.flushCard)}>
                   <div {...stylex.props(s.flushMedia)} />
                   <div {...stylex.props(s.flushBody)}>
@@ -609,6 +709,9 @@ export default function RadiusPage() {
 
               {/* Dropdown concentric */}
               <div {...stylex.props(s.group)}>
+                <XDSText type="supporting" color="secondary" weight="bold">
+                  Dropdown (4px pad)
+                </XDSText>
                 <div {...stylex.props(s.dropdownMenu)}>
                   <div {...stylex.props(s.dropdownItem, s.dropdownItemActive)}>
                     Dashboard
