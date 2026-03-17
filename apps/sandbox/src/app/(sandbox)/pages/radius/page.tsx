@@ -464,7 +464,7 @@ export default function RadiusPage() {
                     step={0.05}
                   />
                 </div>
-                <XDSText type="large" weight="bold" color="accent">
+                <XDSText type="large" weight="bold" color="active">
                   {multiplier}×
                 </XDSText>
               </XDSHStack>
