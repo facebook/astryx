@@ -27,7 +27,7 @@ afterEach(() => {
 describe('generateCompressedIndex', () => {
   it('includes the version number', () => {
     const result = generateCompressedIndex('1.2.3');
-    expect(result).toContain('[XDS v1.2.3]');
+    expect(result).toContain('XDS v1.2.3');
     expect(result).toContain('<!-- XDS:START -->');
     expect(result).toContain('<!-- XDS:END -->');
   });
@@ -41,7 +41,7 @@ describe('generateCompressedIndex', () => {
     const result = generateCompressedIndex('1.0.0');
     expect(result).toContain('npx xds upgrade');
     expect(result).toContain('npx xds upgrade --apply');
-    expect(result).toContain('ALWAYS run npx xds upgrade --apply to migrate breaking API changes');
+    expect(result).toContain('after @xds/core bump, always run npx xds upgrade --apply');
   });
 });
 
@@ -115,7 +115,7 @@ describe('injectAgentsMd', () => {
     const content = fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
     expect(content).toContain('# AGENTS.md');
     expect(content).toContain('<!-- XDS:START -->');
-    expect(content).toContain('[XDS v1.0.0]');
+    expect(content).toContain('XDS v1.0.0');
     expect(content).toContain('<!-- XDS:END -->');
   });
 
@@ -135,7 +135,7 @@ More stuff.
     injectAgentsMd(tmpDir, '2.0.0');
 
     const content = fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
-    expect(content).toContain('[XDS v2.0.0]');
+    expect(content).toContain('XDS v2.0.0');
     expect(content).not.toContain('old content');
     expect(content).toContain('Some content.');
     expect(content).toContain('More stuff.');
@@ -153,7 +153,7 @@ Existing agent docs.
     const content = fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
     expect(content).toContain('Existing agent docs.');
     expect(content).toContain('<!-- XDS:START -->');
-    expect(content).toContain('[XDS v1.0.0]');
+    expect(content).toContain('XDS v1.0.0');
   });
 });
 
@@ -168,7 +168,7 @@ describe('injectClaudeMd', () => {
     expect(content).toContain('# Claude Config');
     expect(content).toContain('Existing rules.');
     expect(content).toContain('<!-- XDS:START -->');
-    expect(content).toContain('[XDS v1.0.0]');
+    expect(content).toContain('XDS v1.0.0');
   });
 
   it('does not create CLAUDE.md when it does not exist', () => {
@@ -192,7 +192,7 @@ Other rules.
     injectClaudeMd(tmpDir, '2.0.0');
 
     const content = fs.readFileSync(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
-    expect(content).toContain('[XDS v2.0.0]');
+    expect(content).toContain('XDS v2.0.0');
     expect(content).not.toContain('old content');
     expect(content).toContain('Other rules.');
   });
