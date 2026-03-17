@@ -11,11 +11,13 @@ import {colorVars} from '@xds/core/theme/tokens.stylex';
 const styles = stylex.create({
   container: {
     maxWidth: 900,
+    padding: 16,
   },
   controls: {
-    padding: 24,
+    padding: 16,
     backgroundColor: colorVars['--color-wash'],
     borderRadius: 12,
+    maxWidth: 450,
   },
   controlGroup: {
     display: 'flex',
@@ -33,7 +35,6 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: 16,
-    maxWidth: 400,
   },
   sliderValue: {
     fontSize: 14,
