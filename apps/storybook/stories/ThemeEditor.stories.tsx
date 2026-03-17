@@ -34,7 +34,7 @@ import {
   elevationDefaults,
   transitionDefaults,
 } from '@xds/core/theme';
-import {defaultIconRegistry} from '@xds/theme-default/icons';
+import {defaultTheme, defaultIconRegistry} from '@xds/theme-default';
 
 // =============================================================================
 // Token Groups for the Editor
@@ -1368,17 +1368,32 @@ function ThemeEditorComponent() {
     setTypeScaleRatio(1.2);
   }, [allDefaults]);
 
-  // Create a theme from current tokens
+  // Create a theme from current tokens.
+  // Uses defaultTheme's component overrides so that type scale tokens
+  // (--heading-1-size, --text-body-size, etc.) are consumed by the
+  // heading/text CSS rules in the preview.
+  //
+  // Type scale tokens are ALWAYS included (even at default values) because
+  // the component overrides reference var(--heading-1-size) etc., and those
+  // unhashed CSS custom properties only exist when the theme explicitly sets them.
+  const typeScaleKeys = React.useMemo(
+    () => new Set(Object.keys(typeScaleDefaults)),
+    [],
+  );
+
   const currentTheme = React.useMemo(() => {
     const tokenOverrides: Record<string, string> = {};
     for (const [key, value] of Object.entries(tokens)) {
-      if (value !== allDefaults[key]) {
+      // Always include type scale tokens — the component CSS rules reference
+      // var(--heading-1-size) etc. which only exist when the theme sets them.
+      if (typeScaleKeys.has(key) || value !== allDefaults[key]) {
         tokenOverrides[key] = value;
       }
     }
     return defineTheme({
       name: themeName,
       tokens: tokenOverrides as Partial<Record<string, string>>,
+      components: defaultTheme.components,
       icons: defaultIconRegistry,
     });
   }, [tokens, themeName, allDefaults]);
@@ -1823,6 +1838,7 @@ function ThemeEditorComponent() {
         display: 'flex',
         position: 'absolute',
         inset: 0,
+        margin: -16,
         backgroundColor: 'var(--color-wash)',
       }}>
       {/* Left Panel - Token Editor */}
