@@ -33,6 +33,70 @@ import {XDSBanner} from '@xds/core/Banner';
 // Configuration types
 // =============================================================================
 
+// Simple icon components for shell lab demo
+const DashboardIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.5}
+    {...props}>
+    <rect x="3" y="3" width="7" height="7" rx="1" />
+    <rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" />
+    <rect x="14" y="14" width="7" height="7" rx="1" />
+  </svg>
+);
+const MessagesIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.5}
+    {...props}>
+    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+  </svg>
+);
+const SettingsIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.5}
+    {...props}>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z" />
+  </svg>
+);
+const ProjectsIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.5}
+    {...props}>
+    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+  </svg>
+);
+const DocsIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.5}
+    {...props}>
+    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+  </svg>
+);
+
 interface ShellConfig {
   variant: 'wash' | 'surface' | 'section' | 'elevated';
   height: 'fill' | 'auto';
@@ -410,8 +474,8 @@ function SampleSideNav({config}: {config: ShellConfig}) {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth={1.5}
-                  width="20"
-                  height="20">
+                  width="16"
+                  height="16">
                   <circle cx="12" cy="12" r="10" />
                   <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
                   <circle cx="12" cy="17" r=".5" fill="currentColor" />
@@ -428,8 +492,8 @@ function SampleSideNav({config}: {config: ShellConfig}) {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth={1.5}
-                  width="20"
-                  height="20">
+                  width="16"
+                  height="16">
                   <path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z" />
                   <circle cx="12" cy="12" r="3" />
                 </svg>
@@ -440,15 +504,20 @@ function SampleSideNav({config}: {config: ShellConfig}) {
         ) : undefined
       }>
       <XDSSideNavSection title="Navigation">
-        <XDSSideNavItem label="Dashboard" isSelected href="#" />
+        <XDSSideNavItem
+          label="Dashboard"
+          isSelected
+          href="#"
+          icon={DashboardIcon}
+        />
         <XDSSideNavItem
           label="Projects"
           href="#"
           endContent={<XDSBadge>3</XDSBadge>}
         />
-        <XDSSideNavItem label="Messages" href="#" />
+        <XDSSideNavItem label="Messages" href="#" icon={MessagesIcon} />
         {config.showNestedItems && (
-          <XDSSideNavItem label="Settings" href="#">
+          <XDSSideNavItem label="Settings" href="#" icon={SettingsIcon}>
             <XDSSideNavItem label="General" href="#" />
             <XDSSideNavItem label="Security" href="#" />
             <XDSSideNavItem label="Notifications" href="#" />
@@ -456,7 +525,7 @@ function SampleSideNav({config}: {config: ShellConfig}) {
         )}
       </XDSSideNavSection>
       <XDSSideNavSection title="Resources">
-        <XDSSideNavItem label="Documentation" href="#" />
+        <XDSSideNavItem label="Documentation" href="#" icon={DocsIcon} />
         <XDSSideNavItem label="API Reference" href="#" />
         <XDSSideNavItem label="Support" href="#" />
       </XDSSideNavSection>
@@ -619,9 +688,14 @@ export default function ShellLabPage() {
         title="Navigation"
         side={config.mobileNavSide}>
         <XDSSideNavSection title="Navigation">
-          <XDSSideNavItem label="Dashboard" isSelected href="#" />
-          <XDSSideNavItem label="Projects" href="#" />
-          <XDSSideNavItem label="Messages" href="#" />
+          <XDSSideNavItem
+            label="Dashboard"
+            isSelected
+            href="#"
+            icon={DashboardIcon}
+          />
+          <XDSSideNavItem label="Projects" href="#" icon={ProjectsIcon} />
+          <XDSSideNavItem label="Messages" href="#" icon={MessagesIcon} />
         </XDSSideNavSection>
       </XDSMobileNav>
     ) : config.mobileNavMode === 'none' ? (

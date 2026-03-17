@@ -16,52 +16,16 @@
 
 import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  colorVars,
-  spacingVars,
-  radiusVars,
-  transitionVars,
-} from '../theme/tokens.stylex';
+import {transitionVars} from '../theme/tokens.stylex';
 import {getIcon} from '../Icon/globalIconRegistry';
+import {XDSButton} from '../Button';
 import {useSideNavCollapse} from './SideNavCollapseContext';
-import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Styles
 // =============================================================================
 
 const styles = stylex.create({
-  button: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacingVars['--spacing-2'],
-    minWidth: spacingVars['--spacing-7'],
-    minHeight: spacingVars['--spacing-7'],
-    padding: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-element'],
-    border: 'none',
-    backgroundColor: 'transparent',
-    color: colorVars['--color-icon-secondary'],
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    fontSize: 'inherit',
-    transitionProperty: 'background-color, color',
-    transitionDuration: transitionVars['--transition-fast'],
-    ':hover': {
-      '@media (hover: hover)': {
-        backgroundColor: colorVars['--color-hover-overlay'],
-      },
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
-  },
   chevron: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -141,31 +105,23 @@ export function XDSSideNavCollapseButton({
     return null;
   }
 
-  const defaultContent = (
-    <span
-      {...stylex.props(styles.chevron, isCollapsed && styles.chevronCollapsed)}>
-      {getIcon('chevronLeft')}
-    </span>
-  );
-
   return (
-    <button
-      type="button"
+    <XDSButton
+      label={label ?? (isCollapsed ? 'Expand sidebar' : 'Collapse sidebar')}
+      variant="ghost"
       onClick={handleClick}
-      aria-label={
-        label ?? (isCollapsed ? 'Expand sidebar' : 'Collapse sidebar')
+      icon={
+        children ?? (
+          <span
+            {...stylex.props(
+              styles.chevron,
+              isCollapsed && styles.chevronCollapsed,
+            )}>
+            {getIcon('chevronLeft')}
+          </span>
+        )
       }
-      {...mergeProps(
-        xdsClassName('side-nav-collapse-button'),
-        stylex.props(styles.button),
-      )}>
-      {children ?? (
-        <>
-          {defaultContent}
-          {label && <span>{label}</span>}
-        </>
-      )}
-    </button>
+    />
   );
 }
 

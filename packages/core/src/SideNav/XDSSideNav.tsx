@@ -267,7 +267,7 @@ export function XDSSideNav({
       {hasStickyTop && (
         <div {...stylex.props(styles.stickyTop)}>
           {header}
-          {!collapsed && topContent && (
+          {topContent && (
             <div {...stylex.props(styles.topContent)}>{topContent}</div>
           )}
         </div>
@@ -288,7 +288,7 @@ export function XDSSideNav({
             styles.stickyBottom,
             collapsed && styles.stickyBottomCollapsed,
           )}>
-          {!collapsed && footer}
+          {footer}
           <div
             {...stylex.props(
               styles.footerRow,
