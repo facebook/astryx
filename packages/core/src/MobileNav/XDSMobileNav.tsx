@@ -149,8 +149,8 @@ const styles = stylex.create({
 
 const dynamicStyles = stylex.create({
   width: (w: number) => ({
-    width: `${w}px`,
-    maxWidth: '85vw',
+    width: '100vw',
+    maxWidth: `${w}px`,
   }),
 });
 
