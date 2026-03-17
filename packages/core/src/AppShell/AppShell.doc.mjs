@@ -593,6 +593,8 @@ export const docsDense = {
     sideNavWidth: 'sideNav panel width in px',
     variant:
       'nav bg style: wash=wash bg, surface=surface bg, section=dividers, elevated=wash nav w/ elevated surface content+radius',
+    contentPadding:
+      'main content area padding. 4 (16px) for forms/settings/text, 0 for dashboards/maps/tables. Override per-section via XDSSection.',
     xstyle: 'StyleX layout customization via stylex.create()',
   },
 };

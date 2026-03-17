@@ -322,5 +322,6 @@ export const docsDense = {
     tooltip: 'tooltip on hover',
     onClick: 'standard click handler',
     onClickAction: 'async click handler; shows loading while promise pending',
+    isDisabled: 'disables the button',
   },
 };

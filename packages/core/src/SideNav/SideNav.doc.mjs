@@ -3,13 +3,14 @@
 export const docs = {
   name: 'SideNav',
   description:
-    'Sidebar navigation component for application pages. Supports sections, nested items, selected state, icons, and responsive collapse.',
+    'Sidebar navigation component for application pages. Supports sections, nested items, selected state, icons, and collapsible sidebar.',
   features: [
     'Five-zone layout: header, topContent, children (scrollable), footer, footerIcons',
     'Smart header interaction boundary logic — links and menu trigger coexist without overlap',
     'Nested items via children on XDSSideNavItem',
     'Selected state with optional alternate icon for filled/outline variants',
     'Section grouping with optional title, subtitle, and end content',
+    'Collapsible sidebar via collapsible prop — collapses to icon-only toolbar, uncontrolled or controlled',
     'Accessible — nav landmark, aria-current="page", role="group" with aria-labelledby on sections',
     'Keyboard navigable — Tab through items, Enter/Space to activate',
   ],
@@ -33,6 +34,8 @@ export const docs = {
     'Without a TopNav, include XDSSideNavHeading to provide app identity.',
     'Header interaction model: headingHref only → whole header is one link; headingHref + superheadingHref, no menu → each text is an independent link; menu only, no hrefs → whole header is the popover trigger; menu + hrefs → links are independent <a> elements, chevron/remaining area is the popover trigger.',
     'Depends on useXDSPopover for the header menu popover and XDSIcon for rendering icon components in nav items.',
+    'XDSSideNavCollapseButton renders as an icon-only ghost button by default. Place it in footerIcons, header, or outside the sidenav (pass sideNavRef).',
+    'useXDSSideNavCollapse hook exposes { isCollapsed, toggle, isCollapsible } for custom collapse controls.',
   ],
   examples: [
     {
@@ -49,6 +52,23 @@ export const docs = {
           isSelected
           href="/dashboard"
         />
+        <XDSSideNavItem label="Projects" icon={FolderIcon} href="/projects" />
+      </XDSSideNavSection>
+    </XDSSideNav>
+  }>
+  <Content />
+</XDSAppShell>`,
+    },
+    {
+      label: 'Collapsible sidebar',
+      code: `<XDSAppShell
+  sideNav={
+    <XDSSideNav
+      collapsible
+      header={<XDSSideNavHeading heading="My App" headingHref="/" />}
+      footerIcons={<XDSSideNavCollapseButton />}>
+      <XDSSideNavSection title="Main" isHeaderHidden>
+        <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
         <XDSSideNavItem label="Projects" icon={FolderIcon} href="/projects" />
       </XDSSideNavSection>
     </XDSSideNav>
@@ -97,7 +117,7 @@ export const docs = {
     {
       name: 'XDSSideNav',
       description:
-        'Container with five zones: header, topContent, children (scrollable), footer, and footerIcons.',
+        'Container with five zones: header, topContent, children (scrollable), footer, and footerIcons. Supports collapsible mode.',
       props: [
         {
           name: 'header',
@@ -123,6 +143,13 @@ export const docs = {
           name: 'footerIcons',
           type: 'ReactNode',
           description: 'Footer icon bar.',
+        },
+        {
+          name: 'collapsible',
+          type: "boolean | { defaultIsCollapsed?: boolean; isCollapsed?: boolean; onCollapsedChange?: (isCollapsed: boolean) => void; hasButton?: boolean; buttonLabel?: string }",
+          description:
+            'Enables collapse behavior. true for uncontrolled with default toggle button, or an object for controlled mode and advanced config (defaultIsCollapsed, isCollapsed + onCollapsedChange, hasButton, buttonLabel).',
+          default: 'false',
         },
         {
           name: 'xstyle',
@@ -361,6 +388,49 @@ export const docs = {
         },
       ],
     },
+    {
+      name: 'XDSSideNavCollapseButton',
+      description:
+        'Toggle button for sidenav collapse. Place inside XDSSideNav (reads context automatically) or outside (pass sideNavRef). Renders as an icon-only ghost button by default.',
+      props: [
+        {
+          name: 'sideNavRef',
+          type: 'RefObject<HTMLElement | null>',
+          description:
+            'Ref to the XDSSideNav element. Only needed when the button is rendered outside the sidenav.',
+        },
+        {
+          name: 'label',
+          type: 'string',
+          description:
+            'Custom button label. When provided, renders as a text button with chevron. When omitted, renders icon-only.',
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description:
+            'Custom button content. Overrides the default chevron icon and label.',
+        },
+      ],
+      examples: [
+        {
+          label: 'In footer icons (default)',
+          code: `<XDSSideNav collapsible footerIcons={<XDSSideNavCollapseButton />}>
+  <XDSSideNavSection title="Main" isHeaderHidden>
+    <XDSSideNavItem label="Dashboard" icon={HomeIcon} href="/dashboard" />
+  </XDSSideNavSection>
+</XDSSideNav>`,
+        },
+        {
+          label: 'With custom label',
+          code: `<XDSSideNav collapsible footerIcons={<XDSSideNavCollapseButton label="Toggle sidebar" />}>
+  <XDSSideNavSection title="Main" isHeaderHidden>
+    <XDSSideNavItem label="Dashboard" icon={HomeIcon} href="/dashboard" />
+  </XDSSideNavSection>
+</XDSSideNav>`,
+        },
+      ],
+    },
   ],
 };
 
@@ -368,13 +438,14 @@ export const docs = {
 export const docsZh = {
   name: 'SideNav',
   description:
-    '应用页面的侧边栏导航组件。支持分组、嵌套项、选中状态、图标和响应式折叠。',
+    '应用页面的侧边栏导航组件。支持分组、嵌套项、选中状态、图标和可折叠侧边栏。',
   features: [
     '五区域布局：header、topContent、children（可滚动）、footer、footerIcons',
     '智能头部交互边界逻辑——链接和菜单触发器共存而不重叠',
     '通过 XDSSideNavItem 的 children 实现嵌套项',
     '选中状态支持可选的替代图标，用于填充/轮廓变体',
     '分组支持可选的标题、副标题和尾部内容',
+    '通过 collapsible 属性支持可折叠侧边栏——折叠为仅图标工具栏，支持非受控和受控模式',
     '无障碍 - nav 地标、aria-current="page"、分组使用 role="group" 配合 aria-labelledby',
     '键盘可导航 - Tab 切换项目，Enter/Space 激活',
   ],
@@ -398,8 +469,27 @@ export const docsZh = {
     '没有 TopNav 时，包含 XDSSideNavHeading 以提供应用标识。',
     '头部交互模型：仅 headingHref → 整个头部是一个链接；headingHref + superheadingHref，无菜单 → 每段文本是独立链接；仅菜单，无 href → 整个头部是弹出框触发器；菜单 + href → 链接是独立的 <a> 元素，箭头/剩余区域是弹出框触发器。',
     '依赖 useXDSPopover 实现头部菜单弹出框，依赖 XDSIcon 在导航项中渲染图标组件。',
+    'XDSSideNavCollapseButton 默认渲染为仅图标的 ghost 按钮。可放置在 footerIcons、header 中，或侧边栏外部（传入 sideNavRef）。',
+    'useXDSSideNavCollapse hook 暴露 { isCollapsed, toggle, isCollapsible }，用于自定义折叠控件。',
   ],
   examples: [
+    {
+      label: '可折叠侧边栏',
+      code: `<XDSAppShell
+  sideNav={
+    <XDSSideNav
+      collapsible
+      header={<XDSSideNavHeading heading="My App" headingHref="/" />}
+      footerIcons={<XDSSideNavCollapseButton />}>
+      <XDSSideNavSection title="Main" isHeaderHidden>
+        <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="/dashboard" />
+        <XDSSideNavItem label="Projects" icon={FolderIcon} href="/projects" />
+      </XDSSideNavSection>
+    </XDSSideNav>
+  }>
+  <Content />
+</XDSAppShell>`,
+    },
     {
       label: '配合 XDSAppShell + TopNav（无头部）',
       code: `// TopNav provides identity → SideNav has no header
@@ -488,6 +578,13 @@ export const docsZh = {
           name: 'footerIcons',
           type: 'ReactNode',
           description: '底部图标栏。',
+        },
+        {
+          name: 'collapsible',
+          type: "boolean | { defaultIsCollapsed?: boolean; isCollapsed?: boolean; onCollapsedChange?: (isCollapsed: boolean) => void; hasButton?: boolean; buttonLabel?: string }",
+          description:
+            '启用折叠行为。true 表示非受控模式并带默认切换按钮，或传入对象进行受控模式和高级配置（defaultIsCollapsed、isCollapsed + onCollapsedChange、hasButton、buttonLabel）。',
+          default: 'false',
         },
         {
           name: 'xstyle',
@@ -726,19 +823,55 @@ export const docsZh = {
         },
       ],
     },
+    {
+      name: 'XDSSideNavCollapseButton',
+      description:
+        '侧边栏折叠切换按钮。放置在 XDSSideNav 内部（自动读取上下文）或外部（传入 sideNavRef）。默认渲染为仅图标的 ghost 按钮。',
+      props: [
+        {
+          name: 'sideNavRef',
+          type: 'RefObject<HTMLElement | null>',
+          description:
+            'XDSSideNav 元素的引用。仅在按钮渲染在侧边栏外部时需要。',
+        },
+        {
+          name: 'label',
+          type: 'string',
+          description:
+            '自定义按钮标签。提供时渲染为带箭头的文本按钮。省略时渲染为仅图标按钮。',
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description:
+            '自定义按钮内容。覆盖默认的箭头图标和标签。',
+        },
+      ],
+      examples: [
+        {
+          label: '在底部图标栏中（默认）',
+          code: `<XDSSideNav collapsible footerIcons={<XDSSideNavCollapseButton />}>
+  <XDSSideNavSection title="Main" isHeaderHidden>
+    <XDSSideNavItem label="Dashboard" icon={HomeIcon} href="/dashboard" />
+  </XDSSideNavSection>
+</XDSSideNav>`,
+        },
+      ],
+    },
   ],
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
-    'Sidebar navigation component for app pages. Supports sections, nested items, selected state, icons, responsive collapse.',
+    'Sidebar nav for app pages. Sections, nested items, selected state, icons, collapsible sidebar.',
   features: [
     'Five-zone layout: header, topContent, children (scrollable), footer, footerIcons',
     'Smart header interaction boundary logic; links + menu trigger coexist w/o overlap',
     'Nested items via children on XDSSideNavItem',
     'Selected state w/ optional alternate icon for filled/outline variants',
     'Section grouping w/ optional title, subtitle, end content',
+    'Collapsible sidebar via collapsible prop; collapses to icon-only toolbar, uncontrolled or controlled',
     'Accessible; nav landmark, aria-current="page", role="group" w/ aria-labelledby on sections',
     'Keyboard navigable; Tab through items, Enter/Space to activate',
   ],
@@ -754,18 +887,21 @@ export const docsDense = {
     'W/o TopNav, include XDSSideNavHeading to provide app identity.',
     'Header interaction model: headingHref only = whole header is one link; headingHref+superheadingHref no menu = each text independent link; menu only no hrefs = whole header is popover trigger; menu+hrefs = links are independent <a> elements, chevron/remaining is popover trigger.',
     'Depends on useXDSPopover for header menu popover + XDSIcon for rendering icon components in nav items.',
+    'XDSSideNavCollapseButton renders as icon-only ghost button by default. Place in footerIcons, header, or outside sidenav (pass sideNavRef).',
+    'useXDSSideNavCollapse hook exposes { isCollapsed, toggle, isCollapsible } for custom collapse controls.',
   ],
   components: [
     {
       name: 'XDSSideNav',
       description:
-        'Container w/ five zones: header, topContent, children (scrollable), footer, footerIcons.',
+        'Container w/ five zones: header, topContent, children (scrollable), footer, footerIcons. Supports collapsible mode.',
       propDescriptions: {
         header: 'Header area (typically XDSSideNavHeading). Sticky.',
         topContent: 'Content below header, e.g. create button.',
         children: 'Navigation sections + items. Scrollable.',
         footer: 'Footer area above icon bar.',
         footerIcons: 'Footer icon bar.',
+        collapsible: 'Enables collapse behavior. true for uncontrolled w/ default toggle, or object for controlled mode (defaultIsCollapsed, isCollapsed+onCollapsedChange, hasButton, buttonLabel).',
         xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
       },
     },
@@ -811,6 +947,16 @@ export const docsDense = {
         children: 'Section items.',
         endContent: 'Right-side content in section header.',
         isHeaderHidden: 'Visually hides section header while keeping accessible to screen readers.',
+      },
+    },
+    {
+      name: 'XDSSideNavCollapseButton',
+      description:
+        'Toggle button for sidenav collapse. Place inside XDSSideNav (reads context) or outside (pass sideNavRef). Icon-only ghost button by default.',
+      propDescriptions: {
+        sideNavRef: 'Ref to XDSSideNav element. Only needed when button rendered outside sidenav.',
+        label: 'Custom label. Text button w/ chevron when provided, icon-only when omitted.',
+        children: 'Custom content. Overrides default chevron icon + label.',
       },
     },
   ],
