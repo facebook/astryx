@@ -762,7 +762,7 @@ export default function ShellLabPage() {
       : config.mobileNavMode === 'customContent'
         ? {
             content: (
-              <XDSMobileNav title="Custom Nav" side={config.mobileNavSide}>
+              <XDSMobileNav header="Custom Nav" side={config.mobileNavSide}>
                 <XDSVStack gap={2} xstyle={styles.customSearchBar}>
                   <input
                     type="search"

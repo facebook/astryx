@@ -183,14 +183,9 @@ export interface XDSMobileNavProps extends Omit<XDSBaseProps, 'title'> {
   children: ReactNode;
 
   /**
-   * Optional title shown at the top of the drawer.
-   * For simple text headers. Use `header` for custom content.
-   */
-  title?: string;
-
-  /**
-   * Custom header content rendered in the header area next to the close button.
-   * Replaces `title` when provided. Use for logos, SideNavHeading, search bars, etc.
+   * Header content for the drawer. Rendered next to the close button.
+   * Pass a string for a simple text heading, or a ReactNode for
+   * custom content (logo, SideNavHeading, search bar, etc.).
    */
   header?: ReactNode;
 
@@ -207,7 +202,7 @@ export interface XDSMobileNavProps extends Omit<XDSBaseProps, 'title'> {
   side?: 'start' | 'end';
 
   /**
-   * Accessible label for the drawer. Falls back to title, then 'Navigation'.
+   * Accessible label for the drawer. Falls back to header string, then 'Navigation'.
    */
   label?: string;
 
@@ -239,13 +234,13 @@ export interface XDSMobileNavProps extends Omit<XDSBaseProps, 'title'> {
  * ```
  * // Inside AppShell — state managed by AppShell
  * <XDSAppShell mobileNav={
- *   <XDSMobileNav title="Navigation">
+ *   <XDSMobileNav header="Navigation">
  *     <XDSSideNavItem label="Home" href="/" />
  *   </XDSMobileNav>
  * }>
  *
  * // Standalone — manage state yourself
- * <XDSMobileNav isOpen={isOpen} onOpenChange={setIsOpen} title="Navigation">
+ * <XDSMobileNav isOpen={isOpen} onOpenChange={setIsOpen} header="Navigation">
  *   <XDSSideNavItem label="Home" href="/" />
  * </XDSMobileNav>
  * ```
@@ -254,7 +249,6 @@ export function XDSMobileNav({
   isOpen: isOpenProp,
   onOpenChange: onOpenChangeProp,
   children,
-  title,
   header,
   width = 320,
   side = 'end',
@@ -354,7 +348,7 @@ export function XDSMobileNav({
     <dialog
       ref={setRefs}
       data-testid={testId}
-      aria-label={label ?? title ?? 'Navigation'}
+      aria-label={label ?? (typeof header === 'string' ? header : 'Navigation')}
       onClick={handleDialogClick}
       onCancel={handleCancel}
       {...mergeProps(
@@ -376,14 +370,13 @@ export function XDSMobileNav({
           !isStart && styles.drawerEnd,
           !isStart && isOpen && styles.drawerEndOpen,
         )}>
-        {/* Header — custom content or title + close button */}
-        <div
-          {...stylex.props(
-            styles.header,
-            !title && !header && styles.headerNoTitle,
-          )}>
-          {header ??
-            (title ? <XDSHeading level={2}>{title}</XDSHeading> : null)}
+        {/* Header — content + close button */}
+        <div {...stylex.props(styles.header, !header && styles.headerNoTitle)}>
+          {typeof header === 'string' ? (
+            <XDSHeading level={2}>{header}</XDSHeading>
+          ) : (
+            (header ?? null)
+          )}
           <XDSButton
             variant="ghost"
             label="Close navigation"

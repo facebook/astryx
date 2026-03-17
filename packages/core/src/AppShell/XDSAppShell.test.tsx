@@ -487,7 +487,7 @@ describe('XDSAppShell', () => {
       <XDSAppShell
         sideNav={<TestSideNav />}
         mobileNav={
-          <XDSMobileNav isOpen={true} onOpenChange={onClose} title="Nav">
+          <XDSMobileNav isOpen={true} onOpenChange={onClose} header="Nav">
             <div>Mobile Nav</div>
           </XDSMobileNav>
         }>

@@ -119,9 +119,9 @@ describe('XDSMobileNav', () => {
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
 
-  it('renders title when provided', () => {
+  it('renders header string when provided', () => {
     render(
-      <XDSMobileNav isOpen={true} onOpenChange={() => {}} title="Navigation">
+      <XDSMobileNav isOpen={true} onOpenChange={() => {}} header="Navigation">
         <span>Content</span>
       </XDSMobileNav>,
     );
@@ -156,9 +156,9 @@ describe('XDSMobileNav', () => {
     expect(dialog.tagName).toBe('DIALOG');
   });
 
-  it('sets aria-label from title', () => {
+  it('sets aria-label from header string', () => {
     render(
-      <XDSMobileNav isOpen={true} onOpenChange={() => {}} title="My Nav">
+      <XDSMobileNav isOpen={true} onOpenChange={() => {}} header="My Nav">
         <span>Content</span>
       </XDSMobileNav>,
     );
@@ -166,7 +166,7 @@ describe('XDSMobileNav', () => {
     expect(screen.getByRole('dialog')).toHaveAttribute('aria-label', 'My Nav');
   });
 
-  it('defaults aria-label to Navigation when no title', () => {
+  it('defaults aria-label to Navigation when no header', () => {
     render(
       <XDSMobileNav isOpen={true} onOpenChange={() => {}}>
         <span>Content</span>
