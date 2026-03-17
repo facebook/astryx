@@ -1,6 +1,6 @@
 /**
  * @file XDSSideNavCollapseButton.tsx
- * @input Uses React, StyleX, SideNavCollapseContext, getIcon
+ * @input Uses React, StyleX, XDSSideNavCollapseContext, getIcon
  * @output Exports XDSSideNavCollapseButton component
  * @position Composable toggle button for sidenav collapse
  *
@@ -19,7 +19,7 @@ import * as stylex from '@stylexjs/stylex';
 import {transitionVars} from '../theme/tokens.stylex';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {XDSButton} from '../Button';
-import {useSideNavCollapse} from './SideNavCollapseContext';
+import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
 
 // =============================================================================
 // Styles
@@ -91,7 +91,7 @@ export function XDSSideNavCollapseButton({
   label,
   children,
 }: XDSSideNavCollapseButtonProps) {
-  const {isCollapsed, toggle, isCollapsible} = useSideNavCollapse();
+  const {isCollapsed, toggle, isCollapsible} = useXDSSideNavCollapse();
 
   const handleClick = useCallback(() => {
     toggle();

@@ -22,4 +22,4 @@ export type {XDSSideNavSectionProps} from './XDSSideNavSection';
 export {XDSSideNavCollapseButton} from './XDSSideNavCollapseButton';
 export type {XDSSideNavCollapseButtonProps} from './XDSSideNavCollapseButton';
 
-export {useSideNavCollapse} from './SideNavCollapseContext';
+export {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';

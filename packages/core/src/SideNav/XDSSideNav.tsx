@@ -22,7 +22,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
-import {SideNavCollapseContext} from './SideNavCollapseContext';
+import {XDSSideNavCollapseContext} from './XDSSideNavCollapseContext';
 import {XDSSideNavCollapseButton} from './XDSSideNavCollapseButton';
 
 // =============================================================================
@@ -304,9 +304,9 @@ export function XDSSideNav({
 
   if (isCollapsible) {
     return (
-      <SideNavCollapseContext value={collapseContext}>
+      <XDSSideNavCollapseContext value={collapseContext}>
         {content}
-      </SideNavCollapseContext>
+      </XDSSideNavCollapseContext>
     );
   }
 

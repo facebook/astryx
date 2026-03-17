@@ -31,7 +31,7 @@ import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSTooltip} from '../Tooltip';
-import {useSideNavCollapse} from './SideNavCollapseContext';
+import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
 
 // =============================================================================
 // Styles
@@ -199,7 +199,7 @@ export function XDSSideNavItem({
   'data-testid': testId,
   ref,
 }: XDSSideNavItemProps) {
-  const {isCollapsed} = useSideNavCollapse();
+  const {isCollapsed} = useXDSSideNavCollapse();
   const id = useId();
   const hasChildren = !!children;
   const LinkComponent = useXDSLinkComponent(as);

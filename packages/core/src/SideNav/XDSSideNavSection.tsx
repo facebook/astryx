@@ -25,7 +25,7 @@ import {
   lineHeightVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
-import {useSideNavCollapse} from './SideNavCollapseContext';
+import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
 // =============================================================================
 // Styles
 // =============================================================================
@@ -141,7 +141,7 @@ export function XDSSideNavSection({
   isHeaderHidden = false,
   'data-testid': testId,
 }: XDSSideNavSectionProps) {
-  const {isCollapsed} = useSideNavCollapse();
+  const {isCollapsed} = useXDSSideNavCollapse();
   const id = useId();
   const titleId = `${id}-title`;
 

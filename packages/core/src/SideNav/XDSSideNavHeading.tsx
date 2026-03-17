@@ -33,7 +33,7 @@ import {
 import {useXDSPopover} from '../Popover/useXDSPopover';
 import {XDSLink} from '../Link';
 import {getIcon} from '../Icon/globalIconRegistry';
-import {useSideNavCollapse} from './SideNavCollapseContext';
+import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
 import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
@@ -261,7 +261,7 @@ export function XDSSideNavHeading({
   ref,
   ...props
 }: XDSSideNavHeadingProps) {
-  const {isCollapsed} = useSideNavCollapse();
+  const {isCollapsed} = useXDSSideNavCollapse();
   const rootRef = useRef<HTMLDivElement>(null);
 
   const popover = useXDSPopover({

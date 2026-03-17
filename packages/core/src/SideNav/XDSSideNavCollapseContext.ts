@@ -1,7 +1,7 @@
 /**
- * @file SideNavCollapseContext.ts
+ * @file XDSSideNavCollapseContext.ts
  * @input React createContext, useContext
- * @output Exports SideNavCollapseContext and useSideNavCollapse hook
+ * @output Exports XDSSideNavCollapseContext and useXDSSideNavCollapse hook
  * @position Internal context for sidenav collapse state
  *
  * Provides collapse state to XDSSideNavCollapseButton and other
@@ -19,7 +19,7 @@ export interface SideNavCollapseState {
   isCollapsible: boolean;
 }
 
-export const SideNavCollapseContext = createContext<SideNavCollapseState>({
+export const XDSSideNavCollapseContext = createContext<SideNavCollapseState>({
   isCollapsed: false,
   toggle: () => {},
   isCollapsible: false,
@@ -30,6 +30,6 @@ export const SideNavCollapseContext = createContext<SideNavCollapseState>({
  * Returns { isCollapsed, toggle, isCollapsible }.
  * When used outside a sidenav with isCollapsible, isCollapsible is false.
  */
-export function useSideNavCollapse(): SideNavCollapseState {
-  return useContext(SideNavCollapseContext);
+export function useXDSSideNavCollapse(): SideNavCollapseState {
+  return useContext(XDSSideNavCollapseContext);
 }

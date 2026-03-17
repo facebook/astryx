@@ -113,6 +113,7 @@ interface ShellConfig {
   showSubheading: boolean;
   showNestedItems: boolean;
   isCollapsible: boolean;
+  collapseToggleLocation: 'sidenav' | 'topnav';
   mobileNavMode: 'auto' | 'custom' | 'none';
   mobileNavSide: 'start' | 'end';
   topNavAlignment: 'start' | 'center' | 'end';
@@ -136,6 +137,7 @@ const DEFAULT_CONFIG: ShellConfig = {
   showSubheading: false,
   showNestedItems: true,
   isCollapsible: true,
+  collapseToggleLocation: 'sidenav',
   mobileNavMode: 'auto',
   mobileNavSide: 'start',
   topNavAlignment: 'start',
@@ -254,6 +256,19 @@ function ConfigPanel({
             value={config.isCollapsible}
             onChange={v => onChange({isCollapsible: v})}
           />
+          {config.isCollapsible && (
+            <SelectorRow
+              label="Toggle Location"
+              value={config.collapseToggleLocation}
+              onChange={v =>
+                onChange({collapseToggleLocation: v as 'sidenav' | 'topnav'})
+              }
+              options={[
+                {value: 'sidenav', label: 'SideNav'},
+                {value: 'topnav', label: 'TopNav'},
+              ]}
+            />
+          )}
           <SelectorRow
             label="Breakpoint"
             value={config.sideNavBreakpoint}
@@ -513,6 +528,7 @@ function SampleSideNav({config}: {config: ShellConfig}) {
         <XDSSideNavItem
           label="Projects"
           href="#"
+          icon={ProjectsIcon}
           endContent={<XDSBadge>3</XDSBadge>}
         />
         <XDSSideNavItem label="Messages" href="#" icon={MessagesIcon} />
