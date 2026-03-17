@@ -72,24 +72,6 @@ export default function RadiusPage() {
         {/* Controls */}
         <div {...stylex.props(styles.controls)}>
           <XDSVStack gap={5}>
-            {/* Presets */}
-            <div {...stylex.props(styles.controlGroup)}>
-              <span {...stylex.props(styles.label)}>Presets</span>
-              <XDSHStack gap={2}>
-                {PRESETS.map(p => (
-                  <XDSButton
-                    key={p.name}
-                    label={p.name}
-                    size="sm"
-                    variant={
-                      multiplier === p.value ? 'primary' : 'secondary'
-                    }
-                    onClick={() => handlePreset(p.value)}
-                  />
-                ))}
-              </XDSHStack>
-            </div>
-
             {/* Slider */}
             <div {...stylex.props(styles.controlGroup)}>
               <span {...stylex.props(styles.label)}>Radius Multiplier</span>
@@ -110,6 +92,21 @@ export default function RadiusPage() {
                 </span>
               </div>
             </div>
+
+            {/* Presets */}
+            <XDSHStack gap={2}>
+              {PRESETS.map(p => (
+                <XDSButton
+                  key={p.name}
+                  label={p.name}
+                  size="sm"
+                  variant={
+                    multiplier === p.value ? 'primary' : 'secondary'
+                  }
+                  onClick={() => handlePreset(p.value)}
+                />
+              ))}
+            </XDSHStack>
           </XDSVStack>
         </div>
       </XDSVStack>
