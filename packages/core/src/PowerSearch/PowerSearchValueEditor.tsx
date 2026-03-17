@@ -93,7 +93,6 @@ function StringEditor({
       onChange={(value: string) => {
         onChange({type: 'string', value});
       }}
-      hasAutoFocus
     />
   );
 }
@@ -136,7 +135,6 @@ function StringListEditor({
         });
       }}
       placeholder="Add values..."
-      hasAutoFocus
       debounceMs={operatorValue.searchSource ? 150 : 0}
     />
   );
@@ -167,7 +165,6 @@ function IntegerEditor({
       units={operatorValue.units}
       isIntegerOnly
       placeholder="Enter number..."
-      hasAutoFocus
     />
   );
 }
@@ -196,7 +193,6 @@ function FloatEditor({
       max={operatorValue.maxValue}
       units={operatorValue.units}
       placeholder="Enter number..."
-      hasAutoFocus
     />
   );
 }
@@ -524,7 +520,6 @@ function EntityListEditor({
         });
       }}
       placeholder="Search..."
-      hasAutoFocus
       debounceMs={operatorValue.searchSource ? 150 : 0}
     />
   );

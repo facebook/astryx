@@ -13,7 +13,6 @@
 
 import React, {
   useCallback,
-  useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -469,7 +468,7 @@ export function XDSPowerSearch({
   const searchSource = usePowerSearchSource(config);
   const tokenizerRef = useRef<XDSTokenizerHandle>(null);
 
-  const [popoverState, setPopoverState] = useState<PopoverState>({
+  const [popoverState, setPopoverStateRaw] = useState<PopoverState>({
     type: 'idle',
   });
 
@@ -478,19 +477,28 @@ export function XDSPowerSearch({
     mode: 'context',
     lightDismiss: true,
     onHide() {
-      setPopoverState({type: 'idle'});
+      setPopoverStateRaw({type: 'idle'});
     },
   });
 
-  // Sync popover state with layer visibility
-  const isPopoverActive = popoverState.type !== 'idle';
-  useEffect(() => {
-    if (isPopoverActive) {
-      layer.show();
-    } else {
-      layer.hide();
-    }
-  }, [isPopoverActive, layer]);
+  // Wrapper that manages layer visibility and tokenizer focus alongside state
+  const setPopoverState = useCallback(
+    (state: PopoverState) => {
+      setPopoverStateRaw(state);
+      if (state.type !== 'idle') {
+        // Schedule after the current frame so React can render the popover
+        // content and the typeahead's synchronous focus() has completed
+        requestAnimationFrame(() => {
+          layer.show();
+          tokenizerRef.current?.blur();
+        });
+      } else {
+        layer.hide();
+        tokenizerRef.current?.focus();
+      }
+    },
+    [layer],
+  );
 
   // Expose imperative handle
   useImperativeHandle(ref, () => ({
@@ -628,13 +636,13 @@ export function XDSPowerSearch({
       }
       setPopoverState({type: 'idle'});
     },
-    [popoverState, filters, onChange],
+    [popoverState, filters, onChange, setPopoverState],
   );
 
   // Handle popover cancel
   const handlePopoverCancel = useCallback(() => {
     setPopoverState({type: 'idle'});
-  }, []);
+  }, [setPopoverState]);
 
   // Custom token renderer
   const renderToken = useCallback(

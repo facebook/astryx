@@ -10,7 +10,7 @@
 
 'use client';
 
-import React, {useState, useCallback, useMemo} from 'react';
+import React, {useState, useCallback, useEffect, useMemo, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSButton} from '../Button';
 import {XDSSelector} from '../Selector';
@@ -589,10 +589,24 @@ export function PowerSearchEditPopover({
 }: PowerSearchEditPopoverProps) {
   const [partialFilter, setPartialFilter] =
     useState<PartialFilter>(initialFilter);
+  const valueEditorRef = useRef<HTMLDivElement>(null);
 
   // Reset state when filter changes (new popover opened)
   React.useEffect(() => {
     setPartialFilter(initialFilter);
+  }, [initialFilter]);
+
+  // Focus the first focusable element inside the value editor after mount
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const container = valueEditorRef.current;
+      if (!container) return;
+      const focusable = container.querySelector<HTMLElement>(
+        'input:not([disabled]), button:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      focusable?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
   }, [initialFilter]);
 
   const currentOperator = partialFilter.operator
@@ -678,6 +692,17 @@ export function PowerSearchEditPopover({
 
   const isSaveDisabled = !partialFilter.operator || !partialFilter.value;
 
+  // Handle Enter key anywhere in the popover to trigger save
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' && !isSaveDisabled) {
+        e.preventDefault();
+        handleSave();
+      }
+    },
+    [isSaveDisabled, handleSave],
+  );
+
   const operatorValue: OperatorValue | undefined = currentOperator?.value;
   const isEmptyType = operatorValue?.type === 'empty';
   const isNestedType = operatorValue?.type === 'nested';
@@ -758,7 +783,7 @@ export function PowerSearchEditPopover({
   }
 
   return (
-    <div {...stylex.props(styles.container)}>
+    <div {...stylex.props(styles.container)} onKeyDown={handleKeyDown}>
       <div {...stylex.props(styles.content)}>
         <XDSHStack gap={2}>
           <div {...stylex.props(styles.fieldSelector)}>
@@ -786,7 +811,7 @@ export function PowerSearchEditPopover({
             </div>
           )}
           {operatorValue && !isEmptyType && (
-            <div {...stylex.props(styles.valueEditor)}>
+            <div ref={valueEditorRef} {...stylex.props(styles.valueEditor)}>
               <PowerSearchValueEditor
                 operatorValue={operatorValue}
                 filterValue={partialFilter.value}
