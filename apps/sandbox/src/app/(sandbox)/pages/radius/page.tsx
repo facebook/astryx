@@ -401,6 +401,34 @@ const styles = stylex.create({
     cursor: 'pointer',
     transition: 'border-radius 0.2s',
   },
+  // Demo table for radius-none
+  demoTable: {
+    borderCollapse: 'collapse',
+    fontSize: 13,
+    border: '1px solid light-dark(#ddd, #444)',
+    borderRadius: 0,
+    overflow: 'hidden',
+  },
+  demoTh: {
+    textAlign: 'left',
+    padding: '8px 12px',
+    fontWeight: 600,
+    fontSize: 11,
+    color: 'light-dark(#666, #aaa)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    borderBottom: '1px solid light-dark(#ddd, #444)',
+    backgroundColor: 'light-dark(#f5f5f5, #2a2a2a)',
+  },
+  demoTd: {
+    padding: '8px 12px',
+    borderBottom: '1px solid light-dark(#eee, #333)',
+    color: 'light-dark(#333, #eee)',
+  },
+  demoTdLast: {
+    padding: '8px 12px',
+    color: 'light-dark(#333, #eee)',
+  },
 });
 
 // =============================================================================
@@ -520,36 +548,58 @@ export default function RadiusPage() {
         <XDSDivider />
 
         {/* radius-none */}
-        <XDSVStack gap={3}>
+        <XDSVStack gap={4}>
           <XDSHStack gap={3} vAlign="center">
-            <span {...stylex.props(styles.sectionTitle)}>radius-none</span>
-            <span {...stylex.props(styles.sectionToken)}>0dp</span>
-            <span {...stylex.props(styles.sectionNote)}>Always 0 &middot; ignores multiplier</span>
+            <span {...stylex.props(styles.label)}>radius-none</span>
+            <XDSText type="supporting" color="secondary">
+              0dp &middot; Always 0 &middot; ignores multiplier
+            </XDSText>
           </XDSHStack>
           <div {...stylex.props(styles.componentRow)}>
             <div {...stylex.props(styles.componentGroup)}>
               <div {...stylex.props(styles.componentLabel)}>Table cells</div>
-              <div {...stylex.props(styles.table)}>
-                <div {...stylex.props(styles.tableHeader)}><span>Name</span><span>Role</span><span>Status</span></div>
-                <div {...stylex.props(styles.tableRow)}><span>Alice</span><span>Design</span><span style={{color: '#0D8626'}}>Active</span></div>
-                <div {...stylex.props(styles.tableRowLast)}><span>Bob</span><span>Eng</span><span style={{color: '#0D8626'}}>Active</span></div>
-              </div>
+              <table {...stylex.props(styles.demoTable)}>
+                <thead>
+                  <tr>
+                    <th {...stylex.props(styles.demoTh)}>Name</th>
+                    <th {...stylex.props(styles.demoTh)}>Role</th>
+                    <th {...stylex.props(styles.demoTh)}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td {...stylex.props(styles.demoTd)}>Alice</td>
+                    <td {...stylex.props(styles.demoTd)}>Design</td>
+                    <td {...stylex.props(styles.demoTd)} style={{color: '#0D8626'}}>Active</td>
+                  </tr>
+                  <tr>
+                    <td {...stylex.props(styles.demoTd)}>Bob</td>
+                    <td {...stylex.props(styles.demoTd)}>Eng</td>
+                    <td {...stylex.props(styles.demoTd)} style={{color: '#0D8626'}}>Active</td>
+                  </tr>
+                  <tr>
+                    <td {...stylex.props(styles.demoTdLast)}>Charlie</td>
+                    <td {...stylex.props(styles.demoTdLast)}>PM</td>
+                    <td {...stylex.props(styles.demoTdLast)} style={{color: '#B8860B'}}>Away</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
             <div {...stylex.props(styles.componentGroup)}>
               <div {...stylex.props(styles.componentLabel)}>Side panel</div>
               <div {...stylex.props(styles.sidePanel)}>
-                <div {...stylex.props(styles.sideItem, styles.sideItemActive)} style={{borderRadius: el}}>Dashboard</div>
-                <div {...stylex.props(styles.sideItem)} style={{borderRadius: el}}>Analytics</div>
-                <div {...stylex.props(styles.sideItem)} style={{borderRadius: el}}>Settings</div>
+                <div {...stylex.props(styles.sideItem, styles.sideItemActive)}>Dashboard</div>
+                <div {...stylex.props(styles.sideItem)}>Analytics</div>
+                <div {...stylex.props(styles.sideItem)}>Settings</div>
               </div>
             </div>
             <div {...stylex.props(styles.componentGroup)}>
               <div {...stylex.props(styles.componentLabel)}>Shared edges (button group)</div>
-              <div style={{display: 'flex'}}>
-                <button {...stylex.props(styles.btn, styles.btnSm, styles.btnPrimary)} style={{borderRadius: `${el}px 0 0 ${el}px`}}>Day</button>
-                <button {...stylex.props(styles.btn, styles.btnSm, styles.btnSecondary)} style={{borderRadius: 0, marginLeft: -1}}>Week</button>
-                <button {...stylex.props(styles.btn, styles.btnSm, styles.btnSecondary)} style={{borderRadius: `0 ${el}px ${el}px 0`, marginLeft: -1}}>Month</button>
-              </div>
+              <XDSHStack gap={0}>
+                <XDSButton label="Day" variant="primary" size="sm" />
+                <XDSButton label="Week" variant="secondary" size="sm" />
+                <XDSButton label="Month" variant="secondary" size="sm" />
+              </XDSHStack>
             </div>
           </div>
         </XDSVStack>
