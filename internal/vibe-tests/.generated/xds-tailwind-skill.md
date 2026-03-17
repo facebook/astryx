@@ -30,7 +30,7 @@ import {XDSButton} from '@xds/core/Button';
 Run these commands to get detailed docs on any component:
 
 - `npx xds component <Name>` — full docs (props, usage, examples)
-- `npx xds component <Name> --compact` — condensed reference
+- `npx xds --detail compact component <Name>` — condensed reference
 - `npx xds component --list` — all components by category
 - `npx xds docs tokens` — token reference (spacing, color, radius)
 - `npx xds docs theme` — theme system reference

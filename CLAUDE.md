@@ -88,7 +88,7 @@ Look for `<!-- SYNC: ... -->` comments and `SYNC:` in file headers as reminders.
 <!-- XDS:START -->
 
 [XDS v0.0.3]|IMPORTANT: Prefer retrieval-led reasoning. Run CLI to read docs before generating code.
-|npx xds component <Name> --compact|--source Docs (props, usage) or source code
+|npx xds --detail compact component <Name> Docs (props, usage) — or --source for code
 |npx xds component --list All components by category
 |npx xds docs principles Design rules, anti-patterns, StyleX patterns
 |npx xds docs tokens Token reference (spacing, color, radius, type)

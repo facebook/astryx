@@ -1,8 +1,7 @@
 /**
  * @file component command — List components and print component docs
  *
- * Subcommands: list, search, metadata, props, examples, example, source
- * Global options: --detail brief|normal, --lang en|zh|dense
+ * Global options: --detail full|compact|brief, --lang en|zh|dense
  */
 
 import * as fs from 'node:fs';
@@ -26,7 +25,6 @@ import {
   cleanReadme,
   extractCompact,
   extractBrief,
-  extractBriefAll,
   ensureImportStatement,
   extractProps,
 } from '../../lib/component-legacy.mjs';
@@ -38,9 +36,6 @@ export function registerComponent(program) {
     .description('List components or print component docs')
     .option('--list', 'List all components grouped by category')
     .option('--category <category>', 'List components in a specific category')
-    .option('--compact', 'Token-optimized output for LLMs')
-    .option('--brief', 'Minimal LLM output: signature + props + one example (~200 chars)')
-    .option('--brief-all', 'Brief summaries of ALL components in one output')
     .option('--props', 'Print only the props table')
     .option('--source', 'Print component source code')
     .action(async (name, options) => {
@@ -48,6 +43,14 @@ export function registerComponent(program) {
       const zh = program.opts().zh || false;
       const dense = program.opts().dense || false;
       const lang = program.opts().lang || null;
+      const detail = program.opts().detail || 'full';
+
+      const validDetails = ['full', 'compact', 'brief'];
+      if (!validDetails.includes(detail)) {
+        console.error(`Error: Invalid --detail value "${detail}".`);
+        console.error(`Valid levels: ${validDetails.join(', ')}`);
+        process.exit(1);
+      }
 
       if (!coreDir) {
         console.error(
@@ -55,11 +58,6 @@ export function registerComponent(program) {
             'Make sure you are inside the XDS monorepo or have @xds/core installed.',
         );
         process.exit(1);
-      }
-
-      if (options.briefAll) {
-        console.log(await formatBriefAll(coreDir, {zh, lang}));
-        return;
       }
 
       if (options.category || options.list || !name) {
@@ -77,24 +75,49 @@ export function registerComponent(program) {
             );
             process.exit(1);
           }
-          console.log(`\n${match[0]}:`);
-          for (const comp of match[1]) {
-            console.log(`  ${comp}`);
+
+          if (detail === 'brief') {
+            // Brief list: name + one-line description for each component
+            for (const comp of match[1]) {
+              const readme = findComponentReadme(coreDir, comp);
+              if (readme && readme.endsWith('.doc.mjs')) {
+                try {
+                  const docs = await loadDocs(readme, {zh, lang});
+                  const importHint = resolveImportPath(coreDir, comp);
+                  console.log(formatBrief(docs, comp, importHint));
+                } catch {
+                  console.log(`  ${comp}`);
+                }
+              } else {
+                console.log(`  ${comp}`);
+              }
+            }
+          } else {
+            console.log(`\n${match[0]}:`);
+            for (const comp of match[1]) {
+              console.log(`  ${comp}`);
+            }
+            console.log('');
           }
-          console.log('');
           return;
         }
 
-        console.log('');
-        for (const [category, comps] of Object.entries(components)) {
-          console.log(`${category}:`);
-          for (const comp of comps) {
-            console.log(`  ${comp}`);
+        // --list or no name: show all components
+        if (detail === 'brief') {
+          // Brief list: brief summaries of ALL components
+          console.log(await formatBriefAll(coreDir, {zh, lang}));
+        } else {
+          console.log('');
+          for (const [category, comps] of Object.entries(components)) {
+            console.log(`${category}:`);
+            for (const comp of comps) {
+              console.log(`  ${comp}`);
+            }
+            console.log('');
           }
+          console.log('Usage: npx xds component <name>');
           console.log('');
         }
-        console.log('Usage: npx xds component <name>');
-        console.log('');
         return;
       }
 
@@ -147,9 +170,9 @@ export function registerComponent(program) {
         const importHint = resolveImportPath(coreDir, resolvedName);
         if (options.props) {
           console.log(formatProps(docs, resolvedName));
-        } else if (options.brief) {
+        } else if (detail === 'brief') {
           console.log(formatBrief(docs, resolvedName, importHint));
-        } else if (options.compact) {
+        } else if (detail === 'compact') {
           console.log(formatCompact(docs, resolvedName, importHint));
         } else {
           console.log(formatFull(docs));
@@ -159,9 +182,9 @@ export function registerComponent(program) {
         const content = fs.readFileSync(readmePath, 'utf-8');
         if (options.props) {
           console.log(extractProps(content, resolvedName));
-        } else if (options.brief) {
+        } else if (detail === 'brief') {
           console.log(extractBrief(content, resolvedName));
-        } else if (options.compact) {
+        } else if (detail === 'compact') {
           const compact = extractCompact(content, resolvedName);
           console.log(ensureImportStatement(compact, resolvedName, coreDir));
         } else {
@@ -177,5 +200,5 @@ export function registerComponent(program) {
 export {discoverComponents, findComponentReadme, findComponentSource, resolveImportPath} from '../../lib/component-discovery.mjs';
 export {loadDocs} from '../../lib/component-loader.mjs';
 export {formatFull, formatCompact, formatBrief, formatProps, formatBriefAll} from '../../lib/component-format.mjs';
-export {cleanReadme, extractCompact, extractBrief, extractBriefAll, ensureImportStatement, extractProps} from '../../lib/component-legacy.mjs';
+export {cleanReadme, extractCompact, extractBrief, ensureImportStatement, extractProps} from '../../lib/component-legacy.mjs';
 export {levenshteinDistance, findClosestComponents} from '../../lib/string-utils.mjs';

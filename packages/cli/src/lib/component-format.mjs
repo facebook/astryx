@@ -162,7 +162,7 @@ export function formatCompact(docs, componentName, importHint) {
  * Format a brief, LLM-optimized summary (replaces extractBrief).
  *
  * Format: component signature + key props + one usage example.
- * Targets ~200-400 chars per component (vs ~2-3KB for --compact).
+ * Targets ~200-400 chars per component (vs ~2-3KB for --detail compact).
  *
  * For multi-component docs, extracts the entry matching componentName.
  */
