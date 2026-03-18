@@ -94,7 +94,7 @@ export default function RadiusPage() {
         <XDSVStack gap={2}>
           <XDSHeading level={1}>Corner Radius</XDSHeading>
           <XDSText type="body" color="secondary">
-            Dynamic radius with semantic usage
+            Dynamic radius with numeric scale tokens
           </XDSText>
         </XDSVStack>
 
