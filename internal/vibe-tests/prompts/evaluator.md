@@ -74,17 +74,17 @@ XDS uses specific CSS variable naming. **Any variable not matching these pattern
 
 **Valid CSS variable prefixes:**
 
-| Category      | Prefix                                         | Examples                                                     |
-| ------------- | ---------------------------------------------- | ------------------------------------------------------------ |
-| Colors        | `--color-*`                                    | `--color-surface`, `--color-text-primary`, `--color-accent`  |
-| Spacing       | `--spacing-*`                                  | `--spacing-0` through `--spacing-7`                          |
+| Category      | Prefix                                         | Examples                                                                                 |
+| ------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Colors        | `--color-*`                                    | `--color-surface`, `--color-text-primary`, `--color-accent`                              |
+| Spacing       | `--spacing-*`                                  | `--spacing-0` through `--spacing-7`                                                      |
 | Radius        | `--radius-*`                                   | `--radius-0`, `--radius-1`, `--radius-2`, `--radius-3`, `--radius-4`, `--radius-rounded` |
-| Elevation     | `--elevation-*`                                | `--elevation-base`, `--elevation-dialog`, `--elevation-menu` |
-| Transitions   | `--transition-*`                               | `--transition-fast`, `--transition-normal`                   |
-| Font families | `--font-body`, `--font-code`, `--font-heading` | (only these three)                                           |
-| Text sizes    | `--text-*`                                     | `--text-base`, `--text-sm`, `--text-lg`, `--text-xl`         |
-| Line heights  | `--leading-*`                                  | `--leading-tight`, `--leading-normal`, `--leading-relaxed`   |
-| Font weights  | `--font-weight-*`                              | `--font-weight-normal`, `--font-weight-bold`                 |
+| Shadow        | `--shadow-*`, `--insetshadow-border-*`         | `--shadow-1`, `--shadow-4`, `--insetshadow-border-hover`                                 |
+| Transitions   | `--transition-*`                               | `--transition-fast`, `--transition-normal`                                               |
+| Font families | `--font-body`, `--font-code`, `--font-heading` | (only these three)                                                                       |
+| Text sizes    | `--text-*`                                     | `--text-base`, `--text-sm`, `--text-lg`, `--text-xl`                                     |
+| Line heights  | `--leading-*`                                  | `--leading-tight`, `--leading-normal`, `--leading-relaxed`                               |
+| Font weights  | `--font-weight-*`                              | `--font-weight-normal`, `--font-weight-bold`                                             |
 
 **Common hallucinations to flag:**
 
@@ -94,7 +94,7 @@ XDS uses specific CSS variable naming. **Any variable not matching these pattern
 - `--border-*` (doesn't exist - use `--color-divider` or component props)
 - `--font-family-*` (doesn't exist - use `--font-body`, `--font-code`, `--font-heading`)
 - `--font-size-*` (doesn't exist - use `--text-*`)
-- `--shadow-*` (doesn't exist - use `--elevation-*`)
+- `--elevation-*` (doesn't exist - use `--shadow-*` and `--insetshadow-border-*`)
 
 When you detect a hallucinated CSS variable, create an escape hatch entry:
 

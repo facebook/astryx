@@ -1,7 +1,7 @@
 /** @type {import('../../core/src/docs-types').ReferenceTranslationDoc} */
 
 export const docsDense = {
-  description: 'spacing/color/radius/type/elevation token ref',
+  description: 'spacing/color/radius/type/shadow token ref',
   sections: [
     { title: 'Spacing', content: [{ type: 'prose', text: 'defined in tokens.stylex.ts. gap props use space0-space12.' }, null] },
     { title: 'Size', content: [{ type: 'prose', text: 'control heights for buttons/inputs/selectors.' }, null] },

@@ -2,7 +2,7 @@
 
 export const docs = {
   name: 'Card',
-  description: 'Card container component with elevation and themed styling.',
+  description: 'Card container component with shadow and themed styling.',
   features: [
     'Top-level container for elevated content',
     'Provides card-specific appearance: background, shadow, and border-radius',

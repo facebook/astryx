@@ -317,7 +317,7 @@ ${colorEntries}
 // createTheme calls
 // =============================================================================
 // Only create themes for token groups you want to override.
-// Omitted groups (spacing, size, radius, elevation, transition, typography,
+// Omitted groups (spacing, size, radius, shadow, transition, typography,
 // textSize, lineHeight, fontWeight) use the defineVars defaults automatically.
 
 const colorTheme = stylex.createTheme(
@@ -326,7 +326,7 @@ const colorTheme = stylex.createTheme(
 );
 
 // Uncomment and customize to override other token groups:
-// import { radiusVars, elevationVars, typographyVars, ... } from '@xds/core/theme/tokens.stylex';
+// import { radiusVars, shadowVars, typographyVars, ... } from '@xds/core/theme/tokens.stylex';
 // const radiusTheme = stylex.createTheme(radiusVars, { '--radius-3': '16px', ... });
 ${componentOverrideSection}
 // =============================================================================

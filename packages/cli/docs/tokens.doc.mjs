@@ -3,7 +3,7 @@
 export const docs = {
   name: 'tokens',
   title: 'XDS Design Tokens',
-  description: 'Spacing, color, radius, typography, and elevation token reference.',
+  description: 'Spacing, color, radius, typography, and shadow token reference.',
 
   sections: [
     {
@@ -138,16 +138,21 @@ const sharpTheme = defineTheme({
       ],
     },
     {
-      title: 'Elevation Tokens',
+      title: 'Shadow Tokens',
       content: [
         {
           type: 'table',
           headers: ['Token', 'Usage'],
           rows: [
-            ['--elevation-base', 'Subtle shadow'],
-            ['--elevation-menu', 'Dropdowns, menus'],
-            ['--elevation-dialog', 'Modals, dialogs'],
-            ['--elevation-hover', 'Hover states'],
+            ['--shadow-1', 'Subtle lift (cards)'],
+            ['--shadow-2', 'Floating elements (menus, popovers)'],
+            ['--shadow-3', 'Hover lift, toasts'],
+            ['--shadow-4', 'Dialogs, modals'],
+            ['--insetshadow-border-hover', 'Input hover ring'],
+            ['--insetshadow-border-accent', 'Input focused/active ring'],
+            ['--insetshadow-border-positive', 'Input success ring'],
+            ['--insetshadow-border-warning', 'Input warning ring'],
+            ['--insetshadow-border-negative', 'Input error ring'],
           ],
         },
       ],

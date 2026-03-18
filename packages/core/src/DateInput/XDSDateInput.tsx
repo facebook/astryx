@@ -28,7 +28,7 @@ import {
   colorVars,
   sizeVars,
   radiusVars,
-  elevationVars,
+  shadowVars,
   typographyVars,
   textSizeVars,
   lineHeightVars,
@@ -99,7 +99,7 @@ const styles = stylex.create({
   popover: {
     backgroundColor: colorVars['--color-popover'],
     borderRadius: radiusVars['--radius-3'],
-    boxShadow: elevationVars['--elevation-menu'],
+    boxShadow: shadowVars['--shadow-2'],
   },
 });
 

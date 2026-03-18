@@ -85,35 +85,39 @@ import {defineTheme} from '@xds/core/theme';
 
 const roundedTheme = defineTheme({
   name: 'rounded',
-  radiusScale: { base: 4, multiplier: 1.5 },
+  radiusScale: {base: 4, multiplier: 1.5},
   // Produces: radius-1=6px, radius-2=12px, radius-3=18px, radius-4=24px
   // radius-0 stays 0px, radius-rounded stays 9999px
 });
 
 const sharpTheme = defineTheme({
   name: 'sharp',
-  radiusScale: { base: 4, multiplier: 0 },
+  radiusScale: {base: 4, multiplier: 0},
   // All scalable radii become 0px
 });
 ```
 
-| Multiplier | Effect    | radius-3 becomes |
-| ---------- | --------- | ---------------- |
-| 0          | Sharp     | 0px              |
-| 0.5        | Subtle    | 6px              |
-| 1 (default)| Default   | 12px             |
-| 1.5        | Rounded   | 18px             |
-| 2          | Pill-like | 24px             |
+| Multiplier  | Effect    | radius-3 becomes |
+| ----------- | --------- | ---------------- |
+| 0           | Sharp     | 0px              |
+| 0.5         | Subtle    | 6px              |
+| 1 (default) | Default   | 12px             |
+| 1.5         | Rounded   | 18px             |
+| 2           | Pill-like | 24px             |
 
-## Elevation Tokens
+## Shadow Tokens
 
-| Token              | Usage            |
-| ------------------ | ---------------- |
-| --elevation-base   | Subtle shadow    |
-| --elevation-thumb  | Slider thumbs    |
-| --elevation-menu   | Dropdowns, menus |
-| --elevation-dialog | Modals, dialogs  |
-| --elevation-hover  | Hover states     |
+| Token                         | Usage                     |
+| ----------------------------- | ------------------------- |
+| --shadow-1                    | Subtle lift (cards)       |
+| --shadow-2                    | Floating elements (menus) |
+| --shadow-3                    | Hover lift, toasts        |
+| --shadow-4                    | Dialogs, modals           |
+| --insetshadow-border-hover    | Input hover ring          |
+| --insetshadow-border-accent   | Input focused/active ring |
+| --insetshadow-border-positive | Input success ring        |
+| --insetshadow-border-warning  | Input warning ring        |
+| --insetshadow-border-negative | Input error ring          |
 
 ## Typography Tokens
 

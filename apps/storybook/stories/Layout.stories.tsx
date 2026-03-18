@@ -18,7 +18,7 @@ import {
   spacingVars,
   typographyVars,
   radiusVars,
-  elevationVars,
+  shadowVars,
 } from '@xds/core/theme/tokens.stylex';
 import {XDSTheme} from '@xds/core';
 import {defaultTheme} from '@xds/theme-default';
@@ -108,7 +108,7 @@ const styles = stylex.create({
   demoContainer: {
     backgroundColor: colorVars['--color-card'],
     borderRadius: radiusVars['--radius-3'],
-    boxShadow: elevationVars['--elevation-base'],
+    boxShadow: shadowVars['--shadow-1'],
   },
   // Demo sizing for outer padding story
   demoSize: {
@@ -144,7 +144,7 @@ const meta: Meta<typeof XDSLayout> = {
 The XDS Layout System provides a structured way to build page and component layouts.
 
 **Components:**
-- \`XDSCard\` - Card container with elevation
+- \`XDSCard\` - Card container with shadow
 - \`XDSSection\` - Section container with background variants
 - \`XDSLayout\` - Arranges content into header, content, footer, and panel slots
 - \`XDSLayoutHeader\` - Header slot with optional divider

@@ -269,22 +269,24 @@ export const neutralTheme = defineTheme({
     '--radius-rounded': '9999px',
 
     // =========================================================================
-    // Elevation — oklch-based shadows
+    // Shadows — oklch-based
     // =========================================================================
-    '--elevation-base':
-      '0 1px 2px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 20%))',
-    '--elevation-dialog':
-      '0 4px 6px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 25%)), 0 12px 24px light-dark(oklch(0 0 0 / 15%), oklch(0 0 0 / 35%))',
-    '--elevation-hover':
-      '0 2px 4px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 15%)), 0 4px 12px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 20%))',
-    '--elevation-menu':
+    '--shadow-1': '0 1px 2px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 20%))',
+    '--shadow-2':
       '0 2px 4px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 15%)), 0 4px 8px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 20%))',
-    '--elevation-input-hover': 'inset 0px 0px 0px 2px rgba(1, 113, 227, 0.3)',
-    '--elevation-input-hover-success':
+    '--shadow-3':
+      '0 2px 4px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 15%)), 0 4px 12px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 20%))',
+    '--shadow-4':
+      '0 4px 6px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 25%)), 0 12px 24px light-dark(oklch(0 0 0 / 15%), oklch(0 0 0 / 35%))',
+    '--insetshadow-border-hover':
+      'inset 0px 0px 0px 2px rgba(1, 113, 227, 0.3)',
+    '--insetshadow-border-accent':
+      'inset 0px 0px 0px 2px rgba(1, 113, 227, 0.5)',
+    '--insetshadow-border-positive':
       'inset 0px 0px 0px 2px rgba(38, 167, 86, 0.3)',
-    '--elevation-input-hover-warning':
+    '--insetshadow-border-warning':
       'inset 0px 0px 0px 2px rgba(226, 164, 0, 0.3)',
-    '--elevation-input-hover-error':
+    '--insetshadow-border-negative':
       'inset 0px 0px 0px 2px rgba(227, 25, 59, 0.3)',
 
     // =========================================================================

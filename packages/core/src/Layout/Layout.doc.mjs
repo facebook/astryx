@@ -308,7 +308,7 @@ export const docs = {
     {
       name: 'XDSCard',
       description:
-        'Card with elevation and themed styling, built on XDSLayoutContainer.',
+        'Card with shadow and themed styling, built on XDSLayoutContainer.',
       props: [],
       examples: [
         {
@@ -869,7 +869,7 @@ export const docsDense = {
     {
       name: 'XDSCard',
       description:
-        'Card w/ elevation + themed styling, built on XDSLayoutContainer.',
+        'Card w/ shadow + themed styling, built on XDSLayoutContainer.',
     },
     {
       name: 'XDSSection',

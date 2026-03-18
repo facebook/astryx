@@ -32,7 +32,7 @@ import {
   easingVars,
   spacingVars,
   radiusVars,
-  elevationVars,
+  shadowVars,
 } from '../theme/tokens.stylex';
 
 // =============================================================================
@@ -195,7 +195,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-surface'],
     color: colorVars['--color-text-primary'],
     borderRadius: radiusVars['--radius-2'],
-    boxShadow: elevationVars['--elevation-menu'],
+    boxShadow: shadowVars['--shadow-2'],
   },
   contentPadding: {
     paddingBlockStart: spacingVars['--spacing-3'],
