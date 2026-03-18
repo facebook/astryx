@@ -110,6 +110,9 @@ const styles = stylex.create({
         backgroundColor: colorVars['--color-hover-overlay'],
       },
     },
+    ':active': {
+      backgroundColor: colorVars['--color-pressed-overlay'],
+    },
     outline: {
       default: null,
       ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
@@ -126,6 +129,9 @@ const styles = stylex.create({
       '@media (hover: hover)': {
         backgroundColor: colorVars['--color-deemphasized'],
       },
+    },
+    ':active': {
+      backgroundColor: colorVars['--color-deemphasized'],
     },
   },
 });

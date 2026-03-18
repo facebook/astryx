@@ -178,6 +178,9 @@ const drawerStyles = stylex.create({
         backgroundColor: colorVars['--color-hover-overlay'],
       },
     },
+    ':active': {
+      backgroundColor: colorVars['--color-pressed-overlay'],
+    },
   },
   chevron: {
     display: 'inline-flex',
@@ -220,6 +223,9 @@ const drawerStyles = stylex.create({
       '@media (hover: hover)': {
         backgroundColor: colorVars['--color-hover-overlay'],
       },
+    },
+    ':active': {
+      backgroundColor: colorVars['--color-pressed-overlay'],
     },
   },
   itemIcon: {

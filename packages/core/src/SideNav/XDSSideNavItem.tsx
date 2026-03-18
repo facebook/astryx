@@ -70,6 +70,9 @@ const styles = stylex.create({
         backgroundColor: colorVars['--color-hover-overlay'],
       },
     },
+    ':active': {
+      backgroundColor: colorVars['--color-pressed-overlay'],
+    },
   },
   itemCollapsed: {
     justifyContent: 'center',
@@ -82,6 +85,9 @@ const styles = stylex.create({
       '@media (hover: hover)': {
         backgroundColor: colorVars['--color-deemphasized'],
       },
+    },
+    ':active': {
+      backgroundColor: colorVars['--color-deemphasized'],
     },
   },
   disabled: {

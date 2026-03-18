@@ -55,6 +55,9 @@ const styles = stylex.create({
     height: '100dvh',
     backgroundColor: 'transparent',
     overflow: 'hidden',
+    overscrollBehavior: 'contain',
+    // Prevent touch gestures (pull-to-refresh, background scroll) passing through
+    touchAction: 'none',
     outline: 'none',
     // Native <dialog> uses display:none when closed — we preserve that
     // by only setting display when [open] via :where() selector.
@@ -68,6 +71,7 @@ const styles = stylex.create({
   backdrop: {
     '::backdrop': {
       backgroundColor: colorVars['--color-overlay'],
+      backdropFilter: 'blur(2px)',
       opacity: 0,
       transition: `opacity ${SLIDE_DURATION} ${SLIDE_EASING}`,
     },
@@ -145,6 +149,9 @@ const styles = stylex.create({
     overflowY: 'auto',
     overflowX: 'hidden',
     overscrollBehavior: 'contain',
+    // Re-enable vertical touch scrolling inside the drawer content
+    // (dialog root has touch-action: none to block pull-to-refresh)
+    touchAction: 'pan-y',
     paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-1'],
   },
@@ -307,7 +314,21 @@ export function XDSMobileNav({
       if (!dialog.open) {
         dialog.showModal();
       }
+      // Lock body scroll to prevent iOS pull-to-refresh and background scrolling
+      const scrollY = window.scrollY;
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
     } else if (dialog.open) {
+      // Restore body scroll position
+      const scrollY = Math.abs(parseInt(document.body.style.top || '0', 10));
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.scrollTo(0, scrollY);
+
       const duration = window.matchMedia('(prefers-reduced-motion: reduce)')
         .matches
         ? 10
@@ -321,6 +342,11 @@ export function XDSMobileNav({
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
       }
+      // Ensure body scroll is restored on unmount
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
     };
   }, [isOpen]);
 

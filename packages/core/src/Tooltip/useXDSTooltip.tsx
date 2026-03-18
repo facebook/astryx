@@ -299,6 +299,14 @@ export function useXDSTooltip(
 
   // Event handlers
   const handleMouseEnter = useCallback(() => {
+    // Suppress tooltips on touch devices — hover is simulated and eats a tap
+    if (
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(hover: none)').matches
+    ) {
+      return;
+    }
     scheduleShow();
   }, [scheduleShow]);
 
@@ -306,11 +314,22 @@ export function useXDSTooltip(
     scheduleHide();
   }, [scheduleHide]);
 
-  const handleFocusIn = useCallback(() => {
-    if (!isEnabled) return;
-    clearTimeouts();
-    layer.show();
-  }, [isEnabled, clearTimeouts, layer]);
+  const handleFocusIn = useCallback(
+    (e: Event) => {
+      if (!isEnabled) return;
+      // Only show tooltip for keyboard focus (:focus-visible),
+      // not programmatic focus (e.g. dialog auto-focus, touch tap)
+      const target = e.target as HTMLElement;
+      try {
+        if (!target.matches(':focus-visible')) return;
+      } catch {
+        // :focus-visible not supported — fall through to show
+      }
+      clearTimeouts();
+      layer.show();
+    },
+    [isEnabled, clearTimeouts, layer],
+  );
 
   const handleFocusOut = useCallback(() => {
     scheduleHide();
