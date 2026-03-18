@@ -94,9 +94,16 @@ const styles = stylex.create({
     transitionDuration: transitionVars['--transition-fast'],
     boxSizing: 'border-box',
   },
-  trackFocused: {
-    outline: `2px solid ${colorVars['--color-focus-outline']}`,
-    outlineOffset: 2,
+  trackFocus: {
+    outline: {
+      default: 'none',
+      [stylex.when.ancestor(':focus-within')]:
+        `2px solid ${colorVars['--color-focus-outline']}`,
+    },
+    outlineOffset: {
+      default: null,
+      [stylex.when.ancestor(':focus-within')]: '2px',
+    },
   },
   // State-dependent colors with ancestor hover behavior
   trackOff: {
@@ -334,6 +341,7 @@ export function XDSSwitch({
           stylex.props(
             styles.track,
             isOn ? styles.trackOn : styles.trackOff,
+            !isDisabled && styles.trackFocus,
             isDisabled && styles.trackDisabled,
             isDisabled && !isOn && styles.trackDisabledOff,
           ),

@@ -73,9 +73,16 @@ const styles = stylex.create({
     transitionProperty: 'background-color, border-color',
     transitionDuration: transitionVars['--transition-fast'],
   },
-  checkboxFocused: {
-    outline: `2px solid ${colorVars['--color-focus-outline']}`,
-    outlineOffset: 2,
+  checkboxFocus: {
+    outline: {
+      default: 'none',
+      [stylex.when.ancestor(':focus-within')]:
+        `2px solid ${colorVars['--color-focus-outline']}`,
+    },
+    outlineOffset: {
+      default: null,
+      [stylex.when.ancestor(':focus-within')]: '2px',
+    },
   },
   // State-dependent colors with ancestor hover behavior
   checkboxUnchecked: {
@@ -355,6 +362,7 @@ export function XDSCheckboxInput({
             }}
             onFocus={onFocus}
             onBlur={onBlur}
+            aria-checked={isIndeterminate ? 'mixed' : undefined}
             aria-describedby={ariaDescribedBy}
             aria-invalid={status?.type === 'error' ? true : undefined}
             aria-busy={isBusy || undefined}
@@ -369,6 +377,7 @@ export function XDSCheckboxInput({
             {...stylex.props(
               styles.checkbox,
               checkboxSizeStyles[size],
+              !isDisabled && styles.checkboxFocus,
               isCheckedOrIndeterminate
                 ? styles.checkboxChecked
                 : styles.checkboxUnchecked,
