@@ -298,17 +298,19 @@ export const typographyVars = stylex.defineVars(typographyDefaults);
 // =============================================================================
 
 export const textSizeDefaults = {
+  // Tokens below the type scale range — static, not computed from ratio
   '--text-4xs': '0.5rem', // 8px - citation
   '--text-3xs': '0.625rem', // 10px - micro
   '--text-2xs': '0.6875rem', // 11px - small micro
-  '--text-xsm': '0.75rem', // 12px - supporting, badge
-  '--text-sm': '0.8125rem', // 13px - secondary text
-  '--text-base': '0.875rem', // 14px - body text (XDS default)
-  '--text-lg': '1rem', // 16px - large body
-  '--text-xl': '1.125rem', // 18px - h2
-  '--text-2xl': '1.25rem', // 20px - h1
-  '--text-3xl': '1.5rem', // 24px - editorial h2
-  '--text-4xl': '2rem', // 32px - editorial h1, data viz
+  // Geometric scale: round(14 × 1.2^step) / 16, default base=14, ratio=1.2
+  '--text-xsm': '0.625rem', // step -2: 10px (14 × 1.2⁻² ≈ 9.72 → 10)
+  '--text-sm': '0.75rem', // step -1: 12px (14 × 1.2⁻¹ ≈ 11.67 → 12)
+  '--text-base': '0.875rem', // step  0: 14px — base anchor
+  '--text-lg': '1.0625rem', // step +1: 17px (14 × 1.2¹ ≈ 16.8 → 17)
+  '--text-xl': '1.25rem', // step +2: 20px (14 × 1.2² ≈ 20.16 → 20)
+  '--text-2xl': '1.5rem', // step +3: 24px (14 × 1.2³ ≈ 24.19 → 24)
+  '--text-3xl': '1.8125rem', // step +4: 29px (14 × 1.2⁴ ≈ 29.03 → 29)
+  '--text-4xl': '2.1875rem', // step +5: 35px (14 × 1.2⁵ ≈ 34.84 → 35)
 } as const;
 
 /** @deprecated Use textSizeDefaults */
@@ -379,45 +381,49 @@ export type FontWeightVarName = keyof typeof fontWeightDefaults;
 //   Airy/editorial:   { base: 16, ratio: 1.25 }
 
 export const typeScaleDefaults = {
-  // Heading tokens — h4 is the anchor at base (14px)
-  // Sizes reference --text-* vars where possible so base values compose.
-  // When typeScale is used in defineTheme, these are overridden with computed px values.
-  // Line heights are unitless ratios (snapped to 4px grid at computed size).
-  '--heading-1-size': 'var(--text-3xl)', // 24px (14 × 1.2³)
+  // Sizes are var() references to raw size tokens.
+  // Line heights are hardcoded computed values (4px grid snapped, tiered target).
+  // When typeScale is used in defineTheme, both raw tokens AND these semantic
+  // tokens are overridden together.
+  //
+  // Step mapping: h6=-2, h5=-1, h4=0(base), h3=+1, h2=+2, h1=+3
+  //
+  // Heading tokens
+  '--heading-1-size': 'var(--text-2xl)', // step +3: 24px
   '--heading-1-weight': 'var(--font-weight-semibold)',
-  '--heading-1-leading': '1.3333',
-  '--heading-2-size': 'var(--text-2xl)', // 20px (14 × 1.2²)
+  '--heading-1-leading': '1.3333', // 24px → 32px (target 1.4, 4px snap)
+  '--heading-2-size': 'var(--text-xl)', // step +2: 20px
   '--heading-2-weight': 'var(--font-weight-semibold)',
-  '--heading-2-leading': '1.4',
-  '--heading-3-size': '17px', // 14 × 1.2¹ (no matching --text-* token)
+  '--heading-2-leading': '1.4', // 20px → 28px (target 1.4, 4px snap)
+  '--heading-3-size': 'var(--text-lg)', // step +1: 17px
   '--heading-3-weight': 'var(--font-weight-semibold)',
-  '--heading-3-leading': '1.4118',
-  '--heading-4-size': 'var(--text-base)', // 14px — base anchor
+  '--heading-3-leading': '1.4118', // 17px → 24px (target 1.5, 4px snap)
+  '--heading-4-size': 'var(--text-base)', // step  0: 14px — base anchor
   '--heading-4-weight': 'var(--font-weight-semibold)',
-  '--heading-4-leading': '1.4286',
-  '--heading-5-size': 'var(--text-xsm)', // 12px (14 × 1.2⁻¹)
+  '--heading-4-leading': '1.4286', // 14px → 20px (target 1.5, 4px snap)
+  '--heading-5-size': 'var(--text-sm)', // step -1: 12px
   '--heading-5-weight': 'var(--font-weight-semibold)',
-  '--heading-5-leading': '1.3333',
-  '--heading-6-size': 'var(--text-3xs)', // 10px (14 × 1.2⁻²)
+  '--heading-5-leading': '1.6667', // 12px → 20px (target 1.5, 4px snap)
+  '--heading-6-size': 'var(--text-xsm)', // step -2: 10px
   '--heading-6-weight': 'var(--font-weight-semibold)',
-  '--heading-6-leading': '1.6',
+  '--heading-6-leading': '1.6', // 10px → 16px (target 1.5, min dominated)
 
-  // Text tokens — body/label/code at base, large one step up, supporting one step down
+  // Text tokens — body/label/code at base(0), large at +1, supporting at -1
   '--text-body-size': 'var(--text-base)', // 14px
   '--text-body-weight': 'var(--font-weight-normal)',
-  '--text-body-leading': '1.4286',
-  '--text-large-size': '17px', // 14 × 1.2¹ (no matching --text-* token)
+  '--text-body-leading': '1.4286', // 14px → 20px
+  '--text-large-size': 'var(--text-lg)', // 17px
   '--text-large-weight': 'var(--font-weight-semibold)',
-  '--text-large-leading': '1.4118',
+  '--text-large-leading': '1.4118', // 17px → 24px
   '--text-label-size': 'var(--text-base)', // 14px
   '--text-label-weight': 'var(--font-weight-medium)',
-  '--text-label-leading': '1.4286',
+  '--text-label-leading': '1.4286', // 14px → 20px
   '--text-code-size': 'var(--text-base)', // 14px
   '--text-code-weight': 'var(--font-weight-normal)',
-  '--text-code-leading': '1.4286',
-  '--text-supporting-size': 'var(--text-xsm)', // 12px
+  '--text-code-leading': '1.4286', // 14px → 20px
+  '--text-supporting-size': 'var(--text-sm)', // 12px
   '--text-supporting-weight': 'var(--font-weight-normal)',
-  '--text-supporting-leading': '1.6667',
+  '--text-supporting-leading': '1.6667', // 12px → 20px
 } as const;
 
 export const typeScaleVars = stylex.defineVars(typeScaleDefaults);

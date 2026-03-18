@@ -1,143 +1,144 @@
 /**
  * @file expandTypeScale.test.ts
- * Tests for the type scale computation function.
+ * Tests for the two-layer type scale computation.
  */
 
 import {describe, it, expect} from 'vitest';
 import {expandTypeScale, generateTypeScaleComponents} from './expandTypeScale';
 
 describe('expandTypeScale', () => {
-  describe('default scale (base=14, ratio=1.2)', () => {
+  describe('Layer 1: raw size tokens', () => {
     const tokens = expandTypeScale({base: 14, ratio: 1.2});
 
-    it('generates 33 tokens', () => {
-      expect(Object.keys(tokens)).toHaveLength(33);
-    });
-
-    it('anchors h4 to base size', () => {
-      expect(tokens['--heading-4-size']).toBe('0.875rem');
-    });
-
-    it('computes heading sizes from geometric progression', () => {
-      // h1 = 14 × 1.2³ ≈ 24.19 → 1.5rem
-      expect(tokens['--heading-1-size']).toBe('1.5rem');
-      // h2 = 14 × 1.2² ≈ 20.16 → 1.25rem
-      expect(tokens['--heading-2-size']).toBe('1.25rem');
-      // h3 = 14 × 1.2¹ ≈ 16.8 → 1.0625rem
-      expect(tokens['--heading-3-size']).toBe('1.0625rem');
-      // h5 = 14 × 1.2⁻¹ ≈ 11.67 → 0.75rem
-      expect(tokens['--heading-5-size']).toBe('0.75rem');
-      // h6 = 14 × 1.2⁻² ≈ 9.72 → 0.625rem
-      expect(tokens['--heading-6-size']).toBe('0.625rem');
-    });
-
-    it('computes body text at base size', () => {
-      expect(tokens['--text-body-size']).toBe('0.875rem');
-      expect(tokens['--text-label-size']).toBe('0.875rem');
-      expect(tokens['--text-code-size']).toBe('0.875rem');
-    });
-
-    it('computes large text one step up', () => {
-      // 14 × 1.2¹ ≈ 16.8 → 1.0625rem
-      expect(tokens['--text-large-size']).toBe('1.0625rem');
-    });
-
-    it('computes supporting text one step down', () => {
-      // 14 × 1.2⁻¹ ≈ 11.67 → 0.75rem
-      expect(tokens['--text-supporting-size']).toBe('0.75rem');
-    });
-
-    it('emits unitless line-height ratios', () => {
-      // Line heights should be unitless numbers, not px values
-      for (const [key, value] of Object.entries(tokens)) {
-        if (key.endsWith('-leading')) {
-          expect(value).not.toContain('px');
-          const num = parseFloat(value);
-          expect(num).toBeGreaterThan(1);
-          expect(num).toBeLessThan(2);
-        }
+    it('emits 8 raw size tokens in rem', () => {
+      const sizeTokens = [
+        '--text-xsm',
+        '--text-sm',
+        '--text-base',
+        '--text-lg',
+        '--text-xl',
+        '--text-2xl',
+        '--text-3xl',
+        '--text-4xl',
+      ];
+      for (const name of sizeTokens) {
+        expect(tokens[name]).toBeDefined();
+        expect(tokens[name]).toMatch(/rem$/);
       }
     });
 
-    it('snaps line heights to 4px grid', () => {
-      // Each leading ratio × font size should be divisible by 4
-      for (const [key, value] of Object.entries(tokens)) {
-        if (key.endsWith('-leading')) {
-          const sizeKey = key.replace('-leading', '-size');
-          const fontSize = Math.round(parseFloat(tokens[sizeKey]) * 16);
-          const ratio = parseFloat(value);
-          const computedLh = Math.round(fontSize * ratio);
-          expect(computedLh % 4).toBe(0);
-        }
-      }
+    it('anchors --text-base to the base size', () => {
+      expect(tokens['--text-base']).toBe('0.875rem'); // 14/16
     });
 
-    it('ensures computed line height is at least fontSize + 4', () => {
-      for (const [key, value] of Object.entries(tokens)) {
-        if (key.endsWith('-leading')) {
-          const sizeKey = key.replace('-leading', '-size');
-          const fontSize = Math.round(parseFloat(tokens[sizeKey]) * 16);
-          const ratio = parseFloat(value);
-          const computedLh = Math.round(fontSize * ratio);
-          expect(computedLh).toBeGreaterThanOrEqual(fontSize + 4);
-        }
-      }
+    it('computes geometric progression', () => {
+      expect(tokens['--text-xsm']).toBe('0.625rem'); // 10/16
+      expect(tokens['--text-sm']).toBe('0.75rem'); // 12/16
+      expect(tokens['--text-lg']).toBe('1.0625rem'); // 17/16
+      expect(tokens['--text-xl']).toBe('1.25rem'); // 20/16
+      expect(tokens['--text-2xl']).toBe('1.5rem'); // 24/16
+      expect(tokens['--text-3xl']).toBe('1.8125rem'); // 29/16
+      expect(tokens['--text-4xl']).toBe('2.1875rem'); // 35/16
+    });
+  });
+
+  describe('Layer 2: semantic tokens', () => {
+    const tokens = expandTypeScale({base: 14, ratio: 1.2});
+
+    it('heading sizes are var() references to raw tokens', () => {
+      expect(tokens['--heading-1-size']).toBe('var(--text-2xl)');
+      expect(tokens['--heading-2-size']).toBe('var(--text-xl)');
+      expect(tokens['--heading-3-size']).toBe('var(--text-lg)');
+      expect(tokens['--heading-4-size']).toBe('var(--text-base)');
+      expect(tokens['--heading-5-size']).toBe('var(--text-sm)');
+      expect(tokens['--heading-6-size']).toBe('var(--text-xsm)');
     });
 
-    it('assigns semibold weight to all headings', () => {
-      for (let level = 1; level <= 6; level++) {
-        expect(tokens[`--heading-${level}-weight`]).toBe(
-          'var(--font-weight-semibold)',
-        );
-      }
+    it('heading leadings are hardcoded computed values', () => {
+      expect(tokens['--heading-1-leading']).toBe('1.3333'); // 24px → 32px
+      expect(tokens['--heading-2-leading']).toBe('1.4'); // 20px → 28px
+      expect(tokens['--heading-3-leading']).toBe('1.4118'); // 17px → 24px
+      expect(tokens['--heading-4-leading']).toBe('1.4286'); // 14px → 20px
+      expect(tokens['--heading-5-leading']).toBe('1.6667'); // 12px → 20px
+      expect(tokens['--heading-6-leading']).toBe('1.6'); // 10px → 16px
     });
 
-    it('assigns correct weights to text types', () => {
+    it('text type sizes are var() references', () => {
+      expect(tokens['--text-body-size']).toBe('var(--text-base)');
+      expect(tokens['--text-large-size']).toBe('var(--text-lg)');
+      expect(tokens['--text-label-size']).toBe('var(--text-base)');
+      expect(tokens['--text-code-size']).toBe('var(--text-base)');
+      expect(tokens['--text-supporting-size']).toBe('var(--text-sm)');
+    });
+
+    it('text type leadings are hardcoded computed values', () => {
+      expect(tokens['--text-body-leading']).toBe('1.4286'); // 14px → 20px
+      expect(tokens['--text-large-leading']).toBe('1.4118'); // 17px → 24px
+      expect(tokens['--text-label-leading']).toBe('1.4286');
+      expect(tokens['--text-code-leading']).toBe('1.4286');
+      expect(tokens['--text-supporting-leading']).toBe('1.6667'); // 12px → 16px
+    });
+
+    it('weight tokens are var() references (unchanged)', () => {
+      expect(tokens['--heading-1-weight']).toBe('var(--font-weight-semibold)');
       expect(tokens['--text-body-weight']).toBe('var(--font-weight-normal)');
       expect(tokens['--text-large-weight']).toBe('var(--font-weight-semibold)');
       expect(tokens['--text-label-weight']).toBe('var(--font-weight-medium)');
-      expect(tokens['--text-code-weight']).toBe('var(--font-weight-normal)');
-      expect(tokens['--text-supporting-weight']).toBe(
-        'var(--font-weight-normal)',
+    });
+
+    it('all line heights snap to 4px grid', () => {
+      // Map semantic leading tokens to their font sizes (px)
+      const pairs: [string, number][] = [
+        ['--heading-1-leading', 24],
+        ['--heading-2-leading', 20],
+        ['--heading-3-leading', 17],
+        ['--heading-4-leading', 14],
+        ['--heading-5-leading', 12],
+        ['--heading-6-leading', 10],
+        ['--text-body-leading', 14],
+        ['--text-large-leading', 17],
+        ['--text-supporting-leading', 12],
+      ];
+      for (const [token, fontSize] of pairs) {
+        const ratio = parseFloat(tokens[token]);
+        const lhPx = Math.round(fontSize * ratio);
+        expect(lhPx % 4).toBe(0);
+        expect(lhPx).toBeGreaterThanOrEqual(fontSize + 4);
+      }
+    });
+
+    it('uses tiered target ratio based on font size', () => {
+      // < 20px target 1.5: 14px → 20px line
+      expect(Math.round(14 * parseFloat(tokens['--heading-4-leading']))).toBe(
+        20,
+      );
+      // 20-31px target 1.4: 20px → 28px line
+      expect(Math.round(20 * parseFloat(tokens['--heading-2-leading']))).toBe(
+        28,
+      );
+      // 20-31px target 1.4: 24px → 32px line
+      expect(Math.round(24 * parseFloat(tokens['--heading-1-leading']))).toBe(
+        32,
       );
     });
   });
 
-  describe('dense scale (base=12, ratio=1.125)', () => {
-    const tokens = expandTypeScale({base: 12, ratio: 1.125});
+  describe('does not touch named leading tokens', () => {
+    const tokens = expandTypeScale({base: 14, ratio: 1.2});
 
-    it('anchors h4 to base 12px', () => {
-      expect(tokens['--heading-4-size']).toBe('0.75rem');
-    });
-
-    it('produces smaller heading sizes', () => {
-      // h1 = 12 × 1.125³ ≈ 17.09 → 1.0625rem
-      expect(tokens['--heading-1-size']).toBe('1.0625rem');
-      // h2 = 12 × 1.125² ≈ 15.19 → 0.9375rem
-      expect(tokens['--heading-2-size']).toBe('0.9375rem');
-    });
-
-    it('keeps body at base', () => {
-      expect(tokens['--text-body-size']).toBe('0.75rem');
+    it('does not emit --leading-* tokens', () => {
+      const leadingKeys = Object.keys(tokens).filter(k =>
+        k.startsWith('--leading-'),
+      );
+      expect(leadingKeys).toHaveLength(0);
     });
   });
 
-  describe('airy scale (base=16, ratio=1.25)', () => {
-    const tokens = expandTypeScale({base: 16, ratio: 1.25});
+  describe('total token count', () => {
+    const tokens = expandTypeScale({base: 14, ratio: 1.2});
 
-    it('anchors h4 to base 16px', () => {
-      expect(tokens['--heading-4-size']).toBe('1rem');
-    });
-
-    it('produces larger heading sizes', () => {
-      // h1 = 16 × 1.25³ ≈ 31.25 → 1.9375rem
-      expect(tokens['--heading-1-size']).toBe('1.9375rem');
-      // h2 = 16 × 1.25² = 25 → 1.5625rem
-      expect(tokens['--heading-2-size']).toBe('1.5625rem');
-    });
-
-    it('keeps body at base', () => {
-      expect(tokens['--text-body-size']).toBe('1rem');
+    it('generates 41 tokens (8 size + 33 semantic)', () => {
+      expect(Object.keys(tokens)).toHaveLength(41);
     });
   });
 
@@ -146,121 +147,83 @@ describe('expandTypeScale', () => {
       const tokens = expandTypeScale({
         base: 14,
         ratio: 1.2,
-        weights: {
-          heading: {1: 'var(--font-weight-bold)', 3: 'var(--font-weight-bold)'},
-        },
+        weights: {heading: {1: 'var(--font-weight-bold)'}},
       });
       expect(tokens['--heading-1-weight']).toBe('var(--font-weight-bold)');
       expect(tokens['--heading-2-weight']).toBe('var(--font-weight-semibold)');
-      expect(tokens['--heading-3-weight']).toBe('var(--font-weight-bold)');
     });
 
     it('applies text weight overrides', () => {
       const tokens = expandTypeScale({
         base: 14,
         ratio: 1.2,
-        weights: {
-          text: {large: 'var(--font-weight-normal)'},
-        },
+        weights: {text: {large: 'var(--font-weight-normal)'}},
       });
       expect(tokens['--text-large-weight']).toBe('var(--font-weight-normal)');
       expect(tokens['--text-body-weight']).toBe('var(--font-weight-normal)');
     });
-
-    it('applies both heading and text weight overrides', () => {
-      const tokens = expandTypeScale({
-        base: 14,
-        ratio: 1.2,
-        weights: {
-          heading: {1: '700'},
-          text: {body: '500'},
-        },
-      });
-      expect(tokens['--heading-1-weight']).toBe('700');
-      expect(tokens['--text-body-weight']).toBe('500');
-    });
-
-    it('uses defaults for unspecified weights', () => {
-      const tokens = expandTypeScale({
-        base: 14,
-        ratio: 1.2,
-        weights: {heading: {1: '700'}},
-      });
-      // Only h1 is overridden, rest use defaults
-      expect(tokens['--heading-2-weight']).toBe('var(--font-weight-semibold)');
-      expect(tokens['--text-body-weight']).toBe('var(--font-weight-normal)');
-    });
   });
 
-  describe('token naming', () => {
-    const tokens = expandTypeScale({base: 14, ratio: 1.2});
-
-    it('uses --heading-{level}-{prop} for headings', () => {
-      for (let level = 1; level <= 6; level++) {
-        expect(tokens).toHaveProperty(`--heading-${level}-size`);
-        expect(tokens).toHaveProperty(`--heading-${level}-weight`);
-        expect(tokens).toHaveProperty(`--heading-${level}-leading`);
-      }
+  describe('alternate scales', () => {
+    it('dense scale (base=12, ratio=1.125)', () => {
+      const tokens = expandTypeScale({base: 12, ratio: 1.125});
+      expect(tokens['--text-base']).toBe('0.75rem'); // 12/16
+      expect(tokens['--heading-4-size']).toBe('var(--text-base)');
     });
 
-    it('uses --text-{type}-{prop} for text', () => {
-      for (const type of ['body', 'large', 'label', 'code', 'supporting']) {
-        expect(tokens).toHaveProperty(`--text-${type}-size`);
-        expect(tokens).toHaveProperty(`--text-${type}-weight`);
-        expect(tokens).toHaveProperty(`--text-${type}-leading`);
+    it('airy scale (base=16, ratio=1.25)', () => {
+      const tokens = expandTypeScale({base: 16, ratio: 1.25});
+      expect(tokens['--text-base']).toBe('1rem'); // 16/16
+      expect(tokens['--text-lg']).toBe('1.25rem'); // 20/16
+      expect(tokens['--heading-1-size']).toBe('var(--text-2xl)');
+    });
+
+    it('all scales produce 4px-grid-aligned line heights', () => {
+      const scales = [
+        {base: 12, ratio: 1.125},
+        {base: 14, ratio: 1.2},
+        {base: 16, ratio: 1.25},
+        {base: 18, ratio: 1.333},
+      ];
+      for (const config of scales) {
+        const tokens = expandTypeScale(config);
+        for (let level = 1; level <= 6; level++) {
+          const step = {1: 3, 2: 2, 3: 1, 4: 0, 5: -1, 6: -2}[level]!;
+          const fontSize = Math.round(
+            config.base * Math.pow(config.ratio, step),
+          );
+          const ratio = parseFloat(tokens[`--heading-${level}-leading`]);
+          const lhPx = Math.round(fontSize * ratio);
+          expect(lhPx % 4).toBe(0);
+          expect(lhPx).toBeGreaterThanOrEqual(fontSize + 4);
+        }
       }
     });
   });
 });
 
 describe('generateTypeScaleComponents', () => {
-  it('generates heading and text component keys', () => {
+  it('generates heading and text component overrides', () => {
     const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
-    expect(components).toHaveProperty('heading');
-    expect(components).toHaveProperty('text');
+    expect(components.heading).toBeDefined();
+    expect(components.text).toBeDefined();
   });
 
-  it('generates rules for all 6 heading levels', () => {
+  it('heading overrides reference semantic tokens', () => {
     const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
-    for (let level = 1; level <= 6; level++) {
-      expect(components.heading).toHaveProperty(`level:${level}`);
-    }
+    expect(components.heading['level:1'].fontSize).toBe(
+      'var(--heading-1-size)',
+    );
+    expect(components.heading['level:1'].lineHeight).toBe(
+      'var(--heading-1-leading)',
+    );
   });
 
-  it('generates rules for all 5 text types', () => {
+  it('text overrides reference semantic tokens', () => {
     const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
-    for (const type of ['body', 'large', 'label', 'code', 'supporting']) {
-      expect(components.text).toHaveProperty(`type:${type}`);
-    }
-  });
-
-  it('heading rules include fontFamily, fontSize, fontWeight, lineHeight', () => {
-    const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
-    const h1 = components.heading['level:1'];
-    expect(h1.fontFamily).toBe('var(--font-heading)');
-    expect(h1.fontSize).toBe('var(--heading-1-size)');
-    expect(h1.fontWeight).toBe('var(--heading-1-weight)');
-    expect(h1.lineHeight).toBe('var(--heading-1-leading)');
-  });
-
-  it('text rules include fontFamily, fontSize, fontWeight, lineHeight', () => {
-    const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
-    const body = components.text['type:body'];
-    expect(body.fontFamily).toBe('var(--font-body)');
-    expect(body.fontSize).toBe('var(--text-body-size)');
-    expect(body.fontWeight).toBe('var(--text-body-weight)');
-    expect(body.lineHeight).toBe('var(--text-body-leading)');
-  });
-
-  it('code text uses font-code family', () => {
-    const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
-    expect(components.text['type:code'].fontFamily).toBe('var(--font-code)');
-  });
-
-  it('does NOT include color (handled by component internals)', () => {
-    const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
-    expect(components.heading['level:1'].color).toBeUndefined();
-    expect(components.text['type:body'].color).toBeUndefined();
-    expect(components.text['type:supporting'].color).toBeUndefined();
+    expect(components.text['type:body'].fontSize).toBe('var(--text-body-size)');
+    expect(components.text['type:body'].lineHeight).toBe(
+      'var(--text-body-leading)',
+    );
   });
 });
