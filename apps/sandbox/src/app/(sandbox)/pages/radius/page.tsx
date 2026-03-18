@@ -240,11 +240,11 @@ export default function RadiusPage() {
             {/* Shared edges (button group) */}
             <XDSVStack gap={2}>
               <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Shared Edges (Button Group)</span>
-              <XDSHStack gap={0}>
-                <XDSButton label="Day" variant="primary" size="sm" />
-                <XDSButton label="Week" variant="secondary" size="sm" />
-                <XDSButton label="Month" variant="secondary" size="sm" />
-              </XDSHStack>
+              <div style={{display: 'flex'}}>
+                <button style={{padding: '8px 20px', fontSize: 14, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer', border: 'none', backgroundColor: 'light-dark(#0064E0, #2694FE)', color: '#fff', borderRadius: `${el}px 0 0 ${el}px`, transition: 'border-radius 0.2s'}}>Day</button>
+                <button style={{padding: '8px 20px', fontSize: 14, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer', border: '1px solid light-dark(#ddd, #444)', borderLeft: 'none', backgroundColor: 'light-dark(#f0f0f0, #333)', color: 'light-dark(#333, #eee)', borderRadius: 0}}>Week</button>
+                <button style={{padding: '8px 20px', fontSize: 14, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer', border: '1px solid light-dark(#ddd, #444)', borderLeft: 'none', backgroundColor: 'light-dark(#f0f0f0, #333)', color: 'light-dark(#333, #eee)', borderRadius: `0 ${el}px ${el}px 0`, transition: 'border-radius 0.2s'}}>Month</button>
+              </div>
             </XDSVStack>
           </div>
         </XDSVStack>
