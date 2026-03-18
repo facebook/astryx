@@ -128,8 +128,8 @@ const styles = stylex.create({
     display: 'flex',
     flexWrap: 'wrap',
     gap: spacingVars['--spacing-6'],
-    paddingBlock: spacingVars['--spacing-6'],
-    paddingInline: spacingVars['--spacing-6'],
+    paddingBlock: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-3'],
     maxWidth: 960,
   },
   menuWrapper: {

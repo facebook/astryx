@@ -95,7 +95,7 @@ const styles = stylex.create({
     flexDirection: 'column',
     gap: spacingVars['--spacing-1'],
     minWidth: 280,
-    padding: spacingVars['--spacing-1'],
+    padding: spacingVars['--spacing-3'],
     backgroundColor: colorVars['--color-popover'],
     borderRadius: radiusVars['--radius-3'],
     boxShadow: elevationVars['--elevation-menu'],
