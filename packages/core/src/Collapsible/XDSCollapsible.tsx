@@ -26,7 +26,8 @@ import {
   fontWeightVars,
   spacingVars,
   textSizeVars,
-  transitionVars,
+  durationVars,
+  easingVars,
 } from '../theme/tokens.stylex';
 import {useXDSCollapsible} from './useXDSCollapsible';
 import {getIcon} from '../Icon/globalIconRegistry';
@@ -55,7 +56,9 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    transition: `transform ${transitionVars['--transition-fast']}`,
+    transitionProperty: 'transform',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easingVars['--easing-standard'],
     color: colorVars['--color-icon-secondary'],
   },
   chevronOpen: {

@@ -30,7 +30,8 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
-  transitionVars,
+  durationVars,
+  easingVars,
   textSizeVars,
   fontWeightVars,
   lineHeightVars,
@@ -56,7 +57,8 @@ const styles = stylex.create({
     textDecoration: 'none',
     cursor: 'pointer',
     transitionProperty: 'background-color, color',
-    transitionDuration: transitionVars['--transition-fast'],
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easingVars['--easing-standard'],
     backgroundColor: {
       default: 'transparent',
       ':hover': {
@@ -82,7 +84,8 @@ const styles = stylex.create({
     display: 'inline-flex',
     alignItems: 'center',
     transitionProperty: 'transform',
-    transitionDuration: transitionVars['--transition-fast'],
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easingVars['--easing-standard'],
   },
   chevronOpen: {
     transform: 'rotate(180deg)',
@@ -111,7 +114,8 @@ const styles = stylex.create({
     textDecoration: 'none',
     cursor: 'pointer',
     transitionProperty: 'background-color',
-    transitionDuration: transitionVars['--transition-fast'],
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easingVars['--easing-standard'],
     backgroundColor: {
       default: 'transparent',
       ':hover': {
@@ -171,7 +175,8 @@ const drawerStyles = stylex.create({
   chevron: {
     display: 'inline-flex',
     transitionProperty: 'transform',
-    transitionDuration: transitionVars['--transition-fast'],
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easingVars['--easing-standard'],
   },
   chevronExpanded: {
     transform: 'rotate(180deg)',
@@ -180,7 +185,8 @@ const drawerStyles = stylex.create({
     display: 'grid',
     gridTemplateRows: '0fr',
     transitionProperty: 'grid-template-rows',
-    transitionDuration: transitionVars['--transition-normal'],
+    transitionDuration: durationVars['--duration-medium'],
+    transitionTimingFunction: easingVars['--easing-decelerate'],
   },
   itemsExpanded: {
     gridTemplateRows: '1fr',

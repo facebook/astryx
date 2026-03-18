@@ -26,7 +26,8 @@ import {
   spacingVars,
   radiusVars,
   textSizeVars,
-  transitionVars,
+  durationVars,
+  easingVars,
   typographyVars,
 } from '../theme/tokens.stylex';
 import {XDSFieldLabel} from '../Field/XDSFieldLabel';
@@ -71,7 +72,8 @@ const styles = stylex.create({
     borderStyle: 'solid',
     borderRadius: radiusVars['--radius-content'],
     transitionProperty: 'background-color, border-color',
-    transitionDuration: transitionVars['--transition-fast'],
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easingVars['--easing-standard'],
   },
   checkboxFocused: {
     outline: `2px solid ${colorVars['--color-focus-outline']}`,

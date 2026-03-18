@@ -21,7 +21,8 @@ import {
   spacingVars,
   sizeVars,
   radiusVars,
-  transitionVars,
+  durationVars,
+  easingVars,
   elevationVars,
   textSizeVars,
   fontWeightVars,
@@ -78,7 +79,8 @@ const styles = stylex.create({
     cursor: 'pointer',
     textDecoration: 'none',
     transitionProperty: 'color',
-    transitionDuration: transitionVars['--transition-fast'],
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easingVars['--easing-standard'],
     outline: {
       default: null,
       ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
@@ -136,7 +138,8 @@ const styles = stylex.create({
       },
     },
     transitionProperty: 'opacity',
-    transitionDuration: transitionVars['--transition-fast'],
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easingVars['--easing-standard'],
     pointerEvents: 'none',
   },
   chevron: {
@@ -144,7 +147,8 @@ const styles = stylex.create({
     height: spacingVars['--spacing-4'],
     flexShrink: 0,
     transitionProperty: 'transform',
-    transitionDuration: transitionVars['--transition-fast'],
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easingVars['--easing-standard'],
   },
   chevronOpen: {
     transform: 'rotate(180deg)',
@@ -175,7 +179,8 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     cursor: 'pointer',
     transitionProperty: 'background-color',
-    transitionDuration: transitionVars['--transition-fast'],
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easingVars['--easing-standard'],
     backgroundColor: {
       default: 'transparent',
       ':hover': {

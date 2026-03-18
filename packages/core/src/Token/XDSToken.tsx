@@ -19,7 +19,8 @@ import {
   spacingVars,
   radiusVars,
   sizeVars,
-  transitionVars,
+  durationVars,
+  easingVars,
   textSizeVars,
   fontWeightVars,
   lineHeightVars,
@@ -160,7 +161,8 @@ const styles = stylex.create({
   interactive: {
     cursor: 'pointer',
     transitionProperty: 'background-image',
-    transitionDuration: transitionVars['--transition-fast'],
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easingVars['--easing-standard'],
     backgroundImage: {
       default: null,
       ':hover': {

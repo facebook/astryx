@@ -19,7 +19,8 @@ import {
   colorVars,
   spacingVars,
   textSizeVars,
-  transitionVars,
+  durationVars,
+  easingVars,
   typographyVars,
   fontWeightVars,
 } from '../theme/tokens.stylex';
@@ -58,7 +59,8 @@ const styles = stylex.create({
     borderStyle: 'solid',
     borderRadius: '50%',
     transitionProperty: 'background-color, border-color',
-    transitionDuration: transitionVars['--transition-fast'],
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easingVars['--easing-standard'],
     boxSizing: 'border-box',
   },
   radioUnchecked: {

@@ -40,7 +40,8 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
-  transitionVars,
+  durationVars,
+  easingVars,
   typographyVars,
   textSizeVars,
 } from '../theme/tokens.stylex';
@@ -60,7 +61,9 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-surface'],
     boxShadow: `0 4px 12px ${colorVars['--color-shadow-elevation']}`,
     opacity: 1,
-    transition: `opacity ${transitionVars['--transition-fast']}`,
+    transitionProperty: 'opacity',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easingVars['--easing-decelerate'],
   },
   popover: {
     minWidth: '160px',

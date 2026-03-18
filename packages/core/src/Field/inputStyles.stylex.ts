@@ -17,7 +17,8 @@ import {
   spacingVars,
   radiusVars,
   elevationVars,
-  transitionVars,
+  durationVars,
+  easingVars,
 } from '../theme/tokens.stylex';
 
 /**
@@ -45,7 +46,8 @@ export const inputWrapperStyles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     backgroundColor: colorVars['--color-surface'],
     transitionProperty: 'border-color, outline, box-shadow',
-    transitionDuration: transitionVars['--transition-fast'],
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easingVars['--easing-standard'],
     boxShadow: {
       default: 'none',
       ':hover': {

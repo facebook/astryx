@@ -24,7 +24,8 @@ import {
   colorVars,
   sizeVars,
   spacingVars,
-  transitionVars,
+  durationVars,
+  easingVars,
   textSizeVars,
 } from '../theme/tokens.stylex';
 import {XDSButton} from '../Button';
@@ -196,7 +197,8 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-deemphasized'],
     cursor: 'pointer',
     transitionProperty: 'background-color',
-    transitionDuration: transitionVars['--transition-fast'],
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easingVars['--easing-standard'],
     outline: {
       default: 'none',
       ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,

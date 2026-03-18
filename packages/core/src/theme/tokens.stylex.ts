@@ -228,17 +228,52 @@ export const elevationRaw = elevationDefaults;
 export const elevationVars = stylex.defineVars(elevationDefaults);
 
 // =============================================================================
-// Transition Tokens
+// Motion Tokens — Duration
+// =============================================================================
+// Duration primitives: pick a duration that matches the visual weight.
+// min/max variants derive from base × ratio (default ratio ≈ 0.75).
+// See motionScale in defineTheme for computed generation.
+
+export const durationDefaults = {
+  '--duration-fast-min': '130ms',
+  '--duration-fast': '175ms',
+  '--duration-fast-max': '230ms',
+  '--duration-medium-min': '310ms',
+  '--duration-medium': '410ms',
+  '--duration-medium-max': '550ms',
+} as const;
+
+export const durationVars = stylex.defineVars(durationDefaults);
+
+export type DurationVarName = keyof typeof durationDefaults;
+
+// =============================================================================
+// Motion Tokens — Easing
 // =============================================================================
 
+export const easingDefaults = {
+  '--easing-decelerate': 'cubic-bezier(0.24, 1, 0.4, 1)',
+  '--easing-standard': 'cubic-bezier(0.4, 0, 0.2, 1)',
+} as const;
+
+export const easingVars = stylex.defineVars(easingDefaults);
+
+export type EasingVarName = keyof typeof easingDefaults;
+
+// =============================================================================
+// Motion Tokens — Deprecated (transition shorthand)
+// =============================================================================
+
+/** @deprecated Use durationVars + easingVars instead */
 export const transitionDefaults = {
   '--transition-fast': '0.15s ease',
   '--transition-normal': '0.2s ease',
 } as const;
 
-/** @deprecated Use transitionDefaults */
+/** @deprecated Use durationVars + easingVars instead */
 export const transitionRaw = transitionDefaults;
 
+/** @deprecated Use durationVars + easingVars instead */
 export const transitionVars = stylex.defineVars(transitionDefaults);
 
 // =============================================================================
@@ -323,6 +358,7 @@ export type SpacingVarName = keyof typeof spacingDefaults;
 export type SizeVarName = keyof typeof sizeDefaults;
 export type RadiusVarName = keyof typeof radiusDefaults;
 export type ElevationVarName = keyof typeof elevationDefaults;
+/** @deprecated Use DurationVarName | EasingVarName instead */
 export type TransitionVarName = keyof typeof transitionDefaults;
 export type TypographyVarName = keyof typeof typographyDefaults;
 export type TextSizeVarName = keyof typeof textSizeDefaults;

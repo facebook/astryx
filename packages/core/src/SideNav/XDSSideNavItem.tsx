@@ -24,7 +24,8 @@ import {
   textSizeVars,
   fontWeightVars,
   lineHeightVars,
-  transitionVars,
+  durationVars,
+  easingVars,
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
 import type {XDSIconType} from '../Icon';
@@ -69,7 +70,8 @@ const styles = stylex.create({
     display: 'grid',
     gridTemplateRows: '1fr',
     transitionProperty: 'grid-template-rows',
-    transitionDuration: transitionVars['--transition-normal'],
+    transitionDuration: durationVars['--duration-medium'],
+    transitionTimingFunction: easingVars['--easing-decelerate'],
   },
   childrenCollapsed: {
     gridTemplateRows: '0fr',
@@ -83,7 +85,8 @@ const styles = stylex.create({
     display: 'inline-flex',
     alignItems: 'center',
     transitionProperty: 'transform',
-    transitionDuration: transitionVars['--transition-fast'],
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easingVars['--easing-standard'],
     flexShrink: 0,
   },
   expandChevronCollapsed: {

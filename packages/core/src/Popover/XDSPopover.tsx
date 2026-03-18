@@ -28,6 +28,8 @@ import {useXDSPopover} from './useXDSPopover';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useXDSLayer';
 import {
   colorVars,
+  durationVars,
+  easingVars,
   spacingVars,
   radiusVars,
   elevationVars,
@@ -180,8 +182,8 @@ const styles = stylex.create({
       ':popover-open': 'scale(1)',
     },
     transitionProperty: 'opacity, transform, overlay, display',
-    transitionDuration: '0.15s',
-    transitionTimingFunction: 'ease',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easingVars['--easing-decelerate'],
     transitionBehavior: 'allow-discrete',
     '@starting-style': {
       opacity: 0,

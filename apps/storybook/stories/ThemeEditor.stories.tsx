@@ -33,6 +33,8 @@ import {
   typeScaleDefaults,
   sizeDefaults,
   elevationDefaults,
+  durationDefaults,
+  easingDefaults,
   transitionDefaults,
 } from '@xds/core/theme';
 import {defaultIconRegistry} from '@xds/theme-default';
@@ -78,10 +80,15 @@ const TOKEN_GROUPS = {
     description: 'Shadow and elevation tokens',
     tokens: elevationDefaults,
   },
-  transition: {
-    label: 'Transition',
-    description: 'Animation timing tokens',
-    tokens: transitionDefaults,
+  duration: {
+    label: 'Duration',
+    description: 'Motion duration tokens',
+    tokens: durationDefaults,
+  },
+  easing: {
+    label: 'Easing',
+    description: 'Motion easing tokens',
+    tokens: easingDefaults,
   },
 } as const;
 
@@ -1315,6 +1322,8 @@ function ThemeEditorComponent() {
       ...typeScaleDefaults,
       ...sizeDefaults,
       ...elevationDefaults,
+      ...durationDefaults,
+      ...easingDefaults,
       ...transitionDefaults,
     }),
     [],

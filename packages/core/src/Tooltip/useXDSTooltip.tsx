@@ -26,6 +26,8 @@ import {
 } from '../Layer/useXDSLayer';
 import {
   colorVars,
+  durationVars,
+  easingVars,
   radiusVars,
   spacingVars,
   typographyVars,
@@ -54,8 +56,8 @@ const styles = stylex.create({
     },
     // Transitions with allow-discrete for display/overlay
     transitionProperty: 'opacity, transform, overlay, display',
-    transitionDuration: '0.1s',
-    transitionTimingFunction: 'ease',
+    transitionDuration: durationVars['--duration-fast-min'],
+    transitionTimingFunction: easingVars['--easing-decelerate'],
     transitionBehavior: 'allow-discrete',
     // Entry animation starting state
     '@starting-style': {

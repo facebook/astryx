@@ -36,6 +36,8 @@ import {
   sizeDefaults,
   radiusDefaults,
   elevationDefaults,
+  durationDefaults,
+  easingDefaults,
   transitionDefaults,
   typographyDefaults,
   textSizeDefaults,
@@ -60,6 +62,8 @@ export type XDSTokenName =
   | keyof typeof sizeDefaults
   | keyof typeof radiusDefaults
   | keyof typeof elevationDefaults
+  | keyof typeof durationDefaults
+  | keyof typeof easingDefaults
   | keyof typeof transitionDefaults
   | keyof typeof typographyDefaults
   | keyof typeof textSizeDefaults
@@ -188,6 +192,8 @@ export const xdsTokenDefaults: Record<string, string> = {
   ...sizeDefaults,
   ...radiusDefaults,
   ...elevationDefaults,
+  ...durationDefaults,
+  ...easingDefaults,
   ...transitionDefaults,
   ...typographyDefaults,
   ...textSizeDefaults,
@@ -328,9 +334,7 @@ function toKebabCase(str: string): string {
  *   When false (default), prose rules use var() references to token custom properties
  *   (for the runtime path where tokens are set on :scope).
  */
-export function generateThemeRules(
-  theme: XDSDefinedTheme,
-): string[] {
+export function generateThemeRules(theme: XDSDefinedTheme): string[] {
   const parts: string[] = [];
   const tokens = theme.tokens;
 
@@ -350,7 +354,9 @@ export function generateThemeRules(
   // 2. Component overrides (.xds-* class rules)
   if (theme.components) {
     for (const [component, rules] of Object.entries(theme.components)) {
-      for (const [key, styles] of Object.entries(rules as Record<string, Record<string, string>>)) {
+      for (const [key, styles] of Object.entries(
+        rules as Record<string, Record<string, string>>,
+      )) {
         const entries = Object.entries(styles);
         if (entries.length > 0) {
           const suffix = parseStyleKey(key);

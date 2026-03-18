@@ -37,7 +37,8 @@ import {
   spacingVars,
   radiusVars,
   elevationVars,
-  transitionVars,
+  durationVars,
+  easingVars,
   typographyVars,
   textSizeVars,
   fontWeightVars,
@@ -83,7 +84,8 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     cursor: 'pointer',
     transitionProperty: 'border-color, outline, box-shadow',
-    transitionDuration: transitionVars['--transition-fast'],
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easingVars['--easing-standard'],
     boxShadow: {
       default: 'none',
       ':hover': {
@@ -111,7 +113,7 @@ const styles = stylex.create({
     justifyContent: 'center',
     width: 16,
     height: 16,
-    transition: `transform ${transitionVars['--transition-fast']}`,
+    transition: `transform ${(durationVars, easingVars['--transition-fast'])}`,
     transformOrigin: 'center',
     color: colorVars['--color-icon-secondary'],
   },
@@ -133,7 +135,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-surface'],
     boxShadow: `0 4px 12px ${colorVars['--color-shadow-elevation']}`,
     opacity: 1,
-    transition: `opacity ${transitionVars['--transition-fast']}`,
+    transition: `opacity ${(durationVars, easingVars['--transition-fast'])}`,
   },
   dropdownHidden: {
     opacity: 0,

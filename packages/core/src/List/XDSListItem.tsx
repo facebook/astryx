@@ -22,7 +22,8 @@ import {
   spacingVars,
   textSizeVars,
   lineHeightVars,
-  transitionVars,
+  durationVars,
+  easingVars,
 } from '../theme/tokens.stylex';
 import {XDSListContext} from './XDSListContext';
 import {xdsClassName, mergeProps} from '../utils';
@@ -149,7 +150,8 @@ const styles = stylex.create({
   interactive: {
     cursor: 'pointer',
     transitionProperty: 'background-image',
-    transitionDuration: transitionVars['--transition-fast'],
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easingVars['--easing-standard'],
     backgroundImage: {
       default: null,
       ':hover': {

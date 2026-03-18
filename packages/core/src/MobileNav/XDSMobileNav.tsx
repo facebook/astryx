@@ -25,7 +25,12 @@
 
 import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  durationVars,
+  easingVars,
+  spacingVars,
+} from '../theme/tokens.stylex';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
 import {XDSHeading} from '../Text/XDSHeading';
@@ -36,9 +41,6 @@ import {XDSBaseProps} from '../XDSBaseProps';
 // =============================================================================
 // Styles
 // =============================================================================
-
-const SLIDE_DURATION = '0.25s';
-const SLIDE_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
 const styles = stylex.create({
   dialog: {
@@ -73,7 +75,9 @@ const styles = stylex.create({
       backgroundColor: colorVars['--color-overlay'],
       backdropFilter: 'blur(2px)',
       opacity: 0,
-      transition: `opacity ${SLIDE_DURATION} ${SLIDE_EASING}`,
+      transitionProperty: 'opacity',
+      transitionDuration: durationVars['--duration-medium'],
+      transitionTimingFunction: easingVars['--easing-standard'],
     },
     '@media (prefers-reduced-motion: reduce)': {
       '::backdrop': {
@@ -95,7 +99,9 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-surface'],
     boxSizing: 'border-box',
     overflow: 'hidden',
-    transition: `transform ${SLIDE_DURATION} ${SLIDE_EASING}`,
+    transitionProperty: 'transform',
+    transitionDuration: durationVars['--duration-medium'],
+    transitionTimingFunction: easingVars['--easing-standard'],
     outline: 'none',
     '@media (prefers-reduced-motion: reduce)': {
       transitionDuration: '0.01s',

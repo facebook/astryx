@@ -19,7 +19,8 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   radiusVars,
-  transitionVars,
+  durationVars,
+  easingVars,
   elevationVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
@@ -78,7 +79,9 @@ const styles = stylex.create({
       default: 'scale(0.95) translateY(8px)',
       ':where([open])': 'scale(1) translateY(0)',
     },
-    transition: `opacity ${transitionVars['--transition-normal']}, transform ${transitionVars['--transition-normal']}`,
+    transitionProperty: 'opacity, transform',
+    transitionDuration: durationVars['--duration-medium'],
+    transitionTimingFunction: easingVars['--easing-decelerate'],
     outline: {
       default: null,
       ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,

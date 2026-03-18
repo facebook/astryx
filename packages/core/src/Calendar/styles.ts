@@ -17,7 +17,8 @@ import {
   spacingVars,
   sizeVars,
   radiusVars,
-  transitionVars,
+  durationVars,
+  easingVars,
   textSizeVars,
   fontWeightVars,
 } from '../theme/tokens.stylex';
@@ -191,7 +192,8 @@ export const dayCellStyles = stylex.create({
     position: 'relative',
     zIndex: 1,
     transitionProperty: 'background-color, color',
-    transitionDuration: transitionVars['--transition-fast'],
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easingVars['--easing-standard'],
     // Expand hit target by 2px on each side to prevent gaps
     '::before': {
       content: '""',
