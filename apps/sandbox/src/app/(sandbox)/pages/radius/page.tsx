@@ -401,6 +401,68 @@ export default function RadiusPage() {
             </XDSVStack>
           </XDSVStack>
         </XDSVStack>
+
+        <XDSDivider />
+
+        {/* radius-rounded */}
+        <XDSVStack gap={4}>
+          <div style={{display: 'flex', alignItems: 'baseline', gap: 12}}>
+            <span style={{fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'light-dark(#0064E0, #2694FE)'}}>radius-rounded</span>
+            <span style={{fontSize: 13, color: 'light-dark(#666, #aaa)', fontStyle: 'italic'}}>9999px</span>
+            <span style={{fontSize: 13, color: 'light-dark(#888, #777)', marginLeft: 'auto', fontStyle: 'italic'}}>Always pill &middot; ignores multiplier</span>
+          </div>
+          <div style={{display: 'flex', gap: 48, flexWrap: 'wrap', alignItems: 'flex-start'}}>
+            {/* Badges */}
+            <XDSVStack gap={2}>
+              <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Badges</span>
+              <div style={{display: 'flex', gap: 8}}>
+                <span style={{display: 'inline-flex', padding: '4px 12px', fontSize: 13, fontWeight: 600, borderRadius: 9999, backgroundColor: 'light-dark(rgba(0,100,224,0.1), rgba(38,148,254,0.15))', color: 'light-dark(#0064E0, #4BA9FE)'}}>New</span>
+                <span style={{display: 'inline-flex', padding: '4px 12px', fontSize: 13, fontWeight: 600, borderRadius: 9999, backgroundColor: 'light-dark(rgba(13,134,38,0.1), rgba(13,134,38,0.15))', color: 'light-dark(#0D8626, #26A756)'}}>Active</span>
+                <span style={{display: 'inline-flex', padding: '4px 12px', fontSize: 13, fontWeight: 600, borderRadius: 9999, backgroundColor: 'light-dark(rgba(227,25,59,0.1), rgba(227,25,59,0.15))', color: 'light-dark(#E3193B, #F5394F)'}}>Error</span>
+                <span style={{display: 'inline-flex', padding: '4px 12px', fontSize: 13, fontWeight: 600, borderRadius: 9999, backgroundColor: 'light-dark(rgba(233,175,8,0.1), rgba(233,175,8,0.15))', color: 'light-dark(#B8860B, #E9AF08)'}}>Pending</span>
+              </div>
+            </XDSVStack>
+
+            {/* Avatars */}
+            <XDSVStack gap={2}>
+              <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Avatars</span>
+              <div style={{display: 'flex', gap: 8}}>
+                <div style={{width: 48, height: 48, borderRadius: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, color: '#fff', background: 'linear-gradient(135deg, #5B08D8, #E3193B)'}}>JD</div>
+                <div style={{width: 48, height: 48, borderRadius: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, color: '#fff', background: 'linear-gradient(135deg, #0064E0, #0D8626)'}}>AB</div>
+                <div style={{width: 48, height: 48, borderRadius: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, color: '#fff', background: 'linear-gradient(135deg, #E9AF08, #E3193B)'}}>KL</div>
+              </div>
+            </XDSVStack>
+
+            {/* Status dots */}
+            <XDSVStack gap={2}>
+              <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Status Dots</span>
+              <XDSVStack gap={2}>
+                <div style={{display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, color: 'light-dark(#333, #eee)'}}><div style={{width: 12, height: 12, borderRadius: '50%', backgroundColor: '#0D8626'}} />Online</div>
+                <div style={{display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, color: 'light-dark(#333, #eee)'}}><div style={{width: 12, height: 12, borderRadius: '50%', backgroundColor: '#E9AF08'}} />Away</div>
+                <div style={{display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, color: 'light-dark(#333, #eee)'}}><div style={{width: 12, height: 12, borderRadius: '50%', backgroundColor: '#E3193B'}} />Busy</div>
+              </XDSVStack>
+            </XDSVStack>
+
+            {/* Toggles */}
+            <XDSVStack gap={2}>
+              <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Toggles</span>
+              <XDSVStack gap={3}>
+                <div style={{display: 'flex', alignItems: 'center', gap: 12, fontSize: 15, color: 'light-dark(#333, #eee)'}}>
+                  <div style={{width: 52, height: 30, borderRadius: 9999, backgroundColor: 'light-dark(#0064E0, #2694FE)', padding: 4, cursor: 'pointer'}}>
+                    <div style={{width: 22, height: 22, borderRadius: 9999, backgroundColor: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transform: 'translateX(22px)'}} />
+                  </div>
+                  Notifications
+                </div>
+                <div style={{display: 'flex', alignItems: 'center', gap: 12, fontSize: 15, color: 'light-dark(#333, #eee)'}}>
+                  <div style={{width: 52, height: 30, borderRadius: 9999, backgroundColor: 'light-dark(rgba(0,0,0,0.12), rgba(255,255,255,0.12))', padding: 4, cursor: 'pointer'}}>
+                    <div style={{width: 22, height: 22, borderRadius: 9999, backgroundColor: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'}} />
+                  </div>
+                  Dark mode
+                </div>
+              </XDSVStack>
+            </XDSVStack>
+          </div>
+        </XDSVStack>
       </XDSVStack>
     </div>
   );
