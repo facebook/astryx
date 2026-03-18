@@ -172,7 +172,10 @@ function computeSize(base: number, ratio: number, step: number): number {
  */
 function computeLeading(fontSize: number, targetRatio: number): number {
   const rawLh = fontSize * targetRatio;
-  const snappedLh = Math.max(Math.ceil(rawLh / 4) * 4, fontSize + 4);
+  const snappedLh = Math.max(
+    Math.round(rawLh / 4) * 4,
+    Math.ceil((fontSize + 4) / 4) * 4,
+  );
   // Round to 4 decimal places for clean CSS output
   return Math.round((snappedLh / fontSize) * 10000) / 10000;
 }
