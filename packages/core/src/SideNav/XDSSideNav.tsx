@@ -44,6 +44,8 @@ const styles = stylex.create({
     backgroundColor: 'inherit',
     boxSizing: 'border-box',
     overflow: 'hidden',
+    // View transition name for animated collapse/expand
+    viewTransitionName: 'xds-side-nav',
   },
   rootCollapsed: {
     width: 52,
@@ -326,10 +328,20 @@ export function XDSSideNav({
 
   const toggle = useCallback(() => {
     const newValue = !collapsed;
-    if (!isControlled) {
-      setUncontrolledCollapsed(newValue);
+    const update = () => {
+      if (!isControlled) {
+        setUncontrolledCollapsed(newValue);
+      }
+      onCollapsedChange?.(newValue);
+    };
+
+    // Use View Transitions API for smooth width animation when available.
+    // Falls back to instant state change in unsupported browsers.
+    if (typeof document !== 'undefined' && 'startViewTransition' in document) {
+      document.startViewTransition(update);
+    } else {
+      update();
     }
-    onCollapsedChange?.(newValue);
   }, [collapsed, isControlled, onCollapsedChange]);
 
   const collapseContext = {
