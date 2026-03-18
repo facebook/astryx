@@ -30,7 +30,7 @@ const styles = stylex.create({
   attached: {
     marginTop: -6,
     paddingBlockStart: 14,
-    paddingBlockEnd: 8,
+    paddingBlockEnd: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
     borderBottomLeftRadius: radiusVars['--radius-element'],
     borderBottomRightRadius: radiusVars['--radius-element'],
