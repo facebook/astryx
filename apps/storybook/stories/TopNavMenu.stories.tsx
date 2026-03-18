@@ -8,7 +8,6 @@ import {
   XDSTopNavMegaMenu,
   XDSTopNavMegaMenuItem,
   XDSTopNavMegaMenuFeaturedCard,
-  XDSTopNavMegaMenuFeaturedCard,
 } from '@xds/core/TopNav';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSButton} from '@xds/core/Button';
