@@ -320,11 +320,7 @@ export function useXDSTooltip(
       // Only show tooltip for keyboard focus (:focus-visible),
       // not programmatic focus (e.g. dialog auto-focus, touch tap)
       const target = e.target as HTMLElement;
-      try {
-        if (!target.matches(':focus-visible')) return;
-      } catch {
-        // :focus-visible not supported — fall through to show
-      }
+      if (!target.matches(':focus-visible')) return;
       clearTimeouts();
       layer.show();
     },
