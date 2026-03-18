@@ -1,0 +1,95 @@
+/**
+ * @file navItemStyles.stylex.ts
+ * @input Uses theme tokens (color, spacing, radius, typography, transition)
+ * @output Exports shared nav item appearance styles
+ * @position Shared styles consumed by SideNavItem, TopNavItem (drawer mode),
+ *   TopNavMenu (drawer mode), and any custom nav items that need to match.
+ *
+ * Centralizes the nav item appearance (layout, colors, hover/active/selected states,
+ * disabled state) so all nav-like components stay in sync — especially important
+ * when TopNav items render inside MobileNav drawers alongside SideNav items.
+ *
+ * Individual components layer their own overrides (e.g. collapsed mode, indentation,
+ * focus outlines) via stylex.props composition.
+ */
+
+import * as stylex from '@stylexjs/stylex';
+import {
+  colorVars,
+  spacingVars,
+  radiusVars,
+  textSizeVars,
+  fontWeightVars,
+  lineHeightVars,
+} from '../theme/tokens.stylex';
+
+/**
+ * Base styles shared by all nav item components.
+ * Apply as a foundation and override specific properties as needed.
+ *
+ * @example
+ * ```
+ * import {navItemStyles} from '@xds/core/navItemStyles';
+ *
+ * const styles = stylex.create({
+ *   indented: { paddingInlineStart: spacingVars['--spacing-6'] },
+ * });
+ *
+ * <a {...stylex.props(navItemStyles.item, styles.indented)}>
+ *   Dashboard
+ * </a>
+ * ```
+ */
+export const navItemStyles = stylex.create({
+  /** Base interactive nav item — layout, typography, hover/active states */
+  item: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+    width: '100%',
+    paddingInline: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-2'],
+    borderRadius: radiusVars['--radius-element'],
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    color: colorVars['--color-text-primary'],
+    textDecoration: 'none',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    fontSize: textSizeVars['--text-base'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
+    lineHeight: lineHeightVars['--leading-base'],
+    textAlign: 'start',
+    boxSizing: 'border-box',
+    ':hover': {
+      '@media (hover: hover)': {
+        backgroundColor: colorVars['--color-hover-overlay'],
+      },
+    },
+    ':active': {
+      backgroundColor: colorVars['--color-pressed-overlay'],
+    },
+  },
+
+  /** Selected/active page indicator — deemphasized background, medium weight */
+  selected: {
+    backgroundColor: colorVars['--color-deemphasized'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    ':hover': {
+      '@media (hover: hover)': {
+        backgroundColor: colorVars['--color-deemphasized'],
+      },
+    },
+    ':active': {
+      backgroundColor: colorVars['--color-deemphasized'],
+    },
+  },
+
+  /** Disabled state — muted color, no interaction */
+  disabled: {
+    color: colorVars['--color-text-disabled'],
+    cursor: 'not-allowed',
+    pointerEvents: 'none' as const,
+  },
+});

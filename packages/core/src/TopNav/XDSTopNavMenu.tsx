@@ -23,6 +23,7 @@ import {useXDSPopover} from '../Popover/useXDSPopover';
 import {useListFocus} from '../hooks/useListFocus';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {xdsClassName, mergeProps} from '../utils';
+import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useTopNavSlot} from './TopNavContext';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
 import {
@@ -163,31 +164,9 @@ const drawerStyles = stylex.create({
     flexDirection: 'column',
   },
   header: {
-    display: 'flex',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    width: '100%',
-    paddingBlock: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-2'],
-    borderRadius: radiusVars['--radius-element'],
-    fontSize: textSizeVars['--text-base'],
-    lineHeight: lineHeightVars['--leading-base'],
-    fontWeight: fontWeightVars['--font-weight-normal'],
-    color: colorVars['--color-text-primary'],
-    cursor: 'pointer',
     border: 'none',
     background: 'none',
-    fontFamily: 'inherit',
-    textAlign: 'start',
-    boxSizing: 'border-box',
-    ':hover': {
-      '@media (hover: hover)': {
-        backgroundColor: colorVars['--color-hover-overlay'],
-      },
-    },
-    ':active': {
-      backgroundColor: colorVars['--color-pressed-overlay'],
-    },
   },
   chevron: {
     display: 'inline-flex',
@@ -211,29 +190,8 @@ const drawerStyles = stylex.create({
     minHeight: 0,
   },
   item: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-2'],
-    width: '100%',
-    paddingBlock: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-2'],
     paddingInlineStart: spacingVars['--spacing-6'],
-    borderRadius: radiusVars['--radius-element'],
-    fontSize: textSizeVars['--text-base'],
-    lineHeight: lineHeightVars['--leading-base'],
-    fontWeight: fontWeightVars['--font-weight-normal'],
-    color: colorVars['--color-text-primary'],
     textDecoration: 'none',
-    textAlign: 'start',
-    boxSizing: 'border-box',
-    ':hover': {
-      '@media (hover: hover)': {
-        backgroundColor: colorVars['--color-hover-overlay'],
-      },
-    },
-    ':active': {
-      backgroundColor: colorVars['--color-pressed-overlay'],
-    },
   },
   itemIcon: {
     flexShrink: 0,
@@ -374,7 +332,7 @@ export function XDSTopNavMenu({
           onClick={() => setDrawerExpanded(v => !v)}
           aria-expanded={drawerExpanded}
           aria-controls={`${menuId}-items`}
-          {...stylex.props(drawerStyles.header)}>
+          {...stylex.props(navItemStyles.item, drawerStyles.header)}>
           {label}
           <span
             {...stylex.props(
@@ -396,7 +354,7 @@ export function XDSTopNavMenu({
                 key={i}
                 href={item.href}
                 onClick={item.onClick}
-                {...stylex.props(drawerStyles.item)}>
+                {...stylex.props(navItemStyles.item, drawerStyles.item)}>
                 {item.icon && (
                   <span {...stylex.props(drawerStyles.itemIcon)}>
                     {item.icon}
