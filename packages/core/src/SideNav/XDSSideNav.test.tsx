@@ -7,6 +7,7 @@
  * SYNC: When SideNav components change, update tests to match new behavior
  */
 
+import React from 'react';
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -16,6 +17,7 @@ import {XDSSideNavHeading} from './XDSSideNavHeading';
 import {XDSSideNavItem} from './XDSSideNavItem';
 import {XDSSideNavSection} from './XDSSideNavSection';
 import {XDSLinkProvider} from '../Link/XDSLinkProvider';
+import {XDSSideNavCollapseProvider} from './XDSSideNavCollapseContext';
 
 const CustomLink = forwardRef<HTMLAnchorElement, ComponentPropsWithoutRef<'a'>>(
   ({children, ...props}, ref) => (
@@ -494,5 +496,123 @@ describe('SideNav integration', () => {
     expect(screen.getByText('Projects')).toBeInTheDocument();
     expect(screen.getByText('General')).toBeInTheDocument();
     expect(screen.getByTestId('promo')).toBeInTheDocument();
+  });
+});
+
+// Stub icon for testing
+const StubIcon = () => <svg data-testid="stub-icon" />;
+
+/** Helper to render inside a collapsed SideNav context */
+function renderCollapsed(ui: React.ReactElement) {
+  return render(
+    <XDSSideNavCollapseProvider
+      value={{isCollapsed: true, toggle: () => {}, isCollapsible: true}}>
+      {ui}
+    </XDSSideNavCollapseProvider>,
+  );
+}
+
+/** Helper to render inside an expanded SideNav context */
+function renderExpanded(ui: React.ReactElement) {
+  return render(
+    <XDSSideNavCollapseProvider
+      value={{isCollapsed: false, toggle: () => {}, isCollapsible: true}}>
+      {ui}
+    </XDSSideNavCollapseProvider>,
+  );
+}
+
+// =============================================================================
+// XDSSideNavItem — Collapsed mode
+// =============================================================================
+
+describe('XDSSideNavItem (collapsed)', () => {
+  it('hides items without icons when collapsed', () => {
+    const {container} = renderCollapsed(
+      <XDSSideNavItem label="No Icon Item" />,
+    );
+    expect(screen.queryByText('No Icon Item')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-xds="side-nav-item"]')).toBeNull();
+  });
+
+  it('renders icon-only button when collapsed with icon and no children', () => {
+    renderCollapsed(
+      <XDSSideNavItem label="Dashboard" icon={StubIcon} data-testid="item" />,
+    );
+    // Should have an element with aria-label (icon-only)
+    const item = screen.getByLabelText('Dashboard');
+    expect(item).toBeInTheDocument();
+    // Icon should be rendered
+    expect(screen.getByTestId('stub-icon')).toBeInTheDocument();
+  });
+
+  it('renders collapsed link when href is provided', () => {
+    renderCollapsed(
+      <XDSSideNavItem label="Dashboard" icon={StubIcon} href="/dashboard" />,
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('href', '/dashboard');
+    expect(link).toHaveAttribute('aria-label', 'Dashboard');
+  });
+
+  it('renders popover trigger when collapsed with icon and children', () => {
+    renderCollapsed(
+      <XDSSideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+        <XDSSideNavItem label="General" />
+        <XDSSideNavItem label="Security" />
+      </XDSSideNavItem>,
+    );
+    const trigger = screen.getByTestId('parent');
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveAttribute('aria-label', 'Settings');
+  });
+
+  it('opens popover on click showing children in expanded form', async () => {
+    const user = userEvent.setup();
+    renderCollapsed(
+      <XDSSideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+        <XDSSideNavItem label="General" data-testid="child-general" />
+        <XDSSideNavItem label="Security" data-testid="child-security" />
+      </XDSSideNavItem>,
+    );
+    await user.click(screen.getByTestId('parent'));
+
+    // Children should be visible in expanded form (label text visible)
+    expect(screen.getByText('General')).toBeInTheDocument();
+    expect(screen.getByText('Security')).toBeInTheDocument();
+  });
+
+  it('shows parent label as header in the popover', async () => {
+    const user = userEvent.setup();
+    renderCollapsed(
+      <XDSSideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+        <XDSSideNavItem label="General" />
+      </XDSSideNavItem>,
+    );
+    await user.click(screen.getByTestId('parent'));
+    expect(screen.getByText('Settings')).toBeInTheDocument();
+  });
+
+  it('does not render children without icon when collapsed', () => {
+    renderCollapsed(
+      <XDSSideNavItem label="Settings">
+        <XDSSideNavItem label="General" />
+        <XDSSideNavItem label="Security" />
+      </XDSSideNavItem>,
+    );
+    expect(screen.queryByText('Settings')).not.toBeInTheDocument();
+    expect(screen.queryByText('General')).not.toBeInTheDocument();
+  });
+
+  it('renders normally when not collapsed', () => {
+    renderExpanded(
+      <XDSSideNavItem label="Dashboard" icon={StubIcon}>
+        <XDSSideNavItem label="General" />
+      </XDSSideNavItem>,
+    );
+    expect(screen.getAllByText('Dashboard').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('General')).toBeInTheDocument();
+    expect(screen.getByRole('group')).toBeInTheDocument();
   });
 });
