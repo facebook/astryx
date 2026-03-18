@@ -71,23 +71,44 @@ const styles = stylex.create({
 });
 
 const radiusStyles = stylex.create({
+  // Numeric scale names (preferred)
   none: {
     borderRadius: 0,
+  },
+  0: {
+    borderRadius: radiusVars['--radius-0'],
+  },
+  1: {
+    borderRadius: radiusVars['--radius-1'],
+  },
+  2: {
+    borderRadius: radiusVars['--radius-2'],
+  },
+  3: {
+    borderRadius: radiusVars['--radius-3'],
+  },
+  4: {
+    borderRadius: radiusVars['--radius-4'],
   },
   rounded: {
     borderRadius: radiusVars['--radius-rounded'],
   },
-  container: {
-    borderRadius: radiusVars['--radius-container'],
-  },
-  element: {
-    borderRadius: radiusVars['--radius-element'],
-  },
-  content: {
-    borderRadius: radiusVars['--radius-content'],
-  },
+  // Deprecated semantic aliases (backwards compat)
+  /** @deprecated Use '0' instead */
   inner: {
-    borderRadius: radiusVars['--radius-inner'],
+    borderRadius: radiusVars['--radius-0'],
+  },
+  /** @deprecated Use '1' instead */
+  content: {
+    borderRadius: radiusVars['--radius-1'],
+  },
+  /** @deprecated Use '2' instead */
+  element: {
+    borderRadius: radiusVars['--radius-2'],
+  },
+  /** @deprecated Use '3' instead */
+  container: {
+    borderRadius: radiusVars['--radius-3'],
   },
 });
 
@@ -127,13 +148,18 @@ export interface XDSSkeletonProps extends XDSBaseProps<HTMLDivElement> {
    */
   height?: number | string;
   /**
-   * Border radius of the skeleton, using design token names.
+   * Border radius of the skeleton, using design token scale.
+   * Numeric names (preferred):
    * - 'none': No border radius (sharp corners)
-   * - 'inner': Inner radius
-   * - 'content': Content radius
-   * - 'element': Element radius
-   * - 'container': Container radius (default)
+   * - 0: radius-0 token
+   * - 1: radius-1 token
+   * - 2: radius-2 token
+   * - 3: radius-3 token (default)
+   * - 4: radius-4 token
    * - 'rounded': Fully rounded (for avatars, pills)
+   *
+   * Deprecated semantic aliases (still work):
+   * - 'inner' → 0, 'content' → 1, 'element' → 2, 'container' → 3
    * @default 'container'
    */
   radius?: XDSSkeletonRadius;

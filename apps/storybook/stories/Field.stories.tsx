@@ -22,7 +22,7 @@ const inputStyles = stylex.create({
     borderWidth: 1,
     borderStyle: 'solid',
     borderColor: colorVars['--color-divider'],
-    borderRadius: radiusVars['--radius-element'],
+    borderRadius: radiusVars['--radius-2'],
     backgroundColor: colorVars['--color-surface'],
     color: colorVars['--color-text-primary'],
     outline: 'none',

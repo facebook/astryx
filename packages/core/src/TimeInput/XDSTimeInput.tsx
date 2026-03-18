@@ -95,7 +95,7 @@ const styles = stylex.create({
     borderStyle: 'none',
     backgroundColor: 'transparent',
     cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
+    borderRadius: radiusVars['--radius-2'],
     outline: {
       default: 'none',
       ':focus-visible': `1px solid ${colorVars['--color-focus-outline']}`,

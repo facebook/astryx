@@ -31,6 +31,12 @@ export type {
 export {expandTypeScale, generateTypeScaleComponents} from './expandTypeScale';
 export type {XDSTypeScaleConfig, TypeScaleTokens} from './expandTypeScale';
 
+export {expandRadiusScale} from './expandRadiusScale';
+export type {
+  XDSRadiusScaleConfig,
+  RadiusScaleTokens,
+} from './expandRadiusScale';
+
 // Export token defaults and vars for use in custom components and themes
 export {
   colorDefaults,

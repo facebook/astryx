@@ -41,7 +41,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
-    borderRadius: radiusVars['--radius-element'],
+    borderRadius: radiusVars['--radius-2'],
     fontSize: textSizeVars['--text-base'],
     lineHeight: lineHeightVars['--leading-base'],
     fontWeight: fontWeightVars['--font-weight-medium'],

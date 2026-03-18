@@ -49,7 +49,7 @@ export const navItemStyles = stylex.create({
     width: '100%',
     paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-2'],
-    borderRadius: radiusVars['--radius-element'],
+    borderRadius: radiusVars['--radius-2'],
     borderWidth: 0,
     borderStyle: 'none',
     backgroundColor: 'transparent',

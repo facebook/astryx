@@ -124,7 +124,7 @@ const styles = stylex.create({
   card: {
     backgroundColor: 'var(--color-surface)',
     padding: 'var(--spacing-4)',
-    borderRadius: 'var(--radius-container)',
+    borderRadius: 'var(--radius-3)',
   },
 });
 ```

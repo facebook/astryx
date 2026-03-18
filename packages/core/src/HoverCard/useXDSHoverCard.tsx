@@ -35,7 +35,7 @@ const styles = stylex.create({
   // Base container styles passed to useXDSLayer (includes animations)
   container: {
     backgroundColor: colorVars['--color-surface'],
-    borderRadius: radiusVars['--radius-container'],
+    borderRadius: radiusVars['--radius-3'],
     boxShadow: elevationVars['--elevation-hover'],
     // Animation: closed state (default) and open state
     opacity: {

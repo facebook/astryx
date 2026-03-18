@@ -911,6 +911,7 @@ function createTaskManifest(
   prompts: TestPrompt[],
   config: InteractiveConfig,
   iterationId: string,
+  options?: {skillDocOverride?: string; label?: string},
 ): void {
   const resultsDir = path.join(getResultsDir(), iterationId);
   ensureDir(resultsDir);
@@ -919,6 +920,10 @@ function createTaskManifest(
     iterationId,
     createdAt: timestamp(),
     config,
+    ...(options?.label && {label: options.label}),
+    ...(options?.skillDocOverride && {
+      skillDocOverride: options.skillDocOverride,
+    }),
     prompts: prompts.map(p => ({
       id: p.id,
       category: p.category,
@@ -1108,6 +1113,13 @@ async function main() {
   const promptsIndex = args.indexOf('--prompts');
   const promptIds =
     promptsIndex !== -1 ? args[promptsIndex + 1].split(',') : undefined;
+  const testSetIndex = args.indexOf('--test-set');
+  const testSetName = testSetIndex !== -1 ? args[testSetIndex + 1] : 'default';
+  const skillDocIndex = args.indexOf('--skill-doc');
+  const skillDocOverride =
+    skillDocIndex !== -1 ? args[skillDocIndex + 1] : undefined;
+  const labelIndex = args.indexOf('--label');
+  const label = labelIndex !== -1 ? args[labelIndex + 1] : undefined;
 
   const config: InteractiveConfig = {
     sample,
@@ -1129,7 +1141,23 @@ async function main() {
   }
 
   // Load test set
-  const testSetPath = path.join(__dirname, '..', 'test-sets', 'default.json');
+  const testSetPath = path.join(
+    __dirname,
+    '..',
+    'test-sets',
+    `${testSetName}.json`,
+  );
+  if (!fs.existsSync(testSetPath)) {
+    console.error(`Error: Test set not found at ${testSetPath}`);
+    console.error(
+      `Available test sets: ${fs
+        .readdirSync(path.join(__dirname, '..', 'test-sets'))
+        .filter(f => f.endsWith('.json'))
+        .map(f => f.replace('.json', ''))
+        .join(', ')}`,
+    );
+    process.exit(1);
+  }
   const testSet = readJson<{prompts: TestPrompt[]; holdout?: TestPrompt[]}>(
     testSetPath,
   );
@@ -1158,8 +1186,11 @@ async function main() {
   console.log(`\n🧪 Interactive Vibe Test Setup`);
   console.log(`================================`);
   console.log(`Iteration: ${iterationId}`);
+  if (label) console.log(`Label: ${label}`);
+  console.log(`Test set: ${testSetName}`);
   console.log(`Target: ${target.toUpperCase()}`);
   console.log(`Persona: ${persona}`);
+  if (skillDocOverride) console.log(`Skill doc: ${skillDocOverride}`);
   console.log(
     `Mode: ${target === 'xds' ? 'AGENTS.md' : target === 'baseline' ? 'AGENTS.baseline.md' : target === 'xds-tailwind' ? 'AGENTS.xds-tailwind.md' : 'AGENTS.html.md'} (retrieval-led)`,
   );
@@ -1171,7 +1202,10 @@ async function main() {
   );
 
   // Create task manifest
-  createTaskManifest(prompts, config, iterationId);
+  createTaskManifest(prompts, config, iterationId, {
+    skillDocOverride,
+    label,
+  });
 
   // Output instructions
   console.log(generateSubagentInstructions(iterationId, prompts, config));

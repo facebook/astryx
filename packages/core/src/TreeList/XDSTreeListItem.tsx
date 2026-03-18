@@ -61,7 +61,7 @@ const styles = stylex.create({
     position: 'relative',
   },
   contentWrapper: {
-    borderRadius: radiusVars['--radius-content'],
+    borderRadius: radiusVars['--radius-1'],
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
@@ -161,7 +161,7 @@ const styles = stylex.create({
     background: 'none',
     padding: 0,
     color: colorVars['--color-icon-secondary'],
-    borderRadius: radiusVars['--radius-content'],
+    borderRadius: radiusVars['--radius-1'],
   },
   chevronButton: {
     all: 'unset',
@@ -173,7 +173,7 @@ const styles = stylex.create({
     fontSize: CHEVRON_SIZE,
     cursor: 'pointer',
     color: colorVars['--color-icon-secondary'],
-    borderRadius: radiusVars['--radius-content'],
+    borderRadius: radiusVars['--radius-1'],
   },
   chevronSvg: {
     display: 'flex',

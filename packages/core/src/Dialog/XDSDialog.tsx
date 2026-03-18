@@ -60,7 +60,7 @@ const styles = stylex.create({
     padding: 0,
     border: 'none',
     backgroundColor: colorVars['--color-surface'],
-    borderRadius: radiusVars['--radius-container'],
+    borderRadius: radiusVars['--radius-3'],
     boxShadow: elevationVars['--elevation-dialog'],
     display: {
       default: 'none',

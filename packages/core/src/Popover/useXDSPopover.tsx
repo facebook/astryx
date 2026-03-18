@@ -71,7 +71,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-text-primary'],
     color: colorVars['--color-surface'],
     fontSize: textSizeVars['--text-sm'],
-    borderRadius: radiusVars['--radius-element'],
+    borderRadius: radiusVars['--radius-2'],
     cursor: 'pointer',
     borderWidth: 0,
     borderStyle: 'none',

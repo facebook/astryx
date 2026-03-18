@@ -296,10 +296,10 @@ function generateTailwindPreset(themeDef) {
   }
 
   // Radius
-  borderRadius['element'] = 'var(--radius-element)';
-  borderRadius['container'] = 'var(--radius-container)';
-  borderRadius['content'] = 'var(--radius-content)';
-  borderRadius['inner'] = 'var(--radius-inner)';
+  borderRadius['2'] = 'var(--radius-2)';
+  borderRadius['3'] = 'var(--radius-3)';
+  borderRadius['1'] = 'var(--radius-1)';
+  borderRadius['0'] = 'var(--radius-0)';
   borderRadius['rounded'] = 'var(--radius-rounded)';
 
   // Font size
