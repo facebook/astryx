@@ -18,6 +18,10 @@ import migrateShadowTokens, {
   meta as shadowTokensMeta,
 } from './migrate-shadow-tokens.mjs';
 
+import migrateTokenNames, {
+  meta as tokenNamesMeta,
+} from './migrate-token-names.mjs';
+
 export default [
   {
     name: 'migrate-collapse-to-collapsible',
@@ -38,5 +42,10 @@ export default [
     name: 'migrate-shadow-tokens',
     transform: migrateShadowTokens,
     meta: shadowTokensMeta,
+  },
+  {
+    name: 'migrate-token-names',
+    transform: migrateTokenNames,
+    meta: tokenNamesMeta,
   },
 ];
