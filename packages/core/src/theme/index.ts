@@ -37,6 +37,12 @@ export type {
   RadiusScaleTokens,
 } from './expandRadiusScale';
 
+export {expandMotionScale} from './expandMotionScale';
+export type {
+  XDSMotionScaleConfig,
+  MotionScaleTokens,
+} from './expandMotionScale';
+
 // Export token defaults and vars for use in custom components and themes
 export {
   colorDefaults,

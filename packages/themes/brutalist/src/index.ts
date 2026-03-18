@@ -14,6 +14,12 @@ export const brutalistTheme = defineTheme({
   // Zero radius everywhere — multiplier 0 makes all scalable radii 0px
   radiusScale: {base: 4, multiplier: 0},
 
+  // Motion scale: near-instant — brutalism doesn't wait.
+  // Produces: fast-min=50ms, fast=65ms, fast-max=85ms,
+  //           medium-min=115ms, medium=150ms, medium-max=200ms.
+  // Linear easing — no curves, no polish, just movement.
+  motionScale: {fast: 65, medium: 150, ratio: 0.75, easing: 'linear'},
+
   tokens: {
     // Colors — high contrast, no subtlety
     '--color-accent': ['#FF1493', '#FF69B4'],

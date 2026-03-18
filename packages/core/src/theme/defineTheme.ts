@@ -51,6 +51,10 @@ import {
   type XDSTypeScaleConfig,
 } from './expandTypeScale';
 import {
+  expandMotionScale,
+  type XDSMotionScaleConfig,
+} from './expandMotionScale';
+import {
   expandRadiusScale,
   type XDSRadiusScaleConfig,
 } from './expandRadiusScale';
@@ -142,6 +146,23 @@ export interface XDSDefineThemeInput {
    * ```
    */
   typeScale?: XDSTypeScaleConfig;
+  /**
+   * Motion scale configuration. Computes duration min/max variants from
+   * base values and a scaling ratio: min = base × ratio, max = base / ratio.
+   *
+   * Explicit `tokens` overrides take precedence over motionScale-generated values.
+   *
+   * @example
+   * ```
+   * motionScale: { fast: 175, medium: 410, ratio: 0.75 }
+   *
+   * // Suggested starting points:
+   * //   Snappy:    { fast: 100, medium: 250, ratio: 0.75 }
+   * //   Default:   { fast: 175, medium: 410, ratio: 0.75 }
+   * //   Cinematic: { fast: 200, medium: 500, ratio: 0.7 }
+   * ```
+   */
+  motionScale?: XDSMotionScaleConfig;
   /**
    * Optional radius scale configuration. Generates radius token overrides
    * from a base unit and multiplier.
@@ -307,7 +328,15 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
     }
   }
 
-  // 2. Apply explicit token overrides (highest precedence — overwrites typeScale/radiusScale)
+  // 1c. Apply motionScale-generated tokens (same precedence as typeScale)
+  if (input.motionScale) {
+    const motionTokens = expandMotionScale(input.motionScale);
+    for (const [key, value] of Object.entries(motionTokens)) {
+      tokens[key] = value;
+    }
+  }
+
+  // 2. Apply explicit token overrides (highest precedence — overwrites typeScale/radiusScale/motionScale)
   if (input.tokens) {
     for (const [key, value] of Object.entries(input.tokens)) {
       if (value !== undefined) {

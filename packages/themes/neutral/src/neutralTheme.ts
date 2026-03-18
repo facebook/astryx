@@ -29,6 +29,11 @@ export const neutralTheme = defineTheme({
     },
   },
 
+  // Motion scale: snappier than default to match shadcn/Tailwind conventions.
+  // Produces: fast-min=95ms, fast=125ms, fast-max=165ms,
+  //           medium-min=225ms, medium=300ms, medium-max=400ms.
+  motionScale: {fast: 125, medium: 300, ratio: 0.75},
+
   tokens: {
     // =========================================================================
     // Colors — neutral grayscale palette using oklch

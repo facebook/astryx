@@ -21,6 +21,11 @@ export const defaultTheme = defineTheme({
   // Generates all heading + text tokens AND component overrides automatically.
   typeScale: {base: 14, ratio: 1.2},
 
+  // Motion scale: base durations from Ted's proposal (#674), ratio=0.75.
+  // Generates: fast-min=130ms, fast=175ms, fast-max=235ms,
+  //            medium-min=310ms, medium=410ms, medium-max=545ms.
+  motionScale: {fast: 175, medium: 410, ratio: 0.75},
+
   // The default theme uses the built-in token defaults from tokens.stylex.ts.
   // No additional token overrides needed.
   tokens: {},
