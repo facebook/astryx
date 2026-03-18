@@ -463,6 +463,83 @@ export default function RadiusPage() {
             </XDSVStack>
           </div>
         </XDSVStack>
+
+        <XDSDivider />
+
+        {/* Concentric Radius */}
+        <XDSVStack gap={4}>
+          <div style={{display: 'flex', alignItems: 'baseline', gap: 12}}>
+            <span style={{fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'light-dark(#0064E0, #2694FE)'}}>Concentric Radius</span>
+            <span style={{fontSize: 13, color: 'light-dark(#666, #aaa)', fontFamily: 'SF Mono, Monaco, Consolas, monospace'}}>max(0, outerRadius &minus; padding)</span>
+          </div>
+          <XDSText type="body" color="secondary">
+            Inner radius = outer minus padding. Nested elements get concentric corners.
+          </XDSText>
+          <div style={{display: 'flex', gap: 48, flexWrap: 'wrap', alignItems: 'flex-start'}}>
+            {/* Nested elements */}
+            <XDSVStack gap={2}>
+              <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Nested Elements</span>
+              <div style={{display: 'flex', gap: 24}}>
+                {/* Inset media - 10px pad */}
+                <div style={{border: '1px solid light-dark(#ddd, #444)', borderRadius: ct, padding: 10, width: 220, display: 'flex', flexDirection: 'column', backgroundColor: 'light-dark(#fff, #1a1a1a)', transition: 'border-radius 0.2s'}}>
+                  <div style={{width: '100%', height: 120, background: 'linear-gradient(135deg, #0064E0, #5B08D8)', borderRadius: Math.max(0, ct - 10), marginBottom: 12, transition: 'border-radius 0.2s'}} />
+                  <div style={{fontWeight: 600, fontSize: 15, marginBottom: 4, color: 'light-dark(#333, #eee)'}}>Inset media</div>
+                  <div style={{fontSize: 13, fontFamily: 'SF Mono, Monaco, Consolas, monospace', color: 'light-dark(#888, #777)', lineHeight: 1.6, marginBottom: 12}}>
+                    card: {ct}px, pad: 10px<br />&rarr; inner: {Math.max(0, +(ct - 10).toFixed(1))}px
+                  </div>
+                  <button style={{width: '100%', padding: '10px 14px', backgroundColor: 'light-dark(#0064E0, #2694FE)', color: '#fff', border: 'none', fontSize: 14, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer', borderRadius: Math.max(0, ct - 10), transition: 'border-radius 0.2s'}}>Action</button>
+                  <div style={{fontSize: 13, fontFamily: 'SF Mono, Monaco, Consolas, monospace', color: 'light-dark(#888, #777)', marginTop: 8}}>
+                    btn: max(0, {ct} - 10) = {Math.max(0, +(ct - 10).toFixed(1))}px
+                  </div>
+                </div>
+
+                {/* Tighter pad - 8px */}
+                <div style={{border: '1px solid light-dark(#ddd, #444)', borderRadius: ct, padding: 8, width: 220, display: 'flex', flexDirection: 'column', backgroundColor: 'light-dark(#fff, #1a1a1a)', transition: 'border-radius 0.2s'}}>
+                  <div style={{width: '100%', height: 120, background: 'linear-gradient(135deg, #0064E0, #5B08D8)', borderRadius: Math.max(0, ct - 8), marginBottom: 12, transition: 'border-radius 0.2s'}} />
+                  <div style={{fontWeight: 600, fontSize: 15, marginBottom: 4, color: 'light-dark(#333, #eee)'}}>Tighter pad</div>
+                  <div style={{fontSize: 13, fontFamily: 'SF Mono, Monaco, Consolas, monospace', color: 'light-dark(#888, #777)', lineHeight: 1.6, marginBottom: 12}}>
+                    card: {ct}px, pad: 8px<br />&rarr; inner: {Math.max(0, +(ct - 8).toFixed(1))}px
+                  </div>
+                  <button style={{width: '100%', padding: '10px 14px', backgroundColor: 'light-dark(#0064E0, #2694FE)', color: '#fff', border: 'none', fontSize: 14, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer', borderRadius: Math.max(0, ct - 8), transition: 'border-radius 0.2s'}}>Action</button>
+                  <div style={{fontSize: 13, fontFamily: 'SF Mono, Monaco, Consolas, monospace', color: 'light-dark(#888, #777)', marginTop: 8}}>
+                    btn: max(0, {ct} - 8) = {Math.max(0, +(ct - 8).toFixed(1))}px
+                  </div>
+                </div>
+
+                {/* Flush media - 0px pad, 4px inner padding for button */}
+                <div style={{border: '1px solid light-dark(#ddd, #444)', borderRadius: ct, width: 220, overflow: 'hidden', display: 'flex', flexDirection: 'column', backgroundColor: 'light-dark(#fff, #1a1a1a)', transition: 'border-radius 0.2s'}}>
+                  <div style={{width: '100%', height: 120, background: 'linear-gradient(135deg, #0064E0, #5B08D8)'}} />
+                  <div style={{padding: '12px 10px 4px'}}>
+                    <div style={{fontWeight: 600, fontSize: 15, marginBottom: 4, color: 'light-dark(#333, #eee)'}}>Flush media</div>
+                    <div style={{fontSize: 13, fontFamily: 'SF Mono, Monaco, Consolas, monospace', color: 'light-dark(#888, #777)', lineHeight: 1.6, marginBottom: 12}}>
+                      card: {ct}px, pad: 0<br />&rarr; inherits card
+                    </div>
+                  </div>
+                  <div style={{padding: '0 4px 4px'}}>
+                    <button style={{width: '100%', padding: '10px 14px', backgroundColor: 'light-dark(#0064E0, #2694FE)', color: '#fff', border: 'none', fontSize: 14, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer', borderRadius: Math.max(0, ct - 4), transition: 'border-radius 0.2s'}}>Action</button>
+                  </div>
+                  <div style={{fontSize: 13, fontFamily: 'SF Mono, Monaco, Consolas, monospace', color: 'light-dark(#888, #777)', padding: '4px 10px 10px'}}>
+                    btn: max(0, {ct} - 4) = {Math.max(0, +(ct - 4).toFixed(1))}px
+                  </div>
+                </div>
+              </div>
+            </XDSVStack>
+
+            {/* Dropdown (4px pad) */}
+            <XDSVStack gap={2}>
+              <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Dropdown (4px Pad)</span>
+              <div style={{border: '1px solid light-dark(#ddd, #444)', borderRadius: ct, padding: 6, width: 200, backgroundColor: 'light-dark(#fff, #1a1a1a)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)', transition: 'border-radius 0.2s'}}>
+                <div style={{padding: '10px 14px', fontSize: 15, color: 'light-dark(#333, #eee)', backgroundColor: 'light-dark(rgba(0,0,0,0.04), rgba(255,255,255,0.06))', borderRadius: Math.max(0, ct - 6), transition: 'border-radius 0.2s'}}>Dashboard</div>
+                <div style={{padding: '10px 14px', fontSize: 15, color: 'light-dark(#333, #eee)', borderRadius: Math.max(0, ct - 6)}}>Settings</div>
+                <div style={{padding: '10px 14px', fontSize: 15, color: 'light-dark(#333, #eee)', borderRadius: Math.max(0, ct - 6)}}>Profile</div>
+                <div style={{padding: '10px 14px', fontSize: 15, color: 'light-dark(#333, #eee)', borderRadius: Math.max(0, ct - 6)}}>Log out</div>
+              </div>
+              <div style={{fontSize: 13, fontFamily: 'SF Mono, Monaco, Consolas, monospace', color: 'light-dark(#888, #777)', marginTop: 4}}>
+                menu: {ct}px, pad: 4px<br />&rarr; item: {Math.max(0, +(ct - 4).toFixed(1))}px
+              </div>
+            </XDSVStack>
+          </div>
+        </XDSVStack>
       </XDSVStack>
     </div>
   );
