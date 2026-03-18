@@ -76,9 +76,10 @@ const styles = stylex.create({
       backgroundColor: colorVars['--color-overlay'],
       backdropFilter: 'blur(2px)',
       opacity: 0,
-      transitionProperty: 'opacity',
+      transitionProperty: 'opacity, display, overlay',
       transitionDuration: durationVars['--duration-medium'],
       transitionTimingFunction: easeVars['--ease-standard'],
+      transitionBehavior: 'allow-discrete',
     },
     '@media (prefers-reduced-motion: reduce)': {
       '::backdrop': {
@@ -89,6 +90,14 @@ const styles = stylex.create({
   backdropOpen: {
     '::backdrop': {
       opacity: 1,
+    },
+    // Entry animation — @starting-style sets the initial state when the
+    // dialog is first shown via showModal(). Without this, the backdrop
+    // snaps to opacity: 1 because CSS transitions don't fire on display changes.
+    '@starting-style': {
+      '::backdrop': {
+        opacity: 0,
+      },
     },
   },
   drawer: {
@@ -120,6 +129,9 @@ const styles = stylex.create({
   },
   drawerStartOpen: {
     transform: 'translateX(0)',
+    '@starting-style': {
+      transform: 'translateX(-100%)',
+    },
   },
   drawerEnd: {
     insetInlineEnd: 0,
@@ -133,6 +145,9 @@ const styles = stylex.create({
   },
   drawerEndOpen: {
     transform: 'translateX(0)',
+    '@starting-style': {
+      transform: 'translateX(100%)',
+    },
   },
   header: {
     display: 'flex',
