@@ -176,22 +176,13 @@ export interface XDSAppShellProps {
    *
    * @example
    * ```
-   * // Auto (default) — no prop needed
-   * <XDSAppShell topNav={...} sideNav={...}>
-   *
-   * // Controlled state, auto content
-   * <XDSAppShell mobileNav={{ isOpen, onOpenChange }}>
-   *
-   * // Custom toggle placement
+   * <XDSAppShell topNav={...} sideNav={...} />
+   * <XDSAppShell mobileNav={{ isOpen, onOpenChange }} />
    * <XDSAppShell mobileNav={{ hasToggle: false }}>
    *   <XDSMobileNavToggle />
    * </XDSAppShell>
-   *
-   * // Full custom drawer
-   * <XDSAppShell mobileNav={<XDSMobileNav title="Menu">...</XDSMobileNav>}>
-   *
-   * // Disable
-   * <XDSAppShell mobileNav={false}>
+   * <XDSAppShell mobileNav={<XDSMobileNav title="Menu">...</XDSMobileNav>} />
+   * <XDSAppShell mobileNav={false} />
    * ```
    */
   mobileNav?: false | XDSMobileNavConfig | ReactNode;

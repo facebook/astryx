@@ -115,8 +115,8 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-top-nav'},
-      {className: 'xds-top-nav-item'},
+      {className: 'xds-top-nav', visualProps: ['mode']},
+      {className: 'xds-top-nav-item', visualProps: ['mode']},
       {className: 'xds-top-nav-heading'},
       {className: 'xds-top-nav-mega-menu'},
       {className: 'xds-top-nav-menu'},
@@ -600,8 +600,8 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-top-nav'},
-      {className: 'xds-top-nav-item'},
+      {className: 'xds-top-nav', visualProps: ['mode']},
+      {className: 'xds-top-nav-item', visualProps: ['mode']},
       {className: 'xds-top-nav-heading'},
       {className: 'xds-top-nav-mega-menu'},
       {className: 'xds-top-nav-menu'},
