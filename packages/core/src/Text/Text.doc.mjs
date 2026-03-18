@@ -38,8 +38,8 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-heading', visualProps: ['level']},
-      {className: 'xds-text', visualProps: ['type']},
+      {className: 'xds-heading', visualProps: ['level', 'color']},
+      {className: 'xds-text', visualProps: ['type', 'color']},
     ],
   },
   accessibility: [
@@ -326,8 +326,8 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-heading', visualProps: ['level']},
-      {className: 'xds-text', visualProps: ['type']},
+      {className: 'xds-heading', visualProps: ['level', 'color']},
+      {className: 'xds-text', visualProps: ['type', 'color']},
     ],
   },
   accessibility: [

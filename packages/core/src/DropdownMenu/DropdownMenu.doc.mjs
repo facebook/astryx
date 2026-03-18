@@ -98,6 +98,7 @@ export const docs = {
   ],
   theming: {
     targets: [
+      {className: 'xds-dropdown-menu'},
       {className: 'xds-dropdown-menu-item'},
     ],
   },
@@ -422,6 +423,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
+      {className: 'xds-dropdown-menu'},
       {className: 'xds-dropdown-menu-item'},
     ],
   },

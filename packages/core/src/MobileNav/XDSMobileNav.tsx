@@ -242,14 +242,11 @@ export interface XDSMobileNavProps extends Omit<XDSBaseProps, 'title'> {
  *
  * @example
  * ```
- * // Inside AppShell — state managed by AppShell
  * <XDSAppShell mobileNav={
  *   <XDSMobileNav header="Navigation">
  *     <XDSSideNavItem label="Home" href="/" />
  *   </XDSMobileNav>
  * }>
- *
- * // Standalone — manage state yourself
  * <XDSMobileNav isOpen={isOpen} onOpenChange={setIsOpen} header="Navigation">
  *   <XDSSideNavItem label="Home" href="/" />
  * </XDSMobileNav>

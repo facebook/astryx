@@ -23,7 +23,7 @@ export const docs = {
   keyboard: 'Tab through items, Enter/Space to activate links',
   theming: {
     targets: [
-      {className: 'xds-side-nav'},
+      {className: 'xds-side-nav', visualProps: ['mode']},
       {className: 'xds-side-nav-heading'},
       {className: 'xds-side-nav-item'},
       {className: 'xds-side-nav-section'},
@@ -458,7 +458,7 @@ export const docsZh = {
   keyboard: 'Tab 切换项目，Enter/Space 激活链接',
   theming: {
     targets: [
-      {className: 'xds-side-nav'},
+      {className: 'xds-side-nav', visualProps: ['mode']},
       {className: 'xds-side-nav-heading'},
       {className: 'xds-side-nav-item'},
       {className: 'xds-side-nav-section'},

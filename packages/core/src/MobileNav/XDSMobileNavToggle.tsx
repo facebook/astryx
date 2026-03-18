@@ -45,13 +45,10 @@ export interface XDSMobileNavToggleProps extends Pick<
  *
  * @example
  * ```
- * // In a custom toolbar
  * <div className="my-toolbar">
  *   <XDSMobileNavToggle />
  *   <h1>Page Title</h1>
  * </div>
- *
- * // With custom icon
  * <XDSMobileNavToggle label="Menu">
  *   <MyCustomMenuIcon />
  * </XDSMobileNavToggle>

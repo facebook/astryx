@@ -138,6 +138,11 @@ export const docs = {
     'Tooltip: shows label on hover, hidden when menu is open',
     'Custom rendering: optional children render function for custom item content',
   ],
+  theming: {
+    targets: [
+      {className: 'xds-more-menu'},
+    ],
+  },
   accessibility: [
     'Proper ARIA roles: menu and menuitem on dropdown elements.',
     'Trigger button has aria-haspopup="menu" and aria-expanded.',
@@ -291,6 +296,11 @@ export const docsZh = {
     '工具提示：悬停时显示标签，菜单打开时隐藏',
     '自定义渲染：可选的 children 渲染函数用于自定义项目内容',
   ],
+  theming: {
+    targets: [
+      {className: 'xds-more-menu'},
+    ],
+  },
   accessibility: [
     '正确的 ARIA 角色：下拉元素上设置 menu 和 menuitem。',
     '触发按钮设置了 aria-haspopup="menu" 和 aria-expanded。',
