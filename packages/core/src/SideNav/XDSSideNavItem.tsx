@@ -295,6 +295,43 @@ export function XDSSideNavItem({
     return null;
   }
 
+  // Hover handlers for collapsed popover (mirrors TopNavMenu pattern)
+  const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearPopoverTimeouts = useCallback(() => {
+    if (showTimeoutRef.current) {
+      clearTimeout(showTimeoutRef.current);
+      showTimeoutRef.current = null;
+    }
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+  }, []);
+
+  const schedulePopoverShow = useCallback(() => {
+    clearPopoverTimeouts();
+    showTimeoutRef.current = setTimeout(() => {
+      popover.show({skipAutoFocus: true});
+    }, 150);
+  }, [clearPopoverTimeouts, popover]);
+
+  const schedulePopoverHide = useCallback(() => {
+    clearPopoverTimeouts();
+    hideTimeoutRef.current = setTimeout(() => {
+      popover.hide();
+    }, 200);
+  }, [clearPopoverTimeouts, popover]);
+
+  const handlePopoverMouseEnter = useCallback(() => {
+    schedulePopoverShow();
+  }, [schedulePopoverShow]);
+
+  const handlePopoverMouseLeave = useCallback(() => {
+    schedulePopoverHide();
+  }, [schedulePopoverHide]);
+
   // =========================================================================
   // Collapsed mode — icon-only items, popover for items with children
   // =========================================================================
@@ -327,6 +364,8 @@ export function XDSSideNavItem({
             }}
             type="button"
             onClick={popover.toggle}
+            onMouseEnter={handlePopoverMouseEnter}
+            onMouseLeave={handlePopoverMouseLeave}
             aria-label={label}
             data-testid={testId}
             {...popover.triggerProps}
@@ -341,6 +380,8 @@ export function XDSSideNavItem({
           {popover.render(
             <div
               {...stylex.props(styles.popoverSurface)}
+              onMouseEnter={handlePopoverMouseEnter}
+              onMouseLeave={handlePopoverMouseLeave}
               onClick={() => popover.hide()}>
               <div {...stylex.props(styles.popoverHeader)}>{label}</div>
               <XDSSideNavCollapseProvider value={EXPANDED_COLLAPSE_STATE}>
