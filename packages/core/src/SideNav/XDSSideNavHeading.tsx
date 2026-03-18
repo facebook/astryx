@@ -34,6 +34,8 @@ import {
 import {useXDSPopover} from '../Popover/useXDSPopover';
 import {XDSLink} from '../Link';
 import {getIcon} from '../Icon/globalIconRegistry';
+import {XDSTooltip} from '../Tooltip';
+import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -264,6 +266,7 @@ export function XDSSideNavHeading({
 }: XDSSideNavHeadingProps) {
   const {isCollapsed} = useXDSSideNavCollapse();
   const rootRef = useRef<HTMLDivElement>(null);
+  const collapsedItemRef = useRef<HTMLElement>(null);
 
   const popover = useXDSPopover({
     dialogLabel: 'Navigation menu',
@@ -293,19 +296,93 @@ export function XDSSideNavHeading({
     return null;
   }
   if (isCollapsed && icon) {
+    const isCollapsedLink = !!headingHref;
+    const isCollapsedMenu = !!menu && !headingHref;
+
+    const collapsedIcon = <span {...stylex.props(styles.icon)}>{icon}</span>;
+
+    const collapsedSetRef = (el: HTMLElement | null) => {
+      (collapsedItemRef as React.MutableRefObject<HTMLElement | null>).current =
+        el;
+      if (typeof ref === 'function') {
+        ref(el as HTMLDivElement | null);
+      } else if (ref) {
+        (ref as React.MutableRefObject<HTMLDivElement | null>).current =
+          el as HTMLDivElement | null;
+      }
+      if (isCollapsedMenu) {
+        popover.triggerRef(el);
+      }
+    };
+
+    let collapsedElement: ReactNode;
+
+    if (isCollapsedLink) {
+      collapsedElement = (
+        <a
+          ref={collapsedSetRef as React.Ref<HTMLAnchorElement>}
+          href={headingHref}
+          aria-label={heading}
+          data-testid={testId}
+          {...mergeProps(
+            xdsClassName('side-nav-heading'),
+            stylex.props(navItemStyles.item, styles.rootCollapsed, xstyle),
+            className,
+            style,
+          )}>
+          {collapsedIcon}
+        </a>
+      );
+    } else if (isCollapsedMenu) {
+      collapsedElement = (
+        <>
+          <button
+            ref={collapsedSetRef as React.Ref<HTMLButtonElement>}
+            type="button"
+            onClick={handleToggle}
+            aria-label={heading}
+            data-testid={testId}
+            {...popover.triggerProps}
+            {...mergeProps(
+              xdsClassName('side-nav-heading'),
+              stylex.props(navItemStyles.item, styles.rootCollapsed, xstyle),
+              className,
+              style,
+            )}>
+            {collapsedIcon}
+          </button>
+          {popover.render(
+            <div {...stylex.props(styles.popoverContent)}>{menu}</div>,
+            {placement: 'end', alignment: 'start', xstyle: styles.popover},
+          )}
+        </>
+      );
+    } else {
+      collapsedElement = (
+        <div
+          ref={collapsedSetRef}
+          data-testid={testId}
+          {...mergeProps(
+            xdsClassName('side-nav-heading'),
+            stylex.props(styles.root, styles.rootCollapsed, xstyle),
+            className,
+            style,
+          )}
+          {...props}>
+          {collapsedIcon}
+        </div>
+      );
+    }
+
     return (
-      <div
-        ref={ref}
-        data-testid={testId}
-        {...mergeProps(
-          xdsClassName('side-nav-heading'),
-          stylex.props(styles.root, styles.rootCollapsed, xstyle),
-          className,
-          style,
-        )}
-        {...props}>
-        <span {...stylex.props(styles.icon)}>{icon}</span>
-      </div>
+      <>
+        {collapsedElement}
+        <XDSTooltip
+          content={heading}
+          placement="end"
+          anchorRef={collapsedItemRef}
+        />
+      </>
     );
   }
 
