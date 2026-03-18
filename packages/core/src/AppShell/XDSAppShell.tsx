@@ -491,7 +491,7 @@ export function XDSAppShell({
   const contentAreaStyle =
     variant === 'wash'
       ? styles.contentBgWash
-      : variant === 'elevated' && hasTopNav && hasSideNav
+      : variant === 'elevated' && hasTopNav && hasSideNav && !isBelowBreakpoint
         ? styles.contentBgTransparent
         : variant === 'surface' || variant === 'elevated'
           ? styles.contentBgSurface
