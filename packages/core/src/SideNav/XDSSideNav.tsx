@@ -133,7 +133,6 @@ const styles = stylex.create({
     justifyContent: 'space-between',
     height: 48,
     width: '100%',
-    paddingInline: spacingVars['--spacing-2'],
     backgroundColor: 'inherit',
     boxSizing: 'border-box',
     overflow: 'hidden',
