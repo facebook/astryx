@@ -141,7 +141,6 @@ const COLOR_CATEGORIES = {
     '--color-divider-emphasized',
   ],
   Effects: [
-    '--color-disabled-overlay',
     '--color-glimmer',
     '--color-glimmer-high-contrast',
     '--color-shadow-elevation',

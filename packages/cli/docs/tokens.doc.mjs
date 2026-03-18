@@ -117,7 +117,6 @@ export const docs = {
           headers: ['Token', 'Usage'],
           rows: [
             ['--elevation-base', 'Subtle shadow'],
-            ['--elevation-thumb', 'Slider thumbs'],
             ['--elevation-menu', 'Dropdowns, menus'],
             ['--elevation-dialog', 'Modals, dialogs'],
             ['--elevation-hover', 'Hover states'],

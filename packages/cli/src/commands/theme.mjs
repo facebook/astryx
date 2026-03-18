@@ -146,8 +146,7 @@ function deriveColorPalette({accent, positive, negative, warning, mode}) {
     '--color-divider-high-contrast': ld('#647685', '#6F747C'),
     '--color-divider-emphasized': ld('#CCD3DB', '#494D53'),
 
-    // Disabled/Effects
-    '--color-disabled-overlay': ld('#FFFFFF7F', '#1F1F227F'),
+    // Effects
     '--color-glimmer': ld('#CCD3DB', '#5A5E66'),
     '--color-glimmer-high-contrast': ld('#A4B0BC', '#8C939B'),
     '--color-shadow-elevation': ld('rgba(5, 54, 89, 0.1)', 'rgba(0, 0, 0, 0.3)'),
