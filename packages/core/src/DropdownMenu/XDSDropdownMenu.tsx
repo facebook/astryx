@@ -31,7 +31,7 @@ import {XDSDivider} from '../Divider';
 import {XDSDropdownMenuItem} from './XDSDropdownMenuItem';
 import {
   colorVars,
-  elevationVars,
+  shadowVars,
   spacingVars,
   radiusVars,
   durationVars,
@@ -50,7 +50,7 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-1'],
     borderRadius: radiusVars['--radius-2'],
     backgroundColor: colorVars['--color-surface'],
-    boxShadow: elevationVars['--elevation-menu'],
+    boxShadow: shadowVars['--shadow-2'],
     opacity: 1,
     transitionProperty: 'opacity',
     transitionDuration: durationVars['--duration-fast'],

@@ -14,7 +14,7 @@
 
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, radiusVars, elevationVars} from '../theme/tokens.stylex';
+import {colorVars, radiusVars, shadowVars} from '../theme/tokens.stylex';
 import {container} from '../Layout/container.stylex';
 import type {SpacingToken} from '../Layout/container.stylex';
 import {
@@ -31,7 +31,7 @@ const styles = stylex.create({
   cardOuter: {
     backgroundColor: colorVars['--color-card'],
     borderRadius: radiusVars['--radius-3'],
-    boxShadow: elevationVars['--elevation-base'],
+    boxShadow: shadowVars['--shadow-1'],
     // Clip content to border-radius so nested containers don\'t peek out corners
     overflow: 'clip',
     borderWidth: 1,
@@ -114,7 +114,7 @@ export interface XDSCardProps extends XDSBaseProps {
 }
 
 /**
- * A card container with elevation and themed styling.
+ * A card container with shadow and themed styling.
  *
  * Applies card-specific appearance (background, shadow, border-radius)
  * and sets CSS variables for child layout components.

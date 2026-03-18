@@ -23,7 +23,7 @@ import {
   radiusVars,
   durationVars,
   easingVars,
-  elevationVars,
+  shadowVars,
   textSizeVars,
   fontWeightVars,
   lineHeightVars,
@@ -161,7 +161,7 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-1'],
     backgroundColor: colorVars['--color-surface'],
     borderRadius: radiusVars['--radius-2'],
-    boxShadow: elevationVars['--elevation-menu'],
+    boxShadow: shadowVars['--shadow-2'],
     minWidth: '160px',
   },
   menuItem: {

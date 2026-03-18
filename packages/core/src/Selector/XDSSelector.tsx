@@ -36,7 +36,7 @@ import {
   sizeVars,
   spacingVars,
   radiusVars,
-  elevationVars,
+  shadowVars,
   durationVars,
   easingVars,
   typographyVars,
@@ -89,7 +89,7 @@ const styles = stylex.create({
     boxShadow: {
       default: 'none',
       ':hover': {
-        '@media (hover: hover)': elevationVars['--elevation-input-hover'],
+        '@media (hover: hover)': shadowVars['--insetshadow-border-hover'],
       },
     },
     outline: {

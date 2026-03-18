@@ -102,7 +102,7 @@ export const myTheme: Theme = {
         },
         {
           type: 'prose',
-          text: "Token groups (all optional in styles): colors, spacing, size, radius, elevation, transition, typography, textSize, lineHeight, fontWeight. Omitted groups use defineVars defaults.",
+          text: "Token groups (all optional in styles): colors, spacing, size, radius, shadow, transition, typography, textSize, lineHeight, fontWeight. Omitted groups use defineVars defaults.",
         },
         {
           type: 'list',

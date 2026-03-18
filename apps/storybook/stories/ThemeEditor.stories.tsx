@@ -32,7 +32,7 @@ import {
   fontWeightDefaults,
   typeScaleDefaults,
   sizeDefaults,
-  elevationDefaults,
+  shadowDefaults,
   durationDefaults,
   easingDefaults,
   transitionDefaults,
@@ -75,10 +75,10 @@ const TOKEN_GROUPS = {
     description: 'Component size tokens (sm, md, lg)',
     tokens: sizeDefaults,
   },
-  elevation: {
+  shadow: {
     label: 'Elevation',
-    description: 'Shadow and elevation tokens',
-    tokens: elevationDefaults,
+    description: 'Shadow tokens',
+    tokens: shadowDefaults,
   },
   duration: {
     label: 'Duration',
@@ -1320,7 +1320,7 @@ function ThemeEditorComponent() {
       ...fontWeightDefaults,
       ...typeScaleDefaults,
       ...sizeDefaults,
-      ...elevationDefaults,
+      ...shadowDefaults,
       ...durationDefaults,
       ...easingDefaults,
       ...transitionDefaults,

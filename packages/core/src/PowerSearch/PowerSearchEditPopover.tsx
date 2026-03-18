@@ -21,7 +21,7 @@ import {
   spacingVars,
   colorVars,
   radiusVars,
-  elevationVars,
+  shadowVars,
   textSizeVars,
 } from '../theme/tokens.stylex';
 import {PowerSearchValueEditor} from './PowerSearchValueEditor';
@@ -37,7 +37,7 @@ const styles = stylex.create({
   container: {
     backgroundColor: colorVars['--color-surface'],
     borderRadius: radiusVars['--radius-2'],
-    boxShadow: elevationVars['--elevation-menu'],
+    boxShadow: shadowVars['--shadow-2'],
     overflow: 'hidden',
   },
   content: {

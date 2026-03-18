@@ -21,7 +21,7 @@ import {
   radiusVars,
   durationVars,
   easingVars,
-  elevationVars,
+  shadowVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -62,7 +62,7 @@ const styles = stylex.create({
     border: 'none',
     backgroundColor: colorVars['--color-surface'],
     borderRadius: radiusVars['--radius-3'],
-    boxShadow: elevationVars['--elevation-dialog'],
+    boxShadow: shadowVars['--shadow-4'],
     display: {
       default: 'none',
       ':where([open])': 'flex',

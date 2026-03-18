@@ -54,7 +54,7 @@ export type XDSBannerStatus = 'info' | 'warning' | 'error' | 'success';
 
 /**
  * Visual variant of the banner.
- * - `card`: standalone card with border-radius and elevation
+ * - `card`: standalone card with border-radius and shadow
  * - `section`: full-width section banner (no border-radius)
  */
 export type XDSBannerVariant = 'card' | 'section';

@@ -199,30 +199,35 @@ export const radiusRaw = radiusDefaults;
 export const radiusVars = stylex.defineVars(radiusDefaults);
 
 // =============================================================================
-// Elevation Tokens
+// Shadow Tokens
 // =============================================================================
+// Outer shadows: shadow-1 (subtle) → shadow-4 (strongest). Numbers = depth.
+// Inset shadows: insetshadow-border-* for input state rings.
 
-export const elevationDefaults = {
-  '--elevation-base': '0px 0px 1px light-dark(rgba(0, 0, 0, 0.1), #111112)',
-  '--elevation-dialog':
-    '0px 2px 2px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0px 8px 24px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3))',
-  '--elevation-hover':
-    '0px 1px 2px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0px 2px 12px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2))',
-  '--elevation-menu':
+export const shadowDefaults = {
+  // Outer elevation shadows (ascending intensity: 1 = least, 4 = most)
+  '--shadow-1': '0px 0px 1px light-dark(rgba(0, 0, 0, 0.1), #111112)',
+  '--shadow-2':
     '0px 1px 1px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0px 2px 8px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2))',
-  '--elevation-input-hover': 'inset 0px 0px 0px 2px rgba(1, 113, 227, 0.3)',
-  '--elevation-input-hover-success':
+  '--shadow-3':
+    '0px 1px 2px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0px 2px 12px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2))',
+  '--shadow-4':
+    '0px 2px 2px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0px 8px 24px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3))',
+  // Inset shadows for input border rings (interaction + validation states)
+  '--insetshadow-border-hover': 'inset 0px 0px 0px 2px rgba(1, 113, 227, 0.3)',
+  '--insetshadow-border-accent': 'inset 0px 0px 0px 2px rgba(1, 113, 227, 0.5)',
+  '--insetshadow-border-positive':
     'inset 0px 0px 0px 2px rgba(38, 167, 86, 0.3)',
-  '--elevation-input-hover-warning':
+  '--insetshadow-border-warning':
     'inset 0px 0px 0px 2px rgba(226, 164, 0, 0.3)',
-  '--elevation-input-hover-error':
+  '--insetshadow-border-negative':
     'inset 0px 0px 0px 2px rgba(227, 25, 59, 0.3)',
 } as const;
 
-/** @deprecated Use elevationDefaults */
-export const elevationRaw = elevationDefaults;
+/** @deprecated Use shadowDefaults */
+export const shadowRaw = shadowDefaults;
 
-export const elevationVars = stylex.defineVars(elevationDefaults);
+export const shadowVars = stylex.defineVars(shadowDefaults);
 
 // =============================================================================
 // Motion Tokens — Duration
@@ -353,7 +358,7 @@ export type ColorVarName = keyof typeof colorDefaults;
 export type SpacingVarName = keyof typeof spacingDefaults;
 export type SizeVarName = keyof typeof sizeDefaults;
 export type RadiusVarName = keyof typeof radiusDefaults;
-export type ElevationVarName = keyof typeof elevationDefaults;
+export type ShadowVarName = keyof typeof shadowDefaults;
 /** @deprecated Use DurationVarName | EasingVarName instead */
 export type TransitionVarName = keyof typeof transitionDefaults;
 export type TypographyVarName = keyof typeof typographyDefaults;

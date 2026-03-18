@@ -1,6 +1,6 @@
 /**
  * @file inputStyles.stylex.ts
- * @input Uses theme tokens (color, spacing, radius, elevation, transition)
+ * @input Uses theme tokens (color, spacing, radius, shadow, transition)
  * @output Exports shared input wrapper appearance styles
  * @position Shared styles consumed by TextInput, TextArea, NumberInput, DateInput,
  *   TimeInput, Selector, Typeahead, and Tokenizer
@@ -16,7 +16,7 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
-  elevationVars,
+  shadowVars,
   durationVars,
   easingVars,
 } from '../theme/tokens.stylex';
@@ -51,7 +51,7 @@ export const inputWrapperStyles = stylex.create({
     boxShadow: {
       default: 'none',
       ':hover': {
-        '@media (hover: hover)': elevationVars['--elevation-input-hover'],
+        '@media (hover: hover)': shadowVars['--insetshadow-border-hover'],
       },
     },
     outline: {
@@ -92,8 +92,7 @@ export const inputStatusHoverShadowStyles = stylex.create({
     boxShadow: {
       default: 'none',
       ':hover': {
-        '@media (hover: hover)':
-          elevationVars['--elevation-input-hover-warning'],
+        '@media (hover: hover)': shadowVars['--insetshadow-border-warning'],
       },
     },
   },
@@ -101,7 +100,7 @@ export const inputStatusHoverShadowStyles = stylex.create({
     boxShadow: {
       default: 'none',
       ':hover': {
-        '@media (hover: hover)': elevationVars['--elevation-input-hover-error'],
+        '@media (hover: hover)': shadowVars['--insetshadow-border-negative'],
       },
     },
   },
@@ -109,8 +108,7 @@ export const inputStatusHoverShadowStyles = stylex.create({
     boxShadow: {
       default: 'none',
       ':hover': {
-        '@media (hover: hover)':
-          elevationVars['--elevation-input-hover-success'],
+        '@media (hover: hover)': shadowVars['--insetshadow-border-positive'],
       },
     },
   },

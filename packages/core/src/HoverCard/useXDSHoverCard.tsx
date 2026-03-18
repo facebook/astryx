@@ -28,7 +28,7 @@ import {
   colorVars,
   durationVars,
   easingVars,
-  elevationVars,
+  shadowVars,
   radiusVars,
   spacingVars,
 } from '../theme/tokens.stylex';
@@ -38,7 +38,7 @@ const styles = stylex.create({
   container: {
     backgroundColor: colorVars['--color-surface'],
     borderRadius: radiusVars['--radius-3'],
-    boxShadow: elevationVars['--elevation-hover'],
+    boxShadow: shadowVars['--shadow-3'],
     // Animation: closed state (default) and open state
     opacity: {
       default: 0,

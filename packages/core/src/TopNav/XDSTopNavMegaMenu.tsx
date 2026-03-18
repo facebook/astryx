@@ -31,7 +31,7 @@ import {
   textSizeVars,
   fontWeightVars,
   lineHeightVars,
-  elevationVars,
+  shadowVars,
 } from '../theme/tokens.stylex';
 import {useXDSPopover} from '../Popover/useXDSPopover';
 import {XDSGrid} from '../Grid/XDSGrid';
@@ -120,7 +120,7 @@ const styles = stylex.create({
     borderTopRightRadius: 0,
     borderBottomLeftRadius: radiusVars['--radius-3'],
     borderBottomRightRadius: radiusVars['--radius-3'],
-    boxShadow: elevationVars['--elevation-menu'],
+    boxShadow: shadowVars['--shadow-2'],
     overflow: 'hidden',
   },
   panelContent: {
