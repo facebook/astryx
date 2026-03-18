@@ -423,6 +423,35 @@ export default function RadiusPage() {
 
         <XDSDivider />
 
+        {/* radius-4 */}
+        <XDSVStack gap={4}>
+          <div style={{display: 'flex', alignItems: 'baseline', gap: 12}}>
+            <span style={{fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'light-dark(#0064E0, #2694FE)'}}>radius-4</span>
+            <span style={{fontSize: 13, color: 'light-dark(#666, #aaa)', fontStyle: 'italic'}}>16dp &times; multiplier</span>
+          </div>
+          <div style={{display: 'flex', gap: 48, flexWrap: 'wrap', alignItems: 'flex-start'}}>
+            <XDSVStack gap={2}>
+              <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Page Card</span>
+              <div style={{width: 400, height: 200, overflow: 'hidden', border: '1px solid light-dark(#ddd, #444)', borderRadius: r4, backgroundColor: 'light-dark(#fff, #1a1a1a)', transition: 'border-radius 0.2s', padding: 24}}>
+                <div style={{fontWeight: 600, fontSize: 18, color: 'light-dark(#333, #eee)', marginBottom: 8}}>Page section</div>
+                <div style={{fontSize: 14, color: 'light-dark(#666, #aaa)', lineHeight: 1.6, marginBottom: 20}}>This is a large page-level container that uses radius-4 for its corners. It typically wraps entire content sections.</div>
+                <div style={{display: 'flex', gap: 12}}>
+                  <div style={{flex: 1, border: '1px solid light-dark(#eee, #333)', borderRadius: r3, padding: 16, backgroundColor: 'light-dark(#f9f9f9, #222)', transition: 'border-radius 0.2s'}}>
+                    <div style={{fontWeight: 600, fontSize: 14, color: 'light-dark(#333, #eee)', marginBottom: 4}}>Widget title</div>
+                    <div style={{fontSize: 13, color: 'light-dark(#888, #777)'}}>Content</div>
+                  </div>
+                  <div style={{flex: 1, border: '1px solid light-dark(#eee, #333)', borderRadius: r3, padding: 16, backgroundColor: 'light-dark(#f9f9f9, #222)', transition: 'border-radius 0.2s'}}>
+                    <div style={{fontWeight: 600, fontSize: 14, color: 'light-dark(#333, #eee)', marginBottom: 4}}>Widget title</div>
+                    <div style={{fontSize: 13, color: 'light-dark(#888, #777)'}}>Content</div>
+                  </div>
+                </div>
+              </div>
+            </XDSVStack>
+          </div>
+        </XDSVStack>
+
+        <XDSDivider />
+
         {/* radius-rounded */}
         <XDSVStack gap={4}>
           <div style={{display: 'flex', alignItems: 'baseline', gap: 12}}>
