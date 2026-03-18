@@ -31,12 +31,14 @@ import {XDSDivider} from '../Divider';
 import {XDSDropdownMenuItem} from './XDSDropdownMenuItem';
 import {
   colorVars,
+  elevationVars,
   spacingVars,
   radiusVars,
   transitionVars,
   typographyVars,
   textSizeVars,
 } from '../theme/tokens.stylex';
+import {xdsClassName, mergeProps} from '../utils';
 
 const styles = stylex.create({
   // Dropdown container
@@ -47,7 +49,7 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-1'],
     borderRadius: radiusVars['--radius-element'],
     backgroundColor: colorVars['--color-surface'],
-    boxShadow: `0 4px 12px ${colorVars['--color-shadow-elevation']}`,
+    boxShadow: elevationVars['--elevation-menu'],
     opacity: 1,
     transition: `opacity ${transitionVars['--transition-fast']}`,
   },
@@ -593,7 +595,13 @@ export function XDSDropdownMenu({
       </XDSButton>
 
       {layer.render(
-        <div id={menuId} role="menu" {...stylex.props(styles.dropdown)}>
+        <div
+          id={menuId}
+          role="menu"
+          {...mergeProps(
+            xdsClassName('dropdown-menu'),
+            stylex.props(styles.dropdown),
+          )}>
           {renderOptions()}
         </div>,
         {
