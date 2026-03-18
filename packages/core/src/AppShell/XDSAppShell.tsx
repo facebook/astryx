@@ -364,8 +364,8 @@ const styles = stylex.create({
   autoMobileTopBar: {
     display: 'flex',
     alignItems: 'center',
-    height: 48,
-    paddingInline: 8,
+    height: spacingVars['--spacing-12'],
+    paddingInline: spacingVars['--spacing-2'],
   },
   // Sticky header for auto height mode
   headerSticky: {
