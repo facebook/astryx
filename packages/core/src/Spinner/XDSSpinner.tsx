@@ -132,7 +132,7 @@ export function XDSSpinner({
         ? computedStyle.getPropertyValue(
             colorVars['--color-icon-on-dark-media'],
           ) || '#FFFFFF'
-        : computedStyle.getPropertyValue(colorVars['--color-primary']) ||
+        : computedStyle.getPropertyValue(colorVars['--color-accent']) ||
           '#0064E0';
     const backgroundColor =
       shade === 'onMedia' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.1)';

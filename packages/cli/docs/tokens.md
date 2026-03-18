@@ -39,7 +39,7 @@ Control heights for consistent sizing across buttons, inputs, and selectors.
 
 | Token           | Usage                |
 | --------------- | -------------------- |
-| --color-primary | Primary action color |
+| --color-accent  | Primary action color |
 | --color-surface | Background surface   |
 | --color-wash    | Secondary background |
 | --color-success | Success states       |

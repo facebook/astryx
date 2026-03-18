@@ -74,7 +74,7 @@ const styles = stylex.create({
     },
   },
   navItemActive: {
-    backgroundColor: colorVars['--color-primary-muted'],
+    backgroundColor: colorVars['--color-accent-muted'],
     color: colorVars['--color-text-link'],
   },
   // Content placeholder

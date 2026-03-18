@@ -217,7 +217,7 @@ const sizeStyles = stylex.create({
 
 const variantStyles = stylex.create({
   accent: {
-    backgroundColor: colorVars['--color-primary'],
+    backgroundColor: colorVars['--color-accent'],
   },
   positive: {
     backgroundColor: colorVars['--color-success'],

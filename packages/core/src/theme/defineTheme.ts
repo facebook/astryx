@@ -15,7 +15,7 @@
  * const oceanTheme = defineTheme({
  *   name: 'ocean',
  *   tokens: {
- *     '--color-primary': ['#0077B6', '#48CAE4'],    // [light, dark]
+ *     '--color-accent': ['#0077B6', '#48CAE4'],    // [light, dark]
  *     '--color-surface': ['#F0F8FF', '#0A1628'],
  *     '--radius-3': '16px',                     // same in both modes
  *   },
@@ -475,7 +475,7 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
     secondary: 'var(--color-text-secondary)',
     disabled: 'var(--color-text-disabled)',
     placeholder: 'var(--color-text-secondary)',
-    active: 'var(--color-primary)',
+    active: 'var(--color-accent)',
   };
 
   const components = theme.components || {};

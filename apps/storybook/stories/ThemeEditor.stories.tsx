@@ -100,8 +100,8 @@ type TokenGroupKey = keyof typeof TOKEN_GROUPS;
 
 const COLOR_CATEGORIES = {
   'Core Semantic': [
-    '--color-primary',
-    '--color-primary-muted',
+    '--color-accent',
+    '--color-accent-muted',
     '--color-surface',
     '--color-wash',
     '--color-overlay',
@@ -585,7 +585,7 @@ function SpacingEditor({tokenName, value, onChange}: SpacingEditorProps) {
         style={{
           width: `${Math.min(numValue, 48)}px`,
           height: '24px',
-          backgroundColor: 'var(--color-primary)',
+          backgroundColor: 'var(--color-accent)',
           borderRadius: '4px',
           flexShrink: 0,
         }}
@@ -649,7 +649,7 @@ function RadiusEditor({tokenName, value, onChange}: RadiusEditorProps) {
         style={{
           width: '32px',
           height: '32px',
-          backgroundColor: 'var(--color-primary)',
+          backgroundColor: 'var(--color-accent)',
           borderRadius: value,
           flexShrink: 0,
         }}
@@ -806,7 +806,7 @@ function ComponentPreview() {
           style={{
             width: value,
             height: '16px',
-            backgroundColor: 'var(--color-primary)',
+            backgroundColor: 'var(--color-accent)',
             borderRadius: '2px',
           }}
         />
@@ -893,7 +893,7 @@ const styles = stylex.create({
 // ✅ Use semantic tokens
 const styles = stylex.create({
   button: {
-    backgroundColor: colorVars['--color-primary'],
+    backgroundColor: colorVars['--color-accent'],
     color: colorVars['--color-text-on-dark-media'],
   },
 });`}

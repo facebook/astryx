@@ -250,7 +250,7 @@ const s = stylex.create({ t: { color: { default: 'red', ':hover': 'blue' }, '@me
     category: 'CSS Values',
     name: 'CSS variables (custom properties)',
     code: `import * as stylex from '@stylexjs/stylex';
-const s = stylex.create({ t: { color: 'var(--color-primary)' } });`,
+const s = stylex.create({ t: { color: 'var(--color-accent)' } });`,
   },
   {
     category: 'CSS Values',

@@ -217,7 +217,7 @@ XDS provides CSS custom properties you can reference alongside Tailwind utilitie
 
 | Token                       | Usage                |
 | --------------------------- | -------------------- |
-| var(--color-primary)        | Primary action color |
+| var(--color-accent)         | Primary action color |
 | var(--color-surface)        | Background surface   |
 | var(--color-wash)           | Secondary background |
 | var(--color-success)        | Success states       |
@@ -279,7 +279,7 @@ Create themes by overriding CSS custom properties:
 ```tsx
 const myTheme = {
   ...defaultTheme,
-  '--color-primary': '#7B61FF',
+  '--color-accent': '#7B61FF',
   '--color-surface': '#1A1A2E',
 };
 

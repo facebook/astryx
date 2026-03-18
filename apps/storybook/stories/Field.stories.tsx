@@ -27,7 +27,7 @@ const inputStyles = stylex.create({
     color: colorVars['--color-text-primary'],
     outline: 'none',
     ':focus': {
-      borderColor: colorVars['--color-primary'],
+      borderColor: colorVars['--color-accent'],
     },
   },
 });

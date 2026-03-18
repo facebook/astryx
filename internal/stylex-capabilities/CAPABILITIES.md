@@ -101,7 +101,7 @@ ltr: "@media (h` |
 
 | Feature                           | Status | CSS Output                                                 |
 | --------------------------------- | ------ | ---------------------------------------------------------- |
-| CSS variables (custom properties) | ✅     | `ltr: ".x14qql8p{color:var(--color-primary)}",`            |
+| CSS variables (custom properties) | ✅     | `ltr: ".x14qql8p{color:var(--color-accent)}",`             |
 | calc()                            | ✅     | `ltr: ".xkxa9zd{width:calc(100% - 32px)}",`                |
 | clamp()                           | ✅     | `ltr: ".xdq3cbq{font-size:clamp(14px,2vw,18px)}",`         |
 | light-dark()                      | ✅     | `ltr: ".xarbrzd{color:light-dark(black,white)}",`          |

@@ -79,15 +79,15 @@ const styles = stylex.create({
   },
   radioChecked: {
     borderColor: {
-      default: colorVars['--color-primary'],
+      default: colorVars['--color-accent'],
       [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-primary']}, ${colorVars['--color-hover-tint']} 15%)`,
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
       },
     },
     backgroundColor: {
-      default: colorVars['--color-primary'],
+      default: colorVars['--color-accent'],
       [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-primary']}, ${colorVars['--color-hover-tint']} 15%)`,
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
       },
     },
   },

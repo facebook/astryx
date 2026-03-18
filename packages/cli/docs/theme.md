@@ -53,7 +53,7 @@ import {colorVars, colorDefaults} from '@xds/core/theme/tokens.stylex';
 
 // 1. Define your color overrides
 const colorOverrides = {
-  '--color-primary': 'light-dark(#7B61FF, #9B85FF)',
+  '--color-accent': 'light-dark(#7B61FF, #9B85FF)',
   '--color-surface': 'light-dark(#FFFFFF, #1A1A2E)',
   // ... all ~60 color tokens (see npx xds docs tokens)
 } as const;
@@ -140,7 +140,7 @@ const myTheme = defineTheme({
 
   // Explicit token overrides (highest precedence — overrides scale values)
   tokens: {
-    '--color-primary': ['#7B61FF', '#9B85FF'],
+    '--color-accent': ['#7B61FF', '#9B85FF'],
   },
 
   // Component-level style overrides
@@ -168,7 +168,7 @@ Explicit `tokens` overrides always take precedence over scale-generated values.
 Use `light-dark()` in token values:
 
 ```tsx
-'--color-primary': 'light-dark(#0064E0, #2694FE)',
+'--color-accent': 'light-dark(#0064E0, #2694FE)',
 //                            ^light     ^dark
 ```
 
@@ -260,7 +260,7 @@ const cardOverrides = stylex.create({
   container: {
     borderRadius: '20px',
     background:
-      'linear-gradient(135deg, var(--color-primary), var(--color-success))',
+      'linear-gradient(135deg, var(--color-accent), var(--color-success))',
     padding: '2px', // gradient border width
   },
   content: {

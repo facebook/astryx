@@ -23,7 +23,7 @@ const styles = stylex.create({
   },
   featuredItem: {
     padding: spacingVars['--spacing-6'],
-    backgroundColor: colorVars['--color-primary-muted'],
+    backgroundColor: colorVars['--color-accent-muted'],
     borderRadius: radiusVars['--radius-2'],
     textAlign: 'center',
     height: '100%',

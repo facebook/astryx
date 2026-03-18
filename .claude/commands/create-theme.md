@@ -58,8 +58,8 @@ export const {themeName}Theme = defineTheme({
 
   tokens: {
     // Colors — use [light, dark] tuples for automatic light-dark() conversion
-    '--color-primary': ['#YOUR_LIGHT', '#YOUR_DARK'],
-    '--color-primary-muted': ['#YOUR_LIGHT33', '#YOUR_DARK3F'],
+    '--color-accent': ['#YOUR_LIGHT', '#YOUR_DARK'],
+    '--color-accent-muted': ['#YOUR_LIGHT33', '#YOUR_DARK3F'],
     '--color-surface': ['#FFFFFF', '#1C1C1C'],
     '--color-wash': ['#F5F5F5', '#121212'],
 

@@ -272,7 +272,7 @@ const styles = stylex.create({
 
 const statusStyles = stylex.create({
   info: {
-    backgroundColor: colorVars['--color-primary-muted'],
+    backgroundColor: colorVars['--color-accent-muted'],
   },
   warning: {
     backgroundColor: colorVars['--color-warning-muted'],

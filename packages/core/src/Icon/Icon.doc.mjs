@@ -87,7 +87,7 @@ import {Home} from 'lucide-react';
     'String mode wraps the resolved icon in a <span> with fontSize-based sizing so 1em-based registry icons scale correctly.',
     'Component mode passes stylex.props directly to the SVG element for zero-overhead styling.',
     'Semantic icon names and their usages — close (CloseButton, TimeInput): ✕ close/dismiss; chevronDown (DropdownMenu, Selector, TabMenu): ▾ expand/dropdown; chevronLeft (Calendar): ‹ previous; chevronRight (Calendar): › next; check (Selector, TabMenu): ✓ selected item; checkCircle (Input status): ✓○ success; xCircle (Input status): ✕○ error; warning (Input status): △! warning; info (FieldLabel): ⓘ information tooltip; calendar (DateInput): 📅 date picker; clock (TimeInput): 🕐 time picker; externalLink (Link): ↗ opens in new window.',
-    'Color token mappings — primary: --color-icon-primary (default); secondary: --color-icon-secondary (de-emphasized); tertiary: --color-icon-secondary (subtle/background); disabled: --color-icon-disabled (disabled state); accent: --color-primary (interactive/actionable); positive: --color-success (success/confirmation); negative: --color-error (error/destructive); warning: --color-warning (caution/attention); inherit: currentColor (inherits from parent text color).',
+    'Color token mappings — primary: --color-icon-primary (default); secondary: --color-icon-secondary (de-emphasized); tertiary: --color-icon-secondary (subtle/background); disabled: --color-icon-disabled (disabled state); accent: --color-accent (interactive/actionable); positive: --color-success (success/confirmation); negative: --color-error (error/destructive); warning: --color-warning (caution/attention); inherit: currentColor (inherits from parent text color).',
     'Size dimensions — xsm: 12x12px (dense UI, badges, indicators); sm: 16x16px (inline with text, compact UI); md: 20x20px (default, buttons, inputs); lg: 24x24px (emphasis, standalone icons).',
   ],
 };
@@ -180,7 +180,7 @@ import {Home} from 'lucide-react';
     '字符串模式将解析后的图标包装在 <span> 中，使用基于 fontSize 的尺寸，使基于 1em 的注册表图标正确缩放。',
     '组件模式将 stylex.props 直接传递给 SVG 元素，实现零开销样式。',
     '语义图标名称及其用途——close（CloseButton、TimeInput）：✕ 关闭/消除；chevronDown（DropdownMenu、Selector、TabMenu）：▾ 展开/下拉；chevronLeft（Calendar）：‹ 上一个；chevronRight（Calendar）：› 下一个；check（Selector、TabMenu）：✓ 已选项；checkCircle（Input 状态）：✓○ 成功；xCircle（Input 状态）：✕○ 错误；warning（Input 状态）：△! 警告；info（FieldLabel）：ⓘ 信息提示；calendar（DateInput）：📅 日期选择器；clock（TimeInput）：🕐 时间选择器；externalLink（Link）：↗ 在新窗口中打开。',
-    '颜色令牌映射——primary：--color-icon-primary（默认）；secondary：--color-icon-secondary（弱化）；tertiary：--color-icon-secondary（微妙/背景）；disabled：--color-icon-disabled（禁用状态）；accent：--color-primary（交互/可操作）；positive：--color-success（成功/确认）；negative：--color-error（错误/危险）；warning：--color-warning（警告/注意）；inherit：currentColor（继承父文本颜色）。',
+    '颜色令牌映射——primary：--color-icon-primary（默认）；secondary：--color-icon-secondary（弱化）；tertiary：--color-icon-secondary（微妙/背景）；disabled：--color-icon-disabled（禁用状态）；accent：--color-accent（交互/可操作）；positive：--color-success（成功/确认）；negative：--color-error（错误/危险）；warning：--color-warning（警告/注意）；inherit：currentColor（继承父文本颜色）。',
     '尺寸规格——xsm：12x12px（密集 UI、徽章、指示器）；sm：16x16px（与文本内联、紧凑 UI）；md：20x20px（默认，按钮、输入框）；lg：24x24px（强调、独立图标）。',
   ],
 };
@@ -205,7 +205,7 @@ export const docsDense = {
     'String mode wraps in <span> w/ fontSize-based sizing for 1em registry icons.',
     'Component mode passes stylex.props directly to SVG for zero-overhead styling.',
     'Semantic names: close (CloseButton, TimeInput) chevronDown (DropdownMenu, Selector, TabMenu) chevronLeft/Right (Calendar) check (Selector, TabMenu) checkCircle/xCircle/warning (Input status) info (FieldLabel) calendar (DateInput) clock (TimeInput) externalLink (Link).',
-    'Color tokens: primary=--color-icon-primary; secondary=--color-icon-secondary; tertiary=--color-icon-secondary; disabled=--color-icon-disabled; accent=--color-primary; positive=--color-success; negative=--color-error; warning=--color-warning; inherit=currentColor.',
+    'Color tokens: primary=--color-icon-primary; secondary=--color-icon-secondary; tertiary=--color-icon-secondary; disabled=--color-icon-disabled; accent=--color-accent; positive=--color-success; negative=--color-error; warning=--color-warning; inherit=currentColor.',
     'Size: xsm=12x12px sm=16x16px md=20x20px lg=24x24px.',
   ],
   accessibility: [

@@ -181,7 +181,7 @@ const styles = stylex.create({
   },
   filledTrack: {
     position: 'absolute',
-    backgroundColor: colorVars['--color-primary'],
+    backgroundColor: colorVars['--color-accent'],
     borderRadius: radiusVars['--radius-rounded'],
   },
   filledTrackHorizontal: {
@@ -199,7 +199,7 @@ const styles = stylex.create({
     width: THUMB_SIZE,
     height: THUMB_SIZE,
     borderRadius: radiusVars['--radius-rounded'],
-    backgroundColor: colorVars['--color-primary'],
+    backgroundColor: colorVars['--color-accent'],
     transform: 'translate(-50%, -50%)',
     transitionProperty: 'background-color, box-shadow',
     transitionDuration: durationVars['--duration-fast'],
@@ -217,9 +217,9 @@ const styles = stylex.create({
   },
   thumbHover: {
     backgroundColor: {
-      default: colorVars['--color-primary'],
+      default: colorVars['--color-accent'],
       ':hover': {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-primary']}, ${colorVars['--color-hover-tint']} 15%)`,
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
       },
     },
   },

@@ -929,7 +929,7 @@ export default function ShellLabPage() {
             padding: '8px 16px',
             borderRadius: 8,
             border: 'none',
-            background: 'var(--color-primary)',
+            background: 'var(--color-accent)',
             color: 'white',
             cursor: 'pointer',
             fontSize: 14,

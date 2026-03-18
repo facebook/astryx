@@ -64,7 +64,7 @@ export const docs = {
           type: 'table',
           headers: ['Token', 'Usage'],
           rows: [
-            ['--color-primary', 'Primary action color'],
+            ['--color-accent', 'Primary action color'],
             ['--color-surface', 'Background surface'],
             ['--color-wash', 'Secondary background'],
             ['--color-success', 'Success states'],

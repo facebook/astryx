@@ -101,8 +101,8 @@ function deriveColorPalette({accent, positive, negative, warning, mode}) {
 
   return {
     // Core semantic
-    '--color-primary': ld(accentDark, accentLight),
-    '--color-primary-muted': ld(withAlpha(accent, 0.2), withAlpha(accent, 0.25)),
+    '--color-accent': ld(accentDark, accentLight),
+    '--color-accent-muted': ld(withAlpha(accent, 0.2), withAlpha(accent, 0.25)),
     '--color-text-link': ld(accentTextLight, accentTextDark),
     '--color-surface': ld('#FFFFFF', '#1F1F22'),
     '--color-wash': ld('#F1F4F7', '#111112'),

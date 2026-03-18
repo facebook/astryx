@@ -4,8 +4,7 @@
  * Renames all tokens updated in the naming audit:
  *
  * Color — semantic clarity:
- * - '--color-accent' → '--color-primary'
- * - '--color-accent-deemphasized' → '--color-primary-muted'
+ * - '--color-accent-deemphasized' → '--color-accent-muted'
  * - '--color-accent-text' → '--color-text-link'
  * - '--color-deemphasized' → '--color-muted'
  * - '--color-positive' → '--color-success'
@@ -43,6 +42,9 @@
  * - '--color-text-placeholder' → '--color-text-secondary'
  * - '--color-icon-tertiary' → '--color-icon-secondary'
  *
+ * Note: --color-accent is NOT renamed (kept as-is to avoid ambiguity
+ * with --color-text-primary and --color-icon-primary).
+ *
  * Handles:
  * - String literals (e.g. '--color-accent' or 'var(--color-accent)')
  * - Template literal quasis containing old tokens
@@ -52,7 +54,7 @@
 export const meta = {
   title: 'Migrate renamed design tokens',
   description:
-    'Renames color tokens from the v0.0.5 naming audit (accent→primary, positive→success, negative→error, divider→border, etc.).',
+    'Renames color tokens from the v0.0.5 naming audit (positive→success, negative→error, divider→border, etc.).',
 };
 
 // Ordered longest-first to prevent partial matches
@@ -66,7 +68,7 @@ const TOKEN_MAP = {
   '--color-negative-deemphasized': '--color-error-muted',
   '--color-positive-deemphasized': '--color-success-muted',
   '--color-warning-deemphasized': '--color-warning-muted',
-  '--color-accent-deemphasized': '--color-primary-muted',
+  '--color-accent-deemphasized': '--color-accent-muted',
   '--color-focus-outline-error': '--color-ring-focus-error',
   '--color-divider-emphasized': '--color-border-emphasized',
   '--color-disabled-overlay': '--color-overlay-disabled',
@@ -85,7 +87,6 @@ const TOKEN_MAP = {
   '--color-positive': '--color-success',
   '--color-divider': '--color-border',
   '--color-glimmer': '--color-skeleton',
-  '--color-accent': '--color-primary',
 };
 
 // Build a regex that matches any old token name, longest first.

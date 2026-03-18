@@ -65,7 +65,7 @@ const styles = stylex.create({
     cursor: 'not-allowed',
   },
   itemSelected: {
-    backgroundColor: colorVars['--color-primary-muted'],
+    backgroundColor: colorVars['--color-accent-muted'],
   },
 });
 

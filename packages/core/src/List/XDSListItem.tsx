@@ -176,7 +176,7 @@ const styles = stylex.create({
     pointerEvents: 'none' as const,
   },
   selected: {
-    backgroundColor: colorVars['--color-primary-muted'],
+    backgroundColor: colorVars['--color-accent-muted'],
   },
   invisibleButton: {
     all: 'unset',

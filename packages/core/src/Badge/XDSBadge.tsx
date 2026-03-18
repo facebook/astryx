@@ -59,7 +59,7 @@ const variants = stylex.create({
     color: colorVars['--color-text-primary'],
   },
   info: {
-    backgroundColor: colorVars['--color-primary'],
+    backgroundColor: colorVars['--color-accent'],
     color: colorVars['--color-text-on-dark-media'],
   },
   success: {

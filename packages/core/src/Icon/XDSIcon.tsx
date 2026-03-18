@@ -57,7 +57,7 @@ const colorStyles = stylex.create({
     color: colorVars['--color-icon-disabled'],
   },
   accent: {
-    color: colorVars['--color-primary'],
+    color: colorVars['--color-accent'],
   },
   positive: {
     color: colorVars['--color-success'],

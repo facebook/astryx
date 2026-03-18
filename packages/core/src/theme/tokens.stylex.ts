@@ -16,8 +16,8 @@ import * as stylex from '@stylexjs/stylex';
 
 export const colorDefaults = {
   // Core semantic
-  '--color-primary': 'light-dark(#0064E0, #2694FE)',
-  '--color-primary-muted': 'light-dark(#0082FB33, #0082FB3F)',
+  '--color-accent': 'light-dark(#0064E0, #2694FE)',
+  '--color-accent-muted': 'light-dark(#0082FB33, #0082FB3F)',
   '--color-surface': 'light-dark(#FFFFFF, #1F1F22)',
   '--color-wash': 'light-dark(#F1F4F7, #111112)',
   '--color-overlay': 'light-dark(#01122866, #11111299)',

@@ -11,11 +11,11 @@ describe('defineTheme', () => {
     const theme = defineTheme({
       name: 'custom',
       tokens: {
-        '--color-primary': '#FF0000',
+        '--color-accent': '#FF0000',
       },
     });
     // Override should be present
-    expect(theme.tokens['--color-primary']).toBe('#FF0000');
+    expect(theme.tokens['--color-accent']).toBe('#FF0000');
     // Defaults should NOT be in tokens
     expect(theme.tokens['--color-surface']).toBeUndefined();
   });
@@ -24,15 +24,11 @@ describe('defineTheme', () => {
     const theme = defineTheme({
       name: 'tuple-test',
       tokens: {
-        '--color-primary': ['#0077B6', '#48CAE4'],
+        '--color-accent': ['#0077B6', '#48CAE4'],
       },
     });
-    expect(theme.tokens['--color-primary']).toBe(
-      'light-dark(#0077B6, #48CAE4)',
-    );
-    expect(theme.tokens['--color-primary']).toBe(
-      'light-dark(#0077B6, #48CAE4)',
-    );
+    expect(theme.tokens['--color-accent']).toBe('light-dark(#0077B6, #48CAE4)');
+    expect(theme.tokens['--color-accent']).toBe('light-dark(#0077B6, #48CAE4)');
   });
 
   it('passes through string values as-is', () => {
@@ -49,14 +45,12 @@ describe('defineTheme', () => {
     const theme = defineTheme({
       name: 'mixed',
       tokens: {
-        '--color-primary': ['#0077B6', '#48CAE4'],
+        '--color-accent': ['#0077B6', '#48CAE4'],
         '--radius-3': '16px',
         '--font-heading': '"Georgia", serif',
       },
     });
-    expect(theme.tokens['--color-primary']).toBe(
-      'light-dark(#0077B6, #48CAE4)',
-    );
+    expect(theme.tokens['--color-accent']).toBe('light-dark(#0077B6, #48CAE4)');
     expect(theme.tokens['--radius-3']).toBe('16px');
     expect(theme.tokens['--font-heading']).toBe('"Georgia", serif');
   });
@@ -94,13 +88,13 @@ describe('generateThemeCSS', () => {
     const theme = defineTheme({
       name: 'ocean',
       tokens: {
-        '--color-primary': ['#0077B6', '#48CAE4'],
+        '--color-accent': ['#0077B6', '#48CAE4'],
         '--radius-3': '16px',
       },
     });
     const css = generateThemeCSS(theme);
     expect(css).toContain('@scope');
-    expect(css).toContain('--color-primary: light-dark(#0077B6, #48CAE4)');
+    expect(css).toContain('--color-accent: light-dark(#0077B6, #48CAE4)');
     expect(css).toContain('--radius-3: 16px');
     // :scope should NOT contain non-overridden tokens
     expect(css).not.toContain('--color-surface:');
@@ -138,7 +132,7 @@ describe('component overrides', () => {
       name: 'styled',
       components: {
         card: {
-          base: {borderWidth: '2px', borderColor: 'var(--color-primary)'},
+          base: {borderWidth: '2px', borderColor: 'var(--color-accent)'},
         },
         button: {
           base: {borderRadius: '999px'},
@@ -147,7 +141,7 @@ describe('component overrides', () => {
     });
     expect(theme.components?.card?.base).toEqual({
       borderWidth: '2px',
-      borderColor: 'var(--color-primary)',
+      borderColor: 'var(--color-accent)',
     });
     expect(theme.components?.button?.base).toEqual({borderRadius: '999px'});
   });
@@ -158,11 +152,11 @@ describe('generateThemeCSS with components', () => {
     const theme = defineTheme({
       name: 'ocean',
       tokens: {
-        '--color-primary': ['#0077B6', '#48CAE4'],
+        '--color-accent': ['#0077B6', '#48CAE4'],
       },
       components: {
         card: {
-          base: {borderWidth: '2px', borderColor: 'var(--color-primary)'},
+          base: {borderWidth: '2px', borderColor: 'var(--color-accent)'},
         },
         button: {
           base: {borderRadius: '999px'},
@@ -172,7 +166,7 @@ describe('generateThemeCSS with components', () => {
     const css = generateThemeCSS(theme);
     expect(css).toContain('.xds-card {');
     expect(css).toContain('border-width: 2px');
-    expect(css).toContain('border-color: var(--color-primary)');
+    expect(css).toContain('border-color: var(--color-accent)');
     expect(css).toContain('.xds-button {');
     expect(css).toContain('border-radius: 999px');
   });
@@ -286,10 +280,10 @@ describe('typeScale', () => {
       name: 'combo',
       typeScale: {base: 16, ratio: 1.25},
       tokens: {
-        '--color-primary': '#FF0000',
+        '--color-accent': '#FF0000',
       },
     });
-    expect(theme.tokens['--color-primary']).toBe('#FF0000');
+    expect(theme.tokens['--color-accent']).toBe('#FF0000');
     expect(theme.tokens['--heading-4-size']).toBe('1rem');
   });
 });
@@ -425,10 +419,10 @@ describe('radiusScale', () => {
       typeScale: {base: 16, ratio: 1.25},
       radiusScale: {base: 4, multiplier: 1},
       tokens: {
-        '--color-primary': '#FF0000',
+        '--color-accent': '#FF0000',
       },
     });
-    expect(theme.tokens['--color-primary']).toBe('#FF0000');
+    expect(theme.tokens['--color-accent']).toBe('#FF0000');
     expect(theme.tokens['--heading-4-size']).toBe('1rem');
     expect(theme.tokens['--radius-2']).toBe('8px');
   });

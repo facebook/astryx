@@ -224,7 +224,7 @@ export const dayCellStyles = stylex.create({
 export const dayCellTheme = stylex.create({
   // Range background color
   rangeBg: {
-    backgroundColor: colorVars['--color-primary-muted'],
+    backgroundColor: colorVars['--color-accent-muted'],
   },
 
   // Preview background (muted overlay)
@@ -269,7 +269,7 @@ export const dayCellTheme = stylex.create({
 
   // Selected state (single selection or range endpoints)
   daySelected: {
-    backgroundColor: colorVars['--color-primary'],
+    backgroundColor: colorVars['--color-accent'],
     color: colorVars['--color-text-on-dark-media'],
     backgroundImage: {
       default: null,

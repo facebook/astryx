@@ -29,7 +29,7 @@ export const colorStyles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   active: {
-    color: colorVars['--color-primary'],
+    color: colorVars['--color-accent'],
   },
   inherit: {
     color: 'inherit',

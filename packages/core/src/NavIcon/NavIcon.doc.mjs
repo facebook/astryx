@@ -6,7 +6,7 @@ export const docs = {
     'Circular icon container with accent background for navigation headers.',
   features: [
     'Shared — used in both XDSTopNavHeading and XDSPageNavHeader',
-    'Accent background — uses --color-primary with --color-icon-on-dark-media contrast',
+    'Accent background — uses --color-accent with --color-icon-on-dark-media contrast',
     'Fixed size — renders at the medium (--size-md) design token size',
   ],
   props: [
@@ -61,7 +61,7 @@ export const docsZh = {
     '用于导航头部的带强调色背景的圆形图标容器。',
   features: [
     '共享 — 同时用于 XDSTopNavHeading 和 XDSPageNavHeader',
-    '强调色背景 — 使用 --color-primary 配合 --color-icon-on-dark-media 对比色',
+    '强调色背景 — 使用 --color-accent 配合 --color-icon-on-dark-media 对比色',
     '固定尺寸 — 以中等尺寸 (--size-md) 设计令牌渲染',
   ],
   props: [
@@ -115,7 +115,7 @@ export const docsDense = {
     'Circular icon container w/ accent background for navigation headers.',
   features: [
     'Shared; used in both XDSTopNavHeading + XDSPageNavHeader',
-    'Accent background; uses --color-primary w/ --color-icon-on-dark-media contrast',
+    'Accent background; uses --color-accent w/ --color-icon-on-dark-media contrast',
     'Fixed size; renders at medium (--size-md) design token size',
   ],
   propDescriptions: {

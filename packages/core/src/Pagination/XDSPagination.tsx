@@ -213,7 +213,7 @@ const styles = stylex.create({
     height: 6,
   },
   dotActive: {
-    backgroundColor: colorVars['--color-primary'],
+    backgroundColor: colorVars['--color-accent'],
   },
   dotDisabled: {
     cursor: 'not-allowed',

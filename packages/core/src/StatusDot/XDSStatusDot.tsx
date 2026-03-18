@@ -75,7 +75,7 @@ const variants = stylex.create({
     backgroundColor: colorVars['--color-error'],
   },
   info: {
-    backgroundColor: colorVars['--color-primary'],
+    backgroundColor: colorVars['--color-accent'],
   },
   neutral: {
     backgroundColor: colorVars['--color-muted'],

@@ -105,7 +105,7 @@ const sizeStyles = stylex.create({
  */
 const variants = stylex.create({
   primary: {
-    backgroundColor: colorVars['--color-primary'],
+    backgroundColor: colorVars['--color-accent'],
     color: colorVars['--color-text-on-dark-media'],
     backgroundImage: {
       default: null,

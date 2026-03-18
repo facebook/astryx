@@ -27,7 +27,7 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: '50%',
-    backgroundColor: colorVars['--color-primary'],
+    backgroundColor: colorVars['--color-accent'],
     color: colorVars['--color-icon-on-dark-media'],
     flexShrink: 0,
     width: sizeVars['--size-md'],

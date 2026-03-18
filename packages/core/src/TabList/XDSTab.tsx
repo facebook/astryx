@@ -107,7 +107,7 @@ const styles = stylex.create({
       left: spacingVars['--spacing-3'],
       right: spacingVars['--spacing-3'],
       height: '2px',
-      backgroundColor: colorVars['--color-primary'],
+      backgroundColor: colorVars['--color-accent'],
       borderRadius: radiusVars['--radius-rounded'],
     },
   },

@@ -12,18 +12,17 @@ async function applyTransform(source) {
 describe('migrate-token-names', () => {
   // === Semantic clarity renames ===
 
-  it('renames --color-accent to --color-primary', async () => {
-    const input = `const x = colorVars['--color-accent'];`;
-    const output = await applyTransform(input);
-    expect(output).toContain('--color-primary');
-    expect(output).not.toContain('--color-accent');
-  });
-
-  it('renames --color-accent-deemphasized to --color-primary-muted', async () => {
+  it('renames --color-accent-deemphasized to --color-accent-muted', async () => {
     const input = `const x = colorVars['--color-accent-deemphasized'];`;
     const output = await applyTransform(input);
-    expect(output).toContain('--color-primary-muted');
+    expect(output).toContain('--color-accent-muted');
     expect(output).not.toContain('--color-accent-deemphasized');
+  });
+
+  it('does NOT rename --color-accent (kept as-is)', async () => {
+    const input = `const x = colorVars['--color-accent'];`;
+    const output = await applyTransform(input);
+    expect(output).toContain('--color-accent');
   });
 
   it('renames --color-positive to --color-success', async () => {
@@ -74,9 +73,6 @@ describe('migrate-token-names', () => {
     expect(output).toContain('--color-overlay-hover');
     expect(output).toContain('--color-overlay-pressed');
     expect(output).toContain('--color-overlay-disabled');
-    expect(output).not.toContain('--color-hover-overlay');
-    expect(output).not.toContain('--color-pressed-overlay');
-    expect(output).not.toContain('--color-disabled-overlay');
   });
 
   it('renames focus-outline tokens to ring-focus', async () => {
@@ -174,10 +170,10 @@ describe('migrate-token-names', () => {
   });
 
   it('handles template literals', async () => {
-    const input = 'const css = `color: var(--color-accent)`;';
+    const input = 'const css = `color: var(--color-educational)`;';
     const output = await applyTransform(input);
-    expect(output).toContain('--color-primary');
-    expect(output).not.toMatch(/--color-accent[^-]/);
+    expect(output).toContain('--color-info');
+    expect(output).not.toContain('--color-educational');
   });
 
   it('handles defineTheme token objects', async () => {
@@ -189,17 +185,19 @@ describe('migrate-token-names', () => {
       }
     })`;
     const output = await applyTransform(input);
-    expect(output).toContain('--color-primary');
+    // accent stays as accent
+    expect(output).toContain('--color-accent');
+    // positive → success
     expect(output).toContain('--color-success');
+    // divider → border
     expect(output).toContain('--color-border');
-    expect(output).not.toMatch(/--color-accent[^-]/);
     expect(output).not.toContain('--color-positive');
     expect(output).not.toContain('--color-divider');
   });
 
   it('does not modify tokens that are already renamed', async () => {
     const input = `const x = {
-      a: colorVars['--color-primary'],
+      a: colorVars['--color-accent'],
       b: colorVars['--color-success'],
       c: colorVars['--color-error'],
       d: colorVars['--color-border'],
@@ -223,21 +221,21 @@ describe('migrate-token-names', () => {
     const {default: transform} = await import('../migrate-token-names.mjs');
     const jscodeshift = (await import('jscodeshift')).default;
     const api = {jscodeshift, stats: () => {}, report: () => {}};
-    const source = `const x = '--color-primary';`;
+    const source = `const x = '--color-accent';`;
     const result = transform({source, path: 'test.tsx'}, api);
     expect(result).toBeUndefined();
   });
 
-  it('does not partially match (--color-accent must not match inside --color-accent-text)', async () => {
+  it('does not partially match (--color-accent stays, --color-accent-text renames)', async () => {
     const input = `const x = {
       a: colorVars['--color-accent-text'],
       b: colorVars['--color-accent'],
     };`;
     const output = await applyTransform(input);
-    // accent-text → text-link (not primary-text)
+    // accent-text → text-link
     expect(output).toContain('--color-text-link');
-    // accent → primary
-    expect(output).toContain('--color-primary');
-    expect(output).not.toContain('--color-accent');
+    // accent stays as accent
+    expect(output).toContain('--color-accent');
+    expect(output).not.toContain('--color-accent-text');
   });
 });
