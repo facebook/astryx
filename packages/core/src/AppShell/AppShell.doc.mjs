@@ -7,7 +7,7 @@ export const docs = {
   features: [
     'Two navigation slots: topNav (horizontal bar) and sideNav (vertical sidebar)',
     'Two height modes: fill (viewport-height, independent scroll containers) and auto (page-scroll with sticky nav)',
-    'Controlled and uncontrolled sideNav collapse with responsive auto-collapse via sideNavBreakpoint',
+    'Controlled and uncontrolled sideNav collapse with responsive auto-collapse via mobileNav breakpoint',
     'Mobile: collapsed sideNav renders as an overlay with backdrop',
     'Composes XDSLayout internally for automatic padding collapse, scroll containment, and slot awareness',
     'Semantic HTML: <main> with role="main", SideNav with role="navigation", skip-to-content link',
@@ -213,7 +213,7 @@ const isMobile = useMediaQuery('(max-width: 768px)');
       name: 'mobileNav',
       type: 'ReactNode',
       description:
-        'Mobile navigation slot, typically an XDSMobileNav component. Rendered when the viewport is below the sideNavBreakpoint.',
+        'Mobile navigation configuration. Accepts false (disable), config object (tune auto behavior), or ReactNode (full custom drawer).',
     },
     {
       name: 'banner',
@@ -244,19 +244,7 @@ const isMobile = useMediaQuery('(max-width: 768px)');
       type: '(isCollapsed: boolean) => void',
       description: 'Callback fired when the sideNav collapse state changes.',
     },
-    {
-      name: 'sideNavBreakpoint',
-      type: "'sm' | 'md' | 'lg' | 'none'",
-      description:
-        'Viewport-width breakpoint below which the sideNav auto-collapses. Use "none" to disable responsive collapse.',
-      default: "'md'",
-    },
-    {
-      name: 'sideNavWidth',
-      type: 'number',
-      description: 'Width of the sideNav panel in pixels.',
-      default: '260',
-    },
+
     {
       name: 'variant',
       type: "'wash' | 'surface' | 'section' | 'elevated'",
@@ -301,7 +289,7 @@ export const docsZh = {
   features: [
     '两个导航插槽：topNav（水平导航栏）和 sideNav（垂直侧边栏）',
     '两种高度模式：fill（视口高度，独立滚动容器）和 auto（页面滚动，导航栏吸顶）',
-    '受控和非受控的 sideNav 折叠，通过 sideNavBreakpoint 支持响应式自动折叠',
+    '受控和非受控的 sideNav 折叠，通过 mobileNav breakpoint 支持响应式自动折叠',
     '移动端：折叠的 sideNav 以带遮罩层的浮层形式展示',
     '内部组合使用 XDSLayout，自动处理内边距折叠、滚动容器和插槽感知',
     '语义化 HTML：<main> 带 role="main"，SideNav 带 role="navigation"，跳转到内容链接',
@@ -470,7 +458,7 @@ const isMobile = useMediaQuery('(max-width: 768px)');
       name: 'mobileNav',
       type: 'ReactNode',
       description:
-        '移动端导航插槽，通常为 XDSMobileNav 组件。当视口宽度低于 sideNavBreakpoint 时渲染。',
+        '移动端导航配置。接受 false（禁用）、配置对象（调整自动行为）或 ReactNode（完全自定义抽屉）。',
     },
     {
       name: 'banner',
@@ -557,7 +545,7 @@ export const docsDense = {
   features: [
     'two nav slots: topNav (horizontal bar) + sideNav (vertical sidebar)',
     'two height modes: fill (viewport 100dvh, independent scroll) + auto (page-scroll w/ sticky nav)',
-    'controlled+uncontrolled sideNav collapse w/ responsive auto-collapse via sideNavBreakpoint',
+    'controlled+uncontrolled sideNav collapse w/ responsive auto-collapse via mobileNav breakpoint',
     'mobile: collapsed sideNav renders as overlay w/ backdrop',
     'composes XDSLayout internally for auto padding collapse, scroll containment, slot awareness',
     'semantic HTML: <main> role="main", SideNav role="navigation", skip-to-content link',
@@ -582,15 +570,13 @@ export const docsDense = {
     children: 'main content area, rendered inside <main>',
     topNav: 'top nav slot, typically XDSTopNav',
     sideNav: 'side nav slot, typically XDSSideNav',
-    mobileNav: 'mobile nav slot, typically XDSMobileNav; rendered below sideNavBreakpoint',
+    mobileNav: 'mobile nav config: false | MobileNavConfig | ReactNode',
     banner: 'slot for system-wide announcements above topNav',
     height:
       'fill=viewport 100dvh w/ independent scroll; auto=content-driven w/ sticky nav',
     isSideNavCollapsed: 'sideNav collapsed (controlled)',
     defaultIsSideNavCollapsed: 'initial collapsed state (uncontrolled)',
     onSideNavCollapsedChange: 'callback on sideNav collapse change',
-    sideNavBreakpoint: 'auto-collapse breakpoint; "none" disables responsive collapse',
-    sideNavWidth: 'sideNav panel width in px',
     variant:
       'nav bg style: wash=wash bg, surface=surface bg, section=dividers, elevated=wash nav w/ elevated surface content+radius',
     contentPadding:

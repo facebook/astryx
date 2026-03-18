@@ -15,7 +15,7 @@
 
 'use client';
 
-import {useId, useRef, type ReactNode} from 'react';
+import {useCallback, useId, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -24,6 +24,7 @@ import {
   textSizeVars,
   fontWeightVars,
   lineHeightVars,
+  transitionVars,
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
 import type {XDSIconType} from '../Icon';
@@ -31,7 +32,9 @@ import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSTooltip} from '../Tooltip';
+import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
+import {getIcon} from '../Icon/globalIconRegistry';
 
 // =============================================================================
 // Styles
@@ -43,49 +46,9 @@ const styles = stylex.create({
     flexDirection: 'column',
     width: '100%',
   },
-  item: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-2'],
-    width: '100%',
-    paddingInline: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-2'],
-    borderRadius: radiusVars['--radius-element'],
-    borderWidth: 0,
-    borderStyle: 'none',
-    backgroundColor: 'transparent',
-    color: colorVars['--color-text-primary'],
-    textDecoration: 'none',
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    fontSize: textSizeVars['--text-base'],
-    fontWeight: fontWeightVars['--font-weight-normal'],
-    lineHeight: lineHeightVars['--leading-base'],
-    textAlign: 'start',
-    boxSizing: 'border-box',
-    ':hover': {
-      '@media (hover: hover)': {
-        backgroundColor: colorVars['--color-hover-overlay'],
-      },
-    },
-  },
   itemCollapsed: {
     justifyContent: 'center',
     paddingInline: spacingVars['--spacing-1'],
-  },
-  selected: {
-    backgroundColor: colorVars['--color-deemphasized'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
-    ':hover': {
-      '@media (hover: hover)': {
-        backgroundColor: colorVars['--color-deemphasized'],
-      },
-    },
-  },
-  disabled: {
-    color: colorVars['--color-text-disabled'],
-    cursor: 'not-allowed',
-    pointerEvents: 'none',
   },
   label: {
     flex: 1,
@@ -101,6 +64,30 @@ const styles = stylex.create({
   },
   children: {
     paddingInlineStart: spacingVars['--spacing-6'],
+  },
+  childrenCollapsible: {
+    display: 'grid',
+    gridTemplateRows: '1fr',
+    transitionProperty: 'grid-template-rows',
+    transitionDuration: transitionVars['--transition-normal'],
+  },
+  childrenCollapsed: {
+    gridTemplateRows: '0fr',
+  },
+  childrenInner: {
+    overflow: 'hidden',
+    minHeight: 0,
+    paddingInlineStart: spacingVars['--spacing-6'],
+  },
+  expandChevron: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    transitionProperty: 'transform',
+    transitionDuration: transitionVars['--transition-fast'],
+    flexShrink: 0,
+  },
+  expandChevronCollapsed: {
+    transform: 'rotate(180deg)',
   },
 });
 
@@ -156,6 +143,24 @@ export interface XDSSideNavItemProps {
    */
   children?: ReactNode;
   /**
+   * Enables collapse behavior for items with children.
+   * When true, clicking the item toggles visibility of sub-items.
+   *
+   * - `true` — collapsible with defaults (starts expanded)
+   * - Object — controlled/configured:
+   *   - `defaultIsCollapsed` — start collapsed (default: false)
+   *   - `isCollapsed` + `onCollapsedChange` — controlled mode
+   *
+   * @default false
+   */
+  collapsible?:
+    | boolean
+    | {
+        defaultIsCollapsed?: boolean;
+        isCollapsed?: boolean;
+        onCollapsedChange?: (isCollapsed: boolean) => void;
+      };
+  /**
    * Test ID for the item element.
    */
   'data-testid'?: string;
@@ -196,6 +201,7 @@ export function XDSSideNavItem({
   onClick,
   endContent,
   children,
+  collapsible: itemCollapsible,
   'data-testid': testId,
   ref,
 }: XDSSideNavItemProps) {
@@ -204,6 +210,27 @@ export function XDSSideNavItem({
   const hasChildren = !!children;
   const LinkComponent = useXDSLinkComponent(as);
   const itemRef = useRef<HTMLDivElement>(null);
+
+  // Collapse state for items with children
+  const itemCollapsibleConfig =
+    typeof itemCollapsible === 'object' ? itemCollapsible : {};
+  const isItemCollapsible = hasChildren && itemCollapsible !== false;
+  const itemControlledCollapsed = itemCollapsibleConfig.isCollapsed;
+  const isItemControlled = itemControlledCollapsed !== undefined;
+  const [uncontrolledCollapsed, setUncontrolledCollapsed] = useState(
+    itemCollapsibleConfig.defaultIsCollapsed ?? false,
+  );
+  const isItemCollapsed = isItemControlled
+    ? itemControlledCollapsed
+    : uncontrolledCollapsed;
+
+  const toggleItemCollapse = useCallback(() => {
+    const next = !isItemCollapsed;
+    if (!isItemControlled) {
+      setUncontrolledCollapsed(next);
+    }
+    itemCollapsibleConfig.onCollapsedChange?.(next);
+  }, [isItemCollapsed, isItemControlled, itemCollapsibleConfig]);
 
   const displayIcon = isSelected && selectedIcon ? selectedIcon : icon;
 
@@ -215,6 +242,11 @@ export function XDSSideNavItem({
   const handleClick = (e: React.MouseEvent) => {
     if (isDisabled) {
       e.preventDefault();
+      return;
+    }
+    if (isItemCollapsible && !isCollapsed) {
+      e.preventDefault();
+      toggleItemCollapse();
       return;
     }
     onClick?.(e);
@@ -233,12 +265,23 @@ export function XDSSideNavItem({
       {!isCollapsed && endContent && (
         <span {...stylex.props(styles.endContent)}>{endContent}</span>
       )}
+      {!isCollapsed && isItemCollapsible && (
+        <span
+          {...stylex.props(
+            styles.expandChevron,
+            isItemCollapsed && styles.expandChevronCollapsed,
+          )}>
+          {getIcon('chevronDown')}
+        </span>
+      )}
     </>
   );
 
   const ariaProps = {
     'aria-current': isSelected ? ('page' as const) : undefined,
     'aria-disabled': isDisabled || undefined,
+    'aria-expanded': isItemCollapsible ? !isItemCollapsed : undefined,
+    'aria-controls': isItemCollapsible ? `${id}-children` : undefined,
     'data-testid': testId,
   };
 
@@ -250,10 +293,10 @@ export function XDSSideNavItem({
         onClick={handleClick}
         {...ariaProps}
         {...stylex.props(
-          styles.item,
+          navItemStyles.item,
           isCollapsed && styles.itemCollapsed,
-          isSelected && styles.selected,
-          isDisabled && styles.disabled,
+          isSelected && navItemStyles.selected,
+          isDisabled && navItemStyles.disabled,
         )}>
         {itemContent}
       </LinkComponent>
@@ -265,10 +308,10 @@ export function XDSSideNavItem({
         disabled={isDisabled}
         {...ariaProps}
         {...stylex.props(
-          styles.item,
+          navItemStyles.item,
           isCollapsed && styles.itemCollapsed,
-          isSelected && styles.selected,
-          isDisabled && styles.disabled,
+          isSelected && navItemStyles.selected,
+          isDisabled && navItemStyles.disabled,
         )}>
         {itemContent}
       </button>
@@ -281,13 +324,20 @@ export function XDSSideNavItem({
       {itemElement}
       {hasChildren && !isCollapsed && (
         <div
+          id={`${id}-children`}
           role="group"
           aria-labelledby={`${id}-label`}
-          {...stylex.props(styles.children)}>
-          <span id={`${id}-label`} hidden>
-            {label}
-          </span>
-          {children}
+          aria-hidden={isItemCollapsed}
+          {...stylex.props(
+            styles.childrenCollapsible,
+            isItemCollapsed && styles.childrenCollapsed,
+          )}>
+          <div {...stylex.props(styles.childrenInner)}>
+            <span id={`${id}-label`} hidden>
+              {label}
+            </span>
+            {children}
+          </div>
         </div>
       )}
     </div>

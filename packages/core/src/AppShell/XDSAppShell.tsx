@@ -51,8 +51,6 @@ import {xdsClassName, mergeProps} from '../utils';
 // Constants
 // =============================================================================
 
-const DEFAULT_SIDENAV_WIDTH = 260;
-
 const BREAKPOINT_VALUES: Record<XDSAppShellBreakpoint, number> = {
   sm: 640,
   md: 768,
@@ -114,6 +112,12 @@ export interface XDSMobileNavConfig {
    * or raw children.
    */
   content?: ReactNode;
+
+  /**
+   * Breakpoint below which mobile nav activates.
+   * @default 'md'
+   */
+  breakpoint?: XDSAppShellBreakpoint;
 }
 
 export interface XDSAppShellProps {
@@ -200,18 +204,6 @@ export interface XDSAppShellProps {
    * Side navigation — typically an XDSSideNav.
    */
   sideNav?: ReactNode;
-
-  /**
-   * Breakpoint below which side nav auto-collapses.
-   * @default 'md'
-   */
-  sideNavBreakpoint?: XDSAppShellBreakpoint;
-
-  /**
-   * Width of side nav when expanded (in pixels).
-   * @default 260
-   */
-  sideNavWidth?: number;
 
   /**
    * Top navigation — typically an XDSTopNav.
@@ -428,8 +420,6 @@ export function XDSAppShell({
   height = 'fill',
   mobileNav,
   sideNav,
-  sideNavBreakpoint = 'md',
-  sideNavWidth = DEFAULT_SIDENAV_WIDTH,
   topNav,
   xstyle,
   className,
@@ -447,6 +437,8 @@ export function XDSAppShell({
     !isValidElement(mobileNav)
       ? (mobileNav as XDSMobileNavConfig)
       : null;
+  const sideNavBreakpoint: XDSAppShellBreakpoint =
+    mobileNavConfig?.breakpoint ?? 'md';
   // ReactNode shorthand — user provides <XDSMobileNav> directly as the prop
   const mobileNavReactNode: ReactNode | null =
     mobileNav != null &&
@@ -499,7 +491,7 @@ export function XDSAppShell({
   const contentAreaStyle =
     variant === 'wash'
       ? styles.contentBgWash
-      : variant === 'elevated' && hasTopNav && hasSideNav
+      : variant === 'elevated' && hasTopNav && hasSideNav && !isBelowBreakpoint
         ? styles.contentBgTransparent
         : variant === 'surface' || variant === 'elevated'
           ? styles.contentBgSurface
@@ -726,20 +718,26 @@ export function XDSAppShell({
   // mode — it shows heading + footer icons horizontally, with the hamburger
   const autoMobileTopBar =
     shouldShowAutoToggle && !hasTopNav && hasSideNav ? (
-      <XDSLayoutHeader
-        padding={0}
-        hasDivider={navHasDividers}
-        xstyle={navAreaStyle}>
-        <div
-          {...stylex.props(styles.autoMobileTopBar)}
-          role="navigation"
-          aria-label="Mobile navigation">
-          <XDSSideNavRenderContext value="topbar">
-            {sideNav}
-          </XDSSideNavRenderContext>
-          <XDSMobileNavToggle />
-        </div>
-      </XDSLayoutHeader>
+      <div
+        {...stylex.props(
+          isAuto && styles.headerSticky,
+          isAuto && stickyBgStyle,
+        )}>
+        <XDSLayoutHeader
+          padding={0}
+          hasDivider={navHasDividers}
+          xstyle={navAreaStyle}>
+          <div
+            {...stylex.props(styles.autoMobileTopBar)}
+            role="navigation"
+            aria-label="Mobile navigation">
+            <XDSSideNavRenderContext value="topbar">
+              {sideNav}
+            </XDSSideNavRenderContext>
+            <XDSMobileNavToggle />
+          </div>
+        </XDSLayoutHeader>
+      </div>
     ) : undefined;
 
   return (

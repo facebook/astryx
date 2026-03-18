@@ -28,6 +28,7 @@ export * from './EmptyState';
 export * from './Link';
 export * from './List';
 export * from './NavIcon';
+export * from './NavItem';
 export * from './Slider';
 export * from './Stack';
 export * from './Switch';

@@ -111,6 +111,20 @@ const styles = stylex.create({
     borderBlockStart: 'none',
     paddingBlockStart: 0,
   },
+  // Drawer footer — pushed to bottom of the scrollable content area
+  drawerFooter: {
+    display: 'flex',
+    flexDirection: 'column',
+    marginBlockStart: 'auto',
+    gap: spacingVars['--spacing-2'],
+    paddingBlockStart: spacingVars['--spacing-2'],
+    borderBlockStart: `1px solid ${colorVars['--color-divider']}`,
+  },
+  drawerFooterIcons: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+  },
   // Topbar mode — horizontal layout for mobile top bar
   topbar: {
     display: 'flex',
@@ -119,7 +133,6 @@ const styles = stylex.create({
     justifyContent: 'space-between',
     height: 48,
     width: '100%',
-    paddingInline: spacingVars['--spacing-2'],
     backgroundColor: 'inherit',
     boxSizing: 'border-box',
     overflow: 'hidden',
@@ -298,12 +311,23 @@ export function XDSSideNav({
   // =========================================================================
   // Drawer mode — render inside XDSMobileNav with heading as header
   // =========================================================================
+  const hasDrawerFooter = !!(footer || footerIcons);
+
   if (renderMode === 'drawer') {
     return (
       <XDSMobileNav header={header} data-testid={testId}>
         {topContent}
         {children}
-        {footer}
+        {hasDrawerFooter && (
+          <div {...stylex.props(styles.drawerFooter)}>
+            {footer}
+            {footerIcons && (
+              <div {...stylex.props(styles.drawerFooterIcons)}>
+                {footerIcons}
+              </div>
+            )}
+          </div>
+        )}
       </XDSMobileNav>
     );
   }
@@ -317,7 +341,16 @@ export function XDSSideNav({
       <>
         {topContent}
         {children}
-        {footer}
+        {hasDrawerFooter && (
+          <div {...stylex.props(styles.drawerFooter)}>
+            {footer}
+            {footerIcons && (
+              <div {...stylex.props(styles.drawerFooterIcons)}>
+                {footerIcons}
+              </div>
+            )}
+          </div>
+        )}
       </>
     );
   }

@@ -28,6 +28,7 @@ import {
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
+import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
 /**
@@ -76,50 +77,18 @@ const styles = stylex.create({
       ':active': colorVars['--color-deemphasized'],
     },
   },
-  disabled: {
-    color: colorVars['--color-text-disabled'],
-    cursor: 'not-allowed',
-    pointerEvents: 'none',
-  },
   iconOnly: {
     paddingInline: spacingVars['--spacing-2'],
   },
-  // Drawer mode — SideNavItem-style vertical list element
-  drawerItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-3'],
-    width: '100%',
-    paddingBlock: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-3'],
-    borderRadius: radiusVars['--radius-element'],
-    fontSize: textSizeVars['--text-base'],
-    lineHeight: lineHeightVars['--leading-base'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
-    color: colorVars['--color-text-secondary'],
-    textDecoration: 'none',
-    cursor: 'pointer',
-    boxSizing: 'border-box',
-    backgroundColor: {
-      default: 'transparent',
-      ':hover': {
-        '@media (hover: hover)': colorVars['--color-hover-overlay'],
-      },
-      ':active': colorVars['--color-pressed-overlay'],
-    },
+  // Drawer mode — focus outline (base item + selected come from navItemStyles)
+  drawerFocus: {
     outline: {
       default: null,
       ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
     },
-  },
-  drawerItemSelected: {
-    color: colorVars['--color-text-primary'],
-    fontWeight: fontWeightVars['--font-weight-semibold'],
-    backgroundColor: {
-      default: colorVars['--color-deemphasized'],
-      ':hover': {
-        '@media (hover: hover)': colorVars['--color-deemphasized'],
-      },
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': '2px',
     },
   },
 });
@@ -220,9 +189,10 @@ export function XDSTopNavItem({
         {...mergeProps(
           xdsClassName('top-nav-item', {mode: 'drawer'}),
           stylex.props(
-            styles.drawerItem,
-            isSelected && styles.drawerItemSelected,
-            isDisabled && styles.disabled,
+            navItemStyles.item,
+            styles.drawerFocus,
+            isSelected && navItemStyles.selected,
+            isDisabled && navItemStyles.disabled,
             xstyle,
           ),
           className,
@@ -251,7 +221,7 @@ export function XDSTopNavItem({
         stylex.props(
           styles.base,
           isSelected && styles.selected,
-          isDisabled && styles.disabled,
+          isDisabled && navItemStyles.disabled,
           isIconOnly && styles.iconOnly,
           xstyle,
         ),
