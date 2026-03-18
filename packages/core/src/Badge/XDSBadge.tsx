@@ -35,7 +35,7 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacingVars['--spacing-1'],
-    height: '20px',
+    height: spacingVars['--spacing-5'],
     paddingBlock: 0,
     paddingInline: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-rounded'],
@@ -43,7 +43,6 @@ const styles = stylex.create({
     fontSize: textSizeVars['--text-xsm'],
     lineHeight: lineHeightVars['--leading-tight'],
     fontWeight: fontWeightVars['--font-weight-medium'],
-    letterSpacing: '-0.24px',
     whiteSpace: 'nowrap',
   },
   dot: {
