@@ -336,6 +336,71 @@ export default function RadiusPage() {
             </div>
           </XDSVStack>
         </XDSVStack>
+
+        <XDSDivider />
+
+        {/* radius-container */}
+        <XDSVStack gap={4}>
+          <div style={{display: 'flex', alignItems: 'baseline', gap: 12}}>
+            <span style={{fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'light-dark(#0064E0, #2694FE)'}}>radius-container</span>
+            <span style={{fontSize: 13, color: 'light-dark(#666, #aaa)', fontStyle: 'italic'}}>12dp &times; multiplier</span>
+          </div>
+          <div style={{display: 'flex', gap: 48, flexWrap: 'wrap', alignItems: 'flex-start'}}>
+            {/* Card */}
+            <XDSVStack gap={2}>
+              <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Card</span>
+              <div style={{border: '1px solid light-dark(#ddd, #444)', borderRadius: tokens['radius-container'], overflow: 'hidden', width: 280, backgroundColor: 'light-dark(#fff, #1a1a1a)', transition: 'border-radius 0.2s'}}>
+                <div style={{width: '100%', height: 140, background: 'linear-gradient(135deg, #0064E0, #5B08D8)'}} />
+                <div style={{padding: 16}}>
+                  <div style={{fontWeight: 600, fontSize: 16, marginBottom: 4, color: 'light-dark(#333, #eee)'}}>Card title</div>
+                  <div style={{fontSize: 14, color: 'light-dark(#666, #aaa)'}}>Grouped content.</div>
+                </div>
+              </div>
+            </XDSVStack>
+
+            {/* Modal */}
+            <XDSVStack gap={2}>
+              <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Modal</span>
+              <div style={{border: '1px solid light-dark(#ddd, #444)', borderRadius: tokens['radius-container'], width: 320, overflow: 'hidden', backgroundColor: 'light-dark(#fff, #1a1a1a)', boxShadow: '0 12px 40px rgba(0,0,0,0.08)', transition: 'border-radius 0.2s'}}>
+                <div style={{padding: '20px 24px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <span style={{fontSize: 18, fontWeight: 600, color: 'light-dark(#333, #eee)'}}>Confirm action</span>
+                  <span style={{fontSize: 20, color: 'light-dark(#999, #666)', cursor: 'pointer'}}>&times;</span>
+                </div>
+                <div style={{padding: '0 24px 20px', fontSize: 15, color: 'light-dark(#666, #aaa)', lineHeight: 1.5}}>Are you sure? This cannot be undone.</div>
+                <div style={{padding: '16px 24px', borderTop: '1px solid light-dark(#eee, #333)', display: 'flex', justifyContent: 'flex-end', gap: 10}}>
+                  <button style={{padding: '10px 24px', fontSize: 14, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer', border: '1px solid light-dark(#ddd, #444)', backgroundColor: 'light-dark(#fff, #333)', color: 'light-dark(#333, #eee)', borderRadius: tokens['radius-element'], transition: 'border-radius 0.2s'}}>Cancel</button>
+                  <button style={{padding: '10px 24px', fontSize: 14, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer', border: 'none', backgroundColor: 'light-dark(#0064E0, #2694FE)', color: '#fff', borderRadius: tokens['radius-element'], transition: 'border-radius 0.2s'}}>Confirm</button>
+                </div>
+              </div>
+            </XDSVStack>
+
+            {/* Dropdown */}
+            <XDSVStack gap={2}>
+              <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Dropdown</span>
+              <div style={{border: '1px solid light-dark(#ddd, #444)', borderRadius: tokens['radius-container'], padding: 6, width: 200, backgroundColor: 'light-dark(#fff, #1a1a1a)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)', transition: 'border-radius 0.2s'}}>
+                <div style={{padding: '10px 14px', fontSize: 15, color: 'light-dark(#333, #eee)', backgroundColor: 'light-dark(rgba(0,0,0,0.04), rgba(255,255,255,0.06))', borderRadius: Math.max(0, tokens['radius-container'] - 6), transition: 'border-radius 0.2s'}}>Dashboard</div>
+                <div style={{padding: '10px 14px', fontSize: 15, color: 'light-dark(#333, #eee)', borderRadius: Math.max(0, tokens['radius-container'] - 6)}}>Settings</div>
+                <div style={{padding: '10px 14px', fontSize: 15, color: 'light-dark(#333, #eee)', borderRadius: Math.max(0, tokens['radius-container'] - 6)}}>Profile</div>
+                <div style={{padding: '10px 14px', fontSize: 15, color: 'light-dark(#333, #eee)', borderRadius: Math.max(0, tokens['radius-container'] - 6)}}>Log out</div>
+              </div>
+            </XDSVStack>
+          </div>
+
+          {/* Toasts - second row */}
+          <XDSVStack gap={2}>
+            <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Toasts</span>
+            <XDSVStack gap={2}>
+              <div style={{border: '1px solid light-dark(#ddd, #444)', borderRadius: tokens['radius-container'], padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12, fontSize: 15, width: 320, backgroundColor: 'light-dark(#fff, #1a1a1a)', color: 'light-dark(#333, #eee)', transition: 'border-radius 0.2s'}}>
+                <div style={{width: 12, height: 12, borderRadius: '50%', backgroundColor: '#0D8626', flexShrink: 0}} />
+                Saved successfully
+              </div>
+              <div style={{border: '1px solid light-dark(#ddd, #444)', borderRadius: tokens['radius-container'], padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12, fontSize: 15, width: 320, backgroundColor: 'light-dark(#fff, #1a1a1a)', color: 'light-dark(#333, #eee)', transition: 'border-radius 0.2s'}}>
+                <div style={{width: 12, height: 12, borderRadius: '50%', backgroundColor: '#E3193B', flexShrink: 0}} />
+                Something went wrong
+              </div>
+            </XDSVStack>
+          </XDSVStack>
+        </XDSVStack>
       </XDSVStack>
     </div>
   );
