@@ -140,6 +140,10 @@ const styles = stylex.create({
     minWidth: 'anchor-size(width)',
     marginBlockStart: spacingVars['--spacing-1'],
   },
+  popoverCollapsed: {
+    marginInlineStart: spacingVars['--spacing-1'],
+    minWidth: 180,
+  },
 });
 
 // =============================================================================
@@ -353,7 +357,11 @@ export function XDSSideNavHeading({
           </button>
           {popover.render(
             <div {...stylex.props(styles.popoverContent)}>{menu}</div>,
-            {placement: 'end', alignment: 'start', xstyle: styles.popover},
+            {
+              placement: 'end',
+              alignment: 'start',
+              xstyle: styles.popoverCollapsed,
+            },
           )}
         </>
       );
