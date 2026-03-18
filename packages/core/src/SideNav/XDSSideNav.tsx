@@ -229,20 +229,19 @@ export interface XDSSideNavProps extends XDSBaseProps<HTMLElement> {
    * Enables a drag handle at the inline-end edge for resizing the sidebar.
    * When collapsed, the drag handle is hidden.
    *
+   * - `true` — resizable with defaults (260px initial width)
+   * - Object — configured:
+   *   - `defaultWidth` — initial width in pixels (default: 260)
+   *   - `onWidthChange` — called when user finishes resizing
+   *
    * @default false
    */
-  isResizable?: boolean;
-  /**
-   * Initial width of the sidebar in pixels when `isResizable` is true.
-   *
-   * @default 260
-   */
-  defaultWidth?: number;
-  /**
-   * Called when the user finishes resizing the sidebar via the drag handle.
-   * Receives the final width in pixels.
-   */
-  onWidthChange?: (width: number) => void;
+  resizable?:
+    | boolean
+    | {
+        defaultWidth?: number;
+        onWidthChange?: (width: number) => void;
+      };
 
   /**
    * Enables collapse behavior. The sidebar can be collapsed to a narrow
@@ -301,9 +300,7 @@ export function XDSSideNav({
   footer,
   footerIcons,
   collapsible = false,
-  isResizable = false,
-  defaultWidth = DEFAULT_WIDTH,
-  onWidthChange,
+  resizable = false,
   xstyle,
   className,
   style,
@@ -318,6 +315,12 @@ export function XDSSideNav({
   const defaultIsCollapsed = collapsibleConfig.defaultIsCollapsed ?? false;
   const controlledCollapsed = collapsibleConfig.isCollapsed;
   const onCollapsedChange = collapsibleConfig.onCollapsedChange;
+
+  // Resizable config
+  const resizableConfig = typeof resizable === 'object' ? resizable : {};
+  const isResizable = !!resizable;
+  const defaultWidth = resizableConfig.defaultWidth ?? DEFAULT_WIDTH;
+  const onWidthChange = resizableConfig.onWidthChange;
 
   // Collapse state (controlled + uncontrolled)
   const isControlled = controlledCollapsed !== undefined;

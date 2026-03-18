@@ -400,12 +400,12 @@ describe('XDSSideNavSection', () => {
 // =============================================================================
 
 describe('XDSSideNav resizable', () => {
-  it('renders drag handle when isResizable', () => {
-    render(<XDSSideNav isResizable>Content</XDSSideNav>);
+  it('renders drag handle when resizable', () => {
+    render(<XDSSideNav resizable>Content</XDSSideNav>);
     expect(screen.getByTestId('xds-sidenav-resize-handle')).toBeInTheDocument();
   });
 
-  it('does not render drag handle without isResizable', () => {
+  it('does not render drag handle without resizable', () => {
     render(<XDSSideNav>Content</XDSSideNav>);
     expect(
       screen.queryByTestId('xds-sidenav-resize-handle'),
@@ -415,7 +415,7 @@ describe('XDSSideNav resizable', () => {
   it('does not render drag handle when collapsed', () => {
     render(
       <XDSSideNav
-        isResizable
+        resizable
         collapsible={{isCollapsed: true, onCollapsedChange: () => {}}}>
         Content
       </XDSSideNav>,
@@ -428,7 +428,7 @@ describe('XDSSideNav resizable', () => {
   it('calls onWidthChange after drag', () => {
     const handleWidthChange = vi.fn();
     render(
-      <XDSSideNav isResizable onWidthChange={handleWidthChange}>
+      <XDSSideNav resizable={{onWidthChange: handleWidthChange}}>
         Content
       </XDSSideNav>,
     );
@@ -455,17 +455,13 @@ describe('XDSSideNav resizable', () => {
   });
 
   it('respects defaultWidth', () => {
-    render(
-      <XDSSideNav isResizable defaultWidth={300}>
-        Content
-      </XDSSideNav>,
-    );
+    render(<XDSSideNav resizable={{defaultWidth: 300}}>Content</XDSSideNav>);
     const nav = screen.getByRole('navigation');
     expect(nav.style.width).toBe('300px');
   });
 
   it('drag handle has separator role', () => {
-    render(<XDSSideNav isResizable>Content</XDSSideNav>);
+    render(<XDSSideNav resizable>Content</XDSSideNav>);
     expect(screen.getByRole('separator')).toBeInTheDocument();
   });
 });
