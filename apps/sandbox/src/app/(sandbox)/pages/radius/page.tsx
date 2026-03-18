@@ -132,7 +132,7 @@ export default function RadiusPage() {
             </XDSHStack>
             <XDSHStack gap={2}>
               {Object.entries(tokens).map(([n, val]) => (
-                <XDSToken key={n} label={`${n}  ${val}px`} color="gray" />
+                <XDSToken key={n} label={`${n}: ${val}dp`} color="gray" />
               ))}
             </XDSHStack>
           </XDSVStack>
