@@ -106,18 +106,97 @@ jobs:
             cp -r apps/sandbox/out/* deploy/${SHORT_HASH}/sandbox/
           fi
 
-          cat > deploy/index.html << EOF
+          # Copy XDS dist CSS for the landing page
+          mkdir -p deploy/assets
+          cp packages/core/dist/xds.css deploy/assets/xds.css 2>/dev/null || true
+          cp packages/core/src/reset.css deploy/assets/reset.css 2>/dev/null || true
+          cp packages/themes/default/dist/theme.css deploy/assets/theme.css 2>/dev/null || true
+
+          cat > deploy/index.html << 'LANDING_EOF'
           <!DOCTYPE html>
-          <html>
+          <html lang="en">
           <head>
-            <meta http-equiv="refresh" content="0;url=${SHORT_HASH}/index.html">
-            <title>XDS Storybook</title>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>XDS Design System</title>
+            <link rel="stylesheet" href="assets/reset.css">
+            <link rel="stylesheet" href="assets/xds.css">
+            <link rel="stylesheet" href="assets/theme.css">
+            <style>
+              body {
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: var(--color-wash);
+                font-family: var(--font-body);
+                color: var(--color-text-primary);
+              }
+              .container {
+                max-width: 480px;
+                width: 100%;
+                padding: var(--spacing-6);
+              }
+              h1 { font-size: var(--heading-1-size, 1.5rem); font-weight: var(--font-weight-semibold); margin-bottom: var(--spacing-2); }
+              p { color: var(--color-text-secondary); margin-bottom: var(--spacing-6); font-size: var(--text-body-size, 0.875rem); line-height: 1.5; }
+              .links { display: flex; flex-direction: column; gap: var(--spacing-3); }
+              a.card {
+                display: flex; align-items: center; justify-content: space-between;
+                padding: var(--spacing-4);
+                background: var(--color-card);
+                border-radius: var(--radius-element);
+                box-shadow: var(--elevation-base);
+                text-decoration: none;
+                color: var(--color-text-primary);
+                transition: box-shadow 0.15s ease;
+              }
+              a.card:hover { box-shadow: var(--elevation-hover); }
+              .card-title { font-weight: var(--font-weight-semibold); }
+              .card-desc { font-size: var(--text-supporting-size, 0.75rem); color: var(--color-text-secondary); margin-top: 2px; }
+              .arrow { color: var(--color-text-secondary); font-size: 1.25rem; }
+              .hash { font-family: var(--font-code); font-size: var(--text-supporting-size, 0.75rem); color: var(--color-text-secondary); margin-top: var(--spacing-4); text-align: center; }
+            </style>
           </head>
           <body>
-            <p>Redirecting to <a href="${SHORT_HASH}/index.html">latest Storybook (${SHORT_HASH})</a>...</p>
+            <div class="container">
+              <h1>XDS Design System</h1>
+              <p>Component library for building internal tools. Select an environment below.</p>
+              <div class="links">
+                <a class="card" id="storybook-link" href="#">
+                  <div>
+                    <div class="card-title">📖 Storybook</div>
+                    <div class="card-desc">Component docs, props, and interactive examples</div>
+                  </div>
+                  <span class="arrow">→</span>
+                </a>
+                <a class="card" id="sandbox-link" href="#">
+                  <div>
+                    <div class="card-title">🏗️ Sandbox</div>
+                    <div class="card-desc">Full app demo with theme editor</div>
+                  </div>
+                  <span class="arrow">→</span>
+                </a>
+                <a class="card" href="https://github.com/facebookexperimental/xds">
+                  <div>
+                    <div class="card-title">💻 GitHub</div>
+                    <div class="card-desc">Source code, issues, and wiki</div>
+                  </div>
+                  <span class="arrow">→</span>
+                </a>
+              </div>
+              <div class="hash" id="commit-hash"></div>
+            </div>
+            <script>
+              // Links are set by the deploy script — SHORT_HASH is injected
+            </script>
           </body>
           </html>
-          EOF
+          LANDING_EOF
+
+          # Inject the short hash into the landing page links
+          sed -i "s|id=\"storybook-link\" href=\"#\"|id=\"storybook-link\" href=\"${SHORT_HASH}/index.html\"|" deploy/index.html
+          sed -i "s|id=\"sandbox-link\" href=\"#\"|id=\"sandbox-link\" href=\"${SHORT_HASH}/sandbox/index.html\"|" deploy/index.html
+          sed -i "s|id=\"commit-hash\"|id=\"commit-hash\">Build: ${SHORT_HASH}</div><!--done|" deploy/index.html
 
           touch deploy/.nojekyll
 
