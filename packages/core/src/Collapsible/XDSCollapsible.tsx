@@ -25,6 +25,8 @@ import {
   typographyVars,
   fontWeightVars,
   spacingVars,
+  textSizeVars,
+  transitionVars,
 } from '../theme/tokens.stylex';
 import {useXDSCollapsible} from './useXDSCollapsible';
 import {getIcon} from '../Icon/globalIconRegistry';
@@ -41,7 +43,7 @@ const styles = stylex.create({
     width: '100%',
     cursor: 'pointer',
     fontFamily: typographyVars['--font-body'],
-    fontSize: 16,
+    fontSize: textSizeVars['--text-lg'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-primary'],
     textAlign: 'start',
@@ -53,7 +55,7 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    transition: 'transform 150ms ease',
+    transition: `transform ${transitionVars['--transition-fast']}`,
     color: colorVars['--color-icon-secondary'],
   },
   chevronOpen: {
