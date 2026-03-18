@@ -28,8 +28,10 @@ const styles = stylex.create({
     lineHeight: lineHeightVars['--leading-snug'],
   },
   attached: {
-    marginTop: -6,
-    paddingBlockStart: 14,
+    // Overlap = radius - borderWidth. Pulls status up under the input's bottom corners.
+    marginTop: `calc(-1 * (${radiusVars['--radius-element']} - 1px))`,
+    // Compensate for the negative margin + desired padding
+    paddingBlockStart: `calc(${radiusVars['--radius-element']} - 1px + ${spacingVars['--spacing-2']})`,
     paddingBlockEnd: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
     borderBottomLeftRadius: radiusVars['--radius-element'],
