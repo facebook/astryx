@@ -93,23 +93,6 @@ const radiusStyles = stylex.create({
   rounded: {
     borderRadius: radiusVars['--radius-rounded'],
   },
-  // Deprecated semantic aliases (backwards compat)
-  /** @deprecated Use '0' instead */
-  inner: {
-    borderRadius: radiusVars['--radius-0'],
-  },
-  /** @deprecated Use '1' instead */
-  content: {
-    borderRadius: radiusVars['--radius-1'],
-  },
-  /** @deprecated Use '2' instead */
-  element: {
-    borderRadius: radiusVars['--radius-2'],
-  },
-  /** @deprecated Use '3' instead */
-  container: {
-    borderRadius: radiusVars['--radius-3'],
-  },
 });
 
 const dynamicStyles = stylex.create({
@@ -149,18 +132,14 @@ export interface XDSSkeletonProps extends XDSBaseProps<HTMLDivElement> {
   height?: number | string;
   /**
    * Border radius of the skeleton, using design token scale.
-   * Numeric names (preferred):
    * - 'none': No border radius (sharp corners)
-   * - 0: radius-0 token
-   * - 1: radius-1 token
-   * - 2: radius-2 token
-   * - 3: radius-3 token (default)
-   * - 4: radius-4 token
+   * - 0: radius-0 token (0px)
+   * - 1: radius-1 token (4px)
+   * - 2: radius-2 token (8px)
+   * - 3: radius-3 token (12px, default)
+   * - 4: radius-4 token (16px)
    * - 'rounded': Fully rounded (for avatars, pills)
-   *
-   * Deprecated semantic aliases (still work):
-   * - 'inner' → 0, 'content' → 1, 'element' → 2, 'container' → 3
-   * @default 'container'
+   * @default 3
    */
   radius?: XDSSkeletonRadius;
   /**
@@ -192,7 +171,7 @@ export interface XDSSkeletonProps extends XDSBaseProps<HTMLDivElement> {
 export function XDSSkeleton({
   width = '100%',
   height = '100%',
-  radius: radiusProp = 'container',
+  radius: radiusProp = 3,
   index = 0,
   'data-testid': testId,
   xstyle,

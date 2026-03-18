@@ -26,10 +26,9 @@ export const docs = {
     },
     {
       name: 'radius',
-      type: "'none' | 'inner' | 'content' | 'element' | 'container' | 'rounded'",
-      description:
-        'Border radius using design tokens. Use none for sharp corners, rounded for fully rounded (avatars, pills, circles).',
-      default: "'container'",
+      type: "'none' | 0 | 1 | 2 | 3 | 4 | 'rounded'",
+      description: 'Border radius using design token scale. Use none for sharp corners, rounded for fully rounded (avatars, pills, circles).',
+      default: '3',
     },
     {
       name: 'index',
@@ -102,10 +101,9 @@ export const docsZh = {
     },
     {
       name: 'radius',
-      type: "'none' | 'inner' | 'content' | 'element' | 'container' | 'rounded'",
-      description:
-        '使用设计令牌的边框圆角。使用 none 表示直角，rounded 表示完全圆角（头像、药丸形、圆形）。',
-      default: "'container'",
+      type: "'none' | 0 | 1 | 2 | 3 | 4 | 'rounded'",
+      description: '使用设计令牌的边框圆角。使用 none 表示直角，rounded 表示完全圆角（头像、药丸形、圆形）。',
+      default: '3',
     },
     {
       name: 'index',
@@ -172,7 +170,7 @@ export const docsDense = {
   propDescriptions: {
     width: 'Width in pixels (number) or CSS value (string).',
     height: 'Height in pixels (number) or CSS value (string).',
-    radius: 'Border radius using design tokens. none for sharp corners, rounded for fully rounded (avatars, pills, circles).',
+    radius: 'Border radius using design tokens. none for sharp, 0-4 for scale, rounded for pills.',
     index: 'Index for staggered animation timing. Element at index n starts at DELAY_TIME + (STAGGER_TIME \u00d7 n).',
   },
 };
