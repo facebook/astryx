@@ -99,7 +99,7 @@ const styles = stylex.create({
   },
   // Popover surface for collapsed items with children
   popoverSurface: {
-    backgroundColor: colorVars['--color-surface'],
+    backgroundColor: colorVars['--color-popover'],
     borderWidth: 1,
     borderStyle: 'solid',
     borderColor: colorVars['--color-divider'],
