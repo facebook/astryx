@@ -38,6 +38,7 @@ import {useInternalConfig} from './useInternalConfig';
 import {usePowerSearchSource} from './usePowerSearchSource';
 import {formatFilterValue} from './formatFilterValue';
 import {PowerSearchEditPopover} from './PowerSearchEditPopover';
+import {xdsClassName} from '../utils';
 import type {
   PowerSearchConfig,
   PowerSearchFilter,
@@ -768,7 +769,7 @@ export function XDSPowerSearch({
 
   return (
     <>
-      <div ref={layer.ref}>
+      <div ref={layer.ref} {...xdsClassName('power-search')}>
         <XDSTokenizer
           ref={tokenizerRef}
           label={label}
