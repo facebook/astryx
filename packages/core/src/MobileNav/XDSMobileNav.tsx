@@ -314,20 +314,12 @@ export function XDSMobileNav({
       if (!dialog.open) {
         dialog.showModal();
       }
-      // Lock body scroll to prevent iOS pull-to-refresh and background scrolling
-      const scrollY = window.scrollY;
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
+      // Prevent background scrolling and iOS pull-to-refresh.
+      // overflow: clip avoids creating a scroll container (unlike hidden),
+      // so there's no scroll bounce and no need to save/restore scroll position.
+      document.documentElement.style.overflow = 'clip';
     } else if (dialog.open) {
-      // Restore body scroll position
-      const scrollY = Math.abs(parseInt(document.body.style.top || '0', 10));
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      window.scrollTo(0, scrollY);
+      document.documentElement.style.overflow = '';
 
       const duration = window.matchMedia('(prefers-reduced-motion: reduce)')
         .matches
@@ -342,11 +334,7 @@ export function XDSMobileNav({
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
       }
-      // Ensure body scroll is restored on unmount
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
+      document.documentElement.style.overflow = '';
     };
   }, [isOpen]);
 
