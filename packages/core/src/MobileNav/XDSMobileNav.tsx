@@ -153,7 +153,7 @@ const styles = stylex.create({
     // (dialog root has touch-action: none to block pull-to-refresh)
     touchAction: 'pan-y',
     paddingInline: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-1'],
+    paddingBlock: spacingVars['--spacing-2'],
   },
 });
 

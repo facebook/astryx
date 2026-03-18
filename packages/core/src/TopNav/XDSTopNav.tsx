@@ -107,9 +107,10 @@ const styles = stylex.create({
     flexDirection: 'column',
     gap: spacingVars['--spacing-0-5'],
   },
-  drawerExtraContent: {
-    marginBlockStart: spacingVars['--spacing-1'],
+  drawerDivider: {
+    marginBlock: spacingVars['--spacing-2'],
   },
+  drawerExtraContent: {},
 });
 
 export interface XDSTopNavProps extends XDSBaseProps<HTMLElement> {
@@ -219,7 +220,11 @@ export function XDSTopNav({
             {centerContent}
           </div>
         )}
-        {hasCollapsibleContent && mobileContent && <XDSDivider />}
+        {hasCollapsibleContent && mobileContent && (
+          <div {...stylex.props(styles.drawerDivider)}>
+            <XDSDivider />
+          </div>
+        )}
         {mobileContent && (
           <div {...stylex.props(styles.drawerExtraContent)}>
             {mobileContent}
