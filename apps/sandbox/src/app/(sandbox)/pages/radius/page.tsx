@@ -364,7 +364,7 @@ export default function RadiusPage() {
             {/* Modal */}
             <XDSVStack gap={2}>
               <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Modal</span>
-              <div style={{border: '1px solid light-dark(#ddd, #444)', borderRadius: tokens['radius-container'], width: 320, overflow: 'hidden', backgroundColor: 'light-dark(#fff, #1a1a1a)', boxShadow: '0 12px 40px rgba(0,0,0,0.08)', transition: 'border-radius 0.2s'}}>
+              <div style={{border: '1px solid light-dark(#ddd, #444)', borderRadius: tokens['radius-container'], width: 320, overflow: 'hidden', backgroundColor: 'light-dark(#fff, #1a1a1a)', transition: 'border-radius 0.2s'}}>
                 <div style={{padding: '20px 24px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                   <span style={{fontSize: 18, fontWeight: 600, color: 'light-dark(#333, #eee)'}}>Confirm action</span>
                   <span style={{fontSize: 20, color: 'light-dark(#999, #666)', cursor: 'pointer'}}>&times;</span>
