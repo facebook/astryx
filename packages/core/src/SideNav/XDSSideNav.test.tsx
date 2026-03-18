@@ -17,7 +17,7 @@ import {XDSSideNavHeading} from './XDSSideNavHeading';
 import {XDSSideNavItem} from './XDSSideNavItem';
 import {XDSSideNavSection} from './XDSSideNavSection';
 import {XDSLinkProvider} from '../Link/XDSLinkProvider';
-import {XDSSideNavCollapseProvider} from './XDSSideNavCollapseContext';
+import {XDSSideNavCollapseContext} from './XDSSideNavCollapseContext';
 
 const CustomLink = forwardRef<HTMLAnchorElement, ComponentPropsWithoutRef<'a'>>(
   ({children, ...props}, ref) => (
@@ -505,20 +505,20 @@ const StubIcon = () => <svg data-testid="stub-icon" />;
 /** Helper to render inside a collapsed SideNav context */
 function renderCollapsed(ui: React.ReactElement) {
   return render(
-    <XDSSideNavCollapseProvider
+    <XDSSideNavCollapseContext
       value={{isCollapsed: true, toggle: () => {}, isCollapsible: true}}>
       {ui}
-    </XDSSideNavCollapseProvider>,
+    </XDSSideNavCollapseContext>,
   );
 }
 
 /** Helper to render inside an expanded SideNav context */
 function renderExpanded(ui: React.ReactElement) {
   return render(
-    <XDSSideNavCollapseProvider
+    <XDSSideNavCollapseContext
       value={{isCollapsed: false, toggle: () => {}, isCollapsible: true}}>
       {ui}
-    </XDSSideNavCollapseProvider>,
+    </XDSSideNavCollapseContext>,
   );
 }
 

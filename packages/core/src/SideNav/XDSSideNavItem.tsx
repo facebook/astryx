@@ -38,7 +38,7 @@ import {XDSTooltip} from '../Tooltip';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {
   useXDSSideNavCollapse,
-  XDSSideNavCollapseProvider,
+  XDSSideNavCollapseContext,
 } from './XDSSideNavCollapseContext';
 import {getIcon} from '../Icon/globalIconRegistry';
 
@@ -384,9 +384,9 @@ export function XDSSideNavItem({
               onMouseLeave={handlePopoverMouseLeave}
               onClick={() => popover.hide()}>
               <div {...stylex.props(styles.popoverHeader)}>{label}</div>
-              <XDSSideNavCollapseProvider value={EXPANDED_COLLAPSE_STATE}>
+              <XDSSideNavCollapseContext value={EXPANDED_COLLAPSE_STATE}>
                 {children}
-              </XDSSideNavCollapseProvider>
+              </XDSSideNavCollapseContext>
             </div>,
             {placement: 'end', alignment: 'start'},
           )}
