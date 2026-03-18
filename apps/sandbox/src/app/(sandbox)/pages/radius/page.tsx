@@ -287,6 +287,55 @@ export default function RadiusPage() {
             </XDSVStack>
           </div>
         </XDSVStack>
+
+        <XDSDivider />
+
+        {/* radius-element */}
+        <XDSVStack gap={4}>
+          <div style={{display: 'flex', alignItems: 'baseline', gap: 12}}>
+            <span style={{fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'light-dark(#0064E0, #2694FE)'}}>radius-element</span>
+            <span style={{fontSize: 13, color: 'light-dark(#666, #aaa)', fontStyle: 'italic'}}>8dp &times; multiplier</span>
+          </div>
+          <div style={{display: 'flex', gap: 48, flexWrap: 'wrap', alignItems: 'flex-start'}}>
+            {/* Buttons */}
+            <XDSVStack gap={2}>
+              <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Buttons</span>
+              <div style={{display: 'flex', gap: 8, alignItems: 'center'}}>
+                <button style={{padding: '10px 24px', fontSize: 14, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer', border: 'none', backgroundColor: 'light-dark(#0064E0, #2694FE)', color: '#fff', borderRadius: tokens['radius-element'], transition: 'border-radius 0.2s'}}>Primary</button>
+                <button style={{padding: '10px 24px', fontSize: 14, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer', border: '1px solid light-dark(#ddd, #444)', backgroundColor: 'light-dark(#fff, #333)', color: 'light-dark(#333, #eee)', borderRadius: tokens['radius-element'], transition: 'border-radius 0.2s'}}>Secondary</button>
+                <button style={{padding: '10px 24px', fontSize: 14, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer', border: 'none', backgroundColor: 'transparent', color: 'light-dark(#333, #eee)', borderRadius: tokens['radius-element'], transition: 'border-radius 0.2s'}}>Flat</button>
+              </div>
+            </XDSVStack>
+
+            {/* Input */}
+            <XDSVStack gap={2}>
+              <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Input</span>
+              <input
+                placeholder="Enter text..."
+                style={{padding: '10px 14px', fontSize: 14, fontFamily: 'inherit', border: '1px solid light-dark(#ddd, #444)', backgroundColor: 'light-dark(#fff, #333)', color: 'light-dark(#333, #eee)', borderRadius: tokens['radius-element'], outline: 'none', width: 220, transition: 'border-radius 0.2s'}}
+              />
+            </XDSVStack>
+
+            {/* Text area */}
+            <XDSVStack gap={2}>
+              <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Text Area</span>
+              <textarea
+                placeholder="Write something..."
+                style={{padding: '10px 14px', fontSize: 14, fontFamily: 'inherit', border: '1px solid light-dark(#ddd, #444)', backgroundColor: 'light-dark(#fff, #333)', color: 'light-dark(#333, #eee)', borderRadius: tokens['radius-element'], outline: 'none', width: 260, height: 80, resize: 'vertical', transition: 'border-radius 0.2s'}}
+              />
+            </XDSVStack>
+          </div>
+
+          {/* Tokens - second row */}
+          <XDSVStack gap={2}>
+            <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Tokens</span>
+            <div style={{display: 'flex', gap: 8}}>
+              <span style={{display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', fontSize: 14, fontWeight: 500, backgroundColor: 'light-dark(#f0f0f0, #333)', color: 'light-dark(#333, #eee)', borderRadius: tokens['radius-element'], transition: 'border-radius 0.2s'}}>Design <span style={{opacity: 0.4, cursor: 'pointer'}}>&times;</span></span>
+              <span style={{display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', fontSize: 14, fontWeight: 500, backgroundColor: 'light-dark(#f0f0f0, #333)', color: 'light-dark(#333, #eee)', borderRadius: tokens['radius-element'], transition: 'border-radius 0.2s'}}>System <span style={{opacity: 0.4, cursor: 'pointer'}}>&times;</span></span>
+              <span style={{display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', fontSize: 14, fontWeight: 500, backgroundColor: 'light-dark(#f0f0f0, #333)', color: 'light-dark(#333, #eee)', borderRadius: tokens['radius-element'], transition: 'border-radius 0.2s'}}>Radius <span style={{opacity: 0.4, cursor: 'pointer'}}>&times;</span></span>
+            </div>
+          </XDSVStack>
+        </XDSVStack>
       </XDSVStack>
     </div>
   );
