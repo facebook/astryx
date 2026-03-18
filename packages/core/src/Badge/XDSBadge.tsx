@@ -55,24 +55,24 @@ const styles = stylex.create({
  */
 const variants = stylex.create({
   neutral: {
-    backgroundColor: colorVars['--color-deemphasized'],
+    backgroundColor: colorVars['--color-muted'],
     color: colorVars['--color-text-primary'],
   },
   info: {
-    backgroundColor: colorVars['--color-accent'],
-    color: colorVars['--color-text-on-media'],
+    backgroundColor: colorVars['--color-primary'],
+    color: colorVars['--color-text-on-dark-media'],
   },
   success: {
-    backgroundColor: colorVars['--color-positive'],
-    color: colorVars['--color-text-on-media'],
+    backgroundColor: colorVars['--color-success'],
+    color: colorVars['--color-text-on-dark-media'],
   },
   warning: {
     backgroundColor: colorVars['--color-warning'],
     color: colorVars['--color-text-primary'],
   },
   error: {
-    backgroundColor: colorVars['--color-negative'],
-    color: colorVars['--color-text-on-media'],
+    backgroundColor: colorVars['--color-error'],
+    color: colorVars['--color-text-on-dark-media'],
   },
 });
 

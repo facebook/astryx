@@ -21,7 +21,7 @@ export function Sidebar() {
     <nav
       style={{
         width: 220,
-        borderRight: '1px solid var(--color-divider, #e0e0e0)',
+        borderRight: '1px solid var(--color-border, #e0e0e0)',
         padding: '1.5rem 1rem',
         display: 'flex',
         flexDirection: 'column',
@@ -55,7 +55,7 @@ export function Sidebar() {
               fontSize: '0.875rem',
               color: 'var(--color-text-primary, #333)',
               backgroundColor: isActive
-                ? 'var(--color-hover-overlay, #f0f0f0)'
+                ? 'var(--color-overlay-hover, #f0f0f0)'
                 : 'transparent',
               fontWeight: isActive ? 600 : 400,
             }}>

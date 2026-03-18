@@ -80,15 +80,15 @@ const styles = stylex.create({
     backgroundImage: {
       default: null,
       ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
-      ':active': `linear-gradient(${colorVars['--color-pressed-overlay']}, ${colorVars['--color-pressed-overlay']})`,
+      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
     },
   },
   focusWithinOutline: {
     outline: {
       default: 'none',
-      ':focus-within': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-within': `2px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: {
       default: '0',
@@ -101,7 +101,7 @@ const styles = stylex.create({
     pointerEvents: 'none' as const,
   },
   selected: {
-    backgroundColor: colorVars['--color-accent-deemphasized'],
+    backgroundColor: colorVars['--color-primary-muted'],
   },
   invisibleButton: {
     all: 'unset',

@@ -128,7 +128,7 @@ const styles = stylex.create({
     justifyContent: 'center',
     width: '100%',
     height: '100%',
-    backgroundColor: colorVars['--color-deemphasized'],
+    backgroundColor: colorVars['--color-muted'],
     color: colorVars['--color-text-secondary'],
     fontFamily: typographyVars['--font-body'],
     fontWeight: fontWeightVars['--font-weight-medium'],

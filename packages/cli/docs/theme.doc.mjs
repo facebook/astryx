@@ -79,7 +79,7 @@ import type {ThemeType as Theme} from '@xds/core/theme';
 import {colorVars, colorDefaults} from '@xds/core/theme/tokens.stylex';
 
 const colorOverrides = {
-  '--color-accent': 'light-dark(#7B61FF, #9B85FF)',
+  '--color-primary': 'light-dark(#7B61FF, #9B85FF)',
   '--color-surface': 'light-dark(#FFFFFF, #1A1A2E)',
   // ... all ~60 color tokens (see npx xds docs tokens)
 } as const;
@@ -132,7 +132,7 @@ const myTheme = defineTheme({
   typeScale: { base: 14, ratio: 1.2 },       // generates heading + text tokens
   radiusScale: { base: 4, multiplier: 1 },    // generates radius tokens
   tokens: {
-    '--color-accent': ['#7B61FF', '#9B85FF'], // explicit overrides win
+    '--color-primary': ['#7B61FF', '#9B85FF'], // explicit overrides win
   },
   components: {
     button: { 'variant:primary': { color: 'white' } },
@@ -160,7 +160,7 @@ const myTheme = defineTheme({
           type: 'code',
           lang: 'tsx',
           label: 'Automatic with light-dark()',
-          code: "'--color-accent': 'light-dark(#0064E0, #2694FE)',\n//                            ^light     ^dark",
+          code: "'--color-primary': 'light-dark(#0064E0, #2694FE)',\n//                            ^light     ^dark",
         },
         {
           type: 'code',
@@ -242,7 +242,7 @@ const myTheme = defineTheme({
           code: `const cardOverrides = stylex.create({
   container: {
     borderRadius: '20px',
-    background: 'linear-gradient(135deg, var(--color-accent), var(--color-positive))',
+    background: 'linear-gradient(135deg, var(--color-primary), var(--color-success))',
     padding: '2px',
   },
   content: {

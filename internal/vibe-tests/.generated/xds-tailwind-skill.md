@@ -217,11 +217,11 @@ XDS provides CSS custom properties you can reference alongside Tailwind utilitie
 
 | Token                       | Usage                |
 | --------------------------- | -------------------- |
-| var(--color-accent)         | Primary action color |
+| var(--color-primary)        | Primary action color |
 | var(--color-surface)        | Background surface   |
 | var(--color-wash)           | Secondary background |
-| var(--color-positive)       | Success states       |
-| var(--color-negative)       | Error states         |
+| var(--color-success)        | Success states       |
+| var(--color-error)          | Error states         |
 | var(--color-warning)        | Warning states       |
 | var(--color-text-primary)   | Main text            |
 | var(--color-text-secondary) | Secondary text       |
@@ -229,12 +229,12 @@ XDS provides CSS custom properties you can reference alongside Tailwind utilitie
 
 ### Radius Tokens
 
-| Token                   | Value  | Usage           |
-| ----------------------- | ------ | --------------- |
-| var(--radius-rounded)   | 9999px | Pills, avatars  |
-| var(--radius-container) | 12px   | Cards, modals   |
-| var(--radius-element)   | 8px    | Buttons, inputs |
-| var(--radius-content)   | 4px    | Small elements  |
+| Token                 | Value  | Usage           |
+| --------------------- | ------ | --------------- |
+| var(--radius-rounded) | 9999px | Pills, avatars  |
+| var(--radius-3)       | 12px   | Cards, modals   |
+| var(--radius-2)       | 8px    | Buttons, inputs |
+| var(--radius-1)       | 4px    | Small elements  |
 
 ### Size Tokens
 
@@ -249,7 +249,7 @@ XDS provides CSS custom properties you can reference alongside Tailwind utilitie
 You can reference XDS tokens in Tailwind arbitrary values:
 
 ```tsx
-<div className="p-[var(--spacing-4)] bg-[var(--color-surface)] rounded-[var(--radius-container)]">
+<div className="p-[var(--spacing-4)] bg-[var(--color-surface)] rounded-[var(--radius-3)]">
   Content
 </div>
 ```
@@ -257,8 +257,8 @@ You can reference XDS tokens in Tailwind arbitrary values:
 Or simply use Tailwind's built-in scale which maps closely:
 
 - `p-4` ≈ var(--spacing-4) (16px)
-- `rounded-xl` ≈ var(--radius-container) (12px)
-- `rounded-lg` ≈ var(--radius-element) (8px)
+- `rounded-xl` ≈ var(--radius-3) (12px)
+- `rounded-lg` ≈ var(--radius-2) (8px)
 
 ## Theme System
 
@@ -279,7 +279,7 @@ Create themes by overriding CSS custom properties:
 ```tsx
 const myTheme = {
   ...defaultTheme,
-  '--color-accent': '#7B61FF',
+  '--color-primary': '#7B61FF',
   '--color-surface': '#1A1A2E',
 };
 

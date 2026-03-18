@@ -101,55 +101,55 @@ function deriveColorPalette({accent, positive, negative, warning, mode}) {
 
   return {
     // Core semantic
-    '--color-accent': ld(accentDark, accentLight),
-    '--color-accent-deemphasized': ld(withAlpha(accent, 0.2), withAlpha(accent, 0.25)),
-    '--color-accent-text': ld(accentTextLight, accentTextDark),
+    '--color-primary': ld(accentDark, accentLight),
+    '--color-primary-muted': ld(withAlpha(accent, 0.2), withAlpha(accent, 0.25)),
+    '--color-text-link': ld(accentTextLight, accentTextDark),
     '--color-surface': ld('#FFFFFF', '#1F1F22'),
     '--color-wash': ld('#F1F4F7', '#111112'),
     '--color-overlay': ld('#01122866', '#11111299'),
-    '--color-hover-overlay': ld('#0536590C', '#FFFFFF0C'),
-    '--color-pressed-overlay': ld('#05365919', '#FFFFFF19'),
-    '--color-focus-outline': ld(accentTextLight, accentTextDark),
-    '--color-deemphasized': ld('#0536590C', '#1111127F'),
+    '--color-overlay-hover': ld('#0536590C', '#FFFFFF0C'),
+    '--color-overlay-pressed': ld('#05365919', '#FFFFFF19'),
+    '--color-ring-focus': ld(accentTextLight, accentTextDark),
+    '--color-muted': ld('#0536590C', '#1111127F'),
 
     // Text
     '--color-text-primary': ld('#0A1317', '#DFE2E5'),
     '--color-text-secondary': ld('#4E606F', '#AAAFB5'),
     '--color-text-disabled': ld('#A4B0BC', '#6F747C'),
     '--color-text-link': ld(accentDark, accentLight),
-    '--color-text-placeholder': ld('#4E606F', '#AAAFB5'),
-    '--color-text-on-media': ld('#FFFFFF', '#FFFFFF'),
+    '--color-text-secondary': ld('#4E606F', '#AAAFB5'),
+    '--color-text-on-dark-media': ld('#FFFFFF', '#FFFFFF'),
 
     // Icon
     '--color-icon-primary': ld('#0A1317', '#DFE2E5'),
     '--color-icon-secondary': ld('#4E606F', '#AAAFB5'),
-    '--color-icon-tertiary': ld('#748695', '#8C939B'),
+    '--color-icon-secondary': ld('#748695', '#8C939B'),
     '--color-icon-disabled': ld('#A4B0BC', '#6F747C'),
-    '--color-icon-on-media': ld('#FFFFFF', '#FFFFFF'),
+    '--color-icon-on-dark-media': ld('#FFFFFF', '#FFFFFF'),
 
     // Surface variants
     '--color-card': ld('#FFFFFF', '#1F1F22'),
     '--color-popover': ld('#FFFFFF', '#28292C'),
 
     // Status
-    '--color-positive': ld(positive, positive),
-    '--color-positive-deemphasized': ld(withAlpha(positive, 0.2), withAlpha(positive, 0.25)),
-    '--color-negative': ld(negative, mixColors(negative, '#FF6666', 0.3)),
-    '--color-negative-deemphasized': ld(withAlpha(negative, 0.2), withAlpha(negative, 0.25)),
+    '--color-success': ld(positive, positive),
+    '--color-success-muted': ld(withAlpha(positive, 0.2), withAlpha(positive, 0.25)),
+    '--color-error': ld(negative, mixColors(negative, '#FF6666', 0.3)),
+    '--color-error-muted': ld(withAlpha(negative, 0.2), withAlpha(negative, 0.25)),
     '--color-warning': ld(warning, mixColors(warning, '#FFCC00', 0.3)),
-    '--color-warning-deemphasized': ld(withAlpha(warning, 0.2), withAlpha(warning, 0.25)),
-    '--color-educational': ld('#5B08D8', '#6B1EFD'),
-    '--color-educational-deemphasized': ld('#7952FF33', '#5B08D83F'),
+    '--color-warning-muted': ld(withAlpha(warning, 0.2), withAlpha(warning, 0.25)),
+    '--color-info': ld('#5B08D8', '#6B1EFD'),
+    '--color-info-muted': ld('#7952FF33', '#5B08D83F'),
 
     // Divider
-    '--color-divider': ld('#05365919', '#F2F4F619'),
-    '--color-divider-high-contrast': ld('#647685', '#6F747C'),
-    '--color-divider-emphasized': ld('#CCD3DB', '#494D53'),
+    '--color-border': ld('#05365919', '#F2F4F619'),
+    '--color-border-strong': ld('#647685', '#6F747C'),
+    '--color-border-emphasized': ld('#CCD3DB', '#494D53'),
 
     // Effects
-    '--color-glimmer': ld('#CCD3DB', '#5A5E66'),
-    '--color-glimmer-high-contrast': ld('#A4B0BC', '#8C939B'),
-    '--color-shadow-elevation': ld('rgba(5, 54, 89, 0.1)', 'rgba(0, 0, 0, 0.3)'),
+    '--color-skeleton': ld('#CCD3DB', '#5A5E66'),
+    '--color-skeleton-strong': ld('#A4B0BC', '#8C939B'),
+    '--color-shadow': ld('rgba(5, 54, 89, 0.1)', 'rgba(0, 0, 0, 0.3)'),
     '--color-hover-tint': ld('black', 'white'),
 
     // Literal color sets

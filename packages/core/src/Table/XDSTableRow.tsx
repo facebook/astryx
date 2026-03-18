@@ -45,7 +45,7 @@ const hoverRowStyles = stylex.create({
     backgroundColor: {
       default: null,
       ':hover': {
-        '@media (hover: hover)': colorVars['--color-hover-overlay'],
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
     transitionProperty: 'background-color',
@@ -60,7 +60,7 @@ const stripedHoverRowStyles = stylex.create({
       default: null,
       ':nth-child(even)': colorVars['--color-wash'],
       ':hover': {
-        '@media (hover: hover)': colorVars['--color-hover-overlay'],
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
     transitionProperty: 'background-color',

@@ -40,7 +40,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-wash'],
     borderBottomWidth: '2px',
     borderBottomStyle: 'solid',
-    borderBottomColor: colorVars['--color-divider'],
+    borderBottomColor: colorVars['--color-border'],
     color: colorVars['--color-text-secondary'],
     fontFamily: typographyVars['--font-body'],
     fontSize: textSizeVars['--text-xsm'],

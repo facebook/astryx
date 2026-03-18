@@ -55,9 +55,8 @@ const skeletonFade = stylex.keyframes({
 const styles = stylex.create({
   root: {
     backgroundColor: {
-      default: colorVars['--color-glimmer'],
-      '@media (prefers-contrast: more)':
-        colorVars['--color-glimmer-high-contrast'],
+      default: colorVars['--color-skeleton'],
+      '@media (prefers-contrast: more)': colorVars['--color-skeleton-strong'],
     },
     opacity: 0.25,
   },

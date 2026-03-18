@@ -65,12 +65,12 @@ const styles = stylex.create({
     backgroundColor: {
       default: 'transparent',
       ':hover': {
-        '@media (hover: hover)': colorVars['--color-hover-overlay'],
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: {
       default: '0',
@@ -81,7 +81,7 @@ const styles = stylex.create({
   },
   triggerOpen: {
     color: colorVars['--color-text-primary'],
-    backgroundColor: colorVars['--color-hover-overlay'],
+    backgroundColor: colorVars['--color-overlay-hover'],
   },
   chevron: {
     display: 'inline-flex',
@@ -115,7 +115,7 @@ const styles = stylex.create({
   // Visual styles for the panel content container.
   panelContainer: {
     backgroundColor: colorVars['--color-popover'],
-    borderTop: `1px solid ${colorVars['--color-divider']}`,
+    borderTop: `1px solid ${colorVars['--color-border']}`,
     borderTopLeftRadius: 0,
     borderTopRightRadius: 0,
     borderBottomLeftRadius: radiusVars['--radius-3'],
@@ -143,7 +143,7 @@ const styles = stylex.create({
     flexShrink: 1,
     flexBasis: 200,
     borderRadius: radiusVars['--radius-3'],
-    backgroundColor: colorVars['--color-deemphasized'],
+    backgroundColor: colorVars['--color-muted'],
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
@@ -191,7 +191,7 @@ const styles = stylex.create({
     marginBlockStart: spacingVars['--spacing-2'],
     marginInlineStart: spacingVars['--spacing-6'],
     borderRadius: radiusVars['--radius-3'],
-    backgroundColor: colorVars['--color-deemphasized'],
+    backgroundColor: colorVars['--color-muted'],
     overflow: 'hidden',
   },
 });

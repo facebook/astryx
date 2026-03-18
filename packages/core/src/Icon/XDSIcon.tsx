@@ -51,19 +51,19 @@ const colorStyles = stylex.create({
     color: colorVars['--color-icon-secondary'],
   },
   tertiary: {
-    color: colorVars['--color-icon-tertiary'],
+    color: colorVars['--color-icon-secondary'],
   },
   disabled: {
     color: colorVars['--color-icon-disabled'],
   },
   accent: {
-    color: colorVars['--color-accent'],
+    color: colorVars['--color-primary'],
   },
   positive: {
-    color: colorVars['--color-positive'],
+    color: colorVars['--color-success'],
   },
   negative: {
-    color: colorVars['--color-negative'],
+    color: colorVars['--color-error'],
   },
   warning: {
     color: colorVars['--color-warning'],

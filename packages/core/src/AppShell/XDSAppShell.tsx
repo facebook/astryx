@@ -301,7 +301,7 @@ const styles = stylex.create({
       ':focus': spacingVars['--spacing-2'],
     },
     backgroundColor: colorVars['--color-surface'],
-    color: colorVars['--color-accent-text'],
+    color: colorVars['--color-text-link'],
     zIndex: 9999,
     textDecoration: 'none',
     fontWeight: fontWeightVars['--font-weight-semibold'],

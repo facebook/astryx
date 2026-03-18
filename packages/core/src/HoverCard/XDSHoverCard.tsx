@@ -35,7 +35,7 @@ const styles = stylex.create({
   hoverIndication: {
     textDecorationLine: 'underline',
     textDecorationStyle: 'dashed',
-    textDecorationColor: colorVars['--color-divider-emphasized'],
+    textDecorationColor: colorVars['--color-border-emphasized'],
     textUnderlineOffset: '2px',
   },
 });

@@ -64,25 +64,25 @@ export const navItemStyles = stylex.create({
     boxSizing: 'border-box',
     ':hover': {
       '@media (hover: hover)': {
-        backgroundColor: colorVars['--color-hover-overlay'],
+        backgroundColor: colorVars['--color-overlay-hover'],
       },
     },
     ':active': {
-      backgroundColor: colorVars['--color-pressed-overlay'],
+      backgroundColor: colorVars['--color-overlay-pressed'],
     },
   },
 
   /** Selected/active page indicator — deemphasized background, medium weight */
   selected: {
-    backgroundColor: colorVars['--color-deemphasized'],
+    backgroundColor: colorVars['--color-muted'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     ':hover': {
       '@media (hover: hover)': {
-        backgroundColor: colorVars['--color-deemphasized'],
+        backgroundColor: colorVars['--color-muted'],
       },
     },
     ':active': {
-      backgroundColor: colorVars['--color-deemphasized'],
+      backgroundColor: colorVars['--color-muted'],
     },
   },
 

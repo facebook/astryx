@@ -44,8 +44,8 @@ export interface XDSDividerProps extends Omit<
 
   /**
    * Visual weight of the divider line.
-   * - 'subtle': Uses --color-divider (default)
-   * - 'strong': Uses --color-divider-emphasized
+   * - 'subtle': Uses --color-border (default)
+   * - 'strong': Uses --color-border-emphasized
    * @default 'subtle'
    */
   variant?: 'subtle' | 'strong';
@@ -106,10 +106,10 @@ const lineStyles = stylex.create({
     flexShrink: 1,
   },
   subtle: {
-    backgroundColor: colorVars['--color-divider'],
+    backgroundColor: colorVars['--color-border'],
   },
   strong: {
-    backgroundColor: colorVars['--color-divider-emphasized'],
+    backgroundColor: colorVars['--color-border-emphasized'],
   },
 });
 

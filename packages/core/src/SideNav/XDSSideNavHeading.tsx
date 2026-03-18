@@ -67,7 +67,7 @@ const styles = stylex.create({
     textAlign: 'start',
     ':hover': {
       '@media (hover: hover)': {
-        backgroundColor: colorVars['--color-hover-overlay'],
+        backgroundColor: colorVars['--color-overlay-hover'],
       },
     },
   },
@@ -130,7 +130,7 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-1'],
     borderRadius: radiusVars['--radius-2'],
     backgroundColor: colorVars['--color-surface'],
-    boxShadow: `0 4px 12px ${colorVars['--color-shadow-elevation']}`,
+    boxShadow: `0 4px 12px ${colorVars['--color-shadow']}`,
     overflow: 'hidden',
   },
   popover: {

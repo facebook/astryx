@@ -58,15 +58,15 @@ export const {themeName}Theme = defineTheme({
 
   tokens: {
     // Colors — use [light, dark] tuples for automatic light-dark() conversion
-    '--color-accent': ['#YOUR_LIGHT', '#YOUR_DARK'],
-    '--color-accent-deemphasized': ['#YOUR_LIGHT33', '#YOUR_DARK3F'],
+    '--color-primary': ['#YOUR_LIGHT', '#YOUR_DARK'],
+    '--color-primary-muted': ['#YOUR_LIGHT33', '#YOUR_DARK3F'],
     '--color-surface': ['#FFFFFF', '#1C1C1C'],
     '--color-wash': ['#F5F5F5', '#121212'],
 
     // Radius — customize for different feel
-    '--radius-container': '12px',
-    '--radius-element': '8px',
-    '--radius-content': '4px',
+    '--radius-3': '12px',
+    '--radius-2': '8px',
+    '--radius-1': '4px',
 
     // Typography — font families
     '--font-body': '-apple-system, BlinkMacSystemFont, sans-serif',

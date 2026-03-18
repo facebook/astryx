@@ -75,7 +75,7 @@ const styles = stylex.create({
     cursor: 'pointer',
     borderWidth: 0,
     borderStyle: 'none',
-    outline: `2px solid ${colorVars['--color-focus-outline']}`,
+    outline: `2px solid ${colorVars['--color-ring-focus']}`,
     outlineOffset: 2,
     zIndex: 1,
     pointerEvents: 'auto', // Re-enable mouse clicks when visible

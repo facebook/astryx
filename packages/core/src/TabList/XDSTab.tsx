@@ -88,7 +88,7 @@ const styles = stylex.create({
     transitionTimingFunction: easingVars['--easing-standard'],
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: {
       default: '0',
@@ -96,7 +96,7 @@ const styles = stylex.create({
     },
   },
   selected: {
-    color: colorVars['--color-accent-text'],
+    color: colorVars['--color-text-link'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
   },
   underlineSelected: {
@@ -107,7 +107,7 @@ const styles = stylex.create({
       left: spacingVars['--spacing-3'],
       right: spacingVars['--spacing-3'],
       height: '2px',
-      backgroundColor: colorVars['--color-accent'],
+      backgroundColor: colorVars['--color-primary'],
       borderRadius: radiusVars['--radius-rounded'],
     },
   },
@@ -117,7 +117,7 @@ const styles = stylex.create({
     left: spacingVars['--spacing-3'],
     right: spacingVars['--spacing-3'],
     height: '2px',
-    backgroundColor: colorVars['--color-divider'],
+    backgroundColor: colorVars['--color-border'],
     borderRadius: radiusVars['--radius-rounded'],
     opacity: {
       default: 0,

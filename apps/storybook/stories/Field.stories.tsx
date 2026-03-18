@@ -21,13 +21,13 @@ const inputStyles = stylex.create({
     paddingInline: spacingVars['--spacing-3'],
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: colorVars['--color-divider'],
+    borderColor: colorVars['--color-border'],
     borderRadius: radiusVars['--radius-2'],
     backgroundColor: colorVars['--color-surface'],
     color: colorVars['--color-text-primary'],
     outline: 'none',
     ':focus': {
-      borderColor: colorVars['--color-accent'],
+      borderColor: colorVars['--color-primary'],
     },
   },
 });

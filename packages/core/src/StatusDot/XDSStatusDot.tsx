@@ -66,19 +66,19 @@ const sizes = stylex.create({
  */
 const variants = stylex.create({
   positive: {
-    backgroundColor: colorVars['--color-positive'],
+    backgroundColor: colorVars['--color-success'],
   },
   warning: {
     backgroundColor: colorVars['--color-warning'],
   },
   negative: {
-    backgroundColor: colorVars['--color-negative'],
+    backgroundColor: colorVars['--color-error'],
   },
   info: {
-    backgroundColor: colorVars['--color-accent'],
+    backgroundColor: colorVars['--color-primary'],
   },
   neutral: {
-    backgroundColor: colorVars['--color-deemphasized'],
+    backgroundColor: colorVars['--color-muted'],
   },
 });
 

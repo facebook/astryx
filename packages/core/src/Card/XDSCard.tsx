@@ -36,7 +36,7 @@ const styles = stylex.create({
     overflow: 'clip',
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: colorVars['--color-divider-emphasized'],
+    borderColor: colorVars['--color-border-emphasized'],
   },
   // Inner wrapper: container padding and overflow handling
   cardInner: {

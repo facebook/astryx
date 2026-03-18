@@ -15,7 +15,10 @@ export default function Home() {
           <XDSVStack gap={2}>
             <XDSHeading level={1}>XDS + Tailwind (Dist Build)</XDSHeading>
             <XDSText type="body" color="secondary">
-              This example consumes <XDSText type="body" weight="bold">@xds/core</XDSText>{' '}
+              This example consumes{' '}
+              <XDSText type="body" weight="bold">
+                @xds/core
+              </XDSText>{' '}
               as a pre-built dist package — no StyleX build plugin needed.
               Custom layout uses Tailwind utility classes. XDS handles
               components, theming, and design tokens.
@@ -52,10 +55,7 @@ export default function Home() {
           {/* Text Input */}
           <XDSVStack gap={3}>
             <XDSHeading level={2}>Text Input</XDSHeading>
-            <XDSTextInput
-              label="Email address"
-              placeholder="you@example.com"
-            />
+            <XDSTextInput label="Email address" placeholder="you@example.com" />
           </XDSVStack>
 
           <XDSDivider />
@@ -63,10 +63,10 @@ export default function Home() {
           {/* Tailwind custom styling */}
           <XDSVStack gap={3}>
             <XDSHeading level={2}>Tailwind Integration</XDSHeading>
-            <div className="rounded-lg border border-[var(--color-divider)] p-4 bg-[var(--color-wash)]">
+            <div className="rounded-lg border border-[var(--color-border)] p-4 bg-[var(--color-wash)]">
               <XDSText type="body">
-                This card uses Tailwind utilities for layout with XDS
-                design tokens via CSS custom properties. No StyleX needed.
+                This card uses Tailwind utilities for layout with XDS design
+                tokens via CSS custom properties. No StyleX needed.
               </XDSText>
             </div>
           </XDSVStack>

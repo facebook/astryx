@@ -111,7 +111,7 @@ const styles = stylex.create({
     insetInlineStart: 0,
     borderInlineEndWidth: 1,
     borderInlineEndStyle: 'solid',
-    borderInlineEndColor: colorVars['--color-divider'],
+    borderInlineEndColor: colorVars['--color-border'],
     transform: {
       default: 'translateX(-100%)',
       ':is([dir="rtl"] *)': 'translateX(100%)',
@@ -124,7 +124,7 @@ const styles = stylex.create({
     insetInlineEnd: 0,
     borderInlineStartWidth: 1,
     borderInlineStartStyle: 'solid',
-    borderInlineStartColor: colorVars['--color-divider'],
+    borderInlineStartColor: colorVars['--color-border'],
     transform: {
       default: 'translateX(100%)',
       ':is([dir="rtl"] *)': 'translateX(-100%)',
@@ -142,7 +142,7 @@ const styles = stylex.create({
     flexShrink: 0,
     borderBlockEndWidth: 1,
     borderBlockEndStyle: 'solid',
-    borderBlockEndColor: colorVars['--color-divider'],
+    borderBlockEndColor: colorVars['--color-border'],
   },
   headerNoTitle: {
     justifyContent: 'flex-end',

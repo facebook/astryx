@@ -100,7 +100,7 @@ const styles = stylex.create({
     outline: {
       default: 'none',
       [stylex.when.ancestor(':focus-within')]:
-        `2px solid ${colorVars['--color-focus-outline']}`,
+        `2px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: {
       default: null,
@@ -118,9 +118,9 @@ const styles = stylex.create({
   },
   trackOn: {
     backgroundColor: {
-      default: colorVars['--color-accent'],
+      default: colorVars['--color-primary'],
       [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-primary']}, ${colorVars['--color-hover-tint']} 15%)`,
       },
     },
   },

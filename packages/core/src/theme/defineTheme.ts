@@ -15,7 +15,7 @@
  * const oceanTheme = defineTheme({
  *   name: 'ocean',
  *   tokens: {
- *     '--color-accent': ['#0077B6', '#48CAE4'],    // [light, dark]
+ *     '--color-primary': ['#0077B6', '#48CAE4'],    // [light, dark]
  *     '--color-surface': ['#F0F8FF', '#0A1628'],
  *     '--radius-3': '16px',                     // same in both modes
  *   },
@@ -111,7 +111,7 @@ export type XDSStyleOverrides = Record<string, string>;
  *     'variant:destructive+size:sm': { padding: '2px 6px' },
  *   },
  *   badge: {
- *     'variant:ghost': { border: '1px solid var(--color-divider)' },
+ *     'variant:ghost': { border: '1px solid var(--color-border)' },
  *   },
  * }
  * ```
@@ -466,7 +466,7 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
 
   parts.push(`  hr {
     border: none;
-    border-top: 1px solid var(--color-divider);
+    border-top: 1px solid var(--color-border);
   }`);
 
   // 4. Prop-level color overrides (for text/heading/link specificity)
@@ -474,8 +474,8 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
     primary: 'var(--color-text-primary)',
     secondary: 'var(--color-text-secondary)',
     disabled: 'var(--color-text-disabled)',
-    placeholder: 'var(--color-text-placeholder)',
-    active: 'var(--color-accent)',
+    placeholder: 'var(--color-text-secondary)',
+    active: 'var(--color-primary)',
   };
 
   const components = theme.components || {};

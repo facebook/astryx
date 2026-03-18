@@ -65,9 +65,9 @@ const styles = stylex.create({
   },
   radioUnchecked: {
     borderColor: {
-      default: colorVars['--color-divider-emphasized'],
+      default: colorVars['--color-border-emphasized'],
       [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-divider-emphasized']}, ${colorVars['--color-hover-tint']} 20%)`,
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-border-emphasized']}, ${colorVars['--color-hover-tint']} 20%)`,
       },
     },
     backgroundColor: {
@@ -79,22 +79,22 @@ const styles = stylex.create({
   },
   radioChecked: {
     borderColor: {
-      default: colorVars['--color-accent'],
+      default: colorVars['--color-primary'],
       [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-primary']}, ${colorVars['--color-hover-tint']} 15%)`,
       },
     },
     backgroundColor: {
-      default: colorVars['--color-accent'],
+      default: colorVars['--color-primary'],
       [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-primary']}, ${colorVars['--color-hover-tint']} 15%)`,
       },
     },
   },
   radioWrapperFocus: {
     outline: {
       default: 'none',
-      ':focus-within': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-within': `2px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: {
       default: '0',
@@ -104,14 +104,14 @@ const styles = stylex.create({
   },
   radioDisabled: {
     opacity: 0.5,
-    borderColor: colorVars['--color-divider'],
+    borderColor: colorVars['--color-border'],
   },
   radioDisabledUnchecked: {
-    backgroundColor: colorVars['--color-deemphasized'],
+    backgroundColor: colorVars['--color-muted'],
   },
   innerDot: {
     borderRadius: '50%',
-    backgroundColor: colorVars['--color-icon-on-media'],
+    backgroundColor: colorVars['--color-icon-on-dark-media'],
   },
   labelWrapper: {
     display: 'flex',

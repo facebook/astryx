@@ -84,7 +84,7 @@ const styles = stylex.create({
     transitionTimingFunction: easingVars['--easing-standard'],
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: {
       default: '0',

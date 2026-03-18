@@ -62,12 +62,12 @@ const styles = stylex.create({
     backgroundColor: {
       default: 'transparent',
       ':hover': {
-        '@media (hover: hover)': colorVars['--color-hover-overlay'],
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: {
       default: '0',
@@ -78,7 +78,7 @@ const styles = stylex.create({
   },
   triggerOpen: {
     color: colorVars['--color-text-primary'],
-    backgroundColor: colorVars['--color-hover-overlay'],
+    backgroundColor: colorVars['--color-overlay-hover'],
   },
   chevron: {
     display: 'inline-flex',
@@ -118,13 +118,13 @@ const styles = stylex.create({
     backgroundColor: {
       default: 'transparent',
       ':hover': {
-        '@media (hover: hover)': colorVars['--color-hover-overlay'],
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
     border: 'none',
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: {
       default: '0',
@@ -138,7 +138,7 @@ const styles = stylex.create({
     width: 40,
     height: 40,
     borderRadius: radiusVars['--radius-2'],
-    backgroundColor: colorVars['--color-deemphasized'],
+    backgroundColor: colorVars['--color-muted'],
     flexShrink: 0,
   },
   menuItemContent: {

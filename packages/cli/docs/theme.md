@@ -53,7 +53,7 @@ import {colorVars, colorDefaults} from '@xds/core/theme/tokens.stylex';
 
 // 1. Define your color overrides
 const colorOverrides = {
-  '--color-accent': 'light-dark(#7B61FF, #9B85FF)',
+  '--color-primary': 'light-dark(#7B61FF, #9B85FF)',
   '--color-surface': 'light-dark(#FFFFFF, #1A1A2E)',
   // ... all ~60 color tokens (see npx xds docs tokens)
 } as const;
@@ -133,20 +133,20 @@ const myTheme = defineTheme({
   name: 'my-theme',
 
   // Type scale — generates heading and text tokens from base size + ratio
-  typeScale: { base: 14, ratio: 1.2 },
+  typeScale: {base: 14, ratio: 1.2},
 
   // Radius scale — generates radius tokens from base unit + multiplier
-  radiusScale: { base: 4, multiplier: 1 },
+  radiusScale: {base: 4, multiplier: 1},
 
   // Explicit token overrides (highest precedence — overrides scale values)
   tokens: {
-    '--color-accent': ['#7B61FF', '#9B85FF'],
+    '--color-primary': ['#7B61FF', '#9B85FF'],
   },
 
   // Component-level style overrides
   components: {
     button: {
-      'variant:primary': { color: 'white' },
+      'variant:primary': {color: 'white'},
     },
   },
 });
@@ -154,10 +154,10 @@ const myTheme = defineTheme({
 
 **Scale configs:**
 
-| Config | What it generates | Parameters |
-| --- | --- | --- |
-| `typeScale` | `--heading-*-size/weight/leading`, `--text-*-size/weight/leading` | `base` (px), `ratio`, `weights?` |
-| `radiusScale` | `--radius-0` through `--radius-4`, `--radius-rounded` | `base` (px), `multiplier` (0–2) |
+| Config        | What it generates                                                 | Parameters                       |
+| ------------- | ----------------------------------------------------------------- | -------------------------------- |
+| `typeScale`   | `--heading-*-size/weight/leading`, `--text-*-size/weight/leading` | `base` (px), `ratio`, `weights?` |
+| `radiusScale` | `--radius-0` through `--radius-4`, `--radius-rounded`             | `base` (px), `multiplier` (0–2)  |
 
 Explicit `tokens` overrides always take precedence over scale-generated values.
 
@@ -168,7 +168,7 @@ Explicit `tokens` overrides always take precedence over scale-generated values.
 Use `light-dark()` in token values:
 
 ```tsx
-'--color-accent': 'light-dark(#0064E0, #2694FE)',
+'--color-primary': 'light-dark(#0064E0, #2694FE)',
 //                            ^light     ^dark
 ```
 
@@ -260,7 +260,7 @@ const cardOverrides = stylex.create({
   container: {
     borderRadius: '20px',
     background:
-      'linear-gradient(135deg, var(--color-accent), var(--color-positive))',
+      'linear-gradient(135deg, var(--color-primary), var(--color-success))',
     padding: '2px', // gradient border width
   },
   content: {

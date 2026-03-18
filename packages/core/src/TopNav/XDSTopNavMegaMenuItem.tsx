@@ -50,14 +50,14 @@ const styles = stylex.create({
     backgroundColor: {
       default: 'transparent',
       ':hover': {
-        '@media (hover: hover)': colorVars['--color-hover-overlay'],
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
-      ':active': colorVars['--color-pressed-overlay'],
+      ':active': colorVars['--color-overlay-pressed'],
     },
     border: 'none',
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: {
       default: '0',
@@ -76,7 +76,7 @@ const styles = stylex.create({
     width: 40,
     height: 40,
     borderRadius: radiusVars['--radius-2'],
-    backgroundColor: colorVars['--color-deemphasized'],
+    backgroundColor: colorVars['--color-muted'],
     flexShrink: 0,
     color: colorVars['--color-icon-secondary'],
   },
@@ -111,7 +111,7 @@ const styles = stylex.create({
     width: 32,
     height: 32,
     borderRadius: radiusVars['--radius-2'],
-    backgroundColor: colorVars['--color-deemphasized'],
+    backgroundColor: colorVars['--color-muted'],
     flexShrink: 0,
     color: colorVars['--color-icon-secondary'],
     marginBlockStart: spacingVars['--spacing-0-5'],

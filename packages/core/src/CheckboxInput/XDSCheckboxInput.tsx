@@ -79,7 +79,7 @@ const styles = stylex.create({
     outline: {
       default: 'none',
       [stylex.when.ancestor(':focus-within')]:
-        `2px solid ${colorVars['--color-focus-outline']}`,
+        `2px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: {
       default: null,
@@ -89,9 +89,9 @@ const styles = stylex.create({
   // State-dependent colors with ancestor hover behavior
   checkboxUnchecked: {
     borderColor: {
-      default: colorVars['--color-divider-emphasized'],
+      default: colorVars['--color-border-emphasized'],
       [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-divider-emphasized']}, ${colorVars['--color-hover-tint']} 20%)`,
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-border-emphasized']}, ${colorVars['--color-hover-tint']} 20%)`,
       },
     },
     backgroundColor: {
@@ -103,35 +103,35 @@ const styles = stylex.create({
   },
   checkboxChecked: {
     borderColor: {
-      default: colorVars['--color-accent'],
+      default: colorVars['--color-primary'],
       [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-primary']}, ${colorVars['--color-hover-tint']} 15%)`,
       },
     },
     backgroundColor: {
-      default: colorVars['--color-accent'],
+      default: colorVars['--color-primary'],
       [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-primary']}, ${colorVars['--color-hover-tint']} 15%)`,
       },
     },
   },
   checkboxDisabled: {
     opacity: 0.5,
-    borderColor: colorVars['--color-divider'],
+    borderColor: colorVars['--color-border'],
   },
   checkboxDisabledUnchecked: {
-    backgroundColor: colorVars['--color-deemphasized'],
+    backgroundColor: colorVars['--color-muted'],
   },
   checkmark: {
     display: 'none',
-    color: colorVars['--color-icon-on-media'],
+    color: colorVars['--color-icon-on-dark-media'],
   },
   checkmarkVisible: {
     display: 'block',
   },
   indeterminateMark: {
     display: 'none',
-    backgroundColor: colorVars['--color-icon-on-media'],
+    backgroundColor: colorVars['--color-icon-on-dark-media'],
     borderRadius: 1,
   },
   indeterminateMarkVisible: {

@@ -63,7 +63,7 @@ const styles = stylex.create({
     transitionTimingFunction: easingVars['--easing-standard'],
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: {
       default: '0',
@@ -99,10 +99,10 @@ const linkColorStyles = stylex.create({
     color: colorVars['--color-text-disabled'],
   },
   placeholder: {
-    color: colorVars['--color-text-placeholder'],
+    color: colorVars['--color-text-secondary'],
   },
   active: {
-    color: colorVars['--color-accent'],
+    color: colorVars['--color-primary'],
   },
   inherit: {
     color: 'inherit',

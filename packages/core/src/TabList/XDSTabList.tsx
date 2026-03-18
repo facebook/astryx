@@ -53,7 +53,7 @@ const styles = stylex.create({
   divider: {
     borderBottomWidth: '1px',
     borderBottomStyle: 'solid',
-    borderBottomColor: colorVars['--color-divider'],
+    borderBottomColor: colorVars['--color-border'],
   },
 });
 

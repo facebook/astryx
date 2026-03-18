@@ -40,50 +40,44 @@ export const neutralTheme = defineTheme({
     // =========================================================================
 
     // Core semantic
-    '--color-accent': ['oklch(0.205 0 0)', 'oklch(0.922 0 0)'],
-    '--color-accent-deemphasized': ['oklch(0.97 0 0)', 'oklch(0.269 0 0)'],
-    '--color-accent-text': ['oklch(0.205 0 0)', 'oklch(0.985 0 0)'],
+    '--color-primary': ['oklch(0.205 0 0)', 'oklch(0.922 0 0)'],
+    '--color-primary-muted': ['oklch(0.97 0 0)', 'oklch(0.269 0 0)'],
     '--color-surface': ['oklch(1 0 0)', 'oklch(0.145 0 0)'],
     '--color-wash': ['oklch(0.97 0 0)', 'oklch(0.269 0 0)'],
     '--color-overlay': ['oklch(0 0 0 / 50%)', 'oklch(0 0 0 / 80%)'],
-    '--color-hover-overlay': ['oklch(0 0 0 / 5%)', 'oklch(1 0 0 / 5%)'],
-    '--color-pressed-overlay': ['oklch(0 0 0 / 10%)', 'oklch(1 0 0 / 10%)'],
-    '--color-focus-outline': ['oklch(0.708 0 0)', 'oklch(0.556 0 0)'],
-    '--color-focus-outline-error': ['#E3193B', '#F5394F'],
-    '--color-focus-outline-success': ['#0D8626', '#0D8626'],
-    '--color-focus-outline-warning': ['#F2C00B', '#E9AF08'],
-    '--color-deemphasized': ['oklch(0.97 0 0)', 'oklch(0.269 0 0)'],
+    '--color-overlay-hover': ['oklch(0 0 0 / 5%)', 'oklch(1 0 0 / 5%)'],
+    '--color-overlay-pressed': ['oklch(0 0 0 / 10%)', 'oklch(1 0 0 / 10%)'],
+    '--color-ring-focus': ['oklch(0.708 0 0)', 'oklch(0.556 0 0)'],
+    '--color-ring-focus-error': ['#E3193B', '#F5394F'],
+    '--color-ring-focus-success': ['#0D8626', '#0D8626'],
+    '--color-ring-focus-warning': ['#F2C00B', '#E9AF08'],
+    '--color-muted': ['oklch(0.97 0 0)', 'oklch(0.269 0 0)'],
 
     // Text
     '--color-text-primary': ['oklch(0.145 0 0)', 'oklch(0.985 0 0)'],
     '--color-text-secondary': ['oklch(0.556 0 0)', 'oklch(0.708 0 0)'],
     '--color-text-disabled': ['oklch(0.708 0 0)', 'oklch(0.439 0 0)'],
     '--color-text-link': ['oklch(0.205 0 0)', 'oklch(0.922 0 0)'],
-    '--color-text-placeholder': ['oklch(0.556 0 0)', 'oklch(0.556 0 0)'],
-    '--color-text-on-media': ['oklch(1 0 0)', 'oklch(0.145 0 0)'],
+    '--color-text-on-dark-media': ['oklch(1 0 0)', 'oklch(0.145 0 0)'],
 
     // Icon
     '--color-icon-primary': ['oklch(0.145 0 0)', 'oklch(0.985 0 0)'],
     '--color-icon-secondary': ['oklch(0.556 0 0)', 'oklch(0.708 0 0)'],
-    '--color-icon-tertiary': ['oklch(0.708 0 0)', 'oklch(0.556 0 0)'],
     '--color-icon-disabled': ['oklch(0.708 0 0)', 'oklch(0.439 0 0)'],
-    '--color-icon-on-media': ['oklch(1 0 0)', 'oklch(0.145 0 0)'],
+    '--color-icon-on-dark-media': ['oklch(1 0 0)', 'oklch(0.145 0 0)'],
 
     // Surface variants
     '--color-card': ['oklch(1 0 0)', 'oklch(0.205 0 0)'],
     '--color-popover': ['oklch(1 0 0)', 'oklch(0.269 0 0)'],
 
     // Status/Sentiment
-    '--color-positive': ['oklch(0.6 0.15 145)', 'oklch(0.7 0.15 145)'],
-    '--color-positive-deemphasized': [
+    '--color-success': ['oklch(0.6 0.15 145)', 'oklch(0.7 0.15 145)'],
+    '--color-success-muted': [
       'oklch(0.6 0.15 145 / 20%)',
       'oklch(0.7 0.15 145 / 20%)',
     ],
-    '--color-negative': [
-      'oklch(0.577 0.245 27.325)',
-      'oklch(0.704 0.191 22.216)',
-    ],
-    '--color-negative-deemphasized': [
+    '--color-error': ['oklch(0.577 0.245 27.325)', 'oklch(0.704 0.191 22.216)'],
+    '--color-error-muted': [
       'oklch(0.577 0.245 27.325 / 20%)',
       'oklch(0.704 0.191 22.216 / 20%)',
     ],
@@ -91,28 +85,25 @@ export const neutralTheme = defineTheme({
       'oklch(0.828 0.189 84.429)',
       'oklch(0.769 0.188 70.08)',
     ],
-    '--color-warning-deemphasized': [
+    '--color-warning-muted': [
       'oklch(0.828 0.189 84.429 / 20%)',
       'oklch(0.769 0.188 70.08 / 20%)',
     ],
-    '--color-educational': [
-      'oklch(0.488 0.243 264.376)',
-      'oklch(0.627 0.265 303.9)',
-    ],
-    '--color-educational-deemphasized': [
+    '--color-info': ['oklch(0.488 0.243 264.376)', 'oklch(0.627 0.265 303.9)'],
+    '--color-info-muted': [
       'oklch(0.488 0.243 264.376 / 20%)',
       'oklch(0.627 0.265 303.9 / 20%)',
     ],
 
-    // Divider
-    '--color-divider': ['oklch(0.922 0 0)', 'oklch(1 0 0 / 10%)'],
-    '--color-divider-high-contrast': ['oklch(0.708 0 0)', 'oklch(0.556 0 0)'],
-    '--color-divider-emphasized': ['oklch(0.85 0 0)', 'oklch(0.371 0 0)'],
+    // Border
+    '--color-border': ['oklch(0.922 0 0)', 'oklch(1 0 0 / 10%)'],
+    '--color-border-strong': ['oklch(0.708 0 0)', 'oklch(0.556 0 0)'],
+    '--color-border-emphasized': ['oklch(0.85 0 0)', 'oklch(0.371 0 0)'],
 
     // Effects
-    '--color-glimmer': ['oklch(0.922 0 0)', 'oklch(0.371 0 0)'],
-    '--color-glimmer-high-contrast': ['oklch(0.85 0 0)', 'oklch(0.439 0 0)'],
-    '--color-shadow-elevation': ['oklch(0 0 0 / 10%)', 'oklch(0 0 0 / 30%)'],
+    '--color-skeleton': ['oklch(0.922 0 0)', 'oklch(0.371 0 0)'],
+    '--color-skeleton-strong': ['oklch(0.85 0 0)', 'oklch(0.439 0 0)'],
+    '--color-shadow': ['oklch(0 0 0 / 10%)', 'oklch(0 0 0 / 30%)'],
     '--color-hover-tint': ['black', 'white'],
 
     // Blue
@@ -311,7 +302,7 @@ export const neutralTheme = defineTheme({
       'variant:secondary': {
         borderWidth: '1px',
         borderStyle: 'solid',
-        borderColor: 'var(--color-divider)',
+        borderColor: 'var(--color-border)',
       },
     },
 

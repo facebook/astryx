@@ -248,7 +248,7 @@ function generateProseCSS(themeDef) {
 
   parts.push(`  code, pre {\n    font-family: var(--font-code);\n    font-size: var(--text-base);\n    line-height: var(--leading-base);\n  }`);
 
-  parts.push(`  hr {\n    border: none;\n    border-top: 1px solid var(--color-divider);\n    margin: 0;\n  }`);
+  parts.push(`  hr {\n    border: none;\n    border-top: 1px solid var(--color-border);\n    margin: 0;\n  }`);
 
   const inner = parts.join('\n\n');
   return `@scope (${scopeSelector}) to ([data-xds-theme]) {\n${inner}\n}`;

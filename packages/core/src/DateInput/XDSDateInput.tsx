@@ -66,7 +66,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-2'],
     outline: {
       default: 'none',
-      ':focus-visible': `1px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-visible': `1px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: 1,
   },
@@ -87,7 +87,7 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     outline: 'none',
     '::placeholder': {
-      color: colorVars['--color-text-placeholder'],
+      color: colorVars['--color-text-secondary'],
     },
   },
   inputDisabled: {

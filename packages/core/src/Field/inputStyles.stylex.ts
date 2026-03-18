@@ -38,9 +38,9 @@ export const inputWrapperStyles = stylex.create({
     borderWidth: '1px',
     borderStyle: 'solid',
     borderColor: {
-      default: colorVars['--color-divider-emphasized'],
+      default: colorVars['--color-border-emphasized'],
       ':hover': {
-        '@media (hover: hover)': colorVars['--color-divider-high-contrast'],
+        '@media (hover: hover)': colorVars['--color-border-strong'],
       },
     },
     borderRadius: radiusVars['--radius-2'],
@@ -56,14 +56,14 @@ export const inputWrapperStyles = stylex.create({
     },
     outline: {
       default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-within': `1px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: '0',
   },
   disabled: {
     cursor: 'not-allowed',
     opacity: 0.5,
-    borderColor: colorVars['--color-divider-emphasized'],
+    borderColor: colorVars['--color-border-emphasized'],
   },
 });
 
@@ -76,10 +76,10 @@ export const inputStatusBorderStyles = stylex.create({
     borderColor: colorVars['--color-warning'],
   },
   error: {
-    borderColor: colorVars['--color-negative'],
+    borderColor: colorVars['--color-error'],
   },
   success: {
-    borderColor: colorVars['--color-positive'],
+    borderColor: colorVars['--color-success'],
   },
 });
 
@@ -123,19 +123,19 @@ export const inputStatusFocusWithinStyles = stylex.create({
   warning: {
     outline: {
       default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline-warning']}`,
+      ':focus-within': `1px solid ${colorVars['--color-ring-focus-warning']}`,
     },
   },
   error: {
     outline: {
       default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline-error']}`,
+      ':focus-within': `1px solid ${colorVars['--color-ring-focus-error']}`,
     },
   },
   success: {
     outline: {
       default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-focus-outline-success']}`,
+      ':focus-within': `1px solid ${colorVars['--color-ring-focus-success']}`,
     },
   },
 });
@@ -149,19 +149,19 @@ export const inputStatusFocusStyles = stylex.create({
   warning: {
     outline: {
       default: 'none',
-      ':focus': `1px solid ${colorVars['--color-focus-outline-warning']}`,
+      ':focus': `1px solid ${colorVars['--color-ring-focus-warning']}`,
     },
   },
   error: {
     outline: {
       default: 'none',
-      ':focus': `1px solid ${colorVars['--color-focus-outline-error']}`,
+      ':focus': `1px solid ${colorVars['--color-ring-focus-error']}`,
     },
   },
   success: {
     outline: {
       default: 'none',
-      ':focus': `1px solid ${colorVars['--color-focus-outline-success']}`,
+      ':focus': `1px solid ${colorVars['--color-ring-focus-success']}`,
     },
   },
 });

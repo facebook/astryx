@@ -45,15 +45,15 @@ const styles = stylex.create({
 
 const colorStyles = stylex.create({
   warning: {
-    backgroundColor: colorVars['--color-warning-deemphasized'],
+    backgroundColor: colorVars['--color-warning-muted'],
     color: colorVars['--color-yellow-text'],
   },
   error: {
-    backgroundColor: colorVars['--color-negative-deemphasized'],
+    backgroundColor: colorVars['--color-error-muted'],
     color: colorVars['--color-red-text'],
   },
   success: {
-    backgroundColor: colorVars['--color-positive-deemphasized'],
+    backgroundColor: colorVars['--color-success-muted'],
     color: colorVars['--color-green-text'],
   },
 });

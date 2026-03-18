@@ -194,14 +194,14 @@ const styles = stylex.create({
     borderStyle: 'none',
     padding: 0,
     borderRadius: '50%',
-    backgroundColor: colorVars['--color-deemphasized'],
+    backgroundColor: colorVars['--color-muted'],
     cursor: 'pointer',
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easingVars['--easing-standard'],
     outline: {
       default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: {
       default: '0',
@@ -213,7 +213,7 @@ const styles = stylex.create({
     height: 6,
   },
   dotActive: {
-    backgroundColor: colorVars['--color-accent'],
+    backgroundColor: colorVars['--color-primary'],
   },
   dotDisabled: {
     cursor: 'not-allowed',

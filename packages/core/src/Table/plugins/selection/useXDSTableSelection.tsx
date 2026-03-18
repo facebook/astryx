@@ -102,7 +102,7 @@ function SelectionRowCheckbox<T>({item}: {item: T}) {
 
 const selectedRowStyles = stylex.create({
   row: {
-    backgroundColor: colorVars['--color-accent-deemphasized'],
+    backgroundColor: colorVars['--color-primary-muted'],
   },
 });
 

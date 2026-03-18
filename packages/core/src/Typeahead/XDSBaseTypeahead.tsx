@@ -165,7 +165,7 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     outline: 'none',
     '::placeholder': {
-      color: colorVars['--color-text-placeholder'],
+      color: colorVars['--color-text-secondary'],
     },
   },
   inputDisabled: {
@@ -178,7 +178,7 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-1'],
     borderRadius: radiusVars['--radius-2'],
     backgroundColor: colorVars['--color-surface'],
-    boxShadow: `0 4px 12px ${colorVars['--color-shadow-elevation']}`,
+    boxShadow: `0 4px 12px ${colorVars['--color-shadow']}`,
   },
   popover: {
     minWidth: 'anchor-size(width)',
@@ -201,7 +201,7 @@ const styles = stylex.create({
     textAlign: 'left',
   },
   itemHighlighted: {
-    backgroundColor: colorVars['--color-hover-overlay'],
+    backgroundColor: colorVars['--color-overlay-hover'],
   },
   itemSelected: {
     fontWeight: fontWeightVars['--font-weight-medium'],

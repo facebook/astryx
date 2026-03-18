@@ -112,7 +112,7 @@ const styles = stylex.create({
     height: '1px',
     border: 'none',
     margin: 0,
-    backgroundColor: colorVars['--color-divider'],
+    backgroundColor: colorVars['--color-border'],
   },
 });
 

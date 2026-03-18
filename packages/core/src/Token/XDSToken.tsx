@@ -166,13 +166,13 @@ const styles = stylex.create({
     backgroundImage: {
       default: null,
       ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
-      ':active': `linear-gradient(${colorVars['--color-pressed-overlay']}, ${colorVars['--color-pressed-overlay']})`,
+      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: {
       default: '0',
@@ -207,7 +207,7 @@ const styles = stylex.create({
   focusWithinOutline: {
     outline: {
       default: null,
-      ':focus-within': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-within': `2px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: {
       default: '0',
@@ -229,7 +229,7 @@ const styles = stylex.create({
     color: 'inherit',
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
     },
     '::after': {
       content: '""',
@@ -253,7 +253,7 @@ const sizeStyles = stylex.create({
 
 const colorStyles = stylex.create({
   default: {
-    backgroundColor: colorVars['--color-deemphasized'],
+    backgroundColor: colorVars['--color-muted'],
     color: colorVars['--color-text-primary'],
   },
   red: {

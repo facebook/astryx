@@ -38,7 +38,7 @@ const styles = stylex.create({
   divider: {
     borderBlockEndWidth: 1,
     borderBlockEndStyle: 'solid',
-    borderBlockEndColor: colorVars['--color-divider'],
+    borderBlockEndColor: colorVars['--color-border'],
   },
   // When no divider, collapse spacing to avoid double-padding with content
   collapseBottom: {

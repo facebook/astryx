@@ -63,13 +63,13 @@ const styles = stylex.create({
   dividerEnd: {
     borderInlineEndWidth: 1,
     borderInlineEndStyle: 'solid',
-    borderInlineEndColor: colorVars['--color-divider'],
+    borderInlineEndColor: colorVars['--color-border'],
   },
   // For end panel: divider on start edge
   dividerStart: {
     borderInlineStartWidth: 1,
     borderInlineStartStyle: 'solid',
-    borderInlineStartColor: colorVars['--color-divider'],
+    borderInlineStartColor: colorVars['--color-border'],
   },
   // When no divider, collapse spacing on the side facing content
   // Start panel: collapse end (right in LTR) to merge with content

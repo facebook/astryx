@@ -67,7 +67,7 @@ describe('migrate-radius-tokens', () => {
     expect(output).toContain('--radius-rounded');
   });
 
-  it('does not modify --radius-0 through --radius-4', async () => {
+  it('does not modify already-numeric --radius-0 through --radius-4', async () => {
     const input = `const x = '--radius-3';`;
     const output = await applyTransform(input);
     expect(output).toContain('--radius-3');

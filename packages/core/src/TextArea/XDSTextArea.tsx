@@ -59,7 +59,7 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     outline: 'none',
     '::placeholder': {
-      color: colorVars['--color-text-placeholder'],
+      color: colorVars['--color-text-secondary'],
     },
     resize: 'vertical',
     minHeight: '80px',
@@ -76,7 +76,7 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   counterError: {
-    color: colorVars['--color-negative'],
+    color: colorVars['--color-error'],
   },
 });
 

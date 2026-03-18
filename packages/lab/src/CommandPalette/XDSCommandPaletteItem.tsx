@@ -53,19 +53,19 @@ const styles = stylex.create({
   itemHover: {
     ':hover': {
       [HOVER_HOVER]: {
-        backgroundColor: colorVars['--color-hover-overlay'],
+        backgroundColor: colorVars['--color-overlay-hover'],
       },
     },
   },
   itemHighlighted: {
-    backgroundColor: colorVars['--color-hover-overlay'],
+    backgroundColor: colorVars['--color-overlay-hover'],
   },
   itemDisabled: {
     opacity: 0.5,
     cursor: 'not-allowed',
   },
   itemSelected: {
-    backgroundColor: colorVars['--color-accent-deemphasized'],
+    backgroundColor: colorVars['--color-primary-muted'],
   },
 });
 

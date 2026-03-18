@@ -71,22 +71,22 @@ const dividerStyles = stylex.create({
   top: {
     borderTopWidth: 1,
     borderTopStyle: 'solid',
-    borderTopColor: colorVars['--color-divider'],
+    borderTopColor: colorVars['--color-border'],
   },
   bottom: {
     borderBottomWidth: 1,
     borderBottomStyle: 'solid',
-    borderBottomColor: colorVars['--color-divider'],
+    borderBottomColor: colorVars['--color-border'],
   },
   start: {
     borderInlineStartWidth: 1,
     borderInlineStartStyle: 'solid',
-    borderInlineStartColor: colorVars['--color-divider'],
+    borderInlineStartColor: colorVars['--color-border'],
   },
   end: {
     borderInlineEndWidth: 1,
     borderInlineEndStyle: 'solid',
-    borderInlineEndColor: colorVars['--color-divider'],
+    borderInlineEndColor: colorVars['--color-border'],
   },
 });
 

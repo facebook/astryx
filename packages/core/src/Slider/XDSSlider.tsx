@@ -162,7 +162,7 @@ const styles = stylex.create({
   },
   track: {
     position: 'absolute',
-    backgroundColor: colorVars['--color-deemphasized'],
+    backgroundColor: colorVars['--color-muted'],
     borderRadius: radiusVars['--radius-rounded'],
   },
   trackHorizontal: {
@@ -181,7 +181,7 @@ const styles = stylex.create({
   },
   filledTrack: {
     position: 'absolute',
-    backgroundColor: colorVars['--color-accent'],
+    backgroundColor: colorVars['--color-primary'],
     borderRadius: radiusVars['--radius-rounded'],
   },
   filledTrackHorizontal: {
@@ -199,7 +199,7 @@ const styles = stylex.create({
     width: THUMB_SIZE,
     height: THUMB_SIZE,
     borderRadius: radiusVars['--radius-rounded'],
-    backgroundColor: colorVars['--color-accent'],
+    backgroundColor: colorVars['--color-primary'],
     transform: 'translate(-50%, -50%)',
     transitionProperty: 'background-color, box-shadow',
     transitionDuration: durationVars['--duration-fast'],
@@ -217,16 +217,16 @@ const styles = stylex.create({
   },
   thumbHover: {
     backgroundColor: {
-      default: colorVars['--color-accent'],
+      default: colorVars['--color-primary'],
       ':hover': {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-primary']}, ${colorVars['--color-hover-tint']} 15%)`,
       },
     },
   },
   thumbFocusWithin: {
     outline: {
       default: 'none',
-      ':focus-within': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-within': `2px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: {
       default: '0',
@@ -234,7 +234,7 @@ const styles = stylex.create({
     },
   },
   thumbDisabled: {
-    backgroundColor: colorVars['--color-deemphasized'],
+    backgroundColor: colorVars['--color-muted'],
     cursor: 'not-allowed',
   },
   textValue: {
@@ -259,7 +259,7 @@ const styles = stylex.create({
   },
   mark: {
     position: 'absolute',
-    backgroundColor: colorVars['--color-divider-emphasized'],
+    backgroundColor: colorVars['--color-border-emphasized'],
     borderRadius: radiusVars['--radius-rounded'],
   },
   markHorizontal: {

@@ -70,12 +70,12 @@ const styles = stylex.create({
     fontSize: 14,
     backgroundColor: {
       default: 'transparent',
-      ':hover': colorVars['--color-hover-overlay'],
+      ':hover': colorVars['--color-overlay-hover'],
     },
   },
   navItemActive: {
-    backgroundColor: colorVars['--color-accent-deemphasized'],
-    color: colorVars['--color-accent-text'],
+    backgroundColor: colorVars['--color-primary-muted'],
+    color: colorVars['--color-text-link'],
   },
   // Content placeholder
   placeholder: {

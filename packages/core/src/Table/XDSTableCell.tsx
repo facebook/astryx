@@ -60,7 +60,7 @@ const dividerRowStyles = stylex.create({
   cell: {
     borderBottomWidth: '1px',
     borderBottomStyle: 'solid',
-    borderBottomColor: colorVars['--color-divider'],
+    borderBottomColor: colorVars['--color-border'],
   },
 });
 
@@ -71,7 +71,7 @@ const dividerColumnStyles = stylex.create({
       ':last-child': '0',
     },
     borderRightStyle: 'solid',
-    borderRightColor: colorVars['--color-divider'],
+    borderRightColor: colorVars['--color-border'],
   },
 });
 

@@ -55,13 +55,13 @@ const styles = stylex.create({
     backgroundColor: {
       default: 'transparent',
       ':hover': {
-        '@media (hover: hover)': colorVars['--color-hover-overlay'],
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
-      ':active': colorVars['--color-pressed-overlay'],
+      ':active': colorVars['--color-overlay-pressed'],
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: {
       default: '0',
@@ -72,11 +72,11 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     backgroundColor: {
-      default: colorVars['--color-deemphasized'],
+      default: colorVars['--color-muted'],
       ':hover': {
-        '@media (hover: hover)': colorVars['--color-deemphasized'],
+        '@media (hover: hover)': colorVars['--color-muted'],
       },
-      ':active': colorVars['--color-deemphasized'],
+      ':active': colorVars['--color-muted'],
     },
   },
   iconOnly: {
@@ -86,7 +86,7 @@ const styles = stylex.create({
   drawerFocus: {
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: {
       default: '0',

@@ -93,13 +93,13 @@ const styles = stylex.create({
     justifyContent: 'center',
   },
   positive: {
-    backgroundColor: colorVars['--color-positive'],
+    backgroundColor: colorVars['--color-success'],
   },
   neutral: {
     backgroundColor: colorVars['--color-text-secondary'],
   },
   negative: {
-    backgroundColor: colorVars['--color-negative'],
+    backgroundColor: colorVars['--color-error'],
   },
   icon: {
     display: 'flex',

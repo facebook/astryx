@@ -28,7 +28,7 @@ const styles = stylex.create({
     position: 'absolute',
     right: 0,
     width: LINE_WIDTH,
-    backgroundColor: colorVars['--color-divider-emphasized'],
+    backgroundColor: colorVars['--color-border-emphasized'],
   },
   verticalFull: {
     height: 'calc(100% + 1px)',
@@ -50,7 +50,7 @@ const styles = stylex.create({
     top: '50%',
     transform: 'translateY(-50%)',
     width: '50%',
-    backgroundColor: colorVars['--color-divider-emphasized'],
+    backgroundColor: colorVars['--color-border-emphasized'],
   },
   horizontalLineFull: {
     width: '100%',

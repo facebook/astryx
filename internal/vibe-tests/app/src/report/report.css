@@ -50,11 +50,11 @@
 }
 
 .report-color-positive {
-  color: var(--color-positive);
+  color: var(--color-success);
 }
 
 .report-color-negative {
-  color: var(--color-negative);
+  color: var(--color-error);
 }
 
 .report-color-neutral {

@@ -102,7 +102,7 @@ const styles = stylex.create({
     outline: 'none',
   },
   itemHighlighted: {
-    backgroundColor: colorVars['--color-hover-overlay'],
+    backgroundColor: colorVars['--color-overlay-hover'],
   },
   itemDisabled: {
     opacity: 0.5,

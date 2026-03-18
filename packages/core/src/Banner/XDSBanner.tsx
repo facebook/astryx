@@ -260,9 +260,9 @@ const styles = stylex.create({
     borderLeftStyle: 'solid',
     borderRightStyle: 'solid',
     borderBottomStyle: 'solid',
-    borderLeftColor: colorVars['--color-divider'],
-    borderRightColor: colorVars['--color-divider'],
-    borderBottomColor: colorVars['--color-divider'],
+    borderLeftColor: colorVars['--color-border'],
+    borderRightColor: colorVars['--color-border'],
+    borderBottomColor: colorVars['--color-border'],
   },
   contentAreaCard: {
     borderBottomLeftRadius: radiusVars['--radius-3'],
@@ -272,16 +272,16 @@ const styles = stylex.create({
 
 const statusStyles = stylex.create({
   info: {
-    backgroundColor: colorVars['--color-accent-deemphasized'],
+    backgroundColor: colorVars['--color-primary-muted'],
   },
   warning: {
-    backgroundColor: colorVars['--color-warning-deemphasized'],
+    backgroundColor: colorVars['--color-warning-muted'],
   },
   error: {
-    backgroundColor: colorVars['--color-negative-deemphasized'],
+    backgroundColor: colorVars['--color-error-muted'],
   },
   success: {
-    backgroundColor: colorVars['--color-positive-deemphasized'],
+    backgroundColor: colorVars['--color-success-muted'],
   },
 });
 

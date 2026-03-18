@@ -173,8 +173,8 @@ const styles = stylex.create({
   },
   wrapperWithTokens: {
     // Override padding for border concentricity: token border-radius
-    // (radius-content: 4px) sits concentric with wrapper border-radius
-    // (radius-element: 8px) when inset = radius-element - radius-content - border
+    // (radius-1: 4px) sits concentric with wrapper border-radius
+    // (radius-2: 8px) when inset = radius-2 - radius-1 - border
     // = 8 - 4 - 1 = 3px.
     paddingBlock: `calc(${spacingVars['--spacing-1']} - 1px)`,
     paddingInline: `calc(${spacingVars['--spacing-1']} - 1px)`,

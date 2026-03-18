@@ -37,14 +37,14 @@ Control heights for consistent sizing across buttons, inputs, and selectors.
 
 ### Semantic Colors
 
-| Token            | Usage                |
-| ---------------- | -------------------- |
-| --color-accent   | Primary action color |
-| --color-surface  | Background surface   |
-| --color-wash     | Secondary background |
-| --color-positive | Success states       |
-| --color-negative | Error states         |
-| --color-warning  | Warning states       |
+| Token           | Usage                |
+| --------------- | -------------------- |
+| --color-primary | Primary action color |
+| --color-surface | Background surface   |
+| --color-wash    | Secondary background |
+| --color-success | Success states       |
+| --color-error   | Error states         |
+| --color-warning | Warning states       |
 
 ### Text Colors
 

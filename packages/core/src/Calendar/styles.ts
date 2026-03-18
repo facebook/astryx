@@ -224,12 +224,12 @@ export const dayCellStyles = stylex.create({
 export const dayCellTheme = stylex.create({
   // Range background color
   rangeBg: {
-    backgroundColor: colorVars['--color-accent-deemphasized'],
+    backgroundColor: colorVars['--color-primary-muted'],
   },
 
   // Preview background (muted overlay)
   previewBg: {
-    backgroundColor: colorVars['--color-hover-overlay'],
+    backgroundColor: colorVars['--color-overlay-hover'],
   },
 
   // Day button - default state
@@ -239,12 +239,12 @@ export const dayCellTheme = stylex.create({
     backgroundImage: {
       default: null,
       ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: {
       default: '0',
@@ -259,7 +259,7 @@ export const dayCellTheme = stylex.create({
 
   // Today indicator
   dayToday: {
-    boxShadow: `inset 0 0 0 1px ${colorVars['--color-divider-emphasized']}`,
+    boxShadow: `inset 0 0 0 1px ${colorVars['--color-border-emphasized']}`,
   },
 
   // Today when inside a selected range
@@ -269,12 +269,12 @@ export const dayCellTheme = stylex.create({
 
   // Selected state (single selection or range endpoints)
   daySelected: {
-    backgroundColor: colorVars['--color-accent'],
-    color: colorVars['--color-text-on-media'],
+    backgroundColor: colorVars['--color-primary'],
+    color: colorVars['--color-text-on-dark-media'],
     backgroundImage: {
       default: null,
       ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-hover-overlay']}, ${colorVars['--color-hover-overlay']})`,
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
     },
   },

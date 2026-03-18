@@ -178,7 +178,7 @@ const styles = stylex.create({
   },
   track: {
     width: '100%',
-    backgroundColor: colorVars['--color-deemphasized'],
+    backgroundColor: colorVars['--color-muted'],
     borderRadius: radiusVars['--radius-rounded'],
     overflow: 'hidden',
   },
@@ -217,16 +217,16 @@ const sizeStyles = stylex.create({
 
 const variantStyles = stylex.create({
   accent: {
-    backgroundColor: colorVars['--color-accent'],
+    backgroundColor: colorVars['--color-primary'],
   },
   positive: {
-    backgroundColor: colorVars['--color-positive'],
+    backgroundColor: colorVars['--color-success'],
   },
   warning: {
     backgroundColor: colorVars['--color-warning'],
   },
   negative: {
-    backgroundColor: colorVars['--color-negative'],
+    backgroundColor: colorVars['--color-error'],
   },
 });
 

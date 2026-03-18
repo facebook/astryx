@@ -91,7 +91,7 @@ XDS uses specific CSS variable naming. **Any variable not matching these pattern
 - `--xds-*` prefix (INVALID - XDS doesn't use this prefix)
 - `--xds-color-*`, `--xds-space-*`, `--xds-font-*` (INVALID)
 - `--space-*` instead of `--spacing-*`
-- `--border-*` (doesn't exist - use `--color-divider` or component props)
+- `--border-*` (doesn't exist - use `--color-border` or component props)
 - `--font-family-*` (doesn't exist - use `--font-body`, `--font-code`, `--font-heading`)
 - `--font-size-*` (doesn't exist - use `--text-*`)
 - `--elevation-*` (doesn't exist - use `--shadow-*` and `--insetshadow-border-*`)

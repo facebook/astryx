@@ -54,7 +54,7 @@ const styles = stylex.create({
   featuredLink: {
     fontSize: 14,
     fontWeight: 600,
-    color: 'var(--color-accent-text)',
+    color: 'var(--color-text-link)',
     textDecoration: 'none',
   },
   featuredImage: {

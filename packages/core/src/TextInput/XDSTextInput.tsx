@@ -53,7 +53,7 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     outline: 'none',
     '::placeholder': {
-      color: colorVars['--color-text-placeholder'],
+      color: colorVars['--color-text-secondary'],
     },
   },
   inputDisabled: {

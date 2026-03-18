@@ -83,7 +83,7 @@ const styles = stylex.create({
     transitionTimingFunction: easingVars['--easing-standard'],
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: {
       default: '0',
@@ -91,7 +91,7 @@ const styles = stylex.create({
     },
   },
   triggerSelected: {
-    color: colorVars['--color-accent-text'],
+    color: colorVars['--color-text-link'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
   },
   triggerLabel: {
@@ -119,7 +119,7 @@ const styles = stylex.create({
       left: 0,
       right: 0,
       height: '2px',
-      backgroundColor: colorVars['--color-accent'],
+      backgroundColor: colorVars['--color-primary'],
       borderRadius: radiusVars['--radius-rounded'],
     },
   },
@@ -129,7 +129,7 @@ const styles = stylex.create({
     left: 0,
     right: 0,
     height: '2px',
-    backgroundColor: colorVars['--color-divider'],
+    backgroundColor: colorVars['--color-border'],
     borderRadius: radiusVars['--radius-rounded'],
     opacity: {
       default: 0,
@@ -184,12 +184,12 @@ const styles = stylex.create({
     backgroundColor: {
       default: 'transparent',
       ':hover': {
-        '@media (hover: hover)': colorVars['--color-hover-overlay'],
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
     },
   },
   menuItemSelected: {
