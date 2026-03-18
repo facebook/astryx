@@ -431,7 +431,7 @@ export default function RadiusPage() {
           </div>
           <div style={{display: 'flex', gap: 48, flexWrap: 'wrap', alignItems: 'flex-start'}}>
             <XDSVStack gap={2}>
-              <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Page Card</span>
+              <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Page Section</span>
               <div style={{width: 400, height: 200, overflow: 'hidden', border: '1px solid light-dark(#ddd, #444)', borderRadius: r4, backgroundColor: 'light-dark(#fff, #1a1a1a)', transition: 'border-radius 0.2s', padding: 24}}>
                 <div style={{fontWeight: 600, fontSize: 18, color: 'light-dark(#333, #eee)', marginBottom: 8}}>Page section</div>
                 <div style={{fontSize: 14, color: 'light-dark(#666, #aaa)', lineHeight: 1.6, marginBottom: 20}}>This is a large page-level container that uses radius-4 for its corners. It typically wraps entire content sections.</div>
