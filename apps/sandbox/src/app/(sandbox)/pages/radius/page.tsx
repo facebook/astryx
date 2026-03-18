@@ -75,6 +75,30 @@ const styles = stylex.create({
 // Dropdown Item (hover support with dynamic radius)
 // =============================================================================
 
+function FlatButton({label, radius}: {label: string; radius: number}) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        padding: '10px 24px',
+        fontSize: 14,
+        fontWeight: 500,
+        fontFamily: 'inherit',
+        cursor: 'pointer',
+        border: 'none',
+        backgroundColor: hovered ? 'light-dark(rgba(0,0,0,0.05), rgba(255,255,255,0.08))' : 'transparent',
+        color: 'light-dark(#333, #eee)',
+        borderRadius: radius,
+        transition: 'border-radius 0.2s, background-color 0.15s',
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
 function DropdownItem({label, radius, active}: {label: string; radius: number; active?: boolean}) {
   const [hovered, setHovered] = useState(false);
   return (
@@ -194,7 +218,7 @@ export default function RadiusPage() {
                 <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>4dp</td>
                 <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>Yes</td>
                 <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}><div style={{width: 40, height: 40, backgroundColor: 'light-dark(#ddd, #444)', borderRadius: 4}} /></td>
-                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)', color: 'light-dark(#666, #aaa)'}}>code blocks, thumbnails</td>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)', color: 'light-dark(#666, #aaa)'}}>code blocks, media</td>
               </tr>
               <tr>
                 <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)', fontFamily: 'monospace'}}>radius-2</td>
@@ -319,16 +343,7 @@ export default function RadiusPage() {
               </div>
             </XDSVStack>
 
-            {/* Thumbnails */}
-            <XDSVStack gap={2}>
-              <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Thumbnails</span>
-              <div style={{display: 'flex', gap: 12}}>
-                <div style={{width: 64, height: 64, borderRadius: tokens['radius-1'], background: 'linear-gradient(135deg, #E9AF08, #E3193B)', transition: 'border-radius 0.2s'}} />
-                <div style={{width: 64, height: 64, borderRadius: tokens['radius-1'], background: 'linear-gradient(135deg, #0064E0, #0D8626)', transition: 'border-radius 0.2s'}} />
-                <div style={{width: 64, height: 64, borderRadius: tokens['radius-1'], background: 'linear-gradient(135deg, #5B08D8, #E3193B)', transition: 'border-radius 0.2s'}} />
-                <div style={{width: 64, height: 64, borderRadius: tokens['radius-1'], background: 'linear-gradient(135deg, #0D8626, #0064E0)', transition: 'border-radius 0.2s'}} />
-              </div>
-            </XDSVStack>
+
           </div>
         </XDSVStack>
 
@@ -347,7 +362,7 @@ export default function RadiusPage() {
               <div style={{display: 'flex', gap: 8, alignItems: 'center'}}>
                 <button style={{padding: '10px 24px', fontSize: 14, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer', border: 'none', backgroundColor: 'light-dark(#0064E0, #2694FE)', color: '#fff', borderRadius: tokens['radius-2'], transition: 'border-radius 0.2s'}}>Primary</button>
                 <button style={{padding: '10px 24px', fontSize: 14, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer', border: '1px solid light-dark(#ddd, #444)', backgroundColor: 'light-dark(#fff, #333)', color: 'light-dark(#333, #eee)', borderRadius: tokens['radius-2'], transition: 'border-radius 0.2s'}}>Secondary</button>
-                <button style={{padding: '10px 24px', fontSize: 14, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer', border: 'none', backgroundColor: 'transparent', color: 'light-dark(#333, #eee)', borderRadius: tokens['radius-2'], transition: 'border-radius 0.2s'}}>Flat</button>
+                <FlatButton label="Flat" radius={tokens['radius-2']} />
               </div>
             </XDSVStack>
 
