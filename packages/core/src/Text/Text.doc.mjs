@@ -280,11 +280,6 @@ export const docs = {
         },
       ],
     },
-      ],
-    },
-      ],
-      props: [],
-    },
   ],
 };
 
@@ -591,11 +586,6 @@ export const docsZh = {
           description: '要应用 XDS 排版样式的内容。',
           required: true,
         },
-      ],
-    },
-      ],
-      props: [],
-    },
   ],
 };
 
@@ -656,7 +646,6 @@ export const docsDense = {
         hasStrikethrough: 'Strikethrough text decoration.',
         id: 'HTML id attribute.',
       },
-    },
     },
   ],
 };
