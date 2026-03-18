@@ -13,6 +13,7 @@ export const docs = {
     'Collapsible sidebar via collapsible prop — collapses to icon-only toolbar, uncontrolled or controlled',
     'Accessible — nav landmark, aria-current="page", role="group" with aria-labelledby on sections',
     'Keyboard navigable — Tab through items, Enter/Space to activate',
+    'Resizable sidebar via resizable prop — drag handle at inline-end edge, pointer-based resize with min/max constraints',
   ],
   accessibility: [
     '<nav aria-label="Side navigation"> wraps the entire component',

@@ -18,7 +18,7 @@
 
 'use client';
 
-import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
+import {useCallback, useState, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -28,6 +28,7 @@ import {XDSSideNavCollapseContext} from './XDSSideNavCollapseContext';
 import {XDSSideNavCollapseButton} from './XDSSideNavCollapseButton';
 import {useXDSSideNavRenderMode} from './XDSSideNavRenderContext';
 import {XDSMobileNav} from '../MobileNav/XDSMobileNav';
+import {useResizable} from './useResizable';
 
 // =============================================================================
 // Styles
@@ -289,10 +290,6 @@ export interface XDSSideNavProps extends XDSBaseProps<HTMLElement> {
  * </XDSSideNav>
  * ```
  */
-const MIN_WIDTH = 180;
-const MAX_WIDTH = 480;
-const DEFAULT_WIDTH = 260;
-
 export function XDSSideNav({
   header,
   topContent,
@@ -319,8 +316,6 @@ export function XDSSideNav({
   // Resizable config
   const resizableConfig = typeof resizable === 'object' ? resizable : {};
   const isResizable = !!resizable;
-  const defaultWidth = resizableConfig.defaultWidth ?? DEFAULT_WIDTH;
-  const onWidthChange = resizableConfig.onWidthChange;
 
   // Collapse state (controlled + uncontrolled)
   const isControlled = controlledCollapsed !== undefined;
@@ -343,68 +338,19 @@ export function XDSSideNav({
   };
 
   // =========================================================================
-  // Resize state — pointer-based drag on the inline-end handle
+  // Resize — extracted into useResizable hook
   // =========================================================================
-  const [width, setWidth] = useState(
-    Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, defaultWidth)),
-  );
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isDraggingRef = useRef(false);
-  const startXRef = useRef(0);
-  const startWidthRef = useRef(0);
-  const [isHandleHovered, setIsHandleHovered] = useState(false);
-
-  const handlePointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      e.preventDefault();
-      isDraggingRef.current = true;
-      startXRef.current = e.clientX;
-      startWidthRef.current = width;
-      document.body.style.cursor = 'col-resize';
-
-      const onPointerMove = (moveEvent: PointerEvent) => {
-        if (!isDraggingRef.current) return;
-        const delta = moveEvent.clientX - startXRef.current;
-        const newWidth = Math.min(
-          MAX_WIDTH,
-          Math.max(MIN_WIDTH, startWidthRef.current + delta),
-        );
-        if (containerRef.current) {
-          containerRef.current.style.width = `${newWidth}px`;
-        }
-      };
-
-      const onPointerUp = (upEvent: PointerEvent) => {
-        isDraggingRef.current = false;
-        document.body.style.cursor = '';
-        document.removeEventListener('pointermove', onPointerMove);
-        document.removeEventListener('pointerup', onPointerUp);
-
-        const delta = upEvent.clientX - startXRef.current;
-        const finalWidth = Math.min(
-          MAX_WIDTH,
-          Math.max(MIN_WIDTH, startWidthRef.current + delta),
-        );
-        setWidth(finalWidth);
-        onWidthChange?.(finalWidth);
-      };
-
-      document.addEventListener('pointermove', onPointerMove);
-      document.addEventListener('pointerup', onPointerUp);
-    },
-    [width, onWidthChange],
-  );
-
-  // Clean up listeners if component unmounts during drag
-  useEffect(() => {
-    return () => {
-      if (isDraggingRef.current) {
-        document.body.style.cursor = '';
-      }
-    };
-  }, []);
-
-  const showResizeHandle = isResizable && !collapsed;
+  const {
+    width,
+    containerRef,
+    showHandle: showResizeHandle,
+    handleProps: resizeHandleProps,
+    isHandleHovered,
+  } = useResizable({
+    enabled: isResizable,
+    config: resizableConfig,
+    collapsed,
+  });
 
   // Render mode — when inside AppShell mobile layout, render subsets
   const renderMode = useXDSSideNavRenderMode();
@@ -553,11 +499,7 @@ export function XDSSideNav({
           styles.dragHandle,
           isHandleHovered && styles.dragHandleHover,
         )}
-        onPointerDown={handlePointerDown}
-        onPointerEnter={() => setIsHandleHovered(true)}
-        onPointerLeave={() => {
-          if (!isDraggingRef.current) setIsHandleHovered(false);
-        }}
+        {...resizeHandleProps}
       />
     </div>
   ) : (
