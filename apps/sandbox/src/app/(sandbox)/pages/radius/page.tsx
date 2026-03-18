@@ -72,6 +72,31 @@ const styles = stylex.create({
 });
 
 // =============================================================================
+// Dropdown Item (hover support with dynamic radius)
+// =============================================================================
+
+function DropdownItem({label, radius, active}: {label: string; radius: number; active?: boolean}) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        padding: '10px 14px',
+        fontSize: 15,
+        color: 'light-dark(#333, #eee)',
+        borderRadius: radius,
+        backgroundColor: active || hovered ? 'light-dark(rgba(0,0,0,0.04), rgba(255,255,255,0.06))' : 'transparent',
+        transition: 'border-radius 0.2s, background-color 0.15s',
+        cursor: 'pointer',
+      }}
+    >
+      {label}
+    </div>
+  );
+}
+
+// =============================================================================
 // Page
 // =============================================================================
 
@@ -397,10 +422,10 @@ export default function RadiusPage() {
             <XDSVStack gap={2}>
               <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Dropdown</span>
               <div style={{border: '1px solid light-dark(#ddd, #444)', borderRadius: tokens['radius-3'], padding: 6, width: 200, backgroundColor: 'light-dark(#fff, #1a1a1a)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)', transition: 'border-radius 0.2s'}}>
-                <div style={{padding: '10px 14px', fontSize: 15, color: 'light-dark(#333, #eee)', backgroundColor: 'light-dark(rgba(0,0,0,0.04), rgba(255,255,255,0.06))', borderRadius: Math.max(0, tokens['radius-3'] - 6), transition: 'border-radius 0.2s'}}>Dashboard</div>
-                <div style={{padding: '10px 14px', fontSize: 15, color: 'light-dark(#333, #eee)', borderRadius: Math.max(0, tokens['radius-3'] - 6)}}>Settings</div>
-                <div style={{padding: '10px 14px', fontSize: 15, color: 'light-dark(#333, #eee)', borderRadius: Math.max(0, tokens['radius-3'] - 6)}}>Profile</div>
-                <div style={{padding: '10px 14px', fontSize: 15, color: 'light-dark(#333, #eee)', borderRadius: Math.max(0, tokens['radius-3'] - 6)}}>Log out</div>
+                <DropdownItem label="Dashboard" radius={Math.max(0, tokens['radius-3'] - 6)} active />
+                <DropdownItem label="Settings" radius={Math.max(0, tokens['radius-3'] - 6)} />
+                <DropdownItem label="Profile" radius={Math.max(0, tokens['radius-3'] - 6)} />
+                <DropdownItem label="Log out" radius={Math.max(0, tokens['radius-3'] - 6)} />
               </div>
             </XDSVStack>
           </div>
@@ -577,10 +602,10 @@ export default function RadiusPage() {
             <XDSVStack gap={2}>
               <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Dropdown (4px Pad)</span>
               <div style={{border: '1px solid light-dark(#ddd, #444)', borderRadius: r3, padding: 6, width: 200, backgroundColor: 'light-dark(#fff, #1a1a1a)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)', transition: 'border-radius 0.2s'}}>
-                <div style={{padding: '10px 14px', fontSize: 15, color: 'light-dark(#333, #eee)', backgroundColor: 'light-dark(rgba(0,0,0,0.04), rgba(255,255,255,0.06))', borderRadius: Math.max(0, r3 - 6), transition: 'border-radius 0.2s'}}>Dashboard</div>
-                <div style={{padding: '10px 14px', fontSize: 15, color: 'light-dark(#333, #eee)', borderRadius: Math.max(0, r3 - 6)}}>Settings</div>
-                <div style={{padding: '10px 14px', fontSize: 15, color: 'light-dark(#333, #eee)', borderRadius: Math.max(0, r3 - 6)}}>Profile</div>
-                <div style={{padding: '10px 14px', fontSize: 15, color: 'light-dark(#333, #eee)', borderRadius: Math.max(0, r3 - 6)}}>Log out</div>
+                <DropdownItem label="Dashboard" radius={Math.max(0, r3 - 6)} active />
+                <DropdownItem label="Settings" radius={Math.max(0, r3 - 6)} />
+                <DropdownItem label="Profile" radius={Math.max(0, r3 - 6)} />
+                <DropdownItem label="Log out" radius={Math.max(0, r3 - 6)} />
               </div>
               <div style={{fontSize: 13, fontFamily: 'SF Mono, Monaco, Consolas, monospace', color: 'light-dark(#888, #777)', marginTop: 4}}>
                 menu: {r3}px, pad: 4px<br />&rarr; item: {Math.max(0, +(r3 - 4).toFixed(1))}px
