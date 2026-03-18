@@ -344,14 +344,21 @@ export function XDSSideNavItem({
       />
     );
 
+    // Shared collapsed item styles — used by trigger, link, and button
+    const collapsedItemStyles = mergeProps(
+      xdsClassName('side-nav-item'),
+      stylex.props(
+        navItemStyles.item,
+        styles.itemCollapsed,
+        isSelected && navItemStyles.selected,
+        isDisabled && navItemStyles.disabled,
+      ),
+    );
+
     // Items with children: popover trigger + popover
     if (hasChildren) {
       return (
-        <div
-          {...mergeProps(
-            xdsClassName('side-nav-item'),
-            stylex.props(styles.root),
-          )}>
+        <div {...stylex.props(styles.root)}>
           <button
             ref={el => {
               popover.triggerRef(el);
@@ -369,12 +376,7 @@ export function XDSSideNavItem({
             aria-label={label}
             data-testid={testId}
             {...popover.triggerProps}
-            {...stylex.props(
-              navItemStyles.item,
-              styles.itemCollapsed,
-              isSelected && navItemStyles.selected,
-              isDisabled && navItemStyles.disabled,
-            )}>
+            {...collapsedItemStyles}>
             {collapsedIcon}
           </button>
           {popover.render(
@@ -409,12 +411,7 @@ export function XDSSideNavItem({
           href={href}
           onClick={handleClick}
           {...collapsedAriaProps}
-          {...stylex.props(
-            navItemStyles.item,
-            styles.itemCollapsed,
-            isSelected && navItemStyles.selected,
-            isDisabled && navItemStyles.disabled,
-          )}>
+          {...collapsedItemStyles}>
           {collapsedIcon}
         </LinkComponent>
       ) : (
@@ -424,23 +421,13 @@ export function XDSSideNavItem({
           onClick={handleClick}
           disabled={isDisabled}
           {...collapsedAriaProps}
-          {...stylex.props(
-            navItemStyles.item,
-            styles.itemCollapsed,
-            isSelected && navItemStyles.selected,
-            isDisabled && navItemStyles.disabled,
-          )}>
+          {...collapsedItemStyles}>
           {collapsedIcon}
         </button>
       );
 
     return (
-      <div
-        ref={itemRef}
-        {...mergeProps(
-          xdsClassName('side-nav-item'),
-          stylex.props(styles.root),
-        )}>
+      <div ref={itemRef} {...stylex.props(styles.root)}>
         {collapsedElement}
         <XDSTooltip content={label} placement="end" anchorRef={itemRef} />
       </div>
