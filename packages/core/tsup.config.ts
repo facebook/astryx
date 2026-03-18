@@ -1,8 +1,12 @@
 /**
  * @file tsup.config.ts
  * @input Uses tsup
- * @output Bundle configuration for CJS/ESM outputs with TypeScript declarations
+ * @output Bundle configuration for CJS/ESM outputs (no DTS — see build script)
  * @position Build config; defines entry points and output formats for @xds/core
+ *
+ * DTS generation is handled separately by `tsc --project tsconfig.build.json`
+ * to avoid tsup's per-entry-point TypeScript program instantiation, which
+ * consumes excessive memory (~2-4GB) with 60+ entry points.
  *
  * SYNC: When modified, update this header and /packages/core/README.md
  */
@@ -13,7 +17,7 @@ import babel from 'esbuild-plugin-babel';
 export default defineConfig({
   entry: ['src/index.ts', 'src/*/index.ts', 'src/theme/tokens.stylex.ts'],
   format: ['cjs', 'esm'],
-  dts: true,
+  dts: false,
   splitting: true,
   clean: true,
   external: ['react', 'react-dom'],
