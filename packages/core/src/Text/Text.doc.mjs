@@ -572,20 +572,6 @@ export const docsZh = {
         },
       ],
     },
-        {
-          label: '编辑风格变体',
-          code: `<div className="xds-typography">
-  <article dangerouslySetInnerHTML={{__html: markdownContent}} />
-</div>`,
-        },
-      ],
-      props: [
-        {
-          name: 'children',
-          type: 'ReactNode',
-          description: '要应用 XDS 排版样式的内容。',
-          required: true,
-        },
   ],
 };
 

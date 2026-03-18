@@ -7,11 +7,7 @@ import {brutalistTheme} from '@xds/theme-brutalist';
 
 // Import the base reset and typography stylesheets
 import '@xds/core/reset.css';
-import '@xds/core/typography.css';
 
-// Import the pre-built StyleX CSS from the core package
-// Use relative path since @xds/core alias points to source, not dist
-import '../../../packages/core/dist/index.css';
 
 /**
  * Map of available themes

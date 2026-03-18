@@ -20,7 +20,6 @@
  *
  * 2. Combine with theme and typography:
  *    import '@xds/core/reset.css';        // @layer reset  — clean slate
- *    import '@xds/core/typography.css';    // @layer typography — prose styles
  *    import '@xds/core/xds.css';           // @layer xds.core.base — component styles
  *    import '@xds/theme-default/theme.css'; // @layer xds.theme — theme overrides
  *
@@ -169,7 +168,7 @@
   /*
    * Remove default list styles, margin, and padding. Lists used for
    * navigation or layout shouldn't carry prose styling by default.
-   * Use typography.css or explicit styles for prose lists.
+   * Use explicit styles for prose lists.
    */
   :where(ol, ul, menu) {
     list-style: none;

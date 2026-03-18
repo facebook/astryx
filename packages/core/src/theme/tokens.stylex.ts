@@ -333,7 +333,7 @@ export type FontWeightVarName = keyof typeof fontWeightDefaults;
 // Typography Tokens - Type Scale (computed from base=14, ratio=1.2)
 // =============================================================================
 // These tokens are the source of truth for heading and text sizing.
-// Components and typography.css reference these tokens so that themes
+// Components reference these tokens so that themes
 // can override them via typeScale in defineTheme.
 //
 // Default scale: base=14px, ratio=1.2, h4 anchored to base.
