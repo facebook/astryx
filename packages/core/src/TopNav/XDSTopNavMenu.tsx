@@ -161,23 +161,22 @@ const drawerStyles = stylex.create({
     justifyContent: 'space-between',
     width: '100%',
     paddingBlock: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-element'],
     fontSize: textSizeVars['--text-base'],
     lineHeight: lineHeightVars['--leading-base'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
-    color: colorVars['--color-text-secondary'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
+    color: colorVars['--color-text-primary'],
     cursor: 'pointer',
     border: 'none',
     background: 'none',
     fontFamily: 'inherit',
+    textAlign: 'start',
     boxSizing: 'border-box',
-    backgroundColor: {
-      default: 'transparent',
-      ':hover': {
-        '@media (hover: hover)': colorVars['--color-hover-overlay'],
+    ':hover': {
+      '@media (hover: hover)': {
+        backgroundColor: colorVars['--color-hover-overlay'],
       },
-      ':active': colorVars['--color-pressed-overlay'],
     },
   },
   chevron: {
@@ -204,24 +203,23 @@ const drawerStyles = stylex.create({
   item: {
     display: 'flex',
     alignItems: 'center',
-    gap: spacingVars['--spacing-3'],
+    gap: spacingVars['--spacing-2'],
     width: '100%',
     paddingBlock: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-2'],
     paddingInlineStart: spacingVars['--spacing-6'],
     borderRadius: radiusVars['--radius-element'],
     fontSize: textSizeVars['--text-base'],
     lineHeight: lineHeightVars['--leading-base'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
-    color: colorVars['--color-text-secondary'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
+    color: colorVars['--color-text-primary'],
     textDecoration: 'none',
+    textAlign: 'start',
     boxSizing: 'border-box',
-    backgroundColor: {
-      default: 'transparent',
-      ':hover': {
-        '@media (hover: hover)': colorVars['--color-hover-overlay'],
+    ':hover': {
+      '@media (hover: hover)': {
+        backgroundColor: colorVars['--color-hover-overlay'],
       },
-      ':active': colorVars['--color-pressed-overlay'],
     },
   },
   itemIcon: {

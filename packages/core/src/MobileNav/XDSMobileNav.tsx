@@ -81,11 +81,6 @@ const styles = stylex.create({
     '::backdrop': {
       opacity: 1,
     },
-    '@starting-style': {
-      '::backdrop': {
-        opacity: 0,
-      },
-    },
   },
   drawer: {
     position: 'absolute',
@@ -114,9 +109,6 @@ const styles = stylex.create({
   },
   drawerStartOpen: {
     transform: 'translateX(0)',
-    '@starting-style': {
-      transform: 'translateX(-100%)',
-    },
   },
   drawerEnd: {
     insetInlineEnd: 0,
@@ -130,9 +122,6 @@ const styles = stylex.create({
   },
   drawerEndOpen: {
     transform: 'translateX(0)',
-    '@starting-style': {
-      transform: 'translateX(100%)',
-    },
   },
   header: {
     display: 'flex',
