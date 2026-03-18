@@ -180,22 +180,28 @@ function computeLeading(fontSize: number, targetRatio: number): number {
   return Math.round((snappedLh / fontSize) * 10000) / 10000;
 }
 
+/** Convert px to rem based on the standard 16px root font size. */
+function pxToRem(px: number): string {
+  const rem = Math.round((px / 16) * 10000) / 10000;
+  return `${rem}rem`;
+}
+
 /**
  * Expand a type scale configuration into typography token overrides.
  *
  * Generates 33 tokens: 6 heading levels × 3 properties + 5 text types × 3 properties.
  *
- * Font sizes are emitted as px values (e.g. '24px').
+ * Font sizes are emitted as rem values (e.g. '1.5rem') based on 16px root.
  * Line heights are emitted as unitless ratios (e.g. '1.3333').
  * Font weights are emitted as var() references (e.g. 'var(--font-weight-semibold)').
  *
  * @example
  * ```
  * const tokens = expandTypeScale({ base: 14, ratio: 1.2 });
- * // tokens['--heading-1-size'] === '24px'
+ * // tokens['--heading-1-size'] === '1.5rem'
  * // tokens['--heading-1-leading'] === '1.3333'
- * // tokens['--heading-4-size'] === '14px'  (anchor)
- * // tokens['--text-body-size'] === '14px'
+ * // tokens['--heading-4-size'] === '0.875rem'  (anchor)
+ * // tokens['--text-body-size'] === '0.875rem'
  * ```
  */
 export function expandTypeScale(config: XDSTypeScaleConfig): TypeScaleTokens {
@@ -218,7 +224,7 @@ export function expandTypeScale(config: XDSTypeScaleConfig): TypeScaleTokens {
     const size = computeSize(base, ratio, step);
     const leading = computeLeading(size, HEADING_LH_RATIO);
 
-    tokens[`--heading-${level}-size`] = `${size}px`;
+    tokens[`--heading-${level}-size`] = pxToRem(size);
     tokens[`--heading-${level}-weight`] = headingWeights[level];
     tokens[`--heading-${level}-leading`] = `${leading}`;
   }
@@ -228,7 +234,7 @@ export function expandTypeScale(config: XDSTypeScaleConfig): TypeScaleTokens {
     const size = computeSize(base, ratio, step);
     const leading = computeLeading(size, TEXT_LH_RATIOS[type]);
 
-    tokens[`--text-${type}-size`] = `${size}px`;
+    tokens[`--text-${type}-size`] = pxToRem(size);
     tokens[`--text-${type}-weight`] = textWeights[type];
     tokens[`--text-${type}-leading`] = `${leading}`;
   }

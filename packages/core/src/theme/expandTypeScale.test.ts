@@ -15,36 +15,36 @@ describe('expandTypeScale', () => {
     });
 
     it('anchors h4 to base size', () => {
-      expect(tokens['--heading-4-size']).toBe('14px');
+      expect(tokens['--heading-4-size']).toBe('0.875rem');
     });
 
     it('computes heading sizes from geometric progression', () => {
-      // h1 = 14 × 1.2³ ≈ 24.19 → 24px
-      expect(tokens['--heading-1-size']).toBe('24px');
-      // h2 = 14 × 1.2² ≈ 20.16 → 20px
-      expect(tokens['--heading-2-size']).toBe('20px');
-      // h3 = 14 × 1.2¹ ≈ 16.8 → 17px
-      expect(tokens['--heading-3-size']).toBe('17px');
-      // h5 = 14 × 1.2⁻¹ ≈ 11.67 → 12px
-      expect(tokens['--heading-5-size']).toBe('12px');
-      // h6 = 14 × 1.2⁻² ≈ 9.72 → 10px
-      expect(tokens['--heading-6-size']).toBe('10px');
+      // h1 = 14 × 1.2³ ≈ 24.19 → 1.5rem
+      expect(tokens['--heading-1-size']).toBe('1.5rem');
+      // h2 = 14 × 1.2² ≈ 20.16 → 1.25rem
+      expect(tokens['--heading-2-size']).toBe('1.25rem');
+      // h3 = 14 × 1.2¹ ≈ 16.8 → 1.0625rem
+      expect(tokens['--heading-3-size']).toBe('1.0625rem');
+      // h5 = 14 × 1.2⁻¹ ≈ 11.67 → 0.75rem
+      expect(tokens['--heading-5-size']).toBe('0.75rem');
+      // h6 = 14 × 1.2⁻² ≈ 9.72 → 0.625rem
+      expect(tokens['--heading-6-size']).toBe('0.625rem');
     });
 
     it('computes body text at base size', () => {
-      expect(tokens['--text-body-size']).toBe('14px');
-      expect(tokens['--text-label-size']).toBe('14px');
-      expect(tokens['--text-code-size']).toBe('14px');
+      expect(tokens['--text-body-size']).toBe('0.875rem');
+      expect(tokens['--text-label-size']).toBe('0.875rem');
+      expect(tokens['--text-code-size']).toBe('0.875rem');
     });
 
     it('computes large text one step up', () => {
-      // 14 × 1.2¹ ≈ 16.8 → 17px
-      expect(tokens['--text-large-size']).toBe('17px');
+      // 14 × 1.2¹ ≈ 16.8 → 1.0625rem
+      expect(tokens['--text-large-size']).toBe('1.0625rem');
     });
 
     it('computes supporting text one step down', () => {
-      // 14 × 1.2⁻¹ ≈ 11.67 → 12px
-      expect(tokens['--text-supporting-size']).toBe('12px');
+      // 14 × 1.2⁻¹ ≈ 11.67 → 0.75rem
+      expect(tokens['--text-supporting-size']).toBe('0.75rem');
     });
 
     it('emits unitless line-height ratios', () => {
@@ -64,7 +64,7 @@ describe('expandTypeScale', () => {
       for (const [key, value] of Object.entries(tokens)) {
         if (key.endsWith('-leading')) {
           const sizeKey = key.replace('-leading', '-size');
-          const fontSize = parseInt(tokens[sizeKey]);
+          const fontSize = Math.round(parseFloat(tokens[sizeKey]) * 16);
           const ratio = parseFloat(value);
           const computedLh = Math.round(fontSize * ratio);
           expect(computedLh % 4).toBe(0);
@@ -76,7 +76,7 @@ describe('expandTypeScale', () => {
       for (const [key, value] of Object.entries(tokens)) {
         if (key.endsWith('-leading')) {
           const sizeKey = key.replace('-leading', '-size');
-          const fontSize = parseInt(tokens[sizeKey]);
+          const fontSize = Math.round(parseFloat(tokens[sizeKey]) * 16);
           const ratio = parseFloat(value);
           const computedLh = Math.round(fontSize * ratio);
           expect(computedLh).toBeGreaterThanOrEqual(fontSize + 4);
@@ -107,18 +107,18 @@ describe('expandTypeScale', () => {
     const tokens = expandTypeScale({base: 12, ratio: 1.125});
 
     it('anchors h4 to base 12px', () => {
-      expect(tokens['--heading-4-size']).toBe('12px');
+      expect(tokens['--heading-4-size']).toBe('0.75rem');
     });
 
     it('produces smaller heading sizes', () => {
-      // h1 = 12 × 1.125³ ≈ 17.09 → 17px
-      expect(tokens['--heading-1-size']).toBe('17px');
-      // h2 = 12 × 1.125² ≈ 15.19 → 15px
-      expect(tokens['--heading-2-size']).toBe('15px');
+      // h1 = 12 × 1.125³ ≈ 17.09 → 1.0625rem
+      expect(tokens['--heading-1-size']).toBe('1.0625rem');
+      // h2 = 12 × 1.125² ≈ 15.19 → 0.9375rem
+      expect(tokens['--heading-2-size']).toBe('0.9375rem');
     });
 
     it('keeps body at base', () => {
-      expect(tokens['--text-body-size']).toBe('12px');
+      expect(tokens['--text-body-size']).toBe('0.75rem');
     });
   });
 
@@ -126,18 +126,18 @@ describe('expandTypeScale', () => {
     const tokens = expandTypeScale({base: 16, ratio: 1.25});
 
     it('anchors h4 to base 16px', () => {
-      expect(tokens['--heading-4-size']).toBe('16px');
+      expect(tokens['--heading-4-size']).toBe('1rem');
     });
 
     it('produces larger heading sizes', () => {
-      // h1 = 16 × 1.25³ ≈ 31.25 → 31px
-      expect(tokens['--heading-1-size']).toBe('31px');
-      // h2 = 16 × 1.25² = 25 → 25px
-      expect(tokens['--heading-2-size']).toBe('25px');
+      // h1 = 16 × 1.25³ ≈ 31.25 → 1.9375rem
+      expect(tokens['--heading-1-size']).toBe('1.9375rem');
+      // h2 = 16 × 1.25² = 25 → 1.5625rem
+      expect(tokens['--heading-2-size']).toBe('1.5625rem');
     });
 
     it('keeps body at base', () => {
-      expect(tokens['--text-body-size']).toBe('16px');
+      expect(tokens['--text-body-size']).toBe('1rem');
     });
   });
 

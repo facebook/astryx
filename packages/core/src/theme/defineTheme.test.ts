@@ -96,13 +96,16 @@ describe('generateThemeCSS', () => {
     expect(css).toContain('@scope');
     expect(css).toContain('--color-accent: light-dark(#0077B6, #48CAE4)');
     expect(css).toContain('--radius-container: 16px');
-    // Should NOT contain non-overridden tokens
-    expect(css).not.toContain('--color-surface');
+    // :scope should NOT contain non-overridden tokens
+    expect(css).not.toContain('--color-surface:');
   });
 
-  it('returns empty string for no overrides', () => {
+  it('includes prose rules even with no overrides', () => {
     const theme = defineTheme({name: 'empty'});
-    expect(generateThemeCSS(theme)).toBe('');
+    const css = generateThemeCSS(theme);
+    expect(css).toContain('@scope');
+    expect(css).toContain(':is(h1, h2, h3, h4, h5, h6)');
+    expect(css).toContain('font-family: var(--font-heading)');
   });
 });
 
@@ -236,8 +239,8 @@ describe('typeScale', () => {
       name: 'dense',
       typeScale: {base: 12, ratio: 1.125},
     });
-    expect(theme.tokens['--heading-4-size']).toBe('12px');
-    expect(theme.tokens['--text-body-size']).toBe('12px');
+    expect(theme.tokens['--heading-4-size']).toBe('0.75rem');
+    expect(theme.tokens['--text-body-size']).toBe('0.75rem');
   });
 
   it('generates all 33 type scale tokens', () => {
@@ -263,7 +266,7 @@ describe('typeScale', () => {
     // Explicit token should win over typeScale
     expect(theme.tokens['--heading-1-size']).toBe('40px');
     // Non-overridden typeScale token should still be present
-    expect(theme.tokens['--heading-4-size']).toBe('14px');
+    expect(theme.tokens['--heading-4-size']).toBe('0.875rem');
   });
 
   it('works without typeScale (backwards compatible)', () => {
@@ -281,7 +284,7 @@ describe('typeScale', () => {
       },
     });
     expect(theme.tokens['--color-accent']).toBe('#FF0000');
-    expect(theme.tokens['--heading-4-size']).toBe('16px');
+    expect(theme.tokens['--heading-4-size']).toBe('1rem');
   });
 });
 
