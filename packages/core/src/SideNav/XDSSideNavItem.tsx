@@ -107,6 +107,7 @@ const styles = stylex.create({
     boxShadow: shadowVars['--shadow-menu'],
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-1'],
+    marginInlineStart: spacingVars['--spacing-1'],
     minWidth: 180,
   },
   popoverHeader: {
@@ -474,10 +475,13 @@ export function XDSSideNavItem({
         href={href}
         onClick={handleClick}
         {...ariaProps}
-        {...stylex.props(
-          navItemStyles.item,
-          isSelected && navItemStyles.selected,
-          isDisabled && navItemStyles.disabled,
+        {...mergeProps(
+          xdsClassName('side-nav-item'),
+          stylex.props(
+            navItemStyles.item,
+            isSelected && navItemStyles.selected,
+            isDisabled && navItemStyles.disabled,
+          ),
         )}>
         {itemContent}
       </LinkComponent>
@@ -488,19 +492,20 @@ export function XDSSideNavItem({
         onClick={handleClick}
         disabled={isDisabled}
         {...ariaProps}
-        {...stylex.props(
-          navItemStyles.item,
-          isSelected && navItemStyles.selected,
-          isDisabled && navItemStyles.disabled,
+        {...mergeProps(
+          xdsClassName('side-nav-item'),
+          stylex.props(
+            navItemStyles.item,
+            isSelected && navItemStyles.selected,
+            isDisabled && navItemStyles.disabled,
+          ),
         )}>
         {itemContent}
       </button>
     );
 
   const item = (
-    <div
-      ref={itemRef}
-      {...mergeProps(xdsClassName('side-nav-item'), stylex.props(styles.root))}>
+    <div ref={itemRef} {...stylex.props(styles.root)}>
       {itemElement}
       {hasChildren && !isCollapsed && (
         <div
