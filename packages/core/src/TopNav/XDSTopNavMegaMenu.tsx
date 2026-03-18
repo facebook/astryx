@@ -44,6 +44,7 @@ import {useXDSPopover} from '../Popover/useXDSPopover';
 import {XDSGrid} from '../Grid/XDSGrid';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {xdsClassName, mergeProps} from '../utils';
+import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useTopNavSlot} from './TopNavContext';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
 import type {XDSTopNavMegaMenuGroupProps} from './XDSTopNavMegaMenuGroup';
@@ -213,113 +214,45 @@ const styles = stylex.create({
     flexDirection: 'column',
   },
   // =========================================================================
-  // Drawer mode styles
+  // Drawer mode styles (composes navItemStyles.item as base)
   // =========================================================================
-  drawerTrigger: {
+  drawerSection: {
     display: 'flex',
-    alignItems: 'center',
+    flexDirection: 'column',
+  },
+  // Header button override — justifyContent and button resets only,
+  // base layout/colors come from navItemStyles.item
+  drawerHeader: {
     justifyContent: 'space-between',
-    width: '100%',
-    paddingBlock: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-3'],
-    borderRadius: radiusVars['--radius-element'],
-    fontSize: textSizeVars['--text-base'],
-    lineHeight: lineHeightVars['--leading-base'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
-    color: colorVars['--color-text-secondary'],
-    textDecoration: 'none',
-    cursor: 'pointer',
-    boxSizing: 'border-box',
     border: 'none',
-    fontFamily: 'inherit',
-    backgroundColor: {
-      default: 'transparent',
-      ':hover': {
-        '@media (hover: hover)': colorVars['--color-hover-overlay'],
-      },
-      ':active': colorVars['--color-pressed-overlay'],
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
-    },
+    background: 'none',
   },
   drawerChevron: {
     display: 'inline-flex',
-    alignItems: 'center',
-    color: colorVars['--color-icon-secondary'],
+    transitionProperty: 'transform',
+    transitionDuration: transitionVars['--transition-fast'],
   },
-  drawerPanel: {
-    display: 'flex',
-    flexDirection: 'column',
-    width: '100%',
+  drawerChevronExpanded: {
+    transform: 'rotate(180deg)',
   },
-  drawerBackButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-3'],
-    borderRadius: radiusVars['--radius-element'],
-    fontSize: textSizeVars['--text-base'],
-    lineHeight: lineHeightVars['--leading-base'],
-    fontWeight: fontWeightVars['--font-weight-semibold'],
-    color: colorVars['--color-text-primary'],
-    textDecoration: 'none',
-    cursor: 'pointer',
-    boxSizing: 'border-box',
-    border: 'none',
-    fontFamily: 'inherit',
-    backgroundColor: {
-      default: 'transparent',
-      ':hover': {
-        '@media (hover: hover)': colorVars['--color-hover-overlay'],
-      },
-      ':active': colorVars['--color-pressed-overlay'],
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
-    },
+  drawerItems: {
+    display: 'grid',
+    gridTemplateRows: '0fr',
+    transitionProperty: 'grid-template-rows',
+    transitionDuration: transitionVars['--transition-normal'],
   },
-  drawerBackIcon: {
-    display: 'inline-flex',
-    alignItems: 'center',
+  drawerItemsExpanded: {
+    gridTemplateRows: '1fr',
   },
-  drawerItemList: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: spacingVars['--spacing-1'],
-    paddingInlineStart: spacingVars['--spacing-3'],
+  drawerItemsInner: {
+    overflow: 'hidden',
+    minHeight: 0,
   },
+  // Item indentation + content layout overrides (base from navItemStyles.item)
   drawerItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-3'],
-    width: '100%',
-    paddingBlock: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-3'],
-    borderRadius: radiusVars['--radius-element'],
-    fontSize: textSizeVars['--text-base'],
-    lineHeight: lineHeightVars['--leading-base'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
-    color: colorVars['--color-text-secondary'],
+    paddingInlineStart: spacingVars['--spacing-6'],
+    alignItems: 'flex-start',
     textDecoration: 'none',
-    cursor: 'pointer',
-    boxSizing: 'border-box',
-    border: 'none',
-    fontFamily: 'inherit',
-    backgroundColor: {
-      default: 'transparent',
-      ':hover': {
-        '@media (hover: hover)': colorVars['--color-hover-overlay'],
-      },
-      ':active': colorVars['--color-pressed-overlay'],
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,
-    },
   },
   drawerItemIcon: {
     display: 'flex',
@@ -331,6 +264,27 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-deemphasized'],
     flexShrink: 0,
     color: colorVars['--color-icon-secondary'],
+    marginBlockStart: spacingVars['--spacing-0-5'],
+  },
+  drawerItemContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-0-5'],
+    minWidth: 0,
+  },
+  drawerItemDescription: {
+    fontSize: textSizeVars['--text-sm'],
+    lineHeight: lineHeightVars['--leading-snug'],
+    color: colorVars['--color-text-secondary'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
+  },
+  // Featured card in drawer — compact version
+  drawerFeatured: {
+    marginBlockStart: spacingVars['--spacing-2'],
+    marginInlineStart: spacingVars['--spacing-6'],
+    borderRadius: radiusVars['--radius-container'],
+    backgroundColor: colorVars['--color-deemphasized'],
+    overflow: 'hidden',
   },
 });
 
@@ -655,7 +609,7 @@ function DefaultMegaMenu({
 }
 
 // =============================================================================
-// DrawerMegaMenu — mobile drawer drill-down mode
+// DrawerMegaMenu — mobile drawer inline collapsible mode
 // =============================================================================
 
 function DrawerMegaMenu({
@@ -663,28 +617,40 @@ function DrawerMegaMenu({
   children,
 }: Pick<XDSTopNavMegaMenuProps, 'label' | 'children'>) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const {groups} = parseChildren(children);
+  const menuId = `mega-menu-${label.toLowerCase().replace(/\s+/g, '-')}`;
+  const {groups, featuredContent} = parseChildren(children);
   const allItems = groups.flatMap(g => g.items);
 
-  if (isExpanded) {
-    return (
-      <div {...stylex.props(styles.drawerPanel)}>
-        {/* Back button */}
-        <button
-          type="button"
-          onClick={() => setIsExpanded(false)}
-          {...mergeProps(
-            xdsClassName('top-nav-mega-menu', {mode: 'drawer-back'}),
-            stylex.props(styles.drawerBackButton),
+  return (
+    <div {...stylex.props(styles.drawerSection)}>
+      {/* Header toggle — same pattern as TopNavMenu drawer */}
+      <button
+        type="button"
+        onClick={() => setIsExpanded(v => !v)}
+        aria-expanded={isExpanded}
+        aria-controls={`${menuId}-items`}
+        {...mergeProps(
+          xdsClassName('top-nav-mega-menu', {mode: 'drawer'}),
+          stylex.props(navItemStyles.item, styles.drawerHeader),
+        )}>
+        {label}
+        <span
+          {...stylex.props(
+            styles.drawerChevron,
+            isExpanded && styles.drawerChevronExpanded,
           )}>
-          <span {...stylex.props(styles.drawerBackIcon)}>
-            {getIcon('chevronLeft')}
-          </span>
-          {label}
-        </button>
+          {getIcon('chevronDown')}
+        </span>
+      </button>
 
-        {/* Items list */}
-        <div {...stylex.props(styles.drawerItemList)}>
+      {/* Animated expand/collapse container */}
+      <div
+        id={`${menuId}-items`}
+        {...stylex.props(
+          styles.drawerItems,
+          isExpanded && styles.drawerItemsExpanded,
+        )}>
+        <div {...stylex.props(styles.drawerItemsInner)}>
           {allItems.map((item, index) => {
             const Element = item.href ? 'a' : 'button';
             const elementProps =
@@ -695,33 +661,32 @@ function DrawerMegaMenu({
                 href={item.href}
                 onClick={item.onClick}
                 {...elementProps}
-                {...stylex.props(styles.drawerItem)}>
+                {...stylex.props(navItemStyles.item, styles.drawerItem)}>
                 {item.icon && (
                   <div {...stylex.props(styles.drawerItemIcon)}>
                     {item.icon}
                   </div>
                 )}
-                {item.title}
+                <div {...stylex.props(styles.drawerItemContent)}>
+                  {item.title}
+                  {item.description && (
+                    <span {...stylex.props(styles.drawerItemDescription)}>
+                      {item.description}
+                    </span>
+                  )}
+                </div>
               </Element>
             );
           })}
+
+          {/* Featured card */}
+          {featuredContent != null && (
+            <div {...stylex.props(styles.drawerFeatured)}>
+              {featuredContent}
+            </div>
+          )}
         </div>
       </div>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => setIsExpanded(true)}
-      {...mergeProps(
-        xdsClassName('top-nav-mega-menu', {mode: 'drawer'}),
-        stylex.props(styles.drawerTrigger),
-      )}>
-      {label}
-      <span {...stylex.props(styles.drawerChevron)}>
-        {getIcon('chevronRight')}
-      </span>
-    </button>
+    </div>
   );
 }

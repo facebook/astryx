@@ -101,7 +101,7 @@ describe('XDSTopNavMegaMenu — mobile-bar mode', () => {
 // =============================================================================
 
 describe('XDSTopNavMegaMenu — drawer mode', () => {
-  it('renders a drill-down trigger with label and chevron', () => {
+  it('renders a collapsible trigger with label', () => {
     render(
       <XDSTopNavRenderContext.Provider value="drawer">
         <XDSTopNavMegaMenu label="Products">
@@ -111,7 +111,9 @@ describe('XDSTopNavMegaMenu — drawer mode', () => {
         </XDSTopNavMegaMenu>
       </XDSTopNavRenderContext.Provider>,
     );
-    expect(screen.getByRole('button', {name: 'Products'})).toBeInTheDocument();
+    const trigger = screen.getByRole('button', {name: 'Products'});
+    expect(trigger).toBeInTheDocument();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('expands to show items when tapped', async () => {
@@ -128,15 +130,17 @@ describe('XDSTopNavMegaMenu — drawer mode', () => {
       </XDSTopNavRenderContext.Provider>,
     );
 
-    // Tap the trigger
-    await user.click(screen.getByRole('button', {name: 'Products'}));
+    const trigger = screen.getByRole('button', {name: 'Products'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
-    // Items should now be visible
+    await user.click(trigger);
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText('Analytics')).toBeInTheDocument();
     expect(screen.getByText('Reports')).toBeInTheDocument();
   });
 
-  it('shows a back button with label when expanded', async () => {
+  it('collapses when trigger is clicked again', async () => {
     const user = userEvent.setup();
 
     render(
@@ -149,36 +153,38 @@ describe('XDSTopNavMegaMenu — drawer mode', () => {
       </XDSTopNavRenderContext.Provider>,
     );
 
-    await user.click(screen.getByRole('button', {name: 'Products'}));
-
-    // Back button should contain the label text
-    const backButton = screen.getByRole('button', {name: /Products/});
-    expect(backButton).toBeInTheDocument();
-  });
-
-  it('collapses back when back button is clicked', async () => {
-    const user = userEvent.setup();
-
-    render(
-      <XDSTopNavRenderContext.Provider value="drawer">
-        <XDSTopNavMegaMenu label="Products">
-          <XDSTopNavMegaMenuGroup>
-            <XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />
-          </XDSTopNavMegaMenuGroup>
-        </XDSTopNavMegaMenu>
-      </XDSTopNavRenderContext.Provider>,
-    );
+    const trigger = screen.getByRole('button', {name: 'Products'});
 
     // Expand
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // Collapse
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('shows item descriptions when provided', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <XDSTopNavRenderContext.Provider value="drawer">
+        <XDSTopNavMegaMenu label="Products">
+          <XDSTopNavMegaMenuGroup>
+            <XDSTopNavMegaMenuItem
+              title="Analytics"
+              description="Track behavior"
+              href="/analytics"
+            />
+          </XDSTopNavMegaMenuGroup>
+        </XDSTopNavMegaMenu>
+      </XDSTopNavRenderContext.Provider>,
+    );
+
     await user.click(screen.getByRole('button', {name: 'Products'}));
+
     expect(screen.getByText('Analytics')).toBeInTheDocument();
-
-    // Click back
-    await user.click(screen.getByRole('button', {name: /Products/}));
-
-    // Should show trigger again (no expanded items)
-    expect(screen.queryByText('Analytics')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Products'})).toBeInTheDocument();
+    expect(screen.getByText('Track behavior')).toBeInTheDocument();
   });
 
   it('renders items as links when href is provided', async () => {
@@ -218,6 +224,27 @@ describe('XDSTopNavMegaMenu — drawer mode', () => {
     await user.click(screen.getByRole('button', {name: 'Export'}));
 
     expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders featured content when expanded', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <XDSTopNavRenderContext.Provider value="drawer">
+        <XDSTopNavMegaMenu label="Products">
+          <XDSTopNavMegaMenuGroup>
+            <XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />
+          </XDSTopNavMegaMenuGroup>
+          <XDSTopNavMegaMenuFeatured>
+            <span>Featured: New AI Tools</span>
+          </XDSTopNavMegaMenuFeatured>
+        </XDSTopNavMegaMenu>
+      </XDSTopNavRenderContext.Provider>,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Products'}));
+
+    expect(screen.getByText('Featured: New AI Tools')).toBeInTheDocument();
   });
 });
 
