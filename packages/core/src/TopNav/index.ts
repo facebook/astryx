@@ -25,6 +25,9 @@ export type {XDSTopNavMegaMenuProps} from './XDSTopNavMegaMenu';
 export {XDSTopNavMegaMenuItem} from './XDSTopNavMegaMenuItem';
 export type {XDSTopNavMegaMenuItemProps} from './XDSTopNavMegaMenuItem';
 
+export {XDSTopNavMegaMenuFeaturedCard} from './XDSTopNavMegaMenuFeaturedCard';
+export type {XDSTopNavMegaMenuFeaturedCardProps} from './XDSTopNavMegaMenuFeaturedCard';
+
 export {
   XDSTopNavRenderContext,
   useXDSTopNavRenderMode,

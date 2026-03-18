@@ -7,6 +7,8 @@ import {
   XDSTopNavMenu,
   XDSTopNavMegaMenu,
   XDSTopNavMegaMenuItem,
+  XDSTopNavMegaMenuFeaturedCard,
+  XDSTopNavMegaMenuFeaturedCard,
 } from '@xds/core/TopNav';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSButton} from '@xds/core/Button';
@@ -210,44 +212,14 @@ export const MegaMenu: Story = {
                   </>
                 }
                 featured={
-                  <>
-                    <img
-                      src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=560&h=280&fit=crop"
-                      alt="Team collaboration"
-                      style={{
-                        width: '100%',
-                        height: 140,
-                        objectFit: 'cover',
-                        display: 'block',
-                      }}
-                    />
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 8,
-                        padding: 16,
-                      }}>
-                      <strong>What&apos;s new in v4.0</strong>
-                      <span
-                        style={{
-                          fontSize: 14,
-                          color: 'var(--color-text-secondary)',
-                        }}>
-                        AI-powered analytics and real-time collaboration.
-                      </span>
-                      <a
-                        href="#announcement"
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: 'var(--color-accent-text)',
-                          textDecoration: 'none',
-                        }}>
-                        Read the announcement →
-                      </a>
-                    </div>
-                  </>
+                  <XDSTopNavMegaMenuFeaturedCard
+                    title="What's new in v4.0"
+                    description="AI-powered analytics and real-time collaboration."
+                    image="https://images.unsplash.com/photo-1551434678-e076c223a692?w=560&h=280&fit=crop"
+                    imageAlt="Team collaboration"
+                    linkLabel="Read the announcement"
+                    linkHref="#announcement"
+                  />
                 }
               />
               <XDSTopNavItem label="Pricing" href="#" />

@@ -12,6 +12,7 @@ import {
   XDSTopNavItem,
   XDSTopNavMegaMenu,
   XDSTopNavMegaMenuItem,
+  XDSTopNavMegaMenuFeaturedCard,
 } from '@xds/core/TopNav';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 
@@ -259,27 +260,14 @@ export default function MegaMenuPage() {
                       </>
                     }
                     featured={
-                      <>
-                        <img
-                          src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=560&h=280&fit=crop"
-                          alt="Team collaboration"
-                          {...stylex.props(styles.featuredImage)}
-                        />
-                        <div {...stylex.props(styles.featuredBody)}>
-                          <span {...stylex.props(styles.featuredTitle)}>
-                            What&apos;s new in v4.0
-                          </span>
-                          <span {...stylex.props(styles.featuredDescription)}>
-                            Explore the latest features including AI-powered
-                            analytics and real-time collaboration.
-                          </span>
-                          <a
-                            href="#announcement"
-                            {...stylex.props(styles.featuredLink)}>
-                            Read the announcement →
-                          </a>
-                        </div>
-                      </>
+                      <XDSTopNavMegaMenuFeaturedCard
+                        title="What's new in v4.0"
+                        description="Explore the latest features including AI-powered analytics and real-time collaboration."
+                        image="https://images.unsplash.com/photo-1551434678-e076c223a692?w=560&h=280&fit=crop"
+                        imageAlt="Team collaboration"
+                        linkLabel="Read the announcement"
+                        linkHref="#announcement"
+                      />
                     }
                   />
                   <XDSTopNavMegaMenu
@@ -308,20 +296,12 @@ export default function MegaMenuPage() {
                       </>
                     }
                     featured={
-                      <div {...stylex.props(styles.featuredBody)}>
-                        <span {...stylex.props(styles.featuredTitle)}>
-                          Customer Stories
-                        </span>
-                        <span {...stylex.props(styles.featuredDescription)}>
-                          See how leading companies are building with our
-                          platform.
-                        </span>
-                        <a
-                          href="#case-studies"
-                          {...stylex.props(styles.featuredLink)}>
-                          View case studies →
-                        </a>
-                      </div>
+                      <XDSTopNavMegaMenuFeaturedCard
+                        title="Customer Stories"
+                        description="See how leading companies are building with our platform."
+                        linkLabel="View case studies"
+                        linkHref="#case-studies"
+                      />
                     }
                   />
                   <XDSTopNavItem label="Learn" href="#" />

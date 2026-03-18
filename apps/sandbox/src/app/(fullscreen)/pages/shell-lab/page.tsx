@@ -19,6 +19,7 @@ import {
   XDSTopNavMenu,
   XDSTopNavMegaMenu,
   XDSTopNavMegaMenuItem,
+  XDSTopNavMegaMenuFeaturedCard,
 } from '@xds/core/TopNav';
 import {XDSMobileNav, XDSMobileNavToggle} from '@xds/core/MobileNav';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
@@ -644,28 +645,12 @@ function SampleTopNav({
           </>
         }
         featured={
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
-              padding: 16,
-            }}>
-            <strong>New: AI Features</strong>
-            <span style={{fontSize: 14, color: 'var(--color-text-secondary)'}}>
-              Explore our latest AI-powered analytics tools for faster insights.
-            </span>
-            <a
-              href="#"
-              style={{
-                fontSize: 14,
-                fontWeight: 600,
-                color: 'var(--color-accent-text)',
-                textDecoration: 'none',
-              }}>
-              Learn more →
-            </a>
-          </div>
+          <XDSTopNavMegaMenuFeaturedCard
+            title="New: AI Features"
+            description="Explore our latest AI-powered analytics tools for faster insights."
+            linkLabel="Learn more"
+            linkHref="#"
+          />
         }
       />
       <XDSTopNavItem label="Team" href="#" />
