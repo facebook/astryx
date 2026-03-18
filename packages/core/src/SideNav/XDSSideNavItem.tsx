@@ -290,11 +290,6 @@ export function XDSSideNavItem({
     onClick?.(e);
   };
 
-  // In collapsed mode: hide items without icons
-  if (isCollapsed && !icon) {
-    return null;
-  }
-
   // Hover handlers for collapsed popover (mirrors TopNavMenu pattern)
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -331,6 +326,11 @@ export function XDSSideNavItem({
   const handlePopoverMouseLeave = useCallback(() => {
     schedulePopoverHide();
   }, [schedulePopoverHide]);
+
+  // In collapsed mode: hide items without icons
+  if (isCollapsed && !icon) {
+    return null;
+  }
 
   // =========================================================================
   // Collapsed mode — icon-only items, popover for items with children
