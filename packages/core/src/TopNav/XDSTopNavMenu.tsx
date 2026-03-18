@@ -10,7 +10,14 @@
  * - /packages/core/src/TopNav/index.ts
  */
 
-import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useXDSPopover} from '../Popover/useXDSPopover';
 import {useListFocus} from '../hooks/useListFocus';
@@ -351,6 +358,7 @@ export function XDSTopNavMenu({
 }: XDSTopNavMenuProps) {
   const renderMode = useXDSTopNavRenderMode();
   const [drawerExpanded, setDrawerExpanded] = useState(false);
+  const menuId = useId();
 
   // Mobile bar: hide menus entirely
   if (renderMode === 'mobile-bar') {
@@ -365,6 +373,7 @@ export function XDSTopNavMenu({
           type="button"
           onClick={() => setDrawerExpanded(v => !v)}
           aria-expanded={drawerExpanded}
+          aria-controls={`${menuId}-items`}
           {...stylex.props(drawerStyles.header)}>
           {label}
           <span
@@ -376,6 +385,7 @@ export function XDSTopNavMenu({
           </span>
         </button>
         <div
+          id={`${menuId}-items`}
           {...stylex.props(
             drawerStyles.items,
             drawerExpanded && drawerStyles.itemsExpanded,

@@ -325,6 +325,8 @@ export function XDSSideNavItem({
   const ariaProps = {
     'aria-current': isSelected ? ('page' as const) : undefined,
     'aria-disabled': isDisabled || undefined,
+    'aria-expanded': isItemCollapsible ? !isItemCollapsed : undefined,
+    'aria-controls': isItemCollapsible ? `${id}-children` : undefined,
     'data-testid': testId,
   };
 
@@ -367,6 +369,7 @@ export function XDSSideNavItem({
       {itemElement}
       {hasChildren && !isCollapsed && (
         <div
+          id={`${id}-children`}
           role="group"
           aria-labelledby={`${id}-label`}
           aria-hidden={isItemCollapsed}
