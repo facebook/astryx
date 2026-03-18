@@ -42,7 +42,7 @@ export const inputWrapperStyles = stylex.create({
         '@media (hover: hover)': colorVars['--color-divider-high-contrast'],
       },
     },
-    borderRadius: radiusVars['--radius-element'],
+    borderRadius: radiusVars['--radius-2'],
     backgroundColor: colorVars['--color-surface'],
     transitionProperty: 'border-color, outline, box-shadow',
     transitionDuration: transitionVars['--transition-fast'],

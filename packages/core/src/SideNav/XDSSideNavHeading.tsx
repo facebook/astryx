@@ -58,7 +58,7 @@ const styles = stylex.create({
   },
   interactive: {
     cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
+    borderRadius: radiusVars['--radius-2'],
     borderWidth: 0,
     borderStyle: 'none',
     backgroundColor: 'transparent',
@@ -128,7 +128,7 @@ const styles = stylex.create({
   },
   popoverContent: {
     padding: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-element'],
+    borderRadius: radiusVars['--radius-2'],
     backgroundColor: colorVars['--color-surface'],
     boxShadow: `0 4px 12px ${colorVars['--color-shadow-elevation']}`,
     overflow: 'hidden',

@@ -20,7 +20,7 @@ const styles = stylex.create({
     maxWidth: '400px',
     padding: 'var(--spacing-7)',
     backgroundColor: 'var(--color-surface)',
-    borderRadius: 'var(--radius-container)',
+    borderRadius: 'var(--radius-3)',
     boxShadow: 'var(--elevation-menu)',
   },
 });

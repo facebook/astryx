@@ -35,10 +35,10 @@ describe('defineTheme', () => {
     const theme = defineTheme({
       name: 'string-test',
       tokens: {
-        '--radius-container': '16px',
+        '--radius-3': '16px',
       },
     });
-    expect(theme.tokens['--radius-container']).toBe('16px');
+    expect(theme.tokens['--radius-3']).toBe('16px');
   });
 
   it('mixes tuples and strings', () => {
@@ -46,12 +46,12 @@ describe('defineTheme', () => {
       name: 'mixed',
       tokens: {
         '--color-accent': ['#0077B6', '#48CAE4'],
-        '--radius-container': '16px',
+        '--radius-3': '16px',
         '--font-heading': '"Georgia", serif',
       },
     });
     expect(theme.tokens['--color-accent']).toBe('light-dark(#0077B6, #48CAE4)');
-    expect(theme.tokens['--radius-container']).toBe('16px');
+    expect(theme.tokens['--radius-3']).toBe('16px');
     expect(theme.tokens['--font-heading']).toBe('"Georgia", serif');
   });
 
@@ -89,13 +89,13 @@ describe('generateThemeCSS', () => {
       name: 'ocean',
       tokens: {
         '--color-accent': ['#0077B6', '#48CAE4'],
-        '--radius-container': '16px',
+        '--radius-3': '16px',
       },
     });
     const css = generateThemeCSS(theme);
     expect(css).toContain('@scope');
     expect(css).toContain('--color-accent: light-dark(#0077B6, #48CAE4)');
-    expect(css).toContain('--radius-container: 16px');
+    expect(css).toContain('--radius-3: 16px');
     // :scope should NOT contain non-overridden tokens
     expect(css).not.toContain('--color-surface:');
   });
@@ -220,14 +220,14 @@ describe('generateThemeCSS with components', () => {
   it('combines tokens and components', () => {
     const theme = defineTheme({
       name: 'combo',
-      tokens: {'--radius-container': '20px'},
+      tokens: {'--radius-3': '20px'},
       components: {
         card: {base: {borderWidth: '1px'}},
       },
     });
     const css = generateThemeCSS(theme);
     expect(css).toContain('@scope');
-    expect(css).toContain('--radius-container: 20px');
+    expect(css).toContain('--radius-3: 20px');
     expect(css).toContain('.xds-card {');
     expect(css).toContain('border-width: 1px');
   });
@@ -368,5 +368,62 @@ describe('typeScale component auto-generation', () => {
     expect(theme.components?.heading?.['level:1']?.fontSize).toBe(
       'var(--heading-1-size)',
     );
+  });
+});
+
+describe('radiusScale', () => {
+  it('generates radius tokens from radiusScale', () => {
+    const theme = defineTheme({
+      name: 'rounded',
+      radiusScale: {base: 4, multiplier: 1.5},
+    });
+    expect(theme.tokens['--radius-1']).toBe('6px');
+    expect(theme.tokens['--radius-2']).toBe('12px');
+    expect(theme.tokens['--radius-3']).toBe('18px');
+    expect(theme.tokens['--radius-4']).toBe('24px');
+    expect(theme.tokens['--radius-0']).toBe('0px');
+    expect(theme.tokens['--radius-rounded']).toBe('9999px');
+  });
+
+  it('explicit tokens override radiusScale', () => {
+    const theme = defineTheme({
+      name: 'custom',
+      radiusScale: {base: 4, multiplier: 1},
+      tokens: {'--radius-3': '20px'},
+    });
+    expect(theme.tokens['--radius-3']).toBe('20px');
+    expect(theme.tokens['--radius-2']).toBe('8px'); // from radiusScale
+  });
+
+  it('radiusScale with multiplier 0 produces sharp theme', () => {
+    const theme = defineTheme({
+      name: 'sharp',
+      radiusScale: {base: 4, multiplier: 0},
+    });
+    expect(theme.tokens['--radius-1']).toBe('0px');
+    expect(theme.tokens['--radius-2']).toBe('0px');
+    expect(theme.tokens['--radius-3']).toBe('0px');
+    expect(theme.tokens['--radius-4']).toBe('0px');
+    expect(theme.tokens['--radius-0']).toBe('0px');
+    expect(theme.tokens['--radius-rounded']).toBe('9999px');
+  });
+
+  it('works without radiusScale (backwards compatible)', () => {
+    const theme = defineTheme({name: 'no-scale'});
+    expect(theme.tokens['--radius-0']).toBeUndefined();
+  });
+
+  it('combines radiusScale with typeScale and other tokens', () => {
+    const theme = defineTheme({
+      name: 'combo',
+      typeScale: {base: 16, ratio: 1.25},
+      radiusScale: {base: 4, multiplier: 1},
+      tokens: {
+        '--color-accent': '#FF0000',
+      },
+    });
+    expect(theme.tokens['--color-accent']).toBe('#FF0000');
+    expect(theme.tokens['--heading-4-size']).toBe('1rem');
+    expect(theme.tokens['--radius-2']).toBe('8px');
   });
 });

@@ -141,7 +141,7 @@ const styles = stylex.create({
     paddingBlock: 0,
     borderWidth: 0,
     borderStyle: 'none',
-    borderRadius: radiusVars['--radius-content'],
+    borderRadius: radiusVars['--radius-1'],
     fontFamily: 'inherit',
     fontSize: textSizeVars['--text-sm'],
     lineHeight: lineHeightVars['--leading-snug'],

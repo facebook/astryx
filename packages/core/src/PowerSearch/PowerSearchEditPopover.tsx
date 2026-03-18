@@ -36,7 +36,7 @@ import type {
 const styles = stylex.create({
   container: {
     backgroundColor: colorVars['--color-surface'],
-    borderRadius: radiusVars['--radius-element'],
+    borderRadius: radiusVars['--radius-2'],
     boxShadow: elevationVars['--elevation-menu'],
     overflow: 'hidden',
   },

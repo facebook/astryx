@@ -141,7 +141,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-3'],
   },
   withRadius: {
-    borderRadius: radiusVars['--radius-content'],
+    borderRadius: radiusVars['--radius-1'],
   },
   noRadius: {
     borderRadius: 0,

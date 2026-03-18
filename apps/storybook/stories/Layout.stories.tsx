@@ -107,7 +107,7 @@ const styles = stylex.create({
   // Demo container styling to visualize bounds
   demoContainer: {
     backgroundColor: colorVars['--color-card'],
-    borderRadius: radiusVars['--radius-container'],
+    borderRadius: radiusVars['--radius-3'],
     boxShadow: elevationVars['--elevation-base'],
   },
   // Demo sizing for outer padding story

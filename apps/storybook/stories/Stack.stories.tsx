@@ -17,7 +17,7 @@ const styles = stylex.create({
     borderColor: colorVars['--color-blue-border'],
     paddingBlock: spacingVars['--spacing-4'],
     paddingInline: spacingVars['--spacing-6'],
-    borderRadius: radiusVars['--radius-element'],
+    borderRadius: radiusVars['--radius-2'],
     fontWeight: 500,
     height: '100%',
     boxSizing: 'border-box',

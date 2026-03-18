@@ -67,7 +67,7 @@ const styles = stylex.create({
   container: {
     padding: 'var(--spacing-4)',
     backgroundColor: 'var(--color-surface)',
-    borderRadius: 'var(--radius-element)',
+    borderRadius: 'var(--radius-2)',
   },
 });
 

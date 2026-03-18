@@ -32,14 +32,14 @@ const styles = stylex.create({
     paddingBlockStart: 14,
     paddingBlockEnd: 8,
     paddingInline: spacingVars['--spacing-2'],
-    borderBottomLeftRadius: radiusVars['--radius-element'],
-    borderBottomRightRadius: radiusVars['--radius-element'],
+    borderBottomLeftRadius: radiusVars['--radius-2'],
+    borderBottomRightRadius: radiusVars['--radius-2'],
   },
   detached: {
     marginTop: spacingVars['--spacing-1'],
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
-    borderRadius: radiusVars['--radius-element'],
+    borderRadius: radiusVars['--radius-2'],
   },
 });
 

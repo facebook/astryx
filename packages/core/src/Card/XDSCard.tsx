@@ -30,7 +30,7 @@ const styles = stylex.create({
   // Outer wrapper: visual styling with clip for border-radius
   cardOuter: {
     backgroundColor: colorVars['--color-card'],
-    borderRadius: radiusVars['--radius-container'],
+    borderRadius: radiusVars['--radius-3'],
     boxShadow: elevationVars['--elevation-base'],
     // Clip content to border-radius so nested containers don\'t peek out corners
     overflow: 'clip',

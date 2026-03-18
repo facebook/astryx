@@ -36,7 +36,7 @@ const styles = stylex.create({
     minWidth: '20px',
     height: '20px',
     paddingInline: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-content'],
+    borderRadius: radiusVars['--radius-1'],
     backgroundColor: colorVars['--color-wash'],
     borderBottomWidth: '2px',
     borderBottomStyle: 'solid',

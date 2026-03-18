@@ -10,6 +10,10 @@ import {defineTheme} from '@xds/core/theme';
 
 export const brutalistTheme = defineTheme({
   name: 'brutalist',
+
+  // Zero radius everywhere — multiplier 0 makes all scalable radii 0px
+  radiusScale: {base: 4, multiplier: 0},
+
   tokens: {
     // Colors — high contrast, no subtlety
     '--color-accent': ['#FF1493', '#FF69B4'],
@@ -18,11 +22,7 @@ export const brutalistTheme = defineTheme({
     '--color-wash': ['#F5F5F5', '#111111'],
     '--color-card': ['#FFFFFF', '#000000'],
 
-    // Zero radius everywhere
-    '--radius-container': '0px',
-    '--radius-element': '0px',
-    '--radius-content': '0px',
-    '--radius-inner': '0px',
+    // Even pills are sharp in brutalist
     '--radius-rounded': '0px',
 
     // Monospace headings

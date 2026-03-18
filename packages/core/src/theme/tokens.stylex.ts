@@ -186,12 +186,12 @@ export const sizeVars = stylex.defineVars(sizeDefaults);
 // =============================================================================
 
 export const radiusDefaults = {
+  '--radius-0': '0px',
+  '--radius-1': '4px',
+  '--radius-2': '8px',
+  '--radius-3': '12px',
+  '--radius-4': '16px',
   '--radius-rounded': '9999px',
-  '--radius-container': '12px',
-  '--radius-element': '8px',
-  '--radius-content': '4px',
-  '--radius-inner': '0px',
-  '--radius-page': '20px',
 } as const;
 
 /** @deprecated Use radiusDefaults */

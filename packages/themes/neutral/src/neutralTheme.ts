@@ -261,11 +261,11 @@ export const neutralTheme = defineTheme({
     // =========================================================================
     // Radius — slightly larger than default
     // =========================================================================
+    '--radius-0': '0.25rem',
+    '--radius-1': '0.375rem',
+    '--radius-2': '0.625rem',
+    '--radius-3': '0.75rem',
     '--radius-rounded': '9999px',
-    '--radius-container': '0.75rem',
-    '--radius-element': '0.625rem',
-    '--radius-content': '0.375rem',
-    '--radius-inner': '0.25rem',
 
     // =========================================================================
     // Elevation — oklch-based shadows
