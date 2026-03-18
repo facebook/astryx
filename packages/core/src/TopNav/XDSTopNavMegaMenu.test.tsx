@@ -1,7 +1,7 @@
 /**
  * @file XDSTopNavMegaMenu.test.tsx
  * @input Uses vitest, @testing-library/react, XDSTopNavMegaMenu and sub-components
- * @output Unit tests for XDSTopNavMegaMenu composed children API and mobile modes
+ * @output Unit tests for XDSTopNavMegaMenu slots API and mobile modes
  * @position Testing; validates XDSTopNavMegaMenu behavior
  *
  * SYNC: When XDSTopNavMegaMenu changes, update tests to match new behavior
@@ -11,9 +11,7 @@ import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSTopNavMegaMenu} from './XDSTopNavMegaMenu';
-import {XDSTopNavMegaMenuGroup} from './XDSTopNavMegaMenuGroup';
 import {XDSTopNavMegaMenuItem} from './XDSTopNavMegaMenuItem';
-import {XDSTopNavMegaMenuFeatured} from './XDSTopNavMegaMenuFeatured';
 import {XDSTopNavRenderContext} from './XDSTopNavRenderContext';
 
 // =============================================================================
@@ -23,55 +21,53 @@ import {XDSTopNavRenderContext} from './XDSTopNavRenderContext';
 describe('XDSTopNavMegaMenu — default mode', () => {
   it('renders the trigger button with label', () => {
     render(
-      <XDSTopNavMegaMenu label="Products">
-        <XDSTopNavMegaMenuGroup>
-          <XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />
-        </XDSTopNavMegaMenuGroup>
-      </XDSTopNavMegaMenu>,
+      <XDSTopNavMegaMenu
+        label="Products"
+        items={<XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />}
+      />,
     );
     expect(screen.getByRole('button', {name: 'Products'})).toBeInTheDocument();
   });
 
   it('trigger has aria-haspopup and aria-expanded attributes', () => {
     render(
-      <XDSTopNavMegaMenu label="Products">
-        <XDSTopNavMegaMenuGroup>
-          <XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />
-        </XDSTopNavMegaMenuGroup>
-      </XDSTopNavMegaMenu>,
+      <XDSTopNavMegaMenu
+        label="Products"
+        items={<XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />}
+      />,
     );
     const trigger = screen.getByRole('button', {name: 'Products'});
     expect(trigger).toHaveAttribute('aria-haspopup', 'true');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('renders with multiple menu items in a group', () => {
+  it('renders with multiple menu items', () => {
     render(
-      <XDSTopNavMegaMenu label="Products">
-        <XDSTopNavMegaMenuGroup>
-          <XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />
-          <XDSTopNavMegaMenuItem title="Reports" href="/reports" />
-        </XDSTopNavMegaMenuGroup>
-      </XDSTopNavMegaMenu>,
+      <XDSTopNavMegaMenu
+        label="Products"
+        items={
+          <>
+            <XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />
+            <XDSTopNavMegaMenuItem title="Reports" href="/reports" />
+          </>
+        }
+      />,
     );
     expect(screen.getByRole('button', {name: 'Products'})).toBeInTheDocument();
   });
 
   it('renders with featured content', () => {
     render(
-      <XDSTopNavMegaMenu label="Products">
-        <XDSTopNavMegaMenuGroup>
-          <XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />
-        </XDSTopNavMegaMenuGroup>
-        <XDSTopNavMegaMenuFeatured>
-          <span data-testid="featured">Featured content</span>
-        </XDSTopNavMegaMenuFeatured>
-      </XDSTopNavMegaMenu>,
+      <XDSTopNavMegaMenu
+        label="Products"
+        items={<XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />}
+        featured={<span data-testid="featured">Featured content</span>}
+      />,
     );
     expect(screen.getByRole('button', {name: 'Products'})).toBeInTheDocument();
   });
 
-  it('renders without children', () => {
+  it('renders without items or featured', () => {
     render(<XDSTopNavMegaMenu label="Empty" />);
     expect(screen.getByRole('button', {name: 'Empty'})).toBeInTheDocument();
   });
@@ -85,11 +81,10 @@ describe('XDSTopNavMegaMenu — mobile-bar mode', () => {
   it('returns null in mobile-bar mode', () => {
     const {container} = render(
       <XDSTopNavRenderContext.Provider value="mobile-bar">
-        <XDSTopNavMegaMenu label="Products">
-          <XDSTopNavMegaMenuGroup>
-            <XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />
-          </XDSTopNavMegaMenuGroup>
-        </XDSTopNavMegaMenu>
+        <XDSTopNavMegaMenu
+          label="Products"
+          items={<XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />}
+        />
       </XDSTopNavRenderContext.Provider>,
     );
     expect(container.innerHTML).toBe('');
@@ -97,18 +92,17 @@ describe('XDSTopNavMegaMenu — mobile-bar mode', () => {
 });
 
 // =============================================================================
-// Drawer mode — drill-down
+// Drawer mode — inline collapsible
 // =============================================================================
 
 describe('XDSTopNavMegaMenu — drawer mode', () => {
   it('renders a collapsible trigger with label', () => {
     render(
       <XDSTopNavRenderContext.Provider value="drawer">
-        <XDSTopNavMegaMenu label="Products">
-          <XDSTopNavMegaMenuGroup>
-            <XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />
-          </XDSTopNavMegaMenuGroup>
-        </XDSTopNavMegaMenu>
+        <XDSTopNavMegaMenu
+          label="Products"
+          items={<XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />}
+        />
       </XDSTopNavRenderContext.Provider>,
     );
     const trigger = screen.getByRole('button', {name: 'Products'});
@@ -121,12 +115,15 @@ describe('XDSTopNavMegaMenu — drawer mode', () => {
 
     render(
       <XDSTopNavRenderContext.Provider value="drawer">
-        <XDSTopNavMegaMenu label="Products">
-          <XDSTopNavMegaMenuGroup>
-            <XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />
-            <XDSTopNavMegaMenuItem title="Reports" href="/reports" />
-          </XDSTopNavMegaMenuGroup>
-        </XDSTopNavMegaMenu>
+        <XDSTopNavMegaMenu
+          label="Products"
+          items={
+            <>
+              <XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />
+              <XDSTopNavMegaMenuItem title="Reports" href="/reports" />
+            </>
+          }
+        />
       </XDSTopNavRenderContext.Provider>,
     );
 
@@ -145,21 +142,16 @@ describe('XDSTopNavMegaMenu — drawer mode', () => {
 
     render(
       <XDSTopNavRenderContext.Provider value="drawer">
-        <XDSTopNavMegaMenu label="Products">
-          <XDSTopNavMegaMenuGroup>
-            <XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />
-          </XDSTopNavMegaMenuGroup>
-        </XDSTopNavMegaMenu>
+        <XDSTopNavMegaMenu
+          label="Products"
+          items={<XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />}
+        />
       </XDSTopNavRenderContext.Provider>,
     );
 
     const trigger = screen.getByRole('button', {name: 'Products'});
-
-    // Expand
     await user.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
-
-    // Collapse
     await user.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
@@ -169,15 +161,16 @@ describe('XDSTopNavMegaMenu — drawer mode', () => {
 
     render(
       <XDSTopNavRenderContext.Provider value="drawer">
-        <XDSTopNavMegaMenu label="Products">
-          <XDSTopNavMegaMenuGroup>
+        <XDSTopNavMegaMenu
+          label="Products"
+          items={
             <XDSTopNavMegaMenuItem
               title="Analytics"
               description="Track behavior"
               href="/analytics"
             />
-          </XDSTopNavMegaMenuGroup>
-        </XDSTopNavMegaMenu>
+          }
+        />
       </XDSTopNavRenderContext.Provider>,
     );
 
@@ -192,11 +185,10 @@ describe('XDSTopNavMegaMenu — drawer mode', () => {
 
     render(
       <XDSTopNavRenderContext.Provider value="drawer">
-        <XDSTopNavMegaMenu label="Products">
-          <XDSTopNavMegaMenuGroup>
-            <XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />
-          </XDSTopNavMegaMenuGroup>
-        </XDSTopNavMegaMenu>
+        <XDSTopNavMegaMenu
+          label="Products"
+          items={<XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />}
+        />
       </XDSTopNavRenderContext.Provider>,
     );
 
@@ -212,11 +204,10 @@ describe('XDSTopNavMegaMenu — drawer mode', () => {
 
     render(
       <XDSTopNavRenderContext.Provider value="drawer">
-        <XDSTopNavMegaMenu label="Tools">
-          <XDSTopNavMegaMenuGroup>
-            <XDSTopNavMegaMenuItem title="Export" onClick={handleClick} />
-          </XDSTopNavMegaMenuGroup>
-        </XDSTopNavMegaMenu>
+        <XDSTopNavMegaMenu
+          label="Tools"
+          items={<XDSTopNavMegaMenuItem title="Export" onClick={handleClick} />}
+        />
       </XDSTopNavRenderContext.Provider>,
     );
 
@@ -231,14 +222,11 @@ describe('XDSTopNavMegaMenu — drawer mode', () => {
 
     render(
       <XDSTopNavRenderContext.Provider value="drawer">
-        <XDSTopNavMegaMenu label="Products">
-          <XDSTopNavMegaMenuGroup>
-            <XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />
-          </XDSTopNavMegaMenuGroup>
-          <XDSTopNavMegaMenuFeatured>
-            <span>Featured: New AI Tools</span>
-          </XDSTopNavMegaMenuFeatured>
-        </XDSTopNavMegaMenu>
+        <XDSTopNavMegaMenu
+          label="Products"
+          items={<XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />}
+          featured={<span>Featured: New AI Tools</span>}
+        />
       </XDSTopNavRenderContext.Provider>,
     );
 
@@ -249,36 +237,33 @@ describe('XDSTopNavMegaMenu — drawer mode', () => {
 });
 
 // =============================================================================
-// Sub-components
+// XDSTopNavMegaMenuItem — standalone rendering
 // =============================================================================
 
-describe('XDSTopNavMegaMenuGroup', () => {
-  it('renders children', () => {
-    render(
-      <XDSTopNavMegaMenuGroup>
-        <span data-testid="child">Hello</span>
-      </XDSTopNavMegaMenuGroup>,
-    );
-    expect(screen.getByTestId('child')).toBeInTheDocument();
-  });
-});
-
 describe('XDSTopNavMegaMenuItem', () => {
-  it('renders null (declarative only)', () => {
-    const {container} = render(
-      <XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />,
-    );
-    expect(container.innerHTML).toBe('');
+  it('renders as a desktop item by default', () => {
+    render(<XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />);
+    expect(screen.getByRole('link', {name: /Analytics/})).toBeInTheDocument();
   });
-});
 
-describe('XDSTopNavMegaMenuFeatured', () => {
-  it('renders children', () => {
+  it('renders description in desktop mode', () => {
     render(
-      <XDSTopNavMegaMenuFeatured>
-        <span data-testid="featured">Featured</span>
-      </XDSTopNavMegaMenuFeatured>,
+      <XDSTopNavMegaMenuItem
+        title="Analytics"
+        description="Track behavior"
+        href="/analytics"
+      />,
     );
-    expect(screen.getByTestId('featured')).toBeInTheDocument();
+    expect(screen.getByText('Analytics')).toBeInTheDocument();
+    expect(screen.getByText('Track behavior')).toBeInTheDocument();
+  });
+
+  it('renders as a drawer item in drawer context', () => {
+    render(
+      <XDSTopNavRenderContext.Provider value="drawer">
+        <XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />
+      </XDSTopNavRenderContext.Provider>,
+    );
+    expect(screen.getByRole('link', {name: /Analytics/})).toBeInTheDocument();
   });
 });

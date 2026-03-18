@@ -18,9 +18,7 @@ import {
   XDSTopNavItem,
   XDSTopNavMenu,
   XDSTopNavMegaMenu,
-  XDSTopNavMegaMenuGroup,
   XDSTopNavMegaMenuItem,
-  XDSTopNavMegaMenuFeatured,
 } from '@xds/core/TopNav';
 import {XDSMobileNav, XDSMobileNavToggle} from '@xds/core/MobileNav';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
@@ -619,30 +617,33 @@ function SampleTopNav({
   const megaItems = (
     <>
       <XDSTopNavItem label="Home" href="#" isSelected />
-      <XDSTopNavMegaMenu label="Products">
-        <XDSTopNavMegaMenuGroup>
-          <XDSTopNavMegaMenuItem
-            title="Analytics"
-            description="View metrics and dashboards"
-            href="#"
-          />
-          <XDSTopNavMegaMenuItem
-            title="Reports"
-            description="Generate and export reports"
-            href="#"
-          />
-          <XDSTopNavMegaMenuItem
-            title="Pipelines"
-            description="Data processing workflows"
-            href="#"
-          />
-          <XDSTopNavMegaMenuItem
-            title="Integrations"
-            description="Connect your tools"
-            href="#"
-          />
-        </XDSTopNavMegaMenuGroup>
-        <XDSTopNavMegaMenuFeatured>
+      <XDSTopNavMegaMenu
+        label="Products"
+        items={
+          <>
+            <XDSTopNavMegaMenuItem
+              title="Analytics"
+              description="View metrics and dashboards"
+              href="#"
+            />
+            <XDSTopNavMegaMenuItem
+              title="Reports"
+              description="Generate and export reports"
+              href="#"
+            />
+            <XDSTopNavMegaMenuItem
+              title="Pipelines"
+              description="Data processing workflows"
+              href="#"
+            />
+            <XDSTopNavMegaMenuItem
+              title="Integrations"
+              description="Connect your tools"
+              href="#"
+            />
+          </>
+        }
+        featured={
           <div
             style={{
               display: 'flex',
@@ -665,8 +666,8 @@ function SampleTopNav({
               Learn more →
             </a>
           </div>
-        </XDSTopNavMegaMenuFeatured>
-      </XDSTopNavMegaMenu>
+        }
+      />
       <XDSTopNavItem label="Team" href="#" />
     </>
   );

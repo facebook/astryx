@@ -11,9 +11,7 @@ import {
   XDSTopNavHeading,
   XDSTopNavItem,
   XDSTopNavMegaMenu,
-  XDSTopNavMegaMenuGroup,
   XDSTopNavMegaMenuItem,
-  XDSTopNavMegaMenuFeatured,
 } from '@xds/core/TopNav';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 
@@ -198,8 +196,7 @@ export default function MegaMenuPage() {
           <XDSHeading level={1}>Mega Menu</XDSHeading>
           <XDSText type="body" color="secondary">
             A top nav variation with a full-width mega menu that appears on
-            hover. Uses the composed children API with XDSTopNavMegaMenuGroup,
-            XDSTopNavMegaMenuItem, and XDSTopNavMegaMenuFeatured.
+            hover. Uses the slots API with XDSTopNavMegaMenuItem components.
           </XDSText>
         </XDSVStack>
 
@@ -220,91 +217,97 @@ export default function MegaMenuPage() {
                 <>
                   <XDSTopNavMegaMenu
                     label="Products"
-                    onOpenChange={setMenuOpen1}>
-                    <XDSTopNavMegaMenuGroup>
-                      <XDSTopNavMegaMenuItem
-                        title="Analytics"
-                        description="Track and analyze user behavior across your applications"
-                        icon={<ChartIcon />}
-                        href="#analytics"
-                      />
-                      <XDSTopNavMegaMenuItem
-                        title="Platform"
-                        description="End-to-end infrastructure for building at scale"
-                        icon={<LayersIcon />}
-                        href="#platform"
-                      />
-                      <XDSTopNavMegaMenuItem
-                        title="Security"
-                        description="Enterprise-grade protection for your data and users"
-                        icon={<ShieldIcon />}
-                        href="#security"
-                      />
-                      <XDSTopNavMegaMenuItem
-                        title="Automation"
-                        description="Streamline workflows with intelligent automation tools"
-                        icon={<ZapIcon />}
-                        href="#automation"
-                      />
-                      <XDSTopNavMegaMenuItem
-                        title="Developer Tools"
-                        description="APIs, SDKs, and CLI tools for seamless integration"
-                        icon={<CodeIcon />}
-                        href="#dev-tools"
-                      />
-                      <XDSTopNavMegaMenuItem
-                        title="Global Network"
-                        description="Low-latency edge infrastructure in 40+ regions"
-                        icon={<GlobeIcon />}
-                        href="#network"
-                      />
-                    </XDSTopNavMegaMenuGroup>
-                    <XDSTopNavMegaMenuFeatured>
-                      <img
-                        src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=560&h=280&fit=crop"
-                        alt="Team collaboration"
-                        {...stylex.props(styles.featuredImage)}
-                      />
-                      <div {...stylex.props(styles.featuredBody)}>
-                        <span {...stylex.props(styles.featuredTitle)}>
-                          What&apos;s new in v4.0
-                        </span>
-                        <span {...stylex.props(styles.featuredDescription)}>
-                          Explore the latest features including AI-powered
-                          analytics and real-time collaboration.
-                        </span>
-                        <a
-                          href="#announcement"
-                          {...stylex.props(styles.featuredLink)}>
-                          Read the announcement →
-                        </a>
-                      </div>
-                    </XDSTopNavMegaMenuFeatured>
-                  </XDSTopNavMegaMenu>
+                    onOpenChange={setMenuOpen1}
+                    items={
+                      <>
+                        <XDSTopNavMegaMenuItem
+                          title="Analytics"
+                          description="Track and analyze user behavior across your applications"
+                          icon={<ChartIcon />}
+                          href="#analytics"
+                        />
+                        <XDSTopNavMegaMenuItem
+                          title="Platform"
+                          description="End-to-end infrastructure for building at scale"
+                          icon={<LayersIcon />}
+                          href="#platform"
+                        />
+                        <XDSTopNavMegaMenuItem
+                          title="Security"
+                          description="Enterprise-grade protection for your data and users"
+                          icon={<ShieldIcon />}
+                          href="#security"
+                        />
+                        <XDSTopNavMegaMenuItem
+                          title="Automation"
+                          description="Streamline workflows with intelligent automation tools"
+                          icon={<ZapIcon />}
+                          href="#automation"
+                        />
+                        <XDSTopNavMegaMenuItem
+                          title="Developer Tools"
+                          description="APIs, SDKs, and CLI tools for seamless integration"
+                          icon={<CodeIcon />}
+                          href="#dev-tools"
+                        />
+                        <XDSTopNavMegaMenuItem
+                          title="Global Network"
+                          description="Low-latency edge infrastructure in 40+ regions"
+                          icon={<GlobeIcon />}
+                          href="#network"
+                        />
+                      </>
+                    }
+                    featured={
+                      <>
+                        <img
+                          src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=560&h=280&fit=crop"
+                          alt="Team collaboration"
+                          {...stylex.props(styles.featuredImage)}
+                        />
+                        <div {...stylex.props(styles.featuredBody)}>
+                          <span {...stylex.props(styles.featuredTitle)}>
+                            What&apos;s new in v4.0
+                          </span>
+                          <span {...stylex.props(styles.featuredDescription)}>
+                            Explore the latest features including AI-powered
+                            analytics and real-time collaboration.
+                          </span>
+                          <a
+                            href="#announcement"
+                            {...stylex.props(styles.featuredLink)}>
+                            Read the announcement →
+                          </a>
+                        </div>
+                      </>
+                    }
+                  />
                   <XDSTopNavMegaMenu
                     label="Solutions"
-                    onOpenChange={setMenuOpen2}>
-                    <XDSTopNavMegaMenuGroup>
-                      <XDSTopNavMegaMenuItem
-                        title="Enterprise"
-                        description="Solutions for large-scale organizations"
-                        icon={<LayersIcon />}
-                        href="#enterprise"
-                      />
-                      <XDSTopNavMegaMenuItem
-                        title="Startups"
-                        description="Get started fast with startup-friendly pricing"
-                        icon={<ZapIcon />}
-                        href="#startups"
-                      />
-                      <XDSTopNavMegaMenuItem
-                        title="Developers"
-                        description="Build with powerful APIs and documentation"
-                        icon={<CodeIcon />}
-                        href="#developers"
-                      />
-                    </XDSTopNavMegaMenuGroup>
-                    <XDSTopNavMegaMenuFeatured>
+                    onOpenChange={setMenuOpen2}
+                    items={
+                      <>
+                        <XDSTopNavMegaMenuItem
+                          title="Enterprise"
+                          description="Solutions for large-scale organizations"
+                          icon={<LayersIcon />}
+                          href="#enterprise"
+                        />
+                        <XDSTopNavMegaMenuItem
+                          title="Startups"
+                          description="Get started fast with startup-friendly pricing"
+                          icon={<ZapIcon />}
+                          href="#startups"
+                        />
+                        <XDSTopNavMegaMenuItem
+                          title="Developers"
+                          description="Build with powerful APIs and documentation"
+                          icon={<CodeIcon />}
+                          href="#developers"
+                        />
+                      </>
+                    }
+                    featured={
                       <div {...stylex.props(styles.featuredBody)}>
                         <span {...stylex.props(styles.featuredTitle)}>
                           Customer Stories
@@ -319,8 +322,8 @@ export default function MegaMenuPage() {
                           View case studies →
                         </a>
                       </div>
-                    </XDSTopNavMegaMenuFeatured>
-                  </XDSTopNavMegaMenu>
+                    }
+                  />
                   <XDSTopNavItem label="Learn" href="#" />
                 </>
               }
@@ -346,28 +349,30 @@ export default function MegaMenuPage() {
                   <XDSTopNavItem label="Home" href="#" isSelected />
                   <XDSTopNavMegaMenu
                     label="Features"
-                    onOpenChange={setMenuOpen3}>
-                    <XDSTopNavMegaMenuGroup>
-                      <XDSTopNavMegaMenuItem
-                        title="Dashboard"
-                        description="Overview of your key metrics"
-                        icon={<ChartIcon />}
-                        href="#dashboard"
-                      />
-                      <XDSTopNavMegaMenuItem
-                        title="Integrations"
-                        description="Connect with your favorite tools"
-                        icon={<CodeIcon />}
-                        href="#integrations"
-                      />
-                      <XDSTopNavMegaMenuItem
-                        title="API Access"
-                        description="Programmatic access to all features"
-                        icon={<GlobeIcon />}
-                        href="#api"
-                      />
-                    </XDSTopNavMegaMenuGroup>
-                  </XDSTopNavMegaMenu>
+                    onOpenChange={setMenuOpen3}
+                    items={
+                      <>
+                        <XDSTopNavMegaMenuItem
+                          title="Dashboard"
+                          description="Overview of your key metrics"
+                          icon={<ChartIcon />}
+                          href="#dashboard"
+                        />
+                        <XDSTopNavMegaMenuItem
+                          title="Integrations"
+                          description="Connect with your favorite tools"
+                          icon={<CodeIcon />}
+                          href="#integrations"
+                        />
+                        <XDSTopNavMegaMenuItem
+                          title="API Access"
+                          description="Programmatic access to all features"
+                          icon={<GlobeIcon />}
+                          href="#api"
+                        />
+                      </>
+                    }
+                  />
                   <XDSTopNavItem label="Pricing" href="#" />
                 </>
               }

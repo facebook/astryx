@@ -22,14 +22,8 @@ export type {XDSTopNavMenuProps, XDSTopNavMenuItemData} from './XDSTopNavMenu';
 export {XDSTopNavMegaMenu} from './XDSTopNavMegaMenu';
 export type {XDSTopNavMegaMenuProps} from './XDSTopNavMegaMenu';
 
-export {XDSTopNavMegaMenuGroup} from './XDSTopNavMegaMenuGroup';
-export type {XDSTopNavMegaMenuGroupProps} from './XDSTopNavMegaMenuGroup';
-
 export {XDSTopNavMegaMenuItem} from './XDSTopNavMegaMenuItem';
 export type {XDSTopNavMegaMenuItemProps} from './XDSTopNavMegaMenuItem';
-
-export {XDSTopNavMegaMenuFeatured} from './XDSTopNavMegaMenuFeatured';
-export type {XDSTopNavMegaMenuFeaturedProps} from './XDSTopNavMegaMenuFeatured';
 
 export {
   XDSTopNavRenderContext,
