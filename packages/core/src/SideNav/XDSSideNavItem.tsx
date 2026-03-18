@@ -87,7 +87,7 @@ const styles = stylex.create({
     flexShrink: 0,
   },
   expandChevronCollapsed: {
-    transform: 'rotate(-90deg)',
+    transform: 'rotate(180deg)',
   },
 });
 
