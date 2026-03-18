@@ -236,8 +236,9 @@ describe('typeScale', () => {
       name: 'dense',
       typeScale: {base: 12, ratio: 1.125},
     });
-    expect(theme.tokens['--heading-4-size']).toBe('12px');
-    expect(theme.tokens['--text-body-size']).toBe('12px');
+    expect(theme.tokens['--heading-4-size']).toBe('var(--text-base)');
+    expect(theme.tokens['--text-base']).toBe('12px');
+    expect(theme.tokens['--text-body-size']).toBe('var(--text-base)');
   });
 
   it('generates all 33 type scale tokens', () => {
@@ -249,7 +250,7 @@ describe('typeScale', () => {
     const typeScaleKeys = Object.keys(theme.tokens).filter(
       k => k.startsWith('--heading-') || k.startsWith('--text-'),
     );
-    expect(typeScaleKeys).toHaveLength(33);
+    expect(typeScaleKeys).toHaveLength(41);
   });
 
   it('explicit tokens override typeScale-generated values', () => {
@@ -263,7 +264,7 @@ describe('typeScale', () => {
     // Explicit token should win over typeScale
     expect(theme.tokens['--heading-1-size']).toBe('40px');
     // Non-overridden typeScale token should still be present
-    expect(theme.tokens['--heading-4-size']).toBe('14px');
+    expect(theme.tokens['--heading-4-size']).toBe('var(--text-base)');
   });
 
   it('works without typeScale (backwards compatible)', () => {
@@ -281,7 +282,7 @@ describe('typeScale', () => {
       },
     });
     expect(theme.tokens['--color-accent']).toBe('#FF0000');
-    expect(theme.tokens['--heading-4-size']).toBe('16px');
+    expect(theme.tokens['--heading-4-size']).toBe('var(--text-base)');
   });
 });
 

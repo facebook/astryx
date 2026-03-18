@@ -1,17 +1,34 @@
 /**
  * @file expandTypeScale.ts
  * @input Type scale configuration { base, ratio, weights? }
- * @output Token overrides for heading and text typography
+ * @output Token overrides for raw size, leading, and semantic typography tokens
  * @position Theme utility; consumed by defineTheme.ts
  *
- * Computes font sizes, weights, and line heights from a base size and
- * scaling ratio using a geometric progression: size = base × ratio^step.
+ * Computes a complete typography token set from a base size and scaling ratio
+ * using a geometric progression: size = base × ratio^step.
  *
- * The heading scale is anchored at h4 = base. Headings h1–h3 scale up,
- * h5–h6 scale down. Text types are mapped to fixed steps relative to base.
+ * Three-layer architecture:
+ *   Layer 1:  Raw size tokens (--text-xsm … --text-4xl)
+ *   Layer 1b: Leading tokens (--leading-tight … --leading-4xl)
+ *   Layer 2:  Semantic tokens (--heading-*, --text-*-size/leading/weight)
+ *             All size/leading values are var() references to Layer 1/1b.
  *
- * Line heights are unitless ratios, snapped so the computed px value
- * aligns to a 4px grid for visual rhythm.
+ * Step mapping:
+ *   step -2 → --text-xsm  / --leading-tight    (h6)
+ *   step -1 → --text-sm   / --leading-snug     (h5, supporting)
+ *   step  0 → --text-base / --leading-base     (h4, body, label, code)
+ *   step +1 → --text-lg   / --leading-normal   (h3, large)
+ *   step +2 → --text-xl   / --leading-relaxed  (h2)
+ *   step +3 → --text-2xl  / --leading-2xl      (h1)
+ *   step +4 → --text-3xl  / --leading-3xl
+ *   step +5 → --text-4xl  / --leading-4xl
+ *
+ * Line heights use a tiered target ratio based on font size:
+ *   < 20px  → 1.5   (body text, small UI)
+ *   20–31px → 1.4   (medium headings)
+ *   ≥ 32px  → 1.25  (large display headings)
+ *
+ * Then 4px-grid-snapped with Math.round and a minimum of fontSize + 4.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/theme/expandTypeScale.test.ts
@@ -91,6 +108,37 @@ export type TypeScaleTokens = Record<string, string>;
 // =============================================================================
 
 /**
+ * Step → raw size token name.
+ * These tokens form the geometric font size scale.
+ */
+const STEP_TO_SIZE_TOKEN: Record<number, string> = {
+  [-2]: '--text-xsm',
+  [-1]: '--text-sm',
+  [0]: '--text-base',
+  [1]: '--text-lg',
+  [2]: '--text-xl',
+  [3]: '--text-2xl',
+  [4]: '--text-3xl',
+  [5]: '--text-4xl',
+};
+
+/**
+ * Step → leading token name.
+ * Steps -2 through +2 reuse the existing named tokens.
+ * Steps +3 through +5 extend the scale with size-based names.
+ */
+const STEP_TO_LEADING_TOKEN: Record<number, string> = {
+  [-2]: '--leading-tight',
+  [-1]: '--leading-snug',
+  [0]: '--leading-base',
+  [1]: '--leading-normal',
+  [2]: '--leading-relaxed',
+  [3]: '--leading-2xl',
+  [4]: '--leading-3xl',
+  [5]: '--leading-4xl',
+};
+
+/**
  * Heading level → step offset from base (h4 = 0).
  * h1 is 3 steps above base, h6 is 2 steps below.
  */
@@ -140,18 +188,6 @@ const DEFAULT_TEXT_WEIGHTS: Record<string, string> = {
   supporting: 'var(--font-weight-normal)',
 };
 
-/**
- * Line-height target ratios. Headings are tighter, body text is more generous.
- */
-const HEADING_LH_RATIO = 1.3;
-const TEXT_LH_RATIOS: Record<string, number> = {
-  body: 1.5,
-  large: 1.45,
-  label: 1.4,
-  code: 1.5,
-  supporting: 1.5,
-};
-
 // =============================================================================
 // Computation
 // =============================================================================
@@ -164,13 +200,30 @@ function computeSize(base: number, ratio: number, step: number): number {
 }
 
 /**
- * Compute a unitless line-height ratio, snapped so the computed px value
- * aligns to a 4px grid. Ensures a minimum of fontSize + 4px for readability.
+ * Tiered target line-height ratio based on font size.
  *
- * Returns a unitless number (e.g. 1.3333) — not a px value — so line-height
+ * Smaller text gets more generous leading for readability.
+ * Larger display text gets tighter leading for visual density.
+ *
+ *   < 20px  → 1.5   (body text, small UI elements)
+ *   20–31px → 1.4   (medium headings, transitional)
+ *   ≥ 32px  → 1.25  (large display headings)
+ */
+function targetLeadingRatio(fontSize: number): number {
+  return fontSize < 20 ? 1.5 : fontSize < 32 ? 1.4 : 1.25;
+}
+
+/**
+ * Compute a unitless line-height ratio, snapped so the computed px value
+ * aligns to a 4px grid. Ensures a minimum gap of fontSize + 4px for readability.
+ *
+ * Uses a tiered target ratio — see `targetLeadingRatio`.
+ *
+ * Returns a unitless number (e.g. 1.4286) — not a px value — so line-height
  * scales proportionally when StyleX converts font sizes to relative units.
  */
-function computeLeading(fontSize: number, targetRatio: number): number {
+function computeLeading(fontSize: number): number {
+  const targetRatio = targetLeadingRatio(fontSize);
   const rawLh = fontSize * targetRatio;
   const snappedLh = Math.max(
     Math.round(rawLh / 4) * 4,
@@ -183,19 +236,26 @@ function computeLeading(fontSize: number, targetRatio: number): number {
 /**
  * Expand a type scale configuration into typography token overrides.
  *
- * Generates 33 tokens: 6 heading levels × 3 properties + 5 text types × 3 properties.
- *
- * Font sizes are emitted as px values (e.g. '24px').
- * Line heights are emitted as unitless ratios (e.g. '1.3333').
- * Font weights are emitted as var() references (e.g. 'var(--font-weight-semibold)').
+ * Generates three layers of tokens:
+ *   - Layer 1:  8 raw size tokens (--text-xsm … --text-4xl)
+ *   - Layer 1b: 8 leading tokens (--leading-tight … --leading-4xl)
+ *   - Layer 2:  33 semantic tokens (headings + text types) using var() refs
  *
  * @example
  * ```
  * const tokens = expandTypeScale({ base: 14, ratio: 1.2 });
- * // tokens['--heading-1-size'] === '24px'
- * // tokens['--heading-1-leading'] === '1.3333'
- * // tokens['--heading-4-size'] === '14px'  (anchor)
- * // tokens['--text-body-size'] === '14px'
+ * // Layer 1 — raw sizes
+ * // tokens['--text-base'] === '14px'
+ * // tokens['--text-2xl'] === '24px'
+ * //
+ * // Layer 1b — leading
+ * // tokens['--leading-base'] === '1.4286'
+ * //
+ * // Layer 2 — semantic (var refs)
+ * // tokens['--heading-1-size'] === 'var(--text-2xl)'
+ * // tokens['--heading-1-leading'] === 'var(--leading-2xl)'
+ * // tokens['--text-body-size'] === 'var(--text-base)'
+ * // tokens['--text-body-leading'] === 'var(--leading-base)'
  * ```
  */
 export function expandTypeScale(config: XDSTypeScaleConfig): TypeScaleTokens {
@@ -212,25 +272,35 @@ export function expandTypeScale(config: XDSTypeScaleConfig): TypeScaleTokens {
     ...(weights?.text as Record<string, string> | undefined),
   };
 
+  // ── Layer 1: Raw size tokens ──────────────────────────────────────────────
+  for (let step = -2; step <= 5; step++) {
+    const size = computeSize(base, ratio, step);
+    tokens[STEP_TO_SIZE_TOKEN[step]] = `${size}px`;
+  }
+
+  // ── Layer 1b: Leading tokens ──────────────────────────────────────────────
+  for (let step = -2; step <= 5; step++) {
+    const size = computeSize(base, ratio, step);
+    const leading = computeLeading(size);
+    tokens[STEP_TO_LEADING_TOKEN[step]] = `${leading}`;
+  }
+
+  // ── Layer 2: Semantic tokens (all var() references) ───────────────────────
+
   // Heading tokens
   for (const [levelStr, step] of Object.entries(HEADING_STEPS)) {
     const level = Number(levelStr);
-    const size = computeSize(base, ratio, step);
-    const leading = computeLeading(size, HEADING_LH_RATIO);
-
-    tokens[`--heading-${level}-size`] = `${size}px`;
+    tokens[`--heading-${level}-size`] = `var(${STEP_TO_SIZE_TOKEN[step]})`;
     tokens[`--heading-${level}-weight`] = headingWeights[level];
-    tokens[`--heading-${level}-leading`] = `${leading}`;
+    tokens[`--heading-${level}-leading`] =
+      `var(${STEP_TO_LEADING_TOKEN[step]})`;
   }
 
   // Text tokens
   for (const [type, step] of Object.entries(TEXT_STEPS)) {
-    const size = computeSize(base, ratio, step);
-    const leading = computeLeading(size, TEXT_LH_RATIOS[type]);
-
-    tokens[`--text-${type}-size`] = `${size}px`;
+    tokens[`--text-${type}-size`] = `var(${STEP_TO_SIZE_TOKEN[step]})`;
     tokens[`--text-${type}-weight`] = textWeights[type];
-    tokens[`--text-${type}-leading`] = `${leading}`;
+    tokens[`--text-${type}-leading`] = `var(${STEP_TO_LEADING_TOKEN[step]})`;
   }
 
   return tokens;
