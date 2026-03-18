@@ -186,7 +186,7 @@ const drawerStyles = stylex.create({
     gridTemplateRows: '0fr',
     transitionProperty: 'grid-template-rows',
     transitionDuration: durationVars['--duration-medium'],
-    transitionTimingFunction: easingVars['--easing-decelerate'],
+    transitionTimingFunction: easingVars['--easing-standard'],
   },
   itemsExpanded: {
     gridTemplateRows: '1fr',

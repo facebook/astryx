@@ -106,7 +106,7 @@ const styles = stylex.create({
     },
     transitionProperty: 'opacity, transform, overlay, display',
     transitionDuration: durationVars['--duration-medium-min'],
-    transitionTimingFunction: easingVars['--easing-decelerate'],
+    transitionTimingFunction: easingVars['--easing-standard'],
     transitionBehavior: 'allow-discrete',
     '@starting-style': {
       opacity: 0,
@@ -177,7 +177,7 @@ const styles = stylex.create({
     gridTemplateRows: '0fr',
     transitionProperty: 'grid-template-rows',
     transitionDuration: durationVars['--duration-medium'],
-    transitionTimingFunction: easingVars['--easing-decelerate'],
+    transitionTimingFunction: easingVars['--easing-standard'],
   },
   drawerItemsExpanded: {
     gridTemplateRows: '1fr',

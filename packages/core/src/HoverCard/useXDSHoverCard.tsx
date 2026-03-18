@@ -51,7 +51,7 @@ const styles = stylex.create({
     // Transitions with allow-discrete for display/overlay
     transitionProperty: 'opacity, transform, overlay, display',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-decelerate'],
+    transitionTimingFunction: easingVars['--easing-standard'],
     transitionBehavior: 'allow-discrete',
     // Entry animation starting state
     '@starting-style': {

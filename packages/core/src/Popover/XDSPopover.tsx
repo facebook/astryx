@@ -183,7 +183,7 @@ const styles = stylex.create({
     },
     transitionProperty: 'opacity, transform, overlay, display',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-decelerate'],
+    transitionTimingFunction: easingVars['--easing-standard'],
     transitionBehavior: 'allow-discrete',
     '@starting-style': {
       opacity: 0,

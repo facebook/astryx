@@ -252,8 +252,7 @@ export type DurationVarName = keyof typeof durationDefaults;
 // =============================================================================
 
 export const easingDefaults = {
-  '--easing-decelerate': 'cubic-bezier(0.24, 1, 0.4, 1)',
-  '--easing-standard': 'cubic-bezier(0.4, 0, 0.2, 1)',
+  '--easing-standard': 'cubic-bezier(0.24, 1, 0.4, 1)',
 } as const;
 
 export const easingVars = stylex.defineVars(easingDefaults);

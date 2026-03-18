@@ -81,7 +81,7 @@ const styles = stylex.create({
     },
     transitionProperty: 'opacity, transform',
     transitionDuration: durationVars['--duration-medium'],
-    transitionTimingFunction: easingVars['--easing-decelerate'],
+    transitionTimingFunction: easingVars['--easing-standard'],
     outline: {
       default: null,
       ':focus-visible': `2px solid ${colorVars['--color-focus-outline']}`,

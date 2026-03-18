@@ -71,7 +71,7 @@ const styles = stylex.create({
     gridTemplateRows: '1fr',
     transitionProperty: 'grid-template-rows',
     transitionDuration: durationVars['--duration-medium'],
-    transitionTimingFunction: easingVars['--easing-decelerate'],
+    transitionTimingFunction: easingVars['--easing-standard'],
   },
   childrenCollapsed: {
     gridTemplateRows: '0fr',

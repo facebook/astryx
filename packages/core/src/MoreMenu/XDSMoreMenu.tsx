@@ -63,7 +63,7 @@ const styles = stylex.create({
     opacity: 1,
     transitionProperty: 'opacity',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-decelerate'],
+    transitionTimingFunction: easingVars['--easing-standard'],
   },
   popover: {
     minWidth: '160px',

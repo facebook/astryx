@@ -187,7 +187,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-rounded'],
     transitionProperty: 'width',
     transitionDuration: durationVars['--duration-medium'],
-    transitionTimingFunction: easingVars['--easing-decelerate'],
+    transitionTimingFunction: easingVars['--easing-standard'],
   },
   indeterminateFill: {
     height: '100%',
