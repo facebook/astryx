@@ -17,7 +17,7 @@
  *   tokens: {
  *     '--color-accent': ['#0077B6', '#48CAE4'],    // [light, dark]
  *     '--color-surface': ['#F0F8FF', '#0A1628'],
- *     '--radius-container': '16px',                 // same in both modes
+ *     '--radius-3': '16px',                     // same in both modes
  *   },
  *   icons: oceanIcons,
  * });
@@ -48,6 +48,10 @@ import {
   generateTypeScaleComponents,
   type XDSTypeScaleConfig,
 } from './expandTypeScale';
+import {
+  expandRadiusScale,
+  type XDSRadiusScaleConfig,
+} from './expandRadiusScale';
 
 // =============================================================================
 // Types
@@ -134,6 +138,25 @@ export interface XDSDefineThemeInput {
    * ```
    */
   typeScale?: XDSTypeScaleConfig;
+  /**
+   * Optional radius scale configuration. Generates radius token overrides
+   * from a base unit and multiplier.
+   *
+   * radius-0 and radius-rounded are always fixed (never affected by multiplier).
+   * radius-1 through radius-4 = base * step * multiplier.
+   *
+   * When omitted, themes use the hardcoded defaults (base=4, multiplier=1).
+   * Explicit `tokens` overrides take precedence over radiusScale-generated values.
+   *
+   * @example
+   * ```tsx
+   * radiusScale: { base: 4, multiplier: 1 }
+   *
+   * // Sharp/brutalist — all radii become 0
+   * radiusScale: { base: 4, multiplier: 0 }
+   * ```
+   */
+  radiusScale?: XDSRadiusScaleConfig;
   /** Token overrides — flat map of CSS custom property names to values.
    *  Values can be a string or [light, dark] tuple.
    *  Only include tokens you want to override; defaults fill the rest. */
@@ -270,7 +293,15 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
     }
   }
 
-  // 2. Apply explicit token overrides (highest precedence — overwrites typeScale)
+  // 1b. Apply radiusScale-generated tokens (lowest precedence for radius)
+  if (input.radiusScale) {
+    const radiusTokens = expandRadiusScale(input.radiusScale);
+    for (const [key, value] of Object.entries(radiusTokens)) {
+      tokens[key] = value;
+    }
+  }
+
+  // 2. Apply explicit token overrides (highest precedence — overwrites typeScale/radiusScale)
   if (input.tokens) {
     for (const [key, value] of Object.entries(input.tokens)) {
       if (value !== undefined) {
@@ -328,9 +359,7 @@ function toKebabCase(str: string): string {
  *   When false (default), prose rules use var() references to token custom properties
  *   (for the runtime path where tokens are set on :scope).
  */
-export function generateThemeRules(
-  theme: XDSDefinedTheme,
-): string[] {
+export function generateThemeRules(theme: XDSDefinedTheme): string[] {
   const parts: string[] = [];
   const tokens = theme.tokens;
 
@@ -350,7 +379,9 @@ export function generateThemeRules(
   // 2. Component overrides (.xds-* class rules)
   if (theme.components) {
     for (const [component, rules] of Object.entries(theme.components)) {
-      for (const [key, styles] of Object.entries(rules as Record<string, Record<string, string>>)) {
+      for (const [key, styles] of Object.entries(
+        rules as Record<string, Record<string, string>>,
+      )) {
         const entries = Object.entries(styles);
         if (entries.length > 0) {
           const suffix = parseStyleKey(key);

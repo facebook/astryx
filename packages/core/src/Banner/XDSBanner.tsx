@@ -190,7 +190,7 @@ const styles = stylex.create({
     overflow: 'clip',
   },
   card: {
-    borderRadius: radiusVars['--radius-container'],
+    borderRadius: radiusVars['--radius-3'],
   },
   section: {
     borderRadius: '0',
@@ -265,8 +265,8 @@ const styles = stylex.create({
     borderBottomColor: colorVars['--color-divider'],
   },
   contentAreaCard: {
-    borderBottomLeftRadius: radiusVars['--radius-container'],
-    borderBottomRightRadius: radiusVars['--radius-container'],
+    borderBottomLeftRadius: radiusVars['--radius-3'],
+    borderBottomRightRadius: radiusVars['--radius-3'],
   },
 });
 

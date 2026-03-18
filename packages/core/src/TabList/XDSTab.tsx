@@ -74,7 +74,7 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     borderWidth: 0,
     borderStyle: 'none',
-    borderRadius: radiusVars['--radius-element'],
+    borderRadius: radiusVars['--radius-2'],
     fontFamily: 'inherit',
     fontSize: textSizeVars['--text-base'],
     lineHeight: lineHeightVars['--leading-base'],

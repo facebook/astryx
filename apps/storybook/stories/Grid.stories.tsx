@@ -18,13 +18,13 @@ const styles = stylex.create({
   item: {
     padding: spacingVars['--spacing-4'],
     backgroundColor: colorVars['--color-wash'],
-    borderRadius: radiusVars['--radius-element'],
+    borderRadius: radiusVars['--radius-2'],
     textAlign: 'center',
   },
   featuredItem: {
     padding: spacingVars['--spacing-6'],
     backgroundColor: colorVars['--color-accent-deemphasized'],
-    borderRadius: radiusVars['--radius-element'],
+    borderRadius: radiusVars['--radius-2'],
     textAlign: 'center',
     height: '100%',
     boxSizing: 'border-box',
@@ -32,7 +32,7 @@ const styles = stylex.create({
   cardImage: {
     height: 120,
     backgroundColor: colorVars['--color-wash'],
-    borderRadius: radiusVars['--radius-element'],
+    borderRadius: radiusVars['--radius-2'],
     marginBlockEnd: spacingVars['--spacing-3'],
   },
   storyWrapper: {

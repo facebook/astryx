@@ -865,7 +865,7 @@ function ComponentPreview() {
             <pre
               style={{
                 padding: '16px',
-                borderRadius: 'var(--radius-element)',
+                borderRadius: 'var(--radius-2)',
                 backgroundColor: 'var(--color-wash)',
                 border: '1px solid var(--color-divider)',
                 fontFamily: 'var(--font-code)',

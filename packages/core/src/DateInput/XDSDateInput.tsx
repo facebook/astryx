@@ -63,7 +63,7 @@ const styles = stylex.create({
     borderStyle: 'none',
     backgroundColor: 'transparent',
     cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
+    borderRadius: radiusVars['--radius-2'],
     outline: {
       default: 'none',
       ':focus-visible': `1px solid ${colorVars['--color-focus-outline']}`,
@@ -98,7 +98,7 @@ const styles = stylex.create({
   },
   popover: {
     backgroundColor: colorVars['--color-popover'],
-    borderRadius: radiusVars['--radius-container'],
+    borderRadius: radiusVars['--radius-3'],
     boxShadow: elevationVars['--elevation-menu'],
   },
 });

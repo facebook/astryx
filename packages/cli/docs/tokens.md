@@ -65,13 +65,13 @@ Control heights for consistent sizing across buttons, inputs, and selectors.
 
 ## Radius Tokens
 
-| Token              | Value  | Usage           |
-| ------------------ | ------ | --------------- |
-| --radius-rounded   | 9999px | Pills, avatars  |
-| --radius-container | 12px   | Cards, modals   |
-| --radius-element   | 8px    | Buttons, inputs |
-| --radius-content   | 4px    | Small elements  |
-| --radius-inner     | 0px    | No radius       |
+| Token            | Value  | Usage           |
+| ---------------- | ------ | --------------- |
+| --radius-rounded | 9999px | Pills, avatars  |
+| --radius-3       | 12px   | Cards, modals   |
+| --radius-2       | 8px    | Buttons, inputs |
+| --radius-1       | 4px    | Small elements  |
+| --radius-0       | 0px    | No radius       |
 
 ## Elevation Tokens
 
@@ -116,13 +116,13 @@ Control heights for consistent sizing across buttons, inputs, and selectors.
 
 ### Line Heights (Leading)
 
-| Token            | Value  | Usage                        |
-| ---------------- | ------ | ---------------------------- |
-| --leading-tight  | 1.25   | Display text, headings       |
-| --leading-snug   | 1.375  | Compact body text, headings  |
-| --leading-base   | 1.4286 | Body text with --text-base   |
-| --leading-normal | 1.5    | Body text, large body        |
-| --leading-relaxed| 1.625  | Editorial body, reading text |
+| Token             | Value  | Usage                        |
+| ----------------- | ------ | ---------------------------- |
+| --leading-tight   | 1.25   | Display text, headings       |
+| --leading-snug    | 1.375  | Compact body text, headings  |
+| --leading-base    | 1.4286 | Body text with --text-base   |
+| --leading-normal  | 1.5    | Body text, large body        |
+| --leading-relaxed | 1.625  | Editorial body, reading text |
 
 ## Usage in StyleX
 
@@ -134,7 +134,7 @@ const styles = stylex.create({
   card: {
     padding: spacingVars['--spacing-4'],
     backgroundColor: colorVars['--color-surface'],
-    borderRadius: radiusVars['--radius-container'],
+    borderRadius: radiusVars['--radius-3'],
   },
   button: {
     height: sizeVars['--size-md'],
@@ -149,7 +149,7 @@ const styles = stylex.create({
   card: {
     padding: 'var(--spacing-4)',
     backgroundColor: 'var(--color-surface)',
-    borderRadius: 'var(--radius-container)',
+    borderRadius: 'var(--radius-3)',
   },
 });
 ```

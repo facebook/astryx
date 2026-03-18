@@ -69,7 +69,7 @@ const styles = stylex.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderStyle: 'solid',
-    borderRadius: radiusVars['--radius-content'],
+    borderRadius: radiusVars['--radius-1'],
     transitionProperty: 'background-color, border-color',
     transitionDuration: transitionVars['--transition-fast'],
   },

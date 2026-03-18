@@ -21,7 +21,7 @@ const styles = stylex.create({
     borderColor: colorVars['--color-blue-border'],
     paddingBlock: spacingVars['--spacing-4'],
     paddingInline: spacingVars['--spacing-6'],
-    borderRadius: radiusVars['--radius-element'],
+    borderRadius: radiusVars['--radius-2'],
     fontWeight: 500,
   },
   storyWrapper: {
@@ -33,7 +33,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-blue-background'],
     color: colorVars['--color-blue-text'],
     padding: spacingVars['--spacing-2'],
-    borderRadius: radiusVars['--radius-element'],
+    borderRadius: radiusVars['--radius-2'],
   },
 });
 

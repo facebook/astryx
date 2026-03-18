@@ -232,7 +232,7 @@ function generateThemeFile({name, exportName, colors, includeComponentOverrides,
 // --- Card ---
 // const cardOverrides = stylex.create({
 //   container: {
-//     borderRadius: radiusVars['--radius-container'],
+//     borderRadius: radiusVars['--radius-3'],
 //     // gradient border: set a gradient background + padding, inner content covers it
 //     // background: 'linear-gradient(135deg, ...)',
 //   },
@@ -327,7 +327,7 @@ const colorTheme = stylex.createTheme(
 
 // Uncomment and customize to override other token groups:
 // import { radiusVars, elevationVars, typographyVars, ... } from '@xds/core/theme/tokens.stylex';
-// const radiusTheme = stylex.createTheme(radiusVars, { '--radius-container': '16px', ... });
+// const radiusTheme = stylex.createTheme(radiusVars, { '--radius-3': '16px', ... });
 ${componentOverrideSection}
 // =============================================================================
 // Theme Export

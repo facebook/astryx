@@ -204,7 +204,7 @@ export const CustomCellRenderer: Story = {
           <span
             style={{
               padding: `${spacingDefaults['--spacing-0-5']} ${spacingDefaults['--spacing-2']}`,
-              borderRadius: radiusDefaults['--radius-content'],
+              borderRadius: radiusDefaults['--radius-1'],
               fontSize: textSizeDefaults['--text-xsm'],
               backgroundColor:
                 item.role === 'Engineer'

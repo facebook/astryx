@@ -39,7 +39,7 @@ const styles = stylex.create({
     width: '100%',
     paddingInline: spacingVars['--spacing-3'],
     paddingBlock: spacingVars['--spacing-2'],
-    borderRadius: radiusVars['--radius-content'],
+    borderRadius: radiusVars['--radius-1'],
     fontFamily: typographyVars['--font-body'],
     fontSize: textSizeVars['--text-base'],
     color: colorVars['--color-text-primary'],
