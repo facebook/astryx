@@ -187,6 +187,64 @@ export default function RadiusPage() {
             </tbody>
           </table>
         </XDSVStack>
+
+        <XDSDivider />
+
+        {/* radius-none */}
+        <XDSVStack gap={4}>
+          <div style={{display: 'flex', alignItems: 'baseline', gap: 12}}>
+            <span style={{fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'light-dark(#0064E0, #2694FE)'}}>radius-none</span>
+            <span style={{fontSize: 13, color: 'light-dark(#666, #aaa)', fontStyle: 'italic'}}>0dp</span>
+            <span style={{fontSize: 13, color: 'light-dark(#888, #777)', marginLeft: 'auto'}}>Always 0 &middot; ignores multiplier</span>
+          </div>
+          <div style={{display: 'flex', gap: 48, flexWrap: 'wrap', alignItems: 'flex-start'}}>
+            {/* Table cells */}
+            <XDSVStack gap={2}>
+              <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Table Cells</span>
+              <table style={{borderCollapse: 'collapse', fontSize: 14, border: '1px solid light-dark(#ddd, #444)', borderRadius: 0}}>
+                <thead>
+                  <tr>
+                    <th style={{textAlign: 'left', padding: '8px 16px', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'light-dark(#666, #aaa)', borderBottom: '1px solid light-dark(#ddd, #444)', backgroundColor: 'light-dark(#f9f9f9, #2a2a2a)'}}>Name</th>
+                    <th style={{textAlign: 'left', padding: '8px 16px', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'light-dark(#666, #aaa)', borderBottom: '1px solid light-dark(#ddd, #444)', backgroundColor: 'light-dark(#f9f9f9, #2a2a2a)'}}>Role</th>
+                    <th style={{textAlign: 'left', padding: '8px 16px', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'light-dark(#666, #aaa)', borderBottom: '1px solid light-dark(#ddd, #444)', backgroundColor: 'light-dark(#f9f9f9, #2a2a2a)'}}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{padding: '10px 16px', borderBottom: '1px solid light-dark(#eee, #333)'}}>Alice</td>
+                    <td style={{padding: '10px 16px', borderBottom: '1px solid light-dark(#eee, #333)'}}>Design</td>
+                    <td style={{padding: '10px 16px', borderBottom: '1px solid light-dark(#eee, #333)', color: '#0D8626'}}>Active</td>
+                  </tr>
+                  <tr>
+                    <td style={{padding: '10px 16px'}}>Bob</td>
+                    <td style={{padding: '10px 16px'}}>Eng</td>
+                    <td style={{padding: '10px 16px', color: '#0D8626'}}>Active</td>
+                  </tr>
+                </tbody>
+              </table>
+            </XDSVStack>
+
+            {/* Side panel */}
+            <XDSVStack gap={2}>
+              <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Side Panel</span>
+              <div style={{border: '1px solid light-dark(#ddd, #444)', borderRadius: 0, padding: 8, width: 160, display: 'flex', flexDirection: 'column', gap: 2}}>
+                <div style={{padding: '8px 12px', fontSize: 14, color: 'light-dark(#0064E0, #2694FE)', backgroundColor: 'light-dark(rgba(0,100,224,0.06), rgba(38,148,254,0.1))', borderRadius: 0}}>Dashboard</div>
+                <div style={{padding: '8px 12px', fontSize: 14, color: 'light-dark(#666, #aaa)'}}>Analytics</div>
+                <div style={{padding: '8px 12px', fontSize: 14, color: 'light-dark(#666, #aaa)'}}>Settings</div>
+              </div>
+            </XDSVStack>
+
+            {/* Shared edges (button group) */}
+            <XDSVStack gap={2}>
+              <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Shared Edges (Button Group)</span>
+              <XDSHStack gap={0}>
+                <XDSButton label="Day" variant="primary" size="sm" />
+                <XDSButton label="Week" variant="secondary" size="sm" />
+                <XDSButton label="Month" variant="secondary" size="sm" />
+              </XDSHStack>
+            </XDSVStack>
+          </div>
+        </XDSVStack>
       </XDSVStack>
     </div>
   );
