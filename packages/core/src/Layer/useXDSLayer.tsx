@@ -44,6 +44,8 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     overflow: 'visible',
+    // Override browser default [popover] background (canvas color)
+    backgroundColor: 'transparent',
   },
   // Fixed positioning mode
   fixed: {
