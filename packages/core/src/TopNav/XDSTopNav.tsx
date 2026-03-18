@@ -22,6 +22,7 @@ import {xdsClassName, mergeProps} from '../utils';
 import {TopNavSlotContext} from './TopNavContext';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
 import {useXDSTopNavMobileContent} from './XDSTopNavMobileContentContext';
+import {XDSDivider} from '../Divider/XDSDivider';
 import {XDSMobileNav} from '../MobileNav/XDSMobileNav';
 import {XDSMobileNavToggle} from '../MobileNav/XDSMobileNavToggle';
 
@@ -106,9 +107,10 @@ const styles = stylex.create({
     flexDirection: 'column',
     gap: spacingVars['--spacing-0-5'],
   },
-  drawerExtraContent: {
-    marginBlockStart: spacingVars['--spacing-4'],
+  drawerDivider: {
+    marginBlock: spacingVars['--spacing-2'],
   },
+  drawerExtraContent: {},
 });
 
 export interface XDSTopNavProps extends XDSBaseProps<HTMLElement> {
@@ -216,6 +218,11 @@ export function XDSTopNav({
           <div {...stylex.props(styles.drawerItems)}>
             {startContent}
             {centerContent}
+          </div>
+        )}
+        {hasCollapsibleContent && mobileContent && (
+          <div {...stylex.props(styles.drawerDivider)}>
+            <XDSDivider />
           </div>
         )}
         {mobileContent && (

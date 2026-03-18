@@ -55,6 +55,9 @@ const styles = stylex.create({
     height: '100dvh',
     backgroundColor: 'transparent',
     overflow: 'hidden',
+    overscrollBehavior: 'contain',
+    // Prevent touch gestures (pull-to-refresh, background scroll) passing through
+    touchAction: 'none',
     outline: 'none',
     // Native <dialog> uses display:none when closed — we preserve that
     // by only setting display when [open] via :where() selector.
@@ -68,6 +71,7 @@ const styles = stylex.create({
   backdrop: {
     '::backdrop': {
       backgroundColor: colorVars['--color-overlay'],
+      backdropFilter: 'blur(2px)',
       opacity: 0,
       transition: `opacity ${SLIDE_DURATION} ${SLIDE_EASING}`,
     },
@@ -145,8 +149,11 @@ const styles = stylex.create({
     overflowY: 'auto',
     overflowX: 'hidden',
     overscrollBehavior: 'contain',
+    // Re-enable vertical touch scrolling inside the drawer content
+    // (dialog root has touch-action: none to block pull-to-refresh)
+    touchAction: 'pan-y',
     paddingInline: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-1'],
+    paddingBlock: spacingVars['--spacing-2'],
   },
 });
 
@@ -307,7 +314,13 @@ export function XDSMobileNav({
       if (!dialog.open) {
         dialog.showModal();
       }
+      // Prevent background scrolling and iOS pull-to-refresh.
+      // overflow: clip avoids creating a scroll container (unlike hidden),
+      // so there's no scroll bounce and no need to save/restore scroll position.
+      document.documentElement.style.overflow = 'clip';
     } else if (dialog.open) {
+      document.documentElement.style.overflow = '';
+
       const duration = window.matchMedia('(prefers-reduced-motion: reduce)')
         .matches
         ? 10
@@ -321,6 +334,7 @@ export function XDSMobileNav({
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
       }
+      document.documentElement.style.overflow = '';
     };
   }, [isOpen]);
 
@@ -363,8 +377,9 @@ export function XDSMobileNav({
           xstyle,
         ),
       )}>
-      {/* Drawer panel */}
+      {/* Drawer panel — tabIndex so showModal() focuses the drawer, not the close button */}
       <div
+        tabIndex={-1}
         {...stylex.props(
           styles.drawer,
           dynamicStyles.width(width),
@@ -385,7 +400,6 @@ export function XDSMobileNav({
           <XDSButton
             variant="ghost"
             label="Close navigation"
-            tooltip="Close"
             icon={<XDSIcon icon="close" color="inherit" />}
             onClick={() => onOpenChange(false)}
           />

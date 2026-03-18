@@ -4,6 +4,7 @@ import {useState, useCallback} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {XDSAppShell} from '@xds/core/AppShell';
+import type {XDSMobileNavConfig} from '@xds/core/AppShell';
 import {
   XDSSideNav,
   XDSSideNavHeading,
@@ -102,7 +103,6 @@ interface ShellConfig {
   variant: 'wash' | 'surface' | 'section' | 'elevated';
   height: 'fill' | 'auto';
   sideNavBreakpoint: 'sm' | 'md' | 'lg' | 'none';
-  sideNavWidth: number;
   showSideNav: boolean;
   showTopNav: boolean;
   showBanner: boolean;
@@ -126,7 +126,6 @@ const DEFAULT_CONFIG: ShellConfig = {
   variant: 'section',
   height: 'fill',
   sideNavBreakpoint: 'md',
-  sideNavWidth: 260,
   showSideNav: true,
   showTopNav: true,
   showBanner: false,
@@ -752,15 +751,12 @@ export default function ShellLabPage() {
   }, []);
 
   // Build the mobileNav prop based on config
-  const mobileNav:
-    | false
-    | {hasToggle?: boolean; content?: React.ReactNode}
-    | React.ReactNode
-    | undefined =
+  const mobileNav: false | XDSMobileNavConfig | React.ReactNode | undefined =
     config.mobileNavMode === 'disabled'
       ? false
       : config.mobileNavMode === 'customContent'
         ? {
+            breakpoint: config.sideNavBreakpoint,
             content: (
               <XDSMobileNav header="Custom Nav" side={config.mobileNavSide}>
                 <XDSVStack gap={2} xstyle={styles.customSearchBar}>
@@ -804,8 +800,8 @@ export default function ShellLabPage() {
             ),
           }
         : config.mobileNavMode === 'customToggle'
-          ? {hasToggle: false} // auto drawer content, but no auto toggle
-          : undefined; // auto with toggle — full default behavior
+          ? {hasToggle: false, breakpoint: config.sideNavBreakpoint} // auto drawer content, but no auto toggle
+          : {breakpoint: config.sideNavBreakpoint}; // auto with breakpoint
 
   return (
     <>
@@ -813,8 +809,6 @@ export default function ShellLabPage() {
         variant={config.variant}
         height={config.height}
         contentPadding={6}
-        sideNavBreakpoint={config.sideNavBreakpoint}
-        sideNavWidth={config.sideNavWidth}
         topNav={
           config.showTopNav ? (
             <SampleTopNav

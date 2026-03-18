@@ -238,7 +238,7 @@ describe('XDSAppShell', () => {
 
   it('tracks breakpoint changes', () => {
     render(
-      <XDSAppShell sideNav={<TestSideNav />} sideNavBreakpoint="md">
+      <XDSAppShell sideNav={<TestSideNav />} mobileNav={{breakpoint: 'md'}}>
         <div>Content</div>
       </XDSAppShell>,
     );
@@ -247,9 +247,9 @@ describe('XDSAppShell', () => {
     expect(window.matchMedia).toHaveBeenCalled();
   });
 
-  it('does not track breakpoint when sideNavBreakpoint is none', () => {
+  it('does not track breakpoint when mobileNav breakpoint is none', () => {
     render(
-      <XDSAppShell sideNav={<TestSideNav />} sideNavBreakpoint="none">
+      <XDSAppShell sideNav={<TestSideNav />} mobileNav={{breakpoint: 'none'}}>
         <div>Content</div>
       </XDSAppShell>,
     );

@@ -328,4 +328,30 @@
   :where(html) {
     -webkit-tap-highlight-color: transparent;
   }
+
+  /* ===========================================================================
+     Touch Devices
+     =========================================================================== */
+
+  /*
+   * Suppress focus-visible outlines on touch-only devices.
+   *
+   * Focus rings exist to show keyboard users where focus is. On devices
+   * with no hover capability and a coarse pointer (phones, tablets),
+   * there's no keyboard navigation — focus rings are visual noise that
+   * can flash on tap, on dialog open (showModal auto-focus), or on
+   * programmatic focus.
+   *
+   * This targets touch-only devices specifically:
+   * - (hover: none) — no hover capability (not a mouse)
+   * - (pointer: coarse) — imprecise pointer (finger, not stylus)
+   *
+   * Hybrid devices (laptop with touchscreen) are NOT affected because
+   * their primary pointer is fine (trackpad/mouse) and hover is available.
+   */
+  @media (hover: none) and (pointer: coarse) {
+    :where(:focus-visible) {
+      outline: none;
+    }
+  }
 }

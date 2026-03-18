@@ -236,13 +236,7 @@ const meta: Meta<typeof XDSAppShell> = {
       control: 'boolean',
       description: 'Whether the side nav starts collapsed',
     },
-    sideNavBreakpoint: {
-      control: 'radio',
-      options: ['sm', 'md', 'lg', 'none'],
-    },
-    sideNavWidth: {
-      control: 'number',
-    },
+
     background: {
       control: 'radio',
       options: ['surface', 'wash'],
