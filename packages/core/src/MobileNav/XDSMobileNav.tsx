@@ -377,8 +377,9 @@ export function XDSMobileNav({
           xstyle,
         ),
       )}>
-      {/* Drawer panel */}
+      {/* Drawer panel — tabIndex so showModal() focuses the drawer, not the close button */}
       <div
+        tabIndex={-1}
         {...stylex.props(
           styles.drawer,
           dynamicStyles.width(width),
@@ -399,7 +400,6 @@ export function XDSMobileNav({
           <XDSButton
             variant="ghost"
             label="Close navigation"
-            tooltip="Close"
             icon={<XDSIcon icon="close" color="inherit" />}
             onClick={() => onOpenChange(false)}
           />

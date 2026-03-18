@@ -201,7 +201,7 @@ export function XDSSideNavItem({
   onClick,
   endContent,
   children,
-  collapsible: itemCollapsible = false,
+  collapsible: itemCollapsible,
   'data-testid': testId,
   ref,
 }: XDSSideNavItemProps) {
@@ -214,7 +214,7 @@ export function XDSSideNavItem({
   // Collapse state for items with children
   const itemCollapsibleConfig =
     typeof itemCollapsible === 'object' ? itemCollapsible : {};
-  const isItemCollapsible = hasChildren && !!itemCollapsible;
+  const isItemCollapsible = hasChildren && itemCollapsible !== false;
   const itemControlledCollapsed = itemCollapsibleConfig.isCollapsed;
   const isItemControlled = itemControlledCollapsed !== undefined;
   const [uncontrolledCollapsed, setUncontrolledCollapsed] = useState(
