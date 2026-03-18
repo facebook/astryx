@@ -97,15 +97,43 @@ export const docs = {
       title: 'Radius Tokens',
       content: [
         {
+          type: 'prose',
+          text: 'Numeric scale based on a 4dp base unit. Tokens 1–4 scale with the theme\'s radiusScale multiplier; tokens 0 and rounded are fixed.',
+        },
+        {
           type: 'table',
-          headers: ['Token', 'Value', 'Usage'],
+          headers: ['Token', 'Value', 'Usage', 'Scales'],
           rows: [
-            ['--radius-rounded', '9999px', 'Pills, avatars'],
-            ['--radius-3', '12px', 'Cards, modals'],
-            ['--radius-2', '8px', 'Buttons, inputs'],
-            ['--radius-1', '4px', 'Small elements'],
-            ['--radius-0', '0px', 'No radius'],
+            ['--radius-0', '0px', 'No radius (dividers, table cells)', 'No'],
+            ['--radius-1', '4px', 'Code blocks, inner content', 'Yes'],
+            ['--radius-2', '8px', 'Buttons, inputs, text areas', 'Yes'],
+            ['--radius-3', '12px', 'Cards, modals, popovers, dropdowns', 'Yes'],
+            ['--radius-4', '16px', 'Page sections, large containers', 'Yes'],
+            ['--radius-rounded', '9999px', 'Badges, avatars, status dots, toggles', 'No'],
           ],
+        },
+        {
+          type: 'prose',
+          text: 'Use radiusScale in defineTheme to generate all radius tokens from a base unit and multiplier: defineTheme({ radiusScale: { base: 4, multiplier: 1.5 } }). Multiplier 0 = sharp, 1 = default, 1.5 = rounded, 2 = pill-like. Explicit token overrides take precedence over radiusScale values.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'radiusScale example',
+          code: `import {defineTheme} from '@xds/core/theme';
+
+// Rounded theme — all scalable radii increased by 50%
+const roundedTheme = defineTheme({
+  name: 'rounded',
+  radiusScale: { base: 4, multiplier: 1.5 },
+});
+
+// Sharp/brutalist theme — all scalable radii become 0
+const sharpTheme = defineTheme({
+  name: 'sharp',
+  radiusScale: { base: 4, multiplier: 0 },
+  tokens: { '--radius-rounded': '0px' }, // even pills are sharp
+});`,
         },
       ],
     },

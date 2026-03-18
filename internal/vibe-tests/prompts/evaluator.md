@@ -78,7 +78,7 @@ XDS uses specific CSS variable naming. **Any variable not matching these pattern
 | ------------- | ---------------------------------------------- | ------------------------------------------------------------ |
 | Colors        | `--color-*`                                    | `--color-surface`, `--color-text-primary`, `--color-accent`  |
 | Spacing       | `--spacing-*`                                  | `--spacing-0` through `--spacing-7`                          |
-| Radius        | `--radius-*`                                   | `--radius-container`, `--radius-element`, `--radius-content` |
+| Radius        | `--radius-*`                                   | `--radius-0`, `--radius-1`, `--radius-2`, `--radius-3`, `--radius-4`, `--radius-rounded` |
 | Elevation     | `--elevation-*`                                | `--elevation-base`, `--elevation-dialog`, `--elevation-menu` |
 | Transitions   | `--transition-*`                               | `--transition-fast`, `--transition-normal`                   |
 | Font families | `--font-body`, `--font-code`, `--font-heading` | (only these three)                                           |

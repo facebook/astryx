@@ -115,6 +115,41 @@ export const myTheme: Theme = {
       ],
     },
     {
+      title: 'defineTheme (recommended)',
+      content: [
+        {
+          type: 'prose',
+          text: "defineTheme is a higher-level API that wraps the raw stylex.createTheme pattern. It supports scale configs that generate tokens from parameters. Explicit token overrides always take precedence over scale-generated values.",
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'defineTheme with scale configs',
+          code: `import {defineTheme} from '@xds/core/theme';
+
+const myTheme = defineTheme({
+  name: 'my-theme',
+  typeScale: { base: 14, ratio: 1.2 },       // generates heading + text tokens
+  radiusScale: { base: 4, multiplier: 1 },    // generates radius tokens
+  tokens: {
+    '--color-accent': ['#7B61FF', '#9B85FF'], // explicit overrides win
+  },
+  components: {
+    button: { 'variant:primary': { color: 'white' } },
+  },
+});`,
+        },
+        {
+          type: 'table',
+          headers: ['Config', 'Generates', 'Parameters'],
+          rows: [
+            ['typeScale', '--heading-*-size/weight/leading, --text-*-size/weight/leading', 'base (px), ratio, weights?'],
+            ['radiusScale', '--radius-0 through --radius-4, --radius-rounded', 'base (px), multiplier (0–2)'],
+          ],
+        },
+      ],
+    },
+    {
       title: 'Light/Dark Mode',
       content: [
         {

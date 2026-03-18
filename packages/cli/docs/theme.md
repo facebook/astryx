@@ -122,6 +122,45 @@ export const myTheme: Theme = {
 };
 ```
 
+### defineTheme (recommended for new themes)
+
+`defineTheme` is a higher-level API that wraps the raw `stylex.createTheme` pattern. It supports scale configs that generate tokens from parameters.
+
+```tsx
+import {defineTheme} from '@xds/core/theme';
+
+const myTheme = defineTheme({
+  name: 'my-theme',
+
+  // Type scale — generates heading and text tokens from base size + ratio
+  typeScale: { base: 14, ratio: 1.2 },
+
+  // Radius scale — generates radius tokens from base unit + multiplier
+  radiusScale: { base: 4, multiplier: 1 },
+
+  // Explicit token overrides (highest precedence — overrides scale values)
+  tokens: {
+    '--color-accent': ['#7B61FF', '#9B85FF'],
+  },
+
+  // Component-level style overrides
+  components: {
+    button: {
+      'variant:primary': { color: 'white' },
+    },
+  },
+});
+```
+
+**Scale configs:**
+
+| Config | What it generates | Parameters |
+| --- | --- | --- |
+| `typeScale` | `--heading-*-size/weight/leading`, `--text-*-size/weight/leading` | `base` (px), `ratio`, `weights?` |
+| `radiusScale` | `--radius-0` through `--radius-4`, `--radius-rounded` | `base` (px), `multiplier` (0–2) |
+
+Explicit `tokens` overrides always take precedence over scale-generated values.
+
 ## Light/Dark Mode
 
 ### Automatic (recommended)

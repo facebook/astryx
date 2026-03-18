@@ -65,13 +65,45 @@ Control heights for consistent sizing across buttons, inputs, and selectors.
 
 ## Radius Tokens
 
-| Token            | Value  | Usage           |
-| ---------------- | ------ | --------------- |
-| --radius-rounded | 9999px | Pills, avatars  |
-| --radius-3       | 12px   | Cards, modals   |
-| --radius-2       | 8px    | Buttons, inputs |
-| --radius-1       | 4px    | Small elements  |
-| --radius-0       | 0px    | No radius       |
+Numeric scale based on a 4dp base unit. Tokens 1–4 scale with the theme's `radiusScale` multiplier; tokens 0 and rounded are fixed.
+
+| Token            | Value  | Usage                                 | Scales |
+| ---------------- | ------ | ------------------------------------- | ------ |
+| --radius-0       | 0px    | No radius (dividers, table cells)     | No     |
+| --radius-1       | 4px    | Code blocks, inner content            | Yes    |
+| --radius-2       | 8px    | Buttons, inputs, text areas           | Yes    |
+| --radius-3       | 12px   | Cards, modals, popovers, dropdowns    | Yes    |
+| --radius-4       | 16px   | Page sections, large containers       | Yes    |
+| --radius-rounded | 9999px | Badges, avatars, status dots, toggles | No     |
+
+### radiusScale (via defineTheme)
+
+Generate all radius tokens from a base unit and multiplier:
+
+```tsx
+import {defineTheme} from '@xds/core/theme';
+
+const roundedTheme = defineTheme({
+  name: 'rounded',
+  radiusScale: { base: 4, multiplier: 1.5 },
+  // Produces: radius-1=6px, radius-2=12px, radius-3=18px, radius-4=24px
+  // radius-0 stays 0px, radius-rounded stays 9999px
+});
+
+const sharpTheme = defineTheme({
+  name: 'sharp',
+  radiusScale: { base: 4, multiplier: 0 },
+  // All scalable radii become 0px
+});
+```
+
+| Multiplier | Effect    | radius-3 becomes |
+| ---------- | --------- | ---------------- |
+| 0          | Sharp     | 0px              |
+| 0.5        | Subtle    | 6px              |
+| 1 (default)| Default   | 12px             |
+| 1.5        | Rounded   | 18px             |
+| 2          | Pill-like | 24px             |
 
 ## Elevation Tokens
 
