@@ -104,11 +104,7 @@ export const neutralTheme = defineTheme({
     '--color-divider-high-contrast': ['oklch(0.708 0 0)', 'oklch(0.556 0 0)'],
     '--color-divider-emphasized': ['oklch(0.85 0 0)', 'oklch(0.371 0 0)'],
 
-    // Disabled/Effects
-    '--color-disabled-overlay': [
-      'oklch(1 0 0 / 50%)',
-      'oklch(0.145 0 0 / 50%)',
-    ],
+    // Effects
     '--color-glimmer': ['oklch(0.922 0 0)', 'oklch(0.371 0 0)'],
     '--color-glimmer-high-contrast': ['oklch(0.85 0 0)', 'oklch(0.439 0 0)'],
     '--color-shadow-elevation': ['oklch(0 0 0 / 10%)', 'oklch(0 0 0 / 30%)'],
@@ -272,8 +268,6 @@ export const neutralTheme = defineTheme({
     // =========================================================================
     '--elevation-base':
       '0 1px 2px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 20%))',
-    '--elevation-thumb':
-      '0 1px 3px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 30%))',
     '--elevation-dialog':
       '0 4px 6px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 25%)), 0 12px 24px light-dark(oklch(0 0 0 / 15%), oklch(0 0 0 / 35%))',
     '--elevation-hover':

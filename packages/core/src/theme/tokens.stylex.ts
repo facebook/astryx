@@ -64,8 +64,7 @@ export const colorDefaults = {
   '--color-divider-high-contrast': 'light-dark(#647685, #6F747C)',
   '--color-divider-emphasized': 'light-dark(#CCD3DB, #494D53)',
 
-  // Disabled/Effects
-  '--color-disabled-overlay': 'light-dark(#FFFFFF7F, #1F1F227F)',
+  // Effects
   '--color-glimmer': 'light-dark(#CCD3DB, #5A5E66)',
   '--color-glimmer-high-contrast': 'light-dark(#A4B0BC, #8C939B)',
   '--color-shadow-elevation':
@@ -205,8 +204,6 @@ export const radiusVars = stylex.defineVars(radiusDefaults);
 
 export const elevationDefaults = {
   '--elevation-base': '0px 0px 1px light-dark(rgba(0, 0, 0, 0.1), #111112)',
-  '--elevation-thumb':
-    '0 1px 3px light-dark(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.4))',
   '--elevation-dialog':
     '0px 2px 2px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0px 8px 24px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3))',
   '--elevation-hover':
