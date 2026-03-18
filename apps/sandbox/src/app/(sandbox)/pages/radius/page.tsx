@@ -168,7 +168,7 @@ export default function RadiusPage() {
                 <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>radius-content</td>
                 <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>4dp</td>
                 <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>Yes</td>
-                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}><div style={{width: 40, height: 40, backgroundColor: 'light-dark(#ddd, #444)', borderRadius: r1}} /></td>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}><div style={{width: 40, height: 40, backgroundColor: 'light-dark(#ddd, #444)', borderRadius: 4}} /></td>
                 <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)', color: 'light-dark(#666, #aaa)'}}>code blocks, thumbnails</td>
               </tr>
               <tr>
@@ -176,7 +176,7 @@ export default function RadiusPage() {
                 <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>radius-element</td>
                 <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>8dp</td>
                 <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>Yes</td>
-                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}><div style={{width: 40, height: 40, backgroundColor: 'light-dark(#ddd, #444)', borderRadius: r2}} /></td>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}><div style={{width: 40, height: 40, backgroundColor: 'light-dark(#ddd, #444)', borderRadius: 8}} /></td>
                 <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)', color: 'light-dark(#666, #aaa)'}}>buttons, inputs, text areas, tokens, checkboxes</td>
               </tr>
               <tr>
@@ -184,7 +184,7 @@ export default function RadiusPage() {
                 <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>radius-container</td>
                 <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>12dp</td>
                 <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>Yes</td>
-                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}><div style={{width: 40, height: 40, backgroundColor: 'light-dark(#ddd, #444)', borderRadius: r3}} /></td>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}><div style={{width: 40, height: 40, backgroundColor: 'light-dark(#ddd, #444)', borderRadius: 12}} /></td>
                 <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)', color: 'light-dark(#666, #aaa)'}}>cards, modals, popovers, dropdown menus, toasts</td>
               </tr>
               <tr>
@@ -192,7 +192,7 @@ export default function RadiusPage() {
                 <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>radius-page</td>
                 <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>16dp</td>
                 <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>Yes</td>
-                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}><div style={{width: 40, height: 40, backgroundColor: 'light-dark(#ddd, #444)', borderRadius: r4}} /></td>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}><div style={{width: 40, height: 40, backgroundColor: 'light-dark(#ddd, #444)', borderRadius: 16}} /></td>
                 <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)', color: 'light-dark(#666, #aaa)'}}>page sections, large containers</td>
               </tr>
               <tr>
