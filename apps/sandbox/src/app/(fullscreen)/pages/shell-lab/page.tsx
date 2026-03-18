@@ -116,6 +116,7 @@ interface ShellConfig {
   showSubheading: boolean;
   showNestedItems: boolean;
   isCollapsible: boolean;
+  isResizable: boolean;
   collapseToggleLocation: 'sidenav' | 'topnav';
   mobileNavMode: 'auto' | 'customContent' | 'customToggle' | 'disabled';
   mobileNavSide: 'start' | 'end';
@@ -139,6 +140,7 @@ const DEFAULT_CONFIG: ShellConfig = {
   showSubheading: false,
   showNestedItems: true,
   isCollapsible: true,
+  isResizable: false,
   collapseToggleLocation: 'sidenav',
   mobileNavMode: 'auto',
   mobileNavSide: 'start',
@@ -271,6 +273,11 @@ function ConfigPanel({
               ]}
             />
           )}
+          <ToggleRow
+            label="Resizable"
+            value={config.isResizable}
+            onChange={v => onChange({isResizable: v})}
+          />
         </XDSVStack>
 
         <XDSDivider />
@@ -486,6 +493,7 @@ function SampleSideNav({
             : true
           : false
       }
+      resizable={config.isResizable}
       header={heading}
       topContent={
         config.showTopContent ? (

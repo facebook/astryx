@@ -8,7 +8,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {forwardRef, type ComponentPropsWithoutRef} from 'react';
 import {XDSSideNav} from './XDSSideNav';
@@ -392,6 +392,77 @@ describe('XDSSideNavSection', () => {
       </XDSSideNavSection>,
     );
     expect(screen.getByTestId('nav-section')).toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// Resizable
+// =============================================================================
+
+describe('XDSSideNav resizable', () => {
+  it('renders drag handle when resizable', () => {
+    render(<XDSSideNav resizable>Content</XDSSideNav>);
+    expect(screen.getByTestId('xds-sidenav-resize-handle')).toBeInTheDocument();
+  });
+
+  it('does not render drag handle without resizable', () => {
+    render(<XDSSideNav>Content</XDSSideNav>);
+    expect(
+      screen.queryByTestId('xds-sidenav-resize-handle'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not render drag handle when collapsed', () => {
+    render(
+      <XDSSideNav
+        resizable
+        collapsible={{isCollapsed: true, onCollapsedChange: () => {}}}>
+        Content
+      </XDSSideNav>,
+    );
+    expect(
+      screen.queryByTestId('xds-sidenav-resize-handle'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('calls onWidthChange after drag', () => {
+    const handleWidthChange = vi.fn();
+    render(
+      <XDSSideNav resizable={{onWidthChange: handleWidthChange}}>
+        Content
+      </XDSSideNav>,
+    );
+    const handle = screen.getByTestId('xds-sidenav-resize-handle');
+
+    // Simulate pointer drag sequence
+    act(() => {
+      handle.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          clientX: 260,
+          bubbles: true,
+        }),
+      );
+      document.dispatchEvent(
+        new PointerEvent('pointermove', {clientX: 310, bubbles: true}),
+      );
+      document.dispatchEvent(
+        new PointerEvent('pointerup', {clientX: 310, bubbles: true}),
+      );
+    });
+
+    expect(handleWidthChange).toHaveBeenCalledTimes(1);
+    expect(handleWidthChange).toHaveBeenCalledWith(expect.any(Number));
+  });
+
+  it('respects defaultWidth', () => {
+    render(<XDSSideNav resizable={{defaultWidth: 300}}>Content</XDSSideNav>);
+    const nav = screen.getByRole('navigation');
+    expect(nav.style.width).toBe('300px');
+  });
+
+  it('drag handle has separator role', () => {
+    render(<XDSSideNav resizable>Content</XDSSideNav>);
+    expect(screen.getByRole('separator')).toBeInTheDocument();
   });
 });
 
