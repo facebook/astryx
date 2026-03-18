@@ -9,7 +9,7 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSSwitch} from '@xds/core/Switch';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSBanner} from '@xds/core/Banner';
-import {XDSTabList} from '@xds/core/TabList';
+import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSDialog} from '@xds/core/Dialog';
 import {XDSToken} from '@xds/core/Token';
 import {XDSSlider} from '@xds/core/Slider';
@@ -1093,15 +1093,11 @@ const styles = stylex.create({
         <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
           Tabs
         </XDSText>
-        <XDSTabList
-          tabs={[
-            {id: 'overview', label: 'Overview'},
-            {id: 'details', label: 'Details'},
-            {id: 'settings', label: 'Settings'},
-          ]}
-          selectedId={selectedTab}
-          onSelect={setSelectedTab}
-        />
+        <XDSTabList value={selectedTab} onChange={setSelectedTab}>
+          <XDSTab value="overview" label="Overview" />
+          <XDSTab value="details" label="Details" />
+          <XDSTab value="settings" label="Settings" />
+        </XDSTabList>
       </div>
 
       {/* Avatar */}
@@ -1407,15 +1403,11 @@ function DashboardPreview() {
 
       {/* Tabs + Table */}
       <div>
-        <XDSTabList
-          tabs={[
-            {id: 'overview', label: 'Overview'},
-            {id: 'performance', label: 'Performance'},
-            {id: 'errors', label: 'Errors'},
-          ]}
-          activeTab={tab}
-          onTabChange={setTab}
-        />
+        <XDSTabList value={tab} onChange={setTab}>
+          <XDSTab value="overview" label="Overview" />
+          <XDSTab value="performance" label="Performance" />
+          <XDSTab value="errors" label="Errors" />
+        </XDSTabList>
         <div style={{marginTop: '16px'}}>
           <XDSTable columns={dashboardColumns} data={metrics} size="sm" />
         </div>
@@ -1546,15 +1538,11 @@ function PreviewTabs() {
 
   return (
     <div>
-      <XDSTabList
-        tabs={[
-          {id: 'preview', label: 'Preview'},
-          {id: 'landing', label: 'Landing Page'},
-          {id: 'dashboard', label: 'Dashboard'},
-        ]}
-        activeTab={activePreview}
-        onTabChange={setActivePreview}
-      />
+      <XDSTabList value={activePreview} onChange={setActivePreview}>
+        <XDSTab value="preview" label="Preview" />
+        <XDSTab value="landing" label="Landing Page" />
+        <XDSTab value="dashboard" label="Dashboard" />
+      </XDSTabList>
       <div style={{marginTop: '24px'}}>
         {activePreview === 'preview' && <ComponentPreview />}
         {activePreview === 'landing' && <LandingPagePreview />}
