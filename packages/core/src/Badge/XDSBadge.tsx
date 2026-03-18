@@ -35,7 +35,7 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacingVars['--spacing-1'],
-    height: '20px',
+    height: spacingVars['--spacing-5'],
     paddingBlock: 0,
     paddingInline: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-rounded'],
