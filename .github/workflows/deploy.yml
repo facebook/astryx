@@ -61,6 +61,7 @@ jobs:
 
   deploy:
     needs: test
+    if: always() && !cancelled() && needs.test.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
