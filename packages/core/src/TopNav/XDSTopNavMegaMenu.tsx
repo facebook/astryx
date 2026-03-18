@@ -116,10 +116,7 @@ const styles = stylex.create({
   panelContainer: {
     backgroundColor: colorVars['--color-popover'],
     borderTop: `1px solid ${colorVars['--color-border']}`,
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-    borderBottomLeftRadius: radiusVars['--radius-3'],
-    borderBottomRightRadius: radiusVars['--radius-3'],
+    borderRadius: radiusVars['--radius-3'],
     boxShadow: shadowVars['--shadow-menu'],
     overflow: 'hidden',
   },
