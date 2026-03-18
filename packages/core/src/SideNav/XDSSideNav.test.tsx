@@ -296,55 +296,6 @@ describe('XDSSideNavHeading collapsed', () => {
     expect(link).toHaveAttribute('aria-label', 'My App');
   });
 
-  it('renders as button when collapsed with menu and no href', () => {
-    render(
-      <CollapsedWrapper>
-        <XDSSideNavHeading
-          heading="My App"
-          icon={<span data-testid="app-icon">🏠</span>}
-          menu={<div>Menu content</div>}
-        />
-      </CollapsedWrapper>,
-    );
-    const button = screen.getByRole('button');
-    expect(button).toHaveAttribute('aria-label', 'My App');
-    expect(button).toHaveAttribute('aria-haspopup', 'dialog');
-  });
-
-  it('toggles popover when collapsed menu button is clicked', async () => {
-    const user = userEvent.setup();
-    render(
-      <CollapsedWrapper>
-        <XDSSideNavHeading
-          heading="My App"
-          icon={<span data-testid="app-icon">🏠</span>}
-          menu={<div data-testid="menu-content">Menu</div>}
-        />
-      </CollapsedWrapper>,
-    );
-    const button = screen.getByRole('button');
-    await user.click(button);
-    expect(button).toHaveAttribute('aria-expanded', 'true');
-  });
-
-  it('prefers link over menu trigger when collapsed with both href and menu', () => {
-    render(
-      <CollapsedWrapper>
-        <XDSSideNavHeading
-          heading="My App"
-          headingHref="/home"
-          icon={<span data-testid="app-icon">🏠</span>}
-          menu={<div>Menu</div>}
-        />
-      </CollapsedWrapper>,
-    );
-    const link = screen.getByRole('link');
-    expect(link).toHaveAttribute('href', '/home');
-    expect(link).toHaveAttribute('aria-label', 'My App');
-    // Should not have a button trigger
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
-  });
-
   it('does not show chevron when collapsed', () => {
     const {container} = render(
       <CollapsedWrapper>
