@@ -245,6 +245,48 @@ export default function RadiusPage() {
             </XDSVStack>
           </div>
         </XDSVStack>
+
+        <XDSDivider />
+
+        {/* radius-content */}
+        <XDSVStack gap={4}>
+          <div style={{display: 'flex', alignItems: 'baseline', gap: 12}}>
+            <span style={{fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'light-dark(#0064E0, #2694FE)'}}>radius-content</span>
+            <span style={{fontSize: 13, color: 'light-dark(#666, #aaa)', fontStyle: 'italic'}}>4dp &times; multiplier</span>
+          </div>
+          <div style={{display: 'flex', gap: 48, flexWrap: 'wrap', alignItems: 'flex-start'}}>
+            {/* Code block */}
+            <XDSVStack gap={2}>
+              <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Code Block</span>
+              <div style={{
+                backgroundColor: 'light-dark(#f5f5f5, #2a2a2a)',
+                border: '1px solid light-dark(#ddd, #444)',
+                borderRadius: tokens['radius-content'],
+                padding: '16px 20px',
+                fontFamily: 'SF Mono, Monaco, Consolas, monospace',
+                fontSize: 14,
+                color: 'light-dark(#333, #eee)',
+                lineHeight: 1.8,
+                width: 420,
+                transition: 'border-radius 0.2s',
+              }}>
+                <span style={{color: '#5B08D8'}}>const</span> radius = <span style={{color: '#0064E0'}}>max</span>(<span style={{color: '#E9AF08'}}>0</span>, outer - padding);<br />
+                <span style={{color: '#5B08D8'}}>const</span> theme = <span style={{color: '#0D8626'}}>&apos;default&apos;</span>;
+              </div>
+            </XDSVStack>
+
+            {/* Thumbnails */}
+            <XDSVStack gap={2}>
+              <span style={{fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'light-dark(#888, #777)'}}>Thumbnails</span>
+              <div style={{display: 'flex', gap: 12}}>
+                <div style={{width: 64, height: 64, borderRadius: tokens['radius-content'], background: 'linear-gradient(135deg, #E9AF08, #E3193B)', transition: 'border-radius 0.2s'}} />
+                <div style={{width: 64, height: 64, borderRadius: tokens['radius-content'], background: 'linear-gradient(135deg, #0064E0, #0D8626)', transition: 'border-radius 0.2s'}} />
+                <div style={{width: 64, height: 64, borderRadius: tokens['radius-content'], background: 'linear-gradient(135deg, #5B08D8, #E3193B)', transition: 'border-radius 0.2s'}} />
+                <div style={{width: 64, height: 64, borderRadius: tokens['radius-content'], background: 'linear-gradient(135deg, #0D8626, #0064E0)', transition: 'border-radius 0.2s'}} />
+              </div>
+            </XDSVStack>
+          </div>
+        </XDSVStack>
       </XDSVStack>
     </div>
   );
