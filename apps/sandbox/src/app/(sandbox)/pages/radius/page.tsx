@@ -77,6 +77,9 @@ const styles = stylex.create({
 export default function RadiusPage() {
   const [multiplier, setMultiplier] = useState(1);
   const tokens = useMemo(() => computeTokens(multiplier), [multiplier]);
+  const ct = tokens['radius-container'];
+  const el = tokens['radius-element'];
+  const co = tokens['radius-content'];
 
   const activePreset = Object.entries(PRESETS).find(
     ([, v]) => Math.abs(v - multiplier) < 0.001,
