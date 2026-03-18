@@ -44,6 +44,7 @@ import {
   typographyVars,
   textSizeVars,
 } from '../theme/tokens.stylex';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Styles
@@ -475,7 +476,13 @@ export function XDSMoreMenu({
         data-testid={testId}
       />
       {layer.render(
-        <div id={menuId} role="menu" {...stylex.props(styles.dropdown)}>
+        <div
+          id={menuId}
+          role="menu"
+          {...mergeProps(
+            xdsClassName('more-menu'),
+            stylex.props(styles.dropdown),
+          )}>
           {renderOptions()}
         </div>,
         {

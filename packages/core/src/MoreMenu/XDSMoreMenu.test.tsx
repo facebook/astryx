@@ -184,4 +184,10 @@ describe('XDSMoreMenu', () => {
     expect(button).toBeInTheDocument();
     expect(button.tagName).toBe('BUTTON');
   });
+
+  it('renders xds-more-menu class on dropdown panel for theme targeting', () => {
+    render(<XDSMoreMenu items={defaultItems} />);
+    const menu = screen.getByRole('menu', {hidden: true});
+    expect(menu.className).toContain('xds-more-menu');
+  });
 });
