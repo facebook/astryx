@@ -718,20 +718,26 @@ export function XDSAppShell({
   // mode — it shows heading + footer icons horizontally, with the hamburger
   const autoMobileTopBar =
     shouldShowAutoToggle && !hasTopNav && hasSideNav ? (
-      <XDSLayoutHeader
-        padding={0}
-        hasDivider={navHasDividers}
-        xstyle={navAreaStyle}>
-        <div
-          {...stylex.props(styles.autoMobileTopBar)}
-          role="navigation"
-          aria-label="Mobile navigation">
-          <XDSSideNavRenderContext value="topbar">
-            {sideNav}
-          </XDSSideNavRenderContext>
-          <XDSMobileNavToggle />
-        </div>
-      </XDSLayoutHeader>
+      <div
+        {...stylex.props(
+          isAuto && styles.headerSticky,
+          isAuto && stickyBgStyle,
+        )}>
+        <XDSLayoutHeader
+          padding={0}
+          hasDivider={navHasDividers}
+          xstyle={navAreaStyle}>
+          <div
+            {...stylex.props(styles.autoMobileTopBar)}
+            role="navigation"
+            aria-label="Mobile navigation">
+            <XDSSideNavRenderContext value="topbar">
+              {sideNav}
+            </XDSSideNavRenderContext>
+            <XDSMobileNavToggle />
+          </div>
+        </XDSLayoutHeader>
+      </div>
     ) : undefined;
 
   return (
