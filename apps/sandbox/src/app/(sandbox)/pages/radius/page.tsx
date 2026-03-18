@@ -132,6 +132,61 @@ export default function RadiusPage() {
             </XDSHStack>
           </XDSVStack>
         </div>
+
+        <XDSDivider />
+
+        {/* Default Radius Table */}
+        <XDSVStack gap={3}>
+          <XDSHeading level={2}>Default Radius</XDSHeading>
+          <table style={{width: '100%', borderCollapse: 'collapse', fontSize: 14}}>
+            <thead>
+              <tr>
+                <th style={{textAlign: 'left', padding: '12px 0', fontWeight: 600, borderBottom: '2px solid light-dark(#ddd, #444)'}}>Token</th>
+                <th style={{textAlign: 'left', padding: '12px 0', fontWeight: 600, borderBottom: '2px solid light-dark(#ddd, #444)'}}>Base Value</th>
+                <th style={{textAlign: 'left', padding: '12px 0', fontWeight: 600, borderBottom: '2px solid light-dark(#ddd, #444)'}}>Scales?</th>
+                <th style={{textAlign: 'left', padding: '12px 0', fontWeight: 600, borderBottom: '2px solid light-dark(#ddd, #444)'}}>Visual</th>
+                <th style={{textAlign: 'left', padding: '12px 0', fontWeight: 600, borderBottom: '2px solid light-dark(#ddd, #444)'}}>Example Components</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)', fontFamily: 'monospace'}}>radius-none</td>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>0dp</td>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>No — always 0</td>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}><div style={{width: 40, height: 40, backgroundColor: 'light-dark(#ddd, #444)', borderRadius: 0}} /></td>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)', color: 'light-dark(#666, #aaa)'}}>dividers, table cells, side panels, shared edges (button groups)</td>
+              </tr>
+              <tr>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)', fontFamily: 'monospace'}}>radius-content</td>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>4dp</td>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>Yes</td>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}><div style={{width: 40, height: 40, backgroundColor: 'light-dark(#ddd, #444)', borderRadius: tokens['radius-content']}} /></td>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)', color: 'light-dark(#666, #aaa)'}}>code blocks, thumbnails</td>
+              </tr>
+              <tr>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)', fontFamily: 'monospace'}}>radius-element</td>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>8dp</td>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>Yes</td>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}><div style={{width: 40, height: 40, backgroundColor: 'light-dark(#ddd, #444)', borderRadius: tokens['radius-element']}} /></td>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)', color: 'light-dark(#666, #aaa)'}}>buttons, inputs, text areas, tokens, checkboxes</td>
+              </tr>
+              <tr>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)', fontFamily: 'monospace'}}>radius-container</td>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>12dp</td>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}>Yes</td>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)'}}><div style={{width: 40, height: 40, backgroundColor: 'light-dark(#ddd, #444)', borderRadius: tokens['radius-container']}} /></td>
+                <td style={{padding: '12px 0', borderBottom: '1px solid light-dark(#eee, #333)', color: 'light-dark(#666, #aaa)'}}>cards, modals, popovers, dropdown menus, toasts</td>
+              </tr>
+              <tr>
+                <td style={{padding: '12px 0', fontFamily: 'monospace'}}>radius-rounded</td>
+                <td style={{padding: '12px 0'}}>9999dp</td>
+                <td style={{padding: '12px 0'}}>No — always pill</td>
+                <td style={{padding: '12px 0'}}><div style={{width: 40, height: 40, backgroundColor: 'light-dark(#ddd, #444)', borderRadius: 9999}} /></td>
+                <td style={{padding: '12px 0', color: 'light-dark(#666, #aaa)'}}>badges, avatars, status dots, toggles</td>
+              </tr>
+            </tbody>
+          </table>
+        </XDSVStack>
       </XDSVStack>
     </div>
   );
