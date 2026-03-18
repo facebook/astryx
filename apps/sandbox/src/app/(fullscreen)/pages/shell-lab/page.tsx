@@ -4,6 +4,7 @@ import {useState, useCallback} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {XDSAppShell} from '@xds/core/AppShell';
+import type {XDSMobileNavConfig} from '@xds/core/AppShell';
 import {
   XDSSideNav,
   XDSSideNavHeading,
@@ -750,11 +751,7 @@ export default function ShellLabPage() {
   }, []);
 
   // Build the mobileNav prop based on config
-  const mobileNav:
-    | false
-    | {hasToggle?: boolean; content?: React.ReactNode; breakpoint?: string}
-    | React.ReactNode
-    | undefined =
+  const mobileNav: false | XDSMobileNavConfig | React.ReactNode | undefined =
     config.mobileNavMode === 'disabled'
       ? false
       : config.mobileNavMode === 'customContent'
