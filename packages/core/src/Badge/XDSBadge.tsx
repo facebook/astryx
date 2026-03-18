@@ -43,7 +43,6 @@ const styles = stylex.create({
     fontSize: textSizeVars['--text-xsm'],
     lineHeight: lineHeightVars['--leading-tight'],
     fontWeight: fontWeightVars['--font-weight-medium'],
-    letterSpacing: '-0.24px',
     whiteSpace: 'nowrap',
   },
   dot: {
