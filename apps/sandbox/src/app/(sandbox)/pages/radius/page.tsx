@@ -42,9 +42,9 @@ const styles = stylex.create({
     maxWidth: 1200,
   },
   controls: {
-    padding: 16,
-    backgroundColor: 'light-dark(#f5f5f5, #2a2a2a)',
-    borderRadius: 8,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 16,
   },
   controlGroup: {
     display: 'flex',
@@ -103,7 +103,7 @@ export default function RadiusPage() {
         {/* Controls */}
         <div {...stylex.props(styles.controls)}>
           <XDSVStack gap={4}>
-            <span {...stylex.props(styles.label)}>Radius Multiplier</span>
+            <span style={{fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'light-dark(#0064E0, #2694FE)'}}>Radius Multiplier</span>
             <XDSHStack gap={3} vAlign="center">
               <input
                 type="range"
@@ -142,7 +142,7 @@ export default function RadiusPage() {
 
         {/* Default Radius Table */}
         <XDSVStack gap={3}>
-          <XDSHeading level={2}>Default Radius</XDSHeading>
+          <span style={{fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'light-dark(#0064E0, #2694FE)'}}>Default Radius</span>
           <table style={{width: '100%', borderCollapse: 'collapse', fontSize: 14}}>
             <thead>
               <tr>
