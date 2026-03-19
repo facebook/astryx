@@ -4,15 +4,81 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSCard} from '@xds/core/Card';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSLink} from '@xds/core/Link';
+import {XDSTabList, XDSTab} from '@xds/core/TabList';
+import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
 import {XDSButton} from '@xds/core/Button';
+import {} from '@heroicons/react/24/outline';
+
+function XBracketIcon({style}: {style?: React.CSSProperties}) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      style={style}>
+      {/* Left bracket */}
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7 4H4v16h3" />
+      {/* Right bracket */}
+      <path strokeLinecap="round" strokeLinejoin="round" d="M17 4h3v16h-3" />
+      {/* X */}
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 9l6 6M15 9l-6 6"
+      />
+    </svg>
+  );
+}
+
+function NestIcon({style}: {style?: React.CSSProperties}) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      style={style}>
+      {/* Bowl shape */}
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 12c0 5 4 9 9 9s9-4 9-9"
+      />
+      {/* Woven lines */}
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M5 13c1.5 3 4 5 7 5s5.5-2 7-5"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M7.5 15c1 1.5 2.5 2.5 4.5 2.5s3.5-1 4.5-2.5"
+      />
+      {/* Three eggs */}
+      <ellipse cx="8.5" cy="10.5" rx="2" ry="2.8" strokeLinejoin="round" />
+      <ellipse cx="12" cy="9.5" rx="1.8" ry="2.5" strokeLinejoin="round" />
+      <ellipse cx="15.5" cy="10.5" rx="2" ry="2.8" strokeLinejoin="round" />
+    </svg>
+  );
+}
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSTextInput} from '@xds/core/TextInput';
+import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSTable, proportional, pixel} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {XDSPagination} from '@xds/core/Pagination';
-import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
+import {
+  colorVars,
+  spacingVars,
+  textSizeVars,
+  fontWeightVars,
+  radiusVars,
+} from '@xds/core/theme/tokens.stylex';
 
 // =============================================================================
 // Styles
@@ -24,48 +90,46 @@ const styles = stylex.create({
     margin: '0 auto',
     width: '100%',
   },
-  subtitle: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 6,
-    flexWrap: 'wrap',
-  },
   statsRow: {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: 12,
+    gap: spacingVars['--spacing-3'],
   },
   statInner: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 4,
+    gap: spacingVars['--spacing-1'],
   },
   statValueRow: {
     display: 'flex',
     alignItems: 'baseline',
-    gap: 8,
+    gap: spacingVars['--spacing-2'],
   },
   changePositive: {
-    color: '#16a34a',
-    fontSize: '0.875rem',
-    fontWeight: 600,
+    color: colorVars['--color-positive'],
+    fontSize: textSizeVars['--text-base'],
+    fontWeight: fontWeightVars['--font-weight-semibold'],
   },
   chartsGrid: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
-    gap: 16,
+    gap: spacingVars['--spacing-4'],
   },
   chartInner: {
-    padding: '4px 0 0 0',
+    paddingTop: spacingVars['--spacing-1'],
   },
   linksRow: {
     display: 'flex',
-    gap: 8,
+    gap: spacingVars['--spacing-2'],
     flexWrap: 'wrap',
   },
+  searchFill: {
+    flex: 1,
+    minWidth: 0,
+  },
   sectionLabel: {
-    fontSize: '0.6875rem',
-    fontWeight: 700,
+    fontSize: textSizeVars['--text-xsm'],
+    fontWeight: fontWeightVars['--font-weight-bold'],
     textTransform: 'uppercase',
     letterSpacing: '0.08em',
     color: colorVars['--color-text-secondary'],
@@ -73,12 +137,12 @@ const styles = stylex.create({
   orgBar: {
     display: 'flex',
     alignItems: 'center',
-    gap: 8,
+    gap: spacingVars['--spacing-2'],
     height: 26,
   },
   orgLabel: {
     width: 180,
-    fontSize: '0.75rem',
+    fontSize: textSizeVars['--text-xsm'],
     color: colorVars['--color-text-secondary'],
     textAlign: 'right',
     flexShrink: 0,
@@ -90,17 +154,17 @@ const styles = stylex.create({
     flex: 1,
     height: 14,
     backgroundColor: colorVars['--color-wash'],
-    borderRadius: 3,
+    borderRadius: radiusVars['--radius-content'],
     overflow: 'hidden',
   },
   barFill: {
     height: '100%',
     backgroundColor: colorVars['--color-active'],
-    borderRadius: 3,
+    borderRadius: radiusVars['--radius-content'],
   },
   pctLabel: {
     width: 36,
-    fontSize: '0.75rem',
+    fontSize: textSizeVars['--text-xsm'],
     color: colorVars['--color-text-secondary'],
   },
   wash: {
@@ -119,47 +183,174 @@ const overviewStats = [
     label: 'Total Intern Tools',
     value: '14,184',
     change: '+5.4%',
-    source: 'internal_tool_data \u00b7 vs 30d ago',
-  },
-  {
-    label: 'Total Nest Apps',
-    value: '7,304',
-    change: '+318.3%',
-    source: 'nest/apps \u00b7 vs 30d ago',
+    source: 'internal_tool_data · MoM',
   },
   {
     label: 'Intern WAU',
     value: '282,255',
     change: '+6.3%',
-    source: 'vitals_event \u00b7 vs prev week',
+    source: 'vitals_event · WoW',
+  },
+  {
+    label: 'Total Nest Apps',
+    value: '7,304',
+    change: '+318.3%',
+    source: 'nest/apps · MoM',
   },
   {
     label: 'Nest WAU',
     value: '22,169',
     change: '+23.2%',
-    source: 'nest_traces \u00b7 vs prev 7d',
+    source: 'nest_traces · WoW',
   },
 ];
 
-const dsComponentStats = [
-  {label: 'XDS on Intern', value: '588', source: 'Components in www'},
-  {label: 'XDS WWW on Nest', value: '671', source: '@nest/xds exports'},
-  {label: 'XDS OSS on Nest', value: '45', source: '@xds/core components'},
-  {label: 'NDS on Nest', value: '155', source: 'Core + family themes'},
+interface AdoptionMatrixRow extends Record<string, unknown> {
+  id: string;
+  metric: string;
+  xdsIntern: string;
+  xdsInternChange: string;
+  xdsInternSub: string;
+  xdsWwwNest: string;
+  xdsWwwNestChange: string;
+  xdsWwwNestSub: string;
+  xdsOssNest: string;
+  xdsOssNestChange: string;
+  xdsOssNestSub: string;
+  ndsNest: string;
+  ndsNestChange: string;
+  ndsNestSub: string;
+}
+
+const adoptionMatrixData: AdoptionMatrixRow[] = [
+  {
+    id: 'components',
+    metric: 'Components',
+    xdsIntern: '588',
+    xdsInternChange: '+1.2%',
+    xdsInternSub: 'Components in www',
+    xdsWwwNest: '671',
+    xdsWwwNestChange: '+0.4%',
+    xdsWwwNestSub: '@nest/xds components',
+    xdsOssNest: '45',
+    xdsOssNestChange: '+4.7%',
+    xdsOssNestSub: '@xds/core components',
+    ndsNest: '155',
+    ndsNestChange: '+0.6%',
+    ndsNestSub: '@nest/nds components',
+  },
+  {
+    id: 'insertions',
+    metric: 'Insertions',
+    xdsIntern: '2,376,231',
+    xdsInternChange: '+3.1%',
+    xdsInternSub: 'Total usages in www',
+    xdsWwwNest: '132',
+    xdsWwwNestChange: '+8.2%',
+    xdsWwwNestSub: 'Import usages',
+    xdsOssNest: '81+',
+    xdsOssNestChange: '+12.5%',
+    xdsOssNestSub: 'Import usages',
+    ndsNest: '7,960+',
+    ndsNestChange: '+2.3%',
+    ndsNestSub: 'Import usages',
+  },
+  {
+    id: 'tools',
+    metric: 'Tools / Apps Using',
+    xdsIntern: '127',
+    xdsInternChange: '+1.6%',
+    xdsInternSub: 'Distinct oncalls on www',
+    xdsWwwNest: '236+',
+    xdsWwwNestChange: '+5.4%',
+    xdsWwwNestSub: 'Apps with @nest/xds',
+    xdsOssNest: '5',
+    xdsOssNestChange: '+0.0%',
+    xdsOssNestSub: 'Apps with @xds/core',
+    ndsNest: '4,700+',
+    ndsNestChange: '+1.9%',
+    ndsNestSub: 'Apps with @nest/nds',
+  },
 ];
 
-const dsInsertionStats = [
-  {label: 'XDS on Intern', value: '2,376,231', source: 'Total usages in www'},
-  {label: 'XDS WWW on Nest', value: '132', source: 'Tracked in product_system'},
-  {label: 'XDS OSS on Nest', value: '81+', source: 'Imports in xds-core'},
-  {label: 'NDS on Nest', value: '7,960+', source: 'Import lines in .tsx'},
-];
-
-const dsToolStats = [
-  {label: 'XDS on Intern', value: '127', source: 'Distinct oncalls on www'},
-  {label: 'XDS WWW on Nest', value: '236+', source: 'Apps with @nest/xds'},
-  {label: 'XDS OSS on Nest', value: '5', source: 'Apps in xds-core monorepo'},
-  {label: 'NDS on Nest', value: '4,700+', source: 'Apps with @nest/nds'},
+const adoptionMatrixColumns: XDSTableColumn<AdoptionMatrixRow>[] = [
+  {key: 'metric', header: '', width: proportional(1.2)},
+  {
+    key: 'xdsIntern',
+    header: 'XDS on Intern',
+    renderCell: row => (
+      <XDSVStack gap={0.5}>
+        <span>
+          <XDSText type="large" weight="bold">
+            {row.xdsIntern}
+          </XDSText>{' '}
+          <span style={{color: '#16a34a', fontSize: '0.75rem'}}>
+            {row.xdsInternChange}
+          </span>
+        </span>
+        <XDSText type="supporting" color="disabled">
+          {row.xdsInternSub}
+        </XDSText>
+      </XDSVStack>
+    ),
+  },
+  {
+    key: 'xdsWwwNest',
+    header: 'XDS WWW on Nest',
+    renderCell: row => (
+      <XDSVStack gap={0.5}>
+        <span>
+          <XDSText type="large" weight="bold">
+            {row.xdsWwwNest}
+          </XDSText>{' '}
+          <span style={{color: '#16a34a', fontSize: '0.75rem'}}>
+            {row.xdsWwwNestChange}
+          </span>
+        </span>
+        <XDSText type="supporting" color="disabled">
+          {row.xdsWwwNestSub}
+        </XDSText>
+      </XDSVStack>
+    ),
+  },
+  {
+    key: 'xdsOssNest',
+    header: 'XDS OSS on Nest',
+    renderCell: row => (
+      <XDSVStack gap={0.5}>
+        <span>
+          <XDSText type="large" weight="bold">
+            {row.xdsOssNest}
+          </XDSText>{' '}
+          <span style={{color: '#16a34a', fontSize: '0.75rem'}}>
+            {row.xdsOssNestChange}
+          </span>
+        </span>
+        <XDSText type="supporting" color="disabled">
+          {row.xdsOssNestSub}
+        </XDSText>
+      </XDSVStack>
+    ),
+  },
+  {
+    key: 'ndsNest',
+    header: 'NDS on Nest',
+    renderCell: row => (
+      <XDSVStack gap={0.5}>
+        <span>
+          <XDSText type="large" weight="bold">
+            {row.ndsNest}
+          </XDSText>{' '}
+          <span style={{color: '#16a34a', fontSize: '0.75rem'}}>
+            {row.ndsNestChange}
+          </span>
+        </span>
+        <XDSText type="supporting" color="disabled">
+          {row.ndsNestSub}
+        </XDSText>
+      </XDSVStack>
+    ),
+  },
 ];
 
 const oncallsByOrg = [
@@ -434,7 +625,7 @@ type SinglePoint = {label: string; value: number};
 
 function MiniLineChart({
   data,
-  height = 260,
+  height = 280,
   colors = ['#3b82f6', '#f97316'],
   keys,
   formatY,
@@ -447,7 +638,7 @@ function MiniLineChart({
 }) {
   const w = 500;
   const h = height;
-  const pad = {top: 20, right: 20, bottom: 30, left: 50};
+  const pad = {top: 20, right: 20, bottom: 50, left: 50};
   const cw = w - pad.left - pad.right;
   const ch = h - pad.top - pad.bottom;
 
@@ -506,7 +697,7 @@ function MiniLineChart({
           <text
             key={i}
             x={xScale(i)}
-            y={h - 6}
+            y={pad.top + ch + 16}
             textAnchor="middle"
             fontSize={10}
             fill="#999">
@@ -518,12 +709,12 @@ function MiniLineChart({
       <path d={line(keys[0])} fill="none" stroke={colors[0]} strokeWidth={2} />
       <path d={line(keys[1])} fill="none" stroke={colors[1]} strokeWidth={2} />
       {/* Legend */}
-      <circle cx={pad.left} cy={h - 6} r={3} fill={colors[0]} />
-      <text x={pad.left + 8} y={h - 3} fontSize={10} fill="#666">
+      <circle cx={w / 2 - 35} cy={h - 8} r={3} fill={colors[0]} />
+      <text x={w / 2 - 27} y={h - 4} fontSize={10} fill="#666">
         {keys[0]}
       </text>
-      <circle cx={pad.left + 60} cy={h - 6} r={3} fill={colors[1]} />
-      <text x={pad.left + 68} y={h - 3} fontSize={10} fill="#666">
+      <circle cx={w / 2 + 25} cy={h - 8} r={3} fill={colors[1]} />
+      <text x={w / 2 + 33} y={h - 4} fontSize={10} fill="#666">
         {keys[1]}
       </text>
     </svg>
@@ -667,7 +858,7 @@ const columns: XDSTableColumn<ComponentAdoptionRow>[] = [
   {
     key: 'component',
     header: 'Component',
-    width: proportional(3),
+    width: proportional(1),
     renderCell: (item: ComponentAdoptionRow) => (
       <XDSText type="body" weight="bold">
         {item.component}
@@ -677,7 +868,7 @@ const columns: XDSTableColumn<ComponentAdoptionRow>[] = [
   {
     key: 'usages',
     header: 'Usages',
-    width: pixel(100),
+    width: proportional(1),
     renderCell: (item: ComponentAdoptionRow) => (
       <XDSText type="body">{item.usages.toLocaleString()}</XDSText>
     ),
@@ -685,7 +876,7 @@ const columns: XDSTableColumn<ComponentAdoptionRow>[] = [
   {
     key: 'files',
     header: 'Files',
-    width: pixel(90),
+    width: proportional(1),
     renderCell: (item: ComponentAdoptionRow) => (
       <XDSText type="body">{item.files.toLocaleString()}</XDSText>
     ),
@@ -693,7 +884,7 @@ const columns: XDSTableColumn<ComponentAdoptionRow>[] = [
   {
     key: 'oncalls',
     header: 'Oncalls',
-    width: pixel(80),
+    width: proportional(1),
     renderCell: (item: ComponentAdoptionRow) => (
       <XDSText type="body">{String(item.oncalls)}</XDSText>
     ),
@@ -701,7 +892,7 @@ const columns: XDSTableColumn<ComponentAdoptionRow>[] = [
   {
     key: 'teams',
     header: 'Teams',
-    width: pixel(80),
+    width: proportional(1),
     renderCell: (item: ComponentAdoptionRow) => (
       <XDSText type="body">{String(item.teams)}</XDSText>
     ),
@@ -709,7 +900,7 @@ const columns: XDSTableColumn<ComponentAdoptionRow>[] = [
   {
     key: 'firstInstance',
     header: 'First Instance',
-    width: pixel(120),
+    width: proportional(1),
     renderCell: (item: ComponentAdoptionRow) => (
       <XDSText type="supporting" color="secondary">
         {item.firstInstance}
@@ -722,34 +913,10 @@ const columns: XDSTableColumn<ComponentAdoptionRow>[] = [
 // Page: Overview
 // =============================================================================
 
-function OverviewContent() {
-  return (
-    <XDSVStack gap={6}>
-      <div {...stylex.props(styles.statsRow)}>
-        {overviewStats.map(stat => (
-          <StatCard key={stat.label} {...stat} />
-        ))}
-      </div>
-
-      <div {...stylex.props(styles.chartsGrid)}>
-        <ChartCard title="Daily Active Users (14d) \u2014 Intern vs Nest">
-          <MiniLineChart data={dauData} keys={['intern', 'nest']} />
-        </ChartCard>
-        <ChartCard title="Daily New Tool / App Creation \u2014 Intern vs Nest">
-          <MiniLineChart data={creationData} keys={['intern', 'nest']} />
-        </ChartCard>
-      </div>
-    </XDSVStack>
-  );
-}
-
-// =============================================================================
-// Page: Design Systems
-// =============================================================================
-
 const PAGE_SIZE = 10;
 
-function DesignSystemsContent() {
+function OverviewContent() {
+  const [ovTab, setOvTab] = useState('usage');
   const [search, setSearch] = useState('');
   const [tablePage, setTablePage] = useState(1);
 
@@ -768,114 +935,200 @@ function DesignSystemsContent() {
   );
 
   return (
-    <XDSVStack gap={8}>
-      {/* Component Counts */}
-      <XDSVStack gap={3}>
-        <span {...stylex.props(styles.sectionLabel)}>Components</span>
-        <div {...stylex.props(styles.statsRow)}>
-          {dsComponentStats.map(stat => (
-            <StatCard key={stat.label} {...stat} />
-          ))}
-        </div>
-      </XDSVStack>
+    <XDSVStack gap={6}>
+      <XDSTabList
+        value={ovTab}
+        onChange={(v: string) => setOvTab(v)}
+        hasDivider>
+        <XDSTab value="usage" label="Overview" />
+        <XDSTab value="ds-details" label="Design System Details" />
+      </XDSTabList>
 
-      {/* Insertions */}
-      <XDSVStack gap={3}>
-        <span {...stylex.props(styles.sectionLabel)}>Insertions</span>
-        <div {...stylex.props(styles.statsRow)}>
-          {dsInsertionStats.map(stat => (
-            <StatCard key={stat.label} {...stat} />
-          ))}
-        </div>
-      </XDSVStack>
-
-      {/* Tools/Apps Using */}
-      <XDSVStack gap={3}>
-        <span {...stylex.props(styles.sectionLabel)}>Tools / Apps Using</span>
-        <div {...stylex.props(styles.statsRow)}>
-          {dsToolStats.map(stat => (
-            <StatCard key={stat.label} {...stat} />
-          ))}
-        </div>
-      </XDSVStack>
-
-      {/* Quick Links */}
-      <div {...stylex.props(styles.linksRow)}>
-        {[
-          'XDS WWW on Nest',
-          'XDS OSS Storybook',
-          'NDS Storybook',
-          'XDS & Tooling Unidash',
-        ].map(name => (
-          <XDSButton key={name} label={name} variant="secondary" size="sm">
-            {name} \u2197
-          </XDSButton>
-        ))}
-      </div>
-
-      <XDSDivider />
-
-      {/* XDS on Intern (www) Details */}
-      <XDSVStack gap={6}>
-        <XDSHeading level={2}>XDS on Intern (www) Details</XDSHeading>
-
-        <div {...stylex.props(styles.chartsGrid)}>
-          <ChartCard title="XDS Component Count Over Time">
-            <SingleLineChart data={componentCountData} />
-          </ChartCard>
-
-          <ChartCard title="% Oncalls Using XDS by Org">
-            <div style={{maxHeight: 260, overflowY: 'auto'}}>
-              {oncallsByOrg.map(org => (
-                <div key={org.org} {...stylex.props(styles.orgBar)}>
-                  <span {...stylex.props(styles.orgLabel)}>{org.org}</span>
-                  <div {...stylex.props(styles.barTrack)}>
-                    <div
-                      {...stylex.props(styles.barFill)}
-                      style={{width: `${org.pct}%`}}
-                    />
-                  </div>
-                  <span {...stylex.props(styles.pctLabel)}>{org.pct}%</span>
-                </div>
+      {ovTab === 'usage' && (
+        <XDSVStack gap={6}>
+          <XDSVStack gap={3}>
+            <span {...stylex.props(styles.sectionLabel)}>
+              www vs Nest Usage
+            </span>
+            <div {...stylex.props(styles.statsRow)}>
+              {overviewStats.map(stat => (
+                <StatCard key={stat.label} {...stat} />
               ))}
             </div>
-          </ChartCard>
-        </div>
+          </XDSVStack>
 
-        {/* Component Adoption Table */}
-        <XDSVStack gap={3}>
-          <XDSText type="body" weight="bold">
-            XDS Component Adoption Details
-          </XDSText>
-          <XDSTextInput
-            label="Search components"
-            isLabelHidden
-            placeholder="Search components..."
-            value={search}
-            onChange={(v: string) => {
-              setSearch(v);
-              setTablePage(1);
-            }}
-          />
-          <XDSTable<ComponentAdoptionRow>
-            data={pagedRows}
-            columns={columns}
-            idKey="id"
-            density="balanced"
-            dividers="rows"
-            hasHover
-          />
-          {totalPages > 1 && (
-            <XDSHStack gap={2} hAlign="center">
-              <XDSPagination
-                page={tablePage}
-                totalPages={totalPages}
-                onChange={setTablePage}
-              />
-            </XDSHStack>
-          )}
+          <div {...stylex.props(styles.chartsGrid)}>
+            <ChartCard title="Daily Active Users (14d) — Intern vs Nest">
+              <MiniLineChart data={dauData} keys={['intern', 'nest']} />
+            </ChartCard>
+            <ChartCard title="Daily New Tool / App Creation — Intern vs Nest">
+              <MiniLineChart data={creationData} keys={['intern', 'nest']} />
+            </ChartCard>
+          </div>
+
+          <XDSDivider />
+
+          <XDSVStack gap={3}>
+            <span {...stylex.props(styles.sectionLabel)}>
+              Design System Adoption
+            </span>
+            <XDSTable<AdoptionMatrixRow>
+              data={adoptionMatrixData}
+              columns={adoptionMatrixColumns}
+              idKey="id"
+              density="balanced"
+              dividers="grid"
+            />
+          </XDSVStack>
         </XDSVStack>
-      </XDSVStack>
+      )}
+
+      {ovTab === 'ds-details' && (
+        <XDSVStack gap={6}>
+          <div {...stylex.props(styles.chartsGrid)}>
+            {/* Left column */}
+            <XDSVStack gap={3}>
+              <span {...stylex.props(styles.sectionLabel)}>
+                XDS on Intern (www)
+              </span>
+              <ChartCard title="XDS Component Count Over Time">
+                <SingleLineChart data={componentCountData} />
+              </ChartCard>
+              <ChartCard title="% Oncalls Using XDS WWW by Org">
+                <div style={{maxHeight: 260, overflowY: 'auto'}}>
+                  {oncallsByOrg.map(org => (
+                    <div key={org.org} {...stylex.props(styles.orgBar)}>
+                      <span {...stylex.props(styles.orgLabel)}>{org.org}</span>
+                      <div {...stylex.props(styles.barTrack)}>
+                        <div
+                          {...stylex.props(styles.barFill)}
+                          style={{width: `${org.pct}%`}}
+                        />
+                      </div>
+                      <span {...stylex.props(styles.pctLabel)}>{org.pct}%</span>
+                    </div>
+                  ))}
+                </div>
+              </ChartCard>
+            </XDSVStack>
+
+            {/* Right column */}
+            <XDSVStack gap={3}>
+              <span {...stylex.props(styles.sectionLabel)}>
+                Nest Design Systems (NDS / XDS OSS)
+              </span>
+              <ChartCard title="Nest Design System Component Count Over Time">
+                <SingleLineChart data={componentCountData} />
+              </ChartCard>
+              <ChartCard title="% Apps Using NDS / XDS OSS by Org">
+                <div style={{maxHeight: 260, overflowY: 'auto'}}>
+                  {oncallsByOrg.map(org => (
+                    <div key={org.org} {...stylex.props(styles.orgBar)}>
+                      <span {...stylex.props(styles.orgLabel)}>{org.org}</span>
+                      <div {...stylex.props(styles.barTrack)}>
+                        <div
+                          {...stylex.props(styles.barFill)}
+                          style={{width: `${org.pct}%`}}
+                        />
+                      </div>
+                      <span {...stylex.props(styles.pctLabel)}>{org.pct}%</span>
+                    </div>
+                  ))}
+                </div>
+              </ChartCard>
+            </XDSVStack>
+          </div>
+
+          <XDSDivider />
+
+          {/* Component Adoption Table */}
+          <XDSVStack gap={3}>
+            <span {...stylex.props(styles.sectionLabel)}>
+              XDS Component Adoption Details
+            </span>
+            <XDSHStack gap={3} vAlign="end">
+              <XDSDropdownMenu
+                button={{
+                  label: 'XDS on Intern (WWW)',
+                  variant: 'secondary',
+                  size: 'sm',
+                }}
+                items={[
+                  {label: 'XDS on Intern (WWW)', onClick: () => {}},
+                  {
+                    label: 'Nest Design System (NDS/XDS OSS)',
+                    onClick: () => {},
+                  },
+                ]}
+              />
+              <div {...stylex.props(styles.searchFill)}>
+                <XDSTextInput
+                  label="Search components"
+                  isLabelHidden
+                  placeholder="Search components..."
+                  value={search}
+                  onChange={(v: string) => {
+                    setSearch(v);
+                    setTablePage(1);
+                  }}
+                />
+              </div>
+            </XDSHStack>
+            <div {...stylex.props(styles.chartsGrid)}>
+              <ChartCard title="Nest Component Growth: Button">
+                <SingleLineChart data={componentCountData} />
+              </ChartCard>
+              <ChartCard title="Nest Design System Component Adoption">
+                <SingleLineChart data={componentCountData} />
+              </ChartCard>
+            </div>
+            <XDSTable<ComponentAdoptionRow>
+              data={pagedRows}
+              columns={columns}
+              idKey="id"
+              density="balanced"
+              dividers="rows"
+              hasHover
+            />
+            {totalPages > 1 && (
+              <XDSHStack gap={2} hAlign="center">
+                <XDSPagination
+                  page={tablePage}
+                  totalPages={totalPages}
+                  onChange={setTablePage}
+                />
+              </XDSHStack>
+            )}
+          </XDSVStack>
+
+          {/* Quick Links */}
+          <div {...stylex.props(styles.linksRow)}>
+            {[
+              {
+                name: 'XDS WWW on Nest',
+                href: 'https://example-xds.nest.x2p.facebook.net/',
+              },
+              {
+                name: 'XDS OSS Storybook',
+                href: 'https://facebookexperimental.github.io/xds/',
+              },
+              {
+                name: 'NDS Storybook',
+                href: 'https://nds-storybook.nest.x2p.facebook.net/storybook/index.html?path=/',
+              },
+            ].map(({name, href}) => (
+              <XDSButton
+                key={name}
+                label={name}
+                variant="secondary"
+                size="sm"
+                onClick={() => window.open(href, '_blank')}>
+                {name} ↗
+              </XDSButton>
+            ))}
+          </div>
+        </XDSVStack>
+      )}
     </XDSVStack>
   );
 }
@@ -885,44 +1138,36 @@ function DesignSystemsContent() {
 // =============================================================================
 
 function AnalyticsDashboard() {
-  const [tab, setTab] = useState('overview');
-
   return (
     <div {...stylex.props(styles.wash)}>
+      <XDSTopNav
+        label="Main navigation"
+        heading={<XDSTopNavHeading heading="Internal Web Apps Analytics" />}
+        endContent={
+          <>
+            <XDSButton
+              label="Notifications"
+              variant="ghost"
+              icon={<XBracketIcon style={{width: 16, height: 16}} />}
+              onClick={() =>
+                window.open('https://fburl.com/unidash/1tc4odil', '_blank')
+              }
+            />
+            <XDSButton
+              label="Nest"
+              variant="ghost"
+              icon={<NestIcon style={{width: 16, height: 16}} />}
+              onClick={() =>
+                window.open('https://fburl.com/unidash/3lwsz2m9', '_blank')
+              }
+            />
+          </>
+        }
+      />
+
       <div {...stylex.props(styles.page)}>
         <XDSVStack gap={6}>
-          <XDSVStack gap={2}>
-            <XDSHeading level={1}>Internal Web Apps Analytics</XDSHeading>
-            <div {...stylex.props(styles.subtitle)}>
-              <XDSText type="body" color="secondary">
-                Intern (www) vs Nest platform comparison and design system
-                adoption.
-              </XDSText>
-              <XDSLink
-                label="XDS Unidash"
-                href="https://fburl.com/unidash/pwcm5j49">
-                XDS Unidash
-              </XDSLink>
-              <XDSText type="body" color="secondary">
-                \u00b7
-              </XDSText>
-              <XDSLink
-                label="Nest Unidash"
-                href="https://fburl.com/unidash/zw1ycdu8">
-                Nest Unidash
-              </XDSLink>
-            </div>
-          </XDSVStack>
-
-          <XDSTabList
-            value={tab}
-            onChange={(v: string) => setTab(v)}
-            hasDivider>
-            <XDSTab value="overview" label="Overview" />
-            <XDSTab value="design-systems" label="Design Systems" />
-          </XDSTabList>
-
-          {tab === 'overview' ? <OverviewContent /> : <DesignSystemsContent />}
+          <OverviewContent />
         </XDSVStack>
       </div>
     </div>
