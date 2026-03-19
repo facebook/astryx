@@ -114,15 +114,15 @@ export const docs = {
     },
     {
       label: 'endSlot — badge after label',
-      code: '<XDSButton label="Messages" endSlot={<XDSBadge>3</XDSBadge>} />',
+      code: '<XDSButton label="Messages" endSlot={<XDSBadge label={3} />} />',
     },
     {
       label: 'endSlot — icon, label, and badge',
-      code: '<XDSButton label="Edit" icon={<PencilIcon />} endSlot={<XDSBadge>New</XDSBadge>}>Edit</XDSButton>',
+      code: '<XDSButton label="Edit" icon={<PencilIcon />} endSlot={<XDSBadge label="New" />}>Edit</XDSButton>',
     },
     {
       label: 'endSlot — settings with badge',
-      code: `<XDSButton label="Settings" icon={<GearIcon />} endSlot={<XDSBadge>New</XDSBadge>}>
+      code: `<XDSButton label="Settings" icon={<GearIcon />} endSlot={<XDSBadge label="New" />}>
   Settings
 </XDSButton>`,
     },
@@ -260,15 +260,15 @@ export const docsZh = {
     },
     {
       label: 'endSlot——标签后的徽章',
-      code: '<XDSButton label="Messages" endSlot={<XDSBadge>3</XDSBadge>} />',
+      code: '<XDSButton label="Messages" endSlot={<XDSBadge label={3} />} />',
     },
     {
       label: 'endSlot——图标、标签和徽章',
-      code: '<XDSButton label="Edit" icon={<PencilIcon />} endSlot={<XDSBadge>New</XDSBadge>}>Edit</XDSButton>',
+      code: '<XDSButton label="Edit" icon={<PencilIcon />} endSlot={<XDSBadge label="New" />}>Edit</XDSButton>',
     },
     {
       label: 'endSlot——带徽章的设置按钮',
-      code: `<XDSButton label="Settings" icon={<GearIcon />} endSlot={<XDSBadge>New</XDSBadge>}>
+      code: `<XDSButton label="Settings" icon={<GearIcon />} endSlot={<XDSBadge label="New" />}>
   Settings
 </XDSButton>`,
     },

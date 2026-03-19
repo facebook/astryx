@@ -22,6 +22,10 @@ import migrateTokenNames, {
   meta as tokenNamesMeta,
 } from './migrate-token-names.mjs';
 
+import migrateBadgeChildrenToLabel, {
+  meta as badgeChildrenToLabelMeta,
+} from './migrate-badge-children-to-label.mjs';
+
 export default [
   {
     name: 'migrate-collapse-to-collapsible',
@@ -47,5 +51,10 @@ export default [
     name: 'migrate-token-names',
     transform: migrateTokenNames,
     meta: tokenNamesMeta,
+  },
+  {
+    name: 'migrate-badge-children-to-label',
+    transform: migrateBadgeChildrenToLabel,
+    meta: badgeChildrenToLabelMeta,
   },
 ];

@@ -64,10 +64,10 @@ export default function ExamplePage() {
         <XDSVStack gap={3}>
           <XDSHeading level={2}>Badges</XDSHeading>
           <XDSHStack gap={3} vAlign="center">
-            <XDSBadge variant="info">Info</XDSBadge>
-            <XDSBadge variant="success">Success</XDSBadge>
-            <XDSBadge variant="warning">Warning</XDSBadge>
-            <XDSBadge variant="error">Error</XDSBadge>
+            <XDSBadge variant="info" label='Info' />
+            <XDSBadge variant="success" label='Success' />
+            <XDSBadge variant="warning" label='Warning' />
+            <XDSBadge variant="error" label='Error' />
           </XDSHStack>
         </XDSVStack>
 

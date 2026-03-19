@@ -560,7 +560,7 @@ function SampleSideNav({
           label="Projects"
           href="#"
           icon={ProjectsIcon}
-          endContent={<XDSBadge>3</XDSBadge>}
+          endContent={<XDSBadge label={3} />}
         />
         <XDSSideNavItem label="Messages" href="#" icon={MessagesIcon} />
         {config.showNestedItems && (

@@ -25,17 +25,17 @@ export const docs = {
   examples: [
     {
       label: 'Text badge',
-      code: '<XDSBadge>Default</XDSBadge>',
+      code: '<XDSBadge label="Default" />',
     },
     {
       label: 'Status variants',
-      code: `<XDSBadge variant="success">Active</XDSBadge>
-<XDSBadge variant="error">Failed</XDSBadge>
-<XDSBadge variant="warning">Pending</XDSBadge>`,
+      code: `<XDSBadge variant="success" label="Active" />
+<XDSBadge variant="error" label="Failed" />
+<XDSBadge variant="warning" label="Pending" />`,
     },
     {
       label: 'Count badge',
-      code: '<XDSBadge variant="info">42</XDSBadge>',
+      code: '<XDSBadge variant="info" label={42} />',
     },
     {
       label: 'Dot indicator (no children)',
@@ -75,17 +75,17 @@ export const docsZh = {
   examples: [
     {
       label: '文本徽章',
-      code: '<XDSBadge>Default</XDSBadge>',
+      code: '<XDSBadge label="Default" />',
     },
     {
       label: '状态变体',
-      code: `<XDSBadge variant="success">Active</XDSBadge>
-<XDSBadge variant="error">Failed</XDSBadge>
-<XDSBadge variant="warning">Pending</XDSBadge>`,
+      code: `<XDSBadge variant="success" label="Active" />
+<XDSBadge variant="error" label="Failed" />
+<XDSBadge variant="warning" label="Pending" />`,
     },
     {
       label: '计数徽章',
-      code: '<XDSBadge variant="info">42</XDSBadge>',
+      code: '<XDSBadge variant="info" label={42} />',
     },
     {
       label: '圆点指示器（无子元素）',

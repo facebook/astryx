@@ -303,9 +303,7 @@ const columns: XDSTableColumn<ReviewRow>[] = [
     header: 'Status',
     width: pixel(160),
     renderCell: (item: ReviewRow) => (
-      <XDSBadge variant={STATUS_VARIANT_MAP[item.status]}>
-        {item.status}
-      </XDSBadge>
+      <XDSBadge variant={STATUS_VARIANT_MAP[item.status]} label={item.status} />
     ),
   },
 ];
