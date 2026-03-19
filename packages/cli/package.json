@@ -1,7 +1,7 @@
 {
   "name": "@xds/cli",
-  "version": "0.0.5",
-  "description": "XDS design system CLI — init, swizzle, theme, templates, and agent docs",
+  "version": "0.0.6",
+  "description": "XDS design system CLI \u2014 init, swizzle, theme, templates, and agent docs",
   "type": "module",
   "bin": {
     "xds": "./bin/xds.mjs"
