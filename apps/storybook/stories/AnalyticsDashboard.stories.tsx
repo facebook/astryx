@@ -8,7 +8,11 @@ import {XDSLink} from '@xds/core/Link';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
 import {XDSButton} from '@xds/core/Button';
-import {} from '@heroicons/react/24/outline';
+import {
+  InformationCircleIcon,
+  ArrowPathIcon,
+  LinkIcon,
+} from '@heroicons/react/24/outline';
 
 function XBracketIcon({style}: {style?: React.CSSProperties}) {
   return (
@@ -841,9 +845,37 @@ function ChartCard({
   return (
     <XDSCard padding={4}>
       <XDSVStack gap={2}>
-        <XDSText type="body" weight="bold">
-          {title}
-        </XDSText>
+        <XDSHStack gap={2} hAlign="between" vAlign="center">
+          <XDSText type="body" weight="bold">
+            {title}
+          </XDSText>
+          <XDSHStack gap={2}>
+            <InformationCircleIcon
+              style={{
+                width: 14,
+                height: 14,
+                color: 'var(--color-text-secondary)',
+                cursor: 'pointer',
+              }}
+            />
+            <ArrowPathIcon
+              style={{
+                width: 14,
+                height: 14,
+                color: 'var(--color-text-secondary)',
+                cursor: 'pointer',
+              }}
+            />
+            <LinkIcon
+              style={{
+                width: 14,
+                height: 14,
+                color: 'var(--color-text-secondary)',
+                cursor: 'pointer',
+              }}
+            />
+          </XDSHStack>
+        </XDSHStack>
         <div {...stylex.props(styles.chartInner)}>{children}</div>
       </XDSVStack>
     </XDSCard>
