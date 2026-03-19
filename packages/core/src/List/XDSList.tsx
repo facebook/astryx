@@ -16,8 +16,9 @@
 import {useId, useMemo, Children, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {colorVars, spacingVars} from '../theme/tokens.stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 import {XDSListContext, type XDSListDensity} from './XDSListContext';
+import {XDSDivider} from '../Divider';
 import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
@@ -109,10 +110,7 @@ const styles = stylex.create({
     marginBottom: spacingVars['--spacing-2'],
   },
   divider: {
-    height: '1px',
-    border: 'none',
-    margin: 0,
-    backgroundColor: colorVars['--color-border'],
+    marginBlock: 0,
   },
 });
 
@@ -184,11 +182,7 @@ export function XDSList({
       withDividers.push(child);
       if (i < childArray.length - 1) {
         withDividers.push(
-          <hr
-            key={`divider-${i}`}
-            aria-hidden="true"
-            {...stylex.props(styles.divider)}
-          />,
+          <XDSDivider key={`divider-${i}`} xstyle={styles.divider} />,
         );
       }
     });

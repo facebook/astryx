@@ -213,19 +213,20 @@ describe('XDSList', () => {
         <XDSListItem label="Item 3" />
       </XDSList>,
     );
-    const dividers = container.querySelectorAll('hr');
+    const dividers = container.querySelectorAll('[role="separator"]');
     expect(dividers).toHaveLength(2);
   });
 
-  it('dividers have aria-hidden="true"', () => {
+  it('dividers use XDSDivider with role="separator"', () => {
     const {container} = render(
       <XDSList hasDividers>
         <XDSListItem label="Item 1" />
         <XDSListItem label="Item 2" />
       </XDSList>,
     );
-    const divider = container.querySelector('hr');
-    expect(divider).toHaveAttribute('aria-hidden', 'true');
+    const divider = container.querySelector('[role="separator"]');
+    expect(divider).toBeTruthy();
+    expect(divider).toHaveAttribute('aria-orientation', 'horizontal');
   });
 
   it('does not render dividers when hasDividers is false', () => {
@@ -235,7 +236,7 @@ describe('XDSList', () => {
         <XDSListItem label="Item 2" />
       </XDSList>,
     );
-    const dividers = container.querySelectorAll('hr');
+    const dividers = container.querySelectorAll('[role="separator"]');
     expect(dividers).toHaveLength(0);
   });
 
