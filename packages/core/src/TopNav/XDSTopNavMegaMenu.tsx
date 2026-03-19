@@ -329,11 +329,19 @@ function DefaultMegaMenu({
   const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
   const clickLockedRef = useRef(false);
 
+  const handlePopoverShow = useCallback(() => {
+    onOpenChange?.(true);
+  }, [onOpenChange]);
+
+  const handlePopoverHide = useCallback(() => {
+    onOpenChange?.(false);
+  }, [onOpenChange]);
+
   const popover = useXDSPopover({
     dialogLabel: label,
     xstyle: styles.panelAnimation,
-    onShow: () => onOpenChange?.(true),
-    onHide: () => onOpenChange?.(false),
+    onShow: handlePopoverShow,
+    onHide: handlePopoverHide,
   });
 
   // Set the CSS anchor to the parent <nav> element (the XDSTopNav).

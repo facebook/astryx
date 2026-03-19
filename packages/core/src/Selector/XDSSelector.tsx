@@ -438,12 +438,14 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
   const listboxRef = useRef<HTMLDivElement>(null);
 
   // Layer for dropdown positioning
+  const handleLayerHide = useCallback(() => {
+    triggerRef.current?.focus();
+  }, []);
+
   const layer = useXDSLayer({
     mode: 'context',
     lightDismiss: true,
-    onHide: () => {
-      triggerRef.current?.focus();
-    },
+    onHide: handleLayerHide,
   });
 
   // Calculate offset to position selected item over trigger

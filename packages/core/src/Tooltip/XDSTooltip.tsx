@@ -12,6 +12,7 @@
 'use client';
 
 import React, {
+  useCallback,
   useLayoutEffect,
   useRef,
   type ReactElement,
@@ -175,6 +176,14 @@ export function XDSTooltip({
   const showHoverIndication =
     hasHoverIndication === true || (hasHoverIndication === 'auto' && textOnly);
 
+  const handleShow = useCallback(() => {
+    onOpenChange?.(true);
+  }, [onOpenChange]);
+
+  const handleHide = useCallback(() => {
+    onOpenChange?.(false);
+  }, [onOpenChange]);
+
   // Use the hook for all tooltip behavior
   const tooltip = useXDSTooltip({
     placement,
@@ -183,8 +192,8 @@ export function XDSTooltip({
     hideDelay,
     focusTrigger,
     isEnabled,
-    onShow: onOpenChange ? () => onOpenChange(true) : undefined,
-    onHide: onOpenChange ? () => onOpenChange(false) : undefined,
+    onShow: handleShow,
+    onHide: handleHide,
   });
 
   // Sibling mode: attach to external anchorRef

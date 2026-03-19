@@ -473,12 +473,14 @@ export function XDSPowerSearch({
   });
 
   // Layer for positioning the edit popover anchored to the tokenizer
+  const handleLayerHide = useCallback(() => {
+    setPopoverStateRaw({type: 'idle'});
+  }, []);
+
   const layer = useXDSLayer({
     mode: 'context',
     lightDismiss: true,
-    onHide() {
-      setPopoverStateRaw({type: 'idle'});
-    },
+    onHide: handleLayerHide,
   });
 
   // Wrapper that manages layer visibility and tokenizer focus alongside state
