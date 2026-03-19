@@ -1,5 +1,5 @@
 /**
- * @file v0.0.5 transform manifest
+ * @file v0.0.6 transform manifest
  */
 
 import migrateCollapseToCollapsible, {
