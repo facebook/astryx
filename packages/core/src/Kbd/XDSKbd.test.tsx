@@ -2,6 +2,9 @@
  * @file XDSKbd.test.tsx
  * @input Uses React Testing Library, XDSKbd
  * @output Tests for XDSKbd component
+ *
+ * Note: Tests run in jsdom which reports a non-Mac platform,
+ * so `mod` resolves to "Ctrl" rather than "⌘".
  */
 
 import {render, screen} from '@testing-library/react';
@@ -16,9 +19,15 @@ describe('XDSKbd', () => {
 
   it('renders multiple keys separated by +', () => {
     render(<XDSKbd keys="mod+k" />);
-    // mod should render as ⌘
-    expect(screen.getByText('\u2318')).toBeInTheDocument();
+    // In jsdom (non-Mac), mod renders as "Ctrl"
+    expect(screen.getByText('Ctrl')).toBeInTheDocument();
     expect(screen.getByText('K')).toBeInTheDocument();
+  });
+
+  it('renders mod as Ctrl on non-Mac platforms', () => {
+    // jsdom is a non-Mac environment, so mod → Ctrl
+    render(<XDSKbd keys="mod" />);
+    expect(screen.getByText('Ctrl')).toBeInTheDocument();
   });
 
   it('maps modifier keys to symbols', () => {
@@ -52,7 +61,8 @@ describe('XDSKbd', () => {
 
   it('handles whitespace around keys', () => {
     render(<XDSKbd keys="mod + k" />);
-    expect(screen.getByText('\u2318')).toBeInTheDocument();
+    // In jsdom (non-Mac), mod renders as "Ctrl"
+    expect(screen.getByText('Ctrl')).toBeInTheDocument();
     expect(screen.getByText('K')).toBeInTheDocument();
   });
 

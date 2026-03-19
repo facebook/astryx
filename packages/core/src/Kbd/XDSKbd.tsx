@@ -51,10 +51,26 @@ const styles = stylex.create({
 });
 
 /**
+ * Lazy platform detection — SSR-safe, cached after first call.
+ * Returns true on macOS, iPhone, iPad, iPod; false elsewhere (including SSR).
+ */
+let _isMac: boolean | null = null;
+function isMac(): boolean {
+  if (_isMac === null) {
+    _isMac =
+      typeof navigator !== 'undefined' &&
+      /Mac|iPhone|iPad|iPod/.test(
+        navigator.platform ?? navigator.userAgent ?? '',
+      );
+  }
+  return _isMac;
+}
+
+/**
  * Map of modifier key names to display symbols.
+ * Note: `mod` is not in this map — it resolves dynamically via `getKeyDisplay`.
  */
 const KEY_DISPLAY: Record<string, string> = {
-  mod: '\u2318', // ⌘
   ctrl: '\u2303', // ⌃
   alt: '\u2325', // ⌥
   shift: '\u21E7', // ⇧
@@ -67,6 +83,18 @@ const KEY_DISPLAY: Record<string, string> = {
   left: '\u2190',
   right: '\u2192',
 };
+
+/**
+ * Resolves a key name to its display string. Handles the platform-aware
+ * `mod` key (⌘ on macOS, Ctrl on other platforms) and falls back to
+ * KEY_DISPLAY or uppercased key name.
+ */
+function getKeyDisplay(key: string): string {
+  if (key === 'mod') {
+    return isMac() ? '\u2318' : 'Ctrl';
+  }
+  return KEY_DISPLAY[key] ?? key.toUpperCase();
+}
 
 export interface XDSKbdProps {
   /**
@@ -130,7 +158,7 @@ export function XDSKbd({keys, xstyle, className, style}: XDSKbdProps) {
       aria-hidden="true">
       {parts.map((key, i) => (
         <kbd key={i} {...stylex.props(styles.kbd)}>
-          {KEY_DISPLAY[key] ?? key.toUpperCase()}
+          {getKeyDisplay(key)}
         </kbd>
       ))}
     </span>
