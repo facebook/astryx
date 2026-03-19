@@ -1731,272 +1731,277 @@ function ThemeEditorComponent() {
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        position: 'fixed',
-        inset: 0,
-        overflow: 'hidden',
-        backgroundColor: 'var(--color-wash)',
-      }}>
-      {/* ================================================================= */}
-      {/* Left Panel — Accordion-based Token Editor                         */}
-      {/* ================================================================= */}
+    <XDSTheme theme={currentTheme} mode={mode}>
       <div
         style={{
-          width: '380px',
           display: 'flex',
-          flexDirection: 'column',
-          backgroundColor: 'var(--color-surface)',
-          borderRight: '1px solid var(--color-border)',
+          position: 'fixed',
+          inset: 0,
           overflow: 'hidden',
+          backgroundColor: 'var(--color-wash)',
         }}>
-        {/* Panel header — shows editable theme name */}
+        {/* ================================================================= */}
+        {/* Left Panel — Accordion-based Token Editor                         */}
+        {/* ================================================================= */}
         <div
           style={{
-            padding: '16px 20px 12px',
+            width: '380px',
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderBottom: '1px solid var(--color-border)',
+            flexDirection: 'column',
+            backgroundColor: 'var(--color-surface)',
+            borderRight: '1px solid var(--color-border)',
+            overflow: 'hidden',
           }}>
-          {isEditingName ? (
-            <input
-              autoFocus
-              type="text"
-              value={themeName}
-              onChange={e => setThemeName(e.target.value)}
-              onBlur={() => setIsEditingName(false)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') setIsEditingName(false);
-              }}
-              style={{
-                all: 'unset',
-                fontSize: 'var(--heading-3-size, 17px)',
-                fontWeight: 600,
-                color: 'var(--color-text-primary)',
-                borderBottom: '2px solid var(--color-accent)',
-                paddingBottom: '2px',
-                width: '160px',
-              }}
-            />
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsEditingName(true)}
-              style={{
-                all: 'unset',
-                cursor: 'pointer',
-                fontSize: 'var(--heading-3-size, 17px)',
-                fontWeight: 600,
-                fontFamily: 'var(--font-heading, var(--font-body))',
-                color: 'var(--color-text-primary)',
-                lineHeight: 'var(--heading-3-leading, 1.3)',
-              }}>
-              {themeName} Theme
-            </button>
-          )}
-          <XDSHStack gap={1} vAlign="center">
-            <button
-              type="button"
-              onClick={() => setShowSearch(!showSearch)}
-              style={{
-                all: 'unset',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '32px',
-                height: '32px',
-                borderRadius: '6px',
-                color: 'var(--color-icon-secondary)',
-              }}
-              title="Search tokens">
-              <XDSIcon icon="search" size="sm" color="secondary" />
-            </button>
-            {/* Mode toggle */}
-            <XDSButton
-              label={mode === 'light' ? '☀' : '☾'}
-              variant="ghost"
-              size="sm"
-              onClick={() => setMode(mode === 'light' ? 'dark' : 'light')}
-            />
-          </XDSHStack>
-        </div>
-
-        {/* Search bar — expandable */}
-        {showSearch && (
+          {/* Panel header — shows editable theme name */}
           <div
             style={{
-              padding: '8px 16px',
+              padding: '16px 20px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
               borderBottom: '1px solid var(--color-border)',
             }}>
-            <XDSTextInput
-              label="Search tokens"
-              isLabelHidden
-              placeholder="Search tokens…"
-              value={searchQuery}
-              onChange={setSearchQuery}
+            {isEditingName ? (
+              <input
+                autoFocus
+                type="text"
+                value={themeName}
+                onChange={e => setThemeName(e.target.value)}
+                onBlur={() => setIsEditingName(false)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') setIsEditingName(false);
+                }}
+                style={{
+                  all: 'unset',
+                  fontSize: 'var(--heading-3-size, 17px)',
+                  fontWeight: 600,
+                  color: 'var(--color-text-primary)',
+                  borderBottom: '2px solid var(--color-accent)',
+                  paddingBottom: '2px',
+                  width: '160px',
+                }}
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsEditingName(true)}
+                style={{
+                  all: 'unset',
+                  cursor: 'pointer',
+                  fontSize: 'var(--heading-3-size, 17px)',
+                  fontWeight: 600,
+                  fontFamily: 'var(--font-heading, var(--font-body))',
+                  color: 'var(--color-text-primary)',
+                  lineHeight: 'var(--heading-3-leading, 1.3)',
+                }}>
+                {themeName} Theme
+              </button>
+            )}
+            <XDSHStack gap={1} vAlign="center">
+              <button
+                type="button"
+                onClick={() => setShowSearch(!showSearch)}
+                style={{
+                  all: 'unset',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '6px',
+                  color: 'var(--color-icon-secondary)',
+                }}
+                title="Search tokens">
+                <XDSIcon icon="search" size="sm" color="secondary" />
+              </button>
+              {/* Mode toggle */}
+              <XDSButton
+                label={mode === 'light' ? '☀' : '☾'}
+                variant="ghost"
+                size="sm"
+                onClick={() => setMode(mode === 'light' ? 'dark' : 'light')}
+              />
+            </XDSHStack>
+          </div>
+
+          {/* Search bar — expandable */}
+          {showSearch && (
+            <div
+              style={{
+                padding: '8px 16px',
+                borderBottom: '1px solid var(--color-border)',
+              }}>
+              <XDSTextInput
+                label="Search tokens"
+                isLabelHidden
+                placeholder="Search tokens…"
+                value={searchQuery}
+                onChange={setSearchQuery}
+                size="sm"
+              />
+            </div>
+          )}
+
+          {/* Accordion sections */}
+          <div
+            style={{
+              flex: 1,
+              overflow: 'auto',
+              padding: '8px 12px',
+            }}>
+            <XDSCollapsibleGroup type="multiple" defaultValue={['colors']}>
+              <XDSVStack gap={0.5}>
+                {(Object.keys(TOKEN_GROUPS) as TokenGroupKey[]).map(
+                  groupKey => {
+                    const group = TOKEN_GROUPS[groupKey];
+                    const dotColor =
+                      SECTION_DOT_COLORS[groupKey] || 'var(--color-accent)';
+                    const modified = modifiedCount(group.tokens);
+
+                    return (
+                      <XDSCollapsible
+                        key={groupKey}
+                        value={groupKey}
+                        defaultIsOpen={groupKey === 'colors'}
+                        trigger={
+                          <XDSHStack
+                            gap={2}
+                            vAlign="center"
+                            style={{width: '100%'}}>
+                            <div
+                              style={{
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '50%',
+                                backgroundColor: dotColor,
+                                flexShrink: 0,
+                              }}
+                            />
+                            <XDSText
+                              type="label"
+                              style={{flex: 1, textAlign: 'start'}}>
+                              {group.label}
+                            </XDSText>
+                            {modified > 0 && (
+                              <XDSBadge variant="info">{modified}</XDSBadge>
+                            )}
+                          </XDSHStack>
+                        }>
+                        <div style={{padding: '4px 0 8px'}}>
+                          {sectionRenderers[groupKey]()}
+                        </div>
+                      </XDSCollapsible>
+                    );
+                  },
+                )}
+              </XDSVStack>
+            </XDSCollapsibleGroup>
+          </div>
+
+          {/* Bottom actions */}
+          <div
+            style={{
+              padding: '12px 16px',
+              borderTop: '1px solid var(--color-border)',
+              display: 'flex',
+              gap: '8px',
+            }}>
+            <XDSButton
+              label="Reset"
+              variant="secondary"
               size="sm"
+              onClick={handleReset}
+              style={{flex: 1}}
+            />
+            <XDSButton
+              label={showCode ? 'Hide code' : 'View code →'}
+              variant="primary"
+              size="sm"
+              onClick={() => setShowCode(!showCode)}
+              style={{flex: 1}}
             />
           </div>
-        )}
+        </div>
 
-        {/* Accordion sections */}
+        {/* ================================================================= */}
+        {/* Right Panel — Live Preview                                        */}
+        {/* ================================================================= */}
         <div
           style={{
             flex: 1,
-            overflow: 'auto',
-            padding: '8px 12px',
-          }}>
-          <XDSCollapsibleGroup type="multiple" defaultValue={['colors']}>
-            <XDSVStack gap={0.5}>
-              {(Object.keys(TOKEN_GROUPS) as TokenGroupKey[]).map(groupKey => {
-                const group = TOKEN_GROUPS[groupKey];
-                const dotColor =
-                  SECTION_DOT_COLORS[groupKey] || 'var(--color-accent)';
-                const modified = modifiedCount(group.tokens);
-
-                return (
-                  <XDSCollapsible
-                    key={groupKey}
-                    value={groupKey}
-                    defaultIsOpen={groupKey === 'colors'}
-                    trigger={
-                      <XDSHStack
-                        gap={2}
-                        vAlign="center"
-                        style={{width: '100%'}}>
-                        <div
-                          style={{
-                            width: '8px',
-                            height: '8px',
-                            borderRadius: '50%',
-                            backgroundColor: dotColor,
-                            flexShrink: 0,
-                          }}
-                        />
-                        <XDSText
-                          type="label"
-                          style={{flex: 1, textAlign: 'start'}}>
-                          {group.label}
-                        </XDSText>
-                        {modified > 0 && (
-                          <XDSBadge variant="info">{modified}</XDSBadge>
-                        )}
-                      </XDSHStack>
-                    }>
-                    <div style={{padding: '4px 0 8px'}}>
-                      {sectionRenderers[groupKey]()}
-                    </div>
-                  </XDSCollapsible>
-                );
-              })}
-            </XDSVStack>
-          </XDSCollapsibleGroup>
-        </div>
-
-        {/* Bottom actions */}
-        <div
-          style={{
-            padding: '12px 16px',
-            borderTop: '1px solid var(--color-border)',
             display: 'flex',
-            gap: '8px',
+            flexDirection: 'column',
+            overflow: 'hidden',
           }}>
-          <XDSButton
-            label="Reset"
-            variant="secondary"
-            size="sm"
-            onClick={handleReset}
-            style={{flex: 1}}
-          />
-          <XDSButton
-            label={showCode ? 'Hide code' : 'View code →'}
-            variant="primary"
-            size="sm"
-            onClick={() => setShowCode(!showCode)}
-            style={{flex: 1}}
-          />
-        </div>
-      </div>
-
-      {/* ================================================================= */}
-      {/* Right Panel — Live Preview                                        */}
-      {/* ================================================================= */}
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}>
-        {/* Preview header */}
-        <div
-          style={{
-            padding: '12px 24px',
-            borderBottom: '1px solid var(--color-border)',
-            backgroundColor: 'var(--color-surface)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}>
-          <XDSHeading level={4}>Live Preview</XDSHeading>
-          <XDSHStack gap={1}>
-            <XDSButton
-              label="Light"
-              variant={mode === 'light' ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setMode('light')}
-            />
-            <XDSButton
-              label="Dark"
-              variant={mode === 'dark' ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setMode('dark')}
-            />
-          </XDSHStack>
-        </div>
-
-        {/* Code panel (collapsible) */}
-        {showCode && (
+          {/* Preview header */}
           <div
             style={{
-              padding: '16px 24px',
+              padding: '12px 24px',
               borderBottom: '1px solid var(--color-border)',
-              backgroundColor: 'var(--color-wash)',
-              maxHeight: '300px',
-              overflow: 'auto',
+              backgroundColor: 'var(--color-surface)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}>
-            <XDSText type="label" display="block" style={{marginBottom: '8px'}}>
-              Generated Theme Code
-            </XDSText>
-            <pre
-              style={{
-                padding: '16px',
-                borderRadius: '8px',
-                backgroundColor: 'var(--color-surface)',
-                border: '1px solid var(--color-border-emphasized)',
-                fontSize: '12px',
-                fontFamily: 'var(--font-code)',
-                overflow: 'auto',
-                margin: 0,
-                color: 'var(--color-text-primary)',
-              }}>
-              {generateThemeCode(
-                themeName,
-                tokens,
-                allDefaults,
-                typeScaleBase,
-                typeScaleRatio,
-              )}
-            </pre>
+            <XDSHeading level={4}>Live Preview</XDSHeading>
+            <XDSHStack gap={1}>
+              <XDSButton
+                label="Light"
+                variant={mode === 'light' ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => setMode('light')}
+              />
+              <XDSButton
+                label="Dark"
+                variant={mode === 'dark' ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => setMode('dark')}
+              />
+            </XDSHStack>
           </div>
-        )}
 
-        {/* Preview content */}
-        <div style={{flex: 1, overflow: 'auto'}}>
-          <XDSTheme theme={currentTheme} mode={mode}>
+          {/* Code panel (collapsible) */}
+          {showCode && (
+            <div
+              style={{
+                padding: '16px 24px',
+                borderBottom: '1px solid var(--color-border)',
+                backgroundColor: 'var(--color-wash)',
+                maxHeight: '300px',
+                overflow: 'auto',
+              }}>
+              <XDSText
+                type="label"
+                display="block"
+                style={{marginBottom: '8px'}}>
+                Generated Theme Code
+              </XDSText>
+              <pre
+                style={{
+                  padding: '16px',
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--color-surface)',
+                  border: '1px solid var(--color-border-emphasized)',
+                  fontSize: '12px',
+                  fontFamily: 'var(--font-code)',
+                  overflow: 'auto',
+                  margin: 0,
+                  color: 'var(--color-text-primary)',
+                }}>
+                {generateThemeCode(
+                  themeName,
+                  tokens,
+                  allDefaults,
+                  typeScaleBase,
+                  typeScaleRatio,
+                )}
+              </pre>
+            </div>
+          )}
+
+          {/* Preview content */}
+          <div style={{flex: 1, overflow: 'auto'}}>
             <div
               style={{
                 backgroundColor: 'var(--color-surface)',
@@ -2004,10 +2009,10 @@ function ThemeEditorComponent() {
               }}>
               <ComponentPreview />
             </div>
-          </XDSTheme>
+          </div>
         </div>
       </div>
-    </div>
+    </XDSTheme>
   );
 }
 
@@ -2032,8 +2037,8 @@ type Story = StoryObj;
 export const ThemeEditor: Story = {
   render: () => <ThemeEditorComponent />,
   parameters: {
-    // Use default theme for the editor chrome (left panel).
-    // The preview panel wraps its own <XDSTheme theme={currentTheme}>.
-    xdsTheme: 'default',
+    // The entire editor (both panels) is wrapped in <XDSTheme>
+    // so the editor chrome reflects token changes in real-time.
+    xdsTheme: 'none',
   },
 };
