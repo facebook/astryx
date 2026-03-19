@@ -402,17 +402,6 @@ function getTokenLabel(tokenName: string): string {
 // Section Indicator Colors — maps each token group to a dot color
 // =============================================================================
 
-const SECTION_DOT_COLORS: Record<string, string> = {
-  colors: '#3B82F6',
-  spacing: '#10B981',
-  radius: '#F59E0B',
-  typography: '#8B5CF6',
-  size: '#EC4899',
-  shadow: '#6366F1',
-  duration: '#14B8A6',
-  easing: '#F97316',
-};
-
 // =============================================================================
 // Compact Color Swatch — matching the mockup design
 // =============================================================================
@@ -1719,6 +1708,34 @@ function ThemeEditorComponent() {
   // =========================================================================
   // Build the accordion sections
   // =========================================================================
+  // Count how many tokens in a group match the search query
+  const groupHasSearchMatch = React.useCallback(
+    (groupKey: TokenGroupKey) => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      const group = TOKEN_GROUPS[groupKey];
+
+      // For colors, check across all color categories
+      if (groupKey === 'colors') {
+        return Object.values(COLOR_CATEGORIES).some(catTokens =>
+          catTokens.some(
+            t =>
+              t.toLowerCase().includes(q) ||
+              getTokenLabel(t).toLowerCase().includes(q),
+          ),
+        );
+      }
+
+      // For other groups, check the group's tokens directly
+      return Object.keys(group.tokens).some(
+        t =>
+          t.toLowerCase().includes(q) ||
+          getTokenLabel(t).toLowerCase().includes(q),
+      );
+    },
+    [searchQuery],
+  );
+
   const sectionRenderers: Record<TokenGroupKey, () => React.ReactNode> = {
     colors: renderColorTokens,
     spacing: () => renderSpacingTokens(spacingDefaults),
@@ -1759,7 +1776,6 @@ function ThemeEditorComponent() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              borderBottom: '1px solid var(--color-border)',
             }}>
             {isEditingName ? (
               <input
@@ -1850,14 +1866,25 @@ function ThemeEditorComponent() {
               overflow: 'auto',
               padding: '8px 12px',
             }}>
-            <XDSCollapsibleGroup type="multiple" defaultValue={['colors']}>
+            <XDSCollapsibleGroup
+              type="multiple"
+              defaultValue={
+                searchQuery
+                  ? (Object.keys(TOKEN_GROUPS) as TokenGroupKey[]).filter(k =>
+                      groupHasSearchMatch(k),
+                    )
+                  : ['colors']
+              }>
               <XDSVStack gap={0.5}>
                 {(Object.keys(TOKEN_GROUPS) as TokenGroupKey[]).map(
                   groupKey => {
                     const group = TOKEN_GROUPS[groupKey];
-                    const dotColor =
-                      SECTION_DOT_COLORS[groupKey] || 'var(--color-accent)';
                     const modified = modifiedCount(group.tokens);
+
+                    // Hide sections with no search matches
+                    if (searchQuery && !groupHasSearchMatch(groupKey)) {
+                      return null;
+                    }
 
                     return (
                       <XDSCollapsible
@@ -1869,15 +1896,6 @@ function ThemeEditorComponent() {
                             gap={2}
                             vAlign="center"
                             style={{width: '100%'}}>
-                            <div
-                              style={{
-                                width: '8px',
-                                height: '8px',
-                                borderRadius: '50%',
-                                backgroundColor: dotColor,
-                                flexShrink: 0,
-                              }}
-                            />
                             <XDSText
                               type="label"
                               style={{flex: 1, textAlign: 'start'}}>
