@@ -37,6 +37,7 @@ export * from './Field';
 export * from './FormLayout';
 export * from './Grid';
 export * from './Section';
+export * from './SegmentedControl';
 export * from './Selector';
 export * from './Icon';
 export * from './Text';
