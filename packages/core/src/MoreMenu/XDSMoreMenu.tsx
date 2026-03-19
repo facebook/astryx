@@ -256,13 +256,15 @@ export function XDSMoreMenu({
 
   const selectableItems = useMemo(() => getSelectableItems(items), [items]);
 
+  const handleLayerHide = useCallback(() => {
+    setHighlightedIndex(-1);
+    buttonRef.current?.focus();
+  }, []);
+
   const layer = useXDSLayer({
     mode: 'context',
     lightDismiss: true,
-    onHide: () => {
-      setHighlightedIndex(-1);
-      buttonRef.current?.focus();
-    },
+    onHide: handleLayerHide,
   });
 
   const handleButtonClick = useCallback(() => {

@@ -113,6 +113,126 @@ describe('XDSGrid', () => {
     expect(grid.style.gridTemplateColumns).toBe('1fr');
   });
 
+  // --- P1: columns={0} guard (hardening #719) ---
+
+  it('falls back to 1fr when columns={0}', () => {
+    render(
+      <XDSGrid columns={0} data-testid="grid">
+        <div>Item</div>
+      </XDSGrid>,
+    );
+    const grid = screen.getByTestId('grid');
+    // columns={0} must not produce repeat(0, 1fr) — should fall back to default
+    expect(grid.style.gridTemplateColumns).toBe('1fr');
+  });
+
+  it('falls back to 1fr when columns is negative', () => {
+    render(
+      <XDSGrid columns={-1} data-testid="grid">
+        <div>Item</div>
+      </XDSGrid>,
+    );
+    const grid = screen.getByTestId('grid');
+    expect(grid.style.gridTemplateColumns).toBe('1fr');
+  });
+
+  it('uses auto-fit without maxWidth cap when columns={0} with minChildWidth', () => {
+    render(
+      <XDSGrid columns={0} minChildWidth={200} data-testid="grid">
+        <div>Item</div>
+      </XDSGrid>,
+    );
+    const grid = screen.getByTestId('grid');
+    // minChildWidth drives auto-fit; columns={0} should not set a maxWidth cap
+    expect(grid.style.gridTemplateColumns).toBe(
+      'repeat(auto-fit, minmax(200px, 1fr))',
+    );
+    expect(grid.style.maxWidth).toBe('');
+  });
+
+  // --- P2: width/height props (hardening #719) ---
+
+  it('applies numeric width as pixels', () => {
+    render(
+      <XDSGrid columns={2} width={600} data-testid="grid">
+        <div>Item</div>
+      </XDSGrid>,
+    );
+    const grid = screen.getByTestId('grid');
+    expect(grid.style.width).toBe('600px');
+  });
+
+  it('applies string width as-is', () => {
+    render(
+      <XDSGrid columns={2} width="100%" data-testid="grid">
+        <div>Item</div>
+      </XDSGrid>,
+    );
+    const grid = screen.getByTestId('grid');
+    expect(grid.style.width).toBe('100%');
+  });
+
+  it('applies numeric height as pixels', () => {
+    render(
+      <XDSGrid columns={2} height={400} data-testid="grid">
+        <div>Item</div>
+      </XDSGrid>,
+    );
+    const grid = screen.getByTestId('grid');
+    expect(grid.style.height).toBe('400px');
+  });
+
+  it('applies string height as-is', () => {
+    render(
+      <XDSGrid columns={2} height="50vh" data-testid="grid">
+        <div>Item</div>
+      </XDSGrid>,
+    );
+    const grid = screen.getByTestId('grid');
+    expect(grid.style.height).toBe('50vh');
+  });
+
+  // --- P2: minChildWidth + columnGap interaction (hardening #719) ---
+
+  it('calculates maxWidth using columnGap when both columnGap and gap are set', () => {
+    render(
+      <XDSGrid
+        columns={3}
+        minChildWidth={200}
+        gap={2}
+        columnGap={6}
+        data-testid="grid">
+        <div>Item</div>
+      </XDSGrid>,
+    );
+    const grid = screen.getByTestId('grid');
+    // columnGap should take precedence over gap for maxWidth calculation
+    // maxWidth = 3 * 200 + 2 * 24 (space6=24px) = 600 + 48 = 648px
+    expect(grid.style.maxWidth).toBe('648px');
+  });
+
+  it('calculates maxWidth using gap when columnGap is not set', () => {
+    render(
+      <XDSGrid columns={2} minChildWidth={150} gap={3} data-testid="grid">
+        <div>Item</div>
+      </XDSGrid>,
+    );
+    const grid = screen.getByTestId('grid');
+    // maxWidth = 2 * 150 + 1 * 12 (space3=12px) = 300 + 12 = 312px
+    expect(grid.style.maxWidth).toBe('312px');
+  });
+
+  it('calculates maxWidth with zero gap when neither gap nor columnGap is set', () => {
+    render(
+      <XDSGrid columns={3} minChildWidth={100} data-testid="grid">
+        <div>Item</div>
+      </XDSGrid>,
+    );
+    const grid = screen.getByTestId('grid');
+    // maxWidth = 3 * 100 + 2 * 0 = 300px
+    expect(grid.style.maxWidth).toBe('300px');
+  });
+
   it('forwards ref correctly', () => {
     const ref = vi.fn();
     render(

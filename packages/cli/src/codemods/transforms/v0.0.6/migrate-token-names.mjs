@@ -1,5 +1,5 @@
 /**
- * @file Codemod: Migrate renamed design tokens from v0.0.5 naming audit
+ * @file Codemod: Migrate renamed design tokens from v0.0.6 naming audit
  *
  * Renames all tokens updated in the naming audit:
  *
@@ -59,7 +59,7 @@
 export const meta = {
   title: 'Migrate renamed design tokens',
   description:
-    'Renames color tokens from the v0.0.5 naming audit (positive→success, negative→error, divider→border, etc.).',
+    'Renames color tokens from the v0.0.6 naming audit (positive→success, negative→error, divider→border, etc.).',
 };
 
 // Ordered longest-first to prevent partial matches

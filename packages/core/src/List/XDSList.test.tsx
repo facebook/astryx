@@ -213,19 +213,27 @@ describe('XDSList', () => {
         <XDSListItem label="Item 3" />
       </XDSList>,
     );
-    const dividers = container.querySelectorAll('hr');
-    expect(dividers).toHaveLength(2);
+    // Dividers are rendered as borders on <li> elements, not separate DOM nodes
+    const items = container.querySelectorAll('li');
+    expect(items).toHaveLength(3);
+    // No <hr> elements should exist
+    const hrs = container.querySelectorAll('hr');
+    expect(hrs).toHaveLength(0);
   });
 
-  it('dividers have aria-hidden="true"', () => {
+  it('does not add extra DOM elements for dividers', () => {
     const {container} = render(
       <XDSList hasDividers>
         <XDSListItem label="Item 1" />
         <XDSListItem label="Item 2" />
       </XDSList>,
     );
-    const divider = container.querySelector('hr');
-    expect(divider).toHaveAttribute('aria-hidden', 'true');
+    const list = container.querySelector('ul');
+    // Only <li> children — no <hr> or other divider elements
+    const children = list?.children;
+    expect(children).toHaveLength(2);
+    expect(children?.[0]?.tagName).toBe('LI');
+    expect(children?.[1]?.tagName).toBe('LI');
   });
 
   it('does not render dividers when hasDividers is false', () => {
@@ -235,8 +243,8 @@ describe('XDSList', () => {
         <XDSListItem label="Item 2" />
       </XDSList>,
     );
-    const dividers = container.querySelectorAll('hr');
-    expect(dividers).toHaveLength(0);
+    const hrs = container.querySelectorAll('hr');
+    expect(hrs).toHaveLength(0);
   });
 
   // ===========================================================================

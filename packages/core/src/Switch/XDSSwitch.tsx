@@ -131,6 +131,9 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-gray-background'],
   },
   thumb: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: radiusVars['--radius-rounded'],
     backgroundColor: colorVars['--color-surface'],
     transitionProperty: 'transform, width, height',
@@ -304,8 +307,9 @@ export function XDSSwitch({
   const isOn = optimisticValue === true;
 
   // Build aria-describedby from description and status message
+  // Only include descriptionID when the element actually renders
   const describedByParts: string[] = [];
-  if (description) describedByParts.push(descriptionID);
+  if (description && !isLabelHidden) describedByParts.push(descriptionID);
   if (status?.message) describedByParts.push(statusMessageID);
   const ariaDescribedBy =
     describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
@@ -353,12 +357,7 @@ export function XDSSwitch({
           {...stylex.props(
             styles.thumb,
             isOn ? styles.thumbOn : styles.thumbOff,
-          )}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
+          )}>
           {isBusy && <XDSSpinner size="sm" />}
         </div>
       </div>

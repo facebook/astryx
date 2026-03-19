@@ -130,12 +130,14 @@ export interface XDSHoverCardOptions {
   isEnabled?: boolean;
 
   /**
-   * Callback fired when hover card is shown
+   * Callback fired when hover card is shown.
+   * Wrap in useCallback for stable identity.
    */
   onShow?: () => void;
 
   /**
-   * Callback fired when hover card is hidden
+   * Callback fired when hover card is hidden.
+   * Wrap in useCallback for stable identity.
    */
   onHide?: () => void;
 }

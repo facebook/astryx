@@ -88,12 +88,14 @@ export interface FixedRenderProps {
  */
 interface BaseLayerOptions {
   /**
-   * Callback fired when layer is shown
+   * Callback fired when layer is shown.
+   * Wrap in useCallback for stable identity.
    */
   onShow?: () => void;
 
   /**
-   * Callback fired when layer is hidden
+   * Callback fired when layer is hidden.
+   * Wrap in useCallback for stable identity.
    */
   onHide?: () => void;
 
@@ -313,6 +315,17 @@ export function useXDSLayer(
     [onShow, onHide],
   );
 
+  // Ref callback for popover element — sets up toggle listener
+  const popoverRefCallback = useCallback(
+    (el: HTMLElement | null) => {
+      popoverRef.current = el;
+      if (el) {
+        el.addEventListener('toggle', handleToggle);
+      }
+    },
+    [handleToggle],
+  );
+
   // Render function for context mode
   const renderContext = useCallback(
     (children: ReactNode, props?: ContextRenderProps) => {
@@ -327,12 +340,7 @@ export function useXDSLayer(
 
       return (
         <div
-          ref={el => {
-            popoverRef.current = el;
-            if (el) {
-              el.addEventListener('toggle', handleToggle);
-            }
-          }}
+          ref={popoverRefCallback}
           id={id}
           popover={lightDismiss ? 'auto' : 'manual'}
           {...stylex.props(styles.base, xstyle)}
@@ -341,7 +349,7 @@ export function useXDSLayer(
         </div>
       );
     },
-    [anchorId, handleToggle, id, lightDismiss],
+    [anchorId, id, lightDismiss, popoverRefCallback],
   );
 
   // Render function for fixed mode
@@ -357,12 +365,7 @@ export function useXDSLayer(
 
       return (
         <div
-          ref={el => {
-            popoverRef.current = el;
-            if (el) {
-              el.addEventListener('toggle', handleToggle);
-            }
-          }}
+          ref={popoverRefCallback}
           id={id}
           popover={lightDismiss ? 'auto' : 'manual'}
           {...stylex.props(styles.base, styles.fixed)}
@@ -371,7 +374,7 @@ export function useXDSLayer(
         </div>
       );
     },
-    [handleToggle, id, lightDismiss],
+    [popoverRefCallback, id, lightDismiss],
   );
 
   if (mode === 'context') {

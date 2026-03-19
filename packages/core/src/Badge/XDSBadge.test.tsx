@@ -4,21 +4,21 @@ import {XDSBadge} from './XDSBadge';
 
 describe('XDSBadge', () => {
   it('renders with default variant', () => {
-    render(<XDSBadge>Default</XDSBadge>);
+    render(<XDSBadge label="Default" />);
     expect(screen.getByText('Default')).toBeInTheDocument();
   });
 
   it('renders with different variants', () => {
-    const {rerender} = render(<XDSBadge variant="success">Success</XDSBadge>);
+    const {rerender} = render(<XDSBadge variant="success" label="Success" />);
     expect(screen.getByText('Success')).toBeInTheDocument();
 
-    rerender(<XDSBadge variant="error">Error</XDSBadge>);
+    rerender(<XDSBadge variant="error" label="Error" />);
     expect(screen.getByText('Error')).toBeInTheDocument();
 
-    rerender(<XDSBadge variant="warning">Warning</XDSBadge>);
+    rerender(<XDSBadge variant="warning" label="Warning" />);
     expect(screen.getByText('Warning')).toBeInTheDocument();
 
-    rerender(<XDSBadge variant="info">Info</XDSBadge>);
+    rerender(<XDSBadge variant="info" label="Info" />);
     expect(screen.getByText('Info')).toBeInTheDocument();
   });
 
@@ -31,7 +31,7 @@ describe('XDSBadge', () => {
 
   it('renders with icon', () => {
     render(
-      <XDSBadge icon={<span data-testid="icon">*</span>}>With Icon</XDSBadge>,
+      <XDSBadge icon={<span data-testid="icon">*</span>} label="With Icon" />,
     );
     expect(screen.getByTestId('icon')).toBeInTheDocument();
     expect(screen.getByText('With Icon')).toBeInTheDocument();
@@ -39,17 +39,17 @@ describe('XDSBadge', () => {
 
   it('forwards ref', () => {
     const ref = {current: null as HTMLSpanElement | null};
-    render(<XDSBadge ref={ref}>Test</XDSBadge>);
+    render(<XDSBadge ref={ref} label="Test" />);
     expect(ref.current).toBeInstanceOf(HTMLSpanElement);
   });
 
   it('spreads additional props', () => {
-    render(<XDSBadge data-testid="custom-badge">Test</XDSBadge>);
+    render(<XDSBadge data-testid="custom-badge" label="Test" />);
     expect(screen.getByTestId('custom-badge')).toBeInTheDocument();
   });
 
   it('renders xds-* class names for theme targeting', () => {
-    const {container} = render(<XDSBadge variant="success">Active</XDSBadge>);
+    const {container} = render(<XDSBadge variant="success" label="Active" />);
     const root = container.firstElementChild!;
     expect(root.className).toContain('xds-badge');
     expect(root.className).toContain('success');

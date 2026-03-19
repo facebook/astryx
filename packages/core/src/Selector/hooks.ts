@@ -233,8 +233,10 @@ export function useCombobox({
           break;
 
         case 'Escape':
-          e.preventDefault();
-          closeAndReset();
+          if (isOpen) {
+            e.preventDefault();
+            closeAndReset();
+          }
           break;
 
         case 'Home':

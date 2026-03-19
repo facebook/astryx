@@ -13,10 +13,10 @@
 
 'use client';
 
-import {useId, useMemo, Children, type ReactNode} from 'react';
+import {useId, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {colorVars, spacingVars} from '../theme/tokens.stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 import {XDSListContext, type XDSListDensity} from './XDSListContext';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -108,12 +108,6 @@ const styles = stylex.create({
   header: {
     marginBottom: spacingVars['--spacing-2'],
   },
-  divider: {
-    height: '1px',
-    border: 'none',
-    margin: 0,
-    backgroundColor: colorVars['--color-border'],
-  },
 });
 
 const listStyleTypes = stylex.create({
@@ -175,26 +169,6 @@ export function XDSList({
     [density, hasDividers, hasMarkers],
   );
 
-  // Interleave dividers between children when hasDividers is true
-  let renderedChildren = children;
-  if (hasDividers) {
-    const childArray = Children.toArray(children);
-    const withDividers: ReactNode[] = [];
-    childArray.forEach((child, i) => {
-      withDividers.push(child);
-      if (i < childArray.length - 1) {
-        withDividers.push(
-          <hr
-            key={`divider-${i}`}
-            aria-hidden="true"
-            {...stylex.props(styles.divider)}
-          />,
-        );
-      }
-    });
-    renderedChildren = withDividers;
-  }
-
   return (
     <XDSListContext.Provider value={contextValue}>
       {header != null && (
@@ -218,7 +192,7 @@ export function XDSList({
           className,
           style,
         )}>
-        {renderedChildren}
+        {children}
       </Tag>
     </XDSListContext.Provider>
   );

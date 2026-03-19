@@ -105,7 +105,7 @@ describe('XDSButton', () => {
     render(
       <XDSButton
         label="Click me"
-        endSlot={<XDSBadge data-testid="end">3</XDSBadge>}
+        endSlot={<XDSBadge data-testid="end" label={3} />}
       />,
     );
     const button = screen.getByRole('button');
@@ -118,7 +118,7 @@ describe('XDSButton', () => {
     render(
       <XDSButton
         label="Accessible name"
-        endSlot={<XDSBadge data-testid="end">New</XDSBadge>}>
+        endSlot={<XDSBadge data-testid="end" label='New' />}>
         Custom content
       </XDSButton>,
     );
@@ -132,7 +132,7 @@ describe('XDSButton', () => {
       <XDSButton
         label="Settings"
         icon={<span data-testid="icon">⚙</span>}
-        endSlot={<XDSBadge data-testid="end">New</XDSBadge>}>
+        endSlot={<XDSBadge data-testid="end" label='New' />}>
         Settings
       </XDSButton>,
     );
@@ -158,7 +158,7 @@ describe('XDSButton', () => {
       <XDSButton
         label="Settings"
         icon={<span data-testid="icon">⚙</span>}
-        endSlot={<XDSBadge data-testid="end">3</XDSBadge>}
+        endSlot={<XDSBadge data-testid="end" label={3} />}
       />,
     );
     expect(screen.getByTestId('icon')).toBeInTheDocument();
@@ -169,7 +169,7 @@ describe('XDSButton', () => {
     render(
       <XDSButton
         label="Test"
-        endSlot={<XDSBadge data-testid="end">3</XDSBadge>}
+        endSlot={<XDSBadge data-testid="end" label={3} />}
       />,
     );
     const badge = screen.getByTestId('end');
@@ -185,7 +185,7 @@ describe('XDSButton', () => {
       <XDSButton
         label="Submit"
         isLoading
-        endSlot={<XDSBadge data-testid="end">3</XDSBadge>}
+        endSlot={<XDSBadge data-testid="end" label={3} />}
       />,
     );
     // endSlot should still be in the DOM

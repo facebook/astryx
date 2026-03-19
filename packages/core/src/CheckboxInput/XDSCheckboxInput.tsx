@@ -330,8 +330,9 @@ export function XDSCheckboxInput({
   const isCheckedOrIndeterminate = isChecked || isIndeterminate;
 
   // Build aria-describedby from description and status message
+  // Only include descriptionID when the element actually renders
   const describedByParts: string[] = [];
-  if (description) describedByParts.push(descriptionID);
+  if (description && !isLabelHidden) describedByParts.push(descriptionID);
   if (status?.message) describedByParts.push(statusMessageID);
   const ariaDescribedBy =
     describedByParts.length > 0 ? describedByParts.join(' ') : undefined;

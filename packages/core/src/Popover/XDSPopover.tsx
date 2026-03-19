@@ -276,14 +276,20 @@ export function XDSPopover({
   // the trigger click from immediately re-opening it.
   const lastHideTimeRef = useRef(0);
 
+  const handlePopoverShow = useCallback(() => {
+    onOpenChange?.(true);
+  }, [onOpenChange]);
+
+  const handlePopoverHide = useCallback(() => {
+    lastHideTimeRef.current = Date.now();
+    onOpenChange?.(false);
+  }, [onOpenChange]);
+
   const popover = useXDSPopover({
     dialogLabel: label,
     hasLightDismiss: true,
-    onShow: () => onOpenChange?.(true),
-    onHide: () => {
-      lastHideTimeRef.current = Date.now();
-      onOpenChange?.(false);
-    },
+    onShow: handlePopoverShow,
+    onHide: handlePopoverHide,
   });
 
   // Shared handler for click events on the trigger button.
