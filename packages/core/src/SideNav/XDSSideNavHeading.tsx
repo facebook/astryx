@@ -140,6 +140,9 @@ const styles = stylex.create({
     minWidth: 'anchor-size(width)',
     marginBlockStart: spacingVars['--spacing-1'],
   },
+  popoverCollapsed: {
+    marginInlineStart: spacingVars['--spacing-1'],
+  },
 });
 
 // =============================================================================
