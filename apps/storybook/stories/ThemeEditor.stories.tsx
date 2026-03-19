@@ -36,6 +36,7 @@ import {XDSCollapsible} from '@xds/core/Collapsible';
 import {XDSCollapsibleGroup} from '@xds/core/Collapsible';
 import {XDSPagination} from '@xds/core/Pagination';
 import {XDSPopover} from '@xds/core/Popover';
+import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
 import {XDSTheme, defineTheme, expandTypeScale} from '@xds/core/theme';
 import {
   colorDefaults,
@@ -799,6 +800,56 @@ const spacingTableColumns: XDSTableColumn<SpacingRow>[] = [
   {key: 'preview', header: 'Preview'},
 ];
 
+// =============================================================================
+// Dashboard Example — Transaction Table Data
+// =============================================================================
+
+interface TransactionRow extends Record<string, unknown> {
+  id: string;
+  name: string;
+  transactionId: string;
+  card: string;
+  amount: string;
+}
+
+const transactionColumns: XDSTableColumn<TransactionRow>[] = [
+  {key: 'name', header: 'Name'},
+  {key: 'transactionId', header: 'Transaction ID'},
+  {key: 'card', header: 'Card'},
+  {key: 'amount', header: 'Amount'},
+];
+
+const transactionData: TransactionRow[] = [
+  {
+    id: '1',
+    name: 'iPhone 17 purchased',
+    transactionId: '#21325554',
+    card: '•••• 5635',
+    amount: '$790',
+  },
+  {
+    id: '2',
+    name: 'Refrigerator',
+    transactionId: '#21325554',
+    card: '•••• 5635',
+    amount: '$1,524',
+  },
+  {
+    id: '3',
+    name: 'Car Purchased',
+    transactionId: '#21325554',
+    card: '•••• 5635',
+    amount: '$1,420',
+  },
+  {
+    id: '4',
+    name: 'Asus ExpertBook P1',
+    transactionId: '#21325554',
+    card: '•••• 5635',
+    amount: '$1,250',
+  },
+];
+
 function ComponentPreview() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [selectedTab, setSelectedTab] = React.useState('overview');
@@ -1551,6 +1602,284 @@ const styles = stylex.create({
           pageSize={10}
           variant="pages"
         />
+      </div>
+
+      {/* ================================================================= */}
+      {/* Dashboard Example — Finance-style layout                         */}
+      {/* ================================================================= */}
+      <div>
+        <XDSText type="label" style={{marginBottom: '16px', display: 'block'}}>
+          Dashboard Example
+        </XDSText>
+
+        <XDSGrid columns={3} gap={4}>
+          {/* --- Row 1: Revenue Card --- */}
+          <XDSCard padding="lg">
+            <XDSStack gap="md">
+              <XDSText type="supporting">Total Revenue</XDSText>
+              <XDSHeading level={1}>$25,562.05</XDSHeading>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '8px',
+                  alignItems: 'center',
+                }}>
+                <XDSText type="supporting">Compare to last month</XDSText>
+                <XDSBadge label="+15.46%" sentiment="positive" />
+              </div>
+            </XDSStack>
+          </XDSCard>
+
+          {/* --- Row 1: All Track in One (spans 2 cols) --- */}
+          <XDSGridSpan columns={2}>
+            <XDSCard padding="lg">
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '16px',
+                }}>
+                <XDSHeading level={4}>All track in one</XDSHeading>
+                <XDSBadge label="View all" variant="primary" />
+              </div>
+              <XDSGrid columns={2} gap={3}>
+                <XDSCard padding="md">
+                  <XDSStack gap="sm">
+                    <XDSText type="supporting">Current Balance</XDSText>
+                    <XDSHeading level={3}>$52,024.00</XDSHeading>
+                    <XDSBadge label="+55.46%" sentiment="positive" />
+                  </XDSStack>
+                </XDSCard>
+                <XDSCard padding="md">
+                  <XDSStack gap="sm">
+                    <XDSText type="supporting">Income</XDSText>
+                    <XDSHeading level={3}>$32,024.00</XDSHeading>
+                    <XDSBadge label="+55.46%" sentiment="positive" />
+                  </XDSStack>
+                </XDSCard>
+                <XDSCard padding="md">
+                  <XDSStack gap="sm">
+                    <XDSText type="supporting">Savings</XDSText>
+                    <XDSHeading level={3}>$12,124.00</XDSHeading>
+                    <XDSBadge label="+55.46%" sentiment="positive" />
+                  </XDSStack>
+                </XDSCard>
+                <XDSCard padding="md">
+                  <XDSStack gap="sm">
+                    <XDSText type="supporting">Expenses</XDSText>
+                    <XDSHeading level={3}>$5,014.00</XDSHeading>
+                    <XDSBadge label="+55.46%" sentiment="warning" />
+                  </XDSStack>
+                </XDSCard>
+              </XDSGrid>
+            </XDSCard>
+          </XDSGridSpan>
+
+          {/* --- Row 2: Daily Transactions Limit --- */}
+          <XDSCard padding="lg">
+            <XDSStack gap="md">
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}>
+                <XDSText type="label">Daily Transactions limit</XDSText>
+                <XDSText type="supporting">95%</XDSText>
+              </div>
+              <XDSProgressBar value={95} label="95%" />
+              <XDSText type="supporting">$1,250 used from $3,050 limit</XDSText>
+            </XDSStack>
+          </XDSCard>
+
+          {/* --- Row 2: Quick Transfer --- */}
+          <XDSCard padding="lg">
+            <XDSStack gap="md">
+              <XDSHeading level={4}>Quick Transfer</XDSHeading>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '16px',
+                  alignItems: 'center',
+                }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}>
+                  <XDSAvatar name="Sara Lee" size="lg" />
+                  <XDSText type="supporting">Sara</XDSText>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}>
+                  <XDSAvatar name="Ishan Patel" size="lg" />
+                  <XDSText type="supporting">Ishan</XDSText>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}>
+                  <XDSAvatar name="Jon Doe" size="lg" />
+                  <XDSText type="supporting">Jon</XDSText>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}>
+                  <XDSAvatar name="Alex Nguyen" size="lg" />
+                  <XDSText type="supporting">Alex</XDSText>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}>
+                  <div
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      border: '2px dashed var(--color-divider-emphasized)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'var(--color-text-secondary)',
+                      fontSize: '18px',
+                    }}>
+                    +
+                  </div>
+                  <XDSText type="supporting">Add</XDSText>
+                </div>
+              </div>
+            </XDSStack>
+          </XDSCard>
+
+          {/* --- Row 2: Your Savings --- */}
+          <XDSCard padding="lg">
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '16px',
+              }}>
+              <XDSHeading level={4}>Your savings</XDSHeading>
+              <XDSBadge label="View all" variant="primary" />
+            </div>
+            <XDSStack gap="md">
+              <div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '4px',
+                  }}>
+                  <XDSText type="body">New Car</XDSText>
+                  <XDSText type="supporting">55%</XDSText>
+                </div>
+                <XDSProgressBar value={55} label="55%" />
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    marginTop: '2px',
+                  }}>
+                  <XDSText type="supporting">$10,520 / $50,000</XDSText>
+                </div>
+              </div>
+              <div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '4px',
+                  }}>
+                  <XDSText type="body">New House Rent</XDSText>
+                  <XDSText type="supporting">85%</XDSText>
+                </div>
+                <XDSProgressBar value={85} label="85%" />
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    marginTop: '2px',
+                  }}>
+                  <XDSText type="supporting">$10,520 / $150,000</XDSText>
+                </div>
+              </div>
+              <div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '4px',
+                  }}>
+                  <XDSText type="body">New Bike</XDSText>
+                  <XDSText type="supporting">85%</XDSText>
+                </div>
+                <XDSProgressBar value={85} label="85%" />
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    marginTop: '2px',
+                  }}>
+                  <XDSText type="supporting">$3,020 / $7,000</XDSText>
+                </div>
+              </div>
+            </XDSStack>
+          </XDSCard>
+
+          {/* --- Row 3: Balance Spending Table (full width) --- */}
+          <XDSGridSpan columns="full">
+            <XDSCard padding="lg">
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '16px',
+                }}>
+                <XDSHeading level={4}>Balance Spending</XDSHeading>
+                <div style={{display: 'flex', gap: '8px'}}>
+                  <XDSTextInput
+                    label="Search"
+                    isLabelHidden
+                    placeholder="Searching"
+                    size="sm"
+                  />
+                  <XDSButton label="Filter" variant="ghost" size="sm" />
+                </div>
+              </div>
+              <XDSTable
+                columns={transactionColumns}
+                data={transactionData}
+                getRowKey={row => row.id}
+                density="balanced"
+                dividers="rows"
+              />
+            </XDSCard>
+          </XDSGridSpan>
+        </XDSGrid>
       </div>
 
       {/* Empty State */}
