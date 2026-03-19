@@ -21,6 +21,21 @@ import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSTable} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {XDSDivider} from '@xds/core/Divider';
+import {XDSLink} from '@xds/core/Link';
+import {XDSTooltip} from '@xds/core/Tooltip';
+import {XDSSkeleton} from '@xds/core/Skeleton';
+import {XDSSpinner} from '@xds/core/Spinner';
+import {XDSStatusDot} from '@xds/core/StatusDot';
+import {XDSTextArea} from '@xds/core/TextArea';
+import {XDSBreadcrumbs, XDSBreadcrumbItem} from '@xds/core/Breadcrumbs';
+import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
+import {XDSEmptyState} from '@xds/core/EmptyState';
+import {XDSKbd} from '@xds/core/Kbd';
+import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSCollapsible} from '@xds/core/Collapsible';
+import {XDSCollapsibleGroup} from '@xds/core/Collapsible';
+import {XDSPagination} from '@xds/core/Pagination';
+import {XDSPopover} from '@xds/core/Popover';
 import {XDSTheme, defineTheme, expandTypeScale} from '@xds/core/theme';
 import {
   colorDefaults,
@@ -791,6 +806,12 @@ function ComponentPreview() {
   const [sliderValue, setSliderValue] = React.useState(50);
   const [checkboxValue, setCheckboxValue] = React.useState(false);
   const [radioValue, setRadioValue] = React.useState('option1');
+  const [selectorValue, setSelectorValue] = React.useState<string | undefined>(
+    undefined,
+  );
+  const [numberValue, setNumberValue] = React.useState<number | null>(null);
+  const [textAreaValue, setTextAreaValue] = React.useState('');
+  const [paginationPage, setPaginationPage] = React.useState(1);
 
   // Spacing data for table
   const spacingData: SpacingRow[] = Object.entries(spacingDefaults).map(
@@ -1209,6 +1230,351 @@ const styles = stylex.create({
             </XDSStack>
           </div>
         </XDSDialog>
+      </div>
+
+      {/* Links */}
+      <div>
+        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
+          Links
+        </XDSText>
+        <div
+          style={{
+            display: 'flex',
+            gap: '16px',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+          }}>
+          <XDSLink href="#" label="Default link">
+            Default link
+          </XDSLink>
+          <XDSLink href="#" label="Active link" color="active">
+            Active link
+          </XDSLink>
+          <XDSLink href="#" label="Secondary link" color="secondary">
+            Secondary link
+          </XDSLink>
+          <XDSLink href="#" label="Underlined" hasUnderline>
+            Always underlined
+          </XDSLink>
+          <XDSLink href="#" label="External link" isExternalLink>
+            External link
+          </XDSLink>
+        </div>
+      </div>
+
+      {/* Tooltip */}
+      <div>
+        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
+          Tooltip
+        </XDSText>
+        <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+          <XDSTooltip content="Helpful tooltip text" placement="above">
+            <XDSButton
+              label="Hover for tooltip"
+              variant="secondary"
+              size="sm"
+            />
+          </XDSTooltip>
+          <XDSTooltip content="Another tooltip" placement="below">
+            <XDSBadge label="Hover me too" />
+          </XDSTooltip>
+        </div>
+      </div>
+
+      {/* Selector & NumberInput */}
+      <div>
+        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
+          Selector &amp; Number Input
+        </XDSText>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            maxWidth: '300px',
+          }}>
+          <XDSSelector
+            label="Fruit"
+            options={['Apple', 'Banana', 'Orange', 'Mango', 'Pineapple']}
+            value={selectorValue}
+            onChange={setSelectorValue}
+            placeholder="Select a fruit..."
+          />
+          <XDSNumberInput
+            label="Quantity"
+            value={numberValue}
+            onChange={setNumberValue}
+            placeholder="Enter a number"
+          />
+        </div>
+      </div>
+
+      {/* TextArea */}
+      <div>
+        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
+          Text Area
+        </XDSText>
+        <div style={{maxWidth: '400px'}}>
+          <XDSTextArea
+            label="Description"
+            placeholder="Enter a longer description..."
+            value={textAreaValue}
+            onChange={setTextAreaValue}
+          />
+        </div>
+      </div>
+
+      {/* Breadcrumbs */}
+      <div>
+        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
+          Breadcrumbs
+        </XDSText>
+        <XDSBreadcrumbs>
+          <XDSBreadcrumbItem href="#">Home</XDSBreadcrumbItem>
+          <XDSBreadcrumbItem href="#">Projects</XDSBreadcrumbItem>
+          <XDSBreadcrumbItem href="#">Design System</XDSBreadcrumbItem>
+          <XDSBreadcrumbItem isCurrent>Theme Editor</XDSBreadcrumbItem>
+        </XDSBreadcrumbs>
+      </div>
+
+      {/* Dropdown Menu */}
+      <div>
+        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
+          Dropdown Menu
+        </XDSText>
+        <div style={{display: 'flex', gap: '8px'}}>
+          <XDSDropdownMenu
+            button={{label: 'Actions'}}
+            items={[
+              {label: 'Edit', onClick: () => {}},
+              {label: 'Duplicate', onClick: () => {}},
+              {type: 'divider' as const},
+              {label: 'Delete', onClick: () => {}},
+            ]}
+          />
+          <XDSDropdownMenu
+            button={{label: 'More', variant: 'ghost'}}
+            items={[
+              {label: 'Settings', onClick: () => {}},
+              {label: 'Export', onClick: () => {}},
+              {label: 'Help', onClick: () => {}},
+            ]}
+          />
+        </div>
+      </div>
+
+      {/* Popover */}
+      <div>
+        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
+          Popover
+        </XDSText>
+        <XDSPopover
+          content={
+            <div style={{padding: '16px', maxWidth: '240px'}}>
+              <XDSStack gap="sm">
+                <XDSHeading level={5}>Popover Title</XDSHeading>
+                <XDSText type="body">
+                  This is a popover with some content. It appears on click and
+                  uses the theme surface color.
+                </XDSText>
+                <XDSButton label="Got it" variant="primary" size="sm" />
+              </XDSStack>
+            </div>
+          }>
+          <XDSButton label="Open Popover" variant="secondary" />
+        </XDSPopover>
+      </div>
+
+      {/* Status Dots */}
+      <div>
+        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
+          Status Dots
+        </XDSText>
+        <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
+          <div style={{display: 'flex', gap: '6px', alignItems: 'center'}}>
+            <XDSStatusDot variant="positive" label="Online" />
+            <XDSText type="body">Online</XDSText>
+          </div>
+          <div style={{display: 'flex', gap: '6px', alignItems: 'center'}}>
+            <XDSStatusDot variant="warning" label="Away" />
+            <XDSText type="body">Away</XDSText>
+          </div>
+          <div style={{display: 'flex', gap: '6px', alignItems: 'center'}}>
+            <XDSStatusDot variant="negative" label="Offline" />
+            <XDSText type="body">Offline</XDSText>
+          </div>
+          <div style={{display: 'flex', gap: '6px', alignItems: 'center'}}>
+            <XDSStatusDot variant="info" label="Busy" />
+            <XDSText type="body">Busy</XDSText>
+          </div>
+          <div style={{display: 'flex', gap: '6px', alignItems: 'center'}}>
+            <XDSStatusDot variant="positive" label="Live" isPulsing />
+            <XDSText type="body">Live</XDSText>
+          </div>
+        </div>
+      </div>
+
+      {/* Keyboard Shortcuts */}
+      <div>
+        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
+          Keyboard Shortcuts
+        </XDSText>
+        <div
+          style={{
+            display: 'flex',
+            gap: '16px',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+          }}>
+          <XDSKbd keys="mod+k" />
+          <XDSKbd keys="mod+shift+p" />
+          <XDSKbd keys="ctrl+c" />
+          <XDSKbd keys="shift+enter" />
+          <XDSKbd keys="alt+tab" />
+        </div>
+      </div>
+
+      {/* Skeleton Loading */}
+      <div>
+        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
+          Skeleton Loading
+        </XDSText>
+        <XDSCard padding="md">
+          <div style={{display: 'flex', gap: '12px', alignItems: 'flex-start'}}>
+            <XDSSkeleton width={48} height={48} radius="rounded" />
+            <div
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}>
+              <XDSSkeleton width="60%" height={16} index={0} />
+              <XDSSkeleton width="100%" height={12} index={1} />
+              <XDSSkeleton width="80%" height={12} index={2} />
+            </div>
+          </div>
+        </XDSCard>
+      </div>
+
+      {/* Spinner */}
+      <div>
+        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
+          Spinner
+        </XDSText>
+        <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
+          <XDSSpinner size="sm" />
+          <XDSSpinner size="md" />
+          <XDSSpinner size="lg" />
+        </div>
+      </div>
+
+      {/* List */}
+      <div>
+        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
+          List
+        </XDSText>
+        <XDSCard padding="none">
+          <XDSList
+            hasDividers
+            header={
+              <div style={{padding: '12px 16px'}}>
+                <XDSText type="label">Settings</XDSText>
+              </div>
+            }>
+            <XDSListItem
+              label="Notifications"
+              description="Manage your alerts and preferences"
+            />
+            <XDSListItem
+              label="Privacy"
+              description="Control your data and visibility"
+            />
+            <XDSListItem
+              label="Appearance"
+              description="Customize the look and feel"
+            />
+          </XDSList>
+        </XDSCard>
+      </div>
+
+      {/* Collapsible */}
+      <div>
+        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
+          Collapsible
+        </XDSText>
+        <XDSCollapsibleGroup type="single" defaultValue="general">
+          <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+            <XDSCard padding="md">
+              <XDSCollapsible trigger="General Settings" value="general">
+                <XDSText
+                  type="body"
+                  style={{paddingTop: '8px', display: 'block'}}>
+                  Configure your general preferences including language,
+                  timezone, and display options.
+                </XDSText>
+              </XDSCollapsible>
+            </XDSCard>
+            <XDSCard padding="md">
+              <XDSCollapsible trigger="Privacy Settings" value="privacy">
+                <XDSText
+                  type="body"
+                  style={{paddingTop: '8px', display: 'block'}}>
+                  Manage who can see your profile, activity, and personal
+                  information.
+                </XDSText>
+              </XDSCollapsible>
+            </XDSCard>
+            <XDSCard padding="md">
+              <XDSCollapsible trigger="Notifications" value="notifications">
+                <XDSText
+                  type="body"
+                  style={{paddingTop: '8px', display: 'block'}}>
+                  Choose which notifications you receive and how they are
+                  delivered.
+                </XDSText>
+              </XDSCollapsible>
+            </XDSCard>
+          </div>
+        </XDSCollapsibleGroup>
+      </div>
+
+      {/* Pagination */}
+      <div>
+        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
+          Pagination
+        </XDSText>
+        <XDSPagination
+          page={paginationPage}
+          onChange={setPaginationPage}
+          totalItems={200}
+          pageSize={10}
+          variant="pages"
+        />
+      </div>
+
+      {/* Empty State */}
+      <div>
+        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
+          Empty State
+        </XDSText>
+        <XDSCard padding="none">
+          <XDSEmptyState
+            icon={<span style={{fontSize: '48px'}}>🔍</span>}
+            title="No results found"
+            description="Try adjusting your search or filters to find what you need."
+            actions={
+              <>
+                <XDSButton
+                  label="Clear filters"
+                  variant="secondary"
+                  size="sm"
+                />
+                <XDSButton label="Browse all" variant="primary" size="sm" />
+              </>
+            }
+          />
+        </XDSCard>
       </div>
     </div>
   );
