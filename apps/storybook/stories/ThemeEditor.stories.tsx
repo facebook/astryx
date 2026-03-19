@@ -21,12 +21,7 @@ import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSTable} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {XDSDivider} from '@xds/core/Divider';
-import {
-  XDSTheme,
-  defineTheme,
-  expandTypeScale,
-  xdsTokenDefaults,
-} from '@xds/core/theme';
+import {XDSTheme, expandTypeScale, xdsTokenDefaults} from '@xds/core/theme';
 import {
   colorDefaults,
   spacingDefaults,
@@ -42,7 +37,7 @@ import {
   easeDefaults,
   transitionDefaults,
 } from '@xds/core/theme';
-import {defaultTheme, defaultIconRegistry} from '@xds/theme-default';
+import {defaultTheme} from '@xds/theme-default';
 import {neutralTheme} from '@xds/theme-neutral';
 import {brutalistTheme} from '@xds/theme-brutalist';
 import {XDSCollapsible} from '@xds/core/Collapsible';
@@ -1393,28 +1388,28 @@ function ThemeEditorComponent() {
     setTypeScaleRatio(1.2);
   }, [selectedThemeKey]);
 
-  // Theme generation
-  const typeScaleKeys = React.useMemo(
-    () => new Set(Object.keys(typeScaleDefaults)),
-    [],
-  );
-
   const currentTheme = React.useMemo(() => {
-    const tokenOverrides: Record<string, string> = {};
+    const baseTheme = AVAILABLE_THEMES[selectedThemeKey].theme;
+
+    // Find tokens the user has manually changed vs the selected theme's values
+    const userOverrides: Record<string, string> = {};
     for (const [key, value] of Object.entries(tokens)) {
-      if (typeScaleKeys.has(key) || value !== allDefaults[key]) {
-        tokenOverrides[key] = value;
+      if (value !== themeTokens[key]) {
+        userOverrides[key] = value;
       }
     }
-    const baseTheme = AVAILABLE_THEMES[selectedThemeKey].theme;
-    return defineTheme({
-      name: themeName,
-      typeScale: {base: typeScaleBase, ratio: typeScaleRatio},
-      tokens: tokenOverrides as Partial<Record<string, string>>,
-      icons: baseTheme.icons || defaultIconRegistry,
-      components: baseTheme.components,
-    });
-  }, [tokens, themeName, allDefaults, selectedThemeKey]);
+
+    // If user hasn't changed anything, use the base theme directly
+    if (Object.keys(userOverrides).length === 0) {
+      return baseTheme;
+    }
+
+    // Otherwise, layer user overrides on top of the base theme's tokens
+    return {
+      ...baseTheme,
+      tokens: {...baseTheme.tokens, ...userOverrides},
+    };
+  }, [tokens, themeTokens, selectedThemeKey]);
 
   // Count modified tokens per group (compared to the selected theme's values)
   const modifiedCount = React.useCallback(
