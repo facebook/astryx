@@ -31,7 +31,7 @@ import {
   spacingVars,
   radiusVars,
   durationVars,
-  easingVars,
+  easeVars,
   textSizeVars,
   fontWeightVars,
   lineHeightVars,
@@ -58,7 +58,7 @@ const styles = stylex.create({
     cursor: 'pointer',
     transitionProperty: 'background-color, color',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     backgroundColor: {
       default: 'transparent',
       ':hover': {
@@ -85,7 +85,7 @@ const styles = stylex.create({
     alignItems: 'center',
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
   },
   chevronOpen: {
     transform: 'rotate(180deg)',
@@ -114,7 +114,7 @@ const styles = stylex.create({
     cursor: 'pointer',
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     backgroundColor: {
       default: 'transparent',
       ':hover': {
@@ -175,7 +175,7 @@ const drawerStyles = stylex.create({
     display: 'inline-flex',
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
   },
   chevronExpanded: {
     transform: 'rotate(180deg)',
@@ -185,7 +185,7 @@ const drawerStyles = stylex.create({
     gridTemplateRows: '0fr',
     transitionProperty: 'grid-template-rows',
     transitionDuration: durationVars['--duration-medium'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
   },
   itemsExpanded: {
     gridTemplateRows: '1fr',

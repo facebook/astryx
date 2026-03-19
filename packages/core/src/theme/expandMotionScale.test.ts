@@ -38,7 +38,7 @@ describe('expandMotionScale', () => {
   it('does not include easing token when not specified', () => {
     const tokens = expandMotionScale({fast: 175, medium: 410, ratio: 0.75});
 
-    expect(tokens['--easing-standard']).toBeUndefined();
+    expect(tokens['--ease-standard']).toBeUndefined();
   });
 
   it('includes easing override when specified', () => {
@@ -49,7 +49,7 @@ describe('expandMotionScale', () => {
       easing: 'cubic-bezier(0.0, 0.0, 0.2, 1)',
     });
 
-    expect(tokens['--easing-standard']).toBe('cubic-bezier(0.0, 0.0, 0.2, 1)');
+    expect(tokens['--ease-standard']).toBe('cubic-bezier(0.0, 0.0, 0.2, 1)');
   });
 
   it('produces exactly 6 duration tokens', () => {

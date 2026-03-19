@@ -24,7 +24,7 @@ import {
   fontWeightVars,
   lineHeightVars,
   durationVars,
-  easingVars,
+  easeVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -187,7 +187,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-rounded'],
     transitionProperty: 'width',
     transitionDuration: durationVars['--duration-medium'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
   },
   indeterminateFill: {
     height: '100%',

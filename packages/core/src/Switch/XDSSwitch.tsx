@@ -26,7 +26,7 @@ import {
   spacingVars,
   radiusVars,
   durationVars,
-  easingVars,
+  easeVars,
   typographyVars,
   textSizeVars,
 } from '../theme/tokens.stylex';
@@ -93,7 +93,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-rounded'],
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     boxSizing: 'border-box',
   },
   trackFocus: {
@@ -135,7 +135,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-surface'],
     transitionProperty: 'transform, width, height',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
   },
   thumbOff: {
     width: THUMB_SIZE_OFF,

@@ -19,7 +19,7 @@ import {
   spacingVars,
   radiusVars,
   durationVars,
-  easingVars,
+  easeVars,
   textSizeVars,
   fontWeightVars,
   lineHeightVars,
@@ -46,7 +46,7 @@ const styles = stylex.create({
     cursor: 'pointer',
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     backgroundColor: {
       default: 'transparent',
       ':hover': {

@@ -20,7 +20,7 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   durationVars,
-  easingVars,
+  easeVars,
   textSizeVars,
   lineHeightVars,
   spacingVars,
@@ -60,7 +60,7 @@ const styles = stylex.create({
     cursor: 'pointer',
     transitionProperty: 'color, text-decoration',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     outline: {
       default: null,
       ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,

@@ -23,7 +23,7 @@ import {
   textSizeVars,
   lineHeightVars,
   durationVars,
-  easingVars,
+  easeVars,
 } from '../theme/tokens.stylex';
 import {XDSListContext} from './XDSListContext';
 import {xdsClassName, mergeProps} from '../utils';
@@ -151,7 +151,7 @@ const styles = stylex.create({
     cursor: 'pointer',
     transitionProperty: 'background-image',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     backgroundImage: {
       default: null,
       ':hover': {

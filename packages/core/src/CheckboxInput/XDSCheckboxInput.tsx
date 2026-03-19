@@ -27,7 +27,7 @@ import {
   radiusVars,
   textSizeVars,
   durationVars,
-  easingVars,
+  easeVars,
   typographyVars,
 } from '../theme/tokens.stylex';
 import {XDSFieldLabel} from '../Field/XDSFieldLabel';
@@ -73,7 +73,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-1'],
     transitionProperty: 'background-color, border-color',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
   },
   checkboxFocus: {
     outline: {

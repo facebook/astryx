@@ -27,7 +27,7 @@ import {
 import {
   colorVars,
   durationVars,
-  easingVars,
+  easeVars,
   radiusVars,
   spacingVars,
   typographyVars,
@@ -57,7 +57,7 @@ const styles = stylex.create({
     // Transitions with allow-discrete for display/overlay
     transitionProperty: 'opacity, transform, overlay, display',
     transitionDuration: durationVars['--duration-fast-min'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     transitionBehavior: 'allow-discrete',
     // Entry animation starting state
     '@starting-style': {

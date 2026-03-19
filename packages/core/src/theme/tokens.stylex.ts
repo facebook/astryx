@@ -200,7 +200,7 @@ export const radiusVars = stylex.defineVars(radiusDefaults);
 // =============================================================================
 // Outer shadows: shadow-base (subtle) → shadow-dialog (strongest).
 // Names encode use-case categories for LLM-friendly reasoning.
-// Inset shadows: insetshadow-border-* for input state rings.
+// Inset shadows: inset-shadow-border-* for input state rings.
 
 export const shadowDefaults = {
   // Outer elevation shadows (ascending intensity: base < menu < hover < dialog)
@@ -212,13 +212,14 @@ export const shadowDefaults = {
   '--shadow-dialog':
     '0px 2px 2px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0px 8px 24px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3))',
   // Inset shadows for input border rings (interaction + validation states)
-  '--insetshadow-border-hover': 'inset 0px 0px 0px 2px rgba(1, 113, 227, 0.3)',
-  '--insetshadow-border-accent': 'inset 0px 0px 0px 2px rgba(1, 113, 227, 0.5)',
-  '--insetshadow-border-positive':
+  '--inset-shadow-border-hover': 'inset 0px 0px 0px 2px rgba(1, 113, 227, 0.3)',
+  '--inset-shadow-border-accent':
+    'inset 0px 0px 0px 2px rgba(1, 113, 227, 0.5)',
+  '--inset-shadow-border-positive':
     'inset 0px 0px 0px 2px rgba(38, 167, 86, 0.3)',
-  '--insetshadow-border-warning':
+  '--inset-shadow-border-warning':
     'inset 0px 0px 0px 2px rgba(226, 164, 0, 0.3)',
-  '--insetshadow-border-negative':
+  '--inset-shadow-border-negative':
     'inset 0px 0px 0px 2px rgba(227, 25, 59, 0.3)',
 } as const;
 
@@ -251,28 +252,28 @@ export type DurationVarName = keyof typeof durationDefaults;
 // Motion Tokens — Easing
 // =============================================================================
 
-export const easingDefaults = {
-  '--easing-standard': 'cubic-bezier(0.24, 1, 0.4, 1)',
+export const easeDefaults = {
+  '--ease-standard': 'cubic-bezier(0.24, 1, 0.4, 1)',
 } as const;
 
-export const easingVars = stylex.defineVars(easingDefaults);
+export const easeVars = stylex.defineVars(easeDefaults);
 
-export type EasingVarName = keyof typeof easingDefaults;
+export type EaseVarName = keyof typeof easeDefaults;
 
 // =============================================================================
 // Motion Tokens — Deprecated (transition shorthand)
 // =============================================================================
 
-/** @deprecated Use durationVars + easingVars instead */
+/** @deprecated Use durationVars + easeVars instead */
 export const transitionDefaults = {
   '--transition-fast': '0.15s ease',
   '--transition-normal': '0.2s ease',
 } as const;
 
-/** @deprecated Use durationVars + easingVars instead */
+/** @deprecated Use durationVars + easeVars instead */
 export const transitionRaw = transitionDefaults;
 
-/** @deprecated Use durationVars + easingVars instead */
+/** @deprecated Use durationVars + easeVars instead */
 export const transitionVars = stylex.defineVars(transitionDefaults);
 
 // =============================================================================
@@ -357,7 +358,7 @@ export type SpacingVarName = keyof typeof spacingDefaults;
 export type SizeVarName = keyof typeof sizeDefaults;
 export type RadiusVarName = keyof typeof radiusDefaults;
 export type ShadowVarName = keyof typeof shadowDefaults;
-/** @deprecated Use DurationVarName | EasingVarName instead */
+/** @deprecated Use DurationVarName | EaseVarName instead */
 export type TransitionVarName = keyof typeof transitionDefaults;
 export type TypographyVarName = keyof typeof typographyDefaults;
 export type TextSizeVarName = keyof typeof textSizeDefaults;

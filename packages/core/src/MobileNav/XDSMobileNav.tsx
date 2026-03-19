@@ -28,7 +28,7 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   durationVars,
-  easingVars,
+  easeVars,
   spacingVars,
 } from '../theme/tokens.stylex';
 import {XDSButton} from '../Button';
@@ -77,7 +77,7 @@ const styles = stylex.create({
       opacity: 0,
       transitionProperty: 'opacity',
       transitionDuration: durationVars['--duration-medium'],
-      transitionTimingFunction: easingVars['--easing-standard'],
+      transitionTimingFunction: easeVars['--ease-standard'],
     },
     '@media (prefers-reduced-motion: reduce)': {
       '::backdrop': {
@@ -101,7 +101,7 @@ const styles = stylex.create({
     overflow: 'hidden',
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-medium'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     outline: 'none',
     '@media (prefers-reduced-motion: reduce)': {
       transitionDuration: '0.01s',

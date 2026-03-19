@@ -16,7 +16,7 @@
 
 import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {durationVars, easingVars} from '../theme/tokens.stylex';
+import {durationVars, easeVars} from '../theme/tokens.stylex';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {XDSButton} from '../Button';
 import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
@@ -32,7 +32,7 @@ const styles = stylex.create({
     alignItems: 'center',
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
   },
   chevronCollapsed: {
     transform: 'rotate(180deg)',

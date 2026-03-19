@@ -18,7 +18,7 @@ import {
   radiusVars,
   shadowVars,
   durationVars,
-  easingVars,
+  easeVars,
 } from '../theme/tokens.stylex';
 
 /**
@@ -47,11 +47,11 @@ export const inputWrapperStyles = stylex.create({
     backgroundColor: colorVars['--color-surface'],
     transitionProperty: 'border-color, outline, box-shadow',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     boxShadow: {
       default: 'none',
       ':hover': {
-        '@media (hover: hover)': shadowVars['--insetshadow-border-hover'],
+        '@media (hover: hover)': shadowVars['--inset-shadow-border-hover'],
       },
     },
     outline: {
@@ -92,7 +92,7 @@ export const inputStatusHoverShadowStyles = stylex.create({
     boxShadow: {
       default: 'none',
       ':hover': {
-        '@media (hover: hover)': shadowVars['--insetshadow-border-warning'],
+        '@media (hover: hover)': shadowVars['--inset-shadow-border-warning'],
       },
     },
   },
@@ -100,7 +100,7 @@ export const inputStatusHoverShadowStyles = stylex.create({
     boxShadow: {
       default: 'none',
       ':hover': {
-        '@media (hover: hover)': shadowVars['--insetshadow-border-negative'],
+        '@media (hover: hover)': shadowVars['--inset-shadow-border-negative'],
       },
     },
   },
@@ -108,7 +108,7 @@ export const inputStatusHoverShadowStyles = stylex.create({
     boxShadow: {
       default: 'none',
       ':hover': {
-        '@media (hover: hover)': shadowVars['--insetshadow-border-positive'],
+        '@media (hover: hover)': shadowVars['--inset-shadow-border-positive'],
       },
     },
   },

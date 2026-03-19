@@ -38,7 +38,7 @@ import {
   radiusVars,
   shadowVars,
   durationVars,
-  easingVars,
+  easeVars,
   typographyVars,
   textSizeVars,
   fontWeightVars,
@@ -85,11 +85,11 @@ const styles = stylex.create({
     cursor: 'pointer',
     transitionProperty: 'border-color, outline, box-shadow',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     boxShadow: {
       default: 'none',
       ':hover': {
-        '@media (hover: hover)': shadowVars['--insetshadow-border-hover'],
+        '@media (hover: hover)': shadowVars['--inset-shadow-border-hover'],
       },
     },
     outline: {
@@ -115,7 +115,7 @@ const styles = stylex.create({
     height: 16,
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     transformOrigin: 'center',
     color: colorVars['--color-icon-secondary'],
   },

@@ -20,7 +20,7 @@ import {
   colorVars,
   radiusVars,
   durationVars,
-  easingVars,
+  easeVars,
   shadowVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
@@ -81,7 +81,7 @@ const styles = stylex.create({
     },
     transitionProperty: 'opacity, transform',
     transitionDuration: durationVars['--duration-medium'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     outline: {
       default: null,
       ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,

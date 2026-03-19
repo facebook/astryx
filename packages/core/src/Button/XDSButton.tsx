@@ -24,7 +24,7 @@ import {
   spacingVars,
   radiusVars,
   durationVars,
-  easingVars,
+  easeVars,
   textSizeVars,
   fontWeightVars,
   lineHeightVars,
@@ -60,7 +60,7 @@ const styles = stylex.create({
     cursor: 'pointer',
     transitionProperty: 'background-image, transform',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     transform: {
       default: 'scale(1)',
       ':active': 'scale(0.98)',

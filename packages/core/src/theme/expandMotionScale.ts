@@ -51,7 +51,7 @@ export interface XDSMotionScaleConfig {
    * Typical range: 0.65–0.85. Default: 0.75.
    */
   ratio: number;
-  /** Optional easing curve override for --easing-standard. */
+  /** Optional easing curve override for --ease-standard. */
   easing?: string;
 }
 
@@ -98,9 +98,9 @@ export function expandMotionScale(
     '--duration-medium-max': `${roundMs(medium / ratio)}ms`,
   };
 
-  // Easing override (optional — default comes from easingDefaults)
+  // Easing override (optional — default comes from easeDefaults)
   if (easing) {
-    tokens['--easing-standard'] = easing;
+    tokens['--ease-standard'] = easing;
   }
 
   return tokens;

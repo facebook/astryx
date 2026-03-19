@@ -34,7 +34,7 @@ import {
   sizeDefaults,
   shadowDefaults,
   durationDefaults,
-  easingDefaults,
+  easeDefaults,
   transitionDefaults,
 } from '@xds/core/theme';
 import {defaultIconRegistry} from '@xds/theme-default';
@@ -88,7 +88,7 @@ const TOKEN_GROUPS = {
   easing: {
     label: 'Easing',
     description: 'Motion easing tokens',
-    tokens: easingDefaults,
+    tokens: easeDefaults,
   },
 } as const;
 
@@ -1315,7 +1315,7 @@ function ThemeEditorComponent() {
       ...sizeDefaults,
       ...shadowDefaults,
       ...durationDefaults,
-      ...easingDefaults,
+      ...easeDefaults,
       ...transitionDefaults,
     }),
     [],

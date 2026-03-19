@@ -41,7 +41,7 @@ import {
   spacingVars,
   radiusVars,
   durationVars,
-  easingVars,
+  easeVars,
   typographyVars,
   textSizeVars,
 } from '../theme/tokens.stylex';
@@ -63,7 +63,7 @@ const styles = stylex.create({
     opacity: 1,
     transitionProperty: 'opacity',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
   },
   popover: {
     minWidth: '160px',

@@ -79,7 +79,7 @@ XDS uses specific CSS variable naming. **Any variable not matching these pattern
 | Colors        | `--color-*`                                    | `--color-surface`, `--color-text-primary`, `--color-accent`                              |
 | Spacing       | `--spacing-*`                                  | `--spacing-0` through `--spacing-7`                                                      |
 | Radius        | `--radius-*`                                   | `--radius-0`, `--radius-1`, `--radius-2`, `--radius-3`, `--radius-4`, `--radius-rounded` |
-| Shadow        | `--shadow-*`, `--insetshadow-border-*`         | `--shadow-base`, `--shadow-dialog`, `--insetshadow-border-hover`                         |
+| Shadow        | `--shadow-*`, `--inset-shadow-border-*`        | `--shadow-base`, `--shadow-dialog`, `--inset-shadow-border-hover`                        |
 | Transitions   | `--transition-*`                               | `--transition-fast`, `--transition-normal`                                               |
 | Font families | `--font-body`, `--font-code`, `--font-heading` | (only these three)                                                                       |
 | Text sizes    | `--text-*`                                     | `--text-base`, `--text-sm`, `--text-lg`, `--text-xl`                                     |
@@ -94,7 +94,7 @@ XDS uses specific CSS variable naming. **Any variable not matching these pattern
 - `--border-*` (doesn't exist - use `--color-border` or component props)
 - `--font-family-*` (doesn't exist - use `--font-body`, `--font-code`, `--font-heading`)
 - `--font-size-*` (doesn't exist - use `--text-*`)
-- `--elevation-*` (doesn't exist - use `--shadow-*` and `--insetshadow-border-*`)
+- `--elevation-*` (doesn't exist - use `--shadow-*` and `--inset-shadow-border-*`)
 
 When you detect a hallucinated CSS variable, create an escape hatch entry:
 

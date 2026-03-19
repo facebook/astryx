@@ -20,7 +20,7 @@ import {
   sizeVars,
   radiusVars,
   durationVars,
-  easingVars,
+  easeVars,
   textSizeVars,
   fontWeightVars,
   lineHeightVars,
@@ -85,7 +85,7 @@ const styles = stylex.create({
     textDecoration: 'none',
     transitionProperty: 'color',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     outline: {
       default: null,
       ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
@@ -127,7 +127,7 @@ const styles = stylex.create({
     },
     transitionProperty: 'opacity',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     pointerEvents: 'none',
   },
   icon: {

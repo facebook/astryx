@@ -29,7 +29,7 @@ import type {LayerAlignment, LayerPlacement} from '../Layer/useXDSLayer';
 import {
   colorVars,
   durationVars,
-  easingVars,
+  easeVars,
   spacingVars,
   radiusVars,
   shadowVars,
@@ -183,7 +183,7 @@ const styles = stylex.create({
     },
     transitionProperty: 'opacity, transform, overlay, display',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     transitionBehavior: 'allow-discrete',
     '@starting-style': {
       opacity: 0,

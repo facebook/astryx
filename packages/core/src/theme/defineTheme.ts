@@ -37,7 +37,7 @@ import {
   radiusDefaults,
   shadowDefaults,
   durationDefaults,
-  easingDefaults,
+  easeDefaults,
   transitionDefaults,
   typographyDefaults,
   textSizeDefaults,
@@ -71,7 +71,7 @@ export type XDSTokenName =
   | keyof typeof radiusDefaults
   | keyof typeof shadowDefaults
   | keyof typeof durationDefaults
-  | keyof typeof easingDefaults
+  | keyof typeof easeDefaults
   | keyof typeof transitionDefaults
   | keyof typeof typographyDefaults
   | keyof typeof textSizeDefaults
@@ -237,7 +237,7 @@ export const xdsTokenDefaults: Record<string, string> = {
   ...radiusDefaults,
   ...shadowDefaults,
   ...durationDefaults,
-  ...easingDefaults,
+  ...easeDefaults,
   ...transitionDefaults,
   ...typographyDefaults,
   ...textSizeDefaults,

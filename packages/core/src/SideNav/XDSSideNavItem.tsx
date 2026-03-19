@@ -25,7 +25,7 @@ import {
   fontWeightVars,
   lineHeightVars,
   durationVars,
-  easingVars,
+  easeVars,
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
 import type {XDSIconType} from '../Icon';
@@ -71,7 +71,7 @@ const styles = stylex.create({
     gridTemplateRows: '1fr',
     transitionProperty: 'grid-template-rows',
     transitionDuration: durationVars['--duration-medium'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
   },
   childrenCollapsed: {
     gridTemplateRows: '0fr',
@@ -86,7 +86,7 @@ const styles = stylex.create({
     alignItems: 'center',
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     flexShrink: 0,
   },
   expandChevronCollapsed: {

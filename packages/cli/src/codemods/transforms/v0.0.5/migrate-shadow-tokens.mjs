@@ -14,10 +14,10 @@
  *   --shadow-4 → --shadow-dialog
  *
  * Inset shadows (semantic states):
- *   --elevation-input-hover         → --insetshadow-border-hover
- *   --elevation-input-hover-success → --insetshadow-border-positive
- *   --elevation-input-hover-warning → --insetshadow-border-warning
- *   --elevation-input-hover-error   → --insetshadow-border-negative
+ *   --elevation-input-hover         → --inset-shadow-border-hover
+ *   --elevation-input-hover-success → --inset-shadow-border-positive
+ *   --elevation-input-hover-warning → --inset-shadow-border-warning
+ *   --elevation-input-hover-error   → --inset-shadow-border-negative
  *
  * JS identifier renames:
  *   elevationDefaults → shadowDefaults
@@ -29,14 +29,14 @@
 export const meta = {
   title: 'Migrate elevation tokens to shadow semantic naming',
   description:
-    'Renames --elevation-* to --shadow-base/menu/hover/dialog and --insetshadow-border-*. Also migrates --shadow-1/2/3/4 from the brief numeric naming period.',
+    'Renames --elevation-* to --shadow-base/menu/hover/dialog and --inset-shadow-border-*. Also migrates --shadow-1/2/3/4 from the brief numeric naming period.',
 };
 
 const TOKEN_MAP = {
-  '--elevation-input-hover-success': '--insetshadow-border-positive',
-  '--elevation-input-hover-warning': '--insetshadow-border-warning',
-  '--elevation-input-hover-error': '--insetshadow-border-negative',
-  '--elevation-input-hover': '--insetshadow-border-hover',
+  '--elevation-input-hover-success': '--inset-shadow-border-positive',
+  '--elevation-input-hover-warning': '--inset-shadow-border-warning',
+  '--elevation-input-hover-error': '--inset-shadow-border-negative',
+  '--elevation-input-hover': '--inset-shadow-border-hover',
   '--elevation-base': '--shadow-base',
   '--elevation-menu': '--shadow-menu',
   '--elevation-hover': '--shadow-hover',

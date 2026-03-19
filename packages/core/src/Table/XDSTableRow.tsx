@@ -14,7 +14,7 @@
 import {useContext, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, durationVars, easingVars} from '../theme/tokens.stylex';
+import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
 import {XDSTableContext} from './XDSTableContext';
 import {xdsClassName, mergeProps} from '../utils';
@@ -50,7 +50,7 @@ const hoverRowStyles = stylex.create({
     },
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
   },
 });
 
@@ -65,7 +65,7 @@ const stripedHoverRowStyles = stylex.create({
     },
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
   },
 });
 

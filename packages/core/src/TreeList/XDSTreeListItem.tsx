@@ -20,7 +20,7 @@ import {
   textSizeVars,
   lineHeightVars,
   durationVars,
-  easingVars,
+  easeVars,
 } from '../theme/tokens.stylex';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {
@@ -76,7 +76,7 @@ const styles = stylex.create({
     cursor: 'pointer',
     transitionProperty: 'background-image',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     backgroundImage: {
       default: null,
       ':hover': {
@@ -181,7 +181,7 @@ const styles = stylex.create({
     display: 'flex',
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
   },
   chevronExpanded: {
     transform: 'rotate(90deg)',

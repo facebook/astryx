@@ -38,17 +38,17 @@ describe('migrate-shadow-tokens', () => {
   });
 
   // Inset shadows
-  it('--elevation-input-hover → --insetshadow-border-hover', async () => {
-    expect(await applyTransform(`const x = '--elevation-input-hover';`)).toContain('--insetshadow-border-hover');
+  it('--elevation-input-hover → --inset-shadow-border-hover', async () => {
+    expect(await applyTransform(`const x = '--elevation-input-hover';`)).toContain('--inset-shadow-border-hover');
   });
-  it('--elevation-input-hover-success → --insetshadow-border-positive', async () => {
-    expect(await applyTransform(`const x = '--elevation-input-hover-success';`)).toContain('--insetshadow-border-positive');
+  it('--elevation-input-hover-success → --inset-shadow-border-positive', async () => {
+    expect(await applyTransform(`const x = '--elevation-input-hover-success';`)).toContain('--inset-shadow-border-positive');
   });
-  it('--elevation-input-hover-warning → --insetshadow-border-warning', async () => {
-    expect(await applyTransform(`const x = '--elevation-input-hover-warning';`)).toContain('--insetshadow-border-warning');
+  it('--elevation-input-hover-warning → --inset-shadow-border-warning', async () => {
+    expect(await applyTransform(`const x = '--elevation-input-hover-warning';`)).toContain('--inset-shadow-border-warning');
   });
-  it('--elevation-input-hover-error → --insetshadow-border-negative', async () => {
-    expect(await applyTransform(`const x = '--elevation-input-hover-error';`)).toContain('--insetshadow-border-negative');
+  it('--elevation-input-hover-error → --inset-shadow-border-negative', async () => {
+    expect(await applyTransform(`const x = '--elevation-input-hover-error';`)).toContain('--inset-shadow-border-negative');
   });
 
   // JS identifiers
@@ -78,7 +78,7 @@ describe('migrate-shadow-tokens', () => {
   it('handles defineTheme', async () => {
     const out = await applyTransform(`const t = defineTheme({ tokens: { '--elevation-base': 'x', '--elevation-input-hover': 'y' } })`);
     expect(out).toContain('--shadow-base');
-    expect(out).toContain('--insetshadow-border-hover');
+    expect(out).toContain('--inset-shadow-border-hover');
   });
 
   // Safety

@@ -27,7 +27,7 @@ import {
   spacingVars,
   radiusVars,
   durationVars,
-  easingVars,
+  easeVars,
   typographyVars,
   textSizeVars,
 } from '../theme/tokens.stylex';
@@ -203,7 +203,7 @@ const styles = stylex.create({
     transform: 'translate(-50%, -50%)',
     transitionProperty: 'background-color, box-shadow',
     transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easingVars['--easing-standard'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     outline: 'none',
     cursor: 'grab',
     zIndex: 1,
