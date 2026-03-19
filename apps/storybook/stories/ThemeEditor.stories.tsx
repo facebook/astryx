@@ -1176,7 +1176,7 @@ const styles = stylex.create({
       <XDSVStack gap={3}>
         <XDSText type="label">Card</XDSText>
         <XDSCard padding="md">
-          <XDSStack gap="sm">
+          <XDSVStack gap={2}>
             <XDSHeading level={4}>Card Title</XDSHeading>
             <XDSText type="body">
               This is a sample card with some content to demonstrate how cards
@@ -1186,7 +1186,7 @@ const styles = stylex.create({
               <XDSButton label="Action" variant="primary" size="sm" />
               <XDSButton label="Cancel" variant="ghost" size="sm" />
             </XDSHStack>
-          </XDSStack>
+          </XDSVStack>
         </XDSCard>
       </XDSVStack>
 
@@ -1203,7 +1203,7 @@ const styles = stylex.create({
           onClose={() => setDialogOpen(false)}
           title="Sample Dialog">
           <div style={{padding: '0 24px 24px 24px'}}>
-            <XDSStack gap="md">
+            <XDSVStack gap={4}>
               <XDSText type="body">
                 This is a sample dialog to preview how dialogs look with the
                 current theme settings.
@@ -1224,7 +1224,7 @@ const styles = stylex.create({
                   onClick={() => setDialogOpen(false)}
                 />
               </XDSHStack>
-            </XDSStack>
+            </XDSVStack>
           </div>
         </XDSDialog>
       </XDSVStack>
@@ -1341,14 +1341,14 @@ const styles = stylex.create({
         <XDSText type="label">Popover</XDSText>
         <XDSPopover
           content={
-            <XDSStack gap="sm" style={{padding: '16px', maxWidth: '240px'}}>
+            <XDSVStack gap={2} style={{padding: '16px', maxWidth: '240px'}}>
               <XDSHeading level={5}>Popover Title</XDSHeading>
               <XDSText type="body">
                 This is a popover with some content. It appears on click and
                 uses the theme surface color.
               </XDSText>
               <XDSButton label="Got it" variant="primary" size="sm" />
-            </XDSStack>
+            </XDSVStack>
           }>
           <XDSButton label="Open Popover" variant="secondary" />
         </XDSPopover>
@@ -1504,14 +1504,14 @@ const styles = stylex.create({
         <XDSGrid columns={3} gap={4}>
           {/* --- Row 1: Revenue Card --- */}
           <XDSCard padding="lg">
-            <XDSStack gap="md">
+            <XDSVStack gap={4}>
               <XDSText type="supporting">Total Revenue</XDSText>
               <XDSHeading level={1}>$25,562.05</XDSHeading>
               <XDSHStack gap={2} vAlign="center">
                 <XDSText type="supporting">Compare to last month</XDSText>
                 <XDSBadge label="+15.46%" sentiment="positive" />
               </XDSHStack>
-            </XDSStack>
+            </XDSVStack>
           </XDSCard>
 
           {/* --- Row 1: All Track in One (spans 2 cols) --- */}
@@ -1524,32 +1524,32 @@ const styles = stylex.create({
                 </XDSHStack>
                 <XDSGrid columns={2} gap={3}>
                   <XDSCard padding="md">
-                    <XDSStack gap="sm">
+                    <XDSVStack gap={2}>
                       <XDSText type="supporting">Current Balance</XDSText>
                       <XDSHeading level={3}>$52,024.00</XDSHeading>
                       <XDSBadge label="+55.46%" sentiment="positive" />
-                    </XDSStack>
+                    </XDSVStack>
                   </XDSCard>
                   <XDSCard padding="md">
-                    <XDSStack gap="sm">
+                    <XDSVStack gap={2}>
                       <XDSText type="supporting">Income</XDSText>
                       <XDSHeading level={3}>$32,024.00</XDSHeading>
                       <XDSBadge label="+55.46%" sentiment="positive" />
-                    </XDSStack>
+                    </XDSVStack>
                   </XDSCard>
                   <XDSCard padding="md">
-                    <XDSStack gap="sm">
+                    <XDSVStack gap={2}>
                       <XDSText type="supporting">Savings</XDSText>
                       <XDSHeading level={3}>$12,124.00</XDSHeading>
                       <XDSBadge label="+55.46%" sentiment="positive" />
-                    </XDSStack>
+                    </XDSVStack>
                   </XDSCard>
                   <XDSCard padding="md">
-                    <XDSStack gap="sm">
+                    <XDSVStack gap={2}>
                       <XDSText type="supporting">Expenses</XDSText>
                       <XDSHeading level={3}>$5,014.00</XDSHeading>
                       <XDSBadge label="+55.46%" sentiment="warning" />
-                    </XDSStack>
+                    </XDSVStack>
                   </XDSCard>
                 </XDSGrid>
               </XDSVStack>
@@ -1558,19 +1558,19 @@ const styles = stylex.create({
 
           {/* --- Row 2: Daily Transactions Limit --- */}
           <XDSCard padding="lg">
-            <XDSStack gap="md">
+            <XDSVStack gap={4}>
               <XDSHStack hAlign="between" vAlign="center">
                 <XDSText type="label">Daily Transactions limit</XDSText>
                 <XDSText type="supporting">95%</XDSText>
               </XDSHStack>
               <XDSProgressBar value={95} label="95%" />
               <XDSText type="supporting">$1,250 used from $3,050 limit</XDSText>
-            </XDSStack>
+            </XDSVStack>
           </XDSCard>
 
           {/* --- Row 2: Quick Transfer --- */}
           <XDSCard padding="lg">
-            <XDSStack gap="md">
+            <XDSVStack gap={4}>
               <XDSHeading level={4}>Quick Transfer</XDSHeading>
               <XDSHStack gap={4} vAlign="start">
                 <XDSVStack gap={1} hAlign="center">
@@ -1604,7 +1604,7 @@ const styles = stylex.create({
                   <XDSText type="supporting">Add</XDSText>
                 </XDSVStack>
               </XDSHStack>
-            </XDSStack>
+            </XDSVStack>
           </XDSCard>
 
           {/* --- Row 2: Your Savings --- */}
