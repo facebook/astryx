@@ -1,0 +1,144 @@
+name: "🎨 Design Nit"
+description: Report a visual bug, inconsistency, or missing Storybook coverage found during design audit.
+title: "[design-nit] <ComponentName>: <short description>"
+labels: ["design-nit"]
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which component is this about?
+      options:
+        - AppShell
+        - AspectRatio
+        - Avatar
+        - Badge
+        - Banner
+        - Breadcrumbs
+        - Button
+        - Calendar
+        - Card
+        - Center
+        - CheckboxInput
+        - Collapsible
+        - DateInput
+        - Dialog
+        - Divider
+        - DropdownMenu
+        - EmptyState
+        - Field
+        - FormLayout
+        - Grid
+        - HoverCard
+        - Icon
+        - Kbd
+        - Layout
+        - Link
+        - List
+        - MobileNav
+        - MoreMenu
+        - NumberInput
+        - Pagination
+        - Popover
+        - PowerSearch
+        - ProgressBar
+        - RadioList
+        - Section
+        - Selector
+        - SideNav
+        - Skeleton
+        - Slider
+        - Spinner
+        - Stack
+        - StatusDot
+        - Switch
+        - TabList
+        - Table
+        - Text
+        - TextArea
+        - TextInput
+        - TimeInput
+        - Token
+        - Tokenizer
+        - Tooltip
+        - TopNav
+        - TreeList
+        - Typeahead
+        - Vstack
+        - Hstack
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How severe is this issue?
+      options:
+        - "P0 — Broken: Component doesn't render or crashes"
+        - "P1 — Major: Significant visual or functional bug"
+        - "P2 — Minor: Cosmetic issue or missing story"
+        - "P3 — Nit: Naming inconsistency, minor doc improvement"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: theme
+    attributes:
+      label: Theme
+      description: Which theme is affected?
+      options:
+        - Light
+        - Dark
+        - Both
+      default: 0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: What type of issue is this?
+      options:
+        - Visual correctness (doesn't match WWW / design spec)
+        - Interaction state (hover, focus, active, disabled, error)
+        - Storybook (missing story, broken controls, bad description)
+        - Spacing / tokens (padding, margin, sizing inconsistency)
+        - Dark mode (dark theme specific issue)
+        - Responsive (layout breaks at different widths)
+        - Accessibility (touch targets, labels, contrast)
+        - Other
+      default: 0
+    validations:
+      required: false
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What's wrong
+      description: Describe what you see vs what you expected.
+      placeholder: |
+        Badge height should be 20px. It is currently 24.5px and off-centered.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected (WWW)
+      description: Screenshot or link to the WWW component showing correct behavior.
+      placeholder: |
+        [Paste screenshot or link to internalfb.com/dimsum/xds/... ]
+    validations:
+      required: false
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual (OSS Storybook)
+      description: Screenshot or link to the OSS Storybook showing the issue.
+      placeholder: |
+        [Paste screenshot or Storybook link]
+    validations:
+      required: false
