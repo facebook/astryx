@@ -98,7 +98,7 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-1'],
     backgroundColor: colorVars['--color-popover'],
     borderRadius: radiusVars['--radius-3'],
-    boxShadow: shadowVars['--shadow-2'],
+    boxShadow: shadowVars['--shadow-menu'],
   },
   menuOffset: {
     marginBlockStart: spacingVars['--spacing-1'],

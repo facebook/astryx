@@ -14,6 +14,10 @@ import migrateSkeletonRadius, {
   meta as skeletonRadiusMeta,
 } from './migrate-skeleton-radius.mjs';
 
+import migrateShadowTokens, {
+  meta as shadowTokensMeta,
+} from './migrate-shadow-tokens.mjs';
+
 export default [
   {
     name: 'migrate-collapse-to-collapsible',
@@ -29,5 +33,10 @@ export default [
     name: 'migrate-skeleton-radius',
     transform: migrateSkeletonRadius,
     meta: skeletonRadiusMeta,
+  },
+  {
+    name: 'migrate-shadow-tokens',
+    transform: migrateShadowTokens,
+    meta: shadowTokensMeta,
   },
 ];

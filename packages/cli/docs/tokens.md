@@ -109,10 +109,10 @@ const sharpTheme = defineTheme({
 
 | Token                         | Usage                     |
 | ----------------------------- | ------------------------- |
-| --shadow-1                    | Subtle lift (cards)       |
-| --shadow-2                    | Floating elements (menus) |
-| --shadow-3                    | Hover lift, toasts        |
-| --shadow-4                    | Dialogs, modals           |
+| --shadow-base                 | Subtle lift (cards)       |
+| --shadow-menu                 | Floating elements (menus) |
+| --shadow-hover                | Hover lift, toasts        |
+| --shadow-dialog               | Dialogs, modals           |
 | --insetshadow-border-hover    | Input hover ring          |
 | --insetshadow-border-accent   | Input focused/active ring |
 | --insetshadow-border-positive | Input success ring        |

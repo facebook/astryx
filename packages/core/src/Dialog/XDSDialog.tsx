@@ -62,7 +62,7 @@ const styles = stylex.create({
     border: 'none',
     backgroundColor: colorVars['--color-surface'],
     borderRadius: radiusVars['--radius-3'],
-    boxShadow: shadowVars['--shadow-4'],
+    boxShadow: shadowVars['--shadow-dialog'],
     display: {
       default: 'none',
       ':where([open])': 'flex',

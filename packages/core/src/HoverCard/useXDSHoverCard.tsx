@@ -38,7 +38,7 @@ const styles = stylex.create({
   container: {
     backgroundColor: colorVars['--color-surface'],
     borderRadius: radiusVars['--radius-3'],
-    boxShadow: shadowVars['--shadow-3'],
+    boxShadow: shadowVars['--shadow-hover'],
     // Animation: closed state (default) and open state
     opacity: {
       default: 0,

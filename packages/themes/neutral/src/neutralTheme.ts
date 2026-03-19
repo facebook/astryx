@@ -271,12 +271,13 @@ export const neutralTheme = defineTheme({
     // =========================================================================
     // Shadows — oklch-based
     // =========================================================================
-    '--shadow-1': '0 1px 2px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 20%))',
-    '--shadow-2':
+    '--shadow-base':
+      '0 1px 2px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 20%))',
+    '--shadow-menu':
       '0 2px 4px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 15%)), 0 4px 8px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 20%))',
-    '--shadow-3':
+    '--shadow-hover':
       '0 2px 4px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 15%)), 0 4px 12px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 20%))',
-    '--shadow-4':
+    '--shadow-dialog':
       '0 4px 6px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 25%)), 0 12px 24px light-dark(oklch(0 0 0 / 15%), oklch(0 0 0 / 35%))',
     '--insetshadow-border-hover':
       'inset 0px 0px 0px 2px rgba(1, 113, 227, 0.3)',

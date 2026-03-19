@@ -21,7 +21,7 @@ const styles = stylex.create({
     padding: 'var(--spacing-7)',
     backgroundColor: 'var(--color-surface)',
     borderRadius: 'var(--radius-3)',
-    boxShadow: 'var(--shadow-2)',
+    boxShadow: 'var(--shadow-menu)',
   },
 });
 

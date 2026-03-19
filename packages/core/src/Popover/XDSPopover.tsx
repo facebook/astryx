@@ -195,7 +195,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-surface'],
     color: colorVars['--color-text-primary'],
     borderRadius: radiusVars['--radius-2'],
-    boxShadow: shadowVars['--shadow-2'],
+    boxShadow: shadowVars['--shadow-menu'],
   },
   contentPadding: {
     paddingBlockStart: spacingVars['--spacing-3'],

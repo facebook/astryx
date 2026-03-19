@@ -120,7 +120,7 @@ const styles = stylex.create({
     borderTopRightRadius: 0,
     borderBottomLeftRadius: radiusVars['--radius-3'],
     borderBottomRightRadius: radiusVars['--radius-3'],
-    boxShadow: shadowVars['--shadow-2'],
+    boxShadow: shadowVars['--shadow-menu'],
     overflow: 'hidden',
   },
   panelContent: {

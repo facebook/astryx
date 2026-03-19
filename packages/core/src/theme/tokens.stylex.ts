@@ -201,17 +201,18 @@ export const radiusVars = stylex.defineVars(radiusDefaults);
 // =============================================================================
 // Shadow Tokens
 // =============================================================================
-// Outer shadows: shadow-1 (subtle) → shadow-4 (strongest). Numbers = depth.
+// Outer shadows: shadow-base (subtle) → shadow-dialog (strongest).
+// Names encode use-case categories for LLM-friendly reasoning.
 // Inset shadows: insetshadow-border-* for input state rings.
 
 export const shadowDefaults = {
-  // Outer elevation shadows (ascending intensity: 1 = least, 4 = most)
-  '--shadow-1': '0px 0px 1px light-dark(rgba(0, 0, 0, 0.1), #111112)',
-  '--shadow-2':
+  // Outer elevation shadows (ascending intensity: base < menu < hover < dialog)
+  '--shadow-base': '0px 0px 1px light-dark(rgba(0, 0, 0, 0.1), #111112)',
+  '--shadow-menu':
     '0px 1px 1px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0px 2px 8px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2))',
-  '--shadow-3':
+  '--shadow-hover':
     '0px 1px 2px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0px 2px 12px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2))',
-  '--shadow-4':
+  '--shadow-dialog':
     '0px 2px 2px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)), 0px 8px 24px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3))',
   // Inset shadows for input border rings (interaction + validation states)
   '--insetshadow-border-hover': 'inset 0px 0px 0px 2px rgba(1, 113, 227, 0.3)',

@@ -161,7 +161,7 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-1'],
     backgroundColor: colorVars['--color-surface'],
     borderRadius: radiusVars['--radius-2'],
-    boxShadow: shadowVars['--shadow-2'],
+    boxShadow: shadowVars['--shadow-menu'],
     minWidth: '160px',
   },
   menuItem: {

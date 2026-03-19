@@ -99,7 +99,7 @@ const styles = stylex.create({
   popover: {
     backgroundColor: colorVars['--color-popover'],
     borderRadius: radiusVars['--radius-3'],
-    boxShadow: shadowVars['--shadow-2'],
+    boxShadow: shadowVars['--shadow-menu'],
   },
 });
 

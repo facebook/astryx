@@ -108,7 +108,7 @@ const styles = stylex.create({
   demoContainer: {
     backgroundColor: colorVars['--color-card'],
     borderRadius: radiusVars['--radius-3'],
-    boxShadow: shadowVars['--shadow-1'],
+    boxShadow: shadowVars['--shadow-base'],
   },
   // Demo sizing for outer padding story
   demoSize: {
