@@ -13,6 +13,7 @@
 'use client';
 
 import React, {
+  useCallback,
   useLayoutEffect,
   useRef,
   type ReactElement,
@@ -165,6 +166,14 @@ export function XDSHoverCard({
   const showHoverIndication =
     hasHoverIndication === true || (hasHoverIndication === 'auto' && textOnly);
 
+  const handleShow = useCallback(() => {
+    onOpenChange?.(true);
+  }, [onOpenChange]);
+
+  const handleHide = useCallback(() => {
+    onOpenChange?.(false);
+  }, [onOpenChange]);
+
   // Use the hook for all hover card behavior
   const hoverCard = useXDSHoverCard({
     placement,
@@ -173,8 +182,8 @@ export function XDSHoverCard({
     hideDelay,
     focusTrigger,
     isEnabled,
-    onShow: onOpenChange ? () => onOpenChange(true) : undefined,
-    onHide: onOpenChange ? () => onOpenChange(false) : undefined,
+    onShow: handleShow,
+    onHide: handleHide,
   });
 
   // For element children with display:contents, attach ref to first child

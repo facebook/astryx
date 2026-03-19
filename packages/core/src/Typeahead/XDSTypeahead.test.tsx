@@ -238,6 +238,78 @@ describe('XDSTypeahead', () => {
   });
 });
 
+describe('XDSBaseTypeahead hasEntriesOnFocus', () => {
+  it('shows bootstrap results on mouse click', async () => {
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    // Simulate full mouse click sequence (pointerdown → focus → pointerup → click)
+    fireEvent.pointerDown(input);
+    fireEvent.focus(input);
+    fireEvent.pointerUp(input);
+    fireEvent.click(input);
+
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+  });
+
+  it('shows bootstrap results on keyboard focus', async () => {
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    // Keyboard focus — no pointer events
+    fireEvent.focus(input);
+
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+  });
+
+  it('re-shows results on refocus when results already exist', async () => {
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    // Initial focus to load bootstrap results
+    fireEvent.focus(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    // Blur to close, then refocus
+    fireEvent.blur(input);
+    fireEvent.focus(input);
+
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+  });
+});
+
 describe('XDSTypeahead edit mode', () => {
   it('enters edit mode on token container click', () => {
     const onChange = vi.fn();

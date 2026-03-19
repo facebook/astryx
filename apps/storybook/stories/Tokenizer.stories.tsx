@@ -189,6 +189,26 @@ export const WithStartIconAndTokens: Story = {
   name: 'With Start Icon and Tokens',
 };
 
+export const WithEntriesOnFocus: Story = {
+  render: args => {
+    const [value, setValue] = useState<XDSSearchableItem[]>([]);
+    return (
+      <XDSTokenizer
+        {...args}
+        searchSource={userSource}
+        value={value}
+        onChange={items => setValue(items)}
+        hasEntriesOnFocus
+      />
+    );
+  },
+  args: {
+    label: 'Team Members',
+    placeholder: 'Click to see suggestions...',
+  },
+  name: 'With Entries On Focus',
+};
+
 export const WithEndContent: Story = {
   render: args => {
     const [value, setValue] = useState<XDSSearchableItem[]>([

@@ -692,15 +692,18 @@ export function PowerSearchEditPopover({
 
   const isSaveDisabled = !partialFilter.operator || !partialFilter.value;
 
-  // Handle Enter key anywhere in the popover to trigger save
+  // Handle Enter to save, Escape to cancel
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' && !isSaveDisabled) {
         e.preventDefault();
         handleSave();
+      } else if (e.key === 'Escape' && !e.defaultPrevented) {
+        e.preventDefault();
+        onCancel();
       }
     },
-    [isSaveDisabled, handleSave],
+    [isSaveDisabled, handleSave, onCancel],
   );
 
   const operatorValue: OperatorValue | undefined = currentOperator?.value;
@@ -723,7 +726,7 @@ export function PowerSearchEditPopover({
   // Nested filter editing
   if (isNestedType) {
     return (
-      <div {...stylex.props(styles.container)}>
+      <div {...stylex.props(styles.container)} onKeyDown={handleKeyDown}>
         <div {...stylex.props(styles.content)}>
           <XDSVStack gap={2}>
             <XDSHStack gap={2}>

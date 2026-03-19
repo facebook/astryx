@@ -333,25 +333,29 @@ export function XDSDropdownMenu({
   const selectableItems = useMemo(() => getSelectableItems(items), [items]);
 
   // Layer for dropdown positioning
+  const handleLayerHide = useCallback(() => {
+    if (isControlled) {
+      onOpenChange?.(false);
+    } else {
+      setInternalIsOpen(false);
+    }
+    setHighlightedIndex(-1);
+    buttonRef.current?.focus();
+  }, [isControlled, onOpenChange]);
+
+  const handleLayerShow = useCallback(() => {
+    if (isControlled) {
+      onOpenChange?.(true);
+    } else {
+      setInternalIsOpen(true);
+    }
+  }, [isControlled, onOpenChange]);
+
   const layer = useXDSLayer({
     mode: 'context',
     lightDismiss: true,
-    onHide: () => {
-      if (isControlled) {
-        onOpenChange?.(false);
-      } else {
-        setInternalIsOpen(false);
-      }
-      setHighlightedIndex(-1);
-      buttonRef.current?.focus();
-    },
-    onShow: () => {
-      if (isControlled) {
-        onOpenChange?.(true);
-      } else {
-        setInternalIsOpen(true);
-      }
-    },
+    onHide: handleLayerHide,
+    onShow: handleLayerShow,
   });
 
   // Sync layer with controlled state
