@@ -8,7 +8,7 @@
  * using a geometric progression: size = base × ratio^step.
  *
  * Two-layer architecture:
- *   Layer 1: Raw size tokens (--text-xsm … --text-4xl)
+ *   Layer 1: Raw size tokens (--text-4xs … --text-4xl)
  *            Geometric progression in rem.
  *   Layer 2: Semantic tokens (--heading-*, --text-*-size/leading/weight)
  *            Sizes are var() references to Layer 1.
@@ -20,6 +20,9 @@
  * component use.
  *
  * Step mapping:
+ *   step -5 → --text-4xs   (sub-scale)
+ *   step -4 → --text-3xs   (sub-scale)
+ *   step -3 → --text-2xs   (sub-scale)
  *   step -2 → --text-xsm   (h6)
  *   step -1 → --text-sm    (h5, supporting)
  *   step  0 → --text-base  (h4, body, label, code)
@@ -116,8 +119,24 @@ export type TypeScaleTokens = Record<string, string>;
 /**
  * Step → raw size token name.
  * These tokens form the geometric font size scale.
+ *
+ * The full scale spans steps -5 to +5:
+ *   -5 → --text-4xs (sub-scale)
+ *   -4 → --text-3xs (sub-scale)
+ *   -3 → --text-2xs (sub-scale)
+ *   -2 → --text-xsm
+ *   -1 → --text-sm
+ *    0 → --text-base (anchor)
+ *   +1 → --text-lg
+ *   +2 → --text-xl
+ *   +3 → --text-2xl
+ *   +4 → --text-3xl
+ *   +5 → --text-4xl
  */
 const STEP_TO_SIZE_TOKEN: Record<number, string> = {
+  [-5]: '--text-4xs',
+  [-4]: '--text-3xs',
+  [-3]: '--text-2xs',
   [-2]: '--text-xsm',
   [-1]: '--text-sm',
   [0]: '--text-base',
@@ -224,7 +243,7 @@ function computeLeading(fontSize: number): number {
  * Expand a type scale configuration into typography token overrides.
  *
  * Generates two layers of tokens:
- *   - Layer 1: 8 raw size tokens (--text-xsm … --text-4xl) in rem
+ *   - Layer 1: 11 raw size tokens (--text-4xs … --text-4xl) in rem
  *   - Layer 2: 33 semantic tokens using var() refs for sizes and
  *              hardcoded computed values for line heights
  *
@@ -257,7 +276,7 @@ export function expandTypeScale(config: XDSTypeScaleConfig): TypeScaleTokens {
   };
 
   // ── Layer 1: Raw size tokens (rem) ────────────────────────────────────────
-  for (let step = -2; step <= 5; step++) {
+  for (let step = -5; step <= 5; step++) {
     const size = computeSize(base, ratio, step);
     tokens[STEP_TO_SIZE_TOKEN[step]] = pxToRem(size);
   }

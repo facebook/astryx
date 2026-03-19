@@ -48,8 +48,11 @@ describe('generateThemeRules', () => {
 
   it('emits raw size tokens in rem', () => {
     const scopeRule = rules.find(r => r.includes(':scope'))!;
-    // Raw tokens (--text-xsm through --text-4xl) should be in rem
+    // Raw tokens (--text-4xs through --text-4xl) should be in rem
     const rawSizeTokens = [
+      '--text-4xs',
+      '--text-3xs',
+      '--text-2xs',
       '--text-xsm',
       '--text-sm',
       '--text-base',

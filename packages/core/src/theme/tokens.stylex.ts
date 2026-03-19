@@ -298,11 +298,10 @@ export const typographyVars = stylex.defineVars(typographyDefaults);
 // =============================================================================
 
 export const textSizeDefaults = {
-  // Tokens below the type scale range — static, not computed from ratio
-  '--text-4xs': '0.5rem', // 8px - citation
-  '--text-3xs': '0.625rem', // 10px - micro
-  '--text-2xs': '0.6875rem', // 11px - small micro
-  // Geometric scale: round(14 × 1.2^step) / 16, default base=14, ratio=1.2
+  // Full geometric scale: round(14 × 1.2^step) / 16, default base=14, ratio=1.2
+  '--text-4xs': '0.375rem', // step -5: 6px (14 × 1.2⁻⁵ ≈ 5.63 → 6)
+  '--text-3xs': '0.4375rem', // step -4: 7px (14 × 1.2⁻⁴ ≈ 6.75 → 7)
+  '--text-2xs': '0.5rem', // step -3: 8px (14 × 1.2⁻³ ≈ 8.10 → 8)
   '--text-xsm': '0.625rem', // step -2: 10px (14 × 1.2⁻² ≈ 9.72 → 10)
   '--text-sm': '0.75rem', // step -1: 12px (14 × 1.2⁻¹ ≈ 11.67 → 12)
   '--text-base': '0.875rem', // step  0: 14px — base anchor

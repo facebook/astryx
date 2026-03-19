@@ -10,8 +10,11 @@ describe('expandTypeScale', () => {
   describe('Layer 1: raw size tokens', () => {
     const tokens = expandTypeScale({base: 14, ratio: 1.2});
 
-    it('emits 8 raw size tokens in rem', () => {
+    it('emits 11 raw size tokens in rem', () => {
       const sizeTokens = [
+        '--text-4xs',
+        '--text-3xs',
+        '--text-2xs',
         '--text-xsm',
         '--text-sm',
         '--text-base',
@@ -29,6 +32,12 @@ describe('expandTypeScale', () => {
 
     it('anchors --text-base to the base size', () => {
       expect(tokens['--text-base']).toBe('0.875rem'); // 14/16
+    });
+
+    it('computes geometric progression for sub-scale tokens', () => {
+      expect(tokens['--text-4xs']).toBe('0.375rem'); // 6/16
+      expect(tokens['--text-3xs']).toBe('0.4375rem'); // 7/16
+      expect(tokens['--text-2xs']).toBe('0.5rem'); // 8/16
     });
 
     it('computes geometric progression', () => {
@@ -137,8 +146,8 @@ describe('expandTypeScale', () => {
   describe('total token count', () => {
     const tokens = expandTypeScale({base: 14, ratio: 1.2});
 
-    it('generates 41 tokens (8 size + 33 semantic)', () => {
-      expect(Object.keys(tokens)).toHaveLength(41);
+    it('generates 44 tokens (11 size + 33 semantic)', () => {
+      expect(Object.keys(tokens)).toHaveLength(44);
     });
   });
 

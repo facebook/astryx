@@ -245,17 +245,17 @@ describe('typeScale', () => {
     expect(theme.tokens['--text-body-size']).toBe('var(--text-base)');
   });
 
-  it('generates 41 tokens (8 raw size + 33 semantic)', () => {
+  it('generates 44 tokens (11 raw size + 33 semantic)', () => {
     const theme = defineTheme({
       name: 'custom',
       typeScale: {base: 14, ratio: 1.2},
     });
-    // 8 raw size (--text-xsm…--text-4xl) + 33 semantic = 41
-    // Filtering for --heading- or --text- captures raw + semantic = 8 + 15 + 18 = 41
+    // 11 raw size (--text-4xs…--text-4xl) + 33 semantic = 44
+    // Filtering for --heading- or --text- captures raw + semantic = 11 + 15 + 18 = 44
     const typeScaleKeys = Object.keys(theme.tokens).filter(
       k => k.startsWith('--heading-') || k.startsWith('--text-'),
     );
-    expect(typeScaleKeys).toHaveLength(41);
+    expect(typeScaleKeys).toHaveLength(44);
   });
 
   it('explicit tokens override typeScale-generated values', () => {
@@ -427,7 +427,7 @@ describe('radiusScale', () => {
       },
     });
     expect(theme.tokens['--color-accent']).toBe('#FF0000');
-    expect(theme.tokens['--heading-4-size']).toBe('1rem');
+    expect(theme.tokens['--heading-4-size']).toBe('var(--text-base)');
     expect(theme.tokens['--radius-2']).toBe('8px');
   });
 });
