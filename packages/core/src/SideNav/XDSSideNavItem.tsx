@@ -102,7 +102,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-popover'],
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: colorVars['--color-divider'],
+    borderColor: colorVars['--color-border'],
     borderRadius: radiusVars['--radius-2'],
     boxShadow: shadowVars['--shadow-menu'],
     paddingBlock: spacingVars['--spacing-1'],
