@@ -1934,33 +1934,6 @@ function ThemeEditorComponent() {
             flexDirection: 'column',
             overflow: 'hidden',
           }}>
-          {/* Preview header */}
-          <div
-            style={{
-              padding: '12px 24px',
-              borderBottom: '1px solid var(--color-border)',
-              backgroundColor: 'var(--color-surface)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}>
-            <XDSHeading level={4}>Live Preview</XDSHeading>
-            <XDSHStack gap={1}>
-              <XDSButton
-                label="Light"
-                variant={mode === 'light' ? 'primary' : 'ghost'}
-                size="sm"
-                onClick={() => setMode('light')}
-              />
-              <XDSButton
-                label="Dark"
-                variant={mode === 'dark' ? 'primary' : 'ghost'}
-                size="sm"
-                onClick={() => setMode('dark')}
-              />
-            </XDSHStack>
-          </div>
-
           {/* Code panel (collapsible) */}
           {showCode && (
             <div
