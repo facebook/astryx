@@ -102,6 +102,7 @@ const COLOR_CATEGORIES = {
   'Core Semantic': [
     '--color-accent',
     '--color-accent-muted',
+    '--color-secondary',
     '--color-surface',
     '--color-wash',
     '--color-overlay',

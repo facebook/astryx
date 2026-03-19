@@ -55,7 +55,7 @@ const styles = stylex.create({
  */
 const variants = stylex.create({
   neutral: {
-    backgroundColor: colorVars['--color-muted'],
+    backgroundColor: colorVars['--color-secondary'],
     color: colorVars['--color-text-primary'],
   },
   info: {

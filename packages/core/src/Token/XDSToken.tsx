@@ -253,7 +253,7 @@ const sizeStyles = stylex.create({
 
 const colorStyles = stylex.create({
   default: {
-    backgroundColor: colorVars['--color-muted'],
+    backgroundColor: colorVars['--color-secondary'],
     color: colorVars['--color-text-primary'],
   },
   red: {

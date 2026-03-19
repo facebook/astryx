@@ -18,6 +18,7 @@ export const colorDefaults = {
   // Core semantic
   '--color-accent': 'light-dark(#0064E0, #2694FE)',
   '--color-accent-muted': 'light-dark(#0082FB33, #0082FB3F)',
+  '--color-secondary': 'light-dark(rgba(5, 54, 89, 0.1), rgba(223, 226, 229, 0.2))',
   '--color-surface': 'light-dark(#FFFFFF, #1F1F22)',
   '--color-wash': 'light-dark(#F1F4F7, #111112)',
   '--color-overlay': 'light-dark(#01122866, #11111299)',

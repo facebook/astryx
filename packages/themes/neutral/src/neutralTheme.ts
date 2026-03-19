@@ -42,6 +42,7 @@ export const neutralTheme = defineTheme({
     // Core semantic
     '--color-accent': ['oklch(0.205 0 0)', 'oklch(0.922 0 0)'],
     '--color-accent-muted': ['oklch(0.97 0 0)', 'oklch(0.269 0 0)'],
+    '--color-secondary': ['oklch(0 0 0 / 6%)', 'oklch(1 0 0 / 10%)'],
     '--color-surface': ['oklch(1 0 0)', 'oklch(0.145 0 0)'],
     '--color-wash': ['oklch(0.97 0 0)', 'oklch(0.269 0 0)'],
     '--color-overlay': ['oklch(0 0 0 / 50%)', 'oklch(0 0 0 / 80%)'],

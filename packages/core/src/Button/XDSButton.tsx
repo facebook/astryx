@@ -124,7 +124,7 @@ const variants = stylex.create({
     },
   },
   secondary: {
-    backgroundColor: colorVars['--color-muted'],
+    backgroundColor: colorVars['--color-secondary'],
     color: colorVars['--color-text-primary'],
     backgroundImage: {
       default: null,
