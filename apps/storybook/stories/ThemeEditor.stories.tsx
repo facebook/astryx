@@ -21,7 +21,12 @@ import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSTable} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {XDSDivider} from '@xds/core/Divider';
-import {XDSTheme, defineTheme, expandTypeScale} from '@xds/core/theme';
+import {
+  XDSTheme,
+  defineTheme,
+  expandTypeScale,
+  xdsTokenDefaults,
+} from '@xds/core/theme';
 import {
   colorDefaults,
   spacingDefaults,
@@ -37,12 +42,34 @@ import {
   easeDefaults,
   transitionDefaults,
 } from '@xds/core/theme';
-import {defaultIconRegistry} from '@xds/theme-default';
+import {defaultTheme, defaultIconRegistry} from '@xds/theme-default';
+import {neutralTheme} from '@xds/theme-neutral';
+import {brutalistTheme} from '@xds/theme-brutalist';
 import {XDSCollapsible} from '@xds/core/Collapsible';
 import {XDSCollapsibleGroup} from '@xds/core/Collapsible';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSVStack} from '@xds/core/Stack';
 import {XDSHStack} from '@xds/core/Stack';
+
+// =============================================================================
+// Available themes
+// =============================================================================
+
+const AVAILABLE_THEMES = {
+  default: {label: 'Default', theme: defaultTheme},
+  neutral: {label: 'Neutral', theme: neutralTheme},
+  brutalist: {label: 'Brutalist', theme: brutalistTheme},
+} as const;
+
+type ThemeKey = keyof typeof AVAILABLE_THEMES;
+
+/**
+ * Resolve a theme to its full token map (defaults + overrides).
+ */
+function resolveThemeTokens(themeKey: ThemeKey): Record<string, string> {
+  const theme = AVAILABLE_THEMES[themeKey].theme;
+  return {...xdsTokenDefaults, ...theme.tokens};
+}
 
 // =============================================================================
 // Token Groups for the Editor
@@ -1301,8 +1328,8 @@ ${parts.join('\n')}
 function ThemeEditorComponent() {
   const [activeTypographyCategory, setActiveTypographyCategory] =
     React.useState<string>('Heading 1');
-  const [themeName, setThemeName] = React.useState('Custom');
-  const [isEditingName, setIsEditingName] = React.useState(false);
+  const [selectedThemeKey, setSelectedThemeKey] =
+    React.useState<ThemeKey>('default');
 
   const [mode, setMode] = React.useState<'light' | 'dark'>('light');
   const [showCode, setShowCode] = React.useState(false);
@@ -1310,7 +1337,7 @@ function ThemeEditorComponent() {
   const [showSearch, setShowSearch] = React.useState(false);
   const [isPanelCollapsed, setIsPanelCollapsed] = React.useState(false);
 
-  // Collect all defaults
+  // Collect all defaults (bare token defaults, not theme-specific)
   const allDefaults = React.useMemo(
     () => ({
       ...colorDefaults,
@@ -1330,12 +1357,28 @@ function ThemeEditorComponent() {
     [],
   );
 
+  // Resolved tokens for the selected theme (defaults + theme overrides)
+  const themeTokens = React.useMemo(
+    () => resolveThemeTokens(selectedThemeKey),
+    [selectedThemeKey],
+  );
+
+  // The theme name from the selected theme
+  const themeName = AVAILABLE_THEMES[selectedThemeKey].theme.name;
+
   // Type scale state
   const [typeScaleBase, setTypeScaleBase] = React.useState(14);
   const [typeScaleRatio, setTypeScaleRatio] = React.useState(1.2);
 
-  const [tokens, setTokens] =
-    React.useState<Record<string, string>>(allDefaults);
+  const [tokens, setTokens] = React.useState<Record<string, string>>(() =>
+    resolveThemeTokens('default'),
+  );
+
+  // When the selected theme changes, update all token values
+  React.useEffect(() => {
+    const resolved = resolveThemeTokens(selectedThemeKey);
+    setTokens(resolved);
+  }, [selectedThemeKey]);
 
   const handleTokenChange = React.useCallback(
     (tokenName: string, value: string) => {
@@ -1345,10 +1388,10 @@ function ThemeEditorComponent() {
   );
 
   const handleReset = React.useCallback(() => {
-    setTokens(allDefaults);
+    setTokens(resolveThemeTokens(selectedThemeKey));
     setTypeScaleBase(14);
     setTypeScaleRatio(1.2);
-  }, [allDefaults]);
+  }, [selectedThemeKey]);
 
   // Theme generation
   const typeScaleKeys = React.useMemo(
@@ -1363,24 +1406,26 @@ function ThemeEditorComponent() {
         tokenOverrides[key] = value;
       }
     }
+    const baseTheme = AVAILABLE_THEMES[selectedThemeKey].theme;
     return defineTheme({
       name: themeName,
       typeScale: {base: typeScaleBase, ratio: typeScaleRatio},
       tokens: tokenOverrides as Partial<Record<string, string>>,
-      icons: defaultIconRegistry,
+      icons: baseTheme.icons || defaultIconRegistry,
+      components: baseTheme.components,
     });
-  }, [tokens, themeName, allDefaults]);
+  }, [tokens, themeName, allDefaults, selectedThemeKey]);
 
-  // Count modified tokens per group
+  // Count modified tokens per group (compared to the selected theme's values)
   const modifiedCount = React.useCallback(
     (groupTokens: Record<string, string>) => {
       let count = 0;
-      for (const [key, defaultVal] of Object.entries(groupTokens)) {
-        if (tokens[key] !== defaultVal) count++;
+      for (const key of Object.keys(groupTokens)) {
+        if (tokens[key] !== themeTokens[key]) count++;
       }
       return count;
     },
-    [tokens],
+    [tokens, themeTokens],
   );
 
   // =========================================================================
@@ -1802,94 +1847,81 @@ function ThemeEditorComponent() {
             </div>
           ) : (
             <>
-              {/* Panel header — shows editable theme name */}
+              {/* Panel header — theme name + selector */}
               <div
                 style={{
                   padding: '16px 20px 12px',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
+                  flexDirection: 'column',
+                  gap: '8px',
                 }}>
-                {isEditingName ? (
-                  <input
-                    autoFocus
-                    type="text"
-                    value={themeName}
-                    onChange={e => setThemeName(e.target.value)}
-                    onBlur={() => setIsEditingName(false)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') setIsEditingName(false);
-                    }}
-                    style={{
-                      all: 'unset',
-                      fontSize: 'var(--heading-3-size, 17px)',
-                      fontWeight: 600,
-                      color: 'var(--color-text-primary)',
-                      borderBottom: '2px solid var(--color-accent)',
-                      paddingBottom: '2px',
-                      width: '160px',
-                    }}
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setIsEditingName(true)}
-                    style={{
-                      all: 'unset',
-                      cursor: 'pointer',
-                      fontSize: 'var(--heading-3-size, 17px)',
-                      fontWeight: 600,
-                      fontFamily: 'var(--font-heading, var(--font-body))',
-                      color: 'var(--color-text-primary)',
-                      lineHeight: 'var(--heading-3-leading, 1.3)',
-                    }}>
-                    {themeName} Theme
-                  </button>
-                )}
-                <XDSHStack gap={0.5} vAlign="center">
-                  <button
-                    type="button"
-                    onClick={() => setShowSearch(!showSearch)}
-                    style={{
-                      all: 'unset',
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '6px',
-                      color: 'var(--color-icon-secondary)',
-                    }}
-                    title="Search tokens">
-                    <XDSIcon icon="search" size="sm" color="secondary" />
-                  </button>
-                  {/* Mode toggle */}
-                  <XDSButton
-                    label={mode === 'light' ? '☀' : '☾'}
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setMode(mode === 'light' ? 'dark' : 'light')}
-                  />
-                  {/* Collapse panel */}
-                  <button
-                    type="button"
-                    onClick={() => setIsPanelCollapsed(true)}
-                    style={{
-                      all: 'unset',
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '6px',
-                      color: 'var(--color-icon-secondary)',
-                    }}
-                    title="Collapse panel">
-                    <XDSIcon icon="chevronLeft" size="sm" color="secondary" />
-                  </button>
-                </XDSHStack>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}>
+                  <XDSHeading level={3}>
+                    {AVAILABLE_THEMES[selectedThemeKey].label} Theme
+                  </XDSHeading>
+                  <XDSHStack gap={0.5} vAlign="center">
+                    <button
+                      type="button"
+                      onClick={() => setShowSearch(!showSearch)}
+                      style={{
+                        all: 'unset',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '6px',
+                        color: 'var(--color-icon-secondary)',
+                      }}
+                      title="Search tokens">
+                      <XDSIcon icon="search" size="sm" color="secondary" />
+                    </button>
+                    {/* Mode toggle */}
+                    <XDSButton
+                      label={mode === 'light' ? '☀' : '☾'}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setMode(mode === 'light' ? 'dark' : 'light')
+                      }
+                    />
+                    {/* Collapse panel */}
+                    <button
+                      type="button"
+                      onClick={() => setIsPanelCollapsed(true)}
+                      style={{
+                        all: 'unset',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '6px',
+                        color: 'var(--color-icon-secondary)',
+                      }}
+                      title="Collapse panel">
+                      <XDSIcon icon="chevronLeft" size="sm" color="secondary" />
+                    </button>
+                  </XDSHStack>
+                </div>
+                {/* Theme selector */}
+                <XDSSelector
+                  label="Theme"
+                  isLabelHidden
+                  size="sm"
+                  options={Object.entries(AVAILABLE_THEMES).map(
+                    ([key, {label}]) => ({value: key, label}),
+                  )}
+                  value={selectedThemeKey}
+                  onChange={v => setSelectedThemeKey(v as ThemeKey)}
+                />
               </div>
 
               {/* Search bar — expandable */}
