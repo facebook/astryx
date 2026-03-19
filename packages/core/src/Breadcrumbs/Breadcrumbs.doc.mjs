@@ -148,6 +148,12 @@ export const docs = {
           type: 'ReactNode',
           description: 'Icon rendered before the item label.',
         },
+        {
+          name: 'as',
+          type: 'XDSLinkComponentType',
+          description:
+            'Custom link component to render instead of <a>. Overrides the provider-level default from XDSLinkProvider. Only applies to non-current items.',
+        },
       ],
       examples: [
         {
@@ -318,6 +324,12 @@ export const docsZh = {
           type: 'ReactNode',
           description: '在项目标签前渲染的图标。',
         },
+        {
+          name: 'as',
+          type: 'XDSLinkComponentType',
+          description:
+            '自定义链接组件，代替 <a> 渲染。覆盖 XDSLinkProvider 设置的默认值。仅适用于非当前项。',
+        },
       ],
       examples: [
         {
@@ -379,6 +391,7 @@ export const docsDense = {
         onClick: 'click handler',
         isCurrent: 'marks current page w/ aria-current="page"',
         startIcon: 'icon before label',
+        as: 'custom link component; overrides XDSLinkProvider default',
       },
     },
   ],

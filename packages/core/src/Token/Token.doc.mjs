@@ -21,6 +21,12 @@ export const docs = {
       required: true,
     },
     {
+      name: 'size',
+      type: "'sm' | 'md'",
+      description: 'The size of the token.',
+      default: "'md'",
+    },
+    {
       name: 'color',
       type: "'default' | 'red' | 'orange' | 'yellow' | 'green' | 'teal' | 'cyan' | 'blue' | 'purple' | 'pink' | 'gray'",
       description: 'Color variant of the token.',
@@ -144,6 +150,12 @@ export const docsZh = {
       type: 'string',
       description: '显示在标记内部的文本标签。',
       required: true,
+    },
+    {
+      name: 'size',
+      type: "'sm' | 'md'",
+      description: '标记的大小。',
+      default: "'md'",
     },
     {
       name: 'color',
@@ -271,6 +283,7 @@ export const docsDense = {
   keyboard: 'Tab focuses token (or inner button w/ onClick). Enter/Space activate clickable token or remove button. Remove button is separate Tab stop.',
   propDescriptions: {
     label: 'Text label inside token.',
+    size: "Token size; 'sm' or 'md'.",
     color: 'Color variant of token.',
     icon: 'Optional icon before label.',
     isDisabled: 'Reduces opacity, blocks interactions.',

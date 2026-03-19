@@ -110,6 +110,12 @@ export const docs = {
           default: 'true',
         },
         {
+          name: 'onOpenChange',
+          type: '(isOpen: boolean) => void',
+          description:
+            'Callback fired when hover card visibility changes. Called with true when shown and false when hidden.',
+        },
+        {
           name: 'hasHoverIndication',
           type: "'auto' | boolean",
           description: 'Shows a dashed underline on the trigger element.',
@@ -295,6 +301,12 @@ export const docsZh = {
           default: 'true',
         },
         {
+          name: 'onOpenChange',
+          type: '(isOpen: boolean) => void',
+          description:
+            '悬浮卡片可见性变化时触发的回调。显示时传入 true，隐藏时传入 false。',
+        },
+        {
           name: 'hasHoverIndication',
           type: "'auto' | boolean",
           description: '在触发元素上显示虚线下划线。',
@@ -406,6 +418,7 @@ export const docsDense = {
         hideDelay: 'Hide delay in ms.',
         focusTrigger: 'Controls when focus events trigger hover card.',
         isEnabled: 'Enable/disable hover + focus triggers.',
+        onOpenChange: 'Callback when visibility changes; true=shown, false=hidden.',
         hasHoverIndication: 'Dashed underline on trigger element.',
       },
     },
