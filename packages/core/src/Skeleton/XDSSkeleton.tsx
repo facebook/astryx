@@ -56,7 +56,7 @@ const styles = stylex.create({
   root: {
     backgroundColor: {
       default: colorVars['--color-skeleton'],
-      '@media (prefers-contrast: more)': colorVars['--color-skeleton-strong'],
+      '@media (prefers-contrast: more)': `color-mix(in srgb, ${colorVars['--color-skeleton']}, ${colorVars['--color-text-primary']} 30%)`,
     },
     opacity: 0.25,
   },

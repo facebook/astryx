@@ -108,13 +108,9 @@ describe('migrate-token-names', () => {
   // === Effects renames ===
 
   it('renames glimmer to skeleton', async () => {
-    const input = `const x = {
-      a: colorVars['--color-glimmer'],
-      b: colorVars['--color-glimmer-high-contrast'],
-    };`;
+    const input = `const x = colorVars['--color-glimmer'];`;
     const output = await applyTransform(input);
     expect(output).toContain('--color-skeleton');
-    expect(output).toContain('--color-skeleton-strong');
     expect(output).not.toMatch(/glimmer/);
   });
 

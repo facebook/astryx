@@ -149,7 +149,6 @@ function deriveColorPalette({accent, positive, negative, warning, mode}) {
 
     // Effects
     '--color-skeleton': ld('#CCD3DB', '#5A5E66'),
-    '--color-skeleton-strong': ld('#A4B0BC', '#8C939B'),
     '--color-shadow': ld('rgba(5, 54, 89, 0.1)', 'rgba(0, 0, 0, 0.3)'),
     '--color-hover-tint': ld('black', 'white'),
 

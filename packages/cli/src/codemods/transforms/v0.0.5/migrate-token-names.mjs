@@ -31,7 +31,6 @@
  *
  * Color — effects:
  * - '--color-glimmer' → '--color-skeleton'
- * - '--color-glimmer-high-contrast' → '--color-skeleton-strong'
  * - '--color-shadow-elevation' → '--color-shadow'
  *
  * Color — media:
@@ -61,7 +60,6 @@ export const meta = {
 // (e.g. --color-educational-deemphasized must match before --color-educational)
 const TOKEN_MAP = {
   '--color-educational-deemphasized': '--color-info-muted',
-  '--color-glimmer-high-contrast': '--color-skeleton-strong',
   '--color-divider-high-contrast': '--color-border-strong',
   '--color-focus-outline-success': '--color-ring-focus-success',
   '--color-focus-outline-warning': '--color-ring-focus-warning',

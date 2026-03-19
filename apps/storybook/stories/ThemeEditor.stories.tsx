@@ -145,12 +145,7 @@ const COLOR_CATEGORIES = {
     '--color-border-strong',
     '--color-border-emphasized',
   ],
-  Effects: [
-    '--color-skeleton',
-    '--color-skeleton-strong',
-    '--color-shadow',
-    '--color-hover-tint',
-  ],
+  Effects: ['--color-skeleton', '--color-shadow', '--color-hover-tint'],
   'Palette: Blue': [
     '--color-blue-background',
     '--color-blue-border',

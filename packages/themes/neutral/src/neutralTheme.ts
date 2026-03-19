@@ -103,7 +103,6 @@ export const neutralTheme = defineTheme({
 
     // Effects
     '--color-skeleton': ['oklch(0.922 0 0)', 'oklch(0.371 0 0)'],
-    '--color-skeleton-strong': ['oklch(0.85 0 0)', 'oklch(0.439 0 0)'],
     '--color-shadow': ['oklch(0 0 0 / 10%)', 'oklch(0 0 0 / 30%)'],
     '--color-hover-tint': ['black', 'white'],
 
