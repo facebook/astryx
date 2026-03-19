@@ -29,7 +29,8 @@ import {
   durationVars,
   easeVars,
   typographyVars,
-  typeScaleVars,
+  lineHeightVars,
+  fontWeightVars,
 } from '../theme/tokens.stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSFieldLabel} from '../Field/XDSFieldLabel';
@@ -76,7 +77,7 @@ const styles = stylex.create({
     transitionProperty: 'background-color, border-color',
     transitionDuration: {
       default: durationVars['--duration-fast'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
+      '@media (prefers-reduced-motion: reduce)': '0.01s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
@@ -149,7 +150,9 @@ const styles = stylex.create({
   },
   description: {
     fontFamily: typographyVars['--font-body'],
-    fontSize: typeScaleVars['--text-supporting-size'],
+    fontSize: textSizeVars['--text-xsm'],
+    lineHeight: lineHeightVars['--leading-relaxed'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
   },
 });
@@ -384,10 +387,7 @@ export function XDSCheckboxInput({
           <div
             aria-hidden="true"
             {...mergeProps(
-              xdsClassName('checkbox', {
-                checked: isCheckedOrIndeterminate ? 'checked' : null,
-                disabled: isDisabled ? 'disabled' : null,
-              }),
+              xdsClassName('checkbox'),
               stylex.props(
                 styles.checkbox,
                 checkboxSizeStyles[size],
@@ -435,7 +435,8 @@ export function XDSCheckboxInput({
             )}
           </div>
         </div>
-        <div {...stylex.props(styles.labelWrapper)}>
+        <div
+          {...stylex.props(styles.labelWrapper)}>
           <XDSFieldLabel
             label={label}
             inputID={id}
