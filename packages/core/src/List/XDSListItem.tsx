@@ -147,6 +147,12 @@ const styles = stylex.create({
   noRadius: {
     borderRadius: 0,
   },
+  withDivider: {
+    borderBlockEnd: `1px solid ${colorVars['--color-border']}`,
+    ':last-child': {
+      borderBlockEnd: 'none',
+    },
+  },
   interactive: {
     cursor: 'pointer',
     transitionProperty: 'background-image',
@@ -374,6 +380,7 @@ export function XDSListItem({
           hasMarkers ? styles.itemWithMarker : styles.item,
           densityStyles[density],
           hasDividers ? styles.noRadius : styles.withRadius,
+          hasDividers && styles.withDivider,
           isInteractive && styles.interactive,
           isInteractive && styles.focusWithinOutline,
           isDisabled && styles.disabled,
