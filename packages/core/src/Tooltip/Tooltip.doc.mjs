@@ -114,6 +114,12 @@ export const docs = {
           default: 'true',
         },
         {
+          name: 'onOpenChange',
+          type: '(isOpen: boolean) => void',
+          description:
+            'Callback fired when tooltip visibility changes. Called with true when shown and false when hidden.',
+        },
+        {
           name: 'hasHoverIndication',
           type: "'auto' | boolean",
           description: 'Shows a dashed underline on the trigger element.',
@@ -303,6 +309,12 @@ export const docsZh = {
           default: 'true',
         },
         {
+          name: 'onOpenChange',
+          type: '(isOpen: boolean) => void',
+          description:
+            '工具提示可见性变化时触发的回调。显示时传入 true，隐藏时传入 false。',
+        },
+        {
           name: 'hasHoverIndication',
           type: "'auto' | boolean",
           description: '在触发元素上显示虚线下划线。',
@@ -416,6 +428,7 @@ export const docsDense = {
         hideDelay: 'Hide delay in ms.',
         focusTrigger: 'Controls when focus events trigger tooltip.',
         isEnabled: 'Enables/disables tooltip triggers.',
+        onOpenChange: 'Callback when visibility changes; true=shown, false=hidden.',
         hasHoverIndication: 'Dashed underline on trigger element.',
       },
     },
