@@ -1,7 +1,7 @@
-name: "🎨 Design Nit"
-description: Report a visual bug or inconsistency found during design audit.
-title: "[design-nit] "
-labels: ["design-nit"]
+name: "🔧 Hardening Issue"
+description: Report a visual bug or inconsistency found during component audit.
+title: "[hardening] "
+labels: ["hardening"]
 body:
   - type: textarea
     id: description
