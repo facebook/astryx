@@ -17,3 +17,9 @@ export {useListFocus} from './useListFocus';
 export type {UseListFocusOptions, UseListFocusReturn} from './useListFocus';
 
 export {useMediaQuery} from './useMediaQuery';
+
+export {useConcentricRadius} from './useConcentricRadius';
+export type {
+  UseConcentricRadiusOptions,
+  UseConcentricRadiusReturn,
+} from './useConcentricRadius';
