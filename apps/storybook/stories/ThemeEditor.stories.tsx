@@ -1790,20 +1790,7 @@ function ThemeEditorComponent() {
   const [mode, setMode] = React.useState<'light' | 'dark'>('light');
   const [showCode, setShowCode] = React.useState(false);
 
-  // Load Figtree from Google Fonts
-  React.useEffect(() => {
-    const id = 'figtree-font-link';
-    if (!document.getElementById(id)) {
-      const link = document.createElement('link');
-      link.id = id;
-      link.rel = 'stylesheet';
-      link.href =
-        'https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap';
-      document.head.appendChild(link);
-    }
-  }, []);
-
-  // Collect all defaults, with Figtree fonts and pill buttons
+  // Collect all defaults
   const allDefaults = React.useMemo(
     () => ({
       ...colorDefaults,
@@ -1819,10 +1806,6 @@ function ThemeEditorComponent() {
       ...durationDefaults,
       ...easeDefaults,
       ...transitionDefaults,
-      // Override defaults for a modern look
-      '--font-body': "'Figtree', sans-serif",
-      '--font-heading': "'Figtree', sans-serif",
-      '--radius-2': '9999px',
     }),
     [],
   );
