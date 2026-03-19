@@ -14,6 +14,7 @@
 
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {container} from '../Layout/container.stylex';
 import type {SpacingToken} from '../Layout/container.stylex';
@@ -108,6 +109,25 @@ const dynamicStyles = stylex.create({
 export interface XDSSectionProps {
   ref?: React.Ref<HTMLElement>;
   /**
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call on the outer wrapper.
+   *
+   * @example
+   * ```
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <XDSSection xstyle={overrides.root} />
+   * ```
+   */
+  xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) appended to the root element.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element.
+   */
+  style?: React.CSSProperties;
+  /**
    * Visual variant of the section.
    * - 'section': Surface background color
    * - 'transparent': Fully transparent background
@@ -191,6 +211,9 @@ export function XDSSection({
   children,
   dividers,
   padding,
+  xstyle,
+  className,
+  style,
   ref,
   ...props
 }: XDSSectionProps) {
@@ -209,7 +232,10 @@ export function XDSSection({
             maxWidth ?? null,
             minHeight ?? null,
           ),
+          xstyle,
         ),
+        className,
+        style,
       )}
       {...props}>
       <div
