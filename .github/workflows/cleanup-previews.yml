@@ -3,6 +3,8 @@ name: Cleanup Preview Deployments
 on:
   schedule:
     - cron: '0 6 * * *' # Daily 6am UTC
+  pull_request:
+    types: [closed]
   workflow_dispatch:
     inputs:
       dry_run:
@@ -23,7 +25,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: gh-pages
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Cleanup stale preview directories
         shell: bash
@@ -31,13 +33,17 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DRY_RUN: ${{ inputs.dry_run || 'false' }}
         run: |
-          MAX_AGE_DAYS=3
-          NOW=$(date +%s)
-          MAX_AGE_SECS=$((MAX_AGE_DAYS * 86400))
+          # ---------------------------------------------------------------
+          # Retention policy:
+          #   KEEP  — latest main commit dir
+          #         — latest head commit dir for each open/draft PR
+          #         — reports/ (vibe test reports)
+          #         — root files (.nojekyll, index.html)
+          #   DELETE — everything else
+          # ---------------------------------------------------------------
 
-          echo "Cleanup config:"
-          echo "  Max age: ${MAX_AGE_DAYS} days"
-          echo "  Dry run: ${DRY_RUN}"
+          echo "Cleanup policy: keep main + open PR heads + reports"
+          echo "Dry run: ${DRY_RUN}"
           echo ""
 
           # Get all 7-char hex directories (preview deployments)
@@ -50,34 +56,36 @@ jobs:
             exit 0
           fi
 
-          # Get open PR head commit short hashes
-          OPEN_PR_HASHES=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --json headRefOid --jq '.[].headRefOid[:7]' || true)
-          echo "Open PR hashes: $(echo "$OPEN_PR_HASHES" | grep -c . || echo 0)"
+          # Get the latest main commit short hash
+          MAIN_HASH=$(gh api repos/$GITHUB_REPOSITORY/commits/main --jq '.sha[:7]')
+          echo "Main HEAD: ${MAIN_HASH}"
 
-          # Build a map of directory -> commit timestamp using git log
-          # One git log call for the entire repo, extract dir names from paths
-          declare -A DIR_TIMES
-          while IFS='|' read -r ts path; do
-            dir="${path%%/*}"
-            # Only record first (most recent) timestamp per directory
-            if [[ ${#dir} -eq 7 ]] && [[ -z "${DIR_TIMES[$dir]+x}" ]]; then
-              DIR_TIMES[$dir]=$ts
-            fi
-          done < <(git log --format="" --name-only --diff-filter=A --pretty=format:"%ct" -- $(printf '%s/ ' "${DIRS[@]}") 2>/dev/null | awk 'NF==1 && /^[0-9]+$/{ts=$0; next} NF>0{print ts"|"$0}' || true)
+          # Get open/draft PR head commit short hashes
+          OPEN_PR_HASHES=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --json headRefOid,number --jq '.[] | .headRefOid[:7]' || true)
+          OPEN_COUNT=$(echo "$OPEN_PR_HASHES" | grep -c . || echo 0)
+          echo "Open/draft PRs: ${OPEN_COUNT}"
+          echo ""
 
-          # Find latest deployment
-          LATEST_DIR=""
-          LATEST_TIME=0
-          for dir in "${DIRS[@]}"; do
-            DIR_TIME="${DIR_TIMES[$dir]:-0}"
-            if [ "$DIR_TIME" -gt "$LATEST_TIME" ]; then
-              LATEST_TIME=$DIR_TIME
-              LATEST_DIR=$dir
+          # Clean up stale root-level storybook files (from old deploy format)
+          # These are files/dirs at the gh-pages root that aren't hash dirs,
+          # index.html, .nojekyll, or reports/
+          ROOT_STALE=0
+          for item in assets favicon.svg iframe.html index.json project.json \
+                      nunito-sans-bold-italic.woff2 nunito-sans-bold.woff2 \
+                      nunito-sans-italic.woff2 nunito-sans-regular.woff2 \
+                      sandbox sb-addons sb-common-assets sb-manager; do
+            if [ -e "$item" ]; then
+              echo "  DELETE root/$item (stale root-level file)"
+              if [ "$DRY_RUN" != "true" ]; then
+                git rm -rf --quiet "$item"
+              fi
+              ROOT_STALE=$((ROOT_STALE + 1))
             fi
           done
-          echo "Latest deployment: ${LATEST_DIR}"
-          echo "Directories with timestamps: ${#DIR_TIMES[@]} of ${TOTAL}"
-          echo ""
+          if [ "$ROOT_STALE" -gt 0 ]; then
+            echo "Cleaned ${ROOT_STALE} stale root-level items"
+            echo ""
+          fi
 
           DELETED=0
           KEPT=0
@@ -85,35 +93,23 @@ jobs:
           for dir in "${DIRS[@]}"; do
             REASON=""
 
-            # Keep latest deployment
-            if [ "$dir" = "$LATEST_DIR" ]; then
-              REASON="latest deployment"
+            # Keep main
+            if [ "$dir" = "$MAIN_HASH" ]; then
+              REASON="main"
             fi
 
-            # Keep if open PR
+            # Keep open/draft PR heads
             if [ -z "$REASON" ] && echo "$OPEN_PR_HASHES" | grep -qx "$dir"; then
               REASON="open PR"
             fi
 
-            # Keep if newer than MAX_AGE_DAYS
-            if [ -z "$REASON" ]; then
-              DIR_TIME="${DIR_TIMES[$dir]:-0}"
-              if [ "$DIR_TIME" -gt 0 ]; then
-                AGE=$((NOW - DIR_TIME))
-                if [ "$AGE" -lt "$MAX_AGE_SECS" ]; then
-                  AGE_DAYS=$((AGE / 86400))
-                  REASON="recent (${AGE_DAYS}d old)"
-                fi
-              fi
-            fi
-
             if [ -n "$REASON" ]; then
-              echo "  KEEP ${dir} - ${REASON}"
+              echo "  KEEP  ${dir} — ${REASON}"
               KEPT=$((KEPT + 1))
             else
               echo "  DELETE ${dir}"
               if [ "$DRY_RUN" != "true" ]; then
-                git rm -rf "$dir"
+                git rm -rf --quiet "$dir"
               fi
               DELETED=$((DELETED + 1))
             fi
@@ -123,7 +119,7 @@ jobs:
           echo "Summary: ${DELETED} deleted, ${KEPT} kept (of ${TOTAL})"
 
           if [ "$DRY_RUN" = "true" ]; then
-            echo "Dry run - no changes committed"
+            echo "Dry run — no changes committed"
             exit 0
           fi
 
