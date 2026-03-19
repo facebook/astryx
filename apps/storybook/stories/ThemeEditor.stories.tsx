@@ -38,6 +38,11 @@ import {
   transitionDefaults,
 } from '@xds/core/theme';
 import {defaultIconRegistry} from '@xds/theme-default';
+import {XDSCollapsible} from '@xds/core/Collapsible';
+import {XDSCollapsibleGroup} from '@xds/core/Collapsible';
+import {XDSIcon} from '@xds/core/Icon';
+import {XDSVStack} from '@xds/core/Stack';
+import {XDSHStack} from '@xds/core/Stack';
 
 // =============================================================================
 // Token Groups for the Editor
@@ -393,6 +398,25 @@ function getTokenLabel(tokenName: string): string {
 // Token Editor Components
 // =============================================================================
 
+// =============================================================================
+// Section Indicator Colors — maps each token group to a dot color
+// =============================================================================
+
+const SECTION_DOT_COLORS: Record<string, string> = {
+  colors: '#3B82F6',
+  spacing: '#10B981',
+  radius: '#F59E0B',
+  typography: '#8B5CF6',
+  size: '#EC4899',
+  shadow: '#6366F1',
+  duration: '#14B8A6',
+  easing: '#F97316',
+};
+
+// =============================================================================
+// Compact Color Swatch — matching the mockup design
+// =============================================================================
+
 interface ColorSwatchProps {
   tokenName: string;
   value: string;
@@ -408,7 +432,6 @@ function ColorSwatch({tokenName, value, onChange, mode}: ColorSwatchProps) {
       : parsed.dark
     : value;
 
-  // Parse color with alpha
   const colorParsed = parseColorWithAlpha(displayValue);
   const hasColorPicker = colorParsed !== null;
 
@@ -429,108 +452,76 @@ function ColorSwatch({tokenName, value, onChange, mode}: ColorSwatchProps) {
     }
   };
 
+  const label = getTokenLabel(tokenName);
+
   return (
     <div
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '12px',
-        padding: '8px 12px',
-        borderRadius: '8px',
-        backgroundColor: 'var(--color-wash)',
+        gap: '10px',
+        padding: '6px 0',
       }}>
+      {/* Color swatch — clickable if we have a color picker */}
+      <div style={{position: 'relative', flexShrink: 0}}>
+        <div
+          style={{
+            width: '28px',
+            height: '28px',
+            borderRadius: '6px',
+            border: '1px solid var(--color-border)',
+            overflow: 'hidden',
+            // Checkerboard for alpha
+            backgroundImage:
+              colorParsed && colorParsed.alpha < 1
+                ? `linear-gradient(45deg, #ccc 25%, transparent 25%), 
+                   linear-gradient(-45deg, #ccc 25%, transparent 25%), 
+                   linear-gradient(45deg, transparent 75%, #ccc 75%), 
+                   linear-gradient(-45deg, transparent 75%, #ccc 75%)`
+                : undefined,
+            backgroundSize: '6px 6px',
+            backgroundPosition: '0 0, 0 3px, 3px -3px, -3px 0px',
+          }}>
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              backgroundColor: displayValue,
+            }}
+          />
+        </div>
+        {hasColorPicker && (
+          <input
+            type="color"
+            value={colorParsed?.hex ?? '#000000'}
+            onChange={e => handleColorChange(e.target.value)}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              opacity: 0,
+              width: '100%',
+              height: '100%',
+              cursor: 'pointer',
+              border: 'none',
+              padding: 0,
+            }}
+          />
+        )}
+      </div>
+
+      {/* Label */}
+      <XDSText type="body" style={{flex: 1, minWidth: 0, fontSize: '13px'}}>
+        {label}
+      </XDSText>
+
+      {/* Value + alpha */}
       <div
         style={{
-          width: '32px',
-          height: '32px',
-          borderRadius: '6px',
-          backgroundColor: displayValue,
-          border: '1px solid var(--color-border-emphasized)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
           flexShrink: 0,
-          // Checkerboard pattern for alpha preview
-          backgroundImage:
-            colorParsed && colorParsed.alpha < 1
-              ? `linear-gradient(45deg, #ccc 25%, transparent 25%), 
-                 linear-gradient(-45deg, #ccc 25%, transparent 25%), 
-                 linear-gradient(45deg, transparent 75%, #ccc 75%), 
-                 linear-gradient(-45deg, transparent 75%, #ccc 75%)`
-              : undefined,
-          backgroundSize: '8px 8px',
-          backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px',
         }}>
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            borderRadius: '6px',
-            backgroundColor: displayValue,
-          }}
-        />
-      </div>
-      <div style={{flex: 1, minWidth: 0}}>
-        <div
-          style={{
-            fontSize: '13px',
-            fontWeight: 500,
-            color: 'var(--color-text-primary)',
-            marginBottom: '2px',
-          }}>
-          {getTokenLabel(tokenName)}
-        </div>
-        <code
-          style={{
-            fontSize: '11px',
-            color: 'var(--color-text-secondary)',
-            fontFamily: 'var(--font-code)',
-          }}>
-          {tokenName}
-        </code>
-      </div>
-      <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
-        {hasColorPicker && colorParsed && (
-          <>
-            <input
-              type="color"
-              value={colorParsed.hex}
-              onChange={e => handleColorChange(e.target.value)}
-              style={{
-                width: '28px',
-                height: '28px',
-                padding: 0,
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-              }}
-            />
-            <input
-              type="number"
-              min="0"
-              max="100"
-              step="1"
-              value={Math.round(colorParsed.alpha * 100)}
-              onChange={e => handleAlphaChange(Number(e.target.value) / 100)}
-              title="Alpha %"
-              style={{
-                width: '50px',
-                padding: '4px 6px',
-                fontSize: '12px',
-                fontFamily: 'var(--font-code)',
-                border: '1px solid var(--color-border-emphasized)',
-                borderRadius: '4px',
-                backgroundColor: 'var(--color-surface)',
-                color: 'var(--color-text-primary)',
-                textAlign: 'center',
-              }}
-            />
-            <span
-              style={{
-                fontSize: '11px',
-                color: 'var(--color-text-secondary)',
-              }}>
-              %
-            </span>
-          </>
-        )}
         <input
           type="text"
           value={displayValue}
@@ -543,16 +534,44 @@ function ColorSwatch({tokenName, value, onChange, mode}: ColorSwatchProps) {
             onChange(tokenName, newValue);
           }}
           style={{
-            width: '100px',
-            padding: '4px 8px',
-            fontSize: '12px',
+            width: '82px',
+            padding: '3px 6px',
+            fontSize: '11px',
             fontFamily: 'var(--font-code)',
-            border: '1px solid var(--color-border-emphasized)',
+            border: '1px solid var(--color-border)',
             borderRadius: '4px',
             backgroundColor: 'var(--color-surface)',
             color: 'var(--color-text-primary)',
+            textAlign: 'center',
           }}
         />
+        {hasColorPicker && colorParsed && (
+          <div style={{display: 'flex', alignItems: 'center', gap: '2px'}}>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+              value={Math.round(colorParsed.alpha * 100)}
+              onChange={e => handleAlphaChange(Number(e.target.value) / 100)}
+              title="Alpha %"
+              style={{
+                width: '38px',
+                padding: '3px 4px',
+                fontSize: '11px',
+                fontFamily: 'var(--font-code)',
+                border: '1px solid var(--color-border)',
+                borderRadius: '4px',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text-primary)',
+                textAlign: 'center',
+              }}
+            />
+            <XDSText type="supporting" color="secondary">
+              %
+            </XDSText>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1291,15 +1310,15 @@ ${parts.join('\n')}
 // =============================================================================
 
 function ThemeEditorComponent() {
-  const [activeGroup, setActiveGroup] = React.useState<TokenGroupKey>('colors');
-  const [activeColorCategory, setActiveColorCategory] =
-    React.useState<string>('Core Semantic');
   const [activeTypographyCategory, setActiveTypographyCategory] =
     React.useState<string>('Heading 1');
-  const [themeName] = React.useState('custom');
+  const [themeName, setThemeName] = React.useState('Custom');
+  const [isEditingName, setIsEditingName] = React.useState(false);
 
   const [mode, setMode] = React.useState<'light' | 'dark'>('light');
   const [showCode, setShowCode] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [showSearch, setShowSearch] = React.useState(false);
 
   // Collect all defaults
   const allDefaults = React.useMemo(
@@ -1321,7 +1340,7 @@ function ThemeEditorComponent() {
     [],
   );
 
-  // Type scale state — base and ratio for the interactive type scale editor
+  // Type scale state
   const [typeScaleBase, setTypeScaleBase] = React.useState(14);
   const [typeScaleRatio, setTypeScaleRatio] = React.useState(1.2);
 
@@ -1341,14 +1360,7 @@ function ThemeEditorComponent() {
     setTypeScaleRatio(1.2);
   }, [allDefaults]);
 
-  // Create a theme from current tokens.
-  // Uses defaultTheme's component overrides so that type scale tokens
-  // (--heading-1-size, --text-body-size, etc.) are consumed by the
-  // heading/text CSS rules in the preview.
-  //
-  // Type scale tokens are ALWAYS included (even at default values) because
-  // the component overrides reference var(--heading-1-size) etc., and those
-  // unhashed CSS custom properties only exist when the theme explicitly sets them.
+  // Theme generation
   const typeScaleKeys = React.useMemo(
     () => new Set(Object.keys(typeScaleDefaults)),
     [],
@@ -1357,8 +1369,6 @@ function ThemeEditorComponent() {
   const currentTheme = React.useMemo(() => {
     const tokenOverrides: Record<string, string> = {};
     for (const [key, value] of Object.entries(tokens)) {
-      // Always include type scale tokens — the component CSS rules reference
-      // var(--heading-1-size) etc. which only exist when the theme sets them.
       if (typeScaleKeys.has(key) || value !== allDefaults[key]) {
         tokenOverrides[key] = value;
       }
@@ -1371,343 +1381,275 @@ function ThemeEditorComponent() {
     });
   }, [tokens, themeName, allDefaults]);
 
-  const renderTokenEditor = () => {
-    const group = TOKEN_GROUPS[activeGroup];
+  // Count modified tokens per group
+  const modifiedCount = React.useCallback(
+    (groupTokens: Record<string, string>) => {
+      let count = 0;
+      for (const [key, defaultVal] of Object.entries(groupTokens)) {
+        if (tokens[key] !== defaultVal) count++;
+      }
+      return count;
+    },
+    [tokens],
+  );
 
-    if (activeGroup === 'colors') {
-      const categoryTokens =
-        COLOR_CATEGORIES[
-          activeColorCategory as keyof typeof COLOR_CATEGORIES
-        ] || [];
+  // =========================================================================
+  // Render the color tokens section with sub-categories
+  // =========================================================================
+  const renderColorTokens = () => {
+    const filteredCategories = Object.entries(COLOR_CATEGORIES).filter(
+      ([, catTokens]) => {
+        if (!searchQuery) return true;
+        const q = searchQuery.toLowerCase();
+        return catTokens.some(
+          t =>
+            t.toLowerCase().includes(q) ||
+            getTokenLabel(t).toLowerCase().includes(q),
+        );
+      },
+    );
 
-      return (
-        <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-          {/* Color category selector */}
-          <XDSSelector
-            label="Color Category"
-            isLabelHidden
-            options={Object.keys(COLOR_CATEGORIES).map(category => ({
-              value: category,
-              label: category,
-            }))}
-            value={activeColorCategory}
-            onChange={v => setActiveColorCategory(v)}
-          />
+    return (
+      <XDSVStack gap={1}>
+        {filteredCategories.map(([category, categoryTokens]) => {
+          const filtered = searchQuery
+            ? categoryTokens.filter(
+                t =>
+                  t.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  getTokenLabel(t)
+                    .toLowerCase()
+                    .includes(searchQuery.toLowerCase()),
+              )
+            : categoryTokens;
 
-          {categoryTokens.map(tokenName => (
-            <ColorSwatch
-              key={tokenName}
-              tokenName={tokenName}
-              value={tokens[tokenName] || ''}
-              onChange={handleTokenChange}
-              mode={mode}
-            />
-          ))}
-        </div>
-      );
-    }
+          if (filtered.length === 0) return null;
 
-    if (activeGroup === 'spacing' || activeGroup === 'size') {
-      return (
-        <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-          {Object.keys(group.tokens).map(tokenName => (
-            <SpacingEditor
-              key={tokenName}
-              tokenName={tokenName}
-              value={tokens[tokenName] || ''}
-              onChange={handleTokenChange}
-            />
-          ))}
-        </div>
-      );
-    }
-
-    if (activeGroup === 'radius') {
-      return (
-        <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-          {Object.keys(group.tokens).map(tokenName => (
-            <RadiusEditor
-              key={tokenName}
-              tokenName={tokenName}
-              value={tokens[tokenName] || ''}
-              onChange={handleTokenChange}
-            />
-          ))}
-        </div>
-      );
-    }
-
-    if (activeGroup === 'typography') {
-      // Type scale controls
-      const applyTypeScale = (base: number, ratio: number) => {
-        setTypeScaleBase(base);
-        setTypeScaleRatio(ratio);
-        setTokens(prev => ({...prev, ...expandTypeScale({base, ratio})}));
-      };
-
-      // Named ratio options from musical/mathematical intervals
-      const RATIO_OPTIONS = [
-        {value: 1.067, label: '1.067 — Minor Second'},
-        {value: 1.125, label: '1.125 — Major Second'},
-        {value: 1.2, label: '1.200 — Minor Third'},
-        {value: 1.25, label: '1.250 — Major Third'},
-        {value: 1.333, label: '1.333 — Perfect Fourth'},
-        {value: 1.414, label: '1.414 — Augmented Fourth'},
-        {value: 1.5, label: '1.500 — Perfect Fifth'},
-        {value: 1.618, label: '1.618 — Golden Ratio'},
-      ];
-      const isCustomRatio = !RATIO_OPTIONS.some(
-        o => Math.abs(o.value - typeScaleRatio) < 0.001,
-      );
-
-      const typeScaleSection = (
-        <div
-          style={{
-            padding: '12px',
-            borderRadius: '8px',
-            backgroundColor: 'var(--color-wash)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px',
-            marginBottom: '16px',
-          }}>
-          <XDSText type="label" color="secondary">
-            Type Scale
-          </XDSText>
-          <XDSSlider
-            label="Base Size"
-            min={10}
-            max={24}
-            step={1}
-            value={typeScaleBase}
-            onChange={v => applyTypeScale(v, typeScaleRatio)}
-            formatValue={v => `${v}px`}
-            valueDisplay="text"
-          />
-          <XDSSelector
-            label="Scale Ratio"
-            options={[
-              ...RATIO_OPTIONS.map(opt => ({
-                value: String(opt.value),
-                label: opt.label,
-              })),
-              {
-                value: 'custom',
-                label: isCustomRatio
-                  ? `Custom — ${typeScaleRatio.toFixed(3)}`
-                  : 'Custom…',
-              },
-            ]}
-            value={isCustomRatio ? 'custom' : String(typeScaleRatio)}
-            onChange={v => {
-              if (v === 'custom') return;
-              applyTypeScale(typeScaleBase, Number(v));
-            }}
-          />
-          {isCustomRatio && (
-            <XDSSlider
-              label="Custom Ratio"
-              isLabelHidden
-              min={1050}
-              max={1700}
-              step={1}
-              value={Math.round(typeScaleRatio * 1000)}
-              onChange={v => applyTypeScale(typeScaleBase, v / 1000)}
-              formatValue={v => (v / 1000).toFixed(3)}
-              valueDisplay="text"
-            />
-          )}
-          <div>
-            <XDSText
-              type="supporting"
-              display="block"
-              style={{marginBottom: '4px'}}>
-              Recommended values
-            </XDSText>
-            <div style={{display: 'flex', gap: '4px', flexWrap: 'wrap'}}>
-              <XDSButton
-                label="Functional"
-                variant={
-                  typeScaleBase === 12 && typeScaleRatio === 1.125
-                    ? 'primary'
-                    : 'ghost'
-                }
-                size="sm"
-                onClick={() => applyTypeScale(12, 1.125)}
-              />
-              <XDSButton
-                label="Default"
-                variant={
-                  typeScaleBase === 14 && typeScaleRatio === 1.2
-                    ? 'primary'
-                    : 'ghost'
-                }
-                size="sm"
-                onClick={() => applyTypeScale(14, 1.2)}
-              />
-              <XDSButton
-                label="Editorial"
-                variant={
-                  typeScaleBase === 16 && typeScaleRatio === 1.25
-                    ? 'primary'
-                    : 'ghost'
-                }
-                size="sm"
-                onClick={() => applyTypeScale(16, 1.25)}
-              />
+          return (
+            <div key={category}>
+              <XDSText
+                type="supporting"
+                weight="semibold"
+                color="secondary"
+                display="block"
+                style={{
+                  padding: '8px 0 4px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  fontSize: '10px',
+                }}>
+                {category}
+              </XDSText>
+              {filtered.map(tokenName => (
+                <ColorSwatch
+                  key={tokenName}
+                  tokenName={tokenName}
+                  value={tokens[tokenName] || ''}
+                  onChange={handleTokenChange}
+                  mode={mode}
+                />
+              ))}
             </div>
-          </div>
-          {/* Compact heading preview */}
-          <div
-            style={{
-              padding: '8px 12px',
-              borderRadius: '6px',
-              border: '1px solid var(--color-border)',
-              backgroundColor: 'var(--color-surface)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '2px',
-            }}>
-            {[1, 2, 3, 4, 5, 6].map(level => {
-              const size = tokens[`--heading-${level}-size`] || '';
-              return (
-                <div
-                  key={level}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'baseline',
-                    gap: '8px',
-                  }}>
-                  <XDSText
-                    type="code"
-                    color="secondary"
-                    style={{width: '18px', flexShrink: 0}}>
-                    h{level}
-                  </XDSText>
-                  <span
-                    style={{
-                      fontSize: size,
-                      fontWeight: 600,
-                      lineHeight: 1.3,
-                      color: 'var(--color-text-primary)',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}>
-                    Heading
-                  </span>
-                  <XDSText
-                    type="code"
-                    color="secondary"
-                    style={{marginLeft: 'auto', flexShrink: 0}}>
-                    {size}
-                  </XDSText>
-                </div>
-              );
-            })}
-          </div>
-          <XDSText type="code" color="secondary">
-            size = {typeScaleBase} × {typeScaleRatio.toFixed(3)}^step · h4 =
-            anchor
-          </XDSText>
-        </div>
-      );
+          );
+        })}
+      </XDSVStack>
+    );
+  };
 
-      const categoryValue = TYPOGRAPHY_CATEGORIES[
-        activeTypographyCategory as keyof typeof TYPOGRAPHY_CATEGORIES
-      ] as TypographyCategoryValue | undefined;
-
-      // Get the list of tokens for this category
-      const categoryTokens: string[] = categoryValue
-        ? Array.isArray(categoryValue)
-          ? categoryValue
-          : categoryValue.tokens
-        : [];
-
-      const categoryDescription =
-        categoryValue && !Array.isArray(categoryValue)
-          ? categoryValue.description
-          : null;
-
-      // Determine sample text rendering for semantic categories
-      const isSemanticStyle = categoryValue && !Array.isArray(categoryValue);
-
+  // =========================================================================
+  // Render spacing/size tokens
+  // =========================================================================
+  const renderSpacingTokens = (groupTokens: Record<string, string>) => {
+    const filtered = Object.keys(groupTokens).filter(t => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
       return (
-        <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-          {typeScaleSection}
+        t.toLowerCase().includes(q) ||
+        getTokenLabel(t).toLowerCase().includes(q)
+      );
+    });
 
-          {/* Typography category selector */}
-          <XDSSelector
-            label="Typography Category"
-            isLabelHidden
-            options={[
-              {
-                type: 'section' as const,
-                title: 'Semantic Styles',
-                options: Object.keys(TYPOGRAPHY_CATEGORIES)
-                  .filter(
-                    k =>
-                      !Array.isArray(
-                        TYPOGRAPHY_CATEGORIES[
-                          k as keyof typeof TYPOGRAPHY_CATEGORIES
-                        ],
-                      ),
-                  )
-                  .map(category => ({value: category, label: category})),
-              },
-              {
-                type: 'section' as const,
-                title: 'Raw Tokens',
-                options: Object.keys(TYPOGRAPHY_CATEGORIES)
-                  .filter(k =>
-                    Array.isArray(
+    return (
+      <XDSVStack gap={0.5}>
+        {filtered.map(tokenName => (
+          <SpacingEditor
+            key={tokenName}
+            tokenName={tokenName}
+            value={tokens[tokenName] || ''}
+            onChange={handleTokenChange}
+          />
+        ))}
+      </XDSVStack>
+    );
+  };
+
+  // =========================================================================
+  // Render radius tokens
+  // =========================================================================
+  const renderRadiusTokens = () => {
+    const filtered = Object.keys(radiusDefaults).filter(t => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        t.toLowerCase().includes(q) ||
+        getTokenLabel(t).toLowerCase().includes(q)
+      );
+    });
+
+    return (
+      <XDSVStack gap={0.5}>
+        {filtered.map(tokenName => (
+          <RadiusEditor
+            key={tokenName}
+            tokenName={tokenName}
+            value={tokens[tokenName] || ''}
+            onChange={handleTokenChange}
+          />
+        ))}
+      </XDSVStack>
+    );
+  };
+
+  // =========================================================================
+  // Render typography tokens (with type scale + category selector)
+  // =========================================================================
+  const renderTypographyTokens = () => {
+    const applyTypeScale = (base: number, ratio: number) => {
+      setTypeScaleBase(base);
+      setTypeScaleRatio(ratio);
+      setTokens(prev => ({...prev, ...expandTypeScale({base, ratio})}));
+    };
+
+    const categoryValue = TYPOGRAPHY_CATEGORIES[
+      activeTypographyCategory as keyof typeof TYPOGRAPHY_CATEGORIES
+    ] as TypographyCategoryValue | undefined;
+
+    const categoryTokens: string[] = categoryValue
+      ? Array.isArray(categoryValue)
+        ? categoryValue
+        : categoryValue.tokens
+      : [];
+
+    const categoryDescription =
+      categoryValue && !Array.isArray(categoryValue)
+        ? categoryValue.description
+        : null;
+
+    const isSemanticStyle = categoryValue && !Array.isArray(categoryValue);
+
+    return (
+      <XDSVStack gap={2}>
+        {/* Type scale quick-picks */}
+        <div>
+          <XDSText
+            type="supporting"
+            weight="semibold"
+            color="secondary"
+            display="block"
+            style={{
+              padding: '4px 0',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              fontSize: '10px',
+            }}>
+            Type Scale Presets
+          </XDSText>
+          <XDSHStack gap={1} style={{flexWrap: 'wrap', paddingTop: '4px'}}>
+            <XDSButton
+              label="Functional"
+              variant={
+                typeScaleBase === 12 && typeScaleRatio === 1.125
+                  ? 'primary'
+                  : 'ghost'
+              }
+              size="sm"
+              onClick={() => applyTypeScale(12, 1.125)}
+            />
+            <XDSButton
+              label="Default"
+              variant={
+                typeScaleBase === 14 && typeScaleRatio === 1.2
+                  ? 'primary'
+                  : 'ghost'
+              }
+              size="sm"
+              onClick={() => applyTypeScale(14, 1.2)}
+            />
+            <XDSButton
+              label="Editorial"
+              variant={
+                typeScaleBase === 16 && typeScaleRatio === 1.25
+                  ? 'primary'
+                  : 'ghost'
+              }
+              size="sm"
+              onClick={() => applyTypeScale(16, 1.25)}
+            />
+          </XDSHStack>
+        </div>
+
+        {/* Category selector */}
+        <XDSSelector
+          label="Typography Category"
+          isLabelHidden
+          size="sm"
+          options={[
+            {
+              type: 'section' as const,
+              title: 'Semantic Styles',
+              options: Object.keys(TYPOGRAPHY_CATEGORIES)
+                .filter(
+                  k =>
+                    !Array.isArray(
                       TYPOGRAPHY_CATEGORIES[
                         k as keyof typeof TYPOGRAPHY_CATEGORIES
                       ],
                     ),
-                  )
-                  .map(category => ({value: category, label: category})),
-              },
-            ]}
-            value={activeTypographyCategory}
-            onChange={v => setActiveTypographyCategory(v)}
-          />
+                )
+                .map(category => ({value: category, label: category})),
+            },
+            {
+              type: 'section' as const,
+              title: 'Raw Tokens',
+              options: Object.keys(TYPOGRAPHY_CATEGORIES)
+                .filter(k =>
+                  Array.isArray(
+                    TYPOGRAPHY_CATEGORIES[
+                      k as keyof typeof TYPOGRAPHY_CATEGORIES
+                    ],
+                  ),
+                )
+                .map(category => ({value: category, label: category})),
+            },
+          ]}
+          value={activeTypographyCategory}
+          onChange={v => setActiveTypographyCategory(v)}
+        />
 
-          {/* Description for semantic styles */}
-          {categoryDescription && (
-            <XDSText
-              type="supporting"
-              display="block"
-              style={{marginBottom: '4px'}}>
-              {categoryDescription}
-            </XDSText>
-          )}
+        {categoryDescription && (
+          <XDSText type="supporting" color="secondary">
+            {categoryDescription}
+          </XDSText>
+        )}
 
-          {/* Sample text preview for semantic styles */}
-          {isSemanticStyle && (
+        {/* Sample text preview */}
+        {isSemanticStyle && (
+          <XDSCard padding={2}>
             <div
               style={{
-                padding: '16px',
-                borderRadius: '8px',
-                backgroundColor: 'var(--color-wash)',
-                border: '1px solid var(--color-border)',
-                marginBottom: '8px',
+                fontSize: tokens[categoryTokens[0]] || 'inherit',
+                fontWeight: tokens[categoryTokens[1]] || 'inherit',
+                lineHeight: tokens[categoryTokens[2]] || 'inherit',
+                color: 'var(--color-text-primary)',
               }}>
-              <div
-                style={{
-                  fontSize: tokens[categoryTokens[0]] || 'inherit',
-                  fontWeight: tokens[categoryTokens[1]] || 'inherit',
-                  lineHeight: tokens[categoryTokens[2]] || 'inherit',
-                  color: 'var(--color-text-primary)',
-                }}>
-                {activeTypographyCategory === 'Code Text'
-                  ? 'const theme = defineTheme({...});'
-                  : `The quick brown fox jumps over the lazy dog`}
-              </div>
+              {activeTypographyCategory === 'Code Text'
+                ? 'const theme = defineTheme({...});'
+                : 'The quick brown fox jumps over the lazy dog'}
             </div>
-          )}
+          </XDSCard>
+        )}
 
-          {/* Token editors */}
+        {/* Token editors */}
+        <XDSVStack gap={0.5}>
           {categoryTokens.map(tokenName => (
             <TypographyEditor
               key={tokenName}
@@ -1716,62 +1658,76 @@ function ThemeEditorComponent() {
               onChange={handleTokenChange}
             />
           ))}
-        </div>
-      );
-    }
+        </XDSVStack>
+      </XDSVStack>
+    );
+  };
 
-    // Default: generic text input
+  // =========================================================================
+  // Render generic tokens (shadow, duration, easing)
+  // =========================================================================
+  const renderGenericTokens = (groupTokens: Record<string, string>) => {
+    const filtered = Object.keys(groupTokens).filter(t => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        t.toLowerCase().includes(q) ||
+        getTokenLabel(t).toLowerCase().includes(q)
+      );
+    });
+
     return (
-      <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-        {Object.keys(group.tokens).map(tokenName => (
-          <div
+      <XDSVStack gap={0.5}>
+        {filtered.map(tokenName => (
+          <XDSHStack
             key={tokenName}
+            gap={2}
+            vAlign="center"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '8px 12px',
-              borderRadius: '8px',
-              backgroundColor: 'var(--color-wash)',
+              padding: '6px 0',
             }}>
-            <div style={{flex: 1, minWidth: 0}}>
-              <div
-                style={{
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  color: 'var(--color-text-primary)',
-                  marginBottom: '2px',
-                }}>
+            <XDSVStack gap={0} style={{flex: 1, minWidth: 0}}>
+              <XDSText type="body" style={{fontSize: '13px'}}>
                 {getTokenLabel(tokenName)}
-              </div>
-              <code
-                style={{
-                  fontSize: '11px',
-                  color: 'var(--color-text-secondary)',
-                  fontFamily: 'var(--font-code)',
-                }}>
+              </XDSText>
+              <XDSText type="code" color="secondary" style={{fontSize: '10px'}}>
                 {tokenName}
-              </code>
-            </div>
+              </XDSText>
+            </XDSVStack>
             <input
               type="text"
               value={tokens[tokenName] || ''}
               onChange={e => handleTokenChange(tokenName, e.target.value)}
               style={{
-                width: '200px',
+                width: '140px',
                 padding: '4px 8px',
-                fontSize: '12px',
+                fontSize: '11px',
                 fontFamily: 'var(--font-code)',
-                border: '1px solid var(--color-border-emphasized)',
+                border: '1px solid var(--color-border)',
                 borderRadius: '4px',
                 backgroundColor: 'var(--color-surface)',
                 color: 'var(--color-text-primary)',
+                flexShrink: 0,
               }}
             />
-          </div>
+          </XDSHStack>
         ))}
-      </div>
+      </XDSVStack>
     );
+  };
+
+  // =========================================================================
+  // Build the accordion sections
+  // =========================================================================
+  const sectionRenderers: Record<TokenGroupKey, () => React.ReactNode> = {
+    colors: renderColorTokens,
+    spacing: () => renderSpacingTokens(spacingDefaults),
+    radius: renderRadiusTokens,
+    typography: renderTypographyTokens,
+    size: () => renderSpacingTokens(sizeDefaults),
+    shadow: () => renderGenericTokens(shadowDefaults),
+    duration: () => renderGenericTokens(durationDefaults),
+    easing: () => renderGenericTokens(easeDefaults),
   };
 
   return (
@@ -1783,74 +1739,191 @@ function ThemeEditorComponent() {
         overflow: 'hidden',
         backgroundColor: 'var(--color-wash)',
       }}>
-      {/* Left Panel - Token Editor */}
+      {/* ================================================================= */}
+      {/* Left Panel — Accordion-based Token Editor                         */}
+      {/* ================================================================= */}
       <div
         style={{
-          width: '400px',
-          borderRight: '1px solid var(--color-border-emphasized)',
+          width: '380px',
           display: 'flex',
           flexDirection: 'column',
           backgroundColor: 'var(--color-surface)',
+          borderRight: '1px solid var(--color-border)',
+          overflow: 'hidden',
         }}>
-        {/* Token group tabs */}
+        {/* Panel header — shows editable theme name */}
         <div
           style={{
-            padding: '16px 16px 12px',
-            borderBottom: '1px solid var(--color-border)',
+            padding: '16px 20px 12px',
             display: 'flex',
-            gap: '4px',
-            flexWrap: 'wrap',
-          }}>
-          {(Object.keys(TOKEN_GROUPS) as TokenGroupKey[]).map(groupKey => (
-            <XDSButton
-              key={groupKey}
-              label={TOKEN_GROUPS[groupKey].label}
-              variant={activeGroup === groupKey ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveGroup(groupKey)}
-            />
-          ))}
-        </div>
-
-        {/* Group description */}
-        <div
-          style={{
-            padding: '12px 16px',
+            alignItems: 'center',
+            justifyContent: 'space-between',
             borderBottom: '1px solid var(--color-border)',
           }}>
-          <XDSText type="supporting">
-            {TOKEN_GROUPS[activeGroup].description}
-          </XDSText>
+          {isEditingName ? (
+            <input
+              autoFocus
+              type="text"
+              value={themeName}
+              onChange={e => setThemeName(e.target.value)}
+              onBlur={() => setIsEditingName(false)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') setIsEditingName(false);
+              }}
+              style={{
+                all: 'unset',
+                fontSize: 'var(--heading-3-size, 17px)',
+                fontWeight: 600,
+                color: 'var(--color-text-primary)',
+                borderBottom: '2px solid var(--color-accent)',
+                paddingBottom: '2px',
+                width: '160px',
+              }}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsEditingName(true)}
+              style={{
+                all: 'unset',
+                cursor: 'pointer',
+                fontSize: 'var(--heading-3-size, 17px)',
+                fontWeight: 600,
+                fontFamily: 'var(--font-heading, var(--font-body))',
+                color: 'var(--color-text-primary)',
+                lineHeight: 'var(--heading-3-leading, 1.3)',
+              }}>
+              {themeName} Theme
+            </button>
+          )}
+          <XDSHStack gap={1} vAlign="center">
+            <button
+              type="button"
+              onClick={() => setShowSearch(!showSearch)}
+              style={{
+                all: 'unset',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '32px',
+                height: '32px',
+                borderRadius: '6px',
+                color: 'var(--color-icon-secondary)',
+              }}
+              title="Search tokens">
+              <XDSIcon icon="search" size="sm" color="secondary" />
+            </button>
+            {/* Mode toggle */}
+            <XDSButton
+              label={mode === 'light' ? '☀' : '☾'}
+              variant="ghost"
+              size="sm"
+              onClick={() => setMode(mode === 'light' ? 'dark' : 'light')}
+            />
+          </XDSHStack>
         </div>
 
-        {/* Token list */}
+        {/* Search bar — expandable */}
+        {showSearch && (
+          <div
+            style={{
+              padding: '8px 16px',
+              borderBottom: '1px solid var(--color-border)',
+            }}>
+            <XDSTextInput
+              label="Search tokens"
+              isLabelHidden
+              placeholder="Search tokens…"
+              value={searchQuery}
+              onChange={setSearchQuery}
+              size="sm"
+            />
+          </div>
+        )}
+
+        {/* Accordion sections */}
         <div
           style={{
             flex: 1,
             overflow: 'auto',
-            padding: '16px',
+            padding: '8px 12px',
           }}>
-          {renderTokenEditor()}
+          <XDSCollapsibleGroup type="multiple" defaultValue={['colors']}>
+            <XDSVStack gap={0.5}>
+              {(Object.keys(TOKEN_GROUPS) as TokenGroupKey[]).map(groupKey => {
+                const group = TOKEN_GROUPS[groupKey];
+                const dotColor =
+                  SECTION_DOT_COLORS[groupKey] || 'var(--color-accent)';
+                const modified = modifiedCount(group.tokens);
+
+                return (
+                  <XDSCollapsible
+                    key={groupKey}
+                    value={groupKey}
+                    defaultIsOpen={groupKey === 'colors'}
+                    trigger={
+                      <XDSHStack
+                        gap={2}
+                        vAlign="center"
+                        style={{width: '100%'}}>
+                        <div
+                          style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            backgroundColor: dotColor,
+                            flexShrink: 0,
+                          }}
+                        />
+                        <XDSText
+                          type="label"
+                          style={{flex: 1, textAlign: 'start'}}>
+                          {group.label}
+                        </XDSText>
+                        {modified > 0 && (
+                          <XDSBadge variant="info">{modified}</XDSBadge>
+                        )}
+                      </XDSHStack>
+                    }>
+                    <div style={{padding: '4px 0 8px'}}>
+                      {sectionRenderers[groupKey]()}
+                    </div>
+                  </XDSCollapsible>
+                );
+              })}
+            </XDSVStack>
+          </XDSCollapsibleGroup>
         </div>
 
-        {/* Actions */}
+        {/* Bottom actions */}
         <div
           style={{
-            padding: '16px',
+            padding: '12px 16px',
             borderTop: '1px solid var(--color-border)',
             display: 'flex',
             gap: '8px',
           }}>
-          <XDSButton label="Reset All" variant="ghost" onClick={handleReset} />
           <XDSButton
-            label={showCode ? 'Hide Code' : 'Export Code'}
+            label="Reset"
             variant="secondary"
+            size="sm"
+            onClick={handleReset}
+            style={{flex: 1}}
+          />
+          <XDSButton
+            label={showCode ? 'Hide code' : 'View code →'}
+            variant="primary"
+            size="sm"
             onClick={() => setShowCode(!showCode)}
+            style={{flex: 1}}
           />
         </div>
       </div>
 
-      {/* Right Panel - Preview */}
+      {/* ================================================================= */}
+      {/* Right Panel — Live Preview                                        */}
+      {/* ================================================================= */}
       <div
         style={{
           flex: 1,
@@ -1869,7 +1942,7 @@ function ThemeEditorComponent() {
             justifyContent: 'space-between',
           }}>
           <XDSHeading level={4}>Live Preview</XDSHeading>
-          <div style={{display: 'flex', gap: '4px'}}>
+          <XDSHStack gap={1}>
             <XDSButton
               label="Light"
               variant={mode === 'light' ? 'primary' : 'ghost'}
@@ -1882,7 +1955,7 @@ function ThemeEditorComponent() {
               size="sm"
               onClick={() => setMode('dark')}
             />
-          </div>
+          </XDSHStack>
         </div>
 
         {/* Code panel (collapsible) */}
@@ -1895,9 +1968,7 @@ function ThemeEditorComponent() {
               maxHeight: '300px',
               overflow: 'auto',
             }}>
-            <XDSText
-              type="label"
-              style={{marginBottom: '8px', display: 'block'}}>
+            <XDSText type="label" display="block" style={{marginBottom: '8px'}}>
               Generated Theme Code
             </XDSText>
             <pre
@@ -1924,11 +1995,7 @@ function ThemeEditorComponent() {
         )}
 
         {/* Preview content */}
-        <div
-          style={{
-            flex: 1,
-            overflow: 'auto',
-          }}>
+        <div style={{flex: 1, overflow: 'auto'}}>
           <XDSTheme theme={currentTheme} mode={mode}>
             <div
               style={{
