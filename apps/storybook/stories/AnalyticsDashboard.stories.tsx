@@ -1105,12 +1105,15 @@ function OverviewContent() {
                   }}
                 />
               </div>
+              <XDSButton label="Search" variant="secondary" size="sm">
+                Search
+              </XDSButton>
             </XDSHStack>
             <div {...stylex.props(styles.chartsGrid)}>
-              <ChartCard title="Nest Component Growth: Button">
+              <ChartCard title="XDS WWW Component Growth: Button">
                 <SingleLineChart data={componentCountData} />
               </ChartCard>
-              <ChartCard title="Nest Design System Component Adoption">
+              <ChartCard title="XDS WWW Component Adoption">
                 <SingleLineChart data={componentCountData} />
               </ChartCard>
             </div>
