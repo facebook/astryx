@@ -158,10 +158,11 @@ export interface XDSTextProps {
   children: ReactNode;
 
   /**
-   * HTML element to render
+   * HTML element to render.
+   * Includes h1-h3 for display types that need heading semantics.
    * @default 'span'
    */
-  as?: 'span' | 'p' | 'div' | 'label';
+  as?: 'span' | 'p' | 'div' | 'label' | 'h1' | 'h2' | 'h3';
 
   'data-testid'?: string;
   id?: string;
@@ -174,6 +175,9 @@ const defaultColorByType: Record<XDSTextType, XDSTextColor> = {
   label: 'primary',
   supporting: 'secondary',
   code: 'primary',
+  'display-1': 'primary',
+  'display-2': 'primary',
+  'display-3': 'primary',
 };
 
 /**
@@ -186,8 +190,9 @@ const defaultColorByType: Record<XDSTextType, XDSTextColor> = {
  * <XDSText type="label">Form label</XDSText>
  * <XDSText type="supporting">Helper text</XDSText>
  * <XDSText type="code">{'const x = 1;'}</XDSText>
+ * <XDSText type="display-1" as="h1">Hero Title</XDSText>
+ * <XDSText type="display-2">$1.2M Revenue</XDSText>
  * <XDSText type="body" maxLines={2}>Clamped text</XDSText>
- * <XDSText type="body" color="secondary" weight="bold">Styled text</XDSText>
  * ```
  */
 export function XDSText({

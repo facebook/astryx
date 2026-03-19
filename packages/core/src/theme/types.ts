@@ -20,7 +20,15 @@ export type HeadingLevel = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 /**
  * Semantic text types for XDSText
  */
-export type XDSTextType = 'body' | 'large' | 'label' | 'supporting' | 'code';
+export type XDSTextType =
+  | 'body'
+  | 'large'
+  | 'label'
+  | 'supporting'
+  | 'code'
+  | 'display-1'
+  | 'display-2'
+  | 'display-3';
 
 /**
  * Text size scale for XDSText size prop override

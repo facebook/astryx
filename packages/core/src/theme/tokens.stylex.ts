@@ -310,6 +310,7 @@ export const textSizeDefaults = {
   '--text-2xl': '1.5rem', // step +3: 24px (14 × 1.2³ ≈ 24.19 → 24)
   '--text-3xl': '1.8125rem', // step +4: 29px (14 × 1.2⁴ ≈ 29.03 → 29)
   '--text-4xl': '2.1875rem', // step +5: 35px (14 × 1.2⁵ ≈ 34.84 → 35)
+  '--text-5xl': '2.625rem', // step +6: 42px (14 × 1.2⁶ ≈ 41.80 → 42)
 } as const;
 
 /** @deprecated Use textSizeDefaults */
@@ -423,6 +424,20 @@ export const typeScaleDefaults = {
   '--text-supporting-size': 'var(--text-sm)', // 12px
   '--text-supporting-weight': 'var(--font-weight-normal)',
   '--text-supporting-leading': '1.6667', // 12px → 20px
+
+  // Display tokens — continue the geometric progression above h1.
+  // Display 1 = step +6 (largest, 42px), Display 3 = step +4 (29px, closest to h1).
+  // Line heights are tighter (~1.2) than headings (~1.3) since large text reads better tight.
+  // Font weight is normal (400) to balance the visual presence of large sizes.
+  '--text-display-1-size': 'var(--text-5xl)', // 42px (14 × 1.2⁶, largest)
+  '--text-display-1-weight': 'var(--font-weight-normal)',
+  '--text-display-1-leading': '1.2381',
+  '--text-display-2-size': 'var(--text-4xl)', // 35px (14 × 1.2⁵)
+  '--text-display-2-weight': 'var(--font-weight-normal)',
+  '--text-display-2-leading': '1.2571',
+  '--text-display-3-size': 'var(--text-3xl)', // 29px (14 × 1.2⁴, closest to h1)
+  '--text-display-3-weight': 'var(--font-weight-normal)',
+  '--text-display-3-leading': '1.2414',
 } as const;
 
 export const typeScaleVars = stylex.defineVars(typeScaleDefaults);

@@ -65,7 +65,17 @@ export type HeadingWeightOverrides = Partial<
  * Keys are text type names, values are CSS font-weight values.
  */
 export type TextWeightOverrides = Partial<
-  Record<'body' | 'large' | 'label' | 'code' | 'supporting', FontWeightValue>
+  Record<
+    | 'body'
+    | 'large'
+    | 'label'
+    | 'code'
+    | 'supporting'
+    | 'display-1'
+    | 'display-2'
+    | 'display-3',
+    FontWeightValue
+  >
 >;
 
 /**
@@ -145,6 +155,7 @@ const STEP_TO_SIZE_TOKEN: Record<number, string> = {
   [3]: '--text-2xl',
   [4]: '--text-3xl',
   [5]: '--text-4xl',
+  [6]: '--text-5xl',
 };
 
 /**
@@ -170,6 +181,9 @@ const TEXT_STEPS: Record<string, number> = {
   label: 0,
   code: 0,
   supporting: -1,
+  'display-1': 6, // largest — continues progression above h1
+  'display-2': 5,
+  'display-3': 4, // closest to h1
 };
 
 /**
@@ -193,6 +207,24 @@ const DEFAULT_TEXT_WEIGHTS: Record<string, string> = {
   label: 'var(--font-weight-medium)',
   code: 'var(--font-weight-normal)',
   supporting: 'var(--font-weight-normal)',
+  'display-1': 'var(--font-weight-normal)',
+  'display-2': 'var(--font-weight-normal)',
+  'display-3': 'var(--font-weight-normal)',
+};
+
+/**
+ * Line-height target ratios. Headings are tighter, body text is more generous.
+ */
+const HEADING_LH_RATIO = 1.3;
+const TEXT_LH_RATIOS: Record<string, number> = {
+  body: 1.5,
+  large: 1.45,
+  label: 1.4,
+  code: 1.5,
+  supporting: 1.5,
+  'display-1': 1.2, // tighter — large text reads better tight
+  'display-2': 1.2,
+  'display-3': 1.2,
 };
 
 // =============================================================================
@@ -244,8 +276,13 @@ function computeLeading(fontSize: number): number {
  *
  * Generates two layers of tokens:
  *   - Layer 1: 11 raw size tokens (--text-4xs … --text-4xl) in rem
- *   - Layer 2: 33 semantic tokens using var() refs for sizes and
+ *   - Layer 2: semantic tokens using var() refs for sizes and
  *              hardcoded computed values for line heights
+ *
+ * Includes 6 heading levels × 3 + 8 text types × 3 (body, large, label, code, supporting, display-1/2/3).
+ * Font sizes are emitted as rem values (e.g. '1.5rem') based on 16px root.
+ * Line heights are emitted as unitless ratios (e.g. '1.3333').
+ * Font weights are emitted as var() references (e.g. '''var(--font-weight-semibold)'''').
  *
  * @example
  * ```
@@ -276,7 +313,7 @@ export function expandTypeScale(config: XDSTypeScaleConfig): TypeScaleTokens {
   };
 
   // ── Layer 1: Raw size tokens (rem) ────────────────────────────────────────
-  for (let step = -5; step <= 5; step++) {
+  for (let step = -5; step <= 6; step++) {
     const size = computeSize(base, ratio, step);
     tokens[STEP_TO_SIZE_TOKEN[step]] = pxToRem(size);
   }
@@ -320,6 +357,9 @@ const TEXT_FONT_FAMILIES: Record<string, string> = {
   label: 'var(--font-body)',
   code: 'var(--font-code)',
   supporting: 'var(--font-body)',
+  'display-1': 'var(--font-heading)',
+  'display-2': 'var(--font-heading)',
+  'display-3': 'var(--font-heading)',
 };
 
 /**
@@ -342,7 +382,16 @@ export function generateTypeScaleComponents(
   components.heading = headingRules;
 
   const textRules: Record<string, Record<string, string>> = {};
-  for (const type of ['body', 'large', 'label', 'code', 'supporting']) {
+  for (const type of [
+    'body',
+    'large',
+    'label',
+    'code',
+    'supporting',
+    'display-1',
+    'display-2',
+    'display-3',
+  ]) {
     textRules[`type:${type}`] = {
       fontFamily: TEXT_FONT_FAMILIES[type],
       fontSize: `var(--text-${type}-size)`,
