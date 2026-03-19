@@ -208,6 +208,12 @@
       "import": "./dist/NavIcon/index.mjs",
       "require": "./dist/NavIcon/index.js"
     },
+    "./NavItem": {
+      "source": "./src/NavItem/index.ts",
+      "types": "./dist/NavItem/index.d.ts",
+      "import": "./dist/NavItem/index.mjs",
+      "require": "./dist/NavItem/index.js"
+    },
     "./NumberInput": {
       "source": "./src/NumberInput/index.ts",
       "types": "./dist/NumberInput/index.d.ts",
