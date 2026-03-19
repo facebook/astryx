@@ -41,6 +41,12 @@
  * - '--color-text-placeholder' → '--color-text-secondary'
  * - '--color-icon-tertiary' → '--color-icon-secondary'
  *
+ * Inset shadow (Tailwind alignment):
+ * - '--insetshadow-border-*' → '--inset-shadow-border-*'
+ *
+ * Easing (Tailwind alignment):
+ * - '--easing-standard' → '--ease-standard'
+ *
  * Note: --color-accent is NOT renamed (kept as-is to avoid ambiguity
  * with --color-text-primary and --color-icon-primary).
  *
@@ -85,6 +91,14 @@ const TOKEN_MAP = {
   '--color-positive': '--color-success',
   '--color-divider': '--color-border',
   '--color-glimmer': '--color-skeleton',
+  // Inset shadow: insetshadow → inset-shadow (Tailwind alignment)
+  '--insetshadow-border-positive': '--inset-shadow-border-positive',
+  '--insetshadow-border-negative': '--inset-shadow-border-negative',
+  '--insetshadow-border-warning': '--inset-shadow-border-warning',
+  '--insetshadow-border-accent': '--inset-shadow-border-accent',
+  '--insetshadow-border-hover': '--inset-shadow-border-hover',
+  // Easing: easing → ease (Tailwind alignment)
+  '--easing-standard': '--ease-standard',
 };
 
 // Build a regex that matches any old token name, longest first.

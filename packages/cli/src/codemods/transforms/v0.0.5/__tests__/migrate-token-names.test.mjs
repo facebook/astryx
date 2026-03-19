@@ -234,4 +234,32 @@ describe('migrate-token-names', () => {
     expect(output).toContain('--color-accent');
     expect(output).not.toContain('--color-accent-text');
   });
+
+  // === Inset shadow rename (Tailwind alignment) ===
+
+  it('renames --insetshadow-border-* to --inset-shadow-border-*', async () => {
+    const input = `const x = {
+      a: shadowVars['--insetshadow-border-hover'],
+      b: shadowVars['--insetshadow-border-accent'],
+      c: shadowVars['--insetshadow-border-positive'],
+      d: shadowVars['--insetshadow-border-warning'],
+      e: shadowVars['--insetshadow-border-negative'],
+    };`;
+    const output = await applyTransform(input);
+    expect(output).toContain('--inset-shadow-border-hover');
+    expect(output).toContain('--inset-shadow-border-accent');
+    expect(output).toContain('--inset-shadow-border-positive');
+    expect(output).toContain('--inset-shadow-border-warning');
+    expect(output).toContain('--inset-shadow-border-negative');
+    expect(output).not.toMatch(/insetshadow/);
+  });
+
+  // === Easing rename (Tailwind alignment) ===
+
+  it('renames --easing-standard to --ease-standard', async () => {
+    const input = `const x = easeVars['--easing-standard'];`;
+    const output = await applyTransform(input);
+    expect(output).toContain('--ease-standard');
+    expect(output).not.toContain('--easing-standard');
+  });
 });
