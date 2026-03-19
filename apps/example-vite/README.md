@@ -18,12 +18,24 @@ XDS ships as raw TypeScript + StyleX source. Consumers compile it at the applica
 ### 1. Install dependencies
 
 ```bash
-npm install @stylexjs/stylex @xds/core @xds/theme react react-dom
+npm install @stylexjs/stylex @xds/core @xds/theme-default react react-dom
 npm install --save-dev @stylexjs/unplugin @vitejs/plugin-react typescript \
   @types/react @types/react-dom vite
 ```
 
-### 2. Vite config
+### 2. Browserslist
+
+Add a `browserslist` to `package.json` so that both Vite's CSS pipeline and the StyleX unplugin target modern browsers. XDS tokens use native `light-dark()` (baseline 2024) — without modern targets, lightningcss lowers it into polyfill variables that break theming:
+
+```json
+{
+  "browserslist": ["last 1 Chrome version"]
+}
+```
+
+> For internal tools targeting latest Chrome, `"last 1 Chrome version"` is sufficient. For broader browser support, use targets that include Chrome 123+ / Firefox 120+ / Safari 17.5+ (when `light-dark()` shipped).
+
+### 3. Vite config
 
 `vite.config.ts` — configure the StyleX unplugin, React plugin, and resolve aliases:
 
@@ -70,6 +82,9 @@ export default defineConfig({
         type: 'commonJS',
         rootDir: __dirname,
       },
+      // The StyleX unplugin runs its own internal lightningcss with
+      // default targets of browserslist('>= 1%'). Override explicitly
+      // so light-dark() is preserved as native CSS.
       lightningcssOptions: {
         targets: lightningcssTargets,
       },
@@ -94,9 +109,9 @@ export default defineConfig({
 });
 ```
 
-> **Important:** The `lightningcssOptions.targets` config is required — without it, the StyleX plugin's internal lightningcss transform lowers `light-dark()` into polyfill variables that silently break all theming colors. The `resolve.alias` points `@xds/core` to source so Vite compiles from TypeScript. Plugin order matters — `stylex.vite()` must come before `react()`.
+> **Important:** The `lightningcssOptions.targets` config is required — the StyleX unplugin's internal lightningcss defaults to `browserslist('>= 1%')` which includes Chrome 112, a browser that doesn't support `light-dark()`. Without explicit targets, all theming colors silently break. The `resolve.alias` points `@xds/core` to source so Vite compiles from TypeScript. Plugin order matters — `stylex.vite()` must come before `react()`.
 
-### 3. CSS entry point
+### 4. CSS entry point
 
 `src/index.css` — a minimal CSS file so Vite emits a CSS asset for StyleX to append to:
 
@@ -106,28 +121,27 @@ export default defineConfig({
 }
 ```
 
-Import it in `src/main.tsx`, along with the base CSS and theme CSS:
+Import it in `src/main.tsx`, along with the base reset and theme CSS:
 
 ```tsx
 import '@xds/core/reset.css';
-import '@xds/core/typography.css';
 import '@xds/theme-default/theme.css';
 import './index.css';
 ```
 
 The CSS import order matters:
-1. `reset.css` — baseline resets (`@layer reset`)
-2. `typography.css` — prose styles (`@layer typography`)
-3. `theme.css` — theme component overrides (`@layer xds.theme`)
-4. `index.css` — StyleX extraction placeholder
 
-### 4. Theme provider
+1. `reset.css` — baseline resets (`@layer reset`)
+2. `theme.css` — theme token overrides (`@layer xds.theme`)
+3. `index.css` — StyleX extraction placeholder
+
+### 5. Theme provider
 
 Wrap your app with `XDSTheme` and the default theme:
 
 ```tsx
 import {XDSTheme} from '@xds/core/theme';
-import {defaultTheme} from '@xds/theme/default';
+import {defaultTheme} from '@xds/theme-default';
 
 export default function App() {
   return <XDSTheme theme={defaultTheme}>{/* your app */}</XDSTheme>;
@@ -151,13 +165,14 @@ npm run preview
 
 ## Gotchas
 
-| Issue                   | Symptom                                 | Fix                                                                       |
-| ----------------------- | --------------------------------------- | ------------------------------------------------------------------------- |
-| Vite pre-bundles XDS    | `Unexpected stylex.defineVars at runtime` | Add `optimizeDeps: { exclude: ['@xds/core', '@xds/theme-default'] }`     |
-| Missing resolve aliases | Module not found errors for `@xds/core` | Add `resolve.alias` pointing to source directory                          |
-| Missing CSS entry point | StyleX has no CSS asset to append to    | Create a minimal `index.css` and import it in `main.tsx`                  |
-| Plugin order            | Styles not extracted or HMR broken      | `stylex.vite()` must come before `react()` in the plugins array           |
-| Duplicate React types   | JSX component type errors in monorepo   | Known monorepo issue with `@types/react` hoisting; doesn't affect runtime |
+| Issue                         | Symptom                                     | Fix                                                                          |
+| ----------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------- |
+| Missing `lightningcssOptions` | Colors broken — `light-dark()` gets lowered | Add `lightningcssOptions: { targets: lightningcssTargets }` to StyleX plugin |
+| Vite pre-bundles XDS          | `Unexpected stylex.defineVars at runtime`   | Add `optimizeDeps: { exclude: ['@xds/core', '@xds/theme-default'] }`         |
+| Missing resolve aliases       | Module not found errors for `@xds/core`     | Add `resolve.alias` pointing to source directory                             |
+| Missing CSS entry point       | StyleX has no CSS asset to append to        | Create a minimal `index.css` and import it in `main.tsx`                     |
+| Plugin order                  | Styles not extracted or HMR broken          | `stylex.vite()` must come before `react()` in the plugins array              |
+| Duplicate React types         | JSX component type errors in monorepo       | Known monorepo issue with `@types/react` hoisting; doesn't affect runtime    |
 
 ## Testing outside the monorepo
 

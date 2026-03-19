@@ -1,5 +1,6 @@
 'use client';
 
+import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
@@ -23,17 +24,21 @@ const styles = stylex.create({
 });
 
 export default function Home() {
+  const [email, setEmail] = useState('');
+
   return (
     <main {...stylex.props(styles.main)}>
       <div {...stylex.props(styles.container)}>
         <XDSVStack gap={6}>
           <XDSVStack gap={2}>
             <XDSHeading level={1}>XDS Example — Next.js</XDSHeading>
-            <XDSText color="secondary">
+            <XDSText type="body" color="secondary">
               This is a reference example for consuming{' '}
-              <XDSText weight="bold">@xds/core</XDSText> as a source
-              distribution in a Next.js application. Components are compiled
-              from raw TypeScript source using StyleX at build time.
+              <XDSText type="body" weight="bold">
+                @xds/core
+              </XDSText>{' '}
+              as a source distribution in a Next.js application. Components are
+              compiled from raw TypeScript source using StyleX at build time.
             </XDSText>
           </XDSVStack>
 
@@ -42,10 +47,10 @@ export default function Home() {
           {/* Buttons */}
           <XDSVStack gap={3}>
             <XDSHeading level={2}>Buttons</XDSHeading>
-            <XDSHStack gap={3} align="center">
-              <XDSButton variant="primary">Primary</XDSButton>
-              <XDSButton variant="secondary">Secondary</XDSButton>
-              <XDSButton variant="ghost">Ghost</XDSButton>
+            <XDSHStack gap={3} vAlign="center">
+              <XDSButton label="Primary" variant="primary" />
+              <XDSButton label="Secondary" variant="secondary" />
+              <XDSButton label="Ghost" variant="ghost" />
             </XDSHStack>
           </XDSVStack>
 
@@ -54,7 +59,7 @@ export default function Home() {
           {/* Badges */}
           <XDSVStack gap={3}>
             <XDSHeading level={2}>Badges</XDSHeading>
-            <XDSHStack gap={3} align="center">
+            <XDSHStack gap={3} vAlign="center">
               <XDSBadge variant="info">Info</XDSBadge>
               <XDSBadge variant="success">Success</XDSBadge>
               <XDSBadge variant="warning">Warning</XDSBadge>
@@ -67,7 +72,12 @@ export default function Home() {
           {/* Text Input */}
           <XDSVStack gap={3}>
             <XDSHeading level={2}>Text Input</XDSHeading>
-            <XDSTextInput label="Email address" placeholder="you@example.com" />
+            <XDSTextInput
+              label="Email address"
+              placeholder="you@example.com"
+              value={email}
+              onChange={setEmail}
+            />
           </XDSVStack>
 
           <XDSDivider />
@@ -78,9 +88,9 @@ export default function Home() {
             <XDSText type="large" weight="bold">
               Large bold text
             </XDSText>
-            <XDSText>Default body text</XDSText>
-            <XDSText type="detail" color="secondary">
-              Detail text in secondary color
+            <XDSText type="body">Default body text</XDSText>
+            <XDSText type="supporting" color="secondary">
+              Supporting text in secondary color
             </XDSText>
           </XDSVStack>
         </XDSVStack>

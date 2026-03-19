@@ -14,7 +14,19 @@ npm install --save-dev @stylexjs/babel-plugin @stylexjs/postcss-plugin \
   @babel/preset-react @babel/preset-typescript typescript @types/react @types/react-dom
 ```
 
-### 2. Babel config
+### 2. Browserslist
+
+Add a `browserslist` to `package.json` so that Next.js (and its internal lightningcss) targets modern browsers. Without this, lightningcss may lower `light-dark()` into polyfill variables that break XDS theming:
+
+```json
+{
+  "browserslist": ["last 1 Chrome version"]
+}
+```
+
+> For internal tools targeting latest Chrome, `"last 1 Chrome version"` is sufficient. For broader browser support, use targets that include Chrome 123+ / Firefox 120+ / Safari 17.5+ (when `light-dark()` shipped).
+
+### 3. Babel config
 
 `babel.config.js` — configure StyleX as a **plugin** (not a preset) with `next/babel`:
 
@@ -47,7 +59,7 @@ module.exports = {
 
 > **Important:** The `aliases` config is required for `stylex.createTheme` to resolve token definitions correctly. Without it, theme overrides silently fail.
 
-### 3. PostCSS config
+### 4. PostCSS config
 
 `postcss.config.js` — this is how Next.js extracts StyleX CSS:
 
@@ -76,7 +88,7 @@ module.exports = {
 };
 ```
 
-### 4. CSS entry point with `@stylex;` directive
+### 5. CSS entry point with `@stylex;` directive
 
 `src/app/globals.css`:
 
@@ -84,44 +96,32 @@ module.exports = {
 @stylex;
 ```
 
-Import it in your root layout, along with the base CSS and theme CSS:
+Import it in your root layout, along with the base reset and theme CSS:
 
 ```tsx
 import '@xds/core/reset.css';
-import '@xds/core/typography.css';
 import '@xds/theme-default/theme.css';
 import './globals.css';
 ```
 
 The CSS import order matters:
-1. `reset.css` — baseline resets (`@layer reset`)
-2. `typography.css` — prose styles (`@layer typography`)
-3. `theme.css` — theme component overrides (`@layer xds.theme`)
-4. `globals.css` — StyleX extraction (`@stylex;` directive)
 
-### 5. Next.js config
+1. `reset.css` — baseline resets (`@layer reset`)
+2. `theme.css` — theme token overrides (`@layer xds.theme`)
+3. `globals.css` — StyleX extraction (`@stylex;` directive)
+
+### 6. Next.js config
 
 `next.config.mjs` — add `transpilePackages` so Next.js compiles XDS source:
 
 ```js
 const nextConfig = {
   transpilePackages: ['@xds/core', '@xds/theme-default'],
-  typescript: {ignoreBuildErrors: true},
 };
 export default nextConfig;
 ```
 
-Also add a `browserslist` to `package.json` to set proper CSS build targets. The StyleX babel plugin uses lightningcss internally, and without modern targets it will lower `light-dark()` into broken polyfill variables:
-
-```json
-{
-  "browserslist": ["last 1 Chrome version"]
-}
-```
-
-> For internal tools targeting latest Chrome, `"last 1 Chrome version"` is sufficient. For broader browser support, use targets that include Chrome 123+ (when `light-dark()` shipped).
-
-### 6. Theme provider (client boundary)
+### 7. Theme provider (client boundary)
 
 ```tsx
 // src/app/providers.tsx
@@ -136,13 +136,14 @@ export function Providers({children}) {
 
 ## Gotchas
 
-| Issue                               | Symptom                                     | Fix                                                              |
-| ----------------------------------- | ------------------------------------------- | ---------------------------------------------------------------- |
-| Missing `@stylex;` directive        | PostCSS produces empty CSS with no error    | Add `@stylex;` to your CSS entry file                            |
-| PostCSS `include` doesn't cover XDS | XDS component styles are missing            | Add `node_modules/@xds/core/**/*.{ts,tsx}` to `include`          |
-| Missing `aliases` in babel config   | `createTheme` token overrides silently fail | Add `aliases` mapping for `@xds/core` and `@xds/core/*`          |
-| No `'use client'` on theme provider | Server component error from `createContext` | Mark the provider file with `'use client'`                       |
-| StyleX as preset instead of plugin  | Build errors or missing styles              | Use `plugins` array, not `presets`, for `@stylexjs/babel-plugin` |
+| Issue                               | Symptom                                     | Fix                                                               |
+| ----------------------------------- | ------------------------------------------- | ----------------------------------------------------------------- |
+| Missing `browserslist`              | Colors broken — `light-dark()` gets lowered | Add `"browserslist": ["last 1 Chrome version"]` to `package.json` |
+| Missing `@stylex;` directive        | PostCSS produces empty CSS with no error    | Add `@stylex;` to your CSS entry file                             |
+| PostCSS `include` doesn't cover XDS | XDS component styles are missing            | Add `node_modules/@xds/core/**/*.{ts,tsx}` to `include`           |
+| Missing `aliases` in babel config   | `createTheme` token overrides silently fail | Add `aliases` mapping for `@xds/core` and `@xds/core/*`           |
+| No `'use client'` on theme provider | Server component error from `createContext` | Mark the provider file with `'use client'`                        |
+| StyleX as preset instead of plugin  | Build errors or missing styles              | Use `plugins` array, not `presets`, for `@stylexjs/babel-plugin`  |
 
 ## Testing outside the monorepo
 
