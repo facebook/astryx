@@ -1,5 +1,5 @@
 /**
- * @file v0.0.5 transform manifest
+ * @file v0.0.6 transform manifest
  */
 
 import migrateCollapseToCollapsible, {
@@ -21,6 +21,10 @@ import migrateShadowTokens, {
 import migrateTokenNames, {
   meta as tokenNamesMeta,
 } from './migrate-token-names.mjs';
+
+import migrateBadgeChildrenToLabel, {
+  meta as badgeChildrenToLabelMeta,
+} from './migrate-badge-children-to-label.mjs';
 
 export default [
   {
@@ -47,5 +51,10 @@ export default [
     name: 'migrate-token-names',
     transform: migrateTokenNames,
     meta: tokenNamesMeta,
+  },
+  {
+    name: 'migrate-badge-children-to-label',
+    transform: migrateBadgeChildrenToLabel,
+    meta: badgeChildrenToLabelMeta,
   },
 ];

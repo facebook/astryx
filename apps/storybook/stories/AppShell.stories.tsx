@@ -141,7 +141,7 @@ function SideNavWithoutHeader() {
           icon={FolderIcon}
           selectedIcon={FolderIconSolid}
           href="#"
-          endContent={<XDSBadge>12</XDSBadge>}
+          endContent={<XDSBadge label={12} />}
         />
       </XDSSideNavSection>
       <XDSSideNavSection title="Organization">
@@ -195,7 +195,7 @@ function SideNavWithHeader() {
           icon={FolderIcon}
           selectedIcon={FolderIconSolid}
           href="#"
-          endContent={<XDSBadge>12</XDSBadge>}
+          endContent={<XDSBadge label={12} />}
         />
       </XDSSideNavSection>
       <XDSSideNavSection title="Organization">
@@ -406,14 +406,14 @@ export const FullFeatured: Story = {
               icon={ChartBarIcon}
               selectedIcon={ChartBarIconSolid}
               href="#"
-              endContent={<XDSBadge variant="info">New</XDSBadge>}
+              endContent={<XDSBadge variant="info" label='New' />}
             />
             <XDSSideNavItem
               label="Projects"
               icon={FolderIcon}
               selectedIcon={FolderIconSolid}
               href="#"
-              endContent={<XDSBadge>12</XDSBadge>}
+              endContent={<XDSBadge label={12} />}
             />
           </XDSSideNavSection>
           <XDSSideNavSection title="Organization">
@@ -594,7 +594,7 @@ export const WithMobileNav: Story = {
             icon={FolderIcon}
             selectedIcon={FolderIconSolid}
             href="#"
-            endContent={<XDSBadge>12</XDSBadge>}
+            endContent={<XDSBadge label={12} />}
           />
         </XDSSideNavSection>
         <XDSSideNavSection title="Organization">

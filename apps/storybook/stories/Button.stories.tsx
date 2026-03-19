@@ -136,12 +136,12 @@ export const WithEndSlot: Story = {
       <XDSButton
         label="Messages"
         variant="primary"
-        endSlot={<XDSBadge variant="info">3</XDSBadge>}
+        endSlot={<XDSBadge variant="info" label={3} />}
       />
       <XDSButton
         label="Notifications"
         variant="secondary"
-        endSlot={<XDSBadge variant="neutral">New</XDSBadge>}
+        endSlot={<XDSBadge variant="neutral" label='New' />}
       />
     </div>
   ),
@@ -154,14 +154,14 @@ export const IconAndEndSlot: Story = {
         label="Settings"
         variant="secondary"
         icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
-        endSlot={<XDSBadge variant="info">New</XDSBadge>}>
+        endSlot={<XDSBadge variant="info" label='New' />}>
         Settings
       </XDSButton>
       <XDSButton
         label="Delete"
         variant="destructive"
         icon={<TrashIcon style={{width: 16, height: 16}} />}
-        endSlot={<XDSBadge variant="error">5</XDSBadge>}>
+        endSlot={<XDSBadge variant="error" label={5} />}>
         Delete
       </XDSButton>
     </div>

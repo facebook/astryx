@@ -30,11 +30,11 @@ export const Default: Story = {
 export const Variants: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-      <XDSBadge variant="neutral">Neutral</XDSBadge>
-      <XDSBadge variant="info">Info</XDSBadge>
-      <XDSBadge variant="success">Success</XDSBadge>
-      <XDSBadge variant="warning">Warning</XDSBadge>
-      <XDSBadge variant="error">Error</XDSBadge>
+      <XDSBadge variant="neutral" label='Neutral' />
+      <XDSBadge variant="info" label='Info' />
+      <XDSBadge variant="success" label='Success' />
+      <XDSBadge variant="warning" label='Warning' />
+      <XDSBadge variant="error" label='Error' />
     </div>
   ),
 };
@@ -42,9 +42,9 @@ export const Variants: Story = {
 export const Counts: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-      <XDSBadge variant="info">3</XDSBadge>
-      <XDSBadge variant="error">99+</XDSBadge>
-      <XDSBadge variant="success">12</XDSBadge>
+      <XDSBadge variant="info" label={3} />
+      <XDSBadge variant="error" label='99+' />
+      <XDSBadge variant="success" label={12} />
     </div>
   ),
 };
@@ -64,10 +64,10 @@ export const DotIndicators: Story = {
 export const StatusLabels: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-      <XDSBadge variant="success">Active</XDSBadge>
-      <XDSBadge variant="warning">Pending</XDSBadge>
-      <XDSBadge variant="error">Failed</XDSBadge>
-      <XDSBadge variant="neutral">Draft</XDSBadge>
+      <XDSBadge variant="success" label='Active' />
+      <XDSBadge variant="warning" label='Pending' />
+      <XDSBadge variant="error" label='Failed' />
+      <XDSBadge variant="neutral" label='Draft' />
     </div>
   ),
 };

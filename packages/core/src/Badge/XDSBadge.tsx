@@ -91,9 +91,10 @@ export interface XDSBadgeProps extends XDSBaseProps<HTMLSpanElement> {
   variant?: XDSBadgeVariant;
   /**
    * The content to display in the badge.
-   * If omitted, renders as a small dot indicator.
+   * If omitted (and no icon), renders as a small dot indicator.
    */
-  children?: ReactNode;
+  label?: ReactNode;
+
   /**
    * Optional icon to display before the label.
    */
@@ -108,15 +109,15 @@ export interface XDSBadgeProps extends XDSBaseProps<HTMLSpanElement> {
  *
  * @example
  * ```
- * <XDSBadge>Default</XDSBadge>
- * <XDSBadge variant="success">Active</XDSBadge>
- * <XDSBadge variant="error">3</XDSBadge>
+ * <XDSBadge label="Default" />
+ * <XDSBadge variant="success" label="Active" />
+ * <XDSBadge variant="error" label="3" />
  * <XDSBadge variant="info" />
  * ```
  */
 export function XDSBadge({
   variant = 'neutral',
-  children,
+  label,
   icon,
   xstyle,
   className,
@@ -124,7 +125,7 @@ export function XDSBadge({
   ref,
   ...props
 }: XDSBadgeProps) {
-  const isDot = children == null && icon == null;
+  const isDot = label == null && icon == null;
 
   return (
     <span
@@ -142,7 +143,7 @@ export function XDSBadge({
       )}
       {...props}>
       {icon}
-      {children}
+      {label}
     </span>
   );
 }

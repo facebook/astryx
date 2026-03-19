@@ -100,7 +100,7 @@ export const docs = {
           label="Projects"
           icon={FolderIcon}
           href="/projects"
-          endContent={<XDSBadge>3</XDSBadge>}
+          endContent={<XDSBadge label={3} />}
         />
       </XDSSideNavSection>
 
@@ -320,7 +320,7 @@ export const docs = {
   selectedIcon={HomeIconSolid}
   isSelected
   href="/dashboard"
-  endContent={<XDSBadge>3</XDSBadge>}
+  endContent={<XDSBadge label={3} />}
 />`,
         },
         {
@@ -376,7 +376,7 @@ export const docs = {
         },
         {
           label: 'With end content and hidden header',
-          code: `<XDSSideNavSection title="Settings" endContent={<XDSBadge>New</XDSBadge>}>
+          code: `<XDSSideNavSection title="Settings" endContent={<XDSBadge label="New" />}>
   <XDSSideNavItem label="General" href="/settings/general" />
   <XDSSideNavItem label="Security" href="/settings/security" />
 </XDSSideNavSection>`,
@@ -535,7 +535,7 @@ export const docsZh = {
           label="Projects"
           icon={FolderIcon}
           href="/projects"
-          endContent={<XDSBadge>3</XDSBadge>}
+          endContent={<XDSBadge label={3} />}
         />
       </XDSSideNavSection>
 
@@ -755,7 +755,7 @@ export const docsZh = {
   selectedIcon={HomeIconSolid}
   isSelected
   href="/dashboard"
-  endContent={<XDSBadge>3</XDSBadge>}
+  endContent={<XDSBadge label={3} />}
 />`,
         },
         {
@@ -811,7 +811,7 @@ export const docsZh = {
         },
         {
           label: '带尾部内容和隐藏头部',
-          code: `<XDSSideNavSection title="Settings" endContent={<XDSBadge>New</XDSBadge>}>
+          code: `<XDSSideNavSection title="Settings" endContent={<XDSBadge label="New" />}>
   <XDSSideNavItem label="General" href="/settings/general" />
   <XDSSideNavItem label="Security" href="/settings/security" />
 </XDSSideNavSection>`,

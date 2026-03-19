@@ -47,9 +47,7 @@ export const docs = {
       renderCell: user => (
         <XDSHStack gap={2} align="center">
           <XDSStatusDot status={user.isActive ? 'positive' : 'negative'} />
-          <XDSBadge variant={user.isActive ? 'success' : 'error'}>
-            {user.isActive ? 'Active' : 'Inactive'}
-          </XDSBadge>
+          <XDSBadge variant={user.isActive ? 'success' : 'error'} label={user.isActive ? 'Active' : 'Inactive'} />
         </XDSHStack>
       ),
     },
@@ -113,9 +111,9 @@ export const docs = {
               : tx.status === 'pending'
                 ? 'warning'
                 : 'error'
-          }>
-          {tx.status}
-        </XDSBadge>
+          }
+          label={tx.status}
+        />
       ),
     },
   ]}
@@ -135,7 +133,7 @@ export const docs = {
       </XDSHStack>
     </XDSTableCell>
     <XDSTableCell>
-      <XDSBadge variant="success">Active</XDSBadge>
+      <XDSBadge variant="success" label="Active" />
     </XDSTableCell>
   </XDSTableRow>
 </XDSTable>`,
@@ -544,9 +542,7 @@ export const docsZh = {
       renderCell: user => (
         <XDSHStack gap={2} align="center">
           <XDSStatusDot status={user.isActive ? 'positive' : 'negative'} />
-          <XDSBadge variant={user.isActive ? 'success' : 'error'}>
-            {user.isActive ? 'Active' : 'Inactive'}
-          </XDSBadge>
+          <XDSBadge variant={user.isActive ? 'success' : 'error'} label={user.isActive ? 'Active' : 'Inactive'} />
         </XDSHStack>
       ),
     },
@@ -610,9 +606,9 @@ export const docsZh = {
               : tx.status === 'pending'
                 ? 'warning'
                 : 'error'
-          }>
-          {tx.status}
-        </XDSBadge>
+          }
+          label={tx.status}
+        />
       ),
     },
   ]}
@@ -632,7 +628,7 @@ export const docsZh = {
       </XDSHStack>
     </XDSTableCell>
     <XDSTableCell>
-      <XDSBadge variant="success">Active</XDSBadge>
+      <XDSBadge variant="success" label="Active" />
     </XDSTableCell>
   </XDSTableRow>
 </XDSTable>`,
