@@ -1,6 +1,6 @@
 {
   "name": "@xds/lab",
-  "version": "0.0.1",
+  "version": "0.0.5",
   "private": true,
   "description": "Experimental XDS components — not published, available in storybook and sandbox for testing",
   "main": "./src/index.ts",
