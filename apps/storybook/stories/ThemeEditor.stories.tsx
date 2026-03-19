@@ -37,6 +37,9 @@ import {XDSCollapsibleGroup} from '@xds/core/Collapsible';
 import {XDSPagination} from '@xds/core/Pagination';
 import {XDSPopover} from '@xds/core/Popover';
 import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
+import {XDSHStack} from '@xds/core/Stack';
+import {XDSVStack} from '@xds/core/Stack';
+import {XDSCenter} from '@xds/core/Center';
 import {XDSTheme, defineTheme, expandTypeScale} from '@xds/core/theme';
 import {
   colorDefaults,
@@ -883,12 +886,10 @@ function ComponentPreview() {
   );
 
   return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
+    <XDSVStack gap={8}>
       {/* Typography Scale - Article Example */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '16px', display: 'block'}}>
-          Typography Scale
-        </XDSText>
+      <XDSVStack gap={4}>
+        <XDSText type="label">Typography Scale</XDSText>
         <XDSCard padding="lg">
           <article>
             <XDSHeading level={1}>Building Design Systems</XDSHeading>
@@ -976,39 +977,25 @@ const styles = stylex.create({
               style={{marginBottom: '8px', display: 'block'}}>
               Using tokens provides several advantages:
             </XDSText>
-            <ul
-              style={{
-                margin: '0 0 16px 0',
-                paddingLeft: '24px',
-                color: 'var(--color-text-primary)',
-                fontSize: 'var(--text-base)',
-                lineHeight: 'var(--leading-base)',
-              }}>
-              <li>Automatic dark mode support via light-dark()</li>
-              <li>Centralized theme customization</li>
-              <li>Consistent visual language across components</li>
-              <li>Easy global updates when design changes</li>
-            </ul>
+            <XDSList listStyle="disc">
+              <XDSListItem label="Automatic dark mode support via light-dark()" />
+              <XDSListItem label="Centralized theme customization" />
+              <XDSListItem label="Consistent visual language across components" />
+              <XDSListItem label="Easy global updates when design changes" />
+            </XDSList>
 
             <XDSText type="supporting">
               Last updated: March 2026 · 5 min read
             </XDSText>
           </article>
         </XDSCard>
-      </div>
+      </XDSVStack>
 
       {/* Button Sizes */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Button Sizes
-        </XDSText>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-          }}>
-          <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Button Sizes</XDSText>
+        <XDSVStack gap={4}>
+          <XDSHStack gap={2} vAlign="center">
             <XDSText type="supporting" style={{width: '40px', flexShrink: 0}}>
               sm
             </XDSText>
@@ -1016,8 +1003,8 @@ const styles = stylex.create({
             <XDSButton label="Secondary" variant="secondary" size="sm" />
             <XDSButton label="Ghost" variant="ghost" size="sm" />
             <XDSButton label="Destructive" variant="destructive" size="sm" />
-          </div>
-          <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+          </XDSHStack>
+          <XDSHStack gap={2} vAlign="center">
             <XDSText type="supporting" style={{width: '40px', flexShrink: 0}}>
               md
             </XDSText>
@@ -1025,8 +1012,8 @@ const styles = stylex.create({
             <XDSButton label="Secondary" variant="secondary" size="md" />
             <XDSButton label="Ghost" variant="ghost" size="md" />
             <XDSButton label="Destructive" variant="destructive" size="md" />
-          </div>
-          <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+          </XDSHStack>
+          <XDSHStack gap={2} vAlign="center">
             <XDSText type="supporting" style={{width: '40px', flexShrink: 0}}>
               lg
             </XDSText>
@@ -1034,27 +1021,23 @@ const styles = stylex.create({
             <XDSButton label="Secondary" variant="secondary" size="lg" />
             <XDSButton label="Ghost" variant="ghost" size="lg" />
             <XDSButton label="Destructive" variant="destructive" size="lg" />
-          </div>
-        </div>
-      </div>
+          </XDSHStack>
+        </XDSVStack>
+      </XDSVStack>
 
       {/* Button States */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Button States
-        </XDSText>
-        <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Button States</XDSText>
+        <XDSHStack gap={2} wrap="wrap">
           <XDSButton label="Default" variant="primary" />
           <XDSButton label="Disabled" variant="primary" isDisabled />
           <XDSButton label="Loading" variant="primary" isLoading />
-        </div>
-      </div>
+        </XDSHStack>
+      </XDSVStack>
 
       {/* Spacing Table */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Spacing Scale
-        </XDSText>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Spacing Scale</XDSText>
         <XDSTable
           columns={spacingTableColumns}
           data={spacingData}
@@ -1062,50 +1045,38 @@ const styles = stylex.create({
           density="compact"
           dividers="rows"
         />
-      </div>
+      </XDSVStack>
 
       {/* Badges */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Badges
-        </XDSText>
-        <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Badges</XDSText>
+        <XDSHStack gap={2} wrap="wrap">
           <XDSBadge label="Default" />
           <XDSBadge label="Primary" variant="primary" />
           <XDSBadge label="Ghost" variant="ghost" />
           <XDSBadge label="Positive" sentiment="positive" />
           <XDSBadge label="Negative" sentiment="negative" />
           <XDSBadge label="Warning" sentiment="warning" />
-        </div>
-      </div>
+        </XDSHStack>
+      </XDSVStack>
 
       {/* Tokens */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Tokens
-        </XDSText>
-        <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Tokens</XDSText>
+        <XDSHStack gap={2} wrap="wrap">
           <XDSToken label="Default" />
           <XDSToken label="Blue" color="blue" />
           <XDSToken label="Green" color="green" />
           <XDSToken label="Red" color="red" />
           <XDSToken label="Purple" color="purple" />
           <XDSToken label="Orange" color="orange" />
-        </div>
-      </div>
+        </XDSHStack>
+      </XDSVStack>
 
       {/* Form Controls */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Form Controls
-        </XDSText>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-            maxWidth: '300px',
-          }}>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Form Controls</XDSText>
+        <XDSVStack gap={3} style={{maxWidth: '300px'}}>
           <XDSTextInput label="Text Input" placeholder="Enter text..." />
           <XDSSwitch
             label="Toggle Switch"
@@ -1124,14 +1095,12 @@ const styles = stylex.create({
             minValue={0}
             maxValue={100}
           />
-        </div>
-      </div>
+        </XDSVStack>
+      </XDSVStack>
 
       {/* Radio List */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Radio List
-        </XDSText>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Radio List</XDSText>
         <XDSRadioList
           label="Select an option"
           value={radioValue}
@@ -1140,31 +1109,21 @@ const styles = stylex.create({
           <XDSRadioListItem value="option2" label="Option 2" />
           <XDSRadioListItem value="option3" label="Option 3" />
         </XDSRadioList>
-      </div>
+      </XDSVStack>
 
       {/* Progress */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Progress
-        </XDSText>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-            maxWidth: '300px',
-          }}>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Progress</XDSText>
+        <XDSVStack gap={2} style={{maxWidth: '300px'}}>
           <XDSProgressBar value={25} label="25%" />
           <XDSProgressBar value={50} label="50%" />
           <XDSProgressBar value={75} label="75%" />
-        </div>
-      </div>
+        </XDSVStack>
+      </XDSVStack>
 
       {/* Tabs */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Tabs
-        </XDSText>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Tabs</XDSText>
         <XDSTabList
           tabs={[
             {id: 'overview', label: 'Overview'},
@@ -1174,26 +1133,22 @@ const styles = stylex.create({
           selectedId={selectedTab}
           onSelect={setSelectedTab}
         />
-      </div>
+      </XDSVStack>
 
       {/* Avatar */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Avatars
-        </XDSText>
-        <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Avatars</XDSText>
+        <XDSHStack gap={2} vAlign="center">
           <XDSAvatar name="John Doe" size="sm" />
           <XDSAvatar name="Jane Smith" size="md" />
           <XDSAvatar name="Bob Wilson" size="lg" />
-        </div>
-      </div>
+        </XDSHStack>
+      </XDSVStack>
 
       {/* Banner */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Banners
-        </XDSText>
-        <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Banners</XDSText>
+        <XDSVStack gap={2}>
           <XDSBanner
             title="Information"
             description="This is an informational banner."
@@ -1214,14 +1169,12 @@ const styles = stylex.create({
             description="Something went wrong."
             status="error"
           />
-        </div>
-      </div>
+        </XDSVStack>
+      </XDSVStack>
 
       {/* Card */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Card
-        </XDSText>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Card</XDSText>
         <XDSCard padding="md">
           <XDSStack gap="sm">
             <XDSHeading level={4}>Card Title</XDSHeading>
@@ -1229,19 +1182,17 @@ const styles = stylex.create({
               This is a sample card with some content to demonstrate how cards
               look with the current theme.
             </XDSText>
-            <div style={{display: 'flex', gap: '8px'}}>
+            <XDSHStack gap={2}>
               <XDSButton label="Action" variant="primary" size="sm" />
               <XDSButton label="Cancel" variant="ghost" size="sm" />
-            </div>
+            </XDSHStack>
           </XDSStack>
         </XDSCard>
-      </div>
+      </XDSVStack>
 
       {/* Dialog trigger */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Dialog
-        </XDSText>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Dialog</XDSText>
         <XDSButton
           label="Open Dialog"
           variant="secondary"
@@ -1261,12 +1212,7 @@ const styles = stylex.create({
                 label="Example Input"
                 placeholder="Type something..."
               />
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '8px',
-                  justifyContent: 'flex-end',
-                }}>
+              <XDSHStack gap={2} hAlign="end">
                 <XDSButton
                   label="Cancel"
                   variant="ghost"
@@ -1277,24 +1223,16 @@ const styles = stylex.create({
                   variant="primary"
                   onClick={() => setDialogOpen(false)}
                 />
-              </div>
+              </XDSHStack>
             </XDSStack>
           </div>
         </XDSDialog>
-      </div>
+      </XDSVStack>
 
       {/* Links */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Links
-        </XDSText>
-        <div
-          style={{
-            display: 'flex',
-            gap: '16px',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-          }}>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Links</XDSText>
+        <XDSHStack gap={4} wrap="wrap" vAlign="center">
           <XDSLink href="#" label="Default link">
             Default link
           </XDSLink>
@@ -1310,15 +1248,13 @@ const styles = stylex.create({
           <XDSLink href="#" label="External link" isExternalLink>
             External link
           </XDSLink>
-        </div>
-      </div>
+        </XDSHStack>
+      </XDSVStack>
 
       {/* Tooltip */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Tooltip
-        </XDSText>
-        <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Tooltip</XDSText>
+        <XDSHStack gap={3} vAlign="center">
           <XDSTooltip content="Helpful tooltip text" placement="above">
             <XDSButton
               label="Hover for tooltip"
@@ -1329,21 +1265,13 @@ const styles = stylex.create({
           <XDSTooltip content="Another tooltip" placement="below">
             <XDSBadge label="Hover me too" />
           </XDSTooltip>
-        </div>
-      </div>
+        </XDSHStack>
+      </XDSVStack>
 
       {/* Selector & NumberInput */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Selector &amp; Number Input
-        </XDSText>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-            maxWidth: '300px',
-          }}>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Selector &amp; Number Input</XDSText>
+        <XDSVStack gap={3} style={{maxWidth: '300px'}}>
           <XDSSelector
             label="Fruit"
             options={['Apple', 'Banana', 'Orange', 'Mango', 'Pineapple']}
@@ -1357,43 +1285,37 @@ const styles = stylex.create({
             onChange={setNumberValue}
             placeholder="Enter a number"
           />
-        </div>
-      </div>
+        </XDSVStack>
+      </XDSVStack>
 
       {/* TextArea */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Text Area
-        </XDSText>
-        <div style={{maxWidth: '400px'}}>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Text Area</XDSText>
+        <XDSVStack style={{maxWidth: '400px'}}>
           <XDSTextArea
             label="Description"
             placeholder="Enter a longer description..."
             value={textAreaValue}
             onChange={setTextAreaValue}
           />
-        </div>
-      </div>
+        </XDSVStack>
+      </XDSVStack>
 
       {/* Breadcrumbs */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Breadcrumbs
-        </XDSText>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Breadcrumbs</XDSText>
         <XDSBreadcrumbs>
           <XDSBreadcrumbItem href="#">Home</XDSBreadcrumbItem>
           <XDSBreadcrumbItem href="#">Projects</XDSBreadcrumbItem>
           <XDSBreadcrumbItem href="#">Design System</XDSBreadcrumbItem>
           <XDSBreadcrumbItem isCurrent>Theme Editor</XDSBreadcrumbItem>
         </XDSBreadcrumbs>
-      </div>
+      </XDSVStack>
 
       {/* Dropdown Menu */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Dropdown Menu
-        </XDSText>
-        <div style={{display: 'flex', gap: '8px'}}>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Dropdown Menu</XDSText>
+        <XDSHStack gap={2}>
           <XDSDropdownMenu
             button={{label: 'Actions'}}
             items={[
@@ -1411,120 +1333,94 @@ const styles = stylex.create({
               {label: 'Help', onClick: () => {}},
             ]}
           />
-        </div>
-      </div>
+        </XDSHStack>
+      </XDSVStack>
 
       {/* Popover */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Popover
-        </XDSText>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Popover</XDSText>
         <XDSPopover
           content={
-            <div style={{padding: '16px', maxWidth: '240px'}}>
-              <XDSStack gap="sm">
-                <XDSHeading level={5}>Popover Title</XDSHeading>
-                <XDSText type="body">
-                  This is a popover with some content. It appears on click and
-                  uses the theme surface color.
-                </XDSText>
-                <XDSButton label="Got it" variant="primary" size="sm" />
-              </XDSStack>
-            </div>
+            <XDSStack gap="sm" style={{padding: '16px', maxWidth: '240px'}}>
+              <XDSHeading level={5}>Popover Title</XDSHeading>
+              <XDSText type="body">
+                This is a popover with some content. It appears on click and
+                uses the theme surface color.
+              </XDSText>
+              <XDSButton label="Got it" variant="primary" size="sm" />
+            </XDSStack>
           }>
           <XDSButton label="Open Popover" variant="secondary" />
         </XDSPopover>
-      </div>
+      </XDSVStack>
 
       {/* Status Dots */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Status Dots
-        </XDSText>
-        <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-          <div style={{display: 'flex', gap: '6px', alignItems: 'center'}}>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Status Dots</XDSText>
+        <XDSHStack gap={4} vAlign="center">
+          <XDSHStack gap={1.5} vAlign="center">
             <XDSStatusDot variant="positive" label="Online" />
             <XDSText type="body">Online</XDSText>
-          </div>
-          <div style={{display: 'flex', gap: '6px', alignItems: 'center'}}>
+          </XDSHStack>
+          <XDSHStack gap={1.5} vAlign="center">
             <XDSStatusDot variant="warning" label="Away" />
             <XDSText type="body">Away</XDSText>
-          </div>
-          <div style={{display: 'flex', gap: '6px', alignItems: 'center'}}>
+          </XDSHStack>
+          <XDSHStack gap={1.5} vAlign="center">
             <XDSStatusDot variant="negative" label="Offline" />
             <XDSText type="body">Offline</XDSText>
-          </div>
-          <div style={{display: 'flex', gap: '6px', alignItems: 'center'}}>
+          </XDSHStack>
+          <XDSHStack gap={1.5} vAlign="center">
             <XDSStatusDot variant="info" label="Busy" />
             <XDSText type="body">Busy</XDSText>
-          </div>
-          <div style={{display: 'flex', gap: '6px', alignItems: 'center'}}>
+          </XDSHStack>
+          <XDSHStack gap={1.5} vAlign="center">
             <XDSStatusDot variant="positive" label="Live" isPulsing />
             <XDSText type="body">Live</XDSText>
-          </div>
-        </div>
-      </div>
+          </XDSHStack>
+        </XDSHStack>
+      </XDSVStack>
 
       {/* Keyboard Shortcuts */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Keyboard Shortcuts
-        </XDSText>
-        <div
-          style={{
-            display: 'flex',
-            gap: '16px',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-          }}>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Keyboard Shortcuts</XDSText>
+        <XDSHStack gap={4} wrap="wrap" vAlign="center">
           <XDSKbd keys="mod+k" />
           <XDSKbd keys="mod+shift+p" />
           <XDSKbd keys="ctrl+c" />
           <XDSKbd keys="shift+enter" />
           <XDSKbd keys="alt+tab" />
-        </div>
-      </div>
+        </XDSHStack>
+      </XDSVStack>
 
       {/* Skeleton Loading */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Skeleton Loading
-        </XDSText>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Skeleton Loading</XDSText>
         <XDSCard padding="md">
-          <div style={{display: 'flex', gap: '12px', alignItems: 'flex-start'}}>
+          <XDSHStack gap={3} vAlign="start">
             <XDSSkeleton width={48} height={48} radius="rounded" />
-            <div
-              style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-              }}>
+            <XDSVStack gap={2} style={{flex: 1}}>
               <XDSSkeleton width="60%" height={16} index={0} />
               <XDSSkeleton width="100%" height={12} index={1} />
               <XDSSkeleton width="80%" height={12} index={2} />
-            </div>
-          </div>
+            </XDSVStack>
+          </XDSHStack>
         </XDSCard>
-      </div>
+      </XDSVStack>
 
       {/* Spinner */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Spinner
-        </XDSText>
-        <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Spinner</XDSText>
+        <XDSHStack gap={4} vAlign="center">
           <XDSSpinner size="sm" />
           <XDSSpinner size="md" />
           <XDSSpinner size="lg" />
-        </div>
-      </div>
+        </XDSHStack>
+      </XDSVStack>
 
       {/* List */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          List
-        </XDSText>
+      <XDSVStack gap={3}>
+        <XDSText type="label">List</XDSText>
         <XDSCard padding="none">
           <XDSList
             hasDividers
@@ -1547,15 +1443,13 @@ const styles = stylex.create({
             />
           </XDSList>
         </XDSCard>
-      </div>
+      </XDSVStack>
 
       {/* Collapsible */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Collapsible
-        </XDSText>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Collapsible</XDSText>
         <XDSCollapsibleGroup type="single" defaultValue="general">
-          <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+          <XDSVStack gap={2}>
             <XDSCard padding="md">
               <XDSCollapsible trigger="General Settings" value="general">
                 <XDSText
@@ -1586,15 +1480,13 @@ const styles = stylex.create({
                 </XDSText>
               </XDSCollapsible>
             </XDSCard>
-          </div>
+          </XDSVStack>
         </XDSCollapsibleGroup>
-      </div>
+      </XDSVStack>
 
       {/* Pagination */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Pagination
-        </XDSText>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Pagination</XDSText>
         <XDSPagination
           page={paginationPage}
           onChange={setPaginationPage}
@@ -1602,15 +1494,12 @@ const styles = stylex.create({
           pageSize={10}
           variant="pages"
         />
-      </div>
-
+      </XDSVStack>
       {/* ================================================================= */}
       {/* Dashboard Example — Finance-style layout                         */}
       {/* ================================================================= */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '16px', display: 'block'}}>
-          Dashboard Example
-        </XDSText>
+      <XDSVStack gap={4}>
+        <XDSText type="label">Dashboard Example</XDSText>
 
         <XDSGrid columns={3} gap={4}>
           {/* --- Row 1: Revenue Card --- */}
@@ -1618,76 +1507,62 @@ const styles = stylex.create({
             <XDSStack gap="md">
               <XDSText type="supporting">Total Revenue</XDSText>
               <XDSHeading level={1}>$25,562.05</XDSHeading>
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '8px',
-                  alignItems: 'center',
-                }}>
+              <XDSHStack gap={2} vAlign="center">
                 <XDSText type="supporting">Compare to last month</XDSText>
                 <XDSBadge label="+15.46%" sentiment="positive" />
-              </div>
+              </XDSHStack>
             </XDSStack>
           </XDSCard>
 
           {/* --- Row 1: All Track in One (spans 2 cols) --- */}
           <XDSGridSpan columns={2}>
             <XDSCard padding="lg">
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '16px',
-                }}>
-                <XDSHeading level={4}>All track in one</XDSHeading>
-                <XDSBadge label="View all" variant="primary" />
-              </div>
-              <XDSGrid columns={2} gap={3}>
-                <XDSCard padding="md">
-                  <XDSStack gap="sm">
-                    <XDSText type="supporting">Current Balance</XDSText>
-                    <XDSHeading level={3}>$52,024.00</XDSHeading>
-                    <XDSBadge label="+55.46%" sentiment="positive" />
-                  </XDSStack>
-                </XDSCard>
-                <XDSCard padding="md">
-                  <XDSStack gap="sm">
-                    <XDSText type="supporting">Income</XDSText>
-                    <XDSHeading level={3}>$32,024.00</XDSHeading>
-                    <XDSBadge label="+55.46%" sentiment="positive" />
-                  </XDSStack>
-                </XDSCard>
-                <XDSCard padding="md">
-                  <XDSStack gap="sm">
-                    <XDSText type="supporting">Savings</XDSText>
-                    <XDSHeading level={3}>$12,124.00</XDSHeading>
-                    <XDSBadge label="+55.46%" sentiment="positive" />
-                  </XDSStack>
-                </XDSCard>
-                <XDSCard padding="md">
-                  <XDSStack gap="sm">
-                    <XDSText type="supporting">Expenses</XDSText>
-                    <XDSHeading level={3}>$5,014.00</XDSHeading>
-                    <XDSBadge label="+55.46%" sentiment="warning" />
-                  </XDSStack>
-                </XDSCard>
-              </XDSGrid>
+              <XDSVStack gap={4}>
+                <XDSHStack hAlign="between" vAlign="center">
+                  <XDSHeading level={4}>All track in one</XDSHeading>
+                  <XDSButton label="View all" variant="ghost" size="sm" />
+                </XDSHStack>
+                <XDSGrid columns={2} gap={3}>
+                  <XDSCard padding="md">
+                    <XDSStack gap="sm">
+                      <XDSText type="supporting">Current Balance</XDSText>
+                      <XDSHeading level={3}>$52,024.00</XDSHeading>
+                      <XDSBadge label="+55.46%" sentiment="positive" />
+                    </XDSStack>
+                  </XDSCard>
+                  <XDSCard padding="md">
+                    <XDSStack gap="sm">
+                      <XDSText type="supporting">Income</XDSText>
+                      <XDSHeading level={3}>$32,024.00</XDSHeading>
+                      <XDSBadge label="+55.46%" sentiment="positive" />
+                    </XDSStack>
+                  </XDSCard>
+                  <XDSCard padding="md">
+                    <XDSStack gap="sm">
+                      <XDSText type="supporting">Savings</XDSText>
+                      <XDSHeading level={3}>$12,124.00</XDSHeading>
+                      <XDSBadge label="+55.46%" sentiment="positive" />
+                    </XDSStack>
+                  </XDSCard>
+                  <XDSCard padding="md">
+                    <XDSStack gap="sm">
+                      <XDSText type="supporting">Expenses</XDSText>
+                      <XDSHeading level={3}>$5,014.00</XDSHeading>
+                      <XDSBadge label="+55.46%" sentiment="warning" />
+                    </XDSStack>
+                  </XDSCard>
+                </XDSGrid>
+              </XDSVStack>
             </XDSCard>
           </XDSGridSpan>
 
           {/* --- Row 2: Daily Transactions Limit --- */}
           <XDSCard padding="lg">
             <XDSStack gap="md">
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}>
+              <XDSHStack hAlign="between" vAlign="center">
                 <XDSText type="label">Daily Transactions limit</XDSText>
                 <XDSText type="supporting">95%</XDSText>
-              </div>
+              </XDSHStack>
               <XDSProgressBar value={95} label="95%" />
               <XDSText type="supporting">$1,250 used from $3,050 limit</XDSText>
             </XDSStack>
@@ -1697,196 +1572,115 @@ const styles = stylex.create({
           <XDSCard padding="lg">
             <XDSStack gap="md">
               <XDSHeading level={4}>Quick Transfer</XDSHeading>
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '16px',
-                  alignItems: 'center',
-                }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}>
+              <XDSHStack gap={4} vAlign="start">
+                <XDSVStack gap={1} hAlign="center">
                   <XDSAvatar name="Sara Lee" size="lg" />
                   <XDSText type="supporting">Sara</XDSText>
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}>
+                </XDSVStack>
+                <XDSVStack gap={1} hAlign="center">
                   <XDSAvatar name="Ishan Patel" size="lg" />
                   <XDSText type="supporting">Ishan</XDSText>
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}>
+                </XDSVStack>
+                <XDSVStack gap={1} hAlign="center">
                   <XDSAvatar name="Jon Doe" size="lg" />
                   <XDSText type="supporting">Jon</XDSText>
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}>
+                </XDSVStack>
+                <XDSVStack gap={1} hAlign="center">
                   <XDSAvatar name="Alex Nguyen" size="lg" />
                   <XDSText type="supporting">Alex</XDSText>
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}>
-                  <div
+                </XDSVStack>
+                <XDSVStack gap={1} hAlign="center">
+                  <XDSCenter
+                    width={40}
+                    height={40}
                     style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '50%',
+                      borderRadius: 'var(--radius-rounded)',
                       border: '2px dashed var(--color-divider-emphasized)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
                       color: 'var(--color-text-secondary)',
                       fontSize: '18px',
                     }}>
                     +
-                  </div>
+                  </XDSCenter>
                   <XDSText type="supporting">Add</XDSText>
-                </div>
-              </div>
+                </XDSVStack>
+              </XDSHStack>
             </XDSStack>
           </XDSCard>
 
           {/* --- Row 2: Your Savings --- */}
           <XDSCard padding="lg">
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '16px',
-              }}>
-              <XDSHeading level={4}>Your savings</XDSHeading>
-              <XDSBadge label="View all" variant="primary" />
-            </div>
-            <XDSStack gap="md">
-              <div>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '4px',
-                  }}>
-                  <XDSText type="body">New Car</XDSText>
-                  <XDSText type="supporting">55%</XDSText>
-                </div>
-                <XDSProgressBar value={55} label="55%" />
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    marginTop: '2px',
-                  }}>
-                  <XDSText type="supporting">$10,520 / $50,000</XDSText>
-                </div>
-              </div>
-              <div>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '4px',
-                  }}>
-                  <XDSText type="body">New House Rent</XDSText>
-                  <XDSText type="supporting">85%</XDSText>
-                </div>
-                <XDSProgressBar value={85} label="85%" />
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    marginTop: '2px',
-                  }}>
-                  <XDSText type="supporting">$10,520 / $150,000</XDSText>
-                </div>
-              </div>
-              <div>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '4px',
-                  }}>
-                  <XDSText type="body">New Bike</XDSText>
-                  <XDSText type="supporting">85%</XDSText>
-                </div>
-                <XDSProgressBar value={85} label="85%" />
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    marginTop: '2px',
-                  }}>
-                  <XDSText type="supporting">$3,020 / $7,000</XDSText>
-                </div>
-              </div>
-            </XDSStack>
+            <XDSVStack gap={4}>
+              <XDSHStack hAlign="between" vAlign="center">
+                <XDSHeading level={4}>Your savings</XDSHeading>
+                <XDSButton label="View all" variant="ghost" size="sm" />
+              </XDSHStack>
+              <XDSVStack gap={3}>
+                <XDSVStack gap={0.5}>
+                  <XDSHStack hAlign="between" vAlign="center">
+                    <XDSText type="body">New Car</XDSText>
+                    <XDSText type="supporting">55%</XDSText>
+                  </XDSHStack>
+                  <XDSProgressBar value={55} label="55%" />
+                  <XDSHStack hAlign="end">
+                    <XDSText type="supporting">$10,520 / $50,000</XDSText>
+                  </XDSHStack>
+                </XDSVStack>
+                <XDSVStack gap={0.5}>
+                  <XDSHStack hAlign="between" vAlign="center">
+                    <XDSText type="body">New House Rent</XDSText>
+                    <XDSText type="supporting">85%</XDSText>
+                  </XDSHStack>
+                  <XDSProgressBar value={85} label="85%" />
+                  <XDSHStack hAlign="end">
+                    <XDSText type="supporting">$10,520 / $150,000</XDSText>
+                  </XDSHStack>
+                </XDSVStack>
+                <XDSVStack gap={0.5}>
+                  <XDSHStack hAlign="between" vAlign="center">
+                    <XDSText type="body">New Bike</XDSText>
+                    <XDSText type="supporting">85%</XDSText>
+                  </XDSHStack>
+                  <XDSProgressBar value={85} label="85%" />
+                  <XDSHStack hAlign="end">
+                    <XDSText type="supporting">$3,020 / $7,000</XDSText>
+                  </XDSHStack>
+                </XDSVStack>
+              </XDSVStack>
+            </XDSVStack>
           </XDSCard>
 
           {/* --- Row 3: Balance Spending Table (full width) --- */}
           <XDSGridSpan columns="full">
             <XDSCard padding="lg">
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '16px',
-                }}>
-                <XDSHeading level={4}>Balance Spending</XDSHeading>
-                <div style={{display: 'flex', gap: '8px'}}>
-                  <XDSTextInput
-                    label="Search"
-                    isLabelHidden
-                    placeholder="Searching"
-                    size="sm"
-                  />
-                  <XDSButton label="Filter" variant="ghost" size="sm" />
-                </div>
-              </div>
-              <XDSTable
-                columns={transactionColumns}
-                data={transactionData}
-                getRowKey={row => row.id}
-                density="balanced"
-                dividers="rows"
-              />
+              <XDSVStack gap={4}>
+                <XDSHStack hAlign="between" vAlign="center">
+                  <XDSHeading level={4}>Balance Spending</XDSHeading>
+                  <XDSHStack gap={2}>
+                    <XDSTextInput
+                      label="Search"
+                      isLabelHidden
+                      placeholder="Searching"
+                      size="sm"
+                    />
+                    <XDSButton label="Filter" variant="ghost" size="sm" />
+                  </XDSHStack>
+                </XDSHStack>
+                <XDSTable
+                  columns={transactionColumns}
+                  data={transactionData}
+                  getRowKey={row => row.id}
+                  density="balanced"
+                  dividers="rows"
+                />
+              </XDSVStack>
             </XDSCard>
           </XDSGridSpan>
         </XDSGrid>
-      </div>
+      </XDSVStack>
 
       {/* Empty State */}
-      <div>
-        <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
-          Empty State
-        </XDSText>
+      <XDSVStack gap={3}>
+        <XDSText type="label">Empty State</XDSText>
         <XDSCard padding="none">
           <XDSEmptyState
             icon={<span style={{fontSize: '48px'}}>🔍</span>}
@@ -1904,8 +1698,8 @@ const styles = stylex.create({
             }
           />
         </XDSCard>
-      </div>
-    </div>
+      </XDSVStack>
+    </XDSVStack>
   );
 }
 
@@ -1996,7 +1790,20 @@ function ThemeEditorComponent() {
   const [mode, setMode] = React.useState<'light' | 'dark'>('light');
   const [showCode, setShowCode] = React.useState(false);
 
-  // Collect all defaults
+  // Load Poppins from Google Fonts
+  React.useEffect(() => {
+    const id = 'poppins-font-link';
+    if (!document.getElementById(id)) {
+      const link = document.createElement('link');
+      link.id = id;
+      link.rel = 'stylesheet';
+      link.href =
+        'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap';
+      document.head.appendChild(link);
+    }
+  }, []);
+
+  // Collect all defaults, with Poppins fonts and pill buttons
   const allDefaults = React.useMemo(
     () => ({
       ...colorDefaults,
@@ -2012,6 +1819,10 @@ function ThemeEditorComponent() {
       ...durationDefaults,
       ...easeDefaults,
       ...transitionDefaults,
+      // Override defaults for a modern look
+      '--font-body': "'Poppins', sans-serif",
+      '--font-heading': "'Poppins', sans-serif",
+      '--radius-2': '9999px',
     }),
     [],
   );
