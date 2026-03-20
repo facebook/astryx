@@ -209,13 +209,33 @@ jobs:
               <div class="hash" id="commit-hash"></div>
             </div>
             <script>
-              // Links are set by the deploy script — SHORT_HASH is injected
+              // Resolve links from the `latest` file so they always point
+              // to the most recently deployed hash — even if a newer main
+              // commit is still building and the sed-injected hash is stale.
+              fetch('latest')
+                .then(r => r.ok ? r.text() : null)
+                .then(hash => {
+                  if (!hash) return;
+                  hash = hash.trim();
+                  const sb = document.getElementById('storybook-link');
+                  const bx = document.getElementById('sandbox-link');
+                  const cm = document.getElementById('commit-hash');
+                  if (sb) sb.href = hash + '/index.html';
+                  if (bx) bx.href = hash + '/sandbox/index.html';
+                  if (cm) cm.textContent = 'Build: ' + hash;
+                })
+                .catch(() => {}); // fallback to sed-injected links
             </script>
           </body>
           </html>
           LANDING_EOF
 
-          # Inject the short hash into the landing page links
+          # Write the latest deployed hash so the landing page can resolve
+          # links dynamically. This survives cleanup and avoids stale links
+          # when a newer main commit is pending deploy.
+          echo -n "${SHORT_HASH}" > deploy/latest
+
+          # Inject the short hash into the landing page as a fallback
           sed -i "s|id=\"storybook-link\" href=\"#\"|id=\"storybook-link\" href=\"${SHORT_HASH}/index.html\"|" deploy/index.html
           sed -i "s|id=\"sandbox-link\" href=\"#\"|id=\"sandbox-link\" href=\"${SHORT_HASH}/sandbox/index.html\"|" deploy/index.html
           sed -i "s|id=\"commit-hash\"|id=\"commit-hash\">Build: ${SHORT_HASH}</div><!--done|" deploy/index.html

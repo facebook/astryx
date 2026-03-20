@@ -35,10 +35,11 @@ jobs:
         run: |
           # ---------------------------------------------------------------
           # Retention policy:
-          #   KEEP  — latest main commit dir
+          #   KEEP  — latest main commit dir (from API)
+          #         — most recently deployed dir (from git log)
           #         — latest head commit dir for each open/draft PR
           #         — reports/ (vibe test reports)
-          #         — root files (.nojekyll, index.html)
+          #         — root files (.nojekyll, index.html, latest, assets/)
           #   DELETE — everything else
           # ---------------------------------------------------------------
 
@@ -60,6 +61,24 @@ jobs:
           MAIN_HASH=$(gh api repos/$GITHUB_REPOSITORY/commits/main --jq '.sha[:7]')
           echo "Main HEAD: ${MAIN_HASH}"
 
+          # Find the most recently deployed hash dir on gh-pages.
+          # This protects against a race where main HEAD has advanced
+          # but its deploy hasn't finished yet — we keep the previous
+          # deploy that's actually serving traffic.
+          LATEST_DEPLOYED=""
+          for dir in "${DIRS[@]}"; do
+            # git log for the dir — most recently touched = most recent deploy
+            DIR_DATE=$(git log -1 --format='%ct' -- "$dir" 2>/dev/null || echo "0")
+            if [ -z "$LATEST_DEPLOYED" ]; then
+              LATEST_DEPLOYED="$dir"
+              LATEST_DATE="$DIR_DATE"
+            elif [ "$DIR_DATE" -gt "$LATEST_DATE" ]; then
+              LATEST_DEPLOYED="$dir"
+              LATEST_DATE="$DIR_DATE"
+            fi
+          done
+          echo "Latest deployed: ${LATEST_DEPLOYED}"
+
           # Get open/draft PR head commit short hashes
           OPEN_PR_HASHES=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --json headRefOid,number --jq '.[] | .headRefOid[:7]' || true)
           OPEN_COUNT=$(echo "$OPEN_PR_HASHES" | grep -c . || echo 0)
@@ -69,8 +88,10 @@ jobs:
           # Clean up stale root-level storybook files (from old deploy format)
           # These are files/dirs at the gh-pages root that aren't hash dirs,
           # index.html, .nojekyll, or reports/
+          # NOTE: `assets/` is NOT stale — it contains CSS referenced by the
+          # landing page (index.html): reset.css, xds.css, theme.css
           ROOT_STALE=0
-          for item in assets favicon.svg iframe.html index.json project.json \
+          for item in favicon.svg iframe.html index.json project.json \
                       nunito-sans-bold-italic.woff2 nunito-sans-bold.woff2 \
                       nunito-sans-italic.woff2 nunito-sans-regular.woff2 \
                       sandbox sb-addons sb-common-assets sb-manager; do
@@ -93,9 +114,15 @@ jobs:
           for dir in "${DIRS[@]}"; do
             REASON=""
 
-            # Keep main
+            # Keep main HEAD
             if [ "$dir" = "$MAIN_HASH" ]; then
-              REASON="main"
+              REASON="main HEAD"
+            fi
+
+            # Keep the most recently deployed dir (in case main HEAD
+            # hasn't deployed yet, this is what's actually serving)
+            if [ -z "$REASON" ] && [ "$dir" = "$LATEST_DEPLOYED" ]; then
+              REASON="latest deployed"
             fi
 
             # Keep open/draft PR heads
