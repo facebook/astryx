@@ -12,6 +12,9 @@ import {
   InformationCircleIcon,
   ArrowPathIcon,
   LinkIcon,
+  ArrowTopRightOnSquareIcon,
+  ClipboardDocumentIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 
 function XBracketIcon({style}: {style?: React.CSSProperties}) {
@@ -73,6 +76,9 @@ function NestIcon({style}: {style?: React.CSSProperties}) {
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
+import {XDSMoreMenu} from '@xds/core/MoreMenu';
+import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
+import {XDSLayout, XDSLayoutContent, XDSLayoutFooter} from '@xds/core/Layout';
 import {XDSTable, proportional, pixel} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {XDSPagination} from '@xds/core/Pagination';
@@ -110,9 +116,22 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
   },
   changePositive: {
-    color: colorVars['--color-positive'],
+    color: colorVars['--color-success'],
     fontSize: textSizeVars['--text-base'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
+  },
+  changeNegative: {
+    color: colorVars['--color-error'],
+    fontSize: textSizeVars['--text-base'],
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+  },
+  changePositiveSm: {
+    color: colorVars['--color-success'],
+    fontSize: textSizeVars['--text-xsm'],
+  },
+  changeNegativeSm: {
+    color: colorVars['--color-error'],
+    fontSize: textSizeVars['--text-xsm'],
   },
   chartsGrid: {
     display: 'grid',
@@ -261,7 +280,7 @@ const adoptionMatrixData: AdoptionMatrixRow[] = [
   },
   {
     id: 'tools',
-    metric: 'Tools / Apps Using',
+    metric: 'Tools / Apps Usage',
     xdsIntern: '127',
     xdsInternChange: '+1.6%',
     xdsInternSub: 'Distinct oncalls on www',
@@ -281,14 +300,14 @@ const adoptionMatrixColumns: XDSTableColumn<AdoptionMatrixRow>[] = [
   {key: 'metric', header: '', width: proportional(1.2)},
   {
     key: 'xdsIntern',
-    header: 'XDS on Intern',
+    header: 'XDS on Intern (WWW)',
     renderCell: row => (
       <XDSVStack gap={0.5}>
         <span>
           <XDSText type="large" weight="bold">
             {row.xdsIntern}
           </XDSText>{' '}
-          <span style={{color: '#16a34a', fontSize: '0.75rem'}}>
+          <span {...stylex.props(styles.changePositiveSm)}>
             {row.xdsInternChange}
           </span>
         </span>
@@ -307,7 +326,7 @@ const adoptionMatrixColumns: XDSTableColumn<AdoptionMatrixRow>[] = [
           <XDSText type="large" weight="bold">
             {row.xdsWwwNest}
           </XDSText>{' '}
-          <span style={{color: '#16a34a', fontSize: '0.75rem'}}>
+          <span {...stylex.props(styles.changePositiveSm)}>
             {row.xdsWwwNestChange}
           </span>
         </span>
@@ -326,7 +345,7 @@ const adoptionMatrixColumns: XDSTableColumn<AdoptionMatrixRow>[] = [
           <XDSText type="large" weight="bold">
             {row.xdsOssNest}
           </XDSText>{' '}
-          <span style={{color: '#16a34a', fontSize: '0.75rem'}}>
+          <span {...stylex.props(styles.changePositiveSm)}>
             {row.xdsOssNestChange}
           </span>
         </span>
@@ -345,7 +364,7 @@ const adoptionMatrixColumns: XDSTableColumn<AdoptionMatrixRow>[] = [
           <XDSText type="large" weight="bold">
             {row.ndsNest}
           </XDSText>{' '}
-          <span style={{color: '#16a34a', fontSize: '0.75rem'}}>
+          <span {...stylex.props(styles.changePositiveSm)}>
             {row.ndsNestChange}
           </span>
         </span>
@@ -822,7 +841,14 @@ function StatCard({
             {value}
           </XDSText>
           {change && (
-            <span {...stylex.props(styles.changePositive)}>{change}</span>
+            <span
+              {...stylex.props(
+                change.startsWith('-')
+                  ? styles.changeNegative
+                  : styles.changePositive,
+              )}>
+              {change}
+            </span>
           )}
         </div>
         {source && (
@@ -838,47 +864,144 @@ function StatCard({
 function ChartCard({
   title,
   children,
+  queryNamespace = 'scuba',
+  queryText = '-- No query details available',
 }: {
   title: string;
   children: React.ReactNode;
+  queryNamespace?: string;
+  queryText?: string;
 }) {
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
+
   return (
-    <XDSCard padding={4}>
-      <XDSVStack gap={2}>
-        <XDSHStack gap={2} hAlign="between" vAlign="center">
-          <XDSText type="body" weight="bold">
-            {title}
-          </XDSText>
-          <XDSHStack gap={2}>
-            <InformationCircleIcon
-              style={{
-                width: 14,
-                height: 14,
-                color: 'var(--color-text-secondary)',
-                cursor: 'pointer',
-              }}
-            />
-            <ArrowPathIcon
-              style={{
-                width: 14,
-                height: 14,
-                color: 'var(--color-text-secondary)',
-                cursor: 'pointer',
-              }}
-            />
-            <LinkIcon
-              style={{
-                width: 14,
-                height: 14,
-                color: 'var(--color-text-secondary)',
-                cursor: 'pointer',
-              }}
-            />
+    <>
+      <XDSCard padding={4}>
+        <XDSVStack gap={2}>
+          <XDSHStack gap={2} hAlign="between" vAlign="start">
+            <XDSText type="body" weight="bold">
+              {title}
+            </XDSText>
+            <XDSHStack gap={1.5}>
+              <XDSButton
+                label="View query details"
+                tooltip="View query details"
+                variant="ghost"
+                size="xs"
+                icon={<InformationCircleIcon style={{width: 14, height: 14}} />}
+                onClick={() => setIsInfoOpen(true)}
+              />
+              <XDSMoreMenu
+                label="Refresh"
+                icon={<ArrowPathIcon style={{width: 14, height: 14}} />}
+                size="xs"
+                items={[{label: 'Refresh data', onClick: () => {}}]}
+              />
+              <XDSMoreMenu
+                label="Copy link or image"
+                icon={<LinkIcon style={{width: 14, height: 14}} />}
+                size="xs"
+                items={[
+                  {label: 'Copy link', onClick: () => {}},
+                  {label: 'Copy image', onClick: () => {}},
+                ]}
+              />
+            </XDSHStack>
           </XDSHStack>
-        </XDSHStack>
-        <div {...stylex.props(styles.chartInner)}>{children}</div>
-      </XDSVStack>
-    </XDSCard>
+          <div {...stylex.props(styles.chartInner)}>{children}</div>
+        </XDSVStack>
+      </XDSCard>
+
+      <XDSDialog
+        isOpen={isInfoOpen}
+        onOpenChange={setIsInfoOpen}
+        purpose="info"
+        width={640}>
+        <XDSLayout
+          header={
+            <XDSDialogHeader
+              title="Query Details"
+              subtitle={title}
+              onOpenChange={setIsInfoOpen}
+            />
+          }
+          content={
+            <XDSLayoutContent>
+              <XDSVStack gap={3}>
+                <XDSHStack gap={2} hAlign="between" vAlign="center">
+                  <XDSHStack gap={2}>
+                    <XDSText type="body" weight="bold">
+                      SQL Query
+                    </XDSText>
+                    <XDSText type="body" color="secondary">
+                      namespace: {queryNamespace}
+                    </XDSText>
+                  </XDSHStack>
+                  <XDSHStack gap={2}>
+                    <XDSButton
+                      label="Daiquery"
+                      tooltip="Open in Daiquery"
+                      variant="secondary"
+                      size="sm"
+                      endSlot={
+                        <ArrowTopRightOnSquareIcon
+                          style={{width: 14, height: 14}}
+                        />
+                      }>
+                      Daiquery
+                    </XDSButton>
+                    <XDSButton
+                      label="Copy"
+                      tooltip="Copy"
+                      variant="secondary"
+                      size="sm"
+                      icon={
+                        <ClipboardDocumentIcon
+                          style={{width: 14, height: 14}}
+                        />
+                      }
+                    />
+                    <XDSButton
+                      label="Download image"
+                      tooltip="Download"
+                      variant="secondary"
+                      size="sm"
+                      icon={
+                        <ArrowDownTrayIcon style={{width: 14, height: 14}} />
+                      }
+                    />
+                  </XDSHStack>
+                </XDSHStack>
+                <XDSCard padding={3}>
+                  <pre
+                    style={{
+                      margin: 0,
+                      fontSize: '0.8125rem',
+                      color: 'var(--color-text-secondary)',
+                      whiteSpace: 'pre-wrap',
+                      fontFamily: 'monospace',
+                    }}>
+                    {queryText}
+                  </pre>
+                </XDSCard>
+              </XDSVStack>
+            </XDSLayoutContent>
+          }
+          footer={
+            <XDSLayoutFooter hasDivider>
+              <XDSHStack gap={2} hAlign="end">
+                <XDSButton
+                  label="Close"
+                  variant="secondary"
+                  onClick={() => setIsInfoOpen(false)}>
+                  Close
+                </XDSButton>
+              </XDSHStack>
+            </XDSLayoutFooter>
+          }
+        />
+      </XDSDialog>
+    </>
   );
 }
 
@@ -951,6 +1074,7 @@ function OverviewContent() {
   const [ovTab, setOvTab] = useState('usage');
   const [search, setSearch] = useState('');
   const [tablePage, setTablePage] = useState(1);
+  const [dsLibrary, setDsLibrary] = useState('XDS on Intern (WWW)');
 
   const filteredRows = useMemo(() => {
     if (!search.trim()) return componentAdoptionData;
@@ -990,7 +1114,12 @@ function OverviewContent() {
           </XDSVStack>
 
           <div {...stylex.props(styles.chartsGrid)}>
-            <ChartCard title="Daily Active Users (14d) — Intern vs Nest">
+            <ChartCard
+              title="Daily Active Users (14d) — Intern vs Nest"
+              queryNamespace="scuba"
+              queryText={
+                '-- Intern: vitals_event (Quartz) APPROX_COUNT_DISTINCT(userid)\n-- Nest: nest_traces APPROX_COUNT_DISTINCT_HLL(user.id)'
+              }>
               <MiniLineChart data={dauData} keys={['intern', 'nest']} />
             </ChartCard>
             <ChartCard title="Daily New Tool / App Creation — Intern vs Nest">
@@ -1081,15 +1210,25 @@ function OverviewContent() {
             <XDSHStack gap={3} vAlign="end">
               <XDSDropdownMenu
                 button={{
-                  label: 'XDS on Intern (WWW)',
+                  label: dsLibrary,
                   variant: 'secondary',
-                  size: 'sm',
                 }}
                 items={[
-                  {label: 'XDS on Intern (WWW)', onClick: () => {}},
+                  {
+                    label: 'XDS on Intern (WWW)',
+                    onClick: () => {
+                      setDsLibrary('XDS on Intern (WWW)');
+                      setSearch('');
+                      setTablePage(1);
+                    },
+                  },
                   {
                     label: 'Nest Design System (NDS/XDS OSS)',
-                    onClick: () => {},
+                    onClick: () => {
+                      setDsLibrary('Nest Design System (NDS/XDS OSS)');
+                      setSearch('');
+                      setTablePage(1);
+                    },
                   },
                 ]}
               />
@@ -1097,7 +1236,7 @@ function OverviewContent() {
                 <XDSTextInput
                   label="Search components"
                   isLabelHidden
-                  placeholder="Search components..."
+                  placeholder={`Search ${dsLibrary} components...`}
                   value={search}
                   onChange={(v: string) => {
                     setSearch(v);
@@ -1105,15 +1244,17 @@ function OverviewContent() {
                   }}
                 />
               </div>
-              <XDSButton label="Search" variant="secondary" size="sm">
+              <XDSButton label="Search" variant="secondary">
                 Search
               </XDSButton>
             </XDSHStack>
             <div {...stylex.props(styles.chartsGrid)}>
-              <ChartCard title="XDS WWW Component Growth: Button">
+              <ChartCard
+                title={`${dsLibrary} Component Growth: ${search || 'XDSButton'}`}>
                 <SingleLineChart data={componentCountData} />
               </ChartCard>
-              <ChartCard title="XDS WWW Component Adoption">
+              <ChartCard
+                title={`${dsLibrary} Component Adoption: ${search || 'XDSButton'}`}>
                 <SingleLineChart data={componentCountData} />
               </ChartCard>
             </div>
@@ -1125,15 +1266,43 @@ function OverviewContent() {
               dividers="rows"
               hasHover
             />
-            {totalPages > 1 && (
-              <XDSHStack gap={2} hAlign="center">
+            <XDSHStack gap={2} hAlign="between" vAlign="center">
+              {totalPages > 1 ? (
                 <XDSPagination
                   page={tablePage}
                   totalPages={totalPages}
                   onChange={setTablePage}
                 />
+              ) : (
+                <div />
+              )}
+              <XDSHStack gap={0.5}>
+                <XDSButton
+                  label="View query details"
+                  tooltip="View query details"
+                  variant="ghost"
+                  size="xs"
+                  icon={
+                    <InformationCircleIcon style={{width: 14, height: 14}} />
+                  }
+                />
+                <XDSMoreMenu
+                  label="Refresh"
+                  icon={<ArrowPathIcon style={{width: 14, height: 14}} />}
+                  size="xs"
+                  items={[{label: 'Refresh data', onClick: () => {}}]}
+                />
+                <XDSMoreMenu
+                  label="Copy link or image"
+                  icon={<LinkIcon style={{width: 14, height: 14}} />}
+                  size="xs"
+                  items={[
+                    {label: 'Copy link', onClick: () => {}},
+                    {label: 'Copy image', onClick: () => {}},
+                  ]}
+                />
               </XDSHStack>
-            )}
+            </XDSHStack>
           </XDSVStack>
 
           {/* Quick Links */}
