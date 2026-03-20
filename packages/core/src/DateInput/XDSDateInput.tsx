@@ -50,8 +50,9 @@ import {
   type ISODateString,
   type XDSCalendarHandle,
 } from '../Calendar';
+import {useCalendarConstraints} from '../Calendar/hooks';
 import {useXDSPopover} from '../Popover';
-import {parseDateInput, formatDisplayDate} from '../utils';
+import {parseDateInput, formatDisplayDate, parseISO} from '../utils';
 
 const styles = stylex.create({
   iconButton: {
@@ -126,6 +127,21 @@ export type {
 } from '../Field';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSBaseProps} from '../XDSBaseProps';
+
+const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
+  warning: 'warning',
+  error: 'xCircle',
+  success: 'checkCircle',
+};
+
+const statusIconColorMap: Record<
+  XDSInputStatusType,
+  'warning' | 'negative' | 'positive'
+> = {
+  warning: 'warning',
+  error: 'negative',
+  success: 'positive',
+};
 
 export interface XDSDateInputProps extends Omit<
   XDSBaseProps,
@@ -272,6 +288,7 @@ export function XDSDateInput({
   className,
   style,
   ref,
+  ...rest
 }: XDSDateInputProps) {
   const id = useId();
   const descriptionID = useId();
@@ -282,22 +299,10 @@ export function XDSDateInput({
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
+  const isEffectivelyDisabled = isDisabled || isBusy;
 
-  // Status icon mapping
-  const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
-    warning: 'warning',
-    error: 'xCircle',
-    success: 'checkCircle',
-  };
-
-  const statusIconColorMap: Record<
-    XDSInputStatusType,
-    'warning' | 'negative' | 'positive'
-  > = {
-    warning: 'warning',
-    error: 'negative',
-    success: 'positive',
-  };
+  // Constraint checking for text input validation (reuses calendar logic)
+  const {isDateDisabled} = useCalendarConstraints({min, max, dateConstraints});
 
   const ariaDescribedBy =
     [
@@ -340,23 +345,28 @@ export function XDSDateInput({
     onHide: handlePopoverHide,
   });
 
-  // Handle opening the popover from button click (focus calendar)
-  const handleOpen = useCallback(() => {
-    if (!isDisabled && !popover.isOpen) {
-      popover.show();
+  // Handle toggling the popover from button click (focus calendar)
+  const handleToggle = useCallback(() => {
+    if (!isEffectivelyDisabled) {
+      if (popover.isOpen) {
+        popover.hide();
+      } else {
+        popover.show();
+      }
     }
-  }, [isDisabled, popover]);
+  }, [isEffectivelyDisabled, popover]);
 
   // Handle opening the popover from input click (keep focus in input)
   const handleInputClick = useCallback(() => {
-    if (!isDisabled && !popover.isOpen) {
+    if (!isEffectivelyDisabled && !popover.isOpen) {
       popover.show({skipAutoFocus: true});
     }
-  }, [isDisabled, popover]);
+  }, [isEffectivelyDisabled, popover]);
 
   // Unified change handler that fires both onChange and onChangeAction
   const fireChange = useCallback(
     (newValue: ISODateString | undefined) => {
+      if (isBusy) return;
       onChange?.(newValue);
       if (onChangeAction) {
         startTransition(async () => {
@@ -365,7 +375,7 @@ export function XDSDateInput({
         });
       }
     },
-    [onChange, onChangeAction, startTransition, setOptimisticValue],
+    [isBusy, onChange, onChangeAction, startTransition, setOptimisticValue],
   );
 
   // Handle date selection from calendar
@@ -378,24 +388,33 @@ export function XDSDateInput({
     [fireChange, popover],
   );
 
-  // Handle input text change - update immediately if valid
+  // Check if a parsed date passes constraints
+  const isDateAllowed = useCallback(
+    (iso: ISODateString): boolean => {
+      return !isDateDisabled(parseISO(iso));
+    },
+    [isDateDisabled],
+  );
+
+  // Handle input text change - update immediately if valid and allowed
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (isEffectivelyDisabled) return;
       const newValue = e.target.value;
       setPendingInput(newValue);
 
-      // If the input is valid, update immediately (don't wait for blur)
+      // If the input is valid and passes constraints, update immediately
       const parsed = parseDateInput(newValue);
-      if (parsed && parsed !== value) {
+      if (parsed && parsed !== value && isDateAllowed(parsed)) {
         fireChange(parsed);
         // Navigate calendar to show the parsed date's month
         calendarRef.current?.navigateTo(parsed);
       }
     },
-    [value, fireChange],
+    [isEffectivelyDisabled, value, fireChange, isDateAllowed],
   );
 
-  // Handle blur - validate and clear pending input
+  // Handle blur - validate, check constraints, and clear pending input
   const handleBlur = useCallback(() => {
     if (pendingInput === null) {
       return;
@@ -411,15 +430,15 @@ export function XDSDateInput({
     }
 
     const parsed = parseDateInput(pendingInput);
-    if (parsed) {
-      // Valid date - update if different
+    if (parsed && isDateAllowed(parsed)) {
+      // Valid date that passes constraints - update if different
       if (parsed !== value) {
         fireChange(parsed);
       }
     }
     // Clear pending input - display will revert to formatted value
     setPendingInput(null);
-  }, [pendingInput, value, fireChange]);
+  }, [pendingInput, value, fireChange, isDateAllowed]);
 
   // Handle keyboard events on input
   const handleInputKeyDown = useCallback(
@@ -427,9 +446,16 @@ export function XDSDateInput({
       if (e.key === 'Escape' && popover.isOpen) {
         e.preventDefault();
         popover.hide();
+      } else if (
+        e.key === 'ArrowDown' &&
+        (e.altKey || !popover.isOpen) &&
+        !isEffectivelyDisabled
+      ) {
+        e.preventDefault();
+        popover.show();
       }
     },
-    [popover],
+    [popover, isEffectivelyDisabled],
   );
 
   // Combine refs
@@ -466,12 +492,13 @@ export function XDSDateInput({
       labelTooltip={labelTooltip}>
       <div
         ref={popover.triggerRef}
+        {...rest}
         {...mergeProps(
           xdsClassName('date-input', {size}),
           stylex.props(
             inputWrapperStyles.base,
             sizeStyles[size],
-            isDisabled && inputWrapperStyles.disabled,
+            isEffectivelyDisabled && inputWrapperStyles.disabled,
             status && inputStatusBorderStyles[status.type],
             status && inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
@@ -480,40 +507,43 @@ export function XDSDateInput({
           className,
           style,
         )}>
-        <button
-          type="button"
-          onClick={handleOpen}
-          disabled={isDisabled}
-          aria-label="Open calendar"
-          {...popover.triggerProps}
-          {...stylex.props(
-            styles.iconButton,
-            isDisabled && styles.iconButtonDisabled,
-          )}>
-          <XDSIcon icon="calendar" size="sm" color="secondary" />
-        </button>
         <input
           ref={setRefs}
           id={id}
           type="text"
+          role="combobox"
           value={displayValue}
           onChange={handleInputChange}
           onBlur={handleBlur}
           onClick={handleInputClick}
           onKeyDown={handleInputKeyDown}
           placeholder={placeholder}
-          disabled={isDisabled}
+          disabled={isEffectivelyDisabled}
           aria-describedby={ariaDescribedBy}
           aria-required={isRequired === true ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
+          aria-expanded={popover.isOpen}
+          aria-haspopup="dialog"
           autoComplete="off"
           {...stylex.props(
             styles.input,
-            isDisabled && styles.inputDisabled,
+            isEffectivelyDisabled && styles.inputDisabled,
             !isInputValid && styles.inputInvalid,
           )}
         />
+        <button
+          type="button"
+          onClick={handleToggle}
+          disabled={isEffectivelyDisabled}
+          aria-label={popover.isOpen ? 'Close calendar' : 'Open calendar'}
+          {...popover.triggerProps}
+          {...stylex.props(
+            styles.iconButton,
+            isEffectivelyDisabled && styles.iconButtonDisabled,
+          )}>
+          <XDSIcon icon="calendar" size="sm" color="secondary" />
+        </button>
         {isBusy && <XDSSpinner size="sm" />}
         {status && (
           <XDSIcon
@@ -527,7 +557,7 @@ export function XDSDateInput({
         <XDSCalendar
           ref={calendarRef}
           mode="single"
-          value={value}
+          value={optimisticValue}
           onChange={handleDateSelect}
           min={min}
           max={max}

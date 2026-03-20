@@ -249,7 +249,7 @@ export function parseISO(iso: ISODateString): Date {
  */
 export function formatDisplayDate(iso: ISODateString): string {
   const date = parseISO(iso);
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(undefined, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
