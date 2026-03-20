@@ -57,9 +57,10 @@ describe('Edge Compensation', () => {
   describe('Banner edge signals', () => {
     it('sets --container-padding-inline on the banner header', () => {
       render(<XDSBanner status="info" title="Test" isDismissable />);
-      // Banner renders with role="status" for info
-      const banner = screen.getByRole('status');
-      expect(banner).toBeInTheDocument();
+      // Banner renders with role="status" for info — use getAllByRole
+      // since the dismiss button's live region also has role="status"
+      const statuses = screen.getAllByRole('status');
+      expect(statuses.length).toBeGreaterThanOrEqual(1);
     });
 
     it('renders dismiss button without a wrapper div', () => {

@@ -8,9 +8,13 @@ export const docs = {
   features: [
     "Variants: 'primary', 'secondary', 'ghost', 'destructive'",
     'Sizes: sm (28px), md (32px), lg (36px)',
-    'Loading state: Shows spinner, disables interaction',
+    'Loading state: Shows spinner, disables interaction, announces via live region',
     'Focus visible: Accessible focus outline with variant-specific colors',
     'Hover/active states: Uses overlay colors via backgroundImage for consistent layering',
+    'Reduced motion: Respects prefers-reduced-motion for transitions',
+    'Tooltip + disabled: Uses aria-disabled instead of native disabled so the button stays focusable for keyboard tooltip access',
+    'Form integration: type, name, value, form props for native form submission',
+    'Async actions: onClickAction with automatic loading state via useTransition',
   ],
 
   props: [
@@ -34,15 +38,36 @@ export const docs = {
       default: "'md'",
     },
     {
+      name: 'type',
+      type: "'button' | 'submit' | 'reset'",
+      description: 'HTML button type attribute.',
+      default: "'button'",
+    },
+    {
+      name: 'name',
+      type: 'string',
+      description: 'HTML name attribute for form submission.',
+    },
+    {
+      name: 'value',
+      type: 'string | number | readonly string[]',
+      description: 'HTML value attribute for form submission.',
+    },
+    {
+      name: 'form',
+      type: 'string',
+      description: 'Associates the button with a form element by ID.',
+    },
+    {
       name: 'isLoading',
       type: 'boolean',
-      description: 'Shows a loading spinner and disables interaction.',
+      description: 'Shows a loading spinner and disables interaction. Announces "Loading" via a live region.',
       default: 'false',
     },
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: 'Disables the button.',
+      description: 'Disables the button. When a tooltip is present, uses aria-disabled instead of native disabled so the button stays focusable.',
       default: 'false',
     },
     {
@@ -128,12 +153,26 @@ export const docs = {
     },
   ],
 
+  accessibility: [
+    'Renders a native <button> element for correct semantics and keyboard support',
+    'Icon-only buttons (icon without children) set aria-label from the label prop',
+    'Loading state sets aria-busy and announces "Loading" via a role="status" live region',
+    'Content is hidden from assistive tech during loading via aria-hidden',
+    'When tooltip is present and button is disabled, uses aria-disabled instead of native disabled to keep the button focusable for keyboard tooltip access',
+    'Warns in development when icon-only buttons have an empty label (WCAG 4.1.2)',
+    'aria-label, aria-busy, and aria-disabled are placed after ...props spread to prevent clobbering',
+  ],
+  keyboard: 'Enter/Space activates the button; Tab/Shift+Tab moves focus in and out',
   theming: {
     targets: [
       {className: 'xds-button', visualProps: ['size', 'variant']},
     ],
     vars: [
       {name: '--button-radius', description: 'Border radius', default: 'var(--radius-2)'},
+      {name: '--button-press-scale', description: 'Active press transform', default: 'scale(0.98)'},
+      {name: '--button-disabled-opacity', description: 'Opacity when disabled', default: '0.5'},
+      {name: '--button-focus-offset', description: 'Focus ring outline offset', default: '3px'},
+      {name: '--button-icon-only-aspect', description: 'Aspect ratio for icon-only buttons', default: '1 / 1'},
     ],
   },
   notes: [
@@ -145,6 +184,9 @@ export const docs = {
     'endSlot is ignored for icon-only buttons (when icon is provided without children) to preserve the square aspect ratio.',
     'Prefer XDSButton over <div onClick> or <span onClick> for accessibility — it provides keyboard navigation, focus management, and screen reader support.',
     'Icon-only buttons are suitable for toolbars, action grids, and compact controls.',
+    'onClick fires before onClickAction; calling preventDefault in onClick prevents onClickAction from running.',
+    'type defaults to "button" (not "submit") to prevent accidental form submission.',
+    'Disabled background gradient is cleared (backgroundImage: none) to prevent hover tint leaking through opacity.',
   ],
 };
 
@@ -157,9 +199,13 @@ export const docsZh = {
   features: [
     "变体：'primary'、'secondary'、'ghost'、'destructive'",
     '尺寸：sm（28px）、md（32px）、lg（36px）',
-    '加载状态：显示加载旋转器，禁用交互',
+    '加载状态：显示加载旋转器，禁用交互，通过实时区域播报',
     '焦点可见：带有变体特定颜色的无障碍焦点轮廓',
     '悬停/激活状态：通过 backgroundImage 使用叠加颜色，实现一致的层级效果',
+    '减少动画：尊重 prefers-reduced-motion',
+    '工具提示 + 禁用：使用 aria-disabled 代替原生 disabled，使按钮保持可聚焦以供键盘访问工具提示',
+    '表单集成：type、name、value、form 属性支持原生表单提交',
+    '异步操作：onClickAction 通过 useTransition 自动显示加载状态',
   ],
 
   props: [
@@ -183,15 +229,36 @@ export const docsZh = {
       default: "'md'",
     },
     {
+      name: 'type',
+      type: "'button' | 'submit' | 'reset'",
+      description: 'HTML 按钮类型属性。',
+      default: "'button'",
+    },
+    {
+      name: 'name',
+      type: 'string',
+      description: '表单提交的 HTML name 属性。',
+    },
+    {
+      name: 'value',
+      type: 'string | number | readonly string[]',
+      description: '表单提交的 HTML value 属性。',
+    },
+    {
+      name: 'form',
+      type: 'string',
+      description: '通过 ID 将按钮与表单元素关联。',
+    },
+    {
       name: 'isLoading',
       type: 'boolean',
-      description: '显示加载旋转器并禁用交互。',
+      description: '显示加载旋转器并禁用交互。通过实时区域播报"Loading"。',
       default: 'false',
     },
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: '禁用按钮。',
+      description: '禁用按钮。存在工具提示时，使用 aria-disabled 代替原生 disabled 以保持可聚焦。',
       default: 'false',
     },
     {
@@ -277,12 +344,26 @@ export const docsZh = {
     },
   ],
 
+  accessibility: [
+    '渲染原生 <button> 元素以确保正确的语义和键盘支持',
+    '纯图标按钮（icon 无 children）从 label 属性设置 aria-label',
+    '加载状态设置 aria-busy 并通过 role="status" 实时区域播报"Loading"',
+    '加载期间通过 aria-hidden 对辅助技术隐藏内容',
+    '当存在工具提示且按钮禁用时，使用 aria-disabled 代替原生 disabled 以保持键盘可聚焦',
+    '开发环境下，纯图标按钮标签为空时发出警告（WCAG 4.1.2）',
+    'aria-label、aria-busy、aria-disabled 放置在 ...props 展开之后以防止覆盖',
+  ],
+  keyboard: 'Enter/Space 激活按钮；Tab/Shift+Tab 移入和移出焦点',
   theming: {
     targets: [
       {className: 'xds-button', visualProps: ['size', 'variant']},
     ],
     vars: [
-      {name: '--button-radius', description: 'Border radius', default: 'var(--radius-2)'},
+      {name: '--button-radius', description: '圆角半径', default: 'var(--radius-2)'},
+      {name: '--button-press-scale', description: '按下时的变换', default: 'scale(0.98)'},
+      {name: '--button-disabled-opacity', description: '禁用时的不透明度', default: '0.5'},
+      {name: '--button-focus-offset', description: '焦点环轮廓偏移', default: '3px'},
+      {name: '--button-icon-only-aspect', description: '纯图标按钮的宽高比', default: '1 / 1'},
     ],
   },
   notes: [
@@ -294,6 +375,9 @@ export const docsZh = {
     '纯图标按钮（提供 icon 但不提供 children 时）会忽略 endSlot，以保持正方形的宽高比。',
     '为了无障碍性，优先使用 XDSButton 而非 <div onClick> 或 <span onClick>——它提供键盘导航、焦点管理和屏幕阅读器支持。',
     '纯图标按钮适用于工具栏、操作网格和紧凑控件。',
+    'onClick 在 onClickAction 之前触发；在 onClick 中调用 preventDefault 会阻止 onClickAction 运行。',
+    'type 默认为 "button"（非 "submit"）以防止意外的表单提交。',
+    '禁用状态清除背景渐变（backgroundImage: none）以防止悬停色调通过不透明度泄漏。',
   ],
 };
 
@@ -303,10 +387,24 @@ export const docsDense = {
   features: [
     "variants: primary, secondary, ghost, destructive",
     'sizes: sm(28px), md(32px), lg(36px)',
-    'loading state: shows spinner+disables interaction',
+    'loading state: shows spinner+disables interaction, announces via live region',
     'focus visible: accessible focus outline w/ variant-specific colors',
     'hover/active: overlay colors via backgroundImage for consistent layering',
+    'reduced motion: respects prefers-reduced-motion',
+    'tooltip+disabled: aria-disabled keeps button focusable for keyboard tooltip',
+    'form integration: type, name, value, form props',
+    'async actions: onClickAction w/ automatic loading via useTransition',
   ],
+  accessibility: [
+    'Native <button> for correct semantics + keyboard support.',
+    'Icon-only buttons set aria-label from label prop.',
+    'Loading sets aria-busy + announces via role="status" live region.',
+    'Content hidden from AT during loading via aria-hidden.',
+    'Tooltip+disabled uses aria-disabled to stay focusable.',
+    'Dev warning on empty label for icon-only (WCAG 4.1.2).',
+    'aria-label, aria-busy, aria-disabled after ...props spread to prevent clobbering.',
+  ],
+  keyboard: 'Enter/Space=activate; Tab/Shift+Tab=move focus in/out.',
   notes: [
     'XDSButtonVariant derived from keyof typeof variants StyleX object',
     'hover/active use backgroundImage linear-gradient overlay on base bg',
@@ -316,18 +414,25 @@ export const docsDense = {
     'endSlot ignored for icon-only to preserve square ratio',
     'prefer XDSButton over <div onClick> for a11y: keyboard nav, focus management, screen reader',
     'icon-only suits toolbars, action grids, compact controls',
+    'onClick fires before onClickAction; preventDefault in onClick stops onClickAction',
+    'type defaults to "button" (not "submit") to prevent accidental form submission',
+    'disabled clears backgroundImage:none to prevent hover tint leaking through opacity',
   ],
   propDescriptions: {
     label: 'accessible label; aria-label for icon-only buttons',
     variant: 'visual style variant',
     size: 'size variant',
-    isLoading: 'shows spinner+disables interaction',
+    type: 'HTML button type; defaults to "button"',
+    name: 'HTML name for form submission',
+    value: 'HTML value for form submission',
+    form: 'associates button with form element by ID',
+    isLoading: 'shows spinner+disables interaction; announces via live region',
     icon: 'icon element; w/o children renders square icon-only button',
     children: 'w/ icon, text rendered next to icon',
     endSlot: 'trailing icon/badge after label; accepts XDSIcon or XDSBadge; ignored for icon-only; color inherited',
     tooltip: 'tooltip on hover',
-    onClick: 'standard click handler',
+    onClick: 'standard click handler; fires before onClickAction',
     onClickAction: 'async click handler; shows loading while promise pending',
-    isDisabled: 'disables the button',
+    isDisabled: 'disables button; uses aria-disabled when tooltip present',
   },
 };
