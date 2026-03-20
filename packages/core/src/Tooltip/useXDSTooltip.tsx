@@ -34,7 +34,7 @@ import {
   textSizeVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName} from '../utils';
 
 const styles = stylex.create({
   // Base container styles - inverted colors for high contrast
@@ -398,16 +398,11 @@ export function useXDSTooltip(
         placement: props?.placement ?? placement,
         alignment: props?.alignment ?? alignment,
         xstyle: popoverXstyle,
+        className: xdsClassName('tooltip'),
       };
 
       return layer.render(
-        <div
-          {...mergeProps(
-            xdsClassName('tooltip'),
-            stylex.props(styles.content),
-          )}>
-          {children}
-        </div>,
+        <div {...stylex.props(styles.content)}>{children}</div>,
         renderProps,
       );
     },

@@ -73,6 +73,11 @@ export interface ContextRenderProps {
    * StyleX styles for the popover container.
    */
   xstyle?: StyleXStyles;
+  /**
+   * Additional CSS class name(s) for the popover container.
+   * Use with xdsClassName() for theme targeting.
+   */
+  className?: string;
 }
 
 /**
@@ -329,7 +334,12 @@ export function useXDSLayer(
   // Render function for context mode
   const renderContext = useCallback(
     (children: ReactNode, props?: ContextRenderProps) => {
-      const {placement = 'above', alignment = 'center', xstyle} = props || {};
+      const {
+        placement = 'above',
+        alignment = 'center',
+        xstyle,
+        className: extraClassName,
+      } = props || {};
 
       // CSS anchor positioning (dynamic, not in StyleX)
       const anchorStyle: React.CSSProperties = {
@@ -338,13 +348,18 @@ export function useXDSLayer(
         positionTryFallbacks: 'flip-block, flip-inline, flip-block flip-inline',
       } as React.CSSProperties;
 
+      const stylexResult = stylex.props(styles.base, xstyle);
+      const combinedClassName = extraClassName
+        ? `${extraClassName} ${stylexResult.className ?? ''}`
+        : stylexResult.className;
+
       return (
         <div
           ref={popoverRefCallback}
           id={id}
           popover={lightDismiss ? 'auto' : 'manual'}
-          {...stylex.props(styles.base, xstyle)}
-          style={anchorStyle}>
+          className={combinedClassName}
+          style={{...stylexResult.style, ...anchorStyle}}>
           {children}
         </div>
       );
