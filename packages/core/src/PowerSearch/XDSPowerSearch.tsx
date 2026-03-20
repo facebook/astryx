@@ -33,6 +33,7 @@ import {
   colorVars,
   textSizeVars,
   lineHeightVars,
+  fontWeightVars,
 } from '../theme/tokens.stylex';
 import {useInternalConfig} from './useInternalConfig';
 import {usePowerSearchSource} from './usePowerSearchSource';
@@ -49,6 +50,7 @@ import type {
   FilterValue,
   OperatorValue,
   EnumItem,
+  PowerSearchLabels,
 } from './types';
 
 // =============================================================================
@@ -78,7 +80,7 @@ const OPERATOR_VALUE_TYPE_TO_ICON: Record<string, XDSIconName> = {
 
 const tokenValueStyles = stylex.create({
   value: {
-    fontWeight: 'bold',
+    fontWeight: fontWeightVars['--font-weight-bold'],
   },
 });
 
@@ -344,14 +346,21 @@ export interface XDSPowerSearchProps {
   onBlur?: () => void;
   /** Validation status. */
   status?: XDSInputStatus;
-  /** Max width for dropdown menu. */
-  menuWidth?: number;
   /** Max display length for filter token values. @default 40 */
   maxTokenLength?: number;
-  /** Max items in operator dropdown. */
-  maxOperatorMenuItems?: number;
   /** Label for the save button in edit popover. @default 'Apply' */
   popoverSaveButtonLabel?: string;
+  /** Label for the cancel button in edit popover. @default 'Cancel' */
+  popoverCancelButtonLabel?: string;
+  /** Label for the delete button in edit popover. @default 'Delete' */
+  popoverDeleteButtonLabel?: string;
+  /** Accessible label for the edit popover dialog. @default 'Edit filter' */
+  popoverAriaLabel?: string;
+  /**
+   * Override hardcoded UI strings for i18n.
+   * Any key not provided uses the English default.
+   */
+  labels?: Partial<PowerSearchLabels>;
   /** Timezone ID for date formatting. */
   timezoneID?: string;
   /**
@@ -455,6 +464,10 @@ export function XDSPowerSearch({
   status,
   maxTokenLength = 40,
   popoverSaveButtonLabel = 'Apply',
+  popoverCancelButtonLabel = 'Cancel',
+  popoverDeleteButtonLabel = 'Delete',
+  popoverAriaLabel = 'Edit filter',
+  labels,
   timezoneID,
   endContent,
   resultCount,
@@ -744,10 +757,12 @@ export function XDSPowerSearch({
     let resultCountNode: React.ReactNode = null;
     if (resultCount != null) {
       if (typeof resultCount === 'number') {
-        const formatted = new Intl.NumberFormat().format(resultCount);
+        const countText = labels?.resultCountLabel
+          ? labels.resultCountLabel(resultCount)
+          : `${new Intl.NumberFormat().format(resultCount)} ${resultCount === 1 ? 'result' : 'results'}`;
         resultCountNode = (
           <span {...stylex.props(resultCountStyles.text)}>
-            {formatted} {resultCount === 1 ? 'result' : 'results'}
+            {countText}
           </span>
         );
       } else {
@@ -766,11 +781,11 @@ export function XDSPowerSearch({
       );
     }
     return resultCountNode || endContent || undefined;
-  }, [resultCount, endContent]);
+  }, [resultCount, endContent, labels]);
 
   return (
     <>
-      <div ref={layer.ref}>
+      <div ref={layer.ref} onFocus={onFocus} onBlur={onBlur}>
         <XDSTokenizer
           ref={tokenizerRef}
           label={label}
@@ -804,6 +819,10 @@ export function XDSPowerSearch({
             onSave={handlePopoverSave}
             onCancel={handlePopoverCancel}
             saveButtonLabel={popoverSaveButtonLabel}
+            cancelButtonLabel={popoverCancelButtonLabel}
+            deleteButtonLabel={popoverDeleteButtonLabel}
+            ariaLabel={popoverAriaLabel}
+            labels={labels}
             isReadOnly={isReadOnly}
           />
         ) : null,

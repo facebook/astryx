@@ -16,6 +16,7 @@ import type {
   FilterValue,
   EnumItem,
   PowerSearchEntity,
+  PowerSearchLabels,
 } from './types';
 import type {InternalConfig} from './useInternalConfig';
 import type {XDSSearchableItem, XDSSearchSource} from '../Typeahead/types';
@@ -38,6 +39,7 @@ export interface PowerSearchValueEditorProps {
   config: InternalConfig;
   isDisabled?: boolean;
   timezoneID?: string;
+  labels?: Partial<PowerSearchLabels>;
 }
 
 // =============================================================================
@@ -72,27 +74,39 @@ function enumItemsToSearchableItems(
 // =============================================================================
 
 function StringEditor({
-  operatorValue,
   filterValue,
   onChange,
   onEnter,
+  placeholder = 'Enter value...',
 }: {
   operatorValue: OperatorValue & {type: 'string'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue, shouldSave?: boolean) => void;
   onEnter?: () => void;
+  placeholder?: string;
 }) {
   const currentValue = filterValue?.type === 'string' ? filterValue.value : '';
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' && onEnter) {
+        e.preventDefault();
+        onEnter();
+      }
+    },
+    [onEnter],
+  );
 
   return (
     <XDSTextInput
       label="Value"
       isLabelHidden
       value={currentValue}
-      placeholder="Enter value..."
+      placeholder={placeholder}
       onChange={(value: string) => {
         onChange({type: 'string', value});
       }}
+      onKeyDown={handleKeyDown}
     />
   );
 }
@@ -101,10 +115,12 @@ function StringListEditor({
   operatorValue,
   filterValue,
   onChange,
+  placeholder = 'Add values...',
 }: {
   operatorValue: OperatorValue & {type: 'string_list'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
+  placeholder?: string;
 }) {
   const currentValue: XDSSearchableItem[] = useMemo(() => {
     if (filterValue?.type !== 'string_list') return [];
@@ -134,7 +150,7 @@ function StringListEditor({
           value: items.map(item => item.label),
         });
       }}
-      placeholder="Add values..."
+      placeholder={placeholder}
       debounceMs={operatorValue.searchSource ? 150 : 0}
     />
   );
@@ -144,10 +160,12 @@ function IntegerEditor({
   operatorValue,
   filterValue,
   onChange,
+  placeholder = 'Enter number...',
 }: {
   operatorValue: OperatorValue & {type: 'integer'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
+  placeholder?: string;
 }) {
   const currentValue =
     filterValue?.type === 'integer' ? filterValue.value : undefined;
@@ -164,7 +182,7 @@ function IntegerEditor({
       max={operatorValue.maxValue}
       units={operatorValue.units}
       isIntegerOnly
-      placeholder="Enter number..."
+      placeholder={placeholder}
     />
   );
 }
@@ -173,10 +191,12 @@ function FloatEditor({
   operatorValue,
   filterValue,
   onChange,
+  placeholder = 'Enter number...',
 }: {
   operatorValue: OperatorValue & {type: 'float'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
+  placeholder?: string;
 }) {
   const currentValue =
     filterValue?.type === 'float' ? filterValue.value : undefined;
@@ -192,7 +212,7 @@ function FloatEditor({
       min={operatorValue.minValue}
       max={operatorValue.maxValue}
       units={operatorValue.units}
-      placeholder="Enter number..."
+      placeholder={placeholder}
     />
   );
 }
@@ -438,10 +458,12 @@ function EnumListEditor({
   operatorValue,
   filterValue,
   onChange,
+  placeholder = 'Select values...',
 }: {
   operatorValue: OperatorValue & {type: 'enum_list'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
+  placeholder?: string;
 }) {
   const items = useMemo(
     () => enumItemsToSearchableItems(operatorValue.values),
@@ -470,7 +492,7 @@ function EnumListEditor({
           value: selectedItems.map(item => item.id),
         });
       }}
-      placeholder="Select values..."
+      placeholder={placeholder}
       hasEntriesOnFocus
       debounceMs={0}
     />
@@ -481,10 +503,12 @@ function EntityListEditor({
   operatorValue,
   filterValue,
   onChange,
+  placeholder = 'Search...',
 }: {
   operatorValue: OperatorValue & {type: 'entity_list'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
+  placeholder?: string;
 }) {
   const source = useMemo<XDSSearchSource<XDSSearchableItem>>(() => {
     if (operatorValue.searchSource) {
@@ -519,7 +543,7 @@ function EntityListEditor({
           })),
         });
       }}
-      placeholder="Search..."
+      placeholder={placeholder}
       debounceMs={operatorValue.searchSource ? 150 : 0}
     />
   );
@@ -530,11 +554,13 @@ function CustomEditor({
   filterValue,
   onChange,
   isDisabled,
+  placeholder = 'Enter value...',
 }: {
   operatorValue: OperatorValue & {type: 'custom'};
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
   isDisabled?: boolean;
+  placeholder?: string;
 }) {
   const currentValue =
     filterValue?.type === 'custom' ? filterValue.value : null;
@@ -548,7 +574,7 @@ function CustomEditor({
           onChange({type: 'custom', value});
         }
       }}
-      placeholder="Enter value..."
+      placeholder={placeholder}
       value={currentValue}
     />
   );
@@ -564,6 +590,7 @@ export function PowerSearchValueEditor({
   onChange,
   onEnter,
   isDisabled,
+  labels,
 }: PowerSearchValueEditorProps) {
   switch (operatorValue.type) {
     case 'empty':
@@ -576,6 +603,7 @@ export function PowerSearchValueEditor({
           filterValue={filterValue}
           onChange={onChange}
           onEnter={onEnter}
+          placeholder={labels?.stringPlaceholder}
         />
       );
 
@@ -585,6 +613,7 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
+          placeholder={labels?.stringListPlaceholder}
         />
       );
 
@@ -594,6 +623,7 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
+          placeholder={labels?.numberPlaceholder}
         />
       );
 
@@ -603,6 +633,7 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
+          placeholder={labels?.numberPlaceholder}
         />
       );
 
@@ -657,6 +688,7 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
+          placeholder={labels?.enumListPlaceholder}
         />
       );
 
@@ -666,6 +698,7 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
+          placeholder={labels?.entityListPlaceholder}
         />
       );
 
@@ -676,6 +709,7 @@ export function PowerSearchValueEditor({
           filterValue={filterValue}
           onChange={onChange}
           isDisabled={isDisabled}
+          placeholder={labels?.customPlaceholder}
         />
       );
 

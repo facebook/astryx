@@ -87,6 +87,30 @@ export const docs = {
       default: "'Apply'",
     },
     {
+      name: 'popoverCancelButtonLabel',
+      type: 'string',
+      description: 'Label for the cancel button in the edit popover.',
+      default: "'Cancel'",
+    },
+    {
+      name: 'popoverDeleteButtonLabel',
+      type: 'string',
+      description: 'Label for the delete button in the edit popover.',
+      default: "'Delete'",
+    },
+    {
+      name: 'popoverAriaLabel',
+      type: 'string',
+      description: 'Accessible label for the edit popover dialog.',
+      default: "'Edit filter'",
+    },
+    {
+      name: 'labels',
+      type: 'Partial<PowerSearchLabels>',
+      description:
+        'Override hardcoded UI strings for i18n. Any key not provided uses the English default.',
+    },
+    {
       name: 'timezoneID',
       type: 'string',
       description: 'Timezone ID for date formatting (e.g. "America/New_York").',
@@ -188,8 +212,9 @@ const [filters, setFilters] = useState([]);
   accessibility: [
     'Built on XDSTokenizer which provides combobox pattern with aria-expanded and aria-autocomplete.',
     'Filter tokens have accessible labels with field name, operator, and value.',
-    'Edit popover uses XDSPopover with focus trapping and light dismiss.',
+    'Edit popover has role="dialog" with configurable aria-label and focus trapping via useFocusTrap.',
     'Clear all button has accessible label.',
+    'All hardcoded UI strings can be overridden via the labels prop for i18n.',
   ],
   keyboard:
     'Type to search fields; Enter to select; Click token to edit; Backspace on empty input removes last filter; Escape closes popover',
@@ -284,6 +309,29 @@ export const docsZh = {
       type: 'string',
       description: '编辑弹出窗口中保存按钮的标签。',
       default: "'Apply'",
+    },
+    {
+      name: 'popoverCancelButtonLabel',
+      type: 'string',
+      description: '编辑弹出窗口中取消按钮的标签。',
+      default: "'Cancel'",
+    },
+    {
+      name: 'popoverDeleteButtonLabel',
+      type: 'string',
+      description: '编辑弹出窗口中删除按钮的标签。',
+      default: "'Delete'",
+    },
+    {
+      name: 'popoverAriaLabel',
+      type: 'string',
+      description: '编辑弹出窗口对话框的无障碍标签。',
+      default: "'Edit filter'",
+    },
+    {
+      name: 'labels',
+      type: 'Partial<PowerSearchLabels>',
+      description: '覆盖硬编码的 UI 字符串以实现国际化。未提供的键使用英文默认值。',
     },
     {
       name: 'timezoneID',
@@ -384,8 +432,9 @@ const [filters, setFilters] = useState([]);
   accessibility: [
     '基于 XDSTokenizer 构建，提供 combobox 模式，包含 aria-expanded 和 aria-autocomplete。',
     '过滤器令牌具有包含字段名、运算符和值的无障碍标签。',
-    '编辑弹出窗口使用 XDSPopover，支持焦点捕获和轻量关闭。',
+    '编辑弹出窗口具有 role="dialog" 和可配置的 aria-label，通过 useFocusTrap 实现焦点捕获。',
     '清除全部按钮具有无障碍标签。',
+    '所有硬编码的 UI 字符串都可通过 labels 属性覆盖以实现国际化。',
   ],
   keyboard:
     '输入搜索字段；回车选择；点击令牌编辑；空输入时退格删除最后一个过滤器；Escape 关闭弹出窗口',
@@ -406,8 +455,9 @@ export const docsDense = {
   accessibility: [
     'Built on XDSTokenizer providing combobox pattern w/ aria-expanded + aria-autocomplete.',
     'Filter tokens have accessible labels w/ field name, operator, value.',
-    'Edit popover uses XDSPopover w/ focus trapping + light dismiss.',
+    'Edit popover has role="dialog" w/ configurable aria-label + focus trapping via useFocusTrap.',
     'Clear all button has accessible label.',
+    'All hardcoded UI strings overridable via labels prop for i18n.',
   ],
   keyboard:
     'Type to search fields; Enter to select; Click token to edit; Backspace on empty input removes last filter; Escape closes popover',
@@ -425,6 +475,10 @@ export const docsDense = {
     status: 'Validation status object w/ type + optional message.',
     maxTokenLength: 'Max char length for filter value display in tokens.',
     popoverSaveButtonLabel: 'Label for save button in edit popover.',
+    popoverCancelButtonLabel: 'Label for cancel button in edit popover.',
+    popoverDeleteButtonLabel: 'Label for delete button in edit popover.',
+    popoverAriaLabel: 'Accessible label for edit popover dialog.',
+    labels: 'Override hardcoded UI strings for i18n. Unset keys use English defaults.',
     timezoneID: 'Timezone ID for date formatting (e.g. "America/New_York").',
     ref: 'Imperative handle w/ focusTypeahead() + blurTypeahead() methods.',
     endContent: 'Content at end of input row. Useful for action buttons or controls.',
