@@ -1,17 +1,43 @@
 /**
  * @file expandTypeScale.ts
  * @input Type scale configuration { base, ratio, weights? }
- * @output Token overrides for heading and text typography
+ * @output Token overrides for raw size tokens and semantic typography tokens
  * @position Theme utility; consumed by defineTheme.ts
  *
- * Computes font sizes, weights, and line heights from a base size and
- * scaling ratio using a geometric progression: size = base × ratio^step.
+ * Computes a complete typography token set from a base size and scaling ratio
+ * using a geometric progression: size = base × ratio^step.
  *
- * The heading scale is anchored at h4 = base. Headings h1–h3 scale up,
- * h5–h6 scale down. Text types are mapped to fixed steps relative to base.
+ * Two-layer architecture:
+ *   Layer 1: Raw size tokens (--text-4xs … --text-4xl)
+ *            Geometric progression in rem.
+ *   Layer 2: Semantic tokens (--heading-*, --text-*-size/leading/weight)
+ *            Sizes are var() references to Layer 1.
+ *            Line heights are hardcoded computed values (4px grid snapped).
+ *            Weights are var() references to font-weight tokens.
  *
- * Line heights are unitless ratios, snapped so the computed px value
- * aligns to a 4px grid for visual rhythm.
+ * The named leading tokens (--leading-tight … --leading-relaxed) are NOT
+ * modified by the type scale — they remain as intent-based ratios for
+ * component use.
+ *
+ * Step mapping:
+ *   step -5 → --text-4xs   (sub-scale)
+ *   step -4 → --text-3xs   (sub-scale)
+ *   step -3 → --text-2xs   (sub-scale)
+ *   step -2 → --text-xsm   (h6)
+ *   step -1 → --text-sm    (h5, supporting)
+ *   step  0 → --text-base  (h4, body, label, code)
+ *   step +1 → --text-lg    (h3, large)
+ *   step +2 → --text-xl    (h2)
+ *   step +3 → --text-2xl   (h1)
+ *   step +4 → --text-3xl
+ *   step +5 → --text-4xl
+ *
+ * Line heights use a tiered target ratio based on font size:
+ *   < 20px  → 1.5   (body text, small UI)
+ *   20–31px → 1.4   (medium headings)
+ *   ≥ 32px  → 1.25  (large display headings)
+ *
+ * Then 4px-grid-snapped with Math.round and a minimum of fontSize + 4.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/theme/expandTypeScale.test.ts
@@ -91,6 +117,37 @@ export type TypeScaleTokens = Record<string, string>;
 // =============================================================================
 
 /**
+ * Step → raw size token name.
+ * These tokens form the geometric font size scale.
+ *
+ * The full scale spans steps -5 to +5:
+ *   -5 → --text-4xs (sub-scale)
+ *   -4 → --text-3xs (sub-scale)
+ *   -3 → --text-2xs (sub-scale)
+ *   -2 → --text-xsm
+ *   -1 → --text-sm
+ *    0 → --text-base (anchor)
+ *   +1 → --text-lg
+ *   +2 → --text-xl
+ *   +3 → --text-2xl
+ *   +4 → --text-3xl
+ *   +5 → --text-4xl
+ */
+const STEP_TO_SIZE_TOKEN: Record<number, string> = {
+  [-5]: '--text-4xs',
+  [-4]: '--text-3xs',
+  [-3]: '--text-2xs',
+  [-2]: '--text-xsm',
+  [-1]: '--text-sm',
+  [0]: '--text-base',
+  [1]: '--text-lg',
+  [2]: '--text-xl',
+  [3]: '--text-2xl',
+  [4]: '--text-3xl',
+  [5]: '--text-4xl',
+};
+
+/**
  * Heading level → step offset from base (h4 = 0).
  * h1 is 3 steps above base, h6 is 2 steps below.
  */
@@ -117,7 +174,6 @@ const TEXT_STEPS: Record<string, number> = {
 
 /**
  * Default font weights per heading level.
- * Themes can override individual levels via weights.heading in the config.
  */
 const DEFAULT_HEADING_WEIGHTS: Record<number, string> = {
   1: 'var(--font-weight-semibold)',
@@ -130,7 +186,6 @@ const DEFAULT_HEADING_WEIGHTS: Record<number, string> = {
 
 /**
  * Default font weights per text type.
- * Themes can override individual types via weights.text in the config.
  */
 const DEFAULT_TEXT_WEIGHTS: Record<string, string> = {
   body: 'var(--font-weight-normal)',
@@ -138,18 +193,6 @@ const DEFAULT_TEXT_WEIGHTS: Record<string, string> = {
   label: 'var(--font-weight-medium)',
   code: 'var(--font-weight-normal)',
   supporting: 'var(--font-weight-normal)',
-};
-
-/**
- * Line-height target ratios. Headings are tighter, body text is more generous.
- */
-const HEADING_LH_RATIO = 1.3;
-const TEXT_LH_RATIOS: Record<string, number> = {
-  body: 1.5,
-  large: 1.45,
-  label: 1.4,
-  code: 1.5,
-  supporting: 1.5,
 };
 
 // =============================================================================
@@ -163,23 +206,6 @@ function computeSize(base: number, ratio: number, step: number): number {
   return Math.round(base * Math.pow(ratio, step));
 }
 
-/**
- * Compute a unitless line-height ratio, snapped so the computed px value
- * aligns to a 4px grid. Ensures a minimum of fontSize + 4px for readability.
- *
- * Returns a unitless number (e.g. 1.3333) — not a px value — so line-height
- * scales proportionally when StyleX converts font sizes to relative units.
- */
-function computeLeading(fontSize: number, targetRatio: number): number {
-  const rawLh = fontSize * targetRatio;
-  const snappedLh = Math.max(
-    Math.round(rawLh / 4) * 4,
-    Math.ceil((fontSize + 4) / 4) * 4,
-  );
-  // Round to 4 decimal places for clean CSS output
-  return Math.round((snappedLh / fontSize) * 10000) / 10000;
-}
-
 /** Convert px to rem based on the standard 16px root font size. */
 function pxToRem(px: number): string {
   const rem = Math.round((px / 16) * 10000) / 10000;
@@ -187,21 +213,52 @@ function pxToRem(px: number): string {
 }
 
 /**
+ * Tiered target line-height ratio based on font size.
+ *
+ *   < 20px  → 1.5   (body text, small UI elements)
+ *   20–31px → 1.4   (medium headings, transitional)
+ *   ≥ 32px  → 1.25  (large display headings)
+ */
+function targetLeadingRatio(fontSize: number): number {
+  return fontSize < 20 ? 1.5 : fontSize < 32 ? 1.4 : 1.25;
+}
+
+/**
+ * Compute a unitless line-height ratio, snapped so the computed px value
+ * aligns to a 4px grid. Ensures a minimum gap of fontSize + 4px.
+ *
+ * Uses a tiered target ratio — see `targetLeadingRatio`.
+ */
+function computeLeading(fontSize: number): number {
+  const target = targetLeadingRatio(fontSize);
+  const rawLh = fontSize * target;
+  const snappedLh = Math.max(
+    Math.round(rawLh / 4) * 4,
+    Math.ceil((fontSize + 4) / 4) * 4,
+  );
+  return Math.round((snappedLh / fontSize) * 10000) / 10000;
+}
+
+/**
  * Expand a type scale configuration into typography token overrides.
  *
- * Generates 33 tokens: 6 heading levels × 3 properties + 5 text types × 3 properties.
- *
- * Font sizes are emitted as rem values (e.g. '1.5rem') based on 16px root.
- * Line heights are emitted as unitless ratios (e.g. '1.3333').
- * Font weights are emitted as var() references (e.g. 'var(--font-weight-semibold)').
+ * Generates two layers of tokens:
+ *   - Layer 1: 11 raw size tokens (--text-4xs … --text-4xl) in rem
+ *   - Layer 2: 33 semantic tokens using var() refs for sizes and
+ *              hardcoded computed values for line heights
  *
  * @example
  * ```
  * const tokens = expandTypeScale({ base: 14, ratio: 1.2 });
- * // tokens['--heading-1-size'] === '1.5rem'
+ * // Layer 1 — raw sizes
+ * // tokens['--text-base'] === '0.875rem'
+ * // tokens['--text-2xl'] === '1.5rem'
+ * //
+ * // Layer 2 — semantic
+ * // tokens['--heading-1-size'] === 'var(--text-2xl)'
  * // tokens['--heading-1-leading'] === '1.3333'
- * // tokens['--heading-4-size'] === '0.875rem'  (anchor)
- * // tokens['--text-body-size'] === '0.875rem'
+ * // tokens['--text-body-size'] === 'var(--text-base)'
+ * // tokens['--text-body-leading'] === '1.4286'
  * ```
  */
 export function expandTypeScale(config: XDSTypeScaleConfig): TypeScaleTokens {
@@ -218,13 +275,24 @@ export function expandTypeScale(config: XDSTypeScaleConfig): TypeScaleTokens {
     ...(weights?.text as Record<string, string> | undefined),
   };
 
+  // ── Layer 1: Raw size tokens (rem) ────────────────────────────────────────
+  for (let step = -5; step <= 5; step++) {
+    const size = computeSize(base, ratio, step);
+    tokens[STEP_TO_SIZE_TOKEN[step]] = pxToRem(size);
+  }
+
+  // ── Layer 2: Semantic tokens ──────────────────────────────────────────────
+  // Sizes → var() refs to Layer 1
+  // Line heights → hardcoded computed values (4px grid snapped)
+  // Weights → var() refs (unchanged)
+
   // Heading tokens
   for (const [levelStr, step] of Object.entries(HEADING_STEPS)) {
     const level = Number(levelStr);
     const size = computeSize(base, ratio, step);
-    const leading = computeLeading(size, HEADING_LH_RATIO);
+    const leading = computeLeading(size);
 
-    tokens[`--heading-${level}-size`] = pxToRem(size);
+    tokens[`--heading-${level}-size`] = `var(${STEP_TO_SIZE_TOKEN[step]})`;
     tokens[`--heading-${level}-weight`] = headingWeights[level];
     tokens[`--heading-${level}-leading`] = `${leading}`;
   }
@@ -232,9 +300,9 @@ export function expandTypeScale(config: XDSTypeScaleConfig): TypeScaleTokens {
   // Text tokens
   for (const [type, step] of Object.entries(TEXT_STEPS)) {
     const size = computeSize(base, ratio, step);
-    const leading = computeLeading(size, TEXT_LH_RATIOS[type]);
+    const leading = computeLeading(size);
 
-    tokens[`--text-${type}-size`] = pxToRem(size);
+    tokens[`--text-${type}-size`] = `var(${STEP_TO_SIZE_TOKEN[step]})`;
     tokens[`--text-${type}-weight`] = textWeights[type];
     tokens[`--text-${type}-leading`] = `${leading}`;
   }
@@ -246,10 +314,6 @@ export function expandTypeScale(config: XDSTypeScaleConfig): TypeScaleTokens {
 // Component override generation
 // =============================================================================
 
-/**
- * Font family mapping for auto-generated component overrides.
- * Code text uses the code font; everything else uses the heading/body font.
- */
 const TEXT_FONT_FAMILIES: Record<string, string> = {
   body: 'var(--font-body)',
   large: 'var(--font-body)',
@@ -259,30 +323,13 @@ const TEXT_FONT_FAMILIES: Record<string, string> = {
 };
 
 /**
- * Generate component style overrides for heading and text components
- * from a type scale configuration.
- *
- * Produces rules like:
- *   heading: { 'level:1': { fontFamily, fontSize, fontWeight, lineHeight } }
- *   text:    { 'type:body': { fontFamily, fontSize, fontWeight, lineHeight } }
- *
- * Color is intentionally excluded — it's handled by component internals
- * (XDSHeading defaults to primary, XDSText has per-type defaults).
- * Including color here would duplicate component logic and risk specificity
- * conflicts with the color prop.
- *
- * @example
- * ```
- * const components = generateTypeScaleComponents({ base: 14, ratio: 1.2 });
- * // components.heading['level:1'].fontSize === 'var(--heading-1-size)'
- * ```
+ * Generate component style overrides for heading and text components.
  */
 export function generateTypeScaleComponents(
   config: XDSTypeScaleConfig,
 ): Record<string, Record<string, Record<string, string>>> {
   const components: Record<string, Record<string, Record<string, string>>> = {};
 
-  // Heading overrides
   const headingRules: Record<string, Record<string, string>> = {};
   for (const level of [1, 2, 3, 4, 5, 6]) {
     headingRules[`level:${level}`] = {
@@ -294,7 +341,6 @@ export function generateTypeScaleComponents(
   }
   components.heading = headingRules;
 
-  // Text overrides
   const textRules: Record<string, Record<string, string>> = {};
   for (const type of ['body', 'large', 'label', 'code', 'supporting']) {
     textRules[`type:${type}`] = {

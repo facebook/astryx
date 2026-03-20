@@ -129,19 +129,72 @@ const sharpTheme = defineTheme({
 
 ### Text Sizes
 
-| Token       | Value          |
-| ----------- | -------------- |
-| --text-4xs  | 8px            |
-| --text-3xs  | 10px           |
-| --text-2xs  | 11px           |
-| --text-xsm  | 12px           |
-| --text-sm   | 13px           |
-| --text-base | 14px (default) |
-| --text-lg   | 16px           |
-| --text-xl   | 18px           |
-| --text-2xl  | 20px           |
-| --text-3xl  | 24px           |
-| --text-4xl  | 32px           |
+Computed from a geometric scale: `round(base × ratio^step)`.
+Default: base=14px, ratio=1.2.
+
+| Token       | Step | Default | Usage           |
+| ----------- | ---- | ------- | --------------- |
+| --text-4xs  | -5   | 6px     | Citation, micro |
+| --text-3xs  | -4   | 7px     | Micro labels    |
+| --text-2xs  | -3   | 8px     | Small micro     |
+| --text-xsm  | -2   | 10px    | Extra small     |
+| --text-sm   | -1   | 12px    | Small text      |
+| --text-base | 0    | 14px    | Body (anchor)   |
+| --text-lg   | +1   | 17px    | Large text      |
+| --text-xl   | +2   | 20px    | Extra large     |
+| --text-2xl  | +3   | 24px    | 2× large        |
+| --text-3xl  | +4   | 29px    | 3× large        |
+| --text-4xl  | +5   | 35px    | 4× large        |
+
+### Type Scale (Semantic Tokens)
+
+Semantic tokens map headings and text types to the raw size scale.
+Sizes are `var()` references; line heights are 4px-grid-snapped computed values.
+
+Override the entire scale with `typeScale: { base, ratio }` in `defineTheme()`.
+
+#### Heading Tokens
+
+| Token               | Maps to          | Default | Leading |
+| ------------------- | ---------------- | ------- | ------- |
+| --heading-1-size    | var(--text-2xl)  | 24px    |         |
+| --heading-1-weight  | semibold         |         |         |
+| --heading-1-leading |                  |         | 1.3333  |
+| --heading-2-size    | var(--text-xl)   | 20px    |         |
+| --heading-2-weight  | semibold         |         |         |
+| --heading-2-leading |                  |         | 1.4     |
+| --heading-3-size    | var(--text-lg)   | 17px    |         |
+| --heading-3-weight  | semibold         |         |         |
+| --heading-3-leading |                  |         | 1.4118  |
+| --heading-4-size    | var(--text-base) | 14px    |         |
+| --heading-4-weight  | semibold         |         |         |
+| --heading-4-leading |                  |         | 1.4286  |
+| --heading-5-size    | var(--text-sm)   | 12px    |         |
+| --heading-5-weight  | semibold         |         |         |
+| --heading-5-leading |                  |         | 1.6667  |
+| --heading-6-size    | var(--text-xsm)  | 10px    |         |
+| --heading-6-weight  | semibold         |         |         |
+| --heading-6-leading |                  |         | 1.6     |
+
+#### Text Type Tokens
+
+| Token                     | Maps to          | Default | Leading | Weight   |
+| ------------------------- | ---------------- | ------- | ------- | -------- |
+| --text-body-size          | var(--text-base) | 14px    |         |          |
+| --text-body-weight        |                  |         |         | normal   |
+| --text-body-leading       |                  |         | 1.4286  |          |
+| --text-large-size         | var(--text-lg)   | 17px    |         |          |
+| --text-large-weight       |                  |         |         | semibold |
+| --text-large-leading      |                  |         | 1.4118  |          |
+| --text-label-size         | var(--text-base) | 14px    |         |          |
+| --text-label-weight       |                  |         |         | medium   |
+| --text-label-leading      |                  |         | 1.4286  |          |
+| --text-code-size          | var(--text-base) | 14px    |         |          |
+| --text-code-weight        |                  |         |         | normal   |
+| --text-code-leading       |                  |         | 1.4286  |          |
+| --text-supporting-size    | var(--text-sm)   | 12px    |         |          |
+| --text-supporting-weight  |                  |         |         | normal   |
+| --text-supporting-leading |                  |         | 1.6667  |          |
 
 ### Font Weights
 
@@ -150,7 +203,9 @@ const sharpTheme = defineTheme({
 - `--font-weight-semibold`: 600
 - `--font-weight-bold`: 700
 
-### Line Heights (Leading)
+### Line Heights (Named Leading)
+
+Intent-based ratios for component use. Not modified by `typeScale`.
 
 | Token             | Value  | Usage                        |
 | ----------------- | ------ | ---------------------------- |

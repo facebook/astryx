@@ -239,20 +239,23 @@ describe('typeScale', () => {
       name: 'dense',
       typeScale: {base: 12, ratio: 1.125},
     });
-    expect(theme.tokens['--heading-4-size']).toBe('0.75rem');
-    expect(theme.tokens['--text-body-size']).toBe('0.75rem');
+    // Semantic tokens are now var() refs; raw token has the computed value
+    expect(theme.tokens['--heading-4-size']).toBe('var(--text-base)');
+    expect(theme.tokens['--text-base']).toBe('0.75rem');
+    expect(theme.tokens['--text-body-size']).toBe('var(--text-base)');
   });
 
-  it('generates all 33 type scale tokens', () => {
+  it('generates 44 tokens (11 raw size + 33 semantic)', () => {
     const theme = defineTheme({
       name: 'custom',
       typeScale: {base: 14, ratio: 1.2},
     });
-    // 6 heading levels × 3 props + 5 text types × 3 props = 33
+    // 11 raw size (--text-4xs…--text-4xl) + 33 semantic = 44
+    // Filtering for --heading- or --text- captures raw + semantic = 11 + 15 + 18 = 44
     const typeScaleKeys = Object.keys(theme.tokens).filter(
       k => k.startsWith('--heading-') || k.startsWith('--text-'),
     );
-    expect(typeScaleKeys).toHaveLength(33);
+    expect(typeScaleKeys).toHaveLength(44);
   });
 
   it('explicit tokens override typeScale-generated values', () => {
@@ -265,8 +268,8 @@ describe('typeScale', () => {
     });
     // Explicit token should win over typeScale
     expect(theme.tokens['--heading-1-size']).toBe('40px');
-    // Non-overridden typeScale token should still be present
-    expect(theme.tokens['--heading-4-size']).toBe('0.875rem');
+    // Non-overridden typeScale token should still be a var() ref
+    expect(theme.tokens['--heading-4-size']).toBe('var(--text-base)');
   });
 
   it('works without typeScale (backwards compatible)', () => {
@@ -284,7 +287,8 @@ describe('typeScale', () => {
       },
     });
     expect(theme.tokens['--color-accent']).toBe('#FF0000');
-    expect(theme.tokens['--heading-4-size']).toBe('1rem');
+    expect(theme.tokens['--heading-4-size']).toBe('var(--text-base)');
+    expect(theme.tokens['--text-base']).toBe('1rem');
   });
 });
 
@@ -423,7 +427,7 @@ describe('radiusScale', () => {
       },
     });
     expect(theme.tokens['--color-accent']).toBe('#FF0000');
-    expect(theme.tokens['--heading-4-size']).toBe('1rem');
+    expect(theme.tokens['--heading-4-size']).toBe('var(--text-base)');
     expect(theme.tokens['--radius-2']).toBe('8px');
   });
 });
