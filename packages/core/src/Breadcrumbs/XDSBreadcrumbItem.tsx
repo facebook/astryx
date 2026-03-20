@@ -78,7 +78,7 @@ const itemStyles = stylex.create({
     margin: 0,
   },
   defaultSize: {
-    fontSize: typeScaleVars['--text-supporting-size'],
+    fontSize: typeScaleVars['--text-body-size'],
   },
   supportingSize: {
     fontSize: typeScaleVars['--text-supporting-size'],

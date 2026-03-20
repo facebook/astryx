@@ -187,7 +187,7 @@ export const dayCellStyles = stylex.create({
     borderStyle: 'none',
     cursor: 'pointer',
     fontFamily: 'inherit',
-    fontSize: typeScaleVars['--text-supporting-size'],
+    fontSize: typeScaleVars['--text-body-size'],
     padding: 0,
     position: 'relative',
     zIndex: 1,

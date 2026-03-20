@@ -154,13 +154,13 @@ const styles = stylex.create({
     alignItems: 'baseline',
   },
   label: {
-    fontSize: typeScaleVars['--text-supporting-size'],
+    fontSize: typeScaleVars['--text-body-size'],
     lineHeight: lineHeightVars['--leading-snug'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-primary'],
   },
   valueLabel: {
-    fontSize: typeScaleVars['--text-supporting-size'],
+    fontSize: typeScaleVars['--text-body-size'],
     lineHeight: lineHeightVars['--leading-snug'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],

@@ -195,13 +195,13 @@ const densityStyles = stylex.create({
   compact: {
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-2'],
-    fontSize: typeScaleVars['--text-supporting-size'],
+    fontSize: typeScaleVars['--text-body-size'],
     lineHeight: lineHeightVars['--leading-snug'],
   },
   balanced: {
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
-    fontSize: typeScaleVars['--text-supporting-size'],
+    fontSize: typeScaleVars['--text-body-size'],
     lineHeight: lineHeightVars['--leading-snug'],
   },
   spacious: {
