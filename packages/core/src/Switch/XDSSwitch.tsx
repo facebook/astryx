@@ -85,6 +85,9 @@ const styles = stylex.create({
   inputDisabled: {
     cursor: 'not-allowed',
   },
+  inputBusy: {
+    pointerEvents: 'none',
+  },
   track: {
     display: 'flex',
     alignItems: 'center',
@@ -167,6 +170,17 @@ const styles = stylex.create({
     fontFamily: typographyVars['--font-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
     color: colorVars['--color-text-secondary'],
+  },
+  srOnly: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    padding: 0,
+    margin: -1,
+    overflow: 'hidden',
+    clip: 'rect(0, 0, 0, 0)',
+    whiteSpace: 'nowrap',
+    borderWidth: 0,
   },
 });
 
@@ -302,7 +316,14 @@ export function XDSSwitch({
   className,
   style,
   ref,
+  ...rest
 }: XDSSwitchProps) {
+  if (process.env.NODE_ENV !== 'production' && !label) {
+    console.warn(
+      'XDSSwitch: `label` prop must not be empty. Provide a meaningful label for accessibility.',
+    );
+  }
+
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -338,7 +359,13 @@ export function XDSSwitch({
           if (onChangeAction && !e.defaultPrevented) {
             startTransition(async () => {
               setOptimisticValue(checked);
-              await onChangeAction(checked, e);
+              try {
+                await onChangeAction(checked, e);
+              } catch (error) {
+                if (process.env.NODE_ENV !== 'production') {
+                  console.error('XDSSwitch: onChangeAction failed:', error);
+                }
+              }
             });
           }
         }}
@@ -347,7 +374,11 @@ export function XDSSwitch({
         aria-describedby={ariaDescribedBy}
         aria-invalid={status?.type === 'error' ? true : undefined}
         aria-busy={isBusy || undefined}
-        {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
+        {...stylex.props(
+          styles.input,
+          isDisabled && styles.inputDisabled,
+          isBusy && styles.inputBusy,
+        )}
       />
       <div
         aria-hidden="true"
@@ -372,6 +403,11 @@ export function XDSSwitch({
           {isBusy && <XDSSpinner size="sm" />}
         </div>
       </div>
+      {isBusy && (
+        <span {...stylex.props(styles.srOnly)} role="status">
+          Loading
+        </span>
+      )}
     </div>
   );
 
@@ -397,8 +433,12 @@ export function XDSSwitch({
 
   return (
     <div
+      {...rest}
       {...mergeProps(
-        xdsClassName('switch-field', {labelPosition, labelSpacing}),
+        xdsClassName('switch-field', {
+          labelPosition: labelPosition !== 'end' ? labelPosition : undefined,
+          labelSpacing: labelSpacing !== 'default' ? labelSpacing : undefined,
+        }),
         stylex.props(xstyle),
         className,
         style,

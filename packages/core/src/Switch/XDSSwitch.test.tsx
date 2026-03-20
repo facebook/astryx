@@ -236,4 +236,222 @@ describe('XDSSwitch', () => {
     );
     expect(screen.getByRole('switch')).toBeInTheDocument();
   });
+
+  it('does not have dangling aria-describedby when isLabelHidden with description', () => {
+    render(
+      <XDSSwitch
+        label="Toggle"
+        description="Some description"
+        isLabelHidden
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    const switchEl = screen.getByRole('switch');
+    // aria-describedby should not reference a non-existent element
+    const describedBy = switchEl.getAttribute('aria-describedby');
+    if (describedBy) {
+      for (const id of describedBy.split(' ')) {
+        expect(document.getElementById(id)).toBeInTheDocument();
+      }
+    }
+    // Description text should not be rendered when label is hidden
+    expect(screen.queryByText('Some description')).not.toBeInTheDocument();
+  });
+
+  it('renders loading announcement when isBusy', () => {
+    render(
+      <XDSSwitch
+        label="Enable notifications"
+        value={false}
+        isLoading
+        onChange={() => {}}
+      />,
+    );
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent('Loading');
+  });
+
+  it('does not render loading announcement when not busy', () => {
+    render(
+      <XDSSwitch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('sets aria-busy on input when loading', () => {
+    render(
+      <XDSSwitch
+        label="Enable notifications"
+        value={false}
+        isLoading
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('catches onChangeAction errors without breaking', async () => {
+    const user = userEvent.setup();
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const failingAction = vi.fn().mockRejectedValue(new Error('fail'));
+
+    render(
+      <XDSSwitch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        onChangeAction={failingAction}
+      />,
+    );
+
+    const switchEl = screen.getByRole('switch');
+    // Should not throw
+    await user.click(switchEl);
+    expect(failingAction).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it('passes through data-testid and other HTML attributes', () => {
+    render(
+      <XDSSwitch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        data-testid="my-switch"
+      />,
+    );
+    expect(screen.getByTestId('my-switch')).toBeInTheDocument();
+  });
+
+  it('warns in development when label is empty', () => {
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <XDSSwitch label="" value={false} onChange={() => {}} />,
+    );
+    expect(consoleWarn).toHaveBeenCalledWith(
+      expect.stringContaining('label'),
+    );
+    consoleWarn.mockRestore();
+  });
+
+  it('omits default variant values from xdsClassName', () => {
+    const {container} = render(
+      <XDSSwitch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    const root = container.firstChild as HTMLElement;
+    expect(root.className).toContain('xds-switch-field');
+    // Default values 'end' and 'default' should not appear as class names
+    expect(root.className).not.toContain(' end');
+    expect(root.className).not.toContain(' default');
+  });
+
+  it('renders status message when status prop is provided', () => {
+    render(
+      <XDSSwitch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Failed to save setting'}}
+      />,
+    );
+    expect(screen.getByText('Failed to save setting')).toBeInTheDocument();
+  });
+
+  it('sets aria-invalid when status type is error', () => {
+    render(
+      <XDSSwitch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Error message'}}
+      />,
+    );
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('does not set aria-invalid when status type is not error', () => {
+    render(
+      <XDSSwitch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        status={{type: 'warning', message: 'Warning message'}}
+      />,
+    );
+    expect(screen.getByRole('switch')).not.toHaveAttribute('aria-invalid');
+  });
+
+  it('associates status message with switch via aria-describedby', () => {
+    render(
+      <XDSSwitch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Error message'}}
+      />,
+    );
+    const switchEl = screen.getByRole('switch');
+    const describedBy = switchEl.getAttribute('aria-describedby');
+    expect(describedBy).toBeTruthy();
+  });
+
+  it('calls onFocus and onBlur callbacks', async () => {
+    const user = userEvent.setup();
+    const handleFocus = vi.fn();
+    const handleBlur = vi.fn();
+    render(
+      <XDSSwitch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+      />,
+    );
+
+    const switchEl = screen.getByRole('switch');
+    await user.click(switchEl);
+    expect(handleFocus).toHaveBeenCalled();
+
+    await user.tab();
+    expect(handleBlur).toHaveBeenCalled();
+  });
+
+  it('sets required attribute when isRequired is true', () => {
+    render(
+      <XDSSwitch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        isRequired
+      />,
+    );
+    expect(screen.getByRole('switch')).toBeRequired();
+  });
+
+  it('includes non-default variant values in xdsClassName', () => {
+    const {container} = render(
+      <XDSSwitch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        labelPosition="start"
+        labelSpacing="spread"
+      />,
+    );
+    const root = container.firstChild as HTMLElement;
+    expect(root.className).toContain('start');
+    expect(root.className).toContain('spread');
+  });
 });
