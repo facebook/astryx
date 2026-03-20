@@ -84,6 +84,17 @@ export const docs = {
       type: "Array<'top' | 'bottom' | 'start' | 'end'>",
       description: 'Which sides of the section have divider borders.',
     },
+    {
+      name: 'padding',
+      type: 'SpacingStep',
+      description: 'Internal padding using the spacing scale (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10). Use padding={0} for edge-to-edge content.',
+      default: '4',
+    },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object.',
+    },
   ],
   theming: {
     targets: [
@@ -177,6 +188,17 @@ export const docsZh = {
       type: "Array<'top' | 'bottom' | 'start' | 'end'>",
       description: '区域的哪些边具有分隔线边框。',
     },
+    {
+      name: 'padding',
+      type: 'SpacingStep',
+      description: '使用间距比例的内部内边距（0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10）。使用 padding={0} 实现全宽内容。',
+      default: '4',
+    },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description: '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值，不能是内联样式对象。',
+    },
   ],
   theming: {
     targets: [
@@ -204,5 +226,7 @@ export const docsDense = {
     minHeight: 'Minimum height of section.',
     children: 'Content rendered inside section.',
     dividers: 'Which sides of section have divider borders.',
+    padding: 'Internal padding via spacing scale; 0 for edge-to-edge content.',
+    xstyle: 'StyleX styles for layout customization; must be stylex.create() value.',
   },
 };

@@ -17,6 +17,11 @@ export const docs = {
       description: 'Badge content. Omit for dot indicator.',
     },
     {
+      name: 'label',
+      type: 'ReactNode',
+      description: 'Badge text content. When both label and children are omitted, renders as a dot indicator.',
+    },
+    {
       name: 'icon',
       type: 'ReactNode',
       description: 'Optional leading icon.',
@@ -67,6 +72,11 @@ export const docsZh = {
       description: '徽章内容。省略则显示圆点指示器。',
     },
     {
+      name: 'label',
+      type: 'ReactNode',
+      description: '徽章文本内容。当 label 和 children 都省略时，渲染为圆点指示器。',
+    },
+    {
       name: 'icon',
       type: 'ReactNode',
       description: '可选的前置图标。',
@@ -104,6 +114,7 @@ export const docsDense = {
   description: 'badge for status indicators, counts, or labels',
   propDescriptions: {
     variant: 'visual style variant',
+    label: 'badge text; omit with children for dot indicator',
     children: 'badge content; omit for dot indicator',
     icon: 'optional leading icon',
   },

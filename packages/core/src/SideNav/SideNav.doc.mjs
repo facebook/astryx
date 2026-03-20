@@ -306,6 +306,12 @@ export const docs = {
           type: 'ReactNode',
           description: 'Sub-items for nesting.',
         },
+        {
+          name: 'collapsible',
+          type: 'boolean | { defaultIsCollapsed?: boolean, isCollapsed?: boolean, onCollapsedChange?: (isCollapsed: boolean) => void }',
+          description: 'Enables collapse behavior for items with children. Pass true for uncontrolled (starts expanded), or an object for controlled mode.',
+          default: 'false',
+        },
       ],
       examples: [
         {
@@ -324,8 +330,8 @@ export const docs = {
 />`,
         },
         {
-          label: 'Nested items',
-          code: `<XDSSideNavItem label="Settings" icon={GearIcon} href="/settings">
+          label: 'Collapsible nested items',
+          code: `<XDSSideNavItem label="Settings" icon={GearIcon} collapsible>
   <XDSSideNavItem label="General" href="/settings/general" />
   <XDSSideNavItem label="Security" href="/settings/security" />
 </XDSSideNavItem>`,
@@ -741,6 +747,12 @@ export const docsZh = {
           type: 'ReactNode',
           description: '用于嵌套的子项。',
         },
+        {
+          name: 'collapsible',
+          type: 'boolean | { defaultIsCollapsed?: boolean, isCollapsed?: boolean, onCollapsedChange?: (isCollapsed: boolean) => void }',
+          description: '启用带子项的折叠行为。传 true 为非受控模式（默认展开），或传对象用于受控模式。',
+          default: 'false',
+        },
       ],
       examples: [
         {
@@ -759,8 +771,8 @@ export const docsZh = {
 />`,
         },
         {
-          label: '嵌套项',
-          code: `<XDSSideNavItem label="Settings" icon={GearIcon} href="/settings">
+          label: '可折叠嵌套项',
+          code: `<XDSSideNavItem label="Settings" icon={GearIcon} collapsible>
   <XDSSideNavItem label="General" href="/settings/general" />
   <XDSSideNavItem label="Security" href="/settings/security" />
 </XDSSideNavItem>`,
@@ -936,6 +948,7 @@ export const docsDense = {
         onClick: 'Click handler.',
         endContent: 'Right-side content such as badges or counts.',
         children: 'Sub-items for nesting.',
+        collapsible: 'Enables collapse for items w/ children. true=uncontrolled, object=controlled mode.',
       },
     },
     {
