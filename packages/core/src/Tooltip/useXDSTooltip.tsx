@@ -31,8 +31,10 @@ import {
   radiusVars,
   spacingVars,
   typographyVars,
+  textSizeVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
+import {xdsClassName} from '../utils';
 
 const styles = stylex.create({
   // Base container styles - inverted colors for high contrast
@@ -43,7 +45,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-2'],
     // Typography
     fontFamily: typographyVars['--font-body'],
-    fontSize: 14,
+    fontSize: textSizeVars['--text-base'],
     lineHeight: lineHeightVars['--leading-base'],
     // Animation: closed state (default) and open state
     opacity: {
@@ -396,6 +398,7 @@ export function useXDSTooltip(
         placement: props?.placement ?? placement,
         alignment: props?.alignment ?? alignment,
         xstyle: popoverXstyle,
+        className: xdsClassName('tooltip'),
       };
 
       return layer.render(

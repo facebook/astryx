@@ -73,6 +73,16 @@ export interface ContextRenderProps {
    * StyleX styles for the popover container.
    */
   xstyle?: StyleXStyles;
+  /**
+   * Additional CSS class name(s) for the popover container.
+   * Use with xdsClassName() for theme targeting.
+   */
+  className?: string;
+  /**
+   * Inline styles for the popover container.
+   * Merged after StyleX and anchor positioning styles.
+   */
+  style?: React.CSSProperties;
 }
 
 /**
@@ -81,6 +91,20 @@ export interface ContextRenderProps {
 export interface FixedRenderProps {
   x: number;
   y: number;
+  /**
+   * StyleX styles for the popover container.
+   */
+  xstyle?: StyleXStyles;
+  /**
+   * Additional CSS class name(s) for the popover container.
+   * Use with xdsClassName() for theme targeting.
+   */
+  className?: string;
+  /**
+   * Inline styles for the popover container.
+   * Merged after StyleX and position styles.
+   */
+  style?: React.CSSProperties;
 }
 
 /**
@@ -329,7 +353,13 @@ export function useXDSLayer(
   // Render function for context mode
   const renderContext = useCallback(
     (children: ReactNode, props?: ContextRenderProps) => {
-      const {placement = 'above', alignment = 'center', xstyle} = props || {};
+      const {
+        placement = 'above',
+        alignment = 'center',
+        xstyle,
+        className: extraClassName,
+        style: extraStyle,
+      } = props || {};
 
       // CSS anchor positioning (dynamic, not in StyleX)
       const anchorStyle: React.CSSProperties = {
@@ -338,13 +368,18 @@ export function useXDSLayer(
         positionTryFallbacks: 'flip-block, flip-inline, flip-block flip-inline',
       } as React.CSSProperties;
 
+      const stylexResult = stylex.props(styles.base, xstyle);
+      const combinedClassName = extraClassName
+        ? `${extraClassName} ${stylexResult.className ?? ''}`
+        : stylexResult.className;
+
       return (
         <div
           ref={popoverRefCallback}
           id={id}
           popover={lightDismiss ? 'auto' : 'manual'}
-          {...stylex.props(styles.base, xstyle)}
-          style={anchorStyle}>
+          className={combinedClassName}
+          style={{...stylexResult.style, ...anchorStyle, ...extraStyle}}>
           {children}
         </div>
       );
@@ -355,7 +390,13 @@ export function useXDSLayer(
   // Render function for fixed mode
   const renderFixed = useCallback(
     (children: ReactNode, props: FixedRenderProps) => {
-      const {x, y} = props;
+      const {
+        x,
+        y,
+        xstyle,
+        className: extraClassName,
+        style: extraStyle,
+      } = props;
 
       // Dynamic position values
       const positionStyle: React.CSSProperties = {
@@ -363,13 +404,18 @@ export function useXDSLayer(
         left: x,
       };
 
+      const stylexResult = stylex.props(styles.base, styles.fixed, xstyle);
+      const combinedClassName = extraClassName
+        ? `${extraClassName} ${stylexResult.className ?? ''}`
+        : stylexResult.className;
+
       return (
         <div
           ref={popoverRefCallback}
           id={id}
           popover={lightDismiss ? 'auto' : 'manual'}
-          {...stylex.props(styles.base, styles.fixed)}
-          style={positionStyle}>
+          className={combinedClassName}
+          style={{...stylexResult.style, ...positionStyle, ...extraStyle}}>
           {children}
         </div>
       );
