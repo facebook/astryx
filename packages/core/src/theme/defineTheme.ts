@@ -59,6 +59,9 @@ import {
   type XDSRadiusScaleConfig,
 } from './expandRadiusScale';
 
+import type {DomainTokenName} from './domainTokens';
+import {domainTokenDefaults} from './domainTokens';
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -79,35 +82,8 @@ export type XDSCoreTokenName =
   | keyof typeof fontWeightDefaults
   | keyof typeof typeScaleDefaults;
 
-/**
- * Domain token registry — extensible via module augmentation.
- *
- * Domain packages (e.g. @xds/lab code components, dataviz) declare
- * their token names here so defineTheme gets type-safe autocomplete
- * for domain-specific tokens.
- *
- * @example
- * ```ts
- * // In @xds/lab or any domain package:
- * declare module '@xds/core/theme' {
- *   interface XDSDomainTokens {
- *     syntax: '--color-syntax-keyword' | '--color-syntax-string' | ...;
- *     dataviz: '--color-dataviz-primary' | '--color-dataviz-secondary' | ...;
- *   }
- * }
- * ```
- */
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface XDSDomainTokens {}
-
-/** All domain token names (union of all registered domains) */
-export type XDSDomainTokenName =
-  XDSDomainTokens[keyof XDSDomainTokens] extends never
-    ? never
-    : XDSDomainTokens[keyof XDSDomainTokens];
-
-/** All valid XDS token names — core + registered domain tokens */
-export type XDSTokenName = XDSCoreTokenName | XDSDomainTokenName;
+/** All valid XDS token names — core + domain tokens */
+export type XDSTokenName = XDSCoreTokenName | DomainTokenName;
 
 /**
  * Token value — either a single string or a [light, dark] tuple.
@@ -274,6 +250,7 @@ export const xdsTokenDefaults: Record<string, string> = {
   ...lineHeightDefaults,
   ...fontWeightDefaults,
   ...typeScaleDefaults,
+  ...domainTokenDefaults,
 };
 
 // =============================================================================
