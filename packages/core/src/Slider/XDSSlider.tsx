@@ -21,7 +21,6 @@ import {
   type PointerEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
@@ -34,12 +33,14 @@ import {
 import {XDSField} from '../Field/XDSField';
 import {XDSTooltip} from '../Tooltip/XDSTooltip';
 import type {XDSInputStatus} from '../Field/types';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export interface XDSSliderBaseProps {
+export interface XDSSliderBaseProps
+  extends Omit<XDSBaseProps<HTMLDivElement>, 'onChange'> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /** Label text for the slider (always rendered for accessibility). */
@@ -72,27 +73,6 @@ export interface XDSSliderBaseProps {
   valueDisplay?: 'tooltip' | 'text' | 'none';
   /** Tick marks at specified positions with optional labels. */
   marks?: Array<{value: number; label?: string}>;
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
   /** Test ID for the root element. */
   'data-testid'?: string;
 }
@@ -201,7 +181,10 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-rounded'],
     backgroundColor: colorVars['--color-accent'],
     transform: 'translate(-50%, -50%)',
-    transitionProperty: 'background-color, box-shadow',
+    transitionProperty: {
+      default: 'background-color, box-shadow',
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     outline: 'none',
@@ -373,6 +356,9 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
     ? (value as [number, number])
     : [value as number];
 
+  const valuesRef = useRef(values);
+  valuesRef.current = values;
+
   const getValueFromPosition = useCallback(
     (clientX: number, clientY: number): number => {
       const track = trackRef.current;
@@ -449,15 +435,20 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
     ],
   );
 
+  const onChangeEndRef = useRef(onChangeEnd);
+  onChangeEndRef.current = onChangeEnd;
+
   const fireChangeEnd = useCallback(() => {
+    const currentValues = valuesRef.current;
+    const cb = onChangeEndRef.current;
     if (isRange) {
-      (onChangeEnd as XDSSliderRangeProps['onChangeEnd'])?.(
-        values as unknown as [number, number],
+      (cb as XDSSliderRangeProps['onChangeEnd'])?.(
+        currentValues as unknown as [number, number],
       );
     } else {
-      (onChangeEnd as XDSSliderSingleProps['onChangeEnd'])?.(values[0]);
+      (cb as XDSSliderSingleProps['onChangeEnd'])?.(currentValues[0]);
     }
-  }, [isRange, values, onChangeEnd]);
+  }, [isRange]);
 
   // Pointer handlers
   const handlePointerDown = useCallback(
@@ -468,6 +459,14 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
       const thumbIndex = getClosestThumb(newVal);
       draggingThumbRef.current = thumbIndex;
       updateValue(thumbIndex, newVal);
+
+      // Focus the closest thumb
+      const track = trackRef.current;
+      if (track) {
+        const thumbs = track.querySelectorAll<HTMLElement>('[role="slider"]');
+        thumbs[thumbIndex]?.focus();
+      }
+
       if (
         typeof (e.currentTarget as HTMLElement).setPointerCapture === 'function'
       ) {
@@ -530,8 +529,9 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
 
       e.preventDefault();
       updateValue(thumbIndex, newVal);
+      fireChangeEnd();
     },
-    [isDisabled, values, step, min, max, updateValue],
+    [isDisabled, values, step, min, max, updateValue, fireChangeEnd],
   );
 
   // Format display value
@@ -678,6 +678,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
           )}>
           {/* Background track */}
           <div
+            aria-hidden="true"
             {...stylex.props(
               styles.track,
               isHorizontal ? styles.trackHorizontal : styles.trackVertical,
@@ -686,6 +687,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
 
           {/* Filled track */}
           <div
+            aria-hidden="true"
             style={filledStyle}
             {...stylex.props(
               styles.filledTrack,
@@ -698,6 +700,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
           {/* Marks */}
           {marks && (
             <div
+              aria-hidden="true"
               {...stylex.props(
                 styles.marksContainer,
                 isHorizontal

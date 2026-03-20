@@ -8,7 +8,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, act} from '@testing-library/react';
+import {render, screen, act, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSSlider} from './XDSSlider';
 
@@ -248,5 +248,353 @@ describe('XDSSlider', () => {
     const sliders = screen.getAllByRole('slider');
     expect(sliders[0]).toHaveAttribute('aria-valuenow', '25');
     expect(sliders[1]).toHaveAttribute('aria-valuenow', '75');
+  });
+
+  it('fires onChangeEnd on keyboard ArrowRight', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    const handleChangeEnd = vi.fn();
+    render(
+      <XDSSlider
+        label="Volume"
+        value={50}
+        step={5}
+        onChange={handleChange}
+        onChangeEnd={handleChangeEnd}
+      />,
+    );
+    const slider = screen.getByRole('slider');
+    act(() => {
+      slider.focus();
+    });
+    await user.keyboard('{ArrowRight}');
+    expect(handleChange).toHaveBeenCalledWith(55);
+    expect(handleChangeEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('fires onChangeEnd on keyboard Home/End', async () => {
+    const user = userEvent.setup();
+    const handleChangeEnd = vi.fn();
+    render(
+      <XDSSlider
+        label="Volume"
+        value={50}
+        min={0}
+        max={100}
+        onChange={vi.fn()}
+        onChangeEnd={handleChangeEnd}
+      />,
+    );
+    const slider = screen.getByRole('slider');
+    act(() => {
+      slider.focus();
+    });
+    await user.keyboard('{Home}');
+    expect(handleChangeEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('fires onChangeEnd on pointer up after pointer down', () => {
+    const handleChange = vi.fn();
+    const handleChangeEnd = vi.fn();
+    render(
+      <XDSSlider
+        label="Volume"
+        value={50}
+        min={0}
+        max={100}
+        onChange={handleChange}
+        onChangeEnd={handleChangeEnd}
+      />,
+    );
+    const slider = screen.getByRole('slider');
+    const trackContainer = slider.parentElement!;
+
+    // Mock getBoundingClientRect for position calculation
+    trackContainer.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 20,
+      width: 200,
+      height: 20,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    fireEvent.pointerDown(trackContainer, {
+      clientX: 100,
+      clientY: 10,
+      pointerId: 1,
+    });
+    fireEvent.pointerUp(trackContainer, {
+      clientX: 100,
+      clientY: 10,
+      pointerId: 1,
+    });
+
+    expect(handleChangeEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('fires onChangeEnd with current value for range mode on keyboard', async () => {
+    const user = userEvent.setup();
+    const handleChangeEnd = vi.fn();
+    render(
+      <XDSSlider
+        label="Range"
+        value={[20, 80] as [number, number]}
+        min={0}
+        max={100}
+        step={5}
+        onChange={vi.fn()}
+        onChangeEnd={handleChangeEnd}
+      />,
+    );
+    const sliders = screen.getAllByRole('slider');
+    act(() => {
+      sliders[0].focus();
+    });
+    await user.keyboard('{ArrowRight}');
+    expect(handleChangeEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('focuses closest thumb on track click', () => {
+    render(
+      <XDSSlider
+        label="Volume"
+        value={50}
+        min={0}
+        max={100}
+        onChange={vi.fn()}
+      />,
+    );
+    const slider = screen.getByRole('slider');
+    const trackContainer = slider.parentElement!;
+
+    trackContainer.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 20,
+      width: 200,
+      height: 20,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    fireEvent.pointerDown(trackContainer, {
+      clientX: 100,
+      clientY: 10,
+      pointerId: 1,
+    });
+
+    expect(document.activeElement).toBe(slider);
+  });
+
+  it('renders description text', () => {
+    render(
+      <XDSSlider
+        label="Volume"
+        value={50}
+        description="Adjust the volume level"
+      />,
+    );
+    expect(screen.getByText('Adjust the volume level')).toBeInTheDocument();
+  });
+
+  it('associates description via aria-describedby', () => {
+    render(
+      <XDSSlider
+        label="Volume"
+        value={50}
+        description="Adjust the volume level"
+      />,
+    );
+    const slider = screen.getByRole('slider');
+    const describedby = slider.getAttribute('aria-describedby');
+    expect(describedby).toBeTruthy();
+    const descEl = document.getElementById(describedby!.split(' ')[0]);
+    expect(descEl).toHaveTextContent('Adjust the volume level');
+  });
+
+  it('associates status message via aria-describedby', () => {
+    render(
+      <XDSSlider
+        label="Volume"
+        value={50}
+        description="Adjust the volume level"
+        status={{type: 'error', message: 'Too loud'}}
+      />,
+    );
+    const slider = screen.getByRole('slider');
+    const describedby = slider.getAttribute('aria-describedby');
+    expect(describedby).toBeTruthy();
+    // Should have at least two IDs (description + status message)
+    const ids = describedby!.split(' ');
+    expect(ids.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('forwards ref to the track container', () => {
+    const ref = vi.fn();
+    render(<XDSSlider label="Volume" value={50} ref={ref} />);
+    expect(ref).toHaveBeenCalledWith(expect.any(HTMLDivElement));
+  });
+
+  it('visually hides label when isLabelHidden is true', () => {
+    render(<XDSSlider label="Volume" value={50} isLabelHidden />);
+    // Label text should still exist in the DOM for screen readers
+    expect(screen.getByText('Volume')).toBeInTheDocument();
+  });
+
+  it('PageUp increases value by step * 10', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <XDSSlider label="Volume" value={50} step={2} onChange={handleChange} />,
+    );
+    const slider = screen.getByRole('slider');
+    act(() => {
+      slider.focus();
+    });
+    await user.keyboard('{PageUp}');
+    expect(handleChange).toHaveBeenCalledWith(70);
+  });
+
+  it('PageDown decreases value by step * 10', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <XDSSlider label="Volume" value={50} step={2} onChange={handleChange} />,
+    );
+    const slider = screen.getByRole('slider');
+    act(() => {
+      slider.focus();
+    });
+    await user.keyboard('{PageDown}');
+    expect(handleChange).toHaveBeenCalledWith(30);
+  });
+
+  it('does not fire onChange on pointer down when disabled', () => {
+    const handleChange = vi.fn();
+    render(
+      <XDSSlider
+        label="Volume"
+        value={50}
+        min={0}
+        max={100}
+        onChange={handleChange}
+        isDisabled
+      />,
+    );
+    const slider = screen.getByRole('slider');
+    const trackContainer = slider.parentElement!;
+
+    trackContainer.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 20,
+      width: 200,
+      height: 20,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    fireEvent.pointerDown(trackContainer, {
+      clientX: 100,
+      clientY: 10,
+      pointerId: 1,
+    });
+
+    expect(handleChange).not.toHaveBeenCalled();
+  });
+
+  it('does not fire onChange on keyboard when disabled', () => {
+    const handleChange = vi.fn();
+    render(
+      <XDSSlider
+        label="Volume"
+        value={50}
+        onChange={handleChange}
+        isDisabled
+      />,
+    );
+    const slider = screen.getByRole('slider');
+    fireEvent.keyDown(slider, {key: 'ArrowRight'});
+    expect(handleChange).not.toHaveBeenCalled();
+  });
+
+  it('clamps value at max boundary', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <XDSSlider
+        label="Volume"
+        value={99}
+        min={0}
+        max={100}
+        step={5}
+        onChange={handleChange}
+      />,
+    );
+    const slider = screen.getByRole('slider');
+    act(() => {
+      slider.focus();
+    });
+    await user.keyboard('{ArrowRight}');
+    expect(handleChange).toHaveBeenCalledWith(100);
+  });
+
+  it('clamps value at min boundary', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <XDSSlider
+        label="Volume"
+        value={1}
+        min={0}
+        max={100}
+        step={5}
+        onChange={handleChange}
+      />,
+    );
+    const slider = screen.getByRole('slider');
+    act(() => {
+      slider.focus();
+    });
+    await user.keyboard('{ArrowLeft}');
+    expect(handleChange).toHaveBeenCalledWith(0);
+  });
+
+  it('renders formatted value with text display', () => {
+    render(
+      <XDSSlider
+        label="Opacity"
+        value={75}
+        formatValue={v => `${v}%`}
+        valueDisplay="text"
+      />,
+    );
+    expect(screen.getByText('75%')).toBeInTheDocument();
+  });
+
+  it('renders range formatted values with text display', () => {
+    render(
+      <XDSSlider
+        label="Range"
+        value={[20, 80] as [number, number]}
+        formatValue={v => `$${v}`}
+        valueDisplay="text"
+      />,
+    );
+    expect(screen.getByText('$20 – $80')).toBeInTheDocument();
+  });
+
+  it('decorative track elements have aria-hidden', () => {
+    const {container} = render(<XDSSlider label="Volume" value={50} />);
+    const ariaHidden = container.querySelectorAll('[aria-hidden="true"]');
+    expect(ariaHidden.length).toBeGreaterThanOrEqual(2);
   });
 });
