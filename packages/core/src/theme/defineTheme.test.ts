@@ -55,18 +55,19 @@ describe('defineTheme', () => {
     expect(theme.tokens['--font-heading']).toBe('"Georgia", serif');
   });
 
-  it('warns on unknown token names', () => {
+  it('accepts unknown token names without warning (types provide guardrails)', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    defineTheme({
-      name: 'bad',
+    const theme = defineTheme({
+      name: 'custom',
       tokens: {
         // @ts-expect-error testing unknown token
         '--color-does-not-exist': '#FF0000',
       },
     });
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('unknown token "--color-does-not-exist"'),
-    );
+    // No runtime warning — TypeScript catches typos at compile time
+    expect(warn).not.toHaveBeenCalled();
+    // But the token is still set (themes are just CSS custom properties)
+    expect(theme.tokens['--color-does-not-exist']).toBe('#FF0000');
     warn.mockRestore();
   });
 
