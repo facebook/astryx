@@ -21,6 +21,7 @@ import {XDSFieldStatus} from './XDSFieldStatus';
 import {
   colorVars,
   fontWeightVars,
+  lineHeightVars,
   spacingVars,
   textSizeVars,
   typographyVars,
@@ -33,17 +34,6 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-1'],
-  },
-  labelRow: {
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  label: {
-    fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-base'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
-    color: colorVars['--color-text-primary'],
   },
   labelHidden: {
     borderStyle: 'none',
@@ -63,13 +53,9 @@ const styles = stylex.create({
   description: {
     fontFamily: typographyVars['--font-body'],
     fontSize: textSizeVars['--text-xsm'],
+    lineHeight: lineHeightVars['--leading-snug'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
-  },
-  optionalRequired: {
-    fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-xsm'],
-    color: colorVars['--color-text-secondary'],
-    marginInlineStart: spacingVars['--spacing-1'],
   },
   inputStatusWrapper: {
     display: 'flex',
@@ -109,6 +95,11 @@ export interface XDSFieldProps extends Omit<
    * @default false
    */
   isLabelHidden?: boolean;
+  /**
+   * Whether the associated input is disabled.
+   * @default false
+   */
+  isDisabled?: boolean;
   /**
    * Description text displayed between the label and input.
    * Hidden when isLabelHidden is true.
@@ -194,6 +185,7 @@ export interface XDSFieldProps extends Omit<
 export function XDSField({
   label,
   isLabelHidden = false,
+  isDisabled = false,
   description,
   inputID,
   descriptionID,
@@ -210,6 +202,14 @@ export function XDSField({
   ref,
   ...props
 }: XDSFieldProps) {
+  if (process.env.NODE_ENV !== 'production') {
+    if (isOptional && isRequired) {
+      console.warn(
+        'XDSField: isOptional and isRequired are mutually exclusive. isOptional takes precedence.',
+      );
+    }
+  }
+
   return (
     <div
       ref={ref}
@@ -224,6 +224,7 @@ export function XDSField({
         label={label}
         inputID={inputID}
         isLabelHidden={isLabelHidden}
+        isDisabled={isDisabled}
         isOptional={isOptional}
         isRequired={isRequired}
         labelIcon={labelIcon}

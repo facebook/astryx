@@ -28,9 +28,9 @@ const styles = stylex.create({
     lineHeight: lineHeightVars['--leading-snug'],
   },
   attached: {
-    marginTop: -6,
-    paddingBlockStart: 14,
-    paddingBlockEnd: 8,
+    marginTop: `calc(-1 * ${spacingVars['--spacing-1-5']})`,
+    paddingBlockStart: `calc(${spacingVars['--spacing-1-5']} + ${spacingVars['--spacing-2']})`,
+    paddingBlockEnd: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
     borderBottomLeftRadius: radiusVars['--radius-2'],
     borderBottomRightRadius: radiusVars['--radius-2'],
@@ -107,6 +107,8 @@ export function XDSFieldStatus({
   return (
     <div
       id={id}
+      role="status"
+      aria-live="polite"
       {...mergeProps(
         xdsClassName('field-status', {type, variant}),
         stylex.props(

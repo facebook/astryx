@@ -283,3 +283,50 @@ export const StatusVariants: Story = {
     );
   },
 };
+
+export const DetachedStatus: Story = {
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 24,
+        maxWidth: 400,
+      }}>
+      <XDSField
+        label="Enable notifications"
+        inputID="d-error"
+        statusVariant="detached"
+        status={{
+          type: 'error',
+          message: 'Notification permissions are required',
+        }}>
+        <input id="d-error" type="checkbox" />
+      </XDSField>
+      <XDSField
+        label="Dark mode"
+        inputID="d-warning"
+        statusVariant="detached"
+        status={{
+          type: 'warning',
+          message: 'Dark mode may affect readability',
+        }}>
+        <input id="d-warning" type="checkbox" />
+      </XDSField>
+    </div>
+  ),
+};
+
+export const DisabledField: Story = {
+  args: {label: 'Locked field', isDisabled: true},
+  render: args => (
+    <XDSField {...args} inputID="disabled-input">
+      <NativeInput
+        id="disabled-input"
+        placeholder="Cannot edit"
+        value=""
+        onChange={() => {}}
+      />
+    </XDSField>
+  ),
+};

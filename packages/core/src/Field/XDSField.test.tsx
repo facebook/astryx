@@ -10,6 +10,7 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {XDSField} from './XDSField';
+import {XDSFieldStatus} from './XDSFieldStatus';
 
 describe('XDSField', () => {
   it('renders with label', () => {
@@ -191,5 +192,147 @@ describe('XDSField', () => {
       </XDSField>,
     );
     expect(document.querySelector('svg')).not.toBeInTheDocument();
+  });
+
+  it('renders attached status variant by default', () => {
+    render(
+      <XDSField
+        label="Email"
+        inputID="email-input"
+        status={{type: 'error', message: 'Invalid email'}}>
+        <input id="email-input" />
+      </XDSField>,
+    );
+    const status = screen.getByText('Invalid email');
+    expect(status).toBeInTheDocument();
+    expect(status.className).toContain('attached');
+  });
+
+  it('does not render status when message is absent', () => {
+    render(
+      <XDSField
+        label="Email"
+        inputID="email-input"
+        status={{type: 'error'}}>
+        <input id="email-input" />
+      </XDSField>,
+    );
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('renders status with messageID for aria-describedby', () => {
+    render(
+      <XDSField
+        label="Email"
+        inputID="email-input"
+        status={{
+          type: 'error',
+          message: 'Required field',
+          messageID: 'email-error',
+        }}>
+        <input id="email-input" aria-describedby="email-error" />
+      </XDSField>,
+    );
+    const status = screen.getByText('Required field');
+    expect(status).toHaveAttribute('id', 'email-error');
+  });
+
+  it('renders detached status variant', () => {
+    render(
+      <XDSField
+        label="Toggle"
+        inputID="toggle-input"
+        statusVariant="detached"
+        status={{type: 'error', message: 'Something went wrong'}}>
+        <input id="toggle-input" />
+      </XDSField>,
+    );
+    const status = screen.getByText('Something went wrong');
+    expect(status).toBeInTheDocument();
+    expect(status.className).toContain('detached');
+  });
+
+  it('passes isDisabled to label', () => {
+    render(
+      <XDSField label="Disabled field" inputID="dis-input" isDisabled>
+        <input id="dis-input" />
+      </XDSField>,
+    );
+    const label = screen.getByText('Disabled field').closest('label');
+    expect(label?.className).toContain('labelDisabled');
+  });
+
+  it('warns when both isOptional and isRequired are set', () => {
+    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <XDSField label="Conflict" inputID="conflict-input" isOptional isRequired>
+        <input id="conflict-input" />
+      </XDSField>,
+    );
+    expect(spy).toHaveBeenCalledWith(
+      expect.stringContaining('isOptional and isRequired are mutually exclusive'),
+    );
+    spy.mockRestore();
+  });
+
+  it('shows Optional when both isOptional and isRequired are set', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <XDSField label="Both" inputID="both-input" isOptional isRequired>
+        <input id="both-input" />
+      </XDSField>,
+    );
+    expect(screen.getByText(/Optional/)).toBeInTheDocument();
+    expect(screen.queryByText(/Required/)).not.toBeInTheDocument();
+    vi.restoreAllMocks();
+  });
+});
+
+describe('XDSFieldStatus', () => {
+  it('has role="status" and aria-live="polite"', () => {
+    render(<XDSFieldStatus type="error" message="Error occurred" />);
+    const status = screen.getByRole('status');
+    expect(status).toHaveAttribute('aria-live', 'polite');
+    expect(status).toHaveTextContent('Error occurred');
+  });
+
+  it('renders detached variant with correct class', () => {
+    render(
+      <XDSFieldStatus type="warning" message="Watch out" variant="detached" />,
+    );
+    const status = screen.getByRole('status');
+    expect(status.className).toContain('detached');
+    expect(status.className).not.toContain('attached');
+  });
+
+  it('renders attached variant by default', () => {
+    render(<XDSFieldStatus type="success" message="All good" />);
+    const status = screen.getByRole('status');
+    expect(status.className).toContain('attached');
+  });
+
+  it('applies correct color style for each status type', () => {
+    const {rerender} = render(
+      <XDSFieldStatus type="error" message="Error" />,
+    );
+    expect(screen.getByRole('status').className).toContain('error');
+
+    rerender(<XDSFieldStatus type="warning" message="Warning" />);
+    expect(screen.getByRole('status').className).toContain('warning');
+
+    rerender(<XDSFieldStatus type="success" message="Success" />);
+    expect(screen.getByRole('status').className).toContain('success');
+  });
+
+  it('renders with id when provided', () => {
+    render(
+      <XDSFieldStatus type="error" message="Error" id="status-id" />,
+    );
+    expect(screen.getByRole('status')).toHaveAttribute('id', 'status-id');
+  });
+
+  it('does not have id attribute when not provided', () => {
+    render(<XDSFieldStatus type="error" message="Error" />);
+    expect(screen.getByRole('status')).not.toHaveAttribute('id');
   });
 });
