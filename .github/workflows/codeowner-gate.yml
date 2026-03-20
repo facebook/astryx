@@ -1,8 +1,9 @@
 # Code owner gate: blocks merge unless a code owner has approved
 # Code owners themselves can merge freely (auto-pass)
 #
-# Add "codeowner-gate" as a required status check in the branch
-# protection settings to enforce this.
+# Uses the Checks API to write a single "Code Owner Gate" status per
+# commit SHA, so re-runs from pull_request_review events UPDATE the
+# existing check instead of creating a competing one.
 name: Code Owner Gate
 
 on:
@@ -13,6 +14,7 @@ on:
     types: [submitted]
 
 permissions:
+  checks: write
   pull-requests: read
   contents: read
 
@@ -28,49 +30,80 @@ jobs:
             // Keep this list in sync with .github/CODEOWNERS
             const CODE_OWNERS = ['cixzhang', 'josephfarina'];
 
-            // --- Resolve PR author ---
-            let prNumber, prAuthor;
+            // --- Resolve PR context ---
+            const pr = context.payload.pull_request;
+            const prNumber = pr.number;
+            const prAuthor = pr.user.login;
+            const headSha = pr.head.sha;
 
-            if (context.eventName === 'pull_request') {
-              prNumber = context.payload.pull_request.number;
-              prAuthor = context.payload.pull_request.user.login;
-            } else if (context.eventName === 'pull_request_review') {
-              prNumber = context.payload.pull_request.number;
-              prAuthor = context.payload.pull_request.user.login;
-            }
+            console.log(`PR #${prNumber} by @${prAuthor} (${headSha.slice(0, 7)})`);
 
-            console.log(`PR #${prNumber} by @${prAuthor}`);
+            // --- Determine result ---
+            let conclusion = 'failure';
+            let summary = '';
 
-            // --- Code owners pass immediately ---
             if (CODE_OWNERS.includes(prAuthor)) {
-              console.log(`✅ @${prAuthor} is a code owner — approved automatically`);
-              return;
+              conclusion = 'success';
+              summary = `@${prAuthor} is a code owner — approved automatically.`;
+            } else {
+              // Check for code owner approval
+              const { data: reviews } = await github.rest.pulls.listReviews({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+              });
+
+              const latestReviews = new Map();
+              for (const review of reviews) {
+                latestReviews.set(review.user.login, review.state);
+              }
+
+              const approvedBy = [...latestReviews.entries()]
+                .filter(([user, state]) => state === 'APPROVED' && CODE_OWNERS.includes(user))
+                .map(([user]) => user);
+
+              if (approvedBy.length > 0) {
+                conclusion = 'success';
+                summary = `Approved by code owner(s): ${approvedBy.map(u => '@' + u).join(', ')}`;
+              } else {
+                summary = `Requires approval from a code owner (${CODE_OWNERS.map(u => '@' + u).join(', ')}).`;
+              }
             }
 
-            // --- Non-owners need a code owner approval ---
-            console.log(`@${prAuthor} is not a code owner — checking for code owner approval...`);
+            console.log(`${conclusion === 'success' ? '✅' : '❌'} ${summary}`);
 
-            const { data: reviews } = await github.rest.pulls.listReviews({
+            // --- Write check run (upsert) ---
+            // Look for an existing check run with our name on this SHA
+            const checkName = 'Code Owner Gate';
+            const { data: existing } = await github.rest.checks.listForRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_number: prNumber,
+              ref: headSha,
+              check_name: checkName,
             });
 
-            // Find the latest review state per reviewer
-            const latestReviews = new Map();
-            for (const review of reviews) {
-              latestReviews.set(review.user.login, review.state);
+            const params = {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: checkName,
+              head_sha: headSha,
+              status: 'completed',
+              conclusion,
+              output: {
+                title: conclusion === 'success' ? 'Approved' : 'Waiting for code owner approval',
+                summary,
+              },
+            };
+
+            if (existing.total_count > 0) {
+              // Update the existing check run
+              await github.rest.checks.update({
+                ...params,
+                check_run_id: existing.check_runs[0].id,
+              });
+              console.log(`Updated check run ${existing.check_runs[0].id}`);
+            } else {
+              // Create a new check run
+              const { data: created } = await github.rest.checks.create(params);
+              console.log(`Created check run ${created.id}`);
             }
-
-            const approvedBy = [...latestReviews.entries()]
-              .filter(([user, state]) => state === 'APPROVED' && CODE_OWNERS.includes(user))
-              .map(([user]) => user);
-
-            if (approvedBy.length > 0) {
-              console.log(`✅ Approved by code owner(s): ${approvedBy.map(u => '@' + u).join(', ')}`);
-              return;
-            }
-
-            core.setFailed(
-              `❌ This PR requires approval from a code owner (${CODE_OWNERS.map(u => '@' + u).join(', ')}) before merging.`
-            );
