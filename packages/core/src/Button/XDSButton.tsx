@@ -60,7 +60,10 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     cursor: 'pointer',
     transitionProperty: 'background-image, transform',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0.01s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     transform: {
       default: 'scale(1)',
@@ -73,6 +76,11 @@ const styles = stylex.create({
     transform: {
       default: 'none',
       ':active': 'none',
+    },
+    backgroundImage: {
+      default: null,
+      ':hover': null,
+      ':active': null,
     },
   },
   iconOnly: {
@@ -335,6 +343,7 @@ export function XDSButton({
   xstyle,
   className,
   style,
+  type = 'button',
   ref,
   ...props
 }: XDSButtonProps): ReactElement {
@@ -345,13 +354,12 @@ export function XDSButton({
   const isIconOnly = icon != null && children == null;
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (onClickAction) {
-      e.preventDefault();
+    props.onClick?.(e);
+    if (onClickAction && !e.defaultPrevented) {
       startTransition(async () => {
         await onClickAction(e);
       });
     }
-    props.onClick?.(e);
   };
 
   // Ghost buttons opt into edge compensation — they self-adjust margins
@@ -369,9 +377,8 @@ export function XDSButton({
   const button = (
     <button
       ref={ref}
+      type={type}
       disabled={buttonDisabled}
-      aria-label={isIconOnly ? label : undefined}
-      aria-busy={isLoadingState || undefined}
       {...mergeProps(
         xdsClassName('button', {variant, size}),
         stylex.props(
@@ -389,6 +396,8 @@ export function XDSButton({
         style,
       )}
       {...props}
+      aria-label={isIconOnly ? label : undefined}
+      aria-busy={isLoadingState || undefined}
       onClick={handleClick}>
       {isLoadingState && (
         <span {...stylex.props(loadingStyles.spinnerOverlay)}>
