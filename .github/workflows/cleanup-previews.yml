@@ -61,6 +61,15 @@ jobs:
           MAIN_HASH=$(gh api repos/$GITHUB_REPOSITORY/commits/main --jq '.sha[:7]')
           echo "Main HEAD: ${MAIN_HASH}"
 
+          # Also protect the hash from the `latest` file — this is the
+          # last successfully deployed main build and may differ from
+          # MAIN_HASH if new commits haven't deployed yet.
+          LATEST_FILE_HASH=""
+          if [ -f "latest" ]; then
+            LATEST_FILE_HASH=$(cat latest | tr -d '[:space:]')
+            echo "Latest file hash: ${LATEST_FILE_HASH}"
+          fi
+
           # Find the most recently deployed hash dir on gh-pages.
           # This protects against a race where main HEAD has advanced
           # but its deploy hasn't finished yet — we keep the previous
@@ -117,6 +126,11 @@ jobs:
             # Keep main HEAD
             if [ "$dir" = "$MAIN_HASH" ]; then
               REASON="main HEAD"
+            fi
+
+            # Keep the hash from the `latest` file (last successful deploy)
+            if [ -z "$REASON" ] && [ -n "$LATEST_FILE_HASH" ] && [ "$dir" = "$LATEST_FILE_HASH" ]; then
+              REASON="latest file (last successful deploy)"
             fi
 
             # Keep the most recently deployed dir (in case main HEAD
