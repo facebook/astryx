@@ -29,7 +29,10 @@ import {
   durationVars,
   easeVars,
   typographyVars,
+  lineHeightVars,
+  fontWeightVars,
 } from '../theme/tokens.stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSFieldLabel} from '../Field/XDSFieldLabel';
 import {XDSFieldStatus} from '../Field/XDSFieldStatus';
 import type {XDSIconType} from '../Icon';
@@ -40,7 +43,7 @@ import {xdsClassName, mergeProps} from '../utils';
 const styles = stylex.create({
   container: {
     display: 'flex',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: spacingVars['--spacing-2'],
   },
   containerLabelHidden: {
@@ -72,7 +75,10 @@ const styles = stylex.create({
     borderStyle: 'solid',
     borderRadius: radiusVars['--radius-1'],
     transitionProperty: 'background-color, border-color',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   checkboxFocus: {
@@ -145,6 +151,8 @@ const styles = stylex.create({
   description: {
     fontFamily: typographyVars['--font-body'],
     fontSize: textSizeVars['--text-xsm'],
+    lineHeight: lineHeightVars['--leading-relaxed'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
   },
 });
@@ -193,19 +201,10 @@ const indeterminateSizeStyles = stylex.create({
   },
 });
 
-const labelWrapperSizeStyles = stylex.create({
-  sm: {
-    marginTop: 1,
-  },
-  md: {
-    marginTop: 3,
-  },
-});
-
 export type XDSCheckboxInputSize = keyof typeof wrapperSizeStyles;
 
-export interface XDSCheckboxInputProps {
-  /** Ref forwarded to the root element */
+export interface XDSCheckboxInputProps extends Omit<XDSBaseProps, 'onChange'> {
+  /** Ref forwarded to the underlying `<input>` element */
   ref?: React.Ref<HTMLInputElement>;
   /**
    * Label text for the checkbox (always rendered for accessibility).
@@ -315,6 +314,9 @@ export function XDSCheckboxInput({
   onBlur,
   labelIcon,
   status,
+  xstyle,
+  className,
+  style,
   ref,
 }: XDSCheckboxInputProps) {
   const id = useId();
@@ -338,7 +340,13 @@ export function XDSCheckboxInput({
     describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
 
   return (
-    <div className={xdsClassName('checkbox-input', {size})}>
+    <div
+      {...mergeProps(
+        xdsClassName('checkbox-input', {size}),
+        stylex.props(xstyle),
+        className,
+        style,
+      )}>
       <div
         {...stylex.props(
           styles.container,
@@ -354,6 +362,7 @@ export function XDSCheckboxInput({
             disabled={isDisabled}
             required={isRequired}
             onChange={e => {
+              if (isBusy) return;
               const checked = e.target.checked;
               onChange?.(checked, e);
               if (onChangeAction && !e.defaultPrevented) {
@@ -377,17 +386,20 @@ export function XDSCheckboxInput({
           />
           <div
             aria-hidden="true"
-            {...stylex.props(
-              styles.checkbox,
-              checkboxSizeStyles[size],
-              !isDisabled && styles.checkboxFocus,
-              isCheckedOrIndeterminate
-                ? styles.checkboxChecked
-                : styles.checkboxUnchecked,
-              isDisabled && styles.checkboxDisabled,
-              isDisabled &&
-                !isCheckedOrIndeterminate &&
-                styles.checkboxDisabledUnchecked,
+            {...mergeProps(
+              xdsClassName('checkbox'),
+              stylex.props(
+                styles.checkbox,
+                checkboxSizeStyles[size],
+                !isDisabled && styles.checkboxFocus,
+                isCheckedOrIndeterminate
+                  ? styles.checkboxChecked
+                  : styles.checkboxUnchecked,
+                isDisabled && styles.checkboxDisabled,
+                isDisabled &&
+                  !isCheckedOrIndeterminate &&
+                  styles.checkboxDisabledUnchecked,
+              ),
             )}>
             {isBusy ? (
               <XDSSpinner
@@ -424,7 +436,7 @@ export function XDSCheckboxInput({
           </div>
         </div>
         <div
-          {...stylex.props(styles.labelWrapper, labelWrapperSizeStyles[size])}>
+          {...stylex.props(styles.labelWrapper)}>
           <XDSFieldLabel
             label={label}
             inputID={id}
