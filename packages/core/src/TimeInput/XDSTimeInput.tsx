@@ -53,6 +53,8 @@ import {
   formatISOTime,
   adjustTime,
   isTimeInRange,
+  xdsClassName,
+  mergeProps,
 } from '../utils';
 
 const styles = stylex.create({
@@ -495,13 +497,16 @@ export function XDSTimeInput({
       }
       labelTooltip={labelTooltip}>
       <div
-        {...stylex.props(
-          inputWrapperStyles.base,
-          sizeStyles[size],
-          isDisabled && inputWrapperStyles.disabled,
-          status && inputStatusBorderStyles[status.type],
-          status && inputStatusHoverShadowStyles[status.type],
-          status && inputStatusFocusWithinStyles[status.type],
+        {...mergeProps(
+          xdsClassName('time-input', {size}),
+          stylex.props(
+            inputWrapperStyles.base,
+            sizeStyles[size],
+            isDisabled && inputWrapperStyles.disabled,
+            status && inputStatusBorderStyles[status.type],
+            status && inputStatusHoverShadowStyles[status.type],
+            status && inputStatusFocusWithinStyles[status.type],
+          ),
         )}>
         <div {...stylex.props(styles.icon)}>
           <XDSIcon icon="clock" size="sm" color="secondary" />
