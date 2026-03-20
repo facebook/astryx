@@ -53,7 +53,9 @@ function buildLanguageUncached(lang: string): LangDef | null {
   if (!raw) return null;
   return {
     patterns: raw.patterns.map(p => {
-      const flags = p.regex.flags.replace('g', '');
+      // Use sticky flag (y) to anchor match at lastIndex position.
+      // This avoids code.slice() on every attempt — much faster.
+      const flags = p.regex.flags.replace(/[gy]/g, '') + 'y';
       return {...p, anchored: new RegExp(p.regex.source, flags)};
     }),
   };
@@ -306,10 +308,10 @@ export function tokenize(code: string, language: string): Token[] {
     let matched = false;
 
     for (const pattern of langDef.patterns) {
-      const slice = code.slice(pos);
-      const match = pattern.anchored.exec(slice);
+      pattern.anchored.lastIndex = pos;
+      const match = pattern.anchored.exec(code);
 
-      if (match && match.index === 0 && match[0].length > 0) {
+      if (match && match.index === pos && match[0].length > 0) {
         tokens.push({
           type: pattern.type,
           start: pos,
