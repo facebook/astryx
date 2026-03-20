@@ -12,22 +12,29 @@ export const docs = {
     'Stay-open behavior when mouse/focus moves into the hover card',
     'display:contents wrapper preserves children refs',
     'Hover indication (dashed underline) for text-only triggers',
+    'Touch suppression — prevents ghost hover on touch devices',
+    'Reduced motion — respects prefers-reduced-motion for transitions',
+    'Double-fire prevention — onShow/onHide callbacks fire exactly once per toggle',
   ],
   notes: [
     'useXDSHoverCard returns a describedBy id — pass it as aria-describedby on the trigger for screen reader support.',
     'When composing multiple aria-describedby sources, merge them with a utility: ids.filter(Boolean).join(" ") || undefined.',
     'LayerPlacement values: above | below | start | end. LayerAlignment values: start | center | end.',
+    'Hover card content has role="status" for live-region announcements.',
+    'Touch suppression: touchstart sets a 500ms flag that suppresses the subsequent mouseenter, preventing ghost hover on mobile.',
   ],
   accessibility: [
     'Links the hover card content to the trigger via aria-describedby.',
     'When composing multiple aria-describedby sources, merge them with a utility.',
     'Escape key dismisses the hover card and returns focus to the trigger.',
+    'Content wrapper has role="status" so screen readers announce hover card content.',
   ],
   keyboard:
     'Escape closes the hover card. Focus triggers show/hide based on the focusTrigger option.',
   theming: {
     targets: [
       {className: 'xds-hovercard'},
+      {className: 'xds-hovercard-trigger'},
     ],
     vars: [
       {name: '--hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-container)'},
@@ -211,22 +218,29 @@ export const docsZh = {
     '鼠标/焦点移入悬浮卡片时保持打开',
     'display:contents 包装器保留子元素 ref',
     '悬停指示（虚线下划线）用于纯文本触发器',
+    '触摸抑制——防止触摸设备上的幽灵悬停',
+    '减少动画——尊重 prefers-reduced-motion',
+    '防止双重触发——onShow/onHide 回调每次切换只触发一次',
   ],
   notes: [
     'useXDSHoverCard 返回一个 describedBy id，将其作为 aria-describedby 传递给触发器以支持屏幕阅读器。',
     '当组合多个 aria-describedby 来源时，使用工具函数合并：ids.filter(Boolean).join(" ") || undefined。',
     'LayerPlacement 值：above | below | start | end。LayerAlignment 值：start | center | end。',
+    '悬浮卡片内容具有 role="status"，用于实时区域公告。',
+    '触摸抑制：touchstart 设置 500ms 标志，抑制后续 mouseenter，防止移动端幽灵悬停。',
   ],
   accessibility: [
     '通过 aria-describedby 将悬浮卡片内容关联到触发器。',
     '当组合多个 aria-describedby 来源时，使用工具函数合并。',
     '按 Escape 键关闭悬浮卡片并将焦点返回到触发器。',
+    '内容包装器具有 role="status"，屏幕阅读器会朗读悬浮卡片内容。',
   ],
   keyboard:
     'Escape 关闭悬浮卡片。焦点触发器根据 focusTrigger 选项控制显示/隐藏。',
   theming: {
     targets: [
       {className: 'xds-hovercard'},
+      {className: 'xds-hovercard-trigger'},
     ],
     vars: [
       {name: '--hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-container)'},
@@ -409,16 +423,22 @@ export const docsDense = {
     'Stay-open when mouse/focus moves into hover card',
     'display:contents wrapper preserves children refs',
     'Hover indication (dashed underline) for text-only triggers',
+    'Touch suppression; prevents ghost hover on touch devices',
+    'Respects prefers-reduced-motion for transitions',
+    'Double-fire prevention; onShow/onHide fire exactly once per toggle',
   ],
   notes: [
     'useXDSHoverCard returns describedBy id; pass as aria-describedby on trigger for screen reader support.',
     'Merge multiple aria-describedby sources w/ ids.filter(Boolean).join(" ") || undefined.',
     'LayerPlacement: above | below | start | end. LayerAlignment: start | center | end.',
+    'Content has role="status" for live-region announcements.',
+    'Touch: touchstart sets 500ms flag suppressing subsequent mouseenter.',
   ],
   accessibility: [
     'Links hover card content to trigger via aria-describedby.',
     'Merge multiple aria-describedby sources w/ utility.',
     'Escape dismisses hover card + returns focus to trigger.',
+    'Content wrapper has role="status" for screen reader announcements.',
   ],
   keyboard: 'Escape closes hover card. Focus triggers show/hide based on focusTrigger option.',
   components: [

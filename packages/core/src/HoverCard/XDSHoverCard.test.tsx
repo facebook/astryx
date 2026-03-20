@@ -7,6 +7,7 @@
  * SYNC: When XDSHoverCard.tsx changes, update tests to match new behavior
  */
 
+import React from 'react';
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {XDSHoverCard} from './XDSHoverCard';
@@ -17,13 +18,19 @@ const originalMatches = HTMLElement.prototype.matches;
 // Track popover open state per element
 const popoverOpenState = new WeakMap<HTMLElement, boolean>();
 
-// Mock Popover API for jsdom
+// Mock Popover API for jsdom — fires toggle event like the browser does
 beforeAll(() => {
   HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
     popoverOpenState.set(this, true);
+    const event = new Event('toggle') as ToggleEvent;
+    Object.defineProperty(event, 'newState', {value: 'open'});
+    this.dispatchEvent(event);
   });
   HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
     popoverOpenState.set(this, false);
+    const event = new Event('toggle') as ToggleEvent;
+    Object.defineProperty(event, 'newState', {value: 'closed'});
+    this.dispatchEvent(event);
   });
 
   // Only intercept :popover-open, delegate everything else to original
@@ -261,6 +268,96 @@ describe('XDSHoverCard', () => {
       // It may be called with false (dismiss), which is expected
       await new Promise(resolve => setTimeout(resolve, 50));
       expect(onOpenChange).not.toHaveBeenCalledWith(true);
+    });
+  });
+
+  describe('touch suppression', () => {
+    it('does not show hover card on touch-then-mouseenter', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <XDSHoverCard
+          content={<span>Card content</span>}
+          onOpenChange={onOpenChange}
+          delay={0}>
+          <button>Trigger</button>
+        </XDSHoverCard>,
+      );
+
+      const trigger = screen.getByRole('button', {name: 'Trigger'});
+
+      // Simulate touch followed by mouse (as mobile browsers do)
+      fireEvent.touchStart(trigger);
+      fireEvent.mouseEnter(trigger);
+
+      // Wait and verify hover card was not shown
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(onOpenChange).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('ARIA', () => {
+    it('popover content has role="status"', () => {
+      const {container} = render(
+        <XDSHoverCard content={<span>Card content</span>}>
+          <button>Trigger</button>
+        </XDSHoverCard>,
+      );
+
+      const statusEl = container.querySelector('[role="status"]');
+      expect(statusEl).toBeInTheDocument();
+    });
+  });
+
+  describe('isTextOnly (deep check)', () => {
+    it('treats fragment-wrapped text as text-only', () => {
+      render(
+        <XDSHoverCard content={<span>Card content</span>}>
+          <>Just text in a fragment</>
+        </XDSHoverCard>,
+      );
+      // Should render as inline span (text-only path)
+      const wrapper = screen.getByText('Just text in a fragment');
+      expect(wrapper.tagName).toBe('SPAN');
+    });
+
+    it('treats fragment-wrapped elements as non-text', () => {
+      render(
+        <XDSHoverCard content={<span>Card content</span>}>
+          <>
+            <button>Inside fragment</button>
+          </>
+        </XDSHoverCard>,
+      );
+      // Should use display:contents wrapper (element path)
+      const btn = screen.getByRole('button', {name: 'Inside fragment'});
+      expect(btn).toBeInTheDocument();
+    });
+  });
+
+  describe('onOpenChange double-fire prevention', () => {
+    it('fires onOpenChange(true) exactly once per show', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <XDSHoverCard
+          content={<span>Card content</span>}
+          onOpenChange={onOpenChange}
+          delay={0}>
+          <button>Trigger</button>
+        </XDSHoverCard>,
+      );
+
+      const trigger = screen.getByRole('button', {name: 'Trigger'});
+      fireEvent.mouseEnter(trigger);
+
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+
+      // Should have been called exactly once with true
+      const trueCalls = onOpenChange.mock.calls.filter(
+        ([val]: [boolean]) => val === true,
+      );
+      expect(trueCalls).toHaveLength(1);
     });
   });
 });

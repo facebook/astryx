@@ -52,7 +52,10 @@ const styles = stylex.create({
     },
     // Transitions with allow-discrete for display/overlay
     transitionProperty: 'opacity, transform, overlay, display',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0.01s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     transitionBehavior: 'allow-discrete',
     // Entry animation starting state
@@ -271,6 +274,9 @@ export function useXDSHoverCard(
   const isHoveringContentRef = useRef(false);
   // Track when we're dismissing via Escape to prevent re-show on refocus
   const isEscapeDismissingRef = useRef(false);
+  // Track recent touch to suppress mouse events on touch devices
+  const recentTouchRef = useRef(false);
+  const touchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Clear all timeouts
   const clearTimeouts = useCallback(() => {
@@ -304,8 +310,22 @@ export function useXDSHoverCard(
     }, hideDelay);
   }, [clearTimeouts, layer, hideDelay]);
 
+  // Touch handler — sets a flag to suppress the subsequent mouseenter
+  const handleTouchStart = useCallback(() => {
+    recentTouchRef.current = true;
+    if (touchTimeoutRef.current) {
+      clearTimeout(touchTimeoutRef.current);
+    }
+    // Reset after a short window — mouse events fire within ~300ms of touch
+    touchTimeoutRef.current = setTimeout(() => {
+      recentTouchRef.current = false;
+    }, 500);
+  }, []);
+
   // Event handlers
   const handleMouseEnter = useCallback(() => {
+    // Suppress hover on touch devices — mouseenter fires after touchstart
+    if (recentTouchRef.current) return;
     scheduleShow();
   }, [scheduleShow]);
 
@@ -358,6 +378,7 @@ export function useXDSHoverCard(
     (el: HTMLElement | null) => {
       // Cleanup previous element
       if (triggerRef.current) {
+        triggerRef.current.removeEventListener('touchstart', handleTouchStart);
         triggerRef.current.removeEventListener('mouseenter', handleMouseEnter);
         triggerRef.current.removeEventListener('mouseleave', handleMouseLeave);
         triggerRef.current.removeEventListener('focusin', handleFocusIn);
@@ -369,6 +390,8 @@ export function useXDSHoverCard(
       }
 
       if (el) {
+        // Attach touch listener for suppression
+        el.addEventListener('touchstart', handleTouchStart, {passive: true});
         // Attach hover listeners
         el.addEventListener('mouseenter', handleMouseEnter);
         el.addEventListener('mouseleave', handleMouseLeave);
@@ -391,6 +414,7 @@ export function useXDSHoverCard(
     },
     [
       focusTrigger,
+      handleTouchStart,
       handleMouseEnter,
       handleMouseLeave,
       handleFocusIn,
@@ -412,6 +436,9 @@ export function useXDSHoverCard(
   useEffect(() => {
     return () => {
       clearTimeouts();
+      if (touchTimeoutRef.current) {
+        clearTimeout(touchTimeoutRef.current);
+      }
     };
   }, [clearTimeouts]);
 
@@ -426,6 +453,7 @@ export function useXDSHoverCard(
 
       return layer.render(
         <div
+          role="status"
           {...mergeProps(
             xdsClassName('hovercard'),
             stylex.props(styles.content),

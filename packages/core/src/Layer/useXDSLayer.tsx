@@ -289,21 +289,19 @@ export function useXDSLayer(
   const popoverRef = useRef<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
+  // show/hide only call the Popover API — state updates and callbacks
+  // are handled exclusively by the toggle event handler to avoid double-fire.
   const show = useCallback(() => {
     if (popoverRef.current && !popoverRef.current.matches(':popover-open')) {
       popoverRef.current.showPopover();
-      setIsOpen(true);
-      onShow?.();
     }
-  }, [onShow]);
+  }, []);
 
   const hide = useCallback(() => {
     if (popoverRef.current?.matches(':popover-open')) {
       popoverRef.current.hidePopover();
-      setIsOpen(false);
-      onHide?.();
     }
-  }, [onHide]);
+  }, []);
 
   // Ref for trigger element (context mode only)
   const ref: RefCallback<HTMLElement> | undefined =
@@ -343,6 +341,11 @@ export function useXDSLayer(
   // Ref callback for popover element — sets up toggle listener
   const popoverRefCallback = useCallback(
     (el: HTMLElement | null) => {
+      // Cleanup previous element's listener
+      if (popoverRef.current) {
+        popoverRef.current.removeEventListener('toggle', handleToggle);
+      }
+
       popoverRef.current = el;
       if (el) {
         el.addEventListener('toggle', handleToggle);
