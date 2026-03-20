@@ -129,6 +129,7 @@ function buildLanguagePatterns(
           {type: 'comment', regex: /\/\/[^\n]*/},
           {type: 'string', regex: /"(?:[^"\\]|\\.)*"/},
           {type: 'string', regex: /'(?:[^'\\]|\\.)*'/},
+          {type: 'variable', regex: /--[a-zA-Z_-][\w-]*/},
           {
             type: 'number',
             regex:
@@ -137,9 +138,10 @@ function buildLanguagePatterns(
           {type: 'constant', regex: /#[0-9a-fA-F]{3,8}\b/},
           {type: 'keyword', regex: CSS_KEYWORDS},
           {type: 'keyword', regex: /@[a-zA-Z][\w-]*/},
-          {type: 'function', regex: /\b[a-zA-Z_-][\w-]*(?=\s*\()/},
-          {type: 'property', regex: /\b[a-zA-Z_-][\w-]*(?=\s*:)/},
+          {type: 'tag', regex: /[.#][a-zA-Z_-][\w-]*/},
           {type: 'keyword', regex: /::?[a-zA-Z][\w-]*/},
+          {type: 'function', regex: /\b[a-zA-Z_-][\w-]*(?=\s*\()/},
+          {type: 'property', regex: /[a-zA-Z_-][\w-]*(?=\s*:)/},
           // eslint-disable-next-line no-useless-escape
           {type: 'punctuation', regex: /[{}()\[\];:,]/},
           {type: 'operator', regex: /[+~>*=|^$]/},

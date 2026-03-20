@@ -284,20 +284,24 @@ export function XDSCodeBlock({
     // find the corresponding text node and offset within the DOM.
     // The code element contains line divs, each containing a text node.
     const lineDivs = codeEl.querySelectorAll('[data-line]');
-    const textMap: Array<{node: Text; offset: number; codeStart: number}> = [];
+    const textMap: Array<{node: Text; offset: number; codeStart: number; codeLength: number}> = [];
     let codeOffset = 0;
 
     for (let i = 0; i < lineDivs.length; i++) {
       const lineDiv = lineDivs[i];
       const textNode = lineDiv.firstChild;
+      // Use the original line length, not the text node length —
+      // empty lines render as '\u200b' (length 1) but represent 0 chars in code
+      const originalLineLength = lines[i]?.length ?? 0;
       if (textNode && textNode.nodeType === Node.TEXT_NODE) {
         textMap.push({
           node: textNode as Text,
           offset: 0,
           codeStart: codeOffset,
+          codeLength: originalLineLength,
         });
-        codeOffset += (textNode as Text).length;
       }
+      codeOffset += originalLineLength;
       // Account for newline between lines
       if (i < lineDivs.length - 1) {
         codeOffset += 1; // the \n
@@ -312,7 +316,7 @@ export function XDSCodeBlock({
         const entry = textMap[i];
         if (offset >= entry.codeStart) {
           const localOffset = offset - entry.codeStart;
-          if (localOffset <= entry.node.length) {
+          if (localOffset <= entry.codeLength) {
             return {node: entry.node, offset: localOffset};
           }
           return null;
