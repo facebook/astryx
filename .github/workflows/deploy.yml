@@ -230,6 +230,17 @@ jobs:
           </html>
           LANDING_EOF
 
+          # Also deploy to a stable `storybook/` directory so links like
+          # .../storybook/index.html?path=/docs/core-xdsbutton--docs
+          # never break when hash directories get cleaned up.
+          mkdir -p deploy/storybook
+          cp -r apps/storybook/dist/* deploy/storybook/
+
+          if [ -d "apps/sandbox/out" ]; then
+            mkdir -p deploy/sandbox
+            cp -r apps/sandbox/out/* deploy/sandbox/
+          fi
+
           # Write the latest deployed hash so the landing page can resolve
           # links dynamically. This survives cleanup and avoids stale links
           # when a newer main commit is pending deploy.
