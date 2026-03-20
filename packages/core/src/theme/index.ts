@@ -25,11 +25,19 @@ export type {
   XDSCoreTokenName,
   XDSTokenName,
   XDSTokenValue,
-  XDSDomainTokens,
-  XDSDomainTokenName,
   XDSComponentStyleMap,
   XDSStyleOverrides,
 } from './defineTheme';
+
+export type {
+  SyntaxTokenName,
+  DomainTokenName,
+} from './domainTokens';
+
+export {
+  syntaxTokenDefaults,
+  domainTokenDefaults,
+} from './domainTokens';
 
 export {expandTypeScale, generateTypeScaleComponents} from './expandTypeScale';
 export type {XDSTypeScaleConfig, TypeScaleTokens} from './expandTypeScale';
