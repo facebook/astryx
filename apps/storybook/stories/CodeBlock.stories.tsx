@@ -16,6 +16,10 @@ const meta: Meta<typeof XDSCodeBlock> = {
         'css',
         'python',
         'bash',
+        'php',
+        'hack',
+        'yaml',
+        'markdown',
         'plaintext',
       ],
       description: 'Language for syntax highlighting',
@@ -25,7 +29,7 @@ const meta: Meta<typeof XDSCodeBlock> = {
       options: ['sm', 'md'],
       description: 'Text size',
     },
-    showLineNumbers: {control: 'boolean'},
+    hasLineNumbers: {control: 'boolean'},
     hasCopyButton: {control: 'boolean'},
     isWrapped: {control: 'boolean'},
   },
@@ -65,7 +69,7 @@ export const Default: Story = {
     code: tsExample,
     language: 'typescript',
     title: 'useUser.ts',
-    showLineNumbers: true,
+    hasLineNumbers: true,
     hasCopyButton: true,
   },
 };
@@ -75,7 +79,7 @@ export const WithHighlightedLines: Story = {
     code: tsExample,
     language: 'typescript',
     title: 'useUser.ts',
-    showLineNumbers: true,
+    hasLineNumbers: true,
     highlightLines: [9, 10, 11, 12, 13],
   },
 };
@@ -96,7 +100,7 @@ export const JSON: Story = {
 }`,
     language: 'json',
     title: 'package.json',
-    showLineNumbers: true,
+    hasLineNumbers: true,
   },
 };
 
@@ -125,7 +129,7 @@ if __name__ == "__main__":
     process(cfg)`,
     language: 'python',
     title: 'pipeline.py',
-    showLineNumbers: true,
+    hasLineNumbers: true,
     highlightLines: [7, 8, 9, 10, 11],
   },
 };
@@ -149,7 +153,7 @@ export const HTML: Story = {
 </html>`,
     language: 'html',
     title: 'index.html',
-    showLineNumbers: true,
+    hasLineNumbers: true,
   },
 };
 
@@ -182,7 +186,7 @@ export const CSS: Story = {
 }`,
     language: 'css',
     title: 'button.css',
-    showLineNumbers: true,
+    hasLineNumbers: true,
   },
 };
 
@@ -208,7 +212,7 @@ cp -r dist/* "$DEPLOY_DIR/"
 echo "Deploy complete: $VERSION"`,
     language: 'bash',
     title: 'deploy.sh',
-    showLineNumbers: true,
+    hasLineNumbers: true,
   },
 };
 
@@ -226,16 +230,19 @@ export const Wrapped: Story = {
 const result = someVeryLongFunctionName(parameterOne, parameterTwo, parameterThree, parameterFour, parameterFive);`,
     language: 'typescript',
     isWrapped: true,
-    showLineNumbers: true,
+    hasLineNumbers: true,
   },
 };
 
 export const WithMaxHeight: Story = {
   args: {
-    code: Array.from({length: 50}, (_, i) => `const line${i + 1} = ${i + 1};`).join('\n'),
+    code: Array.from(
+      {length: 50},
+      (_, i) => `const line${i + 1} = ${i + 1};`,
+    ).join('\n'),
     language: 'typescript',
     title: 'many-lines.ts',
-    showLineNumbers: true,
+    hasLineNumbers: true,
     maxHeight: 200,
   },
 };
@@ -245,7 +252,7 @@ export const SmallSize: Story = {
     code: tsExample,
     language: 'typescript',
     title: 'useUser.ts',
-    showLineNumbers: true,
+    hasLineNumbers: true,
     size: 'sm',
   },
 };
@@ -268,6 +275,6 @@ It preserves whitespace and line breaks.
     Nested indentation too.`,
     language: 'plaintext',
     title: 'notes.txt',
-    showLineNumbers: true,
+    hasLineNumbers: true,
   },
 };

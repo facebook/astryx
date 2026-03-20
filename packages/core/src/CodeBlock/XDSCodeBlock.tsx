@@ -79,7 +79,7 @@ const styles = stylex.create({
   },
   gutterLine: {
     fontFamily: typographyVars['--font-code'],
-    lineHeight: '1.5em',
+    lineHeight: lineHeightVars['--leading-normal'],
   },
   code: {
     display: 'block',
@@ -100,9 +100,9 @@ const styles = stylex.create({
     overflowWrap: 'break-word',
   },
   line: {
-    lineHeight: '1.5em',
+    lineHeight: lineHeightVars['--leading-normal'],
     contentVisibility: 'auto',
-    containIntrinsicBlockSize: 'auto 1.5em',
+    containIntrinsicBlockSize: 'auto 1lh',
   },
   lineHighlighted: {
     backgroundColor: colorVars['--color-accent-muted'],
@@ -158,7 +158,7 @@ export interface XDSCodeBlockProps extends XDSBaseProps<HTMLPreElement> {
   /** Filename/label in header bar */
   title?: string;
   /** Show line number gutter. @default false */
-  showLineNumbers?: boolean;
+  hasLineNumbers?: boolean;
   /** 1-indexed lines to highlight. */
   highlightLines?: number[];
   /** Show copy-to-clipboard button. @default true */
@@ -214,7 +214,7 @@ let instanceCounter = 0;
  * <XDSCodeBlock
  *   code={`const x = 42;`}
  *   language="typescript"
- *   showLineNumbers
+ *   hasLineNumbers
  * />
  * ```
  */
@@ -222,7 +222,7 @@ export function XDSCodeBlock({
   code,
   language = 'plaintext',
   title,
-  showLineNumbers = false,
+  hasLineNumbers = false,
   highlightLines,
   hasCopyButton = true,
   onCopy,
@@ -307,9 +307,7 @@ export function XDSCodeBlock({
     /**
      * Find the text node and local offset for a given code offset.
      */
-    function findPosition(
-      offset: number,
-    ): {node: Text; offset: number} | null {
+    function findPosition(offset: number): {node: Text; offset: number} | null {
       for (let i = textMap.length - 1; i >= 0; i--) {
         const entry = textMap[i];
         if (offset >= entry.codeStart) {
@@ -350,7 +348,7 @@ export function XDSCodeBlock({
       if (ranges.length > 0) {
         const name = `xds-${tokenType}`;
         highlightNames.push(name);
-        // eslint-disable-next-line no-undef
+         
         CSS.highlights.set(name, new Highlight(...ranges));
       }
     }
@@ -368,19 +366,18 @@ export function XDSCodeBlock({
     ? {maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight}
     : undefined;
 
-  const copyButtonEl =
-    hasCopyButton ? (
-      <button
-        type="button"
-        onClick={handleCopy}
-        aria-label={copied ? 'Copied' : 'Copy code'}
-        {...stylex.props(
-          styles.copyButton,
-          !showHeader && styles.copyButtonAbsolute,
-        )}>
-        {copied ? '✓' : '⎘'}
-      </button>
-    ) : null;
+  const copyButtonEl = hasCopyButton ? (
+    <button
+      type="button"
+      onClick={handleCopy}
+      aria-label={copied ? 'Copied' : 'Copy code'}
+      {...stylex.props(
+        styles.copyButton,
+        !showHeader && styles.copyButtonAbsolute,
+      )}>
+      {copied ? '✓' : '⎘'}
+    </button>
+  ) : null;
 
   return (
     <pre
@@ -400,8 +397,10 @@ export function XDSCodeBlock({
       )}
       <div {...stylex.props(styles.scrollContainer)} style={scrollStyle}>
         <div {...stylex.props(styles.codeWrapper)}>
-          {showLineNumbers && (
-            <div {...stylex.props(styles.gutter, gutterSizeStyle)} aria-hidden="true">
+          {hasLineNumbers && (
+            <div
+              {...stylex.props(styles.gutter, gutterSizeStyle)}
+              aria-hidden="true">
               {lines.map((_, i) => (
                 <div key={i} {...stylex.props(styles.gutterLine)}>
                   {i + 1}

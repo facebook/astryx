@@ -31,8 +31,13 @@ const PYTHON_KEYWORDS =
 const BASH_KEYWORDS =
   /\b(if|then|else|elif|fi|for|do|done|while|until|case|esac|function|in|select|return|exit|local|export|source|alias|unalias|readonly|shift|eval|exec|set|unset|trap|wait|read|echo|printf|test|true|false)\b/;
 
-const CSS_KEYWORDS =
-  /\b(important|inherit|initial|unset|revert|auto|none)\b/;
+const CSS_KEYWORDS = /\b(important|inherit|initial|unset|revert|auto|none)\b/;
+
+const PHP_KEYWORDS =
+  /\b(function|class|if|else|elseif|for|foreach|while|return|echo|public|private|protected|static|new|try|catch|throw|namespace|use|require|require_once|include|include_once|extends|implements|interface|abstract|final|const|var|true|false|null|array|isset|unset|empty|list|match|enum|switch|case|break|continue|do|yield|fn)\b/;
+
+const HACK_KEYWORDS =
+  /\b(function|class|if|else|for|foreach|while|return|echo|public|private|protected|static|new|try|catch|throw|namespace|use|require|include|extends|implements|interface|abstract|final|const|shape|vec|dict|keyset|async|await|concurrent|enum|type|newtype|tuple|inout)\b/;
 
 function buildLanguage(lang: string): LangDef | null {
   const cached = langCache.get(lang);
@@ -54,7 +59,9 @@ function buildLanguageUncached(lang: string): LangDef | null {
   };
 }
 
-function buildLanguagePatterns(lang: string): {patterns: Array<{type: string; regex: RegExp}>} | null {
+function buildLanguagePatterns(
+  lang: string,
+): {patterns: Array<{type: string; regex: RegExp}>} | null {
   switch (lang) {
     case 'typescript':
     case 'javascript':
@@ -79,6 +86,7 @@ function buildLanguagePatterns(lang: string): {patterns: Array<{type: string; re
           {type: 'function', regex: /\b[a-zA-Z_$][\w$]*(?=\s*\()/},
           {type: 'property', regex: /(?<=\.)\b[a-zA-Z_$][\w$]*\b/},
           {type: 'operator', regex: /[+\-*/%=!<>&|^~?:]+/},
+          // eslint-disable-next-line no-useless-escape
           {type: 'punctuation', regex: /[{}()\[\];,.]/},
         ],
       };
@@ -90,6 +98,7 @@ function buildLanguagePatterns(lang: string): {patterns: Array<{type: string; re
           {type: 'string', regex: /"(?:[^"\\]|\\.)*"/},
           {type: 'number', regex: /-?\b\d+\.?\d*(?:[eE][+-]?\d+)?\b/},
           {type: 'constant', regex: /\b(true|false|null)\b/},
+          // eslint-disable-next-line no-useless-escape
           {type: 'punctuation', regex: /[{}()\[\]:,]/},
         ],
       };
@@ -120,13 +129,18 @@ function buildLanguagePatterns(lang: string): {patterns: Array<{type: string; re
           {type: 'comment', regex: /\/\/[^\n]*/},
           {type: 'string', regex: /"(?:[^"\\]|\\.)*"/},
           {type: 'string', regex: /'(?:[^'\\]|\\.)*'/},
-          {type: 'number', regex: /-?\b\d+\.?\d*(?:px|em|rem|%|vh|vw|vmin|vmax|ch|ex|deg|rad|turn|s|ms|fr)?\b/},
+          {
+            type: 'number',
+            regex:
+              /-?\b\d+\.?\d*(?:px|em|rem|%|vh|vw|vmin|vmax|ch|ex|deg|rad|turn|s|ms|fr)?\b/,
+          },
           {type: 'constant', regex: /#[0-9a-fA-F]{3,8}\b/},
           {type: 'keyword', regex: CSS_KEYWORDS},
           {type: 'keyword', regex: /@[a-zA-Z][\w-]*/},
           {type: 'function', regex: /\b[a-zA-Z_-][\w-]*(?=\s*\()/},
           {type: 'property', regex: /\b[a-zA-Z_-][\w-]*(?=\s*:)/},
           {type: 'keyword', regex: /::?[a-zA-Z][\w-]*/},
+          // eslint-disable-next-line no-useless-escape
           {type: 'punctuation', regex: /[{}()\[\];:,]/},
           {type: 'operator', regex: /[+~>*=|^$]/},
         ],
@@ -153,6 +167,7 @@ function buildLanguagePatterns(lang: string): {patterns: Array<{type: string; re
           {type: 'function', regex: /\b[a-zA-Z_][\w]*(?=\s*\()/},
           {type: 'property', regex: /(?<=\.)\b[a-zA-Z_][\w]*\b/},
           {type: 'operator', regex: /[+\-*/%=!<>&|^~@:]+/},
+          // eslint-disable-next-line no-useless-escape
           {type: 'punctuation', regex: /[{}()\[\];,.]/},
         ],
       };
@@ -171,9 +186,91 @@ function buildLanguagePatterns(lang: string): {patterns: Array<{type: string; re
           {type: 'variable', regex: /\$[0-9@#?*!$-]/},
           {type: 'number', regex: /\b\d+\b/},
           {type: 'keyword', regex: BASH_KEYWORDS},
-          {type: 'function', regex: /(?<=^|\||\;|\&\&|\|\|)\s*[a-zA-Z_][\w.-]*/},
+          {type: 'function', regex: /(?<=^|\||;|&&|\|\|)\s*[a-zA-Z_][\w.-]*/},
           {type: 'operator', regex: /[|&<>;!]+/},
+          // eslint-disable-next-line no-useless-escape
           {type: 'punctuation', regex: /[{}()\[\]]/},
+        ],
+      };
+
+    case 'php':
+      return {
+        patterns: [
+          {type: 'comment', regex: /\/\*[\s\S]*?\*\//},
+          {type: 'comment', regex: /\/\/[^\n]*/},
+          {type: 'comment', regex: /#[^\n]*/},
+          {type: 'string', regex: /"(?:[^"\\]|\\.)*"/},
+          {type: 'string', regex: /'(?:[^'\\]|\\.)*'/},
+          {type: 'variable', regex: /\$[a-zA-Z_][\w]*/},
+          {type: 'number', regex: /\b0[xX][0-9a-fA-F]+\b/},
+          {type: 'number', regex: /\b\d+\.?\d*(?:[eE][+-]?\d+)?\b/},
+          {type: 'keyword', regex: PHP_KEYWORDS},
+          {type: 'type', regex: /\b[A-Z][a-zA-Z0-9_]*\b/},
+          {type: 'function', regex: /\b[a-zA-Z_][\w]*(?=\s*\()/},
+          {type: 'property', regex: /(?<=->|::)\b[a-zA-Z_][\w]*\b/},
+          {type: 'operator', regex: /[+\-*/%=!<>&|^~?:.]+/},
+          {type: 'constant', regex: /@[\w]+/},
+          // eslint-disable-next-line no-useless-escape
+          {type: 'punctuation', regex: /[{}()\[\];,.]/},
+        ],
+      };
+
+    case 'hack':
+      return {
+        patterns: [
+          {type: 'comment', regex: /\/\*[\s\S]*?\*\//},
+          {type: 'comment', regex: /\/\/[^\n]*/},
+          {type: 'string', regex: /"(?:[^"\\]|\\.)*"/},
+          {type: 'string', regex: /'(?:[^'\\]|\\.)*'/},
+          {type: 'variable', regex: /\$[a-zA-Z_][\w]*/},
+          {type: 'number', regex: /\b0[xX][0-9a-fA-F]+\b/},
+          {type: 'number', regex: /\b\d+\.?\d*(?:[eE][+-]?\d+)?\b/},
+          {type: 'keyword', regex: HACK_KEYWORDS},
+          {type: 'type', regex: /\b[A-Z][a-zA-Z0-9_]*\b/},
+          {type: 'function', regex: /\b[a-zA-Z_][\w]*(?=\s*\()/},
+          {type: 'property', regex: /(?<=->|::)\b[a-zA-Z_][\w]*\b/},
+          {type: 'operator', regex: /[+\-*/%=!<>&|^~?:.]+/},
+          {type: 'constant', regex: /<<[\w]+/},
+          // eslint-disable-next-line no-useless-escape
+          {type: 'punctuation', regex: /[{}()\[\];,.]/},
+        ],
+      };
+
+    case 'yaml':
+    case 'yml':
+      return {
+        patterns: [
+          {type: 'comment', regex: /#[^\n]*/},
+          {type: 'string', regex: /"(?:[^"\\]|\\.)*"/},
+          {type: 'string', regex: /'(?:[^'\\]|\\.)*'/},
+          {type: 'constant', regex: /\b(true|false|yes|no|on|off|null|~)\b/i},
+          {type: 'variable', regex: /[&*][\w]+/},
+          {type: 'type', regex: /!!\w+/},
+          {type: 'number', regex: /\b-?\d+\.?\d*(?:[eE][+-]?\d+)?\b/},
+          {type: 'property', regex: /^[ \t]*[\w][\w ./-]*(?=\s*:)/m},
+          {type: 'keyword', regex: /---/},
+          {type: 'keyword', regex: /\.\.\./},
+          {type: 'operator', regex: /[:|>\-?]/},
+          // eslint-disable-next-line no-useless-escape
+          {type: 'punctuation', regex: /[{}()\[\],]/},
+        ],
+      };
+
+    case 'markdown':
+    case 'md':
+      return {
+        patterns: [
+          {type: 'keyword', regex: /^```[\w]*$/m},
+          {type: 'keyword', regex: /^#{1,6}\s+.*/m},
+          {type: 'keyword', regex: /^---$/m},
+          {type: 'keyword', regex: /^\*\*\*$/m},
+          {type: 'string', regex: /\*\*(?:[^*]|\*(?!\*))+\*\*/},
+          {type: 'string', regex: /\*(?:[^*])+\*/},
+          {type: 'constant', regex: /`[^`]+`/},
+          {type: 'function', regex: /\[(?:[^\]])+\]\([^)]+\)/},
+          {type: 'comment', regex: /^>\s+.*/m},
+          {type: 'operator', regex: /^\s*[-*+]\s/m},
+          {type: 'number', regex: /^\s*\d+\.\s/m},
         ],
       };
 

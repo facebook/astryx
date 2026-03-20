@@ -57,7 +57,7 @@ const styles = stylex.create({
   },
   gutterLine: {
     fontFamily: typographyVars['--font-code'],
-    lineHeight: '1.5em',
+    lineHeight: lineHeightVars['--leading-normal'],
   },
   editorContainer: {
     flex: 1,
@@ -77,7 +77,7 @@ const styles = stylex.create({
     overflowWrap: 'normal',
     outline: 'none',
     caretColor: colorVars['--color-text-primary'],
-    lineHeight: '1.5em',
+    lineHeight: lineHeightVars['--leading-normal'],
   },
   placeholder: {
     position: 'absolute',
@@ -85,7 +85,7 @@ const styles = stylex.create({
     left: spacingVars['--spacing-4'],
     color: colorVars['--color-text-disabled'],
     fontFamily: typographyVars['--font-code'],
-    lineHeight: '1.5em',
+    lineHeight: lineHeightVars['--leading-normal'],
     pointerEvents: 'none',
     userSelect: 'none',
   },
@@ -107,7 +107,10 @@ const styles = stylex.create({
 // Props
 // ---------------------------------------------------------------------------
 
-export interface XDSCodeEditorProps extends XDSBaseProps<HTMLDivElement> {
+export interface XDSCodeEditorProps extends Omit<
+  XDSBaseProps<HTMLDivElement>,
+  'onChange'
+> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /** Controlled value */
@@ -117,9 +120,9 @@ export interface XDSCodeEditorProps extends XDSBaseProps<HTMLDivElement> {
   /** Language for highlighting. @default "plaintext" */
   language?: string;
   /** Show line numbers. @default false */
-  showLineNumbers?: boolean;
+  hasLineNumbers?: boolean;
   /** Read-only mode. @default false */
-  readOnly?: boolean;
+  isReadOnly?: boolean;
   /** Placeholder when empty */
   placeholder?: string;
   /** Max height before scrolling */
@@ -173,7 +176,7 @@ let editorInstanceCounter = 0;
  *   value={code}
  *   onChange={setCode}
  *   language="typescript"
- *   showLineNumbers
+ *   hasLineNumbers
  * />
  * ```
  */
@@ -181,8 +184,8 @@ export function XDSCodeEditor({
   value,
   onChange,
   language = 'plaintext',
-  showLineNumbers = false,
-  readOnly = false,
+  hasLineNumbers = false,
+  isReadOnly = false,
   placeholder,
   maxHeight,
   size = 'md',
@@ -246,9 +249,7 @@ export function XDSCodeEditor({
       node = walker.nextNode();
     }
 
-    function findPosition(
-      offset: number,
-    ): {node: Text; offset: number} | null {
+    function findPosition(offset: number): {node: Text; offset: number} | null {
       for (let i = textNodes.length - 1; i >= 0; i--) {
         const entry = textNodes[i];
         if (offset >= entry.start) {
@@ -306,7 +307,7 @@ export function XDSCodeEditor({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (readOnly) return;
+      if (isReadOnly) return;
 
       // Tab key: insert 2 spaces
       if (e.key === 'Tab') {
@@ -385,7 +386,7 @@ export function XDSCodeEditor({
         if (el) onChange(el.textContent ?? '');
       }
     },
-    [readOnly, onChange],
+    [isReadOnly, onChange],
   );
 
   const handleCompositionStart = useCallback(() => {
@@ -415,8 +416,10 @@ export function XDSCodeEditor({
         style,
       )}
       {...props}>
-      {showLineNumbers && (
-        <div {...stylex.props(styles.gutter, gutterSizeStyle)} aria-hidden="true">
+      {hasLineNumbers && (
+        <div
+          {...stylex.props(styles.gutter, gutterSizeStyle)}
+          aria-hidden="true">
           {lines.map((_, i) => (
             <div key={i} {...stylex.props(styles.gutterLine)}>
               {i + 1}
@@ -432,10 +435,11 @@ export function XDSCodeEditor({
         )}
         <div
           ref={editorRef}
-          contentEditable={readOnly ? false : ('plaintext-only' as any)}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          contentEditable={isReadOnly ? false : ('plaintext-only' as any)}
           role="textbox"
           aria-multiline="true"
-          aria-readonly={readOnly}
+          aria-readonly={isReadOnly}
           spellCheck={false}
           onInput={handleInput}
           onKeyDown={handleKeyDown}
