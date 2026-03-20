@@ -21,6 +21,21 @@ const VIBE_DIR = path.resolve(__dirname, '..');
 const _APP_DIR = path.join(VIBE_DIR, 'app');
 const REPO_ROOT = path.resolve(VIBE_DIR, '../..');
 
+/**
+ * Browser targets for lightningcss.
+ * Prevents lowering native light-dark() into --lightningcss-light/--lightningcss-dark
+ * polyfill variables. XDS tokens use native light-dark() which is baseline 2024:
+ * Chrome 123+, Firefox 120+, Safari 17.5+
+ *
+ * Must match the targets in apps/storybook/.storybook/main.ts and
+ * internal/vibe-tests/app/vite.config.*.ts
+ */
+const LIGHTNINGCSS_TARGETS_JS = `{
+  chrome: 123 << 16,
+  firefox: 120 << 16,
+  safari: (17 << 16) | (5 << 8),
+}`;
+
 interface PreviewManifest {
   [promptId: string]: {
     [target: string]: string; // relative path to preview HTML
@@ -279,6 +294,9 @@ function createViteConfig(tmpDir: string, target: string): string {
           .resolve(REPO_ROOT, 'packages/core/src/theme/tokens.stylex.ts')
           .replace(/\\/g, '/')}',
       },
+      lightningcssOptions: {
+        targets: ${LIGHTNINGCSS_TARGETS_JS},
+      },
     }),
     react(),
     viteSingleFile(),`
@@ -348,6 +366,10 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    // Don't use lightningcss for minification — it lowers light-dark()
+    // into --lightningcss-light/--lightningcss-dark polyfill variables
+    // which breaks XDS theming.
+    cssMinify: false,
   },
   logLevel: 'warn',
 });
