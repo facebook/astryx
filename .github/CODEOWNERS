@@ -1,5 +1,5 @@
 # Default reviewers for the XDS repository
 # See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
-# Cindy reviews everything by default
-* @cixzhang
+# Cindy and Joey review everything by default
+* @cixzhang @josephfarina
