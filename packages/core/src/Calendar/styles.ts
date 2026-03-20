@@ -31,7 +31,7 @@ export const calendarStyles = stylex.create({
   calendar: {
     display: 'inline-block',
     padding: spacingVars['--spacing-3'],
-    minWidth: '220px',
+    minWidth: 220,
   },
   header: {
     display: 'flex',
@@ -55,6 +55,17 @@ export const calendarStyles = stylex.create({
     width: spacingVars['--spacing-4'],
     height: spacingVars['--spacing-4'],
   },
+  srOnly: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    padding: 0,
+    margin: -1,
+    overflow: 'hidden',
+    clipPath: 'inset(50%)',
+    whiteSpace: 'nowrap',
+    borderWidth: 0,
+  },
 });
 
 // =============================================================================
@@ -66,13 +77,9 @@ export const monthGridStyles = stylex.create({
     flex: '1 1 0',
   },
   weekHeader: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(7, 1fr)',
-    marginBottom: spacingVars['--spacing-1'],
+    display: 'contents',
   },
-  weekHeaderWithNumbers: {
-    gridTemplateColumns: 'auto repeat(7, 1fr)',
-  },
+  weekHeaderWithNumbers: {},
   dayName: {
     width: sizeVars['--size-md'],
     height: sizeVars['--size-md'],
@@ -124,53 +131,53 @@ export const dayCellStyles = stylex.create({
   // Range background - structural positioning
   rangeBg: {
     position: 'absolute',
-    top: '2px',
-    bottom: '2px',
+    top: spacingVars['--spacing-0-5'],
+    bottom: spacingVars['--spacing-0-5'],
     left: 0,
     right: 0,
   },
   rangeBgRadiusLeft: {
-    left: '2px',
+    left: spacingVars['--spacing-0-5'],
     borderTopLeftRadius: radiusVars['--radius-rounded'],
     borderBottomLeftRadius: radiusVars['--radius-rounded'],
   },
   rangeBgRadiusRight: {
-    right: '2px',
+    right: spacingVars['--spacing-0-5'],
     borderTopRightRadius: radiusVars['--radius-rounded'],
     borderBottomRightRadius: radiusVars['--radius-rounded'],
   },
   rangeInsetLeft: {
-    left: '2px',
+    left: spacingVars['--spacing-0-5'],
   },
   rangeInsetRight: {
-    right: '2px',
+    right: spacingVars['--spacing-0-5'],
   },
 
   // Preview background - structural positioning
   previewBg: {
     position: 'absolute',
-    top: '2px',
-    bottom: '2px',
+    top: spacingVars['--spacing-0-5'],
+    bottom: spacingVars['--spacing-0-5'],
     left: 0,
     right: 0,
   },
   previewBgRadiusLeft: {
-    left: '2px',
+    left: spacingVars['--spacing-0-5'],
     borderTopLeftRadius: radiusVars['--radius-rounded'],
     borderBottomLeftRadius: radiusVars['--radius-rounded'],
   },
   previewBgRadiusRight: {
-    right: '2px',
+    right: spacingVars['--spacing-0-5'],
     borderTopRightRadius: radiusVars['--radius-rounded'],
     borderBottomRightRadius: radiusVars['--radius-rounded'],
   },
   previewStart: {
-    left: '2px',
+    left: spacingVars['--spacing-0-5'],
     borderTopLeftRadius: radiusVars['--radius-rounded'],
     borderBottomLeftRadius: radiusVars['--radius-rounded'],
   },
   previewEnd: {
-    right: '2px',
+    right: spacingVars['--spacing-0-5'],
     borderTopRightRadius: radiusVars['--radius-rounded'],
     borderBottomRightRadius: radiusVars['--radius-rounded'],
   },
@@ -182,7 +189,7 @@ export const dayCellStyles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: '50%',
+    borderRadius: radiusVars['--radius-rounded'],
     borderWidth: 0,
     borderStyle: 'none',
     cursor: 'pointer',
@@ -192,7 +199,10 @@ export const dayCellStyles = stylex.create({
     position: 'relative',
     zIndex: 1,
     transitionProperty: 'background-color, color',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     // Expand hit target by 2px on each side to prevent gaps
     '::before': {
@@ -248,7 +258,7 @@ export const dayCellTheme = stylex.create({
     },
     outlineOffset: {
       default: '0',
-      ':focus-visible': '2px',
+      ':focus-visible': spacingVars['--spacing-0-5'],
     },
   },
 

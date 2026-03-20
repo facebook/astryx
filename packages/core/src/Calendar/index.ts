@@ -20,7 +20,6 @@ export type {
 export {
   useCalendarDays,
   useCalendarConstraints,
-  useCalendarNavigation,
   useCalendarRovingTabindex,
 } from './hooks';
 export type {
@@ -29,8 +28,6 @@ export type {
   UseCalendarDaysReturn,
   UseCalendarConstraintsOptions,
   UseCalendarConstraintsReturn,
-  UseCalendarNavigationOptions,
-  UseCalendarNavigationReturn,
   UseCalendarRovingTabindexOptions,
   UseCalendarRovingTabindexReturn,
 } from './hooks';

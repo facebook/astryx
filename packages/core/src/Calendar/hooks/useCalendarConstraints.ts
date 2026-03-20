@@ -12,6 +12,7 @@
 
 import {useCallback, useMemo} from 'react';
 import type {ISODateString} from '../XDSCalendar';
+import {parseISO} from '../utils';
 
 /**
  * Configuration for date constraints
@@ -38,14 +39,10 @@ export interface UseCalendarConstraintsReturn {
   minDate: Date | null;
   /** Parsed max date (or null) */
   maxDate: Date | null;
-}
-
-/**
- * Parse ISO date string to Date object.
- */
-function parseISO(str: ISODateString): Date {
-  const [year, month, day] = str.split('-').map(Number);
-  return new Date(year, month - 1, day);
+  /** Whether navigation to previous month is possible given the visible months */
+  canNavigatePrevious: (visibleMonths: Date[]) => boolean;
+  /** Whether navigation to next month is possible given the visible months */
+  canNavigateNext: (visibleMonths: Date[]) => boolean;
 }
 
 /**
@@ -100,9 +97,41 @@ export function useCalendarConstraints(
     [minDate, maxDate, dateConstraints],
   );
 
+  // Check if navigation to previous month is possible
+  const canNavigatePrevious = useCallback(
+    (visibleMonths: Date[]): boolean => {
+      if (!minDate) return true;
+      const firstVisible = visibleMonths[0];
+      // Can navigate if min month is before the first visible month
+      return (
+        minDate.getFullYear() < firstVisible.getFullYear() ||
+        (minDate.getFullYear() === firstVisible.getFullYear() &&
+          minDate.getMonth() < firstVisible.getMonth())
+      );
+    },
+    [minDate],
+  );
+
+  // Check if navigation to next month is possible
+  const canNavigateNext = useCallback(
+    (visibleMonths: Date[]): boolean => {
+      if (!maxDate) return true;
+      const lastVisible = visibleMonths[visibleMonths.length - 1];
+      // Can navigate if max month is after the last visible month
+      return (
+        maxDate.getFullYear() > lastVisible.getFullYear() ||
+        (maxDate.getFullYear() === lastVisible.getFullYear() &&
+          maxDate.getMonth() > lastVisible.getMonth())
+      );
+    },
+    [maxDate],
+  );
+
   return {
     isDateDisabled,
     minDate,
     maxDate,
+    canNavigatePrevious,
+    canNavigateNext,
   };
 }

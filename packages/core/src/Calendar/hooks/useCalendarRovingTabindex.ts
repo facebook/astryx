@@ -13,6 +13,7 @@
 import {useMemo} from 'react';
 import type {ISODateString} from '../XDSCalendar';
 import type {CalendarDay} from './useCalendarDays';
+import {dateToISO} from '../utils';
 
 /**
  * Configuration for calendar roving tabindex
@@ -28,6 +29,8 @@ export interface UseCalendarRovingTabindexOptions {
   month: number;
   /** Function to check if a date is disabled */
   isDateDisabled: (date: Date) => boolean;
+  /** Currently selected date (preferred for tabindex=0) */
+  selectedDate?: Date | null;
 }
 
 /**
@@ -38,16 +41,6 @@ export interface UseCalendarRovingTabindexReturn {
   tabbableDate: ISODateString | null;
   /** Check if a specific date is the tabbable one */
   isTabbable: (iso: ISODateString) => boolean;
-}
-
-/**
- * Convert a Date to ISO date string format.
- */
-function dateToISO(date: Date): ISODateString {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}` as ISODateString;
 }
 
 /**
@@ -79,10 +72,20 @@ function dateToISO(date: Date): ISODateString {
 export function useCalendarRovingTabindex(
   options: UseCalendarRovingTabindexOptions,
 ): UseCalendarRovingTabindexReturn {
-  const {days, today, year, month, isDateDisabled} = options;
+  const {days, today, year, month, isDateDisabled, selectedDate} = options;
 
   // Determine which day should be tabbable
+  // Priority: 1. Selected date  2. Today  3. First enabled day
   const tabbableDate = useMemo(() => {
+    // Check if selected date is in this month and enabled
+    if (selectedDate) {
+      const isSelectedInMonth =
+        selectedDate.getFullYear() === year && selectedDate.getMonth() === month;
+      if (isSelectedInMonth && !isDateDisabled(selectedDate)) {
+        return dateToISO(selectedDate);
+      }
+    }
+
     // Check if today is in this month
     const isTodayInMonth =
       today.getFullYear() === year && today.getMonth() === month;
@@ -100,7 +103,7 @@ export function useCalendarRovingTabindex(
     }
 
     return null;
-  }, [days, today, year, month, isDateDisabled]);
+  }, [days, today, year, month, isDateDisabled, selectedDate]);
 
   // Check if a specific date is tabbable
   const isTabbable = useMemo(() => {

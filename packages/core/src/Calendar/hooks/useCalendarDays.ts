@@ -12,6 +12,7 @@
 
 import {useMemo} from 'react';
 import type {DayOfWeek, ISODateString} from '../XDSCalendar';
+import {dateToISO} from '../utils';
 
 /**
  * Represents a single day in the calendar grid.
@@ -56,16 +57,6 @@ export interface UseCalendarDaysReturn {
 }
 
 /**
- * Convert a Date to ISO date string format.
- */
-function dateToISO(date: Date): ISODateString {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}` as ISODateString;
-}
-
-/**
  * Hook for generating calendar day grids.
  *
  * Calculates all the days to display for a given month, including
@@ -107,14 +98,20 @@ export function useCalendarDays(
     };
   }, [year, month, weekStartsOn, hasVariableRowCount]);
 
-  // Generate day names
+  // Generate localized day names
   const dayNames = useMemo(() => {
-    const names = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-    const rotated: string[] = [];
+    const formatter = new Intl.DateTimeFormat(undefined, {weekday: 'short'});
+    // Use a known Sunday (Jan 4 2026) as reference
+    const refSunday = new Date(2026, 0, 4);
+    const names: string[] = [];
     for (let i = 0; i < 7; i++) {
-      rotated.push(names[(i + weekStartsOn) % 7]);
+      const d = new Date(refSunday);
+      d.setDate(refSunday.getDate() + ((i + weekStartsOn) % 7));
+      // Get short weekday name and truncate to 2 chars for compact display
+      const name = formatter.format(d);
+      names.push(name.length > 2 ? name.slice(0, 2) : name);
     }
-    return rotated;
+    return names;
   }, [weekStartsOn]);
 
   // Generate days array

@@ -18,6 +18,7 @@ import {
   useMemo,
   useCallback,
   useEffect,
+  useRef,
   useImperativeHandle,
 } from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
@@ -200,8 +201,8 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
     ...rest
   } = props;
 
-  // Today's date (memoized)
-  const today = useMemo(() => new Date(), []);
+  // Today's date — fresh on every render so it updates after midnight
+  const today = new Date();
 
   // Internal state for uncontrolled mode
   const [internalValue, setInternalValue] = useState<
@@ -218,8 +219,14 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
   // Pending focus target after month navigation
   const [pendingFocus, setPendingFocus] = useState<ISODateString | null>(null);
 
+  // Track the month index that should handle pendingFocus
+  const [pendingFocusMonthIndex, setPendingFocusMonthIndex] = useState<
+    number | null
+  >(null);
+
   // Determine effective value
-  const effectiveValue = value !== undefined ? value : internalValue;
+  const isControlledValue = value !== undefined;
+  const effectiveValue = isControlledValue ? value : internalValue;
 
   // Focus date state (which month is visible)
   const [internalFocusDate, setInternalFocusDate] = useState<Date>(() => {
@@ -234,10 +241,43 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
     return new Date();
   });
 
-  // Use controlled focusDate if callback is provided, otherwise use internal state
-  const isControlledFocus =
+  // Sync internalFocusDate when focusDate prop changes (semi-controlled)
+  const prevFocusDateProp = useRef(focusDateProp);
+  useEffect(() => {
+    if (focusDateProp !== prevFocusDateProp.current) {
+      prevFocusDateProp.current = focusDateProp;
+      if (focusDateProp) {
+        setInternalFocusDate(parseISO(focusDateProp));
+      }
+    }
+  }, [focusDateProp]);
+
+  // Reset rangeSelectionStart when mode changes
+  const prevMode = useRef(mode);
+  useEffect(() => {
+    if (mode !== prevMode.current) {
+      prevMode.current = mode;
+      setRangeSelectionStart(null);
+      setHoveredDate(null);
+    }
+  }, [mode]);
+
+  // Reset rangeSelectionStart when controlled value changes externally
+  const prevValue = useRef(value);
+  useEffect(() => {
+    if (value !== prevValue.current) {
+      prevValue.current = value;
+      setRangeSelectionStart(null);
+      setHoveredDate(null);
+    }
+  }, [value]);
+
+  // Determine focus date
+  // Fully controlled: focusDate + onFocusDateChange → always use prop
+  // Semi-controlled: focusDate without onFocusDateChange → use internal (synced on prop change)
+  const isFullyControlledFocus =
     focusDateProp !== undefined && onFocusDateChange !== undefined;
-  const focusDate = isControlledFocus
+  const focusDate = isFullyControlledFocus
     ? parseISO(focusDateProp)
     : internalFocusDate;
 
@@ -246,14 +286,13 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
     ref,
     () => ({
       navigateTo: (date: ISODateString) => {
-        if (isControlledFocus) {
-          onFocusDateChange?.(date);
-        } else {
-          setInternalFocusDate(parseISO(date));
+        if (onFocusDateChange) {
+          onFocusDateChange(date);
         }
+        setInternalFocusDate(parseISO(date));
       },
     }),
-    [isControlledFocus, onFocusDateChange],
+    [onFocusDateChange],
   );
 
   // Base month (first day of focus month)
@@ -272,6 +311,38 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
     });
   }, [baseMonth, numberOfMonths]);
 
+  // Auto-navigate to show the controlled value's month when value changes
+  useEffect(() => {
+    if (!isControlledValue || !value) return;
+
+    const targetDate =
+      typeof value === 'string' ? parseISO(value) : parseISO(value.start);
+    const targetMonth = targetDate.getMonth();
+    const targetYear = targetDate.getFullYear();
+
+    // Check if target is already visible
+    const isVisible = visibleMonths.some(
+      m =>
+        m.getFullYear() === targetYear && m.getMonth() === targetMonth,
+    );
+
+    if (!isVisible) {
+      const newFocusDate = new Date(targetYear, targetMonth, 1);
+      if (onFocusDateChange) {
+        onFocusDateChange(dateToISO(newFocusDate));
+      }
+      setInternalFocusDate(newFocusDate);
+    }
+  }, [value, isControlledValue, visibleMonths, onFocusDateChange]);
+
+  // Constraints (including nav bounds)
+  const {canNavigatePrevious, canNavigateNext} =
+    useCalendarConstraints({
+      min,
+      max,
+      dateConstraints,
+    });
+
   // Format month header
   const monthYearLabel = useMemo(() => {
     const formatter = new Intl.DateTimeFormat(undefined, {
@@ -284,6 +355,9 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
     return visibleMonths.map(m => formatter.format(m)).join(' – ');
   }, [visibleMonths, numberOfMonths]);
 
+  // Aria-live announcement for month changes
+  const [monthAnnouncement, setMonthAnnouncement] = useState('');
+
   // Navigation handlers
   const navigateMonth = useCallback(
     (delta: number, focusedDate?: ISODateString, offset?: number) => {
@@ -291,22 +365,58 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
       newDate.setMonth(baseMonth.getMonth() + delta);
       const newISO = dateToISO(newDate);
 
-      // Calculate target focus date if a focused date was provided
+      // Calculate target focus date for keyboard nav
       if (focusedDate) {
         const currentDate = parseISO(focusedDate);
         const daysToMove = offset ?? 7;
-        currentDate.setDate(currentDate.getDate() + delta * daysToMove);
-        setPendingFocus(dateToISO(currentDate));
+
+        if (daysToMove === 7) {
+          // PageUp/PageDown or vertical arrow: go to same day in adjacent month
+          currentDate.setMonth(currentDate.getMonth() + delta);
+        } else {
+          // Horizontal arrow: move by days
+          currentDate.setDate(currentDate.getDate() + delta * daysToMove);
+        }
+        const targetISO = dateToISO(currentDate);
+        setPendingFocus(targetISO);
+
+        // Determine which month grid should handle this focus
+        const targetMonth = currentDate.getMonth();
+        const targetYear = currentDate.getFullYear();
+        const newVisibleMonths = Array.from(
+          {length: numberOfMonths},
+          (_, i) => {
+            const m = new Date(newDate);
+            m.setMonth(newDate.getMonth() + i);
+            return m;
+          },
+        );
+        const monthIdx = newVisibleMonths.findIndex(
+          m =>
+            m.getFullYear() === targetYear && m.getMonth() === targetMonth,
+        );
+        setPendingFocusMonthIndex(monthIdx >= 0 ? monthIdx : 0);
       }
 
+      // Announce month change
+      const formatter = new Intl.DateTimeFormat(undefined, {
+        year: 'numeric',
+        month: 'long',
+      });
+      setMonthAnnouncement(formatter.format(newDate));
+
+      // Always update internal state
+      setInternalFocusDate(newDate);
+      // Also fire callback if provided
       if (onFocusDateChange) {
         onFocusDateChange(newISO);
-      } else {
-        setInternalFocusDate(newDate);
       }
     },
-    [baseMonth, onFocusDateChange],
+    [baseMonth, onFocusDateChange, numberOfMonths],
   );
+
+  const isPrevDisabled = !canNavigatePrevious(visibleMonths);
+  const isNextDisabled = !canNavigateNext(visibleMonths);
 
   // Day click handler
   const handleDayClick = useCallback(
@@ -314,7 +424,9 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
       const iso = dateToISO(date);
 
       if (mode === 'single') {
-        setInternalValue(iso);
+        if (!isControlledValue) {
+          setInternalValue(iso);
+        }
         (onChange as XDSCalendarSingleProps['onChange'])?.(iso, date);
       } else {
         // Range mode
@@ -327,8 +439,11 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
           let start: ISODateString;
           let end: ISODateString;
 
-          // Ensure start <= end
-          if (date < startDate) {
+          if (isSameDay(date, startDate)) {
+            // Same date twice = single-day range
+            start = iso;
+            end = iso;
+          } else if (date < startDate) {
             start = iso;
             end = rangeSelectionStart;
           } else {
@@ -337,24 +452,50 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
           }
 
           const range: DateRange = {start, end};
-          setInternalValue(range);
+          if (!isControlledValue) {
+            setInternalValue(range);
+          }
           setRangeSelectionStart(null);
+          setHoveredDate(null);
           (onChange as XDSCalendarRangeProps['onChange'])?.(range);
         }
       }
     },
-    [mode, onChange, rangeSelectionStart],
+    [mode, onChange, rangeSelectionStart, isControlledValue],
   );
+
+  // Escape handler to cancel range selection
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Escape' && mode === 'range' && rangeSelectionStart) {
+        setRangeSelectionStart(null);
+        setHoveredDate(null);
+        e.preventDefault();
+      }
+    },
+    [mode, rangeSelectionStart],
+  );
+
+  // Parse selected date for roving tabindex
+  const selectedDateForTabindex = useMemo(() => {
+    if (mode === 'single' && effectiveValue && typeof effectiveValue === 'string') {
+      return parseISO(effectiveValue as ISODateString);
+    }
+    return null;
+  }, [mode, effectiveValue]);
 
   return (
     <div
+      {...rest}
       {...mergeProps(
         xdsClassName('calendar', {mode}),
         stylex.props(calendarStyles.calendar, xstyle),
         className,
         style,
       )}
-      {...rest}>
+      role="group"
+      aria-label="Calendar"
+      onKeyDown={handleKeyDown}>
       {/* Header with navigation */}
       <div {...stylex.props(calendarStyles.header)}>
         <XDSButton
@@ -362,9 +503,13 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
           variant="ghost"
           icon={<XDSIcon icon="chevronLeft" size="sm" color="inherit" />}
           onClick={() => navigateMonth(-1)}
+          disabled={isPrevDisabled}
         />
 
-        <span {...stylex.props(calendarStyles.monthYearLabel)}>
+        <span
+          role="heading"
+          aria-level={2}
+          {...stylex.props(calendarStyles.monthYearLabel)}>
           {monthYearLabel}
         </span>
 
@@ -373,12 +518,13 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
           variant="ghost"
           icon={<XDSIcon icon="chevronRight" size="sm" color="inherit" />}
           onClick={() => navigateMonth(1)}
+          disabled={isNextDisabled}
         />
       </div>
 
       {/* Month grids */}
       <div {...stylex.props(calendarStyles.monthsContainer)}>
-        {visibleMonths.map(month => (
+        {visibleMonths.map((month, monthIndex) => (
           <MonthGrid
             key={`${month.getFullYear()}-${month.getMonth()}`}
             month={month}
@@ -396,16 +542,31 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
             onDayClick={handleDayClick}
             onDayHover={date => setHoveredDate(date ? dateToISO(date) : null)}
             today={today}
+            selectedDate={selectedDateForTabindex}
             onNavigatePrevious={(focusedDate, offset) =>
               navigateMonth(-1, focusedDate, offset)
             }
             onNavigateNext={(focusedDate, offset) =>
               navigateMonth(1, focusedDate, offset)
             }
-            pendingFocus={pendingFocus}
-            onPendingFocusHandled={() => setPendingFocus(null)}
+            pendingFocus={
+              pendingFocusMonthIndex === monthIndex ? pendingFocus : null
+            }
+            onPendingFocusHandled={() => {
+              setPendingFocus(null);
+              setPendingFocusMonthIndex(null);
+            }}
           />
         ))}
+      </div>
+
+      {/* Aria-live region for month change announcements */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        {...stylex.props(calendarStyles.srOnly)}>
+        {monthAnnouncement}
       </div>
     </div>
   );
@@ -433,6 +594,7 @@ interface MonthGridProps {
   onDayClick: (date: Date) => void;
   onDayHover: (date: Date | null) => void;
   today: Date;
+  selectedDate: Date | null;
   onNavigatePrevious?: (focusedDate: ISODateString, offset: number) => void;
   onNavigateNext?: (focusedDate: ISODateString, offset: number) => void;
   pendingFocus?: ISODateString | null;
@@ -455,18 +617,19 @@ function MonthGrid({
   onDayClick,
   onDayHover,
   today,
+  selectedDate,
   onNavigatePrevious,
   onNavigateNext,
   pendingFocus,
   onPendingFocusHandled,
 }: MonthGridProps) {
   const year = month.getFullYear();
-  const monthIndex = month.getMonth();
+  const monthNum = month.getMonth();
 
   // Use hooks for days generation and constraints
   const {days, weeks, dayNames} = useCalendarDays({
     year,
-    month: monthIndex,
+    month: monthNum,
     weekStartsOn,
     hasVariableRowCount,
   });
@@ -481,22 +644,20 @@ function MonthGrid({
     days,
     today,
     year,
-    month: monthIndex,
+    month: monthNum,
     isDateDisabled,
+    selectedDate,
   });
 
-  // Helper to get the focused date from the currently focused element
+  // Get focused date from data attribute (not localized aria-label)
   const getFocusedDate = useCallback((): ISODateString | null => {
     const activeElement = document.activeElement as HTMLElement | null;
     if (!activeElement) return null;
 
-    const ariaLabel = activeElement.getAttribute('aria-label');
-    if (!ariaLabel) return null;
+    const dateAttr = activeElement.getAttribute('data-date');
+    if (!dateAttr) return null;
 
-    const parsed = new Date(ariaLabel);
-    if (isNaN(parsed.getTime())) return null;
-
-    return dateToISO(parsed);
+    return dateAttr as ISODateString;
   }, []);
 
   // Handle navigation to previous month
@@ -521,7 +682,7 @@ function MonthGrid({
     [getFocusedDate, onNavigateNext],
   );
 
-  // Handle PageUp/PageDown
+  // Handle PageUp/PageDown — same day in prev/next month
   const handlePageUp = useCallback(() => {
     const focusedDate = getFocusedDate();
     if (focusedDate) {
@@ -536,10 +697,10 @@ function MonthGrid({
     }
   }, [getFocusedDate, onNavigateNext]);
 
-  // Grid focus navigation
+  // Grid focus navigation — use all gridcell buttons (including disabled via aria-disabled)
   const {gridRef, handleKeyDown: handleGridKeyDown} = useGridFocus({
     columns: 7,
-    cellSelector: 'button:not([disabled])',
+    cellSelector: '[role="gridcell"] > button',
     onNavigateBefore: handleNavigatePrevious,
     onNavigateAfter: handleNavigateNext,
     onPageUp: handlePageUp,
@@ -551,15 +712,12 @@ function MonthGrid({
     if (!pendingFocus || !gridRef.current) return;
 
     const buttons = gridRef.current.querySelectorAll<HTMLElement>(
-      'button:not([disabled])',
+      '[role="gridcell"] > button',
     );
-
-    const targetDate = parseISO(pendingFocus);
-    const targetLabel = formatAccessibleDate(targetDate);
 
     let targetButton: HTMLElement | null = null;
     for (const button of buttons) {
-      if (button.getAttribute('aria-label') === targetLabel) {
+      if (button.getAttribute('data-date') === pendingFocus) {
         targetButton = button;
         break;
       }
@@ -574,12 +732,12 @@ function MonthGrid({
   }, [pendingFocus, gridRef, onPendingFocusHandled]);
 
   // Parse selection
-  let selectedDate: Date | null = null;
+  let selectedDateForDisplay: Date | null = null;
   let rangeStart: Date | null = null;
   let rangeEnd: Date | null = null;
 
   if (mode === 'single' && value && typeof value === 'string') {
-    selectedDate = parseISO(value as ISODateString);
+    selectedDateForDisplay = parseISO(value as ISODateString);
   } else if (mode === 'range' && value && typeof value === 'object') {
     const range = value as DateRange;
     rangeStart = parseISO(range.start);
@@ -598,18 +756,17 @@ function MonthGrid({
   if (mode === 'range' && rangeSelectionStart && hoveredDate) {
     const startDate = parseISO(rangeSelectionStart);
     const hoverDate = parseISO(hoveredDate);
-    if (startDate.getTime() !== hoverDate.getTime()) {
-      if (hoverDate < startDate) {
-        previewStart = hoverDate;
-        previewEnd = startDate;
-      } else {
-        previewStart = startDate;
-        previewEnd = hoverDate;
-      }
+    if (hoverDate < startDate) {
+      previewStart = hoverDate;
+      previewEnd = startDate;
+    } else if (hoverDate > startDate) {
+      previewStart = startDate;
+      previewEnd = hoverDate;
     }
+    // If same date, no preview needed
   }
 
-  // Month label for announcements
+  // Month label for grid aria-label
   const monthLabel = useMemo(() => {
     return new Intl.DateTimeFormat(undefined, {
       year: 'numeric',
@@ -619,28 +776,7 @@ function MonthGrid({
 
   return (
     <div {...stylex.props(monthGridStyles.monthGrid)}>
-      {/* Day names header */}
-      <div
-        {...stylex.props(
-          monthGridStyles.weekHeader,
-          hasWeekNumbers && monthGridStyles.weekHeaderWithNumbers,
-        )}>
-        {hasWeekNumbers && (
-          <div
-            {...stylex.props(
-              monthGridStyles.dayName,
-              monthGridStyles.weekNumberHeader,
-            )}
-          />
-        )}
-        {dayNames.map((name, i) => (
-          <div key={i} {...stylex.props(monthGridStyles.dayName)}>
-            {name}
-          </div>
-        ))}
-      </div>
-
-      {/* Days grid */}
+      {/* Days grid — day names are inside the grid for proper association */}
       <div
         ref={gridRef as React.RefObject<HTMLDivElement | null>}
         role="grid"
@@ -650,6 +786,41 @@ function MonthGrid({
           monthGridStyles.daysGrid,
           hasWeekNumbers && monthGridStyles.daysGridWithNumbers,
         )}>
+        {/* Day name headers as first row inside the grid */}
+        <div
+          role="row"
+          {...stylex.props(
+            monthGridStyles.weekHeader,
+            hasWeekNumbers && monthGridStyles.weekHeaderWithNumbers,
+          )}>
+          {hasWeekNumbers && (
+            <div
+              role="columnheader"
+              {...stylex.props(
+                monthGridStyles.dayName,
+                monthGridStyles.weekNumberHeader,
+              )}
+            />
+          )}
+          {dayNames.map((name, i) => (
+            <div
+              key={i}
+              role="columnheader"
+              aria-label={new Intl.DateTimeFormat(undefined, {
+                weekday: 'long',
+              }).format(
+                new Date(
+                  2026,
+                  0,
+                  4 + ((i + weekStartsOn) % 7),
+                ),
+              )}
+              {...stylex.props(monthGridStyles.dayName)}>
+              {name}
+            </div>
+          ))}
+        </div>
+
         {weeks.map((week, weekIndex) => {
           const weekDate = week.find(d => !d.isOutside)?.date || week[0].date;
           const weekNum = getWeekNumber(weekDate);
@@ -670,7 +841,7 @@ function MonthGrid({
                   day={day}
                   dayIndex={dayIndex}
                   mode={mode}
-                  selectedDate={selectedDate}
+                  selectedDate={selectedDateForDisplay}
                   rangeStart={rangeStart}
                   rangeEnd={rangeEnd}
                   previewStart={previewStart}
@@ -730,10 +901,15 @@ function DayCell({
 }: DayCellProps) {
   const {date, isOutside, dayNumber} = day;
 
-  // Empty cell for outside days when not showing them
+  // Empty cell for outside days when not showing them — still needs gridcell role
   if (isOutside && !hasOutsideDays) {
-    return <div {...stylex.props(dayCellStyles.cell)} />;
+    return (
+      <div role="gridcell" {...stylex.props(dayCellStyles.cell)} />
+    );
   }
+
+  // Outside days are not selectable (they belong to adjacent months)
+  const effectivelyDisabled = isDisabled || isOutside;
 
   const isToday = isSameDay(date, today);
   const isSelected =
@@ -769,7 +945,7 @@ function DayCell({
   const previewRoundRight = isPreviewEnd || isLastColumn;
 
   return (
-    <div {...stylex.props(dayCellStyles.cell)}>
+    <div role="gridcell" {...stylex.props(dayCellStyles.cell)}>
       {/* Range background */}
       {hasRangeBackground && (
         <div
@@ -800,18 +976,17 @@ function DayCell({
         />
       )}
 
-      {/* Day button */}
+      {/* Day button — uses aria-disabled instead of disabled for keyboard navigation */}
       <button
         type="button"
-        role="gridcell"
+        data-date={day.iso}
         aria-label={formatAccessibleDate(date)}
         aria-selected={isSelected || isInRange || undefined}
-        aria-disabled={isDisabled || undefined}
-        disabled={isDisabled}
+        aria-disabled={effectivelyDisabled || undefined}
         tabIndex={isTabbableDay ? 0 : -1}
-        onClick={() => !isDisabled && onDayClick(date)}
-        onMouseEnter={() => !isDisabled && onDayHover(date)}
-        onMouseLeave={() => onDayHover(null)}
+        onClick={() => !effectivelyDisabled && onDayClick(date)}
+        onMouseEnter={() => !effectivelyDisabled && onDayHover(date)}
+        onMouseLeave={() => !effectivelyDisabled && onDayHover(null)}
         {...stylex.props(
           dayCellStyles.day,
           dayCellTheme.day,
@@ -825,8 +1000,8 @@ function DayCell({
             dayCellStyles.daySelected,
           (isSelected || isRangeStart || isRangeEnd) &&
             dayCellTheme.daySelected,
-          isDisabled && dayCellStyles.dayDisabled,
-          isDisabled && dayCellTheme.dayDisabled,
+          effectivelyDisabled && dayCellStyles.dayDisabled,
+          effectivelyDisabled && dayCellTheme.dayDisabled,
         )}>
         {dayNumber}
       </button>
