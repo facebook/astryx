@@ -6,7 +6,7 @@ export const docs = {
     'Dropdown selector for choosing from a list of options. Follows XDS input conventions with label, status, and field props.',
   features: [
     'Supports string items (auto-converted to {value, label}), object items with optional icon and disabled state, dividers, and labeled sections',
-    'Custom item rendering via children render prop and XDSSelectorItem helper',
+    'Custom option rendering via children render prop and XDSSelectorOption helper',
     'Integrates with XDS field conventions: label, description, isRequired, isOptional, isLabelHidden, status',
     'Size variants: sm, md, lg',
     'Full keyboard navigation with typeahead support',
@@ -54,7 +54,7 @@ export const docs = {
   label="Fruit"
   options={[
     {value: 'apple', label: 'Apple'},
-    {type: 'section', title: 'Citrus', items: [
+    {type: 'section', title: 'Citrus', options: [
       {value: 'orange', label: 'Orange'},
     ]},
   ]}
@@ -63,10 +63,10 @@ export const docs = {
 />`,
     },
     {
-      label: 'Custom rendering with XDSSelectorItem',
+      label: 'Custom rendering with XDSSelectorOption',
       code: `<XDSSelector label="User" options={users} value={value} onChange={setValue}>
   {user => (
-    <XDSSelectorItem
+    <XDSSelectorOption
       icon={UserIcon}
       label={user.label}
       description={user.email}
@@ -101,7 +101,7 @@ export const docs = {
           name: 'options',
           type: 'XDSSelectorOption[]',
           description:
-            'Array of items — strings, objects with value/label/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, items}).',
+            'Array of options — strings, objects with value/label/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, options}).',
           required: true,
         },
         {
@@ -158,8 +158,8 @@ export const docs = {
         },
         {
           name: 'children',
-          type: '(item: XDSSelectorItemData) => ReactNode',
-          description: 'Custom render function for each item in the dropdown.',
+          type: '(option: XDSSelectorOptionData) => ReactNode',
+          description: 'Custom render function for each option in the dropdown.',
         },
         {
           name: 'xstyle',
@@ -193,7 +193,7 @@ export const docs = {
       ],
     },
     {
-      name: 'XDSSelectorItem',
+      name: 'XDSSelectorOption',
       description:
         'Helper component for custom item rendering inside an XDSSelector children render prop.',
       props: [
@@ -219,7 +219,7 @@ export const docs = {
           label: 'Custom item rendering',
           code: `<XDSSelector label="User" options={users} value={value} onChange={setValue}>
   {user => (
-    <XDSSelectorItem
+    <XDSSelectorOption
       icon={UserIcon}
       label={user.label}
       description={user.email}
@@ -239,7 +239,7 @@ export const docsZh = {
     '用于从选项列表中进行选择的下拉选择器。遵循 XDS 输入规范，支持标签、状态和字段属性。',
   features: [
     '支持字符串选项（自动转换为 {value, label}）、带可选图标和禁用状态的对象选项、分隔线和带标签的分组',
-    '通过 children 渲染函数和 XDSSelectorItem 辅助组件实现自定义选项渲染',
+    '通过 children 渲染函数和 XDSSelectorOption 辅助组件实现自定义选项渲染',
     '集成 XDS 字段规范：label、description、isRequired、isOptional、isLabelHidden、status',
     '尺寸变体：sm、md、lg',
     '完整的键盘导航，支持输入快速定位',
@@ -287,7 +287,7 @@ export const docsZh = {
   label="Fruit"
   options={[
     {value: 'apple', label: 'Apple'},
-    {type: 'section', title: 'Citrus', items: [
+    {type: 'section', title: 'Citrus', options: [
       {value: 'orange', label: 'Orange'},
     ]},
   ]}
@@ -296,10 +296,10 @@ export const docsZh = {
 />`,
     },
     {
-      label: '使用 XDSSelectorItem 自定义渲染',
+      label: '使用 XDSSelectorOption 自定义渲染',
       code: `<XDSSelector label="User" options={users} value={value} onChange={setValue}>
   {user => (
-    <XDSSelectorItem
+    <XDSSelectorOption
       icon={UserIcon}
       label={user.label}
       description={user.email}
@@ -334,7 +334,7 @@ export const docsZh = {
           name: 'options',
           type: 'XDSSelectorOption[]',
           description:
-            '选项数组 - 字符串、带 value/label/icon/disabled 的对象、分隔线（{type: "divider"}）或分组（{type: "section", title, items}）。',
+            '选项数组 - 字符串、带 value/label/icon/disabled 的对象、分隔线（{type: "divider"}）或分组（{type: "section", title, options}）。',
           required: true,
         },
         {
@@ -391,7 +391,7 @@ export const docsZh = {
         },
         {
           name: 'children',
-          type: '(item: XDSSelectorItemData) => ReactNode',
+          type: '(option: XDSSelectorOptionData) => ReactNode',
           description: '下拉菜单中每个选项的自定义渲染函数。',
         },
         {
@@ -426,7 +426,7 @@ export const docsZh = {
       ],
     },
     {
-      name: 'XDSSelectorItem',
+      name: 'XDSSelectorOption',
       description:
         '用于在 XDSSelector 的 children 渲染函数中自定义选项渲染的辅助组件。',
       props: [
@@ -452,7 +452,7 @@ export const docsZh = {
           label: '自定义选项渲染',
           code: `<XDSSelector label="User" options={users} value={value} onChange={setValue}>
   {user => (
-    <XDSSelectorItem
+    <XDSSelectorOption
       icon={UserIcon}
       label={user.label}
       description={user.email}
@@ -471,7 +471,7 @@ export const docsDense = {
     'Dropdown selector for choosing from list of options. Follows XDS input conventions w/ label, status, field props.',
   features: [
     'Supports string items (auto-converted to {value, label}), object items w/ optional icon + disabled state, dividers, labeled sections',
-    'Custom item rendering via children render prop + XDSSelectorItem helper',
+    'Custom option rendering via children render prop + XDSSelectorOption helper',
     'Integrates w/ XDS field conventions: label, description, isRequired, isOptional, isLabelHidden, status',
     'Size variants: sm, md, lg',
     'Full keyboard navigation w/ typeahead support',
@@ -491,7 +491,7 @@ export const docsDense = {
       description: 'Dropdown selector for choosing from list of options.',
       propDescriptions: {
         label: 'Label text for accessibility.',
-        options: 'Array of items; strings, objects w/ value/label/icon/disabled, dividers ({type: "divider"}), sections ({type: "section", title, items}).',
+        options: 'Array of options; strings, objects w/ value/label/icon/disabled, dividers ({type: "divider"}), sections ({type: "section", title, options}).',
         value: 'Currently selected value.',
         onChange: 'Callback fired when selection changes.',
         placeholder: 'Placeholder text when no value selected.',
@@ -502,12 +502,12 @@ export const docsDense = {
         isOptional: 'Marks field optional.',
         isRequired: 'Marks field required.',
         status: 'Validation status w/ optional message.',
-        children: 'Custom render function for each dropdown item.',
+        children: 'Custom render function for each dropdown option.',
         xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
       },
     },
     {
-      name: 'XDSSelectorItem',
+      name: 'XDSSelectorOption',
       description:
         'Helper component for custom item rendering inside XDSSelector children render prop.',
       propDescriptions: {

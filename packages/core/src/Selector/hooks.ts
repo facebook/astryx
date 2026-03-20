@@ -6,7 +6,7 @@
 
 'use client';
 
-import {useCallback, useLayoutEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react';
 import type {RefObject} from 'react';
 import type {XDSSelectorOptionData} from './types';
 
@@ -134,6 +134,15 @@ export function useCombobox({
     undefined,
   );
 
+  // Clean up typeahead timer on unmount
+  useEffect(() => {
+    return () => {
+      if (typeaheadTimeoutRef.current) {
+        clearTimeout(typeaheadTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const getItemId = useCallback(
     (index: number) => `${listboxId}-item-${index}`,
     [listboxId],
@@ -149,6 +158,18 @@ export function useCombobox({
     return selectableItems.findIndex(item => item.value === value);
   }, [selectableItems, value]);
 
+  const findFirstEnabledIndex = useCallback(() => {
+    const enabledIndices = getEnabledIndices();
+    return enabledIndices.length > 0 ? enabledIndices[0] : -1;
+  }, [getEnabledIndices]);
+
+  const findLastEnabledIndex = useCallback(() => {
+    const enabledIndices = getEnabledIndices();
+    return enabledIndices.length > 0
+      ? enabledIndices[enabledIndices.length - 1]
+      : -1;
+  }, [getEnabledIndices]);
+
   const closeAndReset = useCallback(() => {
     setHighlightedIndex(-1);
     onClose();
@@ -163,6 +184,21 @@ export function useCombobox({
     [onSelect, closeAndReset],
   );
 
+  // Scroll highlighted item into view
+  const scrollHighlightedIntoView = useCallback(
+    (index: number) => {
+      const itemId = `${listboxId}-item-${index}`;
+      // Use requestAnimationFrame to ensure DOM has updated
+      requestAnimationFrame(() => {
+        const el = document.getElementById(itemId);
+        if (typeof el?.scrollIntoView === 'function') {
+          el.scrollIntoView({block: 'nearest'});
+        }
+      });
+    },
+    [listboxId],
+  );
+
   const onTriggerClick = useCallback(() => {
     if (isDisabled) return;
     if (isOpen) {
@@ -170,9 +206,18 @@ export function useCombobox({
     } else {
       onOpen();
       const selectedIndex = findSelectedIndex();
-      setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
+      const initialIndex =
+        selectedIndex >= 0 ? selectedIndex : findFirstEnabledIndex();
+      setHighlightedIndex(initialIndex);
     }
-  }, [isDisabled, isOpen, onOpen, closeAndReset, findSelectedIndex]);
+  }, [
+    isDisabled,
+    isOpen,
+    onOpen,
+    closeAndReset,
+    findSelectedIndex,
+    findFirstEnabledIndex,
+  ]);
 
   const onItemMouseEnter = useCallback(
     (item: XDSSelectorOptionData, index: number) => {
@@ -188,20 +233,32 @@ export function useCombobox({
       if (isDisabled) return;
 
       const enabledIndices = getEnabledIndices();
+      if (enabledIndices.length === 0) {
+        // No selectable options — only allow Escape
+        if (e.key === 'Escape' && isOpen) {
+          e.preventDefault();
+          closeAndReset();
+        }
+        return;
+      }
 
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
           if (!isOpen) {
             onOpen();
-            setHighlightedIndex(0);
+            const initial = findFirstEnabledIndex();
+            setHighlightedIndex(initial);
+            scrollHighlightedIntoView(initial);
           } else {
             const currentEnabledPos = enabledIndices.indexOf(highlightedIndex);
             const nextPos = Math.min(
               currentEnabledPos + 1,
               enabledIndices.length - 1,
             );
-            setHighlightedIndex(enabledIndices[nextPos] ?? highlightedIndex);
+            const nextIndex = enabledIndices[nextPos] ?? highlightedIndex;
+            setHighlightedIndex(nextIndex);
+            scrollHighlightedIntoView(nextIndex);
           }
           break;
 
@@ -209,11 +266,15 @@ export function useCombobox({
           e.preventDefault();
           if (!isOpen) {
             onOpen();
-            setHighlightedIndex(selectableItems.length - 1);
+            const initial = findLastEnabledIndex();
+            setHighlightedIndex(initial);
+            scrollHighlightedIntoView(initial);
           } else {
             const currentEnabledPos = enabledIndices.indexOf(highlightedIndex);
             const prevPos = Math.max(currentEnabledPos - 1, 0);
-            setHighlightedIndex(enabledIndices[prevPos] ?? highlightedIndex);
+            const prevIndex = enabledIndices[prevPos] ?? highlightedIndex;
+            setHighlightedIndex(prevIndex);
+            scrollHighlightedIntoView(prevIndex);
           }
           break;
 
@@ -228,7 +289,9 @@ export function useCombobox({
           } else if (!isOpen) {
             onOpen();
             const selectedIndex = findSelectedIndex();
-            setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
+            const initial =
+              selectedIndex >= 0 ? selectedIndex : findFirstEnabledIndex();
+            setHighlightedIndex(initial);
           }
           break;
 
@@ -241,15 +304,18 @@ export function useCombobox({
 
         case 'Home':
           e.preventDefault();
-          if (isOpen && enabledIndices.length > 0) {
+          if (isOpen) {
             setHighlightedIndex(enabledIndices[0]);
+            scrollHighlightedIntoView(enabledIndices[0]);
           }
           break;
 
         case 'End':
           e.preventDefault();
-          if (isOpen && enabledIndices.length > 0) {
-            setHighlightedIndex(enabledIndices[enabledIndices.length - 1]);
+          if (isOpen) {
+            const lastIndex = enabledIndices[enabledIndices.length - 1];
+            setHighlightedIndex(lastIndex);
+            scrollHighlightedIntoView(lastIndex);
           }
           break;
 
@@ -275,6 +341,7 @@ export function useCombobox({
                 onOpen();
               }
               setHighlightedIndex(matchIndex);
+              scrollHighlightedIntoView(matchIndex);
             }
           }
           break;
@@ -289,7 +356,10 @@ export function useCombobox({
       highlightedIndex,
       selectItem,
       findSelectedIndex,
+      findFirstEnabledIndex,
+      findLastEnabledIndex,
       getEnabledIndices,
+      scrollHighlightedIntoView,
       typeahead,
     ],
   );

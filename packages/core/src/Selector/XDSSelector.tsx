@@ -84,7 +84,10 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     cursor: 'pointer',
     transitionProperty: 'border-color, outline, box-shadow',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     boxShadow: {
       default: 'none',
@@ -114,7 +117,10 @@ const styles = stylex.create({
     width: 16,
     height: 16,
     transitionProperty: 'transform',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     transformOrigin: 'center',
     color: colorVars['--color-icon-secondary'],
@@ -135,9 +141,13 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-1'],
     borderRadius: radiusVars['--radius-2'],
     backgroundColor: colorVars['--color-surface'],
-    boxShadow: `0 4px 12px ${colorVars['--color-shadow']}`,
+    boxShadow: shadowVars['--shadow-menu'],
     opacity: 1,
-    transition: `opacity ${durationVars['--duration-fast']}`,
+    transitionProperty: 'opacity',
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
   },
   dropdownHidden: {
     opacity: 0,
@@ -397,6 +407,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
   xstyle,
   className,
   style,
+  ...rest
 }: XDSSelectorProps<T>) {
   const triggerId = useId();
   const listboxId = useId();
@@ -479,7 +490,11 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
         if (onChangeAction) {
           startTransition(async () => {
             setOptimisticValue(newValue);
-            await onChangeAction(newValue);
+            try {
+              await onChangeAction(newValue);
+            } catch {
+              // Swallow so the transition settles and isBusy clears
+            }
           });
         }
       },
@@ -496,7 +511,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
 
       return (
         <div
-          key={item.value}
+          key={`${flatIndex}-${item.value}`}
           id={getItemId(flatIndex)}
           role="option"
           aria-selected={isSelected}
@@ -555,7 +570,10 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
           );
         }
         elements.push(
-          <div key={`section-${i}`} role="group" aria-label={option.title}>
+          <div
+            key={`section-${i}`}
+            role={option.title ? 'group' : undefined}
+            aria-label={option.title || undefined}>
             {sectionItems}
           </div>,
         );
@@ -566,7 +584,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
     }
 
     return elements;
-  }, [options, renderItem, listboxId]);
+  }, [options, renderItem]);
 
   return (
     <XDSField
@@ -588,6 +606,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
       }
       labelTooltip={labelTooltip}>
       <button
+        {...rest}
         ref={el => {
           (
             triggerRef as React.MutableRefObject<HTMLButtonElement | null>
@@ -609,7 +628,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
         aria-required={isRequired ? 'true' : undefined}
         aria-invalid={status?.type === 'error' ? 'true' : undefined}
         aria-busy={isBusy || undefined}
-        disabled={isDisabled}
+        disabled={isDisabled || isBusy}
         onClick={onTriggerClick}
         onKeyDown={onKeyDown}
         data-testid={testId}
