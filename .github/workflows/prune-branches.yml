@@ -1,0 +1,55 @@
+# Prune remote branches from merged PRs with no activity for > 1 day
+name: Prune merged branches
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # daily at 6am UTC
+  workflow_dispatch: # manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Delete stale merged branches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Finding branches from merged PRs with no activity for > 1 day..."
+          CUTOFF=$(date -u -d '1 day ago' +%Y-%m-%dT%H:%M:%SZ)
+          DELETED=0
+          SKIPPED=0
+
+          # Get all remote branches (excluding main, gh-pages)
+          git branch -r --format='%(refname:short)' | sed 's|origin/||' | grep -vE '^(main|gh-pages)$' | while read branch; do
+            # Check if this branch had a merged PR
+            PR_STATE=$(gh pr list --head "$branch" --state merged --json mergedAt --jq '.[0].mergedAt // empty' 2>/dev/null)
+            if [ -z "$PR_STATE" ]; then
+              continue
+            fi
+
+            # Check last commit date on the branch
+            LAST_COMMIT=$(git log -1 --format=%aI "origin/$branch" 2>/dev/null)
+            if [ -z "$LAST_COMMIT" ]; then
+              continue
+            fi
+
+            # Compare: skip if last activity is within the cutoff
+            if [ "$(date -u -d "$LAST_COMMIT" +%s)" -gt "$(date -u -d "$CUTOFF" +%s)" ]; then
+              echo "⏭️  Skip (recent): $branch"
+              SKIPPED=$((SKIPPED + 1))
+              continue
+            fi
+
+            echo "🗑️  Deleting: $branch (merged: $PR_STATE)"
+            gh api repos/${{ github.repository }}/git/refs/heads/$branch -X DELETE 2>/dev/null && DELETED=$((DELETED + 1))
+          done
+
+          echo ""
+          echo "✅ Pruned $DELETED branches"
