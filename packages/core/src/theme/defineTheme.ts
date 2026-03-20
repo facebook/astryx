@@ -59,12 +59,15 @@ import {
   type XDSRadiusScaleConfig,
 } from './expandRadiusScale';
 
+import type {DomainTokenName} from './domainTokens';
+import {domainTokenDefaults} from './domainTokens';
+
 // =============================================================================
 // Types
 // =============================================================================
 
-/** All valid XDS token names */
-export type XDSTokenName =
+/** All valid XDS core token names */
+export type XDSCoreTokenName =
   | keyof typeof colorDefaults
   | keyof typeof spacingDefaults
   | keyof typeof sizeDefaults
@@ -78,6 +81,9 @@ export type XDSTokenName =
   | keyof typeof lineHeightDefaults
   | keyof typeof fontWeightDefaults
   | keyof typeof typeScaleDefaults;
+
+/** All valid XDS token names — core + domain tokens */
+export type XDSTokenName = XDSCoreTokenName | DomainTokenName;
 
 /**
  * Token value — either a single string or a [light, dark] tuple.
@@ -244,6 +250,7 @@ export const xdsTokenDefaults: Record<string, string> = {
   ...lineHeightDefaults,
   ...fontWeightDefaults,
   ...typeScaleDefaults,
+  ...domainTokenDefaults,
 };
 
 // =============================================================================
@@ -340,12 +347,6 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
   if (input.tokens) {
     for (const [key, value] of Object.entries(input.tokens)) {
       if (value !== undefined) {
-        if (!(key in xdsTokenDefaults)) {
-          console.warn(
-            `[XDS] defineTheme("${input.name}"): unknown token "${key}". ` +
-              `Run "npx xds docs tokens" to see valid token names.`,
-          );
-        }
         tokens[key] = resolveTokenValue(value);
       }
     }
