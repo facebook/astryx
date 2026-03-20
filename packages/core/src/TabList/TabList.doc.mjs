@@ -13,7 +13,11 @@ export const docs = {
     'Selection indicator: selected menu items show a checkmark icon (matching XDSSelector pattern)',
     'Keyboard navigation: Tab between items, ArrowUp/Down in menu, Home/End, Escape closes menu (via useListFocus)',
     'Hover state: unselected tabs show a gray underline on hover; no background hover overlay',
+    'Disabled state: XDSTab supports isDisabled prop — prevents selection, applies disabled styling, renders as button even when href is provided',
+    'Reduced motion: all transitions respect @media (prefers-reduced-motion: reduce) with 0ms duration',
     'Accessibility: nav landmark, aria-current="page" on selected tabs, role="menu" + aria-label on dropdown, aria-controls connecting trigger to menu, role="menuitem" for items, role="separator" for heading divider',
+    'Customizable aria-label on XDSTabList for pages with multiple tab lists',
+    'XDSBaseProps: XDSTabList and XDSTab support xstyle, className, style, data-testid, and other HTML attributes',
   ],
   examples: [
     {
@@ -66,13 +70,15 @@ export const docs = {
     ],
   },
   accessibility: [
-    'XDSTabList renders as a <nav> landmark with aria-label="Tabs"',
+    'XDSTabList renders as a <nav> landmark with aria-label="Tabs" (customizable)',
     'XDSTab renders as <button> or <a> — uses navigation pattern, not role="tab"',
     'Selected XDSTab has aria-current="page"',
+    'Disabled XDSTab has disabled attribute and aria-disabled="true"',
     'XDSTabMenu trigger has aria-haspopup="menu", aria-expanded, and aria-controls pointing to the menu element',
     'XDSTabMenu dropdown has role="menu" and aria-label matching the label prop',
     'XDSTabMenu heading divider has role="separator"',
     'XDSTabMenu items have role="menuitem" and aria-current="true" when selected',
+    'XDSTabMenu uses roving tabindex for keyboard-accessible menu items',
   ],
   keyboard:
     'Tab moves focus between tab items; within the XDSTabMenu dropdown: ArrowUp/ArrowDown navigate items (wrapping), Home/End jump to first/last item, Escape closes the menu.',
@@ -116,6 +122,13 @@ export const docs = {
           description:
             'Whether to show a bottom border divider under the tab list.',
           default: 'false',
+        },
+        {
+          name: "'aria-label'",
+          type: 'string',
+          description:
+            'Accessible label for the tab list navigation landmark. Required when multiple tab lists appear on the same page.',
+          default: "'Tabs'",
         },
         {
           name: 'children',
@@ -181,6 +194,13 @@ export const docs = {
           type: 'ReactNode',
           description:
             'Icon element shown when the tab is selected; falls back to icon if not provided.',
+        },
+        {
+          name: 'isDisabled',
+          type: 'boolean',
+          description:
+            'Whether the tab is disabled. Prevents selection and applies disabled styling. When disabled, a tab with href renders as a button.',
+          default: 'false',
         },
       ],
       examples: [
@@ -253,7 +273,11 @@ export const docsZh = {
     '选中指示器：选中的菜单项显示勾选图标（与 XDSSelector 模式一致）',
     '键盘导航：Tab 键在项目间移动焦点，ArrowUp/ArrowDown 在菜单中导航，Home/End 跳转，Escape 关闭菜单（通过 useListFocus 实现）',
     '悬停状态：未选中的标签在悬停时显示灰色下划线；无背景悬停遮罩',
+    '禁用状态：XDSTab 支持 isDisabled 属性 — 阻止选中，应用禁用样式，当提供 href 时仍渲染为按钮',
+    '减少动画：所有过渡动画在 @media (prefers-reduced-motion: reduce) 下使用 0ms 时长',
     '无障碍：nav 地标元素，选中标签上的 aria-current="page"，下拉菜单的 role="menu" + aria-label，aria-controls 连接触发器与菜单，菜单项的 role="menuitem"，标题分隔线的 role="separator"',
+    'XDSTabList 上可自定义 aria-label，适用于页面上有多个标签列表的场景',
+    'XDSBaseProps：XDSTabList 和 XDSTab 支持 xstyle、className、style、data-testid 及其他 HTML 属性',
   ],
   examples: [
     {
@@ -306,13 +330,15 @@ export const docsZh = {
     ],
   },
   accessibility: [
-    'XDSTabList 渲染为带有 aria-label="Tabs" 的 <nav> 地标元素',
+    'XDSTabList 渲染为带有 aria-label="Tabs"（可自定义）的 <nav> 地标元素',
     'XDSTab 渲染为 <button> 或 <a> — 使用导航模式，而非 role="tab"',
     '选中的 XDSTab 具有 aria-current="page"',
+    '禁用的 XDSTab 具有 disabled 属性和 aria-disabled="true"',
     'XDSTabMenu 触发器具有 aria-haspopup="menu"、aria-expanded 和指向菜单元素的 aria-controls',
     'XDSTabMenu 下拉菜单具有 role="menu" 和与 label 属性匹配的 aria-label',
     'XDSTabMenu 标题分隔线具有 role="separator"',
     'XDSTabMenu 菜单项具有 role="menuitem"，选中时具有 aria-current="true"',
+    'XDSTabMenu 使用 roving tabindex 实现可通过键盘访问的菜单项',
   ],
   keyboard:
     'Tab 键在标签项之间移动焦点；在 XDSTabMenu 下拉菜单中：ArrowUp/ArrowDown 导航菜单项（循环），Home/End 跳转到第一项/最后一项，Escape 关闭菜单。',
@@ -356,6 +382,13 @@ export const docsZh = {
           description:
             '是否在标签列表下方显示底部边框分隔线。',
           default: 'false',
+        },
+        {
+          name: "'aria-label'",
+          type: 'string',
+          description:
+            '标签列表导航地标的无障碍标签。当页面上有多个标签列表时需要设置。',
+          default: "'Tabs'",
         },
         {
           name: 'children',
@@ -421,6 +454,13 @@ export const docsZh = {
           type: 'ReactNode',
           description:
             '标签选中时显示的图标元素；未提供时回退到 icon。',
+        },
+        {
+          name: 'isDisabled',
+          type: 'boolean',
+          description:
+            '是否禁用标签。阻止选中并应用禁用样式。禁用时，带 href 的标签渲染为按钮。',
+          default: 'false',
         },
       ],
       examples: [
@@ -491,7 +531,10 @@ export const docsDense = {
     'Selection indicator: selected items show checkmark icon (matching XDSSelector pattern)',
     'Keyboard nav: Tab between items, ArrowUp/Down in menu, Home/End, Escape closes (via useListFocus)',
     'Hover state: unselected tabs show gray underline on hover; no bg hover overlay',
+    'Disabled state: XDSTab supports isDisabled — prevents selection, disabled styling, button fallback for href tabs',
+    'Reduced motion: all transitions use 0ms duration under prefers-reduced-motion: reduce',
     'Accessible: nav landmark, aria-current="page" on selected, role="menu" + aria-label on dropdown, aria-controls, role="menuitem", role="separator"',
+    'Customizable aria-label on XDSTabList; XDSBaseProps (xstyle, className, style, data-testid) on XDSTabList + XDSTab',
   ],
   notes: [
     'XDSTab renders <button> by default, <a> when href provided.',
@@ -504,13 +547,15 @@ export const docsDense = {
     'Size uses sizeVars tokens for tab heights (sm/md/lg).',
   ],
   accessibility: [
-    'XDSTabList renders <nav> w/ aria-label="Tabs".',
+    'XDSTabList renders <nav> w/ aria-label="Tabs" (customizable).',
     'XDSTab renders <button> or <a>; uses nav pattern, not role="tab".',
     'Selected XDSTab has aria-current="page".',
+    'Disabled XDSTab has disabled attr + aria-disabled="true".',
     'XDSTabMenu trigger has aria-haspopup="menu", aria-expanded, aria-controls.',
     'XDSTabMenu dropdown has role="menu" + aria-label matching label prop.',
     'XDSTabMenu heading divider has role="separator".',
     'XDSTabMenu items have role="menuitem" + aria-current="true" when selected.',
+    'XDSTabMenu uses roving tabindex for keyboard-accessible items.',
   ],
   keyboard: 'Tab=move focus between items; ArrowUp/ArrowDown=navigate menu (wrapping); Home/End=first/last; Escape=close menu.',
   components: [
@@ -522,6 +567,7 @@ export const docsDense = {
         onChange: 'Fired when tab is selected.',
         size: 'Size variant applied to all child tabs.',
         hasDivider: 'Show bottom border divider under tab list.',
+        "'aria-label'": 'Accessible label for nav landmark (default: "Tabs").',
         children: 'XDSTab + XDSTabMenu items inside nav.',
       },
     },
@@ -535,6 +581,7 @@ export const docsDense = {
         as: 'Custom link component overriding XDSLinkProvider; only w/ href.',
         icon: 'Icon shown when not selected.',
         selectedIcon: 'Icon shown when selected; falls back to icon.',
+        isDisabled: 'Prevents selection; disabled styling; button fallback for href tabs.',
       },
     },
     {

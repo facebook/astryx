@@ -12,7 +12,7 @@
 
 'use client';
 
-import React, {useCallback, useId} from 'react';
+import React, {useCallback, useId, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSIcon} from '../Icon';
 import type {XDSIconType} from '../Icon';
@@ -79,7 +79,10 @@ const styles = stylex.create({
     cursor: 'pointer',
     textDecoration: 'none',
     transitionProperty: 'color',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0ms',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     outline: {
       default: null,
@@ -138,7 +141,10 @@ const styles = stylex.create({
       },
     },
     transitionProperty: 'opacity',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0ms',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     pointerEvents: 'none',
   },
@@ -147,7 +153,10 @@ const styles = stylex.create({
     height: spacingVars['--spacing-4'],
     flexShrink: 0,
     transitionProperty: 'transform',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0ms',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   chevronOpen: {
@@ -179,7 +188,10 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     cursor: 'pointer',
     transitionProperty: 'background-color',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0ms',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     backgroundColor: {
       default: 'transparent',
@@ -233,13 +245,19 @@ const sizeStyles = stylex.create({
 export function XDSTabMenu({label, options}: XDSTabMenuProps) {
   const tabListCtx = useXDSTabListContext();
   const menuId = useId();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
 
   const layer = useXDSLayer({
     mode: 'context',
     lightDismiss: true,
+    onHide: () => {
+      setFocusedIndex(-1);
+      triggerRef.current?.focus();
+    },
   });
 
-  const {listRef, handleKeyDown: handleListKeyDown} = useListFocus({
+  const {listRef, handleKeyDown: handleListKeyDown, focusFirst} = useListFocus({
     onEscape: () => layer.hide(),
   });
 
@@ -248,8 +266,12 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
       layer.hide();
     } else {
       layer.show();
+      // Auto-focus first menu item after opening
+      requestAnimationFrame(() => {
+        focusFirst();
+      });
     }
-  }, [layer]);
+  }, [layer, focusFirst]);
 
   const selectedOption = options.find(o => o.value === tabListCtx.value);
   const triggerLabel = selectedOption?.label ?? label;
@@ -265,10 +287,20 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
     [tabListCtx, layer],
   );
 
+  // Combine refs for the trigger button (layer anchor + our local ref)
+  const setTriggerRef = useCallback(
+    (el: HTMLButtonElement | null) => {
+      (triggerRef as React.MutableRefObject<HTMLButtonElement | null>).current =
+        el;
+      layer.ref(el);
+    },
+    [layer],
+  );
+
   return (
     <>
       <button
-        ref={layer.ref}
+        ref={setTriggerRef}
         type="button"
         aria-haspopup="menu"
         aria-expanded={layer.isOpen}
@@ -308,14 +340,15 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
           onKeyDown={handleListKeyDown}
           {...stylex.props(styles.dropdown)}>
           <XDSDivider label={label} />
-          {options.map(option => {
+          {options.map((option, index) => {
             const isSelected = tabListCtx.value === option.value;
             return (
               <div
                 key={option.value}
                 role="menuitem"
-                tabIndex={0}
+                tabIndex={focusedIndex === index ? 0 : -1}
                 aria-current={isSelected ? 'true' : undefined}
+                onFocus={() => setFocusedIndex(index)}
                 onClick={() => handleSelect(option.value)}
                 onKeyDown={e => {
                   if (e.key === 'Enter' || e.key === ' ') {

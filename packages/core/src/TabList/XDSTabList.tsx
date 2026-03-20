@@ -17,9 +17,10 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {XDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
 
-export interface XDSTabListProps {
+export interface XDSTabListProps extends XDSBaseProps<HTMLElement> {
   /**
    * The currently selected tab value.
    */
@@ -38,6 +39,12 @@ export interface XDSTabListProps {
    * @default false
    */
   hasDivider?: boolean;
+  /**
+   * Accessible label for the tab list navigation landmark.
+   * Required when multiple tab lists appear on the same page.
+   * @default 'Tabs'
+   */
+  'aria-label'?: string;
   /**
    * XDSTab and XDSTabMenu children.
    */
@@ -78,7 +85,12 @@ export function XDSTabList({
   onChange,
   size = 'md',
   hasDivider = false,
+  'aria-label': ariaLabel = 'Tabs',
   children,
+  xstyle,
+  className,
+  style,
+  ...rest
 }: XDSTabListProps) {
   const contextValue = useMemo(
     () => ({value, onChange, size}),
@@ -88,10 +100,13 @@ export function XDSTabList({
   return (
     <XDSTabListContext.Provider value={contextValue}>
       <nav
-        aria-label="Tabs"
+        aria-label={ariaLabel}
+        {...rest}
         {...mergeProps(
           xdsClassName('tab-list', {size}),
-          stylex.props(styles.nav, hasDivider && styles.divider),
+          stylex.props(styles.nav, hasDivider && styles.divider, xstyle),
+          className,
+          style,
         )}>
         {children}
       </nav>

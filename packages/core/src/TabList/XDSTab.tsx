@@ -29,9 +29,10 @@ import {useXDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
 
-export interface XDSTabProps {
+export interface XDSTabProps extends XDSBaseProps<HTMLButtonElement> {
   /**
    * Custom component to render instead of `<a>` for link tabs.
    * Overrides the provider-level default set by XDSLinkProvider.
@@ -58,6 +59,11 @@ export interface XDSTabProps {
    * Icon element shown when tab is selected. Falls back to `icon` if not provided.
    */
   selectedIcon?: ReactNode;
+  /**
+   * Whether the tab is disabled. Prevents selection and applies disabled styling.
+   * @default false
+   */
+  isDisabled?: boolean;
 }
 
 // =============================================================================
@@ -84,7 +90,10 @@ const styles = stylex.create({
     cursor: 'pointer',
     textDecoration: 'none',
     transitionProperty: 'color',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0ms',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     outline: {
       default: null,
@@ -98,6 +107,11 @@ const styles = stylex.create({
   selected: {
     color: colorVars['--color-text-link'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
+  },
+  disabled: {
+    color: colorVars['--color-text-disabled'],
+    cursor: 'default',
+    pointerEvents: 'none',
   },
   underlineSelected: {
     '::after': {
@@ -126,7 +140,10 @@ const styles = stylex.create({
       },
     },
     transitionProperty: 'opacity',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0ms',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     pointerEvents: 'none',
   },
@@ -183,6 +200,11 @@ export function XDSTab({
   href,
   icon,
   selectedIcon,
+  isDisabled = false,
+  xstyle,
+  className,
+  style,
+  ...rest
 }: XDSTabProps) {
   const tabListCtx = useXDSTabListContext();
   const LinkComponent = useXDSLinkComponent(as);
@@ -192,8 +214,10 @@ export function XDSTab({
   const displayIcon = isSelected && selectedIcon ? selectedIcon : icon;
 
   const handleSelect = useCallback(() => {
-    tabListCtx.onChange(value);
-  }, [tabListCtx, value]);
+    if (!isDisabled) {
+      tabListCtx.onChange(value);
+    }
+  }, [tabListCtx, value, isDisabled]);
 
   const iconElement = displayIcon ? (
     <span {...stylex.props(styles.icon, iconSizeStyles[size])}>
@@ -203,6 +227,8 @@ export function XDSTab({
 
   const sharedProps = {
     'aria-current': isSelected ? ('page' as const) : undefined,
+    'aria-disabled': isDisabled || undefined,
+    ...rest,
     ...mergeProps(
       xdsClassName('tab'),
       stylex.props(
@@ -210,12 +236,16 @@ export function XDSTab({
         sizeStyles[size],
         isSelected && styles.selected,
         isSelected && styles.underlineSelected,
-        !isSelected && stylex.defaultMarker(),
+        isDisabled && styles.disabled,
+        !isSelected && !isDisabled && stylex.defaultMarker(),
+        xstyle,
       ),
+      className,
+      style,
     ),
   };
 
-  const hoverUnderlineElement = !isSelected ? (
+  const hoverUnderlineElement = !isSelected && !isDisabled ? (
     <span {...stylex.props(styles.hoverUnderline)} />
   ) : null;
 
@@ -228,7 +258,7 @@ export function XDSTab({
     </span>
   );
 
-  if (href != null) {
+  if (href != null && !isDisabled) {
     return (
       <LinkComponent href={href} onClick={handleSelect} {...sharedProps}>
         {iconElement}
@@ -239,7 +269,11 @@ export function XDSTab({
   }
 
   return (
-    <button type="button" onClick={handleSelect} {...sharedProps}>
+    <button
+      type="button"
+      onClick={handleSelect}
+      disabled={isDisabled}
+      {...sharedProps}>
       {iconElement}
       {labelElement}
       {hoverUnderlineElement}

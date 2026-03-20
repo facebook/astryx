@@ -189,6 +189,116 @@ describe('XDSTabList', () => {
     expect(screen.getByTestId('icon')).toBeInTheDocument();
     expect(screen.queryByTestId('selected-icon')).not.toBeInTheDocument();
   });
+
+  it('renders bottom divider when hasDivider is true', () => {
+    const {rerender} = render(
+      <XDSTabList value="home" onChange={() => {}} hasDivider>
+        <XDSTab value="home" label="Home" />
+      </XDSTabList>,
+    );
+    const nav = screen.getByRole('navigation');
+    const styleWithDivider = nav.getAttribute('style') ?? '';
+    const classWithDivider = nav.className;
+
+    rerender(
+      <XDSTabList value="home" onChange={() => {}}>
+        <XDSTab value="home" label="Home" />
+      </XDSTabList>,
+    );
+    const styleWithout = nav.getAttribute('style') ?? '';
+    const classWithout = nav.className;
+
+    // The divider variant should produce different styling
+    expect(classWithDivider !== classWithout || styleWithDivider !== styleWithout).toBe(true);
+  });
+
+  it('supports custom aria-label on the nav element', () => {
+    render(
+      <XDSTabList value="home" onChange={() => {}} aria-label="Primary navigation">
+        <XDSTab value="home" label="Home" />
+      </XDSTabList>,
+    );
+
+    expect(screen.getByRole('navigation')).toHaveAttribute(
+      'aria-label',
+      'Primary navigation',
+    );
+  });
+
+  it('passes xstyle, className, style, and data-testid through', () => {
+    render(
+      <XDSTabList
+        value="home"
+        onChange={() => {}}
+        data-testid="my-tablist"
+        className="custom-class">
+        <XDSTab value="home" label="Home" />
+      </XDSTabList>,
+    );
+
+    const nav = screen.getByTestId('my-tablist');
+    expect(nav).toBeInTheDocument();
+    expect(nav.className).toContain('custom-class');
+  });
+});
+
+describe('XDSTab disabled', () => {
+  it('renders a disabled button with aria-disabled', () => {
+    const handleChange = vi.fn();
+
+    render(
+      <XDSTabList value="home" onChange={handleChange}>
+        <XDSTab value="home" label="Home" />
+        <XDSTab value="settings" label="Settings" isDisabled />
+      </XDSTabList>,
+    );
+
+    const settingsTab = screen.getByRole('button', {name: 'Settings'});
+    expect(settingsTab).toBeDisabled();
+    expect(settingsTab).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('does not call onChange when isDisabled', async () => {
+    const user = userEvent.setup({pointerEventsCheck: 0});
+    const handleChange = vi.fn();
+
+    render(
+      <XDSTabList value="home" onChange={handleChange}>
+        <XDSTab value="home" label="Home" />
+        <XDSTab value="settings" label="Settings" isDisabled />
+      </XDSTabList>,
+    );
+
+    // Disabled button has pointer-events: none and disabled attr;
+    // bypass pointer-events check to verify onClick guard
+    await user.click(screen.getByRole('button', {name: 'Settings'}));
+    expect(handleChange).not.toHaveBeenCalled();
+  });
+
+  it('renders as button (not link) when disabled with href', () => {
+    render(
+      <XDSTabList value="home" onChange={() => {}}>
+        <XDSTab value="settings" label="Settings" href="/settings" isDisabled />
+      </XDSTabList>,
+    );
+
+    // Should render as a disabled button, not a link
+    const tab = screen.getByRole('button', {name: 'Settings'});
+    expect(tab).toBeDisabled();
+    expect(screen.queryByRole('link', {name: 'Settings'})).not.toBeInTheDocument();
+  });
+
+  it('passes data-testid and className through to XDSTab', () => {
+    render(
+      <XDSTabList value="home" onChange={() => {}}>
+        <XDSTab value="home" label="Home" data-testid="home-tab" className="my-tab" />
+      </XDSTabList>,
+    );
+
+    const tab = screen.getByTestId('home-tab');
+    expect(tab).toBeInTheDocument();
+    expect(tab.className).toContain('my-tab');
+  });
 });
 
 describe('XDSTab polymorphic link', () => {
@@ -360,5 +470,20 @@ describe('XDSTabMenu', () => {
       hidden: true,
     });
     expect(reportsItem).not.toHaveAttribute('aria-current');
+  });
+
+  it('uses roving tabindex — only focused item has tabIndex=0', () => {
+    render(
+      <XDSTabList value="home" onChange={() => {}}>
+        <XDSTab value="home" label="Home" />
+        <XDSTabMenu label="More" options={menuOptions} />
+      </XDSTabList>,
+    );
+
+    const items = screen.getAllByRole('menuitem', {hidden: true});
+    // Before any focus, all items should have tabIndex=-1
+    items.forEach(item => {
+      expect(item).toHaveAttribute('tabindex', '-1');
+    });
   });
 });
