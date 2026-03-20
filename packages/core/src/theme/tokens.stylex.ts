@@ -128,6 +128,21 @@ export const colorDefaults = {
   '--color-yellow-border': 'light-dark(#FFEB3B, #FFF176)',
   '--color-yellow-icon': 'light-dark(#FBC02D, #FFEE58)',
   '--color-yellow-text': 'light-dark(#753F07, #FBCE03)',
+
+  // Syntax highlighting
+  '--color-syntax-keyword': 'light-dark(#a626a4, #c678dd)',
+  '--color-syntax-string': 'light-dark(#50a14f, #98c379)',
+  '--color-syntax-comment': 'light-dark(#a0a1a7, #5c6370)',
+  '--color-syntax-number': 'light-dark(#986801, #d19a66)',
+  '--color-syntax-function': 'light-dark(#4078f2, #61afef)',
+  '--color-syntax-type': 'light-dark(#a626a4, #e5c07b)',
+  '--color-syntax-variable': 'light-dark(#0A1317, #DFE2E5)',
+  '--color-syntax-operator': 'light-dark(#4E606F, #AAAFB5)',
+  '--color-syntax-constant': 'light-dark(#986801, #d19a66)',
+  '--color-syntax-tag': 'light-dark(#e45649, #e06c75)',
+  '--color-syntax-attribute': 'light-dark(#986801, #d19a66)',
+  '--color-syntax-property': 'light-dark(#4078f2, #61afef)',
+  '--color-syntax-punctuation': 'light-dark(#A4B0BC, #6F747C)',
 } as const;
 
 /** @deprecated Use colorDefaults */
