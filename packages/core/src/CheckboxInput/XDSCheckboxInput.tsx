@@ -13,9 +13,9 @@
  * - /apps/storybook/stories/CheckboxInput.stories.tsx (storybook stories)
  */
 
-
 import {
   useId,
+  useCallback,
   useOptimistic,
   useTransition,
   type ChangeEvent,
@@ -29,6 +29,7 @@ import {
   durationVars,
   easeVars,
   typographyVars,
+  textSizeVars,
   lineHeightVars,
   fontWeightVars,
 } from '../theme/tokens.stylex';
@@ -77,7 +78,7 @@ const styles = stylex.create({
     transitionProperty: 'background-color, border-color',
     transitionDuration: {
       default: durationVars['--duration-fast'],
-      '@media (prefers-reduced-motion: reduce)': '0.01s',
+      '@media (prefers-reduced-motion: reduce)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
@@ -123,7 +124,18 @@ const styles = stylex.create({
   },
   checkboxDisabled: {
     opacity: 0.5,
-    borderColor: colorVars['--color-border'],
+    borderColor: {
+      default: colorVars['--color-border'],
+      [stylex.when.ancestor(':hover')]: {
+        '@media (hover: hover)': colorVars['--color-border'],
+      },
+    },
+    backgroundColor: {
+      default: 'unset',
+      [stylex.when.ancestor(':hover')]: {
+        '@media (hover: hover)': 'unset',
+      },
+    },
   },
   checkboxDisabledUnchecked: {
     backgroundColor: colorVars['--color-muted'],
@@ -331,6 +343,16 @@ export function XDSCheckboxInput({
   const isChecked = optimisticValue === true;
   const isCheckedOrIndeterminate = isChecked || isIndeterminate;
 
+  // Sync the native indeterminate DOM property (can't be set via JSX attribute)
+  const indeterminateRef = useCallback(
+    (el: HTMLInputElement | null) => {
+      if (el) el.indeterminate = isIndeterminate;
+      if (typeof ref === 'function') ref(el);
+      else if (ref) ref.current = el;
+    },
+    [isIndeterminate, ref],
+  );
+
   // Build aria-describedby from description and status message
   // Only include descriptionID when the element actually renders
   const describedByParts: string[] = [];
@@ -355,7 +377,7 @@ export function XDSCheckboxInput({
         )}>
         <div {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}>
           <input
-            ref={ref}
+            ref={indeterminateRef}
             id={id}
             type="checkbox"
             checked={isChecked}
@@ -435,8 +457,7 @@ export function XDSCheckboxInput({
             )}
           </div>
         </div>
-        <div
-          {...stylex.props(styles.labelWrapper)}>
+        <div {...stylex.props(styles.labelWrapper)}>
           <XDSFieldLabel
             label={label}
             inputID={id}
