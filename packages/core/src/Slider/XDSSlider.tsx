@@ -576,7 +576,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
         style={positionStyle}
         onKeyDown={e => handleKeyDown(thumbIndex, e)}
         {...mergeProps(
-          xdsClassName('slider-thumb'),
+          xdsClassName('slider-thumb', {orientation}),
           stylex.props(
             styles.thumb,
             isHorizontal ? styles.thumbHorizontal : styles.thumbVertical,
@@ -657,7 +657,10 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
       className={className}
       style={style}>
       <div
-        {...mergeProps(xdsClassName('slider'), stylex.props(styles.sliderRow))}>
+        {...mergeProps(
+          xdsClassName('slider', {orientation}),
+          stylex.props(styles.sliderRow),
+        )}>
         <div
           ref={node => {
             // Merge refs
@@ -684,7 +687,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
           {/* Background track */}
           <div
             {...mergeProps(
-              xdsClassName('slider-track'),
+              xdsClassName('slider-track', {orientation}),
               stylex.props(
                 styles.track,
                 isHorizontal ? styles.trackHorizontal : styles.trackVertical,

@@ -404,7 +404,7 @@ export function XDSBanner({
         )}>
         <div
           {...mergeProps(
-            xdsClassName('banner-icon'),
+            xdsClassName('banner-icon', {status}),
             stylex.props(styles.iconWrapper),
           )}
           aria-hidden="true">

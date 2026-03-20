@@ -291,7 +291,7 @@ export function XDSRadioListItem({
         <div
           aria-hidden="true"
           {...mergeProps(
-            xdsClassName('radio'),
+            xdsClassName('radio', {size}),
             stylex.props(
               styles.radio,
               radioSizeStyles[size],
@@ -303,7 +303,7 @@ export function XDSRadioListItem({
           {isChecked && (
             <div
               {...mergeProps(
-                xdsClassName('radio-dot'),
+                xdsClassName('radio-dot', {size}),
                 stylex.props(styles.innerDot, dotSizeStyles[size]),
               )}
             />

@@ -319,14 +319,14 @@ export function XDSProgressBar({
         {isIndeterminate ? (
           <div
             {...mergeProps(
-              xdsClassName('progressbar-fill'),
+              xdsClassName('progressbar-fill', {variant}),
               stylex.props(styles.indeterminateFill, variantStyles[variant]),
             )}
           />
         ) : (
           <div
             {...mergeProps(
-              xdsClassName('progressbar-fill'),
+              xdsClassName('progressbar-fill', {variant}),
               stylex.props(styles.fill, variantStyles[variant]),
             )}
             style={{width: `${percentage}%`}}
