@@ -284,7 +284,12 @@ export function XDSCodeBlock({
     // find the corresponding text node and offset within the DOM.
     // The code element contains line divs, each containing a text node.
     const lineDivs = codeEl.querySelectorAll('[data-line]');
-    const textMap: Array<{node: Text; offset: number; codeStart: number; codeLength: number}> = [];
+    const textMap: Array<{
+      node: Text;
+      offset: number;
+      codeStart: number;
+      codeLength: number;
+    }> = [];
     let codeOffset = 0;
 
     for (let i = 0; i < lineDivs.length; i++) {
@@ -325,14 +330,22 @@ export function XDSCodeBlock({
       return null;
     }
 
-    // Create highlight ranges for each token type
-    const highlightNames: string[] = [];
+    // Create highlight ranges for each token type.
+    // Multiple CodeBlock instances share the same highlight names —
+    // we add our ranges to the existing Highlight (or create a new one).
+    // On cleanup, we remove only our ranges.
+    const myRanges: Range[] = [];
 
     for (const tokenType of TOKEN_TYPES) {
       const typedTokens = tokensByType.get(tokenType);
       if (!typedTokens || typedTokens.length === 0) continue;
 
-      const ranges: Range[] = [];
+      const name = `xds-${tokenType}`;
+      let highlight = CSS.highlights.get(name);
+      if (!highlight) {
+        highlight = new Highlight();
+        CSS.highlights.set(name, highlight);
+      }
 
       for (const token of typedTokens) {
         const startPos = findPosition(token.start);
@@ -343,23 +356,25 @@ export function XDSCodeBlock({
           const range = new Range();
           range.setStart(startPos.node, startPos.offset);
           range.setEnd(endPos.node, endPos.offset);
-          ranges.push(range);
+          highlight.add(range);
+          myRanges.push(range);
         } catch {
           // Skip invalid ranges
         }
       }
-
-      if (ranges.length > 0) {
-        const name = `xds-${tokenType}`;
-        highlightNames.push(name);
-         
-        CSS.highlights.set(name, new Highlight(...ranges));
-      }
     }
 
-    // No cleanup needed — when DOM nodes are removed, their ranges
-    // become detached and the browser ignores them in highlights.
-    // Deleting shared highlight names would break other CodeBlock instances.
+    return () => {
+      // Remove only this instance's ranges from the shared highlights
+      for (const range of myRanges) {
+        for (const tokenType of TOKEN_TYPES) {
+          const highlight = CSS.highlights.get(`xds-${tokenType}`);
+          if (highlight) {
+            highlight.delete(range);
+          }
+        }
+      }
+    };
   }, [code, language, customTokenizer, instanceId]);
 
   const sizeStyle = size === 'sm' ? styles.sizeSm : styles.sizeMd;

@@ -263,13 +263,18 @@ export function XDSCodeEditor({
       return null;
     }
 
-    const highlightNames: string[] = [];
+    const myRanges: Range[] = [];
 
     for (const tokenType of TOKEN_TYPES) {
       const typedTokens = tokensByType.get(tokenType);
       if (!typedTokens || typedTokens.length === 0) continue;
 
-      const ranges: Range[] = [];
+      const name = `xds-${tokenType}`;
+      let highlight = CSS.highlights.get(name);
+      if (!highlight) {
+        highlight = new Highlight();
+        CSS.highlights.set(name, highlight);
+      }
 
       for (const token of typedTokens) {
         const startPos = findPosition(token.start);
@@ -280,21 +285,24 @@ export function XDSCodeEditor({
           const range = new Range();
           range.setStart(startPos.node, startPos.offset);
           range.setEnd(endPos.node, endPos.offset);
-          ranges.push(range);
+          highlight.add(range);
+          myRanges.push(range);
         } catch {
           // Skip invalid ranges
         }
       }
-
-      if (ranges.length > 0) {
-        const name = `xds-${tokenType}`;
-        highlightNames.push(name);
-        CSS.highlights.set(name, new Highlight(...ranges));
-      }
     }
 
-    // No cleanup — detached DOM ranges are ignored by the browser.
-    // Deleting shared highlight names would break other instances.
+    return () => {
+      for (const range of myRanges) {
+        for (const tokenType of TOKEN_TYPES) {
+          const highlight = CSS.highlights.get(`xds-${tokenType}`);
+          if (highlight) {
+            highlight.delete(range);
+          }
+        }
+      }
+    };
   }, [value, language, customTokenizer, instanceId]);
 
   const handleInput = useCallback(() => {

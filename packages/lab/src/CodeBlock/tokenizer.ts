@@ -82,12 +82,12 @@ function buildLanguagePatterns(
           {type: 'number', regex: /\b0[oO][0-7_]+\b/},
           {type: 'number', regex: /\b\d[\d_]*\.?[\d_]*(?:[eE][+-]?\d+)?\b/},
           {type: 'keyword', regex: JS_KEYWORDS},
-          {type: 'type', regex: /\b[A-Z][a-zA-Z0-9_]*\b/},
           {type: 'function', regex: /\b[a-zA-Z_$][\w$]*(?=\s*\()/},
-          {type: 'property', regex: /(?<=\.)\b[a-zA-Z_$][\w$]*\b/},
+          {type: 'type', regex: /\b[A-Z][a-zA-Z0-9_]*\b/},
           {type: 'operator', regex: /[+\-*/%=!<>&|^~?:]+/},
           // eslint-disable-next-line no-useless-escape
           {type: 'punctuation', regex: /[{}()\[\];,.]/},
+          {type: 'variable', regex: /\b[a-zA-Z_$][\w$]*\b/},
         ],
       };
 
@@ -165,12 +165,12 @@ function buildLanguagePatterns(
           {type: 'number', regex: /\b0[oO][0-7_]+\b/},
           {type: 'number', regex: /\b\d[\d_]*\.?[\d_]*(?:[eE][+-]?\d+)?j?\b/},
           {type: 'keyword', regex: PYTHON_KEYWORDS},
-          {type: 'type', regex: /\b[A-Z][a-zA-Z0-9_]*\b/},
           {type: 'function', regex: /\b[a-zA-Z_][\w]*(?=\s*\()/},
-          {type: 'property', regex: /(?<=\.)\b[a-zA-Z_][\w]*\b/},
+          {type: 'type', regex: /\b[A-Z][a-zA-Z0-9_]*\b/},
           {type: 'operator', regex: /[+\-*/%=!<>&|^~@:]+/},
           // eslint-disable-next-line no-useless-escape
           {type: 'punctuation', regex: /[{}()\[\];,.]/},
+          {type: 'variable', regex: /\b[a-zA-Z_][\w]*\b/},
         ],
       };
 
@@ -188,7 +188,7 @@ function buildLanguagePatterns(
           {type: 'variable', regex: /\$[0-9@#?*!$-]/},
           {type: 'number', regex: /\b\d+\b/},
           {type: 'keyword', regex: BASH_KEYWORDS},
-          {type: 'function', regex: /(?<=^|\||;|&&|\|\|)\s*[a-zA-Z_][\w.-]*/},
+          {type: 'function', regex: /\b[a-zA-Z_][\w]*(?=\s*\()/},
           {type: 'operator', regex: /[|&<>;!]+/},
           // eslint-disable-next-line no-useless-escape
           {type: 'punctuation', regex: /[{}()\[\]]/},
@@ -207,9 +207,8 @@ function buildLanguagePatterns(
           {type: 'number', regex: /\b0[xX][0-9a-fA-F]+\b/},
           {type: 'number', regex: /\b\d+\.?\d*(?:[eE][+-]?\d+)?\b/},
           {type: 'keyword', regex: PHP_KEYWORDS},
-          {type: 'type', regex: /\b[A-Z][a-zA-Z0-9_]*\b/},
           {type: 'function', regex: /\b[a-zA-Z_][\w]*(?=\s*\()/},
-          {type: 'property', regex: /(?<=->|::)\b[a-zA-Z_][\w]*\b/},
+          {type: 'type', regex: /\b[A-Z][a-zA-Z0-9_]*\b/},
           {type: 'operator', regex: /[+\-*/%=!<>&|^~?:.]+/},
           {type: 'constant', regex: /@[\w]+/},
           // eslint-disable-next-line no-useless-escape
@@ -255,6 +254,7 @@ function buildLanguagePatterns(
           {type: 'operator', regex: /[:|>\-?]/},
           // eslint-disable-next-line no-useless-escape
           {type: 'punctuation', regex: /[{}()\[\],]/},
+          {type: 'variable', regex: /\b[a-zA-Z_][\w]*\b/},
         ],
       };
 
