@@ -298,17 +298,24 @@ export function adjustTime(
   const parsed = parseISOTime(time);
   if (!parsed) return time;
 
-  let totalMinutes = parsed.hour * 60 + parsed.minute + deltaMinutes;
+  // Convert to total seconds for precision with fractional minutes
+  let totalSeconds =
+    parsed.hour * 3600 +
+    parsed.minute * 60 +
+    parsed.second +
+    Math.round(deltaMinutes * 60);
 
   // Wrap around midnight
-  while (totalMinutes < 0) totalMinutes += 24 * 60;
-  totalMinutes = totalMinutes % (24 * 60);
+  const daySeconds = 24 * 3600;
+  while (totalSeconds < 0) totalSeconds += daySeconds;
+  totalSeconds = totalSeconds % daySeconds;
 
-  const newHour = Math.floor(totalMinutes / 60);
-  const newMinute = totalMinutes % 60;
+  const newHour = Math.floor(totalSeconds / 3600);
+  const newMinute = Math.floor((totalSeconds % 3600) / 60);
+  const newSecond = totalSeconds % 60;
 
   return formatISOTime(
-    {hour: newHour, minute: newMinute, second: parsed.second},
+    {hour: newHour, minute: newMinute, second: newSecond},
     includeSeconds,
   );
 }

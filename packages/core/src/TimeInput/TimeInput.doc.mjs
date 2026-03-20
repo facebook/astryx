@@ -67,6 +67,11 @@ export const docs = {
   ],
   props: [
     {
+      name: 'ref',
+      type: 'React.Ref<HTMLInputElement>',
+      description: 'Ref forwarded to the underlying <input> element.',
+    },
+    {
       name: 'label',
       type: 'string',
       description: 'Label text for the input (required for accessibility).',
@@ -191,6 +196,17 @@ export const docs = {
       description:
         'Tooltip text rendered as an info icon at the end of the label row.',
     },
+    {
+      name: 'hasAutoFocus',
+      type: 'boolean',
+      description: 'Whether to automatically focus the input on mount.',
+      default: 'false',
+    },
+    {
+      name: 'htmlName',
+      type: 'string',
+      description: 'The HTML name attribute for the input. Useful for form submissions.',
+    },
   ],
   accessibility: [
     'The visible label is associated with the input via htmlFor / id.',
@@ -203,6 +219,19 @@ export const docs = {
   ],
   keyboard:
     'ArrowUp / ArrowDown adjust the current time by the configured increment in minutes. Typing a time string in common formats (e.g. "2:30 PM", "14:30") is parsed on blur. Pressing the clear button returns focus to the input.',
+  theming: {
+    targets: [
+      {className: 'xds-time-input', visualProps: ['size']},
+    ],
+  },
+  notes: [
+    'Uses a native <input type="text"> with role="spinbutton" for accessible arrow-key time adjustment.',
+    'aria-valuenow, aria-valuemin, and aria-valuemax use total seconds for meaningful numeric values.',
+    'aria-valuetext provides the human-readable display format (e.g. "2:30 PM").',
+    'Input is parsed eagerly — valid values fire onChange immediately, not just on blur.',
+    'Invalid input reverts to the last valid value on blur or Escape.',
+    'Interaction is blocked during busy state (loading or pending async action).',
+  ],
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
@@ -272,6 +301,11 @@ export const docsZh = {
     },
   ],
   props: [
+    {
+      name: 'ref',
+      type: 'React.Ref<HTMLInputElement>',
+      description: '转发至底层 <input> 元素的 ref。',
+    },
     {
       name: 'label',
       type: 'string',
@@ -397,6 +431,17 @@ export const docsZh = {
       description:
         '在标签行末尾以信息图标形式渲染的工具提示文本。',
     },
+    {
+      name: 'hasAutoFocus',
+      type: 'boolean',
+      description: '是否在挂载时自动聚焦输入框。',
+      default: 'false',
+    },
+    {
+      name: 'htmlName',
+      type: 'string',
+      description: '输入框的 HTML name 属性。用于表单提交。',
+    },
   ],
   accessibility: [
     '可见标签通过 htmlFor / id 与输入框关联。',
@@ -409,6 +454,19 @@ export const docsZh = {
   ],
   keyboard:
     '上/下方向键按配置的分钟增量调整当前时间。以常见格式（例如 "2:30 PM"、"14:30"）输入时间字符串会在失焦时解析。按清除按钮将焦点返回到输入框。',
+  theming: {
+    targets: [
+      {className: 'xds-time-input', visualProps: ['size']},
+    ],
+  },
+  notes: [
+    '使用带有 role="spinbutton" 的原生 <input type="text"> 实现无障碍方向键时间调整。',
+    'aria-valuenow、aria-valuemin 和 aria-valuemax 使用总秒数作为有意义的数值。',
+    'aria-valuetext 提供人类可读的显示格式（例如 "2:30 PM"）。',
+    '输入会即时解析——有效值立即触发 onChange，而不仅在失焦时。',
+    '无效输入在失焦或按 Escape 时恢复为上一个有效值。',
+    '忙碌状态（加载中或异步操作等待中）期间阻止交互。',
+  ],
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
@@ -434,7 +492,15 @@ export const docsDense = {
     'Clear button has aria-label "Clear time".',
   ],
   keyboard: 'ArrowUp/ArrowDown adjust time by configured increment in minutes. Typing common formats (e.g. "2:30 PM", "14:30") parsed on blur. Clear button press returns focus to input.',
+  notes: [
+    'native <input type="text"> w/ role="spinbutton" for a11y arrow-key time adjustment',
+    'aria-valuenow/min/max use total seconds; aria-valuetext provides human-readable display',
+    'input parsed eagerly; valid values fire onChange immediately',
+    'invalid input reverts to last valid value on blur/Escape',
+    'interaction blocked during busy state',
+  ],
   propDescriptions: {
+    ref: 'ref forwarded to underlying <input>',
     label: 'Label text (required for a11y).',
     isLabelHidden: 'Visually hides label; keeps screen reader access.',
     description: 'Description text between label+input.',
@@ -455,5 +521,7 @@ export const docsDense = {
     size: 'Input element height.',
     status: 'Colored border+icon. Message rendered below input.',
     labelTooltip: 'Tooltip as info icon at label row end.',
+    hasAutoFocus: 'Auto-focus on mount.',
+    htmlName: 'HTML name attribute for form submissions.',
   },
 };
