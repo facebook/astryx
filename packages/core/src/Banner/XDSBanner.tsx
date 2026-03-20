@@ -402,7 +402,12 @@ export function XDSBanner({
           isSingleLine && styles.headerCentered,
           statusStyles[status],
         )}>
-        <div {...stylex.props(styles.iconWrapper)} aria-hidden="true">
+        <div
+          {...mergeProps(
+            xdsClassName('banner-icon'),
+            stylex.props(styles.iconWrapper),
+          )}
+          aria-hidden="true">
           {icon != null ? (
             icon
           ) : (

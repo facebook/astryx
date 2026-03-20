@@ -111,6 +111,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'xds-progressbar', visualProps: ['size', 'variant']},
+      {className: 'xds-progressbar-fill'},
     ],
   },
   accessibility: [
@@ -234,6 +235,7 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'xds-progressbar', visualProps: ['size', 'variant']},
+      {className: 'xds-progressbar-fill'},
     ],
   },
   accessibility: [

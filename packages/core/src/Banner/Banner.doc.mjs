@@ -118,6 +118,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'xds-banner', visualProps: ['variant']},
+      {className: 'xds-banner-icon'},
     ],
     vars: [
       {name: '--banner-radius', description: 'Border radius (card variant only)', default: 'var(--radius-3)'},
@@ -247,6 +248,7 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'xds-banner', visualProps: ['variant']},
+      {className: 'xds-banner-icon'},
     ],
     vars: [
       {name: '--banner-radius', description: 'Border radius (card variant only)', default: 'var(--radius-3)'},

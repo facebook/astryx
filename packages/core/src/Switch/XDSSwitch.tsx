@@ -365,9 +365,9 @@ export function XDSSwitch({
           ),
         )}>
         <div
-          {...stylex.props(
-            styles.thumb,
-            isOn ? styles.thumbOn : styles.thumbOff,
+          {...mergeProps(
+            xdsClassName('switch-thumb'),
+            stylex.props(styles.thumb, isOn ? styles.thumbOn : styles.thumbOff),
           )}>
           {isBusy && <XDSSpinner size="sm" />}
         </div>

@@ -119,6 +119,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'xds-calendar', visualProps: ['mode']},
+      {className: 'xds-calendar-day'},
     ],
   },
   notes: [
@@ -248,6 +249,7 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'xds-calendar', visualProps: ['mode']},
+      {className: 'xds-calendar-day'},
     ],
   },
   notes: [

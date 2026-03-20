@@ -34,6 +34,7 @@ import {
 import {XDSField} from '../Field/XDSField';
 import {XDSTooltip} from '../Tooltip/XDSTooltip';
 import type {XDSInputStatus} from '../Field/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Types
@@ -574,12 +575,15 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
         aria-describedby={ariaDescribedBy}
         style={positionStyle}
         onKeyDown={e => handleKeyDown(thumbIndex, e)}
-        {...stylex.props(
-          styles.thumb,
-          isHorizontal ? styles.thumbHorizontal : styles.thumbVertical,
-          !isDisabled && styles.thumbHover,
-          !isDisabled && styles.thumbFocusWithin,
-          isDisabled && styles.thumbDisabled,
+        {...mergeProps(
+          xdsClassName('slider-thumb'),
+          stylex.props(
+            styles.thumb,
+            isHorizontal ? styles.thumbHorizontal : styles.thumbVertical,
+            !isDisabled && styles.thumbHover,
+            !isDisabled && styles.thumbFocusWithin,
+            isDisabled && styles.thumbDisabled,
+          ),
         )}
       />
     );
@@ -652,7 +656,8 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
       xstyle={xstyle}
       className={className}
       style={style}>
-      <div {...stylex.props(styles.sliderRow)}>
+      <div
+        {...mergeProps(xdsClassName('slider'), stylex.props(styles.sliderRow))}>
         <div
           ref={node => {
             // Merge refs
@@ -678,9 +683,12 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
           )}>
           {/* Background track */}
           <div
-            {...stylex.props(
-              styles.track,
-              isHorizontal ? styles.trackHorizontal : styles.trackVertical,
+            {...mergeProps(
+              xdsClassName('slider-track'),
+              stylex.props(
+                styles.track,
+                isHorizontal ? styles.trackHorizontal : styles.trackVertical,
+              ),
             )}
           />
 

@@ -221,6 +221,13 @@ export const docs = {
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
   ],
+  theming: {
+    targets: [
+      {className: 'xds-slider'},
+      {className: 'xds-slider-track'},
+      {className: 'xds-slider-thumb'},
+    ],
+  },
   accessibility: [
     'Uses `role="slider"` with `aria-valuenow`, `aria-valuemin`, `aria-valuemax`, and `aria-valuetext` on each thumb.',
     'The label is always rendered in the DOM for accessibility even when `isLabelHidden` is true.',
@@ -460,6 +467,13 @@ export const docsZh = {
         '用于布局自定义的 StyleX 样式（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
     },
   ],
+  theming: {
+    targets: [
+      {className: 'xds-slider'},
+      {className: 'xds-slider-track'},
+      {className: 'xds-slider-thumb'},
+    ],
+  },
   accessibility: [
     '每个滑块使用 `role="slider"`，配合 `aria-valuenow`、`aria-valuemin`、`aria-valuemax` 和 `aria-valuetext`。',
     '即使 `isLabelHidden` 为 true，标签也始终在 DOM 中渲染以确保无障碍可访问性。',

@@ -290,15 +290,23 @@ export function XDSRadioListItem({
         />
         <div
           aria-hidden="true"
-          {...stylex.props(
-            styles.radio,
-            radioSizeStyles[size],
-            isChecked ? styles.radioChecked : styles.radioUnchecked,
-            isDisabled && styles.radioDisabled,
-            isDisabled && !isChecked && styles.radioDisabledUnchecked,
+          {...mergeProps(
+            xdsClassName('radio'),
+            stylex.props(
+              styles.radio,
+              radioSizeStyles[size],
+              isChecked ? styles.radioChecked : styles.radioUnchecked,
+              isDisabled && styles.radioDisabled,
+              isDisabled && !isChecked && styles.radioDisabledUnchecked,
+            ),
           )}>
           {isChecked && (
-            <div {...stylex.props(styles.innerDot, dotSizeStyles[size])} />
+            <div
+              {...mergeProps(
+                xdsClassName('radio-dot'),
+                stylex.props(styles.innerDot, dotSizeStyles[size]),
+              )}
+            />
           )}
         </div>
       </div>
