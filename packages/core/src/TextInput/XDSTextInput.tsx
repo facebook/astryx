@@ -13,7 +13,14 @@
 
 'use client';
 
-import {useId, useOptimistic, useTransition, type ChangeEvent} from 'react';
+import {
+  useId,
+  useOptimistic,
+  useTransition,
+  type ChangeEvent,
+  type FocusEvent,
+  type KeyboardEvent,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSIconName} from '../Icon';
 import {
@@ -34,6 +41,21 @@ import {
 } from '../Field';
 import {XDSIcon, type XDSIconType} from '../Icon';
 import {XDSSpinner} from '../Spinner';
+
+const STATUS_ICON_MAP: Record<XDSInputStatusType, XDSIconName> = {
+  warning: 'warning',
+  error: 'xCircle',
+  success: 'checkCircle',
+};
+
+const STATUS_ICON_COLOR_MAP: Record<
+  XDSInputStatusType,
+  'warning' | 'negative' | 'positive'
+> = {
+  warning: 'warning',
+  error: 'negative',
+  success: 'positive',
+};
 
 const styles = stylex.create({
   wrapper: {
@@ -88,7 +110,7 @@ export interface XDSTextInputProps extends Omit<
   XDSBaseProps,
   'onChange' | 'defaultValue'
 > {
-  /** Ref forwarded to the root element */
+  /** Ref forwarded to the `<input>` element (not the root wrapper div). */
   ref?: React.Ref<HTMLInputElement>;
   /**
    * Label text for the input (always rendered for accessibility).
@@ -105,6 +127,8 @@ export interface XDSTextInputProps extends Omit<
   description?: string;
   /**
    * Whether the field is optional. Mutually exclusive with isRequired.
+   * When both isOptional and isRequired are true, isOptional wins:
+   * the label shows "Optional" and aria-required is not set.
    * @default false
    */
   isOptional?: boolean;
@@ -124,6 +148,10 @@ export interface XDSTextInputProps extends Omit<
    */
   startIcon?: XDSIconType;
   /**
+   * Icon to display before the label text.
+   */
+  labelIcon?: XDSIconType;
+  /**
    * Status indicator for the input.
    * When set, displays a colored border and status icon.
    * If message is provided, displays a floating message box below the input.
@@ -131,8 +159,9 @@ export interface XDSTextInputProps extends Omit<
   status?: XDSInputStatus;
   /**
    * The size of the input.
-   * - 'sm': Compact size (18px height)
-   * - 'md': Default size (26px height)
+   * - 'sm': Compact size (28px height)
+   * - 'md': Default size (32px height)
+   * - 'lg': Large size (36px height)
    * @default 'md'
    */
   size?: XDSTextInputSize;
@@ -140,7 +169,11 @@ export interface XDSTextInputProps extends Omit<
    * Callback fired when the input value changes.
    */
   onChange?: (value: string, e: ChangeEvent<HTMLInputElement>) => void;
-  /** Async action on change. Fires after onChange if not prevented. */
+  /**
+   * Async action fired after onChange. Only fires if `onChange` did not call
+   * `e.preventDefault()` — this lets onChange suppress the async action
+   * (e.g. to skip server validation for locally-invalid input).
+   */
   onChangeAction?: (
     value: string,
     e: ChangeEvent<HTMLInputElement>,
@@ -169,6 +202,22 @@ export interface XDSTextInputProps extends Omit<
    * Useful for form submissions.
    */
   htmlName?: string;
+  /**
+   * The HTML autocomplete attribute for the input.
+   */
+  autoComplete?: string;
+  /**
+   * Callback fired when the input receives focus.
+   */
+  onFocus?: (e: FocusEvent<HTMLInputElement>) => void;
+  /**
+   * Callback fired when the input loses focus.
+   */
+  onBlur?: (e: FocusEvent<HTMLInputElement>) => void;
+  /**
+   * Callback fired when the user presses the Enter key.
+   */
+  onEnter?: () => void;
 }
 
 /**
@@ -188,6 +237,7 @@ export function XDSTextInput({
   isRequired = false,
   isDisabled = false,
   startIcon,
+  labelIcon,
   status,
   size = 'md',
   onChange,
@@ -198,10 +248,15 @@ export function XDSTextInput({
   labelTooltip,
   hasAutoFocus = false,
   htmlName,
+  autoComplete,
+  onFocus,
+  onBlur,
+  onEnter,
   xstyle,
   className,
   style,
   ref,
+  ...rest
 }: XDSTextInputProps) {
   const id = useId();
   const descriptionID = useId();
@@ -211,20 +266,8 @@ export function XDSTextInput({
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
 
-  const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
-    warning: 'warning',
-    error: 'xCircle',
-    success: 'checkCircle',
-  };
-
-  const statusIconColorMap: Record<
-    XDSInputStatusType,
-    'warning' | 'negative' | 'positive'
-  > = {
-    warning: 'warning',
-    error: 'negative',
-    success: 'positive',
-  };
+  // When isOptional is true, it wins: no aria-required regardless of isRequired
+  const effectiveRequired = isRequired && !isOptional;
 
   const ariaDescribedBy =
     [
@@ -245,6 +288,16 @@ export function XDSTextInput({
     }
   };
 
+  const handleKeyDown = onEnter
+    ? (e: KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+          onEnter();
+        }
+      }
+    : undefined;
+
+  const effectiveDisabled = isDisabled || isBusy;
+
   return (
     <XDSField
       label={label}
@@ -254,6 +307,7 @@ export function XDSTextInput({
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
+      labelIcon={labelIcon}
       status={
         status
           ? {
@@ -265,13 +319,14 @@ export function XDSTextInput({
       }
       labelTooltip={labelTooltip}>
       <div
+        {...rest}
         {...mergeProps(
           xdsClassName('text-input', {size}),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,
             sizeStyles[size],
-            isDisabled && inputWrapperStyles.disabled,
+            effectiveDisabled && inputWrapperStyles.disabled,
             status && inputStatusBorderStyles[status.type],
             status && inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
@@ -288,21 +343,28 @@ export function XDSTextInput({
           type="text"
           value={String(optimisticValue)}
           onChange={handleChange}
+          onFocus={onFocus}
+          onBlur={onBlur}
+          onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          disabled={isDisabled}
+          disabled={effectiveDisabled}
           autoFocus={hasAutoFocus}
+          autoComplete={autoComplete}
           aria-describedby={ariaDescribedBy}
-          aria-required={isRequired === true ? 'true' : undefined}
+          aria-required={effectiveRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
-          {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
+          {...stylex.props(
+            styles.input,
+            effectiveDisabled && styles.inputDisabled,
+          )}
         />
         {isBusy && <XDSSpinner size="sm" />}
-        {status && (
+        {!isBusy && status && (
           <XDSIcon
-            icon={statusIconMap[status.type]}
+            icon={STATUS_ICON_MAP[status.type]}
             size="md"
-            color={statusIconColorMap[status.type]}
+            color={STATUS_ICON_COLOR_MAP[status.type]}
           />
         )}
       </div>

@@ -11,8 +11,8 @@ export const docs = {
     'Label tooltip — optional info icon with tooltip at the end of the label',
     'Validation status — error, warning, and success states with colored borders and icons',
     'Start icon — optional icon displayed at the start of the input',
-    'Loading state — shows a spinner and sets aria-busy while an async action is pending',
-    'Disabled state — visually dims the input and prevents interaction',
+    'Loading state — shows a spinner, disables the input, and sets aria-busy while an async action is pending',
+    'Disabled state — visually dims the input, prevents interaction, and suppresses hover effects',
     'Accessible — label is always associated with the input via htmlFor/id; sets aria-invalid, aria-required, aria-busy, and aria-describedby as appropriate',
     'Styled with StyleX — uses XDS design tokens for consistent styling',
   ],
@@ -97,7 +97,7 @@ export const docs = {
       name: 'onChangeAction',
       type: '(value: string, e: ChangeEvent<HTMLInputElement>) => void | Promise<void>',
       description:
-        'Async action fired after onChange (if not prevented). Triggers optimistic update and shows a loading spinner while pending.',
+        'Async action fired after onChange unless onChange calls e.preventDefault(). Triggers optimistic update and shows a loading spinner while pending.',
     },
     {
       name: 'size',
@@ -180,6 +180,36 @@ export const docs = {
       description:
         'The HTML name attribute for the input, useful for form submissions.',
     },
+    {
+      name: 'autoComplete',
+      type: 'string',
+      description: 'The HTML autocomplete attribute for the input.',
+    },
+    {
+      name: 'onFocus',
+      type: '(e: FocusEvent<HTMLInputElement>) => void',
+      description: 'Callback fired when the input receives focus.',
+    },
+    {
+      name: 'onBlur',
+      type: '(e: FocusEvent<HTMLInputElement>) => void',
+      description: 'Callback fired when the input loses focus.',
+    },
+    {
+      name: 'onEnter',
+      type: '() => void',
+      description: 'Callback fired when the user presses the Enter key.',
+    },
+    {
+      name: 'labelIcon',
+      type: 'XDSIconType',
+      description: 'SVG icon component displayed before the label text.',
+    },
+    {
+      name: 'ref',
+      type: 'React.Ref<HTMLInputElement>',
+      description: 'Ref forwarded to the <input> element (not the root wrapper div).',
+    },
   ],
   theming: {
     targets: [
@@ -194,7 +224,7 @@ export const docs = {
     'aria-busy is set while an optimistic update or isLoading is active.',
   ],
   notes: [
-    'isOptional and isRequired are mutually exclusive — if both are set, "Optional" is shown.',
+    'isOptional and isRequired are mutually exclusive — if both are set, isOptional wins: "Optional" is shown and aria-required is not set.',
     'onChangeAction fires after onChange inside a React transition, enabling useOptimistic for an instant UI update while the async work completes.',
     'The component wraps XDSField for label, description, and optional/required rendering.',
     'The size prop supports "sm", "md", and "lg".',
@@ -213,8 +243,8 @@ export const docsZh = {
     '标签工具提示 — 标签末尾带工具提示的可选信息图标',
     '验证状态 — 错误、警告和成功状态，带彩色边框和图标',
     '起始图标 — 显示在输入框起始位置的可选图标',
-    '加载状态 — 异步操作挂起时显示旋转器并设置 aria-busy',
-    '禁用状态 — 视觉上使输入框变暗并阻止交互',
+    '加载状态 — 异步操作挂起时显示旋转器、禁用输入框并设置 aria-busy',
+    '禁用状态 — 视觉上使输入框变暗、阻止交互并抑制悬停效果',
     '无障碍 — 标签始终通过 htmlFor/id 与输入框关联；根据需要设置 aria-invalid、aria-required、aria-busy 和 aria-describedby',
     '使用 StyleX 样式化 — 使用 XDS 设计令牌实现一致的样式',
   ],
@@ -382,6 +412,36 @@ export const docsZh = {
       description:
         '输入框的 HTML name 属性，用于表单提交。',
     },
+    {
+      name: 'autoComplete',
+      type: 'string',
+      description: '输入框的 HTML autocomplete 属性。',
+    },
+    {
+      name: 'onFocus',
+      type: '(e: FocusEvent<HTMLInputElement>) => void',
+      description: '输入框获取焦点时触发的回调。',
+    },
+    {
+      name: 'onBlur',
+      type: '(e: FocusEvent<HTMLInputElement>) => void',
+      description: '输入框失去焦点时触发的回调。',
+    },
+    {
+      name: 'onEnter',
+      type: '() => void',
+      description: '用户按下 Enter 键时触发的回调。',
+    },
+    {
+      name: 'labelIcon',
+      type: 'XDSIconType',
+      description: '显示在标签文本前的 SVG 图标组件。',
+    },
+    {
+      name: 'ref',
+      type: 'React.Ref<HTMLInputElement>',
+      description: '转发到 <input> 元素的 ref（不是根包装 div）。',
+    },
   ],
   theming: {
     targets: [
@@ -396,7 +456,7 @@ export const docsZh = {
     '乐观更新或 isLoading 活跃期间设置 aria-busy。',
   ],
   notes: [
-    'isOptional 和 isRequired 互斥 — 如果同时设置，显示"可选"。',
+    'isOptional 和 isRequired 互斥 — 如果同时设置，isOptional 优先：显示"可选"且不设置 aria-required。',
     'onChangeAction 在 React transition 内于 onChange 之后触发，启用 useOptimistic 以在异步工作完成时实现即时 UI 更新。',
     '组件包装 XDSField 以实现标签、描述和可选/必填的渲染。',
     'size 属性支持 "sm"、"md" 和 "lg"。',
@@ -413,13 +473,13 @@ export const docsDense = {
     'Label tooltip; optional info icon w/ tooltip at label end',
     'Validation status; error, warning, success states w/ colored borders+icons',
     'Start icon; optional icon at input start',
-    'Loading state; shows spinner+sets aria-busy while async action pending',
-    'Disabled state; dims input, prevents interaction',
+    'Loading state; shows spinner, disables input+sets aria-busy while async action pending',
+    'Disabled state; dims input, prevents interaction, suppresses hover effects',
     'Accessible; label always associated via htmlFor/id; sets aria-invalid, aria-required, aria-busy, aria-describedby',
     'Styled w/ StyleX; uses XDS design tokens for consistent styling',
   ],
   notes: [
-    'isOptional+isRequired mutually exclusive; both set = "Optional" shown.',
+    'isOptional+isRequired mutually exclusive; both set = isOptional wins, "Optional" shown, no aria-required.',
     'onChangeAction fires after onChange in React transition, enables useOptimistic for instant UI update.',
     'Wraps XDSField for label, description, optional/required rendering.',
     'size supports "sm", "md", "lg".',
@@ -435,7 +495,7 @@ export const docsDense = {
     label: 'Label text for input; always rendered for a11y.',
     value: 'Current input value.',
     onChange: 'Fired on input value change.',
-    onChangeAction: 'Async action after onChange (if not prevented). Triggers optimistic update+spinner while pending.',
+    onChangeAction: 'Async action after onChange (unless onChange calls e.preventDefault()). Triggers optimistic update+spinner while pending.',
     size: 'Size variant of input.',
     isLabelHidden: 'Visually hides label; keeps screen reader access.',
     description: 'Description text between label+input.',
@@ -449,5 +509,11 @@ export const docsDense = {
     status: 'Validation status; colored border+icon. Message floats below. Error sets aria-invalid.',
     hasAutoFocus: 'Auto-focus input on mount.',
     htmlName: 'HTML name attr for form submissions.',
+    autoComplete: 'HTML autocomplete attr for input.',
+    onFocus: 'Fired when input receives focus.',
+    onBlur: 'Fired when input loses focus.',
+    onEnter: 'Fired when Enter key pressed.',
+    labelIcon: 'SVG icon before label text.',
+    ref: 'Ref forwarded to <input> element (not wrapper div).',
   },
 };
