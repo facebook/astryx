@@ -58,7 +58,10 @@ const styles = stylex.create({
     },
     // Transitions with allow-discrete for display/overlay
     transitionProperty: 'opacity, transform, overlay, display',
-    transitionDuration: durationVars['--duration-fast-min'],
+    transitionDuration: {
+      default: durationVars['--duration-fast-min'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     transitionBehavior: 'allow-discrete',
     // Entry animation starting state
@@ -86,7 +89,7 @@ const styles = stylex.create({
     paddingBlockEnd: spacingVars['--spacing-1'],
     paddingInlineStart: spacingVars['--spacing-2'],
     paddingInlineEnd: spacingVars['--spacing-2'],
-    maxWidth: 300,
+    maxWidth: '18.75rem',
     wordBreak: 'break-word',
   },
 });
@@ -269,6 +272,7 @@ export function useXDSTooltip(
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
+  const isOpenRef = useRef(false);
 
   // Clear all timeouts
   const clearTimeouts = useCallback(() => {
@@ -288,6 +292,7 @@ export function useXDSTooltip(
     clearTimeouts();
     showTimeoutRef.current = setTimeout(() => {
       layer.show();
+      isOpenRef.current = true;
     }, delay);
   }, [isEnabled, clearTimeouts, layer, delay]);
 
@@ -297,9 +302,11 @@ export function useXDSTooltip(
     if (hideDelay > 0) {
       hideTimeoutRef.current = setTimeout(() => {
         layer.hide();
+        isOpenRef.current = false;
       }, hideDelay);
     } else {
       layer.hide();
+      isOpenRef.current = false;
     }
   }, [clearTimeouts, layer, hideDelay]);
 
@@ -329,6 +336,7 @@ export function useXDSTooltip(
       if (!target.matches(':focus-visible')) return;
       clearTimeouts();
       layer.show();
+      isOpenRef.current = true;
     },
     [isEnabled, clearTimeouts, layer],
   );
@@ -336,6 +344,21 @@ export function useXDSTooltip(
   const handleFocusOut = useCallback(() => {
     scheduleHide();
   }, [scheduleHide]);
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // Only consume Escape when tooltip is open or a show is pending
+        const hasPendingShow = showTimeoutRef.current != null;
+        if (!hasPendingShow && !isOpenRef.current) return;
+        e.stopPropagation();
+        clearTimeouts();
+        layer.hide();
+        isOpenRef.current = false;
+      }
+    },
+    [clearTimeouts, layer],
+  );
 
   // Interaction ref that handles event listeners only
   const interactionRef: RefCallback<HTMLElement> = useCallback(
@@ -346,6 +369,7 @@ export function useXDSTooltip(
         triggerRef.current.removeEventListener('mouseleave', handleMouseLeave);
         triggerRef.current.removeEventListener('focusin', handleFocusIn);
         triggerRef.current.removeEventListener('focusout', handleFocusOut);
+        triggerRef.current.removeEventListener('keydown', handleKeyDown);
       }
 
       if (el) {
@@ -362,6 +386,9 @@ export function useXDSTooltip(
           el.addEventListener('focusin', handleFocusIn);
           el.addEventListener('focusout', handleFocusOut);
         }
+
+        // Attach keydown for Escape handling
+        el.addEventListener('keydown', handleKeyDown);
       }
 
       triggerRef.current = el;
@@ -372,6 +399,7 @@ export function useXDSTooltip(
       handleMouseLeave,
       handleFocusIn,
       handleFocusOut,
+      handleKeyDown,
     ],
   );
 
@@ -402,7 +430,9 @@ export function useXDSTooltip(
       };
 
       return layer.render(
-        <div {...stylex.props(styles.content)}>{children}</div>,
+        <div role="tooltip" {...stylex.props(styles.content)}>
+          {children}
+        </div>,
         renderProps,
       );
     },

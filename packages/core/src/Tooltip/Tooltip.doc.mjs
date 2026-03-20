@@ -26,7 +26,7 @@ export const docs = {
     'When composing multiple aria-describedby sources, merge them with a utility.',
   ],
   keyboard:
-    'Focus on the trigger shows the tooltip. Blur hides it.',
+    'Focus on the trigger shows the tooltip. Blur hides it. Escape dismisses the tooltip without propagating to parent elements.',
   examples: [
     {
       label: 'XDSTooltip — basic',
@@ -221,7 +221,7 @@ export const docsZh = {
     '当组合多个 aria-describedby 来源时，使用工具函数合并它们。',
   ],
   keyboard:
-    '聚焦触发器显示工具提示。失焦隐藏工具提示。',
+    '聚焦触发器显示工具提示。失焦隐藏工具提示。按 Escape 键关闭工具提示，不会传播到父元素。',
   examples: [
     {
       label: 'XDSTooltip — 基础用法',
@@ -413,7 +413,7 @@ export const docsDense = {
     'Links tooltip content to trigger via aria-describedby.',
     'When composing multiple aria-describedby sources, merge w/ utility.',
   ],
-  keyboard: 'Focus on trigger shows tooltip. Blur hides it.',
+  keyboard: 'Focus on trigger shows tooltip. Blur hides it. Escape dismisses without propagating.',
   components: [
     {
       name: 'XDSTooltip',
