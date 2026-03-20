@@ -77,9 +77,31 @@ const variants = stylex.create({
 });
 
 /**
- * Badge variant type derived from the variants StyleX object
+ * Extensible variant map for XDSBadge.
+ *
+ * Theme packages can add custom variants via TypeScript module augmentation:
+ * @example
+ * ```
+ * declare module '@xds/core/Badge' {
+ *   interface XDSBadgeVariantMap {
+ *     'premium': true;
+ *   }
+ * }
+ * ```
  */
-export type XDSBadgeVariant = keyof typeof variants;
+export interface XDSBadgeVariantMap {
+  neutral: true;
+  info: true;
+  success: true;
+  warning: true;
+  error: true;
+}
+
+/**
+ * Badge variant type derived from XDSBadgeVariantMap.
+ * Extensible via module augmentation of XDSBadgeVariantMap.
+ */
+export type XDSBadgeVariant = keyof XDSBadgeVariantMap;
 
 export interface XDSBadgeProps extends XDSBaseProps<HTMLSpanElement> {
   /** Ref forwarded to the root element */
@@ -130,6 +152,7 @@ export function XDSBadge({
   return (
     <span
       ref={ref}
+      data-variant={variant}
       {...mergeProps(
         xdsClassName('badge', {variant}),
         stylex.props(

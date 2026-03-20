@@ -83,9 +83,31 @@ const variants = stylex.create({
 });
 
 /**
- * Status dot variant type
+ * Extensible variant map for XDSStatusDot.
+ *
+ * Theme packages can add custom variants via TypeScript module augmentation:
+ * @example
+ * ```
+ * declare module '@xds/core/StatusDot' {
+ *   interface XDSStatusDotVariantMap {
+ *     'critical': true;
+ *   }
+ * }
+ * ```
  */
-export type XDSStatusDotVariant = keyof typeof variants;
+export interface XDSStatusDotVariantMap {
+  positive: true;
+  warning: true;
+  negative: true;
+  info: true;
+  neutral: true;
+}
+
+/**
+ * Status dot variant type derived from XDSStatusDotVariantMap.
+ * Extensible via module augmentation of XDSStatusDotVariantMap.
+ */
+export type XDSStatusDotVariant = keyof XDSStatusDotVariantMap;
 
 /**
  * Status dot size type
@@ -170,6 +192,7 @@ export function XDSStatusDot({
       ref={ref}
       role="img"
       aria-label={label}
+      data-variant={variant}
       {...mergeProps(
         xdsClassName('statusdot', {variant, size}),
         stylex.props(

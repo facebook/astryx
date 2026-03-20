@@ -81,7 +81,30 @@ export type XDSAppShellBreakpoint = 'sm' | 'md' | 'lg' | 'none';
  * - `elevated`: Wash nav background with elevated surface content + border radius
  * @default 'section'
  */
-export type XDSAppShellVariant = 'wash' | 'surface' | 'section' | 'elevated';
+/**
+ * Extensible variant map for XDSAppShell.
+ *
+ * Theme packages can add custom variants via TypeScript module augmentation:
+ * @example
+ * ```
+ * declare module '@xds/core/AppShell' {
+ *   interface XDSAppShellVariantMap {
+ *     'glass': true;
+ *   }
+ * }
+ * ```
+ */
+export interface XDSAppShellVariantMap {
+  wash: true;
+  surface: true;
+  section: true;
+  elevated: true;
+}
+
+/**
+ * Navigation background style. Extensible via module augmentation of XDSAppShellVariantMap.
+ */
+export type XDSAppShellVariant = keyof XDSAppShellVariantMap;
 
 /**
  * Configuration object for mobile navigation behavior.
@@ -736,6 +759,7 @@ export function XDSAppShell({
       <div
         ref={setShellRef}
         data-testid={dataTestId}
+        data-variant={variant}
         {...mergeProps(
           xdsClassName('app-shell', {height, variant}),
           stylex.props(

@@ -13,3 +13,4 @@ export type {
   XDSButtonVariant,
   XDSButtonSize,
 } from './XDSButton';
+export type {XDSButtonVariantMap} from './XDSButton';

@@ -24,6 +24,29 @@ import {
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
+/**
+ * Extensible variant map for XDSDivider.
+ *
+ * Theme packages can add custom variants via TypeScript module augmentation:
+ * @example
+ * ```
+ * declare module '@xds/core/Divider' {
+ *   interface XDSDividerVariantMap {
+ *     'accent': true;
+ *   }
+ * }
+ * ```
+ */
+export interface XDSDividerVariantMap {
+  subtle: true;
+  strong: true;
+}
+
+/**
+ * Divider variant type. Extensible via module augmentation of XDSDividerVariantMap.
+ */
+export type XDSDividerVariant = keyof XDSDividerVariantMap;
+
 export interface XDSDividerProps extends Omit<
   XDSBaseProps<HTMLDivElement>,
   'children'
@@ -48,7 +71,7 @@ export interface XDSDividerProps extends Omit<
    * - 'strong': Uses --color-border-emphasized
    * @default 'subtle'
    */
-  variant?: 'subtle' | 'strong';
+  variant?: XDSDividerVariant;
 
   /**
    * Makes the divider escape its parent's container padding.
@@ -167,6 +190,7 @@ export function XDSDivider({
       ref={ref as React.Ref<HTMLDivElement>}
       role="separator"
       aria-orientation={orientation}
+      data-variant={variant}
       {...mergeProps(
         xdsClassName('divider', {variant, orientation}),
         stylex.props(

@@ -8,4 +8,8 @@
  */
 
 export {XDSDivider} from './XDSDivider';
-export type {XDSDividerProps} from './XDSDivider';
+export type {
+  XDSDividerProps,
+  XDSDividerVariant,
+  XDSDividerVariantMap,
+} from './XDSDivider';

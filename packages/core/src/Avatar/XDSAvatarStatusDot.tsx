@@ -49,7 +49,29 @@ function resolveStatusDotSize(avatarSize: number): {
   return {dotSize: 24, borderWidth: 4, iconSize: 14};
 }
 
-export type XDSAvatarStatusDotVariant = 'positive' | 'neutral' | 'negative';
+/**
+ * Extensible variant map for XDSAvatarStatusDot.
+ *
+ * Theme packages can add custom variants via TypeScript module augmentation:
+ * @example
+ * ```
+ * declare module '@xds/core/Avatar' {
+ *   interface XDSAvatarStatusDotVariantMap {
+ *     'away': true;
+ *   }
+ * }
+ * ```
+ */
+export interface XDSAvatarStatusDotVariantMap {
+  positive: true;
+  neutral: true;
+  negative: true;
+}
+
+/**
+ * AvatarStatusDot variant type. Extensible via module augmentation of XDSAvatarStatusDotVariantMap.
+ */
+export type XDSAvatarStatusDotVariant = keyof XDSAvatarStatusDotVariantMap;
 
 export interface XDSAvatarStatusDotProps extends XDSBaseProps<HTMLSpanElement> {
   /**
@@ -122,12 +144,13 @@ const dynamicStyles = stylex.create({
   }),
 });
 
-const variantStyleMap: Record<XDSAvatarStatusDotVariant, stylex.StyleXStyles> =
-  {
-    positive: styles.positive,
-    neutral: styles.neutral,
-    negative: styles.negative,
-  };
+const variantStyleMap: Partial<
+  Record<XDSAvatarStatusDotVariant, stylex.StyleXStyles>
+> = {
+  positive: styles.positive,
+  neutral: styles.neutral,
+  negative: styles.negative,
+};
 
 /**
  * A status indicator dot that automatically scales to match the parent
@@ -165,6 +188,7 @@ export function XDSAvatarStatusDot({
   return (
     <div
       {...(label ? {'aria-label': label} : undefined)}
+      data-variant={variant}
       {...mergeProps(
         xdsClassName('avatar-status-dot', {variant}),
         stylex.props(

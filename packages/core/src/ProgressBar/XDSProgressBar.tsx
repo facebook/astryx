@@ -29,13 +29,30 @@ import {
 import {xdsClassName, mergeProps} from '../utils';
 
 /**
- * Progress bar variant type — maps to semantic color tokens.
+ * Extensible variant map for XDSProgressBar.
+ *
+ * Theme packages can add custom variants via TypeScript module augmentation:
+ * @example
+ * ```
+ * declare module '@xds/core/ProgressBar' {
+ *   interface XDSProgressBarVariantMap {
+ *     'brand': true;
+ *   }
+ * }
+ * ```
  */
-export type XDSProgressBarVariant =
-  | 'accent'
-  | 'positive'
-  | 'warning'
-  | 'negative';
+export interface XDSProgressBarVariantMap {
+  accent: true;
+  positive: true;
+  warning: true;
+  negative: true;
+}
+
+/**
+ * Progress bar variant type — maps to semantic color tokens.
+ * Extensible via module augmentation of XDSProgressBarVariantMap.
+ */
+export type XDSProgressBarVariant = keyof XDSProgressBarVariantMap;
 
 /**
  * Progress bar size type — controls track height.
@@ -279,6 +296,7 @@ export function XDSProgressBar({
   return (
     <div
       ref={ref}
+      data-variant={variant}
       {...mergeProps(
         xdsClassName('progressbar', {variant, size}),
         stylex.props(styles.container, xstyle),

@@ -53,11 +53,31 @@ import {xdsClassName, mergeProps} from '../utils';
 export type XDSBannerStatus = 'info' | 'warning' | 'error' | 'success';
 
 /**
+ * Extensible variant map for XDSBanner.
+ *
+ * Theme packages can add custom variants via TypeScript module augmentation:
+ * @example
+ * ```
+ * declare module '@xds/core/Banner' {
+ *   interface XDSBannerVariantMap {
+ *     'floating': true;
+ *   }
+ * }
+ * ```
+ */
+export interface XDSBannerVariantMap {
+  card: true;
+  section: true;
+}
+
+/**
  * Visual variant of the banner.
  * - `card`: standalone card with border-radius and shadow
  * - `section`: full-width section banner (no border-radius)
+ *
+ * Extensible via module augmentation of XDSBannerVariantMap.
  */
-export type XDSBannerVariant = 'card' | 'section';
+export type XDSBannerVariant = keyof XDSBannerVariantMap;
 
 export interface XDSBannerProps {
   /** Ref forwarded to the root element */
@@ -384,6 +404,7 @@ export function XDSBanner({
       ref={ref}
       role={role}
       data-testid={testId}
+      data-variant={variant}
       {...mergeProps(
         xdsClassName('banner', {variant}),
         stylex.props(

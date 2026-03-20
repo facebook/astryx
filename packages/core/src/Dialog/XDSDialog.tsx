@@ -26,11 +26,31 @@ import {
 import {xdsClassName, mergeProps} from '../utils';
 
 /**
+ * Extensible variant map for XDSDialog.
+ *
+ * Theme packages can add custom variants via TypeScript module augmentation:
+ * @example
+ * ```
+ * declare module '@xds/core/Dialog' {
+ *   interface XDSDialogVariantMap {
+ *     'drawer': true;
+ *   }
+ * }
+ * ```
+ */
+export interface XDSDialogVariantMap {
+  standard: true;
+  fullscreen: true;
+}
+
+/**
  * Dialog variant type
  * - standard: Normal dialog with configurable width/height
  * - fullscreen: Takes up the entire viewport
+ *
+ * Extensible via module augmentation of XDSDialogVariantMap.
  */
-export type XDSDialogVariant = 'standard' | 'fullscreen';
+export type XDSDialogVariant = keyof XDSDialogVariantMap;
 
 /**
  * Dialog purpose type - controls dismissal behavior
@@ -325,6 +345,7 @@ export function XDSDialog({
       onClick={handleClick}
       onCancel={handleCancel}
       aria-modal="true"
+      data-variant={variant}
       {...mergeProps(
         xdsClassName('dialog', {variant}),
         stylex.props(

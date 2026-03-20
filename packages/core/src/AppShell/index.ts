@@ -12,6 +12,7 @@ export type {
   XDSAppShellProps,
   XDSAppShellBreakpoint,
   XDSAppShellVariant,
+  XDSAppShellVariantMap,
   XDSMobileNavConfig,
 } from './XDSAppShell';
 export {

@@ -19,6 +19,7 @@ export {XDSFieldStatus as XDSFieldStatusComponent} from './XDSFieldStatus';
 export type {
   XDSFieldStatusProps,
   XDSFieldStatusVariant,
+  XDSFieldStatusVariantMap,
 } from './XDSFieldStatus';
 
 // Shared input types

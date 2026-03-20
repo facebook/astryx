@@ -8,4 +8,8 @@
  */
 
 export {XDSSection} from './XDSSection';
-export type {XDSSectionProps, XDSSectionVariant} from './XDSSection';
+export type {
+  XDSSectionProps,
+  XDSSectionVariant,
+  XDSSectionVariantMap,
+} from './XDSSection';

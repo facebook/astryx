@@ -30,11 +30,31 @@ import {xdsClassName, mergeProps} from '../utils';
 // =============================================================================
 
 /**
+ * Extensible variant map for XDSBreadcrumbs.
+ *
+ * Theme packages can add custom variants via TypeScript module augmentation:
+ * @example
+ * ```
+ * declare module '@xds/core/Breadcrumbs' {
+ *   interface XDSBreadcrumbsVariantMap {
+ *     'compact': true;
+ *   }
+ * }
+ * ```
+ */
+export interface XDSBreadcrumbsVariantMap {
+  default: true;
+  supporting: true;
+}
+
+/**
  * Visual variant for the breadcrumb trail.
  * - `'default'`: Standard text styling
  * - `'supporting'`: Smaller, secondary text for supporting context
+ *
+ * Extensible via module augmentation of XDSBreadcrumbsVariantMap.
  */
-export type XDSBreadcrumbsVariant = 'default' | 'supporting';
+export type XDSBreadcrumbsVariant = keyof XDSBreadcrumbsVariantMap;
 
 // =============================================================================
 // Context shared with XDSBreadcrumbItem
@@ -226,6 +246,7 @@ export function XDSBreadcrumbs({
       ref={ref}
       aria-label={label}
       data-testid={testId}
+      data-variant={variant}
       {...mergeProps(
         xdsClassName('breadcrumbs', {variant}),
         stylex.props(navStyles.root, xstyle),

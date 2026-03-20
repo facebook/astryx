@@ -3,4 +3,8 @@
  */
 
 export {XDSBadge} from './XDSBadge';
-export type {XDSBadgeProps, XDSBadgeVariant} from './XDSBadge';
+export type {
+  XDSBadgeProps,
+  XDSBadgeVariant,
+  XDSBadgeVariantMap,
+} from './XDSBadge';

@@ -12,4 +12,5 @@ export type {
   XDSBannerProps,
   XDSBannerStatus,
   XDSBannerVariant,
+  XDSBannerVariantMap,
 } from './XDSBanner';
