@@ -38,13 +38,31 @@ import {xdsClassName, mergeProps} from '../utils';
 // Types
 // =============================================================================
 
-/** Visual variant controlling what appears between prev/next buttons. */
-export type XDSPaginationVariant =
-  | 'pages'
-  | 'count'
-  | 'compact'
-  | 'dots'
-  | 'none';
+/**
+ * Extensible variant map for XDSPagination.
+ *
+ * Theme packages can add custom variants via TypeScript module augmentation:
+ * @example
+ * ```
+ * declare module '@xds/core/Pagination' {
+ *   interface XDSPaginationVariantMap {
+ *     'progress': true;
+ *   }
+ * }
+ * ```
+ */
+export interface XDSPaginationVariantMap {
+  pages: true;
+  count: true;
+  compact: true;
+  dots: true;
+  none: true;
+}
+
+/** Visual variant controlling what appears between prev/next buttons.
+ * Extensible via module augmentation of XDSPaginationVariantMap.
+ */
+export type XDSPaginationVariant = keyof XDSPaginationVariantMap;
 
 /** Size of the pagination controls. */
 export type XDSPaginationSize = 'sm' | 'md';
@@ -508,6 +526,7 @@ export function XDSPagination({
       ref={ref}
       aria-label={label}
       data-testid={testId}
+      data-variant={variant}
       {...mergeProps(
         xdsClassName('pagination', {variant, size}),
         stylex.props(styles.root, xstyle),

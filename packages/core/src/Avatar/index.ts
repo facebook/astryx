@@ -13,4 +13,5 @@ export {XDSAvatarStatusDot} from './XDSAvatarStatusDot';
 export type {
   XDSAvatarStatusDotProps,
   XDSAvatarStatusDotVariant,
+  XDSAvatarStatusDotVariantMap,
 } from './XDSAvatarStatusDot';

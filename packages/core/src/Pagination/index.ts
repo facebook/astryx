@@ -9,5 +9,6 @@ export {XDSPagination, generatePageRange} from './XDSPagination';
 export type {
   XDSPaginationProps,
   XDSPaginationVariant,
+  XDSPaginationVariantMap,
   XDSPaginationSize,
 } from './XDSPagination';

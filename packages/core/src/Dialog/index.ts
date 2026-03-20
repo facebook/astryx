@@ -11,6 +11,7 @@ export {XDSDialog} from './XDSDialog';
 export type {
   XDSDialogProps,
   XDSDialogVariant,
+  XDSDialogVariantMap,
   XDSDialogPurpose,
   XDSDialogPosition,
 } from './XDSDialog';

@@ -184,9 +184,30 @@ const variants = stylex.create({
 });
 
 /**
- * Button variant type derived from the variants StyleX object
+ * Extensible variant map for XDSButton.
+ *
+ * Theme packages can add custom variants via TypeScript module augmentation:
+ * @example
+ * ```
+ * declare module '@xds/core/Button' {
+ *   interface XDSButtonVariantMap {
+ *     'primary-muted': true;
+ *   }
+ * }
+ * ```
  */
-export type XDSButtonVariant = keyof typeof variants;
+export interface XDSButtonVariantMap {
+  primary: true;
+  secondary: true;
+  ghost: true;
+  destructive: true;
+}
+
+/**
+ * Button variant type derived from XDSButtonVariantMap.
+ * Extensible via module augmentation of XDSButtonVariantMap.
+ */
+export type XDSButtonVariant = keyof XDSButtonVariantMap;
 
 /**
  * Button size type derived from the sizeStyles StyleX object
@@ -372,6 +393,7 @@ export function XDSButton({
       disabled={buttonDisabled}
       aria-label={isIconOnly ? label : undefined}
       aria-busy={isLoadingState || undefined}
+      data-variant={variant}
       {...mergeProps(
         xdsClassName('button', {variant, size}),
         stylex.props(

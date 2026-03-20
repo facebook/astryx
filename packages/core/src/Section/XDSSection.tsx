@@ -27,9 +27,29 @@ import type {SizeValue, SpacingStep} from '../utils/types';
 import {xdsClassName, mergeProps} from '../utils';
 
 /**
- * Visual variant for the section.
+ * Extensible variant map for XDSSection.
+ *
+ * Theme packages can add custom variants via TypeScript module augmentation:
+ * @example
+ * ```
+ * declare module '@xds/core/Section' {
+ *   interface XDSSectionVariantMap {
+ *     'elevated': true;
+ *   }
+ * }
+ * ```
  */
-export type XDSSectionVariant = 'section' | 'transparent' | 'wash';
+export interface XDSSectionVariantMap {
+  section: true;
+  transparent: true;
+  wash: true;
+}
+
+/**
+ * Visual variant for the section.
+ * Extensible via module augmentation of XDSSectionVariantMap.
+ */
+export type XDSSectionVariant = keyof XDSSectionVariantMap;
 
 const variantStyles = stylex.create({
   section: {
@@ -222,6 +242,7 @@ export function XDSSection({
   return (
     <div
       ref={ref as React.Ref<HTMLDivElement>}
+      data-variant={variant}
       {...mergeProps(
         xdsClassName('section', {variant}),
         stylex.props(

@@ -58,7 +58,28 @@ const colorStyles = stylex.create({
   },
 });
 
-export type XDSFieldStatusVariant = 'attached' | 'detached';
+/**
+ * Extensible variant map for XDSFieldStatus.
+ *
+ * Theme packages can add custom variants via TypeScript module augmentation:
+ * @example
+ * ```
+ * declare module '@xds/core/Field' {
+ *   interface XDSFieldStatusVariantMap {
+ *     'inline': true;
+ *   }
+ * }
+ * ```
+ */
+export interface XDSFieldStatusVariantMap {
+  attached: true;
+  detached: true;
+}
+
+/**
+ * FieldStatus variant type. Extensible via module augmentation of XDSFieldStatusVariantMap.
+ */
+export type XDSFieldStatusVariant = keyof XDSFieldStatusVariantMap;
 
 export interface XDSFieldStatusProps {
   /**
@@ -107,6 +128,7 @@ export function XDSFieldStatus({
   return (
     <div
       id={id}
+      data-variant={variant}
       {...mergeProps(
         xdsClassName('field-status', {type, variant}),
         stylex.props(
