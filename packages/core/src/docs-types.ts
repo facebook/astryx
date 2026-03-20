@@ -91,6 +91,12 @@ export interface ThemingTarget {
    *  Themes can target specific variants via `.xds-button.secondary`.
    *  Omit if the component has no visual props (class name only). */
   visualProps?: string[];
+  /** State class names that appear on this element based on component state.
+   *  Unlike visualProps (driven by props), these reflect runtime state
+   *  (checked, selected, today, on, expanded, etc.).
+   *  Themes target them the same way as variants: `.xds-radio.checked { ... }`
+   *  Omit if the element has no state-driven classes. */
+  states?: string[];
 }
 
 /**

@@ -66,7 +66,51 @@ export function formatFull(docs) {
 
   if (docs.theming) {
     sections.push('## Theming\n');
-    sections.push(`Component key: \`${docs.theming.componentKey}\`\n`);
+    const componentKey = docs.name.toLowerCase();
+
+    // Targets table
+    if (docs.theming.targets?.length) {
+      const targetLines = [];
+      targetLines.push('| Class | Variants | States |');
+      targetLines.push('|-------|---------|--------|');
+      for (const t of docs.theming.targets) {
+        const variants = t.visualProps?.length ? t.visualProps.join(', ') : '—';
+        const states = t.states?.length ? t.states.join(', ') : '—';
+        targetLines.push(`| \`${t.className}\` | ${variants} | ${states} |`);
+      }
+      sections.push(targetLines.join('\n') + '\n');
+
+      // Generate defineTheme example with class targeting
+      const exampleLines = ['Override in defineTheme:\n```ts\ncomponents: {'];
+      const rootTarget = docs.theming.targets[0];
+      const rootKey = rootTarget.className.replace('xds-', '');
+      exampleLines.push(`  '${rootKey}': {`);
+      exampleLines.push(`    base: { /* CSS properties */ },`);
+      if (rootTarget.visualProps?.length) {
+        const firstVariant = rootTarget.visualProps[0];
+        exampleLines.push(`    '${firstVariant}:value': { /* variant-specific */ },`);
+      }
+      if (rootTarget.states?.length) {
+        const firstState = rootTarget.states[0];
+        exampleLines.push(`    '${firstState}': { /* state-specific */ },`);
+      }
+      exampleLines.push(`  },`);
+      // Show sub-element example if there are multiple targets
+      if (docs.theming.targets.length > 1) {
+        const subTarget = docs.theming.targets[1];
+        const subKey = subTarget.className.replace('xds-', '');
+        exampleLines.push(`  '${subKey}': {`);
+        exampleLines.push(`    base: { /* CSS properties */ },`);
+        if (subTarget.states?.length) {
+          const firstState = subTarget.states[0];
+          exampleLines.push(`    '${firstState}': { /* state-specific */ },`);
+        }
+        exampleLines.push(`  },`);
+      }
+      exampleLines.push('}\n```\n');
+      sections.push(exampleLines.join('\n'));
+    }
+
     if (docs.theming.surfaces?.length) {
       const surfaceLines = [];
       surfaceLines.push('| Surface | Description |');
@@ -89,12 +133,11 @@ export function formatFull(docs) {
       }
       sections.push(varLines.join('\n') + '\n');
 
-      // Show override example
+      // Show var override example
       const overridableVars = docs.theming.vars.filter(v => !v.derived);
       if (overridableVars.length > 0) {
-        const componentKey = docs.name.toLowerCase();
         const exampleVar = overridableVars[0];
-        sections.push('Override in defineTheme:\n```tsx\ncomponents: {\n  ' + componentKey + ': {\n    base: { \'' + exampleVar.name + '\': \'...\' },\n  },\n}\n```\n');
+        sections.push('Override CSS vars in defineTheme:\n```ts\ncomponents: {\n  ' + componentKey + ': {\n    base: { \'' + exampleVar.name + '\': \'...\' },\n  },\n}\n```\n');
       }
     }
   }
@@ -255,6 +298,17 @@ export function formatBrief(docs, componentName, importHint) {
     if (varNames) {
       output.push(`  Vars: ${varNames}`);
     }
+  }
+
+  // Theme targets (class names, variants, states)
+  if (docs.theming?.targets?.length) {
+    const targetParts = docs.theming.targets.map(t => {
+      const parts = [t.className];
+      if (t.visualProps?.length) parts.push(`variants: ${t.visualProps.join(', ')}`);
+      if (t.states?.length) parts.push(`states: ${t.states.join(', ')}`);
+      return parts.join(' ');
+    });
+    output.push(`  Targets: ${targetParts.join(' | ')}`);
   }
 
   // Other props

@@ -387,7 +387,10 @@ export function XDSCheckboxInput({
           <div
             aria-hidden="true"
             {...mergeProps(
-              xdsClassName('checkbox'),
+              xdsClassName('checkbox', {
+                checked: isCheckedOrIndeterminate ? 'checked' : null,
+                disabled: isDisabled ? 'disabled' : null,
+              }),
               stylex.props(
                 styles.checkbox,
                 checkboxSizeStyles[size],
@@ -435,8 +438,7 @@ export function XDSCheckboxInput({
             )}
           </div>
         </div>
-        <div
-          {...stylex.props(styles.labelWrapper)}>
+        <div {...stylex.props(styles.labelWrapper)}>
           <XDSFieldLabel
             label={label}
             inputID={id}

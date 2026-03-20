@@ -813,7 +813,13 @@ function DayCell({
         onMouseEnter={() => !isDisabled && onDayHover(date)}
         onMouseLeave={() => onDayHover(null)}
         {...mergeProps(
-          xdsClassName('calendar-day'),
+          xdsClassName('calendar-day', {
+            selected:
+              isSelected || isRangeStart || isRangeEnd ? 'selected' : null,
+            today: isToday ? 'today' : null,
+            disabled: isDisabled ? 'disabled' : null,
+            'in-range': isInRange ? 'in-range' : null,
+          }),
           stylex.props(
             dayCellStyles.day,
             dayCellTheme.day,

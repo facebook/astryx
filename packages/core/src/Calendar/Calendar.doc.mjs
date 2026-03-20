@@ -119,7 +119,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'xds-calendar', visualProps: ['mode']},
-      {className: 'xds-calendar-day'},
+      {className: 'xds-calendar-day', states: ['selected', 'today', 'disabled', 'in-range']},
     ],
   },
   notes: [
@@ -249,7 +249,7 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'xds-calendar', visualProps: ['mode']},
-      {className: 'xds-calendar-day'},
+      {className: 'xds-calendar-day', states: ['selected', 'today', 'disabled', 'in-range']},
     ],
   },
   notes: [
