@@ -12,6 +12,9 @@
 
 'use client';
 
+// Register syntax domain tokens with core's theme system
+import './registerTokens';
+
 import {useEffect, useRef, useState, useCallback} from 'react';
 import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';

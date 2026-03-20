@@ -63,8 +63,8 @@ import {
 // Types
 // =============================================================================
 
-/** All valid XDS token names */
-export type XDSTokenName =
+/** All valid XDS core token names */
+export type XDSCoreTokenName =
   | keyof typeof colorDefaults
   | keyof typeof spacingDefaults
   | keyof typeof sizeDefaults
@@ -78,6 +78,36 @@ export type XDSTokenName =
   | keyof typeof lineHeightDefaults
   | keyof typeof fontWeightDefaults
   | keyof typeof typeScaleDefaults;
+
+/**
+ * Domain token registry — extensible via module augmentation.
+ *
+ * Domain packages (e.g. @xds/lab code components, dataviz) register
+ * their token names here so defineTheme gets type-safe autocomplete
+ * and runtime validation for domain-specific tokens.
+ *
+ * @example
+ * ```ts
+ * // In @xds/lab or any domain package:
+ * declare module '@xds/core/theme' {
+ *   interface XDSDomainTokens {
+ *     syntax: '--color-syntax-keyword' | '--color-syntax-string' | ...;
+ *     dataviz: '--color-dataviz-primary' | '--color-dataviz-secondary' | ...;
+ *   }
+ * }
+ * ```
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface XDSDomainTokens {}
+
+/** All domain token names (union of all registered domains) */
+export type XDSDomainTokenName =
+  XDSDomainTokens[keyof XDSDomainTokens] extends never
+    ? never
+    : XDSDomainTokens[keyof XDSDomainTokens];
+
+/** All valid XDS token names — core + registered domain tokens */
+export type XDSTokenName = XDSCoreTokenName | XDSDomainTokenName;
 
 /**
  * Token value — either a single string or a [light, dark] tuple.
@@ -245,6 +275,34 @@ export const xdsTokenDefaults: Record<string, string> = {
   ...fontWeightDefaults,
   ...typeScaleDefaults,
 };
+
+/**
+ * Register domain-specific tokens so defineTheme can validate them at runtime.
+ *
+ * Call this at module load time from your domain package. Registered tokens
+ * won't trigger "unknown token" warnings in defineTheme, and their defaults
+ * are available for theme fallback.
+ *
+ * For TypeScript autocomplete, also augment the XDSDomainTokens interface
+ * (see the interface definition above).
+ *
+ * @example
+ * ```ts
+ * // In @xds/lab code components:
+ * import { registerDomainTokens } from '@xds/core/theme';
+ *
+ * registerDomainTokens({
+ *   '--color-syntax-keyword': 'light-dark(#a626a4, #c678dd)',
+ *   '--color-syntax-string': 'light-dark(#50a14f, #98c379)',
+ *   // ...
+ * });
+ * ```
+ */
+export function registerDomainTokens(
+  defaults: Record<string, string>,
+): void {
+  Object.assign(xdsTokenDefaults, defaults);
+}
 
 // =============================================================================
 // defineTheme

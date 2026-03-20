@@ -18,12 +18,16 @@ export {
   generateThemeRules,
   isDefinedTheme,
   xdsTokenDefaults,
+  registerDomainTokens,
 } from './defineTheme';
 export type {
   XDSDefineThemeInput,
   XDSDefinedTheme,
+  XDSCoreTokenName,
   XDSTokenName,
   XDSTokenValue,
+  XDSDomainTokens,
+  XDSDomainTokenName,
   XDSComponentStyleMap,
   XDSStyleOverrides,
 } from './defineTheme';
