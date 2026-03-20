@@ -29,6 +29,8 @@ import {
   easeVars,
   typographyVars,
   textSizeVars,
+  lineHeightVars,
+  fontWeightVars,
 } from '../theme/tokens.stylex';
 import {XDSFieldLabel} from '../Field/XDSFieldLabel';
 import {XDSFieldStatus} from '../Field/XDSFieldStatus';
@@ -92,7 +94,10 @@ const styles = stylex.create({
     padding: TRACK_PADDING,
     borderRadius: radiusVars['--radius-rounded'],
     transitionProperty: 'background-color',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0.01s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     boxSizing: 'border-box',
   },
@@ -137,7 +142,10 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-rounded'],
     backgroundColor: colorVars['--color-surface'],
     transitionProperty: 'transform, width, height',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0.01s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   thumbOff: {
@@ -159,6 +167,8 @@ const styles = stylex.create({
   description: {
     fontFamily: typographyVars['--font-body'],
     fontSize: textSizeVars['--text-xsm'],
+    lineHeight: lineHeightVars['--leading-relaxed'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
   },
 });
@@ -325,6 +335,7 @@ export function XDSSwitch({
         disabled={isDisabled}
         required={isRequired}
         onChange={e => {
+          if (isBusy) return;
           const checked = e.target.checked;
           onChange?.(checked, e);
           if (onChangeAction && !e.defaultPrevented) {
@@ -387,7 +398,7 @@ export function XDSSwitch({
   return (
     <div
       {...mergeProps(
-        xdsClassName('switch-field'),
+        xdsClassName('switch-field', {labelPosition, labelSpacing}),
         stylex.props(xstyle),
         className,
         style,

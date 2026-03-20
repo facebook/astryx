@@ -14,6 +14,7 @@ export const docs = {
     'Status messages — error, warning, success, or info message boxes below the switch',
     'Async action support — onChangeAction with optimistic UI and built-in loading spinner',
     'Accessibility — native checkbox with role="switch", aria-describedby, aria-invalid, aria-busy',
+    'Reduced motion — respects prefers-reduced-motion for track and thumb transitions',
   ],
   examples: [
     {
@@ -75,6 +76,11 @@ export const docs = {
     },
   ],
   props: [
+    {
+      name: 'ref',
+      type: 'React.Ref<HTMLInputElement>',
+      description: 'Ref forwarded to the underlying <input> element.',
+    },
     {
       name: 'label',
       type: 'string',
@@ -183,7 +189,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'xds-switch'},
-      {className: 'xds-switch-field'},
+      {className: 'xds-switch-field', visualProps: ['labelPosition', 'labelSpacing']},
     ],
   },
   accessibility: [
@@ -201,6 +207,8 @@ export const docs = {
     'onChangeAction uses React useTransition and useOptimistic for seamless async toggling',
     'labelPosition="start" with labelSpacing="spread" produces a settings panel style layout',
     'Follows the same patterns as XDSCheckboxInput for structural consistency',
+    'Interaction is blocked during busy state (loading or pending async action) to prevent double-toggling',
+    'Track and thumb transitions respect prefers-reduced-motion (0.01s duration when reduced motion preferred)',
   ],
 };
 
@@ -280,6 +288,11 @@ export const docsZh = {
     },
   ],
   props: [
+    {
+      name: 'ref',
+      type: 'React.Ref<HTMLInputElement>',
+      description: '转发至底层 <input> 元素的 ref。',
+    },
     {
       name: 'label',
       type: 'string',
@@ -388,7 +401,7 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'xds-switch'},
-      {className: 'xds-switch-field'},
+      {className: 'xds-switch-field', visualProps: ['labelPosition', 'labelSpacing']},
     ],
   },
   accessibility: [
@@ -440,6 +453,7 @@ export const docsDense = {
   ],
   keyboard: 'Space=toggle; Tab/Shift+Tab=move focus in/out.',
   propDescriptions: {
+    ref: 'ref forwarded to underlying <input>',
     label: 'Label text (always rendered for a11y).',
     value: 'Whether switch is on or off.',
     onChange: 'Fired when switch state changes.',
