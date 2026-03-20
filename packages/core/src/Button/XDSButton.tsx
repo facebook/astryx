@@ -275,6 +275,16 @@ const loadingStyles = stylex.create({
     position: 'relative',
     color: 'transparent',
   },
+  spinnerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
 
 /**
@@ -381,17 +391,7 @@ export function XDSButton({
       {...props}
       onClick={handleClick}>
       {isLoadingState && (
-        <span
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
+        <span {...stylex.props(loadingStyles.spinnerOverlay)}>
           <XDSSpinner
             size="sm"
             shade={useLightSpinner ? 'onMedia' : 'default'}
