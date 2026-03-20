@@ -1,14 +1,27 @@
 /**
  * @file highlightStyles.ts
- * @input None
- * @output Injects ::highlight() CSS rules into the document head
+ * @input Syntax token defaults from domainTokens
+ * @output Injects ::highlight() CSS rules + fallback token values into the document head
  * @position Shared utility; consumed by XDSCodeBlock and XDSCodeEditor
  *
  * SYNC: When modified, update:
- * - /packages/core/src/theme/tokens.stylex.ts (syntax color token names)
+ * - /packages/core/src/theme/domainTokens.ts (syntax color token names/defaults)
  */
 
+import {syntaxTokenDefaults} from '@xds/core/theme';
+
+/**
+ * Build the fallback CSS custom properties from the syntax token defaults.
+ * These provide colors when no theme explicitly sets --color-syntax-* tokens.
+ * Themes override these via higher-specificity [data-xds-theme] selectors.
+ */
+const FALLBACK_TOKENS = `:root {\n${Object.entries(syntaxTokenDefaults)
+  .map(([name, value]) => `  ${name}: ${value};`)
+  .join('\n')}\n}`;
+
 const HIGHLIGHT_STYLES = `
+${FALLBACK_TOKENS}
+
 ::highlight(xds-keyword)     { color: var(--color-syntax-keyword); }
 ::highlight(xds-string)      { color: var(--color-syntax-string); }
 ::highlight(xds-comment)     { color: var(--color-syntax-comment); }
