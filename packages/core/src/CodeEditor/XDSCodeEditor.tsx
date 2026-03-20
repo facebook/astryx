@@ -292,11 +292,8 @@ export function XDSCodeEditor({
       }
     }
 
-    return () => {
-      for (const name of highlightNames) {
-        CSS.highlights.delete(name);
-      }
-    };
+    // No cleanup — detached DOM ranges are ignored by the browser.
+    // Deleting shared highlight names would break other instances.
   }, [value, language, customTokenizer, instanceId]);
 
   const handleInput = useCallback(() => {

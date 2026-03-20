@@ -16,8 +16,11 @@ export type Token = {type: string; start: number; end: number};
 // ---------------------------------------------------------------------------
 
 type LangDef = {
-  patterns: Array<{type: string; regex: RegExp}>;
+  patterns: Array<{type: string; regex: RegExp; anchored: RegExp}>;
 };
+
+/** Cache compiled language definitions to avoid re-creating regexes. */
+const langCache = new Map<string, LangDef | null>();
 
 const JS_KEYWORDS =
   /\b(const|let|var|function|class|if|else|for|while|return|import|export|from|default|async|await|try|catch|throw|new|typeof|instanceof|interface|type|enum|extends|implements|switch|case|break|continue|do|in|of|void|null|undefined|true|false|this|super|yield|delete|static|public|private|protected|readonly|abstract|as|is|keyof|declare|module|namespace|require)\b/;
@@ -32,6 +35,26 @@ const CSS_KEYWORDS =
   /\b(important|inherit|initial|unset|revert|auto|none)\b/;
 
 function buildLanguage(lang: string): LangDef | null {
+  const cached = langCache.get(lang);
+  if (cached !== undefined) return cached;
+
+  const def = buildLanguageUncached(lang);
+  langCache.set(lang, def);
+  return def;
+}
+
+function buildLanguageUncached(lang: string): LangDef | null {
+  const raw = buildLanguagePatterns(lang);
+  if (!raw) return null;
+  return {
+    patterns: raw.patterns.map(p => {
+      const flags = p.regex.flags.replace('g', '');
+      return {...p, anchored: new RegExp(p.regex.source, flags)};
+    }),
+  };
+}
+
+function buildLanguagePatterns(lang: string): {patterns: Array<{type: string; regex: RegExp}>} | null {
   switch (lang) {
     case 'typescript':
     case 'javascript':
@@ -184,12 +207,8 @@ export function tokenize(code: string, language: string): Token[] {
     let matched = false;
 
     for (const pattern of langDef.patterns) {
-      pattern.regex.lastIndex = 0;
-      const source = pattern.regex.source;
-      const flags = pattern.regex.flags.replace('g', '');
-      const anchored = new RegExp(source, flags);
       const slice = code.slice(pos);
-      const match = anchored.exec(slice);
+      const match = pattern.anchored.exec(slice);
 
       if (match && match.index === 0 && match[0].length > 0) {
         tokens.push({

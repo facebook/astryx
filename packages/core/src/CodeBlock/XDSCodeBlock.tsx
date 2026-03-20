@@ -355,12 +355,9 @@ export function XDSCodeBlock({
       }
     }
 
-    return () => {
-      // Cleanup highlights on unmount
-      for (const name of highlightNames) {
-        CSS.highlights.delete(name);
-      }
-    };
+    // No cleanup needed — when DOM nodes are removed, their ranges
+    // become detached and the browser ignores them in highlights.
+    // Deleting shared highlight names would break other CodeBlock instances.
   }, [code, language, customTokenizer, instanceId]);
 
   const sizeStyle = size === 'sm' ? styles.sizeSm : styles.sizeMd;
@@ -427,7 +424,7 @@ export function XDSCodeBlock({
                   styles.line,
                   highlightSet?.has(i + 1) && styles.lineHighlighted,
                 )}>
-                {line || '\n'}
+                {line || '\u200b'}
               </div>
             ))}
           </code>
