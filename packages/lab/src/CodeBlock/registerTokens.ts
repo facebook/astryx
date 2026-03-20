@@ -1,25 +1,22 @@
 /**
  * @file registerTokens.ts
  * @input Syntax color defaults from tokens.stylex.ts
- * @output Registers syntax tokens with core's defineTheme validation
- * @position Side-effect module; imported by CodeBlock/CodeEditor on first use
+ * @output Type augmentation for defineTheme autocomplete
+ * @position Type-only module; imported by CodeBlock/CodeEditor for side-effect types
  *
- * This module does two things:
- * 1. Augments the XDSDomainTokens interface so TypeScript knows about
- *    --color-syntax-* tokens in defineTheme({ tokens: { ... } })
- * 2. Calls registerDomainTokens() to suppress "unknown token" warnings
+ * Augments the XDSDomainTokens interface so TypeScript provides autocomplete
+ * for --color-syntax-* tokens in defineTheme({ tokens: { ... } }).
+ *
+ * This is types-only — no runtime code. Themes that reference syntax tokens
+ * work regardless of whether this module is imported, because themes just
+ * write CSS custom properties. This module only improves the DX.
  *
  * SYNC: When adding/removing syntax tokens, update:
  * - /packages/lab/src/CodeBlock/tokens.stylex.ts (defineVars defaults)
  * - /packages/lab/src/CodeBlock/highlightStyles.ts (::highlight rules)
  */
 
-import {registerDomainTokens} from '@xds/core/theme';
-import {syntaxColorDefaults} from './tokens.stylex';
-
-// ---------------------------------------------------------------------------
-// Type augmentation — gives defineTheme({ tokens }) autocomplete for syntax tokens
-// ---------------------------------------------------------------------------
+import type {syntaxColorDefaults} from './tokens.stylex';
 
 type SyntaxTokenName = keyof typeof syntaxColorDefaults;
 
@@ -28,9 +25,3 @@ declare module '@xds/core/theme' {
     syntax: SyntaxTokenName;
   }
 }
-
-// ---------------------------------------------------------------------------
-// Runtime registration — prevents "unknown token" warnings in defineTheme
-// ---------------------------------------------------------------------------
-
-registerDomainTokens(syntaxColorDefaults);

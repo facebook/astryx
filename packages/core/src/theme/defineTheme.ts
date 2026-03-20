@@ -82,9 +82,9 @@ export type XDSCoreTokenName =
 /**
  * Domain token registry — extensible via module augmentation.
  *
- * Domain packages (e.g. @xds/lab code components, dataviz) register
+ * Domain packages (e.g. @xds/lab code components, dataviz) declare
  * their token names here so defineTheme gets type-safe autocomplete
- * and runtime validation for domain-specific tokens.
+ * for domain-specific tokens.
  *
  * @example
  * ```ts
@@ -276,34 +276,6 @@ export const xdsTokenDefaults: Record<string, string> = {
   ...typeScaleDefaults,
 };
 
-/**
- * Register domain-specific tokens so defineTheme can validate them at runtime.
- *
- * Call this at module load time from your domain package. Registered tokens
- * won't trigger "unknown token" warnings in defineTheme, and their defaults
- * are available for theme fallback.
- *
- * For TypeScript autocomplete, also augment the XDSDomainTokens interface
- * (see the interface definition above).
- *
- * @example
- * ```ts
- * // In @xds/lab code components:
- * import { registerDomainTokens } from '@xds/core/theme';
- *
- * registerDomainTokens({
- *   '--color-syntax-keyword': 'light-dark(#a626a4, #c678dd)',
- *   '--color-syntax-string': 'light-dark(#50a14f, #98c379)',
- *   // ...
- * });
- * ```
- */
-export function registerDomainTokens(
-  defaults: Record<string, string>,
-): void {
-  Object.assign(xdsTokenDefaults, defaults);
-}
-
 // =============================================================================
 // defineTheme
 // =============================================================================
@@ -398,12 +370,6 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
   if (input.tokens) {
     for (const [key, value] of Object.entries(input.tokens)) {
       if (value !== undefined) {
-        if (!(key in xdsTokenDefaults)) {
-          console.warn(
-            `[XDS] defineTheme("${input.name}"): unknown token "${key}". ` +
-              `Run "npx xds docs tokens" to see valid token names.`,
-          );
-        }
         tokens[key] = resolveTokenValue(value);
       }
     }

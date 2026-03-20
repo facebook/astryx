@@ -18,7 +18,6 @@ export {
   generateThemeRules,
   isDefinedTheme,
   xdsTokenDefaults,
-  registerDomainTokens,
 } from './defineTheme';
 export type {
   XDSDefineThemeInput,
