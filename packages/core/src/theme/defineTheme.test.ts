@@ -255,7 +255,7 @@ describe('typeScale', () => {
     const typeScaleKeys = Object.keys(theme.tokens).filter(
       k => k.startsWith('--heading-') || k.startsWith('--text-'),
     );
-    expect(typeScaleKeys).toHaveLength(44);
+    expect(typeScaleKeys).toHaveLength(54);
   });
 
   it('explicit tokens override typeScale-generated values', () => {

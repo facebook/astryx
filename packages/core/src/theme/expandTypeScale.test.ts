@@ -23,6 +23,7 @@ describe('expandTypeScale', () => {
         '--text-2xl',
         '--text-3xl',
         '--text-4xl',
+        '--text-5xl',
       ];
       for (const name of sizeTokens) {
         expect(tokens[name]).toBeDefined();
@@ -93,6 +94,31 @@ describe('expandTypeScale', () => {
       expect(tokens['--text-body-weight']).toBe('var(--font-weight-normal)');
       expect(tokens['--text-large-weight']).toBe('var(--font-weight-semibold)');
       expect(tokens['--text-label-weight']).toBe('var(--font-weight-medium)');
+      expect(tokens['--text-code-weight']).toBe('var(--font-weight-normal)');
+      expect(tokens['--text-supporting-weight']).toBe(
+        'var(--font-weight-normal)',
+      );
+    });
+
+    it('computes display sizes continuing the progression above h1', () => {
+      // display-1 = 14 × 1.2⁶ ≈ 41.80 → 42px → 2.625rem (largest)
+      expect(tokens['--text-display-1-size']).toBe('var(--text-5xl)');
+      // display-2 = 14 × 1.2⁵ ≈ 34.84 → 35px → 2.1875rem
+      expect(tokens['--text-display-2-size']).toBe('var(--text-4xl)');
+      // display-3 = 14 × 1.2⁴ ≈ 29.03 → 29px → 1.8125rem (closest to h1)
+      expect(tokens['--text-display-3-size']).toBe('var(--text-3xl)');
+    });
+
+    it('assigns normal weight to display types by default', () => {
+      expect(tokens['--text-display-1-weight']).toBe(
+        'var(--font-weight-normal)',
+      );
+      expect(tokens['--text-display-2-weight']).toBe(
+        'var(--font-weight-normal)',
+      );
+      expect(tokens['--text-display-3-weight']).toBe(
+        'var(--font-weight-normal)',
+      );
     });
 
     it('all line heights snap to 4px grid', () => {
@@ -146,8 +172,8 @@ describe('expandTypeScale', () => {
   describe('total token count', () => {
     const tokens = expandTypeScale({base: 14, ratio: 1.2});
 
-    it('generates 44 tokens (11 size + 33 semantic)', () => {
-      expect(Object.keys(tokens)).toHaveLength(44);
+    it('generates 54 tokens (12 size + 42 semantic)', () => {
+      expect(Object.keys(tokens)).toHaveLength(54);
     });
   });
 
@@ -212,6 +238,44 @@ describe('expandTypeScale', () => {
 });
 
 describe('generateTypeScaleComponents', () => {
+  it('generates heading and text component keys', () => {
+    const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
+    expect(components).toHaveProperty('heading');
+    expect(components).toHaveProperty('text');
+  });
+
+  it('generates rules for all 6 heading levels', () => {
+    const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
+    for (let level = 1; level <= 6; level++) {
+      expect(components.heading).toHaveProperty(`level:${level}`);
+    }
+  });
+
+  it('generates rules for all 8 text types (including display)', () => {
+    const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
+    for (const type of [
+      'body',
+      'large',
+      'label',
+      'code',
+      'supporting',
+      'display-1',
+      'display-2',
+      'display-3',
+    ]) {
+      expect(components.text).toHaveProperty(`type:${type}`);
+    }
+  });
+
+  it('heading rules include fontFamily, fontSize, fontWeight, lineHeight', () => {
+    const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
+    const h1 = components.heading['level:1'];
+    expect(h1.fontFamily).toBe('var(--font-heading)');
+    expect(h1.fontSize).toBe('var(--heading-1-size)');
+    expect(h1.fontWeight).toBe('var(--heading-1-weight)');
+    expect(h1.lineHeight).toBe('var(--heading-1-leading)');
+  });
+
   it('generates heading and text component overrides', () => {
     const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
     expect(components.heading).toBeDefined();
