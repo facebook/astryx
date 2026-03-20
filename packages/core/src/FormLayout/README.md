@@ -8,7 +8,7 @@ A spatial layout container for arranging form fields with consistent spacing and
 
 - **Three Layout Modes**: Vertical (default), horizontal, and horizontal-labels
 - **Direction Context**: Provides layout direction to children via React context
-- **Responsive**: Horizontal-labels collapses to vertical on narrow viewports (≤480px)
+- **Responsive**: Horizontal-labels collapses to vertical when the container is narrow (≤480px)
 - **Nestable**: FormLayout inside FormLayout works naturally — inner overrides context
 - **Purely Spatial**: Does not manage form state or render `<form>` — form submission is separate
 - **Styled with StyleX**: Uses XDS design tokens for consistent spacing
@@ -62,7 +62,7 @@ Fields arrange left-to-right, each getting equal flex-grow. Wraps when the conta
 
 ### Horizontal Labels
 
-CSS Grid layout with labels to the left of inputs. Collapses to vertical on narrow viewports (≤480px). Used for settings panels and admin forms.
+CSS Grid layout with labels to the left of inputs. Collapses to vertical when the container is narrow (≤480px) using `@container` queries. Used for settings panels and admin forms.
 
 ```tsx
 <XDSFormLayout direction="horizontal-labels">

@@ -10,6 +10,7 @@
 import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {useContext} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {XDSFormLayout} from './XDSFormLayout';
 import {XDSFormLayoutContext} from './XDSFormLayoutContext';
 import type {XDSFormLayoutDirection} from './XDSFormLayoutContext';
@@ -149,6 +150,91 @@ describe('XDSFormLayout', () => {
     expect(screen.getByTestId('outer-child')).toBeInTheDocument();
     expect(screen.getByTestId('inner-child-1')).toBeInTheDocument();
     expect(screen.getByTestId('inner-child-2')).toBeInTheDocument();
+  });
+
+  // ─── Styling props ─────────────────────────────────────────────────────
+
+  it('applies xstyle to the root element', () => {
+    const overrides = stylex.create({root: {marginBottom: '8px'}});
+    const {container} = render(
+      <XDSFormLayout data-testid="layout" xstyle={overrides.root}>
+        content
+      </XDSFormLayout>,
+    );
+    // StyleX compiles to class names; verify the xstyle class is present
+    // by checking we get more classes than a bare layout
+    const {container: bare} = render(
+      <XDSFormLayout data-testid="bare">content</XDSFormLayout>,
+    );
+    const styledClasses = container.firstElementChild!.className.split(' ');
+    const bareClasses = bare.firstElementChild!.className.split(' ');
+    expect(styledClasses.length).toBeGreaterThan(bareClasses.length);
+  });
+
+  it('applies className to the root element', () => {
+    render(
+      <XDSFormLayout data-testid="layout" className="custom-class">
+        content
+      </XDSFormLayout>,
+    );
+    expect(screen.getByTestId('layout').className).toContain('custom-class');
+  });
+
+  it('applies inline style to the root element', () => {
+    render(
+      <XDSFormLayout data-testid="layout" style={{padding: '16px'}}>
+        content
+      </XDSFormLayout>,
+    );
+    expect(screen.getByTestId('layout').style.padding).toBe('16px');
+  });
+
+  // ─── Edge cases ───────────────────────────────────────────────────────
+
+  it('renders without children', () => {
+    render(<XDSFormLayout data-testid="layout" />);
+    expect(screen.getByTestId('layout')).toBeInTheDocument();
+    expect(screen.getByTestId('layout').childElementCount).toBe(0);
+  });
+
+  // ─── Component metadata ───────────────────────────────────────────────
+
+  it('has displayName', () => {
+    expect(XDSFormLayout.displayName).toBe('XDSFormLayout');
+  });
+
+  // ─── Context-based label alignment ─────────────────────────────────────
+
+  it('children can use context to determine label alignment', () => {
+    // Simulates a child component that reads direction context to decide
+    // whether labels should be placed beside inputs (horizontal-labels)
+    // or above them (vertical/horizontal).
+    function LabelAlignmentReader() {
+      const {direction} = useContext(XDSFormLayoutContext);
+      const alignment = direction === 'horizontal-labels' ? 'beside' : 'above';
+      return <span data-testid="alignment">{alignment}</span>;
+    }
+
+    const {rerender} = render(
+      <XDSFormLayout direction="horizontal-labels">
+        <LabelAlignmentReader />
+      </XDSFormLayout>,
+    );
+    expect(screen.getByTestId('alignment')).toHaveTextContent('beside');
+
+    rerender(
+      <XDSFormLayout direction="vertical">
+        <LabelAlignmentReader />
+      </XDSFormLayout>,
+    );
+    expect(screen.getByTestId('alignment')).toHaveTextContent('above');
+
+    rerender(
+      <XDSFormLayout direction="horizontal">
+        <LabelAlignmentReader />
+      </XDSFormLayout>,
+    );
+    expect(screen.getByTestId('alignment')).toHaveTextContent('above');
   });
 
   // ─── Snapshot tests ─────────────────────────────────────────────────────
