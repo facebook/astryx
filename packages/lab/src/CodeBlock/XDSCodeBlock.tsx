@@ -280,48 +280,38 @@ export function XDSCodeBlock({
       }
     }
 
-    // Build a flat text mapping: for each character offset in the original code,
-    // find the corresponding text node and offset within the DOM.
-    // The code element contains line divs, each containing a text node.
-    const lineDivs = codeEl.querySelectorAll('[data-line]');
-    const textMap: Array<{
-      node: Text;
-      offset: number;
-      codeStart: number;
-      codeLength: number;
-    }> = [];
-    let codeOffset = 0;
+    // Build text node mapping using TreeWalker — same approach as CodeEditor.
+    // Finds all text nodes and maps code offsets to DOM positions.
+    // Code string has \n between lines; DOM has separate text nodes per line
+    // with no \n, so we add 1 after each line's text node to stay in sync.
+    const walker = document.createTreeWalker(codeEl, NodeFilter.SHOW_TEXT);
+    const textNodes: Array<{node: Text; start: number}> = [];
+    let charOffset = 0;
 
-    for (let i = 0; i < lineDivs.length; i++) {
-      const lineDiv = lineDivs[i];
-      const textNode = lineDiv.firstChild;
-      // Use the original line length, not the text node length —
-      // empty lines render as '\u200b' (length 1) but represent 0 chars in code
-      const originalLineLength = lines[i]?.length ?? 0;
-      if (textNode && textNode.nodeType === Node.TEXT_NODE) {
-        textMap.push({
-          node: textNode as Text,
-          offset: 0,
-          codeStart: codeOffset,
-          codeLength: originalLineLength,
-        });
+    let currentNode = walker.nextNode();
+    while (currentNode) {
+      const text = currentNode as Text;
+      const content = text.textContent ?? '';
+      // Skip zero-width space placeholders for empty lines
+      if (content === '\u200b') {
+        // Empty line — still accounts for the \n in the code string
+        charOffset += 1; // just the \n
+      } else {
+        textNodes.push({node: text, start: charOffset});
+        charOffset += content.length + 1; // +1 for the \n after this line
       }
-      codeOffset += originalLineLength;
-      // Account for newline between lines
-      if (i < lineDivs.length - 1) {
-        codeOffset += 1; // the \n
-      }
+      currentNode = walker.nextNode();
     }
 
     /**
      * Find the text node and local offset for a given code offset.
      */
     function findPosition(offset: number): {node: Text; offset: number} | null {
-      for (let i = textMap.length - 1; i >= 0; i--) {
-        const entry = textMap[i];
-        if (offset >= entry.codeStart) {
-          const localOffset = offset - entry.codeStart;
-          if (localOffset <= entry.codeLength) {
+      for (let i = textNodes.length - 1; i >= 0; i--) {
+        const entry = textNodes[i];
+        if (offset >= entry.start) {
+          const localOffset = offset - entry.start;
+          if (localOffset <= (entry.node.textContent?.length ?? 0)) {
             return {node: entry.node, offset: localOffset};
           }
           return null;
