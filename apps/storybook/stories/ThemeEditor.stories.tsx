@@ -9,7 +9,7 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSSwitch} from '@xds/core/Switch';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSBanner} from '@xds/core/Banner';
-import {XDSTabList} from '@xds/core/TabList';
+import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSDialog} from '@xds/core/Dialog';
 import {XDSToken} from '@xds/core/Token';
 import {XDSSlider} from '@xds/core/Slider';
@@ -1093,15 +1093,11 @@ const styles = stylex.create({
         <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
           Tabs
         </XDSText>
-        <XDSTabList
-          tabs={[
-            {id: 'overview', label: 'Overview'},
-            {id: 'details', label: 'Details'},
-            {id: 'settings', label: 'Settings'},
-          ]}
-          selectedId={selectedTab}
-          onSelect={setSelectedTab}
-        />
+        <XDSTabList value={selectedTab} onChange={setSelectedTab}>
+          <XDSTab value="overview" label="Overview" />
+          <XDSTab value="details" label="Details" />
+          <XDSTab value="settings" label="Settings" />
+        </XDSTabList>
       </div>
 
       {/* Avatar */}
@@ -1209,6 +1205,348 @@ const styles = stylex.create({
             </XDSStack>
           </div>
         </XDSDialog>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Landing Page Preview
+// =============================================================================
+
+function LandingPagePreview() {
+  return (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '48px'}}>
+      {/* Hero */}
+      <div style={{textAlign: 'center', padding: '48px 24px'}}>
+        <XDSBadge variant="accent">New Release</XDSBadge>
+        <XDSHeading level={1} style={{marginTop: 16, marginBottom: 12}}>
+          Ship faster with XDS
+        </XDSHeading>
+        <XDSText
+          type="large"
+          color="secondary"
+          display="block"
+          style={{
+            marginBottom: 24,
+            maxWidth: 520,
+            marginLeft: 'auto',
+            marginRight: 'auto',
+          }}>
+          A design system for building internal tools. Open internals, plugin
+          architecture, and automatic spacing.
+        </XDSText>
+        <div style={{display: 'flex', gap: '8px', justifyContent: 'center'}}>
+          <XDSButton label="Get Started" />
+          <XDSButton label="Documentation" variant="secondary" />
+        </div>
+      </div>
+
+      <XDSDivider />
+
+      {/* Features */}
+      <div>
+        <XDSHeading level={2} style={{marginBottom: 16}}>
+          Features
+        </XDSHeading>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '16px',
+          }}>
+          {[
+            {
+              title: 'Open Internals',
+              desc: 'All primitives exported and composable. No black boxes.',
+            },
+            {
+              title: 'Plugin Architecture',
+              desc: 'Transform and extend components through a unified plugin system.',
+            },
+            {
+              title: 'AI-Ready',
+              desc: 'JSDoc annotations with composition hints for LLM-assisted development.',
+            },
+          ].map(f => (
+            <XDSCard key={f.title} padding="md">
+              <XDSHeading level={3} style={{marginBottom: 8}}>
+                {f.title}
+              </XDSHeading>
+              <XDSText type="body" color="secondary">
+                {f.desc}
+              </XDSText>
+            </XDSCard>
+          ))}
+        </div>
+      </div>
+
+      {/* Testimonial */}
+      <XDSCard padding="lg">
+        <XDSText type="large" display="block" style={{marginBottom: 12}}>
+          &ldquo;XDS cut our dev time in half. The type scale system alone saved
+          us weeks of bikeshedding.&rdquo;
+        </XDSText>
+        <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+          <XDSAvatar size="sm" name="Alex Chen" />
+          <div>
+            <XDSText type="label">Alex Chen</XDSText>
+            <XDSText type="supporting" color="secondary">
+              {' '}
+              · Engineering Lead
+            </XDSText>
+          </div>
+        </div>
+      </XDSCard>
+
+      {/* CTA */}
+      <div style={{textAlign: 'center', padding: '32px 0'}}>
+        <XDSHeading level={2} style={{marginBottom: 8}}>
+          Ready to build?
+        </XDSHeading>
+        <XDSText
+          type="body"
+          color="secondary"
+          display="block"
+          style={{marginBottom: 16}}>
+          Get started with XDS in under 5 minutes.
+        </XDSText>
+        <XDSButton label="Start Building" />
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Dashboard Preview
+// =============================================================================
+
+interface MetricRow extends Record<string, unknown> {
+  metric: string;
+  value: string;
+  change: string;
+  trend: 'up' | 'down' | 'flat';
+}
+
+const dashboardColumns: XDSTableColumn<MetricRow>[] = [
+  {key: 'metric', header: 'Metric'},
+  {key: 'value', header: 'Value'},
+  {key: 'change', header: 'Change'},
+];
+
+function DashboardPreview() {
+  const [tab, setTab] = React.useState('overview');
+
+  const metrics: MetricRow[] = [
+    {metric: 'Total Users', value: '12,847', change: '+12.3%', trend: 'up'},
+    {metric: 'Active Sessions', value: '3,421', change: '+8.1%', trend: 'up'},
+    {
+      metric: 'Avg Response Time',
+      value: '142ms',
+      change: '-5.2%',
+      trend: 'down',
+    },
+    {metric: 'Error Rate', value: '0.03%', change: '-18.7%', trend: 'down'},
+    {metric: 'API Calls (24h)', value: '2.4M', change: '+3.1%', trend: 'up'},
+    {metric: 'Storage Used', value: '847 GB', change: '+1.2%', trend: 'flat'},
+  ];
+
+  return (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '24px'}}>
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+        <div>
+          <XDSHeading level={1}>Dashboard</XDSHeading>
+          <XDSText type="supporting" color="secondary">
+            Last updated 2 minutes ago
+          </XDSText>
+        </div>
+        <div style={{display: 'flex', gap: '8px'}}>
+          <XDSButton label="Export" variant="secondary" size="sm" />
+          <XDSButton label="Refresh" size="sm" />
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: '12px',
+        }}>
+        {[
+          {label: 'Revenue', value: '$48.2K', delta: '+12%'},
+          {label: 'Users', value: '12,847', delta: '+8%'},
+          {label: 'Uptime', value: '99.97%', delta: '—'},
+          {label: 'NPS', value: '72', delta: '+3'},
+        ].map(kpi => (
+          <XDSCard key={kpi.label} padding="md">
+            <XDSText type="supporting" color="secondary" display="block">
+              {kpi.label}
+            </XDSText>
+            <XDSHeading level={2} style={{marginTop: 4}}>
+              {kpi.value}
+            </XDSHeading>
+            <XDSText
+              type="supporting"
+              color={kpi.delta.startsWith('+') ? 'active' : 'secondary'}>
+              {kpi.delta}
+            </XDSText>
+          </XDSCard>
+        ))}
+      </div>
+
+      {/* Tabs + Table */}
+      <div>
+        <XDSTabList value={tab} onChange={setTab}>
+          <XDSTab value="overview" label="Overview" />
+          <XDSTab value="performance" label="Performance" />
+          <XDSTab value="errors" label="Errors" />
+        </XDSTabList>
+        <div style={{marginTop: '16px'}}>
+          <XDSTable columns={dashboardColumns} data={metrics} size="sm" />
+        </div>
+      </div>
+
+      {/* Activity Banner */}
+      <XDSBanner
+        variant="educational"
+        title="System Update"
+        description="A new version of the API is available. Review the changelog for breaking changes."
+        action={
+          <XDSButton label="View Changelog" variant="secondary" size="sm" />
+        }
+      />
+
+      {/* Bottom section */}
+      <div
+        style={{display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px'}}>
+        <XDSCard padding="md">
+          <XDSHeading level={3} style={{marginBottom: 12}}>
+            Recent Activity
+          </XDSHeading>
+          {[
+            {
+              user: 'Sarah K.',
+              action: 'deployed v2.4.1 to production',
+              time: '5 min ago',
+            },
+            {
+              user: 'Mike R.',
+              action: 'merged PR #247: fix auth flow',
+              time: '23 min ago',
+            },
+            {
+              user: 'Cindy Z.',
+              action: 'created issue #312: token audit',
+              time: '1 hr ago',
+            },
+            {
+              user: 'Alex C.',
+              action: 'updated dashboard metrics query',
+              time: '2 hr ago',
+            },
+          ].map((item, i) => (
+            <div
+              key={i}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 0',
+                borderBottom: i < 3 ? '1px solid var(--color-divider)' : 'none',
+              }}>
+              <XDSAvatar size="sm" name={item.user} />
+              <div style={{flex: 1}}>
+                <XDSText type="label">{item.user}</XDSText>
+                <XDSText type="body" color="secondary">
+                  {' '}
+                  {item.action}
+                </XDSText>
+              </div>
+              <XDSText type="supporting" color="secondary">
+                {item.time}
+              </XDSText>
+            </div>
+          ))}
+        </XDSCard>
+        <XDSCard padding="md">
+          <XDSHeading level={3} style={{marginBottom: 12}}>
+            Quick Stats
+          </XDSHeading>
+          <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+            <div>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  marginBottom: '4px',
+                }}>
+                <XDSText type="supporting">CPU Usage</XDSText>
+                <XDSText type="supporting" color="secondary">
+                  43%
+                </XDSText>
+              </div>
+              <XDSProgressBar value={43} />
+            </div>
+            <div>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  marginBottom: '4px',
+                }}>
+                <XDSText type="supporting">Memory</XDSText>
+                <XDSText type="supporting" color="secondary">
+                  67%
+                </XDSText>
+              </div>
+              <XDSProgressBar value={67} />
+            </div>
+            <div>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  marginBottom: '4px',
+                }}>
+                <XDSText type="supporting">Storage</XDSText>
+                <XDSText type="supporting" color="secondary">
+                  82%
+                </XDSText>
+              </div>
+              <XDSProgressBar value={82} />
+            </div>
+          </div>
+        </XDSCard>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Preview Tabs (wraps all three preview modes)
+// =============================================================================
+
+function PreviewTabs() {
+  const [activePreview, setActivePreview] = React.useState('preview');
+
+  return (
+    <div>
+      <XDSTabList value={activePreview} onChange={setActivePreview}>
+        <XDSTab value="preview" label="Preview" />
+        <XDSTab value="landing" label="Landing Page" />
+        <XDSTab value="dashboard" label="Dashboard" />
+      </XDSTabList>
+      <div style={{marginTop: '24px'}}>
+        {activePreview === 'preview' && <ComponentPreview />}
+        {activePreview === 'landing' && <LandingPagePreview />}
+        {activePreview === 'dashboard' && <DashboardPreview />}
       </div>
     </div>
   );
@@ -1569,7 +1907,15 @@ function ThemeEditorComponent() {
               gap: '2px',
             }}>
             {[1, 2, 3, 4, 5, 6].map(level => {
-              const size = tokens[`--heading-${level}-size`] || '';
+              const sizeRaw = tokens[`--heading-${level}-size`] || '';
+              // Resolve var() refs: "var(--text-2xl)" → look up --text-2xl in tokens
+              const resolvedSize = sizeRaw.startsWith('var(')
+                ? tokens[sizeRaw.slice(4, -1)] || sizeRaw
+                : sizeRaw;
+              // Convert rem to px for display: "1.5rem" → "24px"
+              const displayPx = resolvedSize.endsWith('rem')
+                ? `${Math.round(parseFloat(resolvedSize) * 16)}px`
+                : resolvedSize;
               return (
                 <div
                   key={level}
@@ -1586,7 +1932,7 @@ function ThemeEditorComponent() {
                   </XDSText>
                   <span
                     style={{
-                      fontSize: size,
+                      fontSize: resolvedSize,
                       fontWeight: 600,
                       lineHeight: 1.3,
                       color: 'var(--color-text-primary)',
@@ -1600,11 +1946,64 @@ function ThemeEditorComponent() {
                     type="code"
                     color="secondary"
                     style={{marginLeft: 'auto', flexShrink: 0}}>
-                    {size}
+                    {displayPx}
                   </XDSText>
                 </div>
               );
             })}
+            <div
+              style={{
+                borderTop: '1px solid var(--color-divider)',
+                marginTop: '4px',
+                paddingTop: '4px',
+              }}>
+              {(['large', 'body', 'supporting'] as const).map(type => {
+                const sizeRaw = tokens[`--text-${type}-size`] || '';
+                const resolvedSize = sizeRaw.startsWith('var(')
+                  ? tokens[sizeRaw.slice(4, -1)] || sizeRaw
+                  : sizeRaw;
+                const displayPx = resolvedSize.endsWith('rem')
+                  ? `${Math.round(parseFloat(resolvedSize) * 16)}px`
+                  : resolvedSize;
+                return (
+                  <div
+                    key={type}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      gap: '8px',
+                    }}>
+                    <XDSText
+                      type="code"
+                      color="secondary"
+                      style={{width: '60px', flexShrink: 0}}>
+                      {type}
+                    </XDSText>
+                    <span
+                      style={{
+                        fontSize: resolvedSize,
+                        fontWeight: type === 'large' ? 600 : 400,
+                        lineHeight: 1.4,
+                        color:
+                          type === 'supporting'
+                            ? 'var(--color-text-secondary)'
+                            : 'var(--color-text-primary)',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}>
+                      Sample text
+                    </span>
+                    <XDSText
+                      type="code"
+                      color="secondary"
+                      style={{marginLeft: 'auto', flexShrink: 0}}>
+                      {displayPx}
+                    </XDSText>
+                  </div>
+                );
+              })}
+            </div>
           </div>
           <XDSText type="code" color="secondary">
             size = {typeScaleBase} × {typeScaleRatio.toFixed(3)}^step · h4 =
@@ -1935,7 +2334,7 @@ function ThemeEditorComponent() {
                 backgroundColor: 'var(--color-surface)',
                 padding: '24px',
               }}>
-              <ComponentPreview />
+              <PreviewTabs />
             </div>
           </XDSTheme>
         </div>
