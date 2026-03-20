@@ -76,6 +76,27 @@ export function formatFull(docs) {
       }
       sections.push(surfaceLines.join('\n') + '\n');
     }
+    if (docs.theming?.vars?.length) {
+      const varLines = [];
+      varLines.push('| CSS Variable | Default | Description |');
+      varLines.push('|-------------|---------|-------------|');
+      for (const v of docs.theming.vars) {
+        if (v.derived) {
+          varLines.push(`| \`${v.name}\` | _(derived)_ | ${v.description} |`);
+        } else {
+          varLines.push(`| \`${v.name}\` | \`${v.default}\` | ${v.description} |`);
+        }
+      }
+      sections.push(varLines.join('\n') + '\n');
+
+      // Show override example
+      const overridableVars = docs.theming.vars.filter(v => !v.derived);
+      if (overridableVars.length > 0) {
+        const componentKey = docs.name.toLowerCase();
+        const exampleVar = overridableVars[0];
+        sections.push('Override in defineTheme:\n```tsx\ncomponents: {\n  ' + componentKey + ': {\n    base: { \'' + exampleVar.name + '\': \'...\' },\n  },\n}\n```\n');
+      }
+    }
   }
 
   if (docs.accessibility?.length) {
@@ -223,6 +244,17 @@ export function formatBrief(docs, componentName, importHint) {
         ? description.slice(0, 77) + '...'
         : description;
     output.push(`  ${shortDesc}`);
+  }
+
+  // Component vars (if any)
+  if (docs.theming?.vars?.length) {
+    const varNames = docs.theming.vars
+      .filter(v => !v.derived)
+      .map(v => `${v.name} (${v.default})`)
+      .join(', ');
+    if (varNames) {
+      output.push(`  Vars: ${varNames}`);
+    }
   }
 
   // Other props

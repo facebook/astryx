@@ -132,6 +132,9 @@ export const docs = {
     targets: [
       {className: 'xds-button', visualProps: ['size', 'variant']},
     ],
+    vars: [
+      {name: '--button-radius', description: 'Border radius', default: 'var(--radius-2)'},
+    ],
   },
   notes: [
     'XDSButtonVariant type is derived from the variants StyleX object using keyof typeof variants.',
@@ -277,6 +280,9 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'xds-button', visualProps: ['size', 'variant']},
+    ],
+    vars: [
+      {name: '--button-radius', description: 'Border radius', default: 'var(--radius-2)'},
     ],
   },
   notes: [

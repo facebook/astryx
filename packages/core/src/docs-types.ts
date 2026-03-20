@@ -94,6 +94,30 @@ export interface ThemingTarget {
 }
 
 /**
+ * Documents a CSS custom property exposed by a component for theming.
+ * These vars are set on the component's root element and can be overridden
+ * via `defineTheme` component overrides.
+ *
+ * @example
+ * ```
+ * {name: '--card-radius', description: 'Border radius', default: 'var(--radius-3)'}
+ * {name: '--card-concentric-radius', description: 'Inner radius', derived: true, formula: 'max(0px, calc(var(--card-radius) - var(--card-padding)))'}
+ * ```
+ */
+export interface ComponentVar {
+  /** CSS custom property name, e.g. '--card-radius' */
+  name: string;
+  /** What this var controls */
+  description: string;
+  /** Default value as a CSS expression, e.g. 'var(--radius-3)' */
+  default: string;
+  /** Whether this var is derived from other vars (not directly settable) */
+  derived?: boolean;
+  /** CSS expression showing how derived vars are computed */
+  formula?: string;
+}
+
+/**
  * Documents one component within a multi-component directory. Used when a
  * directory exports multiple public components (e.g. Table exports XDSTable,
  * XDSBaseTable, XDSTableRow, XDSTableCell, XDSTableHeaderCell).
@@ -145,6 +169,8 @@ interface BaseDoc {
     /** CSS class targets rendered by this component.
      *  Each entry corresponds to an `xdsClassName()` call in the source. */
     targets: ThemingTarget[];
+    /** CSS custom properties exposed for theming. */
+    vars?: ComponentVar[];
   };
   /** Accessibility notes — ARIA patterns, screen reader behavior.
    *  Each string is one self-contained, declarative note.

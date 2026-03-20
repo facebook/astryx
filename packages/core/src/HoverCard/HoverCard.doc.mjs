@@ -25,6 +25,14 @@ export const docs = {
   ],
   keyboard:
     'Escape closes the hover card. Focus triggers show/hide based on the focusTrigger option.',
+  theming: {
+    targets: [
+      {className: 'xds-hovercard'},
+    ],
+    vars: [
+      {name: '--hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-3)'},
+    ],
+  },
   examples: [
     {
       label: 'XDSHoverCard — basic',
@@ -216,6 +224,14 @@ export const docsZh = {
   ],
   keyboard:
     'Escape 关闭悬浮卡片。焦点触发器根据 focusTrigger 选项控制显示/隐藏。',
+  theming: {
+    targets: [
+      {className: 'xds-hovercard'},
+    ],
+    vars: [
+      {name: '--hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-3)'},
+    ],
+  },
   examples: [
     {
       label: 'XDSHoverCard 基本用法',

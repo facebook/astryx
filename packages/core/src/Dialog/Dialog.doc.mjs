@@ -105,6 +105,9 @@ function Example() {
     targets: [
       {className: 'xds-dialog', visualProps: ['variant']},
     ],
+    vars: [
+      {name: '--dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-3)'},
+    ],
   },
   keyboard:
     'Escape closes the dialog (unless purpose="required"); focus is trapped inside the dialog while open.',
@@ -360,6 +363,9 @@ function Example() {
   theming: {
     targets: [
       {className: 'xds-dialog', visualProps: ['variant']},
+    ],
+    vars: [
+      {name: '--dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-3)'},
     ],
   },
   keyboard:

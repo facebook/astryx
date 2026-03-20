@@ -119,6 +119,9 @@ export const docs = {
     targets: [
       {className: 'xds-banner', visualProps: ['variant']},
     ],
+    vars: [
+      {name: '--banner-radius', description: 'Border radius (card variant only)', default: 'var(--radius-3)'},
+    ],
   },
   notes: [
     'Collapsible support is planned: the content area will support collapsing via useXDSCollapsible (issue #187)',
@@ -244,6 +247,9 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'xds-banner', visualProps: ['variant']},
+    ],
+    vars: [
+      {name: '--banner-radius', description: 'Border radius (card variant only)', default: 'var(--radius-3)'},
     ],
   },
   notes: [

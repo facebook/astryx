@@ -214,6 +214,9 @@ export const docs = {
     targets: [
       {className: 'xds-popover'},
     ],
+    vars: [
+      {name: '--popover-radius', description: 'Border radius of the popover', default: 'var(--radius-2)'},
+    ],
   },
 };
 
@@ -426,6 +429,9 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'xds-popover'},
+    ],
+    vars: [
+      {name: '--popover-radius', description: 'Border radius of the popover', default: 'var(--radius-2)'},
     ],
   },
 };

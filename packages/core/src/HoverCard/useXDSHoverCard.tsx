@@ -37,7 +37,8 @@ const styles = stylex.create({
   // Base container styles passed to useXDSLayer (includes animations)
   container: {
     backgroundColor: colorVars['--color-surface'],
-    borderRadius: radiusVars['--radius-3'],
+    '--hovercard-radius': radiusVars['--radius-3'],
+    borderRadius: 'var(--hovercard-radius)',
     boxShadow: shadowVars['--shadow-hover'],
     // Animation: closed state (default) and open state
     opacity: {

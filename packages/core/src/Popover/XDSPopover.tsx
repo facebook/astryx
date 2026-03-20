@@ -194,7 +194,8 @@ const styles = stylex.create({
   container: {
     backgroundColor: colorVars['--color-surface'],
     color: colorVars['--color-text-primary'],
-    borderRadius: radiusVars['--radius-2'],
+    '--popover-radius': radiusVars['--radius-2'],
+    borderRadius: 'var(--popover-radius)',
     boxShadow: shadowVars['--shadow-menu'],
   },
   contentPadding: {

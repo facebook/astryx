@@ -90,6 +90,9 @@ export const docs = {
     targets: [
       {className: 'xds-card'},
     ],
+    vars: [
+      {name: '--card-radius', description: 'Border radius of the card', default: 'var(--radius-3)'},
+    ],
   },
 };
 
@@ -183,6 +186,9 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'xds-card'},
+    ],
+    vars: [
+      {name: '--card-radius', description: 'Border radius of the card', default: 'var(--radius-3)'},
     ],
   },
 };

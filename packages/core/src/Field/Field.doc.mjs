@@ -73,6 +73,9 @@ const bioDescId = useId();
       {className: 'xds-field-label'},
       {className: 'xds-field-status', visualProps: ['type', 'variant']},
     ],
+    vars: [
+      {name: '--input-radius', description: 'Border radius of input fields', default: 'var(--radius-2)'},
+    ],
   },
   notes: [
     'Parent components are responsible for generating IDs (using the useId hook).',
@@ -340,6 +343,9 @@ const bioDescId = useId();
       {className: 'xds-field'},
       {className: 'xds-field-label'},
       {className: 'xds-field-status', visualProps: ['type', 'variant']},
+    ],
+    vars: [
+      {name: '--input-radius', description: 'Border radius of input fields', default: 'var(--radius-2)'},
     ],
   },
   notes: [

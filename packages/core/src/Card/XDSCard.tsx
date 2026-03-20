@@ -29,8 +29,9 @@ import {XDSBaseProps} from '../XDSBaseProps';
 const styles = stylex.create({
   // Outer wrapper: visual styling with clip for border-radius
   cardOuter: {
+    '--card-radius': radiusVars['--radius-3'],
     backgroundColor: colorVars['--color-card'],
-    borderRadius: radiusVars['--radius-3'],
+    borderRadius: 'var(--card-radius)',
     boxShadow: shadowVars['--shadow-base'],
     // Clip content to border-radius so nested containers don\'t peek out corners
     overflow: 'clip',
