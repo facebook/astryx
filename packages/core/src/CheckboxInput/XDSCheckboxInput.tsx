@@ -77,7 +77,7 @@ const styles = stylex.create({
     transitionProperty: 'background-color, border-color',
     transitionDuration: {
       default: durationVars['--duration-fast'],
-      '@media (prefers-reduced-motion: reduce)': '0.01s',
+      '@media (prefers-reduced-motion: reduce)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
