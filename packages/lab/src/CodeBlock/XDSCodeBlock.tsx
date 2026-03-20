@@ -12,7 +12,7 @@
 
 'use client';
 
-import {useEffect, useRef, useState, useCallback} from 'react';
+import {useLayoutEffect, useRef, useState, useCallback} from 'react';
 import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -257,7 +257,7 @@ export function XDSCodeBlock({
   }, [code, onCopy]);
 
   // Apply CSS Custom Highlight API ranges
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!hasHighlightAPI()) return;
 
     ensureHighlightStyles();

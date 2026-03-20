@@ -12,7 +12,7 @@
 
 'use client';
 
-import {useEffect, useRef, useCallback, useState} from 'react';
+import {useEffect, useLayoutEffect, useRef, useCallback, useState} from 'react';
 import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -204,7 +204,7 @@ export function XDSCodeEditor({
   const lines = value.split('\n');
 
   // Sync textContent with controlled value
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = editorRef.current;
     if (!el) return;
     // Only update DOM if it differs (avoids clobbering cursor)
