@@ -5,8 +5,8 @@
  * @position Shared utility; consumed by XDSCodeBlock and XDSCodeEditor
  *
  * SYNC: When modified, update:
- * - /packages/core/src/CodeBlock/XDSCodeBlock.tsx
- * - /packages/core/src/CodeEditor/XDSCodeEditor.tsx
+ * - /packages/lab/src/CodeBlock/XDSCodeBlock.tsx
+ * - /packages/lab/src/CodeEditor/XDSCodeEditor.tsx
  */
 
 export type Token = {type: string; start: number; end: number};

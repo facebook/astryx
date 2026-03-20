@@ -5,9 +5,9 @@
  * @position Core implementation; read-only syntax-highlighted code display
  *
  * SYNC: When modified, update:
- * - /packages/core/src/CodeBlock/index.ts (exports if types change)
- * - /packages/core/src/CodeBlock/tokenizer.ts (shared tokenizer)
- * - /packages/core/src/CodeBlock/highlightStyles.ts (::highlight rules)
+ * - /packages/lab/src/CodeBlock/index.ts (exports if types change)
+ * - /packages/lab/src/CodeBlock/tokenizer.ts (shared tokenizer)
+ * - /packages/lab/src/CodeBlock/highlightStyles.ts (::highlight rules)
  */
 
 'use client';

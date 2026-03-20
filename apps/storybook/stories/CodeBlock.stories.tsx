@@ -2,7 +2,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {XDSCodeBlock} from '@xds/lab';
 
 const meta: Meta<typeof XDSCodeBlock> = {
-  title: 'Core/XDSCodeBlock',
+  title: 'Lab/XDSCodeBlock',
   component: XDSCodeBlock,
   tags: ['autodocs'],
   argTypes: {

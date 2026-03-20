@@ -3,7 +3,7 @@ import {useState} from 'react';
 import {XDSCodeEditor} from '@xds/lab';
 
 const meta: Meta<typeof XDSCodeEditor> = {
-  title: 'Core/XDSCodeEditor',
+  title: 'Lab/XDSCodeEditor',
   component: XDSCodeEditor,
   tags: ['autodocs'],
   argTypes: {
