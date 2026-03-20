@@ -29,6 +29,7 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {useXDSLayer} from '../Layer/useXDSLayer';
 import {XDSTypeaheadItem} from './XDSTypeaheadItem';
 import {XDSIcon} from '../Icon';
+import {XDSSpinner} from '../Spinner';
 import {
   colorVars,
   spacingVars,
@@ -38,13 +39,15 @@ import {
   typographyVars,
   fontWeightVars,
 } from '../theme/tokens.stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import type {XDSSearchableItem, XDSSearchSource} from './types';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export interface XDSBaseTypeaheadProps<T extends XDSSearchableItem> {
+export interface XDSBaseTypeaheadProps<T extends XDSSearchableItem>
+  extends Pick<XDSBaseProps, 'xstyle' | 'className' | 'style'> {
   /**
    * Search source providing items.
    */
@@ -144,6 +147,26 @@ export interface XDSBaseTypeaheadProps<T extends XDSSearchableItem> {
    * If the handler calls `e.preventDefault()`, internal handling is skipped.
    */
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+
+  /**
+   * Whether the field is required.
+   * Sets aria-required on the combobox input.
+   * @default false
+   */
+  isRequired?: boolean;
+
+  /**
+   * Whether the field is in an invalid state.
+   * Sets aria-invalid on the combobox input.
+   * @default false
+   */
+  isInvalid?: boolean;
+
+  /**
+   * Callback when a search or bootstrap error occurs.
+   * If not provided, errors are silently caught and results are cleared.
+   */
+  onError?: (error: unknown) => void;
 }
 
 // =============================================================================
@@ -269,6 +292,12 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
   anchorRef,
   onKeyDown: externalOnKeyDown,
   debounceMs = 150,
+  isRequired = false,
+  isInvalid = false,
+  onError,
+  xstyle,
+  className,
+  style: styleProp,
   ref,
 }: XDSBaseTypeaheadProps<T> & {ref?: React.Ref<HTMLInputElement>}) {
   const generatedId = useId();
@@ -293,6 +322,13 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
   // Debounce ref
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Ref to latest searchSource so debounced callbacks never use a stale one
+  const searchSourceRef = useRef(searchSource);
+  searchSourceRef.current = searchSource;
+
+  // Ref for the dropdown container to scrollIntoView highlighted items
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   // Layer for dropdown
   const handleLayerShow = useCallback(() => {
     onOpenChange?.(true);
@@ -301,8 +337,8 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
   const handleLayerHide = useCallback(() => {
     onOpenChange?.(false);
     setHighlightedIndex(-1);
-    searchSource.cancel?.();
-  }, [onOpenChange, searchSource]);
+    searchSourceRef.current.cancel?.();
+  }, [onOpenChange]);
 
   const layer = useXDSLayer({
     mode: 'context',
@@ -355,42 +391,44 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
   // Perform search
   const performSearch = useCallback(
     async (searchQuery: string) => {
-      searchSource.cancel?.();
+      searchSourceRef.current.cancel?.();
       setIsLoading(true);
       setHasSearched(true);
       try {
-        const searchResults = await searchSource.search(searchQuery);
+        const searchResults = await searchSourceRef.current.search(searchQuery);
         setResults(searchResults.slice(0, maxMenuItems));
         setHighlightedIndex(searchResults.length > 0 ? 0 : -1);
         if (searchResults.length > 0 || searchQuery.length > 0) {
           showLayer();
         }
-      } catch {
+      } catch (error) {
         setResults([]);
         setHighlightedIndex(-1);
+        onError?.(error);
       } finally {
         setIsLoading(false);
       }
     },
-    [searchSource, maxMenuItems, showLayer],
+    [maxMenuItems, showLayer, onError],
   );
 
   // Perform bootstrap
   const performBootstrap = useCallback(async () => {
     setIsLoading(true);
     try {
-      const bootstrapResults = await searchSource.bootstrap();
+      const bootstrapResults = await searchSourceRef.current.bootstrap();
       setResults(bootstrapResults.slice(0, maxMenuItems));
       setHighlightedIndex(bootstrapResults.length > 0 ? 0 : -1);
       if (bootstrapResults.length > 0) {
         showLayer();
       }
-    } catch {
+    } catch (error) {
       setResults([]);
+      onError?.(error);
     } finally {
       setIsLoading(false);
     }
-  }, [searchSource, maxMenuItems, showLayer]);
+  }, [maxMenuItems, showLayer, onError]);
 
   // Handle query change
   const handleQueryChange = useCallback(
@@ -403,7 +441,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
       }
 
       if (newQuery.length === 0 && !hasEntriesOnFocus) {
-        searchSource.cancel?.();
+        searchSourceRef.current.cancel?.();
         setResults([]);
         layer.hide();
         return;
@@ -430,7 +468,6 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
       performBootstrap,
       layer,
       debounceMs,
-      searchSource,
     ],
   );
 
@@ -545,15 +582,41 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
     [listboxId],
   );
 
+  // Scroll highlighted item into view within the dropdown
+  useEffect(() => {
+    if (highlightedIndex < 0 || !layer.isOpen) return;
+    const dropdown = dropdownRef.current;
+    if (!dropdown) return;
+    const item = dropdown.querySelector(`#${CSS.escape(getItemId(highlightedIndex))}`);
+    if (item && typeof item.scrollIntoView === 'function') {
+      item.scrollIntoView({block: 'nearest'});
+    }
+  }, [highlightedIndex, layer.isOpen, getItemId]);
+
   // Cleanup timeout and cancel in-flight searches on unmount
   useEffect(() => {
     return () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
-      searchSource.cancel?.();
+      searchSourceRef.current.cancel?.();
     };
-  }, [searchSource]);
+  }, []);
+
+  const inputStyleProps = stylex.props(
+    styles.input,
+    isDisabled && styles.inputDisabled,
+    inputXStyle,
+    xstyle,
+  );
+  if (className) {
+    inputStyleProps.className = inputStyleProps.className
+      ? `${inputStyleProps.className} ${className}`
+      : className;
+  }
+  if (styleProp) {
+    inputStyleProps.style = {...inputStyleProps.style, ...styleProp};
+  }
 
   return (
     <>
@@ -562,6 +625,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
         id={inputId}
         type="text"
         role="combobox"
+        aria-haspopup="listbox"
         aria-expanded={layer.isOpen}
         aria-controls={listboxId}
         aria-activedescendant={
@@ -571,6 +635,9 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
         }
         aria-autocomplete="list"
         aria-describedby={ariaDescribedBy}
+        aria-required={isRequired || undefined}
+        aria-invalid={isInvalid || undefined}
+        aria-busy={isLoading || undefined}
         value={query}
         onChange={handleInputChange}
         onPointerDown={() => {
@@ -589,29 +656,27 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
         disabled={isDisabled}
         autoFocus={hasAutoFocus}
         autoComplete="off"
-        {...stylex.props(
-          styles.input,
-          isDisabled && styles.inputDisabled,
-          inputXStyle,
-        )}
+        {...inputStyleProps}
       />
       {isLoading && (
-        <span
-          role="status"
-          aria-label="Loading"
-          {...stylex.props(styles.loadingSpinner)}>
-          <XDSIcon icon="clock" size="sm" color="secondary" />
+        <span {...stylex.props(styles.loadingSpinner)}>
+          <XDSSpinner size="sm" />
         </span>
       )}
 
       {layer.render(
         <div
+          ref={dropdownRef}
           id={listboxId}
           role="listbox"
           aria-label="Search results"
           {...stylex.props(styles.dropdown)}>
           {results.length === 0 && hasSearched ? (
-            <div {...stylex.props(styles.emptyState)}>
+            <div
+              role="option"
+              aria-selected={false}
+              aria-disabled="true"
+              {...stylex.props(styles.emptyState)}>
               {emptySearchResultsText}
             </div>
           ) : (

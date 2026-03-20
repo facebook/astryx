@@ -238,6 +238,201 @@ describe('XDSTypeahead', () => {
   });
 });
 
+describe('XDSBaseTypeahead accessibility', () => {
+  it('sets aria-haspopup="listbox" on combobox', () => {
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-haspopup',
+      'listbox',
+    );
+  });
+
+  it('sets aria-required when isRequired is true', () => {
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        isRequired
+      />,
+    );
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-required',
+      'true',
+    );
+  });
+
+  it('does not set aria-required when isRequired is false', () => {
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-required');
+  });
+
+  it('sets aria-invalid when isInvalid is true', () => {
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        isInvalid
+      />,
+    );
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+  });
+
+  it('does not set aria-invalid when isInvalid is false', () => {
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-invalid');
+  });
+
+  it('renders empty state with role="option" for valid ARIA tree', async () => {
+    const emptySource: XDSSearchSource = {
+      search: () => [],
+      bootstrap: () => [],
+    };
+    render(
+      <XDSBaseTypeahead
+        searchSource={emptySource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'xyz'}});
+
+    await waitFor(() => {
+      const listbox = screen.getByRole('listbox', {hidden: true});
+      const option = listbox.querySelector('[role="option"]');
+      expect(option).toBeInTheDocument();
+      expect(option).toHaveAttribute('aria-disabled', 'true');
+      expect(option).toHaveTextContent('No results found');
+    });
+  });
+});
+
+describe('XDSBaseTypeahead error handling', () => {
+  it('calls onError when search throws', async () => {
+    const error = new Error('search failed');
+    const failSource: XDSSearchSource = {
+      search: () => {
+        throw error;
+      },
+      bootstrap: () => [],
+    };
+    const onError = vi.fn();
+    render(
+      <XDSBaseTypeahead
+        searchSource={failSource}
+        value={null}
+        onChange={() => {}}
+        onError={onError}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'test'}});
+
+    await waitFor(() => {
+      expect(onError).toHaveBeenCalledWith(error);
+    });
+  });
+
+  it('calls onError when bootstrap throws', async () => {
+    const error = new Error('bootstrap failed');
+    const failSource: XDSSearchSource = {
+      search: () => [],
+      bootstrap: () => {
+        throw error;
+      },
+    };
+    const onError = vi.fn();
+    render(
+      <XDSBaseTypeahead
+        searchSource={failSource}
+        value={null}
+        onChange={() => {}}
+        onError={onError}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.focus(input);
+
+    await waitFor(() => {
+      expect(onError).toHaveBeenCalledWith(error);
+    });
+  });
+});
+
+describe('XDSTypeahead accessibility', () => {
+  it('sets aria-required on combobox when isRequired is true', () => {
+    render(
+      <XDSTypeahead
+        label="Fruit"
+        isRequired
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-required',
+      'true',
+    );
+  });
+
+  it('sets aria-invalid on combobox when status is error', () => {
+    render(
+      <XDSTypeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+      />,
+    );
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+  });
+
+  it('does not set aria-invalid when status is not error', () => {
+    render(
+      <XDSTypeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        status={{type: 'warning', message: 'Watch out'}}
+      />,
+    );
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-invalid');
+  });
+});
+
 describe('XDSBaseTypeahead hasEntriesOnFocus', () => {
   it('shows bootstrap results on mouse click', async () => {
     render(
@@ -357,5 +552,285 @@ describe('XDSTypeahead edit mode', () => {
 
     // onChange should not have been called — value restored
     expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('XDSBaseTypeahead keyboard navigation', () => {
+  it('selects item with Enter key', async () => {
+    const onChange = vi.fn();
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={onChange}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'a'}});
+
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    // First item should be highlighted by default, press Enter to select
+    fireEvent.keyDown(input, {key: 'Enter'});
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({id: '1', label: 'Apple'}),
+    );
+  });
+
+  it('navigates items with ArrowDown and ArrowUp', async () => {
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'a'}});
+
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    // Arrow down from first (index 0) to second (index 1)
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    await waitFor(() => {
+      const activeId = input.getAttribute('aria-activedescendant');
+      expect(activeId).toContain('option-1');
+    });
+
+    // Arrow up back to first (index 0)
+    fireEvent.keyDown(input, {key: 'ArrowUp'});
+    await waitFor(() => {
+      const activeId = input.getAttribute('aria-activedescendant');
+      expect(activeId).toContain('option-0');
+    });
+  });
+
+  it('closes dropdown with Escape key', async () => {
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'App'}});
+
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    fireEvent.keyDown(input, {key: 'Escape'});
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('wraps highlight from last to first on ArrowDown', async () => {
+    const singleSource: XDSSearchSource = {
+      search: () => [{id: '1', label: 'Apple'}],
+      bootstrap: () => [],
+    };
+    render(
+      <XDSBaseTypeahead
+        searchSource={singleSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'a'}});
+
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    // Already at index 0 (only item), ArrowDown should wrap to 0
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    await waitFor(() => {
+      const activeId = input.getAttribute('aria-activedescendant');
+      expect(activeId).toContain('option-0');
+    });
+  });
+
+  it('opens dropdown with ArrowDown when hasEntriesOnFocus', async () => {
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    // Focus and wait for bootstrap
+    fireEvent.focus(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    // Close via Escape, then reopen with ArrowDown
+    fireEvent.keyDown(input, {key: 'Escape'});
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+  });
+});
+
+describe('XDSBaseTypeahead selection', () => {
+  it('calls onChange when dropdown item is clicked', async () => {
+    const onChange = vi.fn();
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={onChange}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'Ban'}});
+
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    const option = screen.getByRole('option', {hidden: true});
+    fireEvent.click(option);
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({id: '2', label: 'Banana'}),
+    );
+  });
+
+  it('clears query after selection', async () => {
+    const onChange = vi.fn();
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={onChange}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox') as HTMLInputElement;
+    fireEvent.change(input, {target: {value: 'Ban'}});
+
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    const option = screen.getByRole('option', {hidden: true});
+    fireEvent.click(option);
+
+    expect(input.value).toBe('');
+  });
+});
+
+describe('XDSBaseTypeahead callbacks', () => {
+  it('calls onOpenChange(true) when dropdown opens', async () => {
+    const onOpenChange = vi.fn();
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        onOpenChange={onOpenChange}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.focus(input);
+
+    await waitFor(() => {
+      expect(onOpenChange).toHaveBeenCalledWith(true);
+    });
+  });
+
+  it('calls onChangeQuery when input changes', () => {
+    const onChangeQuery = vi.fn();
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        onChangeQuery={onChangeQuery}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'test'}});
+
+    expect(onChangeQuery).toHaveBeenCalledWith('test');
+  });
+});
+
+describe('XDSBaseTypeahead disabled interaction', () => {
+  it('does not open bootstrap results when disabled', () => {
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        isDisabled
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.focus(input);
+
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+describe('XDSTypeahead disabled interaction', () => {
+  it('does not call onChange when disabled and remove is attempted', () => {
+    const onChange = vi.fn();
+    render(
+      <XDSTypeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={onChange}
+        isDisabled
+      />,
+    );
+    // Token remove button should not be rendered when disabled
+    expect(
+      screen.queryByRole('button', {name: `Remove ${fruits[0].label}`}),
+    ).not.toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('XDSTypeahead aria-describedby', () => {
+  it('wires aria-describedby to description element', () => {
+    render(
+      <XDSTypeahead
+        label="Fruit"
+        description="Pick a fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    const describedBy = input.getAttribute('aria-describedby');
+    expect(describedBy).toBeTruthy();
+
+    const descriptionEl = document.getElementById(describedBy!.split(' ')[0]);
+    expect(descriptionEl).toHaveTextContent('Pick a fruit');
   });
 });

@@ -195,6 +195,12 @@ export const docs = {
           description: 'Callback when the dropdown opens or closes.',
         },
         {
+          name: 'onError',
+          type: '(error: unknown) => void',
+          description:
+            'Callback when a search or bootstrap error occurs. If not provided, errors are silently caught.',
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
@@ -333,6 +339,26 @@ export const docs = {
           type: 'string',
           description: 'Additional aria-describedby IDs.',
         },
+        {
+          name: 'isRequired',
+          type: 'boolean',
+          description:
+            'Sets aria-required on the combobox input.',
+          default: 'false',
+        },
+        {
+          name: 'isInvalid',
+          type: 'boolean',
+          description:
+            'Sets aria-invalid on the combobox input.',
+          default: 'false',
+        },
+        {
+          name: 'onError',
+          type: '(error: unknown) => void',
+          description:
+            'Callback when a search or bootstrap error occurs. If not provided, errors are silently caught.',
+        },
       ],
       examples: [
         {
@@ -393,12 +419,13 @@ export const docs = {
     },
   ],
   accessibility: [
-    'Uses combobox ARIA pattern with role="combobox", aria-expanded, aria-autocomplete="list".',
-    'Dropdown uses role="listbox" with role="option" on each item.',
+    'Uses combobox ARIA pattern with role="combobox", aria-haspopup="listbox", aria-expanded, aria-autocomplete="list".',
+    'Dropdown uses role="listbox" with role="option" on each item. Empty state also uses role="option" with aria-disabled="true".',
     'aria-activedescendant tracks the highlighted option.',
     'Selected item has aria-selected="true".',
-    'Loading state has role="status" with aria-label="Loading".',
-    'XDSTypeahead wraps in XDSField for label and description association.',
+    'Loading state uses XDSSpinner (role="status", aria-label="Loading") and sets aria-busy="true" on the input.',
+    'aria-required reflects isRequired; aria-invalid reflects error status.',
+    'XDSTypeahead wraps in XDSField for label and description association via aria-describedby.',
   ],
   keyboard:
     'Arrow keys navigate dropdown items; Enter selects highlighted item; Escape closes dropdown or restores previous value in edit mode; Home/End jump to first/last item',
@@ -611,6 +638,12 @@ export const docsZh = {
           description: '下拉列表打开或关闭时的回调。',
         },
         {
+          name: 'onError',
+          type: '(error: unknown) => void',
+          description:
+            '搜索或引导错误时的回调。未提供时，错误会被静默捕获。',
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
@@ -749,6 +782,23 @@ export const docsZh = {
           type: 'string',
           description: '附加的 aria-describedby ID。',
         },
+        {
+          name: 'isRequired',
+          type: 'boolean',
+          description: '在组合框输入上设置 aria-required。',
+          default: 'false',
+        },
+        {
+          name: 'isInvalid',
+          type: 'boolean',
+          description: '在组合框输入上设置 aria-invalid。',
+          default: 'false',
+        },
+        {
+          name: 'onError',
+          type: '(error: unknown) => void',
+          description: '搜索或引导错误时的回调。未提供时，错误会被静默捕获。',
+        },
       ],
       examples: [
         {
@@ -809,12 +859,13 @@ export const docsZh = {
     },
   ],
   accessibility: [
-    '使用组合框 ARIA 模式，包含 role="combobox"、aria-expanded、aria-autocomplete="list"。',
-    '下拉列表使用 role="listbox"，每个项使用 role="option"。',
+    '使用组合框 ARIA 模式，包含 role="combobox"、aria-haspopup="listbox"、aria-expanded、aria-autocomplete="list"。',
+    '下拉列表使用 role="listbox"，每个项使用 role="option"。空状态也使用 role="option" 和 aria-disabled="true"。',
     'aria-activedescendant 追踪高亮选项。',
     '选中项具有 aria-selected="true"。',
-    '加载状态具有 role="status" 和 aria-label="Loading"。',
-    'XDSTypeahead 包裹在 XDSField 中，用于标签和描述的关联。',
+    '加载状态使用 XDSSpinner（role="status"、aria-label="Loading"）并在输入上设置 aria-busy="true"。',
+    'aria-required 反映 isRequired；aria-invalid 反映错误状态。',
+    'XDSTypeahead 包裹在 XDSField 中，通过 aria-describedby 进行标签和描述的关联。',
   ],
   keyboard:
     '方向键导航下拉列表项目；Enter 选择高亮项目；Escape 关闭下拉列表或在编辑模式中恢复之前的值；Home/End 跳转到第一个/最后一个项目',
@@ -849,12 +900,13 @@ export const docsDense = {
     'If item has element property, XDSTypeaheadItem renders it directly instead of standard layout.',
   ],
   accessibility: [
-    'Combobox ARIA: role="combobox", aria-expanded, aria-autocomplete="list".',
-    'Dropdown role="listbox" w/ role="option" on each item.',
+    'Combobox ARIA: role="combobox", aria-haspopup="listbox", aria-expanded, aria-autocomplete="list".',
+    'Dropdown role="listbox" w/ role="option" on each item. Empty state: role="option" + aria-disabled="true".',
     'aria-activedescendant tracks highlighted option.',
     'Selected item has aria-selected="true".',
-    'Loading state has role="status" w/ aria-label="Loading".',
-    'XDSTypeahead wraps in XDSField for label+description association.',
+    'Loading: XDSSpinner (role="status" + aria-label="Loading") + aria-busy="true" on input.',
+    'aria-required reflects isRequired; aria-invalid reflects error status.',
+    'XDSTypeahead wraps in XDSField for label+description association via aria-describedby.',
   ],
   keyboard: 'Arrow keys navigate dropdown items. Enter selects highlighted item. Escape closes dropdown or restores previous value in edit mode. Home/End jump to first/last item.',
   components: [
@@ -884,6 +936,7 @@ export const docsDense = {
         debounceMs: 'Search debounce ms. 0 for sync.',
         onChangeQuery: 'Fired on search query text change.',
         onOpenChange: 'Fired on dropdown open/close.',
+        onError: 'Error callback for search/bootstrap failures.',
         xstyle: 'StyleX layout styles. Must be stylex.create() value.',
       },
     },
@@ -909,6 +962,9 @@ export const docsDense = {
         onOpenChange: 'Fired on dropdown open/close.',
         inputId: 'Input ID for label association.',
         ariaDescribedBy: 'Additional aria-describedby IDs.',
+        isRequired: 'Sets aria-required on combobox input.',
+        isInvalid: 'Sets aria-invalid on combobox input.',
+        onError: 'Error callback for search/bootstrap failures.',
       },
     },
     {

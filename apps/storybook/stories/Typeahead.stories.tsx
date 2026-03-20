@@ -150,6 +150,15 @@ export const LimitedResults: Story = {
   name: 'Max 3 Results',
 };
 
+export const SmallSize: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    size: 'sm',
+  },
+  name: 'Small Size',
+};
+
 export const WithStartIcon: Story = {
   ...Default,
   args: {
@@ -158,4 +167,73 @@ export const WithStartIcon: Story = {
     hasEntriesOnFocus: true,
   },
   name: 'With Start Icon',
+};
+
+const asyncFruitSource: XDSSearchSource = {
+  search: (query: string) =>
+    new Promise(resolve =>
+      setTimeout(
+        () =>
+          resolve(
+            fruits.filter(f =>
+              f.label.toLowerCase().includes(query.toLowerCase()),
+            ),
+          ),
+        1000,
+      ),
+    ),
+  bootstrap: () =>
+    new Promise(resolve => setTimeout(() => resolve(fruits.slice(0, 5)), 1000)),
+};
+
+export const AsyncLoading: Story = {
+  render: args => {
+    const [value, setValue] = useState<XDSSearchableItem | null>(null);
+    return (
+      <XDSTypeahead
+        {...args}
+        searchSource={asyncFruitSource}
+        value={value}
+        onChange={setValue}
+      />
+    );
+  },
+  args: {
+    label: 'Fruit (Async)',
+    placeholder: 'Search with 1s delay...',
+    hasEntriesOnFocus: true,
+  },
+  name: 'Async Loading',
+};
+
+const errorFruitSource: XDSSearchSource = {
+  search: () => {
+    throw new Error('Network error');
+  },
+  bootstrap: () => fruits.slice(0, 5),
+};
+
+export const WithErrorHandler: Story = {
+  render: args => {
+    const [value, setValue] = useState<XDSSearchableItem | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    return (
+      <>
+        <XDSTypeahead
+          {...args}
+          searchSource={errorFruitSource}
+          value={value}
+          onChange={setValue}
+          onError={e => setError(String(e))}
+          status={error ? {type: 'error', message: error} : undefined}
+        />
+      </>
+    );
+  },
+  args: {
+    label: 'Fruit (Error)',
+    placeholder: 'Type to trigger error...',
+    hasEntriesOnFocus: true,
+  },
+  name: 'With Error Handler',
 };
