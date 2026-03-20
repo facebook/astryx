@@ -429,7 +429,7 @@ describe('XDSTextArea', () => {
       expect(screen.getByText('11/100')).toBeInTheDocument();
     });
 
-    it('sets maxLength attribute on textarea', () => {
+    it('does not set native maxLength attribute on textarea', () => {
       render(
         <XDSTextArea
           label="Description"
@@ -438,12 +438,36 @@ describe('XDSTextArea', () => {
           maxLength={50}
         />,
       );
-      expect(screen.getByRole('textbox')).toHaveAttribute('maxlength', '50');
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('maxlength');
     });
 
-    it('does not set maxLength attribute when not provided', () => {
-      render(<XDSTextArea label="Description" value="" onChange={() => {}} />);
-      expect(screen.getByRole('textbox')).not.toHaveAttribute('maxlength');
+    it('counter is connected via aria-describedby', () => {
+      render(
+        <XDSTextArea
+          label="Description"
+          value="Hello"
+          onChange={() => {}}
+          maxLength={20}
+        />,
+      );
+      const textarea = screen.getByRole('textbox');
+      const describedBy = textarea.getAttribute('aria-describedby');
+      const counter = screen.getByText('5/20');
+      expect(counter).toHaveAttribute('id');
+      expect(describedBy).toContain(counter.id);
+    });
+
+    it('counter has aria-live for screen reader announcements', () => {
+      render(
+        <XDSTextArea
+          label="Description"
+          value="Hello"
+          onChange={() => {}}
+          maxLength={20}
+        />,
+      );
+      const counter = screen.getByText('5/20');
+      expect(counter).toHaveAttribute('aria-live', 'polite');
     });
   });
 
@@ -485,6 +509,133 @@ describe('XDSTextArea', () => {
     it('does not set name attribute when htmlName is not provided', () => {
       render(<XDSTextArea label="Description" value="" onChange={() => {}} />);
       expect(screen.getByRole('textbox')).not.toHaveAttribute('name');
+    });
+  });
+
+  describe('isBusy / isLoading', () => {
+    it('disables textarea when isLoading is true', () => {
+      render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          isLoading
+        />,
+      );
+      expect(screen.getByRole('textbox')).toBeDisabled();
+    });
+
+    it('shows spinner when isLoading is true', () => {
+      const {container} = render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          isLoading
+        />,
+      );
+      // XDSSpinner renders a span with role="status"
+      expect(container.querySelector('[role="status"]')).toBeInTheDocument();
+    });
+
+    it('sets aria-busy when isLoading is true', () => {
+      render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          isLoading
+        />,
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute('aria-busy', 'true');
+    });
+
+    it('does not set aria-busy when not loading', () => {
+      render(
+        <XDSTextArea label="Description" value="" onChange={() => {}} />,
+      );
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-busy');
+    });
+
+    it('blocks onChange during busy state', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={handleChange}
+          isLoading
+        />,
+      );
+
+      const textarea = screen.getByRole('textbox');
+      await user.type(textarea, 'A');
+      expect(handleChange).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('onChangeAction', () => {
+    it('calls onChangeAction after onChange when not prevented', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      const handleAction = vi.fn();
+      render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={handleChange}
+          onChangeAction={handleAction}
+        />,
+      );
+
+      const textarea = screen.getByRole('textbox');
+      await user.type(textarea, 'A');
+      expect(handleChange).toHaveBeenCalledWith('A', expect.any(Object));
+      expect(handleAction).toHaveBeenCalledWith('A', expect.any(Object));
+    });
+  });
+
+  describe('onFocus / onBlur', () => {
+    it('calls onFocus when textarea receives focus', () => {
+      const handleFocus = vi.fn();
+      render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          onFocus={handleFocus}
+        />,
+      );
+
+      const textarea = screen.getByRole('textbox');
+      fireEvent.focus(textarea);
+      expect(handleFocus).toHaveBeenCalledTimes(1);
+    });
+
+    it('calls onBlur when textarea loses focus', () => {
+      const handleBlur = vi.fn();
+      render(
+        <XDSTextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          onBlur={handleBlur}
+        />,
+      );
+
+      const textarea = screen.getByRole('textbox');
+      fireEvent.blur(textarea);
+      expect(handleBlur).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('xdsClassName', () => {
+    it('renders xds-textarea class on wrapper', () => {
+      const {container} = render(
+        <XDSTextArea label="Description" value="" onChange={() => {}} />,
+      );
+      expect(container.querySelector('.xds-textarea')).toBeInTheDocument();
     });
   });
 });

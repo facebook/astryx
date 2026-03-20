@@ -1,7 +1,7 @@
 /**
  * @file XDSTextArea.tsx
- * @input Uses React, useId, ChangeEvent, ClipboardEvent, XDSField, XDSIcon
- * @output Exports XDSTextArea component, XDSTextAreaProps, XDSTextAreaStatus, XDSTextAreaStatusType
+ * @input Uses React, useId, ChangeEvent, ClipboardEvent, FocusEvent, XDSField, XDSIcon, XDSSpinner
+ * @output Exports XDSTextArea component, XDSTextAreaProps
  * @position Core implementation; consumed by index.ts, tested by XDSTextArea.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -19,6 +19,7 @@ import {
   useTransition,
   type ChangeEvent,
   type ClipboardEvent,
+  type FocusEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSIconName} from '../Icon';
@@ -31,6 +32,8 @@ import {
 } from '../theme/tokens.stylex';
 import {
   XDSField,
+  type XDSInputStatus,
+  type XDSInputStatusType,
   inputWrapperStyles,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
@@ -38,6 +41,8 @@ import {
 } from '../Field';
 import {XDSIcon, type XDSIconType} from '../Icon';
 import {XDSSpinner} from '../Spinner';
+import {xdsClassName, mergeProps} from '../utils';
+import {XDSBaseProps} from '../XDSBaseProps';
 
 const styles = stylex.create({
   wrapper: {
@@ -62,7 +67,6 @@ const styles = stylex.create({
       color: colorVars['--color-text-secondary'],
     },
     resize: 'vertical',
-    minHeight: '80px',
   },
   textareaDisabled: {
     cursor: 'not-allowed',
@@ -80,21 +84,32 @@ const styles = stylex.create({
   },
 });
 
-export type XDSTextAreaStatusType = 'warning' | 'error' | 'success';
+// Re-export shared types for convenience
+export type {
+  XDSInputStatus as XDSTextAreaStatus,
+  XDSInputStatusType as XDSTextAreaStatusType,
+} from '../Field';
 
-export interface XDSTextAreaStatus {
-  /**
-   * The type of status to display.
-   */
-  type: XDSTextAreaStatusType;
-  /**
-   * Optional message to display below the textarea.
-   */
-  message?: string;
-}
+const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
+  warning: 'warning',
+  error: 'xCircle',
+  success: 'checkCircle',
+};
 
-export interface XDSTextAreaProps {
-  /** Ref forwarded to the root element */
+const statusIconColorMap: Record<
+  XDSInputStatusType,
+  'warning' | 'negative' | 'positive'
+> = {
+  warning: 'warning',
+  error: 'negative',
+  success: 'positive',
+};
+
+export interface XDSTextAreaProps extends Omit<
+  XDSBaseProps<HTMLTextAreaElement>,
+  'onChange' | 'defaultValue'
+> {
+  /** Ref forwarded to the `<textarea>` element */
   ref?: React.Ref<HTMLTextAreaElement>;
   /**
    * Label text for the textarea (always rendered for accessibility).
@@ -153,7 +168,7 @@ export interface XDSTextAreaProps {
    * When set, displays a colored border and status icon.
    * If message is provided, displays a floating message box below the textarea.
    */
-  status?: XDSTextAreaStatus;
+  status?: XDSInputStatus;
   /**
    * Tooltip text to display in an info icon at the end of the label.
    */
@@ -175,6 +190,8 @@ export interface XDSTextAreaProps {
   /**
    * Maximum number of characters allowed.
    * When set, displays a character counter below the textarea.
+   * Does not enforce the limit natively — the counter shows error styling
+   * when exceeded, and the consumer can validate via onChange.
    */
   maxLength?: number;
   /**
@@ -187,6 +204,14 @@ export interface XDSTextAreaProps {
    * Useful for form submissions.
    */
   htmlName?: string;
+  /**
+   * Callback fired when the textarea receives focus.
+   */
+  onFocus?: (e: FocusEvent<HTMLTextAreaElement>) => void;
+  /**
+   * Callback fired when the textarea loses focus.
+   */
+  onBlur?: (e: FocusEvent<HTMLTextAreaElement>) => void;
 }
 
 /**
@@ -219,40 +244,33 @@ export function XDSTextArea({
   maxLength,
   hasAutoFocus = false,
   htmlName,
+  onFocus,
+  onBlur,
+  xstyle,
+  className,
+  style,
   ref,
 }: XDSTextAreaProps) {
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
+  const counterID = useId();
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
 
-  const statusIconMap: Record<XDSTextAreaStatusType, XDSIconName> = {
-    warning: 'warning',
-    error: 'xCircle',
-    success: 'checkCircle',
-  };
-
-  const statusIconColorMap: Record<
-    XDSTextAreaStatusType,
-    'warning' | 'negative' | 'positive'
-  > = {
-    warning: 'warning',
-    error: 'negative',
-    success: 'positive',
-  };
-
   const ariaDescribedBy =
     [
       description ? descriptionID : null,
       status?.message ? statusMessageID : null,
+      maxLength != null ? counterID : null,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
 
   const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    if (isBusy) return;
     const newValue = e.target.value;
     onChange?.(newValue, e);
     if (onChangeAction && !e.defaultPrevented) {
@@ -262,6 +280,8 @@ export function XDSTextArea({
       });
     }
   };
+
+  const effectivelyDisabled = isDisabled || isBusy;
 
   return (
     <XDSField
@@ -283,13 +303,19 @@ export function XDSTextArea({
       }
       labelTooltip={labelTooltip}>
       <div
-        {...stylex.props(
-          inputWrapperStyles.base,
-          styles.wrapper,
-          isDisabled && inputWrapperStyles.disabled,
-          status && inputStatusBorderStyles[status.type],
-          status && inputStatusHoverShadowStyles[status.type],
-          status && inputStatusFocusWithinStyles[status.type],
+        {...mergeProps(
+          xdsClassName('textarea'),
+          stylex.props(
+            inputWrapperStyles.base,
+            styles.wrapper,
+            effectivelyDisabled && inputWrapperStyles.disabled,
+            status && inputStatusBorderStyles[status.type],
+            status && inputStatusHoverShadowStyles[status.type],
+            status && inputStatusFocusWithinStyles[status.type],
+            xstyle,
+          ),
+          className,
+          style,
         )}>
         {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
         <textarea
@@ -299,11 +325,12 @@ export function XDSTextArea({
           value={String(optimisticValue)}
           onChange={handleChange}
           onPaste={onPaste}
+          onFocus={onFocus}
+          onBlur={onBlur}
           placeholder={placeholder}
           rows={rows}
-          disabled={isDisabled}
+          disabled={effectivelyDisabled}
           spellCheck={hasSpellCheck}
-          maxLength={maxLength}
           autoFocus={hasAutoFocus}
           aria-describedby={ariaDescribedBy}
           aria-required={isRequired === true ? 'true' : undefined}
@@ -311,7 +338,7 @@ export function XDSTextArea({
           aria-busy={isBusy || undefined}
           {...stylex.props(
             styles.textarea,
-            isDisabled && styles.textareaDisabled,
+            effectivelyDisabled && styles.textareaDisabled,
           )}
         />
         {isBusy && <XDSSpinner size="sm" />}
@@ -325,11 +352,13 @@ export function XDSTextArea({
       </div>
       {maxLength != null && (
         <div
+          id={counterID}
+          aria-live="polite"
           {...stylex.props(
             styles.counter,
-            value.length > maxLength && styles.counterError,
+            optimisticValue.length > maxLength && styles.counterError,
           )}>
-          {value.length}/{maxLength}
+          {optimisticValue.length}/{maxLength}
         </div>
       )}
     </XDSField>
