@@ -1,6 +1,6 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {XDSCodeEditor} from '@xds/core/CodeEditor';
+import {XDSCodeEditor} from '@xds/lab';
 
 const meta: Meta<typeof XDSCodeEditor> = {
   title: 'Core/XDSCodeEditor',

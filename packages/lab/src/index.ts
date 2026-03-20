@@ -26,3 +26,7 @@ export {
   defaultFilter,
   type CommandPaletteFilterFn,
 } from './CommandPalette';
+
+export {XDSCodeBlock, type XDSCodeBlockProps} from './CodeBlock';
+export {XDSCodeEditor, type XDSCodeEditorProps} from './CodeEditor';
+export {tokenize, type Token} from './CodeBlock/tokenizer';

@@ -13,7 +13,7 @@
 'use client';
 
 import {useEffect, useRef, useState, useCallback} from 'react';
-import type {XDSBaseProps} from '../XDSBaseProps';
+import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -23,8 +23,8 @@ import {
   typographyVars,
   fontWeightVars,
   lineHeightVars,
-} from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+} from '@xds/core/theme/tokens.stylex';
+import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {tokenize} from './tokenizer';
 import type {Token} from './tokenizer';
 import {ensureHighlightStyles, TOKEN_TYPES} from './highlightStyles';
