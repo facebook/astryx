@@ -18,10 +18,10 @@ import React, {
   useImperativeHandle,
   useMemo,
   useRef,
+  useState,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSBaseTypeahead} from '../Typeahead/XDSBaseTypeahead';
 import {
   XDSField,
@@ -40,6 +40,8 @@ import {
   radiusVars,
   sizeVars,
 } from '../theme/tokens.stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsClassName, mergeProps} from '../utils';
 import type {XDSSearchableItem, XDSSearchSource} from '../Typeahead/types';
 
 // Re-export status types for convenience
@@ -58,6 +60,7 @@ export type {
 export type XDSTokenizerChange<T extends XDSSearchableItem> =
   | {item: T; type: 'add'}
   | {item: T; type: 'remove'}
+  | {type: 'clear'}
   | {type: 'reorder'};
 
 export type XDSTokenizerSize = 'sm' | 'md';
@@ -72,7 +75,8 @@ export interface XDSTokenizerHandle {
   blur(): void;
 }
 
-export interface XDSTokenizerProps<T extends XDSSearchableItem> {
+export interface XDSTokenizerProps<T extends XDSSearchableItem>
+  extends Omit<XDSBaseProps, 'onChange'> {
   /** Accessible label (required). */
   label: string;
   /** Visually hide the label. @default false */
@@ -133,27 +137,6 @@ export interface XDSTokenizerProps<T extends XDSSearchableItem> {
   debounceMs?: number;
   /** Query change callback. */
   onChangeQuery?: (query: string) => void;
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
   /** Test ID. */
   'data-testid'?: string;
   /** Imperative handle ref for focus/blur control. */
@@ -227,6 +210,17 @@ const styles = stylex.create({
     // Restore normal text inset when input follows tokens, since the
     // wrapper padding is reduced for border concentricity.
     paddingInlineStart: `calc(${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px)`,
+  },
+  srOnly: {
+    position: 'absolute',
+    width: '1px',
+    height: '1px',
+    padding: 0,
+    margin: '-1px',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
+    borderWidth: 0,
+    clipPath: 'inset(50%)',
   },
 });
 
@@ -307,6 +301,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   const statusMessageId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const [announcement, setAnnouncement] = useState('');
 
   useImperativeHandle(ref, () => ({
     focus() {
@@ -347,6 +342,13 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
     [],
   );
 
+  // Announce changes for screen readers
+  const announce = useCallback((message: string) => {
+    // Clear first to ensure re-announcement of same message
+    setAnnouncement('');
+    requestAnimationFrame(() => setAnnouncement(message));
+  }, []);
+
   // Handle adding an item
   const handleAdd = useCallback(
     (item: T | null) => {
@@ -356,8 +358,9 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
 
       const newItems = [...value, item];
       onChange(newItems, {item, type: 'add'});
+      announce(`Added ${item.label}, ${newItems.length} selected`);
     },
-    [value, onChange, isAtMax, selectedIds],
+    [value, onChange, isAtMax, selectedIds, announce],
   );
 
   // Handle removing an item
@@ -365,34 +368,82 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
     (item: T) => {
       const newItems = value.filter(v => v.id !== item.id);
       onChange(newItems, {item, type: 'remove'});
+      announce(
+        `Removed ${item.label}, ${newItems.length === 0 ? 'none' : newItems.length} selected`,
+      );
       inputRef.current?.focus();
     },
-    [value, onChange],
+    [value, onChange, announce],
   );
 
   // Handle clearing all items
   const handleClearAll = useCallback(() => {
     if (value.length === 0) return;
-    // Report the last item as removed (convention)
-    const lastItem = value[value.length - 1];
-    onChange([], {item: lastItem, type: 'remove'});
+    onChange([], {type: 'clear'});
+    announce('Cleared all selections');
     inputRef.current?.focus();
-  }, [value, onChange]);
+  }, [value, onChange, announce]);
 
-  // Handle backspace on empty input — remove last token
+  // Collect focusable token buttons inside the wrapper
+  const getTokenButtons = useCallback((): HTMLElement[] => {
+    if (!wrapperRef.current) return [];
+    return Array.from(
+      wrapperRef.current.querySelectorAll<HTMLElement>(
+        'button[aria-label^="Remove "]',
+      ),
+    );
+  }, []);
+
+  // Handle keyboard navigation: backspace to remove last token, arrows to navigate tokens
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (
-        e.key === 'Backspace' &&
-        e.currentTarget.value === '' &&
-        value.length > 0
-      ) {
+      const inputEmpty = e.currentTarget.value === '';
+
+      if (e.key === 'Backspace' && inputEmpty && value.length > 0) {
         e.preventDefault();
         const lastItem = value[value.length - 1];
         handleRemove(lastItem);
+        return;
+      }
+
+      // ArrowLeft at start of empty input → focus last token's remove button
+      if (e.key === 'ArrowLeft' && inputEmpty && value.length > 0) {
+        e.preventDefault();
+        const buttons = getTokenButtons();
+        buttons[buttons.length - 1]?.focus();
       }
     },
-    [value, handleRemove],
+    [value, handleRemove, getTokenButtons],
+  );
+
+  // Handle arrow key navigation within tokens
+  const handleTokenKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLElement>) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+
+      const buttons = getTokenButtons();
+      // Find the focused button — may be e.target when event bubbles from child
+      const target = (e.target as HTMLElement).closest?.(
+        'button[aria-label^="Remove "]',
+      ) as HTMLElement | null;
+      if (!target) return;
+      const idx = buttons.indexOf(target);
+      if (idx === -1) return;
+
+      e.preventDefault();
+
+      if (e.key === 'ArrowLeft' && idx > 0) {
+        buttons[idx - 1].focus();
+      } else if (e.key === 'ArrowRight') {
+        if (idx < buttons.length - 1) {
+          buttons[idx + 1].focus();
+        } else {
+          // Past last token → focus input
+          inputRef.current?.focus();
+        }
+      }
+    },
+    [getTokenButtons],
   );
 
   // Click wrapper to focus input
@@ -412,27 +463,31 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
 
   const sizeStyle = size === 'sm' ? styles.sizeSm : styles.sizeMd;
 
-  // Render tokens
+  // Render tokens — wrap each in a span with onKeyDown for arrow navigation
   const tokens = value.map(item => {
     const onRemoveItem = () => handleRemove(item);
 
     if (renderToken) {
       return (
-        <span key={item.id} {...stylex.props(styles.token)}>
+        <span
+          key={item.id}
+          onKeyDown={handleTokenKeyDown}
+          {...stylex.props(styles.token)}>
           {renderToken(item, onRemoveItem)}
         </span>
       );
     }
 
     return (
-      <XDSToken
-        key={item.id}
-        label={item.label}
-        size={size}
-        onRemove={isDisabled ? undefined : onRemoveItem}
-        isDisabled={isDisabled}
-        xstyle={styles.token}
-      />
+      <span key={item.id} onKeyDown={handleTokenKeyDown}>
+        <XDSToken
+          label={item.label}
+          size={size}
+          onRemove={isDisabled ? undefined : onRemoveItem}
+          isDisabled={isDisabled}
+          xstyle={styles.token}
+        />
+      </span>
     );
   });
 
@@ -464,15 +519,18 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
         aria-label={label}
         onClick={handleWrapperClick}
         data-testid={testId}
-        {...stylex.props(
-          inputWrapperStyles.base,
-          styles.wrapper,
-          value.length > 0 && styles.wrapperWithTokens,
-          sizeStyle,
-          isDisabled && inputWrapperStyles.disabled,
-          status && inputStatusBorderStyles[status.type],
-          status && inputStatusHoverShadowStyles[status.type],
-          status && inputStatusFocusWithinStyles[status.type],
+        {...mergeProps(
+          xdsClassName('tokenizer', {size}),
+          stylex.props(
+            inputWrapperStyles.base,
+            styles.wrapper,
+            value.length > 0 && styles.wrapperWithTokens,
+            sizeStyle,
+            isDisabled && inputWrapperStyles.disabled,
+            status && inputStatusBorderStyles[status.type],
+            status && inputStatusHoverShadowStyles[status.type],
+            status && inputStatusFocusWithinStyles[status.type],
+          ),
         )}>
         {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
         {tokens}
@@ -490,6 +548,10 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
           hasAutoFocus={hasAutoFocus}
           inputId={inputId}
           ariaDescribedBy={ariaDescribedBy}
+          isAriaRequired={isRequired}
+          isAriaInvalid={status?.type === 'error'}
+          isAriaHidden={isAtMax}
+          tabIndex={isAtMax ? -1 : undefined}
           onChangeQuery={onChangeQuery}
           debounceMs={debounceMs}
           onKeyDown={handleKeyDown}
@@ -520,6 +582,9 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
           </div>
         )}
       </div>
+      <span aria-live="polite" role="status" {...stylex.props(styles.srOnly)}>
+        {announcement}
+      </span>
     </XDSField>
   );
 }

@@ -154,7 +154,7 @@ describe('XDSTokenizer', () => {
     );
     // Input stays in the DOM for keyboard accessibility (backspace to remove)
     // but is visually hidden
-    const input = screen.getByRole('combobox');
+    const input = screen.getByRole('combobox', {hidden: true});
     expect(input).toBeInTheDocument();
   });
 
@@ -311,5 +311,194 @@ describe('XDSTokenizer', () => {
     // Tokens should be direct children of the wrapper, not nested in a div
     const tokenElements = wrapper.querySelectorAll(':scope > span');
     expect(tokenElements.length).toBeGreaterThanOrEqual(2);
+  });
+
+  // =========================================================================
+  // Hardening: aria-required and aria-invalid
+  // =========================================================================
+
+  it('sets aria-required on combobox when isRequired', () => {
+    render(
+      <XDSTokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        isRequired
+      />,
+    );
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-required',
+      'true',
+    );
+  });
+
+  it('does not set aria-required when not required', () => {
+    render(
+      <XDSTokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-required');
+  });
+
+  it('sets aria-invalid on combobox when status is error', () => {
+    render(
+      <XDSTokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+      />,
+    );
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+  });
+
+  it('does not set aria-invalid for warning status', () => {
+    render(
+      <XDSTokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        status={{type: 'warning', message: 'Heads up'}}
+      />,
+    );
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-invalid');
+  });
+
+  // =========================================================================
+  // Hardening: maxEntries hides input from screen readers
+  // =========================================================================
+
+  it('sets aria-hidden and tabIndex=-1 on input when at maxEntries', () => {
+    render(
+      <XDSTokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[users[0], users[1]]}
+        onChange={() => {}}
+        maxEntries={2}
+      />,
+    );
+    const input = screen.getByRole('combobox', {hidden: true});
+    expect(input).toHaveAttribute('aria-hidden', 'true');
+    expect(input).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('does not set aria-hidden when under maxEntries', () => {
+    render(
+      <XDSTokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[users[0]]}
+        onChange={() => {}}
+        maxEntries={2}
+      />,
+    );
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-hidden');
+  });
+
+  // =========================================================================
+  // Hardening: aria-live announcements
+  // =========================================================================
+
+  it('has an aria-live region for announcements', () => {
+    render(
+      <XDSTokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const liveRegion = screen.getByRole('status');
+    expect(liveRegion).toHaveAttribute('aria-live', 'polite');
+  });
+
+  // =========================================================================
+  // Hardening: handleClearAll uses type: 'clear'
+  // =========================================================================
+
+  it('calls onChange with type clear when clearing all tokens', () => {
+    const onChange = vi.fn();
+    render(
+      <XDSTokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[users[0], users[1]]}
+        onChange={onChange}
+        hasClear
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', {name: 'Clear all'}));
+    expect(onChange).toHaveBeenCalledWith([], {type: 'clear'});
+  });
+
+  // =========================================================================
+  // Hardening: Arrow key navigation between tokens
+  // =========================================================================
+
+  it('moves focus to last token remove button on ArrowLeft from empty input', () => {
+    render(
+      <XDSTokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[users[0], users[1]]}
+        onChange={() => {}}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    input.focus();
+    fireEvent.keyDown(input, {key: 'ArrowLeft'});
+    const removeButton = screen.getByRole('button', {name: 'Remove Bob'});
+    expect(document.activeElement).toBe(removeButton);
+  });
+
+  it('navigates between token remove buttons with ArrowLeft/ArrowRight', () => {
+    render(
+      <XDSTokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[users[0], users[1], users[2]]}
+        onChange={() => {}}
+      />,
+    );
+    // Focus the last token's remove button
+    const removeBob = screen.getByRole('button', {name: 'Remove Bob'});
+    removeBob.focus();
+
+    // ArrowLeft moves to previous token
+    fireEvent.keyDown(removeBob, {key: 'ArrowLeft'});
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', {name: 'Remove Alice'}),
+    );
+
+    // ArrowRight moves back
+    fireEvent.keyDown(document.activeElement!, {key: 'ArrowRight'});
+    expect(document.activeElement).toBe(removeBob);
+  });
+
+  it('moves focus from last token to input on ArrowRight', () => {
+    render(
+      <XDSTokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[users[0], users[1]]}
+        onChange={() => {}}
+      />,
+    );
+    const removeBob = screen.getByRole('button', {name: 'Remove Bob'});
+    removeBob.focus();
+
+    fireEvent.keyDown(removeBob, {key: 'ArrowRight'});
+    expect(document.activeElement).toBe(screen.getByRole('combobox'));
   });
 });

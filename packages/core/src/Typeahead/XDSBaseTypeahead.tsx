@@ -144,6 +144,26 @@ export interface XDSBaseTypeaheadProps<T extends XDSSearchableItem> {
    * If the handler calls `e.preventDefault()`, internal handling is skipped.
    */
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+
+  /**
+   * Whether the input is required for form validation.
+   */
+  isAriaRequired?: boolean;
+
+  /**
+   * Whether the input value is invalid.
+   */
+  isAriaInvalid?: boolean;
+
+  /**
+   * Whether the input is hidden from assistive technology.
+   */
+  isAriaHidden?: boolean;
+
+  /**
+   * Tab index override for the input element.
+   */
+  tabIndex?: number;
 }
 
 // =============================================================================
@@ -268,6 +288,10 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
   inputXStyle,
   anchorRef,
   onKeyDown: externalOnKeyDown,
+  isAriaRequired,
+  isAriaInvalid,
+  isAriaHidden,
+  tabIndex,
   debounceMs = 150,
   ref,
 }: XDSBaseTypeaheadProps<T> & {ref?: React.Ref<HTMLInputElement>}) {
@@ -571,6 +595,10 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
         }
         aria-autocomplete="list"
         aria-describedby={ariaDescribedBy}
+        aria-required={isAriaRequired ? 'true' : undefined}
+        aria-invalid={isAriaInvalid ? 'true' : undefined}
+        aria-hidden={isAriaHidden ? 'true' : undefined}
+        tabIndex={tabIndex}
         value={query}
         onChange={handleInputChange}
         onPointerDown={() => {

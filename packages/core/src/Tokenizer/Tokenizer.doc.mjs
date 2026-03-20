@@ -28,7 +28,7 @@ export const docs = {
       name: 'onChange',
       type: '(items: T[], change: XDSTokenizerChange<T>) => void',
       description:
-        "Called when selection changes. The change argument includes the affected item and type ('add' | 'remove' | 'reorder').",
+        "Called when selection changes. The change argument includes the affected item and type ('add' | 'remove' | 'clear' | 'reorder').",
       required: true,
     },
     {
@@ -150,10 +150,38 @@ export const docs = {
         'Content to display at the end of the input row. Useful for buttons, result counts, or other controls.',
     },
     {
+      name: 'startIcon',
+      type: 'XDSIconType',
+      description:
+        'Icon to display at the start of the input. Pass an SVG icon component.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+    },
+    {
+      name: 'className',
+      type: 'string',
+      description:
+        'CSS class name(s) appended to the root element. Prefer xstyle for StyleX deduplication.',
+    },
+    {
+      name: 'style',
+      type: 'React.CSSProperties',
+      description: 'Inline styles applied to the root element.',
+    },
+    {
+      name: 'data-testid',
+      type: 'string',
+      description: 'Test ID for the wrapper element.',
+    },
+    {
+      name: 'ref',
+      type: 'React.Ref<XDSTokenizerHandle>',
+      description:
+        'Imperative handle ref exposing focus() and blur() methods.',
     },
   ],
   examples: [
@@ -208,19 +236,27 @@ export const docs = {
     'Token chips for each selected item with remove buttons',
     'Filtered search that automatically excludes already-selected items',
     'Max entries to limit number of selections — input hides when limit is reached',
-    'Clear all button for bulk removal of all tokens',
+    'Clear all button for bulk removal with dedicated clear change type',
     'Custom token and item rendering via renderToken and renderItem',
     'Backspace on empty input removes the last token',
-    "Change metadata: onChange receives a second argument with type ('add' | 'remove' | 'reorder')",
+    'Arrow key navigation between token remove buttons and input',
+    'aria-live announcements for add/remove/clear actions',
+    'aria-required and aria-invalid wired to input for form validation',
+    'aria-hidden and tabIndex=-1 on input when at maxEntries',
+    "Change metadata: onChange receives a second argument with type ('add' | 'remove' | 'clear' | 'reorder')",
   ],
   accessibility: [
     'Wrapped in XDSField for label, description, and status message association.',
     'Token container has role="group" with aria-label.',
     'Clear all button has aria-label="Clear all".',
     'Combobox pattern provided by XDSBaseTypeahead with aria-expanded and aria-autocomplete.',
+    'aria-required set on combobox when isRequired is true.',
+    'aria-invalid set on combobox when status type is error.',
+    'aria-hidden and tabIndex=-1 on input when at maxEntries to remove from tab order.',
+    'aria-live="polite" region announces add/remove/clear actions to screen readers.',
   ],
   keyboard:
-    'Backspace on empty input removes last token; Arrow keys navigate dropdown; Enter selects highlighted item; Escape closes dropdown',
+    'Backspace on empty input removes last token; ArrowLeft from empty input focuses last token remove button; ArrowLeft/ArrowRight navigate between token remove buttons; ArrowRight from last token returns focus to input; Arrow keys navigate dropdown; Enter selects highlighted item; Escape closes dropdown',
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
@@ -252,7 +288,7 @@ export const docsZh = {
       name: 'onChange',
       type: '(items: T[], change: XDSTokenizerChange<T>) => void',
       description:
-        "选择变更时调用。change 参数包含受影响的项目和类型（'add' | 'remove' | 'reorder'）。",
+        "选择变更时调用。change 参数包含受影响的项目和类型（'add' | 'remove' | 'clear' | 'reorder'）。",
       required: true,
     },
     {
@@ -374,10 +410,35 @@ export const docsZh = {
         '在输入行末尾显示的内容。适用于按钮、结果计数或其他控件。',
     },
     {
+      name: 'startIcon',
+      type: 'XDSIconType',
+      description: '在输入框开头显示的图标。传入 SVG 图标组件。',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
         '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值 — 不能是内联样式对象如 style={{}}。',
+    },
+    {
+      name: 'className',
+      type: 'string',
+      description: '附加到根元素的 CSS 类名。优先使用 xstyle 以获得 StyleX 去重优化。',
+    },
+    {
+      name: 'style',
+      type: 'React.CSSProperties',
+      description: '应用于根元素的内联样式。',
+    },
+    {
+      name: 'data-testid',
+      type: 'string',
+      description: '包装元素的测试 ID。',
+    },
+    {
+      name: 'ref',
+      type: 'React.Ref<XDSTokenizerHandle>',
+      description: '暴露 focus() 和 blur() 方法的命令式句柄 ref。',
     },
   ],
   examples: [
@@ -432,19 +493,27 @@ export const docsZh = {
     '每个已选项目显示带移除按钮的标记芯片',
     '过滤搜索自动排除已选项目',
     '最大条目数限制选择数量 — 达到限制时输入框隐藏',
-    '全部清除按钮用于批量移除所有标记',
+    '全部清除按钮用于批量移除，使用专用 clear 变更类型',
     '通过 renderToken 和 renderItem 自定义标记和项目渲染',
     '在空输入框上按退格键移除最后一个标记',
-    "变更元数据：onChange 接收第二个参数，包含类型（'add' | 'remove' | 'reorder'）",
+    '方向键在标记移除按钮和输入框之间导航',
+    'aria-live 通知添加/移除/清除操作',
+    'aria-required 和 aria-invalid 连接到输入框用于表单验证',
+    '达到 maxEntries 时输入框设置 aria-hidden 和 tabIndex=-1',
+    "变更元数据：onChange 接收第二个参数，包含类型（'add' | 'remove' | 'clear' | 'reorder'）",
   ],
   accessibility: [
     '包裹在 XDSField 中，用于标签、描述和状态消息的关联。',
     '标记容器具有 role="group" 和 aria-label。',
     '全部清除按钮具有 aria-label="Clear all"。',
     'XDSBaseTypeahead 提供组合框模式，包含 aria-expanded 和 aria-autocomplete。',
+    '当 isRequired 为 true 时，在组合框上设置 aria-required。',
+    '当状态类型为 error 时，在组合框上设置 aria-invalid。',
+    '达到 maxEntries 时，输入框设置 aria-hidden 和 tabIndex=-1，从 Tab 顺序中移除。',
+    'aria-live="polite" 区域向屏幕阅读器通知添加/移除/清除操作。',
   ],
   keyboard:
-    '在空输入框上按退格键移除最后一个标记；方向键导航下拉列表；Enter 选择高亮项目；Escape 关闭下拉列表',
+    '在空输入框上按退格键移除最后一个标记；从空输入框按左箭头聚焦最后一个标记移除按钮；左右箭头在标记移除按钮之间导航；从最后一个标记按右箭头返回输入框；方向键导航下拉列表；Enter 选择高亮项目；Escape 关闭下拉列表',
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
@@ -454,23 +523,31 @@ export const docsDense = {
     'Token chips for each selected item w/ remove buttons',
     'Filtered search auto-excludes already-selected items',
     'Max entries limits selections; input hides at limit',
-    'Clear all button for bulk removal of all tokens',
+    'Clear all button w/ dedicated clear change type',
     'Custom token+item rendering via renderToken+renderItem',
     'Backspace on empty input removes last token',
-    "Change metadata: onChange receives second arg w/ type ('add'|'remove'|'reorder')",
+    'Arrow key navigation between token remove buttons+input',
+    'aria-live announcements for add/remove/clear actions',
+    'aria-required+aria-invalid wired for form validation',
+    'aria-hidden+tabIndex=-1 on input at maxEntries',
+    "Change metadata: onChange receives second arg w/ type ('add'|'remove'|'clear'|'reorder')",
   ],
   accessibility: [
     'Wrapped in XDSField for label, description, status message association.',
     'Token container has role="group" w/ aria-label.',
     'Clear all button has aria-label="Clear all".',
     'Combobox pattern via XDSBaseTypeahead w/ aria-expanded+aria-autocomplete.',
+    'aria-required on combobox when isRequired.',
+    'aria-invalid on combobox when status=error.',
+    'aria-hidden+tabIndex=-1 on input at maxEntries.',
+    'aria-live="polite" announces add/remove/clear to screen readers.',
   ],
-  keyboard: 'Backspace on empty input removes last token. Arrow keys navigate dropdown. Enter selects highlighted item. Escape closes dropdown.',
+  keyboard: 'Backspace on empty input removes last token. ArrowLeft from empty input focuses last token remove button. ArrowLeft/ArrowRight navigate between tokens. ArrowRight from last token returns to input. Arrow keys navigate dropdown. Enter selects highlighted item. Escape closes dropdown.',
   propDescriptions: {
     label: 'Accessible label for input.',
     searchSource: 'Data source w/ search+bootstrap methods for populating dropdown.',
     value: 'Array of currently selected items.',
-    onChange: "Fired on selection change. Change arg includes affected item+type ('add'|'remove'|'reorder').",
+    onChange: "Fired on selection change. Change arg includes affected item+type ('add'|'remove'|'clear'|'reorder').",
     placeholder: 'Input placeholder. Only shown when no tokens selected.',
     maxEntries: 'Max selections allowed. Input hidden at limit.',
     hasClear: 'Clear-all button for bulk removal.',
@@ -490,7 +567,12 @@ export const docsDense = {
     size: 'Input+token size.',
     debounceMs: 'Search debounce delay ms. 0 for sync sources.',
     onChangeQuery: 'Fired on search query text change.',
+    startIcon: 'Icon at input start. Pass SVG icon component.',
     endContent: 'Content at input row end. For buttons, counts, controls.',
     xstyle: 'StyleX layout styles (margins, positioning). Must be stylex.create() value.',
+    className: 'CSS class(es) on root. Prefer xstyle for StyleX dedup.',
+    style: 'Inline styles on root element.',
+    'data-testid': 'Test ID on wrapper.',
+    ref: 'Imperative handle ref w/ focus()+blur().',
   },
 };
