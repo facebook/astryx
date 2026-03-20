@@ -128,6 +128,8 @@ export const colorDefaults = {
   '--color-yellow-border': 'light-dark(#FFEB3B, #FFF176)',
   '--color-yellow-icon': 'light-dark(#FBC02D, #FFEE58)',
   '--color-yellow-text': 'light-dark(#753F07, #FBCE03)',
+
+  // Syntax highlighting
 } as const;
 
 /** @deprecated Use colorDefaults */
