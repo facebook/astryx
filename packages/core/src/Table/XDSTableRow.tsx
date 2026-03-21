@@ -69,15 +69,6 @@ const stripedHoverRowStyles = stylex.create({
   },
 });
 
-const _lastBodyRowStyles = stylex.create({
-  row: {
-    borderBottomStyle: {
-      default: null,
-      ':last-child': 'hidden',
-    },
-  },
-});
-
 /**
  * XDSTableRow — a `<tr>` wrapper for children/streaming mode.
  *
