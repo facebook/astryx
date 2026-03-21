@@ -545,3 +545,53 @@ describe('variants', () => {
     );
   });
 });
+
+describe('defineTheme fonts', () => {
+  it('passes through fonts array from input', () => {
+    const fonts = [
+      {
+        family: 'Figtree',
+        url: 'https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700',
+      },
+      {
+        family: 'JetBrains Mono',
+        url: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono',
+      },
+    ];
+    const theme = defineTheme({name: 'font-test', fonts});
+    expect(theme.fonts).toEqual(fonts);
+    expect(theme.fonts).toHaveLength(2);
+    expect(theme.fonts![0].family).toBe('Figtree');
+    expect(theme.fonts![1].url).toContain('JetBrains');
+  });
+
+  it('returns undefined fonts when not specified', () => {
+    const theme = defineTheme({name: 'no-fonts'});
+    expect(theme.fonts).toBeUndefined();
+  });
+
+  it('handles empty fonts array', () => {
+    const theme = defineTheme({name: 'empty-fonts', fonts: []});
+    expect(theme.fonts).toEqual([]);
+    expect(theme.fonts).toHaveLength(0);
+  });
+
+  it('combines fonts with tokens and other features', () => {
+    const theme = defineTheme({
+      name: 'combo-fonts',
+      tokens: {'--font-heading': '"Figtree", sans-serif'},
+      fonts: [
+        {
+          family: 'Figtree',
+          url: 'https://fonts.googleapis.com/css2?family=Figtree',
+        },
+      ],
+      typeScale: {base: 14, ratio: 1.2},
+    });
+    expect(theme.name).toBe('combo-fonts');
+    expect(theme.fonts).toHaveLength(1);
+    expect(theme.tokens['--font-heading']).toBe('"Figtree", sans-serif');
+    // typeScale tokens should still be present
+    expect(theme.tokens['--heading-4-size']).toBeDefined();
+  });
+});

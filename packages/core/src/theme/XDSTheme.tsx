@@ -20,7 +20,7 @@
 
 'use client';
 
-import React, {useId, useInsertionEffect} from 'react';
+import React, {useId, useInsertionEffect, useLayoutEffect, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {ThemeMode} from './types';
 import {colorVars, typographyVars} from './tokens.stylex';
@@ -104,6 +104,72 @@ function useThemeStyleInjection(theme: XDSDefinedTheme): void {
 }
 
 // =============================================================================
+// Font loading for themes that declare fonts
+// =============================================================================
+
+/**
+ * Hook that loads fonts declared in theme.fonts at runtime.
+ *
+ * Uses useLayoutEffect to inject font stylesheets before the browser paints,
+ * minimizing flash of unstyled text (FOUT).
+ *
+ * This is the fallback loading path — the preferred approach is to add
+ * <link rel="stylesheet" href="..."> to your document <head>. For discoverability,
+ * `npx xds theme build` prints font instructions in the build output.
+ *
+ * A console warning is logged for each font loaded at runtime
+ * to encourage moving to the preload path.
+ */
+function useThemeFontLoading(theme: XDSDefinedTheme): void {
+  const injectedLinksRef = useRef<HTMLLinkElement[]>([]);
+
+  useLayoutEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (!theme.fonts || theme.fonts.length === 0) return;
+
+    const newLinks: HTMLLinkElement[] = [];
+
+    for (const font of theme.fonts) {
+      // Check if font is already loaded
+      const isLoaded = document.fonts.check(`16px "${font.family}"`);
+      if (isLoaded) continue;
+
+      // Check if we already injected a link for this URL
+      const existing = document.head.querySelector(
+        `link[rel="stylesheet"][href="${font.url}"]`,
+      );
+      if (existing) continue;
+
+      // Inject the font stylesheet
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = font.url;
+      document.head.appendChild(link);
+      newLinks.push(link);
+
+      // Dev-mode warning to encourage preloading
+      // Warn to encourage preloading — only visible in devtools
+      console.warn(
+        `[XDS] Theme "${theme.name}" loaded font "${font.family}" at runtime. ` +
+          `For better performance, add to your document <head>:\n` +
+          `  <link rel="stylesheet" href="${font.url}" />`,
+      );
+    }
+
+    injectedLinksRef.current = newLinks;
+
+    return () => {
+      for (const link of injectedLinksRef.current) {
+        if (link.parentNode) {
+          link.parentNode.removeChild(link);
+        }
+      }
+      injectedLinksRef.current = [];
+    };
+  }, [theme.fonts, theme.name]);
+}
+
+// =============================================================================
 // Component
 // =============================================================================
 
@@ -120,6 +186,7 @@ export function XDSTheme({
   children,
 }: XDSThemeProps): React.ReactElement {
   useThemeStyleInjection(theme);
+  useThemeFontLoading(theme);
 
   // Get color-scheme style
   const colorSchemeStyle =
