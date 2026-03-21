@@ -503,11 +503,17 @@ export function XDSPagination({
                 aria-current={i + 1 === page ? 'page' : undefined}
                 onClick={() => handlePageChange(i + 1)}
                 disabled={isDisabled}
-                {...stylex.props(
-                  styles.dot,
-                  isSm && styles.dotSm,
-                  i + 1 === page && styles.dotActive,
-                  isDisabled && styles.dotDisabled,
+                {...mergeProps(
+                  xdsClassName('pagination-dot', {
+                    active: i + 1 === page ? 'active' : null,
+                    size,
+                  }),
+                  stylex.props(
+                    styles.dot,
+                    isSm && styles.dotSm,
+                    i + 1 === page && styles.dotActive,
+                    isDisabled && styles.dotDisabled,
+                  ),
                 )}
               />
             ))}
