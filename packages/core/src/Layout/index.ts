@@ -22,7 +22,6 @@ export type {
   StackCrossAlignment,
   StackMainAlignment,
   StackWrap,
-  SpacingScale,
   SpacingStep,
 } from '../Stack/stack.stylex';
 

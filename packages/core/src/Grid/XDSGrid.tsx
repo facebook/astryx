@@ -17,7 +17,6 @@ import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
-import type {SpacingScale} from '../Layout';
 import type {SpacingStep} from '../utils/types';
 import type {SizeValue} from '../utils/types';
 import {xdsClassName, mergeProps} from '../utils';
@@ -61,22 +60,21 @@ export interface XDSGridProps extends XDSBaseProps<HTMLDivElement> {
 
   /**
    * Spacing between all grid items (both row and column).
-   * Accepts numeric spacing steps (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10)
-   * or legacy string tokens ('space0', 'space1', etc.).
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
    */
-  gap?: SpacingStep | SpacingScale;
+  gap?: SpacingStep;
 
   /**
    * Spacing between rows. Overrides gap for rows.
-   * Accepts numeric spacing steps or legacy string tokens.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
    */
-  rowGap?: SpacingStep | SpacingScale;
+  rowGap?: SpacingStep;
 
   /**
    * Spacing between columns. Overrides gap for columns.
-   * Accepts numeric spacing steps or legacy string tokens.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
    */
-  columnGap?: SpacingStep | SpacingScale;
+  columnGap?: SpacingStep;
 
   /**
    * Vertical alignment of grid items (align-items).
@@ -155,193 +153,126 @@ const justifyStyles = stylex.create({
 });
 
 const gapStyles = stylex.create({
-  space0: {
+  0: {
     gap: spacingVars['--spacing-0'],
   },
-  'space0.5': {
+  0.5: {
     gap: spacingVars['--spacing-0-5'],
   },
-  space1: {
+  1: {
     gap: spacingVars['--spacing-1'],
   },
-  'space1.5': {
+  1.5: {
     gap: spacingVars['--spacing-1-5'],
   },
-  space2: {
+  2: {
     gap: spacingVars['--spacing-2'],
   },
-  space3: {
+  3: {
     gap: spacingVars['--spacing-3'],
   },
-  space4: {
+  4: {
     gap: spacingVars['--spacing-4'],
   },
-  space5: {
+  5: {
     gap: spacingVars['--spacing-5'],
   },
-  space6: {
+  6: {
     gap: spacingVars['--spacing-6'],
   },
-  space7: {
-    gap: spacingVars['--spacing-7'],
-  },
-  space8: {
+  8: {
     gap: spacingVars['--spacing-8'],
   },
-  space9: {
-    gap: spacingVars['--spacing-9'],
-  },
-  space10: {
+  10: {
     gap: spacingVars['--spacing-10'],
-  },
-  space11: {
-    gap: spacingVars['--spacing-11'],
-  },
-  space12: {
-    gap: spacingVars['--spacing-12'],
   },
 });
 
 const rowGapStyles = stylex.create({
-  space0: {
+  0: {
     rowGap: spacingVars['--spacing-0'],
   },
-  'space0.5': {
+  0.5: {
     rowGap: spacingVars['--spacing-0-5'],
   },
-  space1: {
+  1: {
     rowGap: spacingVars['--spacing-1'],
   },
-  'space1.5': {
+  1.5: {
     rowGap: spacingVars['--spacing-1-5'],
   },
-  space2: {
+  2: {
     rowGap: spacingVars['--spacing-2'],
   },
-  space3: {
+  3: {
     rowGap: spacingVars['--spacing-3'],
   },
-  space4: {
+  4: {
     rowGap: spacingVars['--spacing-4'],
   },
-  space5: {
+  5: {
     rowGap: spacingVars['--spacing-5'],
   },
-  space6: {
+  6: {
     rowGap: spacingVars['--spacing-6'],
   },
-  space7: {
-    rowGap: spacingVars['--spacing-7'],
-  },
-  space8: {
+  8: {
     rowGap: spacingVars['--spacing-8'],
   },
-  space9: {
-    rowGap: spacingVars['--spacing-9'],
-  },
-  space10: {
+  10: {
     rowGap: spacingVars['--spacing-10'],
-  },
-  space11: {
-    rowGap: spacingVars['--spacing-11'],
-  },
-  space12: {
-    rowGap: spacingVars['--spacing-12'],
   },
 });
 
 const columnGapStyles = stylex.create({
-  space0: {
+  0: {
     columnGap: spacingVars['--spacing-0'],
   },
-  'space0.5': {
+  0.5: {
     columnGap: spacingVars['--spacing-0-5'],
   },
-  space1: {
+  1: {
     columnGap: spacingVars['--spacing-1'],
   },
-  'space1.5': {
+  1.5: {
     columnGap: spacingVars['--spacing-1-5'],
   },
-  space2: {
+  2: {
     columnGap: spacingVars['--spacing-2'],
   },
-  space3: {
+  3: {
     columnGap: spacingVars['--spacing-3'],
   },
-  space4: {
+  4: {
     columnGap: spacingVars['--spacing-4'],
   },
-  space5: {
+  5: {
     columnGap: spacingVars['--spacing-5'],
   },
-  space6: {
+  6: {
     columnGap: spacingVars['--spacing-6'],
   },
-  space7: {
-    columnGap: spacingVars['--spacing-7'],
-  },
-  space8: {
+  8: {
     columnGap: spacingVars['--spacing-8'],
   },
-  space9: {
-    columnGap: spacingVars['--spacing-9'],
-  },
-  space10: {
+  10: {
     columnGap: spacingVars['--spacing-10'],
-  },
-  space11: {
-    columnGap: spacingVars['--spacing-11'],
-  },
-  space12: {
-    columnGap: spacingVars['--spacing-12'],
   },
 });
 
-/**
- * Maps numeric SpacingStep values to their corresponding gap style keys.
- */
-const numericToGapKey: Record<SpacingStep, SpacingScale> = {
-  0: 'space0',
-  0.5: 'space0.5',
-  1: 'space1',
-  1.5: 'space1.5',
-  2: 'space2',
-  3: 'space3',
-  4: 'space4',
-  5: 'space5',
-  6: 'space6',
-  8: 'space8',
-  10: 'space10',
-};
-
-/**
- * Resolves a gap value (numeric or legacy string) to a gap style key.
- */
-function resolveGapKey(gap: SpacingStep | SpacingScale): SpacingScale {
-  if (typeof gap === 'number') {
-    return numericToGapKey[gap as SpacingStep];
-  }
-  return gap;
-}
-
 // Spacing token values in pixels for max-width calculation
-const spacingPixels: Record<SpacingScale, number> = {
-  space0: 0,
-  'space0.5': 2,
-  space1: 4,
-  'space1.5': 6,
-  space2: 8,
-  space3: 12,
-  space4: 16,
-  space5: 20,
-  space6: 24,
-  space7: 28,
-  space8: 32,
-  space9: 36,
-  space10: 40,
-  space11: 44,
-  space12: 48,
+const spacingPixels: Record<SpacingStep, number> = {
+  0: 0,
+  0.5: 2,
+  1: 4,
+  1.5: 6,
+  2: 8,
+  3: 12,
+  4: 16,
+  5: 20,
+  6: 24,
+  8: 32,
+  10: 40,
 };
 
 /**
@@ -351,14 +282,14 @@ const spacingPixels: Record<SpacingScale, number> = {
 function calculateMaxWidth(
   columns: number,
   minChildWidth: number,
-  gap: SpacingStep | SpacingScale | undefined,
-  columnGap: SpacingStep | SpacingScale | undefined,
+  gap: SpacingStep | undefined,
+  columnGap: SpacingStep | undefined,
 ): number {
   const gapPx =
     columnGap != null
-      ? spacingPixels[resolveGapKey(columnGap)]
+      ? spacingPixels[columnGap]
       : gap != null
-        ? spacingPixels[resolveGapKey(gap)]
+        ? spacingPixels[gap]
         : 0;
   return columns * minChildWidth + (columns - 1) * gapPx;
 }
@@ -442,9 +373,9 @@ export function XDSGrid({
         xdsClassName('grid', {columns, gap, align, justify}),
         stylex.props(
           baseStyles.grid,
-          gap != null && gapStyles[resolveGapKey(gap)],
-          rowGap != null && rowGapStyles[resolveGapKey(rowGap)],
-          columnGap != null && columnGapStyles[resolveGapKey(columnGap)],
+          gap != null && gapStyles[gap],
+          rowGap != null && rowGapStyles[rowGap],
+          columnGap != null && columnGapStyles[columnGap],
           align != null && alignStyles[align],
           justify != null && justifyStyles[justify],
           xstyle,

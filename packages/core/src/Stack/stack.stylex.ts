@@ -105,105 +105,54 @@ const baseStyles = stylex.create({
 
 /**
  * Gap styles using spacing tokens from the theme.
- * Keys match spacing token names for clarity.
+ * Keys are numeric SpacingStep values.
  */
 const gapStyles = stylex.create({
-  space0: {
+  0: {
     columnGap: spacingVars['--spacing-0'],
     rowGap: spacingVars['--spacing-0'],
   },
-  'space0.5': {
+  0.5: {
     columnGap: spacingVars['--spacing-0-5'],
     rowGap: spacingVars['--spacing-0-5'],
   },
-  space1: {
+  1: {
     columnGap: spacingVars['--spacing-1'],
     rowGap: spacingVars['--spacing-1'],
   },
-  'space1.5': {
+  1.5: {
     columnGap: spacingVars['--spacing-1-5'],
     rowGap: spacingVars['--spacing-1-5'],
   },
-  space2: {
+  2: {
     columnGap: spacingVars['--spacing-2'],
     rowGap: spacingVars['--spacing-2'],
   },
-  space3: {
+  3: {
     columnGap: spacingVars['--spacing-3'],
     rowGap: spacingVars['--spacing-3'],
   },
-  space4: {
+  4: {
     columnGap: spacingVars['--spacing-4'],
     rowGap: spacingVars['--spacing-4'],
   },
-  space5: {
+  5: {
     columnGap: spacingVars['--spacing-5'],
     rowGap: spacingVars['--spacing-5'],
   },
-  space6: {
+  6: {
     columnGap: spacingVars['--spacing-6'],
     rowGap: spacingVars['--spacing-6'],
   },
-  space7: {
-    columnGap: spacingVars['--spacing-7'],
-    rowGap: spacingVars['--spacing-7'],
-  },
-  space8: {
+  8: {
     columnGap: spacingVars['--spacing-8'],
     rowGap: spacingVars['--spacing-8'],
   },
-  space9: {
-    columnGap: spacingVars['--spacing-9'],
-    rowGap: spacingVars['--spacing-9'],
-  },
-  space10: {
+  10: {
     columnGap: spacingVars['--spacing-10'],
     rowGap: spacingVars['--spacing-10'],
   },
-  space11: {
-    columnGap: spacingVars['--spacing-11'],
-    rowGap: spacingVars['--spacing-11'],
-  },
-  space12: {
-    columnGap: spacingVars['--spacing-12'],
-    rowGap: spacingVars['--spacing-12'],
-  },
 });
-
-/**
- * Spacing token names for gap values.
- * @deprecated Use numeric `SpacingStep` values instead (e.g., `2` instead of `'space2'`).
- */
-export type SpacingScale = keyof typeof gapStyles;
-
-/**
- * Maps numeric SpacingStep values to their corresponding gapStyles keys.
- */
-const numericToGapKey: Record<SpacingStep, keyof typeof gapStyles> = {
-  0: 'space0',
-  0.5: 'space0.5',
-  1: 'space1',
-  1.5: 'space1.5',
-  2: 'space2',
-  3: 'space3',
-  4: 'space4',
-  5: 'space5',
-  6: 'space6',
-  8: 'space8',
-  10: 'space10',
-};
-
-/**
- * Resolves a gap value (numeric or legacy string) to a gapStyles key.
- */
-function resolveGapKey(
-  gap: SpacingStep | SpacingScale,
-): keyof typeof gapStyles {
-  if (typeof gap === 'number') {
-    return numericToGapKey[gap as SpacingStep];
-  }
-  return gap;
-}
 
 export {type SpacingStep};
 
@@ -222,10 +171,9 @@ export interface StackOptions {
 
   /**
    * Spacing between items.
-   * Accepts numeric spacing steps (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10)
-   * or legacy string tokens ('space0', 'space1', etc.).
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
    */
-  gap?: SpacingStep | SpacingScale;
+  gap?: SpacingStep;
 
   /**
    * Position of items along the main-axis.
@@ -282,7 +230,7 @@ export function stack({
   return [
     baseStyles.stack,
     directionStyles[direction],
-    gap != null && gapStyles[resolveGapKey(gap)],
+    gap != null && gapStyles[gap],
     crossAlign != null && alignItemsStyles[crossAlign],
     mainAlign != null && justifyContentStyles[mainAlign],
     wrap != null && wrapStyles[wrap],
