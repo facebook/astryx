@@ -269,19 +269,6 @@ describe('XDSPowerSearch', () => {
     expect(screen.getByText('~500 matches')).toBeInTheDocument();
   });
 
-  it('uses custom resultCountLabel from labels prop', () => {
-    render(
-      <XDSPowerSearch
-        config={testConfig}
-        filters={[]}
-        onChange={() => {}}
-        resultCount={42}
-        labels={{resultCountLabel: (n) => `${n} Ergebnisse`}}
-      />,
-    );
-    expect(screen.getByText('42 Ergebnisse')).toBeInTheDocument();
-  });
-
   // ===========================================================================
   // End content
   // ===========================================================================
@@ -491,7 +478,6 @@ describe('XDSPowerSearch', () => {
         config={testConfig}
         filters={filters}
         onChange={() => {}}
-        popoverAriaLabel="Modify filter"
       />,
     );
 
@@ -501,7 +487,8 @@ describe('XDSPowerSearch', () => {
     await vi.waitFor(() => {
       const dialog = container.querySelector('[role="dialog"]');
       expect(dialog).toBeInTheDocument();
-      expect(dialog).toHaveAttribute('aria-label', 'Modify filter');
+      expect(dialog).toHaveAttribute('aria-label', 'Edit filter');
+      expect(dialog).toHaveAttribute('aria-modal', 'true');
     });
   });
 
@@ -509,7 +496,7 @@ describe('XDSPowerSearch', () => {
   // i18n labels
   // ===========================================================================
 
-  it('supports custom popover button labels', async () => {
+  it('supports custom popover save button label', async () => {
     const user = userEvent.setup();
     const filters: PowerSearchFilter[] = [
       {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
@@ -520,8 +507,6 @@ describe('XDSPowerSearch', () => {
         filters={filters}
         onChange={() => {}}
         popoverSaveButtonLabel="Guardar"
-        popoverCancelButtonLabel="Cancelar"
-        popoverDeleteButtonLabel="Borrar"
       />,
     );
 
@@ -532,8 +517,8 @@ describe('XDSPowerSearch', () => {
       const dialog = container.querySelector('[role="dialog"]');
       expect(dialog).toBeInTheDocument();
       expect(dialog?.textContent).toContain('Guardar');
-      expect(dialog?.textContent).toContain('Cancelar');
-      expect(dialog?.textContent).toContain('Borrar');
+      expect(dialog?.textContent).toContain('Cancel');
+      expect(dialog?.textContent).toContain('Delete');
     });
   });
 

@@ -360,33 +360,3 @@ export interface PowerSearchAuxData {
 
 export type PowerSearchItem = XDSSearchableItem<PowerSearchAuxData>;
 
-// =============================================================================
-// i18n label overrides
-// =============================================================================
-
-export interface PowerSearchLabels {
-  /** @default 'N results' / '1 result' */
-  readonly resultCountLabel?: (count: number) => string;
-  /** @default 'Enter value...' */
-  readonly stringPlaceholder: string;
-  /** @default 'Add values...' */
-  readonly stringListPlaceholder: string;
-  /** @default 'Enter number...' */
-  readonly numberPlaceholder: string;
-  /** @default 'Select values...' */
-  readonly enumListPlaceholder: string;
-  /** @default 'Search...' */
-  readonly entityListPlaceholder: string;
-  /** @default 'Enter value...' */
-  readonly customPlaceholder: string;
-  /** @default '+ Add filter' */
-  readonly addFilterLabel: string;
-  /** @default 'Remove filter' */
-  readonly removeFilterLabel: string;
-  /** @default 'Group' */
-  readonly groupFallbackLabel: string;
-  /** @default 'N items' */
-  readonly itemCountLabel?: (count: number) => string;
-  /** @default '1 filter' / 'N filters' */
-  readonly filterCountLabel?: (count: number) => string;
-}

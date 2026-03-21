@@ -50,7 +50,6 @@ import type {
   FilterValue,
   OperatorValue,
   EnumItem,
-  PowerSearchLabels,
 } from './types';
 
 // =============================================================================
@@ -350,17 +349,6 @@ export interface XDSPowerSearchProps {
   maxTokenLength?: number;
   /** Label for the save button in edit popover. @default 'Apply' */
   popoverSaveButtonLabel?: string;
-  /** Label for the cancel button in edit popover. @default 'Cancel' */
-  popoverCancelButtonLabel?: string;
-  /** Label for the delete button in edit popover. @default 'Delete' */
-  popoverDeleteButtonLabel?: string;
-  /** Accessible label for the edit popover dialog. @default 'Edit filter' */
-  popoverAriaLabel?: string;
-  /**
-   * Override hardcoded UI strings for i18n.
-   * Any key not provided uses the English default.
-   */
-  labels?: Partial<PowerSearchLabels>;
   /** Timezone ID for date formatting. */
   timezoneID?: string;
   /**
@@ -401,6 +389,8 @@ type PopoverState =
   | {
       type: 'editing';
       filterIndex: number;
+      filterField: string;
+      filterOperator: string;
       partialFilter: PartialFilter;
     };
 
@@ -464,10 +454,6 @@ export function XDSPowerSearch({
   status,
   maxTokenLength = 40,
   popoverSaveButtonLabel = 'Apply',
-  popoverCancelButtonLabel = 'Cancel',
-  popoverDeleteButtonLabel = 'Delete',
-  popoverAriaLabel = 'Edit filter',
-  labels,
   timezoneID,
   endContent,
   resultCount,
@@ -496,6 +482,16 @@ export function XDSPowerSearch({
     onHide: handleLayerHide,
   });
 
+  // Track rAF ID for cleanup
+  const rafIdRef = useRef<number | null>(null);
+  React.useEffect(() => {
+    return () => {
+      if (rafIdRef.current != null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+    };
+  }, []);
+
   // Wrapper that manages layer visibility and tokenizer focus alongside state
   const setPopoverState = useCallback(
     (state: PopoverState) => {
@@ -503,7 +499,8 @@ export function XDSPowerSearch({
       if (state.type !== 'idle') {
         // Schedule after the current frame so React can render the popover
         // content and the typeahead's synchronous focus() has completed
-        requestAnimationFrame(() => {
+        rafIdRef.current = requestAnimationFrame(() => {
+          rafIdRef.current = null;
           layer.show();
           tokenizerRef.current?.blur();
         });
@@ -614,11 +611,13 @@ export function XDSPowerSearch({
       if (isReadOnly || isDisabled) return;
 
       const filter = filters[index];
-      if (filter.isReadOnly) return;
+      if (!filter || filter.isReadOnly) return;
 
       setPopoverState({
         type: 'editing',
         filterIndex: index,
+        filterField: filter.field,
+        filterOperator: filter.operator,
         partialFilter: {
           field: filter.field,
           operator: filter.operator,
@@ -637,16 +636,32 @@ export function XDSPowerSearch({
           onChange([...filters, savedFilter], 'add', filters.length);
         }
       } else if (popoverState.type === 'editing') {
+        // Find the filter by identity (field+operator) rather than trusting
+        // the stale index, in case filters changed while popover was open
+        let targetIndex = popoverState.filterIndex;
+        if (
+          targetIndex >= filters.length ||
+          filters[targetIndex]?.field !== popoverState.filterField ||
+          filters[targetIndex]?.operator !== popoverState.filterOperator
+        ) {
+          targetIndex = filters.findIndex(
+            f =>
+              f.field === popoverState.filterField &&
+              f.operator === popoverState.filterOperator,
+          );
+        }
+        if (targetIndex === -1) {
+          // Filter no longer exists; just close
+          setPopoverState({type: 'idle'});
+          return;
+        }
         if (savedFilter) {
           const newFilters = [...filters];
-          newFilters[popoverState.filterIndex] = savedFilter;
-          onChange(newFilters, 'edit', popoverState.filterIndex);
+          newFilters[targetIndex] = savedFilter;
+          onChange(newFilters, 'edit', targetIndex);
         } else {
-          // Delete
-          const newFilters = filters.filter(
-            (_, i) => i !== popoverState.filterIndex,
-          );
-          onChange(newFilters, 'remove', popoverState.filterIndex);
+          const newFilters = filters.filter((_, i) => i !== targetIndex);
+          onChange(newFilters, 'remove', targetIndex);
         }
       }
       setPopoverState({type: 'idle'});
@@ -757,17 +772,15 @@ export function XDSPowerSearch({
     let resultCountNode: React.ReactNode = null;
     if (resultCount != null) {
       if (typeof resultCount === 'number') {
-        const countText = labels?.resultCountLabel
-          ? labels.resultCountLabel(resultCount)
-          : `${new Intl.NumberFormat().format(resultCount)} ${resultCount === 1 ? 'result' : 'results'}`;
+        const countText = `${new Intl.NumberFormat().format(resultCount)} ${resultCount === 1 ? 'result' : 'results'}`;
         resultCountNode = (
-          <span {...stylex.props(resultCountStyles.text)}>
+          <span role="status" aria-live="polite" {...stylex.props(resultCountStyles.text)}>
             {countText}
           </span>
         );
       } else {
         resultCountNode = (
-          <span {...stylex.props(resultCountStyles.text)}>{resultCount}</span>
+          <span role="status" aria-live="polite" {...stylex.props(resultCountStyles.text)}>{resultCount}</span>
         );
       }
     }
@@ -781,7 +794,7 @@ export function XDSPowerSearch({
       );
     }
     return resultCountNode || endContent || undefined;
-  }, [resultCount, endContent, labels]);
+  }, [resultCount, endContent]);
 
   return (
     <>
@@ -819,10 +832,6 @@ export function XDSPowerSearch({
             onSave={handlePopoverSave}
             onCancel={handlePopoverCancel}
             saveButtonLabel={popoverSaveButtonLabel}
-            cancelButtonLabel={popoverCancelButtonLabel}
-            deleteButtonLabel={popoverDeleteButtonLabel}
-            ariaLabel={popoverAriaLabel}
-            labels={labels}
             isReadOnly={isReadOnly}
           />
         ) : null,

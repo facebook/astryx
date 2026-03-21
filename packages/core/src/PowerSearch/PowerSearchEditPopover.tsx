@@ -32,7 +32,6 @@ import type {
   PartialFilter,
   FilterValue,
   OperatorValue,
-  PowerSearchLabels,
 } from './types';
 
 const styles = stylex.create({
@@ -96,14 +95,6 @@ export interface PowerSearchEditPopoverProps {
   onCancel: () => void;
   /** Label for the save button. @default 'Apply' */
   saveButtonLabel?: string;
-  /** Label for the cancel button. @default 'Cancel' */
-  cancelButtonLabel?: string;
-  /** Label for the delete button. @default 'Delete' */
-  deleteButtonLabel?: string;
-  /** Accessible label for the popover dialog. @default 'Edit filter' */
-  ariaLabel?: string;
-  /** Override hardcoded UI strings for i18n. */
-  labels?: Partial<PowerSearchLabels>;
   /** Whether the filter is read-only. */
   isReadOnly?: boolean;
 }
@@ -373,7 +364,6 @@ interface NestedEditorProps {
   onOperatorChange: (operatorKey: string) => void;
   onPartialFilterChange: (filter: PartialFilter) => void;
   isReadOnly: boolean;
-  labels?: Partial<PowerSearchLabels>;
 }
 
 function NestedEditor({
@@ -383,7 +373,6 @@ function NestedEditor({
   onOperatorChange,
   onPartialFilterChange,
   isReadOnly,
-  labels,
 }: NestedEditorProps) {
   const [subFilters, setSubFilters] = useState<EditablePartialFilter[]>(() => {
     if (partialFilter.value && partialFilter.value.type === 'nested') {
@@ -421,20 +410,22 @@ function NestedEditor({
     (path: number[], updated: EditablePartialFilter) => {
       setSubFilters(prev => {
         const next = updateAtPath(prev, path, () => updated);
+        syncToParent(next);
         return next;
       });
     },
-    [],
+    [syncToParent],
   );
 
   const handleRemove = useCallback(
     (path: number[]) => {
       setSubFilters(prev => {
         const next = removeAtPath(prev, path);
+        syncToParent(next);
         return next;
       });
     },
-    [],
+    [syncToParent],
   );
 
   const handleAdd = useCallback(
@@ -458,16 +449,12 @@ function NestedEditor({
 
       setSubFilters(prev => {
         const next = addAtPath(prev, parentPath, newSubFilter);
+        syncToParent(next);
         return next;
       });
     },
-    [config],
+    [config, syncToParent],
   );
-
-  // Sync sub-filter state to parent after each render
-  useEffect(() => {
-    syncToParent(subFilters);
-  }, [subFilters, syncToParent]);
 
   function buildTreeItems(
     filters: EditablePartialFilter[],
@@ -489,7 +476,7 @@ function NestedEditor({
             id: `${stableId}-add`,
             label: (
               <XDSButton
-                label={labels?.addFilterLabel ?? '+ Add filter'}
+                label={'+ Add filter'}
                 onClick={() => handleAdd(itemPath)}
                 variant="ghost"
                 size="sm"
@@ -512,7 +499,7 @@ function NestedEditor({
           children,
           endContent: !isReadOnly ? (
             <XDSButton
-              label={labels?.removeFilterLabel ?? 'Remove filter'}
+              label={'Remove filter'}
               icon={<XDSIcon icon="close" size="sm" />}
               variant="ghost"
               size="sm"
@@ -535,7 +522,7 @@ function NestedEditor({
         ),
         endContent: !isReadOnly ? (
           <XDSButton
-            label={labels?.removeFilterLabel ?? 'Remove filter'}
+            label={'Remove filter'}
             icon={<XDSIcon icon="close" size="sm" />}
             variant="ghost"
             size="sm"
@@ -555,7 +542,7 @@ function NestedEditor({
       id: 'add-filter',
       label: (
         <XDSButton
-          label={labels?.addFilterLabel ?? '+ Add filter'}
+          label={'+ Add filter'}
           onClick={() => handleAdd([])}
           variant="ghost"
           size="sm"
@@ -579,7 +566,7 @@ function NestedEditor({
           />
         </div>
       ) : (
-        (operatorOptions[0]?.label ?? labels?.groupFallbackLabel ?? 'Group')
+        (operatorOptions[0]?.label ?? 'Group')
       )}
     </div>
   );
@@ -607,20 +594,15 @@ export function PowerSearchEditPopover({
   onSave,
   onCancel,
   saveButtonLabel = 'Apply',
-  cancelButtonLabel = 'Cancel',
-  deleteButtonLabel = 'Delete',
-  ariaLabel = 'Edit filter',
-  labels,
   isReadOnly = false,
 }: PowerSearchEditPopoverProps) {
+  const ariaLabel = mode === 'create' ? 'Add filter' : 'Edit filter';
   const [partialFilter, setPartialFilter] =
     useState<PartialFilter>(initialFilter);
   const valueEditorRef = useRef<HTMLDivElement>(null);
 
-  // Focus trap for keyboard accessibility
-  const isPopoverVisible = true; // Always true when rendered
   const {containerRef: focusTrapRef, focusFirst} = useFocusTrap({
-    isActive: isPopoverVisible,
+    isActive: true,
     onEscape: onCancel,
   });
 
@@ -738,9 +720,11 @@ export function PowerSearchEditPopover({
   const isEmptyType = operatorValue?.type === 'empty';
   const isNestedType = operatorValue?.type === 'nested';
 
-  // For empty type, auto-save on mount
+  // For empty type, auto-save on mount (ref guard prevents duplicate fires)
+  const hasAutoSaved = useRef(false);
   React.useEffect(() => {
-    if (isEmptyType && partialFilter.field && partialFilter.operator) {
+    if (isEmptyType && partialFilter.field && partialFilter.operator && !hasAutoSaved.current) {
+      hasAutoSaved.current = true;
       onSave({
         field: partialFilter.field,
         operator: partialFilter.operator,
@@ -756,6 +740,7 @@ export function PowerSearchEditPopover({
     return (
       <div
         role="dialog"
+        aria-modal="true"
         aria-label={ariaLabel}
         ref={focusTrapRef as React.RefObject<HTMLDivElement>}
         {...stylex.props(styles.container)}
@@ -782,7 +767,6 @@ export function PowerSearchEditPopover({
               onOperatorChange={handleOperatorChange}
               onPartialFilterChange={setPartialFilter}
               isReadOnly={isReadOnly}
-              labels={labels}
             />
           </XDSVStack>
         </div>
@@ -790,7 +774,7 @@ export function PowerSearchEditPopover({
           <XDSHStack gap={2} hAlign="between">
             {!isReadOnly && mode === 'edit' ? (
               <XDSButton
-                label={deleteButtonLabel}
+                label="Delete"
                 onClick={handleDelete}
                 variant="ghost"
                 size="sm"
@@ -800,7 +784,7 @@ export function PowerSearchEditPopover({
             )}
             <XDSHStack gap={2}>
               <XDSButton
-                label={cancelButtonLabel}
+                label="Cancel"
                 onClick={onCancel}
                 variant="ghost"
                 size="sm"
@@ -822,6 +806,7 @@ export function PowerSearchEditPopover({
   return (
     <div
       role="dialog"
+      aria-modal="true"
       aria-label={ariaLabel}
       ref={focusTrapRef as React.RefObject<HTMLDivElement>}
       {...stylex.props(styles.container)}
@@ -861,7 +846,6 @@ export function PowerSearchEditPopover({
                 onEnter={handleSave}
                 config={config}
                 isDisabled={isReadOnly}
-                labels={labels}
               />
             </div>
           )}
@@ -872,7 +856,7 @@ export function PowerSearchEditPopover({
           <XDSHStack gap={2} hAlign="between">
             {!isReadOnly && mode === 'edit' ? (
               <XDSButton
-                label={deleteButtonLabel}
+                label="Delete"
                 onClick={handleDelete}
                 variant="ghost"
                 size="sm"
@@ -882,7 +866,7 @@ export function PowerSearchEditPopover({
             )}
             <XDSHStack gap={2}>
               <XDSButton
-                label={cancelButtonLabel}
+                label="Cancel"
                 onClick={onCancel}
                 variant="ghost"
                 size="sm"

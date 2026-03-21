@@ -16,7 +16,6 @@ import type {
   FilterValue,
   EnumItem,
   PowerSearchEntity,
-  PowerSearchLabels,
 } from './types';
 import type {InternalConfig} from './useInternalConfig';
 import type {XDSSearchableItem, XDSSearchSource} from '../Typeahead/types';
@@ -39,7 +38,6 @@ export interface PowerSearchValueEditorProps {
   config: InternalConfig;
   isDisabled?: boolean;
   timezoneID?: string;
-  labels?: Partial<PowerSearchLabels>;
 }
 
 // =============================================================================
@@ -590,7 +588,6 @@ export function PowerSearchValueEditor({
   onChange,
   onEnter,
   isDisabled,
-  labels,
 }: PowerSearchValueEditorProps) {
   switch (operatorValue.type) {
     case 'empty':
@@ -603,7 +600,6 @@ export function PowerSearchValueEditor({
           filterValue={filterValue}
           onChange={onChange}
           onEnter={onEnter}
-          placeholder={labels?.stringPlaceholder}
         />
       );
 
@@ -613,7 +609,6 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
-          placeholder={labels?.stringListPlaceholder}
         />
       );
 
@@ -623,7 +618,6 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
-          placeholder={labels?.numberPlaceholder}
         />
       );
 
@@ -633,7 +627,6 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
-          placeholder={labels?.numberPlaceholder}
         />
       );
 
@@ -688,7 +681,6 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
-          placeholder={labels?.enumListPlaceholder}
         />
       );
 
@@ -698,7 +690,6 @@ export function PowerSearchValueEditor({
           operatorValue={operatorValue}
           filterValue={filterValue}
           onChange={onChange}
-          placeholder={labels?.entityListPlaceholder}
         />
       );
 
@@ -709,7 +700,6 @@ export function PowerSearchValueEditor({
           filterValue={filterValue}
           onChange={onChange}
           isDisabled={isDisabled}
-          placeholder={labels?.customPlaceholder}
         />
       );
 

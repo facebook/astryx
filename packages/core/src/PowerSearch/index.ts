@@ -70,5 +70,4 @@ export type {
   OperatorTokenizationConfig,
   PowerSearchChangeType,
   XDSPowerSearchHandle,
-  PowerSearchLabels,
 } from './types';

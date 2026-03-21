@@ -43,7 +43,13 @@ function formatDateAbsolute(unixSeconds: number, timezoneID?: string): string {
     minute: '2-digit',
     ...(timezoneID ? {timeZone: timezoneID} : {}),
   };
-  return new Intl.DateTimeFormat(undefined, options).format(unixSeconds * 1000);
+  try {
+    return new Intl.DateTimeFormat(undefined, options).format(unixSeconds * 1000);
+  } catch {
+    // Fall back to formatting without timezone if the timezone string is invalid
+    const {timeZone: _, ...fallbackOptions} = options;
+    return new Intl.DateTimeFormat(undefined, fallbackOptions).format(unixSeconds * 1000);
+  }
 }
 
 function formatRelativeDate(value: string): string {
