@@ -15,7 +15,7 @@ import * as path from 'node:path';
 import {createRequire} from 'node:module';
 
 // Import shared theme processing from core — ensures build and runtime
-// use the same logic for typeScale expansion, prose, and component rules.
+// use the same logic for typography.scale expansion, prose, and component rules.
 const _require = createRequire(import.meta.url);
 let _defineTheme = null;
 let _generateThemeRules = null;
@@ -593,14 +593,17 @@ export function registerTheme(program) {
       // This ensures build and runtime produce identical rule sets.
       let css;
       if (_defineTheme && _generateThemeRules) {
-        // Shared path: run through defineTheme (expands typeScale, merges
+        // Shared path: run through defineTheme (expands typography.scale, merges
         // components) then generateThemeRules with computedValues for
         // self-contained CSS output.
         const resolvedTheme = _defineTheme({
           name: themeDef.name,
-          typeScale: themeDef.typeScale,
+          typography: themeDef.typography,
+          motion: themeDef.motion,
+          radius: themeDef.radius,
           tokens: themeDef.tokens,
           components: themeDef.components,
+          variants: themeDef.variants,
         });
         const rules = _generateThemeRules(resolvedTheme);
         if (rules.length === 0) {
@@ -698,10 +701,10 @@ Or with a <link> tag:
   </XDSTheme>
 `);
 
-      // Print font declaration warnings
-      if (themeDef.fonts && themeDef.fonts.length > 0) {
+      // Print font declaration warnings (derived from typography roles)
+      if (resolvedTheme.fonts && resolvedTheme.fonts.length > 0) {
         console.log(`\n⚠ Theme "${themeDef.name}" requires fonts not included in the build:`);
-        for (const font of themeDef.fonts) {
+        for (const font of resolvedTheme.fonts) {
           console.log(`  ${font.family} — add to your document <head>:`);
           console.log(`  <link rel="stylesheet" href="${font.url}" />`);
         }

@@ -23,6 +23,78 @@ export interface ThemeFontSource {
   url: string;
 }
 
+// =============================================================================
+// Typography config types
+// =============================================================================
+
+/**
+ * Named font weight — maps to var(--font-weight-*) at the token layer.
+ * Raw CSS values (e.g. '800') are accepted as an escape hatch.
+ */
+export type FontWeight =
+  | 'normal'
+  | 'medium'
+  | 'semibold'
+  | 'bold'
+  | (string & {});
+
+/**
+ * A typography role declaration (body, heading, or code).
+ *
+ * @example
+ * ```
+ * body: {
+ *   family: 'Geist',
+ *   fallbacks: '"Geist Fallback", -apple-system, sans-serif',
+ *   url: 'https://cdn.jsdelivr.net/npm/geist@1/dist/fonts/geist-sans/style.css',
+ *   weight: 'normal',
+ * }
+ * ```
+ */
+export interface TypographyRole {
+  /** Primary font name — used for font loading detection via document.fonts.check() */
+  family?: string;
+  /** CSS fallback font stack (appended after family in the computed --font-* token) */
+  fallbacks?: string;
+  /** Stylesheet URL for runtime font loading. Omit for system fonts. */
+  url?: string;
+  /** Default font weight for this role */
+  weight?: FontWeight;
+  /** Per-level weight overrides (heading only: keys are heading levels 1–6) */
+  weights?: Partial<Record<1 | 2 | 3 | 4 | 5 | 6, FontWeight>>;
+}
+
+/**
+ * Unified typography configuration.
+ *
+ * Replaces the separate `typeScale`, `fonts`, and font token overrides
+ * with a single config object.
+ *
+ * - `scale` controls the geometric type scale (base size + ratio)
+ * - `body`, `heading`, `code` declare fonts, fallbacks, weights per role
+ * - `heading` inherits family/fallbacks/url from `body` if not specified
+ *
+ * @example
+ * ```
+ * typography: {
+ *   scale: { base: 14, ratio: 1.2 },
+ *   body: { family: 'Geist', fallbacks: '-apple-system, sans-serif', url: '...' },
+ *   heading: { weight: 'semibold', weights: { 3: 'bold', 4: 'bold' } },
+ *   code: { family: 'Geist Mono', fallbacks: '"SF Mono", monospace', url: '...' },
+ * }
+ * ```
+ */
+export interface TypographyConfig {
+  /** Type scale: generates text size tokens from base + ratio */
+  scale?: {base: number; ratio: number};
+  /** Body text font configuration */
+  body?: TypographyRole;
+  /** Heading font configuration. Inherits family/fallbacks/url from body if omitted. */
+  heading?: TypographyRole;
+  /** Code/monospace font configuration */
+  code?: TypographyRole;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type StyleXStyles = any;
 

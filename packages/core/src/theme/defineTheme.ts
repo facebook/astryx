@@ -29,7 +29,7 @@
  */
 
 import type {XDSIconRegistry} from '../Icon/globalIconRegistry';
-import type {ThemeFontSource} from './types';
+import type {ThemeFontSource, TypographyConfig, FontWeight} from './types';
 import {parseStyleKey} from '../utils/parseStyleKey';
 import {
   colorDefaults,
@@ -133,35 +133,32 @@ export interface XDSDefineThemeInput {
   /** Theme name — used for data-xds-theme attribute and identification */
   name: string;
   /**
-   * Optional type scale configuration. Generates typography token overrides
-   * from a base size and scaling ratio using a geometric progression.
+   * Unified typography configuration — fonts, scale, and weights.
    *
-   * h4 is anchored to `base`. Headings h1–h3 scale up, h5–h6 scale down.
-   * Text types: body/label/code at base, large one step up, supporting one step down.
-   *
-   * When omitted, themes use the hardcoded defaults (base=14, ratio=1.2).
-   * Explicit `tokens` overrides take precedence over typeScale-generated values.
+   * Replaces the separate `typeScale` and `fonts` fields with a single
+   * config. Scale controls sizing; roles (body, heading, code) declare
+   * fonts, fallbacks, and weights. Heading inherits from body if omitted.
    *
    * @example
    * ```tsx
-   * typeScale: { base: 14, ratio: 1.2 }
-   *
-   * // Suggested starting points:
-   * //   Dense/functional: { base: 12, ratio: 1.125 }
-   * //   Default:          { base: 14, ratio: 1.2 }
-   * //   Airy/editorial:   { base: 16, ratio: 1.25 }
+   * typography: {
+   *   scale: { base: 14, ratio: 1.2 },
+   *   body: { family: 'Geist', fallbacks: '-apple-system, sans-serif', url: '...' },
+   *   heading: { weight: 'semibold', weights: { 3: 'bold', 4: 'bold' } },
+   *   code: { family: 'Geist Mono', fallbacks: '"SF Mono", monospace', url: '...' },
+   * }
    * ```
    */
-  typeScale?: XDSTypeScaleConfig;
+  typography?: TypographyConfig;
   /**
-   * Motion scale configuration. Computes duration min/max variants from
+   * Motion configuration. Computes duration min/max variants from
    * base values and a scaling ratio: min = base × ratio, max = base / ratio.
    *
-   * Explicit `tokens` overrides take precedence over motionScale-generated values.
+   * Explicit `tokens` overrides take precedence over motion-generated values.
    *
    * @example
    * ```
-   * motionScale: { fast: 175, medium: 410, ratio: 0.75 }
+   * motion: { fast: 175, medium: 410, ratio: 0.75 }
    *
    * // Suggested starting points:
    * //   Snappy:    { fast: 100, medium: 250, ratio: 0.75 }
@@ -169,26 +166,26 @@ export interface XDSDefineThemeInput {
    * //   Cinematic: { fast: 200, medium: 500, ratio: 0.7 }
    * ```
    */
-  motionScale?: XDSMotionScaleConfig;
+  motion?: XDSMotionScaleConfig;
   /**
-   * Optional radius scale configuration. Generates radius token overrides
+   * Radius configuration. Generates radius token overrides
    * from a base unit and multiplier.
    *
    * radius-0 and radius-rounded are always fixed (never affected by multiplier).
    * radius-1 through radius-4 = base * step * multiplier.
    *
    * When omitted, themes use the hardcoded defaults (base=4, multiplier=1).
-   * Explicit `tokens` overrides take precedence over radiusScale-generated values.
+   * Explicit `tokens` overrides take precedence over radius-generated values.
    *
    * @example
    * ```tsx
-   * radiusScale: { base: 4, multiplier: 1 }
+   * radius: { base: 4, multiplier: 1 }
    *
    * // Sharp/brutalist — all radii become 0
-   * radiusScale: { base: 4, multiplier: 0 }
+   * radius: { base: 4, multiplier: 0 }
    * ```
    */
-  radiusScale?: XDSRadiusScaleConfig;
+  radius?: XDSRadiusScaleConfig;
   /** Token overrides — flat map of CSS custom property names to values.
    *  Values can be a string or [light, dark] tuple.
    *  Only include tokens you want to override; defaults fill the rest. */
@@ -254,22 +251,6 @@ export interface XDSDefineThemeInput {
    * ```
    */
   variants?: Record<string, Record<string, Record<string, string>>>;
-  /**
-   * Font declarations — fonts this theme requires.
-   *
-   * These are not bundled by the build — instead:
-   * - **Best**: Add `<link rel="stylesheet" href="...">` to your document `<head>` for preloading
-   * - **Build**: `npx xds theme build` prints instructions for any declared fonts
-   * - **Runtime**: `XDSTheme` loads missing fonts automatically as a fallback
-   *
-   * @example
-   * ```
-   * fonts: [
-   *   { family: 'Figtree', url: 'https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700' },
-   * ]
-   * ```
-   */
-  fonts?: ThemeFontSource[];
 }
 
 /** A defined theme — ready to pass to <XDSTheme> */
@@ -369,43 +350,130 @@ function deepMergeComponents(
 }
 
 /**
+ * Resolve a FontWeight name to a var() reference.
+ * Named weights map to var(--font-weight-*); raw values pass through.
+ */
+function resolveFontWeight(weight: FontWeight): string {
+  const named: Record<string, string> = {
+    normal: 'var(--font-weight-normal)',
+    medium: 'var(--font-weight-medium)',
+    semibold: 'var(--font-weight-semibold)',
+    bold: 'var(--font-weight-bold)',
+  };
+  return named[weight] ?? weight;
+}
+
+/**
+ * Build the full CSS font-family value from family + fallbacks.
+ * Quotes the family name if it contains spaces.
+ */
+function buildFontFamily(
+  family?: string,
+  fallbacks?: string,
+): string | undefined {
+  if (!family) return undefined;
+  const quoted = family.includes(' ') ? `"${family}"` : family;
+  if (fallbacks) return `${quoted}, ${fallbacks}`;
+  return quoted;
+}
+
+/**
  * Create an XDS theme.
  *
  * Pass only the tokens you want to override — everything else
  * inherits from the XDS defaults.
  *
- * When `typeScale` is provided, it generates typography token overrides
+ * When `typography.scale` is provided, it generates typography token overrides
  * that are merged into the token map. Explicit `tokens` entries take
- * precedence over typeScale-generated values.
+ * precedence over generated values.
  */
 export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
   const tokens: Record<string, string> = {};
 
+  // Build typeScale config from typography if present
+  const typo = input.typography;
+  let typeScaleConfig: XDSTypeScaleConfig | undefined;
+  if (typo?.scale) {
+    // Collect weight overrides from typography roles
+    const headingWeights: Partial<Record<1 | 2 | 3 | 4 | 5 | 6, string>> = {};
+    const headingRole = typo.heading;
+    if (headingRole?.weights) {
+      for (const [level, w] of Object.entries(headingRole.weights)) {
+        if (w)
+          headingWeights[Number(level) as 1 | 2 | 3 | 4 | 5 | 6] =
+            resolveFontWeight(w);
+      }
+    }
+    // Default heading weight from role
+    const defaultHeadingWeight = headingRole?.weight
+      ? resolveFontWeight(headingRole.weight)
+      : undefined;
+    if (defaultHeadingWeight) {
+      for (let i = 1; i <= 6; i++) {
+        if (!(i in headingWeights)) {
+          headingWeights[i as 1 | 2 | 3 | 4 | 5 | 6] = defaultHeadingWeight;
+        }
+      }
+    }
+
+    // Text weight overrides from roles
+    const textWeights: Partial<Record<string, string>> = {};
+    if (typo.body?.weight)
+      textWeights.body = resolveFontWeight(typo.body.weight);
+    if (typo.code?.weight)
+      textWeights.code = resolveFontWeight(typo.code.weight);
+
+    typeScaleConfig = {
+      base: typo.scale.base,
+      ratio: typo.scale.ratio,
+      weights: {
+        ...(Object.keys(headingWeights).length > 0
+          ? {heading: headingWeights}
+          : {}),
+        ...(Object.keys(textWeights).length > 0 ? {text: textWeights} : {}),
+      },
+    };
+  }
+
   // 1. Apply typeScale-generated tokens first (lowest precedence)
-  if (input.typeScale) {
-    const typeScaleTokens = expandTypeScale(input.typeScale);
+  if (typeScaleConfig) {
+    const typeScaleTokens = expandTypeScale(typeScaleConfig);
     for (const [key, value] of Object.entries(typeScaleTokens)) {
       tokens[key] = value;
     }
   }
 
-  // 1b. Apply radiusScale-generated tokens (lowest precedence for radius)
-  if (input.radiusScale) {
-    const radiusTokens = expandRadiusScale(input.radiusScale);
+  // 1b. Apply radius-generated tokens (lowest precedence for radius)
+  if (input.radius) {
+    const radiusTokens = expandRadiusScale(input.radius);
     for (const [key, value] of Object.entries(radiusTokens)) {
       tokens[key] = value;
     }
   }
 
-  // 1c. Apply motionScale-generated tokens (same precedence as typeScale)
-  if (input.motionScale) {
-    const motionTokens = expandMotionScale(input.motionScale);
+  // 1c. Apply motion-generated tokens (same precedence as typeScale)
+  if (input.motion) {
+    const motionTokens = expandMotionScale(input.motion);
     for (const [key, value] of Object.entries(motionTokens)) {
       tokens[key] = value;
     }
   }
 
-  // 2. Apply explicit token overrides (highest precedence — overwrites typeScale/radiusScale/motionScale)
+  // 1d. Apply typography font family tokens
+  if (typo) {
+    // Heading inherits from body if not specified
+    const bodyFamily = buildFontFamily(typo.body?.family, typo.body?.fallbacks);
+    const headingFamily =
+      buildFontFamily(typo.heading?.family, typo.heading?.fallbacks) ??
+      bodyFamily;
+    const codeFamily = buildFontFamily(typo.code?.family, typo.code?.fallbacks);
+
+    if (bodyFamily) tokens['--font-body'] = bodyFamily;
+    if (headingFamily) tokens['--font-heading'] = headingFamily;
+    if (codeFamily) tokens['--font-code'] = codeFamily;
+  }
+
+  // 2. Apply explicit token overrides (highest precedence — overwrites generated tokens)
   if (input.tokens) {
     for (const [key, value] of Object.entries(input.tokens)) {
       if (value !== undefined) {
@@ -416,8 +484,8 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
 
   // 3. Generate component overrides: typeScale-generated (lowest) + explicit (highest)
   let components = input.components;
-  if (input.typeScale) {
-    const generated = generateTypeScaleComponents(input.typeScale);
+  if (typeScaleConfig) {
+    const generated = generateTypeScaleComponents(typeScaleConfig);
     components = deepMergeComponents(generated, input.components);
   }
 
@@ -448,13 +516,29 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
     }
   }
 
+  // 5. Derive fonts array from typography roles (for runtime loading)
+  let fonts: ThemeFontSource[] | undefined;
+  if (typo) {
+    const seen = new Set<string>();
+    const fontList: ThemeFontSource[] = [];
+    // Heading inherits from body — collect body first, then heading (may be same), then code
+    for (const role of [typo.body, typo.heading, typo.code]) {
+      if (role?.family && role.url && !seen.has(role.family)) {
+        seen.add(role.family);
+        fontList.push({family: role.family, url: role.url});
+      }
+    }
+    // If heading has no family/url but body does, body is already in the list
+    if (fontList.length > 0) fonts = fontList;
+  }
+
   return {
     name: input.name,
     tokens,
     components,
     icons: input.icons,
     variants: variantNames,
-    fonts: input.fonts,
+    fonts,
   };
 }
 

@@ -234,11 +234,11 @@ describe('generateThemeCSS with components', () => {
   });
 });
 
-describe('typeScale', () => {
-  it('generates typography token overrides when typeScale is provided', () => {
+describe('typography.scale', () => {
+  it('generates typography token overrides when typography.scale is provided', () => {
     const theme = defineTheme({
       name: 'dense',
-      typeScale: {base: 12, ratio: 1.125},
+      typography: {scale: {base: 12, ratio: 1.125}},
     });
     // Semantic tokens are now var() refs; raw token has the computed value
     expect(theme.tokens['--heading-4-size']).toBe('var(--text-base)');
@@ -249,7 +249,7 @@ describe('typeScale', () => {
   it('generates 44 tokens (11 raw size + 33 semantic)', () => {
     const theme = defineTheme({
       name: 'custom',
-      typeScale: {base: 14, ratio: 1.2},
+      typography: {scale: {base: 14, ratio: 1.2}},
     });
     // 11 raw size (--text-4xs…--text-4xl) + 33 semantic = 44
     // Filtering for --heading- or --text- captures raw + semantic = 11 + 15 + 18 = 44
@@ -259,30 +259,30 @@ describe('typeScale', () => {
     expect(typeScaleKeys).toHaveLength(54);
   });
 
-  it('explicit tokens override typeScale-generated values', () => {
+  it('explicit tokens override scale-generated values', () => {
     const theme = defineTheme({
       name: 'override-test',
-      typeScale: {base: 14, ratio: 1.2},
+      typography: {scale: {base: 14, ratio: 1.2}},
       tokens: {
         '--heading-1-size': '40px',
       },
     });
-    // Explicit token should win over typeScale
+    // Explicit token should win over typography.scale
     expect(theme.tokens['--heading-1-size']).toBe('40px');
-    // Non-overridden typeScale token should still be a var() ref
+    // Non-overridden scale token should still be a var() ref
     expect(theme.tokens['--heading-4-size']).toBe('var(--text-base)');
   });
 
-  it('works without typeScale (backwards compatible)', () => {
+  it('works without typography.scale (backwards compatible)', () => {
     const theme = defineTheme({name: 'no-scale'});
     // No type scale tokens should be present
     expect(theme.tokens['--heading-1-size']).toBeUndefined();
   });
 
-  it('combines typeScale with other token overrides', () => {
+  it('combines typography.scale with other token overrides', () => {
     const theme = defineTheme({
       name: 'combo',
-      typeScale: {base: 16, ratio: 1.25},
+      typography: {scale: {base: 16, ratio: 1.25}},
       tokens: {
         '--color-accent': '#FF0000',
       },
@@ -293,11 +293,11 @@ describe('typeScale', () => {
   });
 });
 
-describe('typeScale component auto-generation', () => {
-  it('auto-generates heading component overrides when typeScale is provided', () => {
+describe('typography.scale component auto-generation', () => {
+  it('auto-generates heading component overrides when typography.scale is provided', () => {
     const theme = defineTheme({
       name: 'auto',
-      typeScale: {base: 14, ratio: 1.2},
+      typography: {scale: {base: 14, ratio: 1.2}},
     });
     expect(theme.components?.heading?.['level:1']).toBeDefined();
     expect(theme.components?.heading?.['level:1']?.fontSize).toBe(
@@ -305,10 +305,10 @@ describe('typeScale component auto-generation', () => {
     );
   });
 
-  it('auto-generates text component overrides when typeScale is provided', () => {
+  it('auto-generates text component overrides when typography.scale is provided', () => {
     const theme = defineTheme({
       name: 'auto',
-      typeScale: {base: 14, ratio: 1.2},
+      typography: {scale: {base: 14, ratio: 1.2}},
     });
     expect(theme.components?.text?.['type:body']).toBeDefined();
     expect(theme.components?.text?.['type:body']?.fontSize).toBe(
@@ -319,7 +319,7 @@ describe('typeScale component auto-generation', () => {
   it('does not include color in auto-generated rules', () => {
     const theme = defineTheme({
       name: 'auto',
-      typeScale: {base: 14, ratio: 1.2},
+      typography: {scale: {base: 14, ratio: 1.2}},
     });
     expect(theme.components?.heading?.['level:1']?.color).toBeUndefined();
     expect(theme.components?.text?.['type:supporting']?.color).toBeUndefined();
@@ -328,7 +328,7 @@ describe('typeScale component auto-generation', () => {
   it('explicit components deep-merge on top of auto-generated', () => {
     const theme = defineTheme({
       name: 'custom',
-      typeScale: {base: 14, ratio: 1.2},
+      typography: {scale: {base: 14, ratio: 1.2}},
       components: {
         heading: {
           'level:1': {letterSpacing: '-0.02em'},
@@ -350,7 +350,7 @@ describe('typeScale component auto-generation', () => {
     expect(theme.components?.button?.base?.borderRadius).toBe('999px');
   });
 
-  it('does not generate components when typeScale is absent', () => {
+  it('does not generate components when typography.scale is absent', () => {
     const theme = defineTheme({name: 'bare'});
     expect(theme.components).toBeUndefined();
   });
@@ -358,7 +358,7 @@ describe('typeScale component auto-generation', () => {
   it('explicit heading overrides win over auto-generated', () => {
     const theme = defineTheme({
       name: 'override',
-      typeScale: {base: 14, ratio: 1.2},
+      typography: {scale: {base: 14, ratio: 1.2}},
       components: {
         heading: {
           'level:1': {fontFamily: '"Playfair Display", serif'},
@@ -376,11 +376,11 @@ describe('typeScale component auto-generation', () => {
   });
 });
 
-describe('radiusScale', () => {
-  it('generates radius tokens from radiusScale', () => {
+describe('radius', () => {
+  it('generates radius tokens from radius', () => {
     const theme = defineTheme({
       name: 'rounded',
-      radiusScale: {base: 4, multiplier: 1.5},
+      radius: {base: 4, multiplier: 1.5},
     });
     expect(theme.tokens['--radius-1']).toBe('6px');
     expect(theme.tokens['--radius-2']).toBe('12px');
@@ -390,20 +390,20 @@ describe('radiusScale', () => {
     expect(theme.tokens['--radius-rounded']).toBe('9999px');
   });
 
-  it('explicit tokens override radiusScale', () => {
+  it('explicit tokens override radius', () => {
     const theme = defineTheme({
       name: 'custom',
-      radiusScale: {base: 4, multiplier: 1},
+      radius: {base: 4, multiplier: 1},
       tokens: {'--radius-3': '20px'},
     });
     expect(theme.tokens['--radius-3']).toBe('20px');
-    expect(theme.tokens['--radius-2']).toBe('8px'); // from radiusScale
+    expect(theme.tokens['--radius-2']).toBe('8px'); // from radius
   });
 
-  it('radiusScale with multiplier 0 produces sharp theme', () => {
+  it('radius with multiplier 0 produces sharp theme', () => {
     const theme = defineTheme({
       name: 'sharp',
-      radiusScale: {base: 4, multiplier: 0},
+      radius: {base: 4, multiplier: 0},
     });
     expect(theme.tokens['--radius-1']).toBe('0px');
     expect(theme.tokens['--radius-2']).toBe('0px');
@@ -413,16 +413,16 @@ describe('radiusScale', () => {
     expect(theme.tokens['--radius-rounded']).toBe('9999px');
   });
 
-  it('works without radiusScale (backwards compatible)', () => {
+  it('works without radius (backwards compatible)', () => {
     const theme = defineTheme({name: 'no-scale'});
     expect(theme.tokens['--radius-0']).toBeUndefined();
   });
 
-  it('combines radiusScale with typeScale and other tokens', () => {
+  it('combines radius with typography.scale and other tokens', () => {
     const theme = defineTheme({
       name: 'combo',
-      typeScale: {base: 16, ratio: 1.25},
-      radiusScale: {base: 4, multiplier: 1},
+      typography: {scale: {base: 16, ratio: 1.25}},
+      radius: {base: 4, multiplier: 1},
       tokens: {
         '--color-accent': '#FF0000',
       },
@@ -546,52 +546,204 @@ describe('variants', () => {
   });
 });
 
-describe('defineTheme fonts', () => {
-  it('passes through fonts array from input', () => {
-    const fonts = [
-      {
-        family: 'Figtree',
-        url: 'https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700',
+describe('typography fonts derivation', () => {
+  it('derives fonts array from typography roles with urls', () => {
+    const theme = defineTheme({
+      name: 'font-test',
+      typography: {
+        body: {
+          family: 'Figtree',
+          fallbacks: 'sans-serif',
+          url: 'https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700',
+        },
+        code: {
+          family: 'JetBrains Mono',
+          fallbacks: 'monospace',
+          url: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono',
+        },
       },
-      {
-        family: 'JetBrains Mono',
-        url: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono',
-      },
-    ];
-    const theme = defineTheme({name: 'font-test', fonts});
-    expect(theme.fonts).toEqual(fonts);
+    });
     expect(theme.fonts).toHaveLength(2);
     expect(theme.fonts![0].family).toBe('Figtree');
+    expect(theme.fonts![1].family).toBe('JetBrains Mono');
     expect(theme.fonts![1].url).toContain('JetBrains');
   });
 
-  it('returns undefined fonts when not specified', () => {
+  it('returns undefined fonts when no typography specified', () => {
     const theme = defineTheme({name: 'no-fonts'});
     expect(theme.fonts).toBeUndefined();
   });
 
-  it('handles empty fonts array', () => {
-    const theme = defineTheme({name: 'empty-fonts', fonts: []});
-    expect(theme.fonts).toEqual([]);
-    expect(theme.fonts).toHaveLength(0);
+  it('returns undefined fonts when typography has no urls', () => {
+    const theme = defineTheme({
+      name: 'no-urls',
+      typography: {
+        body: {family: 'Courier New', fallbacks: 'monospace'},
+      },
+    });
+    expect(theme.fonts).toBeUndefined();
   });
 
-  it('combines fonts with tokens and other features', () => {
+  it('deduplicates fonts when heading inherits from body', () => {
     const theme = defineTheme({
-      name: 'combo-fonts',
-      tokens: {'--font-heading': '"Figtree", sans-serif'},
-      fonts: [
-        {
+      name: 'dedup',
+      typography: {
+        body: {
+          family: 'Geist',
+          fallbacks: 'sans-serif',
+          url: 'https://example.com/geist.css',
+        },
+        // heading inherits body — same font, should not duplicate
+      },
+    });
+    expect(theme.fonts).toHaveLength(1);
+    expect(theme.fonts![0].family).toBe('Geist');
+  });
+
+  it('derives font family tokens from typography roles', () => {
+    const theme = defineTheme({
+      name: 'family-tokens',
+      typography: {
+        body: {family: 'Geist', fallbacks: '-apple-system, sans-serif'},
+        code: {family: 'Geist Mono', fallbacks: '"SF Mono", monospace'},
+      },
+    });
+    expect(theme.tokens['--font-body']).toBe(
+      'Geist, -apple-system, sans-serif',
+    );
+    expect(theme.tokens['--font-heading']).toBe(
+      'Geist, -apple-system, sans-serif',
+    ); // inherited from body
+    expect(theme.tokens['--font-code']).toBe(
+      '"Geist Mono", "SF Mono", monospace',
+    );
+  });
+
+  it('heading family overrides body when specified', () => {
+    const theme = defineTheme({
+      name: 'heading-override',
+      typography: {
+        body: {family: 'Inter', fallbacks: 'sans-serif'},
+        heading: {family: 'Playfair Display', fallbacks: 'serif'},
+      },
+    });
+    expect(theme.tokens['--font-body']).toBe('Inter, sans-serif');
+    expect(theme.tokens['--font-heading']).toBe('"Playfair Display", serif');
+  });
+
+  it('explicit tokens override typography-derived font tokens', () => {
+    const theme = defineTheme({
+      name: 'token-wins',
+      typography: {
+        body: {family: 'Geist', fallbacks: 'sans-serif'},
+      },
+      tokens: {'--font-heading': '"Custom", serif'},
+    });
+    // Explicit token wins over typography-derived
+    expect(theme.tokens['--font-heading']).toBe('"Custom", serif');
+    // Body still comes from typography
+    expect(theme.tokens['--font-body']).toBe('Geist, sans-serif');
+  });
+
+  it('combines typography with scale and tokens', () => {
+    const theme = defineTheme({
+      name: 'combo',
+      typography: {
+        scale: {base: 14, ratio: 1.2},
+        body: {
           family: 'Figtree',
+          fallbacks: 'sans-serif',
           url: 'https://fonts.googleapis.com/css2?family=Figtree',
         },
-      ],
-      typeScale: {base: 14, ratio: 1.2},
+      },
     });
-    expect(theme.name).toBe('combo-fonts');
+    expect(theme.name).toBe('combo');
     expect(theme.fonts).toHaveLength(1);
-    expect(theme.tokens['--font-heading']).toBe('"Figtree", sans-serif');
-    // typeScale tokens should still be present
+    expect(theme.tokens['--font-body']).toBe('Figtree, sans-serif');
+    // scale tokens should still be present
     expect(theme.tokens['--heading-4-size']).toBeDefined();
+  });
+});
+
+describe('typography weight derivation', () => {
+  it('applies heading weight from typography role', () => {
+    const theme = defineTheme({
+      name: 'heading-weight',
+      typography: {
+        scale: {base: 14, ratio: 1.2},
+        heading: {weight: 'bold'},
+      },
+    });
+    // All heading levels should get bold weight
+    expect(theme.tokens['--heading-1-weight']).toBe('var(--font-weight-bold)');
+    expect(theme.tokens['--heading-4-weight']).toBe('var(--font-weight-bold)');
+  });
+
+  it('per-level heading weights override default heading weight', () => {
+    const theme = defineTheme({
+      name: 'per-level',
+      typography: {
+        scale: {base: 14, ratio: 1.2},
+        heading: {
+          weight: 'semibold',
+          weights: {3: 'bold', 4: 'bold'},
+        },
+      },
+    });
+    expect(theme.tokens['--heading-1-weight']).toBe(
+      'var(--font-weight-semibold)',
+    );
+    expect(theme.tokens['--heading-3-weight']).toBe('var(--font-weight-bold)');
+    expect(theme.tokens['--heading-4-weight']).toBe('var(--font-weight-bold)');
+  });
+
+  it('body weight flows to text body token', () => {
+    const theme = defineTheme({
+      name: 'body-weight',
+      typography: {
+        scale: {base: 14, ratio: 1.2},
+        body: {weight: 'medium'},
+      },
+    });
+    expect(theme.tokens['--text-body-weight']).toBe(
+      'var(--font-weight-medium)',
+    );
+  });
+
+  it('code weight flows to text code token', () => {
+    const theme = defineTheme({
+      name: 'code-weight',
+      typography: {
+        scale: {base: 14, ratio: 1.2},
+        code: {weight: 'medium'},
+      },
+    });
+    expect(theme.tokens['--text-code-weight']).toBe(
+      'var(--font-weight-medium)',
+    );
+  });
+
+  it('named weight maps to var reference', () => {
+    const theme = defineTheme({
+      name: 'named-weight',
+      typography: {
+        scale: {base: 14, ratio: 1.2},
+        heading: {weight: 'normal'},
+      },
+    });
+    expect(theme.tokens['--heading-1-weight']).toBe(
+      'var(--font-weight-normal)',
+    );
+  });
+
+  it('raw CSS weight value passes through', () => {
+    const theme = defineTheme({
+      name: 'raw-weight',
+      typography: {
+        scale: {base: 14, ratio: 1.2},
+        heading: {weight: '900'},
+      },
+    });
+    expect(theme.tokens['--heading-1-weight']).toBe('900');
   });
 });

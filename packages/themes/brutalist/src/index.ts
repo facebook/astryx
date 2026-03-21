@@ -1,8 +1,8 @@
 /**
  * Brutalist theme for XDS
  *
- * Zero radius, monospace headings, hot pink accent, heavy borders.
- * Demonstrates the full power of defineTheme: token overrides,
+ * Zero radius, monospace everything, hot pink accent, heavy borders.
+ * Demonstrates the full power of defineTheme: typography roles,
  * component-level style overrides, and variant targeting.
  */
 
@@ -11,14 +11,19 @@ import {defineTheme} from '@xds/core/theme';
 export const brutalistTheme = defineTheme({
   name: 'brutalist',
 
-  // Zero radius everywhere — multiplier 0 makes all scalable radii 0px
-  radiusScale: {base: 4, multiplier: 0},
+  // Monospace everything — body sets Courier, heading inherits
+  typography: {
+    body: {family: 'Courier New', fallbacks: '"Courier", monospace'},
+  },
 
-  // Motion scale: near-instant — brutalism doesn't wait.
+  // Zero radius everywhere — multiplier 0 makes all scalable radii 0px
+  radius: {base: 4, multiplier: 0},
+
+  // Motion: near-instant — brutalism doesn't wait.
   // Produces: fast-min=50ms, fast=65ms, fast-max=85ms,
   //           medium-min=115ms, medium=150ms, medium-max=200ms.
   // Linear easing — no curves, no polish, just movement.
-  motionScale: {fast: 65, medium: 150, ratio: 0.75, easing: 'linear'},
+  motion: {fast: 65, medium: 150, ratio: 0.75, easing: 'linear'},
 
   tokens: {
     // Colors — high contrast, no subtlety
@@ -30,9 +35,6 @@ export const brutalistTheme = defineTheme({
 
     // Even pills are sharp in brutalist
     '--radius-rounded': '0px',
-
-    // Monospace headings
-    '--font-heading': '"Courier New", "Courier", monospace',
   },
   components: {
     // Cards get heavy borders
@@ -78,11 +80,8 @@ export const brutalistTheme = defineTheme({
         letterSpacing: '0.05em',
       },
     },
-    // Body text is monospace too
+    // Code gets a background
     text: {
-      base: {
-        fontFamily: '"Courier New", "Courier", monospace',
-      },
       'type:code': {
         backgroundColor: 'var(--color-wash)',
         padding: '2px 4px',
