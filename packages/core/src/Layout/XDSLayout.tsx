@@ -65,6 +65,11 @@ const styles = stylex.create({
 
 export interface XDSLayoutProps extends Omit<XDSBaseProps, 'content'> {
   /**
+   * Ref forwarded to the root DOM element.
+   */
+  ref?: React.Ref<HTMLDivElement>;
+
+  /**
    * Main content area (center).
    */
   content?: ReactNode;
@@ -186,6 +191,7 @@ export function XDSLayout({
   header,
   height = 'fill',
   padding,
+  ref,
   start,
   xstyle,
   className,
@@ -207,6 +213,7 @@ export function XDSLayout({
   return (
     <XDSLayoutSlotsContext.Provider value={slotsValue}>
       <div
+        ref={ref}
         {...mergeProps(
           xdsClassName('layout', {height}),
           stylex.props(
