@@ -8,9 +8,31 @@ describe('XDSEmptyState', () => {
     expect(screen.getByText('No results found')).toBeInTheDocument();
   });
 
-  it('renders title as a heading element', () => {
+  it('renders title as h3 by default', () => {
     render(<XDSEmptyState title="No data" />);
-    expect(screen.getByRole('heading', {name: 'No data'})).toBeInTheDocument();
+    const heading = screen.getByRole('heading', {name: 'No data'});
+    expect(heading).toBeInTheDocument();
+    expect(heading.tagName).toBe('H3');
+  });
+
+  it('renders custom heading level', () => {
+    render(<XDSEmptyState title="No data" headingLevel={2} />);
+    const heading = screen.getByRole('heading', {name: 'No data'});
+    expect(heading.tagName).toBe('H2');
+  });
+
+  it('renders all heading levels', () => {
+    const levels = [1, 2, 3, 4, 5, 6] as const;
+    for (const level of levels) {
+      const {unmount} = render(
+        <XDSEmptyState title={`Level ${level}`} headingLevel={level} />,
+      );
+      const heading = screen.getByRole('heading', {
+        name: `Level ${level}`,
+      });
+      expect(heading.tagName).toBe(`H${level}`);
+      unmount();
+    }
   });
 
   it('renders with description', () => {

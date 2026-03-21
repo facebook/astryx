@@ -22,11 +22,46 @@ describe('XDSBadge', () => {
     expect(screen.getByText('Info')).toBeInTheDocument();
   });
 
-  it('renders as dot when no label provided', () => {
-    const {container} = render(<XDSBadge variant="success" />);
-    const badge = container.querySelector('span');
-    expect(badge).toBeInTheDocument();
-    expect(badge?.textContent).toBe('');
+  it('renders as dot with shape="dot"', () => {
+    render(<XDSBadge variant="success" shape="dot" label="Online" />);
+    // Label is in the DOM as visually hidden text for screen readers
+    expect(screen.getByText('Online')).toBeInTheDocument();
+  });
+
+  it('dot shape has accessible label via visually hidden text', () => {
+    render(
+      <XDSBadge
+        variant="error"
+        shape="dot"
+        label="3 unread"
+        data-testid="dot-badge"
+      />,
+    );
+    const badge = screen.getByTestId('dot-badge');
+    expect(screen.getByText('3 unread')).toBeInTheDocument();
+    // The visually hidden span is inside the badge
+    expect(badge.textContent).toBe('3 unread');
+  });
+
+  it('dot shape suppresses icon', () => {
+    render(
+      <XDSBadge
+        label="Status"
+        icon={<span data-testid="icon">*</span>}
+        shape="dot"
+        data-testid="dot-badge"
+      />,
+    );
+    const badge = screen.getByTestId('dot-badge');
+    expect(badge.querySelector('[data-testid="icon"]')).toBeNull();
+  });
+
+  it('includes shape in xdsClassName', () => {
+    const {container} = render(
+      <XDSBadge variant="info" label="New" shape="dot" />,
+    );
+    const root = container.firstElementChild!;
+    expect(root.className).toContain('dot');
   });
 
   it('renders with icon', () => {

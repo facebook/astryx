@@ -11,7 +11,7 @@
  * - /apps/storybook/stories/EmptyState.stories.tsx (storybook stories)
  */
 
-import {type ReactNode} from 'react';
+import {type ReactNode, createElement} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -101,6 +101,12 @@ export interface XDSEmptyStateProps {
    */
   actions?: ReactNode;
   /**
+   * Semantic heading level for the title element.
+   * Controls the rendered HTML tag (h1–h6) to fit the document outline.
+   * @default 3
+   */
+  headingLevel?: 1 | 2 | 3 | 4 | 5 | 6;
+  /**
    * Use compact variant for constrained spaces with reduced spacing.
    * @default false
    */
@@ -158,6 +164,7 @@ export function XDSEmptyState({
   description,
   icon,
   actions,
+  headingLevel = 3,
   isCompact = false,
   xstyle,
   className,
@@ -165,6 +172,7 @@ export function XDSEmptyState({
   ref,
   ...props
 }: XDSEmptyStateProps) {
+  const HeadingTag = `h${headingLevel}` as const;
   return (
     <div
       ref={ref}
@@ -182,9 +190,11 @@ export function XDSEmptyState({
       {...props}>
       {icon != null && <div aria-hidden="true">{icon}</div>}
       <div {...stylex.props(styles.textGroup)}>
-        <h3 {...stylex.props(styles.title, isCompact && styles.titleCompact)}>
-          {title}
-        </h3>
+        {createElement(
+          HeadingTag,
+          stylex.props(styles.title, isCompact && styles.titleCompact),
+          title,
+        )}
         {description != null && (
           <p
             {...stylex.props(
