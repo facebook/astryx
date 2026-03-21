@@ -17,13 +17,21 @@ const originalMatches = HTMLElement.prototype.matches;
 // Track popover open state per element
 const popoverOpenState = new WeakMap<HTMLElement, boolean>();
 
-// Mock Popover API for jsdom
+// Mock Popover API for jsdom — dispatch toggle events like real browsers
 beforeAll(() => {
   HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
     popoverOpenState.set(this, true);
+    const event = new Event('toggle', {bubbles: false});
+    (event as unknown as ToggleEvent).newState = 'open';
+    (event as unknown as ToggleEvent).oldState = 'closed';
+    this.dispatchEvent(event);
   });
   HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
     popoverOpenState.set(this, false);
+    const event = new Event('toggle', {bubbles: false});
+    (event as unknown as ToggleEvent).newState = 'closed';
+    (event as unknown as ToggleEvent).oldState = 'open';
+    this.dispatchEvent(event);
   });
 
   // Only intercept :popover-open, delegate everything else to original

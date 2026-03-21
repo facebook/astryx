@@ -14,6 +14,7 @@
 import React, {
   useCallback,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -83,6 +84,10 @@ export interface ContextRenderProps {
    * Merged after StyleX and anchor positioning styles.
    */
   style?: React.CSSProperties;
+  /**
+   * ARIA role for the popover container.
+   */
+  role?: string;
 }
 
 /**
@@ -288,21 +293,27 @@ export function useXDSLayer(
   const popoverRef = useRef<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
+  // Store callbacks in refs so handleToggle has stable identity
+  const onShowRef = useRef(onShow);
+  const onHideRef = useRef(onHide);
+  useLayoutEffect(() => {
+    onShowRef.current = onShow;
+    onHideRef.current = onHide;
+  });
+
+  // show/hide only call the Popover API — handleToggle is the single
+  // source of truth for state updates and onShow/onHide callbacks.
   const show = useCallback(() => {
     if (popoverRef.current && !popoverRef.current.matches(':popover-open')) {
       popoverRef.current.showPopover();
-      setIsOpen(true);
-      onShow?.();
     }
-  }, [onShow]);
+  }, []);
 
   const hide = useCallback(() => {
     if (popoverRef.current?.matches(':popover-open')) {
       popoverRef.current.hidePopover();
-      setIsOpen(false);
-      onHide?.();
     }
-  }, [onHide]);
+  }, []);
 
   // Ref for trigger element (context mode only)
   const ref: RefCallback<HTMLElement> | undefined =
@@ -324,24 +335,25 @@ export function useXDSLayer(
         }
       : undefined;
 
-  // Handle popover toggle events (for sync with browser-initiated close)
-  const handleToggle = useCallback(
-    (e: Event) => {
-      const toggleEvent = e as ToggleEvent;
-      if (toggleEvent.newState === 'closed') {
-        setIsOpen(false);
-        onHide?.();
-      } else if (toggleEvent.newState === 'open') {
-        setIsOpen(true);
-        onShow?.();
-      }
-    },
-    [onShow, onHide],
-  );
+  // Handle popover toggle events — single source of truth for state/callbacks
+  const handleToggle = useCallback((e: Event) => {
+    const toggleEvent = e as ToggleEvent;
+    if (toggleEvent.newState === 'closed') {
+      setIsOpen(false);
+      onHideRef.current?.();
+    } else if (toggleEvent.newState === 'open') {
+      setIsOpen(true);
+      onShowRef.current?.();
+    }
+  }, []);
 
   // Ref callback for popover element — sets up toggle listener
   const popoverRefCallback = useCallback(
     (el: HTMLElement | null) => {
+      // Remove listener from previous element
+      if (popoverRef.current) {
+        popoverRef.current.removeEventListener('toggle', handleToggle);
+      }
       popoverRef.current = el;
       if (el) {
         el.addEventListener('toggle', handleToggle);
@@ -359,6 +371,7 @@ export function useXDSLayer(
         xstyle,
         className: extraClassName,
         style: extraStyle,
+        role,
       } = props || {};
 
       // CSS anchor positioning (dynamic, not in StyleX)
@@ -377,6 +390,7 @@ export function useXDSLayer(
         <div
           ref={popoverRefCallback}
           id={id}
+          role={role}
           popover={lightDismiss ? 'auto' : 'manual'}
           className={combinedClassName}
           style={{...stylexResult.style, ...anchorStyle, ...extraStyle}}>

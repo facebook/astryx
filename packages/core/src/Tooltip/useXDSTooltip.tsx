@@ -273,6 +273,8 @@ export function useXDSTooltip(
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const isOpenRef = useRef(false);
+  const isEnabledRef = useRef(isEnabled);
+  isEnabledRef.current = isEnabled;
 
   // Clear all timeouts
   const clearTimeouts = useCallback(() => {
@@ -291,6 +293,7 @@ export function useXDSTooltip(
     if (!isEnabled) return;
     clearTimeouts();
     showTimeoutRef.current = setTimeout(() => {
+      if (!isEnabledRef.current) return;
       layer.show();
       isOpenRef.current = true;
     }, delay);
@@ -412,6 +415,13 @@ export function useXDSTooltip(
     [layer.ref, interactionRef],
   );
 
+  // Clear pending timeouts when isEnabled becomes false
+  useEffect(() => {
+    if (!isEnabled) {
+      clearTimeouts();
+    }
+  }, [isEnabled, clearTimeouts]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -427,12 +437,11 @@ export function useXDSTooltip(
         alignment: props?.alignment ?? alignment,
         xstyle: popoverXstyle,
         className: xdsClassName('tooltip'),
+        role: 'tooltip' as const,
       };
 
       return layer.render(
-        <div role="tooltip" {...stylex.props(styles.content)}>
-          {children}
-        </div>,
+        <div {...stylex.props(styles.content)}>{children}</div>,
         renderProps,
       );
     },
