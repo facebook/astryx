@@ -2085,18 +2085,18 @@
     "@stylexjs/shared" "0.11.1"
     "@stylexjs/stylex" "0.11.1"
 
-"@stylexjs/babel-plugin@0.17.5", "@stylexjs/babel-plugin@^0.17.4":
-  version "0.17.5"
-  resolved "https://registry.npmjs.org/@stylexjs/babel-plugin/-/babel-plugin-0.17.5.tgz"
-  integrity sha512-BT+066uVkzcJSLtkGaEmFLEWxs3uC08wuOxeC8AEVyfWibz45/e1OVjDgIf1+8my0XiJXSLAlwjmzkf1/unjNA==
+"@stylexjs/babel-plugin@0.18.1", "@stylexjs/babel-plugin@^0.18.1":
+  version "0.18.1"
+  resolved "https://registry.yarnpkg.com/@stylexjs/babel-plugin/-/babel-plugin-0.18.1.tgz#9d5cc47d9c386077c27af0dde3a3a6852722b97c"
+  integrity sha512-T3JkuyLqfOiwbhiLtS3yrrDRW5P9NK0NGbeZrQ8qX9xYgEgC2t3fqL+U1DvUuvBXod5dEpXH7YiIzTpSfK8kmQ==
   dependencies:
     "@babel/core" "^7.26.8"
     "@babel/helper-module-imports" "^7.25.9"
     "@babel/traverse" "^7.26.8"
     "@babel/types" "^7.26.8"
     "@dual-bundle/import-meta-resolve" "^4.1.0"
-    "@stylexjs/shared" "0.17.5"
-    "@stylexjs/stylex" "0.17.5"
+    "@stylexjs/shared" "0.18.1"
+    "@stylexjs/stylex" "0.18.1"
     postcss-value-parser "^4.1.0"
 
 "@stylexjs/esbuild-plugin@^0.11.1":
@@ -2113,13 +2113,13 @@
     babel-plugin-syntax-hermes-parser "^0.26.0"
     esbuild "^0.24.0"
 
-"@stylexjs/postcss-plugin@^0.17.4":
-  version "0.17.5"
-  resolved "https://registry.npmjs.org/@stylexjs/postcss-plugin/-/postcss-plugin-0.17.5.tgz"
-  integrity sha512-GeveZXN8aDrXTSRpDM0SvCjmmY7WCfoel+lWcsf47QcJvjz5auGmh3a9LhIFLpwmAgpsVr20RyB8yxX93NaKow==
+"@stylexjs/postcss-plugin@^0.18.1":
+  version "0.18.1"
+  resolved "https://registry.yarnpkg.com/@stylexjs/postcss-plugin/-/postcss-plugin-0.18.1.tgz#278cd886d45e79d28fd2e098593a3f16c149f6fa"
+  integrity sha512-vFXUqIk3KRv3CamJxtixruFoYCRqzHzfoe8BOCGH3ZrFuRn6/FaFSfCyCeluWG1QdEgY92OfpEJjq564NNEURg==
   dependencies:
     "@babel/core" "^7.26.8"
-    "@stylexjs/babel-plugin" "0.17.5"
+    "@stylexjs/babel-plugin" "0.18.1"
     fast-glob "^3.3.2"
     glob-parent "^6.0.2"
     is-glob "^4.0.3"
@@ -2132,10 +2132,10 @@
   dependencies:
     postcss-value-parser "^4.1.0"
 
-"@stylexjs/shared@0.17.5":
-  version "0.17.5"
-  resolved "https://registry.npmjs.org/@stylexjs/shared/-/shared-0.17.5.tgz"
-  integrity sha512-Q8HwrvfOl2SBKzjb3+HgaH1mUGBqFcWIwgKvZMyhkXIqhmGMrWA3vdTxtzEpuYiFH7AOPuzebpOJn/3rIqK7iA==
+"@stylexjs/shared@0.18.1":
+  version "0.18.1"
+  resolved "https://registry.yarnpkg.com/@stylexjs/shared/-/shared-0.18.1.tgz#a63a387a351e0eb4501361d323446901d04b5634"
+  integrity sha512-YtzdWT0DpuKB14h+BAc95vUxpiCmJdFkCaFKAEjmKhLfbUaaowm+BKlKBYXAoUjWSzP6a55CznApcNQVr+fbQg==
 
 "@stylexjs/stylex@0.11.1":
   version "0.11.1"
@@ -2146,25 +2146,25 @@
     invariant "^2.2.4"
     styleq "0.2.1"
 
-"@stylexjs/stylex@0.17.5", "@stylexjs/stylex@^0.17.4":
-  version "0.17.5"
-  resolved "https://registry.npmjs.org/@stylexjs/stylex/-/stylex-0.17.5.tgz"
-  integrity sha512-mV+mIXqj1AsnGHFj/hyno7YOBjBpgRzvD00iif0w/LExeN8mwNb2yTfnTHkx62fLaM7vUtoIEcO/bFHqmiOtpw==
+"@stylexjs/stylex@0.18.1", "@stylexjs/stylex@^0.18.1":
+  version "0.18.1"
+  resolved "https://registry.yarnpkg.com/@stylexjs/stylex/-/stylex-0.18.1.tgz#1b48bf645cc028404199ba4561b4bcb56203656d"
+  integrity sha512-EQUUnOCM0wq7B0OIrQum+tLckE8Dm+zjZgemxKQ28z1ajV65D8HHlfbaTEj3VtYuUOUT6VrQZQvzwkdEDxOUkA==
   dependencies:
     css-mediaquery "^0.1.2"
     invariant "^2.2.4"
     styleq "0.2.1"
 
-"@stylexjs/unplugin@^0.17.4":
-  version "0.17.5"
-  resolved "https://registry.npmjs.org/@stylexjs/unplugin/-/unplugin-0.17.5.tgz"
-  integrity sha512-ygKFNN3vUeZsmH++fGYm/XDecuNZzqTzCsU4XMiKqUpWwCb7YTJitptLASTk7Qe+dz1bpwmdWfFDUR55Us7WfA==
+"@stylexjs/unplugin@^0.18.1":
+  version "0.18.1"
+  resolved "https://registry.yarnpkg.com/@stylexjs/unplugin/-/unplugin-0.18.1.tgz#6da9407d7223fef0e6b4d4cde7718171bf224611"
+  integrity sha512-gT12x6SDxMcfL9XjEK8stuXbMYzN5XYRBJgcP7kkcNzh+f2pYFKlnF3B63cHDL1ErXZWBUk4NsoqUVnzPZIH7A==
   dependencies:
     "@babel/core" "^7.26.8"
     "@babel/plugin-syntax-flow" "^7.26.0"
     "@babel/plugin-syntax-jsx" "^7.25.9"
     "@babel/plugin-syntax-typescript" "^7.25.9"
-    "@stylexjs/babel-plugin" "0.17.5"
+    "@stylexjs/babel-plugin" "0.18.1"
     browserslist "^4.24.0"
     lightningcss "^1.29.1"
 
@@ -5444,6 +5444,16 @@ unplugin@^1.3.1:
   integrity sha512-4/u/j4FrCKdi17jaxuJA0jClGxB1AvU2hw/IuayPc4ay1XGaJs/rbb4v5WKwAjNifjmXK9PIFyuPiaK8azyR9w==
   dependencies:
     acorn "^8.14.0"
+    webpack-virtual-modules "^0.6.2"
+
+unplugin@^2.3.11:
+  version "2.3.11"
+  resolved "https://registry.yarnpkg.com/unplugin/-/unplugin-2.3.11.tgz#411e020dd2ba90e2fbe1e7bd63a5a399e6ee3b54"
+  integrity sha512-5uKD0nqiYVzlmCRs01Fhs2BdkEgBS3SAVP6ndrBsuK42iC2+JHyxM05Rm9G8+5mkmRtzMZGY8Ct5+mliZxU/Ww==
+  dependencies:
+    "@jridgewell/remapping" "^2.3.5"
+    acorn "^8.15.0"
+    picomatch "^4.0.3"
     webpack-virtual-modules "^0.6.2"
 
 update-browserslist-db@^1.2.0:

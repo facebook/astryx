@@ -87,7 +87,7 @@ Look for `<!-- SYNC: ... -->` comments and `SYNC:` in file headers as reminders.
 
 <!-- STYLEX-CAPS:START -->
 
-[StyleX v0.17.5 CSS Support]|Use CSS-native solutions. Don't build JS workarounds for supported features.
+[StyleX v0.18.1 CSS Support]|Use CSS-native solutions. Don't build JS workarounds for supported features.
 |AT-RULES: @media, @supports, @container (+named), @starting-style, @scope — YES
 |AT-RULES: @layer, @property (explicit) — NO (compiles but invalid CSS output)
 |PSEUDO-CLS: :hover, :focus, :focus-visible, :focus-within, :active, :disabled — YES
@@ -121,6 +121,7 @@ Look for `<!-- SYNC: ... -->` comments and `SYNC:` in file headers as reminders.
 <!-- STYLEX-CAPS:END -->
 
 <!-- XDS-CLI:START -->
+
 XDS v0.0.4|Always run npx xds component <Name> before writing XDS component code.
 npx xds component <Name> props, usage, examples for any component
 npx xds component --list 95 components by category
@@ -130,4 +131,5 @@ npx xds upgrade --apply run version migration codemods
 --detail compact|brief less output | --lang dense|zh translation
 RULE: after @xds/core bump, always run npx xds upgrade --apply
 RULE: when swizzling, always use --gap to report missing capabilities
+
 <!-- XDS-CLI:END -->

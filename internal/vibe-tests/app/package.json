@@ -16,6 +16,7 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.0.0",
     "@stylexjs/unplugin": "*",
+    "unplugin": "^2.3.11",
     "vite": "^5.0.0",
     "vite-plugin-singlefile": "^2.0.0"
   }
