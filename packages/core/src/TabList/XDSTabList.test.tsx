@@ -242,52 +242,7 @@ describe('XDSTabList', () => {
   });
 });
 
-describe('XDSTab disabled', () => {
-  it('renders a disabled button with aria-disabled', () => {
-    const handleChange = vi.fn();
-
-    render(
-      <XDSTabList value="home" onChange={handleChange}>
-        <XDSTab value="home" label="Home" />
-        <XDSTab value="settings" label="Settings" isDisabled />
-      </XDSTabList>,
-    );
-
-    const settingsTab = screen.getByRole('button', {name: 'Settings'});
-    expect(settingsTab).toBeDisabled();
-    expect(settingsTab).toHaveAttribute('aria-disabled', 'true');
-  });
-
-  it('does not call onChange when isDisabled', async () => {
-    const user = userEvent.setup({pointerEventsCheck: 0});
-    const handleChange = vi.fn();
-
-    render(
-      <XDSTabList value="home" onChange={handleChange}>
-        <XDSTab value="home" label="Home" />
-        <XDSTab value="settings" label="Settings" isDisabled />
-      </XDSTabList>,
-    );
-
-    // Disabled button has pointer-events: none and disabled attr;
-    // bypass pointer-events check to verify onClick guard
-    await user.click(screen.getByRole('button', {name: 'Settings'}));
-    expect(handleChange).not.toHaveBeenCalled();
-  });
-
-  it('renders as button (not link) when disabled with href', () => {
-    render(
-      <XDSTabList value="home" onChange={() => {}}>
-        <XDSTab value="settings" label="Settings" href="/settings" isDisabled />
-      </XDSTabList>,
-    );
-
-    // Should render as a disabled button, not a link
-    const tab = screen.getByRole('button', {name: 'Settings'});
-    expect(tab).toBeDisabled();
-    expect(screen.queryByRole('link', {name: 'Settings'})).not.toBeInTheDocument();
-  });
-
+describe('XDSTab passthrough', () => {
   it('passes data-testid and className through to XDSTab', () => {
     render(
       <XDSTabList value="home" onChange={() => {}}>

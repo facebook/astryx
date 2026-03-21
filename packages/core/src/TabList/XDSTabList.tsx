@@ -40,12 +40,6 @@ export interface XDSTabListProps extends XDSBaseProps<HTMLElement> {
    */
   hasDivider?: boolean;
   /**
-   * Accessible label for the tab list navigation landmark.
-   * Required when multiple tab lists appear on the same page.
-   * @default 'Tabs'
-   */
-  'aria-label'?: string;
-  /**
    * XDSTab and XDSTabMenu children.
    */
   children: ReactNode;

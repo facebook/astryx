@@ -32,7 +32,7 @@ import type {XDSLinkComponentType} from '../Link/types';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
 
-export interface XDSTabProps extends XDSBaseProps<HTMLButtonElement> {
+export interface XDSTabProps extends XDSBaseProps<HTMLElement> {
   /**
    * Custom component to render instead of `<a>` for link tabs.
    * Overrides the provider-level default set by XDSLinkProvider.
@@ -59,11 +59,6 @@ export interface XDSTabProps extends XDSBaseProps<HTMLButtonElement> {
    * Icon element shown when tab is selected. Falls back to `icon` if not provided.
    */
   selectedIcon?: ReactNode;
-  /**
-   * Whether the tab is disabled. Prevents selection and applies disabled styling.
-   * @default false
-   */
-  isDisabled?: boolean;
 }
 
 // =============================================================================
@@ -107,11 +102,6 @@ const styles = stylex.create({
   selected: {
     color: colorVars['--color-text-link'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
-  },
-  disabled: {
-    color: colorVars['--color-text-disabled'],
-    cursor: 'default',
-    pointerEvents: 'none',
   },
   underlineSelected: {
     '::after': {
@@ -200,7 +190,6 @@ export function XDSTab({
   href,
   icon,
   selectedIcon,
-  isDisabled = false,
   xstyle,
   className,
   style,
@@ -214,10 +203,8 @@ export function XDSTab({
   const displayIcon = isSelected && selectedIcon ? selectedIcon : icon;
 
   const handleSelect = useCallback(() => {
-    if (!isDisabled) {
-      tabListCtx.onChange(value);
-    }
-  }, [tabListCtx, value, isDisabled]);
+    tabListCtx.onChange(value);
+  }, [tabListCtx, value]);
 
   const iconElement = displayIcon ? (
     <span {...stylex.props(styles.icon, iconSizeStyles[size])}>
@@ -227,7 +214,6 @@ export function XDSTab({
 
   const sharedProps = {
     'aria-current': isSelected ? ('page' as const) : undefined,
-    'aria-disabled': isDisabled || undefined,
     ...rest,
     ...mergeProps(
       xdsClassName('tab'),
@@ -236,8 +222,7 @@ export function XDSTab({
         sizeStyles[size],
         isSelected && styles.selected,
         isSelected && styles.underlineSelected,
-        isDisabled && styles.disabled,
-        !isSelected && !isDisabled && stylex.defaultMarker(),
+        !isSelected && stylex.defaultMarker(),
         xstyle,
       ),
       className,
@@ -245,7 +230,7 @@ export function XDSTab({
     ),
   };
 
-  const hoverUnderlineElement = !isSelected && !isDisabled ? (
+  const hoverUnderlineElement = !isSelected ? (
     <span {...stylex.props(styles.hoverUnderline)} />
   ) : null;
 
@@ -258,7 +243,7 @@ export function XDSTab({
     </span>
   );
 
-  if (href != null && !isDisabled) {
+  if (href != null) {
     return (
       <LinkComponent href={href} onClick={handleSelect} {...sharedProps}>
         {iconElement}
@@ -272,7 +257,6 @@ export function XDSTab({
     <button
       type="button"
       onClick={handleSelect}
-      disabled={isDisabled}
       {...sharedProps}>
       {iconElement}
       {labelElement}

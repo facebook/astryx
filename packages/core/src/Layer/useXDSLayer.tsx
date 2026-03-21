@@ -339,12 +339,22 @@ export function useXDSLayer(
     [onShow, onHide],
   );
 
+  // Track previous element+handler to clean up on re-assignment
+  const prevPopoverRef = useRef<{el: HTMLElement; handler: (e: Event) => void} | null>(null);
+
   // Ref callback for popover element — sets up toggle listener
   const popoverRefCallback = useCallback(
     (el: HTMLElement | null) => {
+      // Remove old listener before adding new one
+      if (prevPopoverRef.current) {
+        prevPopoverRef.current.el.removeEventListener('toggle', prevPopoverRef.current.handler);
+        prevPopoverRef.current = null;
+      }
+
       popoverRef.current = el;
       if (el) {
         el.addEventListener('toggle', handleToggle);
+        prevPopoverRef.current = {el, handler: handleToggle};
       }
     },
     [handleToggle],

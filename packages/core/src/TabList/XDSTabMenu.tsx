@@ -12,7 +12,7 @@
 
 'use client';
 
-import React, {useCallback, useId, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useId, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSIcon} from '../Icon';
 import type {XDSIconType} from '../Icon';
@@ -261,14 +261,26 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
     onEscape: () => layer.hide(),
   });
 
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
+  }, []);
+
   const handleToggle = useCallback(() => {
     if (layer.isOpen) {
       layer.hide();
     } else {
       layer.show();
       // Auto-focus first menu item after opening
-      requestAnimationFrame(() => {
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
         focusFirst();
+        setFocusedIndex(0);
       });
     }
   }, [layer, focusFirst]);
