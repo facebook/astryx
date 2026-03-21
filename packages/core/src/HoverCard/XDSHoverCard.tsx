@@ -24,7 +24,6 @@ import * as stylex from '@stylexjs/stylex';
 import {useXDSHoverCard, type HoverCardFocusTrigger} from './useXDSHoverCard';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useXDSLayer';
 import {colorVars} from '../theme/tokens.stylex';
-import {xdsClassName} from '../utils';
 
 export type {HoverCardFocusTrigger} from './useXDSHoverCard';
 
@@ -229,8 +228,7 @@ export function XDSHoverCard({
           {...stylex.props(
             styles.wrapperInline,
             showHoverIndication && styles.hoverIndication,
-          )}
-          {...xdsClassName('hovercard-trigger')}>
+          )}>
           {children}
         </span>
         {hoverCard.renderHoverCard(content)}
@@ -243,8 +241,7 @@ export function XDSHoverCard({
     <>
       <div
         ref={wrapperRef as React.RefObject<HTMLDivElement | null>}
-        {...stylex.props(styles.wrapperContents)}
-        {...xdsClassName('hovercard-trigger')}>
+        {...stylex.props(styles.wrapperContents)}>
         {children}
       </div>
       {hoverCard.renderHoverCard(content)}

@@ -34,7 +34,6 @@ export const docs = {
   theming: {
     targets: [
       {className: 'xds-hovercard'},
-      {className: 'xds-hovercard-trigger'},
     ],
     vars: [
       {name: '--hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-container)'},
@@ -240,7 +239,6 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'xds-hovercard'},
-      {className: 'xds-hovercard-trigger'},
     ],
     vars: [
       {name: '--hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-container)'},
