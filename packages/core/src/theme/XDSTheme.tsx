@@ -114,7 +114,7 @@ function useThemeStyleInjection(theme: XDSDefinedTheme): void {
  * <link rel="stylesheet" href="..."> to your document <head>. For discoverability,
  * `npx xds theme build` prints font instructions in the build output.
  *
- * In dev mode, a console warning is logged for each font loaded at runtime
+ * A console warning is logged for each font loaded at runtime
  * to encourage moving to the preload path.
  */
 function useThemeFontLoading(theme: XDSDefinedTheme): void {
@@ -145,14 +145,12 @@ function useThemeFontLoading(theme: XDSDefinedTheme): void {
       newLinks.push(link);
 
       // Dev-mode warning to encourage preloading
-      if (process.env.NODE_ENV !== 'production') {
-         
-        console.warn(
-          `[XDS] Theme "${theme.name}" loaded font "${font.family}" at runtime. ` +
-            `For better performance, add to your document <head>:\n` +
-            `  <link rel="stylesheet" href="${font.url}" />`,
-        );
-      }
+      // Warn to encourage preloading — only visible in devtools
+      console.warn(
+        `[XDS] Theme "${theme.name}" loaded font "${font.family}" at runtime. ` +
+          `For better performance, add to your document <head>:\n` +
+          `  <link rel="stylesheet" href="${font.url}" />`,
+      );
     }
 
     injectedLinksRef.current = newLinks;
