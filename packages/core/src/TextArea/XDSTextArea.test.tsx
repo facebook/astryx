@@ -116,6 +116,24 @@ describe('XDSTextArea', () => {
     expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-required');
   });
 
+  it('suppresses aria-required when isOptional is true even if isRequired is also true', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <XDSTextArea
+        label="Feedback"
+        isOptional
+        isRequired
+        value=""
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-required');
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('isOptional and isRequired are both true'),
+    );
+    warnSpy.mockRestore();
+  });
+
   it('renders with custom rows', () => {
     render(
       <XDSTextArea label="Description" value="" onChange={() => {}} rows={5} />,
@@ -457,8 +475,8 @@ describe('XDSTextArea', () => {
       expect(describedBy).toContain(counter.id);
     });
 
-    it('counter has aria-live for screen reader announcements', () => {
-      render(
+    it('renders aria-live region only when approaching limit (>=80%)', () => {
+      const {rerender} = render(
         <XDSTextArea
           label="Description"
           value="Hello"
@@ -466,8 +484,64 @@ describe('XDSTextArea', () => {
           maxLength={20}
         />,
       );
-      const counter = screen.getByText('5/20');
-      expect(counter).toHaveAttribute('aria-live', 'polite');
+      // 5/20 = 25%, below threshold — no aria-live region
+      expect(
+        document.querySelector('[aria-live="polite"]'),
+      ).not.toBeInTheDocument();
+
+      // 16/20 = 80%, at threshold — aria-live region appears
+      rerender(
+        <XDSTextArea
+          label="Description"
+          value="1234567890123456"
+          onChange={() => {}}
+          maxLength={20}
+        />,
+      );
+      const liveRegion = document.querySelector('[aria-live="polite"]');
+      expect(liveRegion).toBeInTheDocument();
+      expect(liveRegion?.textContent).toBe('4 characters remaining');
+    });
+
+    it('aria-live region shows over-limit message when maxLength exceeded', () => {
+      render(
+        <XDSTextArea
+          label="Description"
+          value="This text exceeds the limit"
+          onChange={() => {}}
+          maxLength={10}
+        />,
+      );
+      const liveRegion = document.querySelector('[aria-live="polite"]');
+      expect(liveRegion).toBeInTheDocument();
+      expect(liveRegion?.textContent).toBe('17 characters over limit');
+    });
+
+    it('sets aria-invalid when maxLength is exceeded', () => {
+      render(
+        <XDSTextArea
+          label="Description"
+          value="This exceeds the limit"
+          onChange={() => {}}
+          maxLength={10}
+        />,
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute(
+        'aria-invalid',
+        'true',
+      );
+    });
+
+    it('does not set aria-invalid when within maxLength', () => {
+      render(
+        <XDSTextArea
+          label="Description"
+          value="Short"
+          onChange={() => {}}
+          maxLength={100}
+        />,
+      );
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-invalid');
     });
   });
 
