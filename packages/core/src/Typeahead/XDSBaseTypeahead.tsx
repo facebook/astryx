@@ -26,6 +26,7 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
+import type {XDSInputStatus} from '../Field/types';
 import {useXDSLayer} from '../Layer/useXDSLayer';
 import {XDSTypeaheadItem} from './XDSTypeaheadItem';
 import {XDSIcon} from '../Icon';
@@ -278,12 +279,13 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
   onKeyDown: externalOnKeyDown,
   debounceMs = 150,
   isRequired = false,
-  isInvalid = false,
+  status,
   ref,
 }: XDSBaseTypeaheadProps<T> & {
-  isInvalid?: boolean;
+  status?: XDSInputStatus;
   ref?: React.Ref<HTMLInputElement>;
 }) {
+  const isInvalid = status?.type === 'error';
   const generatedId = useId();
   const inputId = externalInputId ?? generatedId;
   const listboxId = useId();

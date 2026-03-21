@@ -53,6 +53,7 @@ export const docs = {
   searchSource={managerSource}
   value={manager}
   onChange={setManager}
+  isRequired
   status={{ type: 'error', message: 'A manager is required' }}
 />`,
     },
@@ -140,6 +141,12 @@ export const docs = {
           name: 'description',
           type: 'string',
           description: 'Helper text displayed below the label.',
+        },
+        {
+          name: 'isRequired',
+          type: 'boolean',
+          description: 'Marks the field as required.',
+          default: 'false',
         },
         {
           name: 'isOptional',
@@ -462,6 +469,7 @@ export const docsZh = {
   searchSource={managerSource}
   value={manager}
   onChange={setManager}
+  isRequired
   status={{ type: 'error', message: 'A manager is required' }}
 />`,
     },
@@ -549,6 +557,12 @@ export const docsZh = {
           name: 'description',
           type: 'string',
           description: '显示在标签下方的辅助文本。',
+        },
+        {
+          name: 'isRequired',
+          type: 'boolean',
+          description: '将字段标记为必填。',
+          default: 'false',
         },
         {
           name: 'isOptional',
@@ -861,6 +875,7 @@ export const docsDense = {
         renderItem: 'Custom dropdown item render. Default renders XDSTypeaheadItem.',
         isLabelHidden: 'Visually hides label; keeps a11y.',
         description: 'Helper text below label.',
+        isRequired: 'Marks field required.',
         isOptional: 'Shows optional indicator on label.',
         labelTooltip: 'Tooltip on label.',
         emptySearchResultsText: 'Text when search returns no results.',

@@ -411,7 +411,7 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
           inputId={inputId}
           ariaDescribedBy={ariaDescribedBy}
           isRequired={isRequired}
-          isInvalid={status?.type === 'error'}
+          status={status}
           onChangeQuery={onChangeQuery}
           onOpenChange={onOpenChange}
           debounceMs={debounceMs}
