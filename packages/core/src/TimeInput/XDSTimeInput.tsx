@@ -275,9 +275,8 @@ export interface XDSTimeInputProps
 /**
  * A time input component with text input and keyboard navigation.
  *
- * BREAKING CHANGE: The input now uses `role="spinbutton"` instead of the
- * implicit `role="textbox"`. Tests querying by `getByRole('textbox')` must
- * be updated to `getByRole('spinbutton')`.
+ * The input uses `role="spinbutton"` for accessible arrow-key time
+ * adjustment. Query with `getByRole('spinbutton')` in tests.
  *
  * @example
  * ```
