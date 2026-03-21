@@ -759,7 +759,6 @@ export function XDSAppShell({
       <div
         ref={setShellRef}
         data-testid={dataTestId}
-        data-variant={variant}
         {...mergeProps(
           xdsClassName('app-shell', {height, variant}),
           stylex.props(

@@ -152,7 +152,6 @@ export function XDSBadge({
   return (
     <span
       ref={ref}
-      data-variant={variant}
       {...mergeProps(
         xdsClassName('badge', {variant}),
         stylex.props(

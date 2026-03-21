@@ -432,3 +432,36 @@ describe('radiusScale', () => {
     expect(theme.tokens['--radius-2']).toBe('8px');
   });
 });
+
+describe('variants', () => {
+  it('passes through variants from input to output', () => {
+    const theme = defineTheme({
+      name: 'custom',
+      variants: {
+        button: ['primary-muted', 'primary-outline'],
+        badge: ['info-subtle'],
+      },
+    });
+    expect(theme.variants).toEqual({
+      button: ['primary-muted', 'primary-outline'],
+      badge: ['info-subtle'],
+    });
+  });
+
+  it('returns undefined variants when not provided', () => {
+    const theme = defineTheme({name: 'bare'});
+    expect(theme.variants).toBeUndefined();
+  });
+
+  it('combines variants with tokens and components', () => {
+    const theme = defineTheme({
+      name: 'combo',
+      tokens: {'--color-accent': '#FF0000'},
+      components: {button: {base: {borderRadius: '999px'}}},
+      variants: {button: ['primary-muted']},
+    });
+    expect(theme.tokens['--color-accent']).toBe('#FF0000');
+    expect(theme.components?.button?.base?.borderRadius).toBe('999px');
+    expect(theme.variants).toEqual({button: ['primary-muted']});
+  });
+});

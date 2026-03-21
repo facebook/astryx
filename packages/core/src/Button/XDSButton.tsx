@@ -393,7 +393,6 @@ export function XDSButton({
       disabled={buttonDisabled}
       aria-label={isIconOnly ? label : undefined}
       aria-busy={isLoadingState || undefined}
-      data-variant={variant}
       {...mergeProps(
         xdsClassName('button', {variant, size}),
         stylex.props(

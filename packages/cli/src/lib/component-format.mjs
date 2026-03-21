@@ -21,9 +21,84 @@ function formatPropsTable(props) {
 }
 
 /**
- * Format full component docs (default mode, replaces cleanReadme).
+ * Get the variant values for a given theming target, extracting them from
+ * the visualProps and the variant prop in the component's props list.
+ * Returns an array of variant strings from the `variant` prop type,
+ * or the variants from target visualProps.
  */
-export function formatFull(docs) {
+function getTargetVariants(target, docs) {
+  if (!target.visualProps?.length) return [];
+
+  // If variant is a visualProp, try to resolve the actual variant values from props
+  if (target.visualProps.includes('variant')) {
+    const allProps = docs.props || (docs.components?.[0]?.props) || [];
+    const variantProp = allProps.find(p => p.name === 'variant');
+    if (variantProp && variantProp.type.includes('|')) {
+      return variantProp.type
+        .replace(/['"]/g, '')
+        .split('|')
+        .map(v => v.trim())
+        .filter(Boolean);
+    }
+  }
+
+  // Return all visualProps as-is (size, orientation, etc.)
+  return target.visualProps;
+}
+
+/**
+ * Get the state classes for a theming target from the states field.
+ */
+function getTargetStates(target) {
+  return target.states || [];
+}
+
+/**
+ * Format the theming targets table, merging in theme variants if available.
+ *
+ * @param {object} docs - Component doc object
+ * @param {object|null} themeData - Resolved theme data with variants
+ * @returns {string} Markdown table
+ */
+function formatTargetsTable(docs, themeData) {
+  if (!docs.theming?.targets?.length) return '';
+
+  const lines = [];
+  lines.push('| Class | Variants | States |');
+  lines.push('|-------|----------|--------|');
+
+  for (const target of docs.theming.targets) {
+    const coreVariants = getTargetVariants(target, docs);
+    const states = getTargetStates(target);
+
+    // Merge theme variants — keyed by component name derived from class
+    // e.g. className 'xds-button' → component key 'button'
+    const componentKey = target.className.replace(/^xds-/, '');
+    const themeVariants = themeData?.variants?.[componentKey] || [];
+
+    // Build variant display: core variants plain, theme variants with * suffix
+    const variantParts = [
+      ...coreVariants,
+      ...themeVariants.map(v => `${v}*`),
+    ];
+
+    const variantsStr = variantParts.length > 0 ? variantParts.join(', ') : '—';
+    const statesStr = states.length > 0 ? states.join(', ') : '—';
+
+    lines.push(`| \`${target.className}\` | ${variantsStr} | ${statesStr} |`);
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Format full component docs (default mode, replaces cleanReadme).
+ *
+ * @param {object} docs - Component doc object
+ * @param {object} [options] - Options
+ * @param {object|null} [options.themeData] - Resolved theme data
+ */
+export function formatFull(docs, options = {}) {
   const sections = [];
 
   sections.push(`# ${docs.name}\n`);
@@ -65,20 +140,21 @@ export function formatFull(docs) {
   }
 
   if (docs.theming) {
+    const { themeData = null } = options;
     sections.push('## Theming\n');
-    const componentKey = docs.name.toLowerCase();
-
-    // Targets table
+// Targets table with theme variant merging
     if (docs.theming.targets?.length) {
-      const targetLines = [];
-      targetLines.push('| Class | Variants | States |');
-      targetLines.push('|-------|---------|--------|');
-      for (const t of docs.theming.targets) {
-        const variants = t.visualProps?.length ? t.visualProps.join(', ') : '—';
-        const states = t.states?.length ? t.states.join(', ') : '—';
-        targetLines.push(`| \`${t.className}\` | ${variants} | ${states} |`);
+      const targetsTable = formatTargetsTable(docs, themeData);
+      sections.push(targetsTable + '\n');
+
+      // Note about theme variants if any are present
+      if (themeData?.variants) {
+        const componentKeys = docs.theming.targets.map(t => t.className.replace(/^xds-/, ''));
+        const hasThemeVariants = componentKeys.some(k => themeData.variants[k]?.length > 0);
+        if (hasThemeVariants) {
+          sections.push(`_\\* = custom variant from ${themeData.name || 'active'} theme_\n`);
+        }
       }
-      sections.push(targetLines.join('\n') + '\n');
 
       // Generate defineTheme example with class targeting
       const exampleLines = ['Override in defineTheme:\n```ts\ncomponents: {'];
@@ -111,15 +187,12 @@ export function formatFull(docs) {
       sections.push(exampleLines.join('\n'));
     }
 
-    if (docs.theming.surfaces?.length) {
-      const surfaceLines = [];
-      surfaceLines.push('| Surface | Description |');
-      surfaceLines.push('|---------|-------------|');
-      for (const s of docs.theming.surfaces) {
-        surfaceLines.push(`| \`${s.name}\` | ${s.description} |`);
-      }
-      sections.push(surfaceLines.join('\n') + '\n');
+    // Legacy componentKey (for backward compatibility)
+    if (docs.theming.componentKey) {
+      sections.push(`Component key: \`${docs.theming.componentKey}\`\n`);
     }
+
+    // Component CSS vars
     if (docs.theming?.vars?.length) {
       const varLines = [];
       varLines.push('| CSS Variable | Default | Description |');
@@ -230,7 +303,7 @@ export function formatCompact(docs, componentName, importHint) {
  *
  * For multi-component docs, extracts the entry matching componentName.
  */
-export function formatBrief(docs, componentName, importHint) {
+export function formatBrief(docs, componentName, importHint, options = {}) {
   const displayName = componentName.startsWith('XDS')
     ? componentName
     : `XDS${componentName}`;
@@ -300,12 +373,17 @@ export function formatBrief(docs, componentName, importHint) {
     }
   }
 
-  // Theme targets (class names, variants, states)
+// Theme targets (class names, variants, states) with theme variant merging
   if (docs.theming?.targets?.length) {
+    const { themeData = null } = options;
     const targetParts = docs.theming.targets.map(t => {
       const parts = [t.className];
       if (t.visualProps?.length) parts.push(`variants: ${t.visualProps.join(', ')}`);
       if (t.states?.length) parts.push(`states: ${t.states.join(', ')}`);
+      // Merge theme variants
+      const componentKey = t.className.replace(/^xds-/, '');
+      const themeVars = themeData?.variants?.[componentKey];
+      if (themeVars?.length) parts.push(`theme: ${themeVars.map(v => v + '*').join(', ')}`);
       return parts.join(' ');
     });
     output.push(`  Targets: ${targetParts.join(' | ')}`);
@@ -351,7 +429,7 @@ export function formatProps(docs, componentName) {
 /**
  * Format brief summaries for ALL components in one output.
  */
-export async function formatBriefAll(coreDir, {zh = false, lang} = {}) {
+export async function formatBriefAll(coreDir, {zh = false, lang, themeData = null} = {}) {
   const components = discoverComponents(coreDir);
   const output = [];
 
@@ -362,7 +440,7 @@ export async function formatBriefAll(coreDir, {zh = false, lang} = {}) {
       if (readmePath && readmePath.endsWith('.doc.mjs')) {
         const docs = await loadDocs(readmePath, {zh, lang});
         const importPath = resolveImportPath(coreDir, comp);
-        output.push(formatBrief(docs, comp, importPath));
+        output.push(formatBrief(docs, comp, importPath, { themeData }));
       } else if (readmePath) {
         // Legacy README.md path
         const content = fs.readFileSync(readmePath, 'utf-8');

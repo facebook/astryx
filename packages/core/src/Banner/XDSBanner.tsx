@@ -404,7 +404,6 @@ export function XDSBanner({
       ref={ref}
       role={role}
       data-testid={testId}
-      data-variant={variant}
       {...mergeProps(
         xdsClassName('banner', {variant}),
         stylex.props(

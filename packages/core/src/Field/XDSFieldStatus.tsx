@@ -128,7 +128,6 @@ export function XDSFieldStatus({
   return (
     <div
       id={id}
-      data-variant={variant}
       {...mergeProps(
         xdsClassName('field-status', {type, variant}),
         stylex.props(

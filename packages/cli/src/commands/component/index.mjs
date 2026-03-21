@@ -29,6 +29,7 @@ import {
   extractProps,
 } from '../../lib/component-legacy.mjs';
 import {findClosestComponents} from '../../lib/string-utils.mjs';
+import {resolveTheme} from '../../lib/resolve-theme.mjs';
 
 export function registerComponent(program) {
   program
@@ -60,6 +61,9 @@ export function registerComponent(program) {
         process.exit(1);
       }
 
+      // Resolve active theme for variant merging
+      const themeData = resolveTheme(process.cwd());
+
       if (options.category || options.list || !name) {
         const components = discoverComponents(coreDir);
 
@@ -84,7 +88,7 @@ export function registerComponent(program) {
                 try {
                   const docs = await loadDocs(readme, {zh, lang});
                   const importHint = resolveImportPath(coreDir, comp);
-                  console.log(formatBrief(docs, comp, importHint));
+                  console.log(formatBrief(docs, comp, importHint, { themeData }));
                 } catch {
                   console.log(`  ${comp}`);
                 }
@@ -105,7 +109,7 @@ export function registerComponent(program) {
         // --list or no name: show all components
         if (detail === 'brief') {
           // Brief list: brief summaries of ALL components
-          console.log(await formatBriefAll(coreDir, {zh, lang}));
+          console.log(await formatBriefAll(coreDir, {zh, lang, themeData}));
         } else {
           console.log('');
           for (const [category, comps] of Object.entries(components)) {
@@ -171,11 +175,11 @@ export function registerComponent(program) {
         if (options.props) {
           console.log(formatProps(docs, resolvedName));
         } else if (detail === 'brief') {
-          console.log(formatBrief(docs, resolvedName, importHint));
+          console.log(formatBrief(docs, resolvedName, importHint, { themeData }));
         } else if (detail === 'compact') {
           console.log(formatCompact(docs, resolvedName, importHint));
         } else {
-          console.log(formatFull(docs));
+          console.log(formatFull(docs, { themeData }));
         }
       } else {
         // Legacy path for README.md files
