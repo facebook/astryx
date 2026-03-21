@@ -1,7 +1,7 @@
 /**
  * @file XDSSlider.tsx
  * @input Uses React, useId, useRef, useCallback, XDSField, XDSTooltip
- * @output Exports XDSSlider component, XDSSliderProps, XDSSliderSingleProps, XDSSliderRangeProps
+ * @output Exports XDSSlider component, XDSSliderProps, XDSSliderSingleProps, XDSSliderRangeProps, XDSSliderBaseProps
  * @position Core implementation; consumed by index.ts, tested by XDSSlider.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -34,6 +34,7 @@ import {XDSField} from '../Field/XDSField';
 import {XDSTooltip} from '../Tooltip/XDSTooltip';
 import type {XDSInputStatus} from '../Field/types';
 import type {StyleXStyles} from '@stylexjs/stylex';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Types
@@ -266,7 +267,7 @@ const styles = stylex.create({
   markLabel: {
     position: 'absolute',
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: textSizeVars['--text-sm'],
     color: colorVars['--color-text-secondary'],
     whiteSpace: 'nowrap',
   },
@@ -615,12 +616,15 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
         aria-describedby={ariaDescribedBy}
         style={positionStyle}
         onKeyDown={e => handleKeyDown(thumbIndex, e)}
-        {...stylex.props(
-          styles.thumb,
-          isHorizontal ? styles.thumbHorizontal : styles.thumbVertical,
-          !isDisabled && styles.thumbHover,
-          !isDisabled && styles.thumbFocusVisible,
-          isDisabled && styles.thumbDisabled,
+        {...mergeProps(
+          xdsClassName('slider-thumb', {orientation}),
+          stylex.props(
+            styles.thumb,
+            isHorizontal ? styles.thumbHorizontal : styles.thumbVertical,
+            !isDisabled && styles.thumbHover,
+            !isDisabled && styles.thumbFocusVisible,
+            isDisabled && styles.thumbDisabled,
+          ),
         )}
       />
     );
@@ -693,7 +697,11 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
       xstyle={xstyle}
       className={className}
       style={style}>
-      <div {...stylex.props(styles.sliderRow)}>
+      <div
+        {...mergeProps(
+          xdsClassName('slider', {orientation}),
+          stylex.props(styles.sliderRow),
+        )}>
         <div
           ref={node => {
             // Merge refs
@@ -724,9 +732,12 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
           {/* Background track */}
           <div
             aria-hidden="true"
-            {...stylex.props(
-              styles.track,
-              isHorizontal ? styles.trackHorizontal : styles.trackVertical,
+            {...mergeProps(
+              xdsClassName('slider-track', {orientation}),
+              stylex.props(
+                styles.track,
+                isHorizontal ? styles.trackHorizontal : styles.trackVertical,
+              ),
             )}
           />
 
