@@ -296,7 +296,7 @@ describe('XDSHoverCard', () => {
   });
 
   describe('ARIA', () => {
-    it('popover content has role="status"', () => {
+    it('popover content does not have role="status"', () => {
       const {container} = render(
         <XDSHoverCard content={<span>Card content</span>}>
           <button>Trigger</button>
@@ -304,33 +304,7 @@ describe('XDSHoverCard', () => {
       );
 
       const statusEl = container.querySelector('[role="status"]');
-      expect(statusEl).toBeInTheDocument();
-    });
-  });
-
-  describe('isTextOnly (deep check)', () => {
-    it('treats fragment-wrapped text as text-only', () => {
-      render(
-        <XDSHoverCard content={<span>Card content</span>}>
-          <>Just text in a fragment</>
-        </XDSHoverCard>,
-      );
-      // Should render as inline span (text-only path)
-      const wrapper = screen.getByText('Just text in a fragment');
-      expect(wrapper.tagName).toBe('SPAN');
-    });
-
-    it('treats fragment-wrapped elements as non-text', () => {
-      render(
-        <XDSHoverCard content={<span>Card content</span>}>
-          <>
-            <button>Inside fragment</button>
-          </>
-        </XDSHoverCard>,
-      );
-      // Should use display:contents wrapper (element path)
-      const btn = screen.getByRole('button', {name: 'Inside fragment'});
-      expect(btn).toBeInTheDocument();
+      expect(statusEl).not.toBeInTheDocument();
     });
   });
 

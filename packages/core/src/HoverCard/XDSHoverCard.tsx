@@ -24,8 +24,7 @@ import * as stylex from '@stylexjs/stylex';
 import {useXDSHoverCard, type HoverCardFocusTrigger} from './useXDSHoverCard';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useXDSLayer';
 import {colorVars} from '../theme/tokens.stylex';
-import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName} from '../utils';
 
 export type {HoverCardFocusTrigger} from './useXDSHoverCard';
 
@@ -44,7 +43,7 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSHoverCardProps extends XDSBaseProps {
+export interface XDSHoverCardProps {
   /**
    * The trigger element(s). Children refs are preserved.
    */
@@ -115,25 +114,16 @@ export interface XDSHoverCardProps extends XDSBaseProps {
 }
 
 /**
- * Check if children are text-only (no React elements), recursively.
- * Fragments are unwrapped and their children checked.
+ * Check if children are text-only (no React elements).
  */
 function isTextOnly(children: ReactNode): boolean {
-  let result = true;
+  let hasElement = false;
   React.Children.forEach(children, child => {
-    if (!result) return;
     if (React.isValidElement(child)) {
-      // Unwrap fragments and check their children
-      if (child.type === React.Fragment) {
-        if (!isTextOnly((child.props as {children?: ReactNode}).children)) {
-          result = false;
-        }
-      } else {
-        result = false;
-      }
+      hasElement = true;
     }
   });
-  return result;
+  return !hasElement;
 }
 
 /**
@@ -170,10 +160,6 @@ export function XDSHoverCard({
   isEnabled = true,
   onOpenChange,
   hasHoverIndication = 'auto',
-  xstyle,
-  className,
-  style,
-  ...restProps
 }: XDSHoverCardProps): ReactElement {
   const wrapperRef = useRef<HTMLElement>(null);
   const textOnly = isTextOnly(children);
@@ -202,11 +188,6 @@ export function XDSHoverCard({
     onHide: handleHide,
   });
 
-  // Compute the hover indication class name once (stable across renders)
-  const hoverIndicationClassName = showHoverIndication
-    ? stylex.props(styles.hoverIndication).className
-    : undefined;
-
   // For element children with display:contents, attach ref to first child
   useLayoutEffect(() => {
     if (textOnly) return; // Skip for text-only (ref is on wrapper)
@@ -227,11 +208,6 @@ export function XDSHoverCard({
       mergeIds(existingDescribedBy, hoverCard.describedBy) ?? '',
     );
 
-    // Apply hover indication class to first child element
-    if (hoverIndicationClassName) {
-      firstChild.classList.add(...hoverIndicationClassName.split(' '));
-    }
-
     return () => {
       hoverCard.ref(null);
       if (existingDescribedBy) {
@@ -239,11 +215,8 @@ export function XDSHoverCard({
       } else {
         firstChild.removeAttribute('aria-describedby');
       }
-      if (hoverIndicationClassName) {
-        firstChild.classList.remove(...hoverIndicationClassName.split(' '));
-      }
     };
-  }, [textOnly, hoverCard.ref, hoverCard.describedBy, children, hoverIndicationClassName]);
+  }, [textOnly, hoverCard.ref, hoverCard.describedBy]);
 
   // For text-only children: use inline span with ref on wrapper
   if (textOnly) {
@@ -253,17 +226,11 @@ export function XDSHoverCard({
           ref={hoverCard.ref}
           tabIndex={0}
           aria-describedby={hoverCard.describedBy}
-          {...mergeProps(
-            xdsClassName('hovercard-trigger'),
-            stylex.props(
-              styles.wrapperInline,
-              showHoverIndication && styles.hoverIndication,
-              xstyle,
-            ),
-            className,
-            style,
+          {...stylex.props(
+            styles.wrapperInline,
+            showHoverIndication && styles.hoverIndication,
           )}
-          {...restProps}>
+          {...xdsClassName('hovercard-trigger')}>
           {children}
         </span>
         {hoverCard.renderHoverCard(content)}
@@ -276,13 +243,8 @@ export function XDSHoverCard({
     <>
       <div
         ref={wrapperRef as React.RefObject<HTMLDivElement | null>}
-        {...mergeProps(
-          xdsClassName('hovercard-trigger'),
-          stylex.props(styles.wrapperContents, xstyle),
-          className,
-          style,
-        )}
-        {...restProps}>
+        {...stylex.props(styles.wrapperContents)}
+        {...xdsClassName('hovercard-trigger')}>
         {children}
       </div>
       {hoverCard.renderHoverCard(content)}

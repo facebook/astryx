@@ -326,6 +326,8 @@ export function useXDSHoverCard(
   const handleMouseEnter = useCallback(() => {
     // Suppress hover on touch devices — mouseenter fires after touchstart
     if (recentTouchRef.current) return;
+    // Reset escape flag so hover-then-focus sequences work
+    isEscapeDismissingRef.current = false;
     scheduleShow();
   }, [scheduleShow]);
 
@@ -363,6 +365,8 @@ export function useXDSHoverCard(
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        const popoverEl = document.getElementById(layer.id);
+        if (!popoverEl?.matches(':popover-open')) return;
         // Stop propagation so parent components don't react to the same Escape
         e.stopPropagation();
         // Hide immediately without refocusing (we're already on trigger)
@@ -453,7 +457,6 @@ export function useXDSHoverCard(
 
       return layer.render(
         <div
-          role="status"
           {...mergeProps(
             xdsClassName('hovercard'),
             stylex.props(styles.content),
