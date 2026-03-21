@@ -190,7 +190,6 @@ export function XDSDivider({
       ref={ref as React.Ref<HTMLDivElement>}
       role="separator"
       aria-orientation={orientation}
-      data-variant={variant}
       {...mergeProps(
         xdsClassName('divider', {variant, orientation}),
         stylex.props(

@@ -242,7 +242,6 @@ export function XDSSection({
   return (
     <div
       ref={ref as React.Ref<HTMLDivElement>}
-      data-variant={variant}
       {...mergeProps(
         xdsClassName('section', {variant}),
         stylex.props(

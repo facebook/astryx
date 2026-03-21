@@ -192,7 +192,6 @@ export function XDSStatusDot({
       ref={ref}
       role="img"
       aria-label={label}
-      data-variant={variant}
       {...mergeProps(
         xdsClassName('statusdot', {variant, size}),
         stylex.props(

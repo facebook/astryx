@@ -296,7 +296,6 @@ export function XDSProgressBar({
   return (
     <div
       ref={ref}
-      data-variant={variant}
       {...mergeProps(
         xdsClassName('progressbar', {variant, size}),
         stylex.props(styles.container, xstyle),

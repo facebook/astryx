@@ -526,7 +526,6 @@ export function XDSPagination({
       ref={ref}
       aria-label={label}
       data-testid={testId}
-      data-variant={variant}
       {...mergeProps(
         xdsClassName('pagination', {variant, size}),
         stylex.props(styles.root, xstyle),

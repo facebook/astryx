@@ -246,7 +246,6 @@ export function XDSBreadcrumbs({
       ref={ref}
       aria-label={label}
       data-testid={testId}
-      data-variant={variant}
       {...mergeProps(
         xdsClassName('breadcrumbs', {variant}),
         stylex.props(navStyles.root, xstyle),

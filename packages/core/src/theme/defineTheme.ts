@@ -215,6 +215,23 @@ export interface XDSDefineThemeInput {
   components?: XDSComponentStyleMap;
   /** Icon registry — maps semantic icon names to React nodes */
   icons?: Partial<XDSIconRegistry>;
+  /**
+   * Custom variants added by this theme. Keyed by component name (lowercase),
+   * value is an array of variant strings.
+   *
+   * These variants are available at runtime (CSS + class names work correctly)
+   * but don't provide autocomplete until `xds theme build` generates the
+   * TypeScript module augmentation file.
+   *
+   * @example
+   * ```tsx
+   * variants: {
+   *   button: ['primary-muted', 'primary-outline'],
+   *   badge: ['info-subtle'],
+   * }
+   * ```
+   */
+  variants?: Record<string, string[]>;
 }
 
 /** A defined theme — ready to pass to <XDSTheme> */
@@ -227,6 +244,8 @@ export interface XDSDefinedTheme {
   components?: XDSComponentStyleMap;
   /** Icon registry */
   icons?: Partial<XDSIconRegistry>;
+  /** Custom variants added by this theme, keyed by component name (lowercase) */
+  variants?: Record<string, string[]>;
   /** Whether this theme has been pre-compiled by theme build CLI */
   __built?: true;
 }
@@ -364,6 +383,7 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
     tokens,
     components,
     icons: input.icons,
+    variants: input.variants,
   };
 }
 

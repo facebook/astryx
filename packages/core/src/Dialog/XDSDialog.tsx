@@ -345,7 +345,6 @@ export function XDSDialog({
       onClick={handleClick}
       onCancel={handleCancel}
       aria-modal="true"
-      data-variant={variant}
       {...mergeProps(
         xdsClassName('dialog', {variant}),
         stylex.props(
