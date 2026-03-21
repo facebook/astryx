@@ -13,13 +13,7 @@ import {XDSBaseTable} from './XDSBaseTable';
 import {XDSTable} from './XDSTable';
 import {XDSTableRow} from './XDSTableRow';
 import {XDSTableCell} from './XDSTableCell';
-import {
-  proportional,
-  pixel,
-  generateColumns,
-  columnWidthToCSS,
-  capitalize,
-} from './columnUtils';
+import {proportional, pixel, generateColumns, capitalize} from './columnUtils';
 import type {TablePlugin, XDSTableColumn} from './types';
 
 // =============================================================================
@@ -65,20 +59,6 @@ describe('columnUtils', () => {
     it('creates a pixel width', () => {
       const w = pixel(200);
       expect(w).toEqual({type: 'pixel', value: 200});
-    });
-  });
-
-  describe('columnWidthToCSS', () => {
-    it('converts pixel width to px string', () => {
-      expect(columnWidthToCSS(pixel(100), 3)).toBe('100px');
-    });
-
-    it('converts proportional width to percentage', () => {
-      expect(columnWidthToCSS(proportional(1), 4)).toBe('25%');
-    });
-
-    it('handles proportional(2) out of 4', () => {
-      expect(columnWidthToCSS(proportional(2), 4)).toBe('50%');
     });
   });
 

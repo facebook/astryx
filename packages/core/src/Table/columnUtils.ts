@@ -1,6 +1,6 @@
 /**
  * @file columnUtils.ts
- * @input XDSTableColumn, ColumnWidth types from types.ts
+ * @input XDSTableColumn types from types.ts
  * @output Pure utility functions for column width and auto-generation
  * @position Utility layer; consumed by XDSBaseTable.tsx
  *
@@ -10,12 +10,7 @@
  */
 
 import type {ReactNode} from 'react';
-import type {
-  XDSTableColumn,
-  ColumnWidth,
-  ProportionalWidth,
-  PixelWidth,
-} from './types';
+import type {XDSTableColumn, ProportionalWidth, PixelWidth} from './types';
 
 /**
  * Create a proportional column width (fr-like).
@@ -40,24 +35,6 @@ export function proportional(value: number = 1): ProportionalWidth {
  */
 export function pixel(value: number): PixelWidth {
   return {type: 'pixel', value};
-}
-
-/**
- * Convert a ColumnWidth to a CSS width string for `<col>`.
- *
- * Proportional widths are converted to percentages relative to the
- * total proportional units across all columns.
- */
-export function columnWidthToCSS(
-  width: ColumnWidth,
-  totalProportional: number,
-): string {
-  if (width.type === 'pixel') {
-    return `${width.value}px`;
-  }
-  // Convert proportional to percentage
-  const pct = (width.value / totalProportional) * 100;
-  return `${pct}%`;
 }
 
 /**

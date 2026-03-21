@@ -15,12 +15,7 @@ export {XDSTableHeaderCell} from './XDSTableHeaderCell';
 export {XDSTableContext} from './XDSTableContext';
 export {useXDSTableSelection} from './plugins/selection';
 export {useXDSBaseTablePlugins} from './useXDSBaseTablePlugins';
-export {
-  proportional,
-  pixel,
-  generateColumns,
-  columnWidthToCSS,
-} from './columnUtils';
+export {proportional, pixel, generateColumns} from './columnUtils';
 export type {
   XDSTableColumn,
   ColumnWidth,
