@@ -101,19 +101,6 @@ describe('XDSTextInput', () => {
     expect(screen.getByRole('textbox')).toHaveFocus();
   });
 
-  it('renders labelIcon when provided', () => {
-    render(
-      <XDSTextInput
-        label="Search"
-        value=""
-        onChange={() => {}}
-        labelIcon={MagnifyingGlassIcon}
-      />,
-    );
-    expect(document.querySelector('svg')).toBeInTheDocument();
-    expect(screen.getByLabelText('Search')).toBeInTheDocument();
-  });
-
   it('shows "Optional" text when isOptional is true', () => {
     render(
       <XDSTextInput label="Nickname" isOptional value="" onChange={() => {}} />,
@@ -393,11 +380,14 @@ describe('XDSTextInput', () => {
   });
 
   describe('isLoading / isBusy', () => {
-    it('disables input when isLoading is true', () => {
+    it('sets readOnly and aria-disabled when isLoading is true', () => {
       render(
         <XDSTextInput label="Name" value="" onChange={() => {}} isLoading />,
       );
-      expect(screen.getByRole('textbox')).toBeDisabled();
+      const input = screen.getByRole('textbox');
+      expect(input).not.toBeDisabled();
+      expect(input).toHaveAttribute('readonly');
+      expect(input).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('sets aria-busy when isLoading is true', () => {
@@ -412,21 +402,11 @@ describe('XDSTextInput', () => {
       expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-busy');
     });
 
-    it('does not fire onChange when isLoading is true', async () => {
-      const user = userEvent.setup();
-      const handleChange = vi.fn();
+    it('preserves focus and tab order when isLoading is true', () => {
       render(
-        <XDSTextInput
-          label="Name"
-          isLoading
-          value=""
-          onChange={handleChange}
-        />,
+        <XDSTextInput label="Name" value="" onChange={() => {}} isLoading hasAutoFocus />,
       );
-
-      const input = screen.getByRole('textbox');
-      await user.type(input, 'test');
-      expect(handleChange).not.toHaveBeenCalled();
+      expect(screen.getByRole('textbox')).toHaveFocus();
     });
 
     it('hides status icon when isBusy shows spinner', () => {
@@ -624,7 +604,7 @@ describe('XDSTextInput', () => {
   });
 
   describe('onEnter prop', () => {
-    it('calls onEnter when Enter key is pressed', async () => {
+    it('calls onEnter with the keyboard event when Enter key is pressed', async () => {
       const user = userEvent.setup();
       const handleEnter = vi.fn();
       render(
@@ -640,6 +620,9 @@ describe('XDSTextInput', () => {
       await user.click(input);
       await user.keyboard('{Enter}');
       expect(handleEnter).toHaveBeenCalledTimes(1);
+      expect(handleEnter).toHaveBeenCalledWith(
+        expect.objectContaining({key: 'Enter'}),
+      );
     });
 
     it('does not call onEnter for other keys', async () => {
@@ -661,33 +644,4 @@ describe('XDSTextInput', () => {
     });
   });
 
-  describe('XDSBaseProps rest spreading', () => {
-    it('spreads data attributes to the wrapper div', () => {
-      const {container} = render(
-        <XDSTextInput
-          label="Name"
-          value=""
-          onChange={() => {}}
-          data-testid="my-input"
-        />,
-      );
-      const wrapper = container.querySelector(
-        '[data-testid="my-input"]',
-      );
-      expect(wrapper).toBeInTheDocument();
-    });
-
-    it('spreads aria attributes to the wrapper div', () => {
-      const {container} = render(
-        <XDSTextInput
-          label="Name"
-          value=""
-          onChange={() => {}}
-          aria-label="custom-label"
-        />,
-      );
-      const wrapper = container.querySelector('.xds-text-input');
-      expect(wrapper).toHaveAttribute('aria-label', 'custom-label');
-    });
-  });
 });

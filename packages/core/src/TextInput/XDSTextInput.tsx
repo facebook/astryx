@@ -127,8 +127,6 @@ export interface XDSTextInputProps extends Omit<
   description?: string;
   /**
    * Whether the field is optional. Mutually exclusive with isRequired.
-   * When both isOptional and isRequired are true, isOptional wins:
-   * the label shows "Optional" and aria-required is not set.
    * @default false
    */
   isOptional?: boolean;
@@ -147,10 +145,6 @@ export interface XDSTextInputProps extends Omit<
    * Pass an SVG icon component (e.g. from heroicons, lucide, etc.).
    */
   startIcon?: XDSIconType;
-  /**
-   * Icon to display before the label text.
-   */
-  labelIcon?: XDSIconType;
   /**
    * Status indicator for the input.
    * When set, displays a colored border and status icon.
@@ -217,7 +211,7 @@ export interface XDSTextInputProps extends Omit<
   /**
    * Callback fired when the user presses the Enter key.
    */
-  onEnter?: () => void;
+  onEnter?: (e: KeyboardEvent<HTMLInputElement>) => void;
 }
 
 /**
@@ -225,8 +219,8 @@ export interface XDSTextInputProps extends Omit<
  *
  * @example
  * ```
- * <XDSTextInput label="Name" value={name} onChange={setName} />
- * <XDSTextInput label="Search" isLabelHidden value={query} onChange={setQuery} />
+ * <XDSTextInput label="Name" value={name} onChange={(val) => setName(val)} />
+ * <XDSTextInput label="Search" isLabelHidden value={query} onChange={(val) => setQuery(val)} />
  * ```
  */
 export function XDSTextInput({
@@ -237,7 +231,6 @@ export function XDSTextInput({
   isRequired = false,
   isDisabled = false,
   startIcon,
-  labelIcon,
   status,
   size = 'md',
   onChange,
@@ -256,7 +249,6 @@ export function XDSTextInput({
   className,
   style,
   ref,
-  ...rest
 }: XDSTextInputProps) {
   const id = useId();
   const descriptionID = useId();
@@ -266,7 +258,6 @@ export function XDSTextInput({
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
 
-  // When isOptional is true, it wins: no aria-required regardless of isRequired
   const effectiveRequired = isRequired && !isOptional;
 
   const ariaDescribedBy =
@@ -291,12 +282,13 @@ export function XDSTextInput({
   const handleKeyDown = onEnter
     ? (e: KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
-          onEnter();
+          onEnter(e);
         }
       }
     : undefined;
 
-  const effectiveDisabled = isDisabled || isBusy;
+  const effectiveDisabled = isDisabled;
+  const effectiveReadOnly = !isDisabled && isBusy;
 
   return (
     <XDSField
@@ -307,7 +299,6 @@ export function XDSTextInput({
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
-      labelIcon={labelIcon}
       status={
         status
           ? {
@@ -319,14 +310,13 @@ export function XDSTextInput({
       }
       labelTooltip={labelTooltip}>
       <div
-        {...rest}
         {...mergeProps(
           xdsClassName('text-input', {size}),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,
             sizeStyles[size],
-            effectiveDisabled && inputWrapperStyles.disabled,
+            (effectiveDisabled || effectiveReadOnly) && inputWrapperStyles.disabled,
             status && inputStatusBorderStyles[status.type],
             status && inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
@@ -348,15 +338,17 @@ export function XDSTextInput({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={effectiveDisabled}
+          readOnly={effectiveReadOnly}
           autoFocus={hasAutoFocus}
           autoComplete={autoComplete}
           aria-describedby={ariaDescribedBy}
           aria-required={effectiveRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
+          aria-disabled={effectiveReadOnly ? 'true' : undefined}
           aria-busy={isBusy || undefined}
           {...stylex.props(
             styles.input,
-            effectiveDisabled && styles.inputDisabled,
+            (effectiveDisabled || effectiveReadOnly) && styles.inputDisabled,
           )}
         />
         {isBusy && <XDSSpinner size="sm" />}

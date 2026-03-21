@@ -11,7 +11,7 @@ export const docs = {
     'Label tooltip — optional info icon with tooltip at the end of the label',
     'Validation status — error, warning, and success states with colored borders and icons',
     'Start icon — optional icon displayed at the start of the input',
-    'Loading state — shows a spinner, disables the input, and sets aria-busy while an async action is pending',
+    'Loading state — shows a spinner, makes the input read-only, and sets aria-busy while an async action is pending',
     'Disabled state — visually dims the input, prevents interaction, and suppresses hover effects',
     'Accessible — label is always associated with the input via htmlFor/id; sets aria-invalid, aria-required, aria-busy, and aria-describedby as appropriate',
     'Styled with StyleX — uses XDS design tokens for consistent styling',
@@ -19,15 +19,15 @@ export const docs = {
   examples: [
     {
       label: 'Basic',
-      code: '<XDSTextInput label="Name" value={name} onChange={setName} />',
+      code: '<XDSTextInput label="Name" value={name} onChange={(val) => setName(val)} />',
     },
     {
       label: 'With placeholder',
-      code: '<XDSTextInput label="Email" value={email} onChange={setEmail} placeholder="email@example.com" />',
+      code: '<XDSTextInput label="Email" value={email} onChange={(val) => setEmail(val)} placeholder="email@example.com" />',
     },
     {
       label: 'Hidden label',
-      code: '<XDSTextInput label="Search" isLabelHidden value={query} onChange={setQuery} placeholder="Search..." />',
+      code: '<XDSTextInput label="Search" isLabelHidden value={query} onChange={(val) => setQuery(val)} placeholder="Search..." />',
     },
     {
       label: 'With description',
@@ -35,20 +35,20 @@ export const docs = {
   label="Email"
   description="We'll never share your email"
   value={email}
-  onChange={setEmail}
+  onChange={(val) => setEmail(val)}
 />`,
     },
     {
       label: 'Optional and required',
-      code: `<XDSTextInput label="Nickname" isOptional value={nickname} onChange={setNickname} />
-<XDSTextInput label="Username" isRequired value={username} onChange={setUsername} />`,
+      code: `<XDSTextInput label="Nickname" isOptional value={nickname} onChange={(val) => setNickname(val)} />
+<XDSTextInput label="Username" isRequired value={username} onChange={(val) => setUsername(val)} />`,
     },
     {
       label: 'Validation status',
       code: `<XDSTextInput
   label="Email"
   value={email}
-  onChange={setEmail}
+  onChange={(val) => setEmail(val)}
   status={{type: 'error', message: 'Invalid email address'}}
 />`,
     },
@@ -57,7 +57,7 @@ export const docs = {
       code: `<XDSTextInput
   label="Search"
   value={query}
-  onChange={setQuery}
+  onChange={(val) => setQuery(val)}
   startIcon={MagnifyingGlassIcon}
   placeholder="Search..."
 />`,
@@ -67,7 +67,7 @@ export const docs = {
       code: `<XDSTextInput
   label="Username"
   value={username}
-  onChange={setUsername}
+  onChange={(val) => setUsername(val)}
   onChangeAction={async (value) => {
     await checkAvailability(value);
   }}
@@ -197,13 +197,8 @@ export const docs = {
     },
     {
       name: 'onEnter',
-      type: '() => void',
+      type: '(e: KeyboardEvent<HTMLInputElement>) => void',
       description: 'Callback fired when the user presses the Enter key.',
-    },
-    {
-      name: 'labelIcon',
-      type: 'XDSIconType',
-      description: 'SVG icon component displayed before the label text.',
     },
     {
       name: 'ref',
@@ -243,7 +238,7 @@ export const docsZh = {
     '标签工具提示 — 标签末尾带工具提示的可选信息图标',
     '验证状态 — 错误、警告和成功状态，带彩色边框和图标',
     '起始图标 — 显示在输入框起始位置的可选图标',
-    '加载状态 — 异步操作挂起时显示旋转器、禁用输入框并设置 aria-busy',
+    '加载状态 — 异步操作挂起时显示旋转器、使输入框只读并设置 aria-busy',
     '禁用状态 — 视觉上使输入框变暗、阻止交互并抑制悬停效果',
     '无障碍 — 标签始终通过 htmlFor/id 与输入框关联；根据需要设置 aria-invalid、aria-required、aria-busy 和 aria-describedby',
     '使用 StyleX 样式化 — 使用 XDS 设计令牌实现一致的样式',
@@ -251,15 +246,15 @@ export const docsZh = {
   examples: [
     {
       label: '基础用法',
-      code: '<XDSTextInput label="Name" value={name} onChange={setName} />',
+      code: '<XDSTextInput label="Name" value={name} onChange={(val) => setName(val)} />',
     },
     {
       label: '带占位符',
-      code: '<XDSTextInput label="Email" value={email} onChange={setEmail} placeholder="email@example.com" />',
+      code: '<XDSTextInput label="Email" value={email} onChange={(val) => setEmail(val)} placeholder="email@example.com" />',
     },
     {
       label: '隐藏标签',
-      code: '<XDSTextInput label="Search" isLabelHidden value={query} onChange={setQuery} placeholder="Search..." />',
+      code: '<XDSTextInput label="Search" isLabelHidden value={query} onChange={(val) => setQuery(val)} placeholder="Search..." />',
     },
     {
       label: '带描述',
@@ -267,20 +262,20 @@ export const docsZh = {
   label="Email"
   description="We'll never share your email"
   value={email}
-  onChange={setEmail}
+  onChange={(val) => setEmail(val)}
 />`,
     },
     {
       label: '可选和必填',
-      code: `<XDSTextInput label="Nickname" isOptional value={nickname} onChange={setNickname} />
-<XDSTextInput label="Username" isRequired value={username} onChange={setUsername} />`,
+      code: `<XDSTextInput label="Nickname" isOptional value={nickname} onChange={(val) => setNickname(val)} />
+<XDSTextInput label="Username" isRequired value={username} onChange={(val) => setUsername(val)} />`,
     },
     {
       label: '验证状态',
       code: `<XDSTextInput
   label="Email"
   value={email}
-  onChange={setEmail}
+  onChange={(val) => setEmail(val)}
   status={{type: 'error', message: 'Invalid email address'}}
 />`,
     },
@@ -289,7 +284,7 @@ export const docsZh = {
       code: `<XDSTextInput
   label="Search"
   value={query}
-  onChange={setQuery}
+  onChange={(val) => setQuery(val)}
   startIcon={MagnifyingGlassIcon}
   placeholder="Search..."
 />`,
@@ -299,7 +294,7 @@ export const docsZh = {
       code: `<XDSTextInput
   label="Username"
   value={username}
-  onChange={setUsername}
+  onChange={(val) => setUsername(val)}
   onChangeAction={async (value) => {
     await checkAvailability(value);
   }}
@@ -433,11 +428,6 @@ export const docsZh = {
       description: '用户按下 Enter 键时触发的回调。',
     },
     {
-      name: 'labelIcon',
-      type: 'XDSIconType',
-      description: '显示在标签文本前的 SVG 图标组件。',
-    },
-    {
       name: 'ref',
       type: 'React.Ref<HTMLInputElement>',
       description: '转发到 <input> 元素的 ref（不是根包装 div）。',
@@ -473,7 +463,7 @@ export const docsDense = {
     'Label tooltip; optional info icon w/ tooltip at label end',
     'Validation status; error, warning, success states w/ colored borders+icons',
     'Start icon; optional icon at input start',
-    'Loading state; shows spinner, disables input+sets aria-busy while async action pending',
+    'Loading state; shows spinner, makes input read-only+sets aria-busy while async action pending',
     'Disabled state; dims input, prevents interaction, suppresses hover effects',
     'Accessible; label always associated via htmlFor/id; sets aria-invalid, aria-required, aria-busy, aria-describedby',
     'Styled w/ StyleX; uses XDS design tokens for consistent styling',
@@ -513,7 +503,6 @@ export const docsDense = {
     onFocus: 'Fired when input receives focus.',
     onBlur: 'Fired when input loses focus.',
     onEnter: 'Fired when Enter key pressed.',
-    labelIcon: 'SVG icon before label text.',
     ref: 'Ref forwarded to <input> element (not wrapper div).',
   },
 };
