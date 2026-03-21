@@ -20,7 +20,7 @@
 
 'use client';
 
-import React, {useEffect, useId, useInsertionEffect, useRef} from 'react';
+import React, {useId, useInsertionEffect, useLayoutEffect, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {ThemeMode} from './types';
 import {colorVars, typographyVars} from './tokens.stylex';
@@ -110,6 +110,9 @@ function useThemeStyleInjection(theme: XDSDefinedTheme): void {
 /**
  * Hook that loads fonts declared in theme.fonts at runtime.
  *
+ * Uses useLayoutEffect to inject font stylesheets before the browser paints,
+ * minimizing flash of unstyled text (FOUT).
+ *
  * This is the fallback loading path — the preferred approach is to add
  * <link rel="stylesheet" href="..."> to your document <head>. For discoverability,
  * `npx xds theme build` prints font instructions in the build output.
@@ -120,7 +123,7 @@ function useThemeStyleInjection(theme: XDSDefinedTheme): void {
 function useThemeFontLoading(theme: XDSDefinedTheme): void {
   const injectedLinksRef = useRef<HTMLLinkElement[]>([]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (typeof document === 'undefined') return;
     if (!theme.fonts || theme.fonts.length === 0) return;
 
