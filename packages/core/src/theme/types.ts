@@ -4,6 +4,25 @@
  * Shared types used across XDS components.
  */
 
+/**
+ * A font source declaration for a theme.
+ * Used to declare fonts the theme requires so they can be preloaded,
+ * reported at build time, and loaded at runtime as a fallback.
+ *
+ * @example
+ * ```
+ * fonts: [
+ *   { family: 'Figtree', url: 'https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700' },
+ * ]
+ * ```
+ */
+export interface ThemeFontSource {
+  /** Font family name, e.g. 'Figtree' */
+  family: string;
+  /** URL to load the font from, e.g. a Google Fonts URL */
+  url: string;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type StyleXStyles = any;
 

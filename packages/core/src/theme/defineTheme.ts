@@ -29,6 +29,7 @@
  */
 
 import type {XDSIconRegistry} from '../Icon/globalIconRegistry';
+import type {ThemeFontSource} from './types';
 import {parseStyleKey} from '../utils/parseStyleKey';
 import {
   colorDefaults,
@@ -253,6 +254,22 @@ export interface XDSDefineThemeInput {
    * ```
    */
   variants?: Record<string, Record<string, Record<string, string>>>;
+  /**
+   * Font declarations — fonts this theme requires.
+   *
+   * These are not bundled by the build — instead:
+   * - **Best**: Add `<link rel="stylesheet" href="...">` to your document `<head>` for preloading
+   * - **Build**: `npx xds theme build` prints instructions for any declared fonts
+   * - **Runtime**: `XDSTheme` loads missing fonts automatically as a fallback
+   *
+   * @example
+   * ```
+   * fonts: [
+   *   { family: 'Figtree', url: 'https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700' },
+   * ]
+   * ```
+   */
+  fonts?: ThemeFontSource[];
 }
 
 /** A defined theme — ready to pass to <XDSTheme> */
@@ -269,6 +286,11 @@ export interface XDSDefinedTheme {
   variants?: Record<string, string[]>;
   /** Whether this theme has been pre-compiled by theme build CLI */
   __built?: true;
+  /**
+   * Font declarations — fonts this theme requires.
+   * Passed through from defineTheme input unchanged.
+   */
+  fonts?: ThemeFontSource[];
 }
 
 // =============================================================================
@@ -432,6 +454,7 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
     components,
     icons: input.icons,
     variants: variantNames,
+    fonts: input.fonts,
   };
 }
 

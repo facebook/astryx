@@ -697,5 +697,15 @@ Or with a <link> tag:
     <App />
   </XDSTheme>
 `);
+
+      // Print font declaration warnings
+      if (themeDef.fonts && themeDef.fonts.length > 0) {
+        console.log(`\n⚠ Theme "${themeDef.name}" requires fonts not included in the build:`);
+        for (const font of themeDef.fonts) {
+          console.log(`  ${font.family} — add to your document <head>:`);
+          console.log(`  <link rel="stylesheet" href="${font.url}" />`);
+        }
+        console.log('');
+      }
     });
 }
