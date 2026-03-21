@@ -203,6 +203,11 @@ export const docs = {
   ],
   keyboard:
     'ArrowUp / ArrowDown adjust the current time by the configured increment in minutes. Typing a time string in common formats (e.g. "2:30 PM", "14:30") is parsed on blur. Pressing the clear button returns focus to the input.',
+  theming: {
+    targets: [
+      {className: 'xds-time-input', visualProps: ['size']},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
@@ -409,6 +414,11 @@ export const docsZh = {
   ],
   keyboard:
     '上/下方向键按配置的分钟增量调整当前时间。以常见格式（例如 "2:30 PM"、"14:30"）输入时间字符串会在失焦时解析。按清除按钮将焦点返回到输入框。',
+  theming: {
+    targets: [
+      {className: 'xds-time-input', visualProps: ['size']},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

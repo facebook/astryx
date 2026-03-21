@@ -143,8 +143,7 @@ export interface XDSOverflowListProps extends XDSBaseProps<HTMLDivElement> {
    *       button={{label: `+${overflowItems.length}`, variant: 'ghost'}}
    *       items={overflowItems.map(({index}) => ({ label: labels[index] }))}
    *     />
-   *   )}
-   * >
+   *   )}>
    *   {labels.map(l => <XDSButton key={l} label={l} />)}
    * </XDSOverflowList>
    * ```
@@ -165,8 +164,7 @@ export interface XDSOverflowListProps extends XDSBaseProps<HTMLDivElement> {
  *   gap={2}
  *   overflowRenderer={(items) => (
  *     <XDSButton label={`+${items.length} more`} variant="ghost" />
- *   )}
- * >
+ *   )}>
  *   <XDSButton label="Action 1" />
  *   <XDSButton label="Action 2" />
  *   <XDSButton label="Action 3" />
