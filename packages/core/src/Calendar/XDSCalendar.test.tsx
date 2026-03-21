@@ -70,7 +70,7 @@ describe('XDSCalendar', () => {
     render(<XDSCalendar value="2026-01-15" focusDate="2026-01-01" />);
 
     const day15 = getDayButton(15);
-    expect(day15).toHaveAttribute('aria-selected', 'true');
+    expect(day15.closest('[role="gridcell"]')).toHaveAttribute('aria-selected', 'true');
   });
 
   it('calls onChange when date is selected', async () => {
@@ -90,7 +90,7 @@ describe('XDSCalendar', () => {
     render(<XDSCalendar defaultValue="2026-01-15" focusDate="2026-01-01" />);
 
     const day15 = getDayButton(15);
-    expect(day15).toHaveAttribute('aria-selected', 'true');
+    expect(day15.closest('[role="gridcell"]')).toHaveAttribute('aria-selected', 'true');
   });
 
   it('does not write internalValue when value is controlled', async () => {
@@ -114,7 +114,7 @@ describe('XDSCalendar', () => {
     );
 
     const day10 = getDayButton(10);
-    expect(day10).toHaveAttribute('aria-selected', 'true');
+    expect(day10.closest('[role="gridcell"]')).toHaveAttribute('aria-selected', 'true');
   });
 
   // ─── Navigation ──────────────────────────────────────────────
@@ -476,9 +476,9 @@ describe('XDSCalendar', () => {
     const day12 = getDayButton(12);
     const day15 = getDayButton(15);
 
-    expect(day10).toHaveAttribute('aria-selected', 'true');
-    expect(day12).toHaveAttribute('aria-selected', 'true');
-    expect(day15).toHaveAttribute('aria-selected', 'true');
+    expect(day10.closest('[role="gridcell"]')).toHaveAttribute('aria-selected', 'true');
+    expect(day12.closest('[role="gridcell"]')).toHaveAttribute('aria-selected', 'true');
+    expect(day15.closest('[role="gridcell"]')).toHaveAttribute('aria-selected', 'true');
   });
 
   it('cancels range selection with Escape', async () => {

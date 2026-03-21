@@ -198,6 +198,7 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
     xstyle,
     className,
     style,
+    onKeyDown: onKeyDownProp,
     ...rest
   } = props;
 
@@ -466,14 +467,15 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
 
   // Escape handler to cancel range selection
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
       if (e.key === 'Escape' && mode === 'range' && rangeSelectionStart) {
         setRangeSelectionStart(null);
         setHoveredDate(null);
         e.preventDefault();
       }
+      onKeyDownProp?.(e);
     },
-    [mode, rangeSelectionStart],
+    [mode, rangeSelectionStart, onKeyDownProp],
   );
 
   // Parse selected date for roving tabindex
@@ -486,6 +488,8 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
 
   return (
     <div
+      role="group"
+      aria-label="Calendar"
       {...rest}
       {...mergeProps(
         xdsClassName('calendar', {mode}),
@@ -493,8 +497,6 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
         className,
         style,
       )}
-      role="group"
-      aria-label="Calendar"
       onKeyDown={handleKeyDown}>
       {/* Header with navigation */}
       <div {...stylex.props(calendarStyles.header)}>
@@ -789,13 +791,11 @@ function MonthGrid({
         {/* Day name headers as first row inside the grid */}
         <div
           role="row"
-          {...stylex.props(
-            monthGridStyles.weekHeader,
-            hasWeekNumbers && monthGridStyles.weekHeaderWithNumbers,
-          )}>
+          {...stylex.props(monthGridStyles.weekHeader)}>
           {hasWeekNumbers && (
             <div
               role="columnheader"
+              aria-label="Week"
               {...stylex.props(
                 monthGridStyles.dayName,
                 monthGridStyles.weekNumberHeader,
@@ -831,7 +831,7 @@ function MonthGrid({
               role="row"
               {...stylex.props(monthGridStyles.weekRow)}>
               {hasWeekNumbers && (
-                <div {...stylex.props(monthGridStyles.weekNumber)}>
+                <div role="rowheader" {...stylex.props(monthGridStyles.weekNumber)}>
                   {weekNum}
                 </div>
               )}
@@ -929,9 +929,6 @@ function DayCell({
   const isPreviewStart = previewStart && isSameDay(date, previewStart);
   const isPreviewEnd = previewEnd && isSameDay(date, previewEnd);
 
-  // Determine cell background for range
-  const hasRangeBackground = isInRange;
-
   // Round edges at grid boundaries or range endpoints
   const isFirstColumn = dayIndex === 0;
   const isLastColumn = dayIndex === 6;
@@ -945,9 +942,9 @@ function DayCell({
   const previewRoundRight = isPreviewEnd || isLastColumn;
 
   return (
-    <div role="gridcell" {...stylex.props(dayCellStyles.cell)}>
+    <div role="gridcell" aria-selected={isSelected || isInRange || undefined} {...stylex.props(dayCellStyles.cell)}>
       {/* Range background */}
-      {hasRangeBackground && (
+      {isInRange && (
         <div
           {...stylex.props(
             dayCellStyles.rangeBg,
@@ -970,8 +967,6 @@ function DayCell({
             dayCellTheme.previewBg,
             previewRoundLeft && dayCellStyles.previewBgRadiusLeft,
             previewRoundRight && dayCellStyles.previewBgRadiusRight,
-            isPreviewStart && dayCellStyles.previewStart,
-            isPreviewEnd && dayCellStyles.previewEnd,
           )}
         />
       )}
@@ -981,7 +976,7 @@ function DayCell({
         type="button"
         data-date={day.iso}
         aria-label={formatAccessibleDate(date)}
-        aria-selected={isSelected || isInRange || undefined}
+        aria-current={isToday ? 'date' : undefined}
         aria-disabled={effectivelyDisabled || undefined}
         tabIndex={isTabbableDay ? 0 : -1}
         onClick={() => !effectivelyDisabled && onDayClick(date)}
@@ -992,12 +987,8 @@ function DayCell({
           dayCellTheme.day,
           isOutside && dayCellStyles.dayOutside,
           isOutside && dayCellTheme.dayOutside,
-          isToday && !isSelected && !isInRange && dayCellStyles.dayToday,
           isToday && !isSelected && !isInRange && dayCellTheme.dayToday,
-          isToday && !isSelected && isInRange && dayCellStyles.dayTodayInRange,
           isToday && !isSelected && isInRange && dayCellTheme.dayTodayInRange,
-          (isSelected || isRangeStart || isRangeEnd) &&
-            dayCellStyles.daySelected,
           (isSelected || isRangeStart || isRangeEnd) &&
             dayCellTheme.daySelected,
           effectivelyDisabled && dayCellStyles.dayDisabled,

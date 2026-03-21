@@ -51,10 +51,6 @@ export const calendarStyles = stylex.create({
     display: 'flex',
     gap: spacingVars['--spacing-4'],
   },
-  navIcon: {
-    width: spacingVars['--spacing-4'],
-    height: spacingVars['--spacing-4'],
-  },
   srOnly: {
     position: 'absolute',
     width: 1,
@@ -79,7 +75,6 @@ export const monthGridStyles = stylex.create({
   weekHeader: {
     display: 'contents',
   },
-  weekHeaderWithNumbers: {},
   dayName: {
     width: sizeVars['--size-md'],
     height: sizeVars['--size-md'],
@@ -171,17 +166,6 @@ export const dayCellStyles = stylex.create({
     borderTopRightRadius: radiusVars['--radius-rounded'],
     borderBottomRightRadius: radiusVars['--radius-rounded'],
   },
-  previewStart: {
-    left: spacingVars['--spacing-0-5'],
-    borderTopLeftRadius: radiusVars['--radius-rounded'],
-    borderBottomLeftRadius: radiusVars['--radius-rounded'],
-  },
-  previewEnd: {
-    right: spacingVars['--spacing-0-5'],
-    borderTopRightRadius: radiusVars['--radius-rounded'],
-    borderBottomRightRadius: radiusVars['--radius-rounded'],
-  },
-
   // Day button - structural
   day: {
     width: sizeVars['--size-sm'],
@@ -219,9 +203,6 @@ export const dayCellStyles = stylex.create({
   dayOutside: {
     opacity: 0.5,
   },
-  dayToday: {},
-  dayTodayInRange: {},
-  daySelected: {},
   dayDisabled: {
     cursor: 'not-allowed',
   },
