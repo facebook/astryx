@@ -16,7 +16,7 @@
  */
 
 
-import {useTransition, type ReactElement, type ReactNode} from 'react';
+import {useRef, useTransition, type ReactElement, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -36,15 +36,6 @@ import type {XDSIconProps} from '../Icon/XDSIcon';
 import type {XDSBadgeProps} from '../Badge/XDSBadge';
 import {edgeCompensation} from '../Layout/edgeCompensation.stylex';
 import {xdsClassName, mergeProps} from '../utils';
-
-/**
- * Maps button size to spinner size.
- */
-const SPINNER_SIZE_MAP = {
-  sm: 'sm',
-  md: 'sm',
-  lg: 'md',
-} as const;
 
 /**
  * Base button styles
@@ -75,20 +66,26 @@ const styles = stylex.create({
       '@media (prefers-reduced-motion: reduce)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
-    '--button-press-scale': 'scale(0.98)',
     transform: {
       default: 'scale(1)',
-      ':active': 'var(--button-press-scale)',
+      ':active': 'scale(0.98)',
     },
   },
   disabled: {
     cursor: 'not-allowed',
-    '--button-disabled-opacity': '0.5',
-    opacity: 'var(--button-disabled-opacity)',
+    opacity: 0.5,
     backgroundImage: 'none',
     transform: {
       default: 'none',
       ':active': 'none',
+    },
+  },
+  ariaDisabled: {
+    backgroundImage: {
+      default: 'none',
+      ':hover': {
+        '@media (hover: hover)': 'none',
+      },
     },
   },
   iconOnly: {
@@ -252,12 +249,6 @@ export interface XDSButtonProps extends XDSBaseProps<HTMLButtonElement> {
   ref?: React.Ref<HTMLButtonElement>;
   /** HTML button type attribute. @default 'button' */
   type?: 'button' | 'submit' | 'reset';
-  /** HTML name attribute for form submission. */
-  name?: string;
-  /** HTML value attribute for form submission. */
-  value?: string | number | readonly string[];
-  /** Associates the button with a form element by ID. */
-  form?: string;
   /**
    * Accessible label for the button (required for accessibility).
    * Used as visible text, or as aria-label for icon-only buttons.
@@ -394,6 +385,7 @@ export function XDSButton({
   ...props
 }: XDSButtonProps): ReactElement {
   const [isPending, startTransition] = useTransition();
+  const actionInFlightRef = useRef(false);
   const isLoadingState = isLoading || isPending;
   const buttonDisabled = isDisabled || isLoadingState;
   const useLightSpinner = variant === 'primary' || variant === 'destructive';
@@ -412,25 +404,31 @@ export function XDSButton({
   const useAriaDisabled = tooltip != null && buttonDisabled;
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (buttonDisabled) {
+    if (buttonDisabled || actionInFlightRef.current) {
       e.preventDefault();
       return;
     }
     props.onClick?.(e);
     if (onClickAction && !e.defaultPrevented) {
+      actionInFlightRef.current = true;
       startTransition(async () => {
-        await onClickAction(e);
+        try {
+          await onClickAction(e);
+        } finally {
+          actionInFlightRef.current = false;
+        }
       });
     }
   };
 
-  // When aria-disabled, suppress keyboard activation (Enter/Space) and other
-  // keys that consumers may use for interaction (e.g., ArrowDown to open a
-  // menu). Tab is allowed so focus management keeps working.
+  // When aria-disabled, suppress activation keys (Enter/Space) but allow
+  // other keys (Escape, arrows) to reach consumer handlers.
   const handleKeyDown = useAriaDisabled
     ? (e: React.KeyboardEvent<HTMLButtonElement>) => {
-        if (e.key !== 'Tab') {
+        if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
+        } else {
+          props.onKeyDown?.(e);
         }
       }
     : undefined;
@@ -460,6 +458,7 @@ export function XDSButton({
           variants[variant],
           isIconOnly && styles.iconOnly,
           buttonDisabled && styles.disabled,
+          useAriaDisabled && styles.ariaDisabled,
           isLoadingState && loadingStyles.loading,
           edgePaddingSignal,
           edgeCompStyle,
@@ -469,7 +468,9 @@ export function XDSButton({
         style,
       )}
       {...props}
-      {...(isIconOnly && label !== '' ? {'aria-label': label} : null)}
+      {...((isIconOnly && label !== '') || (isLoadingState && !isIconOnly)
+        ? {'aria-label': label}
+        : null)}
       aria-busy={isLoadingState || undefined}
       aria-disabled={useAriaDisabled || undefined}
       onClick={handleClick}
@@ -479,7 +480,7 @@ export function XDSButton({
           {...stylex.props(loadingStyles.spinnerOverlay)}
           aria-hidden="true">
           <XDSSpinner
-            size={SPINNER_SIZE_MAP[size]}
+            size="sm"
             shade={useLightSpinner ? 'onMedia' : 'default'}
           />
         </span>

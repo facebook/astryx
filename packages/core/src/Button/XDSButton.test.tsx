@@ -261,18 +261,6 @@ describe('XDSButton', () => {
     expect(screen.getByRole('button')).toHaveAttribute('type', 'submit');
   });
 
-  it('passes name and value props', () => {
-    render(<XDSButton label="Test" name="action" value="save" />);
-    const button = screen.getByRole('button');
-    expect(button).toHaveAttribute('name', 'action');
-    expect(button).toHaveAttribute('value', 'save');
-  });
-
-  it('passes form prop', () => {
-    render(<XDSButton label="Test" form="my-form" />);
-    expect(screen.getByRole('button')).toHaveAttribute('form', 'my-form');
-  });
-
   // Tooltip
   it('renders tooltip wrapper when tooltip is provided', () => {
     render(<XDSButton label="Test" tooltip="Helpful tip" />);
@@ -304,7 +292,7 @@ describe('XDSButton', () => {
     expect(handleClick).not.toHaveBeenCalled();
   });
 
-  it('suppresses keyboard activation when aria-disabled via tooltip', async () => {
+  it('suppresses activation keys but passes other keys when aria-disabled via tooltip', async () => {
     const user = userEvent.setup();
     const handleKeyDown = vi.fn();
     render(
@@ -318,8 +306,12 @@ describe('XDSButton', () => {
     const button = screen.getByRole('button');
     button.focus();
     await user.keyboard('{Enter}');
-    // Consumer's onKeyDown should not fire — activation keys are suppressed
+    // Activation keys (Enter) should be suppressed
     expect(handleKeyDown).not.toHaveBeenCalled();
+
+    // Non-activation keys (Escape) should reach consumer handler
+    await user.keyboard('{Escape}');
+    expect(handleKeyDown).toHaveBeenCalledTimes(1);
   });
 
   // Edge compensation
