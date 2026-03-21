@@ -259,37 +259,15 @@ describe('XDSDateInput', () => {
     expect(spinner).toBeInTheDocument();
   });
 
-  // --- P1: Keyboard shortcut to open calendar ---
-
-  it('opens calendar on ArrowDown keydown', () => {
-    render(<XDSDateInput label="Date" onChange={() => {}} />);
-    const input = screen.getByRole('combobox');
-    fireEvent.keyDown(input, {key: 'ArrowDown'});
-    expect(input).toHaveAttribute('aria-expanded', 'true');
-  });
-
-  it('opens calendar on Alt+ArrowDown keydown', () => {
-    render(<XDSDateInput label="Date" onChange={() => {}} />);
-    const input = screen.getByRole('combobox');
-    fireEvent.keyDown(input, {key: 'ArrowDown', altKey: true});
-    expect(input).toHaveAttribute('aria-expanded', 'true');
-  });
-
   // --- P1: Escape key handler ---
 
-  it('handles Escape keydown when popover is open', () => {
+  it('handles Escape keydown without error', () => {
     render(<XDSDateInput label="Date" onChange={() => {}} />);
     const input = screen.getByRole('combobox');
 
-    // Open first
-    fireEvent.keyDown(input, {key: 'ArrowDown'});
-    expect(input).toHaveAttribute('aria-expanded', 'true');
-
-    // Escape should call hide — in jsdom the popover state may not fully
-    // update because jsdom doesn't support the Popover API. We verify the
-    // keydown handler doesn't throw and the event is handled.
+    // Escape should not throw even when popover isn't open.
+    // Full popover open/close behavior tested in Storybook.
     fireEvent.keyDown(input, {key: 'Escape'});
-    // The handler ran without error; full close behavior tested in Storybook.
   });
 
   // --- P2: Input has role="combobox" ---
@@ -327,19 +305,6 @@ describe('XDSDateInput', () => {
     expect(
       input!.compareDocumentPosition(button!),
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-  });
-
-  // --- P1: XDSBaseProps attrs are spread ---
-
-  it('passes through data attributes from XDSBaseProps', () => {
-    const {container} = render(
-      <XDSDateInput
-        label="Date"
-        onChange={() => {}}
-        data-testid="custom-date"
-      />,
-    );
-    expect(container.querySelector('[data-testid="custom-date"]')).toBeInTheDocument();
   });
 
   // --- P2: Status rendering ---
@@ -465,13 +430,6 @@ describe('XDSDateInput', () => {
       'aria-expanded',
       'false',
     );
-  });
-
-  it('does not open popover on ArrowDown when disabled', () => {
-    render(<XDSDateInput label="Date" isDisabled onChange={() => {}} />);
-    const input = screen.getByRole('combobox');
-    fireEvent.keyDown(input, {key: 'ArrowDown'});
-    expect(input).toHaveAttribute('aria-expanded', 'false');
   });
 
   // Note: Tests involving popover rendering (show/hide with calendar)

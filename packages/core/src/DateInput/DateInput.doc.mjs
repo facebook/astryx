@@ -175,7 +175,7 @@ export const docs = {
     },
   ],
   keyboard:
-    'Tab moves between input and calendar icon button; Enter/Space on icon opens/closes the calendar; Escape closes the calendar popover; ArrowDown or Alt+ArrowDown opens the calendar from input; Arrow keys navigate between days; Page Up/Down navigate between months.',
+    'Tab moves between input and calendar icon button; Enter/Space on icon opens/closes the calendar; Escape closes the calendar popover; Arrow keys navigate between days; Page Up/Down navigate between months.',
   notes: [
     'The text input accepts multiple date formats: ISO (2026-01-28), US (01/28/2026, 1/28/2026), and written (Jan 28, 2026 / January 28 2026).',
     'Invalid input reverts to the previous valid value on blur.',
@@ -363,7 +363,7 @@ export const docsZh = {
     },
   ],
   keyboard:
-    'Tab 在输入框和日历图标按钮间移动；Enter/Space 点击图标打开/关闭日历；Escape 关闭日历弹出层；ArrowDown 或 Alt+ArrowDown 从输入框打开日历；方向键在日期间导航；Page Up/Down 在月份间导航。',
+    'Tab 在输入框和日历图标按钮间移动；Enter/Space 点击图标打开/关闭日历；Escape 关闭日历弹出层；方向键在日期间导航；Page Up/Down 在月份间导航。',
   notes: [
     '文本输入接受多种日期格式：ISO（2026-01-28）、美式（01/28/2026、1/28/2026）和书面格式（Jan 28, 2026 / January 28 2026）。',
     '无效输入在失焦时恢复为上一个有效值。',
@@ -386,7 +386,7 @@ export const docsDense = {
     'full keyboard nav, focus trapping, screen reader support',
     'built on XDSField for consistent label, description, validation',
   ],
-  keyboard: 'Tab=move between input+calendar icon; Enter/Space on icon=open/close calendar; Escape=close; ArrowDown/Alt+ArrowDown=open calendar from input; Arrow keys=navigate days; PageUp/Down=navigate months',
+  keyboard: 'Tab=move between input+calendar icon; Enter/Space on icon=open/close calendar; Escape=close; Arrow keys=navigate days; PageUp/Down=navigate months',
   notes: [
     'accepts multiple date formats: ISO (2026-01-28), US (01/28/2026, 1/28/2026), written (Jan 28, 2026 / January 28 2026)',
     'invalid input reverts to previous valid value on blur',

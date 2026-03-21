@@ -119,6 +119,11 @@ const sizeStyles = stylex.create({
 
 export type XDSDateInputSize = keyof typeof sizeStyles;
 
+// Re-export shared types for convenience
+export type {
+  XDSInputStatus as XDSDateInputStatus,
+  XDSInputStatusType as XDSDateInputStatusType,
+} from '../Field';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSBaseProps} from '../XDSBaseProps';
 
@@ -427,16 +432,9 @@ export function XDSDateInput({
       if (e.key === 'Escape' && popover.isOpen) {
         e.preventDefault();
         popover.hide();
-      } else if (
-        e.key === 'ArrowDown' &&
-        (e.altKey || !popover.isOpen) &&
-        !isEffectivelyDisabled
-      ) {
-        e.preventDefault();
-        popover.show();
       }
     },
-    [popover, isEffectivelyDisabled],
+    [popover],
   );
 
   // Combine refs
