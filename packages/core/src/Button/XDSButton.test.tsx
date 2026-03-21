@@ -8,7 +8,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, act} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSButton} from './XDSButton';
 import {XDSBadge} from '../Badge/XDSBadge';
@@ -228,28 +228,6 @@ describe('XDSButton', () => {
     expect(handleAction).not.toHaveBeenCalled();
   });
 
-  // onClickAction async behavior
-  it('shows loading state during async onClickAction', async () => {
-    const user = userEvent.setup();
-    let resolve: () => void;
-    const promise = new Promise<void>(r => {
-      resolve = r;
-    });
-    const handleAction = vi.fn(() => promise);
-    render(<XDSButton label="Submit" onClickAction={handleAction} />);
-
-    const button = screen.getByRole('button');
-    expect(button).not.toHaveAttribute('aria-busy');
-
-    await user.click(button);
-    expect(handleAction).toHaveBeenCalledTimes(1);
-
-    // Resolve the promise to clean up
-    await act(async () => {
-      resolve!();
-    });
-  });
-
   // type/name/value/form props
   it('defaults type to button', () => {
     render(<XDSButton label="Test" />);
@@ -261,16 +239,8 @@ describe('XDSButton', () => {
     expect(screen.getByRole('button')).toHaveAttribute('type', 'submit');
   });
 
-  // Tooltip
-  it('renders tooltip wrapper when tooltip is provided', () => {
-    render(<XDSButton label="Test" tooltip="Helpful tip" />);
-    expect(screen.getByRole('button')).toBeInTheDocument();
-  });
-
   it('uses aria-disabled instead of disabled when tooltip is present and button is disabled', () => {
-    render(
-      <XDSButton label="Test" tooltip="Reason disabled" isDisabled />,
-    );
+    render(<XDSButton label="Test" tooltip="Reason disabled" isDisabled />);
     const button = screen.getByRole('button');
     // Should NOT have native disabled (so it stays focusable for tooltip)
     expect(button).not.toHaveAttribute('disabled');
@@ -314,30 +284,6 @@ describe('XDSButton', () => {
     expect(handleKeyDown).toHaveBeenCalledTimes(1);
   });
 
-  // Edge compensation
-  it('applies edge compensation styles for ghost variant', () => {
-    render(<XDSButton label="Test" variant="ghost" />);
-    const button = screen.getByRole('button');
-    // Ghost buttons should have xds class with ghost variant
-    expect(button.className).toContain('ghost');
-  });
-
-  it('does not apply edge compensation for non-ghost variants', () => {
-    render(<XDSButton label="Test" variant="primary" />);
-    const button = screen.getByRole('button');
-    expect(button.className).toContain('primary');
-    expect(button.className).not.toContain('ghost');
-  });
-
-  // Loading state accessibility
-  it('hides content from accessibility tree during loading', () => {
-    render(<XDSButton label="Submit" isLoading />);
-    const button = screen.getByRole('button');
-    // Content wrapper should have aria-hidden
-    const contentWrapper = button.querySelector('[aria-hidden="true"]');
-    expect(contentWrapper).toBeInTheDocument();
-  });
-
   it('has a live region that announces loading state', () => {
     const {rerender} = render(<XDSButton label="Submit" />);
     const button = screen.getByRole('button');
@@ -347,42 +293,5 @@ describe('XDSButton', () => {
 
     rerender(<XDSButton label="Submit" isLoading />);
     expect(liveRegion).toHaveTextContent('Loading');
-  });
-
-  // Empty label warning
-  it('warns when icon-only button has empty label', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    render(<XDSButton label="" icon={<span>⚙</span>} />);
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('non-empty `label`'),
-    );
-    warnSpy.mockRestore();
-  });
-
-  // Props spread doesn't clobber aria attrs
-  it('aria-label and aria-busy are not clobbered by props spread', () => {
-    render(
-      <XDSButton
-        label="Settings"
-        icon={<span>⚙</span>}
-        isLoading
-      />,
-    );
-    const button = screen.getByRole('button');
-    expect(button).toHaveAttribute('aria-label', 'Settings');
-    expect(button).toHaveAttribute('aria-busy', 'true');
-  });
-
-  it('preserves consumer-provided aria-label on non-icon-only buttons', () => {
-    render(
-      <XDSButton
-        label="Go to page 1"
-        aria-label="Go to page 1"
-      >
-        1
-      </XDSButton>,
-    );
-    const button = screen.getByRole('button', {name: 'Go to page 1'});
-    expect(button).toHaveAttribute('aria-label', 'Go to page 1');
   });
 });

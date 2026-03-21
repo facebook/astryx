@@ -141,7 +141,7 @@ export const WithEndSlot: Story = {
       <XDSButton
         label="Notifications"
         variant="secondary"
-        endSlot={<XDSBadge variant="neutral" label='New' />}
+        endSlot={<XDSBadge variant="neutral" label="New" />}
       />
     </div>
   ),
@@ -154,7 +154,7 @@ export const IconAndEndSlot: Story = {
         label="Settings"
         variant="secondary"
         icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
-        endSlot={<XDSBadge variant="info" label='New' />}>
+        endSlot={<XDSBadge variant="info" label="New" />}>
         Settings
       </XDSButton>
       <XDSButton
@@ -205,6 +205,35 @@ export const AllVariants: Story = {
           label="Settings"
           variant="secondary"
           icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}>
+          Settings
+        </XDSButton>
+        <XDSButton
+          label="Delete"
+          variant="destructive"
+          icon={<TrashIcon style={{width: 16, height: 16}} />}
+        />
+      </div>
+      <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+        <XDSButton label="Small" variant="primary" size="sm" />
+        <XDSButton label="Medium" variant="primary" size="md" />
+        <XDSButton label="Large" variant="primary" size="lg" />
+      </div>
+      <div style={{display: 'flex', gap: '12px'}}>
+        <XDSButton
+          label="With Badge"
+          variant="primary"
+          endSlot={<XDSBadge variant="info" label={3} />}
+        />
+        <XDSButton
+          label="With Badge"
+          variant="secondary"
+          endSlot={<XDSBadge variant="neutral" label="New" />}
+        />
+        <XDSButton
+          label="Icon + Badge"
+          variant="ghost"
+          icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
+          endSlot={<XDSBadge variant="info" label={5} />}>
           Settings
         </XDSButton>
       </div>

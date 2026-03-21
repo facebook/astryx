@@ -15,7 +15,6 @@
  * Last synced props: label, variant, size, isDisabled, isLoading, onClickAction, icon, children, tooltip, endSlot
  */
 
-
 import {useRef, useTransition, type ReactElement, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
@@ -86,6 +85,7 @@ const styles = stylex.create({
       ':hover': {
         '@media (hover: hover)': 'none',
       },
+      ':active': 'none',
     },
   },
   iconOnly: {
@@ -98,6 +98,9 @@ const styles = stylex.create({
     alignItems: 'center',
     color: 'inherit',
   },
+  contentWrapper: {
+    display: 'contents',
+  },
   visuallyHidden: {
     position: 'absolute',
     width: '1px',
@@ -105,7 +108,6 @@ const styles = stylex.create({
     padding: 0,
     margin: '-1px',
     overflow: 'hidden',
-    // @ts-expect-error -- StyleX supports clip but types lag
     clip: 'rect(0, 0, 0, 0)',
     whiteSpace: 'nowrap',
     borderWidth: 0,
@@ -249,6 +251,12 @@ export interface XDSButtonProps extends XDSBaseProps<HTMLButtonElement> {
   ref?: React.Ref<HTMLButtonElement>;
   /** HTML button type attribute. @default 'button' */
   type?: 'button' | 'submit' | 'reset';
+  /** HTML name attribute for form submission. */
+  name?: string;
+  /** HTML value attribute for form submission. */
+  value?: string | number | readonly string[];
+  /** Associates the button with a form element by ID. */
+  form?: string;
   /**
    * Accessible label for the button (required for accessibility).
    * Used as visible text, or as aria-label for icon-only buttons.
@@ -391,14 +399,6 @@ export function XDSButton({
   const useLightSpinner = variant === 'primary' || variant === 'destructive';
   const isIconOnly = icon != null && children == null;
 
-  if (process.env.NODE_ENV !== 'production') {
-    if (isIconOnly && label === '') {
-      console.warn(
-        'XDSButton: icon-only buttons require a non-empty `label` for accessibility (WCAG 4.1.2).',
-      );
-    }
-  }
-
   // Use aria-disabled when tooltip is present so the button remains focusable
   // for keyboard users to reach the tooltip. Otherwise use native disabled.
   const useAriaDisabled = tooltip != null && buttonDisabled;
@@ -485,7 +485,9 @@ export function XDSButton({
           />
         </span>
       )}
-      <span aria-hidden={isLoadingState || undefined}>
+      <span
+        {...stylex.props(styles.contentWrapper)}
+        aria-hidden={isLoadingState || undefined}>
         {icon}
         {children ?? (isIconOnly ? null : label)}
         {!isIconOnly && endSlot && (
@@ -493,7 +495,10 @@ export function XDSButton({
         )}
       </span>
       {/* Live region for loading state announcements */}
-      <span {...stylex.props(styles.visuallyHidden)} role="status" aria-live="polite">
+      <span
+        {...stylex.props(styles.visuallyHidden)}
+        role="status"
+        aria-live="polite">
         {isLoadingState ? 'Loading' : ''}
       </span>
     </button>
