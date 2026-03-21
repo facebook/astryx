@@ -264,6 +264,7 @@ export function useXDSTooltip(
     mode: 'context',
     onShow,
     onHide,
+    role: 'tooltip',
   });
 
   // StyleX for the popover container
@@ -437,7 +438,6 @@ export function useXDSTooltip(
         alignment: props?.alignment ?? alignment,
         xstyle: popoverXstyle,
         className: xdsClassName('tooltip'),
-        role: 'tooltip' as const,
       };
 
       return layer.render(

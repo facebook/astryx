@@ -84,10 +84,6 @@ export interface ContextRenderProps {
    * Merged after StyleX and anchor positioning styles.
    */
   style?: React.CSSProperties;
-  /**
-   * ARIA role for the popover container.
-   */
-  role?: string;
 }
 
 /**
@@ -134,6 +130,13 @@ interface BaseLayerOptions {
    * @default false
    */
   lightDismiss?: boolean;
+
+  /**
+   * ARIA role for the popover container.
+   * Set internally by layer consumers (e.g. 'tooltip', 'dialog').
+   * Not intended for end-user configuration.
+   */
+  role?: string;
 }
 
 /**
@@ -285,7 +288,7 @@ export function useXDSLayer(options: FixedLayerOptions): FixedLayerReturn;
 export function useXDSLayer(
   options: ContextLayerOptions | FixedLayerOptions,
 ): ContextLayerReturn | FixedLayerReturn {
-  const {mode, onShow, onHide, lightDismiss = false} = options;
+  const {mode, onShow, onHide, lightDismiss = false, role} = options;
   const id = useId();
   const anchorId = `--xds-layer-${id.replace(/:/g, '')}`;
 
@@ -371,7 +374,6 @@ export function useXDSLayer(
         xstyle,
         className: extraClassName,
         style: extraStyle,
-        role,
       } = props || {};
 
       // CSS anchor positioning (dynamic, not in StyleX)
@@ -398,7 +400,7 @@ export function useXDSLayer(
         </div>
       );
     },
-    [anchorId, id, lightDismiss, popoverRefCallback],
+    [anchorId, id, lightDismiss, popoverRefCallback, role],
   );
 
   // Render function for fixed mode
