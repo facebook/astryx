@@ -98,7 +98,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Numeric scale based on a 4dp base unit. Tokens 1–4 scale with the theme\'s radiusScale multiplier; tokens 0 and rounded are fixed.',
+          text: 'Numeric scale based on a 4dp base unit. Tokens 1–4 scale with the theme\'s radius multiplier; tokens 0 and rounded are fixed.',
         },
         {
           type: 'table',
@@ -114,24 +114,24 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Use radiusScale in defineTheme to generate all radius tokens from a base unit and multiplier: defineTheme({ radiusScale: { base: 4, multiplier: 1.5 } }). Multiplier 0 = sharp, 1 = default, 1.5 = rounded, 2 = pill-like. Explicit token overrides take precedence over radiusScale values.',
+          text: 'Use radius in defineTheme to generate all radius tokens from a base unit and multiplier: defineTheme({ radius: { base: 4, multiplier: 1.5 } }). Multiplier 0 = sharp, 1 = default, 1.5 = rounded, 2 = pill-like. Explicit token overrides take precedence over radius values.',
         },
         {
           type: 'code',
           lang: 'tsx',
-          label: 'radiusScale example',
+          label: 'radius example',
           code: `import {defineTheme} from '@xds/core/theme';
 
 // Rounded theme — all scalable radii increased by 50%
 const roundedTheme = defineTheme({
   name: 'rounded',
-  radiusScale: { base: 4, multiplier: 1.5 },
+  radius: { base: 4, multiplier: 1.5 },
 });
 
 // Sharp/brutalist theme — all scalable radii become 0
 const sharpTheme = defineTheme({
   name: 'sharp',
-  radiusScale: { base: 4, multiplier: 0 },
+  radius: { base: 4, multiplier: 0 },
   tokens: { '--radius-rounded': '0px' }, // even pills are sharp
 });`,
         },

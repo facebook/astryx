@@ -9,7 +9,7 @@ import {defineTheme, generateThemeCSS, generateThemeRules} from './index';
 
 const defaultInput = {
   name: 'default',
-  typeScale: {base: 14, ratio: 1.2} as const,
+  typography: {scale: {base: 14, ratio: 1.2}},
   tokens: {},
   components: {
     button: {
@@ -175,12 +175,9 @@ describe('generateThemeRules', () => {
 describe('generateThemeRules with weight overrides', () => {
   const theme = defineTheme({
     name: 'custom-weights',
-    typeScale: {
-      base: 14,
-      ratio: 1.2,
-      weights: {
-        heading: {3: 'var(--font-weight-bold)'},
-      },
+    typography: {
+      scale: {base: 14, ratio: 1.2},
+      heading: {weights: {3: 'bold'}},
     },
     tokens: {},
     components: {},
