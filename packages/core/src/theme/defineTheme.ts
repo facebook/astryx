@@ -216,22 +216,43 @@ export interface XDSDefineThemeInput {
   /** Icon registry — maps semantic icon names to React nodes */
   icons?: Partial<XDSIconRegistry>;
   /**
-   * Custom variants added by this theme. Keyed by component name (lowercase),
-   * value is an array of variant strings.
+   * Custom variants added by this theme — declaration and styles together.
+   * Keyed by component name (lowercase), then variant name → style object.
    *
-   * These variants are available at runtime (CSS + class names work correctly)
+   * Use this for NEW variants the theme introduces. To override styles on
+   * existing built-in variants (e.g. `variant:secondary`), use `components`.
+   *
+   * An empty object `{}` registers the variant name without adding styles.
+   *
+   * Variant names are available at runtime (CSS + class names work correctly)
    * but don't provide autocomplete until `xds theme build` generates the
    * TypeScript module augmentation file.
    *
    * @example
    * ```tsx
    * variants: {
-   *   button: ['primary-muted', 'primary-outline'],
-   *   badge: ['info-subtle'],
+   *   button: {
+   *     'primary-muted': {
+   *       backgroundColor: 'var(--color-accent-muted)',
+   *       color: 'var(--color-accent)',
+   *     },
+   *     'primary-outline': {
+   *       borderWidth: '2px',
+   *       borderStyle: 'solid',
+   *       borderColor: 'var(--color-accent)',
+   *       backgroundColor: 'transparent',
+   *     },
+   *   },
+   *   badge: {
+   *     'info-subtle': {
+   *       backgroundColor: 'var(--color-info-muted)',
+   *       color: 'var(--color-info)',
+   *     },
+   *   },
    * }
    * ```
    */
-  variants?: Record<string, string[]>;
+  variants?: Record<string, Record<string, Record<string, string>>>;
 }
 
 /** A defined theme — ready to pass to <XDSTheme> */
@@ -378,12 +399,39 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
     components = deepMergeComponents(generated, input.components);
   }
 
+  // 4. Process variants: extract names for type augmentation + merge styles into components
+  let variantNames: Record<string, string[]> | undefined;
+  if (input.variants) {
+    variantNames = {};
+    const variantComponents: XDSComponentStyleMap = {};
+    for (const [component, variantMap] of Object.entries(input.variants)) {
+      const names: string[] = [];
+      for (const [variantName, styles] of Object.entries(variantMap)) {
+        names.push(variantName);
+        // Merge non-empty variant styles into components as `variant:name`
+        if (styles && Object.keys(styles).length > 0) {
+          if (!variantComponents[component]) {
+            variantComponents[component] = {};
+          }
+          variantComponents[component][`variant:${variantName}`] = styles;
+        }
+      }
+      if (names.length > 0) {
+        variantNames[component] = names;
+      }
+    }
+    // Merge variant-derived component styles (lowest) with explicit components (highest)
+    if (Object.keys(variantComponents).length > 0) {
+      components = deepMergeComponents(variantComponents, components);
+    }
+  }
+
   return {
     name: input.name,
     tokens,
     components,
     icons: input.icons,
-    variants: input.variants,
+    variants: variantNames,
   };
 }
 

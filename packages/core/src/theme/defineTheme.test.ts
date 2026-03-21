@@ -434,12 +434,25 @@ describe('radiusScale', () => {
 });
 
 describe('variants', () => {
-  it('passes through variants from input to output', () => {
+  it('extracts variant names from styled variant objects', () => {
     const theme = defineTheme({
       name: 'custom',
       variants: {
-        button: ['primary-muted', 'primary-outline'],
-        badge: ['info-subtle'],
+        button: {
+          'primary-muted': {
+            backgroundColor: 'var(--color-accent-muted)',
+            color: 'var(--color-accent)',
+          },
+          'primary-outline': {
+            borderWidth: '2px',
+            borderStyle: 'solid',
+          },
+        },
+        badge: {
+          'info-subtle': {
+            backgroundColor: 'var(--color-info-muted)',
+          },
+        },
       },
     });
     expect(theme.variants).toEqual({
@@ -448,20 +461,87 @@ describe('variants', () => {
     });
   });
 
+  it('merges variant styles into components as variant: keys', () => {
+    const theme = defineTheme({
+      name: 'styled-variants',
+      variants: {
+        button: {
+          'primary-muted': {
+            backgroundColor: 'var(--color-accent-muted)',
+            color: 'var(--color-accent)',
+          },
+        },
+      },
+    });
+    expect(theme.components?.button?.['variant:primary-muted']).toEqual({
+      backgroundColor: 'var(--color-accent-muted)',
+      color: 'var(--color-accent)',
+    });
+  });
+
+  it('handles empty style objects (register-only variants)', () => {
+    const theme = defineTheme({
+      name: 'register-only',
+      variants: {
+        button: {
+          'primary-muted': {},
+        },
+      },
+    });
+    expect(theme.variants).toEqual({button: ['primary-muted']});
+    // Empty styles should not create a component entry
+    expect(theme.components?.button?.['variant:primary-muted']).toBeUndefined();
+  });
+
   it('returns undefined variants when not provided', () => {
     const theme = defineTheme({name: 'bare'});
     expect(theme.variants).toBeUndefined();
   });
 
-  it('combines variants with tokens and components', () => {
+  it('combines variants with tokens and explicit components', () => {
     const theme = defineTheme({
       name: 'combo',
       tokens: {'--color-accent': '#FF0000'},
       components: {button: {base: {borderRadius: '999px'}}},
-      variants: {button: ['primary-muted']},
+      variants: {
+        button: {
+          'primary-muted': {
+            backgroundColor: 'var(--color-accent-muted)',
+          },
+        },
+      },
     });
     expect(theme.tokens['--color-accent']).toBe('#FF0000');
+    // Explicit component styles preserved
     expect(theme.components?.button?.base?.borderRadius).toBe('999px');
+    // Variant styles merged in
+    expect(theme.components?.button?.['variant:primary-muted']).toEqual({
+      backgroundColor: 'var(--color-accent-muted)',
+    });
     expect(theme.variants).toEqual({button: ['primary-muted']});
+  });
+
+  it('explicit components override variant styles on collision', () => {
+    const theme = defineTheme({
+      name: 'override',
+      components: {
+        button: {
+          'variant:primary-muted': {backgroundColor: 'red'},
+        },
+      },
+      variants: {
+        button: {
+          'primary-muted': {backgroundColor: 'blue', color: 'white'},
+        },
+      },
+    });
+    // Explicit component override wins for backgroundColor
+    expect(
+      theme.components?.button?.['variant:primary-muted']?.backgroundColor,
+    ).toBe('red');
+    // Variant-only property still present
+    expect(theme.components?.button?.['variant:primary-muted']?.color).toBe(
+      'white',
+    );
   });
 });
