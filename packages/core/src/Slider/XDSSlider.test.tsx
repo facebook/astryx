@@ -218,8 +218,8 @@ describe('XDSSlider', () => {
       <XDSSlider label="Price range" value={[20, 80] as [number, number]} />,
     );
     const sliders = screen.getAllByRole('slider');
-    expect(sliders[0]).toHaveAttribute('aria-label', 'Minimum value');
-    expect(sliders[1]).toHaveAttribute('aria-label', 'Maximum value');
+    expect(sliders[0]).toHaveAttribute('aria-label', 'Price range, minimum value');
+    expect(sliders[1]).toHaveAttribute('aria-label', 'Price range, maximum value');
   });
 
   it('single thumb uses label as aria-label', () => {
@@ -269,10 +269,10 @@ describe('XDSSlider', () => {
     });
     await user.keyboard('{ArrowRight}');
     expect(handleChange).toHaveBeenCalledWith(55);
-    expect(handleChangeEnd).toHaveBeenCalledTimes(1);
+    expect(handleChangeEnd).toHaveBeenCalledWith(55);
   });
 
-  it('fires onChangeEnd on keyboard Home/End', async () => {
+  it('fires onChangeEnd on keyboard Home/End with correct value', async () => {
     const user = userEvent.setup();
     const handleChangeEnd = vi.fn();
     render(
@@ -290,7 +290,7 @@ describe('XDSSlider', () => {
       slider.focus();
     });
     await user.keyboard('{Home}');
-    expect(handleChangeEnd).toHaveBeenCalledTimes(1);
+    expect(handleChangeEnd).toHaveBeenCalledWith(0);
   });
 
   it('fires onChangeEnd on pointer up after pointer down', () => {
@@ -336,7 +336,7 @@ describe('XDSSlider', () => {
     expect(handleChangeEnd).toHaveBeenCalledTimes(1);
   });
 
-  it('fires onChangeEnd with current value for range mode on keyboard', async () => {
+  it('fires onChangeEnd with correct value for range mode on keyboard', async () => {
     const user = userEvent.setup();
     const handleChangeEnd = vi.fn();
     render(
@@ -355,7 +355,7 @@ describe('XDSSlider', () => {
       sliders[0].focus();
     });
     await user.keyboard('{ArrowRight}');
-    expect(handleChangeEnd).toHaveBeenCalledTimes(1);
+    expect(handleChangeEnd).toHaveBeenCalledWith([25, 80]);
   });
 
   it('focuses closest thumb on track click', () => {

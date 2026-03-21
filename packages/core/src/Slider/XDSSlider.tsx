@@ -1,7 +1,7 @@
 /**
  * @file XDSSlider.tsx
  * @input Uses React, useId, useRef, useCallback, XDSField, XDSTooltip
- * @output Exports XDSSlider component, XDSSliderProps, XDSSliderSingleProps, XDSSliderRangeProps, XDSSliderBaseProps
+ * @output Exports XDSSlider component, XDSSliderProps, XDSSliderSingleProps, XDSSliderRangeProps
  * @position Core implementation; consumed by index.ts, tested by XDSSlider.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -33,14 +33,13 @@ import {
 import {XDSField} from '../Field/XDSField';
 import {XDSTooltip} from '../Tooltip/XDSTooltip';
 import type {XDSInputStatus} from '../Field/types';
-import type {XDSBaseProps} from '../XDSBaseProps';
+import type {StyleXStyles} from '@stylexjs/stylex';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export interface XDSSliderBaseProps
-  extends Omit<XDSBaseProps<HTMLDivElement>, 'onChange'> {
+export interface XDSSliderBaseProps {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /** Label text for the slider (always rendered for accessibility). */
@@ -73,6 +72,15 @@ export interface XDSSliderBaseProps
   valueDisplay?: 'tooltip' | 'text' | 'none';
   /** Tick marks at specified positions with optional labels. */
   marks?: Array<{value: number; label?: string}>;
+  /** StyleX styles for the root element. */
+  xstyle?: StyleXStyles;
+  /**
+   * HTML class name. Prefer `xstyle` for styling — className is provided
+   * for integration with non-StyleX systems.
+   */
+  className?: string;
+  /** Inline styles. Prefer `xstyle` for styling. */
+  style?: React.CSSProperties;
   /** Test ID for the root element. */
   'data-testid'?: string;
 }
@@ -181,11 +189,11 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-rounded'],
     backgroundColor: colorVars['--color-accent'],
     transform: 'translate(-50%, -50%)',
-    transitionProperty: {
-      default: 'background-color, box-shadow',
-      '@media (prefers-reduced-motion: reduce)': 'none',
+    transitionProperty: 'background-color, box-shadow',
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
     },
-    transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     outline: 'none',
     cursor: 'grab',
@@ -206,14 +214,14 @@ const styles = stylex.create({
       },
     },
   },
-  thumbFocusWithin: {
+  thumbFocusVisible: {
     outline: {
       default: 'none',
-      ':focus-within': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: {
       default: '0',
-      ':focus-within': '2px',
+      ':focus-visible': '2px',
     },
   },
   thumbDisabled: {
@@ -281,6 +289,7 @@ function clamp(val: number, min: number, max: number): number {
 }
 
 function snapToStep(val: number, min: number, step: number): number {
+  if (step <= 0) return val;
   const steps = Math.round((val - min) / step);
   return min + steps * step;
 }
@@ -438,17 +447,20 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
   const onChangeEndRef = useRef(onChangeEnd);
   onChangeEndRef.current = onChangeEnd;
 
-  const fireChangeEnd = useCallback(() => {
-    const currentValues = valuesRef.current;
-    const cb = onChangeEndRef.current;
-    if (isRange) {
-      (cb as XDSSliderRangeProps['onChangeEnd'])?.(
-        currentValues as unknown as [number, number],
-      );
-    } else {
-      (cb as XDSSliderSingleProps['onChangeEnd'])?.(currentValues[0]);
-    }
-  }, [isRange]);
+  const fireChangeEnd = useCallback(
+    (newValues?: number[]) => {
+      const currentValues = newValues ?? valuesRef.current;
+      const cb = onChangeEndRef.current;
+      if (isRange) {
+        (cb as XDSSliderRangeProps['onChangeEnd'])?.(
+          currentValues as unknown as [number, number],
+        );
+      } else {
+        (cb as XDSSliderSingleProps['onChangeEnd'])?.(currentValues[0]);
+      }
+    },
+    [isRange],
+  );
 
   // Pointer handlers
   const handlePointerDown = useCallback(
@@ -528,10 +540,38 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
       }
 
       e.preventDefault();
+      const clamped = clamp(snapToStep(newVal, min, step), min, max);
       updateValue(thumbIndex, newVal);
-      fireChangeEnd();
+
+      // Compute the exact values that onChange will receive so onChangeEnd
+      // reports the correct value even before React batches the state update.
+      if (isRange) {
+        const newValues = [...values] as [number, number];
+        newValues[thumbIndex] = clamped;
+        const minGap = minStepsBetweenThumbs * step;
+        if (thumbIndex === 0) {
+          newValues[0] = Math.min(newValues[0], newValues[1] - minGap);
+        } else {
+          newValues[1] = Math.max(newValues[1], newValues[0] + minGap);
+        }
+        newValues[0] = clamp(newValues[0], min, max);
+        newValues[1] = clamp(newValues[1], min, max);
+        fireChangeEnd(newValues);
+      } else {
+        fireChangeEnd([clamped]);
+      }
     },
-    [isDisabled, values, step, min, max, updateValue, fireChangeEnd],
+    [
+      isDisabled,
+      isRange,
+      values,
+      step,
+      min,
+      max,
+      minStepsBetweenThumbs,
+      updateValue,
+      fireChangeEnd,
+    ],
   );
 
   // Format display value
@@ -551,8 +591,8 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
 
     const thumbLabel = isRange
       ? thumbIndex === 0
-        ? 'Minimum value'
-        : 'Maximum value'
+        ? `${label}, minimum value`
+        : `${label}, maximum value`
       : label;
 
     const useTooltip = valueDisplay === 'tooltip';
@@ -561,6 +601,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
     const thumbElement = (
       <div
         key={thumbIndex}
+        id={!isRange ? id : undefined}
         role="slider"
         tabIndex={isDisabled ? -1 : 0}
         aria-valuemin={min}
@@ -578,7 +619,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
           styles.thumb,
           isHorizontal ? styles.thumbHorizontal : styles.thumbVertical,
           !isDisabled && styles.thumbHover,
-          !isDisabled && styles.thumbFocusWithin,
+          !isDisabled && styles.thumbFocusVisible,
           isDisabled && styles.thumbDisabled,
         )}
       />
@@ -666,9 +707,13 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
                 node;
             }
           }}
+          {...(isRange
+            ? {role: 'group', 'aria-label': label}
+            : undefined)}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
           {...stylex.props(
             styles.trackContainer,
             isHorizontal
