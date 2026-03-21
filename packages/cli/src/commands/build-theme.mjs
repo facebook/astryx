@@ -592,11 +592,12 @@ export function registerTheme(program) {
       // Generate CSS using the shared generateThemeRules from core.
       // This ensures build and runtime produce identical rule sets.
       let css;
+      let resolvedTheme;
       if (_defineTheme && _generateThemeRules) {
         // Shared path: run through defineTheme (expands typography.scale, merges
         // components) then generateThemeRules with computedValues for
         // self-contained CSS output.
-        const resolvedTheme = _defineTheme({
+        resolvedTheme = _defineTheme({
           name: themeDef.name,
           typography: themeDef.typography,
           motion: themeDef.motion,
@@ -702,7 +703,7 @@ Or with a <link> tag:
 `);
 
       // Print font declaration warnings (derived from typography roles)
-      if (resolvedTheme.fonts && resolvedTheme.fonts.length > 0) {
+      if (resolvedTheme && resolvedTheme.fonts && resolvedTheme.fonts.length > 0) {
         console.log(`\n⚠ Theme "${themeDef.name}" requires fonts not included in the build:`);
         for (const font of resolvedTheme.fonts) {
           console.log(`  ${font.family} — add to your document <head>:`);
