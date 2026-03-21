@@ -76,9 +76,7 @@ export interface XDSTableColumn<T extends Record<string, unknown>> {
    * renderCell: (item) => (
    *   <XDSHStack gap={2} align="center">
    *     <XDSStatusDot status={item.isActive ? 'positive' : 'negative'} />
-   *     <XDSBadge variant={item.isActive ? 'success' : 'error'}>
-   *       {item.isActive ? 'Active' : 'Inactive'}
-   *     </XDSBadge>
+   *     <XDSBadge variant={item.isActive ? 'success' : 'error'} label={item.isActive ? 'Active' : 'Inactive'} />
    *   </XDSHStack>
    * )
    * ```

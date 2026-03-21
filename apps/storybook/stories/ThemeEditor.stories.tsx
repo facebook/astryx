@@ -1219,7 +1219,7 @@ function LandingPagePreview() {
     <div style={{display: 'flex', flexDirection: 'column', gap: '48px'}}>
       {/* Hero */}
       <div style={{textAlign: 'center', padding: '48px 24px'}}>
-        <XDSBadge variant="accent">New Release</XDSBadge>
+        <XDSBadge variant="accent" label="New Release" />
         <XDSHeading level={1} style={{marginTop: 16, marginBottom: 12}}>
           Ship faster with XDS
         </XDSHeading>

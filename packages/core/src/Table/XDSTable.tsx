@@ -171,9 +171,7 @@ function XDSTableInner<T extends Record<string, unknown>>({
  *       </XDSHStack>
  *     )},
  *     { key: 'status', header: 'Status', renderCell: (u) => (
- *       <XDSBadge variant={u.active ? 'success' : 'error'}>
- *         {u.active ? 'Active' : 'Inactive'}
- *       </XDSBadge>
+ *       <XDSBadge variant={u.active ? 'success' : 'error'} label={u.active ? 'Active' : 'Inactive'} />
  *     )},
  *   ]}
  *   density="compact"

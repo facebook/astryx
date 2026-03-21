@@ -22,7 +22,7 @@ describe('XDSBadge', () => {
     expect(screen.getByText('Info')).toBeInTheDocument();
   });
 
-  it('renders as dot when no children provided', () => {
+  it('renders as dot when no label provided', () => {
     const {container} = render(<XDSBadge variant="success" />);
     const badge = container.querySelector('span');
     expect(badge).toBeInTheDocument();
