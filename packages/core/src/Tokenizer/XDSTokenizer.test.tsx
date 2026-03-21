@@ -427,7 +427,7 @@ describe('XDSTokenizer', () => {
   // Hardening: handleClearAll uses type: 'clear'
   // =========================================================================
 
-  it('calls onChange with type clear when clearing all tokens', () => {
+  it('calls onChange with type remove when clearing all tokens', () => {
     const onChange = vi.fn();
     render(
       <XDSTokenizer
@@ -439,7 +439,10 @@ describe('XDSTokenizer', () => {
       />,
     );
     fireEvent.click(screen.getByRole('button', {name: 'Clear all'}));
-    expect(onChange).toHaveBeenCalledWith([], {type: 'clear'});
+    expect(onChange).toHaveBeenCalledWith([], {
+      item: users[1],
+      type: 'remove',
+    });
   });
 
   // =========================================================================

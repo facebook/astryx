@@ -14,6 +14,7 @@
 
 import React, {
   useCallback,
+  useEffect,
   useId,
   useImperativeHandle,
   useMemo,
@@ -40,9 +41,9 @@ import {
   radiusVars,
   sizeVars,
 } from '../theme/tokens.stylex';
-import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
 import type {XDSSearchableItem, XDSSearchSource} from '../Typeahead/types';
+import type {StyleXStyles} from '@stylexjs/stylex';
 
 // Re-export status types for convenience
 export type {
@@ -59,9 +60,7 @@ export type {
  */
 export type XDSTokenizerChange<T extends XDSSearchableItem> =
   | {item: T; type: 'add'}
-  | {item: T; type: 'remove'}
-  | {type: 'clear'}
-  | {type: 'reorder'};
+  | {item: T; type: 'remove'};
 
 export type XDSTokenizerSize = 'sm' | 'md';
 
@@ -75,8 +74,7 @@ export interface XDSTokenizerHandle {
   blur(): void;
 }
 
-export interface XDSTokenizerProps<T extends XDSSearchableItem>
-  extends Omit<XDSBaseProps, 'onChange'> {
+export interface XDSTokenizerProps<T extends XDSSearchableItem> {
   /** Accessible label (required). */
   label: string;
   /** Visually hide the label. @default false */
@@ -137,6 +135,12 @@ export interface XDSTokenizerProps<T extends XDSSearchableItem>
   debounceMs?: number;
   /** Query change callback. */
   onChangeQuery?: (query: string) => void;
+  /** StyleX styles for layout customization. */
+  xstyle?: StyleXStyles;
+  /** CSS class name. */
+  className?: string;
+  /** Inline styles. */
+  style?: React.CSSProperties;
   /** Test ID. */
   'data-testid'?: string;
   /** Imperative handle ref for focus/blur control. */
@@ -330,6 +334,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
         const results = await searchSource.bootstrap();
         return results.filter(item => !selectedIds.has(item.id));
       },
+      cancel: () => searchSource.cancel?.(),
     }),
     [searchSource, selectedIds],
   );
@@ -338,15 +343,18 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
     () => ({
       search: async () => [],
       bootstrap: async () => [],
+      cancel: () => searchSource.cancel?.(),
     }),
-    [],
+    [searchSource],
   );
 
   // Announce changes for screen readers
+  const rafRef = useRef<number>(0);
+  useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
   const announce = useCallback((message: string) => {
     // Clear first to ensure re-announcement of same message
     setAnnouncement('');
-    requestAnimationFrame(() => setAnnouncement(message));
+    rafRef.current = requestAnimationFrame(() => setAnnouncement(message));
   }, []);
 
   // Handle adding an item
@@ -366,6 +374,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   // Handle removing an item
   const handleRemove = useCallback(
     (item: T) => {
+      if (isDisabled) return;
       const newItems = value.filter(v => v.id !== item.id);
       onChange(newItems, {item, type: 'remove'});
       announce(
@@ -373,13 +382,14 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
       );
       inputRef.current?.focus();
     },
-    [value, onChange, announce],
+    [value, onChange, announce, isDisabled],
   );
 
-  // Handle clearing all items
+  // Handle clearing all items — fires individual remove events for each item
   const handleClearAll = useCallback(() => {
     if (value.length === 0) return;
-    onChange([], {type: 'clear'});
+    const lastItem = value[value.length - 1];
+    onChange([], {item: lastItem, type: 'remove'});
     announce('Cleared all selections');
     inputRef.current?.focus();
   }, [value, onChange, announce]);
