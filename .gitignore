@@ -50,3 +50,4 @@ internal/vibe-tests/results/
 apps/sandbox/.next/
 apps/sandbox/out/
 apps/sandbox/next-env.d.ts
+apps/example-nextjs-tailwind/.next

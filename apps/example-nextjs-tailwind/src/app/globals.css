@@ -1,4 +1,11 @@
 @import "tailwindcss";
 @import "@xds/core/reset.css";
-@import "@xds/core/xds.css";
 @import "@xds/theme-default/theme.css";
+
+/* Component CSS is now auto-imported via JS side-effect imports.
+ * Each `import { XDSButton } from '@xds/core/Button'` pulls in
+ * common.css (shared, loaded once) + Button/styles.css (unique).
+ *
+ * For the all-in-one approach, you can still use:
+ *   @import "@xds/core/xds.css";
+ */
