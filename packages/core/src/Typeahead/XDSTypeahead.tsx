@@ -122,11 +122,6 @@ export interface XDSTypeaheadProps<T extends XDSSearchableItem> {
    * inline styles, so these values take priority.
    */
   style?: React.CSSProperties;
-  /**
-   * Callback when a search or bootstrap error occurs.
-   * If not provided, errors are silently caught and results are cleared.
-   */
-  onError?: (error: unknown) => void;
   /** Test ID. */
   'data-testid'?: string;
 }
@@ -231,7 +226,6 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
   debounceMs,
   onChangeQuery,
   onOpenChange,
-  onError,
   xstyle,
   className,
   style,
@@ -420,7 +414,6 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
           isInvalid={status?.type === 'error'}
           onChangeQuery={onChangeQuery}
           onOpenChange={onOpenChange}
-          onError={onError}
           debounceMs={debounceMs}
           anchorRef={wrapperRef}
           onKeyDown={handleKeyDown}

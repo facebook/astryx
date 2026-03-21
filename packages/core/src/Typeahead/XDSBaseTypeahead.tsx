@@ -39,15 +39,13 @@ import {
   typographyVars,
   fontWeightVars,
 } from '../theme/tokens.stylex';
-import type {XDSBaseProps} from '../XDSBaseProps';
 import type {XDSSearchableItem, XDSSearchSource} from './types';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export interface XDSBaseTypeaheadProps<T extends XDSSearchableItem>
-  extends Pick<XDSBaseProps, 'xstyle' | 'className' | 'style'> {
+export interface XDSBaseTypeaheadProps<T extends XDSSearchableItem> {
   /**
    * Search source providing items.
    */
@@ -154,19 +152,6 @@ export interface XDSBaseTypeaheadProps<T extends XDSSearchableItem>
    * @default false
    */
   isRequired?: boolean;
-
-  /**
-   * Whether the field is in an invalid state.
-   * Sets aria-invalid on the combobox input.
-   * @default false
-   */
-  isInvalid?: boolean;
-
-  /**
-   * Callback when a search or bootstrap error occurs.
-   * If not provided, errors are silently caught and results are cleared.
-   */
-  onError?: (error: unknown) => void;
 }
 
 // =============================================================================
@@ -294,12 +279,11 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
   debounceMs = 150,
   isRequired = false,
   isInvalid = false,
-  onError,
-  xstyle,
-  className,
-  style: styleProp,
   ref,
-}: XDSBaseTypeaheadProps<T> & {ref?: React.Ref<HTMLInputElement>}) {
+}: XDSBaseTypeaheadProps<T> & {
+  isInvalid?: boolean;
+  ref?: React.Ref<HTMLInputElement>;
+}) {
   const generatedId = useId();
   const inputId = externalInputId ?? generatedId;
   const listboxId = useId();
@@ -321,6 +305,9 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
 
   // Debounce ref
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Generation counter to discard stale async results
+  const searchIdRef = useRef(0);
 
   // Ref to latest searchSource so debounced callbacks never use a stale one
   const searchSourceRef = useRef(searchSource);
@@ -392,43 +379,54 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
   const performSearch = useCallback(
     async (searchQuery: string) => {
       searchSourceRef.current.cancel?.();
+      const id = ++searchIdRef.current;
       setIsLoading(true);
       setHasSearched(true);
       try {
         const searchResults = await searchSourceRef.current.search(searchQuery);
+        if (id !== searchIdRef.current) return; // stale result
         setResults(searchResults.slice(0, maxMenuItems));
         setHighlightedIndex(searchResults.length > 0 ? 0 : -1);
         if (searchResults.length > 0 || searchQuery.length > 0) {
           showLayer();
         }
       } catch (error) {
+        if (id !== searchIdRef.current) return; // stale error
         setResults([]);
         setHighlightedIndex(-1);
-        onError?.(error);
+        console.error('XDSBaseTypeahead: search error', error);
       } finally {
-        setIsLoading(false);
+        if (id === searchIdRef.current) {
+          setIsLoading(false);
+        }
       }
     },
-    [maxMenuItems, showLayer, onError],
+    [maxMenuItems, showLayer],
   );
 
   // Perform bootstrap
   const performBootstrap = useCallback(async () => {
+    const id = ++searchIdRef.current;
     setIsLoading(true);
     try {
       const bootstrapResults = await searchSourceRef.current.bootstrap();
+      if (id !== searchIdRef.current) return; // stale result
       setResults(bootstrapResults.slice(0, maxMenuItems));
       setHighlightedIndex(bootstrapResults.length > 0 ? 0 : -1);
       if (bootstrapResults.length > 0) {
         showLayer();
       }
     } catch (error) {
+      if (id !== searchIdRef.current) return; // stale error
       setResults([]);
-      onError?.(error);
+      setHasSearched(true);
+      console.error('XDSBaseTypeahead: bootstrap error', error);
     } finally {
-      setIsLoading(false);
+      if (id === searchIdRef.current) {
+        setIsLoading(false);
+      }
     }
-  }, [maxMenuItems, showLayer, onError]);
+  }, [maxMenuItems, showLayer]);
 
   // Handle query change
   const handleQueryChange = useCallback(
@@ -551,13 +549,13 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
           layer.hide();
           break;
         case 'Home':
-          if (layer.isOpen) {
+          if (layer.isOpen && results.length > 0) {
             e.preventDefault();
             setHighlightedIndex(0);
           }
           break;
         case 'End':
-          if (layer.isOpen) {
+          if (layer.isOpen && results.length > 0) {
             e.preventDefault();
             setHighlightedIndex(results.length - 1);
           }
@@ -603,21 +601,6 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
     };
   }, []);
 
-  const inputStyleProps = stylex.props(
-    styles.input,
-    isDisabled && styles.inputDisabled,
-    inputXStyle,
-    xstyle,
-  );
-  if (className) {
-    inputStyleProps.className = inputStyleProps.className
-      ? `${inputStyleProps.className} ${className}`
-      : className;
-  }
-  if (styleProp) {
-    inputStyleProps.style = {...inputStyleProps.style, ...styleProp};
-  }
-
   return (
     <>
       <input
@@ -656,12 +639,22 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
         disabled={isDisabled}
         autoFocus={hasAutoFocus}
         autoComplete="off"
-        {...inputStyleProps}
+        {...stylex.props(
+          styles.input,
+          isDisabled && styles.inputDisabled,
+          inputXStyle,
+        )}
       />
       {isLoading && (
         <span {...stylex.props(styles.loadingSpinner)}>
           <XDSSpinner size="sm" />
         </span>
+      )}
+
+      {results.length === 0 && hasSearched && (
+        <div role="status" aria-live="polite" {...stylex.props(styles.emptyState)}>
+          {emptySearchResultsText}
+        </div>
       )}
 
       {layer.render(
@@ -671,42 +664,32 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
           role="listbox"
           aria-label="Search results"
           {...stylex.props(styles.dropdown)}>
-          {results.length === 0 && hasSearched ? (
+          {results.map((item, index) => (
             <div
+              key={item.id}
+              id={getItemId(index)}
               role="option"
-              aria-selected={false}
-              aria-disabled="true"
-              {...stylex.props(styles.emptyState)}>
-              {emptySearchResultsText}
-            </div>
-          ) : (
-            results.map((item, index) => (
-              <div
-                key={item.id}
-                id={getItemId(index)}
-                role="option"
-                aria-selected={value?.id === item.id}
-                tabIndex={-1}
-                onClick={() => handleSelect(item)}
-                onMouseEnter={() => setHighlightedIndex(index)}
-                {...stylex.props(
-                  styles.item,
-                  index === highlightedIndex && styles.itemHighlighted,
-                  value?.id === item.id && styles.itemSelected,
-                )}>
-                <span {...stylex.props(styles.itemContent)}>
-                  {renderItem ? (
-                    renderItem(item)
-                  ) : (
-                    <XDSTypeaheadItem item={item} />
-                  )}
-                </span>
-                {value?.id === item.id && (
-                  <XDSIcon icon="check" size="sm" color="accent" />
+              aria-selected={index === highlightedIndex}
+              tabIndex={-1}
+              onClick={() => handleSelect(item)}
+              onMouseEnter={() => setHighlightedIndex(index)}
+              {...stylex.props(
+                styles.item,
+                index === highlightedIndex && styles.itemHighlighted,
+                value?.id === item.id && styles.itemSelected,
+              )}>
+              <span {...stylex.props(styles.itemContent)}>
+                {renderItem ? (
+                  renderItem(item)
+                ) : (
+                  <XDSTypeaheadItem item={item} />
                 )}
-              </div>
-            ))
-          )}
+              </span>
+              {value?.id === item.id && (
+                <XDSIcon icon="check" size="sm" color="accent" />
+              )}
+            </div>
+          ))}
         </div>,
         {
           placement: 'below',

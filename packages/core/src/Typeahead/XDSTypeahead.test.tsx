@@ -279,13 +279,14 @@ describe('XDSBaseTypeahead accessibility', () => {
     expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-required');
   });
 
-  it('sets aria-invalid when isInvalid is true', () => {
+  it('sets aria-invalid when passed internally via XDSTypeahead', () => {
     render(
-      <XDSBaseTypeahead
+      <XDSTypeahead
+        label="Fruit"
         searchSource={fruitSource}
         value={null}
         onChange={() => {}}
-        isInvalid
+        status={{type: 'error', message: 'Required'}}
       />,
     );
     expect(screen.getByRole('combobox')).toHaveAttribute(
@@ -294,18 +295,7 @@ describe('XDSBaseTypeahead accessibility', () => {
     );
   });
 
-  it('does not set aria-invalid when isInvalid is false', () => {
-    render(
-      <XDSBaseTypeahead
-        searchSource={fruitSource}
-        value={null}
-        onChange={() => {}}
-      />,
-    );
-    expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-invalid');
-  });
-
-  it('renders empty state with role="option" for valid ARIA tree', async () => {
+  it('renders empty state with role="status" outside listbox', async () => {
     const emptySource: XDSSearchSource = {
       search: () => [],
       bootstrap: () => [],
@@ -322,31 +312,26 @@ describe('XDSBaseTypeahead accessibility', () => {
     fireEvent.change(input, {target: {value: 'xyz'}});
 
     await waitFor(() => {
-      const listbox = screen.getByRole('listbox', {hidden: true});
-      const option = listbox.querySelector('[role="option"]');
-      expect(option).toBeInTheDocument();
-      expect(option).toHaveAttribute('aria-disabled', 'true');
-      expect(option).toHaveTextContent('No results found');
+      const status = screen.getByRole('status');
+      expect(status).toHaveTextContent('No results found');
     });
   });
 });
 
 describe('XDSBaseTypeahead error handling', () => {
-  it('calls onError when search throws', async () => {
-    const error = new Error('search failed');
+  it('logs error and clears results when search throws', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const failSource: XDSSearchSource = {
       search: () => {
-        throw error;
+        throw new Error('search failed');
       },
       bootstrap: () => [],
     };
-    const onError = vi.fn();
     render(
       <XDSBaseTypeahead
         searchSource={failSource}
         value={null}
         onChange={() => {}}
-        onError={onError}
         debounceMs={0}
       />,
     );
@@ -354,25 +339,24 @@ describe('XDSBaseTypeahead error handling', () => {
     fireEvent.change(input, {target: {value: 'test'}});
 
     await waitFor(() => {
-      expect(onError).toHaveBeenCalledWith(error);
+      expect(consoleSpy).toHaveBeenCalled();
     });
+    consoleSpy.mockRestore();
   });
 
-  it('calls onError when bootstrap throws', async () => {
-    const error = new Error('bootstrap failed');
+  it('logs error and sets hasSearched when bootstrap throws', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const failSource: XDSSearchSource = {
       search: () => [],
       bootstrap: () => {
-        throw error;
+        throw new Error('bootstrap failed');
       },
     };
-    const onError = vi.fn();
     render(
       <XDSBaseTypeahead
         searchSource={failSource}
         value={null}
         onChange={() => {}}
-        onError={onError}
         hasEntriesOnFocus
         debounceMs={0}
       />,
@@ -381,8 +365,11 @@ describe('XDSBaseTypeahead error handling', () => {
     fireEvent.focus(input);
 
     await waitFor(() => {
-      expect(onError).toHaveBeenCalledWith(error);
+      expect(consoleSpy).toHaveBeenCalled();
+      // After bootstrap error, hasSearched should be true so empty state shows
+      expect(screen.getByRole('status')).toHaveTextContent('No results found');
     });
+    consoleSpy.mockRestore();
   });
 });
 

@@ -206,34 +206,3 @@ export const AsyncLoading: Story = {
   name: 'Async Loading',
 };
 
-const errorFruitSource: XDSSearchSource = {
-  search: () => {
-    throw new Error('Network error');
-  },
-  bootstrap: () => fruits.slice(0, 5),
-};
-
-export const WithErrorHandler: Story = {
-  render: args => {
-    const [value, setValue] = useState<XDSSearchableItem | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    return (
-      <>
-        <XDSTypeahead
-          {...args}
-          searchSource={errorFruitSource}
-          value={value}
-          onChange={setValue}
-          onError={e => setError(String(e))}
-          status={error ? {type: 'error', message: error} : undefined}
-        />
-      </>
-    );
-  },
-  args: {
-    label: 'Fruit (Error)',
-    placeholder: 'Type to trigger error...',
-    hasEntriesOnFocus: true,
-  },
-  name: 'With Error Handler',
-};
