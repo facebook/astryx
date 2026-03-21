@@ -11,6 +11,4 @@ export {XDSDateInput} from './XDSDateInput';
 export type {
   XDSDateInputProps,
   XDSDateInputSize,
-  XDSDateInputStatus,
-  XDSDateInputStatusType,
 } from './XDSDateInput';
