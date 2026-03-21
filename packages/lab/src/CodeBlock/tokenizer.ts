@@ -287,24 +287,44 @@ function buildLanguagePatterns(
 // Core tokenizer
 // ---------------------------------------------------------------------------
 
+/** Threshold below which we tokenize synchronously (characters). */
+export const SYNC_TOKENIZE_THRESHOLD = 2000;
+
+/** Characters to process per chunk in async tokenization. */
+const ASYNC_CHUNK_SIZE = 5000;
+
 /**
- * Tokenizes a code string into an array of typed tokens with character offsets.
- *
- * Uses a greedy first-match strategy: at each position, try all patterns in
- * order and emit the first match. Skips characters that don't match any pattern.
- *
- * @param code - The source code string to tokenize
- * @param language - Language identifier (e.g. 'typescript', 'python')
- * @returns Array of tokens sorted by start position
+ * Yield to the main thread. Uses `scheduler.yield()` when available,
+ * falling back to `setTimeout(resolve, 0)`.
  */
-export function tokenize(code: string, language: string): Token[] {
-  const langDef = buildLanguage(language);
-  if (!langDef) return [];
+function yieldToMain(): Promise<void> {
+  if (
+    typeof scheduler !== 'undefined' &&
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    typeof (scheduler as any).yield === 'function'
+  ) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (scheduler as any).yield();
+  }
+  return new Promise(resolve => setTimeout(resolve, 0));
+}
 
-  const tokens: Token[] = [];
-  let pos = 0;
+/**
+ * Internal tokenization loop. Processes from `startPos` up to `endPos`
+ * (or end of string), pushing tokens into the provided array.
+ * Returns the final position.
+ */
+function tokenizeRange(
+  code: string,
+  langDef: LangDef,
+  tokens: Token[],
+  startPos: number,
+  endPos: number,
+): number {
+  let pos = startPos;
+  const limit = Math.min(endPos, code.length);
 
-  while (pos < code.length) {
+  while (pos < limit) {
     let matched = false;
 
     for (const pattern of langDef.patterns) {
@@ -325,6 +345,68 @@ export function tokenize(code: string, language: string): Token[] {
 
     if (!matched) {
       pos++;
+    }
+  }
+
+  return pos;
+}
+
+/**
+ * Tokenizes a code string into an array of typed tokens with character offsets.
+ *
+ * Uses a greedy first-match strategy: at each position, try all patterns in
+ * order and emit the first match. Skips characters that don't match any pattern.
+ *
+ * Best for small code strings (< 2000 chars). For large code, use
+ * `tokenizeAsync()` which yields to the main thread between chunks.
+ *
+ * @param code - The source code string to tokenize
+ * @param language - Language identifier (e.g. 'typescript', 'python')
+ * @returns Array of tokens sorted by start position
+ */
+export function tokenize(code: string, language: string): Token[] {
+  const langDef = buildLanguage(language);
+  if (!langDef) return [];
+
+  const tokens: Token[] = [];
+  tokenizeRange(code, langDef, tokens, 0, code.length);
+  return tokens;
+}
+
+/**
+ * Async streaming tokenizer that yields to the main thread between chunks.
+ *
+ * Processes ~5000 characters at a time, then yields via `scheduler.yield()`
+ * (or `setTimeout`) to avoid blocking the main thread on large files.
+ *
+ * Supports cancellation via AbortSignal — returns tokens accumulated so far
+ * if aborted (callers should discard the result).
+ *
+ * @param code - The source code string to tokenize
+ * @param language - Language identifier (e.g. 'typescript', 'python')
+ * @param signal - Optional AbortSignal for cancellation
+ * @returns Promise resolving to array of tokens sorted by start position
+ */
+export async function tokenizeAsync(
+  code: string,
+  language: string,
+  signal?: AbortSignal,
+): Promise<Token[]> {
+  const langDef = buildLanguage(language);
+  if (!langDef) return [];
+
+  const tokens: Token[] = [];
+  let pos = 0;
+
+  while (pos < code.length) {
+    if (signal?.aborted) return tokens;
+
+    // Process one chunk
+    pos = tokenizeRange(code, langDef, tokens, pos, pos + ASYNC_CHUNK_SIZE);
+
+    // Yield to main thread if there's more to process
+    if (pos < code.length) {
+      await yieldToMain();
     }
   }
 
