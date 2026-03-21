@@ -316,7 +316,6 @@ export function XDSSwitch({
   className,
   style,
   ref,
-  ...rest
 }: XDSSwitchProps) {
   if (process.env.NODE_ENV !== 'production' && !label) {
     console.warn(
@@ -359,13 +358,7 @@ export function XDSSwitch({
           if (onChangeAction && !e.defaultPrevented) {
             startTransition(async () => {
               setOptimisticValue(checked);
-              try {
-                await onChangeAction(checked, e);
-              } catch (error) {
-                if (process.env.NODE_ENV !== 'production') {
-                  console.error('XDSSwitch: onChangeAction failed:', error);
-                }
-              }
+              await onChangeAction(checked, e);
             });
           }
         }}
@@ -433,7 +426,6 @@ export function XDSSwitch({
 
   return (
     <div
-      {...rest}
       {...mergeProps(
         xdsClassName('switch-field', {
           labelPosition: labelPosition !== 'end' ? labelPosition : undefined,

@@ -295,39 +295,62 @@ describe('XDSSwitch', () => {
     expect(screen.getByRole('switch')).toHaveAttribute('aria-busy', 'true');
   });
 
-  it('catches onChangeAction errors without breaking', async () => {
+  it('calls onChangeAction on success and clears loading state', async () => {
     const user = userEvent.setup();
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
-    const failingAction = vi.fn().mockRejectedValue(new Error('fail'));
+    const handleAction = vi.fn().mockResolvedValue(undefined);
 
     render(
       <XDSSwitch
         label="Enable notifications"
         value={false}
         onChange={() => {}}
-        onChangeAction={failingAction}
+        onChangeAction={handleAction}
       />,
     );
 
     const switchEl = screen.getByRole('switch');
-    // Should not throw
     await user.click(switchEl);
-    expect(failingAction).toHaveBeenCalled();
-    consoleError.mockRestore();
+    expect(handleAction).toHaveBeenCalledTimes(1);
+    expect(handleAction).toHaveBeenCalledWith(true, expect.any(Object));
+    // After resolution, loading state should clear
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
-  it('passes through data-testid and other HTML attributes', () => {
+  it('does not call onChange when isBusy (isLoading=true)', async () => {
+    // Bypass pointer-events CSS check to test the JS guard
+    const user = userEvent.setup({pointerEventsCheck: 0});
+    const handleChange = vi.fn();
+
     render(
       <XDSSwitch
         label="Enable notifications"
         value={false}
-        onChange={() => {}}
-        data-testid="my-switch"
+        onChange={handleChange}
+        isLoading
       />,
     );
-    expect(screen.getByTestId('my-switch')).toBeInTheDocument();
+
+    const switchEl = screen.getByRole('switch');
+    await user.click(switchEl);
+    expect(handleChange).not.toHaveBeenCalled();
+  });
+
+  it('does not call onChangeAction when onChange calls preventDefault', async () => {
+    const user = userEvent.setup();
+    const handleAction = vi.fn();
+
+    render(
+      <XDSSwitch
+        label="Enable notifications"
+        value={false}
+        onChange={(_checked, e) => e.preventDefault()}
+        onChangeAction={handleAction}
+      />,
+    );
+
+    const switchEl = screen.getByRole('switch');
+    await user.click(switchEl);
+    expect(handleAction).not.toHaveBeenCalled();
   });
 
   it('warns in development when label is empty', () => {
