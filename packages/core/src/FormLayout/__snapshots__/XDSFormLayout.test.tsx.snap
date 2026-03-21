@@ -16,7 +16,7 @@ exports[`XDSFormLayout > matches snapshot for horizontal direction 1`] = `
 
 exports[`XDSFormLayout > matches snapshot for horizontal-labels direction 1`] = `
 <div
-  class="xds-form-layout horizontal-labels XDSFormLayout__styles.base xdt5ytf XDSFormLayout__styles.horizontalLabels x12h1iku xrvj5dj x1pmbctz xlaq8a2 x7a106z xxfasz9 x1f4tumk x1ph4873"
+  class="xds-form-layout horizontal-labels XDSFormLayout__styles.base xdt5ytf XDSFormLayout__styles.horizontalLabels xrvj5dj x1pmbctz xlaq8a2 x7a106z xedohl4 x1rpgqan x1a1jff"
   data-testid="layout"
 >
   <label>

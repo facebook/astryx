@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/FormLayout.stories.tsx (storybook stories)
  */
 
-
 import {useMemo, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
@@ -29,7 +28,7 @@ import {xdsClassName, mergeProps} from '../utils';
 // Responsive breakpoint for horizontal-labels collapse
 // =============================================================================
 
-const HORIZONTAL_LABELS_COLLAPSE = '@container (max-width: 480px)';
+const HORIZONTAL_LABELS_COLLAPSE = '@media (max-width: 480px)';
 
 // =============================================================================
 // Styles
@@ -46,7 +45,6 @@ const styles = stylex.create({
     flexWrap: 'wrap',
   },
   horizontalLabels: {
-    containerType: 'inline-size',
     display: 'grid',
     gridTemplateColumns: 'auto 1fr',
     gap: `${spacingVars['--spacing-3']} ${spacingVars['--spacing-4']}`,
@@ -106,11 +104,6 @@ export interface XDSFormLayoutProps extends XDSBaseProps<HTMLDivElement> {
    * inline styles, so these values take priority.
    */
   style?: React.CSSProperties;
-
-  /**
-   * Test ID for the root element.
-   */
-  'data-testid'?: string;
 }
 
 // =============================================================================

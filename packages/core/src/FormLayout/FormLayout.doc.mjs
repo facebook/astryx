@@ -9,7 +9,7 @@ export const docs = {
       name: 'direction',
       type: "'vertical' | 'horizontal' | 'horizontal-labels'",
       description:
-        'Controls field arrangement. Vertical stacks top-to-bottom, horizontal arranges left-to-right with equal flex-grow, and horizontal-labels uses CSS Grid with labels to the left of inputs (collapses to vertical when the container is narrow <=480px).',
+        'Controls field arrangement. Vertical stacks top-to-bottom, horizontal arranges left-to-right with equal flex-grow, and horizontal-labels uses CSS Grid with labels to the left of inputs (collapses to vertical on narrow viewports <=480px).',
       default: "'vertical'",
     },
     {
@@ -74,7 +74,7 @@ export const docs = {
   features: [
     "Three layout modes: 'vertical' (default), 'horizontal', and 'horizontal-labels'",
     'Direction context via XDSFormLayoutContext — children can read the current layout direction',
-    'Responsive: horizontal-labels collapses to vertical when the container is narrow (<=480px)',
+    'Responsive: horizontal-labels collapses to vertical on narrow viewports (<=480px)',
     'Nestable: inner FormLayout overrides context for its children',
     'Purely spatial: does not manage form state or render <form> — form submission is separate',
   ],
@@ -100,7 +100,7 @@ export const docsZh = {
       name: 'direction',
       type: "'vertical' | 'horizontal' | 'horizontal-labels'",
       description:
-        '控制字段排列方式。vertical 从上到下堆叠，horizontal 从左到右排列且等比弹性增长，horizontal-labels 使用 CSS Grid 将标签放在输入框左侧（在容器宽度 <=480px 时折叠为垂直布局）。',
+        '控制字段排列方式。vertical 从上到下堆叠，horizontal 从左到右排列且等比弹性增长，horizontal-labels 使用 CSS Grid 将标签放在输入框左侧（在窄视口 <=480px 时折叠为垂直布局）。',
       default: "'vertical'",
     },
     {
@@ -165,7 +165,7 @@ export const docsZh = {
   features: [
     '三种布局模式：\'vertical\'（默认）、\'horizontal\' 和 \'horizontal-labels\'',
     '通过 XDSFormLayoutContext 提供方向上下文 - 子组件可以读取当前布局方向',
-    '响应式：horizontal-labels 在容器宽度（<=480px）时折叠为垂直布局',
+    '响应式：horizontal-labels 在窄视口（<=480px）时折叠为垂直布局',
     '可嵌套：内部 FormLayout 会为其子组件覆盖上下文',
     '纯空间布局：不管理表单状态或渲染 <form> - 表单提交是独立的',
   ],
@@ -188,7 +188,7 @@ export const docsDense = {
   features: [
     "Three layout modes: 'vertical' (default), 'horizontal', 'horizontal-labels'",
     'Direction context via XDSFormLayoutContext; children read current layout direction',
-    'Responsive: horizontal-labels collapses to vertical when container is narrow (<=480px)',
+    'Responsive: horizontal-labels collapses to vertical on narrow viewports (<=480px)',
     'Nestable: inner FormLayout overrides context for children',
     'Purely spatial: no form state management or <form> rendering',
   ],
@@ -198,7 +198,7 @@ export const docsDense = {
     'Accepts standard HTML div attributes (id, role, aria-*) via rest props.',
   ],
   propDescriptions: {
-    direction: 'Field arrangement. Vertical stacks top-to-bottom, horizontal arranges left-to-right w/ equal flex-grow, horizontal-labels uses CSS Grid w/ labels left of inputs (collapses when container <=480px).',
+    direction: 'Field arrangement. Vertical stacks top-to-bottom, horizontal arranges left-to-right w/ equal flex-grow, horizontal-labels uses CSS Grid w/ labels left of inputs (collapses <=480px).',
     children: 'Form fields to arrange. Accepts XDS inputs + XDSField-wrapped custom controls.',
     xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
   },
