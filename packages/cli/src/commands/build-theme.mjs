@@ -793,7 +793,7 @@ export function registerTheme(program) {
         const colorSchemeDecl = scopeBlock.includes('light-dark(')
           ? '  :root { color-scheme: light dark; }\n\n'
           : '';
-        css = `@layer xds.theme {\n${colorSchemeDecl}${scopeBlock}\n}\n`;
+        css = `@layer xds-theme {\n${colorSchemeDecl}${scopeBlock}\n}\n`;
       } else {
         // Legacy fallback when core isn't built yet
         const scopeBlocks = [];
@@ -809,7 +809,7 @@ export function registerTheme(program) {
         const colorSchemeDecl = joined.includes('light-dark(')
           ? '  :root { color-scheme: light dark; }\n\n'
           : '';
-        css = `@layer xds.theme {\n${colorSchemeDecl}${joined}\n}\n`;
+        css = `@layer xds-theme {\n${colorSchemeDecl}${joined}\n}\n`;
       }
 
       // Determine output path

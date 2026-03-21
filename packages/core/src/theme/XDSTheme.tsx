@@ -88,7 +88,7 @@ function useThemeStyleInjection(theme: XDSDefinedTheme): void {
     const style = document.createElement('style');
     style.setAttribute('data-xds-theme', theme.name);
     style.setAttribute('data-xds-id', id);
-    style.textContent = `@layer xds.theme {\n${css}\n}`;
+    style.textContent = `@layer xds-theme {\n${css}\n}`;
     document.head.appendChild(style);
     injectedThemes.add(themeKey);
 

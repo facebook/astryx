@@ -2,7 +2,7 @@
  * @file build-css.mjs
  * Post-build script that extracts StyleX CSS from compiled source files
  * and outputs per-component CSS files, a shared common.css, and a combined xds.css,
- * all wrapped in @layer xds.
+ * all wrapped in @layer xds-base.
  *
  * Usage: node scripts/build-css.mjs
  *
@@ -12,7 +12,7 @@
  * 3. Identifies shared rules (used by 2+ components) → common.css
  * 4. Outputs per-component CSS files with only unique rules
  * 5. Outputs a combined xds.css with all rules
- * 6. All CSS is wrapped in @layer xds { ... }
+ * 6. All CSS is wrapped in @layer xds-base { ... }
  *
  * Per-component CSS enables tree-shaking for dist consumers:
  *   import { Button } from '@xds/core/Button';
@@ -145,7 +145,7 @@ function wrapInLayer(css, comment) {
   return `/* ${comment} */
 /* Auto-generated. Do not edit manually. */
 
-@layer xds {
+@layer xds-base {
 ${css
   .split('\n')
   .map(line => '  ' + line)

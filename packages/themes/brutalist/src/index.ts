@@ -54,9 +54,14 @@ export const brutalistTheme = defineTheme({
         borderColor: 'var(--color-text-primary)',
       },
     },
-    // Buttons are loud
+    // Buttons are loud — 9999px radius override tests layer ordering.
+    // Everything else in brutalist is 0px radius, but buttons are
+    // deliberately pill-shaped. If this override works without !important,
+    // CSS layers are doing their job.
+    // (same pattern that needed !important in Meta theme #692)
     button: {
       base: {
+        borderRadius: '9999px',
         textTransform: 'uppercase',
         letterSpacing: '0.1em',
         fontWeight: '800',
