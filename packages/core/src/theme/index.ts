@@ -103,4 +103,7 @@ export type {
   XDSTextWeight,
   XDSTextColor,
   ThemeFontSource,
+  TypographyConfig,
+  TypographyRole,
+  FontWeight,
 } from './types';

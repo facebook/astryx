@@ -129,8 +129,12 @@ export const myTheme: Theme = {
 
 const myTheme = defineTheme({
   name: 'my-theme',
-  typeScale: { base: 14, ratio: 1.2 },       // generates heading + text tokens
-  radiusScale: { base: 4, multiplier: 1 },    // generates radius tokens
+  typography: {
+    scale: { base: 14, ratio: 1.2 },         // generates heading + text tokens
+    body: { family: 'Inter', fallbacks: '-apple-system, sans-serif' },
+  },
+  radius: { base: 4, multiplier: 1 },         // generates radius tokens
+  motion: { fast: 175, medium: 410, ratio: 0.75 },
   tokens: {
     '--color-accent': ['#7B61FF', '#9B85FF'], // explicit overrides win
   },
@@ -143,8 +147,10 @@ const myTheme = defineTheme({
           type: 'table',
           headers: ['Config', 'Generates', 'Parameters'],
           rows: [
-            ['typeScale', '--heading-*-size/weight/leading, --text-*-size/weight/leading', 'base (px), ratio, weights?'],
-            ['radiusScale', '--radius-0 through --radius-4, --radius-rounded', 'base (px), multiplier (0–2)'],
+            ['typography.scale', '--heading-*-size/weight/leading, --text-*-size/weight/leading', 'base (px), ratio'],
+            ['typography.body/heading/code', '--font-body, --font-heading, --font-code', 'family, fallbacks?, url?, weight?'],
+            ['radius', '--radius-0 through --radius-4, --radius-rounded', 'base (px), multiplier (0–2)'],
+            ['motion', '--duration-fast-*, --duration-medium-*, --ease-*', 'fast (ms), medium (ms), ratio, easing?'],
           ],
         },
       ],

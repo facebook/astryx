@@ -65,7 +65,7 @@ Control heights for consistent sizing across buttons, inputs, and selectors.
 
 ## Radius Tokens
 
-Numeric scale based on a 4dp base unit. Tokens 1–4 scale with the theme's `radiusScale` multiplier; tokens 0 and rounded are fixed.
+Numeric scale based on a 4dp base unit. Tokens 1–4 scale with the theme's `radius` multiplier; tokens 0 and rounded are fixed.
 
 | Token            | Value  | Usage                                 | Scales |
 | ---------------- | ------ | ------------------------------------- | ------ |
@@ -76,7 +76,7 @@ Numeric scale based on a 4dp base unit. Tokens 1–4 scale with the theme's `rad
 | --radius-4       | 16px   | Page sections, large containers       | Yes    |
 | --radius-rounded | 9999px | Badges, avatars, status dots, toggles | No     |
 
-### radiusScale (via defineTheme)
+### radius (via defineTheme)
 
 Generate all radius tokens from a base unit and multiplier:
 
@@ -85,14 +85,14 @@ import {defineTheme} from '@xds/core/theme';
 
 const roundedTheme = defineTheme({
   name: 'rounded',
-  radiusScale: {base: 4, multiplier: 1.5},
+  radius: {base: 4, multiplier: 1.5},
   // Produces: radius-1=6px, radius-2=12px, radius-3=18px, radius-4=24px
   // radius-0 stays 0px, radius-rounded stays 9999px
 });
 
 const sharpTheme = defineTheme({
   name: 'sharp',
-  radiusScale: {base: 4, multiplier: 0},
+  radius: {base: 4, multiplier: 0},
   // All scalable radii become 0px
 });
 ```
@@ -151,7 +151,7 @@ Default: base=14px, ratio=1.2.
 Semantic tokens map headings and text types to the raw size scale.
 Sizes are `var()` references; line heights are 4px-grid-snapped computed values.
 
-Override the entire scale with `typeScale: { base, ratio }` in `defineTheme()`.
+Override the entire scale with `typography.scale: { base, ratio }` in `defineTheme()`.
 
 #### Heading Tokens
 
@@ -205,7 +205,7 @@ Override the entire scale with `typeScale: { base, ratio }` in `defineTheme()`.
 
 ### Line Heights (Named Leading)
 
-Intent-based ratios for component use. Not modified by `typeScale`.
+Intent-based ratios for component use. Not modified by `typography.scale`.
 
 | Token             | Value  | Usage                        |
 | ----------------- | ------ | ---------------------------- |

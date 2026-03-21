@@ -235,7 +235,7 @@ export const shadowVars = stylex.defineVars(shadowDefaults);
 // =============================================================================
 // Duration primitives: pick a duration that matches the visual weight.
 // min/max variants derive from base × ratio (default ratio ≈ 0.75).
-// See motionScale in defineTheme for computed generation.
+// See motion in defineTheme for computed generation.
 
 export const durationDefaults = {
   '--duration-fast-min': '130ms',
@@ -374,7 +374,7 @@ export type FontWeightVarName = keyof typeof fontWeightDefaults;
 // =============================================================================
 // These tokens are the source of truth for heading and text sizing.
 // Components reference these tokens so that themes
-// can override them via typeScale in defineTheme.
+// can override them via typography.scale in defineTheme.
 //
 // Default scale: base=14px, ratio=1.2, h4 anchored to base.
 // Suggested starting points:
@@ -385,7 +385,7 @@ export type FontWeightVarName = keyof typeof fontWeightDefaults;
 export const typeScaleDefaults = {
   // Sizes are var() references to raw size tokens.
   // Line heights are hardcoded computed values (4px grid snapped, tiered target).
-  // When typeScale is used in defineTheme, both raw tokens AND these semantic
+  // When typography.scale is used in defineTheme, both raw tokens AND these semantic
   // tokens are overridden together.
   //
   // Step mapping: h6=-2, h5=-1, h4=0(base), h3=+1, h2=+2, h1=+3
