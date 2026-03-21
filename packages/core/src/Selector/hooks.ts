@@ -98,7 +98,6 @@ interface UseComboboxOptions {
   selectableItems: XDSSelectorOptionData[];
   value?: string;
   isDisabled?: boolean;
-  isBusy?: boolean;
   isOpen: boolean;
   onOpen: () => void;
   onClose: () => void;
@@ -123,7 +122,6 @@ export function useCombobox({
   selectableItems,
   value,
   isDisabled = false,
-  isBusy = false,
   isOpen,
   onOpen,
   onClose,
@@ -204,7 +202,7 @@ export function useCombobox({
   );
 
   const onTriggerClick = useCallback(() => {
-    if (isDisabled || isBusy) return;
+    if (isDisabled) return;
     if (isOpen) {
       closeAndReset();
     } else {
@@ -216,7 +214,6 @@ export function useCombobox({
     }
   }, [
     isDisabled,
-    isBusy,
     isOpen,
     onOpen,
     closeAndReset,
@@ -235,7 +232,7 @@ export function useCombobox({
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (isDisabled || isBusy) return;
+      if (isDisabled) return;
 
       const enabledIndices = getEnabledIndices();
       if (enabledIndices.length === 0) {
@@ -354,7 +351,6 @@ export function useCombobox({
     },
     [
       isDisabled,
-      isBusy,
       isOpen,
       onOpen,
       closeAndReset,

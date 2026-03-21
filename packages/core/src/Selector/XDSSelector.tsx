@@ -480,8 +480,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
   } = useCombobox({
     selectableItems,
     value,
-    isDisabled,
-    isBusy,
+    isDisabled: isDisabled || isBusy,
     isOpen: layer.isOpen,
     onOpen: layer.show,
     onClose: layer.hide,
