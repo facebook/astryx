@@ -192,6 +192,11 @@ export const docs = {
       ],
     },
   ],
+  theming: {
+    targets: [
+      {className: 'xds-tooltip'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
@@ -387,6 +392,11 @@ export const docsZh = {
       ],
     },
   ],
+  theming: {
+    targets: [
+      {className: 'xds-tooltip'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
