@@ -415,7 +415,8 @@
     "lint": "eslint src",
     "typecheck:docs": "tsc --project tsconfig.docs.json",
     "build:css": "node ../../scripts/build-css.mjs",
-    "postbuild": "yarn build:css"
+    "inject:css": "node ../../scripts/inject-css-imports.mjs",
+    "postbuild": "yarn build:css && yarn inject:css"
   },
   "peerDependencies": {
     "react": ">=19.0.0",

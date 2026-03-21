@@ -1,19 +1,24 @@
 /**
  * @file build-css.mjs
  * Post-build script that extracts StyleX CSS from compiled source files
- * and outputs a single xds.css wrapped in @layer xds.core.base.
+ * and outputs per-component CSS files, a shared common.css, and a combined xds.css,
+ * all wrapped in @layer xds.
  *
  * Usage: node scripts/build-css.mjs
  *
  * This script:
  * 1. Runs Babel with the StyleX plugin over all source files
- * 2. Collects the CSS rules StyleX generates
- * 3. Wraps them in @layer xds.core.base { ... }
- * 4. Writes to packages/core/dist/xds.css
+ * 2. Groups CSS rules by component directory
+ * 3. Identifies shared rules (used by 2+ components) → common.css
+ * 4. Outputs per-component CSS files with only unique rules
+ * 5. Outputs a combined xds.css with all rules
+ * 6. All CSS is wrapped in @layer xds { ... }
  *
- * The resulting CSS file can be imported by consumers who don't have
- * StyleX in their build pipeline:
+ * Per-component CSS enables tree-shaking for dist consumers:
+ *   import { Button } from '@xds/core/Button';
+ *   // bundler auto-includes common.css + dist/Button/styles.css
  *
+ * All-in-one CSS for consumers who prefer a single import:
  *   import '@xds/core/xds.css';
  */
 
@@ -29,8 +34,26 @@ const ROOT = path.resolve(__dirname, '..');
 const CORE_SRC = path.resolve(ROOT, 'packages/core/src');
 const CORE_DIST = path.resolve(ROOT, 'packages/core/dist');
 
+/**
+ * Determine which component a source file belongs to.
+ * Returns the component directory name (e.g. "Button") or "_shared"
+ * for files not in a component directory.
+ */
+function getComponentName(filePath) {
+  const rel = path.relative(CORE_SRC, filePath);
+  const parts = rel.split(path.sep);
+
+  if (parts.length === 1) return '_shared';
+
+  const dir = parts[0];
+  if (dir[0] === dir[0].toUpperCase() && dir[0] !== '_') {
+    return dir;
+  }
+
+  return '_shared';
+}
+
 async function collectStyleXCSS() {
-  // Find all TypeScript/TSX source files
   const files = await glob('**/*.{ts,tsx}', {
     cwd: CORE_SRC,
     absolute: true,
@@ -39,12 +62,13 @@ async function collectStyleXCSS() {
 
   console.log(`Processing ${files.length} source files...`);
 
+  // Map: componentName -> StyleX rules[]
+  const componentRules = new Map();
   const allRules = [];
 
   for (const file of files) {
     const code = await fs.readFile(file, 'utf8');
 
-    // Skip files that don't use stylex
     if (!code.includes('@stylexjs/stylex')) {
       continue;
     }
@@ -74,52 +98,191 @@ async function collectStyleXCSS() {
         ],
       });
 
-      if (result?.metadata?.stylex) {
-        allRules.push(...result.metadata.stylex);
+      if (result?.metadata?.stylex?.length) {
+        const rules = result.metadata.stylex;
+        const component = getComponentName(file);
+
+        if (!componentRules.has(component)) {
+          componentRules.set(component, []);
+        }
+        componentRules.get(component).push(...rules);
+        allRules.push(...rules);
       }
     } catch (err) {
-      console.warn(`  Warning: Could not process ${path.relative(ROOT, file)}: ${err.message}`);
+      console.warn(
+        `  Warning: Could not process ${path.relative(ROOT, file)}: ${err.message}`,
+      );
     }
   }
 
-  console.log(`Collected ${allRules.length} StyleX rules`);
+  console.log(`Collected ${allRules.length} StyleX rules across ${componentRules.size} groups`);
 
-  if (allRules.length === 0) {
-    console.warn('No StyleX rules found!');
-    return '';
+  return {componentRules, allRules};
+}
+
+/**
+ * Given a list of StyleX rules, produce CSS via the official processor
+ * and parse it into individual rule entries: { className, rule (full text) }
+ */
+function parseRulesFromCSS(css) {
+  const entries = [];
+  // Match each rule: .className...{ ... }
+  // StyleX rules can have :not(#\#) and pseudo-selectors
+  const ruleRegex = /(\.[a-z][a-z0-9_-]+[^{}]*)\{([^}]+)\}/g;
+  let match;
+  while ((match = ruleRegex.exec(css)) !== null) {
+    const selector = match[1].trim();
+    const className = selector.match(/^(\.[a-z][a-z0-9_-]+)/)?.[1];
+    if (className) {
+      entries.push({className, fullRule: match[0]});
+    }
   }
+  return entries;
+}
 
-  // Use StyleX's built-in CSS processor to sort and dedupe rules
-  const css = stylexBabelPlugin.processStylexRules(allRules, false);
+function wrapInLayer(css, comment) {
+  if (!css.trim()) return '';
+  return `/* ${comment} */
+/* Auto-generated. Do not edit manually. */
 
-  // Wrap in @layer xds.core.base
-  const layeredCSS = `/* XDS Pre-compiled StyleX CSS */
-/* This file is auto-generated. Do not edit manually. */
-/* Consumer styles (unlayered) always override these styles. */
-
-@layer xds.core.base {
-${css.split('\n').map(line => '  ' + line).join('\n')}
+@layer xds {
+${css
+  .split('\n')
+  .map(line => '  ' + line)
+  .join('\n')}
 }
 `;
-
-  return layeredCSS;
 }
 
 async function main() {
-  const css = await collectStyleXCSS();
+  const {componentRules, allRules} = await collectStyleXCSS();
 
-  if (!css) {
-    console.error('Failed to collect CSS');
+  if (allRules.length === 0) {
+    console.error('No StyleX rules found!');
     process.exit(1);
   }
 
-  // Ensure dist directory exists
   await fs.mkdir(CORE_DIST, {recursive: true});
 
-  const outPath = path.resolve(CORE_DIST, 'xds.css');
-  await fs.writeFile(outPath, css, 'utf8');
-  console.log(`\nWritten to ${path.relative(ROOT, outPath)}`);
-  console.log(`Size: ${(css.length / 1024).toFixed(1)} KB`);
+  // --- Step 1: Process each component's rules to get CSS ---
+  // We need to identify which CSS classes are shared across components.
+  // Process each component independently, then compare.
+  const componentCSS = new Map(); // component -> parsed CSS entries
+  const classToComponents = new Map(); // className -> Set<component>
+  const classToRule = new Map(); // className -> full rule text (first seen)
+
+  for (const [component, rules] of componentRules) {
+    if (component === '_shared' || rules.length === 0) continue;
+
+    const css = stylexBabelPlugin.processStylexRules(rules, false);
+    if (!css.trim()) continue;
+
+    const entries = parseRulesFromCSS(css);
+    componentCSS.set(component, entries);
+
+    for (const {className, fullRule} of entries) {
+      if (!classToComponents.has(className)) {
+        classToComponents.set(className, new Set());
+      }
+      classToComponents.get(className).add(component);
+
+      if (!classToRule.has(className)) {
+        classToRule.set(className, fullRule);
+      }
+    }
+  }
+
+  // --- Step 2: Identify shared classes (2+ components) ---
+  const sharedClasses = new Set();
+  for (const [className, components] of classToComponents) {
+    if (components.size >= 2) {
+      sharedClasses.add(className);
+    }
+  }
+
+  console.log(`\nShared classes (2+ components): ${sharedClasses.size}`);
+  console.log(`Unique classes: ${classToComponents.size - sharedClasses.size}`);
+
+  // --- Step 3: Write common.css with shared rules ---
+  // Use the combined allRules processed output to get correct ordering
+  const combinedCSS = stylexBabelPlugin.processStylexRules(allRules, false);
+  const combinedEntries = parseRulesFromCSS(combinedCSS);
+
+  const commonRules = combinedEntries
+    .filter(e => sharedClasses.has(e.className))
+    .map(e => e.fullRule);
+
+  // Dedupe (same className can appear in multiple @media contexts)
+  const seenCommon = new Set();
+  const dedupedCommonRules = commonRules.filter(rule => {
+    if (seenCommon.has(rule)) return false;
+    seenCommon.add(rule);
+    return true;
+  });
+
+  const commonCSSContent = dedupedCommonRules.join('\n');
+  const commonPath = path.resolve(CORE_DIST, 'common.css');
+  await fs.writeFile(
+    commonPath,
+    wrapInLayer(commonCSSContent, 'XDS shared styles — auto-imported by components'),
+    'utf8',
+  );
+  console.log(`Common CSS: ${(commonCSSContent.length / 1024).toFixed(1)} KB (${dedupedCommonRules.length} rules)`);
+
+  // --- Step 4: Write per-component CSS (unique rules only) ---
+  let componentCount = 0;
+  const manifest = {};
+
+  for (const [component, entries] of componentCSS) {
+    // Filter to only rules unique to this component
+    const uniqueRules = entries
+      .filter(e => !sharedClasses.has(e.className))
+      .map(e => e.fullRule);
+
+    const componentDir = path.resolve(CORE_DIST, component);
+    await fs.mkdir(componentDir, {recursive: true});
+
+    const outPath = path.resolve(componentDir, 'styles.css');
+
+    if (uniqueRules.length === 0) {
+      // Component only uses shared classes — still write an empty-ish file
+      // so the import doesn't break
+      await fs.writeFile(
+        outPath,
+        `/* XDS ${component} styles */\n/* All rules for this component are in common.css */\n`,
+        'utf8',
+      );
+    } else {
+      // Dedupe within component
+      const seen = new Set();
+      const deduped = uniqueRules.filter(rule => {
+        if (seen.has(rule)) return false;
+        seen.add(rule);
+        return true;
+      });
+      await fs.writeFile(outPath, wrapInLayer(deduped.join('\n'), `XDS ${component} styles`), 'utf8');
+    }
+
+    manifest[component] = {total: entries.length, unique: uniqueRules.length};
+    componentCount++;
+  }
+
+  console.log(`\nWrote ${componentCount} per-component CSS files`);
+
+  // --- Step 5: Write combined xds.css ---
+  const combinedPath = path.resolve(CORE_DIST, 'xds.css');
+  await fs.writeFile(
+    combinedPath,
+    wrapInLayer(combinedCSS, 'XDS Pre-compiled StyleX CSS — all components'),
+    'utf8',
+  );
+  console.log(`Combined: ${(combinedCSS.length / 1024).toFixed(1)} KB`);
+
+  // --- Manifest ---
+  const manifestLines = Object.entries(manifest)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([name, {total, unique}]) => `  ${name}: ${unique} unique / ${total} total`);
+  console.log(`\nPer-component breakdown:\n${manifestLines.join('\n')}`);
 }
 
 main().catch(err => {
