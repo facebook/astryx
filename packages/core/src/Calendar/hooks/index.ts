@@ -20,6 +20,12 @@ export type {
   UseCalendarConstraintsReturn,
 } from './useCalendarConstraints';
 
+export {useCalendarNavigation} from './useCalendarNavigation';
+export type {
+  UseCalendarNavigationOptions,
+  UseCalendarNavigationReturn,
+} from './useCalendarNavigation';
+
 export {useCalendarRovingTabindex} from './useCalendarRovingTabindex';
 export type {
   UseCalendarRovingTabindexOptions,

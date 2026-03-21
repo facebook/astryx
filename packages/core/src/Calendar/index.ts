@@ -15,3 +15,33 @@ export type {
   DayOfWeek,
   DateRange,
 } from './XDSCalendar';
+
+// Re-export hooks for advanced usage
+export {
+  useCalendarDays,
+  useCalendarConstraints,
+  useCalendarNavigation,
+  useCalendarRovingTabindex,
+} from './hooks';
+export type {
+  CalendarDay,
+  UseCalendarDaysOptions,
+  UseCalendarDaysReturn,
+  UseCalendarConstraintsOptions,
+  UseCalendarConstraintsReturn,
+  UseCalendarNavigationOptions,
+  UseCalendarNavigationReturn,
+  UseCalendarRovingTabindexOptions,
+  UseCalendarRovingTabindexReturn,
+} from './hooks';
+
+// Re-export calendar-specific utilities for advanced usage
+export {
+  isSameDay,
+  isDateInRange,
+  getWeekNumber,
+  formatAccessibleDate,
+} from './utils';
+
+// Re-export theme styles for customization
+export {dayCellTheme} from './styles';
