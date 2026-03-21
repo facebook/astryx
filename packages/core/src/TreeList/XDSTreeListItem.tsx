@@ -23,6 +23,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {getIcon} from '../Icon/globalIconRegistry';
+import {xdsClassName, mergeProps} from '../utils';
 import {
   XDSTreeListBranches,
   XDSTreeListHorizontalConnector,
@@ -416,15 +417,21 @@ export function XDSTreeListItem({
           nestedLevel={nestedLevel}
         />
         <div
-          {...stylex.props(
-            styles.contentWrapper,
-            densityStyles[density],
-            (isInteractive || (hasChildren && onClick == null)) &&
-              styles.interactive,
-            (isInteractive || (hasChildren && onClick == null)) &&
-              styles.focusWithinOutline,
-            isDisabled && styles.disabled,
-            isSelected && styles.selected,
+          {...mergeProps(
+            xdsClassName('tree-list-item', {
+              selected: isSelected ? 'selected' : null,
+              disabled: isDisabled ? 'disabled' : null,
+            }),
+            stylex.props(
+              styles.contentWrapper,
+              densityStyles[density],
+              (isInteractive || (hasChildren && onClick == null)) &&
+                styles.interactive,
+              (isInteractive || (hasChildren && onClick == null)) &&
+                styles.focusWithinOutline,
+              isDisabled && styles.disabled,
+              isSelected && styles.selected,
+            ),
           )}
           style={{marginLeft: computedMarginLeft}}
           onClick={handleClick}>

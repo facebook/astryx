@@ -62,6 +62,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'xds-tree-list', visualProps: ['density']},
+      {className: 'xds-tree-list-item', states: ['selected', 'disabled']},
     ],
   },
   notes: [
@@ -187,6 +188,7 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'xds-tree-list', visualProps: ['density']},
+      {className: 'xds-tree-list-item', states: ['selected', 'disabled']},
     ],
   },
   notes: [

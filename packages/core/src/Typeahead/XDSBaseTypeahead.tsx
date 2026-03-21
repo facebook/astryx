@@ -36,6 +36,7 @@ import {
   lineHeightVars,
   typographyVars,
   fontWeightVars,
+  shadowVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {XDSSearchableItem, XDSSearchSource} from './types';
@@ -178,7 +179,7 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-1'],
     borderRadius: radiusVars['--radius-2'],
     backgroundColor: colorVars['--color-surface'],
-    boxShadow: `0 4px 12px ${colorVars['--color-shadow']}`,
+    boxShadow: shadowVars['--shadow-menu'],
   },
   popover: {
     minWidth: 'anchor-size(width)',
