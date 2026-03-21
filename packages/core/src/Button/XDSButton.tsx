@@ -338,8 +338,8 @@ const edgeCompStyles = stylex.create({
  * <XDSButton label="Settings" icon={<GearIcon />} variant="ghost" />
  * <XDSButton label="Pick emoji" icon={<span>🚀</span>} variant="ghost" size="sm" />
  * <XDSButton label="Edit" icon={<PencilIcon />}>Edit</XDSButton>
- * <XDSButton label="Messages" endSlot={<XDSBadge>3</XDSBadge>} />
- * <XDSButton label="Edit" icon={<PencilIcon />} endSlot={<XDSBadge>New</XDSBadge>}>Edit</XDSButton>
+ * <XDSButton label="Messages" endSlot={<XDSBadge label={3} />} />
+ * <XDSButton label="Edit" icon={<PencilIcon />} endSlot={<XDSBadge label="New" />}>Edit</XDSButton>
  * ```
  */
 export function XDSButton({

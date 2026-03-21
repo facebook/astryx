@@ -123,13 +123,13 @@ export const WithBadges: Story = {
       <XDSOverflowList
         gap={1}
         overflowRenderer={overflowItems => (
-          <XDSBadge variant="neutral">+{overflowItems.length}</XDSBadge>
+          <XDSBadge variant="neutral" label={`+${overflowItems.length}`} />
         )}>
-        <XDSBadge variant="info">React</XDSBadge>
-        <XDSBadge variant="success">TypeScript</XDSBadge>
-        <XDSBadge variant="warning">StyleX</XDSBadge>
-        <XDSBadge variant="neutral">Storybook</XDSBadge>
-        <XDSBadge variant="error">Vitest</XDSBadge>
+        <XDSBadge variant="info" label="React" />
+        <XDSBadge variant="success" label="TypeScript" />
+        <XDSBadge variant="warning" label="StyleX" />
+        <XDSBadge variant="neutral" label="Storybook" />
+        <XDSBadge variant="error" label="Vitest" />
       </XDSOverflowList>
     </div>
   ),

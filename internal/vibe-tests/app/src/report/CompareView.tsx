@@ -233,9 +233,10 @@ function CostComparisonSection({
       key: 'winner',
       header: 'Lower Cost',
       renderCell: row => (
-        <XDSBadge variant={winnerBadgeVariant(row.winner)}>
-          {row.winner === 'tie' ? '—' : winnerLabel(row.winner)}
-        </XDSBadge>
+        <XDSBadge
+          variant={winnerBadgeVariant(row.winner)}
+          label={row.winner === 'tie' ? '—' : winnerLabel(row.winner)}
+        />
       ),
     },
   ];
@@ -320,9 +321,10 @@ export function CompareView({comparison}: CompareViewProps) {
       key: 'winner',
       header: 'Winner',
       renderCell: row => (
-        <XDSBadge variant={winnerBadgeVariant(row.winner)}>
-          {winnerLabel(row.winner)}
-        </XDSBadge>
+        <XDSBadge
+          variant={winnerBadgeVariant(row.winner)}
+          label={winnerLabel(row.winner)}
+        />
       ),
     },
   ];
