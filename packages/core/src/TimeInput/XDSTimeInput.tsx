@@ -270,21 +270,14 @@ export interface XDSTimeInputProps
    */
   labelTooltip?: string;
 
-  /**
-   * Whether to automatically focus the input on mount.
-   * @default false
-   */
-  hasAutoFocus?: boolean;
-
-  /**
-   * The HTML name attribute for the input.
-   * Useful for form submissions.
-   */
-  htmlName?: string;
 }
 
 /**
  * A time input component with text input and keyboard navigation.
+ *
+ * BREAKING CHANGE: The input now uses `role="spinbutton"` instead of the
+ * implicit `role="textbox"`. Tests querying by `getByRole('textbox')` must
+ * be updated to `getByRole('spinbutton')`.
  *
  * @example
  * ```
@@ -318,8 +311,6 @@ export function XDSTimeInput({
   size = 'md',
   status,
   labelTooltip,
-  hasAutoFocus = false,
-  htmlName,
   xstyle,
   className,
   style,
@@ -437,7 +428,7 @@ export function XDSTimeInput({
 
       // If the input is valid, update immediately (don't wait for blur)
       const parsed = parseTimeInput(newValue, hasSeconds);
-      if (parsed && isTimeInRange(parsed, min, max) && parsed !== normalizedValue) {
+      if (parsed && isTimeInRange(parsed, min, max) && compareTime(parsed, normalizedValue) !== 0) {
         fireChange(parsed);
       }
     },
@@ -470,7 +461,7 @@ export function XDSTimeInput({
       const parsed = parseTimeInput(pendingInput, hasSeconds);
       if (parsed && isTimeInRange(parsed, min, max)) {
         // Valid time - update if different
-        if (parsed !== normalizedValue) {
+        if (compareTime(parsed, normalizedValue) !== 0) {
           fireChange(parsed);
         }
       }
@@ -494,16 +485,12 @@ export function XDSTimeInput({
 
     const parsed = parseTimeInput(pendingInput, hasSeconds);
     if (parsed && isTimeInRange(parsed, min, max)) {
-      if (parsed !== normalizedValue) {
+      if (compareTime(parsed, normalizedValue) !== 0) {
         fireChange(parsed);
       }
     }
     setPendingInput(null);
   }, [pendingInput, normalizedValue, fireChange, hasSeconds, min, max]);
-
-  const revertPendingInput = useCallback(() => {
-    setPendingInput(null);
-  }, []);
 
   // Handle keyboard navigation on input
   const handleInputKeyDown = useCallback(
@@ -516,7 +503,7 @@ export function XDSTimeInput({
 
       if (e.key === 'Escape') {
         e.preventDefault();
-        revertPendingInput();
+        setPendingInput(null);
         return;
       }
 
@@ -543,7 +530,7 @@ export function XDSTimeInput({
         }
       }
     },
-    [normalizedValue, hasSeconds, increment, min, max, fireChange, commitPendingInput, revertPendingInput],
+    [normalizedValue, hasSeconds, increment, min, max, fireChange, commitPendingInput],
   );
 
   // Handle clear button click
@@ -605,7 +592,6 @@ export function XDSTimeInput({
         <input
           ref={setRefs}
           id={id}
-          name={htmlName}
           type="text"
           role="spinbutton"
           value={displayValue}
@@ -615,7 +601,6 @@ export function XDSTimeInput({
           onKeyDown={handleInputKeyDown}
           placeholder={displayPlaceholder}
           disabled={isDisabled || isBusy}
-          autoFocus={hasAutoFocus}
           aria-describedby={ariaDescribedBy}
           aria-required={isRequired === true ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}

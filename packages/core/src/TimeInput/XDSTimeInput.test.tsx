@@ -368,18 +368,6 @@ describe('XDSTimeInput', () => {
     expect(screen.getByRole('spinbutton')).toBeInTheDocument();
   });
 
-  // --- htmlName and hasAutoFocus ---
-
-  it('passes htmlName to input', () => {
-    render(
-      <XDSTimeInput label="Time" onChange={() => {}} htmlName="start_time" />,
-    );
-    expect(screen.getByRole('spinbutton')).toHaveAttribute(
-      'name',
-      'start_time',
-    );
-  });
-
   // --- hasSeconds mismatch normalization ---
 
   it('normalizes HH:MM value when hasSeconds is true', () => {

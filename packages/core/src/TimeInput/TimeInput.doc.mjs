@@ -196,17 +196,6 @@ export const docs = {
       description:
         'Tooltip text rendered as an info icon at the end of the label row.',
     },
-    {
-      name: 'hasAutoFocus',
-      type: 'boolean',
-      description: 'Whether to automatically focus the input on mount.',
-      default: 'false',
-    },
-    {
-      name: 'htmlName',
-      type: 'string',
-      description: 'The HTML name attribute for the input. Useful for form submissions.',
-    },
   ],
   accessibility: [
     'The visible label is associated with the input via htmlFor / id.',
@@ -431,17 +420,6 @@ export const docsZh = {
       description:
         '在标签行末尾以信息图标形式渲染的工具提示文本。',
     },
-    {
-      name: 'hasAutoFocus',
-      type: 'boolean',
-      description: '是否在挂载时自动聚焦输入框。',
-      default: 'false',
-    },
-    {
-      name: 'htmlName',
-      type: 'string',
-      description: '输入框的 HTML name 属性。用于表单提交。',
-    },
   ],
   accessibility: [
     '可见标签通过 htmlFor / id 与输入框关联。',
@@ -521,7 +499,5 @@ export const docsDense = {
     size: 'Input element height.',
     status: 'Colored border+icon. Message rendered below input.',
     labelTooltip: 'Tooltip as info icon at label row end.',
-    hasAutoFocus: 'Auto-focus on mount.',
-    htmlName: 'HTML name attribute for form submissions.',
   },
 };
