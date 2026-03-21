@@ -558,10 +558,12 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
           hasAutoFocus={hasAutoFocus}
           inputId={inputId}
           ariaDescribedBy={ariaDescribedBy}
-          isAriaRequired={isRequired}
-          isAriaInvalid={status?.type === 'error'}
-          isAriaHidden={isAtMax}
-          tabIndex={isAtMax ? -1 : undefined}
+          inputAttributes={{
+            'aria-required': isRequired ? 'true' : undefined,
+            'aria-invalid': status?.type === 'error' ? 'true' : undefined,
+            'aria-hidden': isAtMax ? 'true' : undefined,
+            tabIndex: isAtMax ? -1 : undefined,
+          }}
           onChangeQuery={onChangeQuery}
           debounceMs={debounceMs}
           onKeyDown={handleKeyDown}

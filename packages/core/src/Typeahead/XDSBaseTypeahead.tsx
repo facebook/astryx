@@ -146,24 +146,11 @@ export interface XDSBaseTypeaheadProps<T extends XDSSearchableItem> {
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 
   /**
-   * Whether the input is required for form validation.
+   * @internal Extra HTML attributes spread onto the `<input>` element.
+   * Used by composite components (e.g. XDSTokenizer) to wire accessibility
+   * attributes derived from their own props. Not part of the public API.
    */
-  isAriaRequired?: boolean;
-
-  /**
-   * Whether the input value is invalid.
-   */
-  isAriaInvalid?: boolean;
-
-  /**
-   * Whether the input is hidden from assistive technology.
-   */
-  isAriaHidden?: boolean;
-
-  /**
-   * Tab index override for the input element.
-   */
-  tabIndex?: number;
+  inputAttributes?: React.InputHTMLAttributes<HTMLInputElement>;
 }
 
 // =============================================================================
@@ -288,10 +275,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
   inputXStyle,
   anchorRef,
   onKeyDown: externalOnKeyDown,
-  isAriaRequired,
-  isAriaInvalid,
-  isAriaHidden,
-  tabIndex,
+  inputAttributes,
   debounceMs = 150,
   ref,
 }: XDSBaseTypeaheadProps<T> & {ref?: React.Ref<HTMLInputElement>}) {
@@ -595,10 +579,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
         }
         aria-autocomplete="list"
         aria-describedby={ariaDescribedBy}
-        aria-required={isAriaRequired ? 'true' : undefined}
-        aria-invalid={isAriaInvalid ? 'true' : undefined}
-        aria-hidden={isAriaHidden ? 'true' : undefined}
-        tabIndex={tabIndex}
+        {...inputAttributes}
         value={query}
         onChange={handleInputChange}
         onPointerDown={() => {
