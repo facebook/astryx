@@ -187,7 +187,7 @@ export function XDSAvatarStatusDot({
 
   return (
     <div
-      {...(label ? {'aria-label': label} : undefined)}
+      {...(label ? {role: 'img', 'aria-label': label} : undefined)}
       {...mergeProps(
         xdsClassName('avatar-status-dot', {variant}),
         stylex.props(
@@ -210,3 +210,5 @@ export function XDSAvatarStatusDot({
     </div>
   );
 }
+
+XDSAvatarStatusDot.displayName = 'XDSAvatarStatusDot';
