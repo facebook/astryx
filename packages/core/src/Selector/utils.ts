@@ -17,6 +17,7 @@ import type {
 export function isOptionData(
   option: XDSSelectorOptionType,
 ): option is XDSSelectorOptionData | string {
+  if (option == null) return false;
   if (typeof option === 'string') return true;
   return !('type' in option);
 }
@@ -27,6 +28,7 @@ export function isOptionData(
 export function isDivider(
   option: XDSSelectorOptionType,
 ): option is XDSSelectorDivider {
+  if (option == null) return false;
   return (
     typeof option === 'object' && 'type' in option && option.type === 'divider'
   );
@@ -38,6 +40,7 @@ export function isDivider(
 export function isSection(
   option: XDSSelectorOptionType,
 ): option is XDSSelectorSection {
+  if (option == null) return false;
   return (
     typeof option === 'object' && 'type' in option && option.type === 'section'
   );

@@ -362,10 +362,10 @@ describe('XDSSelector', () => {
   });
 
   // =========================================================================
-  // P1: isBusy disables trigger
+  // P1: isBusy keeps trigger in tab order with aria-disabled
   // =========================================================================
 
-  it('disables trigger during isLoading', () => {
+  it('marks trigger aria-disabled during isLoading but keeps it focusable', () => {
     render(
       <XDSSelector
         label="Fruit"
@@ -374,7 +374,10 @@ describe('XDSSelector', () => {
         isLoading
       />,
     );
-    expect(screen.getByRole('combobox')).toBeDisabled();
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).not.toBeDisabled();
+    expect(trigger).toHaveAttribute('aria-disabled', 'true');
+    expect(trigger).toHaveAttribute('aria-busy', 'true');
   });
 
   // =========================================================================

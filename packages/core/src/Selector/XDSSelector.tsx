@@ -481,6 +481,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
     selectableItems,
     value,
     isDisabled,
+    isBusy,
     isOpen: layer.isOpen,
     onOpen: layer.show,
     onClose: layer.hide,
@@ -492,8 +493,8 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
             setOptimisticValue(newValue);
             try {
               await onChangeAction(newValue);
-            } catch {
-              // Swallow so the transition settles and isBusy clears
+            } catch (error) {
+              console.error('XDSSelector: onChangeAction failed:', error);
             }
           });
         }
@@ -628,7 +629,8 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
         aria-required={isRequired ? 'true' : undefined}
         aria-invalid={status?.type === 'error' ? 'true' : undefined}
         aria-busy={isBusy || undefined}
-        disabled={isDisabled || isBusy}
+        aria-disabled={isBusy || undefined}
+        disabled={isDisabled}
         onClick={onTriggerClick}
         onKeyDown={onKeyDown}
         data-testid={testId}
@@ -671,7 +673,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
           ref={listboxRef}
           id={listboxId}
           role="listbox"
-          aria-labelledby={triggerId}
+          aria-label={label}
           {...stylex.props(
             styles.dropdown,
             !isPositioned && styles.dropdownHidden,

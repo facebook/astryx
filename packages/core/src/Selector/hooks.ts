@@ -98,6 +98,7 @@ interface UseComboboxOptions {
   selectableItems: XDSSelectorOptionData[];
   value?: string;
   isDisabled?: boolean;
+  isBusy?: boolean;
   isOpen: boolean;
   onOpen: () => void;
   onClose: () => void;
@@ -122,6 +123,7 @@ export function useCombobox({
   selectableItems,
   value,
   isDisabled = false,
+  isBusy = false,
   isOpen,
   onOpen,
   onClose,
@@ -133,12 +135,15 @@ export function useCombobox({
   const typeaheadTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
+  const rafRef = useRef<number | undefined>(undefined);
 
-  // Clean up typeahead timer on unmount
   useEffect(() => {
     return () => {
       if (typeaheadTimeoutRef.current) {
         clearTimeout(typeaheadTimeoutRef.current);
+      }
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current);
       }
     };
   }, []);
@@ -184,23 +189,22 @@ export function useCombobox({
     [onSelect, closeAndReset],
   );
 
-  // Scroll highlighted item into view
   const scrollHighlightedIntoView = useCallback(
     (index: number) => {
       const itemId = `${listboxId}-item-${index}`;
-      // Use requestAnimationFrame to ensure DOM has updated
-      requestAnimationFrame(() => {
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current);
+      }
+      rafRef.current = requestAnimationFrame(() => {
         const el = document.getElementById(itemId);
-        if (typeof el?.scrollIntoView === 'function') {
-          el.scrollIntoView({block: 'nearest'});
-        }
+        el?.scrollIntoView({block: 'nearest'});
       });
     },
     [listboxId],
   );
 
   const onTriggerClick = useCallback(() => {
-    if (isDisabled) return;
+    if (isDisabled || isBusy) return;
     if (isOpen) {
       closeAndReset();
     } else {
@@ -212,6 +216,7 @@ export function useCombobox({
     }
   }, [
     isDisabled,
+    isBusy,
     isOpen,
     onOpen,
     closeAndReset,
@@ -230,7 +235,7 @@ export function useCombobox({
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (isDisabled) return;
+      if (isDisabled || isBusy) return;
 
       const enabledIndices = getEnabledIndices();
       if (enabledIndices.length === 0) {
@@ -349,6 +354,7 @@ export function useCombobox({
     },
     [
       isDisabled,
+      isBusy,
       isOpen,
       onOpen,
       closeAndReset,
