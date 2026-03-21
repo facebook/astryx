@@ -101,7 +101,7 @@ describe('XDSField', () => {
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLDivElement));
   });
 
-  it('renders description without ID attribute when descriptionID is not provided', () => {
+  it('auto-generates descriptionID when description is provided but descriptionID is omitted', () => {
     render(
       <XDSField
         label="Email"
@@ -112,7 +112,7 @@ describe('XDSField', () => {
     );
     const description = screen.getByText('Description text');
     expect(description).toBeInTheDocument();
-    expect(description).not.toHaveAttribute('id');
+    expect(description).toHaveAttribute('id', 'email-input-desc');
   });
 
   it('renders Optional text when isOptional is set', () => {
@@ -165,14 +165,16 @@ describe('XDSField', () => {
     expect(screen.getByText(/Required/)).toBeInTheDocument();
   });
 
-  it('renders Optional text with bullet separator', () => {
+  it('renders Optional text with bullet separator hidden from screen readers', () => {
     render(
       <XDSField label="Name" inputID="name-input" isOptional>
         <input id="name-input" />
       </XDSField>,
     );
     expect(screen.getByText('Name')).toBeInTheDocument();
-    expect(screen.getByText(/∙.*Optional/)).toBeInTheDocument();
+    expect(screen.getByText('Optional')).toBeInTheDocument();
+    const bullet = screen.getByText('∙', {exact: false});
+    expect(bullet).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('renders tooltip info icon when labelTooltip is provided', () => {
@@ -217,6 +219,7 @@ describe('XDSField', () => {
         <input id="email-input" />
       </XDSField>,
     );
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
@@ -237,6 +240,19 @@ describe('XDSField', () => {
     expect(status).toHaveAttribute('id', 'email-error');
   });
 
+  it('auto-generates messageID when status.message is provided but messageID is omitted', () => {
+    render(
+      <XDSField
+        label="Email"
+        inputID="email-input"
+        status={{type: 'error', message: 'Required field'}}>
+        <input id="email-input" />
+      </XDSField>,
+    );
+    const status = screen.getByText('Required field');
+    expect(status).toHaveAttribute('id', 'email-input-status');
+  });
+
   it('renders detached status variant', () => {
     render(
       <XDSField
@@ -252,14 +268,18 @@ describe('XDSField', () => {
     expect(status.className).toContain('detached');
   });
 
-  it('passes isDisabled to label', () => {
+  it('does not accept isDisabled prop (disabled state detected via CSS :has(:disabled))', () => {
     render(
-      <XDSField label="Disabled field" inputID="dis-input" isDisabled>
-        <input id="dis-input" />
+      <XDSField label="Disabled field" inputID="dis-input">
+        <input id="dis-input" disabled />
       </XDSField>,
     );
+    // Label is rendered without a disabled prop — styling is handled via
+    // CSS ancestor detection (:has(:disabled)) on the container
     const label = screen.getByText('Disabled field').closest('label');
-    expect(label?.className).toContain('labelDisabled');
+    expect(label).toBeInTheDocument();
+    // The label should NOT have the prop-based labelDisabled class
+    expect(label?.className).not.toContain('labelDisabled');
   });
 
   it('warns when both isOptional and isRequired are set', () => {
@@ -289,11 +309,25 @@ describe('XDSField', () => {
 });
 
 describe('XDSFieldStatus', () => {
-  it('has role="status" and aria-live="polite"', () => {
+  it('uses role="alert" and aria-live="assertive" for errors', () => {
     render(<XDSFieldStatus type="error" message="Error occurred" />);
+    const status = screen.getByRole('alert');
+    expect(status).toHaveAttribute('aria-live', 'assertive');
+    expect(status).toHaveTextContent('Error occurred');
+  });
+
+  it('uses role="status" and aria-live="polite" for non-error types', () => {
+    render(<XDSFieldStatus type="warning" message="Watch out" />);
     const status = screen.getByRole('status');
     expect(status).toHaveAttribute('aria-live', 'polite');
-    expect(status).toHaveTextContent('Error occurred');
+
+    const {rerender} = render(
+      <XDSFieldStatus type="success" message="All good" />,
+    );
+    expect(screen.getAllByRole('status')[0]).toHaveAttribute(
+      'aria-live',
+      'polite',
+    );
   });
 
   it('renders detached variant with correct class', () => {
@@ -315,7 +349,7 @@ describe('XDSFieldStatus', () => {
     const {rerender} = render(
       <XDSFieldStatus type="error" message="Error" />,
     );
-    expect(screen.getByRole('status').className).toContain('error');
+    expect(screen.getByRole('alert').className).toContain('error');
 
     rerender(<XDSFieldStatus type="warning" message="Warning" />);
     expect(screen.getByRole('status').className).toContain('warning');
@@ -328,11 +362,11 @@ describe('XDSFieldStatus', () => {
     render(
       <XDSFieldStatus type="error" message="Error" id="status-id" />,
     );
-    expect(screen.getByRole('status')).toHaveAttribute('id', 'status-id');
+    expect(screen.getByRole('alert')).toHaveAttribute('id', 'status-id');
   });
 
   it('does not have id attribute when not provided', () => {
     render(<XDSFieldStatus type="error" message="Error" />);
-    expect(screen.getByRole('status')).not.toHaveAttribute('id');
+    expect(screen.getByRole('alert')).not.toHaveAttribute('id');
   });
 });

@@ -107,8 +107,8 @@ export function XDSFieldStatus({
   return (
     <div
       id={id}
-      role="status"
-      aria-live="polite"
+      role={type === 'error' ? 'alert' : 'status'}
+      aria-live={type === 'error' ? 'assertive' : 'polite'}
       {...mergeProps(
         xdsClassName('field-status', {type, variant}),
         stylex.props(

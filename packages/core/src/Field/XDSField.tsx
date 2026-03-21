@@ -96,11 +96,6 @@ export interface XDSFieldProps extends Omit<
    */
   isLabelHidden?: boolean;
   /**
-   * Whether the associated input is disabled.
-   * @default false
-   */
-  isDisabled?: boolean;
-  /**
    * Description text displayed between the label and input.
    * Hidden when isLabelHidden is true.
    */
@@ -185,7 +180,6 @@ export interface XDSFieldProps extends Omit<
 export function XDSField({
   label,
   isLabelHidden = false,
-  isDisabled = false,
   description,
   inputID,
   descriptionID,
@@ -202,6 +196,11 @@ export function XDSField({
   ref,
   ...props
 }: XDSFieldProps) {
+  const resolvedDescriptionID =
+    descriptionID ?? (description ? `${inputID}-desc` : undefined);
+  const resolvedMessageID =
+    status?.messageID ?? (status?.message ? `${inputID}-status` : undefined);
+
   if (process.env.NODE_ENV !== 'production') {
     if (isOptional && isRequired) {
       console.warn(
@@ -224,7 +223,6 @@ export function XDSField({
         label={label}
         inputID={inputID}
         isLabelHidden={isLabelHidden}
-        isDisabled={isDisabled}
         isOptional={isOptional}
         isRequired={isRequired}
         labelIcon={labelIcon}
@@ -232,7 +230,7 @@ export function XDSField({
       />
       {description && (
         <span
-          id={descriptionID}
+          id={resolvedDescriptionID}
           {...stylex.props(
             styles.description,
             isLabelHidden && styles.labelHidden,
@@ -247,7 +245,7 @@ export function XDSField({
             <XDSFieldStatus
               type={status.type}
               message={status.message}
-              id={status.messageID}
+              id={resolvedMessageID}
               variant="attached"
             />
           )}
@@ -259,7 +257,7 @@ export function XDSField({
             <XDSFieldStatus
               type={status.type}
               message={status.message}
-              id={status.messageID}
+              id={resolvedMessageID}
               variant="detached"
             />
           )}

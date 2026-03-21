@@ -30,10 +30,14 @@ const styles = stylex.create({
     fontFamily: typographyVars['--font-body'],
     fontSize: textSizeVars['--text-base'],
     fontWeight: fontWeightVars['--font-weight-medium'],
-    color: colorVars['--color-text-primary'],
-  },
-  labelClickable: {
-    cursor: 'pointer',
+    color: {
+      default: colorVars['--color-text-primary'],
+      [stylex.when.ancestor(':has(:disabled)')]: colorVars['--color-text-disabled'],
+    },
+    cursor: {
+      default: 'pointer',
+      [stylex.when.ancestor(':has(:disabled)')]: 'not-allowed',
+    },
   },
   labelDisabled: {
     color: colorVars['--color-text-disabled'],
@@ -132,7 +136,6 @@ export function XDSFieldLabel({
         xdsClassName('field-label'),
         stylex.props(
           styles.label,
-          !isDisabled && styles.labelClickable,
           isDisabled && styles.labelDisabled,
           isLabelHidden && styles.labelHidden,
         ),
@@ -141,19 +144,22 @@ export function XDSFieldLabel({
         <XDSIcon
           icon={labelIcon}
           size="sm"
-          color={isDisabled ? 'disabled' : 'primary'}
+          color="inherit"
         />
       )}
       {label}
       {statusText && (
-        <span {...stylex.props(styles.optionalRequired)}> ∙ {statusText}</span>
+        <span {...stylex.props(styles.optionalRequired)}>
+          <span aria-hidden="true"> ∙ </span>
+          {statusText}
+        </span>
       )}
       {labelTooltip && (
         <XDSTooltip content={labelTooltip} placement="above">
           <XDSIcon
             icon="info"
             size="sm"
-            color={isDisabled ? 'disabled' : 'secondary'}
+            color="inherit"
           />
         </XDSTooltip>
       )}
