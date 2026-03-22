@@ -1492,7 +1492,7 @@ function DashboardPreview() {
                   43%
                 </XDSText>
               </div>
-              <XDSProgressBar value={43} />
+              <XDSProgressBar value={43} label="API Latency" isLabelHidden />
             </div>
             <div>
               <div
@@ -1506,7 +1506,7 @@ function DashboardPreview() {
                   67%
                 </XDSText>
               </div>
-              <XDSProgressBar value={67} />
+              <XDSProgressBar value={67} label="Error Rate" isLabelHidden />
             </div>
             <div>
               <div
@@ -1520,7 +1520,7 @@ function DashboardPreview() {
                   82%
                 </XDSText>
               </div>
-              <XDSProgressBar value={82} />
+              <XDSProgressBar value={82} label="Uptime" isLabelHidden />
             </div>
           </div>
         </XDSCard>
