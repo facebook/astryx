@@ -1729,7 +1729,7 @@ function ThemeEditorComponent() {
               label: category,
             }))}
             value={activeColorCategory}
-            onChange={v => setActiveColorCategory(v)}
+            onChange={(v: string) => setActiveColorCategory(v)}
           />
 
           {categoryTokens.map(tokenName => (
@@ -1818,8 +1818,8 @@ function ThemeEditorComponent() {
             max={24}
             step={1}
             value={typeScaleBase}
-            onChange={v => applyTypeScale(v, typeScaleRatio)}
-            formatValue={v => `${v}px`}
+            onChange={(v: number) => applyTypeScale(v, typeScaleRatio)}
+            formatValue={(v: number) => `${v}px`}
             valueDisplay="text"
           />
           <XDSSelector
@@ -1837,7 +1837,7 @@ function ThemeEditorComponent() {
               },
             ]}
             value={isCustomRatio ? 'custom' : String(typeScaleRatio)}
-            onChange={v => {
+            onChange={(v: string) => {
               if (v === 'custom') return;
               applyTypeScale(typeScaleBase, Number(v));
             }}
@@ -1850,8 +1850,8 @@ function ThemeEditorComponent() {
               max={1700}
               step={1}
               value={Math.round(typeScaleRatio * 1000)}
-              onChange={v => applyTypeScale(typeScaleBase, v / 1000)}
-              formatValue={v => (v / 1000).toFixed(3)}
+              onChange={(v: number) => applyTypeScale(typeScaleBase, v / 1000)}
+              formatValue={(v: number) => (v / 1000).toFixed(3)}
               valueDisplay="text"
             />
           )}
@@ -2069,7 +2069,7 @@ function ThemeEditorComponent() {
               },
             ]}
             value={activeTypographyCategory}
-            onChange={v => setActiveTypographyCategory(v)}
+            onChange={(v: string) => setActiveTypographyCategory(v)}
           />
 
           {/* Description for semantic styles */}
