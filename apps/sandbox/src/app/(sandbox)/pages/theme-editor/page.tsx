@@ -1597,7 +1597,7 @@ export const ${themeName}Theme = defineTheme({
 
   if (hasCustomTypeScale) {
     parts.push(
-      `  typeScale: { base: ${typeScaleBase}, ratio: ${typeScaleRatio} },`,
+      `  typography: { scale: { base: ${typeScaleBase}, ratio: ${typeScaleRatio} } },`,
     );
   }
 
@@ -1703,7 +1703,7 @@ function ThemeEditorComponent() {
     }
     return defineTheme({
       name: themeName,
-      typeScale: {base: typeScaleBase, ratio: typeScaleRatio},
+      typography: {scale: {base: typeScaleBase, ratio: typeScaleRatio}},
       tokens: tokenOverrides as Partial<Record<string, string>>,
       icons: defaultIconRegistry,
     });
