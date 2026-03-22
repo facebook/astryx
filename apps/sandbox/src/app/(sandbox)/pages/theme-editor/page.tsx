@@ -1640,7 +1640,7 @@ function ThemeEditorComponent() {
   const [showCode, setShowCode] = React.useState(false);
 
   // Collect all defaults
-  const allDefaults = React.useMemo(
+  const allDefaults: Record<string, string> = React.useMemo(
     () => ({
       ...colorDefaults,
       ...spacingDefaults,
