@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file index.ts
  * @input Imports XDSField component and types from XDSField.tsx, XDSFieldLabel from XDSFieldLabel.tsx, XDSFieldStatus from XDSFieldStatus.tsx

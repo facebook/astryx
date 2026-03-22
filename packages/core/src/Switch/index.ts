@@ -1,3 +1,5 @@
+'use client';
+
 export {XDSSwitch} from './XDSSwitch';
 export type {
   XDSSwitchProps,

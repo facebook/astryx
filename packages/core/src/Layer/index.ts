@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file index.ts
  * @input Layer hooks and components

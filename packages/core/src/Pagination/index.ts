@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file index.ts
  * @input XDSPagination component and types

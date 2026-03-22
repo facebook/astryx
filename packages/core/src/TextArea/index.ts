@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file index.ts
  * @input Imports XDSTextArea component and types from XDSTextArea.tsx

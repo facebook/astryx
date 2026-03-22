@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file index.ts
  * @input Imports XDSAppShell component and types from XDSAppShell.tsx
