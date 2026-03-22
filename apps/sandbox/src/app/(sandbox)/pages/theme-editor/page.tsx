@@ -1146,7 +1146,7 @@ const styles = stylex.create({
           Card
         </XDSText>
         <XDSCard padding={3}>
-          <XDSStack gap={2}>
+          <XDSStack direction="vertical" gap={2}>
             <XDSHeading level={4}>Card Title</XDSHeading>
             <XDSText type="body">
               This is a sample card with some content to demonstrate how cards
@@ -1174,7 +1174,7 @@ const styles = stylex.create({
           isOpen={dialogOpen}
           onOpenChange={(open) => setDialogOpen(open)}>
           <div style={{padding: '0 24px 24px 24px'}}>
-            <XDSStack gap={3}>
+            <XDSStack direction="vertical" gap={3}>
               <XDSText type="body">
                 This is a sample dialog to preview how dialogs look with the
                 current theme settings.
