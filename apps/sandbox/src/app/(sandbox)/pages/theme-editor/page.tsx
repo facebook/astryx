@@ -818,7 +818,7 @@ function ComponentPreview() {
         <XDSText type="label" style={{marginBottom: '16px', display: 'block'}}>
           Typography Scale
         </XDSText>
-        <XDSCard padding="lg">
+        <XDSCard padding={4}>
           <article>
             <XDSHeading level={1}>Building Design Systems</XDSHeading>
             <XDSText
@@ -1147,7 +1147,7 @@ const styles = stylex.create({
         <XDSText type="label" style={{marginBottom: '12px', display: 'block'}}>
           Card
         </XDSText>
-        <XDSCard padding="md">
+        <XDSCard padding={3}>
           <XDSStack gap="sm">
             <XDSHeading level={4}>Card Title</XDSHeading>
             <XDSText type="body">
@@ -1270,7 +1270,7 @@ function LandingPagePreview() {
               desc: 'JSDoc annotations with composition hints for LLM-assisted development.',
             },
           ].map(f => (
-            <XDSCard key={f.title} padding="md">
+            <XDSCard key={f.title} padding={3}>
               <XDSHeading level={3} style={{marginBottom: 8}}>
                 {f.title}
               </XDSHeading>
@@ -1283,7 +1283,7 @@ function LandingPagePreview() {
       </div>
 
       {/* Testimonial */}
-      <XDSCard padding="lg">
+      <XDSCard padding={4}>
         <XDSText type="large" display="block" style={{marginBottom: 12}}>
           &ldquo;XDS cut our dev time in half. The type scale system alone saved
           us weeks of bikeshedding.&rdquo;
@@ -1386,7 +1386,7 @@ function DashboardPreview() {
           {label: 'Uptime', value: '99.97%', delta: '—'},
           {label: 'NPS', value: '72', delta: '+3'},
         ].map(kpi => (
-          <XDSCard key={kpi.label} padding="md">
+          <XDSCard key={kpi.label} padding={3}>
             <XDSText type="supporting" color="secondary" display="block">
               {kpi.label}
             </XDSText>
@@ -1427,7 +1427,7 @@ function DashboardPreview() {
       {/* Bottom section */}
       <div
         style={{display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px'}}>
-        <XDSCard padding="md">
+        <XDSCard padding={3}>
           <XDSHeading level={3} style={{marginBottom: 12}}>
             Recent Activity
           </XDSHeading>
@@ -1476,7 +1476,7 @@ function DashboardPreview() {
             </div>
           ))}
         </XDSCard>
-        <XDSCard padding="md">
+        <XDSCard padding={3}>
           <XDSHeading level={3} style={{marginBottom: 12}}>
             Quick Stats
           </XDSHeading>
