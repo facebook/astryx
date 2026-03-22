@@ -998,12 +998,11 @@ const styles = stylex.create({
           Badges
         </XDSText>
         <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
-          <XDSBadge label="Default" />
-          <XDSBadge label="Primary" variant="primary" />
-          <XDSBadge label="Ghost" variant="ghost" />
-          <XDSBadge label="Positive" sentiment="positive" />
-          <XDSBadge label="Negative" sentiment="negative" />
-          <XDSBadge label="Warning" sentiment="warning" />
+          <XDSBadge label="Neutral" />
+          <XDSBadge label="Info" variant="info" />
+          <XDSBadge label="Success" variant="success" />
+          <XDSBadge label="Warning" variant="warning" />
+          <XDSBadge label="Error" variant="error" />
         </div>
       </div>
 
