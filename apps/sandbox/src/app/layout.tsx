@@ -1,4 +1,6 @@
 import type {Metadata} from 'next';
+import {cookies} from 'next/headers';
+import {XDSServerProvider} from '@xds/core/ServerProvider';
 
 /**
  * XDS CSS Layer Model (dist path)
@@ -28,11 +30,20 @@ export const metadata: Metadata = {
   description: 'XDS component testing sandbox',
 };
 
-export default function RootLayout({children}: {children: React.ReactNode}) {
+export default async function RootLayout({children}: {children: React.ReactNode}) {
+  const cookieStore = await cookies();
+  const vp = cookieStore.get('xds-sandbox-vp')?.value;
+
   return (
     <html lang="en">
       <body>
-        <Providers>{children}</Providers>
+        <XDSServerProvider
+          viewport={{
+            value: vp ? Number(vp) : undefined,
+            cookieName: 'xds-sandbox-vp',
+          }}>
+          <Providers>{children}</Providers>
+        </XDSServerProvider>
       </body>
     </html>
   );
