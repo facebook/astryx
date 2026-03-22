@@ -5,14 +5,9 @@ import {defaultTheme} from '@xds/theme-default';
 import {neutralTheme} from '@xds/theme-neutral';
 import {brutalistTheme} from '@xds/theme-brutalist';
 
-// Import dist CSS — layered:
-// 1. @layer xds-reset   — reset styles
-// 2. @layer xds-base — component base styles (from StyleX build)
-// 3. @layer xds-theme   — theme overrides (injected at runtime by XDSTheme)
-//
-// Requires `yarn build` before running storybook.
-import '../../../packages/core/src/reset.css';
-import '@xds/core/xds.css';
+// Import the base reset and typography stylesheets
+import '@xds/core/reset.css';
+
 
 /**
  * Map of available themes

@@ -3,8 +3,19 @@ import stylex from '@stylexjs/unplugin';
 import path from 'path';
 
 const rootDir = path.resolve(__dirname, '../../..');
-const coreDist = path.resolve(rootDir, 'packages/core/dist');
-const labSrc = path.resolve(rootDir, 'packages/lab/src');
+const coreRoot = path.resolve(__dirname, '../../../packages/core/src');
+const themeDefaultRoot = path.resolve(
+  __dirname,
+  '../../../packages/themes/default/src',
+);
+const themeNeutralRoot = path.resolve(
+  __dirname,
+  '../../../packages/themes/neutral/src',
+);
+const themeBrutalistRoot = path.resolve(
+  __dirname,
+  '../../../packages/themes/brutalist/src',
+);
 
 /**
  * Browser targets for lightningcss.
@@ -52,39 +63,57 @@ const config: StorybookConfig = {
     return {
       ...config,
       plugins: [
-        // Declare CSS layer order — establishes priority:
-        // xds-reset < xds-base < xds-theme
-        // All are lower than unlayered consumer styles.
+        // Declare CSS layer order before StyleX injects its virtual CSS.
+        // In Vite dev mode the StyleX unplugin's transformIndexHtml injects
+        // a <link> for /virtual:stylex.css before preview.tsx CSS imports
+        // are processed, which would otherwise cause priority1-9 layers to
+        // be declared first (lowest priority) and reset/typography last
+        // (highest priority) — the reverse of what we need.
         {
           name: 'xds-css-layer-order',
           transformIndexHtml() {
             return [
               {
                 tag: 'style',
-                children: '@layer xds-reset, xds-base, xds-theme;',
+                children:
+                  '@layer reset, typography, priority1, priority2, priority3, priority4, priority5, priority6, priority7, priority8, priority9;',
                 injectTo: 'head-prepend',
               },
             ];
           },
         },
         ...filteredPlugins,
-        // StyleX for stories and @xds/lab only (not @xds/core — that uses dist CSS).
-        // useCSSLayers: false so story styles are unlayered and don't interfere
-        // with the dist layer model.
         stylex.vite({
+          // Use production mode with CSS extraction
           dev: false,
-          useCSSLayers: false,
+          useCSSLayers: true,
           styleResolution: 'application-order',
           aliases: {
-            '@xds/core/*': [path.join(coreDist, '*')],
-            '@xds/core': [coreDist],
-            '@xds/lab/*': [path.join(labSrc, '*')],
-            '@xds/lab': [labSrc],
+            '@xds/core/*': [path.join(rootDir, 'packages/core/src/*')],
+            '@xds/core': [path.join(rootDir, 'packages/core/src')],
+            '@xds/theme-default/*': [
+              path.join(rootDir, 'packages/themes/default/src/*'),
+            ],
+            '@xds/theme-neutral/*': [
+              path.join(rootDir, 'packages/themes/neutral/src/*'),
+            ],
+            '@xds/theme-brutalist/*': [
+              path.join(rootDir, 'packages/themes/brutalist/src/*'),
+            ],
           },
           unstable_moduleResolution: {
             type: 'commonJS',
             rootDir: rootDir,
           },
+          // The StyleX unplugin runs its own internal lightningcss transform
+          // with default targets of browserslist('>= 1%') which includes
+          // Chrome 112 — a browser that doesn't support light-dark().
+          // This causes light-dark() token values to be lowered into
+          // --lightningcss-light/--lightningcss-dark polyfill variables,
+          // which only work when a StyleX color-scheme class is applied.
+          // Without XDSTheme (e.g. "none" theme in Storybook, or consumers
+          // using @xds/core without a theme), the polyfill vars are undefined
+          // and colors break. Setting targets here keeps light-dark() native.
           lightningcssOptions: {
             targets: lightningcssTargets,
           },
@@ -94,27 +123,15 @@ const config: StorybookConfig = {
         ...config.resolve,
         alias: {
           ...config.resolve?.alias,
-          // Dist path — requires `yarn build` before running storybook.
-          // Component JS + CSS from dist (layered).
-          // reset.css imported via relative path in preview.tsx (not in dist).
-          '@xds/core/xds.css': path.join(coreDist, 'xds.css'),
-          '@xds/core': coreDist,
-          '@xds/lab': labSrc,
-          '@xds/theme-default': path.join(
-            rootDir,
-            'packages/themes/default/dist',
-          ),
-          '@xds/theme-neutral': path.join(
-            rootDir,
-            'packages/themes/neutral/dist',
-          ),
-          '@xds/theme-brutalist': path.join(
-            rootDir,
-            'packages/themes/brutalist/dist',
-          ),
+          '@xds/core': coreRoot,
+          '@xds/theme-default': themeDefaultRoot,
+          '@xds/theme-neutral': themeNeutralRoot,
+          '@xds/theme-brutalist': themeBrutalistRoot,
         },
       },
       css: {
+        // Also set Vite's own CSS transformer targets to match, so any
+        // non-StyleX CSS (e.g. manual .css imports) also preserves light-dark().
         transformer: 'lightningcss',
         lightningcss: {
           targets: lightningcssTargets,
