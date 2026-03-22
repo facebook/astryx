@@ -1,6 +1,4 @@
 import type {Metadata} from 'next';
-import {cookies} from 'next/headers';
-import {XDSServerProvider} from '@xds/core/ServerProvider';
 
 /**
  * XDS CSS Layer Model (dist path)
@@ -30,20 +28,27 @@ export const metadata: Metadata = {
   description: 'XDS component testing sandbox',
 };
 
-export default async function RootLayout({children}: {children: React.ReactNode}) {
-  const cookieStore = await cookies();
-  const vp = cookieStore.get('xds-sandbox-vp')?.value;
-
+/**
+ * Root layout — static export (GitHub Pages).
+ *
+ * For SSR apps with a real server, wrap with XDSServerProvider
+ * for automatic viewport cookie persistence:
+ *
+ * ```tsx
+ * import { cookies } from 'next/headers';
+ * import { XDSServerProvider } from '@xds/core/ServerProvider';
+ *
+ * const vp = (await cookies()).get('app-vp')?.value;
+ * <XDSServerProvider viewport={{ value: Number(vp), cookieName: 'app-vp' }}>
+ *   <Providers>{children}</Providers>
+ * </XDSServerProvider>
+ * ```
+ */
+export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="en">
       <body>
-        <XDSServerProvider
-          viewport={{
-            value: vp ? Number(vp) : undefined,
-            cookieName: 'xds-sandbox-vp',
-          }}>
-          <Providers>{children}</Providers>
-        </XDSServerProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
