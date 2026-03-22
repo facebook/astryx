@@ -408,7 +408,7 @@
   ],
   "scripts": {
     "prepack": "yarn build",
-    "build": "NODE_OPTIONS='--max-old-space-size=4096' tsup",
+    "build": "tsup && tsc --project tsconfig.build.json",
     "dev": "tsup --watch",
     "test": "vitest run --root ../..",
     "test:watch": "vitest --root ../..",
