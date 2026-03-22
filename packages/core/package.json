@@ -408,7 +408,7 @@
   ],
   "scripts": {
     "prepack": "yarn build",
-    "build": "tsup && tsc --project tsconfig.build.json",
+    "build": "tsup && node ../../scripts/postbuild-use-client.mjs && tsc --project tsconfig.build.json",
     "dev": "tsup --watch",
     "test": "vitest run --root ../..",
     "test:watch": "vitest --root ../..",
