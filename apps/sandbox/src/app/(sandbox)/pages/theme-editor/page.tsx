@@ -1048,8 +1048,8 @@ const styles = stylex.create({
             label="Slider"
             value={sliderValue}
             onChange={setSliderValue}
-            minValue={0}
-            maxValue={100}
+            min={0}
+            max={100}
           />
         </div>
       </div>
@@ -1146,7 +1146,7 @@ const styles = stylex.create({
           Card
         </XDSText>
         <XDSCard padding={3}>
-          <XDSStack gap="sm">
+          <XDSStack gap={2}>
             <XDSHeading level={4}>Card Title</XDSHeading>
             <XDSText type="body">
               This is a sample card with some content to demonstrate how cards
@@ -1172,10 +1172,9 @@ const styles = stylex.create({
         />
         <XDSDialog
           isOpen={dialogOpen}
-          onClose={() => setDialogOpen(false)}
-          title="Sample Dialog">
+          onOpenChange={(open) => setDialogOpen(open)}
           <div style={{padding: '0 24px 24px 24px'}}>
-            <XDSStack gap="md">
+            <XDSStack gap={3}>
               <XDSText type="body">
                 This is a sample dialog to preview how dialogs look with the
                 current theme settings.
@@ -1183,6 +1182,8 @@ const styles = stylex.create({
               <XDSTextInput
                 label="Example Input"
                 placeholder="Type something..."
+                value=""
+                onChange={() => {}}
               />
               <div
                 style={{
