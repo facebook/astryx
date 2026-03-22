@@ -117,7 +117,7 @@ export const docs = {
 
   theming: {
     targets: [
-      {className: 'xds-banner', visualProps: ['variant']},
+      {className: 'xds-banner', visualProps: ['variant', 'status']},
       {className: 'xds-banner-icon', visualProps: ['status']},
     ],
     vars: [
@@ -247,7 +247,7 @@ export const docsZh = {
 
   theming: {
     targets: [
-      {className: 'xds-banner', visualProps: ['variant']},
+      {className: 'xds-banner', visualProps: ['variant', 'status']},
       {className: 'xds-banner-icon', visualProps: ['status']},
     ],
     vars: [
