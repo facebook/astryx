@@ -13,6 +13,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
+import {pathToFileURL} from 'node:url';
 
 // Import shared theme processing from core — ensures build and runtime
 // use the same logic for typography.scale expansion, prose, and component rules.
@@ -54,83 +55,73 @@ function toPascalCase(name) {
 }
 
 /**
- * Known built-in values for each component's visual props.
- * Used to detect custom (theme-added) values that need type augmentation.
- * Values listed here are already in the base type — no augmentation needed.
+ * Load known built-in values for a component's visual props from its .doc.mjs file.
+ * Parses the type string (e.g. "'info' | 'warning' | 'error' | 'success'") to extract values.
+ * Returns a map of { propName: string[] } for props that are visual (listed in theming targets).
  */
-const KNOWN_VALUES = {
-  banner: {
-    status: ['info', 'warning', 'error', 'success'],
-    container: ['card', 'section'],
-  },
-  button: {
-    variant: ['primary', 'secondary', 'ghost', 'destructive'],
-    size: ['sm', 'md', 'lg'],
-  },
-  badge: {
-    variant: ['filled', 'ghost', 'outline'],
-    color: ['default', 'accent', 'positive', 'warning', 'negative', 'info'],
-  },
-  dialog: {
-    variant: ['default', 'full'],
-    position: ['center', 'right'],
-  },
-  divider: {
-    variant: ['default', 'strong'],
-    orientation: ['horizontal', 'vertical'],
-  },
-  heading: {
-    level: ['1', '2', '3', '4', '5', '6'],
-  },
-  icon: {
-    size: ['xs', 'sm', 'md', 'lg', 'xl'],
-    color: ['inherit', 'primary', 'secondary', 'accent', 'positive', 'warning', 'negative'],
-  },
-  link: {
-    color: ['default', 'primary', 'secondary', 'active'],
-  },
-  list: {
-    type: ['default', 'nav'],
-    density: ['default', 'compact'],
-  },
-  pagination: {
-    variant: ['default', 'compact'],
-  },
-  progressbar: {
-    variant: ['default', 'accent'],
-    size: ['sm', 'md'],
-  },
-  section: {
-    variant: ['default', 'card'],
-  },
-  selector: {
-    type: ['checkbox', 'radio'],
-    size: ['sm', 'md'],
-    color: ['default', 'accent'],
-  },
-  spinner: {
-    size: ['sm', 'md', 'lg'],
-  },
-  statusdot: {
-    variant: ['positive', 'warning', 'negative', 'neutral', 'info'],
-    size: ['sm', 'md'],
-  },
-  tablist: {
-    type: ['default', 'pill'],
-  },
-  text: {
-    type: ['body', 'supporting', 'label', 'code'],
-    color: ['primary', 'secondary', 'disabled', 'placeholder', 'active'],
-  },
-  token: {
-    color: ['default', 'accent', 'positive', 'warning', 'negative'],
-  },
-  typeahead: {
-    type: ['checkbox', 'radio'],
-    size: ['sm', 'md'],
-    color: ['default', 'accent'],
-  },
-};
+async function loadKnownValues(componentName) {
+  const coreSrc = path.resolve(process.cwd(), 'packages/core/src');
+  // Map component name to directory (e.g. 'banner' → 'Banner', 'dropdownmenu' → 'DropdownMenu')
+  const dirs = fs.readdirSync(coreSrc, { withFileTypes: true })
+    .filter(d => d.isDirectory())
+    .map(d => d.name);
+  const dir = dirs.find(d => d.toLowerCase() === componentName.toLowerCase()
+    || d.toLowerCase().replace(/[^a-z]/g, '') === componentName.toLowerCase());
+  if (!dir) return {};
+
+  const docPath = path.join(coreSrc, dir, `${dir}.doc.mjs`);
+  if (!fs.existsSync(docPath)) return {};
+
+  try {
+    const docModule = await import(pathToFileURL(docPath).href);
+    const doc = docModule.docs;
+    if (!doc?.theming?.targets) return {};
+
+    // Collect all props — from doc.props or doc.components[].props
+    const allProps = [];
+    if (doc.props) allProps.push(...doc.props);
+    if (doc.components) {
+      for (const comp of doc.components) {
+        if (comp.props) allProps.push(...comp.props);
+      }
+    }
+    if (allProps.length === 0) return {};
+
+    // Collect visual prop names from theming targets
+    const visualProps = new Set();
+    for (const target of doc.theming.targets) {
+      if (target.visualProps) {
+        for (const vp of target.visualProps) visualProps.add(vp);
+      }
+    }
+
+    // Extract values from prop type strings
+    const result = {};
+    for (const prop of allProps) {
+      if (!visualProps.has(prop.name)) continue;
+      if (!prop.type || typeof prop.type !== 'string') continue;
+
+      // Parse union type: "'info' | 'warning' | 'error' | 'success'" → ['info', 'warning', 'error', 'success']
+      const matches = prop.type.match(/'([^']+)'/g);
+      if (matches) {
+        result[prop.name] = matches.map(m => m.replace(/'/g, ''));
+      }
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
+// Cache for loaded known values
+const _knownValuesCache = new Map();
+async function getKnownValues(componentName) {
+  if (!_knownValuesCache.has(componentName)) {
+    _knownValuesCache.set(componentName, await loadKnownValues(componentName));
+  }
+  return _knownValuesCache.get(componentName);
+}
+
 
 /**
  * Generate TypeScript declaration file with module augmentation for custom
@@ -166,11 +157,47 @@ function generateVariantDeclarations(themeDef) {
         const prop = pair.slice(0, colonIdx);
         const value = pair.slice(colonIdx + 1);
 
-        // Check if this value is already a known built-in
-        const knownForProp = KNOWN_VALUES[component]?.[prop];
+        // It's a custom value — collect it for augmentation
+        // (filtering against known values happens async in generateVariantDeclarationsAsync)
+        if (!customValues[component]) customValues[component] = {};
+        if (!customValues[component][prop]) customValues[component][prop] = new Set();
+        customValues[component][prop].add(value);
+      }
+    }
+  }
+
+  // Sync stub — returns null, use generateVariantDeclarationsAsync instead
+  return null;
+}
+
+/**
+ * Async version of generateVariantDeclarations that reads known values from doc files.
+ */
+async function generateVariantDeclarationsAsync(themeDef) {
+  if (!themeDef.components || Object.keys(themeDef.components).length === 0) {
+    return null;
+  }
+
+  // Collect custom values: { component: { prop: [value, ...] } }
+  const customValues = {};
+
+  for (const [component, rules] of Object.entries(themeDef.components)) {
+    const knownForComponent = await getKnownValues(component);
+
+    for (const key of Object.keys(rules)) {
+      if (key === 'base') continue;
+
+      const pairs = key.split('+');
+      for (const pair of pairs) {
+        const colonIdx = pair.indexOf(':');
+        if (colonIdx === -1) continue;
+        const prop = pair.slice(0, colonIdx);
+        const value = pair.slice(colonIdx + 1);
+
+        // Skip known built-in values
+        const knownForProp = knownForComponent[prop];
         if (knownForProp && knownForProp.includes(value)) continue;
 
-        // It's a custom value — collect it for augmentation
         if (!customValues[component]) customValues[component] = {};
         if (!customValues[component][prop]) customValues[component][prop] = new Set();
         customValues[component][prop].add(value);
@@ -817,7 +844,7 @@ export function registerTheme(program) {
 
       // Generate type augmentation .d.ts if theme has custom prop values
       const augmentationSource = resolvedTheme || themeDef;
-      const variantDecl = generateVariantDeclarations(augmentationSource);
+      const variantDecl = await generateVariantDeclarationsAsync(augmentationSource);
       if (variantDecl) {
         const variantDtsPath = path.join(outDir, `${baseName}.variants.d.ts`);
         fs.writeFileSync(variantDtsPath, variantDecl);
