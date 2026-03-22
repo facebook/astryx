@@ -185,6 +185,52 @@ const isMobile = useMediaQuery('(max-width: 768px)');
   <Content />
 </XDSAppShell>`,
     },
+    {
+      label: 'SSR: Prevent mobile layout flash (Next.js)',
+      code: `// app/layout.tsx — server component
+import { cookies } from 'next/headers';
+import { XDSAppShell } from '@xds/core/AppShell';
+import { XDSTopNav, XDSTopNavHeading } from '@xds/core/TopNav';
+import { XDSSideNav } from '@xds/core/SideNav';
+
+export default async function RootLayout({ children }) {
+  // Read viewport width from cookie (set by XDSServerProvider on the client)
+  const vp = (await cookies()).get('app-vp')?.value;
+
+  return (
+    <XDSServerProvider viewport={{ cookieName: 'app-vp' }}>
+      <XDSAppShell
+        viewportHint={vp ? Number(vp) : undefined}
+        topNav={
+          <XDSTopNav
+            label="Navigation"
+            heading={<XDSTopNavHeading heading="My App" />}
+          />
+        }
+        sideNav={<XDSSideNav>{navSections}</XDSSideNav>}>
+        {children}
+      </XDSAppShell>
+    </XDSServerProvider>
+  );
+}`,
+    },
+    {
+      label: 'Split view: AppShell in half the screen',
+      code: `<div style={{ display: 'flex' }}>
+  <div style={{ width: '50%' }}>
+    {/* Hint the container width, not the viewport */}
+    <XDSAppShell
+      viewportHint={containerWidth}
+      topNav={<XDSTopNav label="Nav" />}
+      sideNav={<XDSSideNav>{sections}</XDSSideNav>}>
+      <Content />
+    </XDSAppShell>
+  </div>
+  <div style={{ width: '50%' }}>
+    <DetailPanel />
+  </div>
+</div>`,
+    },
   ],
   props: [
     {
@@ -429,6 +475,52 @@ const isMobile = useMediaQuery('(max-width: 768px)');
   }>
   <Content />
 </XDSAppShell>`,
+    },
+    {
+      label: 'SSR: Prevent mobile layout flash (Next.js)',
+      code: `// app/layout.tsx — server component
+import { cookies } from 'next/headers';
+import { XDSAppShell } from '@xds/core/AppShell';
+import { XDSTopNav, XDSTopNavHeading } from '@xds/core/TopNav';
+import { XDSSideNav } from '@xds/core/SideNav';
+
+export default async function RootLayout({ children }) {
+  // Read viewport width from cookie (set by XDSServerProvider on the client)
+  const vp = (await cookies()).get('app-vp')?.value;
+
+  return (
+    <XDSServerProvider viewport={{ cookieName: 'app-vp' }}>
+      <XDSAppShell
+        viewportHint={vp ? Number(vp) : undefined}
+        topNav={
+          <XDSTopNav
+            label="Navigation"
+            heading={<XDSTopNavHeading heading="My App" />}
+          />
+        }
+        sideNav={<XDSSideNav>{navSections}</XDSSideNav>}>
+        {children}
+      </XDSAppShell>
+    </XDSServerProvider>
+  );
+}`,
+    },
+    {
+      label: 'Split view: AppShell in half the screen',
+      code: `<div style={{ display: 'flex' }}>
+  <div style={{ width: '50%' }}>
+    {/* Hint the container width, not the viewport */}
+    <XDSAppShell
+      viewportHint={containerWidth}
+      topNav={<XDSTopNav label="Nav" />}
+      sideNav={<XDSSideNav>{sections}</XDSSideNav>}>
+      <Content />
+    </XDSAppShell>
+  </div>
+  <div style={{ width: '50%' }}>
+    <DetailPanel />
+  </div>
+</div>`,
     },
   ],
   props: [

@@ -43,6 +43,7 @@ import {XDSMobileNavToggle} from '../MobileNav/XDSMobileNavToggle';
 import {XDSSideNavRenderContext} from '../SideNav/XDSSideNavRenderContext';
 import {XDSTopNavRenderContext} from '../TopNav/XDSTopNavRenderContext';
 import {XDSTopNavMobileContentContext} from '../TopNav/XDSTopNavMobileContentContext';
+import {useServerViewport} from '../ServerProvider/useServerViewport';
 import {XDSAppShellMobileContext} from './XDSAppShellMobileContext';
 import type {XDSAppShellMobileContextValue} from './XDSAppShellMobileContext';
 import type {SpacingStep} from '../utils/types';
@@ -214,6 +215,41 @@ export interface XDSAppShellProps {
    * ```
    */
   mobileNav?: false | XDSMobileNavConfig | ReactNode;
+
+  /**
+   * Viewport width hint for SSR. Tells AppShell the approximate viewport
+   * width so it can render the correct mobile/desktop layout on the first
+   * server render — preventing a hydration flash.
+   *
+   * This is an advisory hint, not a constraint. On the client, AppShell
+   * uses matchMedia for the actual breakpoint detection.
+   *
+   * Pass the viewport width (e.g. from a cookie), or the container width
+   * for split-view layouts where AppShell doesn't fill the full viewport.
+   *
+   * For automatic cookie persistence (so the hint stays accurate across
+   * navigations), wrap your app in `<XDSServerProvider>` with a
+   * `cookieName`. See `@xds/core/ServerProvider`.
+   *
+   * Without this prop or XDSServerProvider, AppShell defaults to mobile-first
+   * on SSR then corrects via matchMedia on the client.
+   *
+   * @example
+   * ```tsx
+   * // Read from cookie for SSR
+   * const vp = cookies().get('vp')?.value;
+   * <XDSAppShell viewportHint={Number(vp) || undefined} ... />
+   *
+   * // With XDSServerProvider for automatic cookie persistence
+   * <XDSServerProvider viewport={{ cookieName: 'app-vp' }}>
+   *   <XDSAppShell viewportHint={Number(vp) || undefined} ... />
+   * </XDSServerProvider>
+   *
+   * // Split view — pass container width, not viewport
+   * <XDSAppShell viewportHint={containerWidth} ... />
+   * ```
+   */
+  viewportHint?: number;
 
   /**
    * Side navigation — typically an XDSSideNav.
@@ -434,6 +470,7 @@ export function XDSAppShell({
   'data-testid': dataTestId,
   height = 'fill',
   mobileNav,
+  viewportHint,
   sideNav,
   topNav,
   xstyle,
@@ -468,9 +505,15 @@ export function XDSAppShell({
   const mobileNavIsControlled = mobileNavConfig?.isOpen !== undefined;
 
   // =========================================================================
+  // Responsive breakpoint — SSR-safe via XDSServerProvider
+  // =========================================================================
+  const breakpointPx =
+    sideNavBreakpoint !== 'none' ? BREAKPOINT_VALUES[sideNavBreakpoint] : 0;
+  const isBelowBreakpoint = useServerViewport(breakpointPx, viewportHint);
+
+  // =========================================================================
   // Mobile nav open state (controlled + uncontrolled)
   // =========================================================================
-  const [isBelowBreakpoint, setIsBelowBreakpoint] = useState(false);
   const [uncontrolledMobileOpen, setUncontrolledMobileOpen] = useState(false);
   const isMobileNavOpen = mobileNavIsControlled
     ? mobileNavConfig!.isOpen!
@@ -553,31 +596,6 @@ export function XDSAppShell({
     observer.observe(headerEl);
     return () => observer.disconnect();
   }, [isAuto]);
-
-  // =========================================================================
-  // Responsive breakpoint handling
-  //
-  // Uses matchMedia which is event-driven — the listener only fires when the
-  // media query match state actually changes, not on every resize. This is
-  // efficient and does not over-trigger.
-  // =========================================================================
-  useEffect(() => {
-    if (sideNavBreakpoint === 'none' || !hasNavContent) return;
-
-    const breakpointPx = BREAKPOINT_VALUES[sideNavBreakpoint];
-    const mql = window.matchMedia(`(max-width: ${breakpointPx}px)`);
-
-    const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
-      const matches = 'matches' in e ? e.matches : false;
-      setIsBelowBreakpoint(matches);
-    };
-
-    // Check initial state
-    handleChange(mql);
-
-    mql.addEventListener('change', handleChange);
-    return () => mql.removeEventListener('change', handleChange);
-  }, [sideNavBreakpoint, hasNavContent]);
 
   // =========================================================================
   // Determine if sideNav should show as overlay (mobile) or inline

@@ -376,6 +376,12 @@
       "import": "./dist/TreeList/index.mjs",
       "require": "./dist/TreeList/index.js"
     },
+    "./ServerProvider": {
+      "source": "./src/ServerProvider/index.ts",
+      "types": "./dist/ServerProvider/index.d.ts",
+      "import": "./dist/ServerProvider/index.mjs",
+      "require": "./dist/ServerProvider/index.js"
+    },
     "./Typeahead": {
       "source": "./src/Typeahead/index.ts",
       "types": "./dist/Typeahead/index.d.ts",
