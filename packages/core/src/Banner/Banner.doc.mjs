@@ -123,14 +123,9 @@ export const docs = {
     vars: [
       {name: '--banner-radius', description: 'Border radius (card container only)', default: 'var(--radius-3)'},
     ],
-    extensibleAxis: 'status',
-    extensibleAxisNote:
-      'Banner uses `status` (not `variant`) as its extensible theming axis. ' +
-      'Custom statuses added via `defineTheme({ variants: { banner: { neutral: {...} } } })` ' +
-      'are stored as `status:neutral` in the component style map. ' +
-      'TypeScript augmentation targets `XDSBannerStatusMap`.',
   },
   notes: [
+    'Banner uses `status` as its extensible theming axis. Custom statuses via `defineTheme` components: `status:neutral`.',
     'Collapsible support is planned: the content area will support collapsing via useXDSCollapsible (issue #187)',
   ],
 };
@@ -259,14 +254,9 @@ export const docsZh = {
     vars: [
       {name: '--banner-radius', description: 'Border radius (card container only)', default: 'var(--radius-3)'},
     ],
-    extensibleAxis: 'status',
-    extensibleAxisNote:
-      'Banner 使用 `status`（而非 `variant`）作为可扩展的主题轴。' +
-      '通过 `defineTheme({ variants: { banner: { neutral: {...} } } })` 添加的自定义状态 ' +
-      '在组件样式映射中存储为 `status:neutral`。' +
-      'TypeScript 类型扩展目标为 `XDSBannerStatusMap`。',
   },
   notes: [
+    'Banner 使用 `status` 作为可扩展的主题轴。通过 defineTheme components 添加自定义状态：`status:neutral`。',
     '折叠支持已规划：内容区将通过 useXDSCollapsible 支持折叠（issue #187）',
   ],
 };
