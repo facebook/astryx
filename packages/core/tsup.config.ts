@@ -16,6 +16,9 @@ export default defineConfig({
   dts: true,
   splitting: true,
   clean: true,
+  banner: {
+    js: '"use client";',
+  },
   external: ['react', 'react-dom'],
   noExternal: ['@stylexjs/stylex', 'styleq'],
   esbuildPlugins: [
