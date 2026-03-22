@@ -1219,7 +1219,7 @@ function LandingPagePreview() {
     <div style={{display: 'flex', flexDirection: 'column', gap: '48px'}}>
       {/* Hero */}
       <div style={{textAlign: 'center', padding: '48px 24px'}}>
-        <XDSBadge variant="accent" label="New Release" />
+        <XDSBadge variant="info" label="New Release" />
         <XDSHeading level={1} style={{marginTop: 16, marginBottom: 12}}>
           Ship faster with XDS
         </XDSHeading>
@@ -1415,10 +1415,10 @@ function DashboardPreview() {
 
       {/* Activity Banner */}
       <XDSBanner
-        variant="educational"
+        status="info"
         title="System Update"
         description="A new version of the API is available. Review the changelog for breaking changes."
-        action={
+        endContent={
           <XDSButton label="View Changelog" variant="secondary" size="sm" />
         }
       />
