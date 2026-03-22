@@ -1172,7 +1172,7 @@ const styles = stylex.create({
         />
         <XDSDialog
           isOpen={dialogOpen}
-          onOpenChange={(open) => setDialogOpen(open)}
+          onOpenChange={(open) => setDialogOpen(open)}>
           <div style={{padding: '0 24px 24px 24px'}}>
             <XDSStack gap={3}>
               <XDSText type="body">
