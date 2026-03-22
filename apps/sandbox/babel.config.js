@@ -20,4 +20,9 @@ module.exports = {
       },
     ],
   ],
+  // Don't run StyleX babel plugin on pre-built dist files —
+  // their CSS is already compiled and shipped via xds.css imports.
+  ignore: [
+    '**/packages/core/dist/**',
+  ],
 };
