@@ -1105,9 +1105,9 @@ const styles = stylex.create({
           Avatars
         </XDSText>
         <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-          <XDSAvatar name="John Doe" size="sm" />
-          <XDSAvatar name="Jane Smith" size="md" />
-          <XDSAvatar name="Bob Wilson" size="lg" />
+          <XDSAvatar name="John Doe" size="small" />
+          <XDSAvatar name="Jane Smith" size="medium" />
+          <XDSAvatar name="Bob Wilson" size="large" />
         </div>
       </div>
 
@@ -1288,7 +1288,7 @@ function LandingPagePreview() {
           us weeks of bikeshedding.&rdquo;
         </XDSText>
         <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-          <XDSAvatar size="sm" name="Alex Chen" />
+          <XDSAvatar name="Alex Chen" size="small" />
           <div>
             <XDSText type="label">Alex Chen</XDSText>
             <XDSText type="supporting" color="secondary">
@@ -1409,7 +1409,7 @@ function DashboardPreview() {
           <XDSTab value="errors" label="Errors" />
         </XDSTabList>
         <div style={{marginTop: '16px'}}>
-          <XDSTable columns={dashboardColumns} data={metrics} size="sm" />
+          <XDSTable columns={dashboardColumns} data={metrics} density="compact" />
         </div>
       </div>
 
@@ -1461,7 +1461,7 @@ function DashboardPreview() {
                 padding: '8px 0',
                 borderBottom: i < 3 ? '1px solid var(--color-divider)' : 'none',
               }}>
-              <XDSAvatar size="sm" name={item.user} />
+              <XDSAvatar name={item.user} size="small" />
               <div style={{flex: 1}}>
                 <XDSText type="label">{item.user}</XDSText>
                 <XDSText type="body" color="secondary">
