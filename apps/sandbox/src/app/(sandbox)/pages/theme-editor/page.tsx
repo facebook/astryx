@@ -1,4 +1,5 @@
-import type {Meta, StoryObj} from '@storybook/react';
+'use client';
+
 import * as React from 'react';
 import {XDSButton} from '@xds/core/Button';
 import {XDSTextInput} from '@xds/core/TextInput';
@@ -2343,29 +2344,6 @@ function ThemeEditorComponent() {
   );
 }
 
-// =============================================================================
-// Storybook Meta
-// =============================================================================
-
-const meta: Meta = {
-  title: 'Theme Editor',
-  parameters: {
-    layout: 'fullscreen',
-    docs: {
-      page: null,
-    },
-  },
-};
-
-export default meta;
-
-type Story = StoryObj;
-
-export const ThemeEditor: Story = {
-  render: () => <ThemeEditorComponent />,
-  parameters: {
-    // Use default theme for the editor chrome (left panel).
-    // The preview panel wraps its own <XDSTheme theme={currentTheme}>.
-    xdsTheme: 'default',
-  },
-};
+export default function ThemeEditorPage() {
+  return <ThemeEditorComponent />;
+}

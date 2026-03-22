@@ -14,6 +14,7 @@ import type {ThemeMode} from '@xds/core/theme';
 
 const pages = [
   {name: 'Home', href: '/'},
+  {name: 'Theme Editor', href: '/pages/theme-editor/'},
   {name: 'Shell Lab', href: '/pages/shell-lab/'},
   {name: 'Example', href: '/pages/example/'},
   {name: 'Navigation', href: '/pages/navigation/'},
