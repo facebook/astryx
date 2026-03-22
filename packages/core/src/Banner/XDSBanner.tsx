@@ -405,7 +405,7 @@ export function XDSBanner({
       role={role}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('banner', {variant}),
+        xdsClassName('banner', {variant, status}),
         stylex.props(
           styles.root,
           variant === 'card' && styles.card,
