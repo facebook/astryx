@@ -179,6 +179,7 @@ export function XDSTopNav({
   const mobileContent = useXDSTopNavMobileContent();
   const hasCenterContent = centerContent != null;
   const hasCollapsibleContent = startContent != null || centerContent != null;
+  const hasMobileDrawerContent = hasCollapsibleContent || mobileContent != null;
 
   // =========================================================================
   // Mobile bar mode — heading + endContent + toggle, hide nav items
@@ -199,7 +200,7 @@ export function XDSTopNav({
         {heading && <div {...stylex.props(styles.heading)}>{heading}</div>}
         <div {...stylex.props(styles.mobileBarEnd)}>
           {endContent}
-          {hasCollapsibleContent && <XDSMobileNavToggle />}
+          {hasMobileDrawerContent && <XDSMobileNavToggle />}
         </div>
       </nav>
     );
