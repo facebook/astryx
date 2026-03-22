@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSTokenizer.tsx
  * @input Uses React, XDSBaseTypeahead, XDSField, XDSToken

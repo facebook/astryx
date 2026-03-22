@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSCollapsibleGroupContext.tsx
  * @input Uses React createContext

@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSButton.tsx
  * @input Uses React, ButtonHTMLAttributes, ReactNode

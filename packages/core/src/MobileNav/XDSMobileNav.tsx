@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSMobileNav.tsx
  * @input Uses React, useEffect, useRef, useCallback, ReactNode, StyleX

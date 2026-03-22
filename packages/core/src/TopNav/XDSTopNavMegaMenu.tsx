@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSTopNavMegaMenu.tsx
  * @input Uses React, StyleX, useXDSPopover (Popover API + CSS anchor positioning)

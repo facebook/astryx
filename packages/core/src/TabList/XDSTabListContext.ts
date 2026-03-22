@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSTabListContext.ts
  * @input React createContext, useContext

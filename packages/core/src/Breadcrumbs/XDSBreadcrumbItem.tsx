@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSBreadcrumbItem.tsx
  * @input Uses React useContext, stylex, theme tokens, BreadcrumbContext

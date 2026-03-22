@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSTextInput.tsx
  * @input Uses React, useId, ChangeEvent, XDSField, XDSIcon

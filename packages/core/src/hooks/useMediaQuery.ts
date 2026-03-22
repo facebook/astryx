@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file useMediaQuery.ts
  * @input Uses React useState, useEffect

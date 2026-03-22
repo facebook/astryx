@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSText.tsx
  * @input Uses React, HTMLAttributes, ReactNode

@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSTreeList.tsx
  * @input Uses React, StyleX, theme tokens, XDSTreeListItem, XDSTreeListTypes

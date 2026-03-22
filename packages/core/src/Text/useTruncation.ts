@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file useTruncation.ts
  * @input Uses React hooks, ResizeObserver

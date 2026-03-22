@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file useXDSCollapsible.ts
  * @input Uses React useState/useContext, CollapsibleGroupContext

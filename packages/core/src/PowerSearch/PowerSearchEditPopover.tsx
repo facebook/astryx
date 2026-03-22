@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file PowerSearchEditPopover.tsx
  * @input InternalConfig, PartialFilter

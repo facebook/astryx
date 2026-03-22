@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSList.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, XDSListContext

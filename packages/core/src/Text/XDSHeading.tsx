@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSHeading.tsx
  * @input Uses React, HTMLAttributes, ReactNode

@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSAvatarStatusDot.tsx
  * @input Uses React, StyleX, theme tokens, and XDSAvatarSizeContext

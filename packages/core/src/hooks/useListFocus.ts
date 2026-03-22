@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file useListFocus.ts
  * @input Uses React useCallback, useRef

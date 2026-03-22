@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSPopover.tsx
  * @input Uses React, useXDSPopover hook

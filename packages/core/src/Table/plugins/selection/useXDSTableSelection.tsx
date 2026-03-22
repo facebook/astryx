@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file useXDSTableSelection.tsx
  * @input React, types, XDSCheckboxInput, XDSTableCell, XDSTableHeaderCell, theme tokens

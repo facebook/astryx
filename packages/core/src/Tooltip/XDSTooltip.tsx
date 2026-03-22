@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSTooltip.tsx
  * @input Uses React, useXDSTooltip hook

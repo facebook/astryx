@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSTabMenu.tsx
  * @input Uses React, StyleX, useXDSLayer, XDSTabListContext

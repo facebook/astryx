@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file PowerSearchValueEditor.tsx
  * @input OperatorValue, FilterValue, onChange callback

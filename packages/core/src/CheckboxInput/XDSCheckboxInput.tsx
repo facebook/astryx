@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSCheckboxInput.tsx
  * @input Uses React, useId, ChangeEvent, XDSFieldLabel, XDSFieldStatus, XDSIconType, XDSInputStatus

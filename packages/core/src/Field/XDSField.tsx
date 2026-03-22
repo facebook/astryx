@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSField.tsx
  * @input Uses React, HTMLAttributes, ReactNode, XDSFieldLabel, XDSIconType

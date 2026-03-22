@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSLayoutAreaContext.ts
  * @input Uses React createContext

@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSSlider.tsx
  * @input Uses React, useId, useRef, useCallback, XDSField, XDSTooltip

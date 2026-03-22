@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSNumberInput.tsx
  * @input Uses React, useId, useState, useMemo, useCallback, XDSField, XDSIcon

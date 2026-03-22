@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSLinkProvider.tsx
  * @input React, XDSLinkContext, XDSLinkComponentType

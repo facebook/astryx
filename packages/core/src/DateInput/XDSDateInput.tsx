@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSDateInput.tsx
  * @input Uses React, useId, useState, useEffect, useCallback, useRef, XDSField, XDSIcon, XDSCalendar, useXDSPopover

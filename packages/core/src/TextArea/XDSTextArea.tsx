@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSTextArea.tsx
  * @input Uses React, useId, ChangeEvent, ClipboardEvent, XDSField, XDSIcon

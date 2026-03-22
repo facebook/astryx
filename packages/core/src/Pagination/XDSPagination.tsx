@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSPagination.tsx
  * @input Uses React, StyleX, XDSButton, XDSIcon, XDSSelector, XDSText; page number buttons delegate to XDSButton

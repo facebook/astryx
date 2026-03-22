@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSSpinner.tsx
  * @input Uses React, StyleX, canvas rendering

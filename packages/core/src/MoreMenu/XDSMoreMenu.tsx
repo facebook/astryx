@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSMoreMenu.tsx
  * @input Uses React, StyleX, useXDSLayer, XDSButton, getIcon, XDSDropdownMenuItem, XDSDivider

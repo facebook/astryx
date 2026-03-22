@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSPowerSearch.tsx
  * @input PowerSearchConfig, filters, onChange

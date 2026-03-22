@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSTypeahead.tsx
  * @input Uses React, XDSBaseTypeahead, XDSField, XDSToken

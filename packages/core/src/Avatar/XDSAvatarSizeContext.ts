@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSAvatarSizeContext.ts
  * @input Uses React createContext

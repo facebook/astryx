@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSSideNavSection.tsx
  * @input Uses React, StyleX

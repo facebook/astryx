@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSAvatar.tsx
  * @input Uses React, HTMLAttributes, ReactNode, useState

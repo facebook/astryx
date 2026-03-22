@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file hooks.ts
  * @output Hooks for XDSSelector

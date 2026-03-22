@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * XDSTheme Provider Component
  *

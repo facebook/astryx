@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSTableCell.tsx
  * @input React, StyleX, XDSTableContext, theme tokens

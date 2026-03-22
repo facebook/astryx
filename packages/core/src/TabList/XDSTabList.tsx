@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSTabList.tsx
  * @input Uses React, StyleX, XDSTabListContext

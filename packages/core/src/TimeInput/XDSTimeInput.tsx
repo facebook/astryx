@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSTimeInput.tsx
  * @input Uses React, useId, useState, useEffect, useCallback, useRef, XDSField, XDSIcon

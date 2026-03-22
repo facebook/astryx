@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSLayout.tsx
  * @input Uses React, stack/stackItem utilities, XDSLayoutAreaContext, XDSLayoutSlotsContext

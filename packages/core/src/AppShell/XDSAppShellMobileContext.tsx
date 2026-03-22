@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSAppShellMobileContext.tsx
  * @input Uses React createContext, useContext

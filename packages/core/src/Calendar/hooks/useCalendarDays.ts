@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file useCalendarDays.ts
  * @input Uses React useMemo

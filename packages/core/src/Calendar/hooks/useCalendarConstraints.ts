@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file useCalendarConstraints.ts
  * @input Uses React useCallback, useMemo

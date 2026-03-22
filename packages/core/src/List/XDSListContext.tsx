@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSListContext.tsx
  * @input Uses React createContext

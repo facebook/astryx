@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSSegmentedControlContext.ts
  * @input React createContext, useContext

@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file useOverflow.ts
  * @input Uses React useState, useLayoutEffect, useCallback, useRef

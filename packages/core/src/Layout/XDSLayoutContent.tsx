@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSLayoutContent.tsx
  * @input Uses React StyleX, XDSLayoutSlotsContext

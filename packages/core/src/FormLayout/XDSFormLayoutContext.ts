@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSFormLayoutContext.ts
  * @input Uses React createContext

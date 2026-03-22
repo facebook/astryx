@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSAppShell.tsx
  * @input Uses React, XDSLayout, XDSLayoutHeader, XDSLayoutPanel, XDSLayoutContent, StyleX

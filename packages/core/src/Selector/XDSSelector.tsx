@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSSelector.tsx
  * @input Uses React, StyleX, useXDSLayer, XDSIcon

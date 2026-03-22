@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSSideNavHeading.tsx
  * @input Uses React, useRef, useCallback, ReactNode, StyleX, useXDSPopover

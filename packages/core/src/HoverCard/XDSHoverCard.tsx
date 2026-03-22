@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSHoverCard.tsx
  * @input Uses React, useXDSHoverCard hook

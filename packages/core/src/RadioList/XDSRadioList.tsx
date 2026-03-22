@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSRadioList.tsx
  * @input Uses React useId, createContext, ReactNode, XDSField, XDSInputStatus

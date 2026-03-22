@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSProgressBar.tsx
  * @input Uses React, useId, stylex, color/spacing/radius/transition tokens

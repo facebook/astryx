@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSDropdownMenu.tsx
  * @input Uses React, StyleX, useXDSLayer, XDSButton, XDSIcon

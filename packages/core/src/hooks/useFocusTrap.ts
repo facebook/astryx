@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file useFocusTrap.ts
  * @input Uses React useCallback, useEffect, useRef

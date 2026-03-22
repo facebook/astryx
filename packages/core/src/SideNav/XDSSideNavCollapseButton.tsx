@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSSideNavCollapseButton.tsx
  * @input Uses React, StyleX, XDSSideNavCollapseContext, getIcon

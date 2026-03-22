@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file useXDSTooltip.tsx
  * @input Uses useXDSLayer, React hooks

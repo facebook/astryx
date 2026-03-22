@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSSideNavItem.tsx
  * @input Uses React, ReactNode, StyleX, XDSIcon, XDSIconType

@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file useGridFocus.ts
  * @input Uses React useCallback, useRef

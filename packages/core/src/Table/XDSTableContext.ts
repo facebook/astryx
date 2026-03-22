@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSTableContext.ts
  * @input React

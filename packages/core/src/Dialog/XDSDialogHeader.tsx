@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSDialogHeader.tsx
  * @input Uses React, useEffect, useRef, XDSLayoutHeader, XDSButton, XDSIcon, XDSHeading, XDSText

@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSBreadcrumbs.tsx
  * @input Uses React, Children, createContext, stylex, theme tokens

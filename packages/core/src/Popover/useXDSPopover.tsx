@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file useXDSPopover.tsx
  * @input Uses useXDSLayer, useFocusTrap, React hooks

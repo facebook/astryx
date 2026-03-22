@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file useCalendarRovingTabindex.ts
  * @input Uses React useMemo

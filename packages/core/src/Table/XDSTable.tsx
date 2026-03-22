@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSTable.tsx
  * @input React, StyleX, XDSBaseTable, theme tokens, types, components

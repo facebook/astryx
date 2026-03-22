@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSSideNav.tsx
  * @input Uses React, HTMLAttributes, ReactNode, StyleX

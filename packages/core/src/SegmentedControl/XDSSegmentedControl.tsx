@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSSegmentedControl.tsx
  * @input Uses React, StyleX, XDSSegmentedControlContext

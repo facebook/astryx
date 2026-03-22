@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSDialog.tsx
  * @input Uses React, DialogHTMLAttributes, ReactNode

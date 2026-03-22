@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file useXDSBaseTablePlugins.ts
  * @input React, types.ts

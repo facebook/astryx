@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSBanner.tsx
  * @input Uses ReactuseState, @heroicons/react/24/solid icons, XDSButton, XDSIcon, StyleX

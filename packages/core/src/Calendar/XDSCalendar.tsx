@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSCalendar.tsx
  * @input Uses React useState, useMemo, useCallback, hooks

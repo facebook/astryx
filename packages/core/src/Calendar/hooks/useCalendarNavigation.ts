@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file useCalendarNavigation.ts
  * @input Uses React useState, useMemo, useCallback

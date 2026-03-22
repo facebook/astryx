@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSFormLayout.tsx
  * @input Uses React, XDSFormLayoutContext, StyleX

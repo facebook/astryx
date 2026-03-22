@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSLayoutSlotsContext.ts
  * @input Uses React createContext
