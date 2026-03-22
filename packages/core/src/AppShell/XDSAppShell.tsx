@@ -647,11 +647,22 @@ export function XDSAppShell({
   // height for the sideNav's sticky offset.
   // =========================================================================
   // When below breakpoint, TopNav renders in mobile-bar mode (heading + endContent + toggle)
+  // Wrap with mobile content context so TopNav knows there's SideNav content
+  // in the drawer (and shows the toggle even without its own collapsible items)
   const topNavContent = hasTopNav ? (
     isBelowBreakpoint && mobileNavEnabled ? (
-      <XDSTopNavRenderContext value="mobile-bar">
-        {topNav}
-      </XDSTopNavRenderContext>
+      <XDSTopNavMobileContentContext
+        value={
+          hasSideNav ? (
+            <XDSSideNavRenderContext value="drawer-content">
+              {sideNav}
+            </XDSSideNavRenderContext>
+          ) : null
+        }>
+        <XDSTopNavRenderContext value="mobile-bar">
+          {topNav}
+        </XDSTopNavRenderContext>
+      </XDSTopNavMobileContentContext>
     ) : (
       topNav
     )
