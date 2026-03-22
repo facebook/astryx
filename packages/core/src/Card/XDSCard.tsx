@@ -109,7 +109,7 @@ export interface XDSCardProps extends XDSBaseProps {
   /**
    * Internal padding of the card using the spacing scale.
    * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
-   * @default 4 (16px)
+   * @default 5 (20px)
    */
   padding?: SpacingStep;
 }
@@ -150,7 +150,7 @@ export function XDSCard({
   // Only enable scrolling when card has a fixed height (not null/undefined and not "auto")
   const hasFixedHeight = height != null && height !== 'auto';
 
-  const effectivePadding = padding ?? 4;
+  const effectivePadding = padding ?? 5;
   const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
 
   return (
@@ -182,9 +182,8 @@ export function XDSCard({
             paddingOuterX: paddingToken,
             paddingOuterY: paddingToken,
           }),
-          effectivePadding !== 4 && paddingStyles[effectivePadding],
-          effectivePadding !== 4 &&
-            containerPaddingInlineVarStyles[effectivePadding],
+          paddingStyles[effectivePadding],
+          containerPaddingInlineVarStyles[effectivePadding],
         )}>
         {children}
       </div>

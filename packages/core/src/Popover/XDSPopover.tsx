@@ -198,10 +198,10 @@ const styles = stylex.create({
     boxShadow: shadowVars['--shadow-menu'],
   },
   contentPadding: {
-    paddingBlockStart: spacingVars['--spacing-3'],
-    paddingBlockEnd: spacingVars['--spacing-3'],
-    paddingInlineStart: spacingVars['--spacing-3'],
-    paddingInlineEnd: spacingVars['--spacing-3'],
+    paddingBlockStart: spacingVars['--spacing-4'],
+    paddingBlockEnd: spacingVars['--spacing-4'],
+    paddingInlineStart: spacingVars['--spacing-4'],
+    paddingInlineEnd: spacingVars['--spacing-4'],
   },
   gap: {
     marginBlockStart: spacingVars['--spacing-1'],
