@@ -987,7 +987,6 @@ const styles = stylex.create({
         <XDSTable
           columns={spacingTableColumns}
           data={spacingData}
-          getRowKey={row => row.token}
           density="compact"
           dividers="rows"
         />
