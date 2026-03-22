@@ -13,7 +13,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
-import {pathToFileURL} from 'node:url';
+import {pathToFileURL, fileURLToPath} from 'node:url';
 
 // Import shared theme processing from core — ensures build and runtime
 // use the same logic for typography.scale expansion, prose, and component rules.
@@ -60,7 +60,10 @@ function toPascalCase(name) {
  * Returns a map of { propName: string[] } for props that are visual (listed in theming targets).
  */
 async function loadKnownValues(componentName) {
-  const coreSrc = path.resolve(process.cwd(), 'packages/core/src');
+  // Resolve core src relative to the CLI package, not cwd (which may be a theme package)
+  const cliDir = path.dirname(fileURLToPath(import.meta.url));
+  const coreSrc = path.resolve(cliDir, '../../../core/src');
+  if (!fs.existsSync(coreSrc)) return {};
   // Map component name to directory (e.g. 'banner' → 'Banner', 'dropdownmenu' → 'DropdownMenu')
   const dirs = fs.readdirSync(coreSrc, { withFileTypes: true })
     .filter(d => d.isDirectory())
