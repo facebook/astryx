@@ -219,62 +219,27 @@ export interface XDSDefineThemeInput {
    * Each entry maps style keys to CSS property overrides, scoped under
    * the theme's data-xds-theme attribute via @scope.
    *
+   * Use `prop:value` keys to target specific visual props. New values
+   * not in the base type are automatically detected by `xds theme build`
+   * and generate TypeScript module augmentations for type-safe extensibility.
+   *
    * @example
    * ```tsx
    * components: {
    *   button: {
    *     base: { fontWeight: '600' },
    *     'variant:secondary': { backgroundColor: '...' },
+   *     'variant:primary-muted': { backgroundColor: '#ECF5FF' }, // new — generates augmentation
+   *   },
+   *   banner: {
+   *     'status:neutral': { backgroundColor: 'var(--color-muted)' }, // new status
    *   },
    * }
-   * // Generates:
-   * // @scope ([data-xds-theme="ocean"]) to ([data-xds-theme]) {
-   * //   .xds-button { font-weight: 600; }
-   * //   .xds-button.secondary { background-color: ...; }
-   * // }
    * ```
    */
   components?: XDSComponentStyleMap;
   /** Icon registry — maps semantic icon names to React nodes */
   icons?: Partial<XDSIconRegistry>;
-  /**
-   * Custom variants added by this theme — declaration and styles together.
-   * Keyed by component name (lowercase), then variant name → style object.
-   *
-   * Use this for NEW variants the theme introduces. To override styles on
-   * existing built-in variants (e.g. `variant:secondary`), use `components`.
-   *
-   * An empty object `{}` registers the variant name without adding styles.
-   *
-   * Variant names are available at runtime (CSS + class names work correctly)
-   * but don't provide autocomplete until `xds theme build` generates the
-   * TypeScript module augmentation file.
-   *
-   * @example
-   * ```tsx
-   * variants: {
-   *   button: {
-   *     'primary-muted': {
-   *       backgroundColor: 'var(--color-accent-muted)',
-   *       color: 'var(--color-accent)',
-   *     },
-   *     'primary-outline': {
-   *       borderWidth: '2px',
-   *       borderStyle: 'solid',
-   *       borderColor: 'var(--color-accent)',
-   *       backgroundColor: 'transparent',
-   *     },
-   *   },
-   *   badge: {
-   *     'info-subtle': {
-   *       backgroundColor: 'var(--color-info-muted)',
-   *       color: 'var(--color-info)',
-   *     },
-   *   },
-   * }
-   * ```
-   */
-  variants?: Record<string, Record<string, Record<string, string>>>;
 }
 
 /** A defined theme — ready to pass to <XDSTheme> */
@@ -287,8 +252,6 @@ export interface XDSDefinedTheme {
   components?: XDSComponentStyleMap;
   /** Icon registry */
   icons?: Partial<XDSIconRegistry>;
-  /** Custom variants added by this theme, keyed by component name (lowercase) */
-  variants?: Record<string, string[]>;
   /** Whether this theme has been pre-compiled by theme build CLI */
   __built?: true;
   /**
@@ -513,34 +476,7 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
     components = deepMergeComponents(generated, input.components);
   }
 
-  // 4. Process variants: extract names for type augmentation + merge styles into components
-  let variantNames: Record<string, string[]> | undefined;
-  if (input.variants) {
-    variantNames = {};
-    const variantComponents: XDSComponentStyleMap = {};
-    for (const [component, variantMap] of Object.entries(input.variants)) {
-      const names: string[] = [];
-      for (const [variantName, styles] of Object.entries(variantMap)) {
-        names.push(variantName);
-        // Merge non-empty variant styles into components as `variant:name`
-        if (styles && Object.keys(styles).length > 0) {
-          if (!variantComponents[component]) {
-            variantComponents[component] = {};
-          }
-          variantComponents[component][`variant:${variantName}`] = styles;
-        }
-      }
-      if (names.length > 0) {
-        variantNames[component] = names;
-      }
-    }
-    // Merge variant-derived component styles (lowest) with explicit components (highest)
-    if (Object.keys(variantComponents).length > 0) {
-      components = deepMergeComponents(variantComponents, components);
-    }
-  }
-
-  // 5. Derive fonts array from typography roles (for runtime loading)
+  // 4. Derive fonts array from typography roles (for runtime loading)
   let fonts: ThemeFontSource[] | undefined;
   if (typo) {
     const seen = new Set<string>();
@@ -561,7 +497,6 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
     tokens,
     components,
     icons: input.icons,
-    variants: variantNames,
     fonts,
   };
 }

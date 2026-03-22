@@ -14,10 +14,10 @@ const meta: Meta<typeof XDSBanner> = {
       options: ['info', 'warning', 'error', 'success'],
       description: 'Status type controlling icon and color',
     },
-    variant: {
+    container: {
       control: 'select',
       options: ['card', 'section'],
-      description: 'Visual variant',
+      description: 'Container type',
     },
     isDismissable: {
       control: 'boolean',
@@ -105,7 +105,7 @@ export const SectionVariant: Story = {
     title: 'System maintenance scheduled',
     description:
       'The system will be undergoing maintenance on Saturday from 2:00 AM to 6:00 AM UTC.',
-    variant: 'section',
+    container: 'section',
   },
 };
 
@@ -253,9 +253,9 @@ export const AllFeatures: Story = {
       </XDSBanner>
       <XDSBanner
         status="error"
-        title="Section variant"
+        title="Section container"
         description="Full-width with no border-radius."
-        variant="section"
+        container="section"
       />
     </div>
   ),
