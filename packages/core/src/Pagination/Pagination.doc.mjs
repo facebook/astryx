@@ -155,12 +155,13 @@ export const docs = {
   theming: {
     targets: [
       {className: 'xds-pagination', visualProps: ['size', 'variant']},
+      {className: 'xds-pagination-dot', visualProps: ['size'], states: ['active']},
     ],
   },
   notes: [
     "Page number buttons use XDSButton (variant='ghost' for inactive, variant='primary' for active) for theming and swizzle compatibility.",
     "Prev/next buttons use XDSButton with variant='ghost' and icon-only mode.",
-    'Dot indicators remain custom elements (intentionally different visual treatment from buttons).',
+    'Dot indicators use xds-pagination-dot className with size and active state classes for theme targeting.',
     'Returns null when totalItems <= 0 or totalPages <= 0.',
     'Also exports generatePageRange utility for computing visible page numbers with ellipsis.',
   ],
@@ -322,12 +323,13 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'xds-pagination', visualProps: ['size', 'variant']},
+      {className: 'xds-pagination-dot', visualProps: ['size'], states: ['active']},
     ],
   },
   notes: [
     "页码按钮使用 XDSButton（非活动状态 variant='ghost'，活动状态 variant='primary'）以兼容主题和 swizzle。",
     "上一页/下一页按钮使用 XDSButton，variant='ghost' 且仅图标模式。",
-    '点指示器保持为自定义元素（有意与按钮采用不同的视觉处理）。',
+    '点指示器使用 xds-pagination-dot 类名，带有 size 和 active 状态类以支持主题定位。',
     '当 totalItems <= 0 或 totalPages <= 0 时返回 null。',
     '还导出 generatePageRange 工具函数，用于计算带省略号的可见页码。',
   ],
@@ -355,7 +357,7 @@ export const docsDense = {
   notes: [
     "Page number buttons use XDSButton (variant='ghost' inactive, variant='primary' active) for theming + swizzle compatibility.",
     "Prev/next buttons use XDSButton w/ variant='ghost' + icon-only mode.",
-    'Dot indicators remain custom elements (intentionally different visual treatment from buttons).',
+    'Dot indicators use xds-pagination-dot className w/ size + active state classes for theme targeting.',
     'Returns null when totalItems <= 0 or totalPages <= 0.',
     'Exports generatePageRange utility for computing visible page numbers w/ ellipsis.',
   ],
