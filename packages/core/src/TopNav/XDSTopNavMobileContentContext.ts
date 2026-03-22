@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSTopNavMobileContentContext.ts
  * @input React createContext, useContext

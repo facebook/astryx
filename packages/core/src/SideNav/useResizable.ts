@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file useResizable.ts
  * @input Resizable configuration (enabled, defaultWidth, onWidthChange)

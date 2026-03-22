@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSSideNavCollapseContext.ts
  * @input React createContext, useContext
