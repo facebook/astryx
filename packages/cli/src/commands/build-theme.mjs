@@ -13,6 +13,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
+import {pathToFileURL, fileURLToPath} from 'node:url';
 
 // Import shared theme processing from core — ensures build and runtime
 // use the same logic for typography.scale expansion, prose, and component rules.
@@ -54,38 +55,185 @@ function toPascalCase(name) {
 }
 
 /**
- * Generate TypeScript declaration file with module augmentation for theme variants.
+ * Load known built-in values for a component's visual props from its .doc.mjs file.
+ * Parses the type string (e.g. "'info' | 'warning' | 'error' | 'success'") to extract values.
+ * Returns a map of { propName: string[] } for props that are visual (listed in theming targets).
+ */
+async function loadKnownValues(componentName) {
+  // Resolve core src relative to the CLI package, not cwd (which may be a theme package)
+  const cliDir = path.dirname(fileURLToPath(import.meta.url));
+  const coreSrc = path.resolve(cliDir, '../../../core/src');
+  if (!fs.existsSync(coreSrc)) return {};
+  // Map component name to directory (e.g. 'banner' → 'Banner', 'dropdownmenu' → 'DropdownMenu')
+  const dirs = fs.readdirSync(coreSrc, { withFileTypes: true })
+    .filter(d => d.isDirectory())
+    .map(d => d.name);
+  const dir = dirs.find(d => d.toLowerCase() === componentName.toLowerCase()
+    || d.toLowerCase().replace(/[^a-z]/g, '') === componentName.toLowerCase());
+  if (!dir) return {};
+
+  const docPath = path.join(coreSrc, dir, `${dir}.doc.mjs`);
+  if (!fs.existsSync(docPath)) return {};
+
+  try {
+    const docModule = await import(pathToFileURL(docPath).href);
+    const doc = docModule.docs;
+    if (!doc?.theming?.targets) return {};
+
+    // Collect all props — from doc.props or doc.components[].props
+    const allProps = [];
+    if (doc.props) allProps.push(...doc.props);
+    if (doc.components) {
+      for (const comp of doc.components) {
+        if (comp.props) allProps.push(...comp.props);
+      }
+    }
+    if (allProps.length === 0) return {};
+
+    // Collect visual prop names from theming targets
+    const visualProps = new Set();
+    for (const target of doc.theming.targets) {
+      if (target.visualProps) {
+        for (const vp of target.visualProps) visualProps.add(vp);
+      }
+    }
+
+    // Extract values from prop type strings
+    const result = {};
+    for (const prop of allProps) {
+      if (!visualProps.has(prop.name)) continue;
+      if (!prop.type || typeof prop.type !== 'string') continue;
+
+      // Parse union type: "'info' | 'warning' | 'error' | 'success'" → ['info', 'warning', 'error', 'success']
+      const matches = prop.type.match(/'([^']+)'/g);
+      if (matches) {
+        result[prop.name] = matches.map(m => m.replace(/'/g, ''));
+      }
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
+// Cache for loaded known values
+const _knownValuesCache = new Map();
+async function getKnownValues(componentName) {
+  if (!_knownValuesCache.has(componentName)) {
+    _knownValuesCache.set(componentName, await loadKnownValues(componentName));
+  }
+  return _knownValuesCache.get(componentName);
+}
+
+
+/**
+ * Generate TypeScript declaration file with module augmentation for custom
+ * component prop values found in the theme's `components` keys.
  *
- * Maps component names from the theme's `variants` field to their module paths
- * and augments the corresponding XDS{Component}VariantMap interfaces.
+ * Scans component override keys (e.g. `status:neutral`, `variant:primary-muted`)
+ * and generates augmentations for values not in the base type.
  *
- * @param {object} themeDef - Theme definition with variants
- * @returns {string|null} TypeScript declaration content, or null if no variants
+ * Interface naming convention: XDS + PascalCase(component) + PascalCase(prop) + Map
+ *   banner + status → XDSBannerStatusMap
+ *   button + variant → XDSButtonVariantMap
+ *
+ * @param {object} themeDef - Theme definition (resolved by defineTheme)
+ * @returns {string|null} TypeScript declaration content, or null if no augmentations needed
  */
 function generateVariantDeclarations(themeDef) {
-  if (!themeDef.variants || Object.keys(themeDef.variants).length === 0) {
+  if (!themeDef.components || Object.keys(themeDef.components).length === 0) {
     return null;
   }
 
+  // Collect custom values: { component: { prop: [value, ...] } }
+  const customValues = {};
+
+  for (const [component, rules] of Object.entries(themeDef.components)) {
+    for (const key of Object.keys(rules)) {
+      if (key === 'base') continue;
+
+      // Parse prop:value pairs from keys like 'status:neutral' or 'variant:primary+size:sm'
+      const pairs = key.split('+');
+      for (const pair of pairs) {
+        const colonIdx = pair.indexOf(':');
+        if (colonIdx === -1) continue;
+        const prop = pair.slice(0, colonIdx);
+        const value = pair.slice(colonIdx + 1);
+
+        // It's a custom value — collect it for augmentation
+        // (filtering against known values happens async in generateVariantDeclarationsAsync)
+        if (!customValues[component]) customValues[component] = {};
+        if (!customValues[component][prop]) customValues[component][prop] = new Set();
+        customValues[component][prop].add(value);
+      }
+    }
+  }
+
+  // Sync stub — returns null, use generateVariantDeclarationsAsync instead
+  return null;
+}
+
+/**
+ * Async version of generateVariantDeclarations that reads known values from doc files.
+ */
+async function generateVariantDeclarationsAsync(themeDef) {
+  if (!themeDef.components || Object.keys(themeDef.components).length === 0) {
+    return null;
+  }
+
+  // Collect custom values: { component: { prop: [value, ...] } }
+  const customValues = {};
+
+  for (const [component, rules] of Object.entries(themeDef.components)) {
+    const knownForComponent = await getKnownValues(component);
+
+    for (const key of Object.keys(rules)) {
+      if (key === 'base') continue;
+
+      const pairs = key.split('+');
+      for (const pair of pairs) {
+        const colonIdx = pair.indexOf(':');
+        if (colonIdx === -1) continue;
+        const prop = pair.slice(0, colonIdx);
+        const value = pair.slice(colonIdx + 1);
+
+        // Skip known built-in values
+        const knownForProp = knownForComponent[prop];
+        if (knownForProp && knownForProp.includes(value)) continue;
+
+        if (!customValues[component]) customValues[component] = {};
+        if (!customValues[component][prop]) customValues[component][prop] = new Set();
+        customValues[component][prop].add(value);
+      }
+    }
+  }
+
+  // Check if we found any custom values
+  const hasCustom = Object.values(customValues).some(
+    props => Object.values(props).some(values => values.size > 0)
+  );
+  if (!hasCustom) return null;
+
   const sections = ['// Generated by xds theme build', ''];
 
-  for (const [componentKey, variantNames] of Object.entries(themeDef.variants)) {
-    if (!variantNames || variantNames.length === 0) continue;
+  for (const [component, props] of Object.entries(customValues)) {
+    for (const [prop, values] of Object.entries(props)) {
+      if (values.size === 0) continue;
 
-    const pascal = toPascalCase(componentKey);
-    const modulePath = `@xds/core/${pascal}`;
-    const interfaceName = `XDS${pascal}VariantMap`;
+      const pascal = toPascalCase(component);
+      const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
+      const modulePath = `@xds/core/${pascal}`;
+      const interfaceName = `XDS${pascal}${propPascal}Map`;
 
-    const entries = variantNames
-      .map(v => `    '${v}': true;`)
-      .join('\n');
-
-    sections.push(`declare module '${modulePath}' {`);
-    sections.push(`  interface ${interfaceName} {`);
-    sections.push(...variantNames.map(v => `    '${v}': true;`));
-    sections.push('  }');
-    sections.push('}');
-    sections.push('');
+      sections.push(`declare module '${modulePath}' {`);
+      sections.push(`  interface ${interfaceName} {`);
+      for (const v of values) {
+        sections.push(`    '${v}': true;`);
+      }
+      sections.push('  }');
+      sections.push('}');
+      sections.push('');
+    }
   }
 
   return sections.join('\n');
@@ -466,7 +614,7 @@ const KNOWN_COMPONENTS = {
   aspectratio: [],
   avatar: ['size'],
   badge: ['variant', 'color'],
-  banner: ['variant'],
+  banner: ['container', 'status'],
   breadcrumbs: ['variant'],
   button: ['variant', 'size'],
   calendar: [],
@@ -633,7 +781,6 @@ export function registerTheme(program) {
           radius: themeDef.radius,
           tokens: themeDef.tokens,
           components: themeDef.components,
-          variants: themeDef.variants,
         });
         const rules = _generateThemeRules(resolvedTheme);
         if (rules.length === 0) {
@@ -698,14 +845,14 @@ export function registerTheme(program) {
       console.log(`✓ ${path.relative(process.cwd(), jsPath)}`);
       console.log(`✓ ${path.relative(process.cwd(), dtsPath)}`);
 
-      // Generate variant augmentation .d.ts if theme has custom variants
-      const variantDecl = generateVariantDeclarations(themeDef);
+      // Generate type augmentation .d.ts if theme has custom prop values
+      const augmentationSource = resolvedTheme || themeDef;
+      const variantDecl = await generateVariantDeclarationsAsync(augmentationSource);
       if (variantDecl) {
         const variantDtsPath = path.join(outDir, `${baseName}.variants.d.ts`);
         fs.writeFileSync(variantDtsPath, variantDecl);
-        const variantCount = Object.values(themeDef.variants)
-          .reduce((sum, v) => sum + v.length, 0);
-        console.log(`✓ ${path.relative(process.cwd(), variantDtsPath)} (${variantCount} variant augmentations)`);
+        const augCount = (variantDecl.match(/': true;/g) || []).length;
+        console.log(`✓ ${path.relative(process.cwd(), variantDtsPath)} (${augCount} type augmentations)`);
       }
 
       // Print install instructions

@@ -854,7 +854,7 @@ export default function ShellLabPage() {
             <XDSBanner
               status="info"
               title="Shell Lab — System announcement banner"
-              variant="section"
+              container="section"
               isDismissable
             />
           ) : undefined

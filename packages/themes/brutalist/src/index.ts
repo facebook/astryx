@@ -37,6 +37,15 @@ export const brutalistTheme = defineTheme({
     '--radius-rounded': '0px',
   },
   components: {
+    // Custom banner status — danger
+    banner: {
+      'status:danger': {
+        backgroundColor: '#FF0000',
+        color: '#FFFFFF',
+        fontWeight: '900',
+        textTransform: 'uppercase',
+      },
+    },
     // Cards get heavy borders
     card: {
       base: {

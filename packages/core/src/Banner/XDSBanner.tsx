@@ -3,7 +3,7 @@
 /**
  * @file XDSBanner.tsx
  * @input Uses ReactuseState, @heroicons/react/24/solid icons, XDSButton, XDSIcon, StyleX
- * @output Exports XDSBanner component, XDSBannerProps, XDSBannerStatus, XDSBannerVariant types
+ * @output Exports XDSBanner component, XDSBannerProps, XDSBannerStatus, XDSBannerContainer types
  * @position Core implementation; consumed by index.ts, tested by XDSBanner.test.tsx
  *
  * Visual structure:
@@ -49,36 +49,57 @@ import {xdsClassName, mergeProps} from '../utils';
 // =============================================================================
 
 /**
- * Status type controlling the banner's icon and color.
- */
-export type XDSBannerStatus = 'info' | 'warning' | 'error' | 'success';
-
-/**
- * Extensible variant map for XDSBanner.
+ * Extensible status map for XDSBanner.
  *
- * Theme packages can add custom variants via TypeScript module augmentation:
+ * Theme packages can add custom statuses via TypeScript module augmentation:
  * @example
  * ```
  * declare module '@xds/core/Banner' {
- *   interface XDSBannerVariantMap {
+ *   interface XDSBannerStatusMap {
+ *     'neutral': true;
+ *   }
+ * }
+ * ```
+ */
+export interface XDSBannerStatusMap {
+  info: true;
+  warning: true;
+  error: true;
+  success: true;
+}
+
+/**
+ * Status type controlling the banner's icon and color.
+ * Extensible via module augmentation of XDSBannerStatusMap.
+ */
+export type XDSBannerStatus = keyof XDSBannerStatusMap;
+
+/**
+ * Extensible container map for XDSBanner.
+ *
+ * Theme packages can add custom container types via TypeScript module augmentation:
+ * @example
+ * ```
+ * declare module '@xds/core/Banner' {
+ *   interface XDSBannerContainerMap {
  *     'floating': true;
  *   }
  * }
  * ```
  */
-export interface XDSBannerVariantMap {
+export interface XDSBannerContainerMap {
   card: true;
   section: true;
 }
 
 /**
- * Visual variant of the banner.
+ * Container type of the banner.
  * - `card`: standalone card with border-radius and shadow
  * - `section`: full-width section banner (no border-radius)
  *
- * Extensible via module augmentation of XDSBannerVariantMap.
+ * Extensible via module augmentation of XDSBannerContainerMap.
  */
-export type XDSBannerVariant = keyof XDSBannerVariantMap;
+export type XDSBannerContainer = keyof XDSBannerContainerMap;
 
 export interface XDSBannerProps {
   /** Ref forwarded to the root element */
@@ -122,12 +143,12 @@ export interface XDSBannerProps {
    */
   endContent?: ReactNode;
   /**
-   * Visual variant of the banner.
+   * Container type of the banner.
    * - `card`: standalone card with border-radius
    * - `section`: full-width section banner (no border-radius)
    * @default 'card'
    */
-  variant?: XDSBannerVariant;
+  container?: XDSBannerContainer;
   /**
    * Whether the content area (children) starts expanded.
    * Only relevant when children are provided.
@@ -364,7 +385,7 @@ export function XDSBanner({
   isDismissable = false,
   onDismiss,
   endContent,
-  variant = 'card',
+  container = 'card',
   defaultIsExpanded = false,
   children,
   xstyle,
@@ -406,11 +427,11 @@ export function XDSBanner({
       role={role}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('banner', {variant, status}),
+        xdsClassName('banner', {container, status}),
         stylex.props(
           styles.root,
-          variant === 'card' && styles.card,
-          variant === 'section' && styles.section,
+          container === 'card' && styles.card,
+          container === 'section' && styles.section,
           xstyle,
         ),
         className,
@@ -479,7 +500,7 @@ export function XDSBanner({
         <div
           {...stylex.props(
             styles.contentArea,
-            variant === 'card' && styles.contentAreaCard,
+            container === 'card' && styles.contentAreaCard,
           )}>
           {children}
         </div>

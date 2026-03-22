@@ -146,17 +146,17 @@ describe('XDSBanner', () => {
     expect(screen.getByTestId('end-btn')).toBeInTheDocument();
   });
 
-  it('renders card variant by default', () => {
+  it('renders card container by default', () => {
     const {container} = render(
-      <XDSBanner status="info" title="Card Variant" />,
+      <XDSBanner status="info" title="Card Container" />,
     );
     const root = container.firstElementChild;
     expect(root).toBeInTheDocument();
   });
 
-  it('renders section variant', () => {
+  it('renders section container', () => {
     const {container} = render(
-      <XDSBanner status="info" title="Section Variant" variant="section" />,
+      <XDSBanner status="info" title="Section Container" container="section" />,
     );
     const root = container.firstElementChild;
     expect(root).toBeInTheDocument();

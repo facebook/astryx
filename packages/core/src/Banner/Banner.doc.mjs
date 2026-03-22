@@ -12,8 +12,8 @@ export const docs = {
     'onDismiss callback fires alongside the internal state change for logging or backend sync',
     'Default status icons from @heroicons/react/24/solid: InformationCircleIcon (info), ExclamationTriangleIcon (warning), XCircleIcon (error), CheckCircleIcon (success)',
     'Status colors: info uses --color-accent-muted, warning uses --color-warning-muted, error uses --color-error-muted, success uses --color-success-muted',
-    'Card variant (default): has border-radius with optional card content area below the colored header',
-    'Section variant: no border-radius, full-width for page-level banners',
+    'Card container (default): has border-radius with optional card content area below the colored header',
+    'Section container: no border-radius, full-width for page-level banners',
   ],
 
   examples: [
@@ -88,10 +88,10 @@ export const docs = {
         'Action content rendered in the header area, end-aligned. Typically a button or link.',
     },
     {
-      name: 'variant',
+      name: 'container',
       type: "'card' | 'section'",
       description:
-        'Visual variant: card has border-radius; section is full-width with no border-radius for page-level use.',
+        'Container type: card has border-radius; section is full-width with no border-radius for page-level use.',
       default: "'card'",
     },
     {
@@ -117,14 +117,15 @@ export const docs = {
 
   theming: {
     targets: [
-      {className: 'xds-banner', visualProps: ['variant', 'status']},
+      {className: 'xds-banner', visualProps: ['container', 'status']},
       {className: 'xds-banner-icon', visualProps: ['status']},
     ],
     vars: [
-      {name: '--banner-radius', description: 'Border radius (card variant only)', default: 'var(--radius-3)'},
+      {name: '--banner-radius', description: 'Border radius (card container only)', default: 'var(--radius-3)'},
     ],
   },
   notes: [
+    'Banner uses `status` as its extensible theming axis. Custom statuses via `defineTheme` components: `status:neutral`.',
     'Collapsible support is planned: the content area will support collapsing via useXDSCollapsible (issue #187)',
   ],
 };
@@ -218,7 +219,7 @@ export const docsZh = {
         '渲染在头部区域末端对齐的操作内容，通常是按钮或链接。',
     },
     {
-      name: 'variant',
+      name: 'container',
       type: "'card' | 'section'",
       description:
         '视觉变体：card 带圆角；section 无圆角全宽，适用于页面级场景。',
@@ -247,14 +248,15 @@ export const docsZh = {
 
   theming: {
     targets: [
-      {className: 'xds-banner', visualProps: ['variant', 'status']},
+      {className: 'xds-banner', visualProps: ['container', 'status']},
       {className: 'xds-banner-icon', visualProps: ['status']},
     ],
     vars: [
-      {name: '--banner-radius', description: 'Border radius (card variant only)', default: 'var(--radius-3)'},
+      {name: '--banner-radius', description: 'Border radius (card container only)', default: 'var(--radius-3)'},
     ],
   },
   notes: [
+    'Banner 使用 `status` 作为可扩展的主题轴。通过 defineTheme components 添加自定义状态：`status:neutral`。',
     '折叠支持已规划：内容区将通过 useXDSCollapsible 支持折叠（issue #187）',
   ],
 };
@@ -269,8 +271,8 @@ export const docsDense = {
     'onDismiss fires alongside internal state change for logging/backend sync',
     'default status icons from @heroicons/react/24/solid: InformationCircleIcon, ExclamationTriangleIcon, XCircleIcon, CheckCircleIcon',
     'status colors: info=accent-deemphasized, warning=warning-deemphasized, error=negative-deemphasized, success=positive-deemphasized',
-    'card variant (default): border-radius w/ optional card content below header',
-    'section variant: no border-radius, full-width for page-level banners',
+    'card container (default): border-radius w/ optional card content below header',
+    'section container: no border-radius, full-width for page-level banners',
   ],
   notes: [
     'collapsible support planned via useXDSCollapsible (issue #187)',
@@ -289,7 +291,7 @@ export const docsDense = {
     isDismissable: 'user can dismiss banner',
     onDismiss: 'dismiss callback; banner self-hides regardless',
     endContent: 'end-aligned action in header, typically button/link',
-    variant: 'card=border-radius; section=full-width no radius for page-level',
+    container: 'card=border-radius; section=full-width no radius for page-level',
     children: 'content in card-bg area below colored header',
     xstyle: 'StyleX layout customization via stylex.create()',
   },

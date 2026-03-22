@@ -433,116 +433,104 @@ describe('radius', () => {
   });
 });
 
-describe('variants', () => {
-  it('extracts variant names from styled variant objects', () => {
+describe('custom status via components', () => {
+  it('passes custom status through components as status:value keys', () => {
     const theme = defineTheme({
-      name: 'custom',
-      variants: {
-        button: {
-          'primary-muted': {
-            backgroundColor: 'var(--color-accent-muted)',
-            color: 'var(--color-accent)',
-          },
-          'primary-outline': {
-            borderWidth: '2px',
-            borderStyle: 'solid',
-          },
-        },
-        badge: {
-          'info-subtle': {
-            backgroundColor: 'var(--color-info-muted)',
+      name: 'banner-status',
+      components: {
+        banner: {
+          'status:neutral': {
+            backgroundColor: 'var(--color-muted)',
           },
         },
       },
     });
-    expect(theme.variants).toEqual({
-      button: ['primary-muted', 'primary-outline'],
-      badge: ['info-subtle'],
+    expect(theme.components?.banner?.['status:neutral']).toEqual({
+      backgroundColor: 'var(--color-muted)',
     });
   });
 
-  it('merges variant styles into components as variant: keys', () => {
+  it('generates correct CSS selectors for banner status extensions', () => {
     const theme = defineTheme({
-      name: 'styled-variants',
-      variants: {
+      name: 'banner-css',
+      components: {
+        banner: {
+          'status:neutral': {
+            backgroundColor: 'var(--color-muted)',
+          },
+        },
+      },
+    });
+    const css = generateThemeCSS(theme);
+    // parseStyleKey('status:neutral') → '.neutral', so CSS should have .xds-banner.neutral
+    expect(css).toContain('.xds-banner.neutral');
+    expect(css).toContain('background-color: var(--color-muted)');
+  });
+
+  it('custom button variant via components', () => {
+    const theme = defineTheme({
+      name: 'button-variant',
+      components: {
         button: {
-          'primary-muted': {
-            backgroundColor: 'var(--color-accent-muted)',
-            color: 'var(--color-accent)',
+          'variant:primary-muted': {
+            backgroundColor: '#ECF5FF',
           },
         },
       },
     });
     expect(theme.components?.button?.['variant:primary-muted']).toEqual({
-      backgroundColor: 'var(--color-accent-muted)',
-      color: 'var(--color-accent)',
+      backgroundColor: '#ECF5FF',
     });
   });
 
-  it('handles empty style objects (register-only variants)', () => {
+  it('generates correct CSS for custom button variant', () => {
     const theme = defineTheme({
-      name: 'register-only',
-      variants: {
+      name: 'button-css',
+      components: {
         button: {
-          'primary-muted': {},
+          'variant:primary-muted': {
+            backgroundColor: '#ECF5FF',
+          },
         },
       },
     });
-    expect(theme.variants).toEqual({button: ['primary-muted']});
-    // Empty styles should not create a component entry
-    expect(theme.components?.button?.['variant:primary-muted']).toBeUndefined();
+    const css = generateThemeCSS(theme);
+    expect(css).toContain('.xds-button.primary-muted');
+    expect(css).toContain('background-color: #ECF5FF');
   });
 
-  it('returns undefined variants when not provided', () => {
-    const theme = defineTheme({name: 'bare'});
-    expect(theme.variants).toBeUndefined();
-  });
-
-  it('combines variants with tokens and explicit components', () => {
+  it('combines custom status with base and token overrides', () => {
     const theme = defineTheme({
       name: 'combo',
       tokens: {'--color-accent': '#FF0000'},
-      components: {button: {base: {borderRadius: '999px'}}},
-      variants: {
-        button: {
-          'primary-muted': {
-            backgroundColor: 'var(--color-accent-muted)',
+      components: {
+        banner: {
+          'status:neutral': {
+            backgroundColor: 'var(--color-muted)',
+            color: 'gray',
           },
         },
+        button: {base: {borderRadius: '999px'}},
       },
     });
     expect(theme.tokens['--color-accent']).toBe('#FF0000');
-    // Explicit component styles preserved
-    expect(theme.components?.button?.base?.borderRadius).toBe('999px');
-    // Variant styles merged in
-    expect(theme.components?.button?.['variant:primary-muted']).toEqual({
-      backgroundColor: 'var(--color-accent-muted)',
+    expect(theme.components?.banner?.['status:neutral']).toEqual({
+      backgroundColor: 'var(--color-muted)',
+      color: 'gray',
     });
-    expect(theme.variants).toEqual({button: ['primary-muted']});
+    expect(theme.components?.button?.base?.borderRadius).toBe('999px');
   });
 
-  it('explicit components override variant styles on collision', () => {
+  it('does not have a variants field on the output', () => {
     const theme = defineTheme({
-      name: 'override',
+      name: 'no-variants',
       components: {
-        button: {
-          'variant:primary-muted': {backgroundColor: 'red'},
-        },
-      },
-      variants: {
-        button: {
-          'primary-muted': {backgroundColor: 'blue', color: 'white'},
+        banner: {
+          'status:neutral': {backgroundColor: 'gray'},
         },
       },
     });
-    // Explicit component override wins for backgroundColor
-    expect(
-      theme.components?.button?.['variant:primary-muted']?.backgroundColor,
-    ).toBe('red');
-    // Variant-only property still present
-    expect(theme.components?.button?.['variant:primary-muted']?.color).toBe(
-      'white',
-    );
+    expect(theme).not.toHaveProperty('variants');
   });
 });
 
