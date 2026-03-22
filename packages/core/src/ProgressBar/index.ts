@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file ProgressBar component barrel export
  */

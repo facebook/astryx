@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file index.ts
  * @input Imports from component directories (Button/, Card/, Layout/, Layer/)

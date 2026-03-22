@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file Breadcrumbs component barrel export
  */

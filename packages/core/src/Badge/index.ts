@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file Badge component barrel export
  */

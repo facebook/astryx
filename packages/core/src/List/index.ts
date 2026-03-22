@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file index.ts
  * @input Imports from XDSList.tsx and XDSListItem.tsx

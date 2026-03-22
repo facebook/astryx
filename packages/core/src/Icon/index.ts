@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file index.ts
  * @input Imports XDSIcon component/types, icon registry, and global registration

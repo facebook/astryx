@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file index.ts
  * @output Exports XDSDropdownMenu, XDSDropdownMenuItem and related types

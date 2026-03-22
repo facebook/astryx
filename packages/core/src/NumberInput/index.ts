@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file index.ts
  * @input Imports XDSNumberInput component and types from XDSNumberInput.tsx

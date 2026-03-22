@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file OverflowList component barrel export
  */

@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * XDS Theme System
  *

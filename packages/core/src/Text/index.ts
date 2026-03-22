@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file Text component exports
  * @position Entry point for Text components

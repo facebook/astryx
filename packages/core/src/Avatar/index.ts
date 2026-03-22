@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file index.ts
  * @input Imports XDSAvatar component and types from XDSAvatar.tsx, XDSAvatarStatusDot from XDSAvatarStatusDot.tsx
