@@ -13,7 +13,6 @@
  * - /packages/core/src/Link/Link.doc.mjs
  */
 
-'use client';
 
 import {useContext} from 'react';
 import {XDSLinkContext} from './XDSLinkContext';

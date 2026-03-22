@@ -14,7 +14,7 @@ export default defineConfig({
   entry: ['src/index.ts', 'src/*/index.ts', 'src/theme/tokens.stylex.ts'],
   format: ['cjs', 'esm'],
   dts: true,
-  splitting: true,
+  splitting: false,
   clean: true,
   external: ['react', 'react-dom'],
   noExternal: ['@stylexjs/stylex', 'styleq'],

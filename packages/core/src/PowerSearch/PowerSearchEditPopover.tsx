@@ -10,7 +10,6 @@
  * - /packages/core/src/PowerSearch/index.ts
  */
 
-'use client';
 
 import React, {useState, useCallback, useEffect, useMemo, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';

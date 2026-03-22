@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/TextInput.stories.tsx (storybook stories)
  */
 
-'use client';
 
 import {useId, useOptimistic, useTransition, type ChangeEvent} from 'react';
 import * as stylex from '@stylexjs/stylex';

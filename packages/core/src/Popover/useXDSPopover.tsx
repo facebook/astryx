@@ -13,7 +13,6 @@
  * - /packages/core/src/Popover/index.ts
  */
 
-'use client';
 
 import React, {
   useCallback,

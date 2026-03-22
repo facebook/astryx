@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSTopNavItem.tsx
  * @input Uses React, AnchorHTMLAttributes, ReactNode
@@ -11,7 +13,6 @@
  * - /apps/storybook/stories/TopNav.stories.tsx
  */
 
-'use client';
 
 import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';

@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSOverflowList.tsx
  * @input Uses React, StyleX, useOverflow hook
@@ -12,7 +14,6 @@
  * - /packages/core/src/OverflowList/index.ts (exports if types change)
  */
 
-'use client';
 
 import {type ReactNode, type ReactElement, Children} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';

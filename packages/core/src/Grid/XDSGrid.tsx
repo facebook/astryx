@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSGrid.tsx
  * @input Uses React, stylex, spacing tokens
@@ -10,7 +12,6 @@
  * - /apps/storybook/stories/Grid.stories.tsx
  */
 
-'use client';
 
 import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';

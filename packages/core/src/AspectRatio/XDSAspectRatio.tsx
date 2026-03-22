@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSAspectRatio.tsx
  * @input Uses React, stylex
@@ -10,7 +12,6 @@
  * - /apps/storybook/stories/AspectRatio.stories.tsx
  */
 
-'use client';
 
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';

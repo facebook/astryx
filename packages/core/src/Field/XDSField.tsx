@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/Field.stories.tsx (storybook stories)
  */
 
-'use client';
 
 import {type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';

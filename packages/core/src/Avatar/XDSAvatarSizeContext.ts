@@ -10,7 +10,6 @@
  * - /packages/core/src/Avatar/Avatar.doc.mjs
  */
 
-'use client';
 
 import {createContext} from 'react';
 

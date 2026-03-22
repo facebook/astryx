@@ -23,7 +23,6 @@
  * - /packages/core/src/MobileNav/index.ts (exports if types change)
  */
 
-'use client';
 
 import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';

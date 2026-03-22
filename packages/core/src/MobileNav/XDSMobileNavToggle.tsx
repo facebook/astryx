@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSMobileNavToggle.tsx
  * @input Uses React, XDSButton, XDSIcon, AppShell mobile context
@@ -9,7 +11,6 @@
  * Can be placed anywhere in the component tree (TopNav, content area, custom toolbar, etc.).
  */
 
-'use client';
 
 import {type ReactNode} from 'react';
 import {XDSButton} from '../Button';

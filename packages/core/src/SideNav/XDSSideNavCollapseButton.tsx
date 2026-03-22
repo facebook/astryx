@@ -14,7 +14,6 @@
  * - /packages/core/src/SideNav/index.ts
  */
 
-'use client';
 
 import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';

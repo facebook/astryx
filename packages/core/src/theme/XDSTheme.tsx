@@ -20,7 +20,6 @@
  * ```
  */
 
-'use client';
 
 import React, {useId, useInsertionEffect, useLayoutEffect, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';

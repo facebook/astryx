@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/Dialog.stories.tsx
  */
 
-'use client';
 
 import {useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';

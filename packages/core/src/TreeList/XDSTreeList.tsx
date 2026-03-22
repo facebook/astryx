@@ -12,7 +12,6 @@
  * - /apps/storybook/stories/TreeList.stories.tsx
  */
 
-'use client';
 
 import {useId, useState, useMemo, useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';

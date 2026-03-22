@@ -11,7 +11,6 @@
  * to adapt rendering based on mobile context.
  */
 
-'use client';
 
 import {createContext, useContext} from 'react';
 

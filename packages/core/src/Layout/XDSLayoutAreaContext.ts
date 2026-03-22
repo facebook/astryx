@@ -10,7 +10,6 @@
  * - /packages/core/src/Layout/Layout.doc.mjs
  */
 
-'use client';
 
 import {createContext} from 'react';
 

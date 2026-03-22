@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSBadge.tsx
  * @input Uses React, HTMLAttributes
@@ -11,7 +13,6 @@
  * - /apps/storybook/stories/Badge.stories.tsx (storybook stories)
  */
 
-'use client';
 
 import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';

@@ -16,7 +16,6 @@
  * - /apps/storybook/stories/SideNav.stories.tsx
  */
 
-'use client';
 
 import {useCallback, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';

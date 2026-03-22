@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSIcon.tsx
  * @input Uses ReactSVGProps, icon components or semantic icon names
@@ -17,7 +19,6 @@
  * - /apps/storybook/stories/Icon.stories.tsx (storybook stories)
  */
 
-'use client';
 
 import {type ComponentType, type SVGProps} from 'react';
 import * as stylex from '@stylexjs/stylex';

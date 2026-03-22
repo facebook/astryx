@@ -10,7 +10,6 @@
  * - /packages/core/src/PowerSearch/index.ts
  */
 
-'use client';
 
 import React, {useCallback, useMemo} from 'react';
 import type {

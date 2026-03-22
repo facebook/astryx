@@ -10,7 +10,6 @@
  * - /packages/core/src/HoverCard/index.ts
  */
 
-'use client';
 
 import {
   useCallback,

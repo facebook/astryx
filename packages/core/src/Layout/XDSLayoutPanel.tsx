@@ -12,7 +12,6 @@
  * - /apps/storybook/stories/Layout.stories.tsx
  */
 
-'use client';
 
 import type {AriaRole, ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';

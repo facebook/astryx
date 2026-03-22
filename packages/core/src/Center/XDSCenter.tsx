@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSCenter.tsx
  * @input Uses React, StyleX for centering styles
@@ -10,7 +12,6 @@
  * - /apps/storybook/stories/Center.stories.tsx
  */
 
-'use client';
 
 import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';

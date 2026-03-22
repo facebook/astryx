@@ -11,7 +11,6 @@
  * - /apps/storybook/stories/Tooltip.stories.tsx
  */
 
-'use client';
 
 import React, {
   useCallback,

@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/Breadcrumbs.stories.tsx
  */
 
-'use client';
 
 import {Children, isValidElement, createContext, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';

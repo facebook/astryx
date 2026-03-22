@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSSection.tsx
  * @input Uses container utility, StyleX
@@ -10,7 +12,6 @@
  * - /apps/storybook/stories/Section.stories.tsx (storybook stories)
  */
 
-'use client';
 
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';

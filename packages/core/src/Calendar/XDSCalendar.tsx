@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/Calendar.stories.tsx (storybook stories)
  */
 
-'use client';
 
 import {
   useState,

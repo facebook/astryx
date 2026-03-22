@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/Table.stories.tsx (storybook stories)
  */
 
-'use client';
 
 import {useMemo, type ReactElement, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';

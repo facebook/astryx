@@ -11,7 +11,6 @@
  * - /packages/core/src/Table/XDSTable.tsx (primary consumer)
  */
 
-'use client';
 
 import {useRef} from 'react';
 import type {TablePlugin} from './types';

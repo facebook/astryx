@@ -18,7 +18,6 @@
  * - /apps/storybook/stories/SideNav.stories.tsx
  */
 
-'use client';
 
 import {useCallback, useState, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';

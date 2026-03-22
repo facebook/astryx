@@ -11,7 +11,6 @@
  * - /packages/core/src/Selector/index.ts
  */
 
-'use client';
 
 import React, {
   useCallback,

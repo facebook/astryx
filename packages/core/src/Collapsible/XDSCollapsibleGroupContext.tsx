@@ -11,7 +11,6 @@
  * - /packages/core/src/Collapsible/Collapsible.doc.mjs
  */
 
-'use client';
 
 import {createContext} from 'react';
 

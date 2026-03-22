@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSCollapsible.tsx
  * @input Uses React, StyleX, useXDSCollapsible hook, getIcon, theme tokens
@@ -16,7 +18,6 @@
  * - /apps/storybook/stories/Collapsible.stories.tsx
  */
 
-'use client';
 
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';

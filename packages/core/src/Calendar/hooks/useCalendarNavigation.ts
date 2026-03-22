@@ -10,7 +10,6 @@
  * - /packages/core/src/Calendar/hooks/index.ts
  */
 
-'use client';
 
 import {useState, useMemo, useCallback} from 'react';
 import type {ISODateString} from '../XDSCalendar';

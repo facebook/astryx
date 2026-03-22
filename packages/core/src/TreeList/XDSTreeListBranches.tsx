@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSTreeListBranches.tsx
  * @input Uses React, StyleX, theme tokens
@@ -8,7 +10,6 @@
  * - /packages/core/src/TreeList/XDSTreeListItem.tsx
  */
 
-'use client';
 
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';

@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSLink.tsx
  * @input Uses React, AnchorHTMLAttributes, ReactNode
@@ -11,7 +13,6 @@
  * - /apps/storybook/stories/Link.stories.tsx (storybook stories)
  */
 
-'use client';
 
 import {type MouseEventHandler, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';

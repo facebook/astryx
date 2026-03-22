@@ -10,7 +10,6 @@
  * - /packages/core/src/Tooltip/index.ts
  */
 
-'use client';
 
 import {
   useCallback,

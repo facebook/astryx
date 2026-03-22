@@ -10,7 +10,6 @@
  * - /packages/core/src/FormLayout/README.md
  */
 
-'use client';
 
 import {createContext} from 'react';
 

@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/Spinner.stories.tsx
  */
 
-'use client';
 
 import {useEffect, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';

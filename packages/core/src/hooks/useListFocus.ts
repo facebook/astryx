@@ -10,7 +10,6 @@
  * - /packages/core/src/hooks/index.ts
  */
 
-'use client';
 
 import {useCallback, useRef} from 'react';
 

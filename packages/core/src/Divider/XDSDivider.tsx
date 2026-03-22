@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSDivider.tsx
  * @input Uses React, stylex, spacing and color tokens
@@ -10,7 +12,6 @@
  * - /apps/storybook/stories/Divider.stories.tsx
  */
 
-'use client';
 
 import {type HTMLAttributes, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';

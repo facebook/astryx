@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/NumberInput.stories.tsx (storybook stories)
  */
 
-'use client';
 
 import {
   useId,

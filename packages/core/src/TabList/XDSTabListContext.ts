@@ -9,7 +9,6 @@
  * SYNC: When modified, update /packages/core/src/TabList/TabList.doc.mjs
  */
 
-'use client';
 
 import {createContext, useContext} from 'react';
 

@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSTopNavMegaMenuItem.tsx
  * @input Uses React, StyleX, theme tokens, navItemStyles, XDSTopNavRenderContext
@@ -10,7 +12,6 @@
  * - /packages/core/src/TopNav/index.ts
  */
 
-'use client';
 
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';

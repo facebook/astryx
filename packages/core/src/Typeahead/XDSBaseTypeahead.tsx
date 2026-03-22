@@ -15,7 +15,6 @@
  * - /packages/core/src/Typeahead/index.ts
  */
 
-'use client';
 
 import React, {
   useCallback,

@@ -11,7 +11,6 @@
  * - /packages/core/src/hooks/useGridFocus.test.ts
  */
 
-'use client';
 
 import {useCallback, useRef} from 'react';
 

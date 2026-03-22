@@ -17,7 +17,6 @@
  *   label, data-testid, xstyle
  */
 
-'use client';
 
 import {useTransition} from 'react';
 import * as stylex from '@stylexjs/stylex';

@@ -12,7 +12,6 @@
  * - /apps/storybook/stories/Tokenizer.stories.tsx
  */
 
-'use client';
 
 import React, {
   useCallback,

@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSSkeleton.tsx
  * @input Uses React, StyleX keyframes and tokens
@@ -10,7 +12,6 @@
  * - /apps/storybook/stories/Skeleton.stories.tsx
  */
 
-'use client';
 
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';

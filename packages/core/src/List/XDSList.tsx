@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/List.stories.tsx
  */
 
-'use client';
 
 import {useId, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';

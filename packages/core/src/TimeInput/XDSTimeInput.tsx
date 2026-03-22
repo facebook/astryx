@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/TimeInput.stories.tsx (storybook stories)
  */
 
-'use client';
 
 import {
   useId,

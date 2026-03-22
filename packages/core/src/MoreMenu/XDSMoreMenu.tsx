@@ -16,7 +16,6 @@
  * - /apps/storybook/stories/MoreMenu.stories.tsx
  */
 
-'use client';
 
 import {
   useCallback,

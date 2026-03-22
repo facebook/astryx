@@ -20,7 +20,6 @@
  * - /apps/storybook/stories/Collapsible.stories.tsx
  */
 
-'use client';
 
 import {useCallback, useMemo, useState, type ReactNode} from 'react';
 import {CollapsibleGroupContext} from './XDSCollapsibleGroupContext';

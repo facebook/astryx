@@ -13,7 +13,6 @@
  * - /packages/core/src/Table/index.ts (exports if types change)
  */
 
-'use client';
 
 import {createContext} from 'react';
 

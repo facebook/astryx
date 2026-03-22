@@ -17,7 +17,6 @@
  * - /packages/core/src/Link/Link.doc.mjs
  */
 
-'use client';
 
 import {createContext} from 'react';
 import type {XDSLinkComponentType} from './types';

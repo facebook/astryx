@@ -12,7 +12,6 @@
  * - /packages/core/src/SegmentedControl/XDSSegmentedControl.test.tsx
  */
 
-'use client';
 
 import {useMemo, useRef, useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';

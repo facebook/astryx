@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/RadioList.stories.tsx
  */
 
-'use client';
 
 import {createContext, useId, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';

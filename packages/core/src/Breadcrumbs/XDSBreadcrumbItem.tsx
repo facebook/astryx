@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/Breadcrumbs.stories.tsx
  */
 
-'use client';
 
 import {useContext, type ReactNode, type MouseEvent} from 'react';
 import * as stylex from '@stylexjs/stylex';

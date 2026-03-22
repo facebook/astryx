@@ -11,7 +11,6 @@
  * - /packages/core/src/Table/index.ts (exports)
  */
 
-'use client';
 
 import {createContext, useContext, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
