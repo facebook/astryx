@@ -2014,7 +2014,7 @@ function ThemeEditorComponent() {
 
       const categoryValue = TYPOGRAPHY_CATEGORIES[
         activeTypographyCategory as keyof typeof TYPOGRAPHY_CATEGORIES
-      ] as TypographyCategoryValue | undefined;
+      ] as unknown as TypographyCategoryValue | undefined;
 
       // Get the list of tokens for this category
       const categoryTokens: string[] = categoryValue
