@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSTopNavMenu.tsx
  * @input Uses React, StyleX, useXDSHoverCard, XDSTopNavItem tokens

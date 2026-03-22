@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSSideNavRenderContext.ts
  * @input React createContext, useContext

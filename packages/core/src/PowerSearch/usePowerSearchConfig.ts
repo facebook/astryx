@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file usePowerSearchConfig.ts
  * @input Field definitions with simplified types
