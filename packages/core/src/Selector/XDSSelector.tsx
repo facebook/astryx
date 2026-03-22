@@ -11,7 +11,6 @@
  * - /packages/core/src/Selector/index.ts
  */
 
-
 import React, {
   useCallback,
   useId,
@@ -136,7 +135,7 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-1'],
     borderRadius: radiusVars['--radius-2'],
     backgroundColor: colorVars['--color-surface'],
-    boxShadow: `0 4px 12px ${colorVars['--color-shadow']}`,
+    boxShadow: shadowVars['--shadow-menu'],
     opacity: 1,
     transition: `opacity ${durationVars['--duration-fast']}`,
   },
@@ -615,7 +614,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>({
         onKeyDown={onKeyDown}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('selector', {size}),
+          xdsClassName('selector', {size, status: status?.type ?? null}),
           stylex.props(
             styles.trigger,
             sizeStyles[size],

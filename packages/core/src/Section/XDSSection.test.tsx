@@ -21,25 +21,25 @@ describe('XDSSection', () => {
 
   it('renders with variant="section" (default)', () => {
     const {container} = render(<XDSSection>Content</XDSSection>);
-    const root = container.firstElementChild!;
-    expect(root.className).toContain('xds-section');
-    expect(root.className).toContain('section');
+    const inner = container.firstElementChild!.firstElementChild!;
+    expect(inner.className).toContain('xds-section');
+    expect(inner.className).toContain('section');
   });
 
   it('renders with variant="transparent"', () => {
     const {container} = render(
       <XDSSection variant="transparent">Content</XDSSection>,
     );
-    const root = container.firstElementChild!;
-    expect(root.className).toContain('xds-section');
-    expect(root.className).toContain('transparent');
+    const inner = container.firstElementChild!.firstElementChild!;
+    expect(inner.className).toContain('xds-section');
+    expect(inner.className).toContain('transparent');
   });
 
   it('renders with variant="wash"', () => {
     const {container} = render(<XDSSection variant="wash">Content</XDSSection>);
-    const root = container.firstElementChild!;
-    expect(root.className).toContain('xds-section');
-    expect(root.className).toContain('wash');
+    const inner = container.firstElementChild!.firstElementChild!;
+    expect(inner.className).toContain('xds-section');
+    expect(inner.className).toContain('wash');
   });
 
   it('renders with dividers', () => {
@@ -100,15 +100,15 @@ describe('XDSSection', () => {
 
   it('renders xds-* class names for theme targeting', () => {
     const {container} = render(<XDSSection>Content</XDSSection>);
-    const root = container.firstElementChild!;
-    expect(root.className).toContain('xds-section');
+    const inner = container.firstElementChild!.firstElementChild!;
+    expect(inner.className).toContain('xds-section');
   });
 
   it('renders variant in xds class names', () => {
     const {container} = render(<XDSSection variant="wash">Content</XDSSection>);
-    const root = container.firstElementChild!;
-    expect(root.className).toContain('xds-section');
-    expect(root.className).toContain('wash');
+    const inner = container.firstElementChild!.firstElementChild!;
+    expect(inner.className).toContain('xds-section');
+    expect(inner.className).toContain('wash');
   });
 
   it('accepts xstyle prop without error', () => {

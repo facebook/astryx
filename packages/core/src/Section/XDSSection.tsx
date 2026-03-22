@@ -12,7 +12,6 @@
  * - /apps/storybook/stories/Section.stories.tsx (storybook stories)
  */
 
-
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -240,42 +239,50 @@ export function XDSSection({
 }: XDSSectionProps) {
   const effectivePadding = padding ?? 4;
   const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
+  const outerStylex = stylex.props(
+    nestedStyles.outer,
+    dynamicStyles.sizing(
+      width ?? null,
+      height ?? null,
+      maxWidth ?? null,
+      minHeight ?? null,
+    ),
+    xstyle,
+  );
+
   return (
     <div
       ref={ref as React.Ref<HTMLDivElement>}
-      {...mergeProps(
-        xdsClassName('section', {variant}),
-        stylex.props(
-          nestedStyles.outer,
-          dynamicStyles.sizing(
-            width ?? null,
-            height ?? null,
-            maxWidth ?? null,
-            minHeight ?? null,
-          ),
-          xstyle,
-        ),
-        className,
-        style,
-      )}
+      className={
+        [outerStylex.className, className].filter(Boolean).join(' ') ||
+        undefined
+      }
+      style={
+        style && outerStylex.style
+          ? {...outerStylex.style, ...style}
+          : style || outerStylex.style
+      }
       {...props}>
       <div
-        {...stylex.props(
-          nestedStyles.inner,
-          ...container({
-            paddingInnerX: paddingToken,
-            paddingInnerY: paddingToken,
-            paddingOuterX: paddingToken,
-            paddingOuterY: paddingToken,
-          }),
-          effectivePadding !== 4 && paddingStyles[effectivePadding],
-          effectivePadding !== 4 &&
-            containerPaddingInlineVarStyles[effectivePadding],
-          variantStyles[variant],
-          dividers?.includes('top') && dividerStyles.top,
-          dividers?.includes('bottom') && dividerStyles.bottom,
-          dividers?.includes('start') && dividerStyles.start,
-          dividers?.includes('end') && dividerStyles.end,
+        {...mergeProps(
+          xdsClassName('section', {variant}),
+          stylex.props(
+            nestedStyles.inner,
+            ...container({
+              paddingInnerX: paddingToken,
+              paddingInnerY: paddingToken,
+              paddingOuterX: paddingToken,
+              paddingOuterY: paddingToken,
+            }),
+            effectivePadding !== 4 && paddingStyles[effectivePadding],
+            effectivePadding !== 4 &&
+              containerPaddingInlineVarStyles[effectivePadding],
+            variantStyles[variant],
+            dividers?.includes('top') && dividerStyles.top,
+            dividers?.includes('bottom') && dividerStyles.bottom,
+            dividers?.includes('start') && dividerStyles.start,
+            dividers?.includes('end') && dividerStyles.end,
+          ),
         )}>
         {children}
       </div>

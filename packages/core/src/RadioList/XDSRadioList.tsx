@@ -3,7 +3,7 @@
 /**
  * @file XDSRadioList.tsx
  * @input Uses React useId, createContext, ReactNode, XDSField, XDSInputStatus
- * @output Exports XDSRadioList component, XDSRadioListProps, RadioListContext
+ * @output Exports XDSRadioList component, XDSRadioListProps, XDSRadioListContext
  * @position Core implementation; consumed by index.ts, tested by XDSRadioList.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -12,7 +12,6 @@
  * - /packages/core/src/RadioList/index.ts
  * - /apps/storybook/stories/RadioList.stories.tsx
  */
-
 
 import {createContext, useId, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -27,7 +26,7 @@ import {xdsClassName, mergeProps} from '../utils';
  */
 export type XDSRadioListSize = 'sm' | 'md';
 
-export interface RadioListContextValue {
+export interface XDSRadioListContextValue {
   name: string;
   value: string;
   onChange: (value: string) => void;
@@ -37,9 +36,8 @@ export interface RadioListContextValue {
   status?: XDSInputStatus;
 }
 
-export const RadioListContext = createContext<RadioListContextValue | null>(
-  null,
-);
+export const XDSRadioListContext =
+  createContext<XDSRadioListContextValue | null>(null);
 
 const styles = stylex.create({
   radiogroup: {
@@ -182,7 +180,7 @@ export function XDSRadioList({
   const descriptionID = useId();
   const statusMessageID = useId();
 
-  const contextValue: RadioListContextValue = {
+  const contextValue: XDSRadioListContextValue = {
     name,
     value,
     onChange,
@@ -236,11 +234,12 @@ export function XDSRadioList({
             orientation === 'vertical' ? styles.vertical : styles.horizontal,
             xstyle,
           ),
+          className,
+          style,
         )}>
-        className, style,
-        <RadioListContext.Provider value={contextValue}>
+        <XDSRadioListContext.Provider value={contextValue}>
           {children}
-        </RadioListContext.Provider>
+        </XDSRadioListContext.Provider>
       </div>
     </XDSField>
   );

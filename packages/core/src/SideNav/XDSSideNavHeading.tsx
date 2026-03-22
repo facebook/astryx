@@ -16,7 +16,6 @@
  * - /apps/storybook/stories/SideNav.stories.tsx
  */
 
-
 import {useCallback, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -26,6 +25,7 @@ import {
   fontWeightVars,
   lineHeightVars,
   radiusVars,
+  shadowVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 // TODO(#264): Lazy-load useXDSPopover so the popover/layer bundle is not
@@ -131,7 +131,7 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-1'],
     borderRadius: radiusVars['--radius-2'],
     backgroundColor: colorVars['--color-surface'],
-    boxShadow: `0 4px 12px ${colorVars['--color-shadow']}`,
+    boxShadow: shadowVars['--shadow-menu'],
     overflow: 'hidden',
   },
   popover: {
