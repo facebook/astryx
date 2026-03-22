@@ -747,3 +747,96 @@ describe('typography weight derivation', () => {
     expect(theme.tokens['--heading-1-weight']).toBe('900');
   });
 });
+
+describe('pseudo-class overrides in components', () => {
+  it('generates pseudo-class rules from nested objects', () => {
+    const theme = defineTheme({
+      name: 'pseudo',
+      components: {
+        radio: {
+          base: {
+            borderColor: '#8F9296',
+            ':hover': {
+              borderColor: 'color-mix(in srgb, #8F9296, black 20%)',
+            },
+          },
+        },
+      },
+    });
+    const css = generateThemeCSS(theme);
+    // Base rule
+    expect(css).toContain('.xds-radio {');
+    expect(css).toContain('border-color: #8F9296');
+    // Pseudo rule — separate selector
+    expect(css).toContain('.xds-radio:hover {');
+    expect(css).toContain(
+      'border-color: color-mix(in srgb, #8F9296, black 20%)',
+    );
+  });
+
+  it('generates pseudo-class rules on variant selectors', () => {
+    const theme = defineTheme({
+      name: 'pseudo-variant',
+      components: {
+        button: {
+          'variant:primary-muted': {
+            backgroundColor: '#ECF5FF',
+            ':hover': {
+              backgroundColor: '#D6EBFF',
+            },
+            ':focus-visible': {
+              outline: '2px solid var(--color-ring-focus)',
+            },
+          },
+        },
+      },
+    });
+    const css = generateThemeCSS(theme);
+    expect(css).toContain('.xds-button.primary-muted {');
+    expect(css).toContain('background-color: #ECF5FF');
+    expect(css).toContain('.xds-button.primary-muted:hover {');
+    expect(css).toContain('background-color: #D6EBFF');
+    expect(css).toContain('.xds-button.primary-muted:focus-visible {');
+    expect(css).toContain('outline: 2px solid var(--color-ring-focus)');
+  });
+
+  it('handles pseudo-only overrides (no base properties)', () => {
+    const theme = defineTheme({
+      name: 'pseudo-only',
+      components: {
+        switch: {
+          base: {
+            ':hover': {
+              backgroundColor: 'color-mix(in srgb, #8F9296, black 5%)',
+            },
+          },
+        },
+      },
+    });
+    const css = generateThemeCSS(theme);
+    // Should NOT emit an empty base rule
+    expect(css).not.toMatch(/\.xds-switch\s*\{\s*\}/);
+    // Should emit the pseudo rule
+    expect(css).toContain('.xds-switch:hover {');
+  });
+
+  it('keeps non-pseudo string values as regular properties', () => {
+    const theme = defineTheme({
+      name: 'mixed',
+      components: {
+        card: {
+          base: {
+            borderWidth: '2px',
+            borderColor: 'var(--color-accent)',
+          },
+        },
+      },
+    });
+    const css = generateThemeCSS(theme);
+    expect(css).toContain('.xds-card {');
+    expect(css).toContain('border-width: 2px');
+    expect(css).toContain('border-color: var(--color-accent)');
+    // No pseudo rules
+    expect(css).not.toContain('.xds-card:');
+  });
+});

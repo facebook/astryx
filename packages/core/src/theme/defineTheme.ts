@@ -94,9 +94,24 @@ export type XDSTokenValue = string | [light: string, dark: string];
 
 /**
  * CSS property values for a style rule.
- * Keys are camelCase CSS properties, values are CSS strings.
+ *
+ * Keys are camelCase CSS properties with string values, OR pseudo-class
+ * selectors (starting with `:`) mapping to nested property objects.
+ *
+ * Pseudo-class keys generate separate CSS rules with the pseudo appended
+ * to the component selector. Supported pseudo-classes include `:hover`,
+ * `:focus-visible`, `:active`, `:checked`, `:disabled`, etc.
+ *
+ * @example
+ * ```ts
+ * {
+ *   borderColor: '#8F9296',
+ *   ':hover': { borderColor: 'color-mix(in srgb, #8F9296, black 20%)' },
+ *   ':focus-visible': { outline: '2px solid var(--color-ring-focus)' },
+ * }
+ * ```
  */
-export type XDSStyleOverrides = Record<string, string>;
+export type XDSStyleOverrides = Record<string, string | Record<string, string>>;
 
 /**
  * Component style overrides.
@@ -109,6 +124,9 @@ export type XDSStyleOverrides = Record<string, string>;
  *
  * The `base` key is optional — omit it to only override specific variants.
  *
+ * Style values can include pseudo-class keys (`:hover`, `:focus-visible`, etc.)
+ * to override interaction states without CSS custom property escape hatches.
+ *
  * @example
  * ```tsx
  * components: {
@@ -119,6 +137,12 @@ export type XDSStyleOverrides = Record<string, string>;
  *   },
  *   badge: {
  *     'variant:ghost': { border: '1px solid var(--color-border)' },
+ *   },
+ *   radio: {
+ *     base: {
+ *       borderColor: '#8F9296',
+ *       ':hover': { borderColor: 'color-mix(in srgb, #8F9296, black 20%)' },
+ *     },
  *   },
  * }
  * ```
@@ -591,15 +615,46 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
   if (theme.components) {
     for (const [component, rules] of Object.entries(theme.components)) {
       for (const [key, styles] of Object.entries(
-        rules as Record<string, Record<string, string>>,
+        rules as Record<
+          string,
+          Record<string, string | Record<string, string>>
+        >,
       )) {
         const entries = Object.entries(styles);
         if (entries.length > 0) {
           const suffix = parseStyleKey(key);
-          const declarations = entries
-            .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
-            .join('\n');
-          parts.push(`  .xds-${component}${suffix} {\n${declarations}\n  }`);
+          const baseSelector = `.xds-${component}${suffix}`;
+
+          // Separate regular properties from pseudo-class overrides
+          const props: [string, string][] = [];
+          const pseudos: [string, Record<string, string>][] = [];
+
+          for (const [prop, value] of entries) {
+            if (prop.startsWith(':') && typeof value === 'object') {
+              pseudos.push([prop, value as Record<string, string>]);
+            } else {
+              props.push([prop, value as string]);
+            }
+          }
+
+          // Emit base rule
+          if (props.length > 0) {
+            const declarations = props
+              .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
+              .join('\n');
+            parts.push(`  ${baseSelector} {\n${declarations}\n  }`);
+          }
+
+          // Emit pseudo-class rules
+          for (const [pseudo, pseudoStyles] of pseudos) {
+            const pseudoEntries = Object.entries(pseudoStyles);
+            if (pseudoEntries.length > 0) {
+              const declarations = pseudoEntries
+                .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
+                .join('\n');
+              parts.push(`  ${baseSelector}${pseudo} {\n${declarations}\n  }`);
+            }
+          }
         }
       }
     }

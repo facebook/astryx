@@ -182,23 +182,52 @@ function generateCSS(themeDef, {prose = true} = {}) {
         const entries = Object.entries(styles);
         if (entries.length > 0) {
           const suffix = parseStyleKey(key);
-          const declarations = entries
-            .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
-            .join('\n');
+
+          // Separate regular properties from pseudo-class overrides
+          const props = [];
+          const pseudos = [];
+
+          for (const [prop, value] of entries) {
+            if (prop.startsWith(':') && typeof value === 'object') {
+              pseudos.push([prop, value]);
+            } else {
+              props.push([prop, value]);
+            }
+          }
 
           // Build selector — co-select HTML elements for prose-related components
           const xdsSelector = `.xds-${component}${suffix}`;
-          let selector = `  ${xdsSelector}`;
+          let baseSelector = `  ${xdsSelector}`;
 
           if (prose) {
             const htmlElements = PROSE_COMPONENT_MAP[component]?.[key];
             if (htmlElements) {
               const htmlSelector = htmlElements.map(el => `  ${el}`).join(',\n');
-              selector = `  ${xdsSelector},\n${htmlSelector}`;
+              baseSelector = `  ${xdsSelector},\n${htmlSelector}`;
             }
           }
 
-          parts.push(`${selector} {\n${declarations}\n  }`);
+          // Emit base rule
+          if (props.length > 0) {
+            const declarations = props
+              .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
+              .join('\n');
+            parts.push(`${baseSelector} {\n${declarations}\n  }`);
+          }
+
+          // Emit pseudo-class rules
+          for (const [pseudo, pseudoStyles] of pseudos) {
+            const pseudoEntries = Object.entries(pseudoStyles);
+            if (pseudoEntries.length > 0) {
+              const declarations = pseudoEntries
+                .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
+                .join('\n');
+              // Pseudo-class rules only on xds selector, not prose co-selection
+              parts.push(
+                `  ${xdsSelector}${pseudo} {\n${declarations}\n  }`,
+              );
+            }
+          }
         }
       }
     }
