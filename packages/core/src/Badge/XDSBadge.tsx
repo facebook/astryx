@@ -47,7 +47,22 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
   },
   dot: {
-    paddingInline: spacingVars['--spacing-1'],
+    width: spacingVars['--spacing-2'],
+    height: spacingVars['--spacing-2'],
+    paddingInline: 0,
+    paddingBlock: 0,
+    borderRadius: '50%',
+  },
+  visuallyHidden: {
+    position: 'absolute',
+    width: '1px',
+    height: '1px',
+    padding: 0,
+    margin: '-1px',
+    overflow: 'hidden',
+    clip: 'rect(0, 0, 0, 0)',
+    whiteSpace: 'nowrap',
+    borderWidth: 0,
   },
 });
 
@@ -113,15 +128,31 @@ export interface XDSBadgeProps extends XDSBaseProps<HTMLSpanElement> {
    */
   variant?: XDSBadgeVariant;
   /**
-   * The content to display in the badge.
-   * If omitted (and no icon), renders as a small dot indicator.
+   * The badge label. Displayed as visible text for pill badges.
+   * Used as the accessible name (visually hidden) for dot badges.
    */
-  label?: ReactNode;
+  label: ReactNode;
 
   /**
    * Optional icon to display before the label.
    */
   icon?: ReactNode;
+
+  /**
+   * Visual shape of the badge.
+   * - `'pill'`: Default rounded pill shape for text/icon content
+   * - `'dot'`: Small circular indicator with no content
+   *
+   * When using `shape="dot"`, the `label` is rendered as visually hidden
+   * text for screen reader accessibility.
+   * @default 'pill'
+   *
+   * @example
+   * ```
+   * <XDSBadge variant="error" shape="dot" label="Unread" />
+   * ```
+   */
+  shape?: 'pill' | 'dot';
 }
 
 /**
@@ -132,29 +163,30 @@ export interface XDSBadgeProps extends XDSBaseProps<HTMLSpanElement> {
  *
  * @example
  * ```
- * <XDSBadge label="Default" />
+ * <XDSBadge label="Active" />
  * <XDSBadge variant="success" label="Active" />
  * <XDSBadge variant="error" label="3" />
- * <XDSBadge variant="info" />
+ * <XDSBadge variant="info" shape="dot" label="New" />
  * ```
  */
 export function XDSBadge({
   variant = 'neutral',
   label,
   icon,
+  shape = 'pill',
   xstyle,
   className,
   style,
   ref,
   ...props
 }: XDSBadgeProps) {
-  const isDot = label == null && icon == null;
+  const isDot = shape === 'dot';
 
   return (
     <span
       ref={ref}
       {...mergeProps(
-        xdsClassName('badge', {variant}),
+        xdsClassName('badge', {variant, shape}),
         stylex.props(
           styles.base,
           variants[variant],
@@ -165,8 +197,9 @@ export function XDSBadge({
         style,
       )}
       {...props}>
-      {icon}
-      {label}
+      {isDot && <span {...stylex.props(styles.visuallyHidden)}>{label}</span>}
+      {!isDot && icon}
+      {!isDot && label}
     </span>
   );
 }
