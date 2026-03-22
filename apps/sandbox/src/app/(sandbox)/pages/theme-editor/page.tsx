@@ -1033,15 +1033,15 @@ const styles = stylex.create({
             gap: '12px',
             maxWidth: '300px',
           }}>
-          <XDSTextInput label="Text Input" placeholder="Enter text..." />
+          <XDSTextInput label="Text Input" placeholder="Enter text..." value="" onChange={() => {}} />
           <XDSSwitch
             label="Toggle Switch"
-            isSelected={switchValue}
+            value={switchValue}
             onChange={setSwitchValue}
           />
           <XDSCheckboxInput
             label="Checkbox"
-            isSelected={checkboxValue}
+            value={checkboxValue}
             onChange={setCheckboxValue}
           />
           <XDSSlider
