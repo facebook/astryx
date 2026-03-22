@@ -57,7 +57,6 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-normal'],
     lineHeight: lineHeightVars['--leading-base'],
     color: colorVars['--color-text-secondary'],
-    maxWidth: '360px',
   },
   descriptionCompact: {
     fontSize: typeScaleVars['--text-supporting-size'],
@@ -66,6 +65,7 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
+    maxWidth: '360px',
   },
   actions: {
     display: 'flex',
