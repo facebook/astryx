@@ -36,13 +36,13 @@ function setCookie(name: string, value: string, days = 365): void {
  *
  * @param breakpointPx - The breakpoint width in pixels (e.g. 768 for "md")
  * @param directHint - Direct width hint (takes precedence over provider)
- * @param defaultValue - SSR default when no hint is available. `true` = mobile-first.
+ * @param defaultValue - SSR default when no hint is available. `false` = desktop-first (avoids rendering mobile layout in static exports where the build machine has no viewport).
  * @returns Whether the viewport is below the breakpoint
  */
 export function useServerViewport(
   breakpointPx: number,
   directHint?: number,
-  defaultValue = true,
+  defaultValue = false,
 ): boolean {
   const server = useXDSServer();
   const viewportHint = server?.viewport;
