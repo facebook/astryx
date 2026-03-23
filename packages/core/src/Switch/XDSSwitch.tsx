@@ -318,12 +318,6 @@ export function XDSSwitch({
   style,
   ref,
 }: XDSSwitchProps) {
-  if (process.env.NODE_ENV !== 'production' && !label) {
-    console.warn(
-      'XDSSwitch: `label` prop must not be empty. Provide a meaningful label for accessibility.',
-    );
-  }
-
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
