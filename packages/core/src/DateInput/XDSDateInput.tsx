@@ -120,27 +120,13 @@ const sizeStyles = stylex.create({
 export type XDSDateInputSize = keyof typeof sizeStyles;
 
 // Re-export shared types for convenience
+
 export type {
   XDSInputStatus as XDSDateInputStatus,
   XDSInputStatusType as XDSDateInputStatusType,
 } from '../Field';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSBaseProps} from '../XDSBaseProps';
-
-const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
-  warning: 'warning',
-  error: 'xCircle',
-  success: 'checkCircle',
-};
-
-const statusIconColorMap: Record<
-  XDSInputStatusType,
-  'warning' | 'negative' | 'positive'
-> = {
-  warning: 'warning',
-  error: 'negative',
-  success: 'positive',
-};
 
 export interface XDSDateInputProps extends Omit<
   XDSBaseProps,
@@ -299,6 +285,22 @@ export function XDSDateInput({
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
   const isEffectivelyDisabled = isDisabled || isBusy;
+
+  // Status icon mapping
+  const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
+    warning: 'warning',
+    error: 'xCircle',
+    success: 'checkCircle',
+  };
+
+  const statusIconColorMap: Record<
+    XDSInputStatusType,
+    'warning' | 'negative' | 'positive'
+  > = {
+    warning: 'warning',
+    error: 'negative',
+    success: 'positive',
+  };
 
   // Constraint checking for text input validation (reuses calendar logic)
   const {isDateDisabled} = useCalendarConstraints({min, max, dateConstraints});
