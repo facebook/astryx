@@ -54,7 +54,7 @@ const THUMB_TRAVEL_ON =
 const styles = stylex.create({
   container: {
     display: 'flex',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: spacingVars['--spacing-2'],
   },
   containerSpread: {
@@ -84,6 +84,9 @@ const styles = stylex.create({
   },
   inputDisabled: {
     cursor: 'not-allowed',
+  },
+  inputBusy: {
+    pointerEvents: 'none',
   },
   track: {
     display: 'flex',
@@ -161,12 +164,24 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-0-5'],
-    marginTop: 3,
+    justifyContent: 'center',
+    minHeight: SWITCH_HEIGHT,
   },
   description: {
     fontFamily: typographyVars['--font-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
     color: colorVars['--color-text-secondary'],
+  },
+  srOnly: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    padding: 0,
+    margin: -1,
+    overflow: 'hidden',
+    clip: 'rect(0, 0, 0, 0)',
+    whiteSpace: 'nowrap',
+    borderWidth: 0,
   },
 });
 
@@ -347,7 +362,11 @@ export function XDSSwitch({
         aria-describedby={ariaDescribedBy}
         aria-invalid={status?.type === 'error' ? true : undefined}
         aria-busy={isBusy || undefined}
-        {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
+        {...stylex.props(
+          styles.input,
+          isDisabled && styles.inputDisabled,
+          isBusy && styles.inputBusy,
+        )}
       />
       <div
         aria-hidden="true"
@@ -372,6 +391,11 @@ export function XDSSwitch({
           {isBusy && <XDSSpinner size="sm" />}
         </div>
       </div>
+      {isBusy && (
+        <span {...stylex.props(styles.srOnly)} role="status">
+          Loading
+        </span>
+      )}
     </div>
   );
 
@@ -398,7 +422,10 @@ export function XDSSwitch({
   return (
     <div
       {...mergeProps(
-        xdsClassName('switch-field', {labelPosition, labelSpacing}),
+        xdsClassName('switch-field', {
+          labelPosition: labelPosition !== 'end' ? labelPosition : undefined,
+          labelSpacing: labelSpacing !== 'default' ? labelSpacing : undefined,
+        }),
         stylex.props(xstyle),
         className,
         style,

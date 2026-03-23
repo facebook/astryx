@@ -209,7 +209,7 @@ export const docs = {
     'labelPosition="start" with labelSpacing="spread" produces a settings panel style layout',
     'Follows the same patterns as XDSCheckboxInput for structural consistency',
     'Interaction is blocked during busy state (loading or pending async action) to prevent double-toggling',
-    'Track and thumb transitions respect prefers-reduced-motion (0.01s duration when reduced motion preferred)',
+    'Track and thumb transitions respect prefers-reduced-motion (0s duration when reduced motion preferred)',
   ],
 };
 

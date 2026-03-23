@@ -236,4 +236,101 @@ describe('XDSSwitch', () => {
     );
     expect(screen.getByRole('switch')).toBeInTheDocument();
   });
+
+  it('sets aria-busy on input when loading', () => {
+    render(
+      <XDSSwitch
+        label="Enable notifications"
+        value={false}
+        isLoading
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('renders status message when status prop is provided', () => {
+    render(
+      <XDSSwitch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Failed to save setting'}}
+      />,
+    );
+    expect(screen.getByText('Failed to save setting')).toBeInTheDocument();
+  });
+
+  it('sets aria-invalid when status type is error', () => {
+    render(
+      <XDSSwitch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Error message'}}
+      />,
+    );
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('does not set aria-invalid when status type is not error', () => {
+    render(
+      <XDSSwitch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        status={{type: 'warning', message: 'Warning message'}}
+      />,
+    );
+    expect(screen.getByRole('switch')).not.toHaveAttribute('aria-invalid');
+  });
+
+  it('associates status message with switch via aria-describedby', () => {
+    render(
+      <XDSSwitch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Error message'}}
+      />,
+    );
+    const switchEl = screen.getByRole('switch');
+    const describedBy = switchEl.getAttribute('aria-describedby');
+    expect(describedBy).toBeTruthy();
+  });
+
+  it('calls onFocus and onBlur callbacks', async () => {
+    const user = userEvent.setup();
+    const handleFocus = vi.fn();
+    const handleBlur = vi.fn();
+    render(
+      <XDSSwitch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+      />,
+    );
+
+    const switchEl = screen.getByRole('switch');
+    await user.click(switchEl);
+    expect(handleFocus).toHaveBeenCalled();
+
+    await user.tab();
+    expect(handleBlur).toHaveBeenCalled();
+  });
+
+  it('sets required attribute when isRequired is true', () => {
+    render(
+      <XDSSwitch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        isRequired
+      />,
+    );
+    expect(screen.getByRole('switch')).toBeRequired();
+  });
+
 });
