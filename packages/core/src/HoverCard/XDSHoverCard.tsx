@@ -113,7 +113,7 @@ export interface XDSHoverCardProps {
 }
 
 /**
- * Check if children are text-only (no React elements).
+ * Check if children are text-only (no React elements)
  */
 function isTextOnly(children: ReactNode): boolean {
   let hasElement = false;
