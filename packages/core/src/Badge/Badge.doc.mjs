@@ -49,7 +49,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-badge', visualProps: ['variant']},
+      {className: 'xds-badge', visualProps: ['variant', 'shape']},
     ],
   },
 };
@@ -104,7 +104,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-badge', visualProps: ['variant']},
+      {className: 'xds-badge', visualProps: ['variant', 'shape']},
     ],
   },
 };
