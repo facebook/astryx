@@ -54,7 +54,7 @@ const THUMB_TRAVEL_ON =
 const styles = stylex.create({
   container: {
     display: 'flex',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: spacingVars['--spacing-2'],
   },
   containerSpread: {
@@ -164,7 +164,8 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-0-5'],
-    marginTop: 3,
+    justifyContent: 'center',
+    minHeight: SWITCH_HEIGHT,
   },
   description: {
     fontFamily: typographyVars['--font-body'],

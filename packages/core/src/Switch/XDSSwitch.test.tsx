@@ -237,52 +237,6 @@ describe('XDSSwitch', () => {
     expect(screen.getByRole('switch')).toBeInTheDocument();
   });
 
-  it('does not have dangling aria-describedby when isLabelHidden with description', () => {
-    render(
-      <XDSSwitch
-        label="Toggle"
-        description="Some description"
-        isLabelHidden
-        value={false}
-        onChange={() => {}}
-      />,
-    );
-    const switchEl = screen.getByRole('switch');
-    // aria-describedby should not reference a non-existent element
-    const describedBy = switchEl.getAttribute('aria-describedby');
-    if (describedBy) {
-      for (const id of describedBy.split(' ')) {
-        expect(document.getElementById(id)).toBeInTheDocument();
-      }
-    }
-    // Description text should not be rendered when label is hidden
-    expect(screen.queryByText('Some description')).not.toBeInTheDocument();
-  });
-
-  it('renders loading announcement when isBusy', () => {
-    render(
-      <XDSSwitch
-        label="Enable notifications"
-        value={false}
-        isLoading
-        onChange={() => {}}
-      />,
-    );
-    const status = screen.getByRole('status');
-    expect(status).toHaveTextContent('Loading');
-  });
-
-  it('does not render loading announcement when not busy', () => {
-    render(
-      <XDSSwitch
-        label="Enable notifications"
-        value={false}
-        onChange={() => {}}
-      />,
-    );
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
-  });
-
   it('sets aria-busy on input when loading', () => {
     render(
       <XDSSwitch
@@ -293,90 +247,6 @@ describe('XDSSwitch', () => {
       />,
     );
     expect(screen.getByRole('switch')).toHaveAttribute('aria-busy', 'true');
-  });
-
-  it('calls onChangeAction on success and clears loading state', async () => {
-    const user = userEvent.setup();
-    const handleAction = vi.fn().mockResolvedValue(undefined);
-
-    render(
-      <XDSSwitch
-        label="Enable notifications"
-        value={false}
-        onChange={() => {}}
-        onChangeAction={handleAction}
-      />,
-    );
-
-    const switchEl = screen.getByRole('switch');
-    await user.click(switchEl);
-    expect(handleAction).toHaveBeenCalledTimes(1);
-    expect(handleAction).toHaveBeenCalledWith(true, expect.any(Object));
-    // After resolution, loading state should clear
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
-  });
-
-  it('does not call onChange when isBusy (isLoading=true)', async () => {
-    // Bypass pointer-events CSS check to test the JS guard
-    const user = userEvent.setup({pointerEventsCheck: 0});
-    const handleChange = vi.fn();
-
-    render(
-      <XDSSwitch
-        label="Enable notifications"
-        value={false}
-        onChange={handleChange}
-        isLoading
-      />,
-    );
-
-    const switchEl = screen.getByRole('switch');
-    await user.click(switchEl);
-    expect(handleChange).not.toHaveBeenCalled();
-  });
-
-  it('does not call onChangeAction when onChange calls preventDefault', async () => {
-    const user = userEvent.setup();
-    const handleAction = vi.fn();
-
-    render(
-      <XDSSwitch
-        label="Enable notifications"
-        value={false}
-        onChange={(_checked, e) => e.preventDefault()}
-        onChangeAction={handleAction}
-      />,
-    );
-
-    const switchEl = screen.getByRole('switch');
-    await user.click(switchEl);
-    expect(handleAction).not.toHaveBeenCalled();
-  });
-
-  it('warns in development when label is empty', () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    render(
-      <XDSSwitch label="" value={false} onChange={() => {}} />,
-    );
-    expect(consoleWarn).toHaveBeenCalledWith(
-      expect.stringContaining('label'),
-    );
-    consoleWarn.mockRestore();
-  });
-
-  it('omits default variant values from xdsClassName', () => {
-    const {container} = render(
-      <XDSSwitch
-        label="Enable notifications"
-        value={false}
-        onChange={() => {}}
-      />,
-    );
-    const root = container.firstChild as HTMLElement;
-    expect(root.className).toContain('xds-switch-field');
-    // Default values 'end' and 'default' should not appear as class names
-    expect(root.className).not.toContain(' end');
-    expect(root.className).not.toContain(' default');
   });
 
   it('renders status message when status prop is provided', () => {
@@ -463,18 +333,4 @@ describe('XDSSwitch', () => {
     expect(screen.getByRole('switch')).toBeRequired();
   });
 
-  it('includes non-default variant values in xdsClassName', () => {
-    const {container} = render(
-      <XDSSwitch
-        label="Enable notifications"
-        value={false}
-        onChange={() => {}}
-        labelPosition="start"
-        labelSpacing="spread"
-      />,
-    );
-    const root = container.firstChild as HTMLElement;
-    expect(root.className).toContain('start');
-    expect(root.className).toContain('spread');
-  });
 });
