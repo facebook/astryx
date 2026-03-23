@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/Slider.stories.tsx
  */
 
-
 import {
   useId,
   useRef,
@@ -577,7 +576,10 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
         style={positionStyle}
         onKeyDown={e => handleKeyDown(thumbIndex, e)}
         {...mergeProps(
-          xdsClassName('slider-thumb', {orientation}),
+          xdsClassName('slider-thumb', {
+            orientation,
+            disabled: isDisabled ? 'disabled' : null,
+          }),
           stylex.props(
             styles.thumb,
             isHorizontal ? styles.thumbHorizontal : styles.thumbVertical,
@@ -659,7 +661,10 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
       style={style}>
       <div
         {...mergeProps(
-          xdsClassName('slider', {orientation}),
+          xdsClassName('slider', {
+            orientation,
+            disabled: isDisabled ? 'disabled' : null,
+          }),
           stylex.props(styles.sliderRow),
         )}>
         <div

@@ -13,9 +13,9 @@
  * - /apps/storybook/stories/Spinner.stories.tsx
  */
 
-
 import {useEffect, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -89,6 +89,22 @@ export interface XDSSpinnerProps {
    */
   shade?: XDSSpinnerShade;
   /**
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
+   */
+  xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) appended to the root element.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
    * Test ID for the root element.
    */
   'data-testid'?: string;
@@ -111,6 +127,8 @@ export interface XDSSpinnerProps {
 export function XDSSpinner({
   size = 'md',
   shade = 'default',
+  xstyle,
+  className,
   'data-testid': testId,
   ref,
 }: XDSSpinnerProps) {
@@ -179,8 +197,9 @@ export function XDSSpinner({
       aria-label="Loading"
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('spinner', {size}),
-        stylex.props(styles.spinner),
+        xdsClassName('spinner', {size, shade}),
+        stylex.props(styles.spinner, xstyle),
+        className,
       )}
       style={{width: frameSize, height: frameSize}}>
       <canvas ref={canvasRef} {...stylex.props(styles.canvas)} />
