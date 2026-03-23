@@ -1,7 +1,9 @@
+'use client';
+
 /**
  * @file XDSTextArea.tsx
  * @input Uses React, useId, ChangeEvent, ClipboardEvent, FocusEvent, XDSField, XDSIcon, XDSSpinner
- * @output Exports XDSTextArea component, XDSTextAreaProps
+ * @output Exports XDSTextArea component, XDSTextAreaProps, XDSTextAreaStatus, XDSTextAreaStatusType
  * @position Core implementation; consumed by index.ts, tested by XDSTextArea.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -10,8 +12,6 @@
  * - /packages/core/src/TextArea/index.ts (exports if types change)
  * - /apps/storybook/stories/TextArea.stories.tsx (storybook stories)
  */
-
-'use client';
 
 import {
   useId,
@@ -28,8 +28,8 @@ import {
   colorVars,
   spacingVars,
   typographyVars,
-  textSizeVars,
   lineHeightVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {
   XDSField,
@@ -56,7 +56,7 @@ const styles = stylex.create({
     borderStyle: 'none',
     padding: 0,
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-body-size'],
     lineHeight: lineHeightVars['--leading-base'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
@@ -75,7 +75,7 @@ const styles = stylex.create({
     justifyContent: 'flex-end',
     marginTop: spacingVars['--spacing-1'],
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-xsm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     color: colorVars['--color-text-secondary'],
   },
   counterError: {
@@ -95,21 +95,6 @@ export interface XDSTextAreaStatus {
    */
   message?: string;
 }
-
-const statusIconMap: Record<XDSTextAreaStatusType, XDSIconName> = {
-  warning: 'warning',
-  error: 'xCircle',
-  success: 'checkCircle',
-};
-
-const statusIconColorMap: Record<
-  XDSTextAreaStatusType,
-  'warning' | 'negative' | 'positive'
-> = {
-  warning: 'warning',
-  error: 'negative',
-  success: 'positive',
-};
 
 export interface XDSTextAreaProps {
   /** Ref forwarded to the root element */
@@ -270,6 +255,21 @@ export function XDSTextArea({
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
+
+  const statusIconMap: Record<XDSTextAreaStatusType, XDSIconName> = {
+    warning: 'warning',
+    error: 'xCircle',
+    success: 'checkCircle',
+  };
+
+  const statusIconColorMap: Record<
+    XDSTextAreaStatusType,
+    'warning' | 'negative' | 'positive'
+  > = {
+    warning: 'warning',
+    error: 'negative',
+    success: 'positive',
+  };
 
   const ariaDescribedBy =
     [
