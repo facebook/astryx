@@ -46,10 +46,10 @@ import {
   lineHeightDefaults,
   fontWeightDefaults,
   sizeDefaults,
-  elevationDefaults,
+  shadowDefaults,
   transitionDefaults,
 } from '@xds/core/theme';
-import {defaultIconRegistry} from '@xds/theme-default/icons';
+import {defaultIconRegistry} from '@xds/theme-default';
 
 // =============================================================================
 // Token Groups for the Editor
@@ -90,7 +90,7 @@ const TOKEN_GROUPS = {
   elevation: {
     label: 'Elevation',
     description: 'Shadow and elevation tokens',
-    tokens: elevationDefaults,
+    tokens: shadowDefaults,
   },
   transition: {
     label: 'Transition',
@@ -1320,7 +1320,7 @@ function ThemeEditorComponent() {
       ...lineHeightDefaults,
       ...fontWeightDefaults,
       ...sizeDefaults,
-      ...elevationDefaults,
+      ...shadowDefaults,
       ...transitionDefaults,
     }),
     [],
