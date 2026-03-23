@@ -22,7 +22,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-selector', visualProps: ['size']},
+      {className: 'xds-selector', visualProps: ['size', 'status']},
       {className: 'xds-selector-option'},
     ],
   },
@@ -255,7 +255,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-selector', visualProps: ['size']},
+      {className: 'xds-selector', visualProps: ['size', 'status']},
       {className: 'xds-selector-option'},
     ],
   },
