@@ -126,21 +126,6 @@ export type XDSTimeInputSize = keyof typeof sizeStyles;
 
 export type XDSTimeInputHourFormat = '12h' | '24h';
 
-const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
-  warning: 'warning',
-  error: 'xCircle',
-  success: 'checkCircle',
-};
-
-const statusIconColorMap: Record<
-  XDSInputStatusType,
-  'warning' | 'negative' | 'positive'
-> = {
-  warning: 'warning',
-  error: 'negative',
-  success: 'positive',
-};
-
 // Re-export shared types for convenience
 
 export type {
@@ -269,7 +254,6 @@ export interface XDSTimeInputProps
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
-
 }
 
 /**
@@ -323,6 +307,22 @@ export function XDSTimeInput({
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
+
+  // Status icon mapping
+  const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
+    warning: 'warning',
+    error: 'xCircle',
+    success: 'checkCircle',
+  };
+
+  const statusIconColorMap: Record<
+    XDSInputStatusType,
+    'warning' | 'negative' | 'positive'
+  > = {
+    warning: 'warning',
+    error: 'negative',
+    success: 'positive',
+  };
 
   // Warn on impossible min > max range
   if (process.env.NODE_ENV !== 'production' && min && max && compareTime(min, max) > 0) {
