@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSBaseTypeahead.tsx
  * @input Uses React, StyleX, useXDSLayer, XDSTypeaheadItem
@@ -12,8 +14,6 @@
  * - /packages/core/src/Typeahead/README.md
  * - /packages/core/src/Typeahead/index.ts
  */
-
-'use client';
 
 import React, {
   useCallback,
@@ -35,10 +35,10 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
-  textSizeVars,
   lineHeightVars,
   typographyVars,
   fontWeightVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {XDSSearchableItem, XDSSearchSource} from './types';
 
@@ -168,7 +168,7 @@ const styles = stylex.create({
     borderStyle: 'none',
     padding: 0,
     fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-body-size'],
     lineHeight: lineHeightVars['--leading-base'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
@@ -223,7 +223,7 @@ const styles = stylex.create({
   emptyState: {
     padding: spacingVars['--spacing-3'],
     textAlign: 'center',
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     color: colorVars['--color-text-secondary'],
   },
   loadingSpinner: {
