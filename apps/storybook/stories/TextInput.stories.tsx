@@ -71,7 +71,7 @@ type Story = StoryObj<typeof XDSTextInput>;
 export const Default: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextInput {...args} value={value} onChange={(val) => setValue(val)} />;
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Name',
@@ -82,7 +82,7 @@ export const Default: Story = {
 export const WithDescription: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextInput {...args} value={value} onChange={(val) => setValue(val)} />;
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Email',
@@ -94,7 +94,7 @@ export const WithDescription: Story = {
 export const WithHiddenLabel: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextInput {...args} value={value} onChange={(val) => setValue(val)} />;
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Search',
@@ -106,7 +106,7 @@ export const WithHiddenLabel: Story = {
 export const WithValue: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? 'Hello, world!');
-    return <XDSTextInput {...args} value={value} onChange={(val) => setValue(val)} />;
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Greeting',
@@ -189,7 +189,7 @@ export const AllVariations: Story = {
 export const OptionalField: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextInput {...args} value={value} onChange={(val) => setValue(val)} />;
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Nickname',
@@ -201,7 +201,7 @@ export const OptionalField: Story = {
 export const RequiredField: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextInput {...args} value={value} onChange={(val) => setValue(val)} />;
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Username',
@@ -213,7 +213,7 @@ export const RequiredField: Story = {
 export const DescriptionWithOptional: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextInput {...args} value={value} onChange={(val) => setValue(val)} />;
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Bio',
@@ -226,7 +226,7 @@ export const DescriptionWithOptional: Story = {
 export const Disabled: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? 'Cannot edit this');
-    return <XDSTextInput {...args} value={value} onChange={(val) => setValue(val)} />;
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Locked Field',
@@ -238,7 +238,7 @@ export const Disabled: Story = {
 export const WithStartIcon: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextInput {...args} value={value} onChange={(val) => setValue(val)} />;
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Search',
@@ -250,7 +250,7 @@ export const WithStartIcon: Story = {
 export const WithStartIconAndSmallSize: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextInput {...args} value={value} onChange={(val) => setValue(val)} />;
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Search',
@@ -341,7 +341,7 @@ export const StartIconVariations: Story = {
 export const ErrorStatus: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? 'invalid@');
-    return <XDSTextInput {...args} value={value} onChange={(val) => setValue(val)} />;
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Email',
@@ -353,7 +353,7 @@ export const ErrorStatus: Story = {
 export const WarningStatus: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? 'user123');
-    return <XDSTextInput {...args} value={value} onChange={(val) => setValue(val)} />;
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Username',
@@ -365,7 +365,7 @@ export const WarningStatus: Story = {
 export const SuccessStatus: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? 'validuser');
-    return <XDSTextInput {...args} value={value} onChange={(val) => setValue(val)} />;
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Username',
@@ -377,7 +377,7 @@ export const SuccessStatus: Story = {
 export const StatusWithoutMessage: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? 'test');
-    return <XDSTextInput {...args} value={value} onChange={(val) => setValue(val)} />;
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Field',
@@ -432,7 +432,7 @@ export const StatusVariations: Story = {
 export const WithTooltip: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextInput {...args} value={value} onChange={(val) => setValue(val)} />;
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'API Key',
@@ -444,7 +444,7 @@ export const WithTooltip: Story = {
 export const TooltipWithOptional: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextInput {...args} value={value} onChange={(val) => setValue(val)} />;
+    return <XDSTextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Webhook URL',

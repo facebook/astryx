@@ -42,21 +42,6 @@ import {
 import {XDSIcon, type XDSIconType} from '../Icon';
 import {XDSSpinner} from '../Spinner';
 
-const STATUS_ICON_MAP: Record<XDSInputStatusType, XDSIconName> = {
-  warning: 'warning',
-  error: 'xCircle',
-  success: 'checkCircle',
-};
-
-const STATUS_ICON_COLOR_MAP: Record<
-  XDSInputStatusType,
-  'warning' | 'negative' | 'positive'
-> = {
-  warning: 'warning',
-  error: 'negative',
-  success: 'positive',
-};
-
 const styles = stylex.create({
   wrapper: {
     zIndex: 1,
@@ -258,6 +243,21 @@ export function XDSTextInput({
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
 
+  const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
+    warning: 'warning',
+    error: 'xCircle',
+    success: 'checkCircle',
+  };
+
+  const statusIconColorMap: Record<
+    XDSInputStatusType,
+    'warning' | 'negative' | 'positive'
+  > = {
+    warning: 'warning',
+    error: 'negative',
+    success: 'positive',
+  };
+
   const effectiveRequired = isRequired && !isOptional;
 
   const ariaDescribedBy =
@@ -354,9 +354,9 @@ export function XDSTextInput({
         {isBusy && <XDSSpinner size="sm" />}
         {!isBusy && status && (
           <XDSIcon
-            icon={STATUS_ICON_MAP[status.type]}
+            icon={statusIconMap[status.type]}
             size="md"
-            color={STATUS_ICON_COLOR_MAP[status.type]}
+            color={statusIconColorMap[status.type]}
           />
         )}
       </div>
