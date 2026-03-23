@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSPowerSearch.tsx
  * @input PowerSearchConfig, filters, onChange
@@ -9,7 +11,6 @@
  * - /packages/core/src/PowerSearch/XDSPowerSearch.doc.mjs
  */
 
-'use client';
 
 import React, {
   useCallback,
@@ -31,9 +32,8 @@ import {useXDSLayer} from '../Layer';
 import {
   spacingVars,
   colorVars,
-  textSizeVars,
   lineHeightVars,
-  fontWeightVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {useInternalConfig} from './useInternalConfig';
 import {usePowerSearchSource} from './usePowerSearchSource';
@@ -79,7 +79,7 @@ const OPERATOR_VALUE_TYPE_TO_ICON: Record<string, XDSIconName> = {
 
 const tokenValueStyles = stylex.create({
   value: {
-    fontWeight: fontWeightVars['--font-weight-bold'],
+    fontWeight: 'bold',
   },
 });
 
@@ -93,7 +93,7 @@ const popoverLayerStyles = stylex.create({
 
 const resultCountStyles = stylex.create({
   text: {
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-snug'],
     color: colorVars['--color-text-secondary'],
     whiteSpace: 'nowrap',

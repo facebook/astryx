@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file PowerSearchValueEditor.tsx
  * @input OperatorValue, FilterValue, onChange callback
@@ -8,7 +10,6 @@
  * - /packages/core/src/PowerSearch/index.ts
  */
 
-'use client';
 
 import React, {useCallback, useMemo} from 'react';
 import type {

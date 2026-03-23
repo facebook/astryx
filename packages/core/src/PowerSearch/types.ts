@@ -359,4 +359,3 @@ export interface PowerSearchAuxData {
 }
 
 export type PowerSearchItem = XDSSearchableItem<PowerSearchAuxData>;
-

@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file useInternalConfig.ts
  * @input PowerSearchConfig

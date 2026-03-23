@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file PowerSearchEditPopover.tsx
  * @input InternalConfig, PartialFilter
@@ -8,7 +10,6 @@
  * - /packages/core/src/PowerSearch/index.ts
  */
 
-'use client';
 
 import React, {useState, useCallback, useEffect, useMemo, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -22,7 +23,7 @@ import {
   colorVars,
   radiusVars,
   shadowVars,
-  textSizeVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {useFocusTrap} from '../hooks/useFocusTrap';
 import {PowerSearchValueEditor} from './PowerSearchValueEditor';
@@ -63,7 +64,7 @@ const styles = stylex.create({
   },
   // Nested editor styles
   nestedRootLabel: {
-    fontSize: textSizeVars['--text-base'],
+    fontSize: typeScaleVars['--text-label-size'],
   },
   nestedFieldSelector: {
     flexShrink: 0,
@@ -476,7 +477,7 @@ function NestedEditor({
             id: `${stableId}-add`,
             label: (
               <XDSButton
-                label={'+ Add filter'}
+                label="+ Add filter"
                 onClick={() => handleAdd(itemPath)}
                 variant="ghost"
                 size="sm"
@@ -499,7 +500,7 @@ function NestedEditor({
           children,
           endContent: !isReadOnly ? (
             <XDSButton
-              label={'Remove filter'}
+              label="Remove filter"
               icon={<XDSIcon icon="close" size="sm" />}
               variant="ghost"
               size="sm"
@@ -522,7 +523,7 @@ function NestedEditor({
         ),
         endContent: !isReadOnly ? (
           <XDSButton
-            label={'Remove filter'}
+            label="Remove filter"
             icon={<XDSIcon icon="close" size="sm" />}
             variant="ghost"
             size="sm"
@@ -542,7 +543,7 @@ function NestedEditor({
       id: 'add-filter',
       label: (
         <XDSButton
-          label={'+ Add filter'}
+          label="+ Add filter"
           onClick={() => handleAdd([])}
           variant="ghost"
           size="sm"
