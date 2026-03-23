@@ -19,11 +19,11 @@
  *    import '@xds/core/reset.css';
  *
  * 2. Combine with theme and typography:
- *    import '@xds/core/reset.css';        // @layer xds-reset  — clean slate
+ *    import '@xds/core/reset.css';        // @layer reset  — clean slate
  *    import '@xds/core/xds.css';           // @layer xds-base — component styles
  *    import '@xds/theme-default/theme.css'; // @layer xds-theme — theme overrides
  *
- * Layer order: xds-reset → xds-base → xds-theme
+ * Layer order: reset → xds-base → xds-theme
  * Consumer styles (unlayered) always override all XDS layers.
  * The reset has the lowest priority and can be overridden by any other layer.
  *
@@ -34,7 +34,7 @@
  * - modern-normalize
  */
 
-@layer xds-reset {
+@layer reset {
 
   /* ===========================================================================
      Box Model
