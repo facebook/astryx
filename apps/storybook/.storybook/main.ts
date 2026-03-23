@@ -67,8 +67,8 @@ const config: StorybookConfig = {
         // In Vite dev mode the StyleX unplugin's transformIndexHtml injects
         // a <link> for /virtual:stylex.css before preview.tsx CSS imports
         // are processed, which would otherwise cause priority1-9 layers to
-        // be declared first (lowest priority) and reset/typography last
-        // (highest priority) — the reverse of what we need.
+        // be declared first (lowest priority) and xds-reset last
+        // (highest priority), making the reset stomp component borders.
         {
           name: 'xds-css-layer-order',
           transformIndexHtml() {
@@ -76,7 +76,7 @@ const config: StorybookConfig = {
               {
                 tag: 'style',
                 children:
-                  '@layer reset, typography, priority1, priority2, priority3, priority4, priority5, priority6, priority7, priority8, priority9;',
+                  '@layer xds-reset, priority1, priority2, priority3, priority4, priority5, priority6, priority7, priority8, priority9, xds-theme;',
                 injectTo: 'head-prepend',
               },
             ];
