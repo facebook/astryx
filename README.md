@@ -39,7 +39,7 @@ import '@xds/core/reset.css'; // Base reset — box-sizing, margins, etc.
 import '@xds/core/typography.css'; // Prose styles — headings, lists, code, etc.
 ```
 
-The reset uses `@layer reset` and typography uses `@layer typography`, so they won't conflict with component styles.
+The reset uses `@layer reset`, so it won't conflict with component styles.
 
 ### 2. Set Up the Theme Provider
 

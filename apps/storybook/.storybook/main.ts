@@ -76,7 +76,7 @@ const config: StorybookConfig = {
               {
                 tag: 'style',
                 children:
-                  '@layer reset, typography, priority1, priority2, priority3, priority4, priority5, priority6, priority7, priority8, priority9;',
+                  '@layer reset, priority1, priority2, priority3, priority4, priority5, priority6, priority7, priority8, priority9;',
                 injectTo: 'head-prepend',
               },
             ];
