@@ -159,6 +159,14 @@ describe('parseDateInput', () => {
       expect(parseDateInput('February 29, 2025')).toBeNull(); // Not a leap year
       expect(parseDateInput('February 30, 2024')).toBeNull();
     });
+
+    it('preserves years 0-99 literally instead of mapping to 1900s', () => {
+      expect(parseDateInput('01/01/0050')).toBe('0050-01-01');
+    });
+
+    it('rejects mixed separators', () => {
+      expect(parseDateInput('1/25.2026')).toBeNull();
+    });
   });
 });
 

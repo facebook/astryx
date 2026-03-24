@@ -97,10 +97,12 @@ export function parseDateInput(input: string): ISODateString | null {
 
   // 4. Try numeric formats with separators (/, -, .) WITH year
   const numericWithYearMatch = trimmed.match(
-    /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/,
+    /^(\d{1,2})([-/.])(\d{1,2})([-/.])(\d{4})$/,
   );
   if (numericWithYearMatch) {
-    const [, first, second, year] = numericWithYearMatch;
+    const [, first, sep1, second, sep2, year] = numericWithYearMatch;
+    // Reject mixed separators (e.g., "1/25.2026")
+    if (sep1 !== sep2) return null;
     return parseNumericDate(+first, +second, +year);
   }
 
@@ -207,6 +209,8 @@ function createISODate(
   }
 
   const date = new Date(year, month - 1, day);
+  // new Date(year, ...) treats 0-99 as 1900s; fix with setFullYear
+  date.setFullYear(year);
 
   // Validate the date didn't overflow (e.g., Feb 30 → Mar 2)
   if (
@@ -224,7 +228,7 @@ function createISODate(
  * Converts a Date object to ISO date string.
  */
 export function dateToISO(date: Date): ISODateString {
-  const year = date.getFullYear();
+  const year = String(date.getFullYear()).padStart(4, '0');
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}` as ISODateString;
@@ -249,7 +253,7 @@ export function parseISO(iso: ISODateString): Date {
  */
 export function formatDisplayDate(iso: ISODateString): string {
   const date = parseISO(iso);
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(undefined, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',

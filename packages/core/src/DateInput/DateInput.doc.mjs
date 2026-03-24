@@ -111,6 +111,17 @@ export const docs = {
       description: 'Callback invoked when the selected date changes.',
     },
     {
+      name: 'onChangeAction',
+      type: '(value: ISODateString | undefined) => void | Promise<void>',
+      description: 'Async action fired after onChange. Drives optimistic UI updates via useTransition.',
+    },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description: 'Whether the input is in a loading state. Disables interaction and shows a spinner.',
+      default: 'false',
+    },
+    {
       name: 'min',
       type: 'ISODateString',
       description: 'Minimum selectable date (YYYY-MM-DD).',
@@ -145,6 +156,11 @@ export const docs = {
         'Status indicator object for error, warning, or success states with a message.',
     },
     {
+      name: 'labelTooltip',
+      type: 'string',
+      description: 'Tooltip text displayed via an info icon at the end of the label.',
+    },
+    {
       name: 'numberOfMonths',
       type: '1 | 2',
       description:
@@ -159,7 +175,7 @@ export const docs = {
     },
   ],
   keyboard:
-    'Tab moves between input and calendar icon button; Enter/Space on icon opens the calendar and moves focus into it; Escape closes the calendar popover; Arrow keys navigate between days; Page Up/Down navigate between months.',
+    'Tab moves between input and calendar icon button; Enter/Space on icon opens/closes the calendar; Escape closes the calendar popover; Arrow keys navigate between days; Page Up/Down navigate between months.',
   notes: [
     'The text input accepts multiple date formats: ISO (2026-01-28), US (01/28/2026, 1/28/2026), and written (Jan 28, 2026 / January 28 2026).',
     'Invalid input reverts to the previous valid value on blur.',
@@ -283,6 +299,17 @@ export const docsZh = {
       description: '选中日期变更时调用的回调。',
     },
     {
+      name: 'onChangeAction',
+      type: '(value: ISODateString | undefined) => void | Promise<void>',
+      description: '在 onChange 之后触发的异步操作。通过 useTransition 驱动乐观更新。',
+    },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description: '输入框是否处于加载状态。禁用交互并显示加载指示器。',
+      default: 'false',
+    },
+    {
       name: 'min',
       type: 'ISODateString',
       description: '可选择的最早日期（YYYY-MM-DD）。',
@@ -317,6 +344,11 @@ export const docsZh = {
         '错误、警告或成功状态的状态指示对象，附带消息。',
     },
     {
+      name: 'labelTooltip',
+      type: 'string',
+      description: '通过标签末尾的信息图标显示的提示文本。',
+    },
+    {
       name: 'numberOfMonths',
       type: '1 | 2',
       description:
@@ -331,7 +363,7 @@ export const docsZh = {
     },
   ],
   keyboard:
-    'Tab 在输入框和日历图标按钮间移动；Enter/Space 点击图标打开日历并将焦点移入；Escape 关闭日历弹出层；方向键在日期间导航；Page Up/Down 在月份间导航。',
+    'Tab 在输入框和日历图标按钮间移动；Enter/Space 点击图标打开/关闭日历；Escape 关闭日历弹出层；方向键在日期间导航；Page Up/Down 在月份间导航。',
   notes: [
     '文本输入接受多种日期格式：ISO（2026-01-28）、美式（01/28/2026、1/28/2026）和书面格式（Jan 28, 2026 / January 28 2026）。',
     '无效输入在失焦时恢复为上一个有效值。',
@@ -354,7 +386,7 @@ export const docsDense = {
     'full keyboard nav, focus trapping, screen reader support',
     'built on XDSField for consistent label, description, validation',
   ],
-  keyboard: 'Tab=move between input+calendar icon; Enter/Space on icon=open calendar; Escape=close; Arrow keys=navigate days; PageUp/Down=navigate months',
+  keyboard: 'Tab=move between input+calendar icon; Enter/Space on icon=open/close calendar; Escape=close; Arrow keys=navigate days; PageUp/Down=navigate months',
   notes: [
     'accepts multiple date formats: ISO (2026-01-28), US (01/28/2026, 1/28/2026), written (Jan 28, 2026 / January 28 2026)',
     'invalid input reverts to previous valid value on blur',
@@ -368,12 +400,15 @@ export const docsDense = {
     isDisabled: 'disable input+calendar',
     value: 'selected date YYYY-MM-DD',
     onChange: 'callback on date change',
+    onChangeAction: 'async action after onChange; drives optimistic UI',
+    isLoading: 'loading state; disables interaction, shows spinner',
     min: 'min selectable date (YYYY-MM-DD)',
     max: 'max selectable date (YYYY-MM-DD)',
     dateConstraints: 'custom constraint fns to disable specific dates',
     placeholder: 'placeholder text in input',
     size: 'input control size',
     status: 'error/warning/success status w/ message',
+    labelTooltip: 'tooltip text via info icon at label end',
     numberOfMonths: 'months shown simultaneously in calendar popover',
     xstyle: 'StyleX styles for layout; must be stylex.create() value',
   },
