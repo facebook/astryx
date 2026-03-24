@@ -201,4 +201,34 @@ describe('XDSCheckboxInput', () => {
     );
     expect(screen.getByRole('checkbox')).toHaveAttribute('aria-busy', 'true');
   });
+
+  it('sets aria-checked="mixed" for indeterminate state', () => {
+    render(
+      <XDSCheckboxInput
+        label="Select all"
+        value="indeterminate"
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('checkbox')).toHaveAttribute(
+      'aria-checked',
+      'mixed',
+    );
+  });
+
+  it('renders status message and sets aria-invalid for error', () => {
+    render(
+      <XDSCheckboxInput
+        label="Accept terms"
+        value={false}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required field'}}
+      />,
+    );
+    expect(screen.getByText('Required field')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+  });
 });

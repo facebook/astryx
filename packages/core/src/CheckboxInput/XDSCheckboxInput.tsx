@@ -13,9 +13,9 @@
  * - /apps/storybook/stories/CheckboxInput.stories.tsx (storybook stories)
  */
 
-
 import {
   useId,
+  useCallback,
   useOptimistic,
   useTransition,
   type ChangeEvent,
@@ -29,7 +29,9 @@ import {
   durationVars,
   easeVars,
   typographyVars,
-  typeScaleVars,
+  textSizeVars,
+  lineHeightVars,
+  fontWeightVars,
 } from '../theme/tokens.stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSFieldLabel} from '../Field/XDSFieldLabel';
@@ -122,7 +124,18 @@ const styles = stylex.create({
   },
   checkboxDisabled: {
     opacity: 0.5,
-    borderColor: colorVars['--color-border'],
+    borderColor: {
+      default: colorVars['--color-border'],
+      [stylex.when.ancestor(':hover')]: {
+        '@media (hover: hover)': colorVars['--color-border'],
+      },
+    },
+    backgroundColor: {
+      default: 'unset',
+      [stylex.when.ancestor(':hover')]: {
+        '@media (hover: hover)': 'unset',
+      },
+    },
   },
   checkboxDisabledUnchecked: {
     backgroundColor: colorVars['--color-muted'],
@@ -149,7 +162,9 @@ const styles = stylex.create({
   },
   description: {
     fontFamily: typographyVars['--font-body'],
-    fontSize: typeScaleVars['--text-supporting-size'],
+    fontSize: textSizeVars['--text-xsm'],
+    lineHeight: lineHeightVars['--leading-relaxed'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
   },
 });
@@ -328,6 +343,16 @@ export function XDSCheckboxInput({
   const isChecked = optimisticValue === true;
   const isCheckedOrIndeterminate = isChecked || isIndeterminate;
 
+  // Sync the native indeterminate DOM property (can't be set via JSX attribute)
+  const indeterminateRef = useCallback(
+    (el: HTMLInputElement | null) => {
+      if (el) el.indeterminate = isIndeterminate;
+      if (typeof ref === 'function') ref(el);
+      else if (ref) ref.current = el;
+    },
+    [isIndeterminate, ref],
+  );
+
   // Build aria-describedby from description and status message
   // Only include descriptionID when the element actually renders
   const describedByParts: string[] = [];
@@ -352,7 +377,7 @@ export function XDSCheckboxInput({
         )}>
         <div {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}>
           <input
-            ref={ref}
+            ref={indeterminateRef}
             id={id}
             type="checkbox"
             checked={isChecked}
@@ -384,10 +409,7 @@ export function XDSCheckboxInput({
           <div
             aria-hidden="true"
             {...mergeProps(
-              xdsClassName('checkbox', {
-                checked: isCheckedOrIndeterminate ? 'checked' : null,
-                disabled: isDisabled ? 'disabled' : null,
-              }),
+              xdsClassName('checkbox'),
               stylex.props(
                 styles.checkbox,
                 checkboxSizeStyles[size],

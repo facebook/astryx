@@ -188,7 +188,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'xds-checkbox-input', visualProps: ['size']},
-      {className: 'xds-checkbox', states: ['checked', 'disabled']},
+      {className: 'xds-checkbox'},
     ],
   },
   notes: [
@@ -384,7 +384,7 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'xds-checkbox-input', visualProps: ['size']},
-      {className: 'xds-checkbox', states: ['checked', 'disabled']},
+      {className: 'xds-checkbox'},
     ],
   },
   notes: [
