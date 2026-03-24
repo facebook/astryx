@@ -59,7 +59,7 @@ const variantStyles = stylex.create({
     backgroundColor: 'transparent',
   },
   wash: {
-    backgroundColor: colorVars['--color-wash'],
+    backgroundColor: colorVars['--color-muted'],
   },
 });
 

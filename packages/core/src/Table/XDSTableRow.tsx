@@ -11,7 +11,6 @@
  * - /packages/core/src/Table/index.ts
  */
 
-
 import {useContext, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
@@ -36,7 +35,7 @@ const stripedRowStyles = stylex.create({
   row: {
     backgroundColor: {
       default: null,
-      ':nth-child(even)': colorVars['--color-wash'],
+      ':nth-child(even)': colorVars['--color-muted'],
     },
   },
 });
@@ -59,7 +58,7 @@ const stripedHoverRowStyles = stylex.create({
   row: {
     backgroundColor: {
       default: null,
-      ':nth-child(even)': colorVars['--color-wash'],
+      ':nth-child(even)': colorVars['--color-muted'],
       ':hover': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },

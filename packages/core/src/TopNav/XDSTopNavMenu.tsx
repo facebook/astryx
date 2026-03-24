@@ -140,7 +140,7 @@ const styles = stylex.create({
     width: 40,
     height: 40,
     borderRadius: radiusVars['--radius-2'],
-    backgroundColor: colorVars['--color-muted'],
+    backgroundColor: colorVars['--color-secondary'],
     flexShrink: 0,
   },
   menuItemContent: {

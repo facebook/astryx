@@ -37,7 +37,7 @@ const styles = stylex.create({
     position: 'relative',
     display: 'flex',
     borderRadius: radiusVars['--radius-2'],
-    backgroundColor: colorVars['--color-wash'],
+    backgroundColor: colorVars['--color-muted'],
     border: `1px solid ${colorVars['--color-border']}`,
     overflow: 'hidden',
   },

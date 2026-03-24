@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/TopNav.stories.tsx
  */
 
-
 import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
@@ -73,11 +72,11 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     backgroundColor: {
-      default: colorVars['--color-muted'],
+      default: colorVars['--color-secondary'],
       ':hover': {
-        '@media (hover: hover)': colorVars['--color-muted'],
+        '@media (hover: hover)': colorVars['--color-secondary'],
       },
-      ':active': colorVars['--color-muted'],
+      ':active': colorVars['--color-secondary'],
     },
   },
   iconOnly: {
