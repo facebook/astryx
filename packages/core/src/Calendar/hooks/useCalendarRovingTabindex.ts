@@ -10,7 +10,6 @@
  * - /packages/core/src/Calendar/hooks/index.ts
  */
 
-
 import {useMemo} from 'react';
 import type {ISODateString} from '../XDSCalendar';
 import type {CalendarDay} from './useCalendarDays';
@@ -29,6 +28,8 @@ export interface UseCalendarRovingTabindexOptions {
   month: number;
   /** Function to check if a date is disabled */
   isDateDisabled: (date: Date) => boolean;
+  /** Currently selected date (if any) */
+  selectedDate?: Date | null;
 }
 
 /**
@@ -80,20 +81,29 @@ function dateToISO(date: Date): ISODateString {
 export function useCalendarRovingTabindex(
   options: UseCalendarRovingTabindexOptions,
 ): UseCalendarRovingTabindexReturn {
-  const {days, today, year, month, isDateDisabled} = options;
+  const {days, today, year, month, isDateDisabled, selectedDate} = options;
 
   // Determine which day should be tabbable
   const tabbableDate = useMemo(() => {
-    // Check if today is in this month
+    // Priority 1: Selected date if visible in this month and enabled
+    if (selectedDate) {
+      const isSelectedInMonth =
+        selectedDate.getFullYear() === year &&
+        selectedDate.getMonth() === month;
+      if (isSelectedInMonth && !isDateDisabled(selectedDate)) {
+        return dateToISO(selectedDate);
+      }
+    }
+
+    // Priority 2: Today if visible in this month and enabled
     const isTodayInMonth =
       today.getFullYear() === year && today.getMonth() === month;
 
-    // If today is in this month and enabled, use it
     if (isTodayInMonth && !isDateDisabled(today)) {
       return dateToISO(today);
     }
 
-    // Otherwise, find first enabled day in this month
+    // Priority 3: First enabled day in this month
     for (const day of days) {
       if (!day.isOutside && !isDateDisabled(day.date)) {
         return day.iso;
@@ -101,7 +111,7 @@ export function useCalendarRovingTabindex(
     }
 
     return null;
-  }, [days, today, year, month, isDateDisabled]);
+  }, [days, today, year, month, isDateDisabled, selectedDate]);
 
   // Check if a specific date is tabbable
   const isTabbable = useMemo(() => {

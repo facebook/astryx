@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/Calendar.stories.tsx (storybook stories)
  */
 
-
 import {
   useState,
   useMemo,
@@ -285,6 +284,31 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
     return visibleMonths.map(m => formatter.format(m)).join(' – ');
   }, [visibleMonths, numberOfMonths]);
 
+  // Determine if prev/next navigation is possible based on min/max
+  const canNavigatePrevious = useMemo(() => {
+    if (!min) return true;
+    const minDate = parseISO(min);
+    // Can't go back if min is in the current focus month
+    return (
+      minDate.getFullYear() < baseMonth.getFullYear() ||
+      (minDate.getFullYear() === baseMonth.getFullYear() &&
+        minDate.getMonth() < baseMonth.getMonth())
+    );
+  }, [min, baseMonth]);
+
+  const canNavigateNext = useMemo(() => {
+    if (!max) return true;
+    const maxDate = parseISO(max);
+    // Check against the last visible month, not just baseMonth
+    const lastVisibleMonth = new Date(baseMonth);
+    lastVisibleMonth.setMonth(baseMonth.getMonth() + numberOfMonths - 1);
+    return (
+      maxDate.getFullYear() > lastVisibleMonth.getFullYear() ||
+      (maxDate.getFullYear() === lastVisibleMonth.getFullYear() &&
+        maxDate.getMonth() > lastVisibleMonth.getMonth())
+    );
+  }, [max, baseMonth, numberOfMonths]);
+
   // Navigation handlers
   const navigateMonth = useCallback(
     (delta: number, focusedDate?: ISODateString, offset?: number) => {
@@ -307,6 +331,22 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
       }
     },
     [baseMonth, onFocusDateChange],
+  );
+
+  // Escape key handler to cancel range selection
+  const handleCalendarKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (
+        mode === 'range' &&
+        rangeSelectionStart !== null &&
+        e.key === 'Escape'
+      ) {
+        setRangeSelectionStart(null);
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    },
+    [mode, rangeSelectionStart],
   );
 
   // Day click handler
@@ -355,6 +395,7 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
         className,
         style,
       )}
+      onKeyDown={handleCalendarKeyDown}
       {...rest}>
       {/* Header with navigation */}
       <div {...stylex.props(calendarStyles.header)}>
@@ -363,6 +404,7 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
           variant="ghost"
           icon={<XDSIcon icon="chevronLeft" size="sm" color="inherit" />}
           onClick={() => navigateMonth(-1)}
+          isDisabled={!canNavigatePrevious}
         />
 
         <span {...stylex.props(calendarStyles.monthYearLabel)}>
@@ -374,6 +416,7 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
           variant="ghost"
           icon={<XDSIcon icon="chevronRight" size="sm" color="inherit" />}
           onClick={() => navigateMonth(1)}
+          isDisabled={!canNavigateNext}
         />
       </div>
 
@@ -478,12 +521,21 @@ function MonthGrid({
     dateConstraints,
   });
 
+  // Parse selected date for roving tabindex priority
+  const selectedDateForTabindex = useMemo(() => {
+    if (mode === 'single' && value && typeof value === 'string') {
+      return parseISO(value as ISODateString);
+    }
+    return null;
+  }, [mode, value]);
+
   const {isTabbable} = useCalendarRovingTabindex({
     days,
     today,
     year,
     month: monthIndex,
     isDateDisabled,
+    selectedDate: selectedDateForTabindex,
   });
 
   // Helper to get the focused date from the currently focused element
@@ -635,7 +687,10 @@ function MonthGrid({
           />
         )}
         {dayNames.map((name, i) => (
-          <div key={i} {...stylex.props(monthGridStyles.dayName)}>
+          <div
+            key={i}
+            role="columnheader"
+            {...stylex.props(monthGridStyles.dayName)}>
             {name}
           </div>
         ))}
@@ -736,6 +791,9 @@ function DayCell({
     return <div {...stylex.props(dayCellStyles.cell)} />;
   }
 
+  // Outside days should not be clickable even when visible
+  const effectivelyDisabled = isDisabled || isOutside;
+
   const isToday = isSameDay(date, today);
   const isSelected =
     mode === 'single' && selectedDate && isSameDay(date, selectedDate);
@@ -805,20 +863,21 @@ function DayCell({
       <button
         type="button"
         role="gridcell"
+        data-date={day.iso}
         aria-label={formatAccessibleDate(date)}
         aria-selected={isSelected || isInRange || undefined}
-        aria-disabled={isDisabled || undefined}
+        aria-disabled={effectivelyDisabled || undefined}
         disabled={isDisabled}
         tabIndex={isTabbableDay ? 0 : -1}
-        onClick={() => !isDisabled && onDayClick(date)}
-        onMouseEnter={() => !isDisabled && onDayHover(date)}
+        onClick={() => !effectivelyDisabled && onDayClick(date)}
+        onMouseEnter={() => !effectivelyDisabled && onDayHover(date)}
         onMouseLeave={() => onDayHover(null)}
         {...mergeProps(
           xdsClassName('calendar-day', {
             selected:
               isSelected || isRangeStart || isRangeEnd ? 'selected' : null,
             today: isToday ? 'today' : null,
-            disabled: isDisabled ? 'disabled' : null,
+            disabled: effectivelyDisabled ? 'disabled' : null,
             'in-range': isInRange ? 'in-range' : null,
           }),
           stylex.props(
@@ -837,8 +896,8 @@ function DayCell({
               dayCellStyles.daySelected,
             (isSelected || isRangeStart || isRangeEnd) &&
               dayCellTheme.daySelected,
-            isDisabled && dayCellStyles.dayDisabled,
-            isDisabled && dayCellTheme.dayDisabled,
+            effectivelyDisabled && dayCellStyles.dayDisabled,
+            effectivelyDisabled && dayCellTheme.dayDisabled,
           ),
         )}>
         {dayNumber}

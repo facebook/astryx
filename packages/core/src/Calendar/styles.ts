@@ -51,6 +51,17 @@ export const calendarStyles = stylex.create({
     display: 'flex',
     gap: spacingVars['--spacing-4'],
   },
+  srOnly: {
+    position: 'absolute',
+    width: '1px',
+    height: '1px',
+    padding: 0,
+    margin: '-1px',
+    overflow: 'hidden',
+    clip: 'rect(0, 0, 0, 0)',
+    whiteSpace: 'nowrap',
+    borderWidth: 0,
+  },
   navIcon: {
     width: spacingVars['--spacing-4'],
     height: spacingVars['--spacing-4'],
@@ -191,7 +202,10 @@ export const dayCellStyles = stylex.create({
     padding: 0,
     position: 'relative',
     zIndex: 1,
-    transitionProperty: 'background-color, color',
+    transitionProperty: {
+      default: 'background-color, color',
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     // Expand hit target by 2px on each side to prevent gaps
