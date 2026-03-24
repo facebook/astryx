@@ -304,26 +304,20 @@ export const neutralTheme = defineTheme({
     },
 
     // =========================================================================
-    // Card — tighter padding
+    // Card — tighter padding via public container padding token
     // =========================================================================
     card: {
       base: {
-        '--layout-padding-inner-x': 'var(--spacing-3)',
-        '--layout-padding-inner-y': 'var(--spacing-3)',
-        '--layout-padding-outer-x': 'var(--spacing-3)',
-        '--layout-padding-outer-y': 'var(--spacing-3)',
+        '--xds-container-padding': 'var(--spacing-3)',
       },
     },
 
     // =========================================================================
-    // Section — tighter padding
+    // Section — tighter padding via public container padding token
     // =========================================================================
     section: {
       base: {
-        '--layout-padding-inner-x': 'var(--spacing-3)',
-        '--layout-padding-inner-y': 'var(--spacing-3)',
-        '--layout-padding-outer-x': 'var(--spacing-3)',
-        '--layout-padding-outer-y': 'var(--spacing-3)',
+        '--xds-container-padding': 'var(--spacing-3)',
       },
     },
 
