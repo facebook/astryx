@@ -10,7 +10,7 @@ If no argument provided, default to 5 samples.
 
 ## Instructions
 
-Run interactive vibe tests using parallel subagents:
+Run interactive vibe tests using parallel subagents. No API keys required — code generation is done by spawned sub-agents, screenshots by GitHub Actions.
 
 ### Step 0: Generate skill doc
 
@@ -24,122 +24,170 @@ This creates `.generated/xds-skill.md` reflecting all components on the current 
 
 ### Step 1: Setup the test iteration
 
-Run the interactive setup command:
+Three targets are compared: *XDS*, *baseline* (shadcn/Tailwind), and *raw HTML/CSS*. All three use the **same prompts** — this is the most important fairness constraint.
 
 ```bash
-yarn workspace @xds/vibe-tests interactive --sample <count>
+cd internal/vibe-tests
+
+# 1. Sample prompts for XDS (records the prompt IDs)
+yarn interactive --target xds --persona naive --sample <count>
+# Note the iteration ID and prompt IDs from the output
+
+# 2. Reuse same prompts for baseline
+yarn interactive --target baseline --persona naive --prompts <comma-separated-ids>
+
+# 3. Reuse same prompts for HTML
+yarn interactive --target html --persona naive --prompts <comma-separated-ids>
 ```
 
 This creates:
+- Three iteration IDs (one per target)
+- Task files in `results/<iteration>/tasks/<promptId>.json`
+- A manifest file per iteration
 
-- A unique iteration ID
-- Task files in `internal/vibe-tests/results/<iteration>/tasks/`
-- A manifest file
+### Step 2: Spawn sub-agents
 
-### Step 2: Read the test prompts
+Spawn sub-agents using `spawn_agent` — one per prompt per target (e.g. 10 prompts × 3 targets = 30 agents).
 
-Read the manifest to get the list of test prompts:
+Each sub-agent must:
 
-```
-internal/vibe-tests/results/<iteration>/manifest.json
-```
+1. **Read the task file** at `results/<iteration>/tasks/<promptId>.json` (on the `xds` node)
+2. **Read the target-specific agent doc:**
+   - XDS → `AGENTS.md` (generated) + run `npx xds component --brief-all` for component catalog
+   - Baseline → `AGENTS.baseline.md` + read `.baseline-docs/`
+   - HTML → `AGENTS.html.md` (no design system docs needed)
+3. **Generate a React component** as a `.tsx` file responding to the prompt
+4. **Self-evaluate** for correctness, accessibility, escape hatches
+5. **Write two files** (on the `xds` node):
+   - `results/<iteration>/results/<promptId>.tsx` — the generated component (must have a default export)
+   - `results/<iteration>/results/<promptId>.json` — metadata:
+     ```json
+     {
+       "docsRead": ["AGENTS.md", "Button.md", "tokens.md"],
+       "completedAt": "2026-03-25T06:00:00Z"
+     }
+     ```
 
-### Step 3: Run tests in parallel
+### Step 3: Verify completeness
 
-For each test prompt, spawn a subagent using the Task tool with:
-
-- `subagent_type`: "general-purpose"
-- Read the generated skill doc at `internal/vibe-tests/.generated/xds-skill.md`
-- Generate code for the prompt using XDS components
-- Self-evaluate the response for:
-  - Correct components used
-  - No hallucinated props
-  - Acceptable vs critical escape hatches
-- Track timing: record start time before generating, calculate durationMs after
-- Return JSON with: response, evaluation, durationMs, inputTokens, outputTokens
-
-### Step 4: Write results
-
-After all subagents complete, write results to:
-
-```
-internal/vibe-tests/results/<iteration>/runs.jsonl
-```
-
-Each line should be a JSON object with:
-
-```json
-{
-  "id": "<iteration>-<promptId>",
-  "timestamp": "<ISO timestamp>",
-  "systemVersion": "xds-llms-v1",
-  "model": "claude-code-interactive",
-  "persona": "naive",
-  "promptCategory": "<category>",
-  "trajectoryDepth": 0,
-  "prompt": "<the prompt>",
-  "response": "<generated code>",
-  "evaluation": {
-    "success": true/false,
-    "componentsUsed": ["XDSCard", ...],
-    "componentsExpected": ["XDSCard", ...],
-    "escapeHatches": [{"type": "...", "severity": "acceptable/critical", "detail": "...", "codeSnippet": "..."}],
-    "failureMode": null or "description",
-    "confusionSignals": []
-  },
-  "fullConversation": [],
-  "contextWindowUsage": 0,
-  "durationMs": <milliseconds taken>,
-  "inputTokens": <input tokens used>,
-  "outputTokens": <output tokens generated>
-}
-```
-
-### Step 5: Aggregate results
-
-Run:
+After all sub-agents complete, verify every task has a `.tsx` and `.json` result:
 
 ```bash
-yarn workspace @xds/vibe-tests aggregate --iteration <id>
+cd internal/vibe-tests
+for ITER in <xds-id> <baseline-id> <html-id>; do
+  EXPECTED=$(ls results/$ITER/tasks/*.json | wc -l)
+  ACTUAL=$(ls results/$ITER/results/*.tsx 2>/dev/null | wc -l)
+  echo "$ITER: $ACTUAL/$EXPECTED complete"
+done
 ```
 
-This will print a summary showing:
+Log any gaps. Missing results mean a sub-agent failed — note which prompt/target is affected.
 
-- Overall success rate
-- Performance stats (total time, avg time, tokens used)
-- Success by category
-- Critical issues (if any)
-- Acceptable escape hatches
+### Step 4: Build previews & screenshots (GitHub Actions)
 
-It also generates an HTML report at `results/<iteration>/report.html` that you can open in a browser to inspect individual test results.
+Commit results to a branch and trigger the screenshot workflow:
 
-### Evaluation Criteria
+```bash
+cd /vercel/sandbox/repos/xds
+git checkout -b vibe-test-data/<date>
+git add -f internal/vibe-tests/results/
+git commit -m "vibe-test: results for $(date +%Y-%m-%d)"
+git push -u origin vibe-test-data/<date>
 
-**Quality Tiers:**
+# Trigger the screenshot workflow
+gh workflow run vibe-screenshots.yml \
+  --ref vibe-test-data/<date> \
+  -f iterations="<xds-id>,<baseline-id>,<html-id>"
+```
 
-- 🥇 **Gold** - Pure XDS, no escape hatches needed
-- 🟢 **Green** - Correct components, only acceptable escape hatches
-- 🟡 **Yellow** - Anti-patterns that break theming (hardcoded values)
-- 🔴 **Red** - Critical failures
+The workflow:
+1. Builds self-contained HTML previews (inlines all CSS via vite-plugin-singlefile)
+2. Captures Playwright screenshots at 4 combos: desktop/mobile × light/dark
+3. Uploads artifacts: `preview-html` and `vibe-test-screenshots`
 
-**Critical escape hatches (Red tier):**
+### Step 5: Wait for GHA and download
 
-- `hallucination` - Invented props/components that don't exist
-- `wrong_component` - Using a component incorrectly
-- `redundant_css` - CSS that duplicates a component prop
+Poll the run until complete:
 
-**Anti-pattern escape hatches (Yellow tier - break theming):**
+```bash
+RUN_ID=$(gh run list --workflow=vibe-screenshots.yml --limit 1 --json databaseId --jq '.[0].databaseId')
+gh run watch $RUN_ID
+```
 
-- `hardcoded_color` - Direct color values instead of CSS variables
-- `hardcoded_spacing` - Direct pixel values for spacing instead of CSS variables
-- `hardcoded_size` - Direct pixel values for sizes instead of CSS variables
-- `inline_style` - Inline styles instead of StyleX
+Download artifacts:
 
-**Acceptable escape hatches (Green tier):**
+```bash
+gh run download $RUN_ID -n vibe-test-screenshots -D internal/vibe-tests/results/
+gh run download $RUN_ID -n preview-html -D internal/vibe-tests/results/
+```
 
-- `supplemental_css` - StyleX for things XDS doesn't cover
-- `wrapper_div` - Structural HTML for composition
-- `custom_animation` - Animation not covered by XDS
-- `layout_workaround` - Layout patterns XDS doesn't support
+If GHA fails: `gh run view $RUN_ID --log-failed`
 
-When evaluating, also include a `gap` field on escape hatches describing what capability is missing, to help generate improvement suggestions.
+### Step 6: Aggregate and report
+
+```bash
+cd internal/vibe-tests
+yarn aggregate --iteration <xds-id>
+yarn report:deploy --iteration <xds-id> --baseline <baseline-id> --html <html-id>
+```
+
+Report URL: `https://facebookexperimental.github.io/xds/reports/<xds-id>/`
+
+### Step 7: Post results
+
+Create a GitHub issue:
+
+```bash
+gh issue create --repo facebookexperimental/xds \
+  --title "Vibe Test Results — $(date +%Y-%m-%d)" \
+  --label "vibe-test" \
+  --body "<results summary>"
+```
+
+Include: overall scores, dimension winners, report link, gaps, and screenshots.
+
+## Fairness Rules
+
+These rules ensure the comparison is meaningful:
+
+1. **Same prompts** — all targets run the exact same prompt IDs (use `--prompts`)
+2. **Same persona** — always `naive` (simulates a developer with no prior knowledge)
+3. **Fair docs** — each target gets its own equivalent agent doc, not the other target's
+4. **No cross-contamination** — XDS agents don't see baseline docs, and vice versa
+5. **10 prompts minimum** — stratified sample covers all categories
+
+## Evaluation Criteria
+
+### Quality Tiers
+
+- 🥇 **Gold** — Pure target usage, no escape hatches needed
+- 🟢 **Green** — Correct components, only acceptable escape hatches
+- 🟡 **Yellow** — Anti-patterns that break theming (hardcoded values)
+- 🔴 **Red** — Critical failures (hallucinations, wrong components)
+
+### Escape Hatch Classification
+
+**Critical (Red tier):**
+- `hallucination` — invented props/components that don't exist
+- `wrong_component` — using a component incorrectly
+- `redundant_css` — CSS that duplicates a component prop
+
+**Anti-pattern (Yellow tier):**
+- `hardcoded_color` — direct color values instead of CSS variables
+- `hardcoded_spacing` — direct pixel values instead of CSS variables
+- `inline_style` — inline styles instead of StyleX
+
+**Acceptable (Green tier):**
+- `supplemental_css` — StyleX for things the system doesn't cover
+- `wrapper_div` — structural HTML for composition
+- `custom_animation` — animation not covered by the system
+
+## Evaluation Dimensions
+
+| Dimension | What It Measures |
+|-----------|-----------------|
+| Correctness | Valid component usage, no hallucinations |
+| Accessibility | Labels, semantics, keyboard support |
+| Code Quality | Complexity, patterns, TypeScript usage |
+| Efficiency | Decisions/element, DRYness, conciseness |
+| Maintainability | Semantic tokens vs magic values, dark mode, locality |

@@ -10,10 +10,6 @@
   "scripts": {
     "harness": "tsx src/cli.ts",
     "generate:skill-doc": "bash scripts/generate-skill-doc.sh",
-    "test:xds": "yarn generate:skill-doc && SKILL_DOC=.generated/xds-skill.md tsx src/cli.ts run",
-    "test:xds:sample": "yarn generate:skill-doc && SKILL_DOC=.generated/xds-skill.md tsx src/cli.ts run --sample 10",
-    "test:xds:holdout": "yarn generate:skill-doc && SKILL_DOC=.generated/xds-skill.md tsx src/cli.ts run --holdout",
-    "test:ci": "yarn generate:skill-doc && SKILL_DOC=.generated/xds-skill.md tsx src/cli.ts run --sample 10",
     "interactive": "tsx src/interactive.ts",
     "interactive:sample": "tsx src/interactive.ts --sample 5",
     "run-interactive": "tsx src/run-interactive.ts",
@@ -21,7 +17,6 @@
     "aggregate": "tsx src/aggregate.ts",
     "aggregate:ci": "tsx src/aggregate.ts --ci",
     "aggregate:json": "tsx src/aggregate.ts --json",
-    "analyze": "tsx src/cli.ts analyze",
     "quality": "tsx src/quality.ts",
     "compare": "tsx src/compare.ts",
     "generate-a11y-manifest": "tsx src/generate-a11y-manifest.ts",
@@ -35,7 +30,6 @@
     "screenshot:previews": "tsx src/screenshot-previews.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.52.0",
     "@xds/cli": "*",
     "commander": "^12.1.0"
   },

@@ -18,13 +18,15 @@ Tests how well AGENTS.md helps LLMs generate correct XDS component code.
 
 **How to execute:**
 
-1. Run `yarn workspace @xds/vibe-tests interactive --sample <count> [--degradation]` to set up iteration
-2. Spawn parallel subagents (one per test prompt) with `mode: "bypassPermissions"` to:
+1. Run `yarn workspace @xds/vibe-tests interactive --sample <count>` to set up iteration
+2. Spawn parallel subagents (one per test prompt) to:
    - Read the task file from `results/<iteration>/tasks/{promptId}.json`
    - Generate code for the prompt using XDS components (AGENTS.md auto-injected)
    - Self-evaluate for success/escape hatches
-   - Write result to individual file: `results/<iteration>/results/{promptId}.json`
-3. Run `yarn workspace @xds/vibe-tests aggregate --iteration <id>` to see results
+   - Write `.tsx` result to `results/<iteration>/results/{promptId}.tsx`
+   - Write `.json` metadata to `results/<iteration>/results/{promptId}.json`
+3. Trigger `gh workflow run vibe-screenshots.yml` to build previews and capture screenshots
+4. Run `yarn workspace @xds/vibe-tests aggregate --iteration <id>` to see results
 
 **Degradation mode (--degradation):**
 Tests context retention across 10-turn conversations with filler, distractor, and recovery turns.
