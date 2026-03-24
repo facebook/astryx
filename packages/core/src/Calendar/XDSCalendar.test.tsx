@@ -300,4 +300,129 @@ describe('XDSCalendar', () => {
       screen.getByRole('button', {name: 'Next month'}),
     ).toBeInTheDocument();
   });
+
+  // ─── Bug Regression Tests ───────────────────────────────────
+
+  it('day buttons have data-date attribute with ISO string', () => {
+    render(<XDSCalendar focusDate="2026-01-01" />);
+
+    const day15 = getDayButton(15);
+    expect(day15).toHaveAttribute('data-date', '2026-01-15');
+  });
+
+  it('ArrowDown moves focus +7 days, not to same day in next month', async () => {
+    const user = userEvent.setup();
+    const handleFocusChange = vi.fn();
+
+    render(
+      <XDSCalendar
+        focusDate="2026-01-01"
+        onFocusDateChange={handleFocusChange}
+      />,
+    );
+
+    // Focus Jan 28
+    const day28 = getDayButton(28);
+    await user.click(day28);
+    day28.querySelector('button')?.focus();
+
+    // Press ArrowDown — should move to Feb 4 (+7 days), not Feb 28
+    await user.keyboard('{ArrowDown}');
+
+    // After navigation, Feb 4 should be focused
+    const focusedElement = document.activeElement;
+    expect(focusedElement).toHaveAttribute('data-date', '2026-02-04');
+  });
+
+  it('prev button is disabled when focusDate month contains min', () => {
+    render(<XDSCalendar focusDate="2026-01-01" min="2026-01-15" />);
+
+    const prevButton = screen.getByRole('button', {name: 'Previous month'});
+    expect(prevButton).toBeDisabled();
+  });
+
+  it('next button is disabled when focusDate month contains max', () => {
+    render(<XDSCalendar focusDate="2026-01-01" max="2026-01-15" />);
+
+    const nextButton = screen.getByRole('button', {name: 'Next month'});
+    expect(nextButton).toBeDisabled();
+  });
+
+  it('outside days are not clickable when hasOutsideDays is true', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+
+    render(
+      <XDSCalendar
+        focusDate="2026-01-01"
+        hasOutsideDays
+        onChange={handleChange}
+      />,
+    );
+
+    // January 2026 starts on Thursday, so Dec 28-31 are outside days
+    // Find an outside day button (December day visible in January grid)
+    const outsideDays = screen.getAllByRole('gridcell').filter(cell => {
+      const button = cell.querySelector('button');
+      return button?.getAttribute('aria-disabled') === 'true';
+    });
+
+    // Click the first outside day
+    if (outsideDays[0]) {
+      const button = outsideDays[0].querySelector('button');
+      if (button) await user.click(button);
+    }
+
+    expect(handleChange).not.toHaveBeenCalled();
+  });
+
+  it('Escape cancels range selection in progress', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+
+    render(
+      <XDSCalendar
+        mode="range"
+        onChange={handleChange}
+        focusDate="2026-01-01"
+      />,
+    );
+
+    // Click start date to begin range selection
+    const day10 = getDayButton(10);
+    await user.click(day10);
+
+    // Press Escape to cancel
+    await user.keyboard('{Escape}');
+
+    // Click another date — should start a NEW range, not complete the old one
+    const day20 = getDayButton(20);
+    await user.click(day20);
+
+    // onChange should NOT have been called (no range completed)
+    expect(handleChange).not.toHaveBeenCalled();
+  });
+
+  it('day name headers have role="columnheader"', () => {
+    render(<XDSCalendar focusDate="2026-01-01" />);
+
+    const columnHeaders = screen.getAllByRole('columnheader');
+    expect(columnHeaders.length).toBe(7);
+
+    // Verify they contain day name abbreviations
+    const dayNames = columnHeaders.map(h => h.textContent);
+    expect(dayNames).toEqual(['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']);
+  });
+
+  it('button inside gridcell does not duplicate role="gridcell"', () => {
+    render(<XDSCalendar focusDate="2026-01-01" />);
+
+    const gridcells = screen.getAllByRole('gridcell');
+    for (const cell of gridcells) {
+      const button = cell.querySelector('button');
+      if (button) {
+        expect(button).not.toHaveAttribute('role', 'gridcell');
+      }
+    }
+  });
 });
