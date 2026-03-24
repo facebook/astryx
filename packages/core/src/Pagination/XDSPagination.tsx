@@ -17,7 +17,6 @@
  *   label, data-testid, xstyle
  */
 
-
 import {useTransition} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -213,7 +212,7 @@ const styles = stylex.create({
     borderStyle: 'none',
     padding: 0,
     borderRadius: '50%',
-    backgroundColor: colorVars['--color-muted'],
+    backgroundColor: colorVars['--color-secondary'],
     cursor: 'pointer',
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast'],

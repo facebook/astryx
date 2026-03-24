@@ -78,7 +78,7 @@ const variants = stylex.create({
     backgroundColor: colorVars['--color-accent'],
   },
   neutral: {
-    backgroundColor: colorVars['--color-muted'],
+    backgroundColor: colorVars['--color-secondary'],
   },
 });
 

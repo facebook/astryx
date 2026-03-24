@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
  */
 
-
 import {useState, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
@@ -129,7 +128,7 @@ const styles = stylex.create({
     justifyContent: 'center',
     width: '100%',
     height: '100%',
-    backgroundColor: colorVars['--color-muted'],
+    backgroundColor: colorVars['--color-secondary'],
     color: colorVars['--color-text-secondary'],
     fontFamily: typographyVars['--font-body'],
     fontWeight: fontWeightVars['--font-weight-medium'],

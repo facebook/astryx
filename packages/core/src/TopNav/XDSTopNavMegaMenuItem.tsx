@@ -12,7 +12,6 @@
  * - /packages/core/src/TopNav/index.ts
  */
 
-
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -77,7 +76,7 @@ const styles = stylex.create({
     width: 40,
     height: 40,
     borderRadius: radiusVars['--radius-2'],
-    backgroundColor: colorVars['--color-muted'],
+    backgroundColor: colorVars['--color-secondary'],
     flexShrink: 0,
     color: colorVars['--color-icon-secondary'],
   },
@@ -112,7 +111,7 @@ const styles = stylex.create({
     width: 32,
     height: 32,
     borderRadius: radiusVars['--radius-2'],
-    backgroundColor: colorVars['--color-muted'],
+    backgroundColor: colorVars['--color-secondary'],
     flexShrink: 0,
     color: colorVars['--color-icon-secondary'],
     marginBlockStart: spacingVars['--spacing-0-5'],

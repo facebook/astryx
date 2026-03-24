@@ -74,15 +74,15 @@ export const navItemStyles = stylex.create({
 
   /** Selected/active page indicator — deemphasized background, medium weight */
   selected: {
-    backgroundColor: colorVars['--color-muted'],
+    backgroundColor: colorVars['--color-secondary'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     ':hover': {
       '@media (hover: hover)': {
-        backgroundColor: colorVars['--color-muted'],
+        backgroundColor: colorVars['--color-secondary'],
       },
     },
     ':active': {
-      backgroundColor: colorVars['--color-muted'],
+      backgroundColor: colorVars['--color-secondary'],
     },
   },
 
