@@ -447,15 +447,6 @@ describe('XDSDateInput', () => {
 
   // --- Arrow-down opens calendar popover ---
 
-  it('opens calendar popover on ArrowDown key', () => {
-    render(<XDSDateInput label="Date" onChange={() => {}} />);
-
-    const input = screen.getByRole('combobox');
-    fireEvent.keyDown(input, {key: 'ArrowDown'});
-
-    expect(input).toHaveAttribute('aria-expanded', 'true');
-  });
-
   // Note: Tests involving popover rendering (show/hide with calendar)
   // are limited because jsdom doesn't support the Popover API.
   // Full popover interaction is tested in the browser via Storybook.

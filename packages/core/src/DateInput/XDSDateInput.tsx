@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/DateInput.stories.tsx (storybook stories)
  */
 
-
 import {
   useId,
   useState,
@@ -280,6 +279,7 @@ export function XDSDateInput({
   const statusMessageID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const calendarRef = useRef<XDSCalendarHandle | null>(null);
+  const lastFiredValueRef = useRef<ISODateString | undefined>(undefined);
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -318,6 +318,10 @@ export function XDSDateInput({
 
   // Clear pending input when value changes externally
   useEffect(() => {
+    if (value === lastFiredValueRef.current) {
+      return;
+    }
+    lastFiredValueRef.current = undefined;
     setPendingInput(null);
   }, [value]);
 
@@ -394,6 +398,7 @@ export function XDSDateInput({
       // If the input is valid and passes constraints, update immediately
       const parsed = parseDateInput(newValue);
       if (parsed && parsed !== value && !isDateDisabled(parseISO(parsed))) {
+        lastFiredValueRef.current = parsed;
         fireChange(parsed);
         // Navigate calendar to show the parsed date's month
         calendarRef.current?.navigateTo(parsed);
@@ -402,14 +407,13 @@ export function XDSDateInput({
     [value, fireChange, isDateDisabled],
   );
 
-  // Handle blur - validate, check constraints, and clear pending input
-  const handleBlur = useCallback(() => {
+  // Commit pending input (shared by blur and Enter key)
+  const commitPendingInput = useCallback(() => {
     if (pendingInput === null) {
       return;
     }
 
     if (!pendingInput.trim()) {
-      // Empty input clears the value
       if (value !== undefined) {
         fireChange(undefined);
       }
@@ -419,14 +423,17 @@ export function XDSDateInput({
 
     const parsed = parseDateInput(pendingInput);
     if (parsed && !isDateDisabled(parseISO(parsed))) {
-      // Valid date that passes constraints - update if different
       if (parsed !== value) {
         fireChange(parsed);
       }
     }
-    // Clear pending input - display will revert to formatted value
     setPendingInput(null);
   }, [pendingInput, value, fireChange, isDateDisabled]);
+
+  // Handle blur - validate, check constraints, and clear pending input
+  const handleBlur = useCallback(() => {
+    commitPendingInput();
+  }, [commitPendingInput]);
 
   // Handle keyboard events on input
   const handleInputKeyDown = useCallback(
@@ -434,9 +441,12 @@ export function XDSDateInput({
       if (e.key === 'Escape' && popover.isOpen) {
         e.preventDefault();
         popover.hide();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        commitPendingInput();
       }
     },
-    [popover],
+    [popover, commitPendingInput],
   );
 
   // Combine refs
