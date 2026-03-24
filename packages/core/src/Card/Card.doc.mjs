@@ -95,9 +95,9 @@ export const docs = {
     ],
     cssProperties: [
       {
-        name: '--xds-container-padding',
+        name: '--xds-card-padding',
         description:
-          "Controls Card container padding. Set in theme component overrides via `card: { base: { '--xds-container-padding': 'var(--spacing-3)' } }`. Cascades to all internal layout padding variables. Do not use `--layout-padding-*` vars directly.",
+          "Controls Card container padding. Set in theme component overrides via `card: { base: { '--xds-card-padding': 'var(--spacing-3)' } }`. Cascades to all internal layout padding variables. Do not use `--layout-padding-*` vars directly.",
         default: 'var(--spacing-4)',
       },
     ],
@@ -200,9 +200,9 @@ export const docsZh = {
     ],
     cssProperties: [
       {
-        name: '--xds-container-padding',
+        name: '--xds-card-padding',
         description:
-          "Controls Card container padding. Set in theme component overrides via `card: { base: { '--xds-container-padding': 'var(--spacing-3)' } }`. Cascades to all internal layout padding variables. Do not use `--layout-padding-*` vars directly.",
+          "Controls Card container padding. Set in theme component overrides via `card: { base: { '--xds-card-padding': 'var(--spacing-3)' } }`. Cascades to all internal layout padding variables. Do not use `--layout-padding-*` vars directly.",
         default: 'var(--spacing-4)',
       },
     ],

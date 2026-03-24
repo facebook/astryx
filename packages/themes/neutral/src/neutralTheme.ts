@@ -304,20 +304,20 @@ export const neutralTheme = defineTheme({
     },
 
     // =========================================================================
-    // Card — tighter padding via public container padding token
+    // Card — tighter padding via public card padding token
     // =========================================================================
     card: {
       base: {
-        '--xds-container-padding': 'var(--spacing-3)',
+        '--xds-card-padding': 'var(--spacing-3)',
       },
     },
 
     // =========================================================================
-    // Section — tighter padding via public container padding token
+    // Section — tighter padding via public section padding token
     // =========================================================================
     section: {
       base: {
-        '--xds-container-padding': 'var(--spacing-3)',
+        '--xds-section-padding': 'var(--spacing-3)',
       },
     },
 

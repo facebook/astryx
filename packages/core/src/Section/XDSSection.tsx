@@ -237,7 +237,7 @@ export function XDSSection({
   ref,
   ...props
 }: XDSSectionProps) {
-  // When no explicit padding prop, use theme default (--xds-container-padding)
+  // When no explicit padding prop, use theme default (--xds-section-padding)
   const useThemeDefault = padding == null;
   const effectivePadding = padding ?? 4;
   const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
@@ -272,7 +272,7 @@ export function XDSSection({
             nestedStyles.inner,
             ...container(
               useThemeDefault
-                ? {useThemeDefault: true}
+                ? {useThemeDefault: 'section'}
                 : {
                     paddingInnerX: paddingToken,
                     paddingInnerY: paddingToken,

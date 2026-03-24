@@ -102,9 +102,9 @@ export const docs = {
     ],
     cssProperties: [
       {
-        name: '--xds-container-padding',
+        name: '--xds-section-padding',
         description:
-          "Controls Section container padding. Set in theme component overrides via `section: { base: { '--xds-container-padding': 'var(--spacing-3)' } }`. Cascades to all internal layout padding variables. Do not use `--layout-padding-*` vars directly.",
+          "Controls Section container padding. Set in theme component overrides via `section: { base: { '--xds-section-padding': 'var(--spacing-3)' } }`. Cascades to all internal layout padding variables. Do not use `--layout-padding-*` vars directly.",
         default: 'var(--spacing-4)',
       },
     ],
@@ -214,9 +214,9 @@ export const docsZh = {
     ],
     cssProperties: [
       {
-        name: '--xds-container-padding',
+        name: '--xds-section-padding',
         description:
-          "Controls Section container padding. Set in theme component overrides via `section: { base: { '--xds-container-padding': 'var(--spacing-3)' } }`. Cascades to all internal layout padding variables. Do not use `--layout-padding-*` vars directly.",
+          "Controls Section container padding. Set in theme component overrides via `section: { base: { '--xds-section-padding': 'var(--spacing-3)' } }`. Cascades to all internal layout padding variables. Do not use `--layout-padding-*` vars directly.",
         default: 'var(--spacing-4)',
       },
     ],

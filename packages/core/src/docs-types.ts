@@ -105,7 +105,7 @@ export interface ThemingTarget {
  *
  * @example
  * ```
- * {name: '--xds-container-padding', description: 'Controls container padding. Cascades to internal layout vars.', default: 'var(--spacing-4)'}
+ * {name: '--xds-card-padding', description: 'Controls Card container padding. Cascades to internal layout vars.', default: 'var(--spacing-4)'}
  * ```
  */
 export interface CSSPropertyDoc {
