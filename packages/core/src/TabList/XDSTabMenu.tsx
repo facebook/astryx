@@ -12,7 +12,6 @@
  * - /packages/core/src/TabList/XDSTabList.test.tsx
  */
 
-
 import React, {useCallback, useId} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSIcon} from '../Icon';
@@ -34,6 +33,7 @@ import {useListFocus} from '../hooks/useListFocus';
 import {XDSDivider} from '../Divider';
 import {useXDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
+import {xdsClassName, mergeProps} from '../utils';
 
 export interface XDSTabMenuOption {
   value: string;
@@ -275,11 +275,14 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
         aria-expanded={layer.isOpen}
         aria-controls={menuId}
         onClick={handleToggle}
-        {...stylex.props(
-          styles.trigger,
-          sizeStyles[size],
-          hasSelectedOption && styles.triggerSelected,
-          !hasSelectedOption && stylex.defaultMarker(),
+        {...mergeProps(
+          xdsClassName('tab-menu'),
+          stylex.props(
+            styles.trigger,
+            sizeStyles[size],
+            hasSelectedOption && styles.triggerSelected,
+            !hasSelectedOption && stylex.defaultMarker(),
+          ),
         )}>
         <span
           {...stylex.props(
@@ -307,7 +310,10 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
           role="menu"
           aria-label={label}
           onKeyDown={handleListKeyDown}
-          {...stylex.props(styles.dropdown)}>
+          {...mergeProps(
+            xdsClassName('tab-menu-dropdown'),
+            stylex.props(styles.dropdown),
+          )}>
           <XDSDivider label={label} />
           {options.map(option => {
             const isSelected = tabListCtx.value === option.value;
@@ -324,9 +330,12 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
                     handleSelect(option.value);
                   }
                 }}
-                {...stylex.props(
-                  styles.menuItem,
-                  isSelected && styles.menuItemSelected,
+                {...mergeProps(
+                  xdsClassName('tab-menu-item'),
+                  stylex.props(
+                    styles.menuItem,
+                    isSelected && styles.menuItemSelected,
+                  ),
                 )}>
                 <span {...stylex.props(styles.menuItemContent)}>
                   {option.icon && (

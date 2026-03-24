@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/TextArea.stories.tsx (storybook stories)
  */
 
-
 import {
   useId,
   useOptimistic,
@@ -39,6 +38,8 @@ import {
 } from '../Field';
 import {XDSIcon, type XDSIconType} from '../Icon';
 import {XDSSpinner} from '../Spinner';
+import {xdsClassName, mergeProps} from '../utils';
+import type {StyleXStyles} from '@stylexjs/stylex';
 
 const styles = stylex.create({
   wrapper: {
@@ -188,6 +189,27 @@ export interface XDSTextAreaProps {
    * Useful for form submissions.
    */
   htmlName?: string;
+  /**
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <Component xstyle={overrides.root} />
+   * ```
+   */
+  xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) appended to the root element.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
 }
 
 /**
@@ -220,6 +242,9 @@ export function XDSTextArea({
   maxLength,
   hasAutoFocus = false,
   htmlName,
+  xstyle,
+  className,
+  style,
   ref,
 }: XDSTextAreaProps) {
   const id = useId();
@@ -284,13 +309,19 @@ export function XDSTextArea({
       }
       labelTooltip={labelTooltip}>
       <div
-        {...stylex.props(
-          inputWrapperStyles.base,
-          styles.wrapper,
-          isDisabled && inputWrapperStyles.disabled,
-          status && inputStatusBorderStyles[status.type],
-          status && inputStatusHoverShadowStyles[status.type],
-          status && inputStatusFocusWithinStyles[status.type],
+        {...mergeProps(
+          xdsClassName('text-area'),
+          stylex.props(
+            inputWrapperStyles.base,
+            styles.wrapper,
+            isDisabled && inputWrapperStyles.disabled,
+            status && inputStatusBorderStyles[status.type],
+            status && inputStatusHoverShadowStyles[status.type],
+            status && inputStatusFocusWithinStyles[status.type],
+            xstyle,
+          ),
+          className,
+          style,
         )}>
         {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
         <textarea
