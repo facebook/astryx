@@ -15,7 +15,6 @@
  * - /packages/core/src/Typeahead/index.ts
  */
 
-
 import React, {
   useCallback,
   useEffect,
@@ -407,6 +406,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
       if (newQuery.length === 0 && !hasEntriesOnFocus) {
         searchSource.cancel?.();
         setResults([]);
+        setHasSearched(false);
         layer.hide();
         return;
       }
@@ -450,6 +450,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
       onChange(item);
       setQuery('');
       setResults([]);
+      setHasSearched(false);
       layer.hide();
       inputRef.current?.focus();
     },

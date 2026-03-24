@@ -310,6 +310,71 @@ describe('XDSBaseTypeahead hasEntriesOnFocus', () => {
   });
 });
 
+describe('XDSBaseTypeahead hasSearched reset', () => {
+  it('does not show "No results found" after selecting an item and re-entering', async () => {
+    const onChange = vi.fn();
+    const {rerender} = render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={onChange}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    // Type a query that returns results
+    fireEvent.change(input, {target: {value: 'Apple'}});
+    await waitFor(() => {
+      expect(screen.getByText('Apple')).toBeInTheDocument();
+    });
+
+    // Select the item
+    fireEvent.click(screen.getByText('Apple'));
+    expect(onChange).toHaveBeenCalledWith(fruits[0]);
+
+    // Re-render with the selected value
+    rerender(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={onChange}
+        debounceMs={0}
+      />,
+    );
+
+    // Focus the input again — "No results found" should NOT appear
+    fireEvent.focus(input);
+
+    // The empty state text should not be visible since hasSearched was reset
+    expect(screen.queryByText('No results found')).not.toBeInTheDocument();
+  });
+
+  it('resets hasSearched when query is cleared without hasEntriesOnFocus', async () => {
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    // Type a query that returns no results
+    fireEvent.change(input, {target: {value: 'xyz'}});
+    await waitFor(() => {
+      expect(screen.getByText('No results found')).toBeInTheDocument();
+    });
+
+    // Clear the query
+    fireEvent.change(input, {target: {value: ''}});
+
+    // "No results found" should disappear since hasSearched is reset
+    expect(screen.queryByText('No results found')).not.toBeInTheDocument();
+  });
+});
+
 describe('XDSTypeahead edit mode', () => {
   it('enters edit mode on token container click', () => {
     const onChange = vi.fn();
