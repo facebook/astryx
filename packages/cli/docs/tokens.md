@@ -37,14 +37,30 @@ Control heights for consistent sizing across buttons, inputs, and selectors.
 
 ### Semantic Colors
 
-| Token           | Usage                |
-| --------------- | -------------------- |
-| --color-accent  | Primary action color |
-| --color-surface | Background surface   |
-| --color-wash    | Secondary background |
-| --color-success | Success states       |
-| --color-error   | Error states         |
-| --color-warning | Warning states       |
+| Token           | Usage                                        |
+| --------------- | -------------------------------------------- |
+| --color-accent  | Primary action color                         |
+| --color-surface | Background surface                           |
+| --color-wash    | Page-level background (app shell, page body) |
+| --color-success | Success states                               |
+| --color-error   | Error states                                 |
+| --color-warning | Warning states                               |
+
+### Neutral Grays
+
+Three tokens for "gray" backgrounds. Choosing the right one depends on what the element _is_:
+
+| Token                 | Role                           | Use for                                                                                                                    |
+| --------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| --color-secondary     | Neutral fill for elements      | Buttons (default), badges, tokens, kbd, avatar fallback, pagination dots, status dots, selected nav items, icon containers |
+| --color-muted         | Background for content areas   | Sections, code blocks, table zebra stripes, progress/slider tracks, disabled input fills, featured cards                   |
+| --color-overlay-hover | Translucent hover/active state | Hover on ghost buttons, list item highlights, menu item highlights, table row hover                                        |
+
+**Decision tree:**
+
+1. Is it a **hover/active/highlighted state**? → `--color-overlay-hover`
+2. Is it a **container with other content inside** (text, icons, controls)? → `--color-muted`
+3. Is it a **self-contained element sitting on a surface**? → `--color-secondary`
 
 ### Text Colors
 
