@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/Field.stories.tsx (storybook stories)
  */
 
-
 import {type HTMLAttributes, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -22,6 +21,7 @@ import {XDSFieldStatus} from './XDSFieldStatus';
 import {
   colorVars,
   fontWeightVars,
+  lineHeightVars,
   spacingVars,
   typographyVars,
   typeScaleVars,
@@ -34,17 +34,6 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-1'],
-  },
-  labelRow: {
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  label: {
-    fontFamily: typographyVars['--font-body'],
-    fontSize: typeScaleVars['--text-body-size'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
-    color: colorVars['--color-text-primary'],
   },
   labelHidden: {
     borderStyle: 'none',
@@ -64,13 +53,9 @@ const styles = stylex.create({
   description: {
     fontFamily: typographyVars['--font-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: lineHeightVars['--leading-snug'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
-  },
-  optionalRequired: {
-    fontFamily: typographyVars['--font-body'],
-    fontSize: typeScaleVars['--text-supporting-size'],
-    color: colorVars['--color-text-secondary'],
-    marginInlineStart: spacingVars['--spacing-1'],
   },
   inputStatusWrapper: {
     display: 'flex',
@@ -211,6 +196,17 @@ export function XDSField({
   ref,
   ...props
 }: XDSFieldProps) {
+  const resolvedDescriptionID =
+    descriptionID ?? (description ? `${inputID}-desc` : undefined);
+  const resolvedMessageID =
+    status?.messageID ?? (status?.message ? `${inputID}-status` : undefined);
+
+  if (isOptional && isRequired) {
+    console.warn(
+      'XDSField: isOptional and isRequired are mutually exclusive. isOptional takes precedence.',
+    );
+  }
+
   return (
     <div
       ref={ref}
@@ -232,7 +228,7 @@ export function XDSField({
       />
       {description && (
         <span
-          id={descriptionID}
+          id={resolvedDescriptionID}
           {...stylex.props(
             styles.description,
             isLabelHidden && styles.labelHidden,
@@ -247,7 +243,7 @@ export function XDSField({
             <XDSFieldStatus
               type={status.type}
               message={status.message}
-              id={status.messageID}
+              id={resolvedMessageID}
               variant="attached"
             />
           )}
@@ -259,7 +255,7 @@ export function XDSField({
             <XDSFieldStatus
               type={status.type}
               message={status.message}
-              id={status.messageID}
+              id={resolvedMessageID}
               variant="detached"
             />
           )}

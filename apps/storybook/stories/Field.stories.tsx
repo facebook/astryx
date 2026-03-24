@@ -2,6 +2,7 @@ import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSField} from '@xds/core/Field';
+import {XDSTextInput} from '@xds/core/TextInput';
 import {
   colorVars,
   spacingVars,
@@ -240,45 +241,33 @@ export const StatusVariants: Story = {
           gap: 24,
           maxWidth: 400,
         }}>
-        <XDSField
+        <XDSTextInput
           label="Email"
           description="Enter your work email"
-          inputID="s-error"
+          value={vals.error}
+          onChange={set('error')}
           status={{
             type: 'error',
             message: 'Please enter a valid email address',
-          }}>
-          <NativeInput
-            id="s-error"
-            value={vals.error}
-            onChange={set('error')}
-          />
-        </XDSField>
-        <XDSField
+          }}
+        />
+        <XDSTextInput
           label="Username"
           description="Choose a unique username"
-          inputID="s-warning"
+          value={vals.warning}
+          onChange={set('warning')}
           status={{
             type: 'warning',
             message: 'This username is reserved for administrators',
-          }}>
-          <NativeInput
-            id="s-warning"
-            value={vals.warning}
-            onChange={set('warning')}
-          />
-        </XDSField>
-        <XDSField
+          }}
+        />
+        <XDSTextInput
           label="API Key"
           description="Paste your API key"
-          inputID="s-success"
-          status={{type: 'success', message: 'API key is valid and active'}}>
-          <NativeInput
-            id="s-success"
-            value={vals.success}
-            onChange={set('success')}
-          />
-        </XDSField>
+          value={vals.success}
+          onChange={set('success')}
+          status={{type: 'success', message: 'API key is valid and active'}}
+        />
       </div>
     );
   },

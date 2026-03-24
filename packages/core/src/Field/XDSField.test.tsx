@@ -111,7 +111,7 @@ describe('XDSField', () => {
     );
     const description = screen.getByText('Description text');
     expect(description).toBeInTheDocument();
-    expect(description).not.toHaveAttribute('id');
+    expect(description).toHaveAttribute('id', 'email-input-desc');
   });
 
   it('renders Optional text when isOptional is set', () => {
@@ -171,7 +171,10 @@ describe('XDSField', () => {
       </XDSField>,
     );
     expect(screen.getByText('Name')).toBeInTheDocument();
-    expect(screen.getByText(/∙.*Optional/)).toBeInTheDocument();
+    expect(
+      screen.getByText('∙', {selector: '[aria-hidden="true"]'}),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Optional/)).toBeInTheDocument();
   });
 
   it('renders tooltip info icon when labelTooltip is provided', () => {
@@ -191,5 +194,70 @@ describe('XDSField', () => {
       </XDSField>,
     );
     expect(document.querySelector('svg')).not.toBeInTheDocument();
+  });
+
+  it('status has role="alert" and aria-live="assertive" for error type', () => {
+    render(
+      <XDSField
+        label="Email"
+        inputID="email-input"
+        status={{type: 'error', message: 'Invalid email'}}>
+        <input id="email-input" />
+      </XDSField>,
+    );
+    const status = screen.getByRole('alert');
+    expect(status).toHaveTextContent('Invalid email');
+    expect(status).toHaveAttribute('aria-live', 'assertive');
+  });
+
+  it('status has role="status" and aria-live="polite" for warning type', () => {
+    render(
+      <XDSField
+        label="Email"
+        inputID="email-input"
+        status={{type: 'warning', message: 'Check this'}}>
+        <input id="email-input" />
+      </XDSField>,
+    );
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent('Check this');
+    expect(status).toHaveAttribute('aria-live', 'polite');
+  });
+
+  it('auto-generates description ID as {inputID}-desc when descriptionID is not provided', () => {
+    render(
+      <XDSField label="Email" inputID="my-input" description="Help text">
+        <input id="my-input" />
+      </XDSField>,
+    );
+    expect(screen.getByText('Help text')).toHaveAttribute(
+      'id',
+      'my-input-desc',
+    );
+  });
+
+  it('auto-generates status message ID as {inputID}-status when messageID is not provided', () => {
+    render(
+      <XDSField
+        label="Email"
+        inputID="my-input"
+        status={{type: 'error', message: 'Required'}}>
+        <input id="my-input" />
+      </XDSField>,
+    );
+    expect(screen.getByRole('alert')).toHaveAttribute('id', 'my-input-status');
+  });
+
+  it('warns when isOptional and isRequired are both set', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <XDSField label="Name" inputID="name-input" isOptional isRequired>
+        <input id="name-input" />
+      </XDSField>,
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      'XDSField: isOptional and isRequired are mutually exclusive. isOptional takes precedence.',
+    );
+    warnSpy.mockRestore();
   });
 });
