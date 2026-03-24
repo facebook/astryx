@@ -12,7 +12,6 @@
  * - /apps/storybook/stories/Card.stories.tsx (storybook stories)
  */
 
-
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars, shadowVars} from '../theme/tokens.stylex';
@@ -151,6 +150,8 @@ export function XDSCard({
   // Only enable scrolling when card has a fixed height (not null/undefined and not "auto")
   const hasFixedHeight = height != null && height !== 'auto';
 
+  // When no explicit padding prop, use theme default (--xds-container-padding)
+  const useThemeDefault = padding == null;
   const effectivePadding = padding ?? 4;
   const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
 
@@ -177,14 +178,21 @@ export function XDSCard({
         {...stylex.props(
           styles.cardInner,
           hasFixedHeight && styles.scrollable,
-          ...container({
-            paddingInnerX: paddingToken,
-            paddingInnerY: paddingToken,
-            paddingOuterX: paddingToken,
-            paddingOuterY: paddingToken,
-          }),
-          effectivePadding !== 4 && paddingStyles[effectivePadding],
-          effectivePadding !== 4 &&
+          ...container(
+            useThemeDefault
+              ? {useThemeDefault: true}
+              : {
+                  paddingInnerX: paddingToken,
+                  paddingInnerY: paddingToken,
+                  paddingOuterX: paddingToken,
+                  paddingOuterY: paddingToken,
+                },
+          ),
+          !useThemeDefault &&
+            effectivePadding !== 4 &&
+            paddingStyles[effectivePadding],
+          !useThemeDefault &&
+            effectivePadding !== 4 &&
             containerPaddingInlineVarStyles[effectivePadding],
         )}>
         {children}

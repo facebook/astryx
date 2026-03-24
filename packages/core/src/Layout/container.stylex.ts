@@ -4,6 +4,22 @@
  * @output StyleX utility for layout container styling
  * @position Layout utility; used by XDSCard, XDSSection components
  *
+ * ## Public API for themes
+ *
+ * Themes can override container padding via the `--xds-container-padding`
+ * CSS custom property in component style overrides:
+ *
+ * ```ts
+ * components: {
+ *   card: { base: { '--xds-container-padding': 'var(--spacing-3)' } },
+ *   section: { base: { '--xds-container-padding': 'var(--spacing-3)' } },
+ * }
+ * ```
+ *
+ * This is the **only** supported way for themes to adjust container padding.
+ * Internal variables (`--layout-padding-inner-x`, etc.) are implementation
+ * details and must not be referenced by themes.
+ *
  * SYNC: When modified, update /packages/core/src/Layout/Layout.doc.mjs
  */
 
@@ -34,6 +50,34 @@ const baseStyles = stylex.create({
   container: {
     boxSizing: 'border-box',
     padding: 'var(--container-padding)',
+  },
+});
+
+/**
+ * Default container padding styles that cascade from --xds-container-padding.
+ *
+ * When no explicit padding prop is set on Card/Section, the internal
+ * layout padding variables read from --xds-container-padding (set by theme)
+ * with a fallback to --spacing-4 (the default).
+ */
+const defaultContainerPaddingStyles = stylex.create({
+  containerPadding: {
+    '--container-padding': `var(--xds-container-padding, ${spacingVars['--spacing-4']})`,
+  },
+  containerPaddingInline: {
+    '--container-padding-inline': `var(--xds-container-padding, ${spacingVars['--spacing-4']})`,
+  },
+  layoutPaddingOuterX: {
+    '--layout-padding-outer-x': `var(--xds-container-padding, ${spacingVars['--spacing-4']})`,
+  },
+  layoutPaddingOuterY: {
+    '--layout-padding-outer-y': `var(--xds-container-padding, ${spacingVars['--spacing-4']})`,
+  },
+  layoutPaddingInnerX: {
+    '--layout-padding-inner-x': `var(--xds-container-padding, ${spacingVars['--spacing-4']})`,
+  },
+  layoutPaddingInnerY: {
+    '--layout-padding-inner-y': `var(--xds-container-padding, ${spacingVars['--spacing-4']})`,
   },
 });
 
@@ -193,6 +237,19 @@ export interface ContainerOptions {
    * @default 'spacing4'
    */
   paddingInnerY?: SpacingToken;
+
+  /**
+   * When true, internal layout padding variables cascade from
+   * --xds-container-padding (set by theme component overrides)
+   * instead of being set to explicit spacing token values.
+   *
+   * This allows themes to override container padding via a single
+   * public CSS custom property without touching internal vars.
+   *
+   * Used by Card and Section when no explicit padding prop is provided.
+   * @default false
+   */
+  useThemeDefault?: boolean;
 }
 
 /**
@@ -201,20 +258,23 @@ export interface ContainerOptions {
  * Sets CSS variables for padding that child layout components read:
  * - `--container-padding` — Default padding for simple content
  * - `--container-padding-inline` — Inline padding for edge compensation
- * - `--layout-padding-outer-x`, `--layout-padding-outer-y`
- * - `--layout-padding-inner-x`, `--layout-padding-inner-y`
+ * - `--layout-padding-outer-x`, `--layout-padding-outer-y` (internal)
+ * - `--layout-padding-inner-x`, `--layout-padding-inner-y` (internal)
+ *
+ * Themes should use `--xds-container-padding` in component overrides to
+ * adjust padding. Do not reference `--layout-padding-*` variables directly.
  *
  * @example
  * ```
  * import { container } from '@xds/core/Layout';
  * import * as stylex from '@stylexjs/stylex';
  *
- * // Basic container with default padding
- * <div {...stylex.props(...container({}))}>
+ * // Basic container with default padding (theme-overridable)
+ * <div {...stylex.props(...container({ useThemeDefault: true }))}>
  *   <XDSLayout ... />
  * </div>
  *
- * // Custom padding values
+ * // Explicit padding values (not theme-overridable)
  * <div {...stylex.props(
  *   ...container({ padding: 'spacing3', paddingOuterY: 'spacing2', paddingInnerX: 'spacing3' }),
  *   customStyles.card
@@ -229,7 +289,22 @@ export function container({
   paddingOuterY = 'spacing4',
   paddingInnerX = 'spacing4',
   paddingInnerY = 'spacing4',
+  useThemeDefault = false,
 }: ContainerOptions) {
+  // When useThemeDefault is true, cascade from --xds-container-padding
+  // so themes can override via a single public custom property.
+  if (useThemeDefault) {
+    return [
+      baseStyles.container,
+      defaultContainerPaddingStyles.containerPadding,
+      defaultContainerPaddingStyles.containerPaddingInline,
+      defaultContainerPaddingStyles.layoutPaddingOuterX,
+      defaultContainerPaddingStyles.layoutPaddingOuterY,
+      defaultContainerPaddingStyles.layoutPaddingInnerX,
+      defaultContainerPaddingStyles.layoutPaddingInnerY,
+    ] as const;
+  }
+
   return [
     baseStyles.container,
     containerPaddingStyles[padding],

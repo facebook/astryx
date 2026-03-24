@@ -237,6 +237,8 @@ export function XDSSection({
   ref,
   ...props
 }: XDSSectionProps) {
+  // When no explicit padding prop, use theme default (--xds-container-padding)
+  const useThemeDefault = padding == null;
   const effectivePadding = padding ?? 4;
   const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
   const outerStylex = stylex.props(
@@ -268,14 +270,21 @@ export function XDSSection({
           xdsClassName('section', {variant}),
           stylex.props(
             nestedStyles.inner,
-            ...container({
-              paddingInnerX: paddingToken,
-              paddingInnerY: paddingToken,
-              paddingOuterX: paddingToken,
-              paddingOuterY: paddingToken,
-            }),
-            effectivePadding !== 4 && paddingStyles[effectivePadding],
-            effectivePadding !== 4 &&
+            ...container(
+              useThemeDefault
+                ? {useThemeDefault: true}
+                : {
+                    paddingInnerX: paddingToken,
+                    paddingInnerY: paddingToken,
+                    paddingOuterX: paddingToken,
+                    paddingOuterY: paddingToken,
+                  },
+            ),
+            !useThemeDefault &&
+              effectivePadding !== 4 &&
+              paddingStyles[effectivePadding],
+            !useThemeDefault &&
+              effectivePadding !== 4 &&
               containerPaddingInlineVarStyles[effectivePadding],
             variantStyles[variant],
             dividers?.includes('top') && dividerStyles.top,
