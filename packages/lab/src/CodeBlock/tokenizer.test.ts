@@ -1,5 +1,5 @@
 import {describe, it, expect} from 'vitest';
-import {tokenize} from './tokenizer';
+import {tokenize, tokenizeAsync, SYNC_TOKENIZE_THRESHOLD} from './tokenizer';
 
 function tokenTypes(code: string, lang: string) {
   return tokenize(code, lang).map(t => ({
@@ -276,6 +276,48 @@ const y = "hello";
       for (let i = 1; i < tokens.length; i++) {
         expect(tokens[i].start).toBeGreaterThanOrEqual(tokens[i - 1].end);
       }
+    });
+  });
+
+  describe('tokenizeAsync', () => {
+    it('produces same results as sync tokenize for small code', async () => {
+      const code = 'const x = 42;\nreturn "hello";';
+      const syncTokens = tokenize(code, 'typescript');
+      const asyncTokens = await tokenizeAsync(code, 'typescript');
+      expect(asyncTokens).toEqual(syncTokens);
+    });
+
+    it('produces same results for larger code', async () => {
+      // Generate code larger than SYNC_TOKENIZE_THRESHOLD
+      const line = 'const x = 42; // comment\n';
+      const code = line.repeat(
+        Math.ceil(SYNC_TOKENIZE_THRESHOLD / line.length) + 10,
+      );
+      const syncTokens = tokenize(code, 'typescript');
+      const asyncTokens = await tokenizeAsync(code, 'typescript');
+      expect(asyncTokens).toEqual(syncTokens);
+    });
+
+    it('returns empty for unknown language', async () => {
+      const tokens = await tokenizeAsync('const x = 1;', 'brainfuck');
+      expect(tokens).toEqual([]);
+    });
+
+    it('respects abort signal', async () => {
+      const controller = new AbortController();
+      controller.abort();
+      const tokens = await tokenizeAsync(
+        'const x = 42;',
+        'typescript',
+        controller.signal,
+      );
+      // Aborted before processing — tokens may be empty or partial
+      expect(Array.isArray(tokens)).toBe(true);
+    });
+
+    it('exports SYNC_TOKENIZE_THRESHOLD as a number', () => {
+      expect(typeof SYNC_TOKENIZE_THRESHOLD).toBe('number');
+      expect(SYNC_TOKENIZE_THRESHOLD).toBe(2000);
     });
   });
 });

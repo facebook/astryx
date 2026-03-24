@@ -30,4 +30,9 @@ export {
 // Code components — syntax highlighting domain
 export {XDSCodeBlock, type XDSCodeBlockProps} from './CodeBlock';
 export {XDSCodeEditor, type XDSCodeEditorProps} from './CodeEditor';
-export {tokenize, type Token} from './CodeBlock/tokenizer';
+export {
+  tokenize,
+  tokenizeAsync,
+  SYNC_TOKENIZE_THRESHOLD,
+  type Token,
+} from './CodeBlock/tokenizer';

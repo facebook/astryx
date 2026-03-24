@@ -12,7 +12,14 @@
 
 'use client';
 
-import {useLayoutEffect, useRef, useState, useCallback} from 'react';
+import {
+  useLayoutEffect,
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+} from 'react';
 import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -25,7 +32,7 @@ import {
   lineHeightVars,
 } from '@xds/core/theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '@xds/core/utils';
-import {tokenize} from './tokenizer';
+import {tokenize, tokenizeAsync, SYNC_TOKENIZE_THRESHOLD} from './tokenizer';
 import type {Token} from './tokenizer';
 import {ensureHighlightStyles, TOKEN_TYPES} from './highlightStyles';
 
@@ -176,6 +183,14 @@ export interface XDSCodeBlockProps extends XDSBaseProps<HTMLPreElement> {
     code: string,
     language: string,
   ) => Array<{type: string; start: number; end: number}>;
+  /**
+   * How to apply syntax highlighting.
+   * - 'css-highlight': Uses CSS Custom Highlight API (zero DOM overhead).
+   *   Falls back to 'spans' if the API is not available.
+   * - 'spans': Renders `<span>` elements with CSS classes per token.
+   * @default 'css-highlight'
+   */
+  highlightMode?: 'css-highlight' | 'spans';
 }
 
 // ---------------------------------------------------------------------------
@@ -199,6 +214,62 @@ function hasHighlightAPI(): boolean {
  */
 let instanceCounter = 0;
 
+/**
+ * Build span-based highlighted line content from tokens.
+ *
+ * Splits a line into segments: plain text between tokens gets rendered
+ * as bare text nodes, tokens get wrapped in <span className="xds-token-{type}">.
+ */
+function buildSpanLine(
+  lineText: string,
+  lineStart: number,
+  tokens: Token[],
+): React.ReactNode {
+  if (tokens.length === 0) {
+    return lineText || '\u200b';
+  }
+
+  const lineEnd = lineStart + lineText.length;
+
+  // Filter tokens that overlap this line
+  const lineTokens = tokens.filter(t => t.start < lineEnd && t.end > lineStart);
+
+  if (lineTokens.length === 0) {
+    return lineText || '\u200b';
+  }
+
+  const parts: React.ReactNode[] = [];
+  let cursor = lineStart;
+
+  for (const token of lineTokens) {
+    const tStart = Math.max(token.start, lineStart);
+    const tEnd = Math.min(token.end, lineEnd);
+
+    // Plain text before this token
+    if (tStart > cursor) {
+      parts.push(lineText.slice(cursor - lineStart, tStart - lineStart));
+    }
+
+    // Token span
+    parts.push(
+      <span
+        key={`${tStart}-${token.type}`}
+        className={`xds-token-${token.type}`}>
+        {lineText.slice(tStart - lineStart, tEnd - lineStart)}
+      </span>,
+    );
+
+    cursor = tEnd;
+  }
+
+  // Remaining plain text after last token
+  if (cursor < lineEnd) {
+    parts.push(lineText.slice(cursor - lineStart));
+  }
+
+  return parts.length > 0 ? parts : '\u200b';
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -207,7 +278,8 @@ let instanceCounter = 0;
  * A read-only syntax-highlighted code block.
  *
  * Uses the CSS Custom Highlight API for zero-DOM-overhead syntax coloring.
- * Falls back to plain text display in browsers without support.
+ * Falls back to span-based rendering in browsers without support, or when
+ * `highlightMode="spans"` is explicitly set.
  *
  * @example
  * ```tsx
@@ -230,6 +302,7 @@ export function XDSCodeBlock({
   maxHeight,
   size = 'md',
   tokenizer: customTokenizer,
+  highlightMode: highlightModeProp = 'css-highlight',
   xstyle,
   className,
   style,
@@ -239,6 +312,13 @@ export function XDSCodeBlock({
   const codeRef = useRef<HTMLElement>(null);
   const [instanceId] = useState(() => ++instanceCounter);
   const [copied, setCopied] = useState(false);
+
+  // Resolve effective highlight mode — fall back to spans if API unavailable
+  const useSpans = highlightModeProp === 'spans' || !hasHighlightAPI();
+
+  // For span mode: we need tokens to render. Small code is tokenized sync,
+  // large code is tokenized async.
+  const [asyncTokens, setAsyncTokens] = useState<Token[] | null>(null);
 
   const lines = code.split('\n');
   // Remove trailing empty line from code that ends with newline
@@ -256,8 +336,39 @@ export function XDSCodeBlock({
     });
   }, [code, onCopy]);
 
-  // Apply CSS Custom Highlight API ranges
+  // Compute tokens for span mode
+  const syncTokens = useMemo(() => {
+    if (!useSpans) return null;
+    if (code.length >= SYNC_TOKENIZE_THRESHOLD) return null;
+    const tok = customTokenizer ?? tokenize;
+    return tok(code, language);
+  }, [useSpans, code, language, customTokenizer]);
+
+  // Async tokenization for span mode with large code
+  useEffect(() => {
+    if (!useSpans) return;
+    if (code.length < SYNC_TOKENIZE_THRESHOLD) return;
+
+    const abortController = new AbortController();
+
+    tokenizeAsync(code, language, abortController.signal).then(tokens => {
+      if (!abortController.signal.aborted) {
+        setAsyncTokens(tokens);
+      }
+    });
+
+    return () => {
+      abortController.abort();
+      setAsyncTokens(null);
+    };
+  }, [useSpans, code, language, customTokenizer]);
+
+  const spanTokens = syncTokens ?? asyncTokens ?? [];
+
+  // Apply CSS Custom Highlight API ranges — small code (sync, layout effect)
   useLayoutEffect(() => {
+    if (useSpans) return;
+    if (code.length >= SYNC_TOKENIZE_THRESHOLD) return;
     if (!hasHighlightAPI()) return;
 
     ensureHighlightStyles();
@@ -269,103 +380,41 @@ export function XDSCodeBlock({
     const tokens = tok(code, language);
     if (tokens.length === 0) return;
 
-    // Group tokens by type
-    const tokensByType = new Map<string, Token[]>();
-    for (const token of tokens) {
-      const existing = tokensByType.get(token.type);
-      if (existing) {
-        existing.push(token);
-      } else {
-        tokensByType.set(token.type, [token]);
-      }
-    }
+    return applyHighlightRanges(codeEl, tokens);
+  }, [useSpans, code, language, customTokenizer, instanceId]);
 
-    // Build text node mapping using TreeWalker — same approach as CodeEditor.
-    // Finds all text nodes and maps code offsets to DOM positions.
-    // Code string has \n between lines; DOM has separate text nodes per line
-    // with no \n, so we add 1 after each line's text node to stay in sync.
-    const walker = document.createTreeWalker(codeEl, NodeFilter.SHOW_TEXT);
-    const textNodes: Array<{node: Text; start: number}> = [];
-    let charOffset = 0;
+  // Apply CSS Custom Highlight API ranges — large code (async, regular effect)
+  useEffect(() => {
+    if (useSpans) return;
+    if (code.length < SYNC_TOKENIZE_THRESHOLD) return;
+    if (!hasHighlightAPI()) return;
 
-    let currentNode = walker.nextNode();
-    while (currentNode) {
-      const text = currentNode as Text;
-      const content = text.textContent ?? '';
-      // Skip zero-width space placeholders for empty lines
-      if (content === '\u200b') {
-        // Empty line — still accounts for the \n in the code string
-        charOffset += 1; // just the \n
-      } else {
-        textNodes.push({node: text, start: charOffset});
-        charOffset += content.length + 1; // +1 for the \n after this line
-      }
-      currentNode = walker.nextNode();
-    }
+    ensureHighlightStyles();
 
-    /**
-     * Find the text node and local offset for a given code offset.
-     */
-    function findPosition(offset: number): {node: Text; offset: number} | null {
-      for (let i = textNodes.length - 1; i >= 0; i--) {
-        const entry = textNodes[i];
-        if (offset >= entry.start) {
-          const localOffset = offset - entry.start;
-          if (localOffset <= (entry.node.textContent?.length ?? 0)) {
-            return {node: entry.node, offset: localOffset};
-          }
-          return null;
-        }
-      }
-      return null;
-    }
+    const codeEl = codeRef.current;
+    if (!codeEl) return;
 
-    // Create highlight ranges for each token type.
-    // Multiple CodeBlock instances share the same highlight names —
-    // we add our ranges to the existing Highlight (or create a new one).
-    // On cleanup, we remove only our ranges.
-    const myRanges: Range[] = [];
+    const abortController = new AbortController();
+    let cleanup: (() => void) | undefined;
 
-    for (const tokenType of TOKEN_TYPES) {
-      const typedTokens = tokensByType.get(tokenType);
-      if (!typedTokens || typedTokens.length === 0) continue;
-
-      const name = `xds-${tokenType}`;
-      let highlight = CSS.highlights.get(name);
-      if (!highlight) {
-        highlight = new Highlight();
-        CSS.highlights.set(name, highlight);
-      }
-
-      for (const token of typedTokens) {
-        const startPos = findPosition(token.start);
-        const endPos = findPosition(token.end);
-        if (!startPos || !endPos) continue;
-
-        try {
-          const range = new Range();
-          range.setStart(startPos.node, startPos.offset);
-          range.setEnd(endPos.node, endPos.offset);
-          highlight.add(range);
-          myRanges.push(range);
-        } catch {
-          // Skip invalid ranges
-        }
-      }
-    }
+    tokenizeAsync(code, language, abortController.signal).then(tokens => {
+      if (abortController.signal.aborted) return;
+      if (tokens.length === 0) return;
+      cleanup = applyHighlightRanges(codeEl, tokens);
+    });
 
     return () => {
-      // Remove only this instance's ranges from the shared highlights
-      for (const range of myRanges) {
-        for (const tokenType of TOKEN_TYPES) {
-          const highlight = CSS.highlights.get(`xds-${tokenType}`);
-          if (highlight) {
-            highlight.delete(range);
-          }
-        }
-      }
+      abortController.abort();
+      cleanup?.();
     };
-  }, [code, language, customTokenizer, instanceId]);
+  }, [useSpans, code, language, customTokenizer, instanceId]);
+
+  // Ensure styles are injected for span mode too
+  useLayoutEffect(() => {
+    if (useSpans) {
+      ensureHighlightStyles();
+    }
+  }, [useSpans]);
 
   const sizeStyle = size === 'sm' ? styles.sizeSm : styles.sizeMd;
   const gutterSizeStyle = size === 'sm' ? styles.gutterSm : styles.gutterMd;
@@ -384,9 +433,24 @@ export function XDSCodeBlock({
         styles.copyButton,
         !showHeader && styles.copyButtonAbsolute,
       )}>
-      {copied ? '✓' : '⎘'}
+      {copied ? '\u2713' : '\u2398'}
     </button>
   ) : null;
+
+  // Build line content: spans mode renders tokens inline, highlight mode
+  // renders plain text (CSS Highlight API colors it via ranges).
+  function renderLineContent(line: string, lineIndex: number): React.ReactNode {
+    if (!useSpans) {
+      return line || '\u200b';
+    }
+    // Calculate the character offset of this line in the full code string.
+    // Each previous line + 1 for the \n separator.
+    let lineStart = 0;
+    for (let i = 0; i < lineIndex; i++) {
+      lineStart += lines[i].length + 1;
+    }
+    return buildSpanLine(line, lineStart, spanTokens);
+  }
 
   return (
     <pre
@@ -432,7 +496,7 @@ export function XDSCodeBlock({
                   styles.line,
                   highlightSet?.has(i + 1) && styles.lineHighlighted,
                 )}>
-                {line || '\u200b'}
+                {renderLineContent(line, i)}
               </div>
             ))}
           </code>
@@ -444,3 +508,100 @@ export function XDSCodeBlock({
 }
 
 XDSCodeBlock.displayName = 'XDSCodeBlock';
+
+// ---------------------------------------------------------------------------
+// Shared highlight range application
+// ---------------------------------------------------------------------------
+
+/**
+ * Apply CSS Custom Highlight API ranges to a code element.
+ * Returns a cleanup function that removes the ranges.
+ */
+function applyHighlightRanges(
+  codeEl: HTMLElement,
+  tokens: Token[],
+): () => void {
+  // Group tokens by type
+  const tokensByType = new Map<string, Token[]>();
+  for (const token of tokens) {
+    const existing = tokensByType.get(token.type);
+    if (existing) {
+      existing.push(token);
+    } else {
+      tokensByType.set(token.type, [token]);
+    }
+  }
+
+  // Build text node mapping using TreeWalker — same approach as CodeEditor.
+  const walker = document.createTreeWalker(codeEl, NodeFilter.SHOW_TEXT);
+  const textNodes: Array<{node: Text; start: number}> = [];
+  let charOffset = 0;
+
+  let currentNode = walker.nextNode();
+  while (currentNode) {
+    const text = currentNode as Text;
+    const content = text.textContent ?? '';
+    if (content === '\u200b') {
+      charOffset += 1;
+    } else {
+      textNodes.push({node: text, start: charOffset});
+      charOffset += content.length + 1;
+    }
+    currentNode = walker.nextNode();
+  }
+
+  function findPosition(offset: number): {node: Text; offset: number} | null {
+    for (let i = textNodes.length - 1; i >= 0; i--) {
+      const entry = textNodes[i];
+      if (offset >= entry.start) {
+        const localOffset = offset - entry.start;
+        if (localOffset <= (entry.node.textContent?.length ?? 0)) {
+          return {node: entry.node, offset: localOffset};
+        }
+        return null;
+      }
+    }
+    return null;
+  }
+
+  const myRanges: Range[] = [];
+
+  for (const tokenType of TOKEN_TYPES) {
+    const typedTokens = tokensByType.get(tokenType);
+    if (!typedTokens || typedTokens.length === 0) continue;
+
+    const name = `xds-${tokenType}`;
+    let highlight = CSS.highlights.get(name);
+    if (!highlight) {
+      highlight = new Highlight();
+      CSS.highlights.set(name, highlight);
+    }
+
+    for (const token of typedTokens) {
+      const startPos = findPosition(token.start);
+      const endPos = findPosition(token.end);
+      if (!startPos || !endPos) continue;
+
+      try {
+        const range = new Range();
+        range.setStart(startPos.node, startPos.offset);
+        range.setEnd(endPos.node, endPos.offset);
+        highlight.add(range);
+        myRanges.push(range);
+      } catch {
+        // Skip invalid ranges
+      }
+    }
+  }
+
+  return () => {
+    for (const range of myRanges) {
+      for (const tokenType of TOKEN_TYPES) {
+        const highlight = CSS.highlights.get(`xds-${tokenType}`);
+        if (highlight) {
+          highlight.delete(range);
+        }
+      }
+    }
+  };
+}
