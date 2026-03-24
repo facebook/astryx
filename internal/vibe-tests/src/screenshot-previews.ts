@@ -149,7 +149,7 @@ async function main() {
 
       // Read the preview manifest to find all HTML files
       const manifestPath = path.join(previewsDir, 'manifest.json');
-      let previewFiles: Array<{promptId: string; target: string; path: string}> =
+      const previewFiles: Array<{promptId: string; target: string; path: string}> =
         [];
 
       if (fs.existsSync(manifestPath)) {
