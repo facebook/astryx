@@ -26,6 +26,12 @@ export const docs = {
       type: 'ReactNode',
       description: 'Optional leading icon.',
     },
+    {
+      name: 'shape',
+      type: "'pill' | 'dot'",
+      description: "Visual shape. 'pill' is the default rounded pill for text/icon content. 'dot' renders a small circular indicator with no visible content (label becomes visually hidden for screen readers).",
+      default: "'pill'",
+    },
   ],
   examples: [
     {
@@ -43,8 +49,8 @@ export const docs = {
       code: '<XDSBadge variant="info" label={42} />',
     },
     {
-      label: 'Dot indicator (no children)',
-      code: '<XDSBadge variant="success" />',
+      label: 'Dot indicator',
+      code: '<XDSBadge variant="error" shape="dot" label="Unread" />',
     },
   ],
   theming: {
@@ -81,6 +87,12 @@ export const docsZh = {
       type: 'ReactNode',
       description: '可选的前置图标。',
     },
+    {
+      name: 'shape',
+      type: "'pill' | 'dot'",
+      description: "视觉形状。'pill' 是文本/图标内容的默认圆角药丸形状。'dot' 渲染一个无可见内容的小圆形指示器（label 变为屏幕阅读器专用的隐藏文本）。",
+      default: "'pill'",
+    },
   ],
   examples: [
     {
@@ -98,8 +110,8 @@ export const docsZh = {
       code: '<XDSBadge variant="info" label={42} />',
     },
     {
-      label: '圆点指示器（无子元素）',
-      code: '<XDSBadge variant="success" />',
+      label: '圆点指示器',
+      code: '<XDSBadge variant="error" shape="dot" label="Unread" />',
     },
   ],
   theming: {
@@ -117,5 +129,6 @@ export const docsDense = {
     label: 'badge text; omit with children for dot indicator',
     children: 'badge content; omit for dot indicator',
     icon: 'optional leading icon',
+    shape: "visual shape: 'pill' (default rounded) or 'dot' (small circular, label visually hidden)",
   },
 };

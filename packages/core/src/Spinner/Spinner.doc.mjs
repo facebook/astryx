@@ -47,7 +47,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-spinner', visualProps: ['size']},
+      {className: 'xds-spinner', visualProps: ['size', 'shade']},
     ],
   },
   notes: [
@@ -108,7 +108,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-spinner', visualProps: ['size']},
+      {className: 'xds-spinner', visualProps: ['size', 'shade']},
     ],
   },
   notes: [
