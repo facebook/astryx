@@ -162,6 +162,21 @@ async function main() {
       console.log(`   ✓ ${previewCount} preview pages copied`);
     }
 
+    // Deploy screenshots if they exist (from GHA vibe-screenshots workflow)
+    // Check all iterations for screenshots and merge into one directory
+    const targetScreenshotsDir = path.join(targetDir, 'screenshots');
+    let totalScreenshots = 0;
+    for (const id of [iteration, baseline, html].filter(Boolean) as string[]) {
+      const screenshotsDir = path.join(VIBE_DIR, 'results', id, 'screenshots');
+      if (fs.existsSync(screenshotsDir)) {
+        copyDirRecursive(screenshotsDir, targetScreenshotsDir);
+        totalScreenshots += countFiles(screenshotsDir, '.png');
+      }
+    }
+    if (totalScreenshots > 0) {
+      console.log(`   ✓ ${totalScreenshots} screenshots copied`);
+    }
+
     updateReportsIndex(tmpDir);
 
     run('git add .', {cwd: tmpDir});

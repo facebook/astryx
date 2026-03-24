@@ -181,6 +181,7 @@ function buildDataScript(opts: {
   baselineSourceCode?: Record<string, string>;
   htmlSourceCode?: Record<string, string>;
   previews?: Record<string, Record<string, string>>;
+  screenshots?: Record<string, string>;
   prompts?: Record<string, string>;
 }): string {
   const reportData = {
@@ -192,6 +193,7 @@ function buildDataScript(opts: {
     baselineSourceCode: opts.baselineSourceCode,
     htmlSourceCode: opts.htmlSourceCode,
     previews: opts.previews,
+    screenshots: opts.screenshots,
     prompts: opts.prompts,
   };
 
@@ -325,6 +327,46 @@ async function main() {
     );
   }
 
+  // Load screenshot manifests from all iterations
+  // Screenshots use relative paths (screenshots/filename.png) that resolve
+  // when deployed to gh-pages alongside the report.
+  let screenshots: Record<string, string> | undefined;
+  for (const id of [iteration, baseline, html].filter(Boolean) as string[]) {
+    const screenshotManifestPath = path.join(
+      resultsDir,
+      id,
+      'screenshots',
+      'manifest.json',
+    );
+    if (fs.existsSync(screenshotManifestPath)) {
+      const manifest = JSON.parse(
+        fs.readFileSync(screenshotManifestPath, 'utf-8'),
+      );
+      if (!screenshots) screenshots = {};
+      // Flatten the nested manifest into filename → relative URL
+      for (const [_promptId, targets] of Object.entries(manifest)) {
+        for (const [_target, viewports] of Object.entries(
+          targets as Record<string, Record<string, Record<string, string>>>,
+        )) {
+          for (const [_viewport, themes] of Object.entries(
+            viewports as Record<string, Record<string, string>>,
+          )) {
+            for (const [_theme, filename] of Object.entries(
+              themes as Record<string, string>,
+            )) {
+              screenshots[filename] = `screenshots/${filename}`;
+            }
+          }
+        }
+      }
+    }
+  }
+  if (screenshots) {
+    console.log(
+      `  ✓ Screenshot manifest loaded (${Object.keys(screenshots).length} images)`,
+    );
+  }
+
   // Extract prompt text from manifest
   const prompts = extractPrompts(manifest);
   if (Object.keys(prompts).length > 0) {
@@ -344,6 +386,7 @@ async function main() {
     baselineSourceCode,
     htmlSourceCode,
     previews,
+    screenshots,
     prompts,
   });
   console.log(`  ✓ ${(dataScript.length / 1024).toFixed(0)} KB of report data`);
