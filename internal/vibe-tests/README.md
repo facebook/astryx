@@ -41,8 +41,13 @@ The skill doc is generated fresh each time, so it always reflects the current br
 ## Quick Start - API Mode
 
 ```bash
-# Requires ANTHROPIC_API_KEY
+# Requires ANTHROPIC_API_KEY (direct Anthropic mode)
 yarn workspace @xds/vibe-tests test:xds:sample
+
+# Or use the Navi-orchestrated pipeline (no API key needed):
+# 1. Navi sub-agents generate TSX results
+# 2. GHA builds previews and captures screenshots
+# See: .github/workflows/vibe-screenshots.yml
 ```
 
 ## What It Does
@@ -234,29 +239,25 @@ Suggested refinements:
 
 ## CI Integration
 
-Vibe tests run automatically on every PR via GitHub Actions.
+### Screenshot Service (`.github/workflows/vibe-screenshots.yml`)
 
-### GitHub Action
+The primary workflow for nightly vibe tests. Triggered by Navi via `workflow_dispatch`:
 
-The workflow (`.github/workflows/vibe-tests.yml`) runs on:
+```bash
+gh workflow run vibe-screenshots.yml -f iterations="<id1>,<id2>,<id3>"
+```
 
-- Every pull request to main/master
-- Every push to main/master
-- Manual trigger with configurable sample size
+**What it does:**
 
-### What it does:
+1. Builds self-contained HTML previews from TSX results (inlines all CSS via vite-plugin-singlefile)
+2. Captures Playwright screenshots at 4 combos: desktop/mobile × light/dark
+3. Uploads preview HTML and screenshots as artifacts (90-day retention)
 
-1. Runs 10 stratified sample tests
-2. Aggregates results and generates HTML report
-3. Posts a summary comment on the PR
-4. Uploads results as artifacts (90-day retention)
-5. Fails the check if:
-   - Success rate is below 70%
-   - Any critical (Red tier) failures
+**No API keys required.** Code generation is handled by Navi sub-agents before this workflow runs.
 
-### Required Secrets:
+### Direct API Mode (legacy)
 
-- `ANTHROPIC_API_KEY`: API key for running tests
+The `test:xds:sample` script calls Anthropic directly and requires `ANTHROPIC_API_KEY`. This is the old all-in-one flow — prefer the Navi-orchestrated pipeline for nightly runs.
 
 ### Aggregate CLI Flags:
 
