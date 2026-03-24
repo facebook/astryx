@@ -93,6 +93,14 @@ export const docs = {
     vars: [
       {name: '--card-radius', description: 'Border radius of the card', default: 'var(--radius-3)'},
     ],
+    cssProperties: [
+      {
+        name: '--xds-container-padding',
+        description:
+          "Controls Card container padding. Set in theme component overrides via `card: { base: { '--xds-container-padding': 'var(--spacing-3)' } }`. Cascades to all internal layout padding variables. Do not use `--layout-padding-*` vars directly.",
+        default: 'var(--spacing-4)',
+      },
+    ],
   },
 };
 
@@ -189,6 +197,14 @@ export const docsZh = {
     ],
     vars: [
       {name: '--card-radius', description: 'Border radius of the card', default: 'var(--radius-3)'},
+    ],
+    cssProperties: [
+      {
+        name: '--xds-container-padding',
+        description:
+          "Controls Card container padding. Set in theme component overrides via `card: { base: { '--xds-container-padding': 'var(--spacing-3)' } }`. Cascades to all internal layout padding variables. Do not use `--layout-padding-*` vars directly.",
+        default: 'var(--spacing-4)',
+      },
     ],
   },
 };

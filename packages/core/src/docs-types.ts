@@ -100,6 +100,24 @@ export interface ThemingTarget {
 }
 
 /**
+ * Documents a public CSS custom property that themes can set on a component
+ * via component style overrides in `defineTheme`.
+ *
+ * @example
+ * ```
+ * {name: '--xds-container-padding', description: 'Controls container padding. Cascades to internal layout vars.', default: 'var(--spacing-4)'}
+ * ```
+ */
+export interface CSSPropertyDoc {
+  /** The CSS custom property name. Always starts with `--xds-`. */
+  name: string;
+  /** What this property controls, in 1-2 sentences. */
+  description: string;
+  /** Default value if not set by theme. e.g. `"var(--spacing-4)"` */
+  default?: string;
+}
+
+/**
  * Documents a CSS custom property exposed by a component for theming.
  * These vars are set on the component's root element and can be overridden
  * via `defineTheme` component overrides.
@@ -177,6 +195,10 @@ interface BaseDoc {
     targets: ThemingTarget[];
     /** CSS custom properties exposed for theming. */
     vars?: ComponentVar[];
+    /** Public CSS custom properties that themes can set on this component
+     *  via component overrides. Only document supported public properties —
+     *  internal variables must not be listed here. */
+    cssProperties?: CSSPropertyDoc[];
   };
   /** Accessibility notes — ARIA patterns, screen reader behavior.
    *  Each string is one self-contained, declarative note.

@@ -192,6 +192,17 @@ export function formatFull(docs, options = {}) {
       sections.push(`Component key: \`${docs.theming.componentKey}\`\n`);
     }
 
+    // Public CSS custom properties
+    if (docs.theming?.cssProperties?.length) {
+      const propLines = [];
+      propLines.push('| CSS Property | Description | Default |');
+      propLines.push('|-------------|-------------|---------|');
+      for (const p of docs.theming.cssProperties) {
+        propLines.push(`| \`${p.name}\` | ${p.description} | ${p.default || '—'} |`);
+      }
+      sections.push(propLines.join('\n') + '\n');
+    }
+
     // Component CSS vars
     if (docs.theming?.vars?.length) {
       const varLines = [];
@@ -292,6 +303,18 @@ export function formatCompact(docs, componentName, importHint) {
     sections.push(docs.notes.map(n => `- ${n}`).join('\n') + '\n');
   }
 
+  // CSS custom properties (compact includes these for theme consumers)
+  if (docs.theming?.cssProperties?.length) {
+    sections.push('## CSS Properties\n');
+    const propLines = [];
+    propLines.push('| CSS Property | Description | Default |');
+    propLines.push('|-------------|-------------|---------|');
+    for (const p of docs.theming.cssProperties) {
+      propLines.push(`| \`${p.name}\` | ${p.description} | ${p.default || '—'} |`);
+    }
+    sections.push(propLines.join('\n') + '\n');
+  }
+
   return sections.join('\n');
 }
 
@@ -371,6 +394,14 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
     if (varNames) {
       output.push(`  Vars: ${varNames}`);
     }
+  }
+
+  // CSS custom properties (if any)
+  if (docs.theming?.cssProperties?.length) {
+    const cssPropNames = docs.theming.cssProperties
+      .map(p => `${p.name} (${p.default || '—'})`)
+      .join(', ');
+    output.push(`  CSS Props: ${cssPropNames}`);
   }
 
 // Theme targets (class names, variants, states) with theme variant merging
