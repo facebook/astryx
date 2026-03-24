@@ -103,6 +103,22 @@ export const TwoMonthsRangeSelection: Story = {
   },
 };
 
+export const MinMaxBoundary: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISODateString | undefined>(undefined);
+    return (
+      <XDSCalendar
+        mode="single"
+        min={'2026-01-10' as ISODateString}
+        max={'2026-03-20' as ISODateString}
+        value={value}
+        onChange={val => setValue(val)}
+        focusDate={'2026-01-01' as ISODateString}
+      />
+    );
+  },
+};
+
 export const WithDateConstraints: Story = {
   render: () => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
