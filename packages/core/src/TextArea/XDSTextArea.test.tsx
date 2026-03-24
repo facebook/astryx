@@ -7,6 +7,7 @@
  * SYNC: When XDSTextArea.tsx changes, update tests to match new behavior
  */
 
+import React from 'react';
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -143,6 +144,18 @@ describe('XDSTextArea', () => {
   it('is not disabled by default', () => {
     render(<XDSTextArea label="Description" value="" onChange={() => {}} />);
     expect(screen.getByRole('textbox')).not.toBeDisabled();
+  });
+
+  it('is disabled when isLoading is true (isBusy)', () => {
+    render(
+      <XDSTextArea
+        label="Description"
+        isLoading
+        value=""
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('textbox')).toBeDisabled();
   });
 
   it('does not call onChange when disabled', async () => {
@@ -429,7 +442,7 @@ describe('XDSTextArea', () => {
       expect(screen.getByText('11/100')).toBeInTheDocument();
     });
 
-    it('sets maxLength attribute on textarea', () => {
+    it('does not set native maxLength attribute (counter is visual-only)', () => {
       render(
         <XDSTextArea
           label="Description"
@@ -438,12 +451,62 @@ describe('XDSTextArea', () => {
           maxLength={50}
         />,
       );
-      expect(screen.getByRole('textbox')).toHaveAttribute('maxlength', '50');
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('maxlength');
+      expect(screen.getByText('0/50')).toBeInTheDocument();
     });
 
     it('does not set maxLength attribute when not provided', () => {
       render(<XDSTextArea label="Description" value="" onChange={() => {}} />);
       expect(screen.getByRole('textbox')).not.toHaveAttribute('maxlength');
+    });
+
+    it('counter updates as user types (controlled)', async () => {
+      const user = userEvent.setup();
+      function Wrapper() {
+        const [val, setVal] = React.useState('');
+        return (
+          <XDSTextArea
+            label="Description"
+            value={val}
+            onChange={setVal}
+            maxLength={50}
+          />
+        );
+      }
+      render(<Wrapper />);
+      const textarea = screen.getByRole('textbox');
+      await user.type(textarea, 'Hello');
+      expect(screen.getByText('5/50')).toBeInTheDocument();
+    });
+
+    it('counter has aria-live region for screen reader announcements', () => {
+      render(
+        <XDSTextArea
+          label="Description"
+          value={'x'.repeat(45)}
+          onChange={() => {}}
+          maxLength={50}
+        />,
+      );
+      const liveRegion = document.querySelector('[aria-live="polite"]');
+      expect(liveRegion).toBeInTheDocument();
+      expect(liveRegion).toHaveTextContent('5 characters remaining');
+    });
+
+    it('counter is linked to textarea via aria-describedby', () => {
+      render(
+        <XDSTextArea
+          label="Description"
+          value="Hello"
+          onChange={() => {}}
+          maxLength={50}
+        />,
+      );
+      const textarea = screen.getByRole('textbox');
+      const describedBy = textarea.getAttribute('aria-describedby');
+      const counter = screen.getByText('5/50');
+      expect(counter).toHaveAttribute('id');
+      expect(describedBy).toContain(counter.id);
     });
   });
 

@@ -2,7 +2,7 @@
 
 /**
  * @file XDSTextArea.tsx
- * @input Uses React, useId, ChangeEvent, ClipboardEvent, XDSField, XDSIcon
+ * @input Uses React, useId, ChangeEvent, ClipboardEvent, FocusEvent, XDSField, XDSIcon, XDSSpinner
  * @output Exports XDSTextArea component, XDSTextAreaProps, XDSTextAreaStatus, XDSTextAreaStatusType
  * @position Core implementation; consumed by index.ts, tested by XDSTextArea.test.tsx
  *
@@ -19,6 +19,7 @@ import {
   useTransition,
   type ChangeEvent,
   type ClipboardEvent,
+  type FocusEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSIconName} from '../Icon';
@@ -40,6 +41,8 @@ import {XDSIcon, type XDSIconType} from '../Icon';
 import {XDSSpinner} from '../Spinner';
 import {xdsClassName, mergeProps} from '../utils';
 import type {StyleXStyles} from '@stylexjs/stylex';
+
+const COUNTER_WARNING_THRESHOLD = 0.8;
 
 const styles = stylex.create({
   wrapper: {
@@ -79,6 +82,29 @@ const styles = stylex.create({
   },
   counterError: {
     color: colorVars['--color-error'],
+  },
+  srOnly: {
+    position: 'absolute',
+    width: '1px',
+    height: '1px',
+    padding: 0,
+    margin: '-1px',
+    overflow: 'hidden',
+    clip: 'rect(0,0,0,0)',
+    whiteSpace: 'nowrap',
+    borderWidth: 0,
+  },
+  statusIcon: {
+    position: 'absolute',
+    top: spacingVars['--spacing-2'],
+    insetInlineEnd: spacingVars['--spacing-2'],
+    pointerEvents: 'none',
+    display: 'flex',
+  },
+  textareaWithStatus: {
+    // Reserve space so text doesn't flow under the absolutely-positioned icon.
+    // 20px (icon md) + 4px gap = 24px (--spacing-6)
+    paddingInlineEnd: spacingVars['--spacing-6'],
   },
 });
 
@@ -177,6 +203,8 @@ export interface XDSTextAreaProps {
   /**
    * Maximum number of characters allowed.
    * When set, displays a character counter below the textarea.
+   * Does not enforce the limit natively — the counter shows error styling
+   * when exceeded, and the consumer can validate via onChange.
    */
   maxLength?: number;
   /**
@@ -189,6 +217,14 @@ export interface XDSTextAreaProps {
    * Useful for form submissions.
    */
   htmlName?: string;
+  /**
+   * Callback fired when the textarea receives focus.
+   */
+  onFocus?: (e: FocusEvent<HTMLTextAreaElement>) => void;
+  /**
+   * Callback fired when the textarea loses focus.
+   */
+  onBlur?: (e: FocusEvent<HTMLTextAreaElement>) => void;
   /**
    * StyleX styles created via `stylex.create()`. Merged with the component's
    * base styles inside a single `stylex.props()` call for optimal deduplication.
@@ -242,6 +278,8 @@ export function XDSTextArea({
   maxLength,
   hasAutoFocus = false,
   htmlName,
+  onFocus,
+  onBlur,
   xstyle,
   className,
   style,
@@ -250,6 +288,7 @@ export function XDSTextArea({
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
+  const counterID = useId();
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -274,6 +313,7 @@ export function XDSTextArea({
     [
       description ? descriptionID : null,
       status?.message ? statusMessageID : null,
+      maxLength != null ? counterID : null,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
@@ -288,6 +328,8 @@ export function XDSTextArea({
       });
     }
   };
+
+  const effectivelyDisabled = isDisabled || isBusy;
 
   return (
     <XDSField
@@ -310,11 +352,11 @@ export function XDSTextArea({
       labelTooltip={labelTooltip}>
       <div
         {...mergeProps(
-          xdsClassName('text-area'),
+          xdsClassName('textarea'),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,
-            isDisabled && inputWrapperStyles.disabled,
+            effectivelyDisabled && inputWrapperStyles.disabled,
             status && inputStatusBorderStyles[status.type],
             status && inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
@@ -331,37 +373,54 @@ export function XDSTextArea({
           value={String(optimisticValue)}
           onChange={handleChange}
           onPaste={onPaste}
+          onFocus={onFocus}
+          onBlur={onBlur}
           placeholder={placeholder}
           rows={rows}
-          disabled={isDisabled}
+          disabled={effectivelyDisabled}
           spellCheck={hasSpellCheck}
-          maxLength={maxLength}
           autoFocus={hasAutoFocus}
           aria-describedby={ariaDescribedBy}
-          aria-required={isRequired === true ? 'true' : undefined}
-          aria-invalid={status?.type === 'error' ? 'true' : undefined}
+          aria-required={isRequired && !isOptional ? 'true' : undefined}
+          aria-invalid={
+            status?.type === 'error' ||
+            (maxLength != null && optimisticValue.length > maxLength)
+              ? 'true'
+              : undefined
+          }
           aria-busy={isBusy || undefined}
           {...stylex.props(
             styles.textarea,
-            isDisabled && styles.textareaDisabled,
+            effectivelyDisabled && styles.textareaDisabled,
+            status && styles.textareaWithStatus,
           )}
         />
         {isBusy && <XDSSpinner size="sm" />}
         {status && (
-          <XDSIcon
-            icon={statusIconMap[status.type]}
-            size="md"
-            color={statusIconColorMap[status.type]}
-          />
+          <span {...stylex.props(styles.statusIcon)}>
+            <XDSIcon
+              icon={statusIconMap[status.type]}
+              size="md"
+              color={statusIconColorMap[status.type]}
+            />
+          </span>
         )}
       </div>
       {maxLength != null && (
         <div
+          id={counterID}
           {...stylex.props(
             styles.counter,
-            value.length > maxLength && styles.counterError,
+            optimisticValue.length > maxLength && styles.counterError,
           )}>
-          {value.length}/{maxLength}
+          {optimisticValue.length}/{maxLength}
+          <span aria-live="polite" {...stylex.props(styles.srOnly)}>
+            {optimisticValue.length >= maxLength * COUNTER_WARNING_THRESHOLD
+              ? optimisticValue.length > maxLength
+                ? `${optimisticValue.length - maxLength} characters over limit`
+                : `${maxLength - optimisticValue.length} characters remaining`
+              : ''}
+          </span>
         </div>
       )}
     </XDSField>
