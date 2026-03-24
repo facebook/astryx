@@ -31,7 +31,8 @@
     "report:dev": "tsx src/build-report.ts --dev",
     "report:deploy": "tsx src/deploy-report.ts",
     "preview:dev": "vite --config app/vite.config.preview.ts",
-    "preview:build": "vite build --config app/vite.config.preview.ts"
+    "preview:build": "vite build --config app/vite.config.preview.ts",
+    "screenshot:previews": "tsx src/screenshot-previews.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0",
