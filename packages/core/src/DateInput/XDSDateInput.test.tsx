@@ -188,7 +188,8 @@ describe('XDSDateInput', () => {
   it('does not call onChange when typed date fails dateConstraints', () => {
     const onChange = vi.fn();
     // Constraint: no weekends
-    const noWeekends = (date: Date) => date.getDay() !== 0 && date.getDay() !== 6;
+    const noWeekends = (date: Date) =>
+      date.getDay() !== 0 && date.getDay() !== 6;
     render(
       <XDSDateInput
         label="Date"
@@ -302,9 +303,9 @@ describe('XDSDateInput', () => {
     const input = container.querySelector('input');
     const button = container.querySelector('button');
     // Input should come before button in the DOM
-    expect(
-      input!.compareDocumentPosition(button!),
-    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(input!.compareDocumentPosition(button!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
   });
 
   // --- P2: Status rendering ---
@@ -400,9 +401,7 @@ describe('XDSDateInput', () => {
   // --- P1: Disabled prevents onChange ---
 
   it('disables input when isDisabled is true', () => {
-    render(
-      <XDSDateInput label="Date" isDisabled onChange={() => {}} />,
-    );
+    render(<XDSDateInput label="Date" isDisabled onChange={() => {}} />);
 
     const input = screen.getByRole('combobox');
     expect(input).toBeDisabled();
@@ -430,6 +429,31 @@ describe('XDSDateInput', () => {
       'aria-expanded',
       'false',
     );
+  });
+
+  // --- Enter key commits typed date ---
+
+  it('commits typed date and fires onChange on Enter key', () => {
+    const onChange = vi.fn();
+    render(<XDSDateInput label="Date" onChange={onChange} />);
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: '03/15/2026'}});
+    onChange.mockClear();
+    fireEvent.keyDown(input, {key: 'Enter'});
+
+    expect(onChange).toHaveBeenCalledWith('2026-03-15');
+  });
+
+  // --- Arrow-down opens calendar popover ---
+
+  it('opens calendar popover on ArrowDown key', () => {
+    render(<XDSDateInput label="Date" onChange={() => {}} />);
+
+    const input = screen.getByRole('combobox');
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+
+    expect(input).toHaveAttribute('aria-expanded', 'true');
   });
 
   // Note: Tests involving popover rendering (show/hide with calendar)
