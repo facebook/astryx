@@ -72,6 +72,7 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
 
   let totalFilesChanged = 0;
   let totalTransformsApplied = 0;
+  const errors = [];
 
   for (const {version, transforms} of versionManifests) {
     p.log.step(`Applying v${version} codemods...`);
@@ -86,25 +87,40 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
       let filesChanged = 0;
 
       for (const filePath of files) {
-        const source = fs.readFileSync(filePath, 'utf-8');
-        const api = {jscodeshift, stats: () => {}, report: () => {}};
-        const file = {source, path: filePath};
+        const relativePath = path.relative(process.cwd(), filePath);
 
-        const result = transform(file, api);
+        try {
+          const source = fs.readFileSync(filePath, 'utf-8');
+          // Configure parser based on file extension
+          const parser = filePath.endsWith('.tsx')
+            ? 'tsx'
+            : filePath.endsWith('.jsx')
+              ? 'babel'
+              : 'babel';
+          const api = {
+            jscodeshift: jscodeshift.withParser(parser),
+            stats: () => {},
+            report: () => {},
+          };
+          const file = {source, path: filePath};
 
-        if (result != null && result !== source) {
-          filesChanged++;
-          totalFilesChanged++;
-          totalTransformsApplied++;
+          const result = transform(file, api);
 
-          const relativePath = path.relative(process.cwd(), filePath);
+          if (result != null && result !== source) {
+            filesChanged++;
+            totalFilesChanged++;
+            totalTransformsApplied++;
 
-          if (apply) {
-            fs.writeFileSync(filePath, result, 'utf-8');
-            p.log.success(`    ✓ ${relativePath}`);
-          } else {
-            p.log.warn(`    ~ ${relativePath} (would change)`);
+            if (apply) {
+              fs.writeFileSync(filePath, result, 'utf-8');
+              p.log.success(`    ✓ ${relativePath}`);
+            } else {
+              p.log.warn(`    ~ ${relativePath} (would change)`);
+            }
           }
+        } catch (err) {
+          p.log.error(`    ✗ ${relativePath} — ${err.message}`);
+          errors.push({file: relativePath, codemod: name, error: err.message});
         }
       }
 
@@ -117,12 +133,25 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
 
   // Summary
   console.log('');
-  if (totalFilesChanged === 0) {
+
+  if (errors.length > 0) {
+    p.log.error(
+      `${errors.length} error${errors.length === 1 ? '' : 's'} during codemods:`,
+    );
+    for (const {file, codemod: cm, error} of errors) {
+      p.log.error(`  ${cm} → ${file}: ${error}`);
+    }
+  }
+
+  if (totalFilesChanged === 0 && errors.length === 0) {
     p.log.success('No changes needed — your code is already up to date!');
   } else if (apply) {
     p.log.success(
       `Done! Applied ${totalTransformsApplied} change${totalTransformsApplied === 1 ? '' : 's'} across ${totalFilesChanged} file${totalFilesChanged === 1 ? '' : 's'}.`,
     );
+    if (errors.length > 0) {
+      p.log.warn('Some files had errors — review them manually.');
+    }
     p.log.info('Run your type checker and tests to verify the changes.');
   } else {
     p.log.warn(
