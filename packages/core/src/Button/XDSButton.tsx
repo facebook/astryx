@@ -91,7 +91,8 @@ const styles = stylex.create({
   iconOnly: {
     '--button-icon-only-aspect': '1 / 1',
     aspectRatio: 'var(--button-icon-only-aspect)',
-    paddingInline: spacingVars['--spacing-2'],
+    paddingBlock: 0,
+    paddingInline: 0,
   },
   endSlotWrapper: {
     display: 'inline-flex',
@@ -347,6 +348,9 @@ const loadingStyles = stylex.create({
  * compensation stays in sync.
  */
 const edgeCompStyles = stylex.create({
+  paddingInline0: {
+    '--component-padding-inline': spacingVars['--spacing-0'],
+  },
   paddingInline2: {
     '--component-padding-inline': spacingVars['--spacing-2'],
   },
@@ -441,7 +445,7 @@ export function XDSButton({
   const edgeCompStyle = isFlat ? edgeCompensation.self : null;
   const edgePaddingSignal = isFlat
     ? isIconOnly
-      ? edgeCompStyles.paddingInline2
+      ? edgeCompStyles.paddingInline0
       : edgeCompStyles.paddingInline3
     : null;
 

@@ -348,7 +348,7 @@ export default function VerticalRhythmPage() {
                 endContent={
                   <XDSButton
                     label="More options"
-                    icon={<XDSIcon icon={EllipsisHorizontalIcon} size="sm" />}
+                    icon={<XDSIcon icon={EllipsisHorizontalIcon} />}
                     variant="ghost"
                     size="md"
                   />
@@ -360,7 +360,7 @@ export default function VerticalRhythmPage() {
                 endContent={
                   <XDSButton
                     label="More options"
-                    icon={<XDSIcon icon={EllipsisHorizontalIcon} size="sm" />}
+                    icon={<XDSIcon icon={EllipsisHorizontalIcon} />}
                     variant="ghost"
                     size="md"
                   />
@@ -574,7 +574,7 @@ export default function VerticalRhythmPage() {
                     />
                     <XDSButton
                       label="Settings"
-                      icon={<XDSIcon icon={Cog6ToothIcon} size="sm" />}
+                      icon={<XDSIcon icon={Cog6ToothIcon} />}
                       variant="ghost"
                     />
                   </>
@@ -650,7 +650,7 @@ export default function VerticalRhythmPage() {
                     endContent={
                       <XDSButton
                         label="Add"
-                        icon={<XDSIcon icon={PlusIcon} size="xsm" />}
+                        icon={<XDSIcon icon={PlusIcon} />}
                         variant="ghost"
                         size="sm"
                       />
