@@ -7,6 +7,11 @@ import {loadDocs} from './component-loader.mjs';
 import {extractBrief} from './component-legacy.mjs';
 import * as fs from 'node:fs';
 
+/** Derive the theme component key from a theming target (strips 'xds-' prefix). */
+function targetKey(target) {
+  return target.className.replace(/^xds-/, '');
+}
+
 function formatPropsTable(props) {
   if (!props || props.length === 0) return '';
   const lines = [];
@@ -73,7 +78,7 @@ function formatTargetsTable(docs, themeData) {
 
     // Merge theme variants — keyed by component name derived from class
     // e.g. className 'xds-button' → component key 'button'
-    const componentKey = target.className.replace(/^xds-/, '');
+    const componentKey = targetKey(target);
     const themeVariants = themeData?.variants?.[componentKey] || [];
 
     // Build variant display: core variants plain, theme variants with * suffix
@@ -149,7 +154,7 @@ export function formatFull(docs, options = {}) {
 
       // Note about theme variants if any are present
       if (themeData?.variants) {
-        const componentKeys = docs.theming.targets.map(t => t.className.replace(/^xds-/, ''));
+        const componentKeys = docs.theming.targets.map(t => targetKey(t));
         const hasThemeVariants = componentKeys.some(k => themeData.variants[k]?.length > 0);
         if (hasThemeVariants) {
           sections.push(`_\\* = custom variant from ${themeData.name || 'active'} theme_\n`);
@@ -159,7 +164,7 @@ export function formatFull(docs, options = {}) {
       // Generate defineTheme example with class targeting
       const exampleLines = ['Override in defineTheme:\n```ts\ncomponents: {'];
       const rootTarget = docs.theming.targets[0];
-      const rootKey = rootTarget.className.replace('xds-', '');
+      const rootKey = targetKey(rootTarget);
       exampleLines.push(`  '${rootKey}': {`);
       exampleLines.push(`    base: { /* CSS properties */ },`);
       if (rootTarget.visualProps?.length) {
@@ -174,7 +179,7 @@ export function formatFull(docs, options = {}) {
       // Show sub-element example if there are multiple targets
       if (docs.theming.targets.length > 1) {
         const subTarget = docs.theming.targets[1];
-        const subKey = subTarget.className.replace('xds-', '');
+        const subKey = targetKey(subTarget);
         exampleLines.push(`  '${subKey}': {`);
         exampleLines.push(`    base: { /* CSS properties */ },`);
         if (subTarget.states?.length) {
@@ -221,7 +226,8 @@ export function formatFull(docs, options = {}) {
       const overridableVars = docs.theming.vars.filter(v => !v.derived);
       if (overridableVars.length > 0) {
         const exampleVar = overridableVars[0];
-        sections.push('Override CSS vars in defineTheme:\n```ts\ncomponents: {\n  ' + componentKey + ': {\n    base: { \'' + exampleVar.name + '\': \'...\' },\n  },\n}\n```\n');
+        const varsKey = docs.theming.targets?.length ? targetKey(docs.theming.targets[0]) : docs.theming.componentKey || '';
+        sections.push('Override CSS vars in defineTheme:\n```ts\ncomponents: {\n  ' + varsKey + ': {\n    base: { \'' + exampleVar.name + '\': \'...\' },\n  },\n}\n```\n');
       }
     }
   }
@@ -412,7 +418,7 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
       if (t.visualProps?.length) parts.push(`variants: ${t.visualProps.join(', ')}`);
       if (t.states?.length) parts.push(`states: ${t.states.join(', ')}`);
       // Merge theme variants
-      const componentKey = t.className.replace(/^xds-/, '');
+      const componentKey = targetKey(t);
       const themeVars = themeData?.variants?.[componentKey];
       if (themeVars?.length) parts.push(`theme: ${themeVars.map(v => v + '*').join(', ')}`);
       return parts.join(' ');
