@@ -21,8 +21,6 @@ export {
   proportional,
   pixel,
   generateColumns,
-  columnWidthToCSS,
-  resolveColumnMinWidth,
   DEFAULT_MIN_COLUMN_WIDTH,
 } from './columnUtils';
 export type {

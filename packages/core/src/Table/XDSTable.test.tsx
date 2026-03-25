@@ -18,8 +18,6 @@ import {
   pixel,
   generateColumns,
   capitalize,
-  columnWidthToCSS,
-  resolveColumnMinWidth,
   DEFAULT_MIN_COLUMN_WIDTH,
 } from './columnUtils';
 import type {TablePlugin, XDSTableColumn} from './types';
@@ -52,14 +50,22 @@ const columns: XDSTableColumn<User>[] = [
 
 describe('columnUtils', () => {
   describe('proportional', () => {
-    it('creates a proportional width with default value 1', () => {
+    it('creates a proportional width with default value 1 and default minWidth', () => {
       const w = proportional();
-      expect(w).toEqual({type: 'proportional', value: 1});
+      expect(w).toEqual({
+        type: 'proportional',
+        value: 1,
+        minWidth: DEFAULT_MIN_COLUMN_WIDTH,
+      });
     });
 
-    it('creates a proportional width with custom value', () => {
+    it('creates a proportional width with custom value and default minWidth', () => {
       const w = proportional(3);
-      expect(w).toEqual({type: 'proportional', value: 3});
+      expect(w).toEqual({
+        type: 'proportional',
+        value: 3,
+        minWidth: DEFAULT_MIN_COLUMN_WIDTH,
+      });
     });
   });
 
@@ -100,60 +106,32 @@ describe('columnUtils', () => {
       expect(generateColumns([])).toEqual([]);
     });
 
-    it('assigns proportional(1) width to each column', () => {
+    it('assigns proportional(1) width with default minWidth to each column', () => {
       const cols = generateColumns(users);
       for (const col of cols) {
-        expect(col.width).toEqual({type: 'proportional', value: 1});
+        expect(col.width).toEqual({
+          type: 'proportional',
+          value: 1,
+          minWidth: DEFAULT_MIN_COLUMN_WIDTH,
+        });
       }
     });
   });
 
   describe('proportional with minWidth', () => {
-    it('creates a proportional width with minWidth', () => {
-      const w = proportional(1, {minWidth: 120});
-      expect(w).toEqual({type: 'proportional', value: 1, minWidth: 120});
+    it('creates a proportional width with explicit minWidth', () => {
+      const w = proportional(1, {minWidth: 200});
+      expect(w).toEqual({type: 'proportional', value: 1, minWidth: 200});
     });
 
-    it('omits minWidth key when not provided', () => {
+    it('uses DEFAULT_MIN_COLUMN_WIDTH when no minWidth provided', () => {
       const w = proportional(2);
-      expect(w).toEqual({type: 'proportional', value: 2});
-      expect('minWidth' in w).toBe(false);
-    });
-  });
-
-  describe('columnWidthToCSS', () => {
-    it('converts pixel width to px string', () => {
-      expect(columnWidthToCSS(pixel(200), 1)).toBe('200px');
-    });
-
-    it('converts proportional width to percentage', () => {
-      expect(columnWidthToCSS(proportional(1), 4)).toBe('25%');
-      expect(columnWidthToCSS(proportional(2), 4)).toBe('50%');
-    });
-  });
-
-  describe('resolveColumnMinWidth', () => {
-    it('returns DEFAULT_MIN_COLUMN_WIDTH for proportional column without explicit minWidth', () => {
-      expect(resolveColumnMinWidth({key: 'a', width: proportional(1)})).toBe(
-        DEFAULT_MIN_COLUMN_WIDTH,
-      );
-    });
-
-    it('returns explicit minWidth when set', () => {
-      expect(
-        resolveColumnMinWidth({
-          key: 'a',
-          width: proportional(1, {minWidth: 200}),
-        }),
-      ).toBe(200);
-    });
-
-    it('returns 0 for pixel columns', () => {
-      expect(resolveColumnMinWidth({key: 'a', width: pixel(80)})).toBe(0);
-    });
-
-    it('returns DEFAULT_MIN_COLUMN_WIDTH for columns with no width', () => {
-      expect(resolveColumnMinWidth({key: 'a'})).toBe(DEFAULT_MIN_COLUMN_WIDTH);
+      expect(w).toEqual({
+        type: 'proportional',
+        value: 2,
+        minWidth: DEFAULT_MIN_COLUMN_WIDTH,
+      });
+      expect(w.minWidth).toBe(DEFAULT_MIN_COLUMN_WIDTH);
     });
   });
 });

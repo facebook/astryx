@@ -10,23 +10,20 @@
  */
 
 import type {ReactNode} from 'react';
-import type {
-  XDSTableColumn,
-  ColumnWidth,
-  ProportionalWidth,
-  PixelWidth,
-} from './types';
+import type {XDSTableColumn, ProportionalWidth, PixelWidth} from './types';
 
 /** Default minimum width (in px) for proportional columns. */
-export const DEFAULT_MIN_COLUMN_WIDTH = 100;
+export const DEFAULT_MIN_COLUMN_WIDTH = 120;
 
 /**
  * Create a proportional column width (fr-like).
  * Columns share available space proportionally.
+ * Applies `DEFAULT_MIN_COLUMN_WIDTH` when no explicit minWidth is provided.
  *
  * @example
  * ```
  * proportional(2) // twice as wide as proportional(1)
+ * proportional(1, { minWidth: 200 }) // explicit min
  * ```
  */
 export function proportional(
@@ -36,7 +33,7 @@ export function proportional(
   return {
     type: 'proportional',
     value,
-    ...(options?.minWidth != null ? {minWidth: options.minWidth} : {}),
+    minWidth: options?.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH,
   };
 }
 
@@ -50,40 +47,6 @@ export function proportional(
  */
 export function pixel(value: number): PixelWidth {
   return {type: 'pixel', value};
-}
-
-/**
- * Convert a ColumnWidth to a CSS width string.
- *
- * Proportional widths are converted to percentages relative to the
- * total proportional units across all columns.
- */
-export function columnWidthToCSS(
-  width: ColumnWidth,
-  totalProportional: number,
-): string {
-  if (width.type === 'pixel') {
-    return `${width.value}px`;
-  }
-  const pct = (width.value / totalProportional) * 100;
-  return `${pct}%`;
-}
-
-/**
- * Resolve the effective min-width for a column in pixels.
- *
- * - Pixel columns: the pixel value is inherently the min (returns 0, no override needed).
- * - Proportional columns: explicit `minWidth` if set, otherwise `DEFAULT_MIN_COLUMN_WIDTH`.
- * - No width set: `DEFAULT_MIN_COLUMN_WIDTH`.
- */
-export function resolveColumnMinWidth<T extends Record<string, unknown>>(
-  column: XDSTableColumn<T>,
-): number {
-  if (!column.width || column.width.type === 'proportional') {
-    return column.width?.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH;
-  }
-  // Pixel columns — the pixel value is their width, no extra min needed
-  return 0;
 }
 
 /**

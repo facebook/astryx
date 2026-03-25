@@ -28,7 +28,7 @@ import type {
 import {
   generateColumns,
   defaultCellRenderer,
-  resolveColumnMinWidth,
+  proportional,
 } from './columnUtils';
 import {XDSTableRow} from './XDSTableRow';
 import {XDSTableCell} from './XDSTableCell';
@@ -202,9 +202,11 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
   const HeaderCellComponent = (components?.HeaderCell ??
     XDSTableHeaderCell) as React.ComponentType<TableHeaderCellComponentProps>;
 
-  // Resolve columns: explicit > auto-generated from data
-  const resolvedColumns: XDSTableColumn<T>[] =
-    columnsProp ?? (data ? generateColumns(data) : []);
+  // Resolve columns: explicit > auto-generated from data.
+  // Ensure every column has a width (default: proportional(1) with minWidth).
+  const resolvedColumns: XDSTableColumn<T>[] = (
+    columnsProp ?? (data ? generateColumns(data) : [])
+  ).map(col => (col.width ? col : {...col, width: proportional(1)}));
 
   // --- Plugin pipeline: table ---
   const tableRenderProps = applyPlugins(plugins, p => p.transformTable, {
@@ -223,8 +225,10 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
 
     // Apply column min-width on the <th>. With table-layout: fixed,
     // header cell sizing controls column widths.
-    const minW = resolveColumnMinWidth(col);
-    const minWidthStyle = minW > 0 ? {minWidth: `${minW}px`} : undefined;
+    // Every column has a resolved width; proportional columns carry minWidth.
+    const minW =
+      col.width!.type === 'proportional' ? col.width!.minWidth : undefined;
+    const minWidthStyle = minW != null ? {minWidth: `${minW}px`} : undefined;
     const existingStyle = cellRenderProps.htmlProps.style as
       | React.CSSProperties
       | undefined;
