@@ -58,6 +58,7 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-label-size'],
     lineHeight: lineHeightVars['--leading-base'],
     fontWeight: fontWeightVars['--font-weight-medium'],
+    whiteSpace: 'nowrap',
     cursor: 'pointer',
     transitionProperty: 'background-image, transform',
     transitionDuration: {
@@ -100,6 +101,11 @@ const styles = stylex.create({
   },
   contentWrapper: {
     display: 'contents',
+  },
+  labelText: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    minWidth: 0,
   },
   visuallyHidden: {
     position: 'absolute',
@@ -489,7 +495,9 @@ export function XDSButton({
         {...stylex.props(styles.contentWrapper)}
         aria-hidden={isLoadingState || undefined}>
         {icon}
-        {children ?? (isIconOnly ? null : label)}
+        {isIconOnly ? null : (
+          <span {...stylex.props(styles.labelText)}>{children ?? label}</span>
+        )}
         {!isIconOnly && endSlot && (
           <span {...stylex.props(styles.endSlotWrapper)}>{endSlot}</span>
         )}
