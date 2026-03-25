@@ -376,7 +376,7 @@ export function XDSToken({
         aria-disabled={isDisabled || undefined}
         {...sharedProps}
         {...mergeProps(
-          xdsClassName('token', {color}),
+          xdsClassName('token', {color, size}),
           stylex.props(
             styles.base,
             sizeStyles[size],
@@ -406,7 +406,7 @@ export function XDSToken({
         onClick={isDisabled ? undefined : handleContainerClick}
         {...sharedProps}
         {...mergeProps(
-          xdsClassName('token', {color}),
+          xdsClassName('token', {color, size}),
           stylex.props(
             styles.base,
             sizeStyles[size],
@@ -456,7 +456,7 @@ export function XDSToken({
       ref={ref as React.Ref<HTMLSpanElement>}
       {...sharedProps}
       {...mergeProps(
-        xdsClassName('token', {color}),
+        xdsClassName('token', {color, size}),
         stylex.props(
           styles.base,
           sizeStyles[size],
