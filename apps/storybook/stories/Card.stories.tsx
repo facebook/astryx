@@ -60,7 +60,7 @@ const meta: Meta<typeof XDSCard> = {
       control: 'select',
       options: ['card', 'flat'],
       description:
-        'Visual variant — card (default) has background/border/radius, flat removes all chrome',
+        'Visual variant — card (default) has background/border/radius, flat retains background but strips border/radius/shadow',
     },
     width: {
       control: {type: 'range', min: 100, max: 800, step: 10},
@@ -404,7 +404,7 @@ export const FlatAppearance: Story = {
           <XDSVStack gap={2}>
             <h3 {...stylex.props(styles.text)}>Flat Card</h3>
             <p {...stylex.props(styles.text, styles.textSecondary)}>
-              No background, border, padding, or border-radius — content only.
+              Retains background, strips border and radius — for use over wash.
             </p>
           </XDSVStack>
         </XDSCard>

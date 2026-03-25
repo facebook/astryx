@@ -38,9 +38,9 @@ const styles = stylex.create({
     borderStyle: 'solid',
     borderColor: colorVars['--color-border-emphasized'],
   },
-  // Flat variant: no background, border, padding, or border-radius
+  // Flat variant: retains background but strips border, radius, and shadow.
+  // Intended for cards appearing over wash/muted backgrounds.
   flat: {
-    backgroundColor: 'transparent',
     borderRadius: 0,
     borderWidth: 0,
     overflow: 'visible',
@@ -75,7 +75,7 @@ export type {SizeValue} from '../utils/types';
 /**
  * Visual variant of the card.
  * - `'card'` (default): Standard card with background, border, and border-radius.
- * - `'flat'`: No background, border, padding, or border-radius — content only.
+ * - `'flat'`: Retains background but strips border, radius, and shadow — for cards over wash.
  */
 export type XDSCardVariant = 'card' | 'flat';
 
@@ -84,7 +84,7 @@ export interface XDSCardProps extends XDSBaseProps {
   /**
    * Visual variant of the card.
    * - `'card'` (default): Standard card with background, border, and border-radius.
-   * - `'flat'`: No background, border, padding, or border-radius — content only.
+   * - `'flat'`: Retains background but strips border, radius, and shadow — for cards over wash.
    * @default 'card'
    */
   variant?: XDSCardVariant;
