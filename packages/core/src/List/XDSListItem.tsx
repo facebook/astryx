@@ -254,6 +254,7 @@ const densityStyles = stylex.create({
   },
   spacious: {
     paddingBlock: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-3'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: lineHeightVars['--leading-normal'],
   },
