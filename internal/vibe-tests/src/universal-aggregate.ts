@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * @file Universal aggregate scoring across 5 dimensions
+ * @file Universal aggregate scoring across 5+1 dimensions (design is optional)
  *
  * Scores an iteration's results using target-neutral evaluation.
  *
@@ -19,12 +19,13 @@ import type {
 import {getResultsDir, writeJson} from './utils.js';
 import {evaluate, getDimensionNames} from './universal-eval.js';
 
-const DIMENSION_LABELS: Record<UniversalDimension, string> = {
+const DIMENSION_LABELS: Partial<Record<UniversalDimension, string>> = {
   correctness: 'Correctness',
   accessibility: 'Accessibility',
   codeQuality: 'Code Quality',
   efficiency: 'Efficiency',
   maintainability: 'Maintainability',
+  design: 'Design',
 };
 
 function parseArgs(): {iteration: string; json: boolean} {
@@ -134,7 +135,10 @@ async function main() {
       }
     }
     for (const dim of dimensions) {
-      categoryScores[category][dim].push(score[dim].score);
+      const dimScore = score[dim];
+      if (dimScore) {
+        categoryScores[category][dim].push(dimScore.score);
+      }
     }
 
     // --- Cost data ---
@@ -196,18 +200,82 @@ async function main() {
     };
   }
 
+  // --- Merge design scores if available ---
+  const designScoresPath = path.join(iterDir, 'design-scores.json');
+  let hasDesignScores = false;
+  if (fs.existsSync(designScoresPath)) {
+    try {
+      const designData = JSON.parse(fs.readFileSync(designScoresPath, 'utf-8'));
+      const summary = designData.summary as Record<
+        string,
+        Record<string, {overall: number; sub: Record<string, number>}>
+      >;
+      for (const [promptId, targets] of Object.entries(summary)) {
+        const targetScores = targets[target];
+        if (targetScores && byPrompt[promptId]) {
+          // Find the full result for variance calculation
+          const fullResults = (designData.results || []).filter(
+            (r: {promptId: string; target: string}) =>
+              r.promptId === promptId && r.target === target,
+          );
+          const passes = fullResults[0]?.passes || [];
+          const overallValues = passes.map((p: {overall: number}) => p.overall);
+          const maxVariance =
+            overallValues.length > 1
+              ? Math.max(...overallValues) - Math.min(...overallValues)
+              : 0;
+
+          byPrompt[promptId].design = {
+            score: targetScores.overall,
+            metrics: {
+              layout: targetScores.sub.layout,
+              hierarchy: targetScores.sub.hierarchy,
+              spacing: targetScores.sub.spacing,
+              components: targetScores.sub.components,
+              color: targetScores.sub.color,
+              passCount: passes.length || designData.passCount || 3,
+              maxVariance,
+            },
+          };
+          hasDesignScores = true;
+        }
+      }
+    } catch (err) {
+      console.error(`Warning: Failed to load design scores: ${err}`);
+    }
+  }
+
   // Compute averages
   const promptCount = Object.keys(byPrompt).length;
   const averages = {} as Record<UniversalDimension, number>;
   for (const dim of dimensions) {
-    const scores = Object.values(byPrompt).map(s => s[dim].score);
-    averages[dim] = Math.round(
-      scores.reduce((a, b) => a + b, 0) / scores.length,
-    );
+    const scores = Object.values(byPrompt)
+      .map(s => s[dim]?.score)
+      .filter((s): s is number => s != null);
+    averages[dim] =
+      scores.length > 0
+        ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+        : 0;
+  }
+  // Design average: only across prompts that have design scores
+  if (hasDesignScores) {
+    const designScores = Object.values(byPrompt)
+      .filter(s => s.design != null)
+      .map(s => s.design!.score);
+    if (designScores.length > 0) {
+      averages.design = Math.round(
+        designScores.reduce((a, b) => a + b, 0) / designScores.length,
+      );
+    }
   }
 
+  const overallDims = [...dimensions];
+  if (hasDesignScores && averages.design != null) {
+    overallDims.push('design' as UniversalDimension);
+  }
   const overall = Math.round(
-    dimensions.reduce((s, d) => s + averages[d], 0) / dimensions.length,
+    overallDims.reduce((s, d) => s + (averages[d] ?? 0), 0) /
+      overallDims.length,
   );
 
   // Category averages
@@ -274,8 +342,16 @@ async function main() {
   console.log('│ Dimension           │ Score │');
   console.log('├─────────────────────┼───────┤');
   for (const dim of dimensions) {
-    const label = DIMENSION_LABELS[dim].padEnd(19);
+    const label = (DIMENSION_LABELS[dim] || dim).padEnd(19);
     const score = String(averages[dim]).padStart(3);
+    console.log(`│ ${label} │  ${score}  │`);
+  }
+  if (hasDesignScores && averages.design != null) {
+    const designPromptCount = Object.values(byPrompt).filter(
+      s => s.design != null,
+    ).length;
+    const label = `Design (${designPromptCount}p)`.padEnd(19);
+    const score = String(averages.design).padStart(3);
     console.log(`│ ${label} │  ${score}  │`);
   }
   console.log('├─────────────────────┼───────┤');

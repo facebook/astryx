@@ -1062,7 +1062,7 @@ export function evaluate(code: string, target: string): UniversalScore {
 }
 
 /**
- * Get the list of dimension names.
+ * Get the list of code-level dimension names (always available).
  */
 export function getDimensionNames(): UniversalDimension[] {
   return [
@@ -1075,20 +1075,47 @@ export function getDimensionNames(): UniversalDimension[] {
 }
 
 /**
+ * Get all dimension names including design (when available).
+ */
+export function getAllDimensionNames(): UniversalDimension[] {
+  return [
+    'correctness',
+    'accessibility',
+    'codeQuality',
+    'efficiency',
+    'maintainability',
+    'design',
+  ];
+}
+
+/**
  * Get the score for a specific dimension.
+ * Returns null for 'design' if not available.
  */
 export function getDimensionScore(
   score: UniversalScore,
   dimension: UniversalDimension,
-): number {
+): number | null {
+  if (dimension === 'design') {
+    return score.design?.score ?? null;
+  }
   return score[dimension].score;
 }
 
 /**
  * Calculate an average score across all dimensions (unweighted).
+ * Includes design dimension when present (non-null).
  */
 export function getAverageScore(score: UniversalScore): number {
   const dims = getDimensionNames();
-  const total = dims.reduce((sum, d) => sum + score[d].score, 0);
-  return Math.round(total / dims.length);
+  let total = dims.reduce((sum, d) => sum + (score[d]?.score ?? 0), 0);
+  let count = dims.length;
+
+  // Include design if present
+  if (score.design != null) {
+    total += score.design.score;
+    count++;
+  }
+
+  return Math.round(total / count);
 }
