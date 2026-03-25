@@ -174,7 +174,7 @@ export default function VerticalRhythmPage() {
           <ScenarioBox
             label="Button + TextInput + Selector side by side"
             verdict="✅">
-            <XDSHStack gap={3} vAlign="center">
+            <XDSHStack gap={2} vAlign="center">
               <XDSButton label="Submit" variant="primary" />
               <XDSTextInput
                 label="Search"
@@ -195,7 +195,7 @@ export default function VerticalRhythmPage() {
           </ScenarioBox>
 
           <ScenarioBox label="Button + Tab row" verdict="✅">
-            <XDSHStack gap={4} vAlign="center">
+            <XDSHStack gap={2} vAlign="center">
               <XDSTabList value={tab} onChange={setTab}>
                 <XDSTab value="tab1" label="Overview" />
                 <XDSTab value="tab2" label="Details" />
@@ -208,7 +208,7 @@ export default function VerticalRhythmPage() {
           <ScenarioBox
             label="All three button sizes: sm (28) / md (32) / lg (36)"
             verdict="📏 Reference">
-            <XDSHStack gap={3} vAlign="center">
+            <XDSHStack gap={2} vAlign="center">
               <XDSButton label="Small 28px" size="sm" />
               <XDSButton label="Medium 32px" size="md" />
               <XDSButton label="Large 36px" size="lg" />
@@ -218,7 +218,7 @@ export default function VerticalRhythmPage() {
           <ScenarioBox
             label="Pagination buttons alongside regular buttons"
             verdict="✅">
-            <XDSHStack gap={4} vAlign="center">
+            <XDSHStack gap={2} vAlign="center">
               <XDSPagination page={page} totalPages={10} onChange={setPage} />
               <XDSButton label="Export" variant="secondary" />
             </XDSHStack>
@@ -332,7 +332,7 @@ export default function VerticalRhythmPage() {
           <ScenarioBox
             label="Badge inside Button endSlot"
             verdict="✅ Badge (20px) centered in 32px button">
-            <XDSHStack gap={3} vAlign="center">
+            <XDSHStack gap={2} vAlign="center">
               <XDSButton label="Messages" endSlot={<XDSBadge label={3} />} />
               <XDSButton
                 label="Alerts"
@@ -389,7 +389,7 @@ export default function VerticalRhythmPage() {
           <ScenarioBox
             label="Button (lg/36px) alongside ListItem (balanced/36px)"
             verdict="✅ Escape hatch — both 36px">
-            <XDSHStack gap={4} vAlign="start">
+            <XDSHStack gap={2} vAlign="start">
               <XDSButton label="Large action" variant="primary" size="lg" />
               <div {...stylex.props(styles.flex1)}>
                 <XDSList>
@@ -405,7 +405,7 @@ export default function VerticalRhythmPage() {
           <ScenarioBox
             label="Button (md/32px) next to ListItem (balanced/36px) — default mismatch"
             verdict="⚠️ 4px height difference">
-            <XDSHStack gap={4} vAlign="start">
+            <XDSHStack gap={2} vAlign="start">
               <XDSButton label="Action" variant="primary" size="md" />
               <div {...stylex.props(styles.flex1)}>
                 <XDSList>
@@ -418,7 +418,7 @@ export default function VerticalRhythmPage() {
           <ScenarioBox
             label="Compact ListItem (28px) next to Button (sm/28px)"
             verdict="✅ Dense pairing">
-            <XDSHStack gap={4} vAlign="start">
+            <XDSHStack gap={2} vAlign="start">
               <XDSButton label="Small" size="sm" />
               <div {...stylex.props(styles.flex1)}>
                 <XDSList density="compact">
@@ -687,7 +687,7 @@ export default function VerticalRhythmPage() {
           <ScenarioBox
             label="Toolbar: Tabs + Search + Button + Dropdown"
             verdict="✅ All controls 32px">
-            <XDSHStack gap={3} vAlign="center">
+            <XDSHStack gap={2} vAlign="center">
               <XDSTabList value={tab} onChange={setTab}>
                 <XDSTab value="tab1" label="All" />
                 <XDSTab value="tab2" label="Active" />
@@ -750,7 +750,7 @@ export default function VerticalRhythmPage() {
             label="Settings page: form controls + list in same view"
             verdict="✅ Controls 32px, list rows 36px">
             <XDSVStack gap={4}>
-              <XDSHStack gap={3} vAlign="end">
+              <XDSHStack gap={2} vAlign="end">
                 <div {...stylex.props(styles.flex1)}>
                   <XDSTextInput
                     label="Project Name"
