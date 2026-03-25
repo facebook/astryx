@@ -43,6 +43,20 @@ describe('generateCompressedIndex', () => {
     expect(result).toContain('npx xds upgrade --apply');
     expect(result).toContain('after @xds/core bump, always run npx xds upgrade --apply');
   });
+
+  it('uses custom runPrefix when provided', () => {
+    const result = generateCompressedIndex('1.0.0', {runPrefix: 'yarn'});
+    expect(result).toContain('yarn xds component <Name>');
+    expect(result).toContain('yarn xds upgrade --apply');
+    expect(result).toContain('after @xds/core bump, always run yarn xds upgrade --apply');
+    expect(result).not.toContain('npx xds');
+  });
+
+  it('uses pnpm exec prefix', () => {
+    const result = generateCompressedIndex('1.0.0', {runPrefix: 'pnpm exec'});
+    expect(result).toContain('pnpm exec xds component <Name>');
+    expect(result).not.toContain('npx xds');
+  });
 });
 
 describe('getXdsVersion', () => {
