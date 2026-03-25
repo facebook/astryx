@@ -18,6 +18,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {findCoreDir, CLI_ROOT} from '../utils/paths.mjs';
+import {getRunPrefix} from '../utils/package-manager.mjs';
 import {discoverComponents} from '../lib/component-discovery.mjs';
 
 const AGENTS_MD = 'AGENTS.md';
@@ -89,10 +90,11 @@ export function resolveAgentPaths(targetDir, agent) {
  * Format C (one-liner per command) chosen after testing three formats
  * against Claude Opus for AI agent usability (scored 5/5).
  */
-export function generateCompressedIndex(version, {coreDir, zh = false, lang} = {}) {
+export function generateCompressedIndex(version, {coreDir, zh = false, lang, runPrefix = 'npx'} = {}) {
+  const run = `${runPrefix} xds`;
   const lines = [XDS_MARKER_START];
 
-  lines.push(`XDS v${version}|Always run npx xds component <Name> before writing XDS component code.`);
+  lines.push(`XDS v${version}|Always run ${run} component <Name> before writing XDS component code.`);
 
   // Component count from live discovery
   let componentCount = '90+';
@@ -105,8 +107,8 @@ export function generateCompressedIndex(version, {coreDir, zh = false, lang} = {
     } catch {}
   }
 
-  lines.push(`npx xds component <Name>       props, usage, examples for any component`);
-  lines.push(`npx xds component --list       ${componentCount} components by category`);
+  lines.push(`${run} component <Name>       props, usage, examples for any component`);
+  lines.push(`${run} component --list       ${componentCount} components by category`);
 
   // Doc topics from live discovery
   const docsDir = path.join(CLI_ROOT, 'docs');
@@ -123,7 +125,7 @@ export function generateCompressedIndex(version, {coreDir, zh = false, lang} = {
         if (descMatch) desc = descMatch[1];
       } catch {}
 
-      lines.push(`npx xds docs ${topic.padEnd(20)} ${desc}`);
+      lines.push(`${run} docs ${topic.padEnd(20)} ${desc}`);
     }
   }
 
@@ -135,14 +137,14 @@ export function generateCompressedIndex(version, {coreDir, zh = false, lang} = {
       .map(e => e.name)
       .sort();
     if (templates.length > 0) {
-      lines.push(`npx xds template <name> [path]  scaffold page (${templates.join(', ')})`);
+      lines.push(`${run} template <name> [path]  scaffold page (${templates.join(', ')})`);
     }
   }
 
-  lines.push(`npx xds swizzle <Name>          eject component source (use --gap to report why)`);
-  lines.push(`npx xds upgrade --apply         run version migration codemods`);
+  lines.push(`${run} swizzle <Name>          eject component source (use --gap to report why)`);
+  lines.push(`${run} upgrade --apply         run version migration codemods`);
   lines.push(`--detail compact|brief          less output | --lang dense|zh  translation`);
-  lines.push(`RULE: after @xds/core bump, always run npx xds upgrade --apply`);
+  lines.push(`RULE: after @xds/core bump, always run ${run} upgrade --apply`);
   lines.push(`RULE: when swizzling, always use --gap to report missing capabilities`);
   lines.push(XDS_MARKER_END);
 
@@ -295,7 +297,8 @@ export function removeAgentDocs(targetDir) {
 export function installAgentDocs(targetDir, {zh = false, lang, agent, paths} = {}) {
   const coreDir = findCoreDir(targetDir);
   const version = getXdsVersion(coreDir);
-  const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang});
+  const runPrefix = getRunPrefix(targetDir);
+  const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang, runPrefix});
   const written = [];
 
   // Explicit paths override everything
@@ -405,6 +408,9 @@ export function registerAgentDocs(program) {
         paths: explicitPaths,
       });
 
+      const runPrefix = getRunPrefix(targetDir);
+      const run = `${runPrefix} xds`;
+
       for (const t of targets) {
         console.log(`✓ ${t}`);
       }
@@ -414,16 +420,16 @@ export function registerAgentDocs(program) {
 
 Your AI coding agent will now:
   • See the XDS component index in ${targets.join(' and ')}
-  • Run \`npx xds component <name>\` to read detailed docs
-  • Run \`npx xds docs principles\` for design principles
-  • Run \`npx xds docs tokens\` for design token reference
+  • Run \`${run} component <name>\` to read detailed docs
+  • Run \`${run} docs principles\` for design principles
+  • Run \`${run} docs tokens\` for design token reference
   • Follow XDS patterns and avoid anti-patterns
 
 To update:
-  npx xds agent-docs
+  ${run} agent-docs
 
 To remove:
-  npx xds agent-docs --remove
+  ${run} agent-docs --remove
 `);
     });
 }
