@@ -1,29 +1,13 @@
 'use client';
 
 import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {XDSLayout, XDSLayoutContent} from '@xds/core';
 import {XDSText} from '@xds/core';
 import {XDSTextInput} from '@xds/core';
 import {XDSButton} from '@xds/core';
-import {XDSVStack} from '@xds/core';
-
-const styles = stylex.create({
-  container: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-  },
-  card: {
-    width: '100%',
-    maxWidth: '400px',
-    padding: 'var(--spacing-7)',
-    backgroundColor: 'var(--color-surface)',
-    borderRadius: 'var(--radius-3)',
-    boxShadow: 'var(--shadow-menu)',
-  },
-});
+import {XDSCard} from '@xds/core';
+import {XDSCenter} from '@xds/core';
+import {XDSFormLayout} from '@xds/core';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -38,10 +22,10 @@ export default function LoginPage() {
     <XDSLayout
       content={
         <XDSLayoutContent>
-          <div {...stylex.props(styles.container)}>
+          <XDSCenter width="100%" height="100vh">
             <form onSubmit={handleSubmit}>
-              <div {...stylex.props(styles.card)}>
-                <XDSVStack gap="space5">
+              <XDSCard maxWidth={400} width="100%">
+                <XDSFormLayout>
                   <XDSText type="large" weight="semibold">
                     Sign in
                   </XDSText>
@@ -61,10 +45,10 @@ export default function LoginPage() {
                   />
 
                   <XDSButton label="Sign in" variant="primary" type="submit" />
-                </XDSVStack>
-              </div>
+                </XDSFormLayout>
+              </XDSCard>
             </form>
-          </div>
+          </XDSCenter>
         </XDSLayoutContent>
       }
     />
