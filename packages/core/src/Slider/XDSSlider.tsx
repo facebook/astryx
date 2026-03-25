@@ -203,7 +203,10 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-accent'],
     transform: 'translate(-50%, -50%)',
     transitionProperty: 'background-color, box-shadow',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     outline: 'none',
     cursor: 'grab',
@@ -224,14 +227,14 @@ const styles = stylex.create({
       },
     },
   },
-  thumbFocusWithin: {
+  thumbFocusVisible: {
     outline: {
       default: 'none',
-      ':focus-within': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
     },
     outlineOffset: {
       default: '0',
-      ':focus-within': '2px',
+      ':focus-visible': '2px',
     },
   },
   thumbDisabled: {
@@ -299,6 +302,7 @@ function clamp(val: number, min: number, max: number): number {
 }
 
 function snapToStep(val: number, min: number, step: number): number {
+  if (step <= 0) return val;
   const steps = Math.round((val - min) / step);
   return min + steps * step;
 }
@@ -373,6 +377,9 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
   const values: number[] = isRange
     ? (value as [number, number])
     : [value as number];
+
+  const valuesRef = useRef(values);
+  valuesRef.current = values;
 
   const getValueFromPosition = useCallback(
     (clientX: number, clientY: number): number => {
@@ -450,25 +457,50 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
     ],
   );
 
-  const fireChangeEnd = useCallback(() => {
-    if (isRange) {
-      (onChangeEnd as XDSSliderRangeProps['onChangeEnd'])?.(
-        values as unknown as [number, number],
-      );
-    } else {
-      (onChangeEnd as XDSSliderSingleProps['onChangeEnd'])?.(values[0]);
-    }
-  }, [isRange, values, onChangeEnd]);
+  const onChangeEndRef = useRef(onChangeEnd);
+  onChangeEndRef.current = onChangeEnd;
+
+  const fireChangeEnd = useCallback(
+    (newValues?: number[]) => {
+      const currentValues = newValues ?? valuesRef.current;
+      const cb = onChangeEndRef.current;
+      if (isRange) {
+        (cb as XDSSliderRangeProps['onChangeEnd'])?.(
+          currentValues as unknown as [number, number],
+        );
+      } else {
+        (cb as XDSSliderSingleProps['onChangeEnd'])?.(currentValues[0]);
+      }
+    },
+    [isRange],
+  );
 
   // Pointer handlers
   const handlePointerDown = useCallback(
     (e: PointerEvent<HTMLDivElement>) => {
       if (isDisabled) return;
       e.preventDefault();
-      const newVal = getValueFromPosition(e.clientX, e.clientY);
+
+      // If the click originated from a mark element, snap to that mark's value
+      // instead of calculating from pointer position (avoids off-by-one when
+      // clicking on wide labels like "100").
+      const markEl = (e.target as HTMLElement).closest<HTMLElement>(
+        '[data-mark-value]',
+      );
+      const newVal = markEl
+        ? Number(markEl.dataset.markValue)
+        : getValueFromPosition(e.clientX, e.clientY);
       const thumbIndex = getClosestThumb(newVal);
       draggingThumbRef.current = thumbIndex;
       updateValue(thumbIndex, newVal);
+
+      // Focus the closest thumb
+      const track = trackRef.current;
+      if (track) {
+        const thumbs = track.querySelectorAll<HTMLElement>('[role="slider"]');
+        thumbs[thumbIndex]?.focus();
+      }
+
       if (
         typeof (e.currentTarget as HTMLElement).setPointerCapture === 'function'
       ) {
@@ -530,9 +562,38 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
       }
 
       e.preventDefault();
+      const clamped = clamp(snapToStep(newVal, min, step), min, max);
       updateValue(thumbIndex, newVal);
+
+      // Compute exact post-update values so onChangeEnd reports the correct
+      // value even before React batches the state update.
+      if (isRange) {
+        const newValues = [...values] as [number, number];
+        newValues[thumbIndex] = clamped;
+        const minGap = minStepsBetweenThumbs * step;
+        if (thumbIndex === 0) {
+          newValues[0] = Math.min(newValues[0], newValues[1] - minGap);
+        } else {
+          newValues[1] = Math.max(newValues[1], newValues[0] + minGap);
+        }
+        newValues[0] = clamp(newValues[0], min, max);
+        newValues[1] = clamp(newValues[1], min, max);
+        fireChangeEnd(newValues);
+      } else {
+        fireChangeEnd([clamped]);
+      }
     },
-    [isDisabled, values, step, min, max, updateValue],
+    [
+      isDisabled,
+      isRange,
+      values,
+      step,
+      min,
+      max,
+      minStepsBetweenThumbs,
+      updateValue,
+      fireChangeEnd,
+    ],
   );
 
   // Format display value
@@ -552,8 +613,8 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
 
     const thumbLabel = isRange
       ? thumbIndex === 0
-        ? 'Minimum value'
-        : 'Maximum value'
+        ? `${label}, minimum value`
+        : `${label}, maximum value`
       : label;
 
     const useTooltip = valueDisplay === 'tooltip';
@@ -562,6 +623,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
     const thumbElement = (
       <div
         key={thumbIndex}
+        id={!isRange ? id : undefined}
         role="slider"
         tabIndex={isDisabled ? -1 : 0}
         aria-valuemin={min}
@@ -573,7 +635,6 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
         aria-invalid={status?.type === 'error' ? true : undefined}
         aria-label={thumbLabel}
         aria-describedby={ariaDescribedBy}
-        style={positionStyle}
         onKeyDown={e => handleKeyDown(thumbIndex, e)}
         {...mergeProps(
           xdsClassName('slider-thumb', {
@@ -584,9 +645,11 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
             styles.thumb,
             isHorizontal ? styles.thumbHorizontal : styles.thumbVertical,
             !isDisabled && styles.thumbHover,
-            !isDisabled && styles.thumbFocusWithin,
+            !isDisabled && styles.thumbFocusVisible,
             isDisabled && styles.thumbDisabled,
           ),
+          undefined,
+          positionStyle,
         )}
       />
     );
@@ -680,9 +743,11 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
                 node;
             }
           }}
+          {...(isRange ? {role: 'group', 'aria-label': label} : undefined)}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
           {...stylex.props(
             styles.trackContainer,
             isHorizontal
@@ -692,6 +757,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
           )}>
           {/* Background track */}
           <div
+            aria-hidden="true"
             {...mergeProps(
               xdsClassName('slider-track', {orientation}),
               stylex.props(
@@ -703,18 +769,20 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
 
           {/* Filled track */}
           <div
-            style={filledStyle}
+            aria-hidden="true"
             {...stylex.props(
               styles.filledTrack,
               isHorizontal
                 ? styles.filledTrackHorizontal
                 : styles.filledTrackVertical,
             )}
+            style={filledStyle}
           />
 
           {/* Marks */}
           {marks && (
             <div
+              aria-hidden="true"
               {...stylex.props(
                 styles.marksContainer,
                 isHorizontal
@@ -730,24 +798,26 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
                   <div key={mark.value}>
                     <div
                       data-testid="slider-mark"
-                      style={markPos}
+                      data-mark-value={mark.value}
                       {...stylex.props(
                         styles.mark,
                         isHorizontal
                           ? styles.markHorizontal
                           : styles.markVertical,
                       )}
+                      style={markPos}
                     />
                     {mark.label && (
                       <span
                         data-testid="slider-mark-label"
-                        style={markPos}
+                        data-mark-value={mark.value}
                         {...stylex.props(
                           styles.markLabel,
                           isHorizontal
                             ? styles.markLabelHorizontal
                             : styles.markLabelVertical,
-                        )}>
+                        )}
+                        style={markPos}>
                         {mark.label}
                       </span>
                     )}
