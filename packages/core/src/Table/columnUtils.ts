@@ -10,7 +10,15 @@
  */
 
 import type {ReactNode} from 'react';
-import type {XDSTableColumn, ProportionalWidth, PixelWidth} from './types';
+import type {
+  XDSTableColumn,
+  ColumnWidth,
+  ProportionalWidth,
+  PixelWidth,
+} from './types';
+
+/** Default minimum width (in px) for proportional columns. */
+export const DEFAULT_MIN_COLUMN_WIDTH = 100;
 
 /**
  * Create a proportional column width (fr-like).
@@ -21,8 +29,15 @@ import type {XDSTableColumn, ProportionalWidth, PixelWidth} from './types';
  * proportional(2) // twice as wide as proportional(1)
  * ```
  */
-export function proportional(value: number = 1): ProportionalWidth {
-  return {type: 'proportional', value};
+export function proportional(
+  value: number = 1,
+  options?: {minWidth?: number},
+): ProportionalWidth {
+  return {
+    type: 'proportional',
+    value,
+    ...(options?.minWidth != null ? {minWidth: options.minWidth} : {}),
+  };
 }
 
 /**
@@ -35,6 +50,40 @@ export function proportional(value: number = 1): ProportionalWidth {
  */
 export function pixel(value: number): PixelWidth {
   return {type: 'pixel', value};
+}
+
+/**
+ * Convert a ColumnWidth to a CSS width string.
+ *
+ * Proportional widths are converted to percentages relative to the
+ * total proportional units across all columns.
+ */
+export function columnWidthToCSS(
+  width: ColumnWidth,
+  totalProportional: number,
+): string {
+  if (width.type === 'pixel') {
+    return `${width.value}px`;
+  }
+  const pct = (width.value / totalProportional) * 100;
+  return `${pct}%`;
+}
+
+/**
+ * Resolve the effective min-width for a column in pixels.
+ *
+ * - Pixel columns: the pixel value is inherently the min (returns 0, no override needed).
+ * - Proportional columns: explicit `minWidth` if set, otherwise `DEFAULT_MIN_COLUMN_WIDTH`.
+ * - No width set: `DEFAULT_MIN_COLUMN_WIDTH`.
+ */
+export function resolveColumnMinWidth<T extends Record<string, unknown>>(
+  column: XDSTableColumn<T>,
+): number {
+  if (!column.width || column.width.type === 'proportional') {
+    return column.width?.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH;
+  }
+  // Pixel columns — the pixel value is their width, no extra min needed
+  return 0;
 }
 
 /**

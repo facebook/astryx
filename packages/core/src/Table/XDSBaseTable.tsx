@@ -25,7 +25,11 @@ import type {
   TableCellComponentProps,
   TableHeaderCellComponentProps,
 } from './types';
-import {generateColumns, defaultCellRenderer} from './columnUtils';
+import {
+  generateColumns,
+  defaultCellRenderer,
+  resolveColumnMinWidth,
+} from './columnUtils';
 import {XDSTableRow} from './XDSTableRow';
 import {XDSTableCell} from './XDSTableCell';
 import {XDSTableHeaderCell} from './XDSTableHeaderCell';
@@ -217,10 +221,26 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
       col,
     );
 
+    // Apply column min-width on the <th>. With table-layout: fixed,
+    // header cell sizing controls column widths.
+    const minW = resolveColumnMinWidth(col);
+    const minWidthStyle = minW > 0 ? {minWidth: `${minW}px`} : undefined;
+    const existingStyle = cellRenderProps.htmlProps.style as
+      | React.CSSProperties
+      | undefined;
+    const mergedHtmlProps = minWidthStyle
+      ? {
+          ...cellRenderProps.htmlProps,
+          style: existingStyle
+            ? {...existingStyle, ...minWidthStyle}
+            : minWidthStyle,
+        }
+      : cellRenderProps.htmlProps;
+
     return (
       <HeaderCellComponent
         key={col.key}
-        {...cellRenderProps.htmlProps}
+        {...mergedHtmlProps}
         xstyle={cellRenderProps.styles}>
         {col.header ?? col.key}
       </HeaderCellComponent>

@@ -13,7 +13,15 @@ import {XDSBaseTable} from './XDSBaseTable';
 import {XDSTable} from './XDSTable';
 import {XDSTableRow} from './XDSTableRow';
 import {XDSTableCell} from './XDSTableCell';
-import {proportional, pixel, generateColumns, capitalize} from './columnUtils';
+import {
+  proportional,
+  pixel,
+  generateColumns,
+  capitalize,
+  columnWidthToCSS,
+  resolveColumnMinWidth,
+  DEFAULT_MIN_COLUMN_WIDTH,
+} from './columnUtils';
 import type {TablePlugin, XDSTableColumn} from './types';
 
 // =============================================================================
@@ -97,6 +105,55 @@ describe('columnUtils', () => {
       for (const col of cols) {
         expect(col.width).toEqual({type: 'proportional', value: 1});
       }
+    });
+  });
+
+  describe('proportional with minWidth', () => {
+    it('creates a proportional width with minWidth', () => {
+      const w = proportional(1, {minWidth: 120});
+      expect(w).toEqual({type: 'proportional', value: 1, minWidth: 120});
+    });
+
+    it('omits minWidth key when not provided', () => {
+      const w = proportional(2);
+      expect(w).toEqual({type: 'proportional', value: 2});
+      expect('minWidth' in w).toBe(false);
+    });
+  });
+
+  describe('columnWidthToCSS', () => {
+    it('converts pixel width to px string', () => {
+      expect(columnWidthToCSS(pixel(200), 1)).toBe('200px');
+    });
+
+    it('converts proportional width to percentage', () => {
+      expect(columnWidthToCSS(proportional(1), 4)).toBe('25%');
+      expect(columnWidthToCSS(proportional(2), 4)).toBe('50%');
+    });
+  });
+
+  describe('resolveColumnMinWidth', () => {
+    it('returns DEFAULT_MIN_COLUMN_WIDTH for proportional column without explicit minWidth', () => {
+      expect(resolveColumnMinWidth({key: 'a', width: proportional(1)})).toBe(
+        DEFAULT_MIN_COLUMN_WIDTH,
+      );
+    });
+
+    it('returns explicit minWidth when set', () => {
+      expect(
+        resolveColumnMinWidth({
+          key: 'a',
+          width: proportional(1, {minWidth: 200}),
+        }),
+      ).toBe(200);
+    });
+
+    it('returns 0 for pixel columns', () => {
+      expect(resolveColumnMinWidth({key: 'a', width: pixel(80)})).toBe(0);
+    });
+
+    it('returns DEFAULT_MIN_COLUMN_WIDTH for columns with no width', () => {
+      expect(resolveColumnMinWidth({key: 'a'})).toBe(DEFAULT_MIN_COLUMN_WIDTH);
     });
   });
 });
@@ -384,6 +441,57 @@ describe('XDSBaseTable', () => {
         />,
       );
       expect(screen.getByRole('table')).toHaveAttribute('data-step', '1,2');
+    });
+  });
+
+  describe('column min-widths', () => {
+    it('applies default minWidth on header cells for proportional columns', () => {
+      const cols: XDSTableColumn<User>[] = [
+        {key: 'name', header: 'Name', width: proportional(1)},
+        {key: 'age', header: 'Age', width: proportional(1)},
+      ];
+      render(<XDSBaseTable data={users} columns={cols} />);
+      const headers = screen.getAllByRole('columnheader');
+      expect(headers[0]).toHaveStyle({
+        minWidth: `${DEFAULT_MIN_COLUMN_WIDTH}px`,
+      });
+      expect(headers[1]).toHaveStyle({
+        minWidth: `${DEFAULT_MIN_COLUMN_WIDTH}px`,
+      });
+    });
+
+    it('applies explicit minWidth on proportional columns', () => {
+      const cols: XDSTableColumn<User>[] = [
+        {key: 'name', header: 'Name', width: proportional(1, {minWidth: 200})},
+        {key: 'age', header: 'Age', width: proportional(1)},
+      ];
+      render(<XDSBaseTable data={users} columns={cols} />);
+      const headers = screen.getAllByRole('columnheader');
+      expect(headers[0]).toHaveStyle({minWidth: '200px'});
+      expect(headers[1]).toHaveStyle({
+        minWidth: `${DEFAULT_MIN_COLUMN_WIDTH}px`,
+      });
+    });
+
+    it('does not set minWidth on pixel columns', () => {
+      const cols: XDSTableColumn<User>[] = [
+        {key: 'name', header: 'Name', width: pixel(80)},
+        {key: 'age', header: 'Age', width: proportional(1)},
+      ];
+      render(<XDSBaseTable data={users} columns={cols} />);
+      const headers = screen.getAllByRole('columnheader');
+      expect(headers[0].style.minWidth).toBe('');
+      expect(headers[1]).toHaveStyle({
+        minWidth: `${DEFAULT_MIN_COLUMN_WIDTH}px`,
+      });
+    });
+
+    it('applies default minWidth on auto-generated columns', () => {
+      render(<XDSBaseTable data={users} />);
+      const headers = screen.getAllByRole('columnheader');
+      for (const header of headers) {
+        expect(header).toHaveStyle({minWidth: `${DEFAULT_MIN_COLUMN_WIDTH}px`});
+      }
     });
   });
 });
