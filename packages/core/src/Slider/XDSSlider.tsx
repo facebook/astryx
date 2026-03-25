@@ -480,7 +480,16 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
     (e: PointerEvent<HTMLDivElement>) => {
       if (isDisabled) return;
       e.preventDefault();
-      const newVal = getValueFromPosition(e.clientX, e.clientY);
+
+      // If the click originated from a mark element, snap to that mark's value
+      // instead of calculating from pointer position (avoids off-by-one when
+      // clicking on wide labels like "100").
+      const markEl = (e.target as HTMLElement).closest<HTMLElement>(
+        '[data-mark-value]',
+      );
+      const newVal = markEl
+        ? Number(markEl.dataset.markValue)
+        : getValueFromPosition(e.clientX, e.clientY);
       const thumbIndex = getClosestThumb(newVal);
       draggingThumbRef.current = thumbIndex;
       updateValue(thumbIndex, newVal);
@@ -789,6 +798,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
                   <div key={mark.value}>
                     <div
                       data-testid="slider-mark"
+                      data-mark-value={mark.value}
                       {...stylex.props(
                         styles.mark,
                         isHorizontal
@@ -800,6 +810,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
                     {mark.label && (
                       <span
                         data-testid="slider-mark-label"
+                        data-mark-value={mark.value}
                         {...stylex.props(
                           styles.markLabel,
                           isHorizontal
