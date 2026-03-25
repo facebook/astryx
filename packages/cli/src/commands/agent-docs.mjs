@@ -1,10 +1,18 @@
 /**
- * @file agent-docs — Install/update AGENTS.md and CLAUDE.md
+ * @file agent-docs — Install/update agent docs for AI coding tools
  *
  * Generates a CLI cheat sheet from actual command metadata and injects
- * it into AGENTS.md and/or CLAUDE.md. Format optimized for AI coding
- * agents (Claude, Copilot, Cursor): one line per command, copy-pasteable,
- * minimal tokens.
+ * it into agent doc files. Supports multiple tools with auto-detection:
+ *
+ * - Claude Code: CLAUDE.md (root) or .claude/CLAUDE.md
+ * - Cursor: .cursorrules
+ * - Codex/generic: AGENTS.md
+ *
+ * Auto-detect: discovers existing files and updates them in place.
+ * Default (no existing files): creates .claude/CLAUDE.md.
+ *
+ * --agent <tool>: target a specific tool preset (claude, cursor, codex, all)
+ * --agent-docs-path <path>: explicit file path(s)
  */
 
 import * as fs from 'node:fs';
@@ -15,9 +23,66 @@ import {discoverComponents} from '../lib/component-discovery.mjs';
 
 const AGENTS_MD = 'AGENTS.md';
 const CLAUDE_MD = 'CLAUDE.md';
+const CLAUDE_DIR_MD = path.join('.claude', 'CLAUDE.md');
 
 const XDS_MARKER_START = '<!-- XDS:START -->';
 const XDS_MARKER_END = '<!-- XDS:END -->';
+
+/**
+ * Agent tool presets — maps tool names to their file search paths.
+ * Order matters: first existing file wins, last entry is the default (created if none exist).
+ */
+const AGENT_PRESETS = {
+  claude: [CLAUDE_MD, CLAUDE_DIR_MD],
+  cursor: ['.cursorrules', AGENTS_MD],
+  codex: [AGENTS_MD],
+};
+
+/**
+ * Find all existing agent doc files in a directory.
+ * Searches all known locations (AGENTS.md, CLAUDE.md, .claude/CLAUDE.md, .cursorrules).
+ * @param {string} targetDir
+ * @returns {string[]} Relative paths of existing agent doc files
+ */
+export function discoverAgentDocs(targetDir) {
+  const allPaths = [AGENTS_MD, CLAUDE_MD, CLAUDE_DIR_MD, '.cursorrules'];
+  return allPaths.filter(p => fs.existsSync(path.join(targetDir, p)));
+}
+
+/**
+ * Resolve which file(s) to write for a given agent tool preset.
+ * Searches for existing files first, falls back to default creation path.
+ *
+ * @param {string} targetDir
+ * @param {string} agent - Preset name: 'claude', 'cursor', 'codex', 'all'
+ * @returns {{inject: string[], create: string[]}} Files to inject into vs create fresh
+ */
+export function resolveAgentPaths(targetDir, agent) {
+  if (agent === 'all') {
+    // Inject into all existing files, create defaults for each tool
+    const existing = discoverAgentDocs(targetDir);
+    if (existing.length > 0) {
+      return {inject: existing, create: []};
+    }
+    // Nothing exists — create default for each tool
+    return {inject: [], create: [AGENTS_MD, CLAUDE_DIR_MD]};
+  }
+
+  const searchPaths = AGENT_PRESETS[agent];
+  if (!searchPaths) {
+    return {inject: [], create: [AGENTS_MD]};
+  }
+
+  // Find first existing file from search order
+  for (const p of searchPaths) {
+    if (fs.existsSync(path.join(targetDir, p))) {
+      return {inject: [p], create: []};
+    }
+  }
+
+  // None found — create the last entry (default location)
+  return {inject: [], create: [searchPaths[searchPaths.length - 1]]};
+}
 
 /**
  * Generate the agent cheat sheet from live CLI metadata.
@@ -141,10 +206,9 @@ export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = fal
  * Inject or update XDS section in AGENTS.md.
  * Always creates the file if it doesn't exist.
  */
-export function injectAgentsMd(targetDir, version, {zh = false, lang, runPrefix} = {}) {
+export function injectAgentsMd(targetDir, version, {zh = false, lang} = {}) {
   const agentsPath = path.join(targetDir, AGENTS_MD);
-  const prefix = runPrefix ?? getRunPrefix(targetDir);
-  const compressedIndex = generateCompressedIndex(version, {coreDir: findCoreDir(targetDir), runPrefix: prefix});
+  const compressedIndex = generateCompressedIndex(version, {coreDir: findCoreDir(targetDir)});
   injectXdsBlock(agentsPath, compressedIndex, {
     createIfMissing: true,
     header: `# AGENTS.md\n\nProject-specific guidance for AI coding agents.`,
@@ -157,10 +221,9 @@ export function injectAgentsMd(targetDir, version, {zh = false, lang, runPrefix}
  *
  * @returns {boolean} Whether the file was written
  */
-export function injectClaudeMd(targetDir, version, {zh = false, lang, runPrefix} = {}) {
+export function injectClaudeMd(targetDir, version, {zh = false, lang} = {}) {
   const claudePath = path.join(targetDir, CLAUDE_MD);
-  const prefix = runPrefix ?? getRunPrefix(targetDir);
-  const compressedIndex = generateCompressedIndex(version, {coreDir: findCoreDir(targetDir), runPrefix: prefix});
+  const compressedIndex = generateCompressedIndex(version, {coreDir: findCoreDir(targetDir)});
   return injectXdsBlock(claudePath, compressedIndex);
 }
 
@@ -196,56 +259,118 @@ export function removeXdsBlock(filePath, {deleteIfEmpty = false} = {}) {
 }
 
 /**
- * Remove XDS section from AGENTS.md and CLAUDE.md.
+ * Remove XDS section from all known agent doc files.
  */
 export function removeAgentDocs(targetDir) {
-  const agentsPath = path.join(targetDir, AGENTS_MD);
-  const claudePath = path.join(targetDir, CLAUDE_MD);
+  const allPaths = discoverAgentDocs(targetDir);
 
-  if (removeXdsBlock(agentsPath, {deleteIfEmpty: true})) {
-    if (!fs.existsSync(agentsPath)) {
-      console.log(`✓ Removed empty ${AGENTS_MD}`);
-    } else {
-      console.log(`✓ Removed XDS section from ${AGENTS_MD}`);
+  for (const p of allPaths) {
+    const filePath = path.join(targetDir, p);
+    // Delete if empty for files we created (AGENTS.md, .claude/CLAUDE.md)
+    const deleteIfEmpty = p === AGENTS_MD || p === CLAUDE_DIR_MD;
+    if (removeXdsBlock(filePath, {deleteIfEmpty})) {
+      if (!fs.existsSync(filePath)) {
+        console.log(`✓ Removed empty ${p}`);
+      } else {
+        console.log(`✓ Removed XDS section from ${p}`);
+      }
     }
-  }
-
-  if (removeXdsBlock(claudePath)) {
-    console.log(`✓ Removed XDS section from ${CLAUDE_MD}`);
   }
 }
 
 /**
  * Programmatic entry point for installing agent docs.
- * Used by the init wizard.
+ * Used by the init wizard, upgrade command, and agent-docs command.
  *
- * Strategy:
- * - If CLAUDE.md exists, inject there (don't create AGENTS.md)
- * - If only AGENTS.md exists (or neither), inject into AGENTS.md
- * - If both exist, inject into both
+ * Strategy (when no agent/paths specified):
+ * - Discover all existing agent doc files and update them
+ * - If nothing found, create .claude/CLAUDE.md as default
+ *
+ * @param {string} targetDir
+ * @param {object} [options]
+ * @param {boolean} [options.zh]
+ * @param {string} [options.lang]
+ * @param {string} [options.agent] - Tool preset: 'claude', 'cursor', 'codex', 'all'
+ * @param {string[]} [options.paths] - Explicit paths (overrides agent/auto-detect)
+ * @returns {string[]} List of files written
  */
-export function installAgentDocs(targetDir, {zh = false, lang} = {}) {
+export function installAgentDocs(targetDir, {zh = false, lang, agent, paths} = {}) {
   const coreDir = findCoreDir(targetDir);
   const version = getXdsVersion(coreDir);
   const runPrefix = getRunPrefix(targetDir);
-  const hasClaudeMd = fs.existsSync(path.join(targetDir, CLAUDE_MD));
-  const hasAgentsMd = fs.existsSync(path.join(targetDir, AGENTS_MD));
+  const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang, runPrefix});
+  const written = [];
 
-  if (hasClaudeMd) {
-    injectClaudeMd(targetDir, version, {zh, lang, runPrefix});
-    if (hasAgentsMd) {
-      injectAgentsMd(targetDir, version, {zh, lang, runPrefix});
+  // Explicit paths override everything
+  if (paths && paths.length > 0) {
+    for (const p of paths) {
+      const filePath = path.join(targetDir, p);
+      const dir = path.dirname(filePath);
+      if (dir !== targetDir) {
+        fs.mkdirSync(dir, {recursive: true});
+      }
+      injectXdsBlock(filePath, compressedIndex, {
+        createIfMissing: true,
+        header: `# ${path.basename(p, path.extname(p))}\n\nProject-specific guidance for AI coding agents.`,
+      });
+      written.push(p);
     }
-  } else {
-    injectAgentsMd(targetDir, version, {zh, lang, runPrefix});
+    return written;
   }
+
+  // Agent preset
+  if (agent) {
+    const {inject, create} = resolveAgentPaths(targetDir, agent);
+    for (const p of inject) {
+      injectXdsBlock(path.join(targetDir, p), compressedIndex);
+      written.push(p);
+    }
+    for (const p of create) {
+      const filePath = path.join(targetDir, p);
+      const dir = path.dirname(filePath);
+      if (dir !== targetDir) {
+        fs.mkdirSync(dir, {recursive: true});
+      }
+      injectXdsBlock(filePath, compressedIndex, {
+        createIfMissing: true,
+        header: `# ${path.basename(p, path.extname(p))}\n\nProject-specific guidance for AI coding agents.`,
+      });
+      written.push(p);
+    }
+    return written;
+  }
+
+  // Auto-detect: update all existing agent doc files
+  const existing = discoverAgentDocs(targetDir);
+
+  if (existing.length > 0) {
+    for (const p of existing) {
+      injectXdsBlock(path.join(targetDir, p), compressedIndex);
+      written.push(p);
+    }
+    return written;
+  }
+
+  // Nothing exists — create .claude/CLAUDE.md as default
+  const defaultPath = CLAUDE_DIR_MD;
+  fs.mkdirSync(path.join(targetDir, '.claude'), {recursive: true});
+  injectXdsBlock(path.join(targetDir, defaultPath), compressedIndex, {
+    createIfMissing: true,
+    header: `# CLAUDE.md\n\nProject-specific guidance for AI coding agents.`,
+  });
+  written.push(defaultPath);
+  return written;
 }
+
+const VALID_AGENTS = ['claude', 'cursor', 'codex', 'all'];
 
 export function registerAgentDocs(program) {
   program
     .command('agent-docs')
-    .description('Install/update XDS component index in AGENTS.md (and CLAUDE.md if present)')
-    .option('--remove', 'Remove XDS section from AGENTS.md and CLAUDE.md')
+    .description('Install/update XDS component index for AI coding agents')
+    .option('--remove', 'Remove XDS section from all agent doc files')
+    .option('--agent <tool>', 'Target tool: claude, cursor, codex, all')
+    .option('--agent-docs-path <path...>', 'Explicit file path(s) to write to')
     .action(options => {
       const targetDir = process.cwd();
       const coreDir = findCoreDir(targetDir);
@@ -260,29 +385,36 @@ export function registerAgentDocs(program) {
         return;
       }
 
-      const runPrefix = getRunPrefix(targetDir);
-      console.log(`\n📚 Installing XDS agent docs (v${version})...\n`);
-
-      const hasClaudeMd = fs.existsSync(path.join(targetDir, CLAUDE_MD));
-      const hasAgentsMd = fs.existsSync(path.join(targetDir, AGENTS_MD));
-      const targets = [];
-
-      if (hasClaudeMd) {
-        injectClaudeMd(targetDir, version, {zh, lang, runPrefix});
-        console.log(`✓ Injected compressed index into ${CLAUDE_MD}`);
-        targets.push(CLAUDE_MD);
-        if (hasAgentsMd) {
-          injectAgentsMd(targetDir, version, {zh, lang, runPrefix});
-          console.log(`✓ Injected compressed index into ${AGENTS_MD}`);
-          targets.push(AGENTS_MD);
-        }
-      } else {
-        injectAgentsMd(targetDir, version, {zh, lang, runPrefix});
-        console.log(`✓ Injected compressed index into ${AGENTS_MD}`);
-        targets.push(AGENTS_MD);
+      // Validate --agent
+      if (options.agent && !VALID_AGENTS.includes(options.agent)) {
+        console.error(`Error: Unknown agent "${options.agent}". Valid: ${VALID_AGENTS.join(', ')}`);
+        process.exitCode = 1;
+        return;
       }
 
+      console.log(`\n📚 Installing XDS agent docs (v${version})...\n`);
+
+      // Collect explicit paths from --agent-docs-path (commander parses variadic as array or single)
+      const explicitPaths = options.agentDocsPath
+        ? Array.isArray(options.agentDocsPath)
+          ? options.agentDocsPath
+          : [options.agentDocsPath]
+        : undefined;
+
+      const targets = installAgentDocs(targetDir, {
+        zh,
+        lang,
+        agent: options.agent,
+        paths: explicitPaths,
+      });
+
+      const runPrefix = getRunPrefix(targetDir);
       const run = `${runPrefix} xds`;
+
+      for (const t of targets) {
+        console.log(`✓ ${t}`);
+      }
+
       console.log(`
 ✅ XDS agent docs installed!
 
