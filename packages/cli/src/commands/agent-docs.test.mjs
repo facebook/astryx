@@ -11,6 +11,8 @@ import {
   injectXdsBlock,
   removeAgentDocs,
   removeXdsBlock,
+  discoverAgentDocs,
+  resolveAgentPaths,
 } from './agent-docs.mjs';
 
 let tmpDir;
@@ -270,37 +272,146 @@ describe('installAgentDocs', () => {
     );
   }
 
-  it('creates AGENTS.md when neither file exists', () => {
+  it('creates .claude/CLAUDE.md when no agent docs exist', () => {
     setupCorePackage(tmpDir);
 
-    installAgentDocs(tmpDir);
+    const written = installAgentDocs(tmpDir);
 
-    expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(true);
-    expect(fs.existsSync(path.join(tmpDir, 'CLAUDE.md'))).toBe(false);
+    expect(written).toEqual(['.claude/CLAUDE.md']);
+    expect(fs.existsSync(path.join(tmpDir, '.claude', 'CLAUDE.md'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(false);
+    const content = fs.readFileSync(path.join(tmpDir, '.claude', 'CLAUDE.md'), 'utf-8');
+    expect(content).toContain('<!-- XDS:START -->');
   });
 
-  it('injects into CLAUDE.md and skips creating AGENTS.md when only CLAUDE.md exists', () => {
+  it('injects into CLAUDE.md at root when it exists', () => {
     setupCorePackage(tmpDir);
     fs.writeFileSync(path.join(tmpDir, 'CLAUDE.md'), '# Claude\n\nProject rules.\n');
 
-    installAgentDocs(tmpDir);
+    const written = installAgentDocs(tmpDir);
 
+    expect(written).toEqual(['CLAUDE.md']);
     expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(false);
     const claudeContent = fs.readFileSync(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
     expect(claudeContent).toContain('<!-- XDS:START -->');
     expect(claudeContent).toContain('Project rules.');
   });
 
-  it('injects into both when both files exist', () => {
+  it('injects into all existing agent doc files', () => {
     setupCorePackage(tmpDir);
     fs.writeFileSync(path.join(tmpDir, 'AGENTS.md'), '# Agents\n\nAgent rules.\n');
     fs.writeFileSync(path.join(tmpDir, 'CLAUDE.md'), '# Claude\n\nClaude rules.\n');
 
-    installAgentDocs(tmpDir);
+    const written = installAgentDocs(tmpDir);
 
+    expect(written).toContain('AGENTS.md');
+    expect(written).toContain('CLAUDE.md');
     const agentsContent = fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
     const claudeContent = fs.readFileSync(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
     expect(agentsContent).toContain('<!-- XDS:START -->');
     expect(claudeContent).toContain('<!-- XDS:START -->');
+  });
+
+  it('updates existing .claude/CLAUDE.md', () => {
+    setupCorePackage(tmpDir);
+    fs.mkdirSync(path.join(tmpDir, '.claude'), {recursive: true});
+    fs.writeFileSync(path.join(tmpDir, '.claude', 'CLAUDE.md'), '# Project\n\nExisting content.\n');
+
+    const written = installAgentDocs(tmpDir);
+
+    expect(written).toEqual(['.claude/CLAUDE.md']);
+    const content = fs.readFileSync(path.join(tmpDir, '.claude', 'CLAUDE.md'), 'utf-8');
+    expect(content).toContain('Existing content.');
+    expect(content).toContain('<!-- XDS:START -->');
+  });
+
+  it('respects --agent claude preset: finds existing CLAUDE.md', () => {
+    setupCorePackage(tmpDir);
+    fs.writeFileSync(path.join(tmpDir, 'CLAUDE.md'), '# Claude\n\nRules.\n');
+
+    const written = installAgentDocs(tmpDir, {agent: 'claude'});
+
+    expect(written).toEqual(['CLAUDE.md']);
+  });
+
+  it('respects --agent claude preset: creates .claude/CLAUDE.md when nothing exists', () => {
+    setupCorePackage(tmpDir);
+
+    const written = installAgentDocs(tmpDir, {agent: 'claude'});
+
+    expect(written).toEqual(['.claude/CLAUDE.md']);
+    expect(fs.existsSync(path.join(tmpDir, '.claude', 'CLAUDE.md'))).toBe(true);
+  });
+
+  it('respects --agent codex preset: creates AGENTS.md', () => {
+    setupCorePackage(tmpDir);
+
+    const written = installAgentDocs(tmpDir, {agent: 'codex'});
+
+    expect(written).toEqual(['AGENTS.md']);
+    expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(true);
+  });
+
+  it('respects explicit --paths', () => {
+    setupCorePackage(tmpDir);
+
+    const written = installAgentDocs(tmpDir, {paths: ['custom/AGENT.md']});
+
+    expect(written).toEqual(['custom/AGENT.md']);
+    expect(fs.existsSync(path.join(tmpDir, 'custom', 'AGENT.md'))).toBe(true);
+  });
+});
+
+describe('discoverAgentDocs', () => {
+  it('finds AGENTS.md and CLAUDE.md at root', () => {
+    fs.writeFileSync(path.join(tmpDir, 'AGENTS.md'), '');
+    fs.writeFileSync(path.join(tmpDir, 'CLAUDE.md'), '');
+
+    const found = discoverAgentDocs(tmpDir);
+
+    expect(found).toContain('AGENTS.md');
+    expect(found).toContain('CLAUDE.md');
+  });
+
+  it('finds .claude/CLAUDE.md', () => {
+    fs.mkdirSync(path.join(tmpDir, '.claude'), {recursive: true});
+    fs.writeFileSync(path.join(tmpDir, '.claude', 'CLAUDE.md'), '');
+
+    const found = discoverAgentDocs(tmpDir);
+
+    expect(found).toContain('.claude/CLAUDE.md');
+  });
+
+  it('returns empty when nothing exists', () => {
+    expect(discoverAgentDocs(tmpDir)).toEqual([]);
+  });
+});
+
+describe('resolveAgentPaths', () => {
+  it('claude preset finds existing CLAUDE.md at root', () => {
+    fs.writeFileSync(path.join(tmpDir, 'CLAUDE.md'), '');
+    const result = resolveAgentPaths(tmpDir, 'claude');
+    expect(result).toEqual({inject: ['CLAUDE.md'], create: []});
+  });
+
+  it('claude preset falls back to .claude/CLAUDE.md', () => {
+    const result = resolveAgentPaths(tmpDir, 'claude');
+    expect(result).toEqual({inject: [], create: ['.claude/CLAUDE.md']});
+  });
+
+  it('all preset discovers existing files', () => {
+    fs.writeFileSync(path.join(tmpDir, 'AGENTS.md'), '');
+    fs.writeFileSync(path.join(tmpDir, 'CLAUDE.md'), '');
+    const result = resolveAgentPaths(tmpDir, 'all');
+    expect(result.inject).toContain('AGENTS.md');
+    expect(result.inject).toContain('CLAUDE.md');
+    expect(result.create).toEqual([]);
+  });
+
+  it('all preset creates defaults when nothing exists', () => {
+    const result = resolveAgentPaths(tmpDir, 'all');
+    expect(result.inject).toEqual([]);
+    expect(result.create).toContain('AGENTS.md');
+    expect(result.create).toContain('.claude/CLAUDE.md');
   });
 });
