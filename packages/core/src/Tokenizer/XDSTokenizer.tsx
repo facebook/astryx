@@ -12,7 +12,6 @@
  * - /apps/storybook/stories/Tokenizer.stories.tsx
  */
 
-
 import React, {
   useCallback,
   useId,
@@ -42,6 +41,7 @@ import {
   sizeVars,
 } from '../theme/tokens.stylex';
 import type {XDSSearchableItem, XDSSearchSource} from '../Typeahead/types';
+import {xdsClassName, mergeProps} from '../utils';
 
 // Re-export status types for convenience
 export type {
@@ -465,15 +465,18 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
         aria-label={label}
         onClick={handleWrapperClick}
         data-testid={testId}
-        {...stylex.props(
-          inputWrapperStyles.base,
-          styles.wrapper,
-          value.length > 0 && styles.wrapperWithTokens,
-          sizeStyle,
-          isDisabled && inputWrapperStyles.disabled,
-          status && inputStatusBorderStyles[status.type],
-          status && inputStatusHoverShadowStyles[status.type],
-          status && inputStatusFocusWithinStyles[status.type],
+        {...mergeProps(
+          xdsClassName('tokenizer', {size}),
+          stylex.props(
+            inputWrapperStyles.base,
+            styles.wrapper,
+            value.length > 0 && styles.wrapperWithTokens,
+            sizeStyle,
+            isDisabled && inputWrapperStyles.disabled,
+            status && inputStatusBorderStyles[status.type],
+            status && inputStatusHoverShadowStyles[status.type],
+            status && inputStatusFocusWithinStyles[status.type],
+          ),
         )}>
         {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
         {tokens}
