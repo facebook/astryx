@@ -5,10 +5,13 @@
  * all codemods needed to migrate to the target version.
  *
  * Options:
- *   --apply         Write changes to disk (default: dry-run)
- *   --to <version>  Target version (default: latest in registry)
- *   --codemod <name> Run a specific transform only
- *   --path <dir>    Source directory (default: ./src)
+ *   --apply              Write changes to disk (default: dry-run)
+ *   --from <version>     Previous version (overrides package.json detection)
+ *   --to <version>       Target version (default: latest in registry)
+ *   --force              Run codemods even if versions appear up to date
+ *   --codemod <name>     Run a specific transform only (skips version check)
+ *   --path <dir>         Source directory (default: ./src)
+ *   --install-deps       Auto-install jscodeshift without prompting (for CI/LLM)
  */
 
 import * as fs from 'node:fs';
@@ -63,9 +66,12 @@ export function registerUpgrade(program) {
     .command('upgrade')
     .description('Run codemods to migrate between XDS versions')
     .option('--apply', 'Write changes to disk (default: dry-run)', false)
+    .option('--from <version>', 'Previous version (overrides package.json detection)')
     .option('--to <version>', 'Target version', latestVersion)
+    .option('--force', 'Run codemods even if versions appear up to date', false)
     .option('--codemod <name>', 'Run a specific transform only')
     .option('--path <dir>', 'Source directory to scan', './src')
+    .option('--install-deps', 'Auto-install jscodeshift without prompting', false)
     .option('--list', 'List available codemods', false)
     .action(async (options) => {
       p.intro('XDS Upgrade');
@@ -77,11 +83,15 @@ export function registerUpgrade(program) {
         return;
       }
 
-      // Detect current version
-      const currentVersion = detectCurrentVersion();
-      if (!currentVersion) {
+      // When --codemod is specified, skip version detection entirely —
+      // the user asked for a specific transform, just run it.
+      const skipVersionCheck = !!options.codemod;
+
+      // Detect current version (--from overrides package.json)
+      const currentVersion = options.from ?? detectCurrentVersion();
+      if (!currentVersion && !skipVersionCheck) {
         p.log.error(
-          'Could not detect @xds/core version. Make sure package.json is in the current directory.',
+          'Could not detect @xds/core version. Make sure package.json is in the current directory, or use --from <version>.',
         );
         p.outro('Aborted');
         process.exitCode = 1;
@@ -89,18 +99,22 @@ export function registerUpgrade(program) {
       }
 
       const targetVersion = options.to;
-      p.log.info(`Current version: ${currentVersion}`);
-      p.log.info(`Target version:  ${targetVersion}`);
 
-      if (currentVersion >= targetVersion) {
-        p.log.success('Already up to date — no codemods to run.');
-        p.outro('Done');
-        return;
+      if (!skipVersionCheck) {
+        p.log.info(`Current version: ${currentVersion}`);
+        p.log.info(`Target version:  ${targetVersion}`);
+
+        if (!options.force && currentVersion >= targetVersion) {
+          p.log.success('Already up to date — no codemods to run.');
+          p.log.info('Use --force to run codemods anyway, or --from <version> to specify the previous version.');
+          p.outro('Done');
+          return;
+        }
       }
 
       // Resolve transforms
       const versionManifests = await getTransformsBetween(
-        currentVersion,
+        skipVersionCheck ? '0.0.0' : currentVersion,
         targetVersion,
       );
 
@@ -134,7 +148,7 @@ export function registerUpgrade(program) {
       );
 
       // Ensure jscodeshift is available
-      const ready = await ensureJscodeshift();
+      const ready = await ensureJscodeshift({installDeps: options.installDeps});
       if (!ready) {
         p.outro('Aborted');
         process.exitCode = 1;
