@@ -31,6 +31,8 @@ import {
 } from '@heroicons/react/24/outline';
 import * as stylex from '@stylexjs/stylex';
 
+// ─── Styles ─────────────────────────────────────────────────────────────────
+
 const styles = stylex.create({
   container: {
     maxWidth: 960,
@@ -56,14 +58,14 @@ const styles = stylex.create({
     minWidth: 0,
   },
   sideNavContainer: {
-    width: 240,
+    width: '100%',
     height: 400,
     border: '1px solid #e0e0e0',
     borderRadius: 8,
     overflow: 'hidden',
   },
   sideNavWithListContainer: {
-    width: 280,
+    width: '100%',
     border: '1px solid #e0e0e0',
     borderRadius: 8,
     overflow: 'auto',
@@ -81,28 +83,57 @@ const styles = stylex.create({
   listInSidebar: {
     padding: '0 8px 8px',
   },
+  resizable: {
+    resize: 'horizontal',
+    overflow: 'auto',
+    minWidth: 200,
+    maxWidth: '100%',
+    borderRight: '3px solid #ccc',
+    paddingRight: 8,
+  },
 });
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+const noop = () => {};
 
 function ScenarioBox({
   label,
   verdict,
+  resizable = true,
   children,
 }: {
   label: string;
   verdict: string;
+  resizable?: boolean;
   children: React.ReactNode;
 }) {
+  const inner = (
+    <div {...stylex.props(styles.scenarioInner, styles.bgStripe)}>
+      {children}
+    </div>
+  );
+
   return (
     <div {...stylex.props(styles.scenario)}>
       <div {...stylex.props(styles.scenarioLabel)}>
         {verdict} {label}
+        {resizable && (
+          <span style={{float: 'right', opacity: 0.5}}>
+            ↔ drag right edge to resize
+          </span>
+        )}
       </div>
-      <div {...stylex.props(styles.scenarioInner, styles.bgStripe)}>
-        {children}
-      </div>
+      {resizable ? (
+        <div {...stylex.props(styles.resizable)}>{inner}</div>
+      ) : (
+        inner
+      )}
     </div>
   );
 }
+
+// ─── Page ───────────────────────────────────────────────────────────────────
 
 export default function VerticalRhythmPage() {
   const [page, setPage] = useState(1);
@@ -118,11 +149,14 @@ export default function VerticalRhythmPage() {
           <XDSHeading level={1}>Vertical Rhythm Audit</XDSHeading>
           <XDSText type="body" color="secondary">
             Visual testing of sizing compositions between 32px controls and 36px
-            content rows. 4px grid lines shown in background.
+            content rows. 4px grid lines shown in background. Drag the right
+            edge of each scenario to resize and inspect how start/end content
+            compresses.
           </XDSText>
           <XDSText type="supporting" color="secondary">
             Size tokens: sm=28px, md=32px, lg=36px. Controls default to md
-            (32px). List/menu/nav items land at 36px (8px pad + 20px text).
+            (32px). List/menu/nav items land at 36px (8px pad + 20px text). All
+            list items are interactive — hover to see visual boundaries.
           </XDSText>
         </XDSVStack>
 
@@ -200,15 +234,16 @@ export default function VerticalRhythmPage() {
           </XDSHeading>
           <XDSText type="supporting" color="secondary">
             List items, menu items, and nav items all naturally land at 36px.
+            Hover to see boundaries.
           </XDSText>
 
           <ScenarioBox
             label="ListItem (balanced) — single line rows"
             verdict="✅ 36px each">
             <XDSList>
-              <XDSListItem label="Dashboard" />
-              <XDSListItem label="Settings" />
-              <XDSListItem label="Users" />
+              <XDSListItem label="Dashboard" onClick={noop} />
+              <XDSListItem label="Settings" onClick={noop} />
+              <XDSListItem label="Users" onClick={noop} />
             </XDSList>
           </ScenarioBox>
 
@@ -216,9 +251,9 @@ export default function VerticalRhythmPage() {
             label="ListItem (compact) — 28px rows matching sm controls"
             verdict="✅ 28px each">
             <XDSList density="compact">
-              <XDSListItem label="Dashboard" />
-              <XDSListItem label="Settings" />
-              <XDSListItem label="Users" />
+              <XDSListItem label="Dashboard" onClick={noop} />
+              <XDSListItem label="Settings" onClick={noop} />
+              <XDSListItem label="Users" onClick={noop} />
             </XDSList>
           </ScenarioBox>
 
@@ -226,9 +261,9 @@ export default function VerticalRhythmPage() {
             label="ListItem (spacious) — taller rows"
             verdict="📏 ~45px each">
             <XDSList density="spacious">
-              <XDSListItem label="Dashboard" />
-              <XDSListItem label="Settings" />
-              <XDSListItem label="Users" />
+              <XDSListItem label="Dashboard" onClick={noop} />
+              <XDSListItem label="Settings" onClick={noop} />
+              <XDSListItem label="Users" onClick={noop} />
             </XDSList>
           </ScenarioBox>
 
@@ -238,9 +273,9 @@ export default function VerticalRhythmPage() {
             <XDSDropdownMenu
               button={{label: 'Actions', variant: 'secondary'}}
               items={[
-                {label: 'Edit', onClick: () => {}},
-                {label: 'Duplicate', onClick: () => {}},
-                {label: 'Archive', onClick: () => {}},
+                {label: 'Edit', onClick: noop},
+                {label: 'Duplicate', onClick: noop},
+                {label: 'Archive', onClick: noop},
               ]}
             />
           </ScenarioBox>
@@ -253,7 +288,7 @@ export default function VerticalRhythmPage() {
           <XDSHeading level={2}>3. Controls Inside Content Rows</XDSHeading>
           <XDSText type="supporting" color="secondary">
             32px controls inside 36px content rows should have natural
-            clearance.
+            clearance. Hover rows to see boundary vs nested control.
           </XDSText>
 
           <ScenarioBox
@@ -263,11 +298,13 @@ export default function VerticalRhythmPage() {
               <XDSListItem
                 label="Notifications"
                 description="Manage how you receive alerts"
+                onClick={noop}
                 endContent={<XDSButton label="Configure" size="md" />}
               />
               <XDSListItem
                 label="Privacy"
                 description="Control who sees your data"
+                onClick={noop}
                 endContent={<XDSButton label="Edit" size="md" />}
               />
             </XDSList>
@@ -280,11 +317,13 @@ export default function VerticalRhythmPage() {
               <XDSListItem
                 label="Notifications"
                 description="Manage how you receive alerts"
+                onClick={noop}
                 endContent={<XDSButton label="Configure" size="sm" />}
               />
               <XDSListItem
                 label="Privacy"
                 description="Control who sees your data"
+                onClick={noop}
                 endContent={<XDSButton label="Edit" size="sm" />}
               />
             </XDSList>
@@ -310,6 +349,7 @@ export default function VerticalRhythmPage() {
               <XDSListItem
                 label="API Keys"
                 description="Manage application credentials"
+                onClick={noop}
                 endContent={
                   <XDSButton
                     label="More options"
@@ -322,6 +362,7 @@ export default function VerticalRhythmPage() {
               <XDSListItem
                 label="Webhooks"
                 description="Configure event notifications"
+                onClick={noop}
                 endContent={
                   <XDSButton
                     label="More options"
@@ -352,7 +393,10 @@ export default function VerticalRhythmPage() {
               <XDSButton label="Large action" variant="primary" size="lg" />
               <div {...stylex.props(styles.flex1)}>
                 <XDSList>
-                  <XDSListItem label="Item aligned with lg button" />
+                  <XDSListItem
+                    label="Item aligned with lg button"
+                    onClick={noop}
+                  />
                 </XDSList>
               </div>
             </XDSHStack>
@@ -365,7 +409,7 @@ export default function VerticalRhythmPage() {
               <XDSButton label="Action" variant="primary" size="md" />
               <div {...stylex.props(styles.flex1)}>
                 <XDSList>
-                  <XDSListItem label="Item next to md button" />
+                  <XDSListItem label="Item next to md button" onClick={noop} />
                 </XDSList>
               </div>
             </XDSHStack>
@@ -378,7 +422,10 @@ export default function VerticalRhythmPage() {
               <XDSButton label="Small" size="sm" />
               <div {...stylex.props(styles.flex1)}>
                 <XDSList density="compact">
-                  <XDSListItem label="Compact item next to sm button" />
+                  <XDSListItem
+                    label="Compact item next to sm button"
+                    onClick={noop}
+                  />
                 </XDSList>
               </div>
             </XDSHStack>
@@ -392,6 +439,7 @@ export default function VerticalRhythmPage() {
           <XDSHeading level={2}>5. Inline Editing Scenarios</XDSHeading>
           <XDSText type="supporting" color="secondary">
             TextInput/Selector placed inside list rows for inline editing.
+            Resize to see how label and controls compress.
           </XDSText>
 
           <ScenarioBox
@@ -400,6 +448,7 @@ export default function VerticalRhythmPage() {
             <XDSList>
               <XDSListItem
                 label="Display Name"
+                onClick={noop}
                 endContent={
                   <XDSTextInput
                     label="Name"
@@ -412,6 +461,7 @@ export default function VerticalRhythmPage() {
               />
               <XDSListItem
                 label="Timezone"
+                onClick={noop}
                 endContent={
                   <XDSSelector
                     label="Zone"
@@ -448,8 +498,8 @@ export default function VerticalRhythmPage() {
                   Standalone List (12px paddingInline):
                 </XDSText>
                 <XDSList>
-                  <XDSListItem label="Settings" onClick={() => {}} />
-                  <XDSListItem label="Preferences" onClick={() => {}} />
+                  <XDSListItem label="Settings" onClick={noop} />
+                  <XDSListItem label="Preferences" onClick={noop} />
                 </XDSList>
               </XDSVStack>
               <XDSVStack gap={1}>
@@ -459,8 +509,8 @@ export default function VerticalRhythmPage() {
                 <XDSDropdownMenu
                   button={{label: 'Menu', variant: 'secondary'}}
                   items={[
-                    {label: 'Settings', onClick: () => {}},
-                    {label: 'Preferences', onClick: () => {}},
+                    {label: 'Settings', onClick: noop},
+                    {label: 'Preferences', onClick: noop},
                   ]}
                 />
               </XDSVStack>
@@ -487,12 +537,9 @@ export default function VerticalRhythmPage() {
                   List items in the same sidebar:
                 </XDSText>
                 <XDSList>
-                  <XDSListItem label="Recent: Q4 Report" onClick={() => {}} />
-                  <XDSListItem
-                    label="Recent: Team Metrics"
-                    onClick={() => {}}
-                  />
-                  <XDSListItem label="Recent: API Usage" onClick={() => {}} />
+                  <XDSListItem label="Recent: Q4 Report" onClick={noop} />
+                  <XDSListItem label="Recent: Team Metrics" onClick={noop} />
+                  <XDSListItem label="Recent: API Usage" onClick={noop} />
                 </XDSList>
               </div>
             </div>
@@ -510,7 +557,8 @@ export default function VerticalRhythmPage() {
 
           <ScenarioBox
             label="TopNav with Button + TextInput in end slot"
-            verdict="✅ 8px breathing room per side">
+            verdict="✅ 8px breathing room per side"
+            resizable={false}>
             <div {...stylex.props(styles.navWrapper)}>
               <XDSTopNav
                 label="App with search"
@@ -543,7 +591,8 @@ export default function VerticalRhythmPage() {
 
           <ScenarioBox
             label="TopNav with Tabs in center + Button in end"
-            verdict="✅ Tabs (32px) centered in 48px bar">
+            verdict="✅ Tabs (32px) centered in 48px bar"
+            resizable={false}>
             <div {...stylex.props(styles.navWrapper)}>
               <XDSTopNav
                 label="Tab navigation"
@@ -631,7 +680,8 @@ export default function VerticalRhythmPage() {
         <XDSVStack gap={4}>
           <XDSHeading level={2}>9. Realistic Compositions</XDSHeading>
           <XDSText type="supporting" color="secondary">
-            How these elements actually compose in real app layouts.
+            How these elements actually compose in real app layouts. Resize to
+            see how content reflows at narrow widths.
           </XDSText>
 
           <ScenarioBox
@@ -654,9 +704,9 @@ export default function VerticalRhythmPage() {
               <XDSDropdownMenu
                 button={{label: 'Sort', variant: 'secondary'}}
                 items={[
-                  {label: 'Name A-Z', onClick: () => {}},
-                  {label: 'Date created', onClick: () => {}},
-                  {label: 'Last modified', onClick: () => {}},
+                  {label: 'Name A-Z', onClick: noop},
+                  {label: 'Date created', onClick: noop},
+                  {label: 'Last modified', onClick: noop},
                 ]}
               />
               <XDSButton label="Create" variant="primary" />
@@ -670,18 +720,21 @@ export default function VerticalRhythmPage() {
               <XDSListItem
                 label="Production"
                 description="us-east-1 · 12 instances"
+                onClick={noop}
                 startContent={<XDSIcon icon={ServerIcon} color="primary" />}
                 endContent={<XDSBadge variant="success" label="Healthy" />}
               />
               <XDSListItem
                 label="Staging"
                 description="us-west-2 · 3 instances"
+                onClick={noop}
                 startContent={<XDSIcon icon={ServerIcon} color="primary" />}
                 endContent={<XDSBadge variant="warning" label="Degraded" />}
               />
               <XDSListItem
                 label="Development"
                 description="eu-west-1 · 1 instance"
+                onClick={noop}
                 startContent={<XDSIcon icon={ServerIcon} color="primary" />}
                 endContent={
                   <XDSHStack gap={2} vAlign="center">
@@ -722,6 +775,7 @@ export default function VerticalRhythmPage() {
                   <XDSListItem
                     label="Alice Chen"
                     description="Owner"
+                    onClick={noop}
                     endContent={
                       <XDSButton label="Remove" size="sm" variant="ghost" />
                     }
@@ -729,6 +783,7 @@ export default function VerticalRhythmPage() {
                   <XDSListItem
                     label="Bob Park"
                     description="Editor"
+                    onClick={noop}
                     endContent={
                       <XDSButton label="Remove" size="sm" variant="ghost" />
                     }
@@ -736,6 +791,7 @@ export default function VerticalRhythmPage() {
                   <XDSListItem
                     label="Carol Wu"
                     description="Viewer"
+                    onClick={noop}
                     endContent={
                       <XDSButton label="Remove" size="sm" variant="ghost" />
                     }
@@ -750,9 +806,21 @@ export default function VerticalRhythmPage() {
             verdict="✅ 32px pagination below 36px rows">
             <XDSVStack gap={3}>
               <XDSList hasDividers>
-                <XDSListItem label="Item 1" description="First result" />
-                <XDSListItem label="Item 2" description="Second result" />
-                <XDSListItem label="Item 3" description="Third result" />
+                <XDSListItem
+                  label="Item 1"
+                  description="First result"
+                  onClick={noop}
+                />
+                <XDSListItem
+                  label="Item 2"
+                  description="Second result"
+                  onClick={noop}
+                />
+                <XDSListItem
+                  label="Item 3"
+                  description="Third result"
+                  onClick={noop}
+                />
               </XDSList>
               <XDSHStack gap={0} hAlign="center">
                 <XDSPagination page={page} totalPages={10} onChange={setPage} />
