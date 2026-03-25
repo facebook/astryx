@@ -297,13 +297,11 @@ export default function VerticalRhythmPage() {
             <XDSList>
               <XDSListItem
                 label="Notifications"
-                description="Manage how you receive alerts"
                 onClick={noop}
                 endContent={<XDSButton label="Configure" size="md" />}
               />
               <XDSListItem
                 label="Privacy"
-                description="Control who sees your data"
                 onClick={noop}
                 endContent={<XDSButton label="Edit" size="md" />}
               />
@@ -316,13 +314,11 @@ export default function VerticalRhythmPage() {
             <XDSList>
               <XDSListItem
                 label="Notifications"
-                description="Manage how you receive alerts"
                 onClick={noop}
                 endContent={<XDSButton label="Configure" size="sm" />}
               />
               <XDSListItem
                 label="Privacy"
-                description="Control who sees your data"
                 onClick={noop}
                 endContent={<XDSButton label="Edit" size="sm" />}
               />
@@ -348,7 +344,6 @@ export default function VerticalRhythmPage() {
             <XDSList>
               <XDSListItem
                 label="API Keys"
-                description="Manage application credentials"
                 onClick={noop}
                 endContent={
                   <XDSButton
@@ -361,7 +356,6 @@ export default function VerticalRhythmPage() {
               />
               <XDSListItem
                 label="Webhooks"
-                description="Configure event notifications"
                 onClick={noop}
                 endContent={
                   <XDSButton
@@ -719,21 +713,18 @@ export default function VerticalRhythmPage() {
             <XDSList hasDividers>
               <XDSListItem
                 label="Production"
-                description="us-east-1 · 12 instances"
                 onClick={noop}
                 startContent={<XDSIcon icon={ServerIcon} color="primary" />}
                 endContent={<XDSBadge variant="success" label="Healthy" />}
               />
               <XDSListItem
                 label="Staging"
-                description="us-west-2 · 3 instances"
                 onClick={noop}
                 startContent={<XDSIcon icon={ServerIcon} color="primary" />}
                 endContent={<XDSBadge variant="warning" label="Degraded" />}
               />
               <XDSListItem
                 label="Development"
-                description="eu-west-1 · 1 instance"
                 onClick={noop}
                 startContent={<XDSIcon icon={ServerIcon} color="primary" />}
                 endContent={
@@ -774,7 +765,6 @@ export default function VerticalRhythmPage() {
                 <XDSList hasDividers>
                   <XDSListItem
                     label="Alice Chen"
-                    description="Owner"
                     onClick={noop}
                     endContent={
                       <XDSButton label="Remove" size="sm" variant="ghost" />
@@ -782,7 +772,6 @@ export default function VerticalRhythmPage() {
                   />
                   <XDSListItem
                     label="Bob Park"
-                    description="Editor"
                     onClick={noop}
                     endContent={
                       <XDSButton label="Remove" size="sm" variant="ghost" />
@@ -790,7 +779,6 @@ export default function VerticalRhythmPage() {
                   />
                   <XDSListItem
                     label="Carol Wu"
-                    description="Viewer"
                     onClick={noop}
                     endContent={
                       <XDSButton label="Remove" size="sm" variant="ghost" />
@@ -806,21 +794,9 @@ export default function VerticalRhythmPage() {
             verdict="✅ 32px pagination below 36px rows">
             <XDSVStack gap={3}>
               <XDSList hasDividers>
-                <XDSListItem
-                  label="Item 1"
-                  description="First result"
-                  onClick={noop}
-                />
-                <XDSListItem
-                  label="Item 2"
-                  description="Second result"
-                  onClick={noop}
-                />
-                <XDSListItem
-                  label="Item 3"
-                  description="Third result"
-                  onClick={noop}
-                />
+                <XDSListItem label="Item 1" onClick={noop} />
+                <XDSListItem label="Item 2" onClick={noop} />
+                <XDSListItem label="Item 3" onClick={noop} />
               </XDSList>
               <XDSHStack gap={0} hAlign="center">
                 <XDSPagination page={page} totalPages={10} onChange={setPage} />
