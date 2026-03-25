@@ -353,7 +353,7 @@ export default function VerticalRhythmPage() {
                 endContent={
                   <XDSButton
                     label="More options"
-                    icon={<XDSIcon icon={EllipsisHorizontalIcon} />}
+                    icon={<XDSIcon icon={EllipsisHorizontalIcon} size="sm" />}
                     variant="ghost"
                     size="md"
                   />
@@ -366,7 +366,7 @@ export default function VerticalRhythmPage() {
                 endContent={
                   <XDSButton
                     label="More options"
-                    icon={<XDSIcon icon={EllipsisHorizontalIcon} />}
+                    icon={<XDSIcon icon={EllipsisHorizontalIcon} size="sm" />}
                     variant="ghost"
                     size="md"
                   />
@@ -580,7 +580,7 @@ export default function VerticalRhythmPage() {
                     />
                     <XDSButton
                       label="Settings"
-                      icon={<XDSIcon icon={Cog6ToothIcon} />}
+                      icon={<XDSIcon icon={Cog6ToothIcon} size="sm" />}
                       variant="ghost"
                     />
                   </>
@@ -646,7 +646,7 @@ export default function VerticalRhythmPage() {
 
           <ScenarioBox
             label="SideNav items with endContent buttons"
-            verdict="✅ 32px ghost buttons in 36px nav rows">
+            verdict="✅ sm icon buttons in 36px nav rows">
             <div {...stylex.props(styles.sideNavContainer)}>
               <XDSSideNav>
                 <XDSSideNavSection title="Workspace">
@@ -656,7 +656,7 @@ export default function VerticalRhythmPage() {
                     endContent={
                       <XDSButton
                         label="Add"
-                        icon={<XDSIcon icon={PlusIcon} />}
+                        icon={<XDSIcon icon={PlusIcon} size="xsm" />}
                         variant="ghost"
                         size="sm"
                       />
