@@ -30,13 +30,19 @@ function isCancel(value) {
 
 // ─── Feature: agents ─────────────────────────────────────────────────────────
 
-function runAgents(targetDir, {interactive = true} = {}) {
+function runAgents(targetDir, {interactive = true, agent, agentDocsPath} = {}) {
   try {
-    installAgentDocs(targetDir);
+    const paths = agentDocsPath
+      ? Array.isArray(agentDocsPath)
+        ? agentDocsPath
+        : [agentDocsPath]
+      : undefined;
+    const written = installAgentDocs(targetDir, {agent, paths});
+    const summary = written.join(', ');
     if (interactive) {
-      p.log.success('AI agent docs installed');
+      p.log.success(`AI agent docs installed → ${summary}`);
     } else {
-      console.log('✓ AI agent docs installed');
+      console.log(`✓ AI agent docs installed → ${summary}`);
     }
   } catch {
     const msg = 'Could not install agent docs. Try again with `npx xds init --features agents`.';
@@ -144,7 +150,9 @@ export function registerInit(program) {
     .description('Initialize XDS in your project')
     .option('--features <list>', 'Comma-separated features to install (agents, theme, template)')
     .option('--all', 'Install all features, no prompts')
-    .option('--remove-agents', 'Remove AI agent docs from AGENTS.md/CLAUDE.md')
+    .option('--remove-agents', 'Remove AI agent docs from all agent doc files')
+    .option('--agent <tool>', 'Target AI tool for agent docs: claude, cursor, codex, all')
+    .option('--agent-docs-path <path...>', 'Explicit file path(s) for agent docs')
     .action(async (options) => {
       const targetDir = process.cwd();
 
@@ -169,7 +177,11 @@ export function registerInit(program) {
         }
 
         for (const feature of features) {
-          if (feature === 'agents') runAgents(targetDir, {interactive: false});
+          if (feature === 'agents') runAgents(targetDir, {
+            interactive: false,
+            agent: options.agent,
+            agentDocsPath: options.agentDocsPath,
+          });
           if (feature === 'theme') await runTheme({interactive: false});
           if (feature === 'template') await runTemplate(targetDir, {interactive: false});
         }
