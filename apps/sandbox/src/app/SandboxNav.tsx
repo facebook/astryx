@@ -22,6 +22,7 @@ const pages = [
   {name: 'Mega Menu', href: '/pages/mega-menu/'},
   {name: 'Polymorphic Link', href: '/pages/polymorphic-link/'},
   {name: 'Table Overview', href: '/pages/table-overview/'},
+  {name: 'Vertical Rhythm', href: '/pages/vertical-rhythm/'},
 ];
 
 export function SandboxNav() {
