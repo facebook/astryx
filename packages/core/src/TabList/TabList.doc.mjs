@@ -63,6 +63,9 @@ export const docs = {
     targets: [
       {className: 'xds-tab-list', visualProps: ['size']},
       {className: 'xds-tab'},
+      {className: 'xds-tab-menu'},
+      {className: 'xds-tab-menu-dropdown'},
+      {className: 'xds-tab-menu-item'},
     ],
   },
   accessibility: [
@@ -303,6 +306,9 @@ export const docsZh = {
     targets: [
       {className: 'xds-tab-list', visualProps: ['size']},
       {className: 'xds-tab'},
+      {className: 'xds-tab-menu'},
+      {className: 'xds-tab-menu-dropdown'},
+      {className: 'xds-tab-menu-item'},
     ],
   },
   accessibility: [

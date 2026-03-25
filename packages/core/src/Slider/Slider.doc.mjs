@@ -223,9 +223,9 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-slider', visualProps: ['orientation']},
+      {className: 'xds-slider', visualProps: ['orientation'], states: ['disabled']},
       {className: 'xds-slider-track', visualProps: ['orientation']},
-      {className: 'xds-slider-thumb', visualProps: ['orientation']},
+      {className: 'xds-slider-thumb', visualProps: ['orientation'], states: ['disabled']},
     ],
   },
   accessibility: [
@@ -469,9 +469,9 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-slider', visualProps: ['orientation']},
+      {className: 'xds-slider', visualProps: ['orientation'], states: ['disabled']},
       {className: 'xds-slider-track', visualProps: ['orientation']},
-      {className: 'xds-slider-thumb', visualProps: ['orientation']},
+      {className: 'xds-slider-thumb', visualProps: ['orientation'], states: ['disabled']},
     ],
   },
   accessibility: [
