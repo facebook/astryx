@@ -11,7 +11,6 @@
  * - /packages/core/src/TreeList/XDSTreeList.tsx
  */
 
-
 import {useId, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -68,6 +67,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-2'],
     outline: 'none',
     overflow: 'hidden',
     position: 'relative',
@@ -196,19 +196,17 @@ const styles = stylex.create({
 const densityStyles = stylex.create({
   compact: {
     paddingBlock: spacingVars['--spacing-1'],
-    paddingInline: spacingVars['--spacing-2'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: lineHeightVars['--leading-snug'],
   },
   balanced: {
     paddingBlock: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-3'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: lineHeightVars['--leading-snug'],
   },
   spacious: {
     paddingBlock: spacingVars['--spacing-3'],
-    paddingInline: spacingVars['--spacing-4'],
+    paddingInline: spacingVars['--spacing-3'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: lineHeightVars['--leading-normal'],
   },

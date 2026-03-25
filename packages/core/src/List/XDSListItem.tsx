@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/List.stories.tsx
  */
 
-
 import {useContext, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -124,6 +123,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-2'],
     position: 'relative',
     boxSizing: 'border-box',
     textAlign: 'start',
@@ -132,6 +132,7 @@ const styles = stylex.create({
   // so the browser renders the ::marker. Flex layout moves to inner wrapper.
   itemWithMarker: {
     display: 'list-item',
+    paddingInline: spacingVars['--spacing-2'],
     position: 'relative',
     boxSizing: 'border-box',
     textAlign: 'start',
@@ -243,19 +244,17 @@ const styles = stylex.create({
 const densityStyles = stylex.create({
   compact: {
     paddingBlock: spacingVars['--spacing-1'],
-    paddingInline: spacingVars['--spacing-2'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: lineHeightVars['--leading-snug'],
   },
   balanced: {
     paddingBlock: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-3'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: lineHeightVars['--leading-snug'],
   },
   spacious: {
     paddingBlock: spacingVars['--spacing-3'],
-    paddingInline: spacingVars['--spacing-4'],
+    paddingInline: spacingVars['--spacing-3'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: lineHeightVars['--leading-normal'],
   },
