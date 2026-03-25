@@ -28,6 +28,7 @@ import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Styles
@@ -208,7 +209,10 @@ export function XDSTopNavMegaMenuItem({
         href={href}
         onClick={onClick}
         {...elementProps}
-        {...stylex.props(navItemStyles.item, styles.drawerItem)}>
+        {...mergeProps(
+          xdsClassName('top-nav-mega-menu-item', {mode: 'drawer'}),
+          stylex.props(navItemStyles.item, styles.drawerItem),
+        )}>
         {icon && <div {...stylex.props(styles.drawerItemIcon)}>{icon}</div>}
         <div {...stylex.props(styles.drawerItemContent)}>
           {title}
@@ -231,7 +235,10 @@ export function XDSTopNavMegaMenuItem({
       href={href}
       onClick={onClick}
       tabIndex={tabIndex}
-      {...stylex.props(styles.desktop)}>
+      {...mergeProps(
+        xdsClassName('top-nav-mega-menu-item'),
+        stylex.props(styles.desktop),
+      )}>
       {icon && <div {...stylex.props(styles.desktopIcon)}>{icon}</div>}
       <div {...stylex.props(styles.desktopContent)}>
         <span {...stylex.props(styles.desktopTitle)}>{title}</span>

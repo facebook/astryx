@@ -15,7 +15,6 @@
  * - /packages/core/src/TopNav/index.ts
  */
 
-
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -25,6 +24,7 @@ import {
   fontWeightVars,
   lineHeightVars,
 } from '../theme/tokens.stylex';
+import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
 // Styles
@@ -127,7 +127,11 @@ export function XDSTopNavMegaMenuFeaturedCard({
   children,
 }: XDSTopNavMegaMenuFeaturedCardProps) {
   return (
-    <div {...stylex.props(styles.root)}>
+    <div
+      {...mergeProps(
+        xdsClassName('top-nav-mega-menu-featured-card'),
+        stylex.props(styles.root),
+      )}>
       {image && (
         <img src={image} alt={imageAlt ?? ''} {...stylex.props(styles.image)} />
       )}
