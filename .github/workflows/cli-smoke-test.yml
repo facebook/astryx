@@ -5,10 +5,10 @@ name: CLI Smoke Test
 on:
   pull_request:
     branches: ["main"]
-    paths:
-      - "packages/cli/**"
-      - "packages/core/src/**"
   merge_group:
+
+permissions:
+  contents: read
 
 concurrency:
   group: "cli-smoke-${{ github.event.merge_group.head_sha || github.head_ref }}"
