@@ -99,9 +99,8 @@ export default function transformer(file, api) {
   });
 
   root.find(j.Identifier).forEach((path) => {
-    const newName = IDENTIFIER_MAP[path.node.name];
-    if (newName) {
-      path.node.name = newName;
+    if (Object.hasOwn(IDENTIFIER_MAP, path.node.name)) {
+      path.node.name = IDENTIFIER_MAP[path.node.name];
       hasChanges = true;
     }
   });
