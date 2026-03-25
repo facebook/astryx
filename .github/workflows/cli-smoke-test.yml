@@ -1,0 +1,31 @@
+# CLI smoke test — runs every xds command to catch regressions
+# Auto-discovers components and doc topics, nothing hardcoded.
+name: CLI Smoke Test
+
+on:
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "packages/cli/**"
+      - "packages/core/src/**"
+  merge_group:
+
+concurrency:
+  group: "cli-smoke-${{ github.event.merge_group.head_sha || github.head_ref }}"
+  cancel-in-progress: true
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "yarn"
+
+      - run: yarn install --frozen-lockfile
+
+      - name: CLI smoke test
+        run: node .github/scripts/cli-smoke-test.mjs
