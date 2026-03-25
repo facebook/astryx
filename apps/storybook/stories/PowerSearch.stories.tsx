@@ -962,3 +962,80 @@ export const WithEndContentPowerSearch: Story = {
   },
   name: 'With End Content and Result Count',
 };
+
+const overflowFilters: PowerSearchFilter[] = [
+  {
+    field: 'status',
+    operator: 'any_of',
+    value: {type: 'enum_list', value: ['open', 'in_progress']},
+  },
+  {field: 'priority', operator: 'is', value: {type: 'enum', value: 'p1'}},
+  {
+    field: 'title',
+    operator: 'contains',
+    value: {type: 'string', value: 'login'},
+  },
+  {
+    field: 'assignee',
+    operator: 'any_of',
+    value: {
+      type: 'entity_list',
+      value: [{id: 'user-1', label: 'Alice Johnson'}],
+    },
+  },
+  {
+    field: 'tags',
+    operator: 'include',
+    value: {type: 'enum_list', value: ['bug']},
+  },
+];
+
+export const OverflowInline: Story = {
+  render: args => {
+    const [filters, setFilters] =
+      useState<PowerSearchFilter[]>(overflowFilters);
+    return (
+      <div>
+        <XDSPowerSearch
+          {...args}
+          config={fullConfig}
+          filters={filters}
+          onChange={newFilters => setFilters([...newFilters])}
+          tokenOverflowBehavior="unfocusedInline"
+        />
+        <p style={{marginTop: 8}}>
+          This text will shift down when the search bar expands on focus.
+        </p>
+      </div>
+    );
+  },
+  args: {
+    placeholder: 'Add more filters...',
+  },
+  name: 'Overflow Inline',
+};
+
+export const OverflowLayer: Story = {
+  render: args => {
+    const [filters, setFilters] =
+      useState<PowerSearchFilter[]>(overflowFilters);
+    return (
+      <div>
+        <XDSPowerSearch
+          {...args}
+          config={fullConfig}
+          filters={filters}
+          onChange={newFilters => setFilters([...newFilters])}
+          tokenOverflowBehavior="unfocusedLayer"
+        />
+        <p style={{marginTop: 8}}>
+          This text should not shift when the search bar expands on focus.
+        </p>
+      </div>
+    );
+  },
+  args: {
+    placeholder: 'Add more filters...',
+  },
+  name: 'Overflow Layer',
+};

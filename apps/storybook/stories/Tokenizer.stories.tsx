@@ -209,6 +209,70 @@ export const WithEntriesOnFocus: Story = {
   name: 'With Entries On Focus',
 };
 
+export const OverflowInline: Story = {
+  render: args => {
+    const [value, setValue] = useState<XDSSearchableItem[]>([
+      users[0],
+      users[1],
+      users[2],
+      users[3],
+      users[4],
+      users[5],
+    ]);
+    return (
+      <div>
+        <XDSTokenizer
+          {...args}
+          searchSource={userSource}
+          value={value}
+          onChange={items => setValue(items)}
+          tokenOverflowBehavior="unfocusedInline"
+        />
+        <p style={{marginTop: 8}}>
+          This text will shift down when the tokenizer expands on focus.
+        </p>
+      </div>
+    );
+  },
+  args: {
+    label: 'Team Members',
+    placeholder: 'Add more...',
+  },
+  name: 'Overflow Inline',
+};
+
+export const OverflowLayer: Story = {
+  render: args => {
+    const [value, setValue] = useState<XDSSearchableItem[]>([
+      users[0],
+      users[1],
+      users[2],
+      users[3],
+      users[4],
+      users[5],
+    ]);
+    return (
+      <div>
+        <XDSTokenizer
+          {...args}
+          searchSource={userSource}
+          value={value}
+          onChange={items => setValue(items)}
+          tokenOverflowBehavior="unfocusedLayer"
+        />
+        <p style={{marginTop: 8}}>
+          This text should not shift when the tokenizer expands on focus.
+        </p>
+      </div>
+    );
+  },
+  args: {
+    label: 'Team Members',
+    placeholder: 'Add more...',
+  },
+  name: 'Overflow Layer',
+};
+
 export const WithEndContent: Story = {
   render: args => {
     const [value, setValue] = useState<XDSSearchableItem[]>([
