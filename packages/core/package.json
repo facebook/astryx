@@ -262,6 +262,12 @@
       "import": "./dist/Section/index.mjs",
       "require": "./dist/Section/index.js"
     },
+    "./SegmentedControl": {
+      "source": "./src/SegmentedControl/index.ts",
+      "types": "./dist/SegmentedControl/index.d.ts",
+      "import": "./dist/SegmentedControl/index.mjs",
+      "require": "./dist/SegmentedControl/index.js"
+    },
     "./Selector": {
       "source": "./src/Selector/index.ts",
       "types": "./dist/Selector/index.d.ts",
@@ -345,6 +351,12 @@
       "types": "./dist/TimeInput/index.d.ts",
       "import": "./dist/TimeInput/index.mjs",
       "require": "./dist/TimeInput/index.js"
+    },
+    "./Timestamp": {
+      "source": "./src/Timestamp/index.ts",
+      "types": "./dist/Timestamp/index.d.ts",
+      "import": "./dist/Timestamp/index.mjs",
+      "require": "./dist/Timestamp/index.js"
     },
     "./Token": {
       "source": "./src/Token/index.ts",

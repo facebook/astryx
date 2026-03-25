@@ -100,6 +100,9 @@ export * from './StatusDot';
 // Spinner loading indicator
 export * from './Spinner';
 
+// Timestamp display
+export * from './Timestamp';
+
 // Overflow list
 export * from './OverflowList';
 
