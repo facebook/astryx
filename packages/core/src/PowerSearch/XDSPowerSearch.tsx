@@ -11,7 +11,6 @@
  * - /packages/core/src/PowerSearch/XDSPowerSearch.doc.mjs
  */
 
-
 import React, {
   useCallback,
   useImperativeHandle,
@@ -21,7 +20,11 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {XDSTokenizer, type XDSTokenizerHandle} from '../Tokenizer';
+import {
+  XDSTokenizer,
+  type XDSTokenizerHandle,
+  type XDSTokenizerOverflowBehavior,
+} from '../Tokenizer';
 import {XDSTypeaheadItem} from '../Typeahead/XDSTypeaheadItem';
 import {XDSToken} from '../Token';
 import {XDSIcon} from '../Icon';
@@ -356,6 +359,12 @@ export interface XDSPowerSearchProps {
   /** Timezone ID for date formatting. */
   timezoneID?: string;
   /**
+   * Controls how tokens overflow when the container is too narrow.
+   * Forwarded to XDSTokenizer.
+   * @default 'none'
+   */
+  tokenOverflowBehavior?: XDSTokenizerOverflowBehavior;
+  /**
    * Content to display at the end of the input row.
    * Useful for action buttons or other controls.
    */
@@ -457,6 +466,7 @@ export function XDSPowerSearch({
   maxTokenLength = 40,
   popoverSaveButtonLabel = 'Apply',
   timezoneID,
+  tokenOverflowBehavior,
   endContent,
   resultCount,
   ref,
@@ -787,6 +797,7 @@ export function XDSPowerSearch({
           startIcon={startIcon}
           endContent={combinedEndContent}
           isDisabled={isDisabled}
+          tokenOverflowBehavior={tokenOverflowBehavior}
           hasEntriesOnFocus
           debounceMs={0}
           status={status}

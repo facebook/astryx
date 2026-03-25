@@ -13,6 +13,7 @@ export {XDSTokenizer} from './XDSTokenizer';
 export type {
   XDSTokenizerProps,
   XDSTokenizerSize,
+  XDSTokenizerOverflowBehavior,
   XDSTokenizerChange,
   XDSTokenizerHandle,
   XDSTokenizerStatus,

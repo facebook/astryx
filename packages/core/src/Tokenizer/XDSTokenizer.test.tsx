@@ -18,8 +18,17 @@ const originalMatches = HTMLElement.prototype.matches;
 // Track popover open state per element
 const popoverOpenState = new WeakMap<HTMLElement, boolean>();
 
+// Mock ResizeObserver for jsdom
+class MockResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
 // Mock Popover API for jsdom
 beforeAll(() => {
+  globalThis.ResizeObserver =
+    MockResizeObserver as unknown as typeof ResizeObserver;
   HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
     popoverOpenState.set(this, true);
     const event = new Event('toggle');
@@ -311,5 +320,100 @@ describe('XDSTokenizer', () => {
     // Tokens should be direct children of the wrapper, not nested in a div
     const tokenElements = wrapper.querySelectorAll(':scope > span');
     expect(tokenElements.length).toBeGreaterThanOrEqual(2);
+  });
+
+  describe('tokenOverflowBehavior', () => {
+    it('none: renders all tokens directly without XDSOverflowList', () => {
+      const {container} = render(
+        <XDSTokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0], users[1]]}
+          onChange={() => {}}
+          tokenOverflowBehavior="none"
+          data-testid="tokenizer"
+        />,
+      );
+      expect(screen.getByText('Alice')).toBeInTheDocument();
+      expect(screen.getByText('Bob')).toBeInTheDocument();
+      // Should not have overflow list measurement containers
+      expect(
+        container.querySelector('[data-overflow-list]'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('unfocusedInline: renders XDSOverflowList when blurred', () => {
+      render(
+        <XDSTokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0], users[1], users[2]]}
+          onChange={() => {}}
+          tokenOverflowBehavior="unfocusedInline"
+          data-testid="tokenizer"
+        />,
+      );
+      // XDSOverflowList renders a hidden measurement container plus visible items,
+      // so tokens appear multiple times in the DOM
+      expect(screen.getAllByText('Alice').length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('unfocusedInline: removes truncation on focus', () => {
+      render(
+        <XDSTokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0], users[1], users[2]]}
+          onChange={() => {}}
+          tokenOverflowBehavior="unfocusedInline"
+          data-testid="tokenizer"
+        />,
+      );
+      const wrapper = screen.getByTestId('tokenizer');
+      // Focus the wrapper (simulates focusing the input within)
+      fireEvent.focusIn(wrapper);
+      // All tokens should be directly rendered (no overflow list)
+      expect(screen.getByText('Alice')).toBeInTheDocument();
+      expect(screen.getByText('Bob')).toBeInTheDocument();
+      expect(screen.getByText('Charlie')).toBeInTheDocument();
+    });
+
+    it('unfocusedLayer: renders layer wrapper divs', () => {
+      const {container} = render(
+        <XDSTokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0], users[1]]}
+          onChange={() => {}}
+          tokenOverflowBehavior="unfocusedLayer"
+          data-testid="tokenizer"
+        />,
+      );
+      const wrapper = screen.getByTestId('tokenizer');
+      // The wrapper should be inside a layer structure (inner > outer)
+      const layerInner = wrapper.parentElement;
+      const layerOuter = layerInner?.parentElement;
+      // Layer outer should have position: relative
+      expect(layerOuter).toBeInTheDocument();
+      expect(layerInner).toBeInTheDocument();
+      // Verify the layer structure exists (inner is absolute positioned)
+      expect(container.querySelectorAll('[role="group"]').length).toBe(1);
+    });
+
+    it('unfocusedInline: does not truncate when no tokens', () => {
+      render(
+        <XDSTokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[]}
+          onChange={() => {}}
+          tokenOverflowBehavior="unfocusedInline"
+          data-testid="tokenizer"
+        />,
+      );
+      // With no tokens, should not be in truncated state
+      const wrapper = screen.getByTestId('tokenizer');
+      expect(wrapper).toBeInTheDocument();
+    });
   });
 });

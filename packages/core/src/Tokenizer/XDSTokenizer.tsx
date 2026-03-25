@@ -18,6 +18,7 @@ import React, {
   useImperativeHandle,
   useMemo,
   useRef,
+  useState,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -34,11 +35,13 @@ import {
 import {XDSToken} from '../Token';
 import {XDSIcon} from '../Icon';
 import type {XDSIconType} from '../Icon';
+import {XDSOverflowList} from '../OverflowList';
 import {
   colorVars,
   spacingVars,
   radiusVars,
   sizeVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {XDSSearchableItem, XDSSearchSource} from '../Typeahead/types';
 import {xdsClassName, mergeProps} from '../utils';
@@ -62,6 +65,17 @@ export type XDSTokenizerChange<T extends XDSSearchableItem> =
   | {type: 'reorder'};
 
 export type XDSTokenizerSize = 'sm' | 'md';
+
+/**
+ * Controls overflow behavior when tokens exceed the available width.
+ * - `'none'`: All tokens wrap normally (default).
+ * - `'unfocusedInline'`: Shows a single line with "+ N more" when unfocused, expands inline on focus.
+ * - `'unfocusedLayer'`: Shows a single line with "+ N more" when unfocused, expands as an overlay on focus.
+ */
+export type XDSTokenizerOverflowBehavior =
+  | 'none'
+  | 'unfocusedInline'
+  | 'unfocusedLayer';
 
 /**
  * Imperative handle for XDSTokenizer.
@@ -126,6 +140,14 @@ export interface XDSTokenizerProps<T extends XDSSearchableItem> {
   hasAutoFocus?: boolean;
   /** Input size. @default 'md' */
   size?: XDSTokenizerSize;
+  /**
+   * Controls how tokens overflow when the container is too narrow.
+   * - `'none'`: Tokens wrap to multiple lines (default).
+   * - `'unfocusedInline'`: Single line with "+ N more" when unfocused; expands inline on focus.
+   * - `'unfocusedLayer'`: Single line with "+ N more" when unfocused; expands as overlay on focus.
+   * @default 'none'
+   */
+  tokenOverflowBehavior?: XDSTokenizerOverflowBehavior;
   /**
    * Debounce delay in ms before triggering search after typing.
    * Set to 0 for synchronous/local search sources that don't need debouncing.
@@ -229,6 +251,40 @@ const styles = stylex.create({
     // wrapper padding is reduced for border concentricity.
     paddingInlineStart: `calc(${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px)`,
   },
+  truncatedWrapper: {
+    flexWrap: 'nowrap',
+    overflow: 'hidden',
+  },
+  truncatedSm: {
+    height: sizeVars['--size-sm'],
+  },
+  truncatedMd: {
+    height: sizeVars['--size-md'],
+  },
+  layerOuter: {
+    position: 'relative',
+    zIndex: 1,
+  },
+  layerOuterSm: {
+    height: sizeVars['--size-sm'],
+  },
+  layerOuterMd: {
+    height: sizeVars['--size-md'],
+  },
+  layerInner: {
+    position: 'absolute',
+    top: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
+    zIndex: 1,
+  },
+  overflowText: {
+    flexShrink: 0,
+    whiteSpace: 'nowrap',
+    fontSize: typeScaleVars['--text-supporting-size'],
+    color: colorVars['--color-text-secondary'],
+    paddingInline: spacingVars['--spacing-1'],
+  },
 });
 
 // =============================================================================
@@ -295,6 +351,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   endContent,
   hasAutoFocus,
   size = 'md',
+  tokenOverflowBehavior = 'none',
   debounceMs,
   onChangeQuery,
   xstyle,
@@ -317,6 +374,29 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
       inputRef.current?.blur();
     },
   }));
+
+  // Focus-within state for overflow truncation
+  const [isFocusedWithin, setIsFocusedWithin] = useState(false);
+  const isTruncated =
+    !isFocusedWithin && tokenOverflowBehavior !== 'none' && value.length > 0;
+
+  const handleFocusCapture = useCallback((e: React.FocusEvent) => {
+    setIsFocusedWithin(true);
+    // When focus enters from outside, redirect to the input so the user
+    // doesn't have to tab through every token remove button.
+    const comingFromOutside = !wrapperRef.current?.contains(
+      e.relatedTarget as Node,
+    );
+    if (comingFromOutside && e.target !== inputRef.current) {
+      inputRef.current?.focus();
+    }
+  }, []);
+
+  const handleBlurCapture = useCallback((e: React.FocusEvent) => {
+    if (!wrapperRef.current?.contains(e.relatedTarget as Node)) {
+      setIsFocusedWithin(false);
+    }
+  }, []);
 
   const isAtMax = maxEntries != null && value.length >= maxEntries;
 
@@ -459,71 +539,109 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
       xstyle={xstyle}
       className={className}
       style={style}>
-      <div
-        ref={wrapperRef}
-        role="group"
-        aria-label={label}
-        onClick={handleWrapperClick}
-        data-testid={testId}
-        {...mergeProps(
-          xdsClassName('tokenizer', {size}),
-          stylex.props(
-            inputWrapperStyles.base,
-            styles.wrapper,
-            value.length > 0 && styles.wrapperWithTokens,
-            sizeStyle,
-            isDisabled && inputWrapperStyles.disabled,
-            status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
-            status && inputStatusFocusWithinStyles[status.type],
-          ),
-        )}>
-        {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
-        {tokens}
-        <XDSBaseTypeahead
-          ref={inputRef}
-          searchSource={isAtMax ? emptySource : filteredSource}
-          value={null}
-          onChange={handleAdd}
-          renderItem={renderItem}
-          placeholder={value.length === 0 ? placeholder : ''}
-          hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
-          maxMenuItems={maxMenuItems}
-          emptySearchResultsText={emptySearchResultsText}
-          isDisabled={isDisabled}
-          hasAutoFocus={hasAutoFocus}
-          inputId={inputId}
-          ariaDescribedBy={ariaDescribedBy}
-          onChangeQuery={onChangeQuery}
-          debounceMs={debounceMs}
-          onKeyDown={handleKeyDown}
-          anchorRef={wrapperRef}
-          inputXStyle={
-            isAtMax
-              ? styles.inputAtMax
-              : value.length > 0
-                ? styles.inputCompact
-                : undefined
-          }
-        />
-        {(endContent || (hasClear && value.length > 0 && !isDisabled)) && (
-          <div {...stylex.props(styles.endSection)}>
-            {endContent}
-            {hasClear && value.length > 0 && !isDisabled && (
-              <button
-                type="button"
-                aria-label="Clear all"
-                onClick={e => {
-                  e.stopPropagation();
-                  handleClearAll();
-                }}
-                {...stylex.props(styles.clearAllButton)}>
-                <XDSIcon icon="close" size="sm" />
-              </button>
+      {(() => {
+        const wrapperContent = (
+          <div
+            ref={wrapperRef}
+            role="group"
+            aria-label={label}
+            onClick={handleWrapperClick}
+            onFocusCapture={handleFocusCapture}
+            onBlurCapture={handleBlurCapture}
+            data-testid={testId}
+            {...mergeProps(
+              xdsClassName('tokenizer', {size}),
+              stylex.props(
+                inputWrapperStyles.base,
+                styles.wrapper,
+                value.length > 0 && styles.wrapperWithTokens,
+                isTruncated
+                  ? size === 'sm'
+                    ? styles.truncatedSm
+                    : styles.truncatedMd
+                  : sizeStyle,
+                isTruncated && styles.truncatedWrapper,
+                isDisabled && inputWrapperStyles.disabled,
+                status && inputStatusBorderStyles[status.type],
+                status && inputStatusHoverShadowStyles[status.type],
+                status && inputStatusFocusWithinStyles[status.type],
+              ),
+            )}>
+            {startIcon && (
+              <XDSIcon icon={startIcon} size="sm" color="primary" />
+            )}
+            {isTruncated ? (
+              <XDSOverflowList
+                gap={1}
+                behavior="observeParent"
+                overflowRenderer={items => (
+                  <span {...stylex.props(styles.overflowText)}>
+                    +{items.length} more
+                  </span>
+                )}>
+                {tokens}
+              </XDSOverflowList>
+            ) : (
+              tokens
+            )}
+            <XDSBaseTypeahead
+              ref={inputRef}
+              searchSource={isAtMax ? emptySource : filteredSource}
+              value={null}
+              onChange={handleAdd}
+              renderItem={renderItem}
+              placeholder={value.length === 0 ? placeholder : ''}
+              hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
+              maxMenuItems={maxMenuItems}
+              emptySearchResultsText={emptySearchResultsText}
+              isDisabled={isDisabled}
+              hasAutoFocus={hasAutoFocus}
+              inputId={inputId}
+              ariaDescribedBy={ariaDescribedBy}
+              onChangeQuery={onChangeQuery}
+              debounceMs={debounceMs}
+              onKeyDown={handleKeyDown}
+              anchorRef={wrapperRef}
+              inputXStyle={
+                isAtMax || isTruncated
+                  ? styles.inputAtMax
+                  : value.length > 0
+                    ? styles.inputCompact
+                    : undefined
+              }
+            />
+            {(endContent || (hasClear && value.length > 0 && !isDisabled)) && (
+              <div {...stylex.props(styles.endSection)}>
+                {endContent}
+                {hasClear && value.length > 0 && !isDisabled && (
+                  <button
+                    type="button"
+                    aria-label="Clear all"
+                    onClick={e => {
+                      e.stopPropagation();
+                      handleClearAll();
+                    }}
+                    {...stylex.props(styles.clearAllButton)}>
+                    <XDSIcon icon="close" size="sm" />
+                  </button>
+                )}
+              </div>
             )}
           </div>
-        )}
-      </div>
+        );
+
+        if (tokenOverflowBehavior === 'unfocusedLayer') {
+          const layerOuterSizeStyle =
+            size === 'sm' ? styles.layerOuterSm : styles.layerOuterMd;
+          return (
+            <div {...stylex.props(styles.layerOuter, layerOuterSizeStyle)}>
+              <div {...stylex.props(styles.layerInner)}>{wrapperContent}</div>
+            </div>
+          );
+        }
+
+        return wrapperContent;
+      })()}
     </XDSField>
   );
 }
