@@ -27,7 +27,9 @@
     "version-packages": "changeset version",
     "verify-exports": "node scripts/verify-exports.mjs",
     "release": "yarn build && changeset publish",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "dev:sandbox": "yarn workspace @xds/core build && yarn workspace @xds/sandbox dev",
+    "dev:sandbox:source": "XDS_SOURCE=1 yarn workspace @xds/sandbox dev"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",
