@@ -18,7 +18,6 @@
  * - /apps/storybook/stories/Collapsible.stories.tsx
  */
 
-
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -63,10 +62,10 @@ const styles = stylex.create({
     color: colorVars['--color-icon-secondary'],
   },
   chevronOpen: {
-    transform: 'rotate(0deg)',
+    transform: 'rotate(180deg)',
   },
   chevronClosed: {
-    transform: 'rotate(-90deg)',
+    transform: 'rotate(0deg)',
   },
   // Content area
   contentHidden: {

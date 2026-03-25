@@ -14,7 +14,7 @@
 
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, radiusVars, shadowVars} from '../theme/tokens.stylex';
+import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {container} from '../Layout/container.stylex';
 import type {SpacingToken} from '../Layout/container.stylex';
 import {
@@ -32,12 +32,18 @@ const styles = stylex.create({
     '--card-radius': radiusVars['--radius-3'],
     backgroundColor: colorVars['--color-card'],
     borderRadius: 'var(--card-radius)',
-    boxShadow: shadowVars['--shadow-base'],
-    // Clip content to border-radius so nested containers don\'t peek out corners
+    // No drop-shadow — matches WWW XDSCard which uses border only
     overflow: 'clip',
     borderWidth: 1,
     borderStyle: 'solid',
     borderColor: colorVars['--color-border-emphasized'],
+  },
+  // Flat variant: no background, border, padding, or border-radius
+  flat: {
+    backgroundColor: 'transparent',
+    borderRadius: 0,
+    borderWidth: 0,
+    overflow: 'visible',
   },
   // Inner wrapper: container padding and overflow handling
   cardInner: {
@@ -66,8 +72,22 @@ const dynamicStyles = stylex.create({
 
 export type {SizeValue} from '../utils/types';
 
+/**
+ * Visual variant of the card.
+ * - `'card'` (default): Standard card with background, border, and border-radius.
+ * - `'flat'`: No background, border, padding, or border-radius — content only.
+ */
+export type XDSCardVariant = 'card' | 'flat';
+
 export interface XDSCardProps extends XDSBaseProps {
   ref?: React.Ref<HTMLDivElement>;
+  /**
+   * Visual variant of the card.
+   * - `'card'` (default): Standard card with background, border, and border-radius.
+   * - `'flat'`: No background, border, padding, or border-radius — content only.
+   * @default 'card'
+   */
+  variant?: XDSCardVariant;
   /**
    * CSS class name(s) appended to the root element.
    */
@@ -135,6 +155,7 @@ export interface XDSCardProps extends XDSBaseProps {
  * ```
  */
 export function XDSCard({
+  variant = 'card',
   width,
   height,
   maxWidth,
@@ -159,9 +180,10 @@ export function XDSCard({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('card'),
+        xdsClassName('card', {variant}),
         stylex.props(
           styles.cardOuter,
+          variant === 'flat' && styles.flat,
           dynamicStyles.sizing(
             width ?? null,
             height ?? null,

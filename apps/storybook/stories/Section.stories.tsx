@@ -17,6 +17,10 @@ import {
 } from '@xds/core/theme/tokens.stylex';
 
 const styles = stylex.create({
+  surfaceWrapper: {
+    backgroundColor: colorVars['--color-surface'],
+    padding: spacingVars['--spacing-6'],
+  },
   pageWrapper: {
     backgroundColor: colorVars['--color-wash'],
     padding: spacingVars['--spacing-6'],
@@ -49,7 +53,7 @@ const meta: Meta<typeof XDSSection> = {
   tags: ['autodocs'],
   decorators: [
     Story => (
-      <div {...stylex.props(styles.pageWrapper)}>
+      <div {...stylex.props(styles.surfaceWrapper)}>
         <Story />
       </div>
     ),
@@ -68,7 +72,6 @@ const meta: Meta<typeof XDSSection> = {
       control: {type: 'range', min: 100, max: 600, step: 10},
       description: 'Height in pixels',
     },
-
   },
 };
 

@@ -75,12 +75,12 @@ type Story = StoryObj<typeof XDSCenter>;
 export const Default: Story = {
   args: {
     axis: 'both',
-    width: 300,
+    width: '100%',
     height: 200,
     children: null,
   },
   render: args => (
-    <XDSSection variant="wash">
+    <XDSSection variant="wash" width="100%">
       <XDSCenter {...args}>
         <Box>Centered Content</Box>
       </XDSCenter>
@@ -91,11 +91,11 @@ export const Default: Story = {
 export const HorizontalOnly: Story = {
   args: {
     axis: 'horizontal',
-    width: 300,
+    width: '100%',
     children: null,
   },
   render: args => (
-    <XDSSection variant="wash">
+    <XDSSection variant="wash" width="100%">
       <XDSCenter {...args}>
         <Box>Horizontal Center</Box>
       </XDSCenter>
@@ -107,10 +107,11 @@ export const VerticalOnly: Story = {
   args: {
     axis: 'vertical',
     height: 150,
+    width: '100%',
     children: null,
   },
   render: args => (
-    <XDSSection variant="wash">
+    <XDSSection variant="wash" width="100%">
       <XDSCenter {...args}>
         <Box>Vertical Center</Box>
       </XDSCenter>

@@ -56,6 +56,12 @@ const meta: Meta<typeof XDSCard> = {
     ),
   ],
   argTypes: {
+    variant: {
+      control: 'select',
+      options: ['card', 'flat'],
+      description:
+        'Visual variant — card (default) has background/border/radius, flat removes all chrome',
+    },
     width: {
       control: {type: 'range', min: 100, max: 800, step: 10},
       description: 'Width in pixels',
@@ -72,7 +78,6 @@ const meta: Meta<typeof XDSCard> = {
       control: {type: 'range', min: 100, max: 600, step: 10},
       description: 'Minimum height in pixels',
     },
-
   },
 };
 
@@ -365,12 +370,79 @@ export const OnBackgrounds: Story = {
             <XDSVStack gap={2}>
               <h3 {...stylex.props(styles.text)}>Another Card</h3>
               <p {...stylex.props(styles.text, styles.textSecondary)}>
-                The card border and shadow provide separation from the surface.
+                The card border provides separation from the surface.
               </p>
             </XDSVStack>
           </XDSCard>
         </div>
       </XDSSection>
+    </div>
+  ),
+};
+
+/**
+ * Flat variant removes all card chrome (background, border, radius).
+ * Useful for grouping content without visual container treatment.
+ */
+export const FlatAppearance: Story = {
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>variant: card (default)</h4>
+        <XDSCard width={250}>
+          <XDSVStack gap={2}>
+            <h3 {...stylex.props(styles.text)}>Standard Card</h3>
+            <p {...stylex.props(styles.text, styles.textSecondary)}>
+              Has background, border, and border-radius.
+            </p>
+          </XDSVStack>
+        </XDSCard>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>variant: flat</h4>
+        <XDSCard variant="flat" width={250}>
+          <XDSVStack gap={2}>
+            <h3 {...stylex.props(styles.text)}>Flat Card</h3>
+            <p {...stylex.props(styles.text, styles.textSecondary)}>
+              No background, border, padding, or border-radius — content only.
+            </p>
+          </XDSVStack>
+        </XDSCard>
+      </div>
+    </div>
+  ),
+};
+
+/**
+ * Callout card: a card with a wash section used as a callout/highlight area.
+ * This pattern pairs XDSCard with a wash XDSSection for visual emphasis.
+ */
+export const Callout: Story = {
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <XDSCard width={350}>
+        <XDSSection variant="wash">
+          <XDSVStack gap={2}>
+            <h3 {...stylex.props(styles.text)}>💡 Tip</h3>
+            <p {...stylex.props(styles.text, styles.textSecondary)}>
+              Use a wash section inside a card for callouts, tips, or
+              highlighted information. The wash background provides visual
+              contrast against the card surface.
+            </p>
+          </XDSVStack>
+        </XDSSection>
+      </XDSCard>
+      <XDSCard width={350}>
+        <XDSSection variant="wash">
+          <XDSVStack gap={2}>
+            <h3 {...stylex.props(styles.text)}>⚠️ Warning</h3>
+            <p {...stylex.props(styles.text, styles.textSecondary)}>
+              Callout cards work well for alerts and warnings too. The full
+              bleed wash fills the card edge-to-edge.
+            </p>
+          </XDSVStack>
+        </XDSSection>
+      </XDSCard>
     </div>
   ),
 };

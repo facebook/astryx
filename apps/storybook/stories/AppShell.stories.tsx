@@ -171,7 +171,9 @@ function SideNavWithHeader() {
     <XDSSideNav
       header={
         <XDSSideNavHeading
-          icon={<XDSIcon icon={CubeIcon} size="lg" />}
+          icon={
+            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+          }
           heading="Acme App"
           headingHref="#"
         />
@@ -406,7 +408,7 @@ export const FullFeatured: Story = {
               icon={ChartBarIcon}
               selectedIcon={ChartBarIconSolid}
               href="#"
-              endContent={<XDSBadge variant="info" label='New' />}
+              endContent={<XDSBadge variant="info" label="New" />}
             />
             <XDSSideNavItem
               label="Projects"
