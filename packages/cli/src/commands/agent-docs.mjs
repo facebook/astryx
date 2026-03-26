@@ -142,7 +142,7 @@ export function generateCompressedIndex(version, {coreDir, zh = false, lang, run
   }
 
   lines.push(`${run} swizzle <Name>          eject component source (use --gap to report why)`);
-  lines.push(`${run} upgrade --apply         run version migration codemods`);
+  lines.push(`${run} upgrade --apply [--from <v> --to ${version}]  run version migration codemods`);
   lines.push(`--detail compact|brief          less output | --lang dense|zh  translation`);
   lines.push(`RULE: after @xds/core bump, always run ${run} upgrade --apply`);
   lines.push(`RULE: when swizzling, always use --gap to report missing capabilities`);
