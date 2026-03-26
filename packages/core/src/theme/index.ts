@@ -63,7 +63,6 @@ export {
   transitionDefaults,
   typographyDefaults,
   textSizeDefaults,
-  lineHeightDefaults,
   fontWeightDefaults,
   typeScaleDefaults,
   colorVars,
@@ -77,7 +76,6 @@ export {
   transitionVars,
   typographyVars,
   textSizeVars,
-  lineHeightVars,
   fontWeightVars,
   typeScaleVars,
 } from './tokens.stylex';
@@ -95,7 +93,6 @@ export type {
   TransitionVarName,
   TypographyVarName,
   TextSizeVarName,
-  LineHeightVarName,
   FontWeightVarName,
   TypeScaleVarName,
 } from './tokens.stylex';

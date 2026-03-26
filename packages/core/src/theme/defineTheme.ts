@@ -42,7 +42,6 @@ import {
   transitionDefaults,
   typographyDefaults,
   textSizeDefaults,
-  lineHeightDefaults,
   fontWeightDefaults,
   typeScaleDefaults,
 } from './tokens.stylex';
@@ -79,7 +78,6 @@ export type XDSCoreTokenName =
   | keyof typeof transitionDefaults
   | keyof typeof typographyDefaults
   | keyof typeof textSizeDefaults
-  | keyof typeof lineHeightDefaults
   | keyof typeof fontWeightDefaults
   | keyof typeof typeScaleDefaults;
 
@@ -277,7 +275,6 @@ export const xdsTokenDefaults: Record<string, string> = {
   ...transitionDefaults,
   ...typographyDefaults,
   ...textSizeDefaults,
-  ...lineHeightDefaults,
   ...fontWeightDefaults,
   ...typeScaleDefaults,
   ...domainTokenDefaults,

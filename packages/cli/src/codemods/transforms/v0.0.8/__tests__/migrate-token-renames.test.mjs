@@ -178,32 +178,54 @@ describe('migrate-token-renames (v0.0.8)', () => {
     expect(output).toContain('--color-background-purple');
   });
 
-  // === Line height renames ===
+  // === Line height renames (token string + identifier rewrite) ===
 
-  it('renames --leading-base to --text-body-leading', async () => {
-    const output = await applyTransform(`const x = lineHeightVars['--leading-base'];`);
-    expect(output).toContain('--text-body-leading');
+  it('rewrites lineHeightVars member access to typeScaleVars with new key', async () => {
+    const input = `const x = lineHeightVars['--leading-base'];`;
+    const output = await applyTransform(input);
+    expect(output).toContain('typeScaleVars["--text-body-leading"]');
+    expect(output).not.toContain('lineHeightVars');
     expect(output).not.toContain('--leading-base');
   });
 
-  it('renames --leading-snug to --text-label-leading', async () => {
-    const output = await applyTransform(`const x = '--leading-snug';`);
+  it('rewrites lineHeightVars import to typeScaleVars', async () => {
+    const input = `import { lineHeightVars } from '@xds/core/theme/tokens.stylex';
+const x = lineHeightVars['--leading-snug'];`;
+    const output = await applyTransform(input);
+    expect(output).toContain('typeScaleVars');
     expect(output).toContain('--text-label-leading');
+    expect(output).not.toContain('lineHeightVars');
+    expect(output).not.toContain('--leading-snug');
   });
 
-  it('renames --leading-normal to --text-large-leading', async () => {
+  it('rewrites lineHeightDefaults to typeScaleDefaults', async () => {
+    const input = `import { lineHeightDefaults } from '@xds/core';
+const tokens = { ...lineHeightDefaults };`;
+    const output = await applyTransform(input);
+    expect(output).toContain('typeScaleDefaults');
+    expect(output).not.toContain('lineHeightDefaults');
+  });
+
+  it('renames all --leading-* token strings', async () => {
+    const input = `const styles = {
+      a: lineHeightVars['--leading-base'],
+      b: lineHeightVars['--leading-snug'],
+      c: lineHeightVars['--leading-normal'],
+      d: lineHeightVars['--leading-tight'],
+      e: lineHeightVars['--leading-relaxed'],
+    };`;
+    const output = await applyTransform(input);
+    expect(output).toContain('typeScaleVars["--text-body-leading"]');
+    expect(output).toContain('typeScaleVars["--text-label-leading"]');
+    expect(output).toContain('typeScaleVars["--text-large-leading"]');
+    expect(output).toContain('typeScaleVars["--text-heading-1-leading"]');
+    expect(output).toContain('typeScaleVars["--text-supporting-leading"]');
+    expect(output).not.toContain('lineHeightVars');
+  });
+
+  it('renames bare --leading-* strings (e.g. in CSS)', async () => {
     const output = await applyTransform(`const x = '--leading-normal';`);
     expect(output).toContain('--text-large-leading');
-  });
-
-  it('renames --leading-tight to --text-heading-1-leading', async () => {
-    const output = await applyTransform(`const x = '--leading-tight';`);
-    expect(output).toContain('--text-heading-1-leading');
-  });
-
-  it('renames --leading-relaxed to --text-supporting-leading', async () => {
-    const output = await applyTransform(`const x = '--leading-relaxed';`);
-    expect(output).toContain('--text-supporting-leading');
   });
 
   // === Edge cases ===

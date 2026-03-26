@@ -29,7 +29,6 @@ import {
   radiusDefaults,
   typographyDefaults,
   textSizeDefaults,
-  lineHeightDefaults,
   fontWeightDefaults,
   typeScaleDefaults,
   sizeDefaults,
@@ -67,7 +66,6 @@ const TOKEN_GROUPS = {
     tokens: {
       ...typographyDefaults,
       ...textSizeDefaults,
-      ...lineHeightDefaults,
       ...fontWeightDefaults,
     },
   },
@@ -1680,7 +1678,6 @@ function ThemeEditorComponent() {
       ...radiusDefaults,
       ...typographyDefaults,
       ...textSizeDefaults,
-      ...lineHeightDefaults,
       ...fontWeightDefaults,
       ...typeScaleDefaults,
       ...sizeDefaults,

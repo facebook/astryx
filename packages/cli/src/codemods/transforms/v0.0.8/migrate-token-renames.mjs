@@ -18,6 +18,7 @@
  * - Font size: --text-* → --font-size-*
  * - Type scale: --heading-*-size/weight/leading → --text-heading-*-size/weight/leading
  * - Line height: --leading-* → semantic typeScale leading tokens
+ *   Also rewrites lineHeightVars → typeScaleVars (imports + member access)
  *
  * ## Line height migration strategy
  *
@@ -42,6 +43,10 @@ export const meta = {
   description:
     'Renames tokens from v0.0.6 intermediate names to final v0.0.8 names per the token spec.',
 };
+
+// =============================================================================
+// Token string renames (CSS custom property names)
+// =============================================================================
 
 const TOKEN_MAP = {
   // Color — Core Semantic
@@ -184,6 +189,20 @@ const TOKEN_MAP = {
   '--heading-6-leading': '--text-heading-6-leading',
 };
 
+// =============================================================================
+// JS identifier renames (import names, variable references)
+// =============================================================================
+
+const IDENTIFIER_MAP = {
+  lineHeightVars: 'typeScaleVars',
+  lineHeightDefaults: 'typeScaleDefaults',
+  lineHeightRaw: 'typeScaleDefaults',
+};
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
 const OLD_TOKENS_PATTERN = new RegExp(
   Object.keys(TOKEN_MAP)
     .sort((a, b) => b.length - a.length)
@@ -196,11 +215,16 @@ function replaceTokens(str) {
   return str.replace(OLD_TOKENS_PATTERN, (match) => TOKEN_MAP[match] || match);
 }
 
+// =============================================================================
+// Transformer
+// =============================================================================
+
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
 
+  // --- Pass 1: Rename token strings in string literals ---
   const replaceInStringNode = (path) => {
     if (typeof path.node.value !== 'string') return;
     const original = path.node.value;
@@ -218,6 +242,7 @@ export default function transformer(file, api) {
     }
   });
 
+  // --- Pass 2: Rename token strings in template literals ---
   root.find(j.TemplateLiteral).forEach((path) => {
     for (const quasi of path.node.quasis) {
       const original = quasi.value.raw;
@@ -228,6 +253,15 @@ export default function transformer(file, api) {
         hasChanges = true;
       }
     }
+  });
+
+  // --- Pass 3: Rename JS identifiers (lineHeightVars → typeScaleVars, etc.) ---
+  // This handles imports, member expressions, and any other reference in one pass.
+  root.find(j.Identifier).forEach((path) => {
+    const newName = IDENTIFIER_MAP[path.node.name];
+    if (!newName) return;
+    path.node.name = newName;
+    hasChanges = true;
   });
 
   return hasChanges ? root.toSource() : undefined;

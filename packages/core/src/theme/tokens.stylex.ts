@@ -325,23 +325,6 @@ export const textSizeRaw = textSizeDefaults;
 export const textSizeVars = stylex.defineVars(textSizeDefaults);
 
 // =============================================================================
-// Typography Tokens - Line Heights
-// =============================================================================
-
-export const lineHeightDefaults = {
-  '--leading-tight': '1.25', // Display text, headings
-  '--leading-snug': '1.375', // Compact body text, headings
-  '--leading-base': '1.4285714285714286', // Body text with --font-size-base (20px line / 14px font)
-  '--leading-normal': '1.5', // Body text, large body
-  '--leading-relaxed': '1.625', // Editorial body, reading text
-} as const;
-
-/** @deprecated Use lineHeightDefaults */
-export const lineHeightRaw = lineHeightDefaults;
-
-export const lineHeightVars = stylex.defineVars(lineHeightDefaults);
-
-// =============================================================================
 // Typography Tokens - Font Weights
 // =============================================================================
 
@@ -370,7 +353,6 @@ export type ShadowVarName = keyof typeof shadowDefaults;
 export type TransitionVarName = keyof typeof transitionDefaults;
 export type TypographyVarName = keyof typeof typographyDefaults;
 export type TextSizeVarName = keyof typeof textSizeDefaults;
-export type LineHeightVarName = keyof typeof lineHeightDefaults;
 export type FontWeightVarName = keyof typeof fontWeightDefaults;
 
 // =============================================================================
