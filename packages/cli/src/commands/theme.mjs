@@ -138,8 +138,6 @@ function deriveColorPalette({accent, positive, negative, warning, mode}) {
     '--color-error-muted': ld(withAlpha(negative, 0.2), withAlpha(negative, 0.25)),
     '--color-warning': ld(warning, mixColors(warning, '#FFCC00', 0.3)),
     '--color-warning-muted': ld(withAlpha(warning, 0.2), withAlpha(warning, 0.25)),
-    '--color-info': ld('#5B08D8', '#6B1EFD'),
-    '--color-info-muted': ld('#7952FF33', '#5B08D83F'),
 
     // Divider
     '--color-border': ld('#05365919', '#F2F4F619'),

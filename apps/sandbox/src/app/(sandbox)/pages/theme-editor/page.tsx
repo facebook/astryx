@@ -141,8 +141,6 @@ const COLOR_CATEGORIES = {
     '--color-error-muted',
     '--color-warning',
     '--color-warning-muted',
-    '--color-info',
-    '--color-info-muted',
   ],
   Divider: [
     '--color-border',

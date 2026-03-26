@@ -76,7 +76,7 @@ describe('generateThemeRules', () => {
     );
     expect(semanticSizeTokens).not.toBeNull();
     semanticSizeTokens!.forEach(m => {
-      expect(m).toContain('var(--text-');
+      expect(m).toContain('var(--font-size-');
     });
   });
 

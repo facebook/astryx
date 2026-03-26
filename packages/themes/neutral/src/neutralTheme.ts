@@ -54,10 +54,6 @@ export const neutralTheme = defineTheme({
     '--color-overlay': ['oklch(0 0 0 / 50%)', 'oklch(0 0 0 / 80%)'],
     '--color-overlay-hover': ['oklch(0 0 0 / 5%)', 'oklch(1 0 0 / 5%)'],
     '--color-overlay-pressed': ['oklch(0 0 0 / 10%)', 'oklch(1 0 0 / 10%)'],
-    '--color-accent': ['oklch(0.708 0 0)', 'oklch(0.556 0 0)'],
-    '--color-error': ['#E3193B', '#F5394F'],
-    '--color-success': ['#0D8626', '#0D8626'],
-    '--color-warning': ['#F2C00B', '#E9AF08'],
     '--color-background-muted': ['oklch(0.97 0 0)', 'oklch(0.269 0 0)'],
 
     // Text
@@ -95,15 +91,9 @@ export const neutralTheme = defineTheme({
       'oklch(0.828 0.189 84.429 / 20%)',
       'oklch(0.769 0.188 70.08 / 20%)',
     ],
-    '--color-info': ['oklch(0.488 0.243 264.376)', 'oklch(0.627 0.265 303.9)'],
-    '--color-info-muted': [
-      'oklch(0.488 0.243 264.376 / 20%)',
-      'oklch(0.627 0.265 303.9 / 20%)',
-    ],
 
     // Border
     '--color-border': ['oklch(0.922 0 0)', 'oklch(1 0 0 / 10%)'],
-    '--color-border-emphasized': ['oklch(0.708 0 0)', 'oklch(0.556 0 0)'],
     '--color-border-emphasized': ['oklch(0.85 0 0)', 'oklch(0.371 0 0)'],
 
     // Effects
@@ -267,8 +257,6 @@ export const neutralTheme = defineTheme({
     // =========================================================================
     // Shadows — oklch-based
     // =========================================================================
-    '--shadow-low':
-      '0 1px 2px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 20%))',
     '--shadow-low':
       '0 2px 4px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 15%)), 0 4px 8px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 20%))',
     '--shadow-med':

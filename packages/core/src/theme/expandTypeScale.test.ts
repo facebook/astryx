@@ -231,7 +231,7 @@ describe('expandTypeScale', () => {
           const fontSize = Math.round(
             config.base * Math.pow(config.ratio, step),
           );
-          const ratio = parseFloat(tokens[`--heading-${level}-leading`]);
+          const ratio = parseFloat(tokens[`--text-heading-${level}-leading`]);
           const lhPx = Math.round(fontSize * ratio);
           expect(lhPx % 4).toBe(0);
           expect(lhPx).toBeGreaterThanOrEqual(fontSize + 4);

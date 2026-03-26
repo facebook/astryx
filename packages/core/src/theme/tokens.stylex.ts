@@ -56,8 +56,6 @@ export const colorDefaults = {
   '--color-warning': 'light-dark(#E9AF08, #F2C00B)',
   '--color-warning-muted': 'light-dark(#E2A40033, #E2A4003F)',
   '--color-on-warning': 'light-dark(#0A1317, #0A1317)',
-  '--color-info': 'light-dark(#5B08D8, #6B1EFD)',
-  '--color-info-muted': 'light-dark(#7952FF33, #5B08D83F)',
 
   // Border
   '--color-border': 'light-dark(#05365919, #F2F4F619)',
