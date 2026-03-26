@@ -262,6 +262,12 @@
       "import": "./dist/Section/index.mjs",
       "require": "./dist/Section/index.js"
     },
+    "./SegmentedControl": {
+      "source": "./src/SegmentedControl/index.ts",
+      "types": "./dist/SegmentedControl/index.d.ts",
+      "import": "./dist/SegmentedControl/index.mjs",
+      "require": "./dist/SegmentedControl/index.js"
+    },
     "./Selector": {
       "source": "./src/Selector/index.ts",
       "types": "./dist/Selector/index.d.ts",
