@@ -384,6 +384,7 @@ describe('radius', () => {
     expect(theme.tokens['--radius-inner']).toBe('6px');
     expect(theme.tokens['--radius-element']).toBe('12px');
     expect(theme.tokens['--radius-container']).toBe('18px');
+    expect(theme.tokens['--radius-page']).toBe('24px');
     expect(theme.tokens['--radius-none']).toBe('0px');
     expect(theme.tokens['--radius-full']).toBe('9999px');
   });
@@ -406,7 +407,7 @@ describe('radius', () => {
     expect(theme.tokens['--radius-inner']).toBe('0px');
     expect(theme.tokens['--radius-element']).toBe('0px');
     expect(theme.tokens['--radius-container']).toBe('0px');
-    expect(theme.tokens['--radius-container']).toBe('0px');
+    expect(theme.tokens['--radius-page']).toBe('0px');
     expect(theme.tokens['--radius-none']).toBe('0px');
     expect(theme.tokens['--radius-full']).toBe('9999px');
   });

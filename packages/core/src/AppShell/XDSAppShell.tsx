@@ -335,7 +335,7 @@ const styles = stylex.create({
     position: 'absolute',
     inset: 0,
     backgroundColor: colorVars['--color-background-surface'],
-    borderStartStartRadius: radiusVars['--radius-container'],
+    borderStartStartRadius: radiusVars['--radius-page'],
     pointerEvents: 'none',
   },
   elevatedContentWrapper: {
