@@ -74,10 +74,10 @@ export const colorDefaults = {
   '--color-text-blue': 'light-dark(#042F97, #AFD7FF)',
 
   // Cyan
-  '--color-background-cyan': 'light-dark(#00BCD433, #00BCD433)',
+  '--color-background-cyan': 'light-dark(#03A7D733, #03A7D733)',
   '--color-border-cyan': 'light-dark(#00BCD4, #4DD0E1)',
   '--color-icon-cyan': 'light-dark(#00ACC1, #26C6DA)',
-  '--color-text-cyan': 'light-dark(#006064, #B2EBF2)',
+  '--color-text-cyan': 'light-dark(#014975, #A1EEF9)',
 
   // Gray
   '--color-background-gray': 'light-dark(#0A131733, #666A724C)',
@@ -98,10 +98,10 @@ export const colorDefaults = {
   '--color-text-orange': 'light-dark(#6B2203, #FDB876)',
 
   // Pink
-  '--color-background-pink': 'light-dark(#E91E6333, #E91E6333)',
+  '--color-background-pink': 'light-dark(#E638B333, #E638B333)',
   '--color-border-pink': 'light-dark(#E91E63, #F48FB1)',
   '--color-icon-pink': 'light-dark(#C2185B, #EC407A)',
-  '--color-text-pink': 'light-dark(#880E4F, #F8BBD0)',
+  '--color-text-pink': 'light-dark(#650053, #FEADE3)',
 
   // Purple
   '--color-background-purple': 'light-dark(#7952FF33, #7952FF33)',
@@ -122,7 +122,7 @@ export const colorDefaults = {
   '--color-text-teal': 'light-dark(#083943, #40DCCD)',
 
   // Yellow
-  '--color-background-yellow': 'light-dark(#FFEB3B33, #FFEB3B33)',
+  '--color-background-yellow': 'light-dark(#E2A40033, #E2A40033)',
   '--color-border-yellow': 'light-dark(#FFEB3B, #FFF176)',
   '--color-icon-yellow': 'light-dark(#FBC02D, #FFEE58)',
   '--color-text-yellow': 'light-dark(#753F07, #FBCE03)',
