@@ -62,7 +62,6 @@ export type RadiusScaleTokens = Record<string, string>;
  * // tokens['--radius-inner'] === '4px'
  * // tokens['--radius-element'] === '8px'
  * // tokens['--radius-container'] === '12px'
- * // tokens['--radius-container'] === '16px'
  * // tokens['--radius-full'] === '9999px'
  * ```
  */
@@ -75,7 +74,6 @@ export function expandRadiusScale(
     '--radius-inner': `${Math.round(base * 1 * multiplier)}px`,
     '--radius-element': `${Math.round(base * 2 * multiplier)}px`,
     '--radius-container': `${Math.round(base * 3 * multiplier)}px`,
-    '--radius-container': `${Math.round(base * 4 * multiplier)}px`,
     '--radius-full': '9999px',
   };
 }

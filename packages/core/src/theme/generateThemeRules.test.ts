@@ -72,7 +72,7 @@ describe('generateThemeRules', () => {
   it('emits semantic size tokens as var() refs', () => {
     const scopeRule = rules.find(r => r.includes(':scope'))!;
     const semanticSizeTokens = scopeRule.match(
-      /--(?:heading-\d|text-(?:body|large|label|code|supporting))-size: [^;]+/g,
+      /--(?:text-heading-\d|text-(?:body|large|label|code|supporting))-size: [^;]+/g,
     );
     expect(semanticSizeTokens).not.toBeNull();
     semanticSizeTokens!.forEach(m => {
@@ -102,9 +102,9 @@ describe('generateThemeRules', () => {
       const rule = rules.find(r => r.includes(`.xds-heading.level-${level}`));
       expect(rule).toBeDefined();
       expect(rule).toContain('font-family');
-      expect(rule).toContain(`var(--heading-${level}-size)`);
-      expect(rule).toContain(`var(--heading-${level}-weight)`);
-      expect(rule).toContain(`var(--heading-${level}-leading)`);
+      expect(rule).toContain(`var(--text-heading-${level}-size)`);
+      expect(rule).toContain(`var(--text-heading-${level}-weight)`);
+      expect(rule).toContain(`var(--text-heading-${level}-leading)`);
     }
   });
 

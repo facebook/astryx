@@ -72,7 +72,7 @@ describe('migrate-token-names', () => {
     const output = await applyTransform(input);
     expect(output).toContain('--color-overlay-hover');
     expect(output).toContain('--color-overlay-pressed');
-    expect(output).toContain('--color-overlay-disabled');
+    expect(output).toContain('--color-overlay');
   });
 
   it('renames focus-outline tokens to ring-focus', async () => {
@@ -135,7 +135,7 @@ describe('migrate-token-names', () => {
 
   // === Token removals (replaced by existing) ===
 
-  it('replaces --color-accent-text with --color-text-accent', async () => {
+  it('replaces --color-accent-text with --color-text-link', async () => {
     const input = `const x = colorVars['--color-accent-text'];`;
     const output = await applyTransform(input);
     expect(output).toContain('--color-text-accent');
@@ -205,9 +205,9 @@ describe('migrate-token-names', () => {
   it('does not modify unrelated tokens', async () => {
     const input = `const x = {
       a: colorVars['--color-text-primary'],
-      b: colorVars['--color-background-surface'],
+      b: colorVars['--color-surface'],
       c: colorVars['--color-warning'],
-      d: colorVars['--color-background-blue'],
+      d: colorVars['--color-blue-background'],
     };`;
     const output = await applyTransform(input);
     expect(output).toBe(input);

@@ -5,8 +5,8 @@
  *
  * Color — semantic clarity:
  * - '--color-accent-deemphasized' → '--color-accent-muted'
- * - '--color-accent-text' → '--color-text-accent'
- * - '--color-deemphasized' → '--color-background-muted'
+ * - '--color-accent-text' → '--color-text-link'
+ * - '--color-deemphasized' → '--color-muted'
  * - '--color-positive' → '--color-success'
  * - '--color-positive-deemphasized' → '--color-success-muted'
  * - '--color-negative' → '--color-error'
@@ -19,14 +19,14 @@
  * - '--color-hover-overlay' → '--color-overlay-hover'
  * - '--color-pressed-overlay' → '--color-overlay-pressed'
  * - '--color-disabled-overlay' → '--color-overlay-disabled'
- * - '--color-focus-outline' → '--color-accent'
- * - '--color-focus-outline-error' → '--color-error'
- * - '--color-focus-outline-success' → '--color-success'
- * - '--color-focus-outline-warning' → '--color-warning'
+ * - '--color-focus-outline' → '--color-ring-focus'
+ * - '--color-focus-outline-error' → '--color-ring-focus-error'
+ * - '--color-focus-outline-success' → '--color-ring-focus-success'
+ * - '--color-focus-outline-warning' → '--color-ring-focus-warning'
  *
  * Color — border/divider:
  * - '--color-divider' → '--color-border'
- * - '--color-divider-high-contrast' → '--color-border-emphasized'
+ * - '--color-divider-high-contrast' → '--color-border-strong'
  * - '--color-divider-emphasized' → '--color-border-emphasized'
  *
  * Color — effects:
@@ -34,8 +34,8 @@
  * - '--color-shadow-elevation' → '--color-shadow'
  *
  * Color — media:
- * - '--color-text-on-media' → '--color-on-dark'
- * - '--color-icon-on-media' → '--color-icon-on-dark'
+ * - '--color-text-on-media' → '--color-text-on-dark-media'
+ * - '--color-icon-on-media' → '--color-icon-on-dark-media'
  *
  * Color — removals (replaced by existing tokens):
  * - '--color-text-placeholder' → '--color-text-secondary'
@@ -75,7 +75,7 @@ const TOKEN_MAP = {
   '--color-accent-deemphasized': '--color-accent-muted',
   '--color-focus-outline-error': '--color-error',
   '--color-divider-emphasized': '--color-border-emphasized',
-  '--color-disabled-overlay': '--color-overlay-disabled',
+  '--color-disabled-overlay': '--color-overlay',
   '--color-shadow-elevation': '--color-shadow',
   '--color-text-placeholder': '--color-text-secondary',
   '--color-pressed-overlay': '--color-overlay-pressed',
@@ -91,12 +91,34 @@ const TOKEN_MAP = {
   '--color-positive': '--color-success',
   '--color-divider': '--color-border',
   '--color-glimmer': '--color-skeleton',
+  // Intermediate v0.0.6 names → final names
+  '--color-ring-focus-success': '--color-success',
+  '--color-ring-focus-warning': '--color-warning',
+  '--color-ring-focus-error': '--color-error',
+  '--color-ring-focus': '--color-accent',
+  '--color-border-strong': '--color-border-emphasized',
+  '--color-icon-on-dark-media': '--color-icon-on-dark',
+  '--color-text-on-dark-media': '--color-on-dark',
+  '--color-text-link': '--color-text-accent',
+  '--color-secondary': '--color-neutral',
+  '--color-muted': '--color-background-muted',
+  '--color-surface': '--color-background-surface',
+  '--color-wash': '--color-background-body',
+  '--color-card': '--color-background-card',
+  '--color-popover': '--color-background-popover',
+  '--color-hover-tint': '--color-tint-hover',
   // Inset shadow: insetshadow → inset-shadow (Tailwind alignment)
   '--insetshadow-border-positive': '--shadow-inset-success',
   '--insetshadow-border-negative': '--shadow-inset-error',
   '--insetshadow-border-warning': '--shadow-inset-warning',
   '--insetshadow-border-accent': '--shadow-inset-selected',
   '--insetshadow-border-hover': '--shadow-inset-hover',
+  // Intermediate v0.0.6 inset shadow names → final names
+  '--inset-shadow-border-positive': '--shadow-inset-success',
+  '--inset-shadow-border-negative': '--shadow-inset-error',
+  '--inset-shadow-border-warning': '--shadow-inset-warning',
+  '--inset-shadow-border-accent': '--shadow-inset-selected',
+  '--inset-shadow-border-hover': '--shadow-inset-hover',
   // Easing: easing → ease (Tailwind alignment)
   '--easing-standard': '--ease-standard',
 };

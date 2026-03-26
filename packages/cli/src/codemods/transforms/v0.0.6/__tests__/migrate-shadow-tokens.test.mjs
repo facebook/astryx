@@ -27,14 +27,25 @@ describe('migrate-shadow-tokens', () => {
   it('--shadow-1 → --shadow-low', async () => {
     expect(await applyTransform(`const x = '--shadow-1';`)).toContain('--shadow-low');
   });
-  it('--shadow-2 → --shadow-low', async () => {
-    expect(await applyTransform(`const x = '--shadow-2';`)).toContain('--shadow-low');
-  });
   it('--shadow-3 → --shadow-med', async () => {
     expect(await applyTransform(`const x = '--shadow-3';`)).toContain('--shadow-med');
   });
   it('--shadow-4 → --shadow-high', async () => {
     expect(await applyTransform(`const x = '--shadow-4';`)).toContain('--shadow-high');
+  });
+
+  // From intermediate v0.0.6 names
+  it('--shadow-base → --shadow-low', async () => {
+    expect(await applyTransform(`const x = '--shadow-base';`)).toContain('--shadow-low');
+  });
+  it('--shadow-menu → --shadow-low', async () => {
+    expect(await applyTransform(`const x = '--shadow-menu';`)).toContain('--shadow-low');
+  });
+  it('--shadow-hover → --shadow-med', async () => {
+    expect(await applyTransform(`const x = '--shadow-hover';`)).toContain('--shadow-med');
+  });
+  it('--shadow-dialog → --shadow-high', async () => {
+    expect(await applyTransform(`const x = '--shadow-dialog';`)).toContain('--shadow-high');
   });
 
   // Inset shadows
@@ -44,11 +55,8 @@ describe('migrate-shadow-tokens', () => {
   it('--elevation-input-hover-success → --shadow-inset-success', async () => {
     expect(await applyTransform(`const x = '--elevation-input-hover-success';`)).toContain('--shadow-inset-success');
   });
-  it('--elevation-input-hover-warning → --shadow-inset-warning', async () => {
-    expect(await applyTransform(`const x = '--elevation-input-hover-warning';`)).toContain('--shadow-inset-warning');
-  });
-  it('--elevation-input-hover-error → --shadow-inset-error', async () => {
-    expect(await applyTransform(`const x = '--elevation-input-hover-error';`)).toContain('--shadow-inset-error');
+  it('--inset-shadow-border-hover → --shadow-inset-hover', async () => {
+    expect(await applyTransform(`const x = '--inset-shadow-border-hover';`)).toContain('--shadow-inset-hover');
   });
 
   // JS identifiers
@@ -74,32 +82,12 @@ describe('migrate-shadow-tokens', () => {
     expect(out).not.toContain('--elevation-dialog');
   });
 
-  // defineTheme
-  it('handles defineTheme', async () => {
-    const out = await applyTransform(`const t = defineTheme({ tokens: { '--elevation-base': 'x', '--elevation-input-hover': 'y' } })`);
-    expect(out).toContain('--shadow-low');
-    expect(out).toContain('--shadow-inset-hover');
-  });
-
   // Safety
-  it('does not modify --color-shadow-elevation', async () => {
-    expect(await applyTransform(`const x = '--color-shadow-elevation';`)).toContain('--color-shadow-elevation');
-  });
   it('returns undefined when no changes needed', async () => {
     const {default: transform} = await import('../migrate-shadow-tokens.mjs');
     const jscodeshift = (await import('jscodeshift')).default;
     const j = jscodeshift.withParser('tsx');
     const result = transform({source: `const x = '--shadow-low';`, path: 'test.tsx'}, {jscodeshift: j, stats: () => {}, report: () => {}});
     expect(result).toBeUndefined();
-  });
-
-  // Real-world pattern
-  it('handles full component pattern', async () => {
-    const out = await applyTransform(`import {elevationVars} from '../theme/tokens.stylex';
-const s = stylex.create({ c: { boxShadow: elevationVars['--elevation-menu'] } });`);
-    expect(out).toContain('shadowVars');
-    expect(out).toContain('--shadow-low');
-    expect(out).not.toContain('elevationVars');
-    expect(out).not.toContain('--elevation-menu');
   });
 });

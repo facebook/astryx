@@ -603,9 +603,9 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
 
   for (let level = 1; level <= 6; level++) {
     parts.push(`  h${level} {
-    font-size: ${val(`--heading-${level}-size`)};
-    font-weight: ${val(`--heading-${level}-weight`)};
-    line-height: ${val(`--heading-${level}-leading`)};
+    font-size: ${val(`--text-heading-${level}-size`)};
+    font-weight: ${val(`--text-heading-${level}-weight`)};
+    line-height: ${val(`--text-heading-${level}-leading`)};
   }`);
   }
 

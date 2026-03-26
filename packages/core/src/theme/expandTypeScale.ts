@@ -329,9 +329,9 @@ export function expandTypeScale(config: XDSTypeScaleConfig): TypeScaleTokens {
     const size = computeSize(base, ratio, step);
     const leading = computeLeading(size);
 
-    tokens[`--heading-${level}-size`] = `var(${STEP_TO_SIZE_TOKEN[step]})`;
-    tokens[`--heading-${level}-weight`] = headingWeights[level];
-    tokens[`--heading-${level}-leading`] = `${leading}`;
+    tokens[`--text-heading-${level}-size`] = `var(${STEP_TO_SIZE_TOKEN[step]})`;
+    tokens[`--text-heading-${level}-weight`] = headingWeights[level];
+    tokens[`--text-heading-${level}-leading`] = `${leading}`;
   }
 
   // Text tokens
@@ -374,9 +374,9 @@ export function generateTypeScaleComponents(
   for (const level of [1, 2, 3, 4, 5, 6]) {
     headingRules[`level:${level}`] = {
       fontFamily: 'var(--font-family-heading)',
-      fontSize: `var(--heading-${level}-size)`,
-      fontWeight: `var(--heading-${level}-weight)`,
-      lineHeight: `var(--heading-${level}-leading)`,
+      fontSize: `var(--text-heading-${level}-size)`,
+      fontWeight: `var(--text-heading-${level}-weight)`,
+      lineHeight: `var(--text-heading-${level}-leading)`,
     };
   }
   components.heading = headingRules;

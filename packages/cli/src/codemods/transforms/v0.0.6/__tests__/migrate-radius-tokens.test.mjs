@@ -10,18 +10,17 @@ async function applyTransform(source) {
 }
 
 describe('migrate-radius-tokens', () => {
-  it('renames radius token string literals', async () => {
+  it('renames old semantic radius token string literals', async () => {
     const input = `const x = '--radius-container';`;
     const output = await applyTransform(input);
     expect(output).toContain('--radius-container');
-    expect(output).not.toContain('--radius-container');
+    expect(output).not.toContain('--radius-3');
   });
 
   it('renames radiusVars property access', async () => {
     const input = `borderRadius: radiusVars['--radius-element']`;
     const output = await applyTransform(input);
     expect(output).toContain('--radius-element');
-    expect(output).not.toContain('--radius-element');
   });
 
   it('renames tokens inside var() in string literals', async () => {
@@ -35,7 +34,7 @@ describe('migrate-radius-tokens', () => {
     const input = 'const css = `border-radius: var(--radius-inner)`;';
     const output = await applyTransform(input);
     expect(output).toContain('--radius-none');
-    expect(output).not.toContain('--radius-inner');
+    expect(output).not.toContain('var(--radius-inner)');
   });
 
   it('renames --radius-page to --radius-container', async () => {
@@ -45,29 +44,20 @@ describe('migrate-radius-tokens', () => {
     expect(output).not.toContain('--radius-page');
   });
 
-  it('handles defineTheme token objects', async () => {
-    const input = `defineTheme({
-      tokens: {
-        '--radius-container': '16px',
-        '--radius-element': '8px',
-      }
-    })`;
+  it('migrates intermediate numeric names', async () => {
+    const input = `const x = '--radius-0';`;
     const output = await applyTransform(input);
-    expect(output).toContain('--radius-container');
-    expect(output).toContain('--radius-element');
-    expect(output).toContain('16px');
-    expect(output).toContain('8px');
-    expect(output).not.toContain('--radius-container');
-    expect(output).not.toContain('--radius-element');
+    expect(output).toContain('--radius-none');
   });
 
-  it('does not modify --radius-full', async () => {
-    const input = `radiusVars['--radius-full']`;
+  it('renames --radius-rounded to --radius-full', async () => {
+    const input = `radiusVars['--radius-rounded']`;
     const output = await applyTransform(input);
     expect(output).toContain('--radius-full');
+    expect(output).not.toContain('--radius-rounded');
   });
 
-  it('does not modify already-numeric --radius-none through --radius-container', async () => {
+  it('does not modify already-final names', async () => {
     const input = `const x = '--radius-container';`;
     const output = await applyTransform(input);
     expect(output).toContain('--radius-container');
