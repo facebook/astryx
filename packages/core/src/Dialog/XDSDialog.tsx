@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/Dialog.stories.tsx (storybook stories)
  */
 
-
 import {useEffect, useRef, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
@@ -92,7 +91,7 @@ const styles = stylex.create({
     flexDirection: 'column',
     overflow: 'hidden',
     height: 'fit-content',
-    // Animation for opening
+    // Animation for open/close
     opacity: {
       default: 0,
       ':where([open])': 1,
@@ -101,9 +100,17 @@ const styles = stylex.create({
       default: 'scale(0.95) translateY(8px)',
       ':where([open])': 'scale(1) translateY(0)',
     },
-    transitionProperty: 'opacity, transform',
+    transitionProperty: 'opacity, transform, display, overlay',
     transitionDuration: durationVars['--duration-medium'],
     transitionTimingFunction: easeVars['--ease-standard'],
+    transitionBehavior: 'allow-discrete',
+    '@starting-style': {
+      opacity: 0,
+      transform: 'scale(0.95) translateY(8px)',
+    },
+    '@media (prefers-reduced-motion: reduce)': {
+      transitionDuration: '0s',
+    },
     outline: {
       default: null,
       ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
@@ -146,10 +153,10 @@ const dynamicStyles = stylex.create({
   ) => ({
     // When position is set, disable auto margin and use fixed positioning
     margin: 0,
-    top: formatPosition(top),
-    right: formatPosition(right),
-    bottom: formatPosition(bottom),
-    left: formatPosition(left),
+    top: top !== undefined ? formatPosition(top) : 'auto',
+    right: right !== undefined ? formatPosition(right) : 'auto',
+    bottom: bottom !== undefined ? formatPosition(bottom) : 'auto',
+    left: left !== undefined ? formatPosition(left) : 'auto',
   }),
 });
 
@@ -340,12 +347,16 @@ export function XDSDialog({
   const isFullscreen = variant === 'fullscreen';
   const hasPosition = position != null && !isFullscreen;
 
+  // Filter out native open to prevent InvalidStateError when accidentally passed
+  const {open: _open, ...safeProps} = props as Record<string, unknown>;
+
   return (
     <dialog
       ref={setRefs}
       onClick={handleClick}
       onCancel={handleCancel}
       aria-modal="true"
+      role={purpose === 'required' ? 'alertdialog' : undefined}
       {...mergeProps(
         xdsClassName('dialog', {variant}),
         stylex.props(
@@ -365,7 +376,7 @@ export function XDSDialog({
         className,
         style,
       )}
-      {...props}>
+      {...safeProps}>
       {children}
     </dialog>
   );

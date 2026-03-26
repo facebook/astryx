@@ -114,7 +114,7 @@ describe('XDSDialog', () => {
         </XDSDialog>,
       );
 
-      const dialog = screen.getByRole('dialog');
+      const dialog = screen.getByRole('alertdialog');
       const escapeEvent = new KeyboardEvent('keydown', {
         key: 'Escape',
         bubbles: true,
@@ -132,7 +132,7 @@ describe('XDSDialog', () => {
         </XDSDialog>,
       );
 
-      const dialog = screen.getByRole('dialog');
+      const dialog = screen.getByRole('alertdialog');
       const cancelEvent = new Event('cancel', {cancelable: true});
       dialog.dispatchEvent(cancelEvent);
 
@@ -217,5 +217,50 @@ describe('XDSDialog', () => {
       </XDSDialog>,
     );
     expect(screen.getByTestId('custom-dialog')).toBeInTheDocument();
+  });
+
+  it('does not forward native open prop to dialog element', () => {
+    render(
+      <XDSDialog
+        isOpen={false}
+        onOpenChange={() => {}}
+        {...({open: true} as Record<string, unknown>)}>
+        Content
+      </XDSDialog>,
+    );
+    const dialog = screen.getByRole('dialog', {hidden: true});
+    // isOpen=false controls state; native open prop must not leak through
+    expect(dialog).not.toHaveAttribute('open');
+  });
+
+  describe('alertdialog role', () => {
+    it('sets role="alertdialog" when purpose is "required"', () => {
+      render(
+        <XDSDialog isOpen={true} onOpenChange={() => {}} purpose="required">
+          Content
+        </XDSDialog>,
+      );
+      expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    });
+
+    it('does not set role="alertdialog" when purpose is "info"', () => {
+      render(
+        <XDSDialog isOpen={true} onOpenChange={() => {}} purpose="info">
+          Content
+        </XDSDialog>,
+      );
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    it('does not set role="alertdialog" when purpose is "form"', () => {
+      render(
+        <XDSDialog isOpen={true} onOpenChange={() => {}} purpose="form">
+          Content
+        </XDSDialog>,
+      );
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
   });
 });
