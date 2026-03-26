@@ -15,20 +15,21 @@ You will receive:
 
 ### Semantic (current)
 
-| Token              | Value  | Usage           |
-| ------------------ | ------ | --------------- |
-| --radius-full      | 9999px | Pills, avatars  |
-| --radius-container | 12px   | Cards, modals   |
-| --radius-element   | 8px    | Buttons, inputs |
-| --radius-inner     | 4px    | Small elements  |
-| --radius-none      | 0px    | No radius       |
+| Token              | Value  | Usage                    |
+| ------------------ | ------ | ------------------------ |
+| --radius-full      | 9999px | Pills, avatars           |
+| --radius-page      | 28px   | Page sections, app shell |
+| --radius-container | 12px   | Cards, modals            |
+| --radius-element   | 8px    | Buttons, inputs          |
+| --radius-inner     | 4px    | Small elements           |
+| --radius-none      | 0px    | No radius                |
 
 ### Numeric (proposed)
 
 | Token              | Value  | Usage                           |
 | ------------------ | ------ | ------------------------------- |
 | --radius-full      | 9999px | Pills, avatars                  |
-| --radius-container | 16px   | Page sections, large containers |
+| --radius-page      | 28px   | Page sections, large containers |
 | --radius-container | 12px   | Cards, modals                   |
 | --radius-element   | 8px    | Buttons, inputs                 |
 | --radius-inner     | 4px    | Small elements                  |

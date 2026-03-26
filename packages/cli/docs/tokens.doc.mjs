@@ -108,7 +108,7 @@ export const docs = {
             ['--radius-inner', '4px', 'Code blocks, inner content', 'Yes'],
             ['--radius-element', '8px', 'Buttons, inputs, text areas', 'Yes'],
             ['--radius-container', '12px', 'Cards, modals, popovers, dropdowns', 'Yes'],
-            ['--radius-container', '16px', 'Page sections, large containers', 'Yes'],
+            ['--radius-page', '28px', 'Page sections, large containers', 'Yes'],
             ['--radius-full', '9999px', 'Badges, avatars, status dots, toggles', 'No'],
           ],
         },
@@ -144,8 +144,7 @@ const sharpTheme = defineTheme({
           type: 'table',
           headers: ['Token', 'Usage'],
           rows: [
-            ['--shadow-low', 'Subtle lift (cards)'],
-            ['--shadow-low', 'Floating elements (menus, popovers)'],
+            ['--shadow-low', 'Subtle lift (cards, menus, popovers)'],
             ['--shadow-med', 'Hover lift, toasts'],
             ['--shadow-high', 'Dialogs, modals'],
             ['--shadow-inset-hover', 'Input hover ring'],

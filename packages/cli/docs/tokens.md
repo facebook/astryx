@@ -45,6 +45,12 @@ Control heights for consistent sizing across buttons, inputs, and selectors.
 | --color-success            | Success states                               |
 | --color-error              | Error states                                 |
 | --color-warning            | Warning states                               |
+| --color-on-accent          | Text/icon on accent background               |
+| --color-on-success         | Text/icon on success background              |
+| --color-on-error           | Text/icon on error background                |
+| --color-on-warning         | Text/icon on warning background              |
+| --color-on-dark            | Text/icon on dark media                      |
+| --color-on-light           | Text/icon on light media                     |
 
 ### Neutral Grays
 
@@ -75,13 +81,14 @@ Three tokens for "gray" backgrounds. Choosing the right one depends on what the 
 
 | Token                  | Usage           |
 | ---------------------- | --------------- |
+| --color-icon-accent    | Accent icons    |
 | --color-icon-primary   | Main icons      |
 | --color-icon-secondary | Secondary icons |
 | --color-icon-disabled  | Disabled icons  |
 
 ## Radius Tokens
 
-Numeric scale based on a 4dp base unit. Tokens 1–4 scale with the theme's `radius` multiplier; tokens 0 and rounded are fixed.
+Semantic scale based on a 4dp base unit. Tokens inner through page scale with the theme's `radius` multiplier; none and full are fixed.
 
 | Token              | Value  | Usage                                 | Scales |
 | ------------------ | ------ | ------------------------------------- | ------ |
@@ -89,7 +96,7 @@ Numeric scale based on a 4dp base unit. Tokens 1–4 scale with the theme's `rad
 | --radius-inner     | 4px    | Code blocks, inner content            | Yes    |
 | --radius-element   | 8px    | Buttons, inputs, text areas           | Yes    |
 | --radius-container | 12px   | Cards, modals, popovers, dropdowns    | Yes    |
-| --radius-container | 16px   | Page sections, large containers       | Yes    |
+| --radius-page      | 28px   | Page sections, large containers       | Yes    |
 | --radius-full      | 9999px | Badges, avatars, status dots, toggles | No     |
 
 ### radius (via defineTheme)
@@ -120,6 +127,12 @@ const sharpTheme = defineTheme({
 | 1 (default) | Default   | 12px             |
 | 1.5         | Rounded   | 18px             |
 | 2           | Pill-like | 24px             |
+
+## Border Tokens
+
+| Token          | Value | Usage                              |
+| -------------- | ----- | ---------------------------------- |
+| --border-width | 1px   | Default border width across the UI |
 
 ## Shadow Tokens
 
@@ -212,6 +225,20 @@ Override the entire scale with `typography.scale: { base, ratio }` in `defineThe
 | --text-supporting-weight  |                       |         |         | normal   |
 | --text-supporting-leading |                       |         | 1.6667  |          |
 
+#### Display Tokens
+
+| Token                    | Maps to              | Default | Leading |
+| ------------------------ | -------------------- | ------- | ------- |
+| --text-display-1-size    | var(--font-size-5xl) | 42px    |         |
+| --text-display-1-weight  |                      |         | normal  |
+| --text-display-1-leading |                      |         | 1.2381  |
+| --text-display-2-size    | var(--font-size-4xl) | 35px    |         |
+| --text-display-2-weight  |                      |         | normal  |
+| --text-display-2-leading |                      |         | 1.2571  |
+| --text-display-3-size    | var(--font-size-3xl) | 29px    |         |
+| --text-display-3-weight  |                      |         | normal  |
+| --text-display-3-leading |                      |         | 1.2414  |
+
 ### Font Weights
 
 - `--font-weight-normal`: 400
@@ -219,17 +246,19 @@ Override the entire scale with `typography.scale: { base, ratio }` in `defineThe
 - `--font-weight-semibold`: 600
 - `--font-weight-bold`: 700
 
-### Line Heights (Named Leading)
+### Line Heights (Named Leading) — Deprecated
 
-Intent-based ratios for component use. Not modified by `typography.scale`.
+> **Deprecated.** Use semantic type scale leading tokens instead.
+> Components should pair their `fontSize` with the matching semantic leading:
+> `--text-body-leading`, `--text-label-leading`, `--text-supporting-leading`, etc.
 
-| Token             | Value  | Usage                           |
-| ----------------- | ------ | ------------------------------- |
-| --leading-tight   | 1.25   | Display text, headings          |
-| --leading-snug    | 1.375  | Compact body text, headings     |
-| --leading-base    | 1.4286 | Body text with --font-size-base |
-| --leading-normal  | 1.5    | Body text, large body           |
-| --leading-relaxed | 1.625  | Editorial body, reading text    |
+| Old Token         | Value  | Replacement               |
+| ----------------- | ------ | ------------------------- |
+| --leading-base    | 1.4286 | --text-body-leading       |
+| --leading-snug    | 1.375  | --text-label-leading      |
+| --leading-normal  | 1.5    | --text-large-leading      |
+| --leading-tight   | 1.25   | --text-heading-1-leading  |
+| --leading-relaxed | 1.625  | --text-supporting-leading |
 
 ## Usage in StyleX
 

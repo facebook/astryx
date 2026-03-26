@@ -64,7 +64,7 @@ export const {themeName}Theme = defineTheme({
     '--color-background-body': ['#F5F5F5', '#121212'],
 
     // Radius — customize for different feel
-    '--radius-page': '16px',
+    '--radius-page': '28px',
     '--radius-container': '12px',
     '--radius-element': '8px',
     '--radius-inner': '4px',

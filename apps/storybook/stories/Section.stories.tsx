@@ -18,7 +18,7 @@ import {
 
 const styles = stylex.create({
   surfaceWrapper: {
-    backgroundColor: colorVars['--color-surface'],
+    backgroundColor: colorVars['--color-background-surface'],
     padding: spacingVars['--spacing-6'],
   },
   pageWrapper: {

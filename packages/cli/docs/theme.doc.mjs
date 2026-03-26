@@ -149,7 +149,7 @@ const myTheme = defineTheme({
           rows: [
             ['typography.scale', '--heading-*-size/weight/leading, --text-*-size/weight/leading', 'base (px), ratio'],
             ['typography.body/heading/code', '--font-family-body, --font-family-heading, --font-family-code', 'family, fallbacks?, url?, weight?'],
-            ['radius', '--radius-none through --radius-container, --radius-full', 'base (px), multiplier (0–2)'],
+            ['radius', '--radius-none through --radius-page, --radius-full', 'base (px), multiplier (0–2)'],
             ['motion', '--duration-fast-*, --duration-medium-*, --ease-*', 'fast (ms), medium (ms), ratio, easing?'],
           ],
         },
