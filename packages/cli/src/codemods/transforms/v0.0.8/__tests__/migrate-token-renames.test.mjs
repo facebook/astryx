@@ -165,6 +165,19 @@ describe('migrate-token-renames (v0.0.8)', () => {
     expect(output).toContain('var(--text-heading-1-size)');
   });
 
+  // === Removed token migrations ===
+
+  it('maps --color-info to --color-icon-purple', async () => {
+    const output = await applyTransform(`const x = colorVars['--color-info'];`);
+    expect(output).toContain('--color-icon-purple');
+    expect(output).not.toContain("'--color-info'");
+  });
+
+  it('maps --color-info-muted to --color-background-purple', async () => {
+    const output = await applyTransform(`const x = '--color-info-muted';`);
+    expect(output).toContain('--color-background-purple');
+  });
+
   // === Line height renames ===
 
   it('renames --leading-base to --text-body-leading', async () => {

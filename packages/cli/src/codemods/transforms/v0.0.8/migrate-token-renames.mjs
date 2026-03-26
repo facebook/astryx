@@ -46,6 +46,8 @@ export const meta = {
 const TOKEN_MAP = {
   // Color — Core Semantic
   '--color-secondary': '--color-neutral',
+  '--color-info-muted': '--color-background-purple', // removed token, closest purple match
+  '--color-info': '--color-icon-purple', // removed token, exact value match (#5B08D8)
   '--color-ring-focus-success': '--color-success',
   '--color-ring-focus-warning': '--color-warning',
   '--color-ring-focus-error': '--color-error',
