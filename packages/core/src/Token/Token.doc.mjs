@@ -116,7 +116,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-token', visualProps: ['color']},
+      {className: 'xds-token', visualProps: ['color', 'size']},
     ],
   },
   accessibility: [
@@ -247,7 +247,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-token', visualProps: ['color']},
+      {className: 'xds-token', visualProps: ['color', 'size']},
     ],
   },
   accessibility: [

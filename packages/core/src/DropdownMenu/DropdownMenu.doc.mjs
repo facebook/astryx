@@ -161,6 +161,12 @@ export const docs = {
           description: 'Callback fired when the trigger button is clicked.',
         },
         {
+          name: 'hasChevron',
+          type: 'boolean',
+          description: 'Whether to show a chevron icon on the trigger button. Set to false for icon-only triggers.',
+          default: 'true',
+        },
+        {
           name: 'children',
           type: '(item: XDSDropdownMenuItemData) => ReactNode',
           description: 'Custom render function for each item in the list.',
@@ -490,6 +496,12 @@ export const docsZh = {
           description: '点击触发按钮时触发的回调。',
         },
         {
+          name: 'hasChevron',
+          type: 'boolean',
+          description: '是否在触发按钮上显示展开箭头。仅图标触发器设为 false。',
+          default: 'true',
+        },
+        {
           name: 'children',
           type: '(item: XDSDropdownMenuItemData) => ReactNode',
           description: '列表中每个项的自定义渲染函数。',
@@ -693,6 +705,7 @@ export const docsDense = {
         onOpenChange: 'callback on open state change',
         menuWidth: 'custom menu width; default matches trigger button',
         onClick: 'trigger button click callback',
+        hasChevron: 'show chevron on trigger; false for icon-only triggers',
         children: 'custom render fn per item',
       },
     },
