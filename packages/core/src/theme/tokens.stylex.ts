@@ -18,6 +18,7 @@ export const colorDefaults = {
   // Core semantic
   '--color-accent': 'light-dark(#0064E0, #2694FE)',
   '--color-accent-muted': 'light-dark(#0082FB33, #0082FB3F)',
+  '--color-on-accent': 'light-dark(#000000, #000000)',
   '--color-neutral':
     'light-dark(rgba(5, 54, 89, 0.1), rgba(223, 226, 229, 0.2))',
   '--color-background-surface': 'light-dark(#FFFFFF, #1F1F22)',
@@ -33,8 +34,10 @@ export const colorDefaults = {
   '--color-text-disabled': 'light-dark(#A4B0BC, #6F747C)',
   '--color-text-accent': 'light-dark(#0064E0, #3E9EFB)',
   '--color-on-dark': 'light-dark(#FFFFFF, #FFFFFF)',
+  '--color-on-light': 'light-dark(#000000, #000000)',
 
   // Icon
+  '--color-icon-accent': 'light-dark(#0064E0, #2694FE)',
   '--color-icon-primary': 'light-dark(#0A1317, #DFE2E5)',
   '--color-icon-secondary': 'light-dark(#4E606F, #AAAFB5)',
   '--color-icon-disabled': 'light-dark(#A4B0BC, #6F747C)',
@@ -47,10 +50,13 @@ export const colorDefaults = {
   // Status/Sentiment
   '--color-success': 'light-dark(#0D8626, #0D8626)',
   '--color-success-muted': 'light-dark(#0B991F33, #0B991F3F)',
+  '--color-on-success': 'light-dark(#000000, #000000)',
   '--color-error': 'light-dark(#E3193B, #F5394F)',
   '--color-error-muted': 'light-dark(#E3193B33, #F5394F3F)',
+  '--color-on-error': 'light-dark(#000000, #000000)',
   '--color-warning': 'light-dark(#E9AF08, #F2C00B)',
   '--color-warning-muted': 'light-dark(#E2A40033, #E2A4003F)',
+  '--color-on-warning': 'light-dark(#0A1317, #0A1317)',
   '--color-info': 'light-dark(#5B08D8, #6B1EFD)',
   '--color-info-muted': 'light-dark(#7952FF33, #5B08D83F)',
 
