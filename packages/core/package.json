@@ -352,6 +352,12 @@
       "import": "./dist/TimeInput/index.mjs",
       "require": "./dist/TimeInput/index.js"
     },
+    "./Timestamp": {
+      "source": "./src/Timestamp/index.ts",
+      "types": "./dist/Timestamp/index.d.ts",
+      "import": "./dist/Timestamp/index.mjs",
+      "require": "./dist/Timestamp/index.js"
+    },
     "./Token": {
       "source": "./src/Token/index.ts",
       "types": "./dist/Token/index.d.ts",
