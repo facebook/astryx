@@ -1,0 +1,100 @@
+/**
+ * @file Check for newer @xds/core versions via local signals.
+ *
+ * Resolution order:
+ * 1. $XDS_LATEST_VERSION env var (set by previous CLI invocation)
+ * 2. xds.versionFile in consumer's package.json (e.g. ../../libs/xds-common/LATEST_VERSION)
+ * 3. If neither: no hint (no network calls from this module)
+ *
+ * When a newer version is detected, returns a hint string for CLI output.
+ * Also sets $XDS_LATEST_VERSION for subsequent commands in the same shell.
+ */
+
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
+/**
+ * Read the latest available version from local signals.
+ * No network calls — purely filesystem and env var checks.
+ *
+ * @param {string} [cwd] - Project directory (default: process.cwd())
+ * @returns {string|null} Latest version string, or null if unknown
+ */
+export function getLatestVersion(cwd = process.cwd()) {
+  // 1. Check env var (fastest — set by previous CLI run)
+  const envVersion = process.env.XDS_LATEST_VERSION;
+  if (envVersion && /^\d+\.\d+\.\d+/.test(envVersion)) {
+    return envVersion;
+  }
+
+  // 2. Check versionFile from package.json config
+  try {
+    const pkgPath = path.resolve(cwd, 'package.json');
+    if (fs.existsSync(pkgPath)) {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+      const versionFile = pkg.xds?.versionFile;
+
+      if (versionFile) {
+        const filePath = path.resolve(cwd, versionFile);
+        if (fs.existsSync(filePath)) {
+          const version = fs.readFileSync(filePath, 'utf-8').trim();
+          if (/^\d+\.\d+\.\d+/.test(version)) {
+            return version;
+          }
+        }
+      }
+    }
+  } catch {
+    // Silently fail — version check should never break the CLI
+  }
+
+  return null;
+}
+
+/**
+ * Get the currently installed @xds/core version from the consumer's package.json.
+ *
+ * @param {string} [cwd] - Project directory
+ * @returns {string|null} Installed version, or null
+ */
+export function getInstalledVersion(cwd = process.cwd()) {
+  try {
+    const pkgPath = path.resolve(cwd, 'package.json');
+    if (!fs.existsSync(pkgPath)) return null;
+
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+    const deps = {...pkg.dependencies, ...pkg.devDependencies};
+    const version = deps['@xds/core'];
+    if (!version) return null;
+
+    // Strip semver range prefix
+    return version.replace(/^[^\d]*/, '');
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Check for available updates and return a hint string if one exists.
+ * Also sets $XDS_LATEST_VERSION env var for subsequent commands.
+ *
+ * @param {string} [cwd] - Project directory
+ * @returns {string|null} FYI hint string, or null if up to date / unknown
+ */
+export function checkForUpdate(cwd = process.cwd()) {
+  const latest = getLatestVersion(cwd);
+  if (!latest) return null;
+
+  // Persist for subsequent commands in this shell session
+  process.env.XDS_LATEST_VERSION = latest;
+
+  const installed = getInstalledVersion(cwd);
+  if (!installed) return null;
+
+  // Simple string comparison works for our semver scheme (0.0.x)
+  if (latest > installed) {
+    return `FYI: A newer version of @xds/core (${latest}) is available. You can upgrade with: xds upgrade --apply --to ${latest}`;
+  }
+
+  return null;
+}
