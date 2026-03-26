@@ -1103,19 +1103,24 @@ export function getDimensionScore(
 }
 
 /**
- * Calculate an average score across all dimensions (unweighted).
- * Includes design dimension when present (non-null).
+ * Calculate an average score across the 5 core dimensions (unweighted).
+ * Does NOT include design — use getFullAverageScore() when all scores
+ * being compared are guaranteed to have design scores.
  */
 export function getAverageScore(score: UniversalScore): number {
   const dims = getDimensionNames();
-  let total = dims.reduce((sum, d) => sum + (score[d]?.score ?? 0), 0);
-  let count = dims.length;
+  const total = dims.reduce((sum, d) => sum + (score[d]?.score ?? 0), 0);
+  return Math.round(total / dims.length);
+}
 
-  // Include design if present
-  if (score.design != null) {
-    total += score.design.score;
-    count++;
-  }
-
-  return Math.round(total / count);
+/**
+ * Calculate an average score across all 6 dimensions including design.
+ * Returns null if design score is not present.
+ */
+export function getFullAverageScore(score: UniversalScore): number | null {
+  if (score.design == null) return null;
+  const dims = getDimensionNames();
+  const coreTotal = dims.reduce((sum, d) => sum + (score[d]?.score ?? 0), 0);
+  const total = coreTotal + score.design.score;
+  return Math.round(total / (dims.length + 1));
 }

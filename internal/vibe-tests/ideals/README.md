@@ -5,16 +5,19 @@ Reference designs for the Night Watch Design dimension. These are the
 
 ## Naming Convention
 
+Uses `__` (double underscore) as separator between promptId and viewport/theme.
+This supports multi-segment prompt IDs like `feature-card-1`.
+
 ```
-{promptId}-{viewport}-{theme}.png   — specific (preferred)
-{promptId}-{viewport}.png           — viewport-only (used for both themes)
+{promptId}__{viewport}__{theme}.png — specific (preferred)
+{promptId}__{viewport}.png          — viewport-only (used for both themes)
 {promptId}.png                      — generic fallback (used for all combos)
 ```
 
 Examples:
 
-- `cwm-1-desktop-light.png` — specific to desktop + light
-- `ty-3-desktop.png` — desktop only, used for both light and dark
+- `cwm-1__desktop__light.png` — specific to desktop + light
+- `ty-3__desktop.png` — desktop only, used for both light and dark
 - `dd-3.png` — fallback for all viewport/theme combos
 
 ## Requirements

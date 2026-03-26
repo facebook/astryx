@@ -292,8 +292,11 @@ function getIdealsDir(): string {
 }
 
 /**
- * Find ideal images for a prompt. Looks for files matching:
- *   ideals/{promptId}-{viewport}-{theme}.png
+ * Find ideal images for a prompt. Uses `__` (double underscore) as separator
+ * between promptId and viewport/theme to support multi-segment prompt IDs
+ * like `feature-card-1`. Looks for files matching:
+ *   ideals/{promptId}__{viewport}__{theme}.png
+ *   ideals/{promptId}__{viewport}.png
  *   ideals/{promptId}.png  (fallback — used for all viewport/theme combos)
  */
 function findIdeal(
@@ -303,12 +306,15 @@ function findIdeal(
 ): string | null {
   const idealsDir = getIdealsDir();
 
-  // Specific match: cwm-1-desktop-light.png
-  const specific = path.join(idealsDir, `${promptId}-${viewport}-${theme}.png`);
+  // Specific match: cwm-1__desktop__light.png
+  const specific = path.join(
+    idealsDir,
+    `${promptId}__${viewport}__${theme}.png`,
+  );
   if (fs.existsSync(specific)) return specific;
 
-  // Viewport match: cwm-1-desktop.png
-  const viewportMatch = path.join(idealsDir, `${promptId}-${viewport}.png`);
+  // Viewport match: cwm-1__desktop.png
+  const viewportMatch = path.join(idealsDir, `${promptId}__${viewport}.png`);
   if (fs.existsSync(viewportMatch)) return viewportMatch;
 
   // Generic fallback: cwm-1.png
@@ -329,16 +335,14 @@ export function listAvailableIdeals(): string[] {
   const promptIds = new Set<string>();
 
   for (const file of files) {
-    // Extract prompt ID: "cwm-1-desktop-light.png" → "cwm-1"
-    // Pattern: {promptId}[-{viewport}[-{theme}]].png
+    // Extract prompt ID using `__` separator.
+    // "cwm-1__desktop__light.png" → "cwm-1"
+    // "feature-card-1__desktop.png" → "feature-card-1"
+    // "cwm-1.png" → "cwm-1" (no viewport/theme suffix)
     const base = file.replace('.png', '');
-    const parts = base.split('-');
-
-    // Prompt IDs are like: cwm-1, ty-3, dd-3, ps-1
-    // They always have format: {letters}-{number}
-    // So we take the first two segments
-    if (parts.length >= 2 && /^\d+$/.test(parts[1])) {
-      promptIds.add(`${parts[0]}-${parts[1]}`);
+    const promptId = base.split('__')[0];
+    if (promptId) {
+      promptIds.add(promptId);
     }
   }
 
@@ -355,7 +359,7 @@ function loadPromptText(promptId: string): string {
     import.meta.dirname,
     '..',
     'test-sets',
-    'universal.json',
+    'default.json',
   );
   if (fs.existsSync(testSetPath)) {
     const testSet = readJson<{prompts: Array<{id: string; prompt: string}>}>(
