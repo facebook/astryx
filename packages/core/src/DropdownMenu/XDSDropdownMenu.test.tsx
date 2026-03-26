@@ -350,3 +350,55 @@ describe('XDSDropdownMenu custom render', () => {
     expect(screen.getByTestId('custom-Delete')).toBeInTheDocument();
   });
 });
+
+describe('XDSDropdownMenu icon-only mode', () => {
+  it('renders icon-only button when icon is set without children', () => {
+    render(
+      <XDSDropdownMenu
+        button={{
+          label: 'More options',
+          icon: <span data-testid="icon">⋯</span>,
+          variant: 'ghost',
+        }}
+        items={[{label: 'Edit'}, {label: 'Delete'}]}
+      />,
+    );
+    const button = screen.getByRole('button', {name: 'More options'});
+    // label should be aria-label, not visible text
+    expect(button).toHaveAttribute('aria-label', 'More options');
+    expect(screen.getByTestId('icon')).toBeInTheDocument();
+  });
+
+  it('renders icon + label when children are provided on button', () => {
+    render(
+      <XDSDropdownMenu
+        button={{
+          label: 'Settings',
+          icon: <span data-testid="icon">⚙️</span>,
+          variant: 'ghost',
+          children: 'Settings',
+        }}
+        items={[{label: 'Preferences'}]}
+      />,
+    );
+    const button = screen.getByRole('button', {name: /Settings/});
+    expect(button).not.toHaveAttribute('aria-label');
+    expect(screen.getByTestId('icon')).toBeInTheDocument();
+  });
+});
+
+describe('XDSDropdownMenu hasChevron', () => {
+  it('hides chevron when hasChevron is false', () => {
+    const {container} = render(
+      <XDSDropdownMenu
+        button={{label: 'Sort by'}}
+        hasChevron={false}
+        items={[{label: 'Name'}, {label: 'Date'}]}
+      />,
+    );
+    // No chevron SVG in the button's endContent wrapper
+    const button = screen.getByRole('button', {name: /Sort by/});
+    const endContentWrapper = button.querySelector('[class*="endContent"]');
+    expect(endContentWrapper).toBeNull();
+  });
+});

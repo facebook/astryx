@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/DropdownMenu.stories.tsx
  */
 
-
 import React, {
   useCallback,
   useId,
@@ -111,13 +110,6 @@ const styles = stylex.create({
   itemDisabled: {
     opacity: 0.5,
     cursor: 'not-allowed',
-  },
-
-  // Chevron icon styling
-  chevronIcon: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });
 
@@ -224,12 +216,12 @@ function getSelectableItems(
 
 /**
  * Props for customizing the dropdown button.
- * Extends XDSButtonProps but omits onClick, href since those are managed internally.
+ * Extends XDSButtonProps but omits onClick since it's managed internally.
+ *
+ * When `icon` is set without `children`, renders as an icon-only button
+ * (square, with `label` as aria-label). Pass `children` to get icon + visible text.
  */
-export type XDSDropdownMenuButtonProps = Omit<
-  XDSButtonProps,
-  'onClick' | 'children'
->;
+export type XDSDropdownMenuButtonProps = Omit<XDSButtonProps, 'onClick'>;
 
 export interface XDSDropdownMenuProps {
   /**
@@ -267,6 +259,14 @@ export interface XDSDropdownMenuProps {
    * Callback when the button is clicked.
    */
   onClick?: () => void;
+
+  /**
+   * Whether to show a chevron indicator on the trigger button.
+   * Automatically hidden for icon-only buttons (when `button.icon` is set
+   * without `button.endContent`).
+   * @default true
+   */
+  hasChevron?: boolean;
 
   /**
    * Custom render function for items.
@@ -316,6 +316,7 @@ export function XDSDropdownMenu({
   onOpenChange,
   menuWidth,
   onClick,
+  hasChevron = true,
   children,
   'data-testid': testId,
 }: XDSDropdownMenuProps) {
@@ -568,12 +569,17 @@ export function XDSDropdownMenu({
     return elements;
   }, [items, renderItem]);
 
-  // Build chevron icon - inherits color from button text
-  const chevronIcon = (
-    <span {...stylex.props(styles.chevronIcon)}>
+  // Icon-only: when button has an icon and no children,
+  // XDSButton handles icon-only rendering natively.
+  const isIconOnly = button.icon != null && button.children == null;
+
+  // Build endContent: use consumer's endContent if provided,
+  // otherwise inject chevron (unless icon-only or hasChevron=false)
+  const resolvedEndContent =
+    button.endContent ??
+    (hasChevron && !isIconOnly ? (
       <XDSIcon icon="chevronDown" size="sm" color="inherit" />
-    </span>
-  );
+    ) : undefined);
 
   // Determine popover xstyle
   const popoverXstyle = menuWidth
@@ -590,6 +596,7 @@ export function XDSDropdownMenu({
           layer.ref(el);
         }}
         {...button}
+        endContent={resolvedEndContent}
         onClick={handleButtonClick}
         onKeyDown={handleKeyDown}
         aria-haspopup="menu"
@@ -600,10 +607,8 @@ export function XDSDropdownMenu({
             ? getItemId(highlightedIndex)
             : undefined
         }
-        data-testid={testId}>
-        {button.label}
-        {chevronIcon}
-      </XDSButton>
+        data-testid={testId}
+      />
 
       {layer.render(
         <div

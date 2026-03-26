@@ -11,6 +11,8 @@ import {
   FolderPlusIcon,
   DocumentPlusIcon,
   UserIcon,
+  EllipsisHorizontalIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSDropdownMenu> = {
@@ -297,5 +299,72 @@ export const CustomItemRender: Story = {
         />
       )}
     </XDSDropdownMenu>
+  ),
+};
+
+// Icon-only trigger — renders as a square icon button (e.g., "⋯" menu)
+export const IconOnly: Story = {
+  render: () => (
+    <div style={{display: 'flex', gap: 16, alignItems: 'center'}}>
+      <XDSDropdownMenu
+        button={{
+          label: 'More options',
+          icon: <EllipsisHorizontalIcon />,
+          variant: 'ghost',
+        }}
+        items={[
+          {label: 'Edit', icon: PencilIcon, onClick: () => console.log('Edit')},
+          {
+            label: 'Delete',
+            icon: TrashIcon,
+            onClick: () => console.log('Delete'),
+          },
+        ]}
+      />
+      <XDSDropdownMenu
+        button={{
+          label: 'Settings',
+          icon: <Cog6ToothIcon />,
+          variant: 'secondary',
+        }}
+        items={[
+          {label: 'Preferences', onClick: () => console.log('Preferences')},
+          {label: 'Account', onClick: () => console.log('Account')},
+        ]}
+      />
+    </div>
+  ),
+};
+
+// Icon + label together — pass children on button to get visible text with icon
+export const IconWithLabel: Story = {
+  render: () => (
+    <XDSDropdownMenu
+      button={{
+        label: 'Settings',
+        icon: <Cog6ToothIcon />,
+        variant: 'ghost',
+        children: 'Settings',
+      }}
+      items={[
+        {label: 'Preferences', onClick: () => console.log('Preferences')},
+        {label: 'Account', onClick: () => console.log('Account')},
+      ]}
+    />
+  ),
+};
+
+// No chevron — label-only trigger without dropdown indicator
+export const NoChevron: Story = {
+  render: () => (
+    <XDSDropdownMenu
+      button={{label: 'Sort by: Name', variant: 'ghost'}}
+      hasChevron={false}
+      items={[
+        {label: 'Name', onClick: () => console.log('Name')},
+        {label: 'Date', onClick: () => console.log('Date')},
+        {label: 'Size', onClick: () => console.log('Size')},
+      ]}
+    />
   ),
 };

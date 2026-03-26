@@ -115,7 +115,7 @@ export const docs = {
   ],
   notes: [
     'Uses `useXDSLayer` with `mode: "context"` for CSS anchor positioning',
-    'Uses `XDSButton` internally with `ChevronDownIcon` that inherits button text color',
+    'Uses `XDSButton` internally — chevron is passed via `endContent` and auto-hidden for icon-only buttons',
     'Items are tracked via the `items` prop to enable keyboard navigation',
     'Light dismiss is enabled by default (clicking outside closes menu)',
   ],
@@ -444,7 +444,7 @@ export const docsZh = {
   ],
   notes: [
     '使用 `useXDSLayer` 配合 `mode: "context"` 进行 CSS 锚点定位',
-    '内部使用 `XDSButton` 和 `ChevronDownIcon`，图标继承按钮文字颜色',
+    '内部使用 `XDSButton`——chevron 通过 `endContent` 传递，图标按钮自动隐藏',
     '通过 `items` 属性跟踪菜单项以启用键盘导航',
     '默认启用轻量关闭（点击外部关闭菜单）',
   ],
@@ -678,7 +678,7 @@ export const docsDense = {
   ],
   notes: [
     'uses useXDSLayer w/ mode:"context" for CSS anchor positioning',
-    'uses XDSButton internally w/ ChevronDownIcon inheriting text color',
+    'uses XDSButton internally — chevron via endContent, auto-hidden for icon-only',
     'items tracked via items prop for keyboard nav',
     'light dismiss enabled by default (click outside closes)',
   ],
