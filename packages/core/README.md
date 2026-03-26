@@ -1,36 +1,159 @@
-# /packages/core
+# @xds/core
 
-Core UI components library for the XDS design system (`@xds/core`).
+A design system for building internal tools and products at Meta.
 
-<!-- SYNC: When files in this directory change, update this document. -->
+## Installation
 
-| Directory/File   | Role   | Purpose                                |
-| ---------------- | ------ | -------------------------------------- |
-| `src/`           | Source | Component source code                  |
-| `docs/`          | Docs   | Documentation including AI skill doc   |
-| `package.json`   | Config | Package configuration and dependencies |
-| `tsconfig.json`  | Config | TypeScript compiler configuration      |
-| `tsup.config.ts` | Build  | Bundle configuration using tsup        |
+```bash
+# Install core + a theme + the CLI (dev tooling)
+yarn add @xds/core @xds/theme-default
+yarn add -D @xds/cli
 
-## Key Exports
+# npm
+npm install @xds/core @xds/theme-default
+npm install -D @xds/cli
 
-### Components
+# pnpm
+pnpm add @xds/core @xds/theme-default
+pnpm add -D @xds/cli
+```
 
-- **Typography**: `XDSText`, `XDSHeading`, `XDSFontWrapper`
-- **Inputs**: `XDSButton`, `XDSTextInput`, `XDSTextArea`, `XDSCheckboxInput`
-- **Layout**: `XDSHStack`, `XDSVStack`, `XDSCard`, `XDSSection`
-- **Feedback**: `XDSTooltip`, `XDSHoverCard`
+## Quick Start
 
-### Theme
+### 1. Import Base Styles
 
-- `Theme` — Provider component that sets CSS custom properties
-- `defaultTheme`, `neutralTheme` — Pre-built themes
-- `useTheme` — Hook to access current theme
+Import the reset stylesheet and your theme's CSS at the root of your application:
 
-### Stylesheets
+```tsx
+// In your root layout or entry point
+import '@xds/core/reset.css';
+import '@xds/theme-default/theme.css';
+```
 
-- `@xds/core/typography.css` — Base typography styles for native HTML elements (h1-h6, p, lists, blockquotes, code, etc.). Uses CSS custom properties from the theme.
+### 2. Set Up the Theme Provider
 
-## Usage
+Wrap your application with the `XDSTheme` component:
 
-See the [Getting Started guide](/README.md#getting-started) in the root README.
+```tsx
+import {XDSTheme} from '@xds/core';
+import {defaultTheme} from '@xds/theme-default';
+
+function App() {
+  return (
+    <XDSTheme theme={defaultTheme}>
+      <YourApp />
+    </XDSTheme>
+  );
+}
+```
+
+### 3. Use Components
+
+```tsx
+import {XDSButton, XDSText, XDSHeading} from '@xds/core';
+
+function Example() {
+  return (
+    <>
+      <XDSHeading>Welcome</XDSHeading>
+      <XDSText>Click the button below to get started.</XDSText>
+      <XDSButton label="Get Started" onClick={() => console.log('clicked')} />
+    </>
+  );
+}
+```
+
+## CLI Tooling
+
+The `@xds/cli` package provides component docs, scaffolding, and upgrade tooling:
+
+```bash
+xds component --list          # Browse all components by category
+xds component Button          # Full docs for a component (props, usage, examples)
+xds docs principles           # Design rules and anti-patterns
+xds docs tokens               # Token reference (spacing, color, radius, type)
+xds template <name> [path]    # Scaffold a page (blank, table, login)
+xds swizzle <Name>            # Eject component source for customization
+```
+
+> If `@xds/cli` is installed as a devDependency, use `xds` directly (yarn/pnpm resolve it from `node_modules/.bin`). Otherwise, use `npx xds`.
+
+### Initialize your project
+
+Run `xds init` to set up project configuration:
+
+```bash
+xds init
+```
+
+This walks you through setting up agent docs, templates, and other project-level configuration.
+
+### AI Agent Setup
+
+If you use AI coding agents (Claude Code, Cursor, Codex, etc.), install the XDS component catalog into your project's agent docs:
+
+```bash
+xds init --features agents
+```
+
+This injects a compact component index into your CLAUDE.md or AGENTS.md so your AI agent can discover and correctly use XDS components. Re-run after upgrading XDS to keep the index current.
+
+## Upgrading
+
+When upgrading to a new version, use the built-in upgrade command to automatically migrate breaking API changes:
+
+```bash
+xds upgrade --apply
+```
+
+This bumps all `@xds/*` dependencies, runs `yarn install`, applies codemods for breaking changes, and refreshes agent docs if present. To migrate between specific versions:
+
+```bash
+xds upgrade --apply --from 0.0.1 --to 0.0.2
+```
+
+Preview what would change without writing to disk:
+
+```bash
+xds upgrade
+```
+
+## Themes
+
+XDS supports pluggable themes. Install a theme package and pass it to `XDSTheme`:
+
+| Package              | Description                 |
+| -------------------- | --------------------------- |
+| `@xds/theme-default` | Clean, professional default |
+| `@xds/theme-neutral` | Muted, minimal aesthetic    |
+
+Each theme package exports a JS theme object and a `theme.css` file:
+
+```bash
+yarn add @xds/theme-neutral
+```
+
+```tsx
+import '@xds/theme-neutral/theme.css';
+import {neutralTheme} from '@xds/theme-neutral';
+
+<XDSTheme theme={neutralTheme}>...</XDSTheme>;
+```
+
+### Custom Themes
+
+Build your own theme with `defineTheme()`. For a full guide on creating custom themes, token overrides, and component style customization:
+
+```bash
+xds docs theme
+```
+
+## Resources
+
+- [Component Storybook](https://facebookexperimental.github.io/xds/)
+- [GitHub Repository](https://github.com/facebookexperimental/xds)
+- [Changelog](https://github.com/facebookexperimental/xds/blob/main/packages/core/CHANGELOG.md)
+
+## License
+
+MIT
