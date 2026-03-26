@@ -1,6 +1,11 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSTabList, XDSTab, XDSTabMenu} from '@xds/core/TabList';
+import {XDSButton} from '@xds/core/Button';
+import {XDSDivider} from '@xds/core/Divider';
+import {XDSHStack} from '@xds/core/Stack';
+import {XDSStackItem} from '@xds/core/Stack';
+import {PlusIcon, FunnelIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSTabList> = {
   title: 'Navigation/XDSTabList',
@@ -148,6 +153,50 @@ export const WithIcons: Story = {
         <XDSTab value="home" label="Home" icon={HomeIcon} />
         <XDSTab value="settings" label="Settings" icon={CogIcon} />
       </XDSTabList>
+    );
+  },
+};
+
+/**
+ * Demonstrates a common page header pattern: large tab list items on the left
+ * with action buttons on the right, separated by a full-width divider underneath.
+ *
+ * Uses `XDSHStack` with `XDSStackItem size="fill"` to push the actions to the
+ * trailing edge, and `XDSDivider` below for visual separation from page content.
+ */
+export const WithActions: Story = {
+  render: () => {
+    const [value, setValue] = useState('all');
+    return (
+      <div>
+        <XDSHStack vAlign="center">
+          <XDSStackItem size="fill">
+            <XDSTabList value={value} onChange={setValue} size="lg">
+              <XDSTab value="all" label="All items" />
+              <XDSTab value="active" label="Active" />
+              <XDSTab value="archived" label="Archived" />
+            </XDSTabList>
+          </XDSStackItem>
+          <XDSStackItem>
+            <XDSHStack gap={1} vAlign="center">
+              <XDSButton
+                label="Filter"
+                variant="ghost"
+                size="md"
+                icon={<FunnelIcon />}
+              />
+              <XDSButton
+                label="New item"
+                variant="primary"
+                size="md"
+                icon={<PlusIcon />}>
+                New item
+              </XDSButton>
+            </XDSHStack>
+          </XDSStackItem>
+        </XDSHStack>
+        <XDSDivider />
+      </div>
     );
   },
 };
