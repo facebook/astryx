@@ -29,8 +29,7 @@ import {
   durationVars,
   easeVars,
   typographyVars,
-  textSizeVars,
-  lineHeightVars,
+  typeScaleVars,
   fontWeightVars,
   borderVars,
 } from '../theme/tokens.stylex';
@@ -163,8 +162,8 @@ const styles = stylex.create({
   },
   description: {
     fontFamily: typographyVars['--font-family-body'],
-    fontSize: textSizeVars['--font-size-xs'],
-    lineHeight: lineHeightVars['--leading-relaxed'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
   },
