@@ -104,8 +104,6 @@ const COLOR_CATEGORIES = {
     '--color-accent',
     '--color-accent-muted',
     '--color-neutral',
-    '--color-background-surface',
-    '--color-background-body',
     '--color-overlay',
   ],
   'Interactive States': [
@@ -130,9 +128,10 @@ const COLOR_CATEGORIES = {
     '--color-icon-disabled',
   ],
   'Surface Variants': [
+    '--color-background-surface',
+    '--color-background-body',
     '--color-background-card',
     '--color-background-popover',
-    '--color-navbar',
   ],
   'Status/Sentiment': [
     '--color-success',
@@ -142,11 +141,7 @@ const COLOR_CATEGORIES = {
     '--color-warning',
     '--color-warning-muted',
   ],
-  Divider: [
-    '--color-border',
-    '--color-border-emphasized',
-    '--color-border-emphasized',
-  ],
+  Divider: ['--color-border', '--color-border-emphasized'],
   Effects: ['--color-skeleton', '--color-shadow', '--color-tint-hover'],
   'Palette: Blue': [
     '--color-background-blue',
