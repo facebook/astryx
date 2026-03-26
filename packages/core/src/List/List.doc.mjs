@@ -146,8 +146,9 @@ export const docs = {
         },
         {
           name: 'description',
-          type: 'string',
-          description: 'Secondary text displayed below the label.',
+          type: 'ReactNode',
+          description:
+            'Secondary content below the label. A plain string gets single-line truncation automatically; a ReactNode lets child components control their own wrapping and line-clamp behavior.',
         },
         {
           name: 'startContent',
@@ -340,8 +341,9 @@ export const docsZh = {
         },
         {
           name: 'description',
-          type: 'string',
-          description: '显示在标签下方的次要文本。',
+          type: 'ReactNode',
+          description:
+            '标签下方的次要内容。纯字符串会自动应用单行截断；ReactNode 允许子组件自行控制换行和多行截断行为。',
         },
         {
           name: 'startContent',
