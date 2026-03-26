@@ -54,6 +54,9 @@ jobs:
 
       - run: yarn install --frozen-lockfile
 
+      - name: Check package.json exports are in sync
+        run: node scripts/sync-exports.js --check
+
       - run: yarn test
 
       - run: yarn build
