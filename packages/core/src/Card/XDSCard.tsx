@@ -14,7 +14,7 @@
 
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, radiusVars, shadowVars} from '../theme/tokens.stylex';
+import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {container} from '../Layout/container.stylex';
 import type {SpacingToken} from '../Layout/container.stylex';
 import {
@@ -32,13 +32,13 @@ const styles = stylex.create({
     '--card-radius': radiusVars['--radius-3'],
     backgroundColor: colorVars['--color-card'],
     borderRadius: 'var(--card-radius)',
-    boxShadow: shadowVars['--shadow-base'],
-    // Clip content to border-radius so nested containers don\'t peek out corners
+    // No drop-shadow — matches WWW XDSCard which uses border only
     overflow: 'clip',
     borderWidth: 1,
     borderStyle: 'solid',
     borderColor: colorVars['--color-border-emphasized'],
   },
+
   // Inner wrapper: container padding and overflow handling
   cardInner: {
     height: '100%',
@@ -115,9 +115,9 @@ export interface XDSCardProps extends XDSBaseProps {
 }
 
 /**
- * A card container with shadow and themed styling.
+ * A card container with border and themed styling.
  *
- * Applies card-specific appearance (background, shadow, border-radius)
+ * Applies card-specific appearance (background, border, border-radius)
  * and sets CSS variables for child layout components.
  *
  * @compositionHint Use as a top-level container for elevated content.

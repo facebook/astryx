@@ -72,7 +72,6 @@ const meta: Meta<typeof XDSCard> = {
       control: {type: 'range', min: 100, max: 600, step: 10},
       description: 'Minimum height in pixels',
     },
-
   },
 };
 
@@ -365,12 +364,46 @@ export const OnBackgrounds: Story = {
             <XDSVStack gap={2}>
               <h3 {...stylex.props(styles.text)}>Another Card</h3>
               <p {...stylex.props(styles.text, styles.textSecondary)}>
-                The card border and shadow provide separation from the surface.
+                The card border provides separation from the surface.
               </p>
             </XDSVStack>
           </XDSCard>
         </div>
       </XDSSection>
+    </div>
+  ),
+};
+
+/**
+ * Callout card: a card with a wash section used as a callout/highlight area.
+ * This pattern pairs XDSCard with a wash XDSSection for visual emphasis.
+ */
+export const Callout: Story = {
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <XDSCard width={350}>
+        <XDSSection variant="wash">
+          <XDSVStack gap={2}>
+            <h3 {...stylex.props(styles.text)}>💡 Tip</h3>
+            <p {...stylex.props(styles.text, styles.textSecondary)}>
+              Use a wash section inside a card for callouts, tips, or
+              highlighted information. The wash background provides visual
+              contrast against the card surface.
+            </p>
+          </XDSVStack>
+        </XDSSection>
+      </XDSCard>
+      <XDSCard width={350}>
+        <XDSSection variant="wash">
+          <XDSVStack gap={2}>
+            <h3 {...stylex.props(styles.text)}>⚠️ Warning</h3>
+            <p {...stylex.props(styles.text, styles.textSecondary)}>
+              Callout cards work well for alerts and warnings too. The full
+              bleed wash fills the card edge-to-edge.
+            </p>
+          </XDSVStack>
+        </XDSSection>
+      </XDSCard>
     </div>
   ),
 };
