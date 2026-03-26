@@ -31,7 +31,6 @@ import {
   fontWeightVars,
   lineHeightVars,
   borderVars,
-  borderVars,
 } from '@xds/core/theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {tokenize, tokenizeAsync, SYNC_TOKENIZE_THRESHOLD} from './tokenizer';

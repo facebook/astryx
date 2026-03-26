@@ -30,7 +30,6 @@ import {
   typographyVars,
   lineHeightVars,
   borderVars,
-  borderVars,
 } from '@xds/core/theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {

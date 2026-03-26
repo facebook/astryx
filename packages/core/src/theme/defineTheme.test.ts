@@ -251,10 +251,9 @@ describe('typography.scale', () => {
       name: 'custom',
       typography: {scale: {base: 14, ratio: 1.2}},
     });
-    // 11 raw size (--font-size-4xs…--font-size-4xl) + 33 semantic = 44
-    // Filtering for --heading- or --text- captures raw + semantic = 11 + 15 + 18 = 44
+    // 12 raw size (--font-size-4xs…--font-size-5xl) + 18 heading + 24 text = 54
     const typeScaleKeys = Object.keys(theme.tokens).filter(
-      k => k.startsWith('--heading-') || k.startsWith('--text-'),
+      k => k.startsWith('--font-size-') || k.startsWith('--text-'),
     );
     expect(typeScaleKeys).toHaveLength(54);
   });
