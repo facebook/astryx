@@ -17,90 +17,25 @@ XDS is an open source design system born from years of building internal tools a
 
 ## Getting Started
 
-### Installation
+For full setup instructions, see the **[@xds/core README](packages/core/README.md)**.
+
+Quick install:
 
 ```bash
-npm install @xds/core
-# or
-yarn add @xds/core
-# or
-pnpm add @xds/core
-# or
-bun add @xds/core
+yarn add @xds/core @xds/theme-default
+yarn add -D @xds/cli
 ```
 
-### 1. Import Base Styles
+Then follow the [setup guide](packages/core/README.md#quick-start) to import styles, configure the theme provider, and start using components.
 
-Import the reset and typography stylesheets at the root of your application. These provide a clean cross-browser baseline and prose styles for native HTML elements.
+## Packages
 
-```tsx
-// In your root layout or entry point
-import '@xds/core/reset.css'; // Base reset — box-sizing, margins, etc.
-import '@xds/core/typography.css'; // Prose styles — headings, lists, code, etc.
-```
-
-The reset uses `@layer reset`, so it won't conflict with component styles.
-
-### 2. Set Up the Theme Provider
-
-Wrap your application with the `XDSTheme` component. This sets up CSS custom properties used by all XDS components and typography styles.
-
-```tsx
-import {XDSTheme} from '@xds/core';
-import {defaultTheme} from '@xds/theme-default';
-
-function App() {
-  return (
-    <XDSTheme theme={defaultTheme}>
-      <YourApp />
-    </XDSTheme>
-  );
-}
-```
-
-### 3. Apply Typography (Optional)
-
-Typography styles activate via the `xds-typography` class or the `XDSFontWrapper` component. Choose one:
-
-```tsx
-// Option A: Global — apply to body
-<body className="xds-typography">
-
-// Option B: Scoped — wrap specific content
-import { XDSFontWrapper } from '@xds/core';
-
-<XDSFontWrapper>
-  <article dangerouslySetInnerHTML={{ __html: markdownContent }} />
-</XDSFontWrapper>
-```
-
-The typography styles support two heading scales:
-
-- **default** — Dense scale for internal tools (h1: 20px)
-- **editorial** — Larger scale for documentation/content (h1: 32px)
-
-```tsx
-<XDSFontWrapper variant="editorial">
-  <h1>Article Title</h1>
-  <p>Long-form content...</p>
-</XDSFontWrapper>
-```
-
-### 4. Use Components
-
-```tsx
-import {XDSButton, XDSText, XDSHeading} from '@xds/core';
-
-function Example() {
-  return (
-    <>
-      <XDSHeading>Welcome</XDSHeading>
-      <XDSText>Click the button below to get started.</XDSText>
-      <XDSButton label="Get Started" onPress={() => console.log('clicked')} />
-    </>
-  );
-}
-```
+| Package                                         | Description                                         | README                            |
+| ----------------------------------------------- | --------------------------------------------------- | --------------------------------- |
+| [`@xds/core`](packages/core)                    | Components, theme system, and utilities             | [README](packages/core/README.md) |
+| [`@xds/cli`](packages/cli)                      | CLI tooling — component docs, scaffolding, codemods | [README](packages/cli/README.md)  |
+| [`@xds/theme-default`](packages/themes/default) | Clean, professional default theme                   |                                   |
+| [`@xds/theme-neutral`](packages/themes/neutral) | Muted, minimal aesthetic theme                      |                                   |
 
 ## Philosophy
 
@@ -116,20 +51,20 @@ The building blocks for visually cohesive and accessible interfaces: typography,
 
 ### Components
 
-A library of 300+ reusable UI building blocks with full TypeScript support.
+A library of 90+ reusable UI building blocks with full TypeScript support.
 
 ### Patterns
 
-33+ battle-tested design solutions for common interactions and workflows: table pages, detail page layouts, form wizards, navigation patterns, data entry flows.
+Battle-tested design solutions for common interactions and workflows: table pages, detail page layouts, form wizards, navigation patterns, data entry flows.
 
 ## Project Structure
 
-| Directory   | Purpose                                                          |
-| ----------- | ---------------------------------------------------------------- |
-| `apps/`     | Application packages: documentation site, sandbox, and Storybook |
-| `packages/` | Published packages: core components and utilities                |
-| `internal/` | Internal tooling: test utilities and build helpers               |
-| `e2e/`      | End-to-end tests using Playwright                                |
+| Directory   | Purpose                                                     |
+| ----------- | ----------------------------------------------------------- |
+| `apps/`     | Example apps and Storybook                                  |
+| `packages/` | Published packages: core, cli, themes                       |
+| `internal/` | Internal tooling: test utilities, eslint plugin, vibe tests |
+| `e2e/`      | End-to-end tests (Playwright)                               |
 
 ## Contributing
 
