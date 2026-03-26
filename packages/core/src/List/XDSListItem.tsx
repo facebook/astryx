@@ -41,9 +41,13 @@ export interface XDSListItemProps {
   label: string;
 
   /**
-   * Secondary description text below the label.
+   * Secondary description below the label.
+   *
+   * Accepts a plain string (single-line truncation applied automatically)
+   * or a ReactNode for rich/multi-line content (no wrapping constraints
+   * applied — child components control their own text behavior).
    */
-  description?: string;
+  description?: ReactNode;
 
   /**
    * Content rendered before the item (icon, avatar, checkbox).
@@ -225,6 +229,9 @@ const styles = stylex.create({
   description: {
     color: colorVars['--color-text-secondary'],
     overflow: 'hidden',
+    minWidth: 0,
+  },
+  descriptionString: {
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
@@ -315,12 +322,18 @@ export function XDSListItem({
   const hasMarkers = ctx?.hasMarkers ?? false;
   const isInteractive = onClick != null || href != null;
 
+  const isStringDescription = typeof description === 'string';
+
   const labelAndDescription = (
     <>
       <span {...stylex.props(styles.label)}>{label}</span>
       {description != null && (
         <span
-          {...stylex.props(styles.description, descriptionSizeStyles[density])}>
+          {...stylex.props(
+            styles.description,
+            isStringDescription && styles.descriptionString,
+            descriptionSizeStyles[density],
+          )}>
           {description}
         </span>
       )}
