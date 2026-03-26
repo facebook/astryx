@@ -15,7 +15,6 @@
  * - /apps/storybook/stories/SideNav.stories.tsx
  */
 
-
 import {useCallback, useId, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -27,6 +26,7 @@ import {
   durationVars,
   easeVars,
   shadowVars,
+  borderVars,
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
 import type {XDSIconType} from '../Icon';
@@ -99,12 +99,12 @@ const styles = stylex.create({
   },
   // Popover surface for collapsed items with children
   popoverSurface: {
-    backgroundColor: colorVars['--color-popover'],
-    borderWidth: 1,
+    backgroundColor: colorVars['--color-background-popover'],
+    borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
     borderColor: colorVars['--color-border'],
-    borderRadius: radiusVars['--radius-2'],
-    boxShadow: shadowVars['--shadow-menu'],
+    borderRadius: radiusVars['--radius-element'],
+    boxShadow: shadowVars['--shadow-low'],
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-1'],
     marginInlineStart: spacingVars['--spacing-1'],

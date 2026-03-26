@@ -13,12 +13,12 @@ import {
 const styles = stylex.create({
   container: {
     padding: spacingVars['--spacing-4'],
-    backgroundColor: colorVars['--color-surface'],
+    backgroundColor: colorVars['--color-background-surface'],
     maxWidth: 600,
   },
   wideContainer: {
     padding: spacingVars['--spacing-4'],
-    backgroundColor: colorVars['--color-surface'],
+    backgroundColor: colorVars['--color-background-surface'],
     maxWidth: 1000,
   },
   storyWrapper: {
@@ -33,13 +33,13 @@ const styles = stylex.create({
     width: '100%',
     height: '100%',
     objectFit: 'cover',
-    borderRadius: radiusVars['--radius-2'],
+    borderRadius: radiusVars['--radius-element'],
   },
   placeholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: colorVars['--color-wash'],
-    borderRadius: radiusVars['--radius-2'],
+    backgroundColor: colorVars['--color-background-body'],
+    borderRadius: radiusVars['--radius-element'],
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -48,7 +48,7 @@ const styles = stylex.create({
     width: '100%',
     height: '100%',
     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    borderRadius: radiusVars['--radius-2'],
+    borderRadius: radiusVars['--radius-element'],
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -60,7 +60,7 @@ const styles = stylex.create({
   smallContainer: {
     maxWidth: 300,
     padding: spacingVars['--spacing-4'],
-    backgroundColor: colorVars['--color-surface'],
+    backgroundColor: colorVars['--color-background-surface'],
   },
 });
 

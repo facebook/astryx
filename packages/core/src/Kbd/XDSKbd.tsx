@@ -18,7 +18,6 @@ import {
   radiusVars,
   typographyVars,
   fontWeightVars,
-  lineHeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 
@@ -36,16 +35,16 @@ const styles = stylex.create({
     minWidth: '20px',
     height: '20px',
     paddingInline: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-1'],
-    backgroundColor: colorVars['--color-secondary'],
+    borderRadius: radiusVars['--radius-inner'],
+    backgroundColor: colorVars['--color-neutral'],
     borderBottomWidth: '2px',
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
     color: colorVars['--color-text-secondary'],
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-medium'],
-    lineHeight: lineHeightVars['--leading-tight'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     userSelect: 'none',
   },
 });

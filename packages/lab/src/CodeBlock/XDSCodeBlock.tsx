@@ -29,7 +29,8 @@ import {
   textSizeVars,
   typographyVars,
   fontWeightVars,
-  lineHeightVars,
+  typeScaleVars,
+  borderVars,
 } from '@xds/core/theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {tokenize, tokenizeAsync, SYNC_TOKENIZE_THRESHOLD} from './tokenizer';
@@ -44,9 +45,9 @@ const styles = stylex.create({
   root: {
     position: 'relative',
     margin: 0,
-    borderRadius: radiusVars['--radius-2'],
-    backgroundColor: colorVars['--color-muted'],
-    border: `1px solid ${colorVars['--color-border']}`,
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-background-muted'],
+    border: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
     overflow: 'hidden',
   },
   header: {
@@ -55,16 +56,16 @@ const styles = stylex.create({
     justifyContent: 'space-between',
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-4'],
-    borderBottom: `1px solid ${colorVars['--color-border']}`,
-    backgroundColor: colorVars['--color-surface'],
+    borderBottom: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
+    backgroundColor: colorVars['--color-background-surface'],
   },
   headerTitle: {
-    fontSize: textSizeVars['--text-sm'],
-    fontFamily: typographyVars['--font-code'],
+    fontSize: textSizeVars['--font-size-sm'],
+    fontFamily: typographyVars['--font-family-code'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
     margin: 0,
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
   },
   scrollContainer: {
     overflowX: 'auto',
@@ -82,11 +83,11 @@ const styles = stylex.create({
     textAlign: 'end',
     userSelect: 'none',
     color: colorVars['--color-text-disabled'],
-    borderRight: `1px solid ${colorVars['--color-border']}`,
+    borderRight: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
   },
   gutterLine: {
-    fontFamily: typographyVars['--font-code'],
-    lineHeight: lineHeightVars['--leading-normal'],
+    fontFamily: typographyVars['--font-family-code'],
+    lineHeight: typeScaleVars['--text-code-leading'],
   },
   code: {
     display: 'block',
@@ -94,7 +95,7 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
     margin: 0,
-    fontFamily: typographyVars['--font-code'],
+    fontFamily: typographyVars['--font-family-code'],
     color: colorVars['--color-text-primary'],
     tabSize: 2,
     whiteSpace: 'pre',
@@ -107,7 +108,7 @@ const styles = stylex.create({
     overflowWrap: 'break-word',
   },
   line: {
-    lineHeight: lineHeightVars['--leading-normal'],
+    lineHeight: typeScaleVars['--text-code-leading'],
     contentVisibility: 'auto',
     containIntrinsicBlockSize: 'auto 1lh',
   },
@@ -118,16 +119,16 @@ const styles = stylex.create({
     borderLeft: `2px solid ${colorVars['--color-accent']}`,
   },
   sizeSm: {
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: textSizeVars['--font-size-sm'],
   },
   sizeMd: {
-    fontSize: textSizeVars['--text-base'],
+    fontSize: textSizeVars['--font-size-base'],
   },
   gutterSm: {
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: textSizeVars['--font-size-sm'],
   },
   gutterMd: {
-    fontSize: textSizeVars['--text-base'],
+    fontSize: textSizeVars['--font-size-base'],
   },
   copyButton: {
     display: 'inline-flex',
@@ -135,12 +136,12 @@ const styles = stylex.create({
     justifyContent: 'center',
     padding: spacingVars['--spacing-1'],
     border: 'none',
-    borderRadius: radiusVars['--radius-1'],
+    borderRadius: radiusVars['--radius-inner'],
     backgroundColor: 'transparent',
     color: colorVars['--color-text-secondary'],
     cursor: 'pointer',
-    fontFamily: typographyVars['--font-code'],
-    fontSize: textSizeVars['--text-sm'],
+    fontFamily: typographyVars['--font-family-code'],
+    fontSize: textSizeVars['--font-size-sm'],
     lineHeight: '1',
     transition: 'background-color 0.15s ease, color 0.15s ease',
   },

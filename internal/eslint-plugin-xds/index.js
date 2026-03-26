@@ -28,7 +28,7 @@ const STYLE_PROPERTIES = {
     pattern: /^['"]?\d+(\.\d+)?(px|rem|em)['"]?$/,
     tokenVar: 'textSizeVars',
     message: 'Use textSizeVars token instead of hardcoded fontSize',
-    examples: ["textSizeVars['--text-xsm']", "textSizeVars['--text-base']"],
+    examples: ["textSizeVars['--font-size-xs']", "textSizeVars['--font-size-base']"],
   },
   fontWeight: {
     pattern: /^\d{3}$/,
@@ -81,7 +81,7 @@ const STYLE_PROPERTIES = {
     pattern: /^['"]?(#[0-9a-fA-F]{3,8}|rgba?\([^)]+\))['"]?$/,
     tokenVar: 'colorVars',
     message: 'Use colorVars token instead of hardcoded backgroundColor',
-    examples: ["colorVars['--color-surface']"],
+    examples: ["colorVars['--color-background-surface']"],
   },
   borderColor: {
     pattern: /^['"]?(#[0-9a-fA-F]{3,8}|rgba?\([^)]+\))['"]?$/,

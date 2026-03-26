@@ -12,7 +12,6 @@
  * - /packages/core/src/SegmentedControl/XDSSegmentedControl.test.tsx
  */
 
-
 import {useMemo, useRef, useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -65,7 +64,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-0-5'],
     '--segmented-padding': spacingVars['--spacing-0-5'],
     padding: 'var(--segmented-padding)',
-    backgroundColor: colorVars['--color-secondary'],
+    backgroundColor: colorVars['--color-neutral'],
   },
   disabled: {
     opacity: 0.5,
@@ -75,15 +74,15 @@ const styles = stylex.create({
 
 const sizeStyles = stylex.create({
   sm: {
-    '--segmented-radius': radiusVars['--radius-1'],
+    '--segmented-radius': radiusVars['--radius-inner'],
     borderRadius: 'var(--segmented-radius)',
   },
   md: {
-    '--segmented-radius': radiusVars['--radius-2'],
+    '--segmented-radius': radiusVars['--radius-element'],
     borderRadius: 'var(--segmented-radius)',
   },
   lg: {
-    '--segmented-radius': radiusVars['--radius-2'],
+    '--segmented-radius': radiusVars['--radius-element'],
     borderRadius: 'var(--segmented-radius)',
   },
 });

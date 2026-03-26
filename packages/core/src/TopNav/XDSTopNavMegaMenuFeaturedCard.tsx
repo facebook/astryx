@@ -22,7 +22,6 @@ import {
   spacingVars,
   typeScaleVars,
   fontWeightVars,
-  lineHeightVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -50,19 +49,19 @@ const styles = stylex.create({
   title: {
     fontSize: typeScaleVars['--text-label-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    lineHeight: lineHeightVars['--leading-base'],
+    lineHeight: typeScaleVars['--text-label-leading'],
     color: colorVars['--color-text-primary'],
   },
   description: {
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     color: colorVars['--color-text-secondary'],
   },
   link: {
     fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    lineHeight: lineHeightVars['--leading-snug'],
-    color: colorVars['--color-text-link'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-accent'],
     textDecoration: 'none',
   },
 });

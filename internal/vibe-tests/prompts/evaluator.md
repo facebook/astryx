@@ -74,17 +74,17 @@ XDS uses specific CSS variable naming. **Any variable not matching these pattern
 
 **Valid CSS variable prefixes:**
 
-| Category      | Prefix                                         | Examples                                                                                 |
-| ------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Colors        | `--color-*`                                    | `--color-surface`, `--color-text-primary`, `--color-accent`                              |
-| Spacing       | `--spacing-*`                                  | `--spacing-0` through `--spacing-7`                                                      |
-| Radius        | `--radius-*`                                   | `--radius-0`, `--radius-1`, `--radius-2`, `--radius-3`, `--radius-4`, `--radius-rounded` |
-| Shadow        | `--shadow-*`, `--inset-shadow-border-*`        | `--shadow-base`, `--shadow-dialog`, `--inset-shadow-border-hover`                        |
-| Transitions   | `--transition-*`                               | `--transition-fast`, `--transition-normal`                                               |
-| Font families | `--font-body`, `--font-code`, `--font-heading` | (only these three)                                                                       |
-| Text sizes    | `--text-*`                                     | `--text-base`, `--text-sm`, `--text-lg`, `--text-xl`                                     |
-| Line heights  | `--leading-*`                                  | `--leading-tight`, `--leading-normal`, `--leading-relaxed`                               |
-| Font weights  | `--font-weight-*`                              | `--font-weight-normal`, `--font-weight-bold`                                             |
+| Category      | Prefix                                                              | Examples                                                                                                           |
+| ------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Colors        | `--color-*`                                                         | `--color-background-surface`, `--color-text-primary`, `--color-accent`                                             |
+| Spacing       | `--spacing-*`                                                       | `--spacing-0` through `--spacing-7`                                                                                |
+| Radius        | `--radius-*`                                                        | `--radius-none`, `--radius-inner`, `--radius-element`, `--radius-container`, `--radius-container`, `--radius-full` |
+| Shadow        | `--shadow-*`, `--inset-shadow-border-*`                             | `--shadow-low`, `--shadow-high`, `--shadow-inset-hover`                                                            |
+| Transitions   | `--transition-*`                                                    | `--transition-fast`, `--transition-normal`                                                                         |
+| Font families | `--font-family-body`, `--font-family-code`, `--font-family-heading` | (only these three)                                                                                                 |
+| Text sizes    | `--text-*`                                                          | `--font-size-base`, `--font-size-sm`, `--font-size-lg`, `--font-size-xl`                                           |
+| Line heights  | `--leading-*`                                                       | `--leading-tight`, `--leading-normal`, `--leading-relaxed`                                                         |
+| Font weights  | `--font-weight-*`                                                   | `--font-weight-normal`, `--font-weight-bold`                                                                       |
 
 **Common hallucinations to flag:**
 
@@ -92,7 +92,7 @@ XDS uses specific CSS variable naming. **Any variable not matching these pattern
 - `--xds-color-*`, `--xds-space-*`, `--xds-font-*` (INVALID)
 - `--space-*` instead of `--spacing-*`
 - `--border-*` (doesn't exist - use `--color-border` or component props)
-- `--font-family-*` (doesn't exist - use `--font-body`, `--font-code`, `--font-heading`)
+- `--font-family-*` (doesn't exist - use `--font-family-body`, `--font-family-code`, `--font-family-heading`)
 - `--font-size-*` (doesn't exist - use `--text-*`)
 - `--elevation-*` (doesn't exist - use `--shadow-*` and `--inset-shadow-border-*`)
 
@@ -102,7 +102,7 @@ When you detect a hallucinated CSS variable, create an escape hatch entry:
 {
   "type": "hallucination",
   "severity": "critical",
-  "detail": "Used non-existent CSS variable --xds-font-family-base. Valid alternatives: --font-body, --font-code, --font-heading",
+  "detail": "Used non-existent CSS variable --xds-font-family-base. Valid alternatives: --font-family-body, --font-family-code, --font-family-heading",
   "codeSnippet": "fontFamily: 'var(--xds-font-family-base)'"
 }
 ```

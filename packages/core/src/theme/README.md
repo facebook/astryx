@@ -122,9 +122,9 @@ Theme provides CSS variables for use in StyleX:
 ```tsx
 const styles = stylex.create({
   card: {
-    backgroundColor: 'var(--color-surface)',
+    backgroundColor: 'var(--color-background-surface)',
     padding: 'var(--spacing-4)',
-    borderRadius: 'var(--radius-3)',
+    borderRadius: 'var(--radius-container)',
   },
 });
 ```

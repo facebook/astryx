@@ -10,40 +10,40 @@ import {
 
 const styles = stylex.create({
   box: {
-    backgroundColor: colorVars['--color-blue-background'],
-    color: colorVars['--color-blue-text'],
+    backgroundColor: colorVars['--color-background-blue'],
+    color: colorVars['--color-text-blue'],
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: colorVars['--color-blue-border'],
+    borderColor: colorVars['--color-border-blue'],
     paddingBlock: spacingVars['--spacing-4'],
     paddingInline: spacingVars['--spacing-6'],
-    borderRadius: radiusVars['--radius-2'],
+    borderRadius: radiusVars['--radius-element'],
     fontWeight: 500,
     height: '100%',
     boxSizing: 'border-box',
   },
   boxAlt: {
-    backgroundColor: colorVars['--color-gray-background'],
-    color: colorVars['--color-gray-text'],
-    borderColor: colorVars['--color-gray-border'],
+    backgroundColor: colorVars['--color-background-gray'],
+    color: colorVars['--color-text-gray'],
+    borderColor: colorVars['--color-border-gray'],
   },
   boxGreen: {
-    backgroundColor: colorVars['--color-green-background'],
-    color: colorVars['--color-green-text'],
-    borderColor: colorVars['--color-green-border'],
+    backgroundColor: colorVars['--color-background-green'],
+    color: colorVars['--color-text-green'],
+    borderColor: colorVars['--color-border-green'],
   },
   boxPurple: {
-    backgroundColor: colorVars['--color-purple-background'],
-    color: colorVars['--color-purple-text'],
-    borderColor: colorVars['--color-purple-border'],
+    backgroundColor: colorVars['--color-background-purple'],
+    color: colorVars['--color-text-purple'],
+    borderColor: colorVars['--color-border-purple'],
   },
   boxOrange: {
-    backgroundColor: colorVars['--color-orange-background'],
-    color: colorVars['--color-orange-text'],
-    borderColor: colorVars['--color-orange-border'],
+    backgroundColor: colorVars['--color-background-orange'],
+    color: colorVars['--color-text-orange'],
+    borderColor: colorVars['--color-border-orange'],
   },
   container: {
-    backgroundColor: colorVars['--color-wash'],
+    backgroundColor: colorVars['--color-background-body'],
   },
   containerWidth: {
     width: 300,
@@ -86,7 +86,7 @@ const styles = stylex.create({
   },
   heading: {
     margin: `0 0 ${spacingVars['--spacing-2']} 0`,
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
   },
 });
 

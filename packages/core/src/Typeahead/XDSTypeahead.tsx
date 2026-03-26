@@ -16,7 +16,6 @@
  * - /apps/storybook/stories/Typeahead.stories.tsx
  */
 
-
 import React, {useCallback, useId, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -153,7 +152,7 @@ const styles = stylex.create({
     justifyContent: 'center',
     cursor: 'pointer',
     padding: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-rounded'],
+    borderRadius: radiusVars['--radius-full'],
     color: colorVars['--color-text-secondary'],
     opacity: {
       default: 0.7,
@@ -163,10 +162,10 @@ const styles = stylex.create({
     },
   },
   sizeSmWrapper: {
-    minHeight: sizeVars['--size-sm'],
+    minHeight: sizeVars['--size-element-sm'],
   },
   sizeMdWrapper: {
-    minHeight: sizeVars['--size-md'],
+    minHeight: sizeVars['--size-element-md'],
   },
   inputHidden: {
     width: 0,

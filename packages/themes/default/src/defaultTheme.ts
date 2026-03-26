@@ -5,7 +5,7 @@
  * Uses defineTheme for CSS-based theming (no StyleX build required for consumers).
  *
  * Typography sizing is driven by typography.scale, which auto-generates both
- * the token values (--heading-1-size, --text-body-size, etc.) and the
+ * the token values (--text-heading-1-size, --text-body-size, etc.) and the
  * component override rules (.xds-heading.level-1 { font-size: ... }).
  *
  * Only non-typography component overrides need to be specified manually.

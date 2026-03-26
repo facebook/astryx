@@ -8,7 +8,7 @@
  * using a geometric progression: size = base × ratio^step.
  *
  * Two-layer architecture:
- *   Layer 1: Raw size tokens (--text-4xs … --text-4xl)
+ *   Layer 1: Raw size tokens (--font-size-4xs … --font-size-4xl)
  *            Geometric progression in rem.
  *   Layer 2: Semantic tokens (--heading-*, --text-*-size/leading/weight)
  *            Sizes are var() references to Layer 1.
@@ -20,17 +20,17 @@
  * component use.
  *
  * Step mapping:
- *   step -5 → --text-4xs   (sub-scale)
- *   step -4 → --text-3xs   (sub-scale)
- *   step -3 → --text-2xs   (sub-scale)
- *   step -2 → --text-xsm   (h6)
- *   step -1 → --text-sm    (h5, supporting)
- *   step  0 → --text-base  (h4, body, label, code)
- *   step +1 → --text-lg    (h3, large)
- *   step +2 → --text-xl    (h2)
- *   step +3 → --text-2xl   (h1)
- *   step +4 → --text-3xl
- *   step +5 → --text-4xl
+ *   step -5 → --font-size-4xs   (sub-scale)
+ *   step -4 → --font-size-3xs   (sub-scale)
+ *   step -3 → --font-size-2xs   (sub-scale)
+ *   step -2 → --font-size-xs   (h6)
+ *   step -1 → --font-size-sm    (h5, supporting)
+ *   step  0 → --font-size-base  (h4, body, label, code)
+ *   step +1 → --font-size-lg    (h3, large)
+ *   step +2 → --font-size-xl    (h2)
+ *   step +3 → --font-size-2xl   (h1)
+ *   step +4 → --font-size-3xl
+ *   step +5 → --font-size-4xl
  *
  * Line heights use a tiered target ratio based on font size:
  *   < 20px  → 1.5   (body text, small UI)
@@ -131,31 +131,31 @@ export type TypeScaleTokens = Record<string, string>;
  * These tokens form the geometric font size scale.
  *
  * The full scale spans steps -5 to +5:
- *   -5 → --text-4xs (sub-scale)
- *   -4 → --text-3xs (sub-scale)
- *   -3 → --text-2xs (sub-scale)
- *   -2 → --text-xsm
- *   -1 → --text-sm
- *    0 → --text-base (anchor)
- *   +1 → --text-lg
- *   +2 → --text-xl
- *   +3 → --text-2xl
- *   +4 → --text-3xl
- *   +5 → --text-4xl
+ *   -5 → --font-size-4xs (sub-scale)
+ *   -4 → --font-size-3xs (sub-scale)
+ *   -3 → --font-size-2xs (sub-scale)
+ *   -2 → --font-size-xs
+ *   -1 → --font-size-sm
+ *    0 → --font-size-base (anchor)
+ *   +1 → --font-size-lg
+ *   +2 → --font-size-xl
+ *   +3 → --font-size-2xl
+ *   +4 → --font-size-3xl
+ *   +5 → --font-size-4xl
  */
 const STEP_TO_SIZE_TOKEN: Record<number, string> = {
-  [-5]: '--text-4xs',
-  [-4]: '--text-3xs',
-  [-3]: '--text-2xs',
-  [-2]: '--text-xsm',
-  [-1]: '--text-sm',
-  [0]: '--text-base',
-  [1]: '--text-lg',
-  [2]: '--text-xl',
-  [3]: '--text-2xl',
-  [4]: '--text-3xl',
-  [5]: '--text-4xl',
-  [6]: '--text-5xl',
+  [-5]: '--font-size-4xs',
+  [-4]: '--font-size-3xs',
+  [-3]: '--font-size-2xs',
+  [-2]: '--font-size-xs',
+  [-1]: '--font-size-sm',
+  [0]: '--font-size-base',
+  [1]: '--font-size-lg',
+  [2]: '--font-size-xl',
+  [3]: '--font-size-2xl',
+  [4]: '--font-size-3xl',
+  [5]: '--font-size-4xl',
+  [6]: '--font-size-5xl',
 };
 
 /**
@@ -275,7 +275,7 @@ function computeLeading(fontSize: number): number {
  * Expand a type scale configuration into typography token overrides.
  *
  * Generates two layers of tokens:
- *   - Layer 1: 11 raw size tokens (--text-4xs … --text-4xl) in rem
+ *   - Layer 1: 11 raw size tokens (--font-size-4xs … --font-size-4xl) in rem
  *   - Layer 2: semantic tokens using var() refs for sizes and
  *              hardcoded computed values for line heights
  *
@@ -288,13 +288,13 @@ function computeLeading(fontSize: number): number {
  * ```
  * const tokens = expandTypeScale({ base: 14, ratio: 1.2 });
  * // Layer 1 — raw sizes
- * // tokens['--text-base'] === '0.875rem'
- * // tokens['--text-2xl'] === '1.5rem'
+ * // tokens['--font-size-base'] === '0.875rem'
+ * // tokens['--font-size-2xl'] === '1.5rem'
  * //
  * // Layer 2 — semantic
- * // tokens['--heading-1-size'] === 'var(--text-2xl)'
- * // tokens['--heading-1-leading'] === '1.3333'
- * // tokens['--text-body-size'] === 'var(--text-base)'
+ * // tokens['--text-heading-1-size'] === 'var(--font-size-2xl)'
+ * // tokens['--text-heading-1-leading'] === '1.3333'
+ * // tokens['--text-body-size'] === 'var(--font-size-base)'
  * // tokens['--text-body-leading'] === '1.4286'
  * ```
  */
@@ -329,9 +329,9 @@ export function expandTypeScale(config: XDSTypeScaleConfig): TypeScaleTokens {
     const size = computeSize(base, ratio, step);
     const leading = computeLeading(size);
 
-    tokens[`--heading-${level}-size`] = `var(${STEP_TO_SIZE_TOKEN[step]})`;
-    tokens[`--heading-${level}-weight`] = headingWeights[level];
-    tokens[`--heading-${level}-leading`] = `${leading}`;
+    tokens[`--text-heading-${level}-size`] = `var(${STEP_TO_SIZE_TOKEN[step]})`;
+    tokens[`--text-heading-${level}-weight`] = headingWeights[level];
+    tokens[`--text-heading-${level}-leading`] = `${leading}`;
   }
 
   // Text tokens
@@ -352,14 +352,14 @@ export function expandTypeScale(config: XDSTypeScaleConfig): TypeScaleTokens {
 // =============================================================================
 
 const TEXT_FONT_FAMILIES: Record<string, string> = {
-  body: 'var(--font-body)',
-  large: 'var(--font-body)',
-  label: 'var(--font-body)',
-  code: 'var(--font-code)',
-  supporting: 'var(--font-body)',
-  'display-1': 'var(--font-heading)',
-  'display-2': 'var(--font-heading)',
-  'display-3': 'var(--font-heading)',
+  body: 'var(--font-family-body)',
+  large: 'var(--font-family-body)',
+  label: 'var(--font-family-body)',
+  code: 'var(--font-family-code)',
+  supporting: 'var(--font-family-body)',
+  'display-1': 'var(--font-family-heading)',
+  'display-2': 'var(--font-family-heading)',
+  'display-3': 'var(--font-family-heading)',
 };
 
 /**
@@ -373,10 +373,10 @@ export function generateTypeScaleComponents(
   const headingRules: Record<string, Record<string, string>> = {};
   for (const level of [1, 2, 3, 4, 5, 6]) {
     headingRules[`level:${level}`] = {
-      fontFamily: 'var(--font-heading)',
-      fontSize: `var(--heading-${level}-size)`,
-      fontWeight: `var(--heading-${level}-weight)`,
-      lineHeight: `var(--heading-${level}-leading)`,
+      fontFamily: 'var(--font-family-heading)',
+      fontSize: `var(--text-heading-${level}-size)`,
+      fontWeight: `var(--text-heading-${level}-weight)`,
+      lineHeight: `var(--text-heading-${level}-leading)`,
     };
   }
   components.heading = headingRules;

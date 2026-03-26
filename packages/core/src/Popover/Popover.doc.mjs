@@ -215,7 +215,7 @@ export const docs = {
       {className: 'xds-popover'},
     ],
     vars: [
-      {name: '--popover-radius', description: 'Border radius of the popover', default: 'var(--radius-2)'},
+      {name: '--popover-radius', description: 'Border radius of the popover', default: 'var(--radius-element)'},
     ],
   },
 };
@@ -431,7 +431,7 @@ export const docsZh = {
       {className: 'xds-popover'},
     ],
     vars: [
-      {name: '--popover-radius', description: 'Border radius of the popover', default: 'var(--radius-2)'},
+      {name: '--popover-radius', description: 'Border radius of the popover', default: 'var(--radius-element)'},
     ],
   },
 };

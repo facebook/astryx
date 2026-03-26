@@ -63,7 +63,7 @@ export const docs = {
   keyboard: 'Not interactive — purely presentational',
   notes: [
     'Fixed 20px height with min-width 20px per key badge',
-    'Uses --color-wash background and --color-text-secondary text color',
+    'Uses --color-background-body background and --color-text-secondary text color',
     'Key display symbols follow macOS conventions (⌘, ⌥, ⇧, ⌃)',
   ],
 };
@@ -132,7 +132,7 @@ export const docsZh = {
   keyboard: '非交互式 — 纯展示用途',
   notes: [
     '固定 20px 高度，每个按键徽章最小宽度 20px',
-    '使用 --color-wash 背景色和 --color-text-secondary 文字颜色',
+    '使用 --color-background-body 背景色和 --color-text-secondary 文字颜色',
     '按键显示符号遵循 macOS 惯例（⌘、⌥、⇧、⌃）',
   ],
 };
@@ -149,7 +149,7 @@ export const docsDense = {
   ],
   notes: [
     'Fixed 20px height w/ min-width 20px per key badge',
-    'Uses --color-wash background + --color-text-secondary text color',
+    'Uses --color-background-body background + --color-text-secondary text color',
     'Key display symbols follow macOS conventions (\u2318, \u2325, \u21e7, \u2303)',
   ],
   accessibility: [

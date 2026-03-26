@@ -17,7 +17,6 @@ import {
   colorVars,
   radiusVars,
   spacingVars,
-  lineHeightVars,
   durationVars,
   easeVars,
   typeScaleVars,
@@ -63,7 +62,7 @@ const styles = stylex.create({
     position: 'relative',
   },
   contentWrapper: {
-    borderRadius: radiusVars['--radius-1'],
+    borderRadius: radiusVars['--radius-inner'],
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
@@ -90,7 +89,7 @@ const styles = stylex.create({
   focusWithinOutline: {
     outline: {
       default: 'none',
-      ':focus-within': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-within': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',
@@ -165,7 +164,7 @@ const styles = stylex.create({
     background: 'none',
     padding: 0,
     color: colorVars['--color-icon-secondary'],
-    borderRadius: radiusVars['--radius-1'],
+    borderRadius: radiusVars['--radius-inner'],
   },
   chevronButton: {
     all: 'unset',
@@ -177,7 +176,7 @@ const styles = stylex.create({
     fontSize: CHEVRON_SIZE,
     cursor: 'pointer',
     color: colorVars['--color-icon-secondary'],
-    borderRadius: radiusVars['--radius-1'],
+    borderRadius: radiusVars['--radius-inner'],
   },
   chevronSvg: {
     display: 'flex',
@@ -197,33 +196,33 @@ const densityStyles = stylex.create({
   compact: {
     paddingBlock: spacingVars['--spacing-1'],
     fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-body-leading'],
   },
   balanced: {
     paddingBlock: spacingVars['--spacing-2'],
     fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-body-leading'],
   },
   spacious: {
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-3'],
     fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: lineHeightVars['--leading-normal'],
+    lineHeight: typeScaleVars['--text-body-leading'],
   },
 });
 
 const descriptionSizeStyles = stylex.create({
   compact: {
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
   },
   balanced: {
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
   },
   spacious: {
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-normal'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
   },
 });
 

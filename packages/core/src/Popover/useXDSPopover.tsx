@@ -13,7 +13,6 @@
  * - /packages/core/src/Popover/index.ts
  */
 
-
 import React, {
   useCallback,
   useEffect,
@@ -70,13 +69,13 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     // Inverted color palette (like tooltip): dark background, light text
     backgroundColor: colorVars['--color-text-primary'],
-    color: colorVars['--color-surface'],
+    color: colorVars['--color-background-surface'],
     fontSize: typeScaleVars['--text-supporting-size'],
-    borderRadius: radiusVars['--radius-2'],
+    borderRadius: radiusVars['--radius-element'],
     cursor: 'pointer',
     borderWidth: 0,
     borderStyle: 'none',
-    outline: `2px solid ${colorVars['--color-ring-focus']}`,
+    outline: `2px solid ${colorVars['--color-accent']}`,
     outlineOffset: 2,
     zIndex: 1,
     pointerEvents: 'auto', // Re-enable mouse clicks when visible

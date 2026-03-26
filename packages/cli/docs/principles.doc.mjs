@@ -97,8 +97,8 @@ const overrides = stylex.create({
 const styles = stylex.create({
   container: {
     padding: 'var(--spacing-4)',
-    backgroundColor: 'var(--color-surface)',
-    borderRadius: 'var(--radius-2)',
+    backgroundColor: 'var(--color-background-surface)',
+    borderRadius: 'var(--radius-element)',
   },
 });
 

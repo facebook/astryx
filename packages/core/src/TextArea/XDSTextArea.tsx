@@ -27,7 +27,6 @@ import {
   colorVars,
   spacingVars,
   typographyVars,
-  lineHeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {
@@ -57,9 +56,9 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     padding: 0,
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: lineHeightVars['--leading-base'],
+    lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
     outline: 'none',
@@ -76,7 +75,7 @@ const styles = stylex.create({
     display: 'flex',
     justifyContent: 'flex-end',
     marginTop: spacingVars['--spacing-1'],
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
     color: colorVars['--color-text-secondary'],
   },

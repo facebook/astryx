@@ -35,7 +35,7 @@ const stripedRowStyles = stylex.create({
   row: {
     backgroundColor: {
       default: null,
-      ':nth-child(even)': colorVars['--color-muted'],
+      ':nth-child(even)': colorVars['--color-background-muted'],
     },
   },
 });
@@ -58,7 +58,7 @@ const stripedHoverRowStyles = stylex.create({
   row: {
     backgroundColor: {
       default: null,
-      ':nth-child(even)': colorVars['--color-muted'],
+      ':nth-child(even)': colorVars['--color-background-muted'],
       ':hover': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },

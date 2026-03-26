@@ -19,6 +19,7 @@ import {
   spacingVars,
   fontWeightVars,
   typeScaleVars,
+  borderVars,
 } from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
 import {XDSTableContext} from './XDSTableContext';
@@ -69,7 +70,7 @@ const headerStyles = stylex.create({
 
 const headerDividerStyles = stylex.create({
   cell: {
-    borderBottomWidth: '1px',
+    borderBottomWidth: borderVars['--border-width'],
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
   },
@@ -78,7 +79,7 @@ const headerDividerStyles = stylex.create({
 const dividerColumnStyles = stylex.create({
   cell: {
     borderRightWidth: {
-      default: '1px',
+      default: borderVars['--border-width'],
       ':last-child': '0',
     },
     borderRightStyle: 'solid',

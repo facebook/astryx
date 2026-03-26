@@ -14,7 +14,7 @@
 
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, radiusVars} from '../theme/tokens.stylex';
+import {borderVars, colorVars, radiusVars} from '../theme/tokens.stylex';
 import {container} from '../Layout/container.stylex';
 import type {SpacingToken} from '../Layout/container.stylex';
 import {
@@ -29,12 +29,12 @@ import {XDSBaseProps} from '../XDSBaseProps';
 const styles = stylex.create({
   // Outer wrapper: visual styling with clip for border-radius
   cardOuter: {
-    '--card-radius': radiusVars['--radius-3'],
-    backgroundColor: colorVars['--color-card'],
+    '--card-radius': radiusVars['--radius-container'],
+    backgroundColor: colorVars['--color-background-card'],
     borderRadius: 'var(--card-radius)',
     // No drop-shadow — matches WWW XDSCard which uses border only
     overflow: 'clip',
-    borderWidth: 1,
+    borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
     borderColor: colorVars['--color-border-emphasized'],
   },

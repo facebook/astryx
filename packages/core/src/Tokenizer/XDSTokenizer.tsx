@@ -212,7 +212,7 @@ const styles = stylex.create({
     justifyContent: 'center',
     cursor: 'pointer',
     padding: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-rounded'],
+    borderRadius: radiusVars['--radius-full'],
     color: colorVars['--color-text-secondary'],
     opacity: {
       default: 0.7,
@@ -230,10 +230,10 @@ const styles = stylex.create({
     flexShrink: 0,
   },
   sizeSm: {
-    minHeight: sizeVars['--size-sm'],
+    minHeight: sizeVars['--size-element-sm'],
   },
   sizeMd: {
-    minHeight: sizeVars['--size-md'],
+    minHeight: sizeVars['--size-element-md'],
   },
   inputAtMax: {
     width: 0,
@@ -256,20 +256,20 @@ const styles = stylex.create({
     overflow: 'hidden',
   },
   truncatedSm: {
-    height: sizeVars['--size-sm'],
+    height: sizeVars['--size-element-sm'],
   },
   truncatedMd: {
-    height: sizeVars['--size-md'],
+    height: sizeVars['--size-element-md'],
   },
   layerOuter: {
     position: 'relative',
     zIndex: 1,
   },
   layerOuterSm: {
-    height: sizeVars['--size-sm'],
+    height: sizeVars['--size-element-sm'],
   },
   layerOuterMd: {
-    height: sizeVars['--size-md'],
+    height: sizeVars['--size-element-md'],
   },
   layerInner: {
     position: 'absolute',

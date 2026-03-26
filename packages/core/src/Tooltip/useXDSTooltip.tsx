@@ -10,7 +10,6 @@
  * - /packages/core/src/Tooltip/index.ts
  */
 
-
 import {
   useCallback,
   useEffect,
@@ -33,7 +32,6 @@ import {
   spacingVars,
   typographyVars,
   typeScaleVars,
-  lineHeightVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName} from '../utils';
 
@@ -42,12 +40,12 @@ const styles = stylex.create({
   container: {
     // Inverted color palette: dark background, light text
     backgroundColor: colorVars['--color-text-primary'],
-    color: colorVars['--color-surface'],
-    borderRadius: radiusVars['--radius-2'],
+    color: colorVars['--color-background-surface'],
+    borderRadius: radiusVars['--radius-element'],
     // Typography
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: lineHeightVars['--leading-base'],
+    lineHeight: typeScaleVars['--text-body-leading'],
     // Animation: closed state (default) and open state
     opacity: {
       default: 0,

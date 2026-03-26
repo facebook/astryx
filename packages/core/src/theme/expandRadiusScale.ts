@@ -58,12 +58,12 @@ export type RadiusScaleTokens = Record<string, string>;
  * @example
  * ```
  * const tokens = expandRadiusScale({ base: 4, multiplier: 1 });
- * // tokens['--radius-0'] === '0px'
- * // tokens['--radius-1'] === '4px'
- * // tokens['--radius-2'] === '8px'
- * // tokens['--radius-3'] === '12px'
- * // tokens['--radius-4'] === '16px'
- * // tokens['--radius-rounded'] === '9999px'
+ * // tokens['--radius-none'] === '0px'
+ * // tokens['--radius-inner'] === '4px'
+ * // tokens['--radius-element'] === '8px'
+ * // tokens['--radius-container'] === '12px'
+ * // tokens['--radius-page'] === '28px'
+ * // tokens['--radius-full'] === '9999px'
  * ```
  */
 export function expandRadiusScale(
@@ -71,11 +71,11 @@ export function expandRadiusScale(
 ): RadiusScaleTokens {
   const {base, multiplier} = config;
   return {
-    '--radius-0': '0px',
-    '--radius-1': `${Math.round(base * 1 * multiplier)}px`,
-    '--radius-2': `${Math.round(base * 2 * multiplier)}px`,
-    '--radius-3': `${Math.round(base * 3 * multiplier)}px`,
-    '--radius-4': `${Math.round(base * 4 * multiplier)}px`,
-    '--radius-rounded': '9999px',
+    '--radius-none': '0px',
+    '--radius-inner': `${Math.round(base * 1 * multiplier)}px`,
+    '--radius-element': `${Math.round(base * 2 * multiplier)}px`,
+    '--radius-container': `${Math.round(base * 3 * multiplier)}px`,
+    '--radius-page': `${Math.round(base * 7 * multiplier)}px`,
+    '--radius-full': '9999px',
   };
 }

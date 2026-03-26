@@ -16,8 +16,8 @@
  *   name: 'ocean',
  *   tokens: {
  *     '--color-accent': ['#0077B6', '#48CAE4'],    // [light, dark]
- *     '--color-surface': ['#F0F8FF', '#0A1628'],
- *     '--radius-3': '16px',                     // same in both modes
+ *     '--color-background-surface': ['#F0F8FF', '#0A1628'],
+ *     '--radius-container': '16px',                     // same in both modes
  *   },
  *   icons: oceanIcons,
  * });
@@ -42,7 +42,6 @@ import {
   transitionDefaults,
   typographyDefaults,
   textSizeDefaults,
-  lineHeightDefaults,
   fontWeightDefaults,
   typeScaleDefaults,
 } from './tokens.stylex';
@@ -79,7 +78,6 @@ export type XDSCoreTokenName =
   | keyof typeof transitionDefaults
   | keyof typeof typographyDefaults
   | keyof typeof textSizeDefaults
-  | keyof typeof lineHeightDefaults
   | keyof typeof fontWeightDefaults
   | keyof typeof typeScaleDefaults;
 
@@ -107,7 +105,7 @@ export type XDSTokenValue = string | [light: string, dark: string];
  * {
  *   borderColor: '#8F9296',
  *   ':hover': { borderColor: 'color-mix(in srgb, #8F9296, black 20%)' },
- *   ':focus-visible': { outline: '2px solid var(--color-ring-focus)' },
+ *   ':focus-visible': { outline: '2px solid var(--color-accent)' },
  * }
  * ```
  */
@@ -232,7 +230,7 @@ export interface XDSDefineThemeInput {
    *     'variant:primary-muted': { backgroundColor: '#ECF5FF' }, // new — generates augmentation
    *   },
    *   banner: {
-   *     'status:neutral': { backgroundColor: 'var(--color-muted)' }, // new status
+   *     'status:neutral': { backgroundColor: 'var(--color-background-muted)' }, // new status
    *   },
    * }
    * ```
@@ -277,7 +275,6 @@ export const xdsTokenDefaults: Record<string, string> = {
   ...transitionDefaults,
   ...typographyDefaults,
   ...textSizeDefaults,
-  ...lineHeightDefaults,
   ...fontWeightDefaults,
   ...typeScaleDefaults,
   ...domainTokenDefaults,
@@ -455,9 +452,9 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
       bodyFamily;
     const codeFamily = buildFontFamily(typo.code?.family, typo.code?.fallbacks);
 
-    if (bodyFamily) tokens['--font-body'] = bodyFamily;
-    if (headingFamily) tokens['--font-heading'] = headingFamily;
-    if (codeFamily) tokens['--font-code'] = codeFamily;
+    if (bodyFamily) tokens['--font-family-body'] = bodyFamily;
+    if (headingFamily) tokens['--font-family-heading'] = headingFamily;
+    if (codeFamily) tokens['--font-family-code'] = codeFamily;
   }
 
   // 2. Apply explicit token overrides (highest precedence — overwrites generated tokens)
@@ -597,20 +594,20 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
 
   // 3. Prose HTML element rules (h1-h6, p, small, code, hr)
   parts.push(`  :is(h1, h2, h3, h4, h5, h6) {
-    font-family: var(--font-heading);
+    font-family: var(--font-family-heading);
     color: var(--color-text-primary);
   }`);
 
   for (let level = 1; level <= 6; level++) {
     parts.push(`  h${level} {
-    font-size: ${val(`--heading-${level}-size`)};
-    font-weight: ${val(`--heading-${level}-weight`)};
-    line-height: ${val(`--heading-${level}-leading`)};
+    font-size: ${val(`--text-heading-${level}-size`)};
+    font-weight: ${val(`--text-heading-${level}-weight`)};
+    line-height: ${val(`--text-heading-${level}-leading`)};
   }`);
   }
 
   parts.push(`  p {
-    font-family: var(--font-heading);
+    font-family: var(--font-family-heading);
     font-size: ${val('--text-body-size')};
     font-weight: ${val('--text-body-weight')};
     line-height: ${val('--text-body-leading')};
@@ -625,7 +622,7 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
   }`);
 
   parts.push(`  code, pre {
-    font-family: var(--font-code);
+    font-family: var(--font-family-code);
     font-size: ${val('--text-code-size')};
     line-height: ${val('--text-code-leading')};
   }`);

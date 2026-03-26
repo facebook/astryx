@@ -785,7 +785,7 @@ export default function ShellLabPage() {
                       padding: '8px 12px',
                       borderRadius: 8,
                       border: '1px solid var(--color-border)',
-                      background: 'var(--color-wash)',
+                      background: 'var(--color-background-body)',
                       fontSize: 14,
                       outline: 'none',
                     }}
@@ -883,7 +883,7 @@ export default function ShellLabPage() {
                   overflow: 'auto',
                   padding: 12,
                   borderRadius: 8,
-                  background: 'var(--color-wash)',
+                  background: 'var(--color-background-body)',
                 }}>
                 {JSON.stringify(config, null, 2)}
               </pre>

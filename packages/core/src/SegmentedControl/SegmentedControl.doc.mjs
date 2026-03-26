@@ -69,7 +69,7 @@ export const docs = {
     'Deselection not allowed (radio semantics — always one selected)',
     'Uses aria-disabled instead of native disabled to maintain keyboard focusability',
     'Keyboard navigation skips disabled items',
-    'Track background uses --color-secondary, selected indicator uses --color-surface with --shadow-base',
+    'Track background uses --color-neutral, selected indicator uses --color-background-surface with --shadow-low',
     'label prop on XDSSegmentedControl is aria-only (like XDSTabList aria-label), never rendered visually',
   ],
   components: [
@@ -215,7 +215,7 @@ export const docsZh = {
     '不允许取消选中（单选语义，始终有一项选中）',
     '使用 aria-disabled 替代原生 disabled 以保持键盘可聚焦性',
     '键盘导航会跳过禁用项',
-    '轨道背景使用 --color-secondary，选中指示器使用 --color-surface 配合 --shadow-base',
+    '轨道背景使用 --color-neutral，选中指示器使用 --color-background-surface 配合 --shadow-low',
     'XDSSegmentedControl 的 label 属性仅用于 aria（类似 XDSTabList 的 aria-label），不会渲染为可见内容',
   ],
   components: [
@@ -277,7 +277,7 @@ export const docsDense = {
     'no deselection (radio semantics; always one selected)',
     'aria-disabled not native disabled; maintains keyboard focusability',
     'keyboard nav skips disabled items',
-    'track bg: --color-secondary; selected indicator: --color-surface+--shadow-base',
+    'track bg: --color-neutral; selected indicator: --color-background-surface+--shadow-low',
     'label prop aria-only (like XDSTabList aria-label); never rendered',
   ],
   propDescriptions: {

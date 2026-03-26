@@ -10,7 +10,6 @@
  * - /packages/core/src/HoverCard/index.ts
  */
 
-
 import {
   useCallback,
   useEffect,
@@ -38,10 +37,10 @@ import {xdsClassName, mergeProps} from '../utils';
 const styles = stylex.create({
   // Base container styles passed to useXDSLayer (includes animations)
   container: {
-    backgroundColor: colorVars['--color-surface'],
-    '--hovercard-radius': radiusVars['--radius-3'],
+    backgroundColor: colorVars['--color-background-surface'],
+    '--hovercard-radius': radiusVars['--radius-container'],
     borderRadius: 'var(--hovercard-radius)',
-    boxShadow: shadowVars['--shadow-hover'],
+    boxShadow: shadowVars['--shadow-med'],
     // Animation: closed state (default) and open state
     opacity: {
       default: 0,

@@ -28,7 +28,8 @@ import {
   radiusVars,
   textSizeVars,
   typographyVars,
-  lineHeightVars,
+  typeScaleVars,
+  borderVars,
 } from '@xds/core/theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {
@@ -47,14 +48,14 @@ const styles = stylex.create({
   root: {
     position: 'relative',
     display: 'flex',
-    borderRadius: radiusVars['--radius-2'],
-    backgroundColor: colorVars['--color-muted'],
-    border: `1px solid ${colorVars['--color-border']}`,
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-background-muted'],
+    border: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
     overflow: 'hidden',
   },
   rootFocused: {
-    borderColor: colorVars['--color-ring-focus'],
-    boxShadow: `0 0 0 1px ${colorVars['--color-ring-focus']}`,
+    borderColor: colorVars['--color-accent'],
+    boxShadow: `0 0 0 1px ${colorVars['--color-accent']}`,
   },
   gutter: {
     flexShrink: 0,
@@ -64,11 +65,11 @@ const styles = stylex.create({
     textAlign: 'end',
     userSelect: 'none',
     color: colorVars['--color-text-disabled'],
-    borderRight: `1px solid ${colorVars['--color-border']}`,
+    borderRight: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
   },
   gutterLine: {
-    fontFamily: typographyVars['--font-code'],
-    lineHeight: lineHeightVars['--leading-normal'],
+    fontFamily: typographyVars['--font-family-code'],
+    lineHeight: typeScaleVars['--text-code-leading'],
   },
   editorContainer: {
     flex: 1,
@@ -80,7 +81,7 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
     margin: 0,
-    fontFamily: typographyVars['--font-code'],
+    fontFamily: typographyVars['--font-family-code'],
     color: colorVars['--color-text-primary'],
     tabSize: 2,
     whiteSpace: 'pre',
@@ -88,29 +89,29 @@ const styles = stylex.create({
     overflowWrap: 'normal',
     outline: 'none',
     caretColor: colorVars['--color-text-primary'],
-    lineHeight: lineHeightVars['--leading-normal'],
+    lineHeight: typeScaleVars['--text-code-leading'],
   },
   placeholder: {
     position: 'absolute',
     top: spacingVars['--spacing-3'],
     left: spacingVars['--spacing-4'],
     color: colorVars['--color-text-disabled'],
-    fontFamily: typographyVars['--font-code'],
-    lineHeight: lineHeightVars['--leading-normal'],
+    fontFamily: typographyVars['--font-family-code'],
+    lineHeight: typeScaleVars['--text-code-leading'],
     pointerEvents: 'none',
     userSelect: 'none',
   },
   sizeSm: {
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: textSizeVars['--font-size-sm'],
   },
   sizeMd: {
-    fontSize: textSizeVars['--text-base'],
+    fontSize: textSizeVars['--font-size-base'],
   },
   gutterSm: {
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: textSizeVars['--font-size-sm'],
   },
   gutterMd: {
-    fontSize: textSizeVars['--text-base'],
+    fontSize: textSizeVars['--font-size-base'],
   },
 });
 

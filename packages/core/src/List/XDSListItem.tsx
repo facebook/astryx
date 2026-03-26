@@ -20,10 +20,10 @@ import {
   colorVars,
   radiusVars,
   spacingVars,
-  lineHeightVars,
   durationVars,
   easeVars,
   typeScaleVars,
+  borderVars,
 } from '../theme/tokens.stylex';
 import {XDSListContext} from './XDSListContext';
 import {xdsClassName, mergeProps} from '../utils';
@@ -148,13 +148,13 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-3'],
   },
   withRadius: {
-    borderRadius: radiusVars['--radius-1'],
+    borderRadius: radiusVars['--radius-inner'],
   },
   noRadius: {
     borderRadius: 0,
   },
   withDivider: {
-    borderBlockEnd: `1px solid ${colorVars['--color-border']}`,
+    borderBlockEnd: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
     ':last-child': {
       borderBlockEnd: 'none',
     },
@@ -175,7 +175,7 @@ const styles = stylex.create({
   focusWithinOutline: {
     outline: {
       default: 'none',
-      ':focus-within': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-within': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',
@@ -252,33 +252,33 @@ const densityStyles = stylex.create({
   compact: {
     paddingBlock: spacingVars['--spacing-1'],
     fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-body-leading'],
   },
   balanced: {
     paddingBlock: spacingVars['--spacing-2'],
     fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-body-leading'],
   },
   spacious: {
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-3'],
     fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: lineHeightVars['--leading-normal'],
+    lineHeight: typeScaleVars['--text-body-leading'],
   },
 });
 
 const descriptionSizeStyles = stylex.create({
   compact: {
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
   },
   balanced: {
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
   },
   spacious: {
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-normal'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
   },
 });
 

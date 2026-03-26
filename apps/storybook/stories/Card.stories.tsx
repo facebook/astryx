@@ -19,11 +19,11 @@ import {
 
 const styles = stylex.create({
   pageWrapper: {
-    backgroundColor: colorVars['--color-wash'],
+    backgroundColor: colorVars['--color-background-body'],
     padding: spacingVars['--spacing-6'],
   },
   text: {
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     color: colorVars['--color-text-primary'],
     margin: 0,
   },
@@ -38,7 +38,7 @@ const styles = stylex.create({
   },
   heading: {
     margin: `0 0 ${spacingVars['--spacing-2']} 0`,
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: 14,
     color: colorVars['--color-text-secondary'],
   },

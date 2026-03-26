@@ -20,7 +20,6 @@
  * - /packages/core/src/TopNav/index.ts
  */
 
-
 import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -30,9 +29,9 @@ import {
   durationVars,
   easeVars,
   fontWeightVars,
-  lineHeightVars,
   shadowVars,
   typeScaleVars,
+  borderVars,
 } from '../theme/tokens.stylex';
 import {useXDSPopover} from '../Popover/useXDSPopover';
 import {XDSGrid} from '../Grid/XDSGrid';
@@ -53,9 +52,9 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
-    borderRadius: radiusVars['--radius-2'],
+    borderRadius: radiusVars['--radius-element'],
     fontSize: typeScaleVars['--text-label-size'],
-    lineHeight: lineHeightVars['--leading-base'],
+    lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
     textDecoration: 'none',
@@ -71,7 +70,7 @@ const styles = stylex.create({
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',
@@ -115,10 +114,10 @@ const styles = stylex.create({
   },
   // Visual styles for the panel content container.
   panelContainer: {
-    backgroundColor: colorVars['--color-popover'],
-    borderTop: `1px solid ${colorVars['--color-border']}`,
-    borderRadius: radiusVars['--radius-3'],
-    boxShadow: shadowVars['--shadow-menu'],
+    backgroundColor: colorVars['--color-background-popover'],
+    borderTop: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
+    borderRadius: radiusVars['--radius-container'],
+    boxShadow: shadowVars['--shadow-low'],
     overflow: 'hidden',
   },
   panelContent: {
@@ -139,8 +138,8 @@ const styles = stylex.create({
     flexGrow: 1,
     flexShrink: 1,
     flexBasis: 200,
-    borderRadius: radiusVars['--radius-3'],
-    backgroundColor: colorVars['--color-muted'],
+    borderRadius: radiusVars['--radius-container'],
+    backgroundColor: colorVars['--color-background-muted'],
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
@@ -187,8 +186,8 @@ const styles = stylex.create({
   drawerFeatured: {
     marginBlockStart: spacingVars['--spacing-2'],
     marginInlineStart: spacingVars['--spacing-6'],
-    borderRadius: radiusVars['--radius-3'],
-    backgroundColor: colorVars['--color-muted'],
+    borderRadius: radiusVars['--radius-container'],
+    backgroundColor: colorVars['--color-background-muted'],
     overflow: 'hidden',
   },
 });

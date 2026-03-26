@@ -22,7 +22,6 @@ import {
   durationVars,
   easeVars,
   fontWeightVars,
-  lineHeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
@@ -142,10 +141,10 @@ const styles = stylex.create({
     paddingBlock: 0,
     borderWidth: 0,
     borderStyle: 'none',
-    borderRadius: radiusVars['--radius-1'],
+    borderRadius: radiusVars['--radius-inner'],
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     whiteSpace: 'nowrap',
     textDecoration: 'none',
@@ -172,7 +171,7 @@ const styles = stylex.create({
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',
@@ -207,7 +206,7 @@ const styles = stylex.create({
   focusWithinOutline: {
     outline: {
       default: null,
-      ':focus-within': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-within': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',
@@ -223,13 +222,13 @@ const styles = stylex.create({
     padding: 0,
     marginInlineEnd: `calc(-1 * ${spacingVars['--spacing-1']})`,
     cursor: 'pointer',
-    borderRadius: radiusVars['--radius-rounded'],
+    borderRadius: radiusVars['--radius-full'],
     width: '16px',
     height: '16px',
     color: 'inherit',
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
     },
     '::after': {
       content: '""',
@@ -241,60 +240,60 @@ const styles = stylex.create({
 
 const sizeStyles = stylex.create({
   sm: {
-    height: `calc(${sizeVars['--size-sm']} - 8px)`,
+    height: `calc(${sizeVars['--size-element-sm']} - 8px)`,
     fontSize: typeScaleVars['--text-supporting-size'],
     paddingInline: spacingVars['--spacing-2'],
   },
   md: {
-    height: `calc(${sizeVars['--size-md']} - 8px)`,
+    height: `calc(${sizeVars['--size-element-md']} - 8px)`,
     paddingInline: spacingVars['--spacing-2'],
   },
 });
 
 const colorStyles = stylex.create({
   default: {
-    backgroundColor: colorVars['--color-secondary'],
+    backgroundColor: colorVars['--color-neutral'],
     color: colorVars['--color-text-primary'],
   },
   red: {
-    backgroundColor: colorVars['--color-red-background'],
-    color: colorVars['--color-red-text'],
+    backgroundColor: colorVars['--color-background-red'],
+    color: colorVars['--color-text-red'],
   },
   orange: {
-    backgroundColor: colorVars['--color-orange-background'],
-    color: colorVars['--color-orange-text'],
+    backgroundColor: colorVars['--color-background-orange'],
+    color: colorVars['--color-text-orange'],
   },
   yellow: {
-    backgroundColor: colorVars['--color-yellow-background'],
-    color: colorVars['--color-yellow-text'],
+    backgroundColor: colorVars['--color-background-yellow'],
+    color: colorVars['--color-text-yellow'],
   },
   green: {
-    backgroundColor: colorVars['--color-green-background'],
-    color: colorVars['--color-green-text'],
+    backgroundColor: colorVars['--color-background-green'],
+    color: colorVars['--color-text-green'],
   },
   teal: {
-    backgroundColor: colorVars['--color-teal-background'],
-    color: colorVars['--color-teal-text'],
+    backgroundColor: colorVars['--color-background-teal'],
+    color: colorVars['--color-text-teal'],
   },
   cyan: {
-    backgroundColor: colorVars['--color-cyan-background'],
-    color: colorVars['--color-cyan-text'],
+    backgroundColor: colorVars['--color-background-cyan'],
+    color: colorVars['--color-text-cyan'],
   },
   blue: {
-    backgroundColor: colorVars['--color-blue-background'],
-    color: colorVars['--color-blue-text'],
+    backgroundColor: colorVars['--color-background-blue'],
+    color: colorVars['--color-text-blue'],
   },
   purple: {
-    backgroundColor: colorVars['--color-purple-background'],
-    color: colorVars['--color-purple-text'],
+    backgroundColor: colorVars['--color-background-purple'],
+    color: colorVars['--color-text-purple'],
   },
   pink: {
-    backgroundColor: colorVars['--color-pink-background'],
-    color: colorVars['--color-pink-text'],
+    backgroundColor: colorVars['--color-background-pink'],
+    color: colorVars['--color-text-pink'],
   },
   gray: {
-    backgroundColor: colorVars['--color-gray-background'],
-    color: colorVars['--color-gray-text'],
+    backgroundColor: colorVars['--color-background-gray'],
+    color: colorVars['--color-text-gray'],
   },
 });
 

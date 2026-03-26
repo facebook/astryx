@@ -448,16 +448,16 @@ function generateProseCSS(themeDef) {
   const parts = [];
 
   // Heading resets — all heading elements get the base heading treatment
-  parts.push(`  :is(h1, h2, h3, h4, h5, h6) {\n    font-family: var(--font-heading);\n    font-weight: var(--font-weight-semibold);\n    color: var(--color-text-primary);\n    margin: 0;\n  }`);
+  parts.push(`  :is(h1, h2, h3, h4, h5, h6) {\n    font-family: var(--font-family-heading);\n    font-weight: var(--font-weight-semibold);\n    color: var(--color-text-primary);\n    margin: 0;\n  }`);
 
   // Per-level heading sizes
   const headingSizes = {
-    h1: {fontSize: 'var(--text-2xl)', lineHeight: '1.2'},
-    h2: {fontSize: 'var(--text-xl)', lineHeight: '1.333'},
-    h3: {fontSize: 'var(--text-lg)', lineHeight: '1.25'},
-    h4: {fontSize: 'var(--text-base)', lineHeight: 'var(--leading-base)'},
-    h5: {fontSize: 'var(--text-base)', lineHeight: 'var(--leading-base)'},
-    h6: {fontSize: 'var(--text-xsm)', lineHeight: '1.333'},
+    h1: {fontSize: 'var(--font-size-2xl)', lineHeight: '1.2'},
+    h2: {fontSize: 'var(--font-size-xl)', lineHeight: '1.333'},
+    h3: {fontSize: 'var(--font-size-lg)', lineHeight: '1.25'},
+    h4: {fontSize: 'var(--font-size-base)', lineHeight: 'var(--leading-base)'},
+    h5: {fontSize: 'var(--font-size-base)', lineHeight: 'var(--leading-base)'},
+    h6: {fontSize: 'var(--font-size-xs)', lineHeight: '1.333'},
   };
 
   for (const [el, styles] of Object.entries(headingSizes)) {
@@ -468,11 +468,11 @@ function generateProseCSS(themeDef) {
   }
 
   // Text element resets
-  parts.push(`  p {\n    font-family: var(--font-heading);\n    color: var(--color-text-primary);\n    margin: 0;\n    font-size: var(--text-base);\n    line-height: var(--leading-base);\n  }`);
+  parts.push(`  p {\n    font-family: var(--font-family-heading);\n    color: var(--color-text-primary);\n    margin: 0;\n    font-size: var(--font-size-base);\n    line-height: var(--leading-base);\n  }`);
 
-  parts.push(`  small {\n    font-size: var(--text-xsm);\n    line-height: 1.333;\n    color: var(--color-text-secondary);\n  }`);
+  parts.push(`  small {\n    font-size: var(--font-size-xs);\n    line-height: 1.333;\n    color: var(--color-text-secondary);\n  }`);
 
-  parts.push(`  code, pre {\n    font-family: var(--font-code);\n    font-size: var(--text-base);\n    line-height: var(--leading-base);\n  }`);
+  parts.push(`  code, pre {\n    font-family: var(--font-family-code);\n    font-size: var(--font-size-base);\n    line-height: var(--leading-base);\n  }`);
 
   parts.push(`  hr {\n    border: none;\n    border-top: 1px solid var(--color-border);\n    margin: 0;\n  }`);
 

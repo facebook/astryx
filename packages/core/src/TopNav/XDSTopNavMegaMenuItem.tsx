@@ -22,7 +22,6 @@ import {
   easeVars,
   typeScaleVars,
   fontWeightVars,
-  lineHeightVars,
 } from '../theme/tokens.stylex';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
@@ -42,7 +41,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-3'],
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-3'],
-    borderRadius: radiusVars['--radius-2'],
+    borderRadius: radiusVars['--radius-element'],
     textDecoration: 'none',
     cursor: 'pointer',
     transitionProperty: 'background-color',
@@ -58,7 +57,7 @@ const styles = stylex.create({
     border: 'none',
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',
@@ -76,8 +75,8 @@ const styles = stylex.create({
     justifyContent: 'center',
     width: 40,
     height: 40,
-    borderRadius: radiusVars['--radius-2'],
-    backgroundColor: colorVars['--color-secondary'],
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-neutral'],
     flexShrink: 0,
     color: colorVars['--color-icon-secondary'],
   },
@@ -89,13 +88,13 @@ const styles = stylex.create({
   },
   desktopTitle: {
     fontSize: typeScaleVars['--text-label-size'],
-    lineHeight: lineHeightVars['--leading-base'],
+    lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-primary'],
   },
   desktopDescription: {
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
   },
@@ -111,8 +110,8 @@ const styles = stylex.create({
     justifyContent: 'center',
     width: 32,
     height: 32,
-    borderRadius: radiusVars['--radius-2'],
-    backgroundColor: colorVars['--color-secondary'],
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-neutral'],
     flexShrink: 0,
     color: colorVars['--color-icon-secondary'],
     marginBlockStart: spacingVars['--spacing-0-5'],
@@ -125,7 +124,7 @@ const styles = stylex.create({
   },
   drawerItemDescription: {
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     color: colorVars['--color-text-secondary'],
     fontWeight: fontWeightVars['--font-weight-normal'],
   },

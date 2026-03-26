@@ -15,14 +15,12 @@
  * - /apps/storybook/stories/SideNav.stories.tsx
  */
 
-
 import {useId, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
   fontWeightVars,
-  lineHeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
@@ -56,7 +54,7 @@ const styles = stylex.create({
   title: {
     fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     color: colorVars['--color-text-secondary'],
     overflow: 'hidden',
     textOverflow: 'ellipsis',
@@ -64,7 +62,7 @@ const styles = stylex.create({
   },
   subtitle: {
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     color: colorVars['--color-text-secondary'],
     overflow: 'hidden',
     textOverflow: 'ellipsis',

@@ -14,7 +14,6 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
-  lineHeightVars,
   fontWeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
@@ -74,7 +73,7 @@ const styles = stylex.create({
   },
   label: {
     fontSize: typeScaleVars['--text-label-size'],
-    lineHeight: lineHeightVars['--leading-base'],
+    lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-primary'],
     overflow: 'hidden',
@@ -83,7 +82,7 @@ const styles = stylex.create({
   },
   description: {
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     color: colorVars['--color-text-secondary'],
     overflow: 'hidden',
     textOverflow: 'ellipsis',

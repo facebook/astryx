@@ -16,15 +16,15 @@ const inputStyles = stylex.create({
   root: {
     width: '100%',
     boxSizing: 'border-box',
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: '14px',
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
     borderWidth: 1,
     borderStyle: 'solid',
     borderColor: colorVars['--color-border'],
-    borderRadius: radiusVars['--radius-2'],
-    backgroundColor: colorVars['--color-surface'],
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-background-surface'],
     color: colorVars['--color-text-primary'],
     outline: 'none',
     ':focus': {

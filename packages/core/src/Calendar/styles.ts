@@ -85,8 +85,8 @@ export const monthGridStyles = stylex.create({
     gridTemplateColumns: 'auto repeat(7, 1fr)',
   },
   dayName: {
-    width: sizeVars['--size-md'],
-    height: sizeVars['--size-md'],
+    width: sizeVars['--size-element-md'],
+    height: sizeVars['--size-element-md'],
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -95,7 +95,7 @@ export const monthGridStyles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   weekNumberHeader: {
-    width: sizeVars['--size-md'],
+    width: sizeVars['--size-element-md'],
   },
   daysGrid: {
     display: 'grid',
@@ -105,8 +105,8 @@ export const monthGridStyles = stylex.create({
     gridTemplateColumns: 'auto repeat(7, 1fr)',
   },
   weekNumber: {
-    width: sizeVars['--size-md'],
-    height: sizeVars['--size-md'],
+    width: sizeVars['--size-element-md'],
+    height: sizeVars['--size-element-md'],
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -129,7 +129,7 @@ export const dayCellStyles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    height: sizeVars['--size-md'],
+    height: sizeVars['--size-element-md'],
   },
 
   // Range background - structural positioning
@@ -142,13 +142,13 @@ export const dayCellStyles = stylex.create({
   },
   rangeBgRadiusLeft: {
     left: '2px',
-    borderTopLeftRadius: radiusVars['--radius-rounded'],
-    borderBottomLeftRadius: radiusVars['--radius-rounded'],
+    borderTopLeftRadius: radiusVars['--radius-full'],
+    borderBottomLeftRadius: radiusVars['--radius-full'],
   },
   rangeBgRadiusRight: {
     right: '2px',
-    borderTopRightRadius: radiusVars['--radius-rounded'],
-    borderBottomRightRadius: radiusVars['--radius-rounded'],
+    borderTopRightRadius: radiusVars['--radius-full'],
+    borderBottomRightRadius: radiusVars['--radius-full'],
   },
   rangeInsetLeft: {
     left: '2px',
@@ -167,29 +167,29 @@ export const dayCellStyles = stylex.create({
   },
   previewBgRadiusLeft: {
     left: '2px',
-    borderTopLeftRadius: radiusVars['--radius-rounded'],
-    borderBottomLeftRadius: radiusVars['--radius-rounded'],
+    borderTopLeftRadius: radiusVars['--radius-full'],
+    borderBottomLeftRadius: radiusVars['--radius-full'],
   },
   previewBgRadiusRight: {
     right: '2px',
-    borderTopRightRadius: radiusVars['--radius-rounded'],
-    borderBottomRightRadius: radiusVars['--radius-rounded'],
+    borderTopRightRadius: radiusVars['--radius-full'],
+    borderBottomRightRadius: radiusVars['--radius-full'],
   },
   previewStart: {
     left: '2px',
-    borderTopLeftRadius: radiusVars['--radius-rounded'],
-    borderBottomLeftRadius: radiusVars['--radius-rounded'],
+    borderTopLeftRadius: radiusVars['--radius-full'],
+    borderBottomLeftRadius: radiusVars['--radius-full'],
   },
   previewEnd: {
     right: '2px',
-    borderTopRightRadius: radiusVars['--radius-rounded'],
-    borderBottomRightRadius: radiusVars['--radius-rounded'],
+    borderTopRightRadius: radiusVars['--radius-full'],
+    borderBottomRightRadius: radiusVars['--radius-full'],
   },
 
   // Day button - structural
   day: {
-    width: sizeVars['--size-sm'],
-    height: sizeVars['--size-sm'],
+    width: sizeVars['--size-element-sm'],
+    height: sizeVars['--size-element-sm'],
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -258,7 +258,7 @@ export const dayCellTheme = stylex.create({
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',
@@ -284,7 +284,7 @@ export const dayCellTheme = stylex.create({
   // Selected state (single selection or range endpoints)
   daySelected: {
     backgroundColor: colorVars['--color-accent'],
-    color: colorVars['--color-text-on-dark-media'],
+    color: colorVars['--color-on-accent'],
     backgroundImage: {
       default: null,
       ':hover': {

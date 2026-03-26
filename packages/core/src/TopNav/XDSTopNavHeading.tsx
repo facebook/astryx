@@ -18,7 +18,6 @@ import {
   colorVars,
   spacingVars,
   fontWeightVars,
-  lineHeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
@@ -37,7 +36,7 @@ const styles = stylex.create({
   headingText: {
     fontSize: typeScaleVars['--text-large-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    lineHeight: lineHeightVars['--leading-tight'],
+    lineHeight: typeScaleVars['--text-large-leading'],
     whiteSpace: 'nowrap',
   },
   logo: {

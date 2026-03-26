@@ -24,7 +24,7 @@ const styles = stylex.create({
     position: 'relative',
     borderRadius: 12,
     overflow: 'visible',
-    backgroundColor: 'var(--color-surface, #fff)',
+    backgroundColor: 'var(--color-background-surface, #fff)',
     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
     transitionProperty: 'border-radius, box-shadow',
     transitionDuration: '0.2s',
@@ -54,7 +54,7 @@ const styles = stylex.create({
   featuredLink: {
     fontSize: 14,
     fontWeight: 600,
-    color: 'var(--color-text-link)',
+    color: 'var(--color-text-accent)',
     textDecoration: 'none',
   },
   featuredImage: {

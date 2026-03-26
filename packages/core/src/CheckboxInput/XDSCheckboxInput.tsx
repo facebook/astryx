@@ -29,9 +29,9 @@ import {
   durationVars,
   easeVars,
   typographyVars,
-  textSizeVars,
-  lineHeightVars,
+  typeScaleVars,
   fontWeightVars,
+  borderVars,
 } from '../theme/tokens.stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSFieldLabel} from '../Field/XDSFieldLabel';
@@ -72,9 +72,9 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
-    borderRadius: radiusVars['--radius-1'],
+    borderRadius: radiusVars['--radius-inner'],
     transitionProperty: 'background-color, border-color',
     transitionDuration: {
       default: durationVars['--duration-fast'],
@@ -86,7 +86,7 @@ const styles = stylex.create({
     outline: {
       default: 'none',
       [stylex.when.ancestor(':focus-within')]:
-        `2px solid ${colorVars['--color-ring-focus']}`,
+        `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: null,
@@ -98,13 +98,13 @@ const styles = stylex.create({
     borderColor: {
       default: colorVars['--color-border-emphasized'],
       [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-border-emphasized']}, ${colorVars['--color-hover-tint']} 20%)`,
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-border-emphasized']}, ${colorVars['--color-tint-hover']} 20%)`,
       },
     },
     backgroundColor: {
-      default: colorVars['--color-surface'],
+      default: colorVars['--color-background-surface'],
       [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-surface']}, ${colorVars['--color-hover-tint']} 5%)`,
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-background-surface']}, ${colorVars['--color-tint-hover']} 5%)`,
       },
     },
   },
@@ -112,13 +112,13 @@ const styles = stylex.create({
     borderColor: {
       default: colorVars['--color-accent'],
       [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },
     backgroundColor: {
       default: colorVars['--color-accent'],
       [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },
   },
@@ -138,18 +138,18 @@ const styles = stylex.create({
     },
   },
   checkboxDisabledUnchecked: {
-    backgroundColor: colorVars['--color-muted'],
+    backgroundColor: colorVars['--color-background-muted'],
   },
   checkmark: {
     display: 'none',
-    color: colorVars['--color-icon-on-dark-media'],
+    color: colorVars['--color-on-accent'],
   },
   checkmarkVisible: {
     display: 'block',
   },
   indeterminateMark: {
     display: 'none',
-    backgroundColor: colorVars['--color-icon-on-dark-media'],
+    backgroundColor: colorVars['--color-on-accent'],
     borderRadius: 1,
   },
   indeterminateMarkVisible: {
@@ -161,9 +161,9 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-0-5'],
   },
   description: {
-    fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-xsm'],
-    lineHeight: lineHeightVars['--leading-relaxed'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
   },

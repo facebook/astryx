@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/ProgressBar.stories.tsx (storybook stories)
  */
 
-
 import {useId} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -22,7 +21,6 @@ import {
   spacingVars,
   radiusVars,
   fontWeightVars,
-  lineHeightVars,
   durationVars,
   easeVars,
   typeScaleVars,
@@ -173,13 +171,13 @@ const styles = stylex.create({
   },
   label: {
     fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-body-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-primary'],
   },
   valueLabel: {
     fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-body-leading'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
   },
@@ -196,13 +194,13 @@ const styles = stylex.create({
   },
   track: {
     width: '100%',
-    backgroundColor: colorVars['--color-muted'],
-    borderRadius: radiusVars['--radius-rounded'],
+    backgroundColor: colorVars['--color-background-muted'],
+    borderRadius: radiusVars['--radius-full'],
     overflow: 'hidden',
   },
   fill: {
     height: '100%',
-    borderRadius: radiusVars['--radius-rounded'],
+    borderRadius: radiusVars['--radius-full'],
     transitionProperty: 'width',
     transitionDuration: durationVars['--duration-medium'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -210,7 +208,7 @@ const styles = stylex.create({
   indeterminateFill: {
     height: '100%',
     width: '40%',
-    borderRadius: radiusVars['--radius-rounded'],
+    borderRadius: radiusVars['--radius-full'],
     animationName: indeterminateSlide,
     animationDuration: {
       default: '1.5s',

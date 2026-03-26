@@ -23,7 +23,7 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSIcon} from '@xds/core/Icon';
 import {
   colorVars,
-  lineHeightVars,
+  typeScaleVars,
   spacingVars,
   typographyVars,
   textSizeVars,
@@ -50,9 +50,9 @@ const styles = stylex.create({
     outline: 'none',
     backgroundColor: 'transparent',
     color: colorVars['--color-text-primary'],
-    fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-base'],
-    lineHeight: lineHeightVars['--leading-normal'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: textSizeVars['--font-size-base'],
+    lineHeight: typeScaleVars['--text-body-leading'],
     padding: 0,
     '::placeholder': {
       color: colorVars['--color-text-secondary'],

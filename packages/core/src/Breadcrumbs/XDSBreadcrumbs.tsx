@@ -13,16 +13,10 @@
  * - /apps/storybook/stories/Breadcrumbs.stories.tsx
  */
 
-
 import {Children, isValidElement, createContext, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {
-  colorVars,
-  spacingVars,
-  lineHeightVars,
-  typeScaleVars,
-} from '../theme/tokens.stylex';
+import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import type {XDSBreadcrumbItemProps} from './XDSBreadcrumbItem';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -154,15 +148,16 @@ const separatorStyles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     color: colorVars['--color-text-secondary'],
-    lineHeight: lineHeightVars['--leading-snug'],
     paddingBlock: spacingVars['--spacing-1'],
     userSelect: 'none',
   },
   defaultSize: {
     fontSize: typeScaleVars['--text-body-size'],
+    lineHeight: typeScaleVars['--text-body-leading'],
   },
   supportingSize: {
     fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
   },
 });
 

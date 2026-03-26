@@ -53,13 +53,13 @@ export type XDSSectionVariant = keyof XDSSectionVariantMap;
 
 const variantStyles = stylex.create({
   section: {
-    backgroundColor: colorVars['--color-surface'],
+    backgroundColor: colorVars['--color-background-surface'],
   },
   transparent: {
     backgroundColor: 'transparent',
   },
   wash: {
-    backgroundColor: colorVars['--color-muted'],
+    backgroundColor: colorVars['--color-background-muted'],
   },
 });
 

@@ -23,7 +23,6 @@ import {
   durationVars,
   easeVars,
   fontWeightVars,
-  lineHeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
@@ -42,9 +41,9 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
-    borderRadius: radiusVars['--radius-2'],
+    borderRadius: radiusVars['--radius-element'],
     fontSize: typeScaleVars['--text-label-size'],
-    lineHeight: lineHeightVars['--leading-base'],
+    lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
     textDecoration: 'none',
@@ -61,7 +60,7 @@ const styles = stylex.create({
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',
@@ -72,11 +71,11 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     backgroundColor: {
-      default: colorVars['--color-secondary'],
+      default: colorVars['--color-neutral'],
       ':hover': {
-        '@media (hover: hover)': colorVars['--color-secondary'],
+        '@media (hover: hover)': colorVars['--color-neutral'],
       },
-      ':active': colorVars['--color-secondary'],
+      ':active': colorVars['--color-neutral'],
     },
   },
   iconOnly: {
@@ -86,7 +85,7 @@ const styles = stylex.create({
   drawerFocus: {
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',

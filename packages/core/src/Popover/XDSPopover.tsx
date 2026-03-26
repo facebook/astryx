@@ -14,7 +14,6 @@
  * - /apps/storybook/stories/Popover.stories.tsx
  */
 
-
 import React, {
   useCallback,
   useLayoutEffect,
@@ -193,10 +192,10 @@ const styles = stylex.create({
   },
   // Visual styles for the inner content container
   container: {
-    backgroundColor: colorVars['--color-surface'],
+    backgroundColor: colorVars['--color-background-surface'],
     color: colorVars['--color-text-primary'],
-    borderRadius: radiusVars['--radius-2'],
-    boxShadow: shadowVars['--shadow-menu'],
+    borderRadius: radiusVars['--radius-element'],
+    boxShadow: shadowVars['--shadow-low'],
   },
   contentPadding: {
     paddingBlockStart: spacingVars['--spacing-3'],

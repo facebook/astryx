@@ -168,7 +168,7 @@ export const docs = {
       {className: 'xds-button', visualProps: ['size', 'variant']},
     ],
     vars: [
-      {name: '--button-radius', description: 'Border radius', default: 'var(--radius-2)'},
+      {name: '--button-radius', description: 'Border radius', default: 'var(--radius-element)'},
       {name: '--button-press-scale', description: 'Active press transform', default: 'scale(0.98)'},
       {name: '--button-disabled-opacity', description: 'Opacity when disabled', default: '0.5'},
       {name: '--button-focus-offset', description: 'Focus ring outline offset', default: '3px'},
@@ -359,7 +359,7 @@ export const docsZh = {
       {className: 'xds-button', visualProps: ['size', 'variant']},
     ],
     vars: [
-      {name: '--button-radius', description: '圆角半径', default: 'var(--radius-2)'},
+      {name: '--button-radius', description: '圆角半径', default: 'var(--radius-element)'},
       {name: '--button-press-scale', description: '按下时的变换', default: 'scale(0.98)'},
       {name: '--button-disabled-opacity', description: '禁用时的不透明度', default: '0.5'},
       {name: '--button-focus-offset', description: '焦点环轮廓偏移', default: '3px'},

@@ -25,7 +25,6 @@ import {
   easeVars,
   shadowVars,
   fontWeightVars,
-  lineHeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {useXDSLayer} from '../Layer/useXDSLayer';
@@ -71,10 +70,10 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     borderWidth: 0,
     borderStyle: 'none',
-    borderRadius: radiusVars['--radius-2'],
+    borderRadius: radiusVars['--radius-element'],
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-label-size'],
-    lineHeight: lineHeightVars['--leading-base'],
+    lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
     cursor: 'pointer',
@@ -84,7 +83,7 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',
@@ -92,7 +91,7 @@ const styles = stylex.create({
     },
   },
   triggerSelected: {
-    color: colorVars['--color-text-link'],
+    color: colorVars['--color-text-accent'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
   },
   triggerLabel: {
@@ -121,7 +120,7 @@ const styles = stylex.create({
       right: 0,
       height: '2px',
       backgroundColor: colorVars['--color-accent'],
-      borderRadius: radiusVars['--radius-rounded'],
+      borderRadius: radiusVars['--radius-full'],
     },
   },
   hoverUnderline: {
@@ -131,7 +130,7 @@ const styles = stylex.create({
     right: 0,
     height: '2px',
     backgroundColor: colorVars['--color-border'],
-    borderRadius: radiusVars['--radius-rounded'],
+    borderRadius: radiusVars['--radius-full'],
     opacity: {
       default: 0,
       [stylex.when.ancestor(':hover')]: {
@@ -160,9 +159,9 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-0-5'],
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-1'],
-    backgroundColor: colorVars['--color-surface'],
-    borderRadius: radiusVars['--radius-2'],
-    boxShadow: shadowVars['--shadow-menu'],
+    backgroundColor: colorVars['--color-background-surface'],
+    borderRadius: radiusVars['--radius-element'],
+    boxShadow: shadowVars['--shadow-low'],
     minWidth: '160px',
   },
   menuItem: {
@@ -172,10 +171,10 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
-    borderRadius: radiusVars['--radius-1'],
+    borderRadius: radiusVars['--radius-inner'],
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-label-size'],
-    lineHeight: lineHeightVars['--leading-base'],
+    lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-primary'],
     cursor: 'pointer',
@@ -190,7 +189,7 @@ const styles = stylex.create({
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
     },
   },
   menuItemSelected: {
@@ -210,9 +209,9 @@ const styles = stylex.create({
 });
 
 const sizeStyles = stylex.create({
-  sm: {height: sizeVars['--size-sm']},
-  md: {height: sizeVars['--size-md']},
-  lg: {height: sizeVars['--size-lg']},
+  sm: {height: sizeVars['--size-element-sm']},
+  md: {height: sizeVars['--size-element-md']},
+  lg: {height: sizeVars['--size-element-lg']},
 });
 
 /**

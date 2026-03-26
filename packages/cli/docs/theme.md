@@ -54,7 +54,7 @@ import {colorVars, colorDefaults} from '@xds/core/theme/tokens.stylex';
 // 1. Define your color overrides
 const colorOverrides = {
   '--color-accent': 'light-dark(#7B61FF, #9B85FF)',
-  '--color-surface': 'light-dark(#FFFFFF, #1A1A2E)',
+  '--color-background-surface': 'light-dark(#FFFFFF, #1A1A2E)',
   // ... all ~60 color tokens (see npx xds docs tokens)
 } as const;
 
@@ -157,7 +157,7 @@ const myTheme = defineTheme({
 | Config             | What it generates                                                 | Parameters                       |
 | ------------------ | ----------------------------------------------------------------- | -------------------------------- |
 | `typography.scale` | `--heading-*-size/weight/leading`, `--text-*-size/weight/leading` | `base` (px), `ratio`, `weights?` |
-| `radius`           | `--radius-0` through `--radius-4`, `--radius-rounded`             | `base` (px), `multiplier` (0–2)  |
+| `radius`           | `--radius-none` through `--radius-page`, `--radius-full`          | `base` (px), `multiplier` (0–2)  |
 
 Explicit `tokens` overrides always take precedence over scale-generated values.
 
@@ -221,7 +221,7 @@ To apply the theme's background color, add it to a wrapper element via StyleX:
 ```tsx
 const styles = stylex.create({
   page: {
-    backgroundColor: 'var(--color-wash)',
+    backgroundColor: 'var(--color-background-body)',
     minHeight: '100vh',
   },
 });
@@ -264,7 +264,7 @@ const cardOverrides = stylex.create({
     padding: '2px', // gradient border width
   },
   content: {
-    backgroundColor: 'var(--color-card)',
+    backgroundColor: 'var(--color-background-card)',
     borderRadius: '18px', // inner radius = outer - padding
   },
 });

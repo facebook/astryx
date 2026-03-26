@@ -43,10 +43,10 @@ export default function Home() {
           <XDSVStack gap={3}>
             <XDSHeading level={2}>Badges</XDSHeading>
             <XDSHStack gap={3} vAlign="center">
-              <XDSBadge variant="info" label='Info' />
-              <XDSBadge variant="success" label='Success' />
-              <XDSBadge variant="warning" label='Warning' />
-              <XDSBadge variant="error" label='Error' />
+              <XDSBadge variant="info" label="Info" />
+              <XDSBadge variant="success" label="Success" />
+              <XDSBadge variant="warning" label="Warning" />
+              <XDSBadge variant="error" label="Error" />
             </XDSHStack>
           </XDSVStack>
 
@@ -63,7 +63,7 @@ export default function Home() {
           {/* Tailwind custom styling */}
           <XDSVStack gap={3}>
             <XDSHeading level={2}>Tailwind Integration</XDSHeading>
-            <div className="rounded-lg border border-[var(--color-border)] p-4 bg-[var(--color-wash)]">
+            <div className="rounded-lg border border-[var(--color-border)] p-4 bg-[var(--color-background-body)]">
               <XDSText type="body">
                 This card uses Tailwind utilities for layout with XDS design
                 tokens via CSS custom properties. No StyleX needed.

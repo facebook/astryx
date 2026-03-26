@@ -106,7 +106,7 @@ function Example() {
       {className: 'xds-dialog', visualProps: ['variant']},
     ],
     vars: [
-      {name: '--dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-3)'},
+      {name: '--dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-container)'},
     ],
   },
   keyboard:
@@ -365,7 +365,7 @@ function Example() {
       {className: 'xds-dialog', visualProps: ['variant']},
     ],
     vars: [
-      {name: '--dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-3)'},
+      {name: '--dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-container)'},
     ],
   },
   keyboard:

@@ -23,6 +23,7 @@ import {
   typographyVars,
   fontWeightVars,
   typeScaleVars,
+  borderVars,
 } from '../theme/tokens.stylex';
 import {XDSRadioListContext} from './XDSRadioList';
 import {xdsClassName, mergeProps} from '../utils';
@@ -55,7 +56,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
     borderRadius: '50%',
     transitionProperty: 'background-color, border-color',
@@ -67,13 +68,13 @@ const styles = stylex.create({
     borderColor: {
       default: colorVars['--color-border-emphasized'],
       [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-border-emphasized']}, ${colorVars['--color-hover-tint']} 20%)`,
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-border-emphasized']}, ${colorVars['--color-tint-hover']} 20%)`,
       },
     },
     backgroundColor: {
-      default: colorVars['--color-surface'],
+      default: colorVars['--color-background-surface'],
       [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-surface']}, ${colorVars['--color-hover-tint']} 5%)`,
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-background-surface']}, ${colorVars['--color-tint-hover']} 5%)`,
       },
     },
   },
@@ -81,20 +82,20 @@ const styles = stylex.create({
     borderColor: {
       default: colorVars['--color-accent'],
       [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },
     backgroundColor: {
       default: colorVars['--color-accent'],
       [stylex.when.ancestor(':hover')]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },
   },
   radioWrapperFocus: {
     outline: {
       default: 'none',
-      ':focus-within': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-within': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',
@@ -107,11 +108,11 @@ const styles = stylex.create({
     borderColor: colorVars['--color-border'],
   },
   radioDisabledUnchecked: {
-    backgroundColor: colorVars['--color-muted'],
+    backgroundColor: colorVars['--color-background-muted'],
   },
   innerDot: {
     borderRadius: '50%',
-    backgroundColor: colorVars['--color-icon-on-dark-media'],
+    backgroundColor: colorVars['--color-on-accent'],
   },
   labelWrapper: {
     display: 'flex',
@@ -120,7 +121,7 @@ const styles = stylex.create({
     marginTop: 1,
   },
   label: {
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-label-size'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-primary'],
@@ -131,7 +132,7 @@ const styles = stylex.create({
     cursor: 'not-allowed',
   },
   description: {
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
     color: colorVars['--color-text-secondary'],
   },

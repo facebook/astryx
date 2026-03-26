@@ -29,8 +29,8 @@ const styles = stylex.create({
   heading: {
     paddingInline: spacingVars['--spacing-3'],
     paddingBlock: spacingVars['--spacing-1'],
-    fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-xsm'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: textSizeVars['--font-size-xs'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-secondary'],
     textTransform: 'uppercase' as const,

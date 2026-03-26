@@ -13,7 +13,6 @@ import * as stylex from '@stylexjs/stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {
   colorVars,
-  lineHeightVars,
   radiusVars,
   spacingVars,
   typographyVars,
@@ -23,38 +22,38 @@ import type {XDSInputStatusType} from './types';
 
 const styles = stylex.create({
   base: {
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
   },
   attached: {
     marginTop: `calc(-1 * ${spacingVars['--spacing-1-5']})`,
     paddingBlockStart: `calc(${spacingVars['--spacing-1-5']} + ${spacingVars['--spacing-2']})`,
     paddingBlockEnd: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
-    borderBottomLeftRadius: radiusVars['--radius-2'],
-    borderBottomRightRadius: radiusVars['--radius-2'],
+    borderBottomLeftRadius: radiusVars['--radius-element'],
+    borderBottomRightRadius: radiusVars['--radius-element'],
   },
   detached: {
     marginTop: spacingVars['--spacing-1'],
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
-    borderRadius: radiusVars['--radius-2'],
+    borderRadius: radiusVars['--radius-element'],
   },
 });
 
 const colorStyles = stylex.create({
   warning: {
     backgroundColor: colorVars['--color-warning-muted'],
-    color: colorVars['--color-yellow-text'],
+    color: colorVars['--color-text-yellow'],
   },
   error: {
     backgroundColor: colorVars['--color-error-muted'],
-    color: colorVars['--color-red-text'],
+    color: colorVars['--color-text-red'],
   },
   success: {
     backgroundColor: colorVars['--color-success-muted'],
-    color: colorVars['--color-green-text'],
+    color: colorVars['--color-text-green'],
   },
 });
 

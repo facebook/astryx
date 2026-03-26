@@ -13,15 +13,9 @@
  * - /apps/storybook/stories/Breadcrumbs.stories.tsx
  */
 
-
 import {useContext, type ReactNode, type MouseEvent} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  colorVars,
-  spacingVars,
-  lineHeightVars,
-  typeScaleVars,
-} from '../theme/tokens.stylex';
+import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {BreadcrumbCtx} from './XDSBreadcrumbs';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
@@ -75,26 +69,25 @@ const itemStyles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
-    lineHeight: lineHeightVars['--leading-snug'],
     margin: 0,
   },
   defaultSize: {
     fontSize: typeScaleVars['--text-body-size'],
+    lineHeight: typeScaleVars['--text-body-leading'],
   },
   supportingSize: {
     fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
   },
   contentWrapper: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
-    lineHeight: lineHeightVars['--leading-snug'],
   },
   link: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
-    lineHeight: lineHeightVars['--leading-snug'],
     paddingBlock: spacingVars['--spacing-1'],
     textDecoration: {
       default: 'none',
@@ -105,7 +98,7 @@ const itemStyles = stylex.create({
     cursor: 'pointer',
   },
   defaultLink: {
-    color: colorVars['--color-text-link'],
+    color: colorVars['--color-text-accent'],
   },
   supportingLink: {
     color: colorVars['--color-text-secondary'],

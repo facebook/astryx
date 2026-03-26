@@ -23,7 +23,6 @@
  * - /packages/core/src/MobileNav/index.ts (exports if types change)
  */
 
-
 import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -97,7 +96,7 @@ const styles = stylex.create({
     bottom: 0,
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: colorVars['--color-surface'],
+    backgroundColor: colorVars['--color-background-surface'],
     boxSizing: 'border-box',
     overflow: 'hidden',
     transitionProperty: 'transform',

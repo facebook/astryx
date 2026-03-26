@@ -15,24 +15,25 @@ You will receive:
 
 ### Semantic (current)
 
-| Token            | Value  | Usage           |
-| ---------------- | ------ | --------------- |
-| --radius-rounded | 9999px | Pills, avatars  |
-| --radius-3       | 12px   | Cards, modals   |
-| --radius-2       | 8px    | Buttons, inputs |
-| --radius-1       | 4px    | Small elements  |
-| --radius-0       | 0px    | No radius       |
+| Token              | Value  | Usage                    |
+| ------------------ | ------ | ------------------------ |
+| --radius-full      | 9999px | Pills, avatars           |
+| --radius-page      | 28px   | Page sections, app shell |
+| --radius-container | 12px   | Cards, modals            |
+| --radius-element   | 8px    | Buttons, inputs          |
+| --radius-inner     | 4px    | Small elements           |
+| --radius-none      | 0px    | No radius                |
 
 ### Numeric (proposed)
 
-| Token            | Value  | Usage                           |
-| ---------------- | ------ | ------------------------------- |
-| --radius-rounded | 9999px | Pills, avatars                  |
-| --radius-4       | 16px   | Page sections, large containers |
-| --radius-3       | 12px   | Cards, modals                   |
-| --radius-2       | 8px    | Buttons, inputs                 |
-| --radius-1       | 4px    | Small elements                  |
-| --radius-0       | 0px    | No radius                       |
+| Token              | Value  | Usage                           |
+| ------------------ | ------ | ------------------------------- |
+| --radius-full      | 9999px | Pills, avatars                  |
+| --radius-page      | 28px   | Page sections, large containers |
+| --radius-container | 12px   | Cards, modals                   |
+| --radius-element   | 8px    | Buttons, inputs                 |
+| --radius-inner     | 4px    | Small elements                  |
+| --radius-none      | 0px    | No radius                       |
 
 ## Evaluation Criteria
 
@@ -50,15 +51,15 @@ Did the LLM pick the **right radius level** for each element?
 
 Did the LLM invent tokens that don't exist in the given scheme?
 
-- In semantic mode: using --radius-1, --radius-2, etc. is a hallucination
-- In numeric mode: using --radius-3, --radius-2, etc. is a hallucination
+- In semantic mode: using --radius-inner, --radius-element, etc. is a hallucination
+- In numeric mode: using --radius-container, --radius-element, etc. is a hallucination
 - In either mode: using --xds-radius-_, --border-radius-_, etc. is a hallucination
 
 ### 3. Hardcoded Values
 
 Did the LLM use raw pixel values instead of tokens?
 
-- `borderRadius: '12px'` instead of `var(--radius-3)` or `var(--radius-3)`
+- `borderRadius: '12px'` instead of `var(--radius-container)` or `var(--radius-container)`
 - This is an anti-pattern (hardcoded_radius)
 
 ### 4. Radius Hierarchy
@@ -83,7 +84,7 @@ Return JSON:
   "success": true/false,
   "componentsUsed": ["XDSCard", ...],
   "componentsExpected": ["XDSCard", ...],
-  "radiusTokensUsed": ["--radius-3", ...],
+  "radiusTokensUsed": ["--radius-container", ...],
   "radiusSelectionCorrect": true/false,
   "radiusSelectionDetail": "Correctly used container radius for card, element radius for button",
   "escapeHatches": [...],

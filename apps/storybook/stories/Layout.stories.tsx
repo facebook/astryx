@@ -28,7 +28,7 @@ const styles = stylex.create({
   // Story wrapper styles
   pageWrapper: {
     height: 500,
-    backgroundColor: colorVars['--color-wash'],
+    backgroundColor: colorVars['--color-background-body'],
     padding: spacingVars['--spacing-4'],
   },
   pageWrapperTall: {
@@ -36,26 +36,26 @@ const styles = stylex.create({
   },
   storySection: {
     padding: spacingVars['--spacing-4'],
-    backgroundColor: colorVars['--color-wash'],
+    backgroundColor: colorVars['--color-background-body'],
   },
   // Typography
   heading: {
     margin: 0,
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: 18,
     fontWeight: 600,
     color: colorVars['--color-text-primary'],
   },
   subheading: {
     margin: 0,
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: 14,
     fontWeight: 500,
     color: colorVars['--color-text-secondary'],
   },
   bodyText: {
     margin: 0,
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: 14,
     lineHeight: 1.5,
     color: colorVars['--color-text-secondary'],
@@ -66,7 +66,7 @@ const styles = stylex.create({
     borderRadius: 6,
     cursor: 'pointer',
     color: colorVars['--color-text-primary'],
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: 14,
     backgroundColor: {
       default: 'transparent',
@@ -75,29 +75,29 @@ const styles = stylex.create({
   },
   navItemActive: {
     backgroundColor: colorVars['--color-accent-muted'],
-    color: colorVars['--color-text-link'],
+    color: colorVars['--color-text-accent'],
   },
   // Content placeholder
   placeholder: {
-    backgroundColor: colorVars['--color-gray-background'],
+    backgroundColor: colorVars['--color-background-gray'],
     borderRadius: 8,
     padding: spacingVars['--spacing-4'],
     color: colorVars['--color-text-secondary'],
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: 14,
   },
   // Full bleed placeholder (no radius, no padding)
   placeholderFullBleed: {
-    backgroundColor: colorVars['--color-gray-background'],
+    backgroundColor: colorVars['--color-background-gray'],
     padding: spacingVars['--spacing-4'],
     color: colorVars['--color-text-secondary'],
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: 14,
     minHeight: 100,
   },
   sectionLabel: {
     margin: `0 0 ${spacingVars['--spacing-2']} 0`,
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: 12,
     fontWeight: 600,
     textTransform: 'uppercase',
@@ -106,9 +106,9 @@ const styles = stylex.create({
   },
   // Demo container styling to visualize bounds
   demoContainer: {
-    backgroundColor: colorVars['--color-card'],
-    borderRadius: radiusVars['--radius-3'],
-    boxShadow: shadowVars['--shadow-base'],
+    backgroundColor: colorVars['--color-background-card'],
+    borderRadius: radiusVars['--radius-container'],
+    boxShadow: shadowVars['--shadow-low'],
   },
   // Demo sizing for outer padding story
   demoSize: {
