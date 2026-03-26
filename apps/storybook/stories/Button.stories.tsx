@@ -240,3 +240,52 @@ export const AllVariants: Story = {
     </div>
   ),
 };
+
+/**
+ * Demonstrates button text truncation in constrained containers.
+ * When a button's container is narrower than the button's natural width,
+ * the label truncates with an ellipsis instead of wrapping to multiple lines.
+ */
+export const Truncation: Story = {
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+      <div>
+        <p style={{fontSize: 12, color: '#666', marginBottom: 8}}>
+          200px container — label truncates with ellipsis
+        </p>
+        <div style={{width: 200, border: '1px dashed #ccc', padding: 4}}>
+          <XDSButton
+            label="A very long button label that overflows"
+            variant="primary"
+            icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
+          />
+        </div>
+      </div>
+      <div>
+        <p style={{fontSize: 12, color: '#666', marginBottom: 8}}>
+          Flex row with limited space — button shrinks gracefully
+        </p>
+        <div style={{display: 'flex', gap: 8, maxWidth: 320}}>
+          <div style={{flex: 1, minWidth: 0}}>
+            <XDSButton
+              label="Submit this extremely long form action"
+              variant="primary"
+              xstyle={{width: '100%'}}
+            />
+          </div>
+          <XDSButton label="Cancel" variant="secondary" />
+        </div>
+      </div>
+      <div>
+        <p style={{fontSize: 12, color: '#666', marginBottom: 8}}>
+          Unconstrained — renders at natural width
+        </p>
+        <XDSButton
+          label="A very long button label that shows fully"
+          variant="primary"
+          icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
+        />
+      </div>
+    </div>
+  ),
+};
