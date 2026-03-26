@@ -100,7 +100,6 @@ const styles = stylex.create({
       default: 'scale(0.95) translateY(8px)',
       ':where([open])': 'scale(1) translateY(0)',
     },
-    // Include display and overlay so dialog stays visible during exit
     transitionProperty: 'opacity, transform, display, overlay',
     transitionDuration: durationVars['--duration-medium'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -152,7 +151,7 @@ const dynamicStyles = stylex.create({
     bottom: number | string | undefined,
     left: number | string | undefined,
   ) => ({
-    // When position is set, use explicit values and auto for unset axes
+    // When position is set, disable auto margin and use fixed positioning
     margin: 0,
     top: top !== undefined ? formatPosition(top) : 'auto',
     right: right !== undefined ? formatPosition(right) : 'auto',
@@ -348,7 +347,7 @@ export function XDSDialog({
   const isFullscreen = variant === 'fullscreen';
   const hasPosition = position != null && !isFullscreen;
 
-  // Filter out native `open` to prevent InvalidStateError when accidentally passed
+  // Filter out native open to prevent InvalidStateError when accidentally passed
   const {open: _open, ...safeProps} = props as Record<string, unknown>;
 
   return (
