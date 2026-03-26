@@ -18,7 +18,6 @@ import {
   radiusVars,
   typographyVars,
   fontWeightVars,
-  lineHeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 
@@ -45,7 +44,7 @@ const styles = stylex.create({
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-medium'],
-    lineHeight: lineHeightVars['--leading-tight'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     userSelect: 'none',
   },
 });

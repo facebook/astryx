@@ -31,7 +31,6 @@ import {
   sizeVars,
   radiusVars,
   typographyVars,
-  lineHeightVars,
   typeScaleVars,
   borderVars,
 } from '../theme/tokens.stylex';
@@ -74,7 +73,7 @@ const styles = stylex.create({
     padding: 0,
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: lineHeightVars['--leading-normal'],
+    lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
     outline: 'none',

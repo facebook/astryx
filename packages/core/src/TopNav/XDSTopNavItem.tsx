@@ -23,7 +23,6 @@ import {
   durationVars,
   easeVars,
   fontWeightVars,
-  lineHeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
@@ -44,7 +43,7 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-3'],
     borderRadius: radiusVars['--radius-element'],
     fontSize: typeScaleVars['--text-label-size'],
-    lineHeight: lineHeightVars['--leading-base'],
+    lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
     textDecoration: 'none',

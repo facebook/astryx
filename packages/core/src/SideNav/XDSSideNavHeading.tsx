@@ -23,7 +23,6 @@ import {
   colorVars,
   spacingVars,
   fontWeightVars,
-  lineHeightVars,
   radiusVars,
   shadowVars,
   typeScaleVars,
@@ -88,7 +87,7 @@ const styles = stylex.create({
   },
   superheading: {
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     color: colorVars['--color-text-secondary'],
     textDecoration: 'none',
     overflow: 'hidden',
@@ -98,7 +97,7 @@ const styles = stylex.create({
   heading: {
     fontSize: typeScaleVars['--text-large-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-large-leading'],
     color: colorVars['--color-text-primary'],
     textDecoration: 'none',
     overflow: 'hidden',
@@ -111,7 +110,7 @@ const styles = stylex.create({
   },
   subheading: {
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     color: colorVars['--color-text-secondary'],
     textDecoration: 'none',
     overflow: 'hidden',

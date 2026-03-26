@@ -21,7 +21,6 @@ import {
   spacingVars,
   radiusVars,
   fontWeightVars,
-  lineHeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
@@ -41,7 +40,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-full'],
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-tight'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     whiteSpace: 'nowrap',
   },

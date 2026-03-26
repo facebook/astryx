@@ -22,8 +22,8 @@ import {
   easeVars,
   textSizeVars,
   fontWeightVars,
-  lineHeightVars,
   shadowVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {useXDSSegmentedControlContext} from './XDSSegmentedControlContext';
 import type {XDSSegmentedControlSize} from './XDSSegmentedControlContext';
@@ -73,7 +73,7 @@ const styles = stylex.create({
     borderStyle: 'none',
     fontFamily: 'inherit',
     fontSize: textSizeVars['--font-size-base'],
-    lineHeight: lineHeightVars['--leading-base'],
+    lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
     cursor: 'pointer',

@@ -16,12 +16,7 @@ import {type HTMLAttributes, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {
-  colorVars,
-  spacingVars,
-  lineHeightVars,
-  typeScaleVars,
-} from '../theme/tokens.stylex';
+import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
 /**
@@ -143,7 +138,7 @@ const labelStyles = stylex.create({
     backgroundColor: colorVars['--color-background-surface'],
     // Small secondary text styling
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-normal'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     color: colorVars['--color-text-secondary'],
   },
   verticalLabel: {

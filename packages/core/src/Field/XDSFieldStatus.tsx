@@ -13,7 +13,6 @@ import * as stylex from '@stylexjs/stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {
   colorVars,
-  lineHeightVars,
   radiusVars,
   spacingVars,
   typographyVars,
@@ -25,7 +24,7 @@ const styles = stylex.create({
   base: {
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
   },
   attached: {
     marginTop: `calc(-1 * ${spacingVars['--spacing-1-5']})`,

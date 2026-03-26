@@ -22,7 +22,6 @@ import {
   easeVars,
   typeScaleVars,
   fontWeightVars,
-  lineHeightVars,
 } from '../theme/tokens.stylex';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
@@ -89,13 +88,13 @@ const styles = stylex.create({
   },
   desktopTitle: {
     fontSize: typeScaleVars['--text-label-size'],
-    lineHeight: lineHeightVars['--leading-base'],
+    lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-primary'],
   },
   desktopDescription: {
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
   },
@@ -125,7 +124,7 @@ const styles = stylex.create({
   },
   drawerItemDescription: {
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     color: colorVars['--color-text-secondary'],
     fontWeight: fontWeightVars['--font-weight-normal'],
   },

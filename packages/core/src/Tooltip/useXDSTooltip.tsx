@@ -32,7 +32,6 @@ import {
   spacingVars,
   typographyVars,
   typeScaleVars,
-  lineHeightVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName} from '../utils';
 
@@ -46,7 +45,7 @@ const styles = stylex.create({
     // Typography
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: lineHeightVars['--leading-base'],
+    lineHeight: typeScaleVars['--text-body-leading'],
     // Animation: closed state (default) and open state
     opacity: {
       default: 0,

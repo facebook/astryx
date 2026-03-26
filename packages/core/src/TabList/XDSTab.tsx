@@ -22,7 +22,6 @@ import {
   durationVars,
   easeVars,
   fontWeightVars,
-  lineHeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {useXDSTabListContext} from './XDSTabListContext';
@@ -78,7 +77,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-label-size'],
-    lineHeight: lineHeightVars['--leading-base'],
+    lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
     cursor: 'pointer',

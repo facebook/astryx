@@ -18,7 +18,6 @@ import {
   colorVars,
   spacingVars,
   fontWeightVars,
-  lineHeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
@@ -44,7 +43,7 @@ const styles = stylex.create({
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-large-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-large-leading'],
     color: colorVars['--color-text-primary'],
   },
   titleCompact: {
@@ -55,7 +54,7 @@ const styles = stylex.create({
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-body-size'],
     fontWeight: fontWeightVars['--font-weight-normal'],
-    lineHeight: lineHeightVars['--leading-base'],
+    lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-secondary'],
   },
   descriptionCompact: {

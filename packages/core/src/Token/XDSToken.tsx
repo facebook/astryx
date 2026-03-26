@@ -22,7 +22,6 @@ import {
   durationVars,
   easeVars,
   fontWeightVars,
-  lineHeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
@@ -145,7 +144,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-inner'],
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     whiteSpace: 'nowrap',
     textDecoration: 'none',

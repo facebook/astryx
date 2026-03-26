@@ -26,7 +26,6 @@ import {
   durationVars,
   easeVars,
   fontWeightVars,
-  lineHeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {XDSTooltip} from '../Tooltip/XDSTooltip';
@@ -55,7 +54,7 @@ const styles = stylex.create({
     borderRadius: 'var(--button-radius)',
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-label-size'],
-    lineHeight: lineHeightVars['--leading-base'],
+    lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     whiteSpace: 'nowrap',
     cursor: 'pointer',

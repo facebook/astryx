@@ -21,7 +21,6 @@ import {
   spacingVars,
   radiusVars,
   fontWeightVars,
-  lineHeightVars,
   durationVars,
   easeVars,
   typeScaleVars,
@@ -172,13 +171,13 @@ const styles = stylex.create({
   },
   label: {
     fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-body-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-primary'],
   },
   valueLabel: {
     fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-body-leading'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
   },

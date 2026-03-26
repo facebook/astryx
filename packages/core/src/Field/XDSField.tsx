@@ -21,7 +21,6 @@ import {XDSFieldStatus} from './XDSFieldStatus';
 import {
   colorVars,
   fontWeightVars,
-  lineHeightVars,
   spacingVars,
   typographyVars,
   typeScaleVars,
@@ -53,7 +52,7 @@ const styles = stylex.create({
   description: {
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
   },

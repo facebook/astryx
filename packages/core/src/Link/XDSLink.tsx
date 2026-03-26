@@ -21,7 +21,6 @@ import {
   colorVars,
   durationVars,
   easeVars,
-  lineHeightVars,
   spacingVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
@@ -80,7 +79,7 @@ const styles = stylex.create({
   },
   standalone: {
     fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: lineHeightVars['--leading-base'],
+    lineHeight: typeScaleVars['--text-body-leading'],
   },
 });
 

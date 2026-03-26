@@ -41,7 +41,6 @@ import {
   easeVars,
   typographyVars,
   fontWeightVars,
-  lineHeightVars,
   typeScaleVars,
   borderVars,
 } from '../theme/tokens.stylex';
@@ -81,7 +80,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-background-surface'],
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-label-size'],
-    lineHeight: lineHeightVars['--leading-base'],
+    lineHeight: typeScaleVars['--text-label-leading'],
     color: colorVars['--color-text-primary'],
     cursor: 'pointer',
     transitionProperty: 'border-color, outline, box-shadow',

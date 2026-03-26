@@ -35,7 +35,6 @@ import {
   durationVars,
   easeVars,
   fontWeightVars,
-  lineHeightVars,
   shadowVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
@@ -53,7 +52,7 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-3'],
     borderRadius: radiusVars['--radius-element'],
     fontSize: typeScaleVars['--text-label-size'],
-    lineHeight: lineHeightVars['--leading-base'],
+    lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
     textDecoration: 'none',
@@ -151,13 +150,13 @@ const styles = stylex.create({
   },
   menuItemTitle: {
     fontSize: typeScaleVars['--text-label-size'],
-    lineHeight: lineHeightVars['--leading-base'],
+    lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-primary'],
   },
   menuItemDescription: {
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
   },

@@ -20,7 +20,6 @@ import {
   radiusVars,
   typeScaleVars,
   fontWeightVars,
-  lineHeightVars,
 } from '../theme/tokens.stylex';
 
 /**
@@ -59,7 +58,7 @@ export const navItemStyles = stylex.create({
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-label-size'],
     fontWeight: fontWeightVars['--font-weight-normal'],
-    lineHeight: lineHeightVars['--leading-base'],
+    lineHeight: typeScaleVars['--text-label-leading'],
     textAlign: 'start',
     boxSizing: 'border-box',
     ':hover': {
