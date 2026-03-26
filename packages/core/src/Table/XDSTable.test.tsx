@@ -471,6 +471,21 @@ describe('XDSBaseTable', () => {
         expect(header).toHaveStyle({minWidth: `${DEFAULT_MIN_COLUMN_WIDTH}px`});
       }
     });
+
+    it('applies default minWidth on columns with no explicit width', () => {
+      const cols: XDSTableColumn<User>[] = [
+        {key: 'name', header: 'Name'},
+        {key: 'age', header: 'Age'},
+      ];
+      render(<XDSBaseTable data={users} columns={cols} />);
+      const headers = screen.getAllByRole('columnheader');
+      expect(headers[0]).toHaveStyle({
+        minWidth: `${DEFAULT_MIN_COLUMN_WIDTH}px`,
+      });
+      expect(headers[1]).toHaveStyle({
+        minWidth: `${DEFAULT_MIN_COLUMN_WIDTH}px`,
+      });
+    });
   });
 });
 

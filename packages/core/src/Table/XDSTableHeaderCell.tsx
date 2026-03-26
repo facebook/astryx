@@ -109,6 +109,7 @@ export function XDSTableHeaderCell({
   children,
   xstyle,
   ref,
+  className: incomingClassName,
   style: incomingStyle,
   ...props
 }: XDSTableHeaderCellProps) {
@@ -122,7 +123,7 @@ export function XDSTableHeaderCell({
         {...mergeProps(
           xdsClassName('table-header-cell'),
           stylex.props(xstyle),
-          undefined,
+          incomingClassName,
           incomingStyle as React.CSSProperties,
         )}>
         {children}
@@ -155,7 +156,7 @@ export function XDSTableHeaderCell({
       {...mergeProps(
         xdsClassName('table-header-cell'),
         stylex.props(...cellStyles),
-        undefined,
+        incomingClassName,
         incomingStyle as React.CSSProperties,
       )}>
       {children}
