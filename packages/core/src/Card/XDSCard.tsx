@@ -38,13 +38,7 @@ const styles = stylex.create({
     borderStyle: 'solid',
     borderColor: colorVars['--color-border-emphasized'],
   },
-  // Flat variant: retains background but strips border, radius, and shadow.
-  // Intended for cards appearing over wash/muted backgrounds.
-  flat: {
-    borderRadius: 0,
-    borderWidth: 0,
-    overflow: 'visible',
-  },
+
   // Inner wrapper: container padding and overflow handling
   cardInner: {
     height: '100%',
@@ -72,22 +66,8 @@ const dynamicStyles = stylex.create({
 
 export type {SizeValue} from '../utils/types';
 
-/**
- * Visual variant of the card.
- * - `'card'` (default): Standard card with background, border, and border-radius.
- * - `'flat'`: Retains background but strips border, radius, and shadow — for cards over wash.
- */
-export type XDSCardVariant = 'card' | 'flat';
-
 export interface XDSCardProps extends XDSBaseProps {
   ref?: React.Ref<HTMLDivElement>;
-  /**
-   * Visual variant of the card.
-   * - `'card'` (default): Standard card with background, border, and border-radius.
-   * - `'flat'`: Retains background but strips border, radius, and shadow — for cards over wash.
-   * @default 'card'
-   */
-  variant?: XDSCardVariant;
   /**
    * CSS class name(s) appended to the root element.
    */
@@ -135,9 +115,9 @@ export interface XDSCardProps extends XDSBaseProps {
 }
 
 /**
- * A card container with shadow and themed styling.
+ * A card container with border and themed styling.
  *
- * Applies card-specific appearance (background, shadow, border-radius)
+ * Applies card-specific appearance (background, border, border-radius)
  * and sets CSS variables for child layout components.
  *
  * @compositionHint Use as a top-level container for elevated content.
@@ -155,7 +135,6 @@ export interface XDSCardProps extends XDSBaseProps {
  * ```
  */
 export function XDSCard({
-  variant = 'card',
   width,
   height,
   maxWidth,
@@ -180,10 +159,9 @@ export function XDSCard({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('card', {variant}),
+        xdsClassName('card'),
         stylex.props(
           styles.cardOuter,
-          variant === 'flat' && styles.flat,
           dynamicStyles.sizing(
             width ?? null,
             height ?? null,

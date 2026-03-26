@@ -10,4 +10,4 @@
  */
 
 export {XDSCard} from './XDSCard';
-export type {XDSCardProps, XDSCardVariant, SizeValue} from './XDSCard';
+export type {XDSCardProps, SizeValue} from './XDSCard';

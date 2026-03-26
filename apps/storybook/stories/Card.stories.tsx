@@ -56,12 +56,6 @@ const meta: Meta<typeof XDSCard> = {
     ),
   ],
   argTypes: {
-    variant: {
-      control: 'select',
-      options: ['card', 'flat'],
-      description:
-        'Visual variant — card (default) has background/border/radius, flat retains background but strips border/radius/shadow',
-    },
     width: {
       control: {type: 'range', min: 100, max: 800, step: 10},
       description: 'Width in pixels',
@@ -376,39 +370,6 @@ export const OnBackgrounds: Story = {
           </XDSCard>
         </div>
       </XDSSection>
-    </div>
-  ),
-};
-
-/**
- * Flat variant removes all card chrome (background, border, radius).
- * Useful for grouping content without visual container treatment.
- */
-export const FlatAppearance: Story = {
-  render: () => (
-    <div {...stylex.props(styles.storyWrapper)}>
-      <div>
-        <h4 {...stylex.props(styles.heading)}>variant: card (default)</h4>
-        <XDSCard width={250}>
-          <XDSVStack gap={2}>
-            <h3 {...stylex.props(styles.text)}>Standard Card</h3>
-            <p {...stylex.props(styles.text, styles.textSecondary)}>
-              Has background, border, and border-radius.
-            </p>
-          </XDSVStack>
-        </XDSCard>
-      </div>
-      <div>
-        <h4 {...stylex.props(styles.heading)}>variant: flat</h4>
-        <XDSCard variant="flat" width={250}>
-          <XDSVStack gap={2}>
-            <h3 {...stylex.props(styles.text)}>Flat Card</h3>
-            <p {...stylex.props(styles.text, styles.textSecondary)}>
-              Retains background, strips border and radius — for use over wash.
-            </p>
-          </XDSVStack>
-        </XDSCard>
-      </div>
     </div>
   ),
 };
