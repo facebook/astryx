@@ -12,10 +12,10 @@
  * - /packages/core/src/Button/index.ts (exports if types change)
  * - /apps/storybook/stories/Button.stories.tsx (storybook stories)
  *
- * Last synced props: label, variant, size, isDisabled, isLoading, onClickAction, icon, children, tooltip, endSlot
+ * Last synced props: label, variant, size, isDisabled, isLoading, onClickAction, icon, children, tooltip, endContent
  */
 
-import {useRef, useTransition, type ReactElement, type ReactNode} from 'react';
+import {useRef, useTransition, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -31,8 +31,7 @@ import {
 } from '../theme/tokens.stylex';
 import {XDSTooltip} from '../Tooltip/XDSTooltip';
 import {XDSSpinner} from '../Spinner';
-import type {XDSIconProps} from '../Icon/XDSIcon';
-import type {XDSBadgeProps} from '../Badge/XDSBadge';
+
 import {edgeCompensation} from '../Layout/edgeCompensation.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -94,7 +93,7 @@ const styles = stylex.create({
     aspectRatio: 'var(--button-icon-only-aspect)',
     paddingInline: spacingVars['--spacing-2'],
   },
-  endSlotWrapper: {
+  endContentWrapper: {
     display: 'inline-flex',
     alignItems: 'center',
     color: 'inherit',
@@ -310,16 +309,13 @@ export interface XDSButtonProps extends XDSBaseProps<HTMLButtonElement> {
    */
   children?: ReactNode;
   /**
-   * Content rendered after the label text.
-   * Only accepts `<XDSIcon>` or `<XDSBadge>` elements.
+   * Content rendered after the label text (badge, icon, chevron, etc.).
    * Ignored for icon-only buttons to preserve square aspect ratio.
    *
-   * The endSlot is wrapped in a container that inherits the button's text
-   * color, so `<XDSIcon>` elements will match the button variant's color
-   * (e.g., white on primary/destructive) without needing an explicit
-   * `color` prop.
+   * Wrapped in a container that inherits the button's text color,
+   * so child elements match the button variant's color automatically.
    */
-  endSlot?: ReactElement<XDSIconProps> | ReactElement<XDSBadgeProps>;
+  endContent?: ReactNode;
   /**
    * Tooltip text shown on hover.
    */
@@ -376,8 +372,8 @@ const edgeCompStyles = stylex.create({
  * <XDSButton label="Settings" icon={<GearIcon />} variant="ghost" />
  * <XDSButton label="Pick emoji" icon={<span>🚀</span>} variant="ghost" size="sm" />
  * <XDSButton label="Edit" icon={<PencilIcon />}>Edit</XDSButton>
- * <XDSButton label="Messages" endSlot={<XDSBadge label={3} />} />
- * <XDSButton label="Edit" icon={<PencilIcon />} endSlot={<XDSBadge label="New" />}>Edit</XDSButton>
+ * <XDSButton label="Messages" endContent={<XDSBadge label={3} />} />
+ * <XDSButton label="Edit" icon={<PencilIcon />} endContent={<XDSBadge label="New" />}>Edit</XDSButton>
  * ```
  */
 export function XDSButton({
@@ -390,14 +386,14 @@ export function XDSButton({
   onClickAction,
   icon,
   children,
-  endSlot,
+  endContent,
   tooltip,
   xstyle,
   className,
   style,
   ref,
   ...props
-}: XDSButtonProps): ReactElement {
+}: XDSButtonProps): ReactNode {
   const [isPending, startTransition] = useTransition();
   const actionInFlightRef = useRef(false);
   const isLoadingState = isLoading || isPending;
@@ -498,8 +494,8 @@ export function XDSButton({
         {isIconOnly ? null : (
           <span {...stylex.props(styles.labelText)}>{children ?? label}</span>
         )}
-        {!isIconOnly && endSlot && (
-          <span {...stylex.props(styles.endSlotWrapper)}>{endSlot}</span>
+        {!isIconOnly && endContent && (
+          <span {...stylex.props(styles.endContentWrapper)}>{endContent}</span>
         )}
       </span>
       {/* Live region for loading state announcements */}

@@ -100,12 +100,12 @@ describe('XDSButton', () => {
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLButtonElement));
   });
 
-  // endSlot tests
-  it('renders endSlot after label', () => {
+  // endContent tests
+  it('renders endContent after label', () => {
     render(
       <XDSButton
         label="Click me"
-        endSlot={<XDSBadge data-testid="end" label={3} />}
+        endContent={<XDSBadge data-testid="end" label={3} />}
       />,
     );
     const button = screen.getByRole('button');
@@ -114,11 +114,11 @@ describe('XDSButton', () => {
     expect(screen.getByTestId('end')).toHaveTextContent('3');
   });
 
-  it('renders endSlot with children', () => {
+  it('renders endContent with children', () => {
     render(
       <XDSButton
         label="Accessible name"
-        endSlot={<XDSBadge data-testid="end" label="New" />}>
+        endContent={<XDSBadge data-testid="end" label="New" />}>
         Custom content
       </XDSButton>,
     );
@@ -127,12 +127,12 @@ describe('XDSButton', () => {
     expect(screen.getByTestId('end')).toBeInTheDocument();
   });
 
-  it('renders endSlot with icon and children', () => {
+  it('renders endContent with icon and children', () => {
     render(
       <XDSButton
         label="Settings"
         icon={<span data-testid="icon">⚙</span>}
-        endSlot={<XDSBadge data-testid="end" label="New" />}>
+        endContent={<XDSBadge data-testid="end" label="New" />}>
         Settings
       </XDSButton>,
     );
@@ -142,23 +142,23 @@ describe('XDSButton', () => {
     expect(screen.getByTestId('end')).toBeInTheDocument();
   });
 
-  it('does not render endSlot for icon-only buttons', () => {
+  it('does not render endContent for icon-only buttons', () => {
     render(
       <XDSButton
         label="Settings"
         icon={<span data-testid="icon">⚙</span>}
-        endSlot={<XDSBadge data-testid="end" label={3} />}
+        endContent={<XDSBadge data-testid="end" label={3} />}
       />,
     );
     expect(screen.getByTestId('icon')).toBeInTheDocument();
     expect(screen.queryByTestId('end')).not.toBeInTheDocument();
   });
 
-  it('wraps endSlot in a container for color inheritance', () => {
+  it('wraps endContent in a container for color inheritance', () => {
     render(
       <XDSButton
         label="Test"
-        endSlot={<XDSBadge data-testid="end" label={3} />}
+        endContent={<XDSBadge data-testid="end" label={3} />}
       />,
     );
     const badge = screen.getByTestId('end');
@@ -167,15 +167,15 @@ describe('XDSButton', () => {
     expect(wrapper?.tagName).toBe('SPAN');
   });
 
-  it('hides endSlot content when loading', () => {
+  it('hides endContent content when loading', () => {
     render(
       <XDSButton
         label="Submit"
         isLoading
-        endSlot={<XDSBadge data-testid="end" label={3} />}
+        endContent={<XDSBadge data-testid="end" label={3} />}
       />,
     );
-    // endSlot should still be in the DOM
+    // endContent should still be in the DOM
     expect(screen.getByTestId('end')).toBeInTheDocument();
     // Button should be disabled and have aria-busy
     const button = screen.getByRole('button');
