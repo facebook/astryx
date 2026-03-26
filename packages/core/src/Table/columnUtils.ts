@@ -12,17 +12,29 @@
 import type {ReactNode} from 'react';
 import type {XDSTableColumn, ProportionalWidth, PixelWidth} from './types';
 
+/** Default minimum width (in px) for proportional columns. */
+export const DEFAULT_MIN_COLUMN_WIDTH = 120;
+
 /**
  * Create a proportional column width (fr-like).
  * Columns share available space proportionally.
+ * Applies `DEFAULT_MIN_COLUMN_WIDTH` when no explicit minWidth is provided.
  *
  * @example
  * ```
  * proportional(2) // twice as wide as proportional(1)
+ * proportional(1, { minWidth: 200 }) // explicit min
  * ```
  */
-export function proportional(value: number = 1): ProportionalWidth {
-  return {type: 'proportional', value};
+export function proportional(
+  value: number = 1,
+  options?: {minWidth?: number},
+): ProportionalWidth {
+  return {
+    type: 'proportional',
+    value,
+    minWidth: options?.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH,
+  };
 }
 
 /**

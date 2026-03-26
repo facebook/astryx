@@ -25,7 +25,11 @@ import type {
   TableCellComponentProps,
   TableHeaderCellComponentProps,
 } from './types';
-import {generateColumns, defaultCellRenderer} from './columnUtils';
+import {
+  generateColumns,
+  defaultCellRenderer,
+  DEFAULT_MIN_COLUMN_WIDTH,
+} from './columnUtils';
 import {XDSTableRow} from './XDSTableRow';
 import {XDSTableCell} from './XDSTableCell';
 import {XDSTableHeaderCell} from './XDSTableHeaderCell';
@@ -198,7 +202,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
   const HeaderCellComponent = (components?.HeaderCell ??
     XDSTableHeaderCell) as React.ComponentType<TableHeaderCellComponentProps>;
 
-  // Resolve columns: explicit > auto-generated from data
+  // Resolve columns: explicit > auto-generated from data.
   const resolvedColumns: XDSTableColumn<T>[] =
     columnsProp ?? (data ? generateColumns(data) : []);
 
@@ -217,10 +221,31 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
       col,
     );
 
+    // Apply column min-width on the <th>. With table-layout: fixed,
+    // header cell sizing controls column widths.
+    // Proportional columns (or columns without explicit width) get a default minWidth.
+    const colWidth = col.width;
+    const minW =
+      !colWidth || colWidth.type === 'proportional'
+        ? (colWidth?.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH)
+        : undefined;
+    const minWidthStyle = minW != null ? {minWidth: `${minW}px`} : undefined;
+    const existingStyle = cellRenderProps.htmlProps.style as
+      | React.CSSProperties
+      | undefined;
+    const mergedHtmlProps = minWidthStyle
+      ? {
+          ...cellRenderProps.htmlProps,
+          style: existingStyle
+            ? {...existingStyle, ...minWidthStyle}
+            : minWidthStyle,
+        }
+      : cellRenderProps.htmlProps;
+
     return (
       <HeaderCellComponent
         key={col.key}
-        {...cellRenderProps.htmlProps}
+        {...mergedHtmlProps}
         xstyle={cellRenderProps.styles}>
         {col.header ?? col.key}
       </HeaderCellComponent>

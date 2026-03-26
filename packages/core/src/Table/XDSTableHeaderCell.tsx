@@ -11,7 +11,6 @@
  * - /packages/core/src/Table/index.ts
  */
 
-
 import {useContext, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
@@ -110,6 +109,8 @@ export function XDSTableHeaderCell({
   children,
   xstyle,
   ref,
+  className: incomingClassName,
+  style: incomingStyle,
   ...props
 }: XDSTableHeaderCellProps) {
   const ctx = useContext(XDSTableContext);
@@ -122,6 +123,8 @@ export function XDSTableHeaderCell({
         {...mergeProps(
           xdsClassName('table-header-cell'),
           stylex.props(xstyle),
+          incomingClassName,
+          incomingStyle as React.CSSProperties,
         )}>
         {children}
       </th>
@@ -153,6 +156,8 @@ export function XDSTableHeaderCell({
       {...mergeProps(
         xdsClassName('table-header-cell'),
         stylex.props(...cellStyles),
+        incomingClassName,
+        incomingStyle as React.CSSProperties,
       )}>
       {children}
     </th>
