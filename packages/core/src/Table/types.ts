@@ -29,6 +29,8 @@ import type {StyleXStyles} from '../theme/types';
 export interface ProportionalWidth {
   type: 'proportional';
   value: number;
+  /** Minimum width in pixels. Prevents the column from shrinking below this size. */
+  minWidth?: number;
 }
 
 /**
