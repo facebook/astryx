@@ -112,7 +112,7 @@ const styles = stylex.create({
   },
   innerDot: {
     borderRadius: '50%',
-    backgroundColor: colorVars['--color-icon-on-dark'],
+    backgroundColor: colorVars['--color-on-accent'],
   },
   labelWrapper: {
     display: 'flex',

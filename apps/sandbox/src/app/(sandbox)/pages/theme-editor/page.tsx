@@ -128,7 +128,6 @@ const COLOR_CATEGORIES = {
     '--color-icon-primary',
     '--color-icon-secondary',
     '--color-icon-disabled',
-    '--color-icon-on-dark',
   ],
   'Surface Variants': [
     '--color-background-card',

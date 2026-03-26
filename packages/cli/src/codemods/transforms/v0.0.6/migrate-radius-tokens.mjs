@@ -21,18 +21,11 @@ export const meta = {
 };
 
 const TOKEN_MAP = {
-  '--radius-inner': '--radius-none',
-  '--radius-content': '--radius-inner',
-  '--radius-element': '--radius-element',
-  '--radius-container': '--radius-container',
-  '--radius-page': '--radius-container',
-  // Also handle intermediate numeric names from v0.0.6
-  '--radius-0': '--radius-none',
-  '--radius-1': '--radius-inner',
-  '--radius-2': '--radius-element',
-  '--radius-3': '--radius-container',
-  '--radius-4': '--radius-container',
-  '--radius-rounded': '--radius-full',
+  '--radius-inner': '--radius-0',
+  '--radius-content': '--radius-1',
+  '--radius-element': '--radius-2',
+  '--radius-container': '--radius-3',
+  '--radius-page': '--radius-4',
 };
 
 // Build a regex that matches any old token name (as a whole token, not substring)

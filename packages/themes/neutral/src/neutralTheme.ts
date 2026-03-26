@@ -71,7 +71,6 @@ export const neutralTheme = defineTheme({
     '--color-icon-primary': ['oklch(0.145 0 0)', 'oklch(0.985 0 0)'],
     '--color-icon-secondary': ['oklch(0.556 0 0)', 'oklch(0.708 0 0)'],
     '--color-icon-disabled': ['oklch(0.708 0 0)', 'oklch(0.439 0 0)'],
-    '--color-icon-on-dark': ['oklch(1 0 0)', 'oklch(0.145 0 0)'],
 
     // Surface variants
     '--color-background-card': ['oklch(1 0 0)', 'oklch(0.205 0 0)'],

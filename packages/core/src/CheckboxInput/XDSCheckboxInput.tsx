@@ -143,14 +143,14 @@ const styles = stylex.create({
   },
   checkmark: {
     display: 'none',
-    color: colorVars['--color-icon-on-dark'],
+    color: colorVars['--color-on-accent'],
   },
   checkmarkVisible: {
     display: 'block',
   },
   indeterminateMark: {
     display: 'none',
-    backgroundColor: colorVars['--color-icon-on-dark'],
+    backgroundColor: colorVars['--color-on-accent'],
     borderRadius: 1,
   },
   indeterminateMarkVisible: {

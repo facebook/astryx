@@ -41,7 +41,6 @@ export const colorDefaults = {
   '--color-icon-primary': 'light-dark(#0A1317, #DFE2E5)',
   '--color-icon-secondary': 'light-dark(#4E606F, #AAAFB5)',
   '--color-icon-disabled': 'light-dark(#A4B0BC, #6F747C)',
-  '--color-icon-on-dark': 'light-dark(#FFFFFF, #FFFFFF)',
 
   // Surface variants
   '--color-background-card': 'light-dark(#FFFFFF, #1F1F22)',

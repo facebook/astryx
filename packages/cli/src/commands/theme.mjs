@@ -126,7 +126,6 @@ function deriveColorPalette({accent, positive, negative, warning, mode}) {
     '--color-icon-secondary': ld('#4E606F', '#AAAFB5'),
     '--color-icon-secondary': ld('#748695', '#8C939B'),
     '--color-icon-disabled': ld('#A4B0BC', '#6F747C'),
-    '--color-icon-on-dark': ld('#FFFFFF', '#FFFFFF'),
 
     // Surface variants
     '--color-background-card': ld('#FFFFFF', '#1F1F22'),

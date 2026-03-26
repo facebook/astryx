@@ -33,28 +33,18 @@ export const meta = {
 };
 
 const TOKEN_MAP = {
-  '--elevation-input-hover-success': '--shadow-inset-success',
-  '--elevation-input-hover-warning': '--shadow-inset-warning',
-  '--elevation-input-hover-error': '--shadow-inset-error',
-  '--elevation-input-hover': '--shadow-inset-hover',
-  '--elevation-base': '--shadow-low',
-  '--elevation-menu': '--shadow-low',
-  '--elevation-hover': '--shadow-med',
-  '--elevation-dialog': '--shadow-high',
-  // Intermediate names from v0.0.6
-  '--shadow-1': '--shadow-low',
-  '--shadow-2': '--shadow-low',
-  '--shadow-3': '--shadow-med',
-  '--shadow-4': '--shadow-high',
-  '--shadow-base': '--shadow-low',
-  '--shadow-menu': '--shadow-low',
-  '--shadow-hover': '--shadow-med',
-  '--shadow-dialog': '--shadow-high',
-  '--inset-shadow-border-hover': '--shadow-inset-hover',
-  '--inset-shadow-border-accent': '--shadow-inset-selected',
-  '--inset-shadow-border-positive': '--shadow-inset-success',
-  '--inset-shadow-border-warning': '--shadow-inset-warning',
-  '--inset-shadow-border-negative': '--shadow-inset-error',
+  '--elevation-input-hover-success': '--inset-shadow-border-positive',
+  '--elevation-input-hover-warning': '--inset-shadow-border-warning',
+  '--elevation-input-hover-error': '--inset-shadow-border-negative',
+  '--elevation-input-hover': '--inset-shadow-border-hover',
+  '--elevation-base': '--shadow-base',
+  '--elevation-menu': '--shadow-menu',
+  '--elevation-hover': '--shadow-hover',
+  '--elevation-dialog': '--shadow-dialog',
+  '--shadow-1': '--shadow-base',
+  '--shadow-2': '--shadow-menu',
+  '--shadow-3': '--shadow-hover',
+  '--shadow-4': '--shadow-dialog',
 };
 
 const IDENTIFIER_MAP = {
