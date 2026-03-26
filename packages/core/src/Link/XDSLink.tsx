@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/Link.stories.tsx (storybook stories)
  */
 
-
 import {type MouseEventHandler, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
@@ -64,7 +63,7 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',

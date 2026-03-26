@@ -19,7 +19,6 @@
  * - /apps/storybook/stories/Banner.stories.tsx (storybook stories)
  */
 
-
 import {useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -232,7 +231,7 @@ const styles = stylex.create({
     overflow: 'clip',
   },
   card: {
-    '--banner-radius': radiusVars['--radius-3'],
+    '--banner-radius': radiusVars['--radius-container'],
     borderRadius: 'var(--banner-radius)',
   },
   section: {
@@ -294,7 +293,7 @@ const styles = stylex.create({
   // automatically via --edge-end signal on the endArea
   // Content area — card background for additional content below the header
   contentArea: {
-    backgroundColor: colorVars['--color-card'],
+    backgroundColor: colorVars['--color-background-card'],
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
     borderLeftWidth: 1,

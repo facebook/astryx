@@ -2,11 +2,11 @@
  * @file Codemod: Migrate semantic radius tokens to numeric scale
  *
  * Transforms:
- * - '--radius-inner' → '--radius-0'
- * - '--radius-content' → '--radius-1'
- * - '--radius-element' → '--radius-2'
- * - '--radius-container' → '--radius-3'
- * - '--radius-page' → '--radius-4'
+ * - '--radius-inner' → '--radius-none'
+ * - '--radius-content' → '--radius-inner'
+ * - '--radius-element' → '--radius-element'
+ * - '--radius-container' → '--radius-container'
+ * - '--radius-page' → '--radius-container'
  *
  * Handles:
  * - String literals (e.g. '--radius-container' or 'var(--radius-container)')
@@ -17,15 +17,15 @@
 export const meta = {
   title: 'Migrate semantic radius tokens to numeric scale',
   description:
-    'Renames --radius-inner/content/element/container/page to --radius-0/1/2/3/4.',
+    'Renames --radius-inner/content/element/container/page to --radius-none/1/2/3/4.',
 };
 
 const TOKEN_MAP = {
-  '--radius-inner': '--radius-0',
-  '--radius-content': '--radius-1',
-  '--radius-element': '--radius-2',
-  '--radius-container': '--radius-3',
-  '--radius-page': '--radius-4',
+  '--radius-inner': '--radius-none',
+  '--radius-content': '--radius-inner',
+  '--radius-element': '--radius-element',
+  '--radius-container': '--radius-container',
+  '--radius-page': '--radius-container',
 };
 
 // Build a regex that matches any old token name (as a whole token, not substring)

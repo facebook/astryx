@@ -62,7 +62,7 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     lineHeight: lineHeightVars['--leading-snug'],
-    color: colorVars['--color-text-link'],
+    color: colorVars['--color-text-accent'],
     textDecoration: 'none',
   },
 });

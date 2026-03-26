@@ -40,12 +40,12 @@ export const inputWrapperStyles = stylex.create({
     borderColor: {
       default: colorVars['--color-border-emphasized'],
       ':hover': {
-        '@media (hover: hover)': colorVars['--color-border-strong'],
+        '@media (hover: hover)': colorVars['--color-border-emphasized'],
       },
     },
-    '--input-radius': radiusVars['--radius-2'],
+    '--input-radius': radiusVars['--radius-element'],
     borderRadius: 'var(--input-radius)',
-    backgroundColor: colorVars['--color-surface'],
+    backgroundColor: colorVars['--color-background-surface'],
     transitionProperty: 'border-color, outline, box-shadow',
     transitionDuration: {
       default: durationVars['--duration-fast'],
@@ -55,12 +55,12 @@ export const inputWrapperStyles = stylex.create({
     boxShadow: {
       default: 'none',
       ':hover': {
-        '@media (hover: hover)': shadowVars['--inset-shadow-border-hover'],
+        '@media (hover: hover)': shadowVars['--shadow-inset-hover'],
       },
     },
     outline: {
       default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-within': `1px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: '0',
   },
@@ -96,7 +96,7 @@ export const inputStatusHoverShadowStyles = stylex.create({
     boxShadow: {
       default: 'none',
       ':hover': {
-        '@media (hover: hover)': shadowVars['--inset-shadow-border-warning'],
+        '@media (hover: hover)': shadowVars['--shadow-inset-warning'],
       },
     },
   },
@@ -104,7 +104,7 @@ export const inputStatusHoverShadowStyles = stylex.create({
     boxShadow: {
       default: 'none',
       ':hover': {
-        '@media (hover: hover)': shadowVars['--inset-shadow-border-negative'],
+        '@media (hover: hover)': shadowVars['--shadow-inset-error'],
       },
     },
   },
@@ -112,7 +112,7 @@ export const inputStatusHoverShadowStyles = stylex.create({
     boxShadow: {
       default: 'none',
       ':hover': {
-        '@media (hover: hover)': shadowVars['--inset-shadow-border-positive'],
+        '@media (hover: hover)': shadowVars['--shadow-inset-success'],
       },
     },
   },
@@ -127,19 +127,19 @@ export const inputStatusFocusWithinStyles = stylex.create({
   warning: {
     outline: {
       default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-ring-focus-warning']}`,
+      ':focus-within': `1px solid ${colorVars['--color-warning']}`,
     },
   },
   error: {
     outline: {
       default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-ring-focus-error']}`,
+      ':focus-within': `1px solid ${colorVars['--color-error']}`,
     },
   },
   success: {
     outline: {
       default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-ring-focus-success']}`,
+      ':focus-within': `1px solid ${colorVars['--color-success']}`,
     },
   },
 });
@@ -153,19 +153,19 @@ export const inputStatusFocusStyles = stylex.create({
   warning: {
     outline: {
       default: 'none',
-      ':focus': `1px solid ${colorVars['--color-ring-focus-warning']}`,
+      ':focus': `1px solid ${colorVars['--color-warning']}`,
     },
   },
   error: {
     outline: {
       default: 'none',
-      ':focus': `1px solid ${colorVars['--color-ring-focus-error']}`,
+      ':focus': `1px solid ${colorVars['--color-error']}`,
     },
   },
   success: {
     outline: {
       default: 'none',
-      ':focus': `1px solid ${colorVars['--color-ring-focus-success']}`,
+      ':focus': `1px solid ${colorVars['--color-success']}`,
     },
   },
 });

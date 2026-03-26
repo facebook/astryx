@@ -27,7 +27,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-label-size'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: {

@@ -29,12 +29,12 @@ export const brutalistTheme = defineTheme({
     // Colors — high contrast, no subtlety
     '--color-accent': ['#FF1493', '#FF69B4'],
     '--color-accent-muted': ['#FF149333', '#FF69B43F'],
-    '--color-surface': ['#FFFFFF', '#000000'],
-    '--color-wash': ['#F5F5F5', '#111111'],
-    '--color-card': ['#FFFFFF', '#000000'],
+    '--color-background-surface': ['#FFFFFF', '#000000'],
+    '--color-background-body': ['#F5F5F5', '#111111'],
+    '--color-background-card': ['#FFFFFF', '#000000'],
 
     // Even pills are sharp in brutalist
-    '--radius-rounded': '0px',
+    '--radius-full': '0px',
   },
   components: {
     // Custom banner status — danger
@@ -97,7 +97,7 @@ export const brutalistTheme = defineTheme({
     // Code gets a background
     text: {
       'type:code': {
-        backgroundColor: 'var(--color-wash)',
+        backgroundColor: 'var(--color-background-body)',
         padding: '2px 4px',
       },
     },

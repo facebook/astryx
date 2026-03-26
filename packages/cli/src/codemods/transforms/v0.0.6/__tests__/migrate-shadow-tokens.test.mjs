@@ -10,45 +10,45 @@ async function applyTransform(source) {
 
 describe('migrate-shadow-tokens', () => {
   // From elevation-*
-  it('--elevation-base → --shadow-base', async () => {
-    expect(await applyTransform(`const x = '--elevation-base';`)).toContain('--shadow-base');
+  it('--elevation-base → --shadow-low', async () => {
+    expect(await applyTransform(`const x = '--elevation-base';`)).toContain('--shadow-low');
   });
-  it('--elevation-menu → --shadow-menu', async () => {
-    expect(await applyTransform(`const x = '--elevation-menu';`)).toContain('--shadow-menu');
+  it('--elevation-menu → --shadow-low', async () => {
+    expect(await applyTransform(`const x = '--elevation-menu';`)).toContain('--shadow-low');
   });
-  it('--elevation-hover → --shadow-hover', async () => {
-    expect(await applyTransform(`const x = '--elevation-hover';`)).toContain('--shadow-hover');
+  it('--elevation-hover → --shadow-med', async () => {
+    expect(await applyTransform(`const x = '--elevation-hover';`)).toContain('--shadow-med');
   });
-  it('--elevation-dialog → --shadow-dialog', async () => {
-    expect(await applyTransform(`const x = '--elevation-dialog';`)).toContain('--shadow-dialog');
+  it('--elevation-dialog → --shadow-high', async () => {
+    expect(await applyTransform(`const x = '--elevation-dialog';`)).toContain('--shadow-high');
   });
 
   // From shadow-N (numeric period)
-  it('--shadow-1 → --shadow-base', async () => {
-    expect(await applyTransform(`const x = '--shadow-1';`)).toContain('--shadow-base');
+  it('--shadow-1 → --shadow-low', async () => {
+    expect(await applyTransform(`const x = '--shadow-1';`)).toContain('--shadow-low');
   });
-  it('--shadow-2 → --shadow-menu', async () => {
-    expect(await applyTransform(`const x = '--shadow-2';`)).toContain('--shadow-menu');
+  it('--shadow-2 → --shadow-low', async () => {
+    expect(await applyTransform(`const x = '--shadow-2';`)).toContain('--shadow-low');
   });
-  it('--shadow-3 → --shadow-hover', async () => {
-    expect(await applyTransform(`const x = '--shadow-3';`)).toContain('--shadow-hover');
+  it('--shadow-3 → --shadow-med', async () => {
+    expect(await applyTransform(`const x = '--shadow-3';`)).toContain('--shadow-med');
   });
-  it('--shadow-4 → --shadow-dialog', async () => {
-    expect(await applyTransform(`const x = '--shadow-4';`)).toContain('--shadow-dialog');
+  it('--shadow-4 → --shadow-high', async () => {
+    expect(await applyTransform(`const x = '--shadow-4';`)).toContain('--shadow-high');
   });
 
   // Inset shadows
-  it('--elevation-input-hover → --inset-shadow-border-hover', async () => {
-    expect(await applyTransform(`const x = '--elevation-input-hover';`)).toContain('--inset-shadow-border-hover');
+  it('--elevation-input-hover → --shadow-inset-hover', async () => {
+    expect(await applyTransform(`const x = '--elevation-input-hover';`)).toContain('--shadow-inset-hover');
   });
-  it('--elevation-input-hover-success → --inset-shadow-border-positive', async () => {
-    expect(await applyTransform(`const x = '--elevation-input-hover-success';`)).toContain('--inset-shadow-border-positive');
+  it('--elevation-input-hover-success → --shadow-inset-success', async () => {
+    expect(await applyTransform(`const x = '--elevation-input-hover-success';`)).toContain('--shadow-inset-success');
   });
-  it('--elevation-input-hover-warning → --inset-shadow-border-warning', async () => {
-    expect(await applyTransform(`const x = '--elevation-input-hover-warning';`)).toContain('--inset-shadow-border-warning');
+  it('--elevation-input-hover-warning → --shadow-inset-warning', async () => {
+    expect(await applyTransform(`const x = '--elevation-input-hover-warning';`)).toContain('--shadow-inset-warning');
   });
-  it('--elevation-input-hover-error → --inset-shadow-border-negative', async () => {
-    expect(await applyTransform(`const x = '--elevation-input-hover-error';`)).toContain('--inset-shadow-border-negative');
+  it('--elevation-input-hover-error → --shadow-inset-error', async () => {
+    expect(await applyTransform(`const x = '--elevation-input-hover-error';`)).toContain('--shadow-inset-error');
   });
 
   // JS identifiers
@@ -66,19 +66,19 @@ describe('migrate-shadow-tokens', () => {
 
   // var() and template literals
   it('renames in var()', async () => {
-    expect(await applyTransform(`const s = 'var(--elevation-menu)';`)).toContain('var(--shadow-menu)');
+    expect(await applyTransform(`const s = 'var(--elevation-menu)';`)).toContain('var(--shadow-low)');
   });
   it('renames in template literals', async () => {
     const out = await applyTransform('const s = `box-shadow: var(--elevation-dialog)`;');
-    expect(out).toContain('--shadow-dialog');
+    expect(out).toContain('--shadow-high');
     expect(out).not.toContain('--elevation-dialog');
   });
 
   // defineTheme
   it('handles defineTheme', async () => {
     const out = await applyTransform(`const t = defineTheme({ tokens: { '--elevation-base': 'x', '--elevation-input-hover': 'y' } })`);
-    expect(out).toContain('--shadow-base');
-    expect(out).toContain('--inset-shadow-border-hover');
+    expect(out).toContain('--shadow-low');
+    expect(out).toContain('--shadow-inset-hover');
   });
 
   // Safety
@@ -89,7 +89,7 @@ describe('migrate-shadow-tokens', () => {
     const {default: transform} = await import('../migrate-shadow-tokens.mjs');
     const jscodeshift = (await import('jscodeshift')).default;
     const j = jscodeshift.withParser('tsx');
-    const result = transform({source: `const x = '--shadow-base';`, path: 'test.tsx'}, {jscodeshift: j, stats: () => {}, report: () => {}});
+    const result = transform({source: `const x = '--shadow-low';`, path: 'test.tsx'}, {jscodeshift: j, stats: () => {}, report: () => {}});
     expect(result).toBeUndefined();
   });
 
@@ -98,7 +98,7 @@ describe('migrate-shadow-tokens', () => {
     const out = await applyTransform(`import {elevationVars} from '../theme/tokens.stylex';
 const s = stylex.create({ c: { boxShadow: elevationVars['--elevation-menu'] } });`);
     expect(out).toContain('shadowVars');
-    expect(out).toContain('--shadow-menu');
+    expect(out).toContain('--shadow-low');
     expect(out).not.toContain('elevationVars');
     expect(out).not.toContain('--elevation-menu');
   });

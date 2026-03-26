@@ -12,7 +12,6 @@
  * - /apps/storybook/stories/Skeleton.stories.tsx
  */
 
-
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
@@ -76,22 +75,22 @@ const radiusStyles = stylex.create({
     borderRadius: 0,
   },
   0: {
-    borderRadius: radiusVars['--radius-0'],
+    borderRadius: radiusVars['--radius-none'],
   },
   1: {
-    borderRadius: radiusVars['--radius-1'],
+    borderRadius: radiusVars['--radius-inner'],
   },
   2: {
-    borderRadius: radiusVars['--radius-2'],
+    borderRadius: radiusVars['--radius-element'],
   },
   3: {
-    borderRadius: radiusVars['--radius-3'],
+    borderRadius: radiusVars['--radius-container'],
   },
   4: {
-    borderRadius: radiusVars['--radius-4'],
+    borderRadius: radiusVars['--radius-container'],
   },
   rounded: {
-    borderRadius: radiusVars['--radius-rounded'],
+    borderRadius: radiusVars['--radius-full'],
   },
 });
 

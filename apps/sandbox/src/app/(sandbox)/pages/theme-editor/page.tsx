@@ -103,34 +103,38 @@ const COLOR_CATEGORIES = {
   'Core Semantic': [
     '--color-accent',
     '--color-accent-muted',
-    '--color-secondary',
-    '--color-surface',
-    '--color-wash',
+    '--color-neutral',
+    '--color-background-surface',
+    '--color-background-body',
     '--color-overlay',
   ],
   'Interactive States': [
     '--color-overlay-hover',
     '--color-overlay-pressed',
-    '--color-ring-focus',
-    '--color-ring-focus-error',
-    '--color-ring-focus-success',
-    '--color-ring-focus-warning',
-    '--color-muted',
+    '--color-accent',
+    '--color-error',
+    '--color-success',
+    '--color-warning',
+    '--color-background-muted',
   ],
   Text: [
     '--color-text-primary',
     '--color-text-secondary',
     '--color-text-disabled',
-    '--color-text-link',
-    '--color-text-on-dark-media',
+    '--color-text-accent',
+    '--color-on-dark',
   ],
   Icon: [
     '--color-icon-primary',
     '--color-icon-secondary',
     '--color-icon-disabled',
-    '--color-icon-on-dark-media',
+    '--color-icon-on-dark',
   ],
-  'Surface Variants': ['--color-card', '--color-popover', '--color-navbar'],
+  'Surface Variants': [
+    '--color-background-card',
+    '--color-background-popover',
+    '--color-navbar',
+  ],
   'Status/Sentiment': [
     '--color-success',
     '--color-success-muted',
@@ -143,69 +147,69 @@ const COLOR_CATEGORIES = {
   ],
   Divider: [
     '--color-border',
-    '--color-border-strong',
+    '--color-border-emphasized',
     '--color-border-emphasized',
   ],
-  Effects: ['--color-skeleton', '--color-shadow', '--color-hover-tint'],
+  Effects: ['--color-skeleton', '--color-shadow', '--color-tint-hover'],
   'Palette: Blue': [
-    '--color-blue-background',
-    '--color-blue-border',
-    '--color-blue-icon',
-    '--color-blue-text',
+    '--color-background-blue',
+    '--color-border-blue',
+    '--color-icon-blue',
+    '--color-text-blue',
   ],
   'Palette: Green': [
-    '--color-green-background',
-    '--color-green-border',
-    '--color-green-icon',
-    '--color-green-text',
+    '--color-background-green',
+    '--color-border-green',
+    '--color-icon-green',
+    '--color-text-green',
   ],
   'Palette: Red': [
-    '--color-red-background',
-    '--color-red-border',
-    '--color-red-icon',
-    '--color-red-text',
+    '--color-background-red',
+    '--color-border-red',
+    '--color-icon-red',
+    '--color-text-red',
   ],
   'Palette: Yellow': [
-    '--color-yellow-background',
-    '--color-yellow-border',
-    '--color-yellow-icon',
-    '--color-yellow-text',
+    '--color-background-yellow',
+    '--color-border-yellow',
+    '--color-icon-yellow',
+    '--color-text-yellow',
   ],
   'Palette: Orange': [
-    '--color-orange-background',
-    '--color-orange-border',
-    '--color-orange-icon',
-    '--color-orange-text',
+    '--color-background-orange',
+    '--color-border-orange',
+    '--color-icon-orange',
+    '--color-text-orange',
   ],
   'Palette: Purple': [
-    '--color-purple-background',
-    '--color-purple-border',
-    '--color-purple-icon',
-    '--color-purple-text',
+    '--color-background-purple',
+    '--color-border-purple',
+    '--color-icon-purple',
+    '--color-text-purple',
   ],
   'Palette: Pink': [
-    '--color-pink-background',
-    '--color-pink-border',
-    '--color-pink-icon',
-    '--color-pink-text',
+    '--color-background-pink',
+    '--color-border-pink',
+    '--color-icon-pink',
+    '--color-text-pink',
   ],
   'Palette: Teal': [
-    '--color-teal-background',
-    '--color-teal-border',
-    '--color-teal-icon',
-    '--color-teal-text',
+    '--color-background-teal',
+    '--color-border-teal',
+    '--color-icon-teal',
+    '--color-text-teal',
   ],
   'Palette: Cyan': [
-    '--color-cyan-background',
-    '--color-cyan-border',
-    '--color-cyan-icon',
-    '--color-cyan-text',
+    '--color-background-cyan',
+    '--color-border-cyan',
+    '--color-icon-cyan',
+    '--color-text-cyan',
   ],
   'Palette: Gray': [
-    '--color-gray-background',
-    '--color-gray-border',
-    '--color-gray-icon',
-    '--color-gray-text',
+    '--color-background-gray',
+    '--color-border-gray',
+    '--color-icon-gray',
+    '--color-text-gray',
   ],
 } as const;
 
@@ -218,30 +222,58 @@ const COLOR_CATEGORIES = {
  * Each style shows which tokens it uses (size, weight, line-height).
  */
 const TYPOGRAPHY_CATEGORIES = {
-  'Font Families': ['--font-body', '--font-heading', '--font-code'],
+  'Font Families': [
+    '--font-family-body',
+    '--font-family-heading',
+    '--font-family-code',
+  ],
   'Heading 1': {
     description: 'Primary page title (24px default)',
-    tokens: ['--heading-1-size', '--heading-1-weight', '--heading-1-leading'],
+    tokens: [
+      '--text-heading-1-size',
+      '--text-heading-1-weight',
+      '--text-heading-1-leading',
+    ],
   },
   'Heading 2': {
     description: 'Section title (20px default)',
-    tokens: ['--heading-2-size', '--heading-2-weight', '--heading-2-leading'],
+    tokens: [
+      '--text-heading-2-size',
+      '--text-heading-2-weight',
+      '--text-heading-2-leading',
+    ],
   },
   'Heading 3': {
     description: 'Subsection title (17px default)',
-    tokens: ['--heading-3-size', '--heading-3-weight', '--heading-3-leading'],
+    tokens: [
+      '--text-heading-3-size',
+      '--text-heading-3-weight',
+      '--text-heading-3-leading',
+    ],
   },
   'Heading 4': {
     description: 'Card/component title (14px — base anchor)',
-    tokens: ['--heading-4-size', '--heading-4-weight', '--heading-4-leading'],
+    tokens: [
+      '--text-heading-4-size',
+      '--text-heading-4-weight',
+      '--text-heading-4-leading',
+    ],
   },
   'Heading 5': {
     description: 'Minor heading (12px default)',
-    tokens: ['--heading-5-size', '--heading-5-weight', '--heading-5-leading'],
+    tokens: [
+      '--text-heading-5-size',
+      '--text-heading-5-weight',
+      '--text-heading-5-leading',
+    ],
   },
   'Heading 6': {
     description: 'Smallest heading (10px default)',
-    tokens: ['--heading-6-size', '--heading-6-weight', '--heading-6-leading'],
+    tokens: [
+      '--text-heading-6-size',
+      '--text-heading-6-weight',
+      '--text-heading-6-leading',
+    ],
   },
   'Body Text': {
     description: 'Default paragraph text',
@@ -276,17 +308,17 @@ const TYPOGRAPHY_CATEGORIES = {
     tokens: ['--text-code-size', '--text-code-weight', '--text-code-leading'],
   },
   'All Text Sizes': [
-    '--text-4xs',
-    '--text-3xs',
-    '--text-2xs',
-    '--text-xsm',
-    '--text-sm',
-    '--text-base',
-    '--text-lg',
-    '--text-xl',
-    '--text-2xl',
-    '--text-3xl',
-    '--text-4xl',
+    '--font-size-4xs',
+    '--font-size-3xs',
+    '--font-size-2xs',
+    '--font-size-xs',
+    '--font-size-sm',
+    '--font-size-base',
+    '--font-size-lg',
+    '--font-size-xl',
+    '--font-size-2xl',
+    '--font-size-3xl',
+    '--font-size-4xl',
   ],
   'All Font Weights': [
     '--font-weight-normal',
@@ -438,7 +470,7 @@ function ColorSwatch({tokenName, value, onChange, mode}: ColorSwatchProps) {
         gap: '12px',
         padding: '8px 12px',
         borderRadius: '8px',
-        backgroundColor: 'var(--color-wash)',
+        backgroundColor: 'var(--color-background-body)',
       }}>
       <div
         style={{
@@ -482,7 +514,7 @@ function ColorSwatch({tokenName, value, onChange, mode}: ColorSwatchProps) {
           style={{
             fontSize: '11px',
             color: 'var(--color-text-secondary)',
-            fontFamily: 'var(--font-code)',
+            fontFamily: 'var(--font-family-code)',
           }}>
           {tokenName}
         </code>
@@ -515,10 +547,10 @@ function ColorSwatch({tokenName, value, onChange, mode}: ColorSwatchProps) {
                 width: '50px',
                 padding: '4px 6px',
                 fontSize: '12px',
-                fontFamily: 'var(--font-code)',
+                fontFamily: 'var(--font-family-code)',
                 border: '1px solid var(--color-border-emphasized)',
                 borderRadius: '4px',
-                backgroundColor: 'var(--color-surface)',
+                backgroundColor: 'var(--color-background-surface)',
                 color: 'var(--color-text-primary)',
                 textAlign: 'center',
               }}
@@ -547,10 +579,10 @@ function ColorSwatch({tokenName, value, onChange, mode}: ColorSwatchProps) {
             width: '100px',
             padding: '4px 8px',
             fontSize: '12px',
-            fontFamily: 'var(--font-code)',
+            fontFamily: 'var(--font-family-code)',
             border: '1px solid var(--color-border-emphasized)',
             borderRadius: '4px',
-            backgroundColor: 'var(--color-surface)',
+            backgroundColor: 'var(--color-background-surface)',
             color: 'var(--color-text-primary)',
           }}
         />
@@ -576,7 +608,7 @@ function SpacingEditor({tokenName, value, onChange}: SpacingEditorProps) {
         gap: '12px',
         padding: '8px 12px',
         borderRadius: '8px',
-        backgroundColor: 'var(--color-wash)',
+        backgroundColor: 'var(--color-background-body)',
       }}>
       <div
         style={{
@@ -601,7 +633,7 @@ function SpacingEditor({tokenName, value, onChange}: SpacingEditorProps) {
           style={{
             fontSize: '11px',
             color: 'var(--color-text-secondary)',
-            fontFamily: 'var(--font-code)',
+            fontFamily: 'var(--font-family-code)',
           }}>
           {tokenName}
         </code>
@@ -614,10 +646,10 @@ function SpacingEditor({tokenName, value, onChange}: SpacingEditorProps) {
           width: '80px',
           padding: '4px 8px',
           fontSize: '12px',
-          fontFamily: 'var(--font-code)',
+          fontFamily: 'var(--font-family-code)',
           border: '1px solid var(--color-border-emphasized)',
           borderRadius: '4px',
-          backgroundColor: 'var(--color-surface)',
+          backgroundColor: 'var(--color-background-surface)',
           color: 'var(--color-text-primary)',
         }}
       />
@@ -640,7 +672,7 @@ function RadiusEditor({tokenName, value, onChange}: RadiusEditorProps) {
         gap: '12px',
         padding: '8px 12px',
         borderRadius: '8px',
-        backgroundColor: 'var(--color-wash)',
+        backgroundColor: 'var(--color-background-body)',
       }}>
       <div
         style={{
@@ -665,7 +697,7 @@ function RadiusEditor({tokenName, value, onChange}: RadiusEditorProps) {
           style={{
             fontSize: '11px',
             color: 'var(--color-text-secondary)',
-            fontFamily: 'var(--font-code)',
+            fontFamily: 'var(--font-family-code)',
           }}>
           {tokenName}
         </code>
@@ -678,10 +710,10 @@ function RadiusEditor({tokenName, value, onChange}: RadiusEditorProps) {
           width: '80px',
           padding: '4px 8px',
           fontSize: '12px',
-          fontFamily: 'var(--font-code)',
+          fontFamily: 'var(--font-family-code)',
           border: '1px solid var(--color-border-emphasized)',
           borderRadius: '4px',
-          backgroundColor: 'var(--color-surface)',
+          backgroundColor: 'var(--color-background-surface)',
           color: 'var(--color-text-primary)',
         }}
       />
@@ -709,7 +741,7 @@ function TypographyEditor({tokenName, value, onChange}: TypographyEditorProps) {
         gap: '12px',
         padding: '8px 12px',
         borderRadius: '8px',
-        backgroundColor: 'var(--color-wash)',
+        backgroundColor: 'var(--color-background-body)',
       }}>
       <div
         style={{
@@ -741,7 +773,7 @@ function TypographyEditor({tokenName, value, onChange}: TypographyEditorProps) {
           style={{
             fontSize: '11px',
             color: 'var(--color-text-secondary)',
-            fontFamily: 'var(--font-code)',
+            fontFamily: 'var(--font-family-code)',
           }}>
           {tokenName}
         </code>
@@ -754,10 +786,10 @@ function TypographyEditor({tokenName, value, onChange}: TypographyEditorProps) {
           width: isFont ? '200px' : '80px',
           padding: '4px 8px',
           fontSize: '12px',
-          fontFamily: 'var(--font-code)',
+          fontFamily: 'var(--font-family-code)',
           border: '1px solid var(--color-border-emphasized)',
           borderRadius: '4px',
-          backgroundColor: 'var(--color-surface)',
+          backgroundColor: 'var(--color-background-surface)',
           color: 'var(--color-text-primary)',
         }}
       />
@@ -866,11 +898,11 @@ function ComponentPreview() {
             <pre
               style={{
                 padding: '16px',
-                borderRadius: 'var(--radius-2)',
-                backgroundColor: 'var(--color-wash)',
+                borderRadius: 'var(--radius-element)',
+                backgroundColor: 'var(--color-background-body)',
                 border: '1px solid var(--color-border)',
-                fontFamily: 'var(--font-code)',
-                fontSize: 'var(--text-sm)',
+                fontFamily: 'var(--font-family-code)',
+                fontSize: 'var(--font-size-sm)',
                 lineHeight: 'var(--leading-normal)',
                 overflow: 'auto',
                 margin: '0 0 16px 0',
@@ -891,7 +923,7 @@ const styles = stylex.create({
 const styles = stylex.create({
   button: {
     backgroundColor: colorVars['--color-accent'],
-    color: colorVars['--color-text-on-dark-media'],
+    color: colorVars['--color-on-dark'],
   },
 });`}
               </code>
@@ -910,7 +942,7 @@ const styles = stylex.create({
                 margin: '0 0 16px 0',
                 paddingLeft: '24px',
                 color: 'var(--color-text-primary)',
-                fontSize: 'var(--text-base)',
+                fontSize: 'var(--font-size-base)',
                 lineHeight: 'var(--leading-base)',
               }}>
               <li>Automatic dark mode support via light-dark()</li>
@@ -1033,7 +1065,12 @@ const styles = stylex.create({
             gap: '12px',
             maxWidth: '300px',
           }}>
-          <XDSTextInput label="Text Input" placeholder="Enter text..." value="" onChange={() => {}} />
+          <XDSTextInput
+            label="Text Input"
+            placeholder="Enter text..."
+            value=""
+            onChange={() => {}}
+          />
           <XDSSwitch
             label="Toggle Switch"
             value={switchValue}
@@ -1172,7 +1209,7 @@ const styles = stylex.create({
         />
         <XDSDialog
           isOpen={dialogOpen}
-          onOpenChange={(open) => setDialogOpen(open)}>
+          onOpenChange={open => setDialogOpen(open)}>
           <div style={{padding: '0 24px 24px 24px'}}>
             <XDSStack direction="vertical" gap={3}>
               <XDSText type="body">
@@ -1409,7 +1446,11 @@ function DashboardPreview() {
           <XDSTab value="errors" label="Errors" />
         </XDSTabList>
         <div style={{marginTop: '16px'}}>
-          <XDSTable columns={dashboardColumns} data={metrics} density="compact" />
+          <XDSTable
+            columns={dashboardColumns}
+            data={metrics}
+            density="compact"
+          />
         </div>
       </div>
 
@@ -1681,11 +1722,11 @@ function ThemeEditorComponent() {
 
   // Create a theme from current tokens.
   // Uses defaultTheme's component overrides so that type scale tokens
-  // (--heading-1-size, --text-body-size, etc.) are consumed by the
+  // (--text-heading-1-size, --text-body-size, etc.) are consumed by the
   // heading/text CSS rules in the preview.
   //
   // Type scale tokens are ALWAYS included (even at default values) because
-  // the component overrides reference var(--heading-1-size) etc., and those
+  // the component overrides reference var(--text-heading-1-size) etc., and those
   // unhashed CSS custom properties only exist when the theme explicitly sets them.
   const typeScaleKeys = React.useMemo(
     () => new Set(Object.keys(typeScaleDefaults)),
@@ -1696,7 +1737,7 @@ function ThemeEditorComponent() {
     const tokenOverrides: Record<string, string> = {};
     for (const [key, value] of Object.entries(tokens)) {
       // Always include type scale tokens — the component CSS rules reference
-      // var(--heading-1-size) etc. which only exist when the theme sets them.
+      // var(--text-heading-1-size) etc. which only exist when the theme sets them.
       if (typeScaleKeys.has(key) || value !== allDefaults[key]) {
         tokenOverrides[key] = value;
       }
@@ -1803,7 +1844,7 @@ function ThemeEditorComponent() {
           style={{
             padding: '12px',
             borderRadius: '8px',
-            backgroundColor: 'var(--color-wash)',
+            backgroundColor: 'var(--color-background-body)',
             display: 'flex',
             flexDirection: 'column',
             gap: '10px',
@@ -1901,14 +1942,14 @@ function ThemeEditorComponent() {
               padding: '8px 12px',
               borderRadius: '6px',
               border: '1px solid var(--color-border)',
-              backgroundColor: 'var(--color-surface)',
+              backgroundColor: 'var(--color-background-surface)',
               display: 'flex',
               flexDirection: 'column',
               gap: '2px',
             }}>
             {[1, 2, 3, 4, 5, 6].map(level => {
               const sizeRaw = tokens[`--heading-${level}-size`] || '';
-              // Resolve var() refs: "var(--text-2xl)" → look up --text-2xl in tokens
+              // Resolve var() refs: "var(--font-size-2xl)" → look up --font-size-2xl in tokens
               const resolvedSize = sizeRaw.startsWith('var(')
                 ? tokens[sizeRaw.slice(4, -1)] || sizeRaw
                 : sizeRaw;
@@ -2088,7 +2129,7 @@ function ThemeEditorComponent() {
               style={{
                 padding: '16px',
                 borderRadius: '8px',
-                backgroundColor: 'var(--color-wash)',
+                backgroundColor: 'var(--color-background-body)',
                 border: '1px solid var(--color-border)',
                 marginBottom: '8px',
               }}>
@@ -2131,7 +2172,7 @@ function ThemeEditorComponent() {
               gap: '12px',
               padding: '8px 12px',
               borderRadius: '8px',
-              backgroundColor: 'var(--color-wash)',
+              backgroundColor: 'var(--color-background-body)',
             }}>
             <div style={{flex: 1, minWidth: 0}}>
               <div
@@ -2147,7 +2188,7 @@ function ThemeEditorComponent() {
                 style={{
                   fontSize: '11px',
                   color: 'var(--color-text-secondary)',
-                  fontFamily: 'var(--font-code)',
+                  fontFamily: 'var(--font-family-code)',
                 }}>
                 {tokenName}
               </code>
@@ -2160,10 +2201,10 @@ function ThemeEditorComponent() {
                 width: '200px',
                 padding: '4px 8px',
                 fontSize: '12px',
-                fontFamily: 'var(--font-code)',
+                fontFamily: 'var(--font-family-code)',
                 border: '1px solid var(--color-border-emphasized)',
                 borderRadius: '4px',
-                backgroundColor: 'var(--color-surface)',
+                backgroundColor: 'var(--color-background-surface)',
                 color: 'var(--color-text-primary)',
               }}
             />
@@ -2180,7 +2221,7 @@ function ThemeEditorComponent() {
         position: 'fixed',
         inset: 0,
         overflow: 'hidden',
-        backgroundColor: 'var(--color-wash)',
+        backgroundColor: 'var(--color-background-body)',
       }}>
       {/* Left Panel - Token Editor */}
       <div
@@ -2189,7 +2230,7 @@ function ThemeEditorComponent() {
           borderRight: '1px solid var(--color-border-emphasized)',
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: 'var(--color-surface)',
+          backgroundColor: 'var(--color-background-surface)',
         }}>
         {/* Token group tabs */}
         <div
@@ -2262,7 +2303,7 @@ function ThemeEditorComponent() {
           style={{
             padding: '12px 24px',
             borderBottom: '1px solid var(--color-border)',
-            backgroundColor: 'var(--color-surface)',
+            backgroundColor: 'var(--color-background-surface)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -2290,7 +2331,7 @@ function ThemeEditorComponent() {
             style={{
               padding: '16px 24px',
               borderBottom: '1px solid var(--color-border)',
-              backgroundColor: 'var(--color-wash)',
+              backgroundColor: 'var(--color-background-body)',
               maxHeight: '300px',
               overflow: 'auto',
             }}>
@@ -2303,10 +2344,10 @@ function ThemeEditorComponent() {
               style={{
                 padding: '16px',
                 borderRadius: '8px',
-                backgroundColor: 'var(--color-surface)',
+                backgroundColor: 'var(--color-background-surface)',
                 border: '1px solid var(--color-border-emphasized)',
                 fontSize: '12px',
-                fontFamily: 'var(--font-code)',
+                fontFamily: 'var(--font-family-code)',
                 overflow: 'auto',
                 margin: 0,
                 color: 'var(--color-text-primary)',
@@ -2331,7 +2372,7 @@ function ThemeEditorComponent() {
           <XDSTheme theme={currentTheme} mode={mode}>
             <div
               style={{
-                backgroundColor: 'var(--color-surface)',
+                backgroundColor: 'var(--color-background-surface)',
                 padding: '24px',
               }}>
               <PreviewTabs />

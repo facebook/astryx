@@ -22,7 +22,7 @@
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
   font-size: 13px;
   line-height: 1.5;
-  background-color: var(--color-wash);
+  background-color: var(--color-background-body);
   border-radius: 6px;
   padding: var(--spacing-3);
   overflow: auto;
@@ -140,7 +140,7 @@
 /* === Report === */
 .report-root {
   min-height: 100vh;
-  background-color: var(--color-wash);
+  background-color: var(--color-background-body);
 }
 
 .report-container {

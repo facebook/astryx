@@ -49,7 +49,7 @@ export const navItemStyles = stylex.create({
     width: '100%',
     paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-2'],
-    borderRadius: radiusVars['--radius-2'],
+    borderRadius: radiusVars['--radius-element'],
     borderWidth: 0,
     borderStyle: 'none',
     backgroundColor: 'transparent',
@@ -74,15 +74,15 @@ export const navItemStyles = stylex.create({
 
   /** Selected/active page indicator — deemphasized background, medium weight */
   selected: {
-    backgroundColor: colorVars['--color-secondary'],
+    backgroundColor: colorVars['--color-neutral'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     ':hover': {
       '@media (hover: hover)': {
-        backgroundColor: colorVars['--color-secondary'],
+        backgroundColor: colorVars['--color-neutral'],
       },
     },
     ':active': {
-      backgroundColor: colorVars['--color-secondary'],
+      backgroundColor: colorVars['--color-neutral'],
     },
   },
 

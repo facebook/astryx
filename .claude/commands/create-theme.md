@@ -60,18 +60,18 @@ export const {themeName}Theme = defineTheme({
     // Colors — use [light, dark] tuples for automatic light-dark() conversion
     '--color-accent': ['#YOUR_LIGHT', '#YOUR_DARK'],
     '--color-accent-muted': ['#YOUR_LIGHT33', '#YOUR_DARK3F'],
-    '--color-surface': ['#FFFFFF', '#1C1C1C'],
-    '--color-wash': ['#F5F5F5', '#121212'],
+    '--color-background-surface': ['#FFFFFF', '#1C1C1C'],
+    '--color-background-body': ['#F5F5F5', '#121212'],
 
     // Radius — customize for different feel
-    '--radius-3': '12px',
-    '--radius-2': '8px',
-    '--radius-1': '4px',
+    '--radius-container': '12px',
+    '--radius-element': '8px',
+    '--radius-inner': '4px',
 
     // Typography — font families
-    '--font-body': '-apple-system, BlinkMacSystemFont, sans-serif',
-    '--font-heading': '-apple-system, BlinkMacSystemFont, sans-serif',
-    '--font-code': '"SF Mono", Monaco, Consolas, monospace',
+    '--font-family-body': '-apple-system, BlinkMacSystemFont, sans-serif',
+    '--font-family-heading': '-apple-system, BlinkMacSystemFont, sans-serif',
+    '--font-family-code': '"SF Mono", Monaco, Consolas, monospace',
 
     // Only include tokens you want to override.
     // See packages/core/src/theme/tokens.stylex.ts for all available tokens.
@@ -86,8 +86,8 @@ export const {themeName}Theme = defineTheme({
     },
     heading: {
       'level:1': {
-        fontFamily: 'var(--font-heading)',
-        fontSize: 'var(--text-2xl)',
+        fontFamily: 'var(--font-family-heading)',
+        fontSize: 'var(--font-size-2xl)',
         fontWeight: 'var(--font-weight-semibold)',
         lineHeight: '1.2',
         color: 'var(--color-text-primary)',
@@ -97,8 +97,8 @@ export const {themeName}Theme = defineTheme({
     },
     text: {
       'type:body': {
-        fontFamily: 'var(--font-body)',
-        fontSize: 'var(--text-base)',
+        fontFamily: 'var(--font-family-body)',
+        fontSize: 'var(--font-size-base)',
         fontWeight: 'var(--font-weight-normal)',
         lineHeight: 'var(--leading-base)',
         color: 'var(--color-text-primary)',
@@ -136,7 +136,7 @@ Component overrides generate scoped CSS:
     background-color: ...;
   }
   .xds-heading.level-1 {
-    font-size: var(--text-2xl);
+    font-size: var(--font-size-2xl);
   }
 }
 ```

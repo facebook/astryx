@@ -83,10 +83,10 @@ describe('migrate-token-names', () => {
       d: colorVars['--color-focus-outline-warning'],
     };`;
     const output = await applyTransform(input);
-    expect(output).toContain('--color-ring-focus');
-    expect(output).toContain('--color-ring-focus-error');
-    expect(output).toContain('--color-ring-focus-success');
-    expect(output).toContain('--color-ring-focus-warning');
+    expect(output).toContain('--color-accent');
+    expect(output).toContain('--color-error');
+    expect(output).toContain('--color-success');
+    expect(output).toContain('--color-warning');
     expect(output).not.toMatch(/focus-outline/);
   });
 
@@ -100,7 +100,7 @@ describe('migrate-token-names', () => {
     };`;
     const output = await applyTransform(input);
     expect(output).toContain('--color-border');
-    expect(output).toContain('--color-border-strong');
+    expect(output).toContain('--color-border-emphasized');
     expect(output).toContain('--color-border-emphasized');
     expect(output).not.toMatch(/color-divider/);
   });
@@ -129,16 +129,16 @@ describe('migrate-token-names', () => {
       b: colorVars['--color-icon-on-media'],
     };`;
     const output = await applyTransform(input);
-    expect(output).toContain('--color-text-on-dark-media');
-    expect(output).toContain('--color-icon-on-dark-media');
+    expect(output).toContain('--color-on-dark');
+    expect(output).toContain('--color-icon-on-dark');
   });
 
   // === Token removals (replaced by existing) ===
 
-  it('replaces --color-accent-text with --color-text-link', async () => {
+  it('replaces --color-accent-text with --color-text-accent', async () => {
     const input = `const x = colorVars['--color-accent-text'];`;
     const output = await applyTransform(input);
-    expect(output).toContain('--color-text-link');
+    expect(output).toContain('--color-text-accent');
     expect(output).not.toContain('--color-accent-text');
   });
 
@@ -205,9 +205,9 @@ describe('migrate-token-names', () => {
   it('does not modify unrelated tokens', async () => {
     const input = `const x = {
       a: colorVars['--color-text-primary'],
-      b: colorVars['--color-surface'],
+      b: colorVars['--color-background-surface'],
       c: colorVars['--color-warning'],
-      d: colorVars['--color-blue-background'],
+      d: colorVars['--color-background-blue'],
     };`;
     const output = await applyTransform(input);
     expect(output).toBe(input);
@@ -229,7 +229,7 @@ describe('migrate-token-names', () => {
     };`;
     const output = await applyTransform(input);
     // accent-text → text-link
-    expect(output).toContain('--color-text-link');
+    expect(output).toContain('--color-text-accent');
     // accent stays as accent
     expect(output).toContain('--color-accent');
     expect(output).not.toContain('--color-accent-text');
@@ -246,11 +246,11 @@ describe('migrate-token-names', () => {
       e: shadowVars['--insetshadow-border-negative'],
     };`;
     const output = await applyTransform(input);
-    expect(output).toContain('--inset-shadow-border-hover');
-    expect(output).toContain('--inset-shadow-border-accent');
-    expect(output).toContain('--inset-shadow-border-positive');
-    expect(output).toContain('--inset-shadow-border-warning');
-    expect(output).toContain('--inset-shadow-border-negative');
+    expect(output).toContain('--shadow-inset-hover');
+    expect(output).toContain('--shadow-inset-selected');
+    expect(output).toContain('--shadow-inset-success');
+    expect(output).toContain('--shadow-inset-warning');
+    expect(output).toContain('--shadow-inset-error');
     expect(output).not.toMatch(/insetshadow/);
   });
 

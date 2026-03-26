@@ -20,7 +20,6 @@
  * ```
  */
 
-
 import React, {useId, useInsertionEffect, useLayoutEffect, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {ThemeMode} from './types';
@@ -47,7 +46,7 @@ const wrapperStyles = stylex.create({
   base: {
     display: 'contents',
     color: colorVars['--color-text-primary'],
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
   },
   light: {
     colorScheme: 'light',

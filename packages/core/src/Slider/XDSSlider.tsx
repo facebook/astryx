@@ -163,8 +163,8 @@ const styles = stylex.create({
   },
   track: {
     position: 'absolute',
-    backgroundColor: colorVars['--color-muted'],
-    borderRadius: radiusVars['--radius-rounded'],
+    backgroundColor: colorVars['--color-background-muted'],
+    borderRadius: radiusVars['--radius-full'],
   },
   trackHorizontal: {
     left: 0,
@@ -183,7 +183,7 @@ const styles = stylex.create({
   filledTrack: {
     position: 'absolute',
     backgroundColor: colorVars['--color-accent'],
-    borderRadius: radiusVars['--radius-rounded'],
+    borderRadius: radiusVars['--radius-full'],
   },
   filledTrackHorizontal: {
     height: TRACK_SIZE,
@@ -199,7 +199,7 @@ const styles = stylex.create({
     position: 'absolute',
     width: THUMB_SIZE,
     height: THUMB_SIZE,
-    borderRadius: radiusVars['--radius-rounded'],
+    borderRadius: radiusVars['--radius-full'],
     backgroundColor: colorVars['--color-accent'],
     transform: 'translate(-50%, -50%)',
     transitionProperty: 'background-color, box-shadow',
@@ -223,14 +223,14 @@ const styles = stylex.create({
     backgroundColor: {
       default: colorVars['--color-accent'],
       ':hover': {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-hover-tint']} 15%)`,
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },
   },
   thumbFocusVisible: {
     outline: {
       default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',
@@ -238,11 +238,11 @@ const styles = stylex.create({
     },
   },
   thumbDisabled: {
-    backgroundColor: colorVars['--color-muted'],
+    backgroundColor: colorVars['--color-background-muted'],
     cursor: 'not-allowed',
   },
   textValue: {
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-label-size'],
     color: colorVars['--color-text-primary'],
     whiteSpace: 'nowrap',
@@ -264,7 +264,7 @@ const styles = stylex.create({
   mark: {
     position: 'absolute',
     backgroundColor: colorVars['--color-border-emphasized'],
-    borderRadius: radiusVars['--radius-rounded'],
+    borderRadius: radiusVars['--radius-full'],
   },
   markHorizontal: {
     width: 2,
@@ -278,7 +278,7 @@ const styles = stylex.create({
   },
   markLabel: {
     position: 'absolute',
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
     color: colorVars['--color-text-secondary'],
     whiteSpace: 'nowrap',

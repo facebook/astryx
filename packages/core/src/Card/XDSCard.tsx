@@ -29,8 +29,8 @@ import {XDSBaseProps} from '../XDSBaseProps';
 const styles = stylex.create({
   // Outer wrapper: visual styling with clip for border-radius
   cardOuter: {
-    '--card-radius': radiusVars['--radius-3'],
-    backgroundColor: colorVars['--color-card'],
+    '--card-radius': radiusVars['--radius-container'],
+    backgroundColor: colorVars['--color-background-card'],
     borderRadius: 'var(--card-radius)',
     // No drop-shadow — matches WWW XDSCard which uses border only
     overflow: 'clip',

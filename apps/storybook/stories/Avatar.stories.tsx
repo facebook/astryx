@@ -18,7 +18,7 @@ const styles = stylex.create({
   },
   heading: {
     margin: `0 0 ${spacingVars['--spacing-2']} 0`,
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
   },
 });
 

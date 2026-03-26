@@ -14,14 +14,14 @@ import {
 
 const styles = stylex.create({
   box: {
-    backgroundColor: colorVars['--color-blue-background'],
-    color: colorVars['--color-blue-text'],
+    backgroundColor: colorVars['--color-background-blue'],
+    color: colorVars['--color-text-blue'],
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: colorVars['--color-blue-border'],
+    borderColor: colorVars['--color-border-blue'],
     paddingBlock: spacingVars['--spacing-4'],
     paddingInline: spacingVars['--spacing-6'],
-    borderRadius: radiusVars['--radius-2'],
+    borderRadius: radiusVars['--radius-element'],
     fontWeight: 500,
   },
   storyWrapper: {
@@ -30,10 +30,10 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-6'],
   },
   iconWrapper: {
-    backgroundColor: colorVars['--color-blue-background'],
-    color: colorVars['--color-blue-text'],
+    backgroundColor: colorVars['--color-background-blue'],
+    color: colorVars['--color-text-blue'],
     padding: spacingVars['--spacing-2'],
-    borderRadius: radiusVars['--radius-2'],
+    borderRadius: radiusVars['--radius-element'],
   },
 });
 

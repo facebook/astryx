@@ -64,10 +64,10 @@ const styles = stylex.create({
     borderStyle: 'none',
     backgroundColor: 'transparent',
     cursor: 'pointer',
-    borderRadius: radiusVars['--radius-2'],
+    borderRadius: radiusVars['--radius-element'],
     outline: {
       default: 'none',
-      ':focus-visible': `1px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-visible': `1px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: 1,
   },
@@ -81,7 +81,7 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     padding: 0,
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: lineHeightVars['--leading-normal'],
     color: colorVars['--color-text-primary'],
@@ -98,21 +98,21 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   popover: {
-    backgroundColor: colorVars['--color-popover'],
-    borderRadius: radiusVars['--radius-3'],
-    boxShadow: shadowVars['--shadow-menu'],
+    backgroundColor: colorVars['--color-background-popover'],
+    borderRadius: radiusVars['--radius-container'],
+    boxShadow: shadowVars['--shadow-low'],
   },
 });
 
 const sizeStyles = stylex.create({
   sm: {
-    height: sizeVars['--size-sm'],
+    height: sizeVars['--size-element-sm'],
   },
   md: {
-    height: sizeVars['--size-md'],
+    height: sizeVars['--size-element-md'],
   },
   lg: {
-    height: sizeVars['--size-lg'],
+    height: sizeVars['--size-element-lg'],
   },
 });
 

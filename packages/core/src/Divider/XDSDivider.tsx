@@ -12,7 +12,6 @@
  * - /apps/storybook/stories/Divider.stories.tsx
  */
 
-
 import {type HTMLAttributes, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
@@ -141,7 +140,7 @@ const labelStyles = stylex.create({
   label: {
     flexShrink: 0,
     paddingInline: spacingVars['--spacing-3'],
-    backgroundColor: colorVars['--color-surface'],
+    backgroundColor: colorVars['--color-background-surface'],
     // Small secondary text styling
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-normal'],

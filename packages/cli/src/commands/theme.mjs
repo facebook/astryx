@@ -103,34 +103,34 @@ function deriveColorPalette({accent, positive, negative, warning, mode}) {
     // Core semantic
     '--color-accent': ld(accentDark, accentLight),
     '--color-accent-muted': ld(withAlpha(accent, 0.2), withAlpha(accent, 0.25)),
-    '--color-secondary': ld('rgba(5, 54, 89, 0.1)', 'rgba(223, 226, 229, 0.2)'),
-    '--color-text-link': ld(accentTextLight, accentTextDark),
-    '--color-surface': ld('#FFFFFF', '#1F1F22'),
-    '--color-wash': ld('#F1F4F7', '#111112'),
+    '--color-neutral': ld('rgba(5, 54, 89, 0.1)', 'rgba(223, 226, 229, 0.2)'),
+    '--color-text-accent': ld(accentTextLight, accentTextDark),
+    '--color-background-surface': ld('#FFFFFF', '#1F1F22'),
+    '--color-background-body': ld('#F1F4F7', '#111112'),
     '--color-overlay': ld('#01122866', '#11111299'),
     '--color-overlay-hover': ld('#0536590C', '#FFFFFF0C'),
     '--color-overlay-pressed': ld('#05365919', '#FFFFFF19'),
-    '--color-ring-focus': ld(accentTextLight, accentTextDark),
-    '--color-muted': ld('#0536590C', '#1111127F'),
+    '--color-accent': ld(accentTextLight, accentTextDark),
+    '--color-background-muted': ld('#0536590C', '#1111127F'),
 
     // Text
     '--color-text-primary': ld('#0A1317', '#DFE2E5'),
     '--color-text-secondary': ld('#4E606F', '#AAAFB5'),
     '--color-text-disabled': ld('#A4B0BC', '#6F747C'),
-    '--color-text-link': ld(accentDark, accentLight),
+    '--color-text-accent': ld(accentDark, accentLight),
     '--color-text-secondary': ld('#4E606F', '#AAAFB5'),
-    '--color-text-on-dark-media': ld('#FFFFFF', '#FFFFFF'),
+    '--color-on-dark': ld('#FFFFFF', '#FFFFFF'),
 
     // Icon
     '--color-icon-primary': ld('#0A1317', '#DFE2E5'),
     '--color-icon-secondary': ld('#4E606F', '#AAAFB5'),
     '--color-icon-secondary': ld('#748695', '#8C939B'),
     '--color-icon-disabled': ld('#A4B0BC', '#6F747C'),
-    '--color-icon-on-dark-media': ld('#FFFFFF', '#FFFFFF'),
+    '--color-icon-on-dark': ld('#FFFFFF', '#FFFFFF'),
 
     // Surface variants
-    '--color-card': ld('#FFFFFF', '#1F1F22'),
-    '--color-popover': ld('#FFFFFF', '#28292C'),
+    '--color-background-card': ld('#FFFFFF', '#1F1F22'),
+    '--color-background-popover': ld('#FFFFFF', '#28292C'),
 
     // Status
     '--color-success': ld(positive, positive),
@@ -144,55 +144,55 @@ function deriveColorPalette({accent, positive, negative, warning, mode}) {
 
     // Divider
     '--color-border': ld('#05365919', '#F2F4F619'),
-    '--color-border-strong': ld('#647685', '#6F747C'),
+    '--color-border-emphasized': ld('#647685', '#6F747C'),
     '--color-border-emphasized': ld('#CCD3DB', '#494D53'),
 
     // Effects
     '--color-skeleton': ld('#CCD3DB', '#5A5E66'),
     '--color-shadow': ld('rgba(5, 54, 89, 0.1)', 'rgba(0, 0, 0, 0.3)'),
-    '--color-hover-tint': ld('black', 'white'),
+    '--color-tint-hover': ld('black', 'white'),
 
     // Literal color sets
-    '--color-blue-background': ld('#0171E333', '#0171E333'),
-    '--color-blue-border': ld('#0171E3', '#4BA9FE'),
-    '--color-blue-icon': ld('#0064E0', '#2694FE'),
-    '--color-blue-text': ld('#042F97', '#AFD7FF'),
-    '--color-cyan-background': ld('#00BCD433', '#00BCD433'),
-    '--color-cyan-border': ld('#00BCD4', '#4DD0E1'),
-    '--color-cyan-icon': ld('#00ACC1', '#26C6DA'),
-    '--color-cyan-text': ld('#006064', '#B2EBF2'),
-    '--color-gray-background': ld('#0A131733', '#666A724C'),
-    '--color-gray-border': ld('#647685', '#8C939B'),
-    '--color-gray-icon': ld('#4E606F', '#AAAFB5'),
-    '--color-gray-text': ld('#0A1317', '#E7EAED'),
-    '--color-green-background': ld('#24BB5E33', '#24BB5E33'),
-    '--color-green-border': ld('#24BB5E', '#4CD964'),
-    '--color-green-icon': ld('#0D8626', '#26A756'),
-    '--color-green-text': ld('#09441F', '#A5F690'),
-    '--color-orange-background': ld('#F2790233', '#F2790233'),
-    '--color-orange-border': ld('#F27902', '#FFA040'),
-    '--color-orange-icon': ld('#E9690B', '#FB8C00'),
-    '--color-orange-text': ld('#6B2203', '#FDB876'),
-    '--color-pink-background': ld('#E91E6333', '#E91E6333'),
-    '--color-pink-border': ld('#E91E63', '#F48FB1'),
-    '--color-pink-icon': ld('#C2185B', '#EC407A'),
-    '--color-pink-text': ld('#880E4F', '#F8BBD0'),
-    '--color-purple-background': ld('#7952FF33', '#7952FF33'),
-    '--color-purple-border': ld('#7952FF', '#9575CD'),
-    '--color-purple-icon': ld('#5B08D8', '#7952FF'),
-    '--color-purple-text': ld('#3E0697', '#B3B0FE'),
-    '--color-red-background': ld('#E3193B33', '#E3193B33'),
-    '--color-red-border': ld('#E3193B', '#F5394F'),
-    '--color-red-icon': ld('#D31130', '#E3193B'),
-    '--color-red-text': ld('#7B0210', '#FFB2B8'),
-    '--color-teal-background': ld('#0DB7AF33', '#0DB7AF33'),
-    '--color-teal-border': ld('#0DB7AF', '#4DB6AC'),
-    '--color-teal-icon': ld('#009688', '#26A69A'),
-    '--color-teal-text': ld('#083943', '#40DCCD'),
-    '--color-yellow-background': ld('#FFEB3B33', '#FFEB3B33'),
-    '--color-yellow-border': ld('#FFEB3B', '#FFF176'),
-    '--color-yellow-icon': ld('#FBC02D', '#FFEE58'),
-    '--color-yellow-text': ld('#753F07', '#FBCE03'),
+    '--color-background-blue': ld('#0171E333', '#0171E333'),
+    '--color-border-blue': ld('#0171E3', '#4BA9FE'),
+    '--color-icon-blue': ld('#0064E0', '#2694FE'),
+    '--color-text-blue': ld('#042F97', '#AFD7FF'),
+    '--color-background-cyan': ld('#00BCD433', '#00BCD433'),
+    '--color-border-cyan': ld('#00BCD4', '#4DD0E1'),
+    '--color-icon-cyan': ld('#00ACC1', '#26C6DA'),
+    '--color-text-cyan': ld('#006064', '#B2EBF2'),
+    '--color-background-gray': ld('#0A131733', '#666A724C'),
+    '--color-border-gray': ld('#647685', '#8C939B'),
+    '--color-icon-gray': ld('#4E606F', '#AAAFB5'),
+    '--color-text-gray': ld('#0A1317', '#E7EAED'),
+    '--color-background-green': ld('#24BB5E33', '#24BB5E33'),
+    '--color-border-green': ld('#24BB5E', '#4CD964'),
+    '--color-icon-green': ld('#0D8626', '#26A756'),
+    '--color-text-green': ld('#09441F', '#A5F690'),
+    '--color-background-orange': ld('#F2790233', '#F2790233'),
+    '--color-border-orange': ld('#F27902', '#FFA040'),
+    '--color-icon-orange': ld('#E9690B', '#FB8C00'),
+    '--color-text-orange': ld('#6B2203', '#FDB876'),
+    '--color-background-pink': ld('#E91E6333', '#E91E6333'),
+    '--color-border-pink': ld('#E91E63', '#F48FB1'),
+    '--color-icon-pink': ld('#C2185B', '#EC407A'),
+    '--color-text-pink': ld('#880E4F', '#F8BBD0'),
+    '--color-background-purple': ld('#7952FF33', '#7952FF33'),
+    '--color-border-purple': ld('#7952FF', '#9575CD'),
+    '--color-icon-purple': ld('#5B08D8', '#7952FF'),
+    '--color-text-purple': ld('#3E0697', '#B3B0FE'),
+    '--color-background-red': ld('#E3193B33', '#E3193B33'),
+    '--color-border-red': ld('#E3193B', '#F5394F'),
+    '--color-icon-red': ld('#D31130', '#E3193B'),
+    '--color-text-red': ld('#7B0210', '#FFB2B8'),
+    '--color-background-teal': ld('#0DB7AF33', '#0DB7AF33'),
+    '--color-border-teal': ld('#0DB7AF', '#4DB6AC'),
+    '--color-icon-teal': ld('#009688', '#26A69A'),
+    '--color-text-teal': ld('#083943', '#40DCCD'),
+    '--color-background-yellow': ld('#FFEB3B33', '#FFEB3B33'),
+    '--color-border-yellow': ld('#FFEB3B', '#FFF176'),
+    '--color-icon-yellow': ld('#FBC02D', '#FFEE58'),
+    '--color-text-yellow': ld('#753F07', '#FBCE03'),
   };
 }
 
@@ -232,20 +232,20 @@ function generateThemeFile({name, exportName, colors, includeComponentOverrides,
 // --- Card ---
 // const cardOverrides = stylex.create({
 //   container: {
-//     borderRadius: radiusVars['--radius-3'],
+//     borderRadius: radiusVars['--radius-container'],
 //     // gradient border: set a gradient background + padding, inner content covers it
 //     // background: 'linear-gradient(135deg, ...)',
 //   },
 //   content: {
-//     backgroundColor: colorVars['--color-card'],
+//     backgroundColor: colorVars['--color-background-card'],
 //   },
 // });
 
 // --- Heading ---
 // const headingStyles = stylex.create({
 //   h1: {
-//     fontFamily: typographyVars['--font-heading'],
-//     fontSize: textSizeVars['--text-2xl'],
+//     fontFamily: typographyVars['--font-family-heading'],
+//     fontSize: textSizeVars['--font-size-2xl'],
 //     fontWeight: fontWeightVars['--font-weight-semibold'],
 //     lineHeight: 1.2,
 //     color: colorVars['--color-text-primary'],
@@ -257,8 +257,8 @@ function generateThemeFile({name, exportName, colors, includeComponentOverrides,
 // --- Text ---
 // const textStyles = stylex.create({
 //   body: {
-//     fontFamily: typographyVars['--font-body'],
-//     fontSize: textSizeVars['--text-base'],
+//     fontFamily: typographyVars['--font-family-body'],
+//     fontSize: textSizeVars['--font-size-base'],
 //     fontWeight: fontWeightVars['--font-weight-normal'],
 //     lineHeight: lineHeightVars['--leading-base'],
 //     color: colorVars['--color-text-primary'],
@@ -327,7 +327,7 @@ const colorTheme = stylex.createTheme(
 
 // Uncomment and customize to override other token groups:
 // import { radiusVars, shadowVars, typographyVars, ... } from '@xds/core/theme/tokens.stylex';
-// const radiusTheme = stylex.createTheme(radiusVars, { '--radius-3': '16px', ... });
+// const radiusTheme = stylex.createTheme(radiusVars, { '--radius-container': '16px', ... });
 ${componentOverrideSection}
 // =============================================================================
 // Theme Export

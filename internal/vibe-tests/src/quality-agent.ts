@@ -199,7 +199,7 @@ The code should use:
 - **XDSFontWrapper** is a global provider that styles native HTML elements with proper typography — raw HTML is acceptable for prose/markdown content rendered within it
 - For structured UI (cards, forms, dashboards), prefer XDSHeading/XDSText over raw HTML for access to props like \`weight\`, \`maxLines\`, \`variant\`, \`hasTabularNumbers\`
 - Never hardcode fontSize, fontWeight, lineHeight, or fontFamily — use the component type system or design tokens
-- Valid typography tokens: \`--text-*\` (sizes), \`--font-weight-*\` (weights), \`--leading-*\` (line heights), \`--font-body\`, \`--font-code\`, \`--font-heading\` (font families)
+- Valid typography tokens: \`--text-*\` (sizes), \`--font-weight-*\` (weights), \`--leading-*\` (line heights), \`--font-family-body\`, \`--font-family-code\`, \`--font-family-heading\` (font families)
 - Common hallucinated tokens to flag: \`--font-size-*\`, \`--font-family-*\`, \`--xds-font-*\` (these don't exist)`
       : `
 ## Design System Context (shadcn/Tailwind)

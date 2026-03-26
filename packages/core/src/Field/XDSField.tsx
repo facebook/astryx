@@ -51,7 +51,7 @@ const styles = stylex.create({
     width: 1,
   },
   description: {
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-snug'],
     fontWeight: fontWeightVars['--font-weight-normal'],

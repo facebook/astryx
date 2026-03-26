@@ -28,10 +28,10 @@ const styles = stylex.create({
     justifyContent: 'center',
     borderRadius: '50%',
     backgroundColor: colorVars['--color-accent'],
-    color: colorVars['--color-icon-on-dark-media'],
+    color: colorVars['--color-icon-on-dark'],
     flexShrink: 0,
-    width: sizeVars['--size-md'],
-    height: sizeVars['--size-md'],
+    width: sizeVars['--size-element-md'],
+    height: sizeVars['--size-element-md'],
   },
 });
 

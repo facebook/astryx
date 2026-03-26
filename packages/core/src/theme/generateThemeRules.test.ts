@@ -37,30 +37,30 @@ describe('generateThemeRules', () => {
     const scopeRule = rules.find(r => r.includes(':scope'));
     expect(scopeRule).toBeDefined();
     // Raw size tokens are rem values
-    expect(scopeRule).toContain('--text-base: 0.875rem');
-    expect(scopeRule).toContain('--text-2xl: 1.5rem');
+    expect(scopeRule).toContain('--font-size-base: 0.875rem');
+    expect(scopeRule).toContain('--font-size-2xl: 1.5rem');
     // Semantic tokens are var() refs
-    expect(scopeRule).toContain('--heading-1-size: var(--text-2xl)');
-    expect(scopeRule).toContain('--heading-4-size: var(--text-base)');
-    expect(scopeRule).toContain('--text-body-size: var(--text-base)');
-    expect(scopeRule).toContain('--text-supporting-size: var(--text-sm)');
+    expect(scopeRule).toContain('--text-heading-1-size: var(--font-size-2xl)');
+    expect(scopeRule).toContain('--text-heading-4-size: var(--font-size-base)');
+    expect(scopeRule).toContain('--text-body-size: var(--font-size-base)');
+    expect(scopeRule).toContain('--text-supporting-size: var(--font-size-sm)');
   });
 
   it('emits raw size tokens in rem', () => {
     const scopeRule = rules.find(r => r.includes(':scope'))!;
-    // Raw tokens (--text-4xs through --text-4xl) should be in rem
+    // Raw tokens (--font-size-4xs through --font-size-4xl) should be in rem
     const rawSizeTokens = [
-      '--text-4xs',
-      '--text-3xs',
-      '--text-2xs',
-      '--text-xsm',
-      '--text-sm',
-      '--text-base',
-      '--text-lg',
-      '--text-xl',
-      '--text-2xl',
-      '--text-3xl',
-      '--text-4xl',
+      '--font-size-4xs',
+      '--font-size-3xs',
+      '--font-size-2xs',
+      '--font-size-xs',
+      '--font-size-sm',
+      '--font-size-base',
+      '--font-size-lg',
+      '--font-size-xl',
+      '--font-size-2xl',
+      '--font-size-3xl',
+      '--font-size-4xl',
     ];
     for (const token of rawSizeTokens) {
       const match = scopeRule.match(new RegExp(`${token}: ([^;]+)`));
@@ -130,7 +130,7 @@ describe('generateThemeRules', () => {
     );
     expect(h1Rule).toBeDefined();
     // Prose rules use val() helper which resolves to the token value (now a var ref)
-    expect(h1Rule).toContain('var(--text-2xl)');
+    expect(h1Rule).toContain('var(--font-size-2xl)');
     expect(h1Rule).toContain('var(--font-weight-semibold)');
   });
 
@@ -139,7 +139,7 @@ describe('generateThemeRules', () => {
       r => r.trimStart().startsWith('p {') || r.includes('\n  p {'),
     );
     expect(pRule).toBeDefined();
-    expect(pRule).toContain('var(--text-base)');
+    expect(pRule).toContain('var(--font-size-base)');
     expect(pRule).toContain('var(--color-text-primary)');
   });
 
@@ -186,10 +186,12 @@ describe('generateThemeRules with weight overrides', () => {
 
   it('reflects weight override in tokens', () => {
     const scopeRule = rules.find(r => r.includes(':scope'))!;
-    expect(scopeRule).toContain('--heading-3-weight: var(--font-weight-bold)');
+    expect(scopeRule).toContain(
+      '--text-heading-3-weight: var(--font-weight-bold)',
+    );
     // Other levels keep default
     expect(scopeRule).toContain(
-      '--heading-1-weight: var(--font-weight-semibold)',
+      '--text-heading-1-weight: var(--font-weight-semibold)',
     );
   });
 

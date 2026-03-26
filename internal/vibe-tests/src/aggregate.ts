@@ -836,7 +836,7 @@ function detectEscapeHatches(
           type: 'hardcoded_typography',
           severity: 'acceptable',
           detail:
-            'Hardcoded fontFamily instead of using --font-body, --font-heading, or --font-code tokens',
+            'Hardcoded fontFamily instead of using --font-family-body, --font-family-heading, or --font-family-code tokens',
           codeSnippet: match[0],
         });
       }
@@ -850,7 +850,7 @@ function detectEscapeHatches(
         type: 'hallucinated_typography_token',
         severity: 'critical',
         detail:
-          'Hallucinated typography CSS variable. Valid tokens: --text-*, --font-body, --font-code, --font-heading, --font-weight-*, --leading-*',
+          'Hallucinated typography CSS variable. Valid tokens: --text-*, --font-family-body, --font-family-code, --font-family-heading, --font-weight-*, --leading-*',
         codeSnippet: match[0],
       });
     }

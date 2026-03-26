@@ -102,7 +102,7 @@ export const docs = {
       {className: 'xds-dropdown-menu-item'},
     ],
     vars: [
-      {name: '--dropdown-radius', description: 'Border radius of the menu popup', default: 'var(--radius-2)'},
+      {name: '--dropdown-radius', description: 'Border radius of the menu popup', default: 'var(--radius-element)'},
       {name: '--dropdown-padding', description: 'Inner padding of the menu popup', default: 'var(--spacing-1)'},
     ],
   },
@@ -431,7 +431,7 @@ export const docsZh = {
       {className: 'xds-dropdown-menu-item'},
     ],
     vars: [
-      {name: '--dropdown-radius', description: 'Border radius of the menu popup', default: 'var(--radius-2)'},
+      {name: '--dropdown-radius', description: 'Border radius of the menu popup', default: 'var(--radius-element)'},
       {name: '--dropdown-padding', description: 'Inner padding of the menu popup', default: 'var(--spacing-1)'},
     ],
   },

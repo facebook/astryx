@@ -144,7 +144,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-3'],
   },
   withRadius: {
-    borderRadius: radiusVars['--radius-1'],
+    borderRadius: radiusVars['--radius-inner'],
   },
   noRadius: {
     borderRadius: 0,
@@ -171,7 +171,7 @@ const styles = stylex.create({
   focusWithinOutline: {
     outline: {
       default: 'none',
-      ':focus-within': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-within': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',

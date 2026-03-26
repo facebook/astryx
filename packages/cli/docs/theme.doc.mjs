@@ -80,7 +80,7 @@ import {colorVars, colorDefaults} from '@xds/core/theme/tokens.stylex';
 
 const colorOverrides = {
   '--color-accent': 'light-dark(#7B61FF, #9B85FF)',
-  '--color-surface': 'light-dark(#FFFFFF, #1A1A2E)',
+  '--color-background-surface': 'light-dark(#FFFFFF, #1A1A2E)',
   // ... all ~60 color tokens (see npx xds docs tokens)
 } as const;
 
@@ -148,8 +148,8 @@ const myTheme = defineTheme({
           headers: ['Config', 'Generates', 'Parameters'],
           rows: [
             ['typography.scale', '--heading-*-size/weight/leading, --text-*-size/weight/leading', 'base (px), ratio'],
-            ['typography.body/heading/code', '--font-body, --font-heading, --font-code', 'family, fallbacks?, url?, weight?'],
-            ['radius', '--radius-0 through --radius-4, --radius-rounded', 'base (px), multiplier (0–2)'],
+            ['typography.body/heading/code', '--font-family-body, --font-family-heading, --font-family-code', 'family, fallbacks?, url?, weight?'],
+            ['radius', '--radius-none through --radius-container, --radius-full', 'base (px), multiplier (0–2)'],
             ['motion', '--duration-fast-*, --duration-medium-*, --ease-*', 'fast (ms), medium (ms), ratio, easing?'],
           ],
         },
@@ -221,7 +221,7 @@ const myTheme = defineTheme({
           label: 'Applying background color',
           code: `const styles = stylex.create({
   page: {
-    backgroundColor: 'var(--color-wash)',
+    backgroundColor: 'var(--color-background-body)',
     minHeight: '100vh',
   },
 });
@@ -252,7 +252,7 @@ const myTheme = defineTheme({
     padding: '2px',
   },
   content: {
-    backgroundColor: 'var(--color-card)',
+    backgroundColor: 'var(--color-background-card)',
     borderRadius: '18px',
   },
 });

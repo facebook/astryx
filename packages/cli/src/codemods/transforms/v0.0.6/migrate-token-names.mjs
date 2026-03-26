@@ -5,8 +5,8 @@
  *
  * Color — semantic clarity:
  * - '--color-accent-deemphasized' → '--color-accent-muted'
- * - '--color-accent-text' → '--color-text-link'
- * - '--color-deemphasized' → '--color-muted'
+ * - '--color-accent-text' → '--color-text-accent'
+ * - '--color-deemphasized' → '--color-background-muted'
  * - '--color-positive' → '--color-success'
  * - '--color-positive-deemphasized' → '--color-success-muted'
  * - '--color-negative' → '--color-error'
@@ -19,14 +19,14 @@
  * - '--color-hover-overlay' → '--color-overlay-hover'
  * - '--color-pressed-overlay' → '--color-overlay-pressed'
  * - '--color-disabled-overlay' → '--color-overlay-disabled'
- * - '--color-focus-outline' → '--color-ring-focus'
- * - '--color-focus-outline-error' → '--color-ring-focus-error'
- * - '--color-focus-outline-success' → '--color-ring-focus-success'
- * - '--color-focus-outline-warning' → '--color-ring-focus-warning'
+ * - '--color-focus-outline' → '--color-accent'
+ * - '--color-focus-outline-error' → '--color-error'
+ * - '--color-focus-outline-success' → '--color-success'
+ * - '--color-focus-outline-warning' → '--color-warning'
  *
  * Color — border/divider:
  * - '--color-divider' → '--color-border'
- * - '--color-divider-high-contrast' → '--color-border-strong'
+ * - '--color-divider-high-contrast' → '--color-border-emphasized'
  * - '--color-divider-emphasized' → '--color-border-emphasized'
  *
  * Color — effects:
@@ -34,8 +34,8 @@
  * - '--color-shadow-elevation' → '--color-shadow'
  *
  * Color — media:
- * - '--color-text-on-media' → '--color-text-on-dark-media'
- * - '--color-icon-on-media' → '--color-icon-on-dark-media'
+ * - '--color-text-on-media' → '--color-on-dark'
+ * - '--color-icon-on-media' → '--color-icon-on-dark'
  *
  * Color — removals (replaced by existing tokens):
  * - '--color-text-placeholder' → '--color-text-secondary'
@@ -66,37 +66,37 @@ export const meta = {
 // (e.g. --color-educational-deemphasized must match before --color-educational)
 const TOKEN_MAP = {
   '--color-educational-deemphasized': '--color-info-muted',
-  '--color-divider-high-contrast': '--color-border-strong',
-  '--color-focus-outline-success': '--color-ring-focus-success',
-  '--color-focus-outline-warning': '--color-ring-focus-warning',
+  '--color-divider-high-contrast': '--color-border-emphasized',
+  '--color-focus-outline-success': '--color-success',
+  '--color-focus-outline-warning': '--color-warning',
   '--color-negative-deemphasized': '--color-error-muted',
   '--color-positive-deemphasized': '--color-success-muted',
   '--color-warning-deemphasized': '--color-warning-muted',
   '--color-accent-deemphasized': '--color-accent-muted',
-  '--color-focus-outline-error': '--color-ring-focus-error',
+  '--color-focus-outline-error': '--color-error',
   '--color-divider-emphasized': '--color-border-emphasized',
   '--color-disabled-overlay': '--color-overlay-disabled',
   '--color-shadow-elevation': '--color-shadow',
   '--color-text-placeholder': '--color-text-secondary',
   '--color-pressed-overlay': '--color-overlay-pressed',
-  '--color-focus-outline': '--color-ring-focus',
+  '--color-focus-outline': '--color-accent',
   '--color-hover-overlay': '--color-overlay-hover',
-  '--color-icon-on-media': '--color-icon-on-dark-media',
+  '--color-icon-on-media': '--color-icon-on-dark',
   '--color-icon-tertiary': '--color-icon-secondary',
-  '--color-text-on-media': '--color-text-on-dark-media',
-  '--color-deemphasized': '--color-muted',
-  '--color-accent-text': '--color-text-link',
+  '--color-text-on-media': '--color-on-dark',
+  '--color-deemphasized': '--color-background-muted',
+  '--color-accent-text': '--color-text-accent',
   '--color-educational': '--color-info',
   '--color-negative': '--color-error',
   '--color-positive': '--color-success',
   '--color-divider': '--color-border',
   '--color-glimmer': '--color-skeleton',
   // Inset shadow: insetshadow → inset-shadow (Tailwind alignment)
-  '--insetshadow-border-positive': '--inset-shadow-border-positive',
-  '--insetshadow-border-negative': '--inset-shadow-border-negative',
-  '--insetshadow-border-warning': '--inset-shadow-border-warning',
-  '--insetshadow-border-accent': '--inset-shadow-border-accent',
-  '--insetshadow-border-hover': '--inset-shadow-border-hover',
+  '--insetshadow-border-positive': '--shadow-inset-success',
+  '--insetshadow-border-negative': '--shadow-inset-error',
+  '--insetshadow-border-warning': '--shadow-inset-warning',
+  '--insetshadow-border-accent': '--shadow-inset-selected',
+  '--insetshadow-border-hover': '--shadow-inset-hover',
   // Easing: easing → ease (Tailwind alignment)
   '--easing-standard': '--ease-standard',
 };

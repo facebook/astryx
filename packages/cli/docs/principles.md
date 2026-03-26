@@ -66,8 +66,8 @@ import * as stylex from '@stylexjs/stylex';
 const styles = stylex.create({
   container: {
     padding: 'var(--spacing-4)',
-    backgroundColor: 'var(--color-surface)',
-    borderRadius: 'var(--radius-2)',
+    backgroundColor: 'var(--color-background-surface)',
+    borderRadius: 'var(--radius-element)',
   },
 });
 

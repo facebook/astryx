@@ -30,7 +30,7 @@ export const docs = {
       {className: 'xds-hovercard'},
     ],
     vars: [
-      {name: '--hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-3)'},
+      {name: '--hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-container)'},
     ],
   },
   examples: [
@@ -229,7 +229,7 @@ export const docsZh = {
       {className: 'xds-hovercard'},
     ],
     vars: [
-      {name: '--hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-3)'},
+      {name: '--hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-container)'},
     ],
   },
   examples: [

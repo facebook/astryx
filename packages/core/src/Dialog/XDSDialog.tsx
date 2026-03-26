@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/Dialog.stories.tsx (storybook stories)
  */
 
-
 import {useEffect, useRef, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
@@ -81,10 +80,10 @@ const styles = stylex.create({
     margin: 'auto',
     padding: 0,
     border: 'none',
-    backgroundColor: colorVars['--color-surface'],
-    '--dialog-radius': radiusVars['--radius-3'],
+    backgroundColor: colorVars['--color-background-surface'],
+    '--dialog-radius': radiusVars['--radius-container'],
     borderRadius: 'var(--dialog-radius)',
-    boxShadow: shadowVars['--shadow-dialog'],
+    boxShadow: shadowVars['--shadow-high'],
     display: {
       default: 'none',
       ':where([open])': 'flex',
@@ -106,7 +105,7 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',

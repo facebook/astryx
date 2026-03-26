@@ -17,7 +17,7 @@ describe('defineTheme', () => {
     // Override should be present
     expect(theme.tokens['--color-accent']).toBe('#FF0000');
     // Defaults should NOT be in tokens
-    expect(theme.tokens['--color-surface']).toBeUndefined();
+    expect(theme.tokens['--color-background-surface']).toBeUndefined();
   });
 
   it('converts [light, dark] tuples to light-dark()', () => {
@@ -35,10 +35,10 @@ describe('defineTheme', () => {
     const theme = defineTheme({
       name: 'string-test',
       tokens: {
-        '--radius-3': '16px',
+        '--radius-container': '16px',
       },
     });
-    expect(theme.tokens['--radius-3']).toBe('16px');
+    expect(theme.tokens['--radius-container']).toBe('16px');
   });
 
   it('mixes tuples and strings', () => {
@@ -46,13 +46,13 @@ describe('defineTheme', () => {
       name: 'mixed',
       tokens: {
         '--color-accent': ['#0077B6', '#48CAE4'],
-        '--radius-3': '16px',
-        '--font-heading': '"Georgia", serif',
+        '--radius-container': '16px',
+        '--font-family-heading': '"Georgia", serif',
       },
     });
     expect(theme.tokens['--color-accent']).toBe('light-dark(#0077B6, #48CAE4)');
-    expect(theme.tokens['--radius-3']).toBe('16px');
-    expect(theme.tokens['--font-heading']).toBe('"Georgia", serif');
+    expect(theme.tokens['--radius-container']).toBe('16px');
+    expect(theme.tokens['--font-family-heading']).toBe('"Georgia", serif');
   });
 
   it('accepts unknown token names without warning (types provide guardrails)', () => {
@@ -90,15 +90,15 @@ describe('generateThemeCSS', () => {
       name: 'ocean',
       tokens: {
         '--color-accent': ['#0077B6', '#48CAE4'],
-        '--radius-3': '16px',
+        '--radius-container': '16px',
       },
     });
     const css = generateThemeCSS(theme);
     expect(css).toContain('@scope');
     expect(css).toContain('--color-accent: light-dark(#0077B6, #48CAE4)');
-    expect(css).toContain('--radius-3: 16px');
+    expect(css).toContain('--radius-container: 16px');
     // :scope should NOT contain non-overridden tokens
-    expect(css).not.toContain('--color-surface:');
+    expect(css).not.toContain('--color-background-surface:');
   });
 
   it('includes prose rules even with no overrides', () => {
@@ -106,7 +106,7 @@ describe('generateThemeCSS', () => {
     const css = generateThemeCSS(theme);
     expect(css).toContain('@scope');
     expect(css).toContain(':is(h1, h2, h3, h4, h5, h6)');
-    expect(css).toContain('font-family: var(--font-heading)');
+    expect(css).toContain('font-family: var(--font-family-heading)');
   });
 });
 
@@ -221,14 +221,14 @@ describe('generateThemeCSS with components', () => {
   it('combines tokens and components', () => {
     const theme = defineTheme({
       name: 'combo',
-      tokens: {'--radius-3': '20px'},
+      tokens: {'--radius-container': '20px'},
       components: {
         card: {base: {borderWidth: '1px'}},
       },
     });
     const css = generateThemeCSS(theme);
     expect(css).toContain('@scope');
-    expect(css).toContain('--radius-3: 20px');
+    expect(css).toContain('--radius-container: 20px');
     expect(css).toContain('.xds-card {');
     expect(css).toContain('border-width: 1px');
   });
@@ -241,9 +241,9 @@ describe('typography.scale', () => {
       typography: {scale: {base: 12, ratio: 1.125}},
     });
     // Semantic tokens are now var() refs; raw token has the computed value
-    expect(theme.tokens['--heading-4-size']).toBe('var(--text-base)');
-    expect(theme.tokens['--text-base']).toBe('0.75rem');
-    expect(theme.tokens['--text-body-size']).toBe('var(--text-base)');
+    expect(theme.tokens['--text-heading-4-size']).toBe('var(--font-size-base)');
+    expect(theme.tokens['--font-size-base']).toBe('0.75rem');
+    expect(theme.tokens['--text-body-size']).toBe('var(--font-size-base)');
   });
 
   it('generates 44 tokens (11 raw size + 33 semantic)', () => {
@@ -251,7 +251,7 @@ describe('typography.scale', () => {
       name: 'custom',
       typography: {scale: {base: 14, ratio: 1.2}},
     });
-    // 11 raw size (--text-4xs…--text-4xl) + 33 semantic = 44
+    // 11 raw size (--font-size-4xs…--font-size-4xl) + 33 semantic = 44
     // Filtering for --heading- or --text- captures raw + semantic = 11 + 15 + 18 = 44
     const typeScaleKeys = Object.keys(theme.tokens).filter(
       k => k.startsWith('--heading-') || k.startsWith('--text-'),
@@ -264,19 +264,19 @@ describe('typography.scale', () => {
       name: 'override-test',
       typography: {scale: {base: 14, ratio: 1.2}},
       tokens: {
-        '--heading-1-size': '40px',
+        '--text-heading-1-size': '40px',
       },
     });
     // Explicit token should win over typography.scale
-    expect(theme.tokens['--heading-1-size']).toBe('40px');
+    expect(theme.tokens['--text-heading-1-size']).toBe('40px');
     // Non-overridden scale token should still be a var() ref
-    expect(theme.tokens['--heading-4-size']).toBe('var(--text-base)');
+    expect(theme.tokens['--text-heading-4-size']).toBe('var(--font-size-base)');
   });
 
   it('works without typography.scale (backwards compatible)', () => {
     const theme = defineTheme({name: 'no-scale'});
     // No type scale tokens should be present
-    expect(theme.tokens['--heading-1-size']).toBeUndefined();
+    expect(theme.tokens['--text-heading-1-size']).toBeUndefined();
   });
 
   it('combines typography.scale with other token overrides', () => {
@@ -288,8 +288,8 @@ describe('typography.scale', () => {
       },
     });
     expect(theme.tokens['--color-accent']).toBe('#FF0000');
-    expect(theme.tokens['--heading-4-size']).toBe('var(--text-base)');
-    expect(theme.tokens['--text-base']).toBe('1rem');
+    expect(theme.tokens['--text-heading-4-size']).toBe('var(--font-size-base)');
+    expect(theme.tokens['--font-size-base']).toBe('1rem');
   });
 });
 
@@ -301,7 +301,7 @@ describe('typography.scale component auto-generation', () => {
     });
     expect(theme.components?.heading?.['level:1']).toBeDefined();
     expect(theme.components?.heading?.['level:1']?.fontSize).toBe(
-      'var(--heading-1-size)',
+      'var(--text-heading-1-size)',
     );
   });
 
@@ -340,7 +340,7 @@ describe('typography.scale component auto-generation', () => {
     });
     // Auto-generated heading props still present
     expect(theme.components?.heading?.['level:1']?.fontSize).toBe(
-      'var(--heading-1-size)',
+      'var(--text-heading-1-size)',
     );
     // Explicit override merged on top
     expect(theme.components?.heading?.['level:1']?.letterSpacing).toBe(
@@ -371,7 +371,7 @@ describe('typography.scale component auto-generation', () => {
     );
     // Auto-generated fontSize still present
     expect(theme.components?.heading?.['level:1']?.fontSize).toBe(
-      'var(--heading-1-size)',
+      'var(--text-heading-1-size)',
     );
   });
 });
@@ -382,22 +382,22 @@ describe('radius', () => {
       name: 'rounded',
       radius: {base: 4, multiplier: 1.5},
     });
-    expect(theme.tokens['--radius-1']).toBe('6px');
-    expect(theme.tokens['--radius-2']).toBe('12px');
-    expect(theme.tokens['--radius-3']).toBe('18px');
-    expect(theme.tokens['--radius-4']).toBe('24px');
-    expect(theme.tokens['--radius-0']).toBe('0px');
-    expect(theme.tokens['--radius-rounded']).toBe('9999px');
+    expect(theme.tokens['--radius-inner']).toBe('6px');
+    expect(theme.tokens['--radius-element']).toBe('12px');
+    expect(theme.tokens['--radius-container']).toBe('18px');
+    expect(theme.tokens['--radius-container']).toBe('24px');
+    expect(theme.tokens['--radius-none']).toBe('0px');
+    expect(theme.tokens['--radius-full']).toBe('9999px');
   });
 
   it('explicit tokens override radius', () => {
     const theme = defineTheme({
       name: 'custom',
       radius: {base: 4, multiplier: 1},
-      tokens: {'--radius-3': '20px'},
+      tokens: {'--radius-container': '20px'},
     });
-    expect(theme.tokens['--radius-3']).toBe('20px');
-    expect(theme.tokens['--radius-2']).toBe('8px'); // from radius
+    expect(theme.tokens['--radius-container']).toBe('20px');
+    expect(theme.tokens['--radius-element']).toBe('8px'); // from radius
   });
 
   it('radius with multiplier 0 produces sharp theme', () => {
@@ -405,17 +405,17 @@ describe('radius', () => {
       name: 'sharp',
       radius: {base: 4, multiplier: 0},
     });
-    expect(theme.tokens['--radius-1']).toBe('0px');
-    expect(theme.tokens['--radius-2']).toBe('0px');
-    expect(theme.tokens['--radius-3']).toBe('0px');
-    expect(theme.tokens['--radius-4']).toBe('0px');
-    expect(theme.tokens['--radius-0']).toBe('0px');
-    expect(theme.tokens['--radius-rounded']).toBe('9999px');
+    expect(theme.tokens['--radius-inner']).toBe('0px');
+    expect(theme.tokens['--radius-element']).toBe('0px');
+    expect(theme.tokens['--radius-container']).toBe('0px');
+    expect(theme.tokens['--radius-container']).toBe('0px');
+    expect(theme.tokens['--radius-none']).toBe('0px');
+    expect(theme.tokens['--radius-full']).toBe('9999px');
   });
 
   it('works without radius (backwards compatible)', () => {
     const theme = defineTheme({name: 'no-scale'});
-    expect(theme.tokens['--radius-0']).toBeUndefined();
+    expect(theme.tokens['--radius-none']).toBeUndefined();
   });
 
   it('combines radius with typography.scale and other tokens', () => {
@@ -428,8 +428,8 @@ describe('radius', () => {
       },
     });
     expect(theme.tokens['--color-accent']).toBe('#FF0000');
-    expect(theme.tokens['--heading-4-size']).toBe('var(--text-base)');
-    expect(theme.tokens['--radius-2']).toBe('8px');
+    expect(theme.tokens['--text-heading-4-size']).toBe('var(--font-size-base)');
+    expect(theme.tokens['--radius-element']).toBe('8px');
   });
 });
 
@@ -440,13 +440,13 @@ describe('custom status via components', () => {
       components: {
         banner: {
           'status:neutral': {
-            backgroundColor: 'var(--color-muted)',
+            backgroundColor: 'var(--color-background-muted)',
           },
         },
       },
     });
     expect(theme.components?.banner?.['status:neutral']).toEqual({
-      backgroundColor: 'var(--color-muted)',
+      backgroundColor: 'var(--color-background-muted)',
     });
   });
 
@@ -456,7 +456,7 @@ describe('custom status via components', () => {
       components: {
         banner: {
           'status:neutral': {
-            backgroundColor: 'var(--color-muted)',
+            backgroundColor: 'var(--color-background-muted)',
           },
         },
       },
@@ -464,7 +464,7 @@ describe('custom status via components', () => {
     const css = generateThemeCSS(theme);
     // parseStyleKey('status:neutral') → '.neutral', so CSS should have .xds-banner.neutral
     expect(css).toContain('.xds-banner.neutral');
-    expect(css).toContain('background-color: var(--color-muted)');
+    expect(css).toContain('background-color: var(--color-background-muted)');
   });
 
   it('custom button variant via components', () => {
@@ -506,7 +506,7 @@ describe('custom status via components', () => {
       components: {
         banner: {
           'status:neutral': {
-            backgroundColor: 'var(--color-muted)',
+            backgroundColor: 'var(--color-background-muted)',
             color: 'gray',
           },
         },
@@ -515,7 +515,7 @@ describe('custom status via components', () => {
     });
     expect(theme.tokens['--color-accent']).toBe('#FF0000');
     expect(theme.components?.banner?.['status:neutral']).toEqual({
-      backgroundColor: 'var(--color-muted)',
+      backgroundColor: 'var(--color-background-muted)',
       color: 'gray',
     });
     expect(theme.components?.button?.base?.borderRadius).toBe('999px');
@@ -596,13 +596,13 @@ describe('typography fonts derivation', () => {
         code: {family: 'Geist Mono', fallbacks: '"SF Mono", monospace'},
       },
     });
-    expect(theme.tokens['--font-body']).toBe(
+    expect(theme.tokens['--font-family-body']).toBe(
       'Geist, -apple-system, sans-serif',
     );
-    expect(theme.tokens['--font-heading']).toBe(
+    expect(theme.tokens['--font-family-heading']).toBe(
       'Geist, -apple-system, sans-serif',
     ); // inherited from body
-    expect(theme.tokens['--font-code']).toBe(
+    expect(theme.tokens['--font-family-code']).toBe(
       '"Geist Mono", "SF Mono", monospace',
     );
   });
@@ -615,8 +615,10 @@ describe('typography fonts derivation', () => {
         heading: {family: 'Playfair Display', fallbacks: 'serif'},
       },
     });
-    expect(theme.tokens['--font-body']).toBe('Inter, sans-serif');
-    expect(theme.tokens['--font-heading']).toBe('"Playfair Display", serif');
+    expect(theme.tokens['--font-family-body']).toBe('Inter, sans-serif');
+    expect(theme.tokens['--font-family-heading']).toBe(
+      '"Playfair Display", serif',
+    );
   });
 
   it('explicit tokens override typography-derived font tokens', () => {
@@ -625,12 +627,12 @@ describe('typography fonts derivation', () => {
       typography: {
         body: {family: 'Geist', fallbacks: 'sans-serif'},
       },
-      tokens: {'--font-heading': '"Custom", serif'},
+      tokens: {'--font-family-heading': '"Custom", serif'},
     });
     // Explicit token wins over typography-derived
-    expect(theme.tokens['--font-heading']).toBe('"Custom", serif');
+    expect(theme.tokens['--font-family-heading']).toBe('"Custom", serif');
     // Body still comes from typography
-    expect(theme.tokens['--font-body']).toBe('Geist, sans-serif');
+    expect(theme.tokens['--font-family-body']).toBe('Geist, sans-serif');
   });
 
   it('combines typography with scale and tokens', () => {
@@ -647,9 +649,9 @@ describe('typography fonts derivation', () => {
     });
     expect(theme.name).toBe('combo');
     expect(theme.fonts).toHaveLength(1);
-    expect(theme.tokens['--font-body']).toBe('Figtree, sans-serif');
+    expect(theme.tokens['--font-family-body']).toBe('Figtree, sans-serif');
     // scale tokens should still be present
-    expect(theme.tokens['--heading-4-size']).toBeDefined();
+    expect(theme.tokens['--text-heading-4-size']).toBeDefined();
   });
 });
 
@@ -663,8 +665,12 @@ describe('typography weight derivation', () => {
       },
     });
     // All heading levels should get bold weight
-    expect(theme.tokens['--heading-1-weight']).toBe('var(--font-weight-bold)');
-    expect(theme.tokens['--heading-4-weight']).toBe('var(--font-weight-bold)');
+    expect(theme.tokens['--text-heading-1-weight']).toBe(
+      'var(--font-weight-bold)',
+    );
+    expect(theme.tokens['--text-heading-4-weight']).toBe(
+      'var(--font-weight-bold)',
+    );
   });
 
   it('per-level heading weights override default heading weight', () => {
@@ -678,11 +684,15 @@ describe('typography weight derivation', () => {
         },
       },
     });
-    expect(theme.tokens['--heading-1-weight']).toBe(
+    expect(theme.tokens['--text-heading-1-weight']).toBe(
       'var(--font-weight-semibold)',
     );
-    expect(theme.tokens['--heading-3-weight']).toBe('var(--font-weight-bold)');
-    expect(theme.tokens['--heading-4-weight']).toBe('var(--font-weight-bold)');
+    expect(theme.tokens['--text-heading-3-weight']).toBe(
+      'var(--font-weight-bold)',
+    );
+    expect(theme.tokens['--text-heading-4-weight']).toBe(
+      'var(--font-weight-bold)',
+    );
   });
 
   it('body weight flows to text body token', () => {
@@ -719,7 +729,7 @@ describe('typography weight derivation', () => {
         heading: {weight: 'normal'},
       },
     });
-    expect(theme.tokens['--heading-1-weight']).toBe(
+    expect(theme.tokens['--text-heading-1-weight']).toBe(
       'var(--font-weight-normal)',
     );
   });
@@ -732,7 +742,7 @@ describe('typography weight derivation', () => {
         heading: {weight: '900'},
       },
     });
-    expect(theme.tokens['--heading-1-weight']).toBe('900');
+    expect(theme.tokens['--text-heading-1-weight']).toBe('900');
   });
 });
 
@@ -773,7 +783,7 @@ describe('pseudo-class overrides in components', () => {
               backgroundColor: '#D6EBFF',
             },
             ':focus-visible': {
-              outline: '2px solid var(--color-ring-focus)',
+              outline: '2px solid var(--color-accent)',
             },
           },
         },
@@ -785,7 +795,7 @@ describe('pseudo-class overrides in components', () => {
     expect(css).toContain('.xds-button.primary-muted:hover {');
     expect(css).toContain('background-color: #D6EBFF');
     expect(css).toContain('.xds-button.primary-muted:focus-visible {');
-    expect(css).toContain('outline: 2px solid var(--color-ring-focus)');
+    expect(css).toContain('outline: 2px solid var(--color-accent)');
   });
 
   it('handles pseudo-only overrides (no base properties)', () => {

@@ -50,8 +50,8 @@ const styles = stylex.create({
     outline: 'none',
     backgroundColor: 'transparent',
     color: colorVars['--color-text-primary'],
-    fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-base'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: textSizeVars['--font-size-base'],
     lineHeight: lineHeightVars['--leading-normal'],
     padding: 0,
     '::placeholder': {

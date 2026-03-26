@@ -34,8 +34,8 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
-    fontFamily: typographyVars['--font-body'],
-    fontSize: textSizeVars['--text-xsm'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: textSizeVars['--font-size-xs'],
     color: colorVars['--color-text-secondary'],
   },
 });

@@ -76,7 +76,7 @@ const bioDescId = useId();
       {className: 'xds-field-status', visualProps: ['type', 'variant']},
     ],
     vars: [
-      {name: '--input-radius', description: 'Border radius of input fields', default: 'var(--radius-2)'},
+      {name: '--input-radius', description: 'Border radius of input fields', default: 'var(--radius-element)'},
     ],
   },
   notes: [
@@ -389,7 +389,7 @@ const bioDescId = useId();
       {className: 'xds-field-status', visualProps: ['type', 'variant']},
     ],
     vars: [
-      {name: '--input-radius', description: 'Border radius of input fields', default: 'var(--radius-2)'},
+      {name: '--input-radius', description: 'Border radius of input fields', default: 'var(--radius-element)'},
     ],
   },
   notes: [

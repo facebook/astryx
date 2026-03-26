@@ -51,7 +51,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
-    borderRadius: radiusVars['--radius-2'],
+    borderRadius: radiusVars['--radius-element'],
     fontSize: typeScaleVars['--text-label-size'],
     lineHeight: lineHeightVars['--leading-base'],
     fontWeight: fontWeightVars['--font-weight-medium'],
@@ -69,7 +69,7 @@ const styles = stylex.create({
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',
@@ -98,9 +98,9 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
     minWidth: 280,
     padding: spacingVars['--spacing-1'],
-    backgroundColor: colorVars['--color-popover'],
-    borderRadius: radiusVars['--radius-3'],
-    boxShadow: shadowVars['--shadow-menu'],
+    backgroundColor: colorVars['--color-background-popover'],
+    borderRadius: radiusVars['--radius-container'],
+    boxShadow: shadowVars['--shadow-low'],
   },
   menuOffset: {
     marginBlockStart: spacingVars['--spacing-1'],
@@ -111,7 +111,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-3'],
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-3'],
-    borderRadius: radiusVars['--radius-2'],
+    borderRadius: radiusVars['--radius-element'],
     textDecoration: 'none',
     cursor: 'pointer',
     transitionProperty: 'background-color',
@@ -126,7 +126,7 @@ const styles = stylex.create({
     border: 'none',
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',
@@ -139,8 +139,8 @@ const styles = stylex.create({
     justifyContent: 'center',
     width: 40,
     height: 40,
-    borderRadius: radiusVars['--radius-2'],
-    backgroundColor: colorVars['--color-secondary'],
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-neutral'],
     flexShrink: 0,
   },
   menuItemContent: {

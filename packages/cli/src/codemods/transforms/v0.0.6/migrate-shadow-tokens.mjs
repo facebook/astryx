@@ -2,22 +2,22 @@
  * @file Codemod: Migrate elevation tokens to shadow semantic naming
  *
  * Outer shadows (semantic categories):
- *   --elevation-base   → --shadow-base
- *   --elevation-menu   → --shadow-menu
- *   --elevation-hover  → --shadow-hover
- *   --elevation-dialog → --shadow-dialog
+ *   --elevation-base   → --shadow-low
+ *   --elevation-menu   → --shadow-low
+ *   --elevation-hover  → --shadow-med
+ *   --elevation-dialog → --shadow-high
  *
  * Also handles brief numeric naming (shadow-1/2/3/4):
- *   --shadow-1 → --shadow-base
- *   --shadow-2 → --shadow-menu
- *   --shadow-3 → --shadow-hover
- *   --shadow-4 → --shadow-dialog
+ *   --shadow-1 → --shadow-low
+ *   --shadow-2 → --shadow-low
+ *   --shadow-3 → --shadow-med
+ *   --shadow-4 → --shadow-high
  *
  * Inset shadows (semantic states):
- *   --elevation-input-hover         → --inset-shadow-border-hover
- *   --elevation-input-hover-success → --inset-shadow-border-positive
- *   --elevation-input-hover-warning → --inset-shadow-border-warning
- *   --elevation-input-hover-error   → --inset-shadow-border-negative
+ *   --elevation-input-hover         → --shadow-inset-hover
+ *   --elevation-input-hover-success → --shadow-inset-success
+ *   --elevation-input-hover-warning → --shadow-inset-warning
+ *   --elevation-input-hover-error   → --shadow-inset-error
  *
  * JS identifier renames:
  *   elevationDefaults → shadowDefaults
@@ -29,22 +29,22 @@
 export const meta = {
   title: 'Migrate elevation tokens to shadow semantic naming',
   description:
-    'Renames --elevation-* to --shadow-base/menu/hover/dialog and --inset-shadow-border-*. Also migrates --shadow-1/2/3/4 from the brief numeric naming period.',
+    'Renames --elevation-* to --shadow-low/menu/hover/dialog and --inset-shadow-border-*. Also migrates --shadow-1/2/3/4 from the brief numeric naming period.',
 };
 
 const TOKEN_MAP = {
-  '--elevation-input-hover-success': '--inset-shadow-border-positive',
-  '--elevation-input-hover-warning': '--inset-shadow-border-warning',
-  '--elevation-input-hover-error': '--inset-shadow-border-negative',
-  '--elevation-input-hover': '--inset-shadow-border-hover',
-  '--elevation-base': '--shadow-base',
-  '--elevation-menu': '--shadow-menu',
-  '--elevation-hover': '--shadow-hover',
-  '--elevation-dialog': '--shadow-dialog',
-  '--shadow-1': '--shadow-base',
-  '--shadow-2': '--shadow-menu',
-  '--shadow-3': '--shadow-hover',
-  '--shadow-4': '--shadow-dialog',
+  '--elevation-input-hover-success': '--shadow-inset-success',
+  '--elevation-input-hover-warning': '--shadow-inset-warning',
+  '--elevation-input-hover-error': '--shadow-inset-error',
+  '--elevation-input-hover': '--shadow-inset-hover',
+  '--elevation-base': '--shadow-low',
+  '--elevation-menu': '--shadow-low',
+  '--elevation-hover': '--shadow-med',
+  '--elevation-dialog': '--shadow-high',
+  '--shadow-1': '--shadow-low',
+  '--shadow-2': '--shadow-low',
+  '--shadow-3': '--shadow-med',
+  '--shadow-4': '--shadow-high',
 };
 
 const IDENTIFIER_MAP = {

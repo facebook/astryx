@@ -204,16 +204,16 @@ export const CustomCellRenderer: Story = {
           <span
             style={{
               padding: `${spacingDefaults['--spacing-0-5']} ${spacingDefaults['--spacing-2']}`,
-              borderRadius: radiusDefaults['--radius-1'],
-              fontSize: textSizeDefaults['--text-xsm'],
+              borderRadius: radiusDefaults['--radius-inner'],
+              fontSize: textSizeDefaults['--font-size-xs'],
               backgroundColor:
                 item.role === 'Engineer'
-                  ? colorDefaults['--color-blue-background']
-                  : colorDefaults['--color-purple-background'],
+                  ? colorDefaults['--color-background-blue']
+                  : colorDefaults['--color-background-purple'],
               color:
                 item.role === 'Engineer'
-                  ? colorDefaults['--color-blue-text']
-                  : colorDefaults['--color-purple-text'],
+                  ? colorDefaults['--color-text-blue']
+                  : colorDefaults['--color-text-purple'],
             }}>
             {item.role}
           </span>

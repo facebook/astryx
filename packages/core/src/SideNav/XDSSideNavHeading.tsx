@@ -59,7 +59,7 @@ const styles = stylex.create({
   },
   interactive: {
     cursor: 'pointer',
-    borderRadius: radiusVars['--radius-2'],
+    borderRadius: radiusVars['--radius-element'],
     borderWidth: 0,
     borderStyle: 'none',
     backgroundColor: 'transparent',
@@ -129,9 +129,9 @@ const styles = stylex.create({
   },
   popoverContent: {
     padding: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-2'],
-    backgroundColor: colorVars['--color-surface'],
-    boxShadow: shadowVars['--shadow-menu'],
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-background-surface'],
+    boxShadow: shadowVars['--shadow-low'],
     overflow: 'hidden',
   },
   popover: {

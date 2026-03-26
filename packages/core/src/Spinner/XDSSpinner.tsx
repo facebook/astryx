@@ -148,9 +148,8 @@ export function XDSSpinner({
     const computedStyle = getComputedStyle(canvas);
     const activeColor =
       shade === 'onMedia'
-        ? computedStyle.getPropertyValue(
-            colorVars['--color-icon-on-dark-media'],
-          ) || '#FFFFFF'
+        ? computedStyle.getPropertyValue(colorVars['--color-icon-on-dark']) ||
+          '#FFFFFF'
         : computedStyle.getPropertyValue(colorVars['--color-accent']) ||
           '#0064E0';
     const backgroundColor =

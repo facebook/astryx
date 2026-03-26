@@ -1,6 +1,6 @@
 {
   "name": "radius-tokens",
-  "description": "Focused test set for evaluating radius token naming: semantic (--radius-container) vs numeric scale (--radius-1 through --radius-4). Tests whether LLMs correctly select and apply radius tokens.",
+  "description": "Focused test set for evaluating radius token naming: semantic (--radius-container) vs numeric scale (--radius-inner through --radius-container). Tests whether LLMs correctly select and apply radius tokens.",
   "prompts": [
     {
       "id": "rad-1",

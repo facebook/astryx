@@ -16,7 +16,6 @@
  * - /apps/storybook/stories/MoreMenu.stories.tsx
  */
 
-
 import {
   useCallback,
   useId,
@@ -59,9 +58,9 @@ const styles = stylex.create({
     maxHeight: '300px',
     overflowY: 'auto',
     padding: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-2'],
-    backgroundColor: colorVars['--color-surface'],
-    boxShadow: shadowVars['--shadow-menu'],
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-background-surface'],
+    boxShadow: shadowVars['--shadow-low'],
     opacity: 1,
     transitionProperty: 'opacity',
     transitionDuration: durationVars['--duration-fast'],
@@ -87,8 +86,8 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     width: '100%',
     padding: spacingVars['--spacing-2'],
-    borderRadius: radiusVars['--radius-1'],
-    fontFamily: typographyVars['--font-body'],
+    borderRadius: radiusVars['--radius-inner'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-label-size'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',

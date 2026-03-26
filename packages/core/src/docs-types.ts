@@ -124,7 +124,7 @@ export interface CSSPropertyDoc {
  *
  * @example
  * ```
- * {name: '--card-radius', description: 'Border radius', default: 'var(--radius-3)'}
+ * {name: '--card-radius', description: 'Border radius', default: 'var(--radius-container)'}
  * {name: '--card-concentric-radius', description: 'Inner radius', derived: true, formula: 'max(0px, calc(var(--card-radius) - var(--card-padding)))'}
  * ```
  */
@@ -133,7 +133,7 @@ export interface ComponentVar {
   name: string;
   /** What this var controls */
   description: string;
-  /** Default value as a CSS expression, e.g. 'var(--radius-3)' */
+  /** Default value as a CSS expression, e.g. 'var(--radius-container)' */
   default: string;
   /** Whether this var is derived from other vars (not directly settable) */
   derived?: boolean;

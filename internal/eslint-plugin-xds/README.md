@@ -47,7 +47,7 @@ const styles = stylex.create({
 ```tsx
 const styles = stylex.create({
   text: {
-    fontSize: textSizeVars['--text-base'], // ✅ Token
+    fontSize: textSizeVars['--font-size-base'], // ✅ Token
     fontWeight: fontWeightVars['--font-weight-semibold'], // ✅ Token
     color: colorVars['--color-error'], // ✅ Token
   },

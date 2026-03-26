@@ -69,7 +69,7 @@ const styles = stylex.create({
     flexDirection: 'column',
     gap: 'var(--spacing-4)',
     padding: 'var(--spacing-6)',
-    backgroundColor: 'var(--color-surface)',
+    backgroundColor: 'var(--color-background-surface)',
   },
 });
 ```

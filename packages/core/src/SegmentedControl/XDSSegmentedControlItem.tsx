@@ -12,7 +12,6 @@
  * - /packages/core/src/SegmentedControl/XDSSegmentedControl.test.tsx
  */
 
-
 import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -73,7 +72,7 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     fontFamily: 'inherit',
-    fontSize: textSizeVars['--text-base'],
+    fontSize: textSizeVars['--font-size-base'],
     lineHeight: lineHeightVars['--leading-base'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
@@ -83,7 +82,7 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',
@@ -101,8 +100,8 @@ const styles = stylex.create({
   selected: {
     color: colorVars['--color-text-primary'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    backgroundColor: colorVars['--color-surface'],
-    boxShadow: shadowVars['--shadow-base'],
+    backgroundColor: colorVars['--color-background-surface'],
+    boxShadow: shadowVars['--shadow-low'],
   },
   disabled: {
     cursor: 'default',
@@ -121,18 +120,18 @@ const CONCENTRIC_RADIUS =
 
 const sizeStyles = stylex.create({
   sm: {
-    height: `calc(${sizeVars['--size-sm']} - 4px)`,
+    height: `calc(${sizeVars['--size-element-sm']} - 4px)`,
     borderRadius: CONCENTRIC_RADIUS,
     paddingInline: spacingVars['--spacing-2'],
-    fontSize: textSizeVars['--text-sm'],
+    fontSize: textSizeVars['--font-size-sm'],
   },
   md: {
-    height: `calc(${sizeVars['--size-md']} - 4px)`,
+    height: `calc(${sizeVars['--size-element-md']} - 4px)`,
     borderRadius: CONCENTRIC_RADIUS,
     paddingInline: spacingVars['--spacing-3'],
   },
   lg: {
-    height: `calc(${sizeVars['--size-lg']} - 4px)`,
+    height: `calc(${sizeVars['--size-element-lg']} - 4px)`,
     borderRadius: CONCENTRIC_RADIUS,
     paddingInline: spacingVars['--spacing-3'],
   },

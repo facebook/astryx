@@ -15,7 +15,6 @@
  * - /apps/storybook/stories/AppShell.stories.tsx
  */
 
-
 import {
   isValidElement,
   useCallback,
@@ -259,16 +258,16 @@ const styles = stylex.create({
     position: 'relative',
   },
   variantWash: {
-    backgroundColor: colorVars['--color-wash'],
+    backgroundColor: colorVars['--color-background-body'],
   },
   variantSurface: {
-    backgroundColor: colorVars['--color-surface'],
+    backgroundColor: colorVars['--color-background-surface'],
   },
   variantSection: {
-    backgroundColor: colorVars['--color-surface'],
+    backgroundColor: colorVars['--color-background-surface'],
   },
   variantElevated: {
-    backgroundColor: colorVars['--color-wash'],
+    backgroundColor: colorVars['--color-background-body'],
   },
   rootFill: {
     height: '100dvh',
@@ -324,8 +323,8 @@ const styles = stylex.create({
       default: 0,
       ':focus': spacingVars['--spacing-2'],
     },
-    backgroundColor: colorVars['--color-surface'],
-    color: colorVars['--color-text-link'],
+    backgroundColor: colorVars['--color-background-surface'],
+    color: colorVars['--color-text-accent'],
     zIndex: 9999,
     textDecoration: 'none',
     fontWeight: fontWeightVars['--font-weight-semibold'],
@@ -335,8 +334,8 @@ const styles = stylex.create({
   elevatedBackdrop: {
     position: 'absolute',
     inset: 0,
-    backgroundColor: colorVars['--color-surface'],
-    borderStartStartRadius: radiusVars['--radius-4'],
+    backgroundColor: colorVars['--color-background-surface'],
+    borderStartStartRadius: radiusVars['--radius-container'],
     pointerEvents: 'none',
   },
   elevatedContentWrapper: {
@@ -347,20 +346,20 @@ const styles = stylex.create({
     height: '100%',
   },
   contentBgSurface: {
-    backgroundColor: colorVars['--color-surface'],
+    backgroundColor: colorVars['--color-background-surface'],
   },
   contentBgWash: {
-    backgroundColor: colorVars['--color-wash'],
+    backgroundColor: colorVars['--color-background-body'],
   },
   contentBgTransparent: {
     backgroundColor: 'transparent',
     isolation: 'isolate',
   },
   navAreaWash: {
-    backgroundColor: colorVars['--color-wash'],
+    backgroundColor: colorVars['--color-background-body'],
   },
   navAreaSurface: {
-    backgroundColor: colorVars['--color-surface'],
+    backgroundColor: colorVars['--color-background-surface'],
   },
   banner: {
     flexShrink: 0,

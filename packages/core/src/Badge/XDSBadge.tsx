@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/Badge.stories.tsx (storybook stories)
  */
 
-
 import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
@@ -39,7 +38,7 @@ const styles = stylex.create({
     height: spacingVars['--spacing-5'],
     paddingBlock: 0,
     paddingInline: spacingVars['--spacing-2'],
-    borderRadius: radiusVars['--radius-rounded'],
+    borderRadius: radiusVars['--radius-full'],
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: lineHeightVars['--leading-tight'],
@@ -71,16 +70,16 @@ const styles = stylex.create({
  */
 const variants = stylex.create({
   neutral: {
-    backgroundColor: colorVars['--color-secondary'],
+    backgroundColor: colorVars['--color-neutral'],
     color: colorVars['--color-text-primary'],
   },
   info: {
     backgroundColor: colorVars['--color-accent'],
-    color: colorVars['--color-text-on-dark-media'],
+    color: colorVars['--color-on-dark'],
   },
   success: {
     backgroundColor: colorVars['--color-success'],
-    color: colorVars['--color-text-on-dark-media'],
+    color: colorVars['--color-on-dark'],
   },
   warning: {
     backgroundColor: colorVars['--color-warning'],
@@ -88,7 +87,7 @@ const variants = stylex.create({
   },
   error: {
     backgroundColor: colorVars['--color-error'],
-    color: colorVars['--color-text-on-dark-media'],
+    color: colorVars['--color-on-dark'],
   },
 });
 

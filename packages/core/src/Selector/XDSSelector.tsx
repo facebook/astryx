@@ -73,12 +73,12 @@ const styles = stylex.create({
     borderColor: {
       default: colorVars['--color-border-emphasized'],
       ':hover': {
-        '@media (hover: hover)': colorVars['--color-border-strong'],
+        '@media (hover: hover)': colorVars['--color-border-emphasized'],
       },
     },
-    borderRadius: radiusVars['--radius-2'],
-    backgroundColor: colorVars['--color-surface'],
-    fontFamily: typographyVars['--font-body'],
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-background-surface'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-label-size'],
     lineHeight: lineHeightVars['--leading-base'],
     color: colorVars['--color-text-primary'],
@@ -89,12 +89,12 @@ const styles = stylex.create({
     boxShadow: {
       default: 'none',
       ':hover': {
-        '@media (hover: hover)': shadowVars['--inset-shadow-border-hover'],
+        '@media (hover: hover)': shadowVars['--shadow-inset-hover'],
       },
     },
     outline: {
       default: 'none',
-      ':focus': `1px solid ${colorVars['--color-ring-focus']}`,
+      ':focus': `1px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: '0',
   },
@@ -133,9 +133,9 @@ const styles = stylex.create({
     maxHeight: '300px',
     overflowY: 'auto',
     padding: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-2'],
-    backgroundColor: colorVars['--color-surface'],
-    boxShadow: shadowVars['--shadow-menu'],
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-background-surface'],
+    boxShadow: shadowVars['--shadow-low'],
     opacity: 1,
     transition: `opacity ${durationVars['--duration-fast']}`,
   },
@@ -171,8 +171,8 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     width: '100%',
     padding: spacingVars['--spacing-2'],
-    borderRadius: radiusVars['--radius-1'],
-    fontFamily: typographyVars['--font-body'],
+    borderRadius: radiusVars['--radius-inner'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-label-size'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
@@ -208,13 +208,13 @@ const styles = stylex.create({
 
 const sizeStyles = stylex.create({
   sm: {
-    height: sizeVars['--size-sm'],
+    height: sizeVars['--size-element-sm'],
   },
   md: {
-    height: sizeVars['--size-md'],
+    height: sizeVars['--size-element-md'],
   },
   lg: {
-    height: sizeVars['--size-lg'],
+    height: sizeVars['--size-element-lg'],
   },
 });
 

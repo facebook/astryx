@@ -43,7 +43,7 @@ const styles = stylex.create({
     justifyContent: 'space-between',
     width: '100%',
     cursor: 'pointer',
-    fontFamily: typographyVars['--font-body'],
+    fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-large-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-primary'],

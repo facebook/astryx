@@ -51,7 +51,7 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-3'],
     borderWidth: 0,
     borderStyle: 'none',
-    '--button-radius': radiusVars['--radius-2'],
+    '--button-radius': radiusVars['--radius-element'],
     borderRadius: 'var(--button-radius)',
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-label-size'],
@@ -121,13 +121,13 @@ const styles = stylex.create({
 
 const sizeStyles = stylex.create({
   sm: {
-    height: sizeVars['--size-sm'],
+    height: sizeVars['--size-element-sm'],
   },
   md: {
-    height: sizeVars['--size-md'],
+    height: sizeVars['--size-element-md'],
   },
   lg: {
-    height: sizeVars['--size-lg'],
+    height: sizeVars['--size-element-lg'],
   },
 });
 
@@ -140,7 +140,7 @@ const sizeStyles = stylex.create({
 const variants = stylex.create({
   primary: {
     backgroundColor: colorVars['--color-accent'],
-    color: colorVars['--color-text-on-dark-media'],
+    color: colorVars['--color-on-dark'],
     backgroundImage: {
       default: null,
       ':hover': {
@@ -150,7 +150,7 @@ const variants = stylex.create({
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
     },
     '--button-focus-offset': '3px',
     outlineOffset: {
@@ -159,7 +159,7 @@ const variants = stylex.create({
     },
   },
   secondary: {
-    backgroundColor: colorVars['--color-secondary'],
+    backgroundColor: colorVars['--color-neutral'],
     color: colorVars['--color-text-primary'],
     backgroundImage: {
       default: null,
@@ -170,7 +170,7 @@ const variants = stylex.create({
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
     },
     '--button-focus-offset': '3px',
     outlineOffset: {
@@ -190,7 +190,7 @@ const variants = stylex.create({
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-ring-focus']}`,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
     },
     '--button-focus-offset': '3px',
     outlineOffset: {
@@ -200,7 +200,7 @@ const variants = stylex.create({
   },
   destructive: {
     backgroundColor: colorVars['--color-error'],
-    color: colorVars['--color-text-on-dark-media'],
+    color: colorVars['--color-on-dark'],
     backgroundImage: {
       default: null,
       ':hover': {

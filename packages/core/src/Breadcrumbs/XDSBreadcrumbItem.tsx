@@ -13,7 +13,6 @@
  * - /apps/storybook/stories/Breadcrumbs.stories.tsx
  */
 
-
 import {useContext, type ReactNode, type MouseEvent} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -105,7 +104,7 @@ const itemStyles = stylex.create({
     cursor: 'pointer',
   },
   defaultLink: {
-    color: colorVars['--color-text-link'],
+    color: colorVars['--color-text-accent'],
   },
   supportingLink: {
     color: colorVars['--color-text-secondary'],

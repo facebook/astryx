@@ -8,7 +8,6 @@ import {brutalistTheme} from '@xds/theme-brutalist';
 // Import the base reset and typography stylesheets
 import '@xds/core/reset.css';
 
-
 /**
  * Map of available themes
  */
@@ -60,7 +59,7 @@ const withXDSTheme: Decorator = (Story, context) => {
       <div
         className="xds-typography"
         style={{
-          backgroundColor: 'var(--color-surface)',
+          backgroundColor: 'var(--color-background-surface)',
           padding: 16,
         }}>
         <Story />

@@ -10,7 +10,6 @@
  * - /packages/core/src/PowerSearch/index.ts
  */
 
-
 import React, {useState, useCallback, useEffect, useMemo, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSButton} from '../Button';
@@ -36,9 +35,9 @@ import type {
 
 const styles = stylex.create({
   container: {
-    backgroundColor: colorVars['--color-surface'],
-    borderRadius: radiusVars['--radius-2'],
-    boxShadow: shadowVars['--shadow-menu'],
+    backgroundColor: colorVars['--color-background-surface'],
+    borderRadius: radiusVars['--radius-element'],
+    boxShadow: shadowVars['--shadow-low'],
     overflow: 'hidden',
   },
   content: {
