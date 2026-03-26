@@ -111,3 +111,17 @@ export * from './utils';
 
 // Theme
 export * from './theme';
+
+// Doc types — for external library authors writing .doc.mjs files
+export type {
+  ComponentDoc,
+  SingleComponentDoc,
+  MultiComponentDoc,
+  PropDoc,
+  Example,
+  ComponentEntry,
+  ThemingTarget,
+  CSSPropertyDoc,
+  ComponentVar,
+  TranslationDoc,
+} from './docs-types';
