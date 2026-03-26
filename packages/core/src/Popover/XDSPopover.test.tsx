@@ -8,7 +8,7 @@
  */
 
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, act} from '@testing-library/react';
 import React from 'react';
 import {XDSPopover} from './XDSPopover';
 
@@ -211,6 +211,45 @@ describe('XDSPopover', () => {
     const trigger = screen.getByRole('button', {name: 'Custom trigger'});
     fireEvent.keyDown(trigger, {key: 'Enter'});
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('closes on Escape key', () => {
+    render(
+      <XDSPopover content={<span>Content</span>} label="Test">
+        <button>Open</button>
+      </XDSPopover>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.keyDown(document, {key: 'Escape'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('restores focus to trigger on close', async () => {
+    render(
+      <XDSPopover content={<span>Content</span>} label="Test">
+        <button>Open</button>
+      </XDSPopover>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    trigger.focus();
+    fireEvent.click(trigger);
+    await act(async () => {
+      fireEvent.keyDown(document, {key: 'Escape'});
+    });
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('has aria-modal="true" on the dialog', () => {
+    render(
+      <XDSPopover content={<span>Content</span>} label="Test">
+        <button>Open</button>
+      </XDSPopover>,
+    );
+    fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+    const dialog = screen.getByRole('dialog', {hidden: true});
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
   });
 
   it('warns in dev when children have no button', () => {

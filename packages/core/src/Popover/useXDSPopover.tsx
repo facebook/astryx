@@ -299,8 +299,14 @@ export function useXDSPopover(
   // Track the trigger element for returning focus
   const triggerElementRef = useRef<HTMLElement | null>(null);
 
+  // Track whether popover was previously open (for focus restoration on close)
+  const wasOpenRef = useRef(false);
+
   // Track whether to skip auto-focus for the current open event
   const skipAutoFocusRef = useRef(false);
+
+  // Ref to the hidden close button
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // Core layer for popover positioning
   const layer = useXDSLayer({
@@ -322,6 +328,13 @@ export function useXDSPopover(
       // Use requestAnimationFrame to ensure DOM is ready
       requestAnimationFrame(() => {
         focusFirst();
+        // If focusFirst() landed on the close button (only focusable element),
+        // redirect focus to the dialog wrapper so the button stays hidden.
+        // On Tab, focus moves to the close button, onFocus fires, button reveals.
+        if (document.activeElement === closeButtonRef.current) {
+          closeButtonRef.current?.blur();
+          contentRef.current?.focus();
+        }
       });
     }
     // Reset the skip flag after the effect runs
@@ -336,6 +349,23 @@ export function useXDSPopover(
       setIsCloseButtonFocused(false);
     }
   }, [layer.isOpen]);
+
+  // Restore focus to trigger element when popover closes
+  useEffect(() => {
+    if (layer.isOpen) {
+      wasOpenRef.current = true;
+    } else if (wasOpenRef.current) {
+      wasOpenRef.current = false;
+      // Only restore focus if onHide hasn't already moved focus elsewhere.
+      // If focus is still inside the popover or on body, it means no custom
+      // focus destination was set, so we restore to the trigger.
+      const active = document.activeElement;
+      const insidePopover = contentRef.current?.contains(active) ?? false;
+      if (insidePopover || active === document.body) {
+        triggerElementRef.current?.focus();
+      }
+    }
+  }, [layer.isOpen, contentRef]);
 
   // Combined ref for trigger element (layer anchor + our ref)
   const triggerRef = useCallback(
@@ -380,6 +410,7 @@ export function useXDSPopover(
           role="dialog"
           aria-modal="true"
           aria-label={dialogLabel}
+          tabIndex={-1}
           {...stylex.props(
             styles.contentWrapper,
             hasSurface && styles.surface,
@@ -388,6 +419,7 @@ export function useXDSPopover(
           {children}
           {hasCloseButton && (
             <button
+              ref={closeButtonRef}
               type="button"
               onClick={layer.hide}
               onFocus={() => setIsCloseButtonFocused(true)}
