@@ -30,6 +30,8 @@ import {
   typographyVars,
   fontWeightVars,
   lineHeightVars,
+  borderVars,
+  borderVars,
 } from '@xds/core/theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {tokenize, tokenizeAsync, SYNC_TOKENIZE_THRESHOLD} from './tokenizer';
@@ -46,7 +48,7 @@ const styles = stylex.create({
     margin: 0,
     borderRadius: radiusVars['--radius-element'],
     backgroundColor: colorVars['--color-background-muted'],
-    border: `1px solid ${colorVars['--color-border']}`,
+    border: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
     overflow: 'hidden',
   },
   header: {
@@ -55,7 +57,7 @@ const styles = stylex.create({
     justifyContent: 'space-between',
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-4'],
-    borderBottom: `1px solid ${colorVars['--color-border']}`,
+    borderBottom: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
     backgroundColor: colorVars['--color-background-surface'],
   },
   headerTitle: {
@@ -82,7 +84,7 @@ const styles = stylex.create({
     textAlign: 'end',
     userSelect: 'none',
     color: colorVars['--color-text-disabled'],
-    borderRight: `1px solid ${colorVars['--color-border']}`,
+    borderRight: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
   },
   gutterLine: {
     fontFamily: typographyVars['--font-family-code'],

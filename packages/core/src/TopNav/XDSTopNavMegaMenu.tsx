@@ -32,6 +32,7 @@ import {
   lineHeightVars,
   shadowVars,
   typeScaleVars,
+  borderVars,
 } from '../theme/tokens.stylex';
 import {useXDSPopover} from '../Popover/useXDSPopover';
 import {XDSGrid} from '../Grid/XDSGrid';
@@ -115,7 +116,7 @@ const styles = stylex.create({
   // Visual styles for the panel content container.
   panelContainer: {
     backgroundColor: colorVars['--color-background-popover'],
-    borderTop: `1px solid ${colorVars['--color-border']}`,
+    borderTop: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
     borderRadius: radiusVars['--radius-container'],
     boxShadow: shadowVars['--shadow-low'],
     overflow: 'hidden',

@@ -26,6 +26,7 @@ import {
   durationVars,
   easeVars,
   shadowVars,
+  borderVars,
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
 import type {XDSIconType} from '../Icon';
@@ -99,7 +100,7 @@ const styles = stylex.create({
   // Popover surface for collapsed items with children
   popoverSurface: {
     backgroundColor: colorVars['--color-background-popover'],
-    borderWidth: 1,
+    borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
     borderColor: colorVars['--color-border'],
     borderRadius: radiusVars['--radius-element'],

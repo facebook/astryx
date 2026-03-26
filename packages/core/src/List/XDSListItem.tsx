@@ -24,6 +24,7 @@ import {
   durationVars,
   easeVars,
   typeScaleVars,
+  borderVars,
 } from '../theme/tokens.stylex';
 import {XDSListContext} from './XDSListContext';
 import {xdsClassName, mergeProps} from '../utils';
@@ -150,7 +151,7 @@ const styles = stylex.create({
     borderRadius: 0,
   },
   withDivider: {
-    borderBlockEnd: `1px solid ${colorVars['--color-border']}`,
+    borderBlockEnd: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
     ':last-child': {
       borderBlockEnd: 'none',
     },

@@ -11,11 +11,15 @@
  * - /packages/core/src/Table/index.ts
  */
 
-
 import {useContext, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
+import {
+  borderVars,
+  colorVars,
+  spacingVars,
+  typeScaleVars,
+} from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
 import {XDSTableContext} from './XDSTableContext';
 import {xdsClassName, mergeProps} from '../utils';
@@ -59,7 +63,7 @@ const densityStyles = stylex.create({
 
 const dividerRowStyles = stylex.create({
   cell: {
-    borderBottomWidth: '1px',
+    borderBottomWidth: borderVars['--border-width'],
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
   },
@@ -68,7 +72,7 @@ const dividerRowStyles = stylex.create({
 const dividerColumnStyles = stylex.create({
   cell: {
     borderRightWidth: {
-      default: '1px',
+      default: borderVars['--border-width'],
       ':last-child': '0',
     },
     borderRightStyle: 'solid',

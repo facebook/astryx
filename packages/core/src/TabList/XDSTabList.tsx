@@ -12,10 +12,9 @@
  * - /packages/core/src/TabList/XDSTabList.test.tsx
  */
 
-
 import {useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars} from '../theme/tokens.stylex';
+import {borderVars, colorVars, spacingVars} from '../theme/tokens.stylex';
 import {XDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
 import {xdsClassName, mergeProps} from '../utils';
@@ -52,7 +51,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-0-5'],
   },
   divider: {
-    borderBottomWidth: '1px',
+    borderBottomWidth: borderVars['--border-width'],
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
   },

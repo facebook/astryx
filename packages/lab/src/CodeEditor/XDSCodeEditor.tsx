@@ -29,6 +29,8 @@ import {
   textSizeVars,
   typographyVars,
   lineHeightVars,
+  borderVars,
+  borderVars,
 } from '@xds/core/theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {
@@ -49,7 +51,7 @@ const styles = stylex.create({
     display: 'flex',
     borderRadius: radiusVars['--radius-element'],
     backgroundColor: colorVars['--color-background-muted'],
-    border: `1px solid ${colorVars['--color-border']}`,
+    border: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
     overflow: 'hidden',
   },
   rootFocused: {
@@ -64,7 +66,7 @@ const styles = stylex.create({
     textAlign: 'end',
     userSelect: 'none',
     color: colorVars['--color-text-disabled'],
-    borderRight: `1px solid ${colorVars['--color-border']}`,
+    borderRight: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
   },
   gutterLine: {
     fontFamily: typographyVars['--font-family-code'],

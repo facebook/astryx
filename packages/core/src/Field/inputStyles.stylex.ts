@@ -19,6 +19,7 @@ import {
   shadowVars,
   durationVars,
   easeVars,
+  borderVars,
 } from '../theme/tokens.stylex';
 
 /**
@@ -35,7 +36,7 @@ export const inputWrapperStyles = stylex.create({
     gap: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-2'],
-    borderWidth: '1px',
+    borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
     borderColor: {
       default: colorVars['--color-border-emphasized'],
@@ -60,7 +61,7 @@ export const inputWrapperStyles = stylex.create({
     },
     outline: {
       default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-accent']}`,
+      ':focus-within': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: '0',
   },
@@ -127,19 +128,19 @@ export const inputStatusFocusWithinStyles = stylex.create({
   warning: {
     outline: {
       default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-warning']}`,
+      ':focus-within': `${borderVars['--border-width']} solid ${colorVars['--color-warning']}`,
     },
   },
   error: {
     outline: {
       default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-error']}`,
+      ':focus-within': `${borderVars['--border-width']} solid ${colorVars['--color-error']}`,
     },
   },
   success: {
     outline: {
       default: 'none',
-      ':focus-within': `1px solid ${colorVars['--color-success']}`,
+      ':focus-within': `${borderVars['--border-width']} solid ${colorVars['--color-success']}`,
     },
   },
 });
@@ -153,19 +154,19 @@ export const inputStatusFocusStyles = stylex.create({
   warning: {
     outline: {
       default: 'none',
-      ':focus': `1px solid ${colorVars['--color-warning']}`,
+      ':focus': `${borderVars['--border-width']} solid ${colorVars['--color-warning']}`,
     },
   },
   error: {
     outline: {
       default: 'none',
-      ':focus': `1px solid ${colorVars['--color-error']}`,
+      ':focus': `${borderVars['--border-width']} solid ${colorVars['--color-error']}`,
     },
   },
   success: {
     outline: {
       default: 'none',
-      ':focus': `1px solid ${colorVars['--color-success']}`,
+      ':focus': `${borderVars['--border-width']} solid ${colorVars['--color-success']}`,
     },
   },
 });

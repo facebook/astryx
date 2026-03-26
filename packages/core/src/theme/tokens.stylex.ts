@@ -175,6 +175,18 @@ export const sizeRaw = sizeDefaults;
 export const sizeVars = stylex.defineVars(sizeDefaults);
 
 // =============================================================================
+// Border Tokens
+// =============================================================================
+
+export const borderDefaults = {
+  '--border-width': '1px',
+} as const;
+
+export const borderVars = stylex.defineVars(borderDefaults);
+
+export type BorderVarName = keyof typeof borderDefaults;
+
+// =============================================================================
 // Radius Tokens
 // =============================================================================
 

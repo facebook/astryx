@@ -32,6 +32,7 @@ import {
   textSizeVars,
   lineHeightVars,
   fontWeightVars,
+  borderVars,
 } from '../theme/tokens.stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSFieldLabel} from '../Field/XDSFieldLabel';
@@ -72,7 +73,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
     borderRadius: radiusVars['--radius-inner'],
     transitionProperty: 'background-color, border-color',

@@ -23,6 +23,7 @@ import {
   typographyVars,
   fontWeightVars,
   typeScaleVars,
+  borderVars,
 } from '../theme/tokens.stylex';
 import {XDSRadioListContext} from './XDSRadioList';
 import {xdsClassName, mergeProps} from '../utils';
@@ -55,7 +56,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
     borderRadius: '50%',
     transitionProperty: 'background-color, border-color',

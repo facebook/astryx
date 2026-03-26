@@ -32,6 +32,7 @@ import {
   typographyVars,
   lineHeightVars,
   typeScaleVars,
+  borderVars,
 } from '../theme/tokens.stylex';
 import {
   XDSField,
@@ -67,7 +68,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     outline: {
       default: 'none',
-      ':focus-visible': `1px solid ${colorVars['--color-accent']}`,
+      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: 1,
   },

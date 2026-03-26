@@ -43,6 +43,7 @@ import {
   fontWeightVars,
   lineHeightVars,
   typeScaleVars,
+  borderVars,
 } from '../theme/tokens.stylex';
 import {type XDSSelectorOptionType, type XDSSelectorOptionData} from './types';
 import {
@@ -68,7 +69,7 @@ const styles = stylex.create({
     width: '100%',
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
-    borderWidth: 1,
+    borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
     borderColor: {
       default: colorVars['--color-border-emphasized'],
@@ -94,7 +95,7 @@ const styles = stylex.create({
     },
     outline: {
       default: 'none',
-      ':focus': `1px solid ${colorVars['--color-accent']}`,
+      ':focus': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: '0',
   },
