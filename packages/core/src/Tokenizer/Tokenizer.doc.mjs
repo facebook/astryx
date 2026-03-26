@@ -213,6 +213,11 @@ export const docs = {
     'Backspace on empty input removes the last token',
     "Change metadata: onChange receives a second argument with type ('add' | 'remove' | 'reorder')",
   ],
+  theming: {
+    targets: [
+      {className: 'xds-tokenizer', visualProps: ['size']},
+    ],
+  },
   accessibility: [
     'Wrapped in XDSField for label, description, and status message association.',
     'Token container has role="group" with aria-label.',
@@ -437,6 +442,11 @@ export const docsZh = {
     '在空输入框上按退格键移除最后一个标记',
     "变更元数据：onChange 接收第二个参数，包含类型（'add' | 'remove' | 'reorder'）",
   ],
+  theming: {
+    targets: [
+      {className: 'xds-tokenizer', visualProps: ['size']},
+    ],
+  },
   accessibility: [
     '包裹在 XDSField 中，用于标签、描述和状态消息的关联。',
     '标记容器具有 role="group" 和 aria-label。',

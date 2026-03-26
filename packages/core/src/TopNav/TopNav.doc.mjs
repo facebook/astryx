@@ -119,10 +119,12 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-top-nav', visualProps: ['mode']},
-      {className: 'xds-top-nav-item', visualProps: ['mode']},
+      {className: 'xds-top-nav', states: ['mode']},
+      {className: 'xds-top-nav-item', states: ['mode']},
       {className: 'xds-top-nav-heading'},
-      {className: 'xds-top-nav-mega-menu', visualProps: ['mode']},
+      {className: 'xds-top-nav-mega-menu', states: ['mode']},
+      {className: 'xds-top-nav-mega-menu-item', states: ['mode']},
+      {className: 'xds-top-nav-mega-menu-featured-card'},
       {className: 'xds-top-nav-menu'},
     ],
   },
@@ -474,6 +476,107 @@ export const docs = {
         },
       ],
     },
+    {
+      name: 'XDSTopNavMegaMenuItem',
+      description:
+        'An individual item inside an XDSTopNavMegaMenu. Renders itself in both desktop (popover grid) and mobile drawer modes via render mode context.',
+      props: [
+        {
+          name: 'title',
+          type: 'string',
+          description: 'Display title for the menu item.',
+          required: true,
+        },
+        {
+          name: 'description',
+          type: 'string',
+          description: 'Optional description text displayed below the title.',
+        },
+        {
+          name: 'icon',
+          type: 'ReactNode',
+          description: 'Optional icon element displayed to the left.',
+        },
+        {
+          name: 'href',
+          type: 'string',
+          description: 'URL to navigate to when clicked.',
+        },
+        {
+          name: 'onClick',
+          type: '() => void',
+          description: 'Callback when item is clicked.',
+        },
+        {
+          name: 'as',
+          type: 'XDSLinkComponentType',
+          description:
+            'Custom component to render instead of <a> for link items. Overrides the provider-level default set by XDSLinkProvider.',
+        },
+      ],
+      examples: [
+        {
+          label: 'Basic item with icon',
+          code: `<XDSTopNavMegaMenuItem title="Enterprise" description="For large teams" icon={<BuildingIcon />} href="/enterprise" />`,
+        },
+      ],
+    },
+    {
+      name: 'XDSTopNavMegaMenuFeaturedCard',
+      description:
+        'Standard featured card for the XDSTopNavMegaMenu featured slot. Provides a consistent card with optional image, title, description, and CTA link.',
+      props: [
+        {
+          name: 'title',
+          type: 'string',
+          description: 'Card title.',
+          required: true,
+        },
+        {
+          name: 'description',
+          type: 'string',
+          description: 'Description text below the title.',
+        },
+        {
+          name: 'image',
+          type: 'string',
+          description: 'Optional image URL displayed above the body.',
+        },
+        {
+          name: 'imageAlt',
+          type: 'string',
+          description: 'Alt text for the image.',
+        },
+        {
+          name: 'linkLabel',
+          type: 'string',
+          description: 'CTA link text.',
+        },
+        {
+          name: 'linkHref',
+          type: 'string',
+          description: 'CTA link URL.',
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: 'Custom content rendered below the standard body.',
+        },
+      ],
+      examples: [
+        {
+          label: 'With image and CTA',
+          code: `<XDSTopNavMegaMenuFeaturedCard
+  title="New: AI Features"
+  description="Explore our latest AI-powered tools."
+  image="/promo.jpg"
+  imageAlt="AI features promotion"
+  linkLabel="Learn more"
+  linkHref="/ai"
+/>`,
+        },
+      ],
+    },
   ],
 };
 
@@ -597,10 +700,12 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-top-nav', visualProps: ['mode']},
-      {className: 'xds-top-nav-item', visualProps: ['mode']},
+      {className: 'xds-top-nav', states: ['mode']},
+      {className: 'xds-top-nav-item', states: ['mode']},
       {className: 'xds-top-nav-heading'},
-      {className: 'xds-top-nav-mega-menu', visualProps: ['mode']},
+      {className: 'xds-top-nav-mega-menu', states: ['mode']},
+      {className: 'xds-top-nav-mega-menu-item', states: ['mode']},
+      {className: 'xds-top-nav-mega-menu-featured-card'},
       {className: 'xds-top-nav-menu'},
     ],
   },
@@ -952,6 +1057,107 @@ export const docsZh = {
         },
       ],
     },
+    {
+      name: 'XDSTopNavMegaMenuItem',
+      description:
+        '超级菜单中的单个项目。在桌面端（弹出层网格）和移动抽屉模式中都会自行渲染。',
+      props: [
+        {
+          name: 'title',
+          type: 'string',
+          description: '菜单项的显示标题。',
+          required: true,
+        },
+        {
+          name: 'description',
+          type: 'string',
+          description: '标题下方的可选描述文本。',
+        },
+        {
+          name: 'icon',
+          type: 'ReactNode',
+          description: '左侧显示的可选图标元素。',
+        },
+        {
+          name: 'href',
+          type: 'string',
+          description: '点击时导航的 URL。',
+        },
+        {
+          name: 'onClick',
+          type: '() => void',
+          description: '点击项目时的回调。',
+        },
+        {
+          name: 'as',
+          type: 'XDSLinkComponentType',
+          description:
+            '用于替代 <a> 的自定义链接组件。覆盖 XDSLinkProvider 设置的默认组件。',
+        },
+      ],
+      examples: [
+        {
+          label: '带图标的基本项目',
+          code: `<XDSTopNavMegaMenuItem title="Enterprise" description="大型团队" icon={<BuildingIcon />} href="/enterprise" />`,
+        },
+      ],
+    },
+    {
+      name: 'XDSTopNavMegaMenuFeaturedCard',
+      description:
+        '超级菜单 featured 插槽的标准特色卡片。提供带可选图片、标题、描述和 CTA 链接的一致卡片。',
+      props: [
+        {
+          name: 'title',
+          type: 'string',
+          description: '卡片标题。',
+          required: true,
+        },
+        {
+          name: 'description',
+          type: 'string',
+          description: '标题下方的描述文本。',
+        },
+        {
+          name: 'image',
+          type: 'string',
+          description: '正文上方显示的可选图片 URL。',
+        },
+        {
+          name: 'imageAlt',
+          type: 'string',
+          description: '图片的替代文本。',
+        },
+        {
+          name: 'linkLabel',
+          type: 'string',
+          description: 'CTA 链接文本。',
+        },
+        {
+          name: 'linkHref',
+          type: 'string',
+          description: 'CTA 链接 URL。',
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: '标准正文下方渲染的自定义内容。',
+        },
+      ],
+      examples: [
+        {
+          label: '带图片和 CTA',
+          code: `<XDSTopNavMegaMenuFeaturedCard
+  title="新功能：AI 特性"
+  description="探索我们最新的 AI 驱动工具。"
+  image="/promo.jpg"
+  imageAlt="AI 功能推广"
+  linkLabel="了解更多"
+  linkHref="/ai"
+/>`,
+        },
+      ],
+    },
   ],
 };
 
@@ -1040,6 +1246,31 @@ export const docsDense = {
         delay: 'Show delay ms on hover.',
         hideDelay: 'Hide delay ms after mouse leaves.',
         onOpenChange: 'Fired on open/close. For coordinating wrapper styles.',
+      },
+    },
+    {
+      name: 'XDSTopNavMegaMenuItem',
+      description: 'Individual mega menu item. Renders in desktop popover grid + mobile drawer modes via context.',
+      propDescriptions: {
+        title: 'Display title.',
+        description: 'Description below title.',
+        icon: 'Left icon element.',
+        href: 'Navigation URL.',
+        onClick: 'Click callback.',
+        as: 'Custom link component, overrides XDSLinkProvider default.',
+      },
+    },
+    {
+      name: 'XDSTopNavMegaMenuFeaturedCard',
+      description: 'Standard featured card for mega menu featured slot. Optional image, title, description, CTA link.',
+      propDescriptions: {
+        title: 'Card title.',
+        description: 'Description below title.',
+        image: 'Image URL above body.',
+        imageAlt: 'Image alt text.',
+        linkLabel: 'CTA link text.',
+        linkHref: 'CTA link URL.',
+        children: 'Custom content below standard body.',
       },
     },
   ],
