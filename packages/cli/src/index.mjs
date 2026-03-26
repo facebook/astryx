@@ -8,6 +8,7 @@
 import {Command} from 'commander';
 import {fileURLToPath} from 'node:url';
 import * as path from 'node:path';
+import {checkForUpdate} from './utils/update-check.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -25,6 +26,25 @@ program
   .action(() => {
     program.help();
   });
+
+/**
+ * Post-action hook: print update hint after any command output.
+ * Only fires for commands that produce output agents read (component, docs, etc.).
+ * Uses the FYI format validated by vibe testing — never triggers injection defenses.
+ */
+const UPDATE_HINT_COMMANDS = new Set(['component', 'docs', 'doctor']);
+program.hook('postAction', (thisCommand) => {
+  try {
+    if (UPDATE_HINT_COMMANDS.has(thisCommand.name())) {
+      const hint = checkForUpdate();
+      if (hint) {
+        console.error(`\n${hint}`);
+      }
+    }
+  } catch {
+    // Never let update check break the CLI
+  }
+});
 
 /**
  * Command registry — each command is lazy-loaded so a broken command
