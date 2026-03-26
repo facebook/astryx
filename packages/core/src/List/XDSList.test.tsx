@@ -571,4 +571,43 @@ describe('XDSList', () => {
     expect(screen.getByText('Label Only')).toBeInTheDocument();
     expect(screen.queryByText('undefined')).not.toBeInTheDocument();
   });
+
+  // ===========================================================================
+  // ReactNode description
+  // ===========================================================================
+
+  it('accepts ReactNode as description', () => {
+    render(
+      <XDSList>
+        <XDSListItem
+          label="Item"
+          description={
+            <div>
+              <span>Rich</span> <span>description</span>
+            </div>
+          }
+        />
+      </XDSList>,
+    );
+    expect(screen.getByText('Rich')).toBeInTheDocument();
+    expect(screen.getByText('description')).toBeInTheDocument();
+  });
+
+  it('still accepts string description', () => {
+    render(
+      <XDSList>
+        <XDSListItem label="Item" description="Simple text" />
+      </XDSList>,
+    );
+    expect(screen.getByText('Simple text')).toBeInTheDocument();
+  });
+
+  it('accepts number as description (ReactNode)', () => {
+    render(
+      <XDSList>
+        <XDSListItem label="Count" description={42} />
+      </XDSList>,
+    );
+    expect(screen.getByText('42')).toBeInTheDocument();
+  });
 });
