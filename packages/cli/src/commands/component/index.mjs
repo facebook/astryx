@@ -6,11 +6,13 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {findCoreDir} from '../../utils/paths.mjs';
+import {findCoreDir, discoverExternalPackages} from '../../utils/paths.mjs';
 import {
   discoverComponents,
+  discoverExternalComponents,
   findComponentReadme,
   findComponentSource,
+  findExternalComponentDoc,
   resolveImportPath,
 } from '../../lib/component-discovery.mjs';
 import {loadDocs} from '../../lib/component-loader.mjs';
@@ -119,6 +121,19 @@ export function registerComponent(program) {
             }
             console.log('');
           }
+          // Show external packages
+          const externals = discoverExternalPackages(process.cwd());
+          for (const ext of externals) {
+            const extComponents = discoverExternalComponents(ext.docsDir);
+            if (extComponents.length > 0) {
+              console.log(`${ext.category} (${ext.name}):`);
+              for (const comp of extComponents) {
+                console.log(`  ${comp}`);
+              }
+              console.log('');
+            }
+          }
+
           console.log('Usage: npx xds component <name>');
           console.log('');
         }
@@ -141,6 +156,20 @@ export function registerComponent(program) {
 
       let readmePath = findComponentReadme(coreDir, dirName);
       let resolvedName = dirName;
+      let fromExternal = null;
+
+      // If not found in core, check external packages
+      if (!readmePath) {
+        const externals = discoverExternalPackages(process.cwd());
+        for (const ext of externals) {
+          const extDocPath = findExternalComponentDoc(ext.docsDir, dirName);
+          if (extDocPath) {
+            readmePath = extDocPath;
+            fromExternal = ext;
+            break;
+          }
+        }
+      }
 
       if (!readmePath) {
         // Try fuzzy matching
@@ -171,7 +200,7 @@ export function registerComponent(program) {
 
       if (readmePath.endsWith('.doc.mjs')) {
         const docs = await loadDocs(readmePath, {zh, dense, lang});
-        const importHint = resolveImportPath(coreDir, resolvedName);
+        const importHint = fromExternal ? fromExternal.name : resolveImportPath(coreDir, resolvedName);
         if (options.props) {
           console.log(formatProps(docs, resolvedName));
         } else if (detail === 'brief') {
@@ -201,7 +230,8 @@ export function registerComponent(program) {
 
 // Re-export lib functions for backward compatibility
 // (agent-docs.mjs, tests, and generate-skill-doc.sh import from here)
-export {discoverComponents, findComponentReadme, findComponentSource, resolveImportPath} from '../../lib/component-discovery.mjs';
+export {discoverComponents, discoverExternalComponents, findComponentReadme, findComponentSource, findExternalComponentDoc, resolveImportPath} from '../../lib/component-discovery.mjs';
+export {discoverExternalPackages} from '../../utils/paths.mjs';
 export {loadDocs} from '../../lib/component-loader.mjs';
 export {formatFull, formatCompact, formatBrief, formatProps, formatBriefAll} from '../../lib/component-format.mjs';
 export {cleanReadme, extractCompact, extractBrief, ensureImportStatement, extractProps} from '../../lib/component-legacy.mjs';

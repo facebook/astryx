@@ -228,6 +228,59 @@ export function resolveImportPath(coreDir, componentName) {
   return '@xds/core';
 }
 
+// ── External package discovery ───────────────────────────────────────
+
+/**
+ * Discover components from an external package's docs directory.
+ * Scans for *.doc.mjs files and returns their names.
+ */
+export function discoverExternalComponents(docsDir) {
+  if (!fs.existsSync(docsDir)) return [];
+  const components = [];
+
+  function scanDir(dirPath) {
+    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+    for (const entry of entries) {
+      if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
+      const fullPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        scanDir(fullPath);
+      } else if (entry.name.endsWith('.doc.mjs')) {
+        components.push(entry.name.replace('.doc.mjs', ''));
+      }
+    }
+  }
+
+  scanDir(docsDir);
+  return components.sort();
+}
+
+/**
+ * Find a component's doc file in an external package's docs directory.
+ * Returns the path to {Name}.doc.mjs or null.
+ */
+export function findExternalComponentDoc(docsDir, name) {
+  if (!fs.existsSync(docsDir)) return null;
+  const target = `${name}.doc.mjs`;
+
+  function scanDir(dirPath) {
+    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+    for (const entry of entries) {
+      if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
+      const fullPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        const found = scanDir(fullPath);
+        if (found) return found;
+      } else if (entry.name === target) {
+        return fullPath;
+      }
+    }
+    return null;
+  }
+
+  return scanDir(docsDir);
+}
+
 // ── Legacy markdown-parsing functions ────────────────────────────────
 // These are kept for backward compatibility with existing tests.
 // The CLI action handler uses the new format functions below instead.

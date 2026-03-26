@@ -4,6 +4,8 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import {
   discoverComponents,
+  discoverExternalComponents,
+  findExternalComponentDoc,
   cleanReadme,
   extractCompact,
   extractProps,
@@ -389,5 +391,117 @@ describe('extractProps', () => {
     const result = extractProps(input, 'Button');
     expect(result).not.toMatch(/\n\n$/);
     expect(result).toMatch(/\n$/);
+  });
+});
+
+describe('discoverExternalComponents', () => {
+  it('finds .doc.mjs files in the docs directory', () => {
+    const docsDir = path.join(tmpDir, 'src');
+    const compDir = path.join(docsDir, 'Employee');
+    fs.mkdirSync(compDir, {recursive: true});
+    fs.writeFileSync(path.join(compDir, 'EmployeeHoverCard.doc.mjs'), '');
+    fs.writeFileSync(path.join(compDir, 'EmployeeLink.doc.mjs'), '');
+
+    const result = discoverExternalComponents(docsDir);
+    expect(result).toEqual(['EmployeeHoverCard', 'EmployeeLink']);
+  });
+
+  it('scans nested directories recursively', () => {
+    const docsDir = path.join(tmpDir, 'src');
+    const deepDir = path.join(docsDir, 'a', 'b', 'c');
+    fs.mkdirSync(deepDir, {recursive: true});
+    fs.writeFileSync(path.join(deepDir, 'DeepComponent.doc.mjs'), '');
+
+    const result = discoverExternalComponents(docsDir);
+    expect(result).toEqual(['DeepComponent']);
+  });
+
+  it('ignores non-.doc.mjs files', () => {
+    const docsDir = path.join(tmpDir, 'src');
+    fs.mkdirSync(docsDir, {recursive: true});
+    fs.writeFileSync(path.join(docsDir, 'Foo.doc.mjs'), '');
+    fs.writeFileSync(path.join(docsDir, 'Foo.tsx'), '');
+    fs.writeFileSync(path.join(docsDir, 'README.md'), '');
+    fs.writeFileSync(path.join(docsDir, 'index.mjs'), '');
+
+    const result = discoverExternalComponents(docsDir);
+    expect(result).toEqual(['Foo']);
+  });
+
+  it('skips node_modules and __tests__ directories', () => {
+    const docsDir = path.join(tmpDir, 'src');
+    const nmDir = path.join(docsDir, 'node_modules', 'dep');
+    const testDir = path.join(docsDir, '__tests__');
+    fs.mkdirSync(nmDir, {recursive: true});
+    fs.mkdirSync(testDir, {recursive: true});
+    fs.writeFileSync(path.join(nmDir, 'Hidden.doc.mjs'), '');
+    fs.writeFileSync(path.join(testDir, 'TestOnly.doc.mjs'), '');
+    fs.writeFileSync(path.join(docsDir, 'Visible.doc.mjs'), '');
+
+    const result = discoverExternalComponents(docsDir);
+    expect(result).toEqual(['Visible']);
+  });
+
+  it('returns empty array for nonexistent directory', () => {
+    const result = discoverExternalComponents(path.join(tmpDir, 'nope'));
+    expect(result).toEqual([]);
+  });
+
+  it('returns sorted results', () => {
+    const docsDir = path.join(tmpDir, 'src');
+    fs.mkdirSync(docsDir, {recursive: true});
+    fs.writeFileSync(path.join(docsDir, 'Zebra.doc.mjs'), '');
+    fs.writeFileSync(path.join(docsDir, 'Alpha.doc.mjs'), '');
+    fs.writeFileSync(path.join(docsDir, 'Middle.doc.mjs'), '');
+
+    const result = discoverExternalComponents(docsDir);
+    expect(result).toEqual(['Alpha', 'Middle', 'Zebra']);
+  });
+});
+
+describe('findExternalComponentDoc', () => {
+  it('finds a doc file by component name', () => {
+    const docsDir = path.join(tmpDir, 'src');
+    const compDir = path.join(docsDir, 'Employee');
+    fs.mkdirSync(compDir, {recursive: true});
+    const docPath = path.join(compDir, 'EmployeeHoverCard.doc.mjs');
+    fs.writeFileSync(docPath, '');
+
+    const result = findExternalComponentDoc(docsDir, 'EmployeeHoverCard');
+    expect(result).toBe(docPath);
+  });
+
+  it('searches nested directories', () => {
+    const docsDir = path.join(tmpDir, 'src');
+    const deepDir = path.join(docsDir, 'nested', 'deep');
+    fs.mkdirSync(deepDir, {recursive: true});
+    const docPath = path.join(deepDir, 'DeepThing.doc.mjs');
+    fs.writeFileSync(docPath, '');
+
+    const result = findExternalComponentDoc(docsDir, 'DeepThing');
+    expect(result).toBe(docPath);
+  });
+
+  it('returns null when component not found', () => {
+    const docsDir = path.join(tmpDir, 'src');
+    fs.mkdirSync(docsDir, {recursive: true});
+
+    const result = findExternalComponentDoc(docsDir, 'NonExistent');
+    expect(result).toBeNull();
+  });
+
+  it('returns null for nonexistent directory', () => {
+    const result = findExternalComponentDoc(path.join(tmpDir, 'nope'), 'Foo');
+    expect(result).toBeNull();
+  });
+
+  it('skips node_modules and __tests__', () => {
+    const docsDir = path.join(tmpDir, 'src');
+    const nmDir = path.join(docsDir, 'node_modules', 'dep');
+    fs.mkdirSync(nmDir, {recursive: true});
+    fs.writeFileSync(path.join(nmDir, 'Hidden.doc.mjs'), '');
+
+    const result = findExternalComponentDoc(docsDir, 'Hidden');
+    expect(result).toBeNull();
   });
 });
