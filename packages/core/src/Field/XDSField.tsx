@@ -49,6 +49,10 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     width: 1,
   },
+  labelGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
   description: {
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
@@ -216,25 +220,27 @@ export function XDSField({
         style,
       )}
       {...props}>
-      <XDSFieldLabel
-        label={label}
-        inputID={inputID}
-        isLabelHidden={isLabelHidden}
-        isOptional={isOptional}
-        isRequired={isRequired}
-        labelIcon={labelIcon}
-        labelTooltip={labelTooltip}
-      />
-      {description && (
-        <span
-          id={resolvedDescriptionID}
-          {...stylex.props(
-            styles.description,
-            isLabelHidden && styles.labelHidden,
-          )}>
-          {description}
-        </span>
-      )}
+      <div {...stylex.props(styles.labelGroup)}>
+        <XDSFieldLabel
+          label={label}
+          inputID={inputID}
+          isLabelHidden={isLabelHidden}
+          isOptional={isOptional}
+          isRequired={isRequired}
+          labelIcon={labelIcon}
+          labelTooltip={labelTooltip}
+        />
+        {description && (
+          <span
+            id={resolvedDescriptionID}
+            {...stylex.props(
+              styles.description,
+              isLabelHidden && styles.labelHidden,
+            )}>
+            {description}
+          </span>
+        )}
+      </div>
       {statusVariant === 'attached' ? (
         <div {...stylex.props(styles.inputStatusWrapper)}>
           {children}
