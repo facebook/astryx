@@ -28,7 +28,7 @@ import {
   radiusVars,
   textSizeVars,
   typographyVars,
-  lineHeightVars,
+  typeScaleVars,
   borderVars,
 } from '@xds/core/theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '@xds/core/utils';
@@ -69,7 +69,7 @@ const styles = stylex.create({
   },
   gutterLine: {
     fontFamily: typographyVars['--font-family-code'],
-    lineHeight: lineHeightVars['--leading-normal'],
+    lineHeight: typeScaleVars['--text-code-leading'],
   },
   editorContainer: {
     flex: 1,
@@ -89,7 +89,7 @@ const styles = stylex.create({
     overflowWrap: 'normal',
     outline: 'none',
     caretColor: colorVars['--color-text-primary'],
-    lineHeight: lineHeightVars['--leading-normal'],
+    lineHeight: typeScaleVars['--text-code-leading'],
   },
   placeholder: {
     position: 'absolute',
@@ -97,7 +97,7 @@ const styles = stylex.create({
     left: spacingVars['--spacing-4'],
     color: colorVars['--color-text-disabled'],
     fontFamily: typographyVars['--font-family-code'],
-    lineHeight: lineHeightVars['--leading-normal'],
+    lineHeight: typeScaleVars['--text-code-leading'],
     pointerEvents: 'none',
     userSelect: 'none',
   },

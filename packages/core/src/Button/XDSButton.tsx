@@ -139,7 +139,7 @@ const sizeStyles = stylex.create({
 const variants = stylex.create({
   primary: {
     backgroundColor: colorVars['--color-accent'],
-    color: colorVars['--color-on-dark'],
+    color: colorVars['--color-on-accent'],
     backgroundImage: {
       default: null,
       ':hover': {
@@ -199,7 +199,7 @@ const variants = stylex.create({
   },
   destructive: {
     backgroundColor: colorVars['--color-error'],
-    color: colorVars['--color-on-dark'],
+    color: colorVars['--color-on-error'],
     backgroundImage: {
       default: null,
       ':hover': {

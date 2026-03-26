@@ -165,6 +165,34 @@ describe('migrate-token-renames (v0.0.8)', () => {
     expect(output).toContain('var(--text-heading-1-size)');
   });
 
+  // === Line height renames ===
+
+  it('renames --leading-base to --text-body-leading', async () => {
+    const output = await applyTransform(`const x = lineHeightVars['--leading-base'];`);
+    expect(output).toContain('--text-body-leading');
+    expect(output).not.toContain('--leading-base');
+  });
+
+  it('renames --leading-snug to --text-label-leading', async () => {
+    const output = await applyTransform(`const x = '--leading-snug';`);
+    expect(output).toContain('--text-label-leading');
+  });
+
+  it('renames --leading-normal to --text-large-leading', async () => {
+    const output = await applyTransform(`const x = '--leading-normal';`);
+    expect(output).toContain('--text-large-leading');
+  });
+
+  it('renames --leading-tight to --text-heading-1-leading', async () => {
+    const output = await applyTransform(`const x = '--leading-tight';`);
+    expect(output).toContain('--text-heading-1-leading');
+  });
+
+  it('renames --leading-relaxed to --text-supporting-leading', async () => {
+    const output = await applyTransform(`const x = '--leading-relaxed';`);
+    expect(output).toContain('--text-supporting-leading');
+  });
+
   // === Edge cases ===
 
   it('handles template literals', async () => {

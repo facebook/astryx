@@ -198,7 +198,7 @@ export const radiusDefaults = {
   '--radius-inner': '4px',
   '--radius-element': '8px',
   '--radius-container': '12px',
-  '--radius-page': '16px',
+  '--radius-page': '28px',
   '--radius-full': '9999px',
 } as const;
 

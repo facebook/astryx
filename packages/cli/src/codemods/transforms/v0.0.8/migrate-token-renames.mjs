@@ -17,6 +17,24 @@
  * - Font family: --font-body/code/heading → --font-family-body/code/heading
  * - Font size: --text-* → --font-size-*
  * - Type scale: --heading-*-size/weight/leading → --text-heading-*-size/weight/leading
+ * - Line height: --leading-* → semantic typeScale leading tokens
+ *
+ * ## Line height migration strategy
+ *
+ * Raw --leading-* tokens are replaced with semantic typeScale leading tokens.
+ * The correct mapping depends on the fontSize used alongside the lineHeight.
+ * This codemod uses the closest-value match as a default. If the result doesn't
+ * look right, manually pick the semantic leading that pairs with your fontSize:
+ *
+ * | fontSize token (px)            | Correct leading token          | Value  |
+ * |-------------------------------|-------------------------------|--------|
+ * | --font-size-base (14px)       | --text-body-leading           | 1.4286 |
+ * | --font-size-base (14px)       | --text-label-leading          | 1.4286 |
+ * | --font-size-sm (12px)         | --text-supporting-leading     | 1.6667 |
+ * | --font-size-lg (17px)         | --text-large-leading          | 1.4118 |
+ * | --font-size-xs (10px)         | --text-heading-6-leading      | 1.6    |
+ * | --font-size-xl (20px)         | --text-heading-2-leading      | 1.4    |
+ * | --font-size-2xl (24px)        | --text-heading-1-leading      | 1.3333 |
  */
 
 export const meta = {
@@ -135,6 +153,13 @@ const TOKEN_MAP = {
   '--text-3xl': '--font-size-3xl',
   '--text-4xl': '--font-size-4xl',
   '--text-5xl': '--font-size-5xl',
+
+  // Line height — closest semantic match by value (see header for manual override guide)
+  '--leading-base': '--text-body-leading', // 1.4286 → 1.4286 (exact)
+  '--leading-snug': '--text-label-leading', // 1.375 → 1.4286 (closest)
+  '--leading-normal': '--text-large-leading', // 1.5 → 1.4118 (closest)
+  '--leading-tight': '--text-heading-1-leading', // 1.25 → 1.3333 (closest)
+  '--leading-relaxed': '--text-supporting-leading', // 1.625 → 1.6667 (closest)
 
   // Type scale
   '--heading-1-size': '--text-heading-1-size',

@@ -74,19 +74,19 @@ const variants = stylex.create({
   },
   info: {
     backgroundColor: colorVars['--color-accent'],
-    color: colorVars['--color-on-dark'],
+    color: colorVars['--color-on-accent'],
   },
   success: {
     backgroundColor: colorVars['--color-success'],
-    color: colorVars['--color-on-dark'],
+    color: colorVars['--color-on-success'],
   },
   warning: {
     backgroundColor: colorVars['--color-warning'],
-    color: colorVars['--color-text-primary'],
+    color: colorVars['--color-on-warning'],
   },
   error: {
     backgroundColor: colorVars['--color-error'],
-    color: colorVars['--color-on-dark'],
+    color: colorVars['--color-on-error'],
   },
 });
 

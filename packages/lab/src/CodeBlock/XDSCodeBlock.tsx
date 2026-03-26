@@ -29,7 +29,7 @@ import {
   textSizeVars,
   typographyVars,
   fontWeightVars,
-  lineHeightVars,
+  typeScaleVars,
   borderVars,
 } from '@xds/core/theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '@xds/core/utils';
@@ -65,7 +65,7 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
     margin: 0,
-    lineHeight: lineHeightVars['--leading-snug'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
   },
   scrollContainer: {
     overflowX: 'auto',
@@ -87,7 +87,7 @@ const styles = stylex.create({
   },
   gutterLine: {
     fontFamily: typographyVars['--font-family-code'],
-    lineHeight: lineHeightVars['--leading-normal'],
+    lineHeight: typeScaleVars['--text-code-leading'],
   },
   code: {
     display: 'block',
@@ -108,7 +108,7 @@ const styles = stylex.create({
     overflowWrap: 'break-word',
   },
   line: {
-    lineHeight: lineHeightVars['--leading-normal'],
+    lineHeight: typeScaleVars['--text-code-leading'],
     contentVisibility: 'auto',
     containIntrinsicBlockSize: 'auto 1lh',
   },

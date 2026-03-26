@@ -284,7 +284,7 @@ export const dayCellTheme = stylex.create({
   // Selected state (single selection or range endpoints)
   daySelected: {
     backgroundColor: colorVars['--color-accent'],
-    color: colorVars['--color-on-dark'],
+    color: colorVars['--color-on-accent'],
     backgroundImage: {
       default: null,
       ':hover': {

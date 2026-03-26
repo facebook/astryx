@@ -32,6 +32,13 @@ export const brutalistTheme = defineTheme({
     '--color-background-surface': ['#FFFFFF', '#000000'],
     '--color-background-body': ['#F5F5F5', '#111111'],
     '--color-background-card': ['#FFFFFF', '#000000'],
+    // Contrast on hot pink accent — white in both modes
+    '--color-on-accent': ['#FFFFFF', '#FFFFFF'],
+    '--color-on-success': ['#FFFFFF', '#FFFFFF'],
+    '--color-on-error': ['#FFFFFF', '#FFFFFF'],
+    '--color-on-warning': ['#000000', '#000000'],
+    '--color-on-light': ['#000000', '#000000'],
+    '--color-on-dark': ['#FFFFFF', '#FFFFFF'],
 
     // Even pills are sharp in brutalist
     '--radius-full': '0px',

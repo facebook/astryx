@@ -62,8 +62,15 @@ export const neutralTheme = defineTheme({
     '--color-text-disabled': ['oklch(0.708 0 0)', 'oklch(0.439 0 0)'],
     '--color-text-accent': ['oklch(0.205 0 0)', 'oklch(0.922 0 0)'],
     '--color-on-dark': ['oklch(1 0 0)', 'oklch(0.145 0 0)'],
+    '--color-on-light': ['oklch(0.145 0 0)', 'oklch(0.145 0 0)'],
+    // Contrast: neutral accent is near-black (L) / near-white (D)
+    '--color-on-accent': ['oklch(1 0 0)', 'oklch(0.145 0 0)'],
+    '--color-on-success': ['oklch(1 0 0)', 'oklch(0.145 0 0)'],
+    '--color-on-error': ['oklch(1 0 0)', 'oklch(0.145 0 0)'],
+    '--color-on-warning': ['oklch(0.145 0 0)', 'oklch(0.145 0 0)'],
 
     // Icon
+    '--color-icon-accent': ['oklch(0.205 0 0)', 'oklch(0.922 0 0)'],
     '--color-icon-primary': ['oklch(0.145 0 0)', 'oklch(0.985 0 0)'],
     '--color-icon-secondary': ['oklch(0.556 0 0)', 'oklch(0.708 0 0)'],
     '--color-icon-disabled': ['oklch(0.708 0 0)', 'oklch(0.439 0 0)'],
@@ -252,6 +259,7 @@ export const neutralTheme = defineTheme({
     '--radius-inner': '0.375rem',
     '--radius-element': '0.625rem',
     '--radius-container': '0.75rem',
+    '--radius-page': '1.75rem',
     '--radius-full': '9999px',
 
     // =========================================================================
@@ -275,9 +283,6 @@ export const neutralTheme = defineTheme({
     // Button — primary gets white text, secondary gets a border
     // =========================================================================
     button: {
-      'variant:primary': {
-        color: 'light-dark(white, oklch(0.145 0 0))',
-      },
       'variant:secondary': {
         borderWidth: '1px',
         borderStyle: 'solid',

@@ -8,7 +8,7 @@ describe('expandRadiusScale', () => {
     expect(tokens['--radius-inner']).toBe('4px');
     expect(tokens['--radius-element']).toBe('8px');
     expect(tokens['--radius-container']).toBe('12px');
-    expect(tokens['--radius-page']).toBe('16px');
+    expect(tokens['--radius-page']).toBe('28px');
     expect(tokens['--radius-full']).toBe('9999px');
   });
 
@@ -17,7 +17,7 @@ describe('expandRadiusScale', () => {
     expect(tokens['--radius-inner']).toBe('6px');
     expect(tokens['--radius-element']).toBe('12px');
     expect(tokens['--radius-container']).toBe('18px');
-    expect(tokens['--radius-page']).toBe('24px');
+    expect(tokens['--radius-page']).toBe('42px');
   });
 
   it('multiplier 0 produces all zeros', () => {
@@ -49,6 +49,6 @@ describe('expandRadiusScale', () => {
     expect(tokens['--radius-inner']).toBe('6px');
     expect(tokens['--radius-element']).toBe('12px');
     expect(tokens['--radius-container']).toBe('18px');
-    expect(tokens['--radius-page']).toBe('24px');
+    expect(tokens['--radius-page']).toBe('42px');
   });
 });
