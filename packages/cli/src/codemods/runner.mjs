@@ -2,12 +2,20 @@
  * @file Codemod runner
  *
  * Orchestrates running jscodeshift transforms against source files.
- * Handles dry-run previews, file writing, and summary reporting.
+ * Handles dry-run previews, file writing, summary reporting, and
+ * output validation to prevent corrupted transforms from reaching disk.
  */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as p from '@clack/prompts';
+
+// Known corruption patterns that indicate a broken transform.
+// Each entry: [regex, human-readable description]
+const CORRUPTION_PATTERNS = [
+  [/\[native code\]/g, '[native code] injection (prototype pollution in identifier map)'],
+  [/function \w+\(\) \{ \[native code\] \}/g, 'native function toString() leak'],
+];
 
 /**
  * Recursively find all source files in a directory.
@@ -38,6 +46,74 @@ function findSourceFiles(dir) {
 
   walk(dir);
   return results.sort();
+}
+
+/**
+ * Detect the project's formatter and run it on changed files.
+ * Tries prettier, then biome. Silently skips if none found.
+ *
+ * @param {string[]} files - Absolute paths to files that were modified
+ */
+async function formatChangedFiles(files) {
+  if (files.length === 0) return;
+
+  const {execSync} = await import('node:child_process');
+  const fileArgs = files.map((f) => `"${f}"`).join(' ');
+
+  const formatters = [
+    {name: 'prettier', cmd: `npx prettier --write ${fileArgs}`},
+    {name: 'biome', cmd: `npx biome format --write ${fileArgs}`},
+  ];
+
+  for (const {name, cmd} of formatters) {
+    try {
+      execSync(cmd, {stdio: 'pipe', timeout: 30000});
+      p.log.info(`Formatted ${files.length} file${files.length === 1 ? '' : 's'} with ${name}`);
+      return;
+    } catch {
+      // Formatter not available or failed — try next
+    }
+  }
+}
+
+/**
+ * Validate transform output before writing to disk.
+ *
+ * Checks:
+ * 1. The output can be re-parsed by jscodeshift (no syntax corruption)
+ * 2. No known corruption patterns are present that weren't in the original
+ *
+ * @param {string} result - The transformed source code
+ * @param {string} source - The original source code
+ * @param {Function} j - jscodeshift instance (with parser configured)
+ * @returns {{ valid: boolean, reason?: string }}
+ */
+export function validateOutput(result, source, j) {
+  // Check 1: Re-parse the output — catches syntax-breaking corruption
+  try {
+    j(result);
+  } catch (parseError) {
+    return {
+      valid: false,
+      reason: `transform produced unparseable output: ${parseError.message}`,
+    };
+  }
+
+  // Check 2: Known corruption patterns (only flag new ones, not pre-existing)
+  for (const [pattern, description] of CORRUPTION_PATTERNS) {
+    const resultMatches = result.match(pattern);
+    const sourceMatches = source.match(pattern);
+    const resultCount = resultMatches ? resultMatches.length : 0;
+    const sourceCount = sourceMatches ? sourceMatches.length : 0;
+    if (resultCount > sourceCount) {
+      return {
+        valid: false,
+        reason: `detected corruption: ${description} (${resultCount - sourceCount} new occurrence${resultCount - sourceCount > 1 ? 's' : ''})`,
+      };
+    }
+  }
+
+  return {valid: true};
 }
 
 /**
@@ -72,7 +148,9 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
 
   let totalFilesChanged = 0;
   let totalTransformsApplied = 0;
+  let totalValidationBlocked = 0;
   const errors = [];
+  const writtenFiles = [];
 
   for (const {version, transforms} of versionManifests) {
     p.log.step(`Applying v${version} codemods...`);
@@ -92,13 +170,11 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
         try {
           const source = fs.readFileSync(filePath, 'utf-8');
           // Configure parser based on file extension
-          const parser = filePath.endsWith('.tsx')
-            ? 'tsx'
-            : filePath.endsWith('.jsx')
-              ? 'babel'
-              : 'babel';
+          const ext = path.extname(filePath);
+          const parser = ext === '.tsx' ? 'tsx' : ext === '.jsx' ? 'babel' : 'babel';
+          const j = jscodeshift.withParser(parser);
           const api = {
-            jscodeshift: jscodeshift.withParser(parser),
+            jscodeshift: j,
             stats: () => {},
             report: () => {},
           };
@@ -107,12 +183,22 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
           const result = transform(file, api);
 
           if (result != null && result !== source) {
+            // Validate output before writing
+            const validation = validateOutput(result, source, j);
+            if (!validation.valid) {
+              totalValidationBlocked++;
+              p.log.error(`    ✗ ${relativePath} — ${validation.reason}`);
+              errors.push({file: relativePath, codemod: name, error: validation.reason});
+              continue;
+            }
+
             filesChanged++;
             totalFilesChanged++;
             totalTransformsApplied++;
 
             if (apply) {
               fs.writeFileSync(filePath, result, 'utf-8');
+              writtenFiles.push(filePath);
               p.log.success(`    ✓ ${relativePath}`);
             } else {
               p.log.warn(`    ~ ${relativePath} (would change)`);
@@ -143,6 +229,21 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
     }
   }
 
+  // Post-codemod formatting: run the project's formatter on changed files
+  // so codemods don't introduce style drift (jscodeshift may change quotes, etc.)
+  if (apply && writtenFiles.length > 0) {
+    await formatChangedFiles(writtenFiles);
+  }
+
+  if (totalValidationBlocked > 0) {
+    p.log.warn(
+      `${totalValidationBlocked} file${totalValidationBlocked === 1 ? ' was' : 's were'} blocked by validation — no changes written to ${totalValidationBlocked === 1 ? 'that file' : 'those files'}.`,
+    );
+    p.log.info(
+      'This means a codemod produced invalid output. Please report this as a bug.',
+    );
+  }
+
   if (totalFilesChanged === 0 && errors.length === 0) {
     p.log.success('No changes needed — your code is already up to date!');
   } else if (apply) {
@@ -159,4 +260,6 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
     );
     p.log.info('Run with --apply to write changes to disk.');
   }
+
+  return {totalFilesChanged, totalTransformsApplied, totalValidationBlocked, errors};
 }
