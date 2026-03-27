@@ -1,14 +1,9 @@
-import {XDSAppShell} from '@xds/core/AppShell';
-import {SandboxTopNav} from '../SandboxTopNav';
-import {SandboxNav} from '../SandboxNav';
+import {SandboxShell} from '../SandboxShell';
 
-export default function SandboxLayout({children}: {children: React.ReactNode}) {
-  return (
-    <XDSAppShell
-      topNav={<SandboxTopNav />}
-      sideNav={<SandboxNav />}
-      contentPadding={4}>
-      {children}
-    </XDSAppShell>
-  );
+export default function SandboxLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <SandboxShell>{children}</SandboxShell>;
 }

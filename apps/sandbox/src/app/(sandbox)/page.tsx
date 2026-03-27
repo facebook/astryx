@@ -1,31 +1,46 @@
 'use client';
 
-import * as stylex from '@stylexjs/stylex';
-import {XDSVStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
-
-const styles = stylex.create({
-  container: {
-    maxWidth: 640,
-  },
-});
+import {categories} from '../sandboxPages';
+import {ProjectCard} from '../ProjectCard';
 
 export default function Home() {
   return (
-    <div {...stylex.props(styles.container)}>
-      <XDSVStack gap={6}>
-        <XDSVStack gap={2}>
-          <XDSHeading level={1}>XDS Sandbox</XDSHeading>
-          <XDSText type="body" color="secondary">
-            A testing ground for XDS components. Use the sidebar to explore
-            example pages, or create new ones under{' '}
-            <XDSText type="body" weight="bold">
-              src/app/pages/
-            </XDSText>
-            .
+    <div style={{display: 'flex', flexDirection: 'column', gap: 40}}>
+      <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
+        <XDSHeading level={1}>XDS Sandbox</XDSHeading>
+        <XDSText type="body" color="secondary">
+          A testing ground for XDS components. Explore tools and templates
+          below, or create new pages under{' '}
+          <XDSText type="body" weight="bold">
+            src/app/pages/
           </XDSText>
-        </XDSVStack>
-      </XDSVStack>
+          .
+        </XDSText>
+      </div>
+
+      {categories.map(category => (
+        <div
+          key={category.slug}
+          style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+          <div style={{display: 'flex', flexDirection: 'column', gap: 4}}>
+            <XDSHeading level={2}>{category.label}</XDSHeading>
+            <XDSText type="body" color="secondary">
+              {category.description}
+            </XDSText>
+          </div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 20,
+            }}>
+            {category.pages.map(page => (
+              <ProjectCard key={page.href} page={page} />
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

@@ -1,83 +1,125 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import {usePathname} from 'next/navigation';
 import Link from 'next/link';
-import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavItem,
-  XDSSideNavSection,
-} from '@xds/core/SideNav';
-import {XDSSelector} from '@xds/core/Selector';
+import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
+import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
+import {XDSText} from '@xds/core/Text';
 import {useThemeControls} from './providers';
 import type {ThemeMode} from '@xds/core/theme';
+import {categories} from './sandboxPages';
+import {
+  HomeIcon,
+  WrenchIcon,
+  LayoutTemplateIcon,
+  PaletteIcon,
+  SunIcon,
+  MoonIcon,
+} from './icons';
+import {spacingVars, colorVars} from '@xds/core/theme/tokens.stylex';
 
-const pages = [
-  {name: 'Home', href: '/'},
-  {name: 'Theme Editor', href: '/pages/theme-editor/'},
-  {name: 'Shell Lab', href: '/pages/shell-lab/'},
-  {name: 'Example', href: '/pages/example/'},
-  {name: 'Navigation', href: '/pages/navigation/'},
-  {name: 'TopNav Menu', href: '/pages/topnav-menu/'},
-  {name: 'Mega Menu', href: '/pages/mega-menu/'},
-  {name: 'Polymorphic Link', href: '/pages/polymorphic-link/'},
-  {name: 'Table Overview', href: '/pages/table-overview/'},
-];
+const categoryIcons: Record<
+  string,
+  React.ComponentType<React.SVGProps<SVGSVGElement>>
+> = {
+  tools: WrenchIcon,
+  templates: LayoutTemplateIcon,
+};
+
+const styles = stylex.create({
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingInline: spacingVars['--spacing-4'],
+    paddingBlock: spacingVars['--spacing-3'],
+    borderBottomWidth: 1,
+    borderBottomStyle: 'solid',
+    borderBottomColor: colorVars['--color-border'],
+  },
+  controls: {
+    display: 'flex',
+    gap: 2,
+  },
+});
+
+function SandboxHeader() {
+  const {setThemeName, mode, setMode} = useThemeControls();
+
+  const themeItems = [
+    {label: 'Default', onClick: () => setThemeName('default')},
+    {label: 'Neutral', onClick: () => setThemeName('neutral')},
+    {label: 'Brutalist', onClick: () => setThemeName('brutalist')},
+    {label: 'Meta', onClick: () => setThemeName('meta')},
+    {label: 'WhatsApp', onClick: () => setThemeName('whatsapp')},
+  ];
+
+  const modeItems = [
+    {label: 'Light', onClick: () => setMode('light' as ThemeMode)},
+    {label: 'Dark', onClick: () => setMode('dark' as ThemeMode)},
+  ];
+
+  return (
+    <div {...stylex.props(styles.header)}>
+      <XDSText type="body" weight="bold">
+        Sandbox
+      </XDSText>
+      <div {...stylex.props(styles.controls)}>
+        <XDSDropdownMenu
+          button={{
+            label: 'Theme',
+            icon: <PaletteIcon />,
+            variant: 'ghost',
+            size: 'sm',
+          }}
+          menuWidth={160}
+          items={themeItems}
+        />
+        <XDSDropdownMenu
+          button={{
+            label: mode === 'dark' ? 'Dark mode' : 'Light mode',
+            icon: mode === 'dark' ? <MoonIcon /> : <SunIcon />,
+            variant: 'ghost',
+            size: 'sm',
+          }}
+          menuWidth={160}
+          items={modeItems}
+        />
+      </div>
+    </div>
+  );
+}
 
 export function SandboxNav() {
   const pathname = usePathname();
-  const {themeName, setThemeName, mode, setMode} = useThemeControls();
 
   return (
-    <XDSSideNav header={<XDSSideNavHeading heading="Sandbox" />}>
-      <XDSSideNavSection title="Pages" isHeaderHidden>
-        {pages.map(page => {
-          const isActive =
-            pathname === page.href ||
-            (page.href !== '/' && pathname.startsWith(page.href));
+    <XDSSideNav header={<SandboxHeader />}>
+      <XDSSideNavSection title="Home" isHeaderHidden>
+        <XDSSideNavItem
+          label="Home"
+          href="/"
+          isSelected={pathname === '/'}
+          as={Link}
+          icon={HomeIcon}
+        />
+      </XDSSideNavSection>
+      <XDSSideNavSection title="Projects">
+        {categories.map(category => {
+          const isActive = pathname === `/${category.slug}/`;
+          const IconComponent = categoryIcons[category.slug];
           return (
             <XDSSideNavItem
-              key={page.href}
-              label={page.name}
-              href={page.href}
+              key={category.slug}
+              label={category.label}
+              href={`/${category.slug}/`}
               isSelected={isActive}
               as={Link}
+              icon={IconComponent}
             />
           );
         })}
-      </XDSSideNavSection>
-      <XDSSideNavSection title="Theme">
-        <div style={{padding: '0 12px'}}>
-          <XDSSelector
-            label="Theme"
-            isLabelHidden
-            size="sm"
-            value={themeName}
-            onChange={setThemeName}
-            options={[
-              {value: 'default', label: 'Default'},
-              {value: 'neutral', label: 'Neutral'},
-              {value: 'brutalist', label: 'Brutalist'},
-              {value: 'meta', label: 'Meta'},
-              {value: 'whatsapp', label: 'WhatsApp'},
-            ]}
-          />
-        </div>
-      </XDSSideNavSection>
-      <XDSSideNavSection title="Mode">
-        <div style={{padding: '0 12px'}}>
-          <XDSSelector
-            label="Mode"
-            isLabelHidden
-            size="sm"
-            value={mode}
-            onChange={v => setMode(v as ThemeMode)}
-            options={[
-              {value: 'light', label: 'Light'},
-              {value: 'dark', label: 'Dark'},
-            ]}
-          />
-        </div>
       </XDSSideNavSection>
     </XDSSideNav>
   );
