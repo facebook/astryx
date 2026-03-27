@@ -286,7 +286,7 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
-    color: colorVars['--color-text-secondary'],
+    color: colorVars['--color-text-primary'],
   },
   iconWrapper: {
     display: 'flex',
