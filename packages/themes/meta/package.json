@@ -1,0 +1,36 @@
+{
+  "name": "@xds/theme-meta",
+  "version": "0.0.1",
+  "private": false,
+  "description": "Meta theme for XDS components — Meta's brand identity with blue accent and clean aesthetics",
+  "license": "MIT",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./theme.css": "./dist/theme.css"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "xds theme build src/metaTheme.ts -o dist/theme.css && node scripts/gen-compat-css.mjs && tsup && rm -f dist/meta.js dist/meta.d.ts"
+  },
+  "dependencies": {
+    "@heroicons/react": "^2.2.0"
+  },
+  "peerDependencies": {
+    "@xds/core": "*",
+    "react": ">=19"
+  },
+  "devDependencies": {
+    "@xds/cli": "*"
+  },
+  "module": "./dist/index.mjs"
+}
