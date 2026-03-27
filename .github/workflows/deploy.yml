@@ -1,5 +1,17 @@
-# Deploy Storybook to GitHub Pages
+# Deploy Storybook + Sandbox to GitHub Pages
 # Only runs on push to main — simple and sequential: sync → test → deploy
+#
+# Deployment layout on gh-pages:
+#   /storybook/    — stable Storybook (always latest main)
+#   /sandbox/      — stable Sandbox (always latest main)
+#   /pr/<number>/  — PR preview dirs (managed by ci.yml, preserved here)
+#   /reports/      — vibe test reports (preserved)
+#   /assets/       — landing page CSS
+#   /index.html    — landing page
+#   /latest        — short hash of latest deploy
+#
+# Uses keep_files:false — each deploy is a clean slate. PR previews and
+# reports are preserved by copying them from gh-pages before deploying.
 name: Deploy
 
 on:
@@ -71,27 +83,57 @@ jobs:
       - name: Build Storybook
         run: yarn workspace @xds/storybook build
 
-      - name: Compute short hash
-        id: hash
-        run: echo "short_hash=${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
-
       - name: Build Sandbox
         run: yarn workspace @xds/sandbox build
         env:
-          SANDBOX_BASE_PATH: /${{ steps.hash.outputs.short_hash }}/sandbox
+          SANDBOX_BASE_PATH: /sandbox
+
+      - name: Preserve PR previews and reports from gh-pages
+        run: |
+          # Clone current gh-pages to rescue PR previews and reports
+          # before the clean deploy wipes everything.
+          git clone --depth=1 --single-branch --branch gh-pages \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" \
+            /tmp/gh-pages 2>/dev/null || true
+
+          if [ -d "/tmp/gh-pages" ]; then
+            # Preserve PR preview directories
+            if [ -d "/tmp/gh-pages/pr" ]; then
+              echo "Preserving PR previews"
+              cp -r /tmp/gh-pages/pr /tmp/preserved-pr
+            fi
+
+            # Preserve vibe test reports
+            if [ -d "/tmp/gh-pages/reports" ]; then
+              echo "Preserving reports"
+              cp -r /tmp/gh-pages/reports /tmp/preserved-reports
+            fi
+
+            rm -rf /tmp/gh-pages
+          fi
 
       - name: Prepare deployment
         run: |
           SHORT_HASH="${GITHUB_SHA:0:7}"
-          REPO_NAME="${{ github.event.repository.name }}"
-          REPO_OWNER="${{ github.repository_owner }}"
 
-          mkdir -p deploy/${SHORT_HASH}
-          cp -r apps/storybook/dist/* deploy/${SHORT_HASH}/
+          # Stable storybook
+          mkdir -p deploy/storybook
+          cp -r apps/storybook/dist/* deploy/storybook/
 
+          # Stable sandbox (built with basePath=/sandbox)
           if [ -d "apps/sandbox/out" ]; then
-            mkdir -p deploy/${SHORT_HASH}/sandbox
-            cp -r apps/sandbox/out/* deploy/${SHORT_HASH}/sandbox/
+            mkdir -p deploy/sandbox
+            cp -r apps/sandbox/out/* deploy/sandbox/
+          fi
+
+          # Restore preserved PR previews and reports
+          if [ -d "/tmp/preserved-pr" ]; then
+            cp -r /tmp/preserved-pr deploy/pr
+            echo "Restored $(ls deploy/pr/ | wc -l) PR preview(s)"
+          fi
+          if [ -d "/tmp/preserved-reports" ]; then
+            cp -r /tmp/preserved-reports deploy/reports
+            echo "Restored reports"
           fi
 
           # Copy XDS dist CSS for the landing page
@@ -150,14 +192,14 @@ jobs:
               <h1>XDS Design System</h1>
               <p>Component library for building internal tools. Select an environment below.</p>
               <div class="links">
-                <a class="card" id="storybook-link" href="#">
+                <a class="card" href="storybook/index.html">
                   <div>
                     <div class="card-title">📖 Storybook</div>
                     <div class="card-desc">Component docs, props, and interactive examples</div>
                   </div>
                   <span class="arrow">→</span>
                 </a>
-                <a class="card" id="sandbox-link" href="#">
+                <a class="card" href="sandbox/index.html">
                   <div>
                     <div class="card-title">🏗️ Sandbox</div>
                     <div class="card-desc">Full app demo with theme editor</div>
@@ -172,50 +214,17 @@ jobs:
                   <span class="arrow">→</span>
                 </a>
               </div>
-              <div class="hash" id="commit-hash"></div>
+              <div class="hash">Build: DEPLOY_HASH_PLACEHOLDER</div>
             </div>
-            <script>
-              // Resolve links from the `latest` file so they always point
-              // to the most recently deployed hash — even if a newer main
-              // commit is still building and the sed-injected hash is stale.
-              fetch('latest')
-                .then(r => r.ok ? r.text() : null)
-                .then(hash => {
-                  if (!hash) return;
-                  hash = hash.trim();
-                  const sb = document.getElementById('storybook-link');
-                  const bx = document.getElementById('sandbox-link');
-                  const cm = document.getElementById('commit-hash');
-                  if (sb) sb.href = hash + '/index.html';
-                  if (bx) bx.href = hash + '/sandbox/index.html';
-                  if (cm) cm.textContent = 'Build: ' + hash;
-                })
-                .catch(() => {}); // fallback to sed-injected links
-            </script>
           </body>
           </html>
           LANDING_EOF
 
-          # Also deploy to a stable `storybook/` directory so links like
-          # .../storybook/index.html?path=/docs/core-xdsbutton--docs
-          # never break when hash directories get cleaned up.
-          mkdir -p deploy/storybook
-          cp -r apps/storybook/dist/* deploy/storybook/
+          # Inject the short hash into the landing page
+          sed -i "s|DEPLOY_HASH_PLACEHOLDER|${SHORT_HASH}|" deploy/index.html
 
-          if [ -d "apps/sandbox/out" ]; then
-            mkdir -p deploy/sandbox
-            cp -r apps/sandbox/out/* deploy/sandbox/
-          fi
-
-          # Write the latest deployed hash so the landing page can resolve
-          # links dynamically. This survives cleanup and avoids stale links
-          # when a newer main commit is pending deploy.
+          # Write the latest deployed hash (used by PR comment links, etc.)
           echo -n "${SHORT_HASH}" > deploy/latest
-
-          # Inject the short hash into the landing page as a fallback
-          sed -i "s|id=\"storybook-link\" href=\"#\"|id=\"storybook-link\" href=\"${SHORT_HASH}/index.html\"|" deploy/index.html
-          sed -i "s|id=\"sandbox-link\" href=\"#\"|id=\"sandbox-link\" href=\"${SHORT_HASH}/sandbox/index.html\"|" deploy/index.html
-          sed -i "s|id=\"commit-hash\"|id=\"commit-hash\">Build: ${SHORT_HASH}</div><!--done|" deploy/index.html
 
           touch deploy/.nojekyll
 
@@ -224,5 +233,5 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./deploy
-          keep_files: true
+          keep_files: false
           destination_dir: .
