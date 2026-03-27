@@ -255,12 +255,19 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-3'],
     '--container-padding-inline': spacingVars['--spacing-3'],
   },
+  // Left group: icon + text content — grows to fill available space
+  startArea: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: spacingVars['--spacing-2'],
+    flex: 1,
+    minWidth: 0,
+  },
   // Text content area within the header
   headerContent: {
     display: 'flex',
     flexDirection: 'column',
     gap: 0,
-    flex: 1,
     minWidth: 0,
   },
   title: {
@@ -447,23 +454,25 @@ export function XDSBanner({
           container === 'card' ? styles.headerCard : styles.headerSection,
           statusStyles[status],
         )}>
-        <div
-          {...mergeProps(
-            xdsClassName('banner-icon', {status}),
-            stylex.props(styles.iconWrapper),
-          )}
-          aria-hidden="true">
-          {icon != null ? (
-            icon
-          ) : (
-            <XDSIcon icon={DefaultIcon} size="md" color={iconColor} />
-          )}
-        </div>
-        <div {...stylex.props(styles.headerContent)}>
-          <span {...stylex.props(styles.title)}>{title}</span>
-          {description != null && (
-            <span {...stylex.props(styles.description)}>{description}</span>
-          )}
+        <div {...stylex.props(styles.startArea)}>
+          <div
+            {...mergeProps(
+              xdsClassName('banner-icon', {status}),
+              stylex.props(styles.iconWrapper),
+            )}
+            aria-hidden="true">
+            {icon != null ? (
+              icon
+            ) : (
+              <XDSIcon icon={DefaultIcon} size="md" color={iconColor} />
+            )}
+          </div>
+          <div {...stylex.props(styles.headerContent)}>
+            <span {...stylex.props(styles.title)}>{title}</span>
+            {description != null && (
+              <span {...stylex.props(styles.description)}>{description}</span>
+            )}
+          </div>
         </div>
         {showEndArea && (
           <div {...stylex.props(styles.endArea, edgeSignals.end)}>
