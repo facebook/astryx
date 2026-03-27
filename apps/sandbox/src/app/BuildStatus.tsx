@@ -32,6 +32,8 @@ type WorkflowRun = {
   head_sha: string;
   html_url: string;
   created_at: string;
+  display_title: string;
+  head_branch: string;
 };
 
 type MergedPR = {
@@ -46,6 +48,7 @@ type BuildData = {
   inProgress: WorkflowRun[];
   recentPRs: MergedPR[];
   currentHash: string | null;
+  currentTitle: string | null;
   lastFetched: Date | null;
   error: string | null;
 };
@@ -209,6 +212,7 @@ async function fetchBuildData(): Promise<BuildData> {
         r.status === 'completed' && r.conclusion === 'success',
     );
     const currentHash = lastSuccess ? lastSuccess.head_sha.slice(0, 7) : null;
+    const currentTitle = lastSuccess?.display_title ?? null;
 
     // Only merged PRs
     const mergedPRs: MergedPR[] = (prsJson as Array<Record<string, unknown>>)
@@ -226,6 +230,7 @@ async function fetchBuildData(): Promise<BuildData> {
       inProgress,
       recentPRs: mergedPRs,
       currentHash,
+      currentTitle,
       lastFetched: new Date(),
       error: null,
     };
@@ -234,6 +239,7 @@ async function fetchBuildData(): Promise<BuildData> {
       inProgress: [],
       recentPRs: [],
       currentHash: null,
+      currentTitle: null,
       lastFetched: new Date(),
       error: err instanceof Error ? err.message : 'Unknown error',
     };
@@ -285,6 +291,13 @@ export function BuildStatus() {
           <div {...stylex.props(styles.sectionTitle)}>
             <XDSText type="supporting">✅ Deployed</XDSText>
           </div>
+          {data.currentTitle && (
+            <div {...stylex.props(styles.prTitle)}>
+              <XDSText type="body" size="sm">
+                {data.currentTitle}
+              </XDSText>
+            </div>
+          )}
           <div {...stylex.props(styles.prMeta)}>
             <span {...stylex.props(styles.hashBadge)}>{data.currentHash}</span>
             {data.lastFetched && (
@@ -303,20 +316,27 @@ export function BuildStatus() {
             <XDSText type="supporting">🔄 BUILDING</XDSText>
           </div>
           {data?.inProgress.map(run => (
-            <div key={run.id} {...stylex.props(styles.buildingRow)}>
-              <XDSSpinner size="sm" />
-              <span {...stylex.props(styles.hashBadge)}>
-                {run.head_sha.slice(0, 7)}
-              </span>
-              <a
-                href={run.html_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                {...stylex.props(styles.link)}>
-                <XDSText type="body" size="sm">
-                  View workflow →
-                </XDSText>
-              </a>
+            <div key={run.id}>
+              <div {...stylex.props(styles.buildingRow)}>
+                <XDSSpinner size="sm" />
+                <div {...stylex.props(styles.prTitle)}>
+                  <XDSText type="body" size="sm">
+                    {run.display_title}
+                  </XDSText>
+                </div>
+              </div>
+              <div {...stylex.props(styles.prMeta)}>
+                <span {...stylex.props(styles.hashBadge)}>
+                  {run.head_sha.slice(0, 7)}
+                </span>
+                <a
+                  href={run.html_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  {...stylex.props(styles.link)}>
+                  <XDSText type="supporting">View workflow →</XDSText>
+                </a>
+              </div>
             </div>
           ))}
         </div>
