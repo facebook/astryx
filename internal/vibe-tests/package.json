@@ -27,7 +27,9 @@
     "report:deploy": "tsx src/deploy-report.ts",
     "preview:dev": "vite --config app/vite.config.preview.ts",
     "preview:build": "vite build --config app/vite.config.preview.ts",
-    "screenshot:previews": "tsx src/screenshot-previews.ts"
+    "screenshot:previews": "tsx src/screenshot-previews.ts",
+    "design-judge": "tsx src/design-judge.ts",
+    "design-judge:dry": "tsx src/design-judge.ts --dry-run"
   },
   "dependencies": {
     "@xds/cli": "*",

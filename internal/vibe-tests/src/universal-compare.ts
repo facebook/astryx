@@ -19,12 +19,13 @@ import type {
 import {writeJson, getResultsDir} from './utils.js';
 import {getDimensionNames, getAverageScore} from './universal-eval.js';
 
-const DIMENSION_LABELS: Record<UniversalDimension, string> = {
+const DIMENSION_LABELS: Partial<Record<UniversalDimension, string>> = {
   correctness: 'Correctness',
   accessibility: 'Accessibility',
   codeQuality: 'Code Quality',
   efficiency: 'Efficiency',
   maintainability: 'Maintainability',
+  design: 'Design',
 };
 
 function loadOrGenerate(iterationId: string): UniversalAggregate {
@@ -193,7 +194,7 @@ async function main() {
     console.log('│ Dimension           │  XDS  │ Baseline │ HTML │  Winner  │');
     console.log('├─────────────────────┼───────┼──────────┼──────┼──────────┤');
     for (const d of dimensions) {
-      const label = DIMENSION_LABELS[d].padEnd(19);
+      const label = (DIMENSION_LABELS[d] || d).padEnd(19);
       const xScore = String(xds.averages[d]).padStart(3);
       const bScore = String(baseline.averages[d]).padStart(3);
       const hScore = String(htmlData!.averages[d]).padStart(3);
@@ -219,7 +220,7 @@ async function main() {
     console.log('│ Dimension           │  XDS  │ Baseline │  Winner  │');
     console.log('├─────────────────────┼───────┼──────────┼──────────┤');
     for (const d of dimensions) {
-      const label = DIMENSION_LABELS[d].padEnd(19);
+      const label = (DIMENSION_LABELS[d] || d).padEnd(19);
       const xScore = String(xds.averages[d]).padStart(3);
       const bScore = String(baseline.averages[d]).padStart(3);
       const w = winnerIcon(winners[d]).padEnd(8);

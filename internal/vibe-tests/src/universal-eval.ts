@@ -1062,7 +1062,7 @@ export function evaluate(code: string, target: string): UniversalScore {
 }
 
 /**
- * Get the list of dimension names.
+ * Get the list of code-level dimension names (always available).
  */
 export function getDimensionNames(): UniversalDimension[] {
   return [
@@ -1075,20 +1075,52 @@ export function getDimensionNames(): UniversalDimension[] {
 }
 
 /**
+ * Get all dimension names including design (when available).
+ */
+export function getAllDimensionNames(): UniversalDimension[] {
+  return [
+    'correctness',
+    'accessibility',
+    'codeQuality',
+    'efficiency',
+    'maintainability',
+    'design',
+  ];
+}
+
+/**
  * Get the score for a specific dimension.
+ * Returns null for 'design' if not available.
  */
 export function getDimensionScore(
   score: UniversalScore,
   dimension: UniversalDimension,
-): number {
+): number | null {
+  if (dimension === 'design') {
+    return score.design?.score ?? null;
+  }
   return score[dimension].score;
 }
 
 /**
- * Calculate an average score across all dimensions (unweighted).
+ * Calculate an average score across the 5 core dimensions (unweighted).
+ * Does NOT include design — use getFullAverageScore() when all scores
+ * being compared are guaranteed to have design scores.
  */
 export function getAverageScore(score: UniversalScore): number {
   const dims = getDimensionNames();
-  const total = dims.reduce((sum, d) => sum + score[d].score, 0);
+  const total = dims.reduce((sum, d) => sum + (score[d]?.score ?? 0), 0);
   return Math.round(total / dims.length);
+}
+
+/**
+ * Calculate an average score across all 6 dimensions including design.
+ * Returns null if design score is not present.
+ */
+export function getFullAverageScore(score: UniversalScore): number | null {
+  if (score.design == null) return null;
+  const dims = getDimensionNames();
+  const coreTotal = dims.reduce((sum, d) => sum + (score[d]?.score ?? 0), 0);
+  const total = coreTotal + score.design.score;
+  return Math.round(total / (dims.length + 1));
 }

@@ -265,7 +265,8 @@ export type UniversalDimension =
   | 'accessibility'
   | 'codeQuality'
   | 'efficiency'
-  | 'maintainability';
+  | 'maintainability'
+  | 'design';
 
 export interface UniversalFinding {
   rule: string;
@@ -304,12 +305,25 @@ export interface DimensionScore<M = undefined> {
   metrics?: M;
 }
 
+export interface DesignMetrics {
+  layout: number;
+  hierarchy: number;
+  spacing: number;
+  components: number;
+  color: number;
+  passCount: number;
+  /** Max variance across passes (stability indicator) */
+  maxVariance: number;
+}
+
 export interface UniversalScore {
   correctness: DimensionScore;
   accessibility: DimensionScore;
   codeQuality: DimensionScore;
   efficiency: DimensionScore<EfficiencyMetrics>;
   maintainability: DimensionScore<MaintainabilityMetrics>;
+  /** Design dimension — null when no ideal reference image exists for the prompt */
+  design?: DimensionScore<DesignMetrics> | null;
 }
 
 export interface CostMetrics {

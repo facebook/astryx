@@ -64,25 +64,37 @@ The harness:
 ```
 internal/vibe-tests/
 ├── src/
-│   ├── cli.ts           # Command-line interface
-│   ├── types.ts         # TypeScript types
-│   ├── runner.ts        # Test orchestration
-│   ├── evaluator.ts     # Response evaluation
-│   ├── analyst.ts       # Results analysis
-│   ├── sampling.ts      # Stratified sampling
-│   └── utils.ts         # Utilities
+│   ├── cli.ts                # Command-line interface
+│   ├── types.ts              # TypeScript types
+│   ├── runner.ts             # Test orchestration
+│   ├── evaluator.ts          # Response evaluation
+│   ├── analyst.ts            # Results analysis
+│   ├── sampling.ts           # Stratified sampling
+│   ├── universal-eval.ts     # 5-dimension static analysis (code-level)
+│   ├── universal-aggregate.ts # Aggregate scores across prompts
+│   ├── universal-compare.ts  # Compare XDS vs baseline vs HTML
+│   ├── design-judge.ts       # 6th dimension: vision LLM visual fidelity judge
+│   ├── screenshot-previews.ts # Playwright screenshots of pre-built HTML
+│   ├── build-previews.ts     # Build self-contained HTML from results
+│   ├── build-report.ts       # Build static report HTML + inject data
+│   ├── deploy-report.ts      # Deploy report + screenshots to gh-pages
+│   └── utils.ts              # Utilities
+├── ideals/                   # Human-provided reference images for design judge
+│   └── {promptId}[-{viewport}[-{theme}]].png
 ├── prompts/
-│   ├── evaluator.md     # Evaluator agent prompt
-│   ├── analyst.md       # Analyst agent prompt
-│   └── personas/        # User personas
+│   ├── evaluator.md          # Evaluator agent prompt
+│   ├── analyst.md            # Analyst agent prompt
+│   └── personas/             # User personas
 ├── test-sets/
-│   └── default.json     # Test prompt battery
-├── results/             # Generated (gitignored)
+│   └── default.json          # Test prompt battery
+├── results/                  # Generated (gitignored)
 │   └── {iteration-id}/
 │       ├── runs.jsonl
 │       ├── analysis.json
+│       ├── universal.json    # 5+1 dimension scores
+│       ├── design-scores.json # Design dimension raw judge output
 │       └── report.html
-└── iterations.json      # Iteration lineage
+└── iterations.json           # Iteration lineage
 ```
 
 ## Test Protocols
@@ -254,6 +266,27 @@ gh workflow run vibe-screenshots.yml -f iterations="<id1>,<id2>,<id3>"
 3. Uploads preview HTML and screenshots as artifacts (90-day retention)
 
 **No API keys required.** Code generation is handled by Navi sub-agents before this workflow runs.
+
+### Design Judge (`src/design-judge.ts`)
+
+Vision LLM evaluation comparing rendered screenshots against human-provided ideal reference images.
+
+```bash
+# Dry run — shows what would be evaluated without API calls
+yarn workspace @xds/vibe-tests design-judge --iteration <id> --dry-run
+
+# Full run — 3 passes per screenshot, desktop + light
+yarn workspace @xds/vibe-tests design-judge --iteration <id>
+
+# Custom: specific prompts, 5 passes, mobile dark
+yarn workspace @xds/vibe-tests design-judge --iteration <id> --prompts cwm-1,ty-3 --passes 5 --viewport mobile --theme dark
+```
+
+**Requires:** `ANTHROPIC_API_KEY` environment variable. Uses Claude Sonnet for vision analysis.
+
+**Prerequisite:** Ideal reference images in `internal/vibe-tests/ideals/`. Only prompts with both screenshots and ideals are evaluated.
+
+**Output:** `results/<iteration>/design-scores.json` — scores are automatically merged into `universal.json` when the aggregate runs.
 
 ### Direct API Mode (legacy)
 
