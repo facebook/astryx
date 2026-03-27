@@ -8,7 +8,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {HashtagIcon} from '@heroicons/react/24/outline';
 import {XDSNumberInput} from './XDSNumberInput';
@@ -311,6 +311,53 @@ describe('XDSNumberInput', () => {
       render(<XDSNumberInput label="Amount" value={100} onChange={() => {}} />);
       expect(screen.queryByText('%')).not.toBeInTheDocument();
       expect(screen.queryByText('GB')).not.toBeInTheDocument();
+    });
+
+    it('includes units id in aria-describedby when units is provided', () => {
+      render(
+        <XDSNumberInput
+          label="Discount"
+          value={10}
+          onChange={() => {}}
+          units="%"
+        />,
+      );
+      const input = screen.getByRole('spinbutton');
+      const unitsSpan = screen.getByText('%');
+      expect(unitsSpan).toHaveAttribute('id');
+      const unitsId = unitsSpan.getAttribute('id')!;
+      expect(input.getAttribute('aria-describedby')).toContain(unitsId);
+    });
+  });
+
+  describe('onWheel', () => {
+    it('blurs the input on wheel event', () => {
+      render(
+        <XDSNumberInput
+          label="Quantity"
+          value={10}
+          onChange={() => {}}
+          hasAutoFocus
+        />,
+      );
+      const input = screen.getByRole('spinbutton');
+      expect(input).toHaveFocus();
+      fireEvent.wheel(input);
+      expect(input).not.toHaveFocus();
+    });
+  });
+
+  describe('onChange with null', () => {
+    it('calls onChange with null when input is cleared', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <XDSNumberInput label="Quantity" value={42} onChange={handleChange} />,
+      );
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.clear(input);
+      expect(handleChange).toHaveBeenCalledWith(null);
     });
   });
 

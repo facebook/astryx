@@ -18,7 +18,6 @@ import {
   useState,
   useMemo,
   useCallback,
-  useRef,
   type FocusEvent,
   type KeyboardEvent,
 } from 'react';
@@ -104,7 +103,7 @@ export interface XDSNumberInputProps extends Omit<
   XDSBaseProps,
   'onChange' | 'defaultValue'
 > {
-  /** Ref forwarded to the root element */
+  /** Ref forwarded to the input element */
   ref?: React.Ref<HTMLInputElement>;
   /**
    * Label text for the input (always rendered for accessibility).
@@ -158,10 +157,11 @@ export interface XDSNumberInputProps extends Omit<
    */
   size?: XDSNumberInputSize;
   /**
-   * Callback fired when the input value changes to a valid number.
-   * Only called when the entered value passes validation.
+   * Callback fired when the input value changes.
+   * Called with a valid number when the entered value passes validation,
+   * or null when the input is cleared.
    */
-  onChange: (value: number) => void;
+  onChange: (value: number | null) => void;
   /**
    * The current value of the input.
    * Use null or undefined to represent an empty/unset value.
@@ -265,6 +265,21 @@ function parseNumberInput(
   return num;
 }
 
+const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
+  warning: 'warning',
+  error: 'xCircle',
+  success: 'checkCircle',
+};
+
+const statusIconColorMap: Record<
+  XDSInputStatusType,
+  'warning' | 'negative' | 'positive'
+> = {
+  warning: 'warning',
+  error: 'negative',
+  success: 'positive',
+};
+
 /**
  * A number input component for collecting numeric user input.
  * Only calls onChange when the entered value passes validation.
@@ -309,30 +324,16 @@ export function XDSNumberInput({
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const unitsID = useId();
 
   // Pending input while user is typing (null = show formatted value)
   const [pendingInput, setPendingInput] = useState<string | null>(null);
-
-  const statusIconMap: Record<XDSInputStatusType, XDSIconName> = {
-    warning: 'warning',
-    error: 'xCircle',
-    success: 'checkCircle',
-  };
-
-  const statusIconColorMap: Record<
-    XDSInputStatusType,
-    'warning' | 'negative' | 'positive'
-  > = {
-    warning: 'warning',
-    error: 'negative',
-    success: 'positive',
-  };
 
   const ariaDescribedBy =
     [
       description ? descriptionID : null,
       status?.message ? statusMessageID : null,
+      units ? unitsID : null,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
@@ -357,27 +358,22 @@ export function XDSNumberInput({
     return parseNumberInput(pendingInput, {min, max, isIntegerOnly}) !== null;
   }, [pendingInput, min, max, isIntegerOnly]);
 
-  // Handle input text change - update immediately if valid
+  // Handle input text change - update immediately if valid or cleared
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = e.target.value;
       setPendingInput(newValue);
 
-      // If the input is valid, update immediately
       const parsed = parseNumberInput(newValue, {min, max, isIntegerOnly});
-      if (parsed !== null && parsed !== value) {
-        onChange(parsed);
+      if (parsed !== null) {
+        if (parsed !== value) {
+          onChange(parsed);
+        }
+      } else if (newValue.trim() === '') {
+        onChange(null);
       }
     },
     [value, onChange, min, max, isIntegerOnly],
-  );
-
-  // Handle focus
-  const handleFocus = useCallback(
-    (e: FocusEvent<HTMLInputElement>) => {
-      onFocus?.(e);
-    },
-    [onFocus],
   );
 
   // Handle blur - validate and clear pending input
@@ -425,7 +421,6 @@ export function XDSNumberInput({
   // Combine refs
   const setRefs = useCallback(
     (el: HTMLInputElement | null) => {
-      inputRef.current = el;
       if (typeof ref === 'function') {
         ref(el);
       } else if (ref) {
@@ -480,8 +475,9 @@ export function XDSNumberInput({
           autoComplete={autoComplete}
           value={displayValue}
           onChange={handleInputChange}
-          onFocus={handleFocus}
+          onFocus={onFocus}
           onBlur={handleBlur}
+          onWheel={e => e.currentTarget.blur()}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={isDisabled}
@@ -498,7 +494,11 @@ export function XDSNumberInput({
             !isInputValid && styles.inputInvalid,
           )}
         />
-        {units && <span {...stylex.props(styles.units)}>{units}</span>}
+        {units && (
+          <span id={unitsID} {...stylex.props(styles.units)}>
+            {units}
+          </span>
+        )}
         {status && (
           <XDSIcon
             icon={statusIconMap[status.type]}

@@ -10,7 +10,6 @@
  * - /packages/core/src/PowerSearch/index.ts
  */
 
-
 import React, {useCallback, useMemo} from 'react';
 import type {
   OperatorValue,
@@ -158,8 +157,8 @@ function IntegerEditor({
       label="Value"
       isLabelHidden
       value={currentValue ?? null}
-      onChange={(value: number) => {
-        onChange({type: 'integer', value});
+      onChange={(value: number | null) => {
+        if (value !== null) onChange({type: 'integer', value});
       }}
       min={operatorValue.minValue}
       max={operatorValue.maxValue}
@@ -187,8 +186,10 @@ function FloatEditor({
       label="Value"
       isLabelHidden
       value={currentValue ?? null}
-      onChange={(value: number) => {
-        onChange({type: 'float', value});
+      onChange={(value: number | null) => {
+        if (value != null) {
+          onChange({type: 'float', value});
+        }
       }}
       min={operatorValue.minValue}
       max={operatorValue.maxValue}
