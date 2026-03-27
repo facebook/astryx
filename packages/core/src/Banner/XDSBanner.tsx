@@ -333,17 +333,12 @@ const styles = stylex.create({
     alignItems: 'center',
     flexShrink: 0,
   },
-  endArea: {
+  endAreaButtons: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
     flexShrink: 0,
     marginInlineStart: 'auto',
-  },
-  endAreaButtons: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-2'],
   },
   endAreaInvisibleBackground: {
     marginBlockStart: '-8px',
@@ -565,41 +560,40 @@ export function XDSBanner({
           </div>
         </div>
         {showEndArea && (
-          <div {...stylex.props(styles.endArea, edgeSignals.end)}>
-            <div
-              {...stylex.props(
-                styles.endAreaButtons,
-                applyEndAreaOffset && styles.endAreaInvisibleBackground,
-              )}>
-              {endContent}
-              {hasChildren && (
-                <XDSButton
-                  variant="ghost"
-                  size="sm"
-                  label={isExpanded ? 'Collapse' : 'Expand'}
-                  tooltip={isExpanded ? 'Collapse' : 'Expand'}
-                  icon={
-                    <XDSIcon
-                      icon={isExpanded ? ChevronUpIcon : ChevronDownIcon}
-                      size="sm"
-                      color="inherit"
-                    />
-                  }
-                  onClick={handleToggleExpand}
-                  aria-expanded={isExpanded}
-                />
-              )}
-              {isDismissable && (
-                <XDSButton
-                  variant="ghost"
-                  size="sm"
-                  label="Dismiss"
-                  tooltip="Dismiss"
-                  icon={<XDSIcon icon="close" size="sm" color="inherit" />}
-                  onClick={handleDismiss}
-                />
-              )}
-            </div>
+          <div
+            {...stylex.props(
+              styles.endAreaButtons,
+              applyEndAreaOffset && styles.endAreaInvisibleBackground,
+              edgeSignals.end,
+            )}>
+            {endContent}
+            {hasChildren && (
+              <XDSButton
+                variant="ghost"
+                size="sm"
+                label={isExpanded ? 'Collapse' : 'Expand'}
+                tooltip={isExpanded ? 'Collapse' : 'Expand'}
+                icon={
+                  <XDSIcon
+                    icon={isExpanded ? ChevronUpIcon : ChevronDownIcon}
+                    size="sm"
+                    color="inherit"
+                  />
+                }
+                onClick={handleToggleExpand}
+                aria-expanded={isExpanded}
+              />
+            )}
+            {isDismissable && (
+              <XDSButton
+                variant="ghost"
+                size="sm"
+                label="Dismiss"
+                tooltip="Dismiss"
+                icon={<XDSIcon icon="close" size="sm" color="inherit" />}
+                onClick={handleDismiss}
+              />
+            )}
           </div>
         )}
       </div>
