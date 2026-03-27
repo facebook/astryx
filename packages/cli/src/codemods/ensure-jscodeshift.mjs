@@ -11,6 +11,7 @@
 
 import {execSync} from 'node:child_process';
 import * as p from '@clack/prompts';
+import {detectPackageManager} from '../utils/package-manager.mjs';
 
 /**
  * @param {object} [options]
@@ -54,9 +55,19 @@ export async function ensureJscodeshift({installDeps = false} = {}) {
 
 /** @returns {boolean} */
 function installJscodeshift() {
+  const pm = detectPackageManager();
+  const cmds = {
+    yarn: 'yarn add --dev jscodeshift',
+    pnpm: 'pnpm add -D jscodeshift',
+    bun: 'bun add -D jscodeshift',
+    npm: 'npm install --save-dev jscodeshift',
+    npx: 'npm install --save-dev jscodeshift',
+  };
+  const cmd = cmds[pm] || cmds.npm;
+
   try {
-    p.log.step('Installing jscodeshift...');
-    execSync('npm install --no-save jscodeshift', {stdio: 'pipe'});
+    p.log.step(`Installing jscodeshift via ${pm}...`);
+    execSync(cmd, {stdio: 'pipe'});
     p.log.success('jscodeshift installed.');
     return true;
   } catch (err) {

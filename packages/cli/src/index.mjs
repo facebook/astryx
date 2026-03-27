@@ -7,17 +7,21 @@
 
 import {Command} from 'commander';
 import {fileURLToPath} from 'node:url';
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {checkForUpdate} from './utils/update-check.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Read version from package.json so it stays in sync
+const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf-8'));
 
 export const program = new Command();
 
 program
   .name('xds')
   .description('XDS design system CLI — components, themes, and tooling')
-  .version('0.0.1')
+  .version(pkg.version)
   .option('--zh', 'Output docs in Chinese Simplified')
   .option('--dense', 'Output docs in compressed dense format (token-efficient)')
   .option('--lang <locale>', 'Output docs in specified language/format (en, zh, dense)')
