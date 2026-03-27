@@ -20,7 +20,7 @@
  * - /apps/storybook/stories/Banner.stories.tsx (storybook stories)
  */
 
-import {useState, type ReactNode} from 'react';
+import {useState, useRef, useEffect, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -270,6 +270,10 @@ const styles = stylex.create({
     alignItems: 'flex-start',
     gap: spacingVars['--spacing-2'],
   },
+  // Applied when the text content is a single unwrapped line
+  headerCentered: {
+    alignItems: 'center',
+  },
   // card variant: 16px on all sides
   headerCard: {
     paddingBlock: spacingVars['--spacing-4'],
@@ -457,9 +461,27 @@ export function XDSBanner({
 }: XDSBannerProps) {
   const [isDismissed, setIsDismissed] = useState(false);
   const [isExpanded, setIsExpanded] = useState(defaultIsExpanded);
+  const [isSingleLine, setIsSingleLine] = useState(false);
+  const headerContentRef = useRef<HTMLDivElement>(null);
   const DefaultIcon = defaultIcons[status];
   const role = statusRole[status];
   const iconColor = statusIconColor[status];
+
+  // Measure whether the text content is a single unwrapped line.
+  // When single-line: center all header items vertically.
+  // When wrapped: anchor to top so icon and buttons don't float to the middle.
+  useEffect(() => {
+    const el = headerContentRef.current;
+    if (el == null) return;
+    const check = () => {
+      // scrollHeight > clientHeight means content has wrapped to multiple lines
+      setIsSingleLine(el.scrollHeight <= el.clientHeight + 2);
+    };
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [title, description]);
   const hasChildren = children != null;
 
   if (isDismissed) {
@@ -503,6 +525,7 @@ export function XDSBanner({
       <div
         {...stylex.props(
           styles.header,
+          isSingleLine && styles.headerCentered,
           container === 'card'
             ? styles.headerCard
             : container === 'section'
@@ -523,7 +546,7 @@ export function XDSBanner({
               <XDSIcon icon={DefaultIcon} size="md" color={iconColor} />
             )}
           </div>
-          <div {...stylex.props(styles.headerContent)}>
+          <div ref={headerContentRef} {...stylex.props(styles.headerContent)}>
             <span
               {...stylex.props(
                 styles.title,
