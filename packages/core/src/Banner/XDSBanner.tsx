@@ -89,12 +89,14 @@ export type XDSBannerStatus = keyof XDSBannerStatusMap;
 export interface XDSBannerContainerMap {
   card: true;
   section: true;
+  content: true;
 }
 
 /**
  * Container type of the banner.
- * - `card`: standalone card with border-radius and shadow
- * - `section`: full-width section banner (no border-radius)
+ * - `card`: standalone card with border-radius (--radius-container) and 16px padding
+ * - `section`: full-width section banner (no border-radius) with 8px block / 16px inline padding
+ * - `content`: inline banner living alongside text and lists, uses --radius-element and 8px block / 12px inline padding
  *
  * Extensible via module augmentation of XDSBannerContainerMap.
  */
@@ -237,6 +239,10 @@ const styles = stylex.create({
   section: {
     borderRadius: '0',
   },
+  content: {
+    '--banner-radius': radiusVars['--radius-element'],
+    borderRadius: 'var(--banner-radius)',
+  },
   // Header area — colored status background with icon, title, description, actions
   header: {
     display: 'flex',
@@ -254,6 +260,12 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-4'],
     '--container-padding-inline': spacingVars['--spacing-4'],
+  },
+  // content variant: 8px block, 12px inline
+  headerContentVariant: {
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
+    '--container-padding-inline': spacingVars['--spacing-3'],
   },
   // Left group: icon + text content — grows to fill available space
   startArea: {
@@ -324,6 +336,12 @@ const styles = stylex.create({
   contentAreaSection: {
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-4'],
+  },
+  contentAreaContentVariant: {
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
+    borderBottomLeftRadius: 'var(--banner-radius)',
+    borderBottomRightRadius: 'var(--banner-radius)',
   },
 });
 
@@ -442,6 +460,7 @@ export function XDSBanner({
           styles.root,
           container === 'card' && styles.card,
           container === 'section' && styles.section,
+          container === 'content' && styles.content,
           xstyle,
         ),
         className,
@@ -451,7 +470,11 @@ export function XDSBanner({
       <div
         {...stylex.props(
           styles.header,
-          container === 'card' ? styles.headerCard : styles.headerSection,
+          container === 'card'
+            ? styles.headerCard
+            : container === 'section'
+              ? styles.headerSection
+              : styles.headerContentVariant,
           statusStyles[status],
         )}>
         <div {...stylex.props(styles.startArea)}>
@@ -514,7 +537,9 @@ export function XDSBanner({
             styles.contentArea,
             container === 'card'
               ? styles.contentAreaCard
-              : styles.contentAreaSection,
+              : container === 'section'
+                ? styles.contentAreaSection
+                : styles.contentAreaContentVariant,
           )}>
           {children}
         </div>
