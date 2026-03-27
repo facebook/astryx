@@ -69,7 +69,7 @@ function SandboxHeader() {
         <XDSDropdownMenu
           button={{
             label: 'Theme',
-            icon: <PaletteIcon />,
+            icon: <PaletteIcon width={16} height={16} style={{color: 'var(--color-icon-secondary)'}} />,
             variant: 'ghost',
             size: 'sm',
           }}
@@ -79,7 +79,12 @@ function SandboxHeader() {
         <XDSDropdownMenu
           button={{
             label: mode === 'dark' ? 'Dark mode' : 'Light mode',
-            icon: mode === 'dark' ? <MoonIcon /> : <SunIcon />,
+            icon:
+              mode === 'dark' ? (
+                <MoonIcon width={16} height={16} style={{color: 'var(--color-icon-secondary)'}} />
+              ) : (
+                <SunIcon width={16} height={16} style={{color: 'var(--color-icon-secondary)'}} />
+              ),
             variant: 'ghost',
             size: 'sm',
           }}
