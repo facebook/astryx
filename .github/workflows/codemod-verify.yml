@@ -1,0 +1,46 @@
+# Codemod verification — ensures codemods can reproduce callsite changes
+#
+# When a PR adds/modifies codemods AND touches consumer code (apps/, stories),
+# this workflow:
+# 1. Reverts the consumer code changes to the base branch state
+# 2. Runs the codemods from source against that reverted code
+# 3. Verifies the codemod output matches the PR's committed changes
+#
+# This enforces the rule: "never manually update callsites — always use the codemod"
+# If the codemod can't reproduce the changes, either the codemod is incomplete
+# or callsites were hand-edited.
+name: Codemod Verify
+
+on:
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "packages/cli/src/codemods/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: "codemod-verify-${{ github.head_ref }}"
+  cancel-in-progress: true
+
+jobs:
+  verify-codemods:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "yarn"
+
+      - run: yarn install --frozen-lockfile
+
+      - name: Verify codemod reproduces callsite changes
+        id: verify
+        run: node .github/scripts/codemod-verify.mjs
