@@ -99,30 +99,26 @@ jobs:
       - name: Build Storybook
         run: yarn workspace @xds/storybook build
 
-      - name: Compute short hash
+      - name: Compute PR preview path
         if: github.event_name == 'pull_request'
-        id: hash
+        id: urls
         run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
           COMMIT_HASH="${{ github.event.pull_request.head.sha }}"
-          echo "short_hash=${COMMIT_HASH:0:7}" >> $GITHUB_OUTPUT
+          SHORT_HASH="${COMMIT_HASH:0:7}"
+          REPO_NAME="${{ github.event.repository.name }}"
+          REPO_OWNER="${{ github.repository_owner }}"
+
+          echo "short_hash=${SHORT_HASH}" >> $GITHUB_OUTPUT
+          echo "pr_number=${PR_NUMBER}" >> $GITHUB_OUTPUT
+          echo "storybook_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/pr/${PR_NUMBER}/" >> $GITHUB_OUTPUT
+          echo "sandbox_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/pr/${PR_NUMBER}/sandbox/" >> $GITHUB_OUTPUT
 
       - name: Build Sandbox
         if: github.event_name == 'pull_request'
         run: yarn workspace @xds/sandbox build
         env:
-          SANDBOX_BASE_PATH: /${{ steps.hash.outputs.short_hash }}/sandbox
-
-      - name: Compute URLs
-        if: github.event_name == 'pull_request'
-        id: urls
-        run: |
-          SHORT_HASH="${{ steps.hash.outputs.short_hash }}"
-          REPO_NAME="${{ github.event.repository.name }}"
-          REPO_OWNER="${{ github.repository_owner }}"
-
-          echo "short_hash=${SHORT_HASH}" >> $GITHUB_OUTPUT
-          echo "storybook_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/${SHORT_HASH}/" >> $GITHUB_OUTPUT
-          echo "sandbox_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/${SHORT_HASH}/sandbox/" >> $GITHUB_OUTPUT
+          SANDBOX_BASE_PATH: /pr/${{ steps.urls.outputs.pr_number }}/sandbox
 
       - name: Upload Storybook artifact
         if: github.event_name == 'pull_request'
@@ -132,22 +128,22 @@ jobs:
           path: apps/storybook/dist/
           retention-days: 30
 
-      - name: Prepare and deploy Storybook preview
+      - name: Prepare and deploy PR preview
         if: github.event_name == 'pull_request'
         run: |
-          SHORT_HASH="${{ steps.urls.outputs.short_hash }}"
+          PR_NUMBER="${{ steps.urls.outputs.pr_number }}"
 
-          mkdir -p deploy/${SHORT_HASH}
-          cp -r apps/storybook/dist/* deploy/${SHORT_HASH}/
+          mkdir -p deploy/pr/${PR_NUMBER}
+          cp -r apps/storybook/dist/* deploy/pr/${PR_NUMBER}/
 
           if [ -d "apps/sandbox/out" ]; then
-            mkdir -p deploy/${SHORT_HASH}/sandbox
-            cp -r apps/sandbox/out/* deploy/${SHORT_HASH}/sandbox/
+            mkdir -p deploy/pr/${PR_NUMBER}/sandbox
+            cp -r apps/sandbox/out/* deploy/pr/${PR_NUMBER}/sandbox/
           fi
 
           touch deploy/.nojekyll
 
-      - name: Deploy Storybook preview to GitHub Pages
+      - name: Deploy PR preview to GitHub Pages
         if: github.event_name == 'pull_request'
         uses: peaceiris/actions-gh-pages@v4
         with:

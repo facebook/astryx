@@ -27,80 +27,82 @@ jobs:
           ref: gh-pages
           fetch-depth: 1
 
-      - name: Cleanup stale preview directories
+      - name: Cleanup stale deployments
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DRY_RUN: ${{ inputs.dry_run || 'false' }}
         run: |
           # ---------------------------------------------------------------
-          # Retention policy:
-          #   KEEP  — latest main commit dir (from API)
-          #         — most recently deployed dir (from git log)
-          #         — latest head commit dir for each open/draft PR
-          #         — reports/ (vibe test reports)
-          #         — root files (.nojekyll, index.html, latest, assets/)
-          #   DELETE — everything else
+          # gh-pages layout:
+          #   /storybook/    — stable (managed by deploy.yml, never cleaned)
+          #   /sandbox/      — stable (managed by deploy.yml, never cleaned)
+          #   /pr/<number>/  — PR previews (cleaned when PR closes)
+          #   /reports/      — vibe test reports (never cleaned)
+          #   /assets/       — landing page CSS (never cleaned)
+          #   /index.html    — landing page (never cleaned)
+          #   /latest        — deploy hash pointer (never cleaned)
+          #
+          # Legacy: 7-char hex dirs from old deploy format are always deleted.
           # ---------------------------------------------------------------
 
-          echo "Cleanup policy: keep main + open PR heads + reports"
           echo "Dry run: ${DRY_RUN}"
           echo ""
 
-          # Get all 7-char hex directories (preview deployments)
-          mapfile -t DIRS < <(ls -d [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f] 2>/dev/null)
-          TOTAL=${#DIRS[@]}
-          echo "Found ${TOTAL} preview directories"
+          DELETED=0
 
-          if [ "$TOTAL" -eq 0 ]; then
-            echo "Nothing to clean up."
-            exit 0
+          # ----- Clean legacy hash directories -----
+          # Old deploy format put previews at /<7-char-hex>/. These are all
+          # stale now that PRs deploy to /pr/<number>/.
+          mapfile -t HASH_DIRS < <(ls -d [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f] 2>/dev/null)
+          if [ ${#HASH_DIRS[@]} -gt 0 ]; then
+            echo "Found ${#HASH_DIRS[@]} legacy hash directories — removing all"
+            for dir in "${HASH_DIRS[@]}"; do
+              echo "  DELETE ${dir} (legacy)"
+              if [ "$DRY_RUN" != "true" ]; then
+                git rm -rf --quiet "$dir"
+              fi
+              DELETED=$((DELETED + 1))
+            done
+            echo ""
           fi
 
-          # Get the latest main commit short hash
-          MAIN_HASH=$(gh api repos/$GITHUB_REPOSITORY/commits/main --jq '.sha[:7]')
-          echo "Main HEAD: ${MAIN_HASH}"
+          # ----- Clean closed PR previews -----
+          if [ -d "pr" ]; then
+            mapfile -t PR_DIRS < <(ls pr/ 2>/dev/null)
+            echo "Found ${#PR_DIRS[@]} PR preview(s)"
 
-          # Find the most recently deployed hash dir on gh-pages.
-          # This protects against a race where main HEAD has advanced
-          # but its deploy hasn't finished yet — we keep the previous
-          # deploy that's actually serving traffic.
-          LATEST_DEPLOYED=""
-          for dir in "${DIRS[@]}"; do
-            # git log for the dir — most recently touched = most recent deploy
-            DIR_DATE=$(git log -1 --format='%ct' -- "$dir" 2>/dev/null || echo "0")
-            if [ -z "$LATEST_DEPLOYED" ]; then
-              LATEST_DEPLOYED="$dir"
-              LATEST_DATE="$DIR_DATE"
-            elif [ "$DIR_DATE" -gt "$LATEST_DATE" ]; then
-              LATEST_DEPLOYED="$dir"
-              LATEST_DATE="$DIR_DATE"
-            fi
-          done
-          echo "Latest deployed: ${LATEST_DEPLOYED}"
+            # Get open PR numbers
+            OPEN_PRS=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --json number --jq '.[].number' || true)
 
-          # Get open/draft PR head commit short hashes
-          OPEN_PR_HASHES=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --json headRefOid,number --jq '.[] | .headRefOid[:7]' || true)
-          OPEN_COUNT=$(echo "$OPEN_PR_HASHES" | grep -c . || echo 0)
-          echo "Open/draft PRs: ${OPEN_COUNT}"
-          echo ""
+            for pr_num in "${PR_DIRS[@]}"; do
+              if echo "$OPEN_PRS" | grep -qx "$pr_num"; then
+                echo "  KEEP  pr/${pr_num} — open"
+              else
+                echo "  DELETE pr/${pr_num} — closed/merged"
+                if [ "$DRY_RUN" != "true" ]; then
+                  git rm -rf --quiet "pr/${pr_num}"
+                fi
+                DELETED=$((DELETED + 1))
+              fi
+            done
+            echo ""
+          fi
 
-          # Clean up stale root-level storybook files (from old deploy format)
-          # These are files/dirs at the gh-pages root that aren't hash dirs,
-          # index.html, .nojekyll, or reports/
-          # NOTE: `assets/` is NOT stale — it contains CSS referenced by the
-          # landing page (index.html): reset.css, xds.css, theme.css
+          # ----- Clean stale root-level files -----
+          # Leftovers from old Storybook-at-root deploy format
           ROOT_STALE=0
           for item in favicon.svg iframe.html index.json project.json \
                       nunito-sans-bold-italic.woff2 nunito-sans-bold.woff2 \
                       nunito-sans-italic.woff2 nunito-sans-regular.woff2 \
-                      sandbox sb-addons sb-common-assets sb-manager; do
+                      sb-addons sb-common-assets sb-manager; do
             if [ -e "$item" ]; then
-              echo "  DELETE root/$item (stale root-level file)"
+              echo "  DELETE root/$item (stale)"
               if [ "$DRY_RUN" != "true" ]; then
                 git rm -rf --quiet "$item"
               fi
               ROOT_STALE=$((ROOT_STALE + 1))
+              DELETED=$((DELETED + 1))
             fi
           done
           if [ "$ROOT_STALE" -gt 0 ]; then
@@ -108,42 +110,8 @@ jobs:
             echo ""
           fi
 
-          DELETED=0
-          KEPT=0
-
-          for dir in "${DIRS[@]}"; do
-            REASON=""
-
-            # Keep main HEAD
-            if [ "$dir" = "$MAIN_HASH" ]; then
-              REASON="main HEAD"
-            fi
-
-            # Keep the most recently deployed dir (in case main HEAD
-            # hasn't deployed yet, this is what's actually serving)
-            if [ -z "$REASON" ] && [ "$dir" = "$LATEST_DEPLOYED" ]; then
-              REASON="latest deployed"
-            fi
-
-            # Keep open/draft PR heads
-            if [ -z "$REASON" ] && echo "$OPEN_PR_HASHES" | grep -qx "$dir"; then
-              REASON="open PR"
-            fi
-
-            if [ -n "$REASON" ]; then
-              echo "  KEEP  ${dir} — ${REASON}"
-              KEPT=$((KEPT + 1))
-            else
-              echo "  DELETE ${dir}"
-              if [ "$DRY_RUN" != "true" ]; then
-                git rm -rf --quiet "$dir"
-              fi
-              DELETED=$((DELETED + 1))
-            fi
-          done
-
-          echo ""
-          echo "Summary: ${DELETED} deleted, ${KEPT} kept (of ${TOTAL})"
+          # ----- Summary -----
+          echo "Summary: ${DELETED} items deleted"
 
           if [ "$DRY_RUN" = "true" ]; then
             echo "Dry run — no changes committed"
@@ -153,7 +121,7 @@ jobs:
           if [ "$DELETED" -gt 0 ]; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git commit -m "chore: cleanup ${DELETED} stale preview deployments"
+            git commit -m "chore: cleanup ${DELETED} stale deployments"
             git push origin gh-pages
             echo "Pushed cleanup commit"
           else
