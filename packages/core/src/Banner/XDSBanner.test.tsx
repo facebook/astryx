@@ -71,9 +71,9 @@ describe('XDSBanner', () => {
 
   it('does not render description when not provided', () => {
     const {container} = render(<XDSBanner status="info" title="Title Only" />);
-    // Only one <p> for the title, no description
-    const paragraphs = container.querySelectorAll('p');
-    expect(paragraphs).toHaveLength(1);
+    // Title renders, description does not
+    expect(screen.getByText('Title Only')).toBeInTheDocument();
+    expect(container.querySelector('[class*="description"]')).toBeNull();
   });
 
   it('renders dismiss button when isDismissable', () => {

@@ -264,6 +264,7 @@ const styles = stylex.create({
     minWidth: 0,
   },
   title: {
+    display: 'block',
     margin: 0,
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-label-size'],
@@ -272,6 +273,7 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
   },
   description: {
+    display: 'block',
     margin: 0,
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-supporting-size'],
@@ -458,9 +460,9 @@ export function XDSBanner({
           )}
         </div>
         <div {...stylex.props(styles.headerContent)}>
-          <p {...stylex.props(styles.title)}>{title}</p>
+          <span {...stylex.props(styles.title)}>{title}</span>
           {description != null && (
-            <p {...stylex.props(styles.description)}>{description}</p>
+            <span {...stylex.props(styles.description)}>{description}</span>
           )}
         </div>
         {showEndArea && (
