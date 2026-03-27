@@ -86,6 +86,14 @@ const dividerColumnStyles = stylex.create({
     borderRightColor: colorVars['--color-border'],
   },
 });
+const overflowStyles = stylex.create({
+  cell: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    maxWidth: '0',
+  },
+});
 
 /**
  * XDSTableHeaderCell — a `<th>` wrapper for header cells.
@@ -136,6 +144,7 @@ export function XDSTableHeaderCell({
     headerStyles.cell,
     densityStyles[ctx.density],
     headerDividerStyles.cell,
+    overflowStyles.cell,
   ];
 
   if (ctx.dividers === 'columns' || ctx.dividers === 'grid') {

@@ -664,6 +664,22 @@ describe('XDSTable', () => {
     expect(idKey).toHaveBeenCalledWith(users[1]);
     expect(idKey).toHaveBeenCalledWith(users[2]);
   });
+
+  it('renders cells that contain long strings without crashing', () => {
+    const longData = [
+      {
+        name: 'a_very_long_string_without_spaces_that_would_overflow_a_fixed_width_column',
+        value: '42',
+      },
+    ];
+    render(<XDSTable data={longData} />);
+    const cell = screen.getAllByRole('cell')[0];
+    expect(cell).toBeInTheDocument();
+    // Long unbroken text renders without breaking layout
+    expect(cell).toHaveTextContent(
+      'a_very_long_string_without_spaces_that_would_overflow_a_fixed_width_column',
+    );
+  });
 });
 
 // =============================================================================

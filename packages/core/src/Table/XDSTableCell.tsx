@@ -79,6 +79,14 @@ const dividerColumnStyles = stylex.create({
     borderRightColor: colorVars['--color-border'],
   },
 });
+const overflowStyles = stylex.create({
+  cell: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    maxWidth: '0',
+  },
+});
 
 /**
  * XDSTableCell — a `<td>` wrapper for children/streaming mode.
@@ -113,7 +121,10 @@ export function XDSTableCell({
     );
   }
 
-  const cellStyles: StyleXStyles[] = [densityStyles[ctx.density]];
+  const cellStyles: StyleXStyles[] = [
+    densityStyles[ctx.density],
+    overflowStyles.cell,
+  ];
 
   if (ctx.dividers === 'rows' || ctx.dividers === 'grid') {
     cellStyles.push(dividerRowStyles.cell);
