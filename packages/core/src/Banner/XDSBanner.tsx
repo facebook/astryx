@@ -159,6 +159,12 @@ export interface XDSBannerProps {
    */
   endContent?: ReactNode;
   /**
+   * Visual variant for the end area.
+   * - `invisibleBackground`: applies a -4px block offset to optically align
+   *   ghost or icon-only buttons with the text. Omit for primary/default buttons.
+   */
+  endAreaVariant?: 'invisibleBackground';
+  /**
    * Container type of the banner.
    * - `card`: standalone card with border-radius
    * - `section`: full-width section banner (no border-radius)
@@ -329,6 +335,8 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     flexShrink: 0,
     marginInlineStart: 'auto',
+  },
+  endAreaInvisibleBackground: {
     marginBlockStart: '-4px',
   },
   // dismissButton negative margin removed — edge compensation handles this
@@ -437,6 +445,7 @@ export function XDSBanner({
   isDismissable = false,
   onDismiss,
   endContent,
+  endAreaVariant,
   container = 'card',
   defaultIsExpanded = false,
   children,
@@ -524,7 +533,13 @@ export function XDSBanner({
           </div>
         </div>
         {showEndArea && (
-          <div {...stylex.props(styles.endArea, edgeSignals.end)}>
+          <div
+            {...stylex.props(
+              styles.endArea,
+              endAreaVariant === 'invisibleBackground' &&
+                styles.endAreaInvisibleBackground,
+              edgeSignals.end,
+            )}>
             {endContent}
             {hasChildren && (
               <XDSButton
