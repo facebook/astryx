@@ -1,20 +1,17 @@
 'use client';
 
+import Link from 'next/link';
 import {XDSText} from '@xds/core/Text';
 import type {SandboxPage} from './sandboxPages';
 import {ImageIcon} from './icons';
 
 export function ProjectCard({page}: {page: SandboxPage}) {
   return (
-    <a
+    <Link
       href={page.href}
       target="_blank"
       rel="noopener noreferrer"
-      style={{
-        textDecoration: 'none',
-        color: 'inherit',
-        display: 'flex',
-      }}>
+      style={{textDecoration: 'none', color: 'inherit', display: 'flex'}}>
       <div
         style={{
           display: 'flex',
@@ -69,6 +66,6 @@ export function ProjectCard({page}: {page: SandboxPage}) {
           </XDSText>
         </div>
       </div>
-    </a>
+    </Link>
   );
 }
