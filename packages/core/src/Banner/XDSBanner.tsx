@@ -567,13 +567,13 @@ export function XDSBanner({
         </div>
         {showEndArea && (
           <div {...stylex.props(styles.endAreaButtons, edgeSignals.end)}>
-            {endContent}
-            {(hasChildren || isDismissable) && (
+            {hasChildren || isDismissable ? (
               <div
                 {...stylex.props(
                   styles.endAreaGhostButtons,
                   applyEndAreaOffset && styles.endAreaInvisibleBackground,
                 )}>
+                {endContent}
                 {hasChildren && (
                   <XDSButton
                     variant="ghost"
@@ -602,6 +602,8 @@ export function XDSBanner({
                   />
                 )}
               </div>
+            ) : (
+              endContent
             )}
           </div>
         )}
