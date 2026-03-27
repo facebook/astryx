@@ -8,13 +8,15 @@
  * manual refresh.
  *
  * The bell shows a small accent-colored dot when a build is in progress.
+ *
+ * Uses a simple React state-driven popover (not the native Popover API)
+ * to ensure compatibility with all browsers and static exports.
  */
 
 'use client';
 
-import {useState, useEffect, useCallback} from 'react';
+import {useState, useEffect, useCallback, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSPopover} from '@xds/core/Popover';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
 import {XDSSpinner} from '@xds/core/Spinner';
@@ -66,7 +68,12 @@ const API_BASE = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`;
 // ---------------------------------------------------------------------------
 
 const styles = stylex.create({
-  bellWrapper: {
+  container: {
+    position: 'relative',
+    display: 'inline-flex',
+    alignItems: 'center',
+  },
+  bellIcon: {
     position: 'relative',
     display: 'inline-flex',
     alignItems: 'center',
@@ -79,17 +86,30 @@ const styles = stylex.create({
     width: 8,
     height: 8,
     borderRadius: '50%',
-    backgroundColor: 'var(--color-accent)',
+    backgroundColor: 'var(--color-accent, #0064E0)',
     pointerEvents: 'none',
   },
-  popoverContent: {
-    width: 340,
-    maxHeight: 440,
+  popover: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    marginTop: 8,
+    width: 360,
+    maxHeight: 480,
     overflowY: 'auto',
+    backgroundColor: 'var(--color-surface, #fff)',
+    borderRadius: 12,
+    boxShadow: '0 2px 12px rgba(5,54,89,0.1), 0 0 0 1px rgba(5,54,89,0.1)',
+    zIndex: 1000,
     display: 'flex',
     flexDirection: 'column',
     gap: 12,
     padding: 16,
+  },
+  backdrop: {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 999,
   },
   sectionTitle: {
     display: 'flex',
@@ -124,7 +144,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: 8,
-    padding: '8px 0',
+    padding: '6px 0 2px 0',
   },
   link: {
     color: 'var(--color-accent, #0064E0)',
@@ -156,7 +176,6 @@ function timeAgo(dateStr: string): string {
   return `${days}d ago`;
 }
 
-// Bell icon as inline SVG (no icon registry dependency)
 function BellIcon() {
   return (
     <svg
@@ -207,7 +226,6 @@ async function fetchBuildData(): Promise<BuildData> {
         r.status === 'waiting',
     );
 
-    // Most recent successful deploy
     const lastSuccess = runs.find(
       (r: WorkflowRun) =>
         r.status === 'completed' && r.conclusion === 'success',
@@ -215,7 +233,6 @@ async function fetchBuildData(): Promise<BuildData> {
     const currentHash = lastSuccess ? lastSuccess.head_sha.slice(0, 7) : null;
     const currentTitle = lastSuccess?.display_title ?? null;
 
-    // Only merged PRs
     const mergedPRs: MergedPR[] = (prsJson as Array<Record<string, unknown>>)
       .filter((pr: Record<string, unknown>) => pr.merged_at != null)
       .slice(0, 10)
@@ -254,6 +271,8 @@ async function fetchBuildData(): Promise<BuildData> {
 export function BuildStatus() {
   const [data, setData] = useState<BuildData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -268,144 +287,159 @@ export function BuildStatus() {
 
   const isBuilding = (data?.inProgress.length ?? 0) > 0;
 
-  const popoverContent = (
-    <div {...stylex.props(styles.popoverContent)}>
-      {/* Header */}
-      <div {...stylex.props(styles.header)}>
-        <XDSText type="label" weight="semibold">
-          Build Status
-        </XDSText>
-        <XDSButton
-          label="Refresh"
-          variant="ghost"
-          size="sm"
-          onClickAction={refresh}
-          isDisabled={loading}
-        />
-      </div>
-
-      <XDSDivider />
-
-      {/* Current deployed hash */}
-      {data?.currentHash && (
-        <div>
-          <div {...stylex.props(styles.sectionTitle)}>
-            <XDSText type="supporting">✅ Deployed</XDSText>
-          </div>
-          {data.currentTitle && (
-            <div {...stylex.props(styles.prTitle)}>
-              <XDSText type="body" size="sm">
-                {data.currentTitle}
-              </XDSText>
-            </div>
-          )}
-          <div {...stylex.props(styles.prMeta)}>
-            <span {...stylex.props(styles.hashBadge)}>{data.currentHash}</span>
-            {data.lastFetched && (
-              <XDSText type="supporting">
-                Checked {timeAgo(data.lastFetched.toISOString())}
-              </XDSText>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Building section */}
-      {isBuilding && (
-        <div>
-          <div {...stylex.props(styles.sectionTitle)}>
-            <XDSText type="supporting">🔄 BUILDING</XDSText>
-          </div>
-          {data?.inProgress.map(run => (
-            <div key={run.id}>
-              <div {...stylex.props(styles.buildingRow)}>
-                <XDSSpinner size="sm" />
-                <div {...stylex.props(styles.prTitle)}>
-                  <XDSText type="body" size="sm">
-                    {run.display_title}
-                  </XDSText>
-                </div>
-              </div>
-              <div {...stylex.props(styles.prMeta)}>
-                <span {...stylex.props(styles.hashBadge)}>
-                  {run.head_sha.slice(0, 7)}
-                </span>
-                <a
-                  href={run.html_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  {...stylex.props(styles.link)}>
-                  <XDSText type="supporting">View workflow →</XDSText>
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <XDSDivider />
-
-      {/* Recent merged PRs */}
-      <div>
-        <div {...stylex.props(styles.sectionTitle)}>
-          <XDSText type="supporting">📋 Recent changes</XDSText>
-        </div>
-        {data?.recentPRs.length === 0 && !data?.error && (
-          <div {...stylex.props(styles.empty)}>
-            <XDSText type="supporting">No recent merges</XDSText>
-          </div>
-        )}
-        {data?.error && (
-          <div {...stylex.props(styles.empty)}>
-            <XDSText type="supporting">⚠️ {data.error}</XDSText>
-          </div>
-        )}
-        {data?.recentPRs.map(pr => (
-          <div key={pr.number} {...stylex.props(styles.prRow)}>
-            <a
-              href={pr.html_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              {...stylex.props(styles.link, styles.prTitle)}>
-              <XDSText type="body" size="sm">
-                {pr.title}
-              </XDSText>
-            </a>
-            <div {...stylex.props(styles.prMeta)}>
-              {pr.merge_commit_sha && (
-                <span {...stylex.props(styles.hashBadge)}>
-                  {pr.merge_commit_sha.slice(0, 7)}
-                </span>
-              )}
-              <XDSText type="supporting">#{pr.number}</XDSText>
-              <XDSText type="supporting">{timeAgo(pr.merged_at)}</XDSText>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {loading && (
-        <div
-          style={{display: 'flex', justifyContent: 'center', padding: '8px'}}>
-          <XDSSpinner size="sm" />
-        </div>
-      )}
-    </div>
-  );
-
   return (
-    <XDSPopover content={popoverContent} placement="below" alignment="end">
+    <div ref={containerRef} {...stylex.props(styles.container)}>
       <XDSButton
         label="Build status"
         variant="ghost"
         size="sm"
         icon={
-          <span {...stylex.props(styles.bellWrapper)}>
+          <span {...stylex.props(styles.bellIcon)}>
             <BellIcon />
             {isBuilding && <span {...stylex.props(styles.dot)} />}
           </span>
         }
+        onClick={() => setIsOpen(prev => !prev)}
       />
-    </XDSPopover>
+
+      {isOpen && (
+        <>
+          {/* Invisible backdrop to catch outside clicks */}
+          <div
+            {...stylex.props(styles.backdrop)}
+            onClick={() => setIsOpen(false)}
+          />
+
+          <div {...stylex.props(styles.popover)}>
+            {/* Header */}
+            <div {...stylex.props(styles.header)}>
+              <XDSText type="label" weight="semibold">
+                Build Status
+              </XDSText>
+              <XDSButton
+                label="Refresh"
+                variant="ghost"
+                size="sm"
+                onClickAction={refresh}
+                isDisabled={loading}
+              />
+            </div>
+
+            <XDSDivider />
+
+            {/* Current deployed hash */}
+            {data?.currentHash && (
+              <div>
+                <div {...stylex.props(styles.sectionTitle)}>
+                  <XDSText type="supporting">✅ Deployed</XDSText>
+                </div>
+                {data.currentTitle && (
+                  <div {...stylex.props(styles.prTitle)}>
+                    <XDSText type="body" size="sm">
+                      {data.currentTitle}
+                    </XDSText>
+                  </div>
+                )}
+                <div {...stylex.props(styles.prMeta)}>
+                  <span {...stylex.props(styles.hashBadge)}>
+                    {data.currentHash}
+                  </span>
+                  {data.lastFetched && (
+                    <XDSText type="supporting">
+                      Checked {timeAgo(data.lastFetched.toISOString())}
+                    </XDSText>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Building section */}
+            {isBuilding && (
+              <div>
+                <div {...stylex.props(styles.sectionTitle)}>
+                  <XDSText type="supporting">🔄 BUILDING</XDSText>
+                </div>
+                {data?.inProgress.map(run => (
+                  <div key={run.id}>
+                    <div {...stylex.props(styles.buildingRow)}>
+                      <XDSSpinner size="sm" />
+                      <div {...stylex.props(styles.prTitle)}>
+                        <XDSText type="body" size="sm">
+                          {run.display_title}
+                        </XDSText>
+                      </div>
+                    </div>
+                    <div {...stylex.props(styles.prMeta)}>
+                      <span {...stylex.props(styles.hashBadge)}>
+                        {run.head_sha.slice(0, 7)}
+                      </span>
+                      <a
+                        href={run.html_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        {...stylex.props(styles.link)}>
+                        <XDSText type="supporting">View workflow →</XDSText>
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <XDSDivider />
+
+            {/* Recent merged PRs */}
+            <div>
+              <div {...stylex.props(styles.sectionTitle)}>
+                <XDSText type="supporting">📋 Recent changes</XDSText>
+              </div>
+              {data?.recentPRs.length === 0 && !data?.error && (
+                <div {...stylex.props(styles.empty)}>
+                  <XDSText type="supporting">No recent merges</XDSText>
+                </div>
+              )}
+              {data?.error && (
+                <div {...stylex.props(styles.empty)}>
+                  <XDSText type="supporting">⚠️ {data.error}</XDSText>
+                </div>
+              )}
+              {data?.recentPRs.map(pr => (
+                <div key={pr.number} {...stylex.props(styles.prRow)}>
+                  <a
+                    href={pr.html_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    {...stylex.props(styles.link, styles.prTitle)}>
+                    <XDSText type="body" size="sm">
+                      {pr.title}
+                    </XDSText>
+                  </a>
+                  <div {...stylex.props(styles.prMeta)}>
+                    {pr.merge_commit_sha && (
+                      <span {...stylex.props(styles.hashBadge)}>
+                        {pr.merge_commit_sha.slice(0, 7)}
+                      </span>
+                    )}
+                    <XDSText type="supporting">#{pr.number}</XDSText>
+                    <XDSText type="supporting">{timeAgo(pr.merged_at)}</XDSText>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {loading && (
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  padding: '8px',
+                }}>
+                <XDSSpinner size="sm" />
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
