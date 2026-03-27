@@ -190,6 +190,12 @@
       "import": "./dist/List/index.mjs",
       "require": "./dist/List/index.js"
     },
+    "./MetadataList": {
+      "source": "./src/MetadataList/index.ts",
+      "types": "./dist/MetadataList/index.d.ts",
+      "import": "./dist/MetadataList/index.mjs",
+      "require": "./dist/MetadataList/index.js"
+    },
     "./MobileNav": {
       "source": "./src/MobileNav/index.ts",
       "types": "./dist/MobileNav/index.d.ts",

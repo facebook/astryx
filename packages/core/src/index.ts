@@ -29,6 +29,7 @@ export * from './Divider';
 export * from './EmptyState';
 export * from './Link';
 export * from './List';
+export * from './MetadataList';
 export * from './NavIcon';
 export * from './NavItem';
 export * from './Slider';
