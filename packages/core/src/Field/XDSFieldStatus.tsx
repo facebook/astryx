@@ -19,6 +19,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {XDSInputStatusType} from './types';
+import {useEntryAnimation} from '../hooks/useEntryAnimation';
 
 const styles = stylex.create({
   base: {
@@ -124,6 +125,8 @@ export function XDSFieldStatus({
   id,
   variant = 'attached',
 }: XDSFieldStatusProps) {
+  const entryStyle = useEntryAnimation('slideDown');
+
   return (
     <div
       id={id}
@@ -133,6 +136,7 @@ export function XDSFieldStatus({
         xdsClassName('field-status', {type, variant}),
         stylex.props(
           styles.base,
+          entryStyle,
           variant === 'attached' ? styles.attached : styles.detached,
           colorStyles[type],
         ),

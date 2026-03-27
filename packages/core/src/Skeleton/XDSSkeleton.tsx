@@ -14,7 +14,7 @@
 
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, radiusVars} from '../theme/tokens.stylex';
+import {colorVars, radiusVars, durationVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
@@ -62,7 +62,7 @@ const styles = stylex.create({
   },
   animate: {
     animationDirection: 'alternate',
-    animationDuration: `${FADE_TIME}ms`,
+    animationDuration: durationVars['--duration-medium-max'],
     animationIterationCount: 'infinite',
     animationName: skeletonFade,
     animationTimingFunction: 'steps(10, end)',

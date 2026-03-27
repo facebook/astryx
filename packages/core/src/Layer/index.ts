@@ -27,6 +27,9 @@ export type {
   FixedLayerReturn,
 } from './useXDSLayer';
 
+// Shared entry animation styles for layer-based components
+export {layerAnimations} from './layerAnimations.stylex';
+
 // Re-export Popover from new location (backward compat)
 export {useXDSPopover, XDSPopover} from '../Popover';
 export type {

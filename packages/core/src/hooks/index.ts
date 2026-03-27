@@ -24,3 +24,6 @@ export {useOverflow} from './useOverflow';
 export type {UseOverflowOptions, UseOverflowReturn} from './useOverflow';
 
 export {useScrollLock} from './useScrollLock';
+
+export {useEntryAnimation} from './useEntryAnimation';
+export type {EntryAnimationPreset} from './useEntryAnimation';
