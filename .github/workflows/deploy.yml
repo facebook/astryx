@@ -78,21 +78,13 @@ jobs:
       - name: Build Sandbox
         run: yarn workspace @xds/sandbox build
         env:
-          SANDBOX_BASE_PATH: /${{ steps.hash.outputs.short_hash }}/sandbox
+          SANDBOX_BASE_PATH: /sandbox
 
       - name: Prepare deployment
         run: |
           SHORT_HASH="${GITHUB_SHA:0:7}"
-          REPO_NAME="${{ github.event.repository.name }}"
-          REPO_OWNER="${{ github.repository_owner }}"
-
           mkdir -p deploy/${SHORT_HASH}
           cp -r apps/storybook/dist/* deploy/${SHORT_HASH}/
-
-          if [ -d "apps/sandbox/out" ]; then
-            mkdir -p deploy/${SHORT_HASH}/sandbox
-            cp -r apps/sandbox/out/* deploy/${SHORT_HASH}/sandbox/
-          fi
 
           # Copy XDS dist CSS for the landing page
           mkdir -p deploy/assets
@@ -157,7 +149,7 @@ jobs:
                   </div>
                   <span class="arrow">→</span>
                 </a>
-                <a class="card" id="sandbox-link" href="#">
+                <a class="card" id="sandbox-link" href="sandbox/index.html">
                   <div>
                     <div class="card-title">🏗️ Sandbox</div>
                     <div class="card-desc">Full app demo with theme editor</div>
@@ -184,10 +176,8 @@ jobs:
                   if (!hash) return;
                   hash = hash.trim();
                   const sb = document.getElementById('storybook-link');
-                  const bx = document.getElementById('sandbox-link');
                   const cm = document.getElementById('commit-hash');
                   if (sb) sb.href = hash + '/index.html';
-                  if (bx) bx.href = hash + '/sandbox/index.html';
                   if (cm) cm.textContent = 'Build: ' + hash;
                 })
                 .catch(() => {}); // fallback to sed-injected links
@@ -214,7 +204,6 @@ jobs:
 
           # Inject the short hash into the landing page as a fallback
           sed -i "s|id=\"storybook-link\" href=\"#\"|id=\"storybook-link\" href=\"${SHORT_HASH}/index.html\"|" deploy/index.html
-          sed -i "s|id=\"sandbox-link\" href=\"#\"|id=\"sandbox-link\" href=\"${SHORT_HASH}/sandbox/index.html\"|" deploy/index.html
           sed -i "s|id=\"commit-hash\"|id=\"commit-hash\">Build: ${SHORT_HASH}</div><!--done|" deploy/index.html
 
           touch deploy/.nojekyll
