@@ -70,11 +70,12 @@ const styles = stylex.create({
     position: 'relative',
     display: 'inline-flex',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   dot: {
     position: 'absolute',
-    top: 2,
-    right: 2,
+    top: -2,
+    right: -2,
     width: 8,
     height: 8,
     borderRadius: '50%',
@@ -394,15 +395,17 @@ export function BuildStatus() {
 
   return (
     <XDSPopover content={popoverContent} placement="below" alignment="end">
-      <div {...stylex.props(styles.bellWrapper)}>
-        <XDSButton
-          label="Build status"
-          variant="ghost"
-          size="sm"
-          icon={<BellIcon />}
-        />
-        {isBuilding && <span {...stylex.props(styles.dot)} />}
-      </div>
+      <XDSButton
+        label="Build status"
+        variant="ghost"
+        size="sm"
+        icon={
+          <span {...stylex.props(styles.bellWrapper)}>
+            <BellIcon />
+            {isBuilding && <span {...stylex.props(styles.dot)} />}
+          </span>
+        }
+      />
     </XDSPopover>
   );
 }
