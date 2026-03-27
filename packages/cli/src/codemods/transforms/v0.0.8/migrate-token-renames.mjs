@@ -256,11 +256,48 @@ export default function transformer(file, api) {
   });
 
   // --- Pass 3: Rename JS identifiers (lineHeightVars → typeScaleVars, etc.) ---
-  // This handles imports, member expressions, and any other reference in one pass.
+  // Uses Object.hasOwn to avoid prototype pollution (toString, hasOwnProperty, etc.)
+  //
+  // Special handling for imports: if the target name already exists as an import
+  // specifier in the same declaration, remove the old specifier instead of renaming
+  // it (avoids duplicate identifier declarations).
+  root.find(j.ImportSpecifier).forEach((importPath) => {
+    const oldName = importPath.node.imported.name;
+    if (!Object.hasOwn(IDENTIFIER_MAP, oldName)) return;
+
+    const newName = IDENTIFIER_MAP[oldName];
+    const declaration = importPath.parent.node;
+    const siblings = declaration.specifiers || [];
+    const targetExists = siblings.some(
+      (s) =>
+        s !== importPath.node &&
+        s.type === 'ImportSpecifier' &&
+        s.imported.name === newName,
+    );
+
+    if (targetExists) {
+      // Target already imported — remove this specifier entirely
+      const idx = siblings.indexOf(importPath.node);
+      if (idx !== -1) {
+        siblings.splice(idx, 1);
+        hasChanges = true;
+      }
+    } else {
+      // Safe to rename
+      importPath.node.imported.name = newName;
+      if (importPath.node.local.name === oldName) {
+        importPath.node.local.name = newName;
+      }
+      hasChanges = true;
+    }
+  });
+
+  // Rename remaining non-import identifier references
   root.find(j.Identifier).forEach((path) => {
-    const newName = IDENTIFIER_MAP[path.node.name];
-    if (!newName) return;
-    path.node.name = newName;
+    if (!Object.hasOwn(IDENTIFIER_MAP, path.node.name)) return;
+    // Skip import specifiers (already handled above)
+    if (path.parent.node.type === 'ImportSpecifier') return;
+    path.node.name = IDENTIFIER_MAP[path.node.name];
     hasChanges = true;
   });
 

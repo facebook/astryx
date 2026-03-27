@@ -248,4 +248,72 @@ const tokens = { ...lineHeightDefaults };`;
     const result = transform({source: `const x = '--color-accent';`, path: 'test.tsx'}, api);
     expect(result).toBeUndefined();
   });
+
+  // === Regression: #910 — prototype pollution corrupts .toString() calls ===
+
+  it('does not corrupt .toString() calls', async () => {
+    const input = `const qs = params.toString();\nconst x = '--color-wash';`;
+    const output = await applyTransform(input);
+    expect(output).toContain('params.toString()');
+    expect(output).not.toContain('[native code]');
+    expect(output).toContain('--color-background-body');
+  });
+
+  it('does not corrupt .toLocaleString() calls', async () => {
+    const input = `const n = count.toLocaleString();\nconst x = '--shadow-base';`;
+    const output = await applyTransform(input);
+    expect(output).toContain('count.toLocaleString()');
+    expect(output).not.toContain('[native code]');
+    expect(output).toContain('--shadow-low');
+  });
+
+  it('does not corrupt .hasOwnProperty() calls', async () => {
+    const input = `const ok = obj.hasOwnProperty('key');\nconst x = '--radius-0';`;
+    const output = await applyTransform(input);
+    expect(output).toContain("obj.hasOwnProperty('key')");
+    expect(output).not.toContain('[native code]');
+    expect(output).toContain('--radius-none');
+  });
+
+  it('does not corrupt .valueOf() calls', async () => {
+    const input = `const v = date.valueOf();\nconst x = '--font-body';`;
+    const output = await applyTransform(input);
+    expect(output).toContain('date.valueOf()');
+    expect(output).not.toContain('[native code]');
+    expect(output).toContain('--font-family-body');
+  });
+
+  // === Regression: duplicate import when target already exists ===
+
+  it('removes old import specifier when target is already imported', async () => {
+    const input = `import { lineHeightDefaults, typeScaleDefaults } from '@xds/core/theme';
+const x = { ...lineHeightDefaults, ...typeScaleDefaults };`;
+    const output = await applyTransform(input);
+    // lineHeightDefaults import should be removed (not renamed to duplicate)
+    expect(output).not.toContain('lineHeightDefaults');
+    // typeScaleDefaults should appear once in import, twice in usage
+    const importMatch = output.match(/import.*typeScaleDefaults/);
+    expect(importMatch).toBeTruthy();
+    // Usage should rename lineHeightDefaults → typeScaleDefaults
+    expect(output).toContain('...typeScaleDefaults');
+  });
+
+  it('renames import specifier when target is NOT already imported', async () => {
+    const input = `import { lineHeightDefaults } from '@xds/core/theme';
+const x = lineHeightDefaults;`;
+    const output = await applyTransform(input);
+    expect(output).toContain('typeScaleDefaults');
+    expect(output).not.toContain('lineHeightDefaults');
+  });
+
+  it('handles lineHeightVars + typeScaleVars dual import', async () => {
+    const input = `import { lineHeightVars, typeScaleVars } from '@xds/core/theme';
+const a = lineHeightVars;
+const b = typeScaleVars;`;
+    const output = await applyTransform(input);
+    // lineHeightVars import should be removed
+    expect(output).not.toContain('lineHeightVars');
+    // All usages should be typeScaleVars
+    expect((output.match(/typeScaleVars/g) || []).length).toBeGreaterThanOrEqual(2);
+  });
 });
