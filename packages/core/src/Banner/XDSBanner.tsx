@@ -361,11 +361,11 @@ const styles = stylex.create({
     borderBottomRightRadius: 'var(--banner-radius)',
   },
   contentAreaSection: {
-    paddingBlock: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-4'],
     paddingInline: spacingVars['--spacing-4'],
   },
   contentAreaContentVariant: {
-    paddingBlock: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-3'],
     borderBottomLeftRadius: 'var(--banner-radius)',
     borderBottomRightRadius: 'var(--banner-radius)',
