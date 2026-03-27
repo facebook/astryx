@@ -505,11 +505,9 @@ export function XDSBanner({
 
   // Show the end area if there are actions, dismiss, or a collapsible toggle
   const showEndArea = endContent != null || isDismissable || hasChildren;
-  // Apply -8px nudge when no description and ghost buttons are present.
-  // When there's a description, buttons are already visually aligned at flex-start.
+  // Apply -8px nudge whenever ghost buttons are present
   const applyEndAreaOffset =
-    description == null &&
-    (endAreaVariant === 'invisibleBackground' || isDismissable || hasChildren);
+    endAreaVariant === 'invisibleBackground' || isDismissable || hasChildren;
 
   return (
     <div
