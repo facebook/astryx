@@ -335,7 +335,7 @@ const styles = stylex.create({
   },
   endAreaButtons: {
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacingVars['--spacing-2'],
     flexShrink: 0,
     marginInlineStart: 'auto',
@@ -343,7 +343,7 @@ const styles = stylex.create({
   // Ghost buttons (collapse/dismiss) — nudged independently from endContent
   endAreaGhostButtons: {
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacingVars['--spacing-2'],
   },
   endAreaInvisibleBackground: {
