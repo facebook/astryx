@@ -563,8 +563,8 @@ export function XDSBanner({
           <div
             {...stylex.props(
               styles.endAreaButtons,
-              applyEndAreaOffset && styles.endAreaInvisibleBackground,
               edgeSignals.end,
+              applyEndAreaOffset && styles.endAreaInvisibleBackground,
             )}>
             {endContent}
             {hasChildren && (
