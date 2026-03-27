@@ -341,7 +341,7 @@ const styles = stylex.create({
     marginInlineStart: 'auto',
   },
   endAreaInvisibleBackground: {
-    marginBlockStart: '-4px',
+    marginBlockStart: '-8px',
   },
   // dismissButton negative margin removed — edge compensation handles this
   // automatically via --edge-end signal on the endArea
