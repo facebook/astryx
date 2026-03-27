@@ -499,10 +499,13 @@ export function XDSBanner({
 
   // Show the end area if there are actions, dismiss, or a collapsible toggle
   const showEndArea = endContent != null || isDismissable || hasChildren;
-  // Auto-apply the -4px nudge when only internal ghost buttons are present.
-  // Override with endAreaVariant='invisibleBackground' when endContent is also a ghost button.
+  // Apply -8px nudge when internal ghost buttons (dismiss/collapse) are present,
+  // or when endContent is explicitly a ghost button (endAreaVariant='invisibleBackground').
   const applyEndAreaOffset =
-    endAreaVariant === 'invisibleBackground' || endContent == null;
+    endAreaVariant === 'invisibleBackground' ||
+    endContent == null ||
+    isDismissable ||
+    hasChildren;
 
   return (
     <div
