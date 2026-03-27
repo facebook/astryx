@@ -5,12 +5,14 @@ import {XDSTheme} from '@xds/core/theme';
 import {defaultTheme} from '@xds/theme-default';
 import {neutralTheme} from '@xds/theme-neutral';
 import {brutalistTheme} from '@xds/theme-brutalist';
+import {whatsappTheme} from '@xds/theme-whatsapp';
 import type {XDSDefinedTheme, ThemeMode} from '@xds/core/theme';
 
 const themes: Record<string, XDSDefinedTheme> = {
   default: defaultTheme,
   neutral: neutralTheme,
   brutalist: brutalistTheme,
+  whatsapp: whatsappTheme,
 };
 
 type ThemeContextValue = {
