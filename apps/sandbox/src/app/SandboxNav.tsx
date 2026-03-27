@@ -58,6 +58,7 @@ export function SandboxNav() {
               {value: 'default', label: 'Default'},
               {value: 'neutral', label: 'Neutral'},
               {value: 'brutalist', label: 'Brutalist'},
+              {value: 'whatsapp', label: 'WhatsApp'},
             ]}
           />
         </div>
