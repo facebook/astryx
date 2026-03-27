@@ -11,6 +11,7 @@
  * - Content area (optional): collapsible card background below the header for additional content (children)
  * - No left border accent — color is expressed through the full header background
  * - When children are provided, a collapse/expand toggle button appears in the end area
+ * - Header always uses alignItems: flex-start so icon and actions pin to the top when title wraps
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Banner/Banner.doc.mjs (props table, features, implementation notes)
@@ -248,10 +249,6 @@ const styles = stylex.create({
     // has different block padding (spacing-3) vs inline padding (spacing-4).
     '--container-padding-inline': spacingVars['--spacing-4'],
   },
-  // When there's only a title (no description) and actions, center everything vertically
-  headerCentered: {
-    alignItems: 'center',
-  },
   // Text content area within the header
   headerContent: {
     display: 'flex',
@@ -414,10 +411,6 @@ export function XDSBanner({
 
   // Show the end area if there are actions, dismiss, or a collapsible toggle
   const showEndArea = endContent != null || isDismissable || hasChildren;
-  // Center items vertically when there's only a title (no description)
-  // and the banner has action buttons
-  const hasActions = endContent != null || isDismissable;
-  const isSingleLine = description == null && hasActions;
 
   return (
     <div
@@ -436,12 +429,7 @@ export function XDSBanner({
         style,
       )}>
       {/* Header: colored status background */}
-      <div
-        {...stylex.props(
-          styles.header,
-          isSingleLine && styles.headerCentered,
-          statusStyles[status],
-        )}>
+      <div {...stylex.props(styles.header, statusStyles[status])}>
         <div
           {...mergeProps(
             xdsClassName('banner-icon', {status}),
