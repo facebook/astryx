@@ -242,12 +242,18 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'flex-start',
     gap: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-3'],
+  },
+  // card variant: 16px on all sides
+  headerCard: {
+    paddingBlock: spacingVars['--spacing-4'],
     paddingInline: spacingVars['--spacing-4'],
-    // Publish inline padding for edge compensation (ghost buttons at edges).
-    // Uses --container-padding-inline (not --container-padding) because Banner
-    // has different block padding (spacing-3) vs inline padding (spacing-4).
     '--container-padding-inline': spacingVars['--spacing-4'],
+  },
+  // section variant: 8px block, 12px inline
+  headerSection: {
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
+    '--container-padding-inline': spacingVars['--spacing-3'],
   },
   // Text content area within the header
   headerContent: {
@@ -290,8 +296,6 @@ const styles = stylex.create({
   // Content area — card background for additional content below the header
   contentArea: {
     backgroundColor: colorVars['--color-background-card'],
-    paddingBlock: spacingVars['--spacing-3'],
-    paddingInline: spacingVars['--spacing-4'],
     borderLeftWidth: 1,
     borderRightWidth: 1,
     borderBottomWidth: 1,
@@ -303,8 +307,14 @@ const styles = stylex.create({
     borderBottomColor: colorVars['--color-border'],
   },
   contentAreaCard: {
+    paddingBlock: spacingVars['--spacing-4'],
+    paddingInline: spacingVars['--spacing-4'],
     borderBottomLeftRadius: 'var(--banner-radius)',
     borderBottomRightRadius: 'var(--banner-radius)',
+  },
+  contentAreaSection: {
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
   },
 });
 
@@ -429,7 +439,12 @@ export function XDSBanner({
         style,
       )}>
       {/* Header: colored status background */}
-      <div {...stylex.props(styles.header, statusStyles[status])}>
+      <div
+        {...stylex.props(
+          styles.header,
+          container === 'card' ? styles.headerCard : styles.headerSection,
+          statusStyles[status],
+        )}>
         <div
           {...mergeProps(
             xdsClassName('banner-icon', {status}),
@@ -486,7 +501,9 @@ export function XDSBanner({
         <div
           {...stylex.props(
             styles.contentArea,
-            container === 'card' && styles.contentAreaCard,
+            container === 'card'
+              ? styles.contentAreaCard
+              : styles.contentAreaSection,
           )}>
           {children}
         </div>
