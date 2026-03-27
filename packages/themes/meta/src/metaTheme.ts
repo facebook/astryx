@@ -22,20 +22,13 @@ export const metaTheme = defineTheme({
       family: 'Figtree',
       fallbacks:
         '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", Helvetica, Arial, sans-serif',
+      url: 'https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap',
     },
     code: {
       family: 'SF Mono',
       fallbacks: '"Cascadia Code", "Segoe UI Mono", Menlo, Consolas, monospace',
     },
   },
-
-  // Font declarations — XDSTheme loads at runtime with console warning
-  fonts: [
-    {
-      family: 'Figtree',
-      url: 'https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap',
-    },
-  ],
 
   // Motion — default Meta timing
   motion: {fast: 175, medium: 410, ratio: 0.75},
@@ -57,8 +50,14 @@ export const metaTheme = defineTheme({
     '--color-background-popover': ['#FFFFFF', '#1F1F20'],
     '--color-background-muted': ['#F2F4F6', '#28292C'],
     '--color-overlay': ['#1111121F', '#11111299'],
-    '--color-overlay-hover': ['rgba(17, 17, 18, 0.05)', 'rgba(242, 244, 246, 0.05)'],
-    '--color-overlay-pressed': ['rgba(17, 17, 18, 0.08)', 'rgba(242, 244, 246, 0.08)'],
+    '--color-overlay-hover': [
+      'rgba(17, 17, 18, 0.05)',
+      'rgba(242, 244, 246, 0.05)',
+    ],
+    '--color-overlay-pressed': [
+      'rgba(17, 17, 18, 0.08)',
+      'rgba(242, 244, 246, 0.08)',
+    ],
     '--color-neutral': ['rgba(17, 17, 18, 0.06)', 'rgba(242, 244, 246, 0.1)'],
 
     // =========================================================================
@@ -83,13 +82,22 @@ export const metaTheme = defineTheme({
     // Status — CDS: NEGATIVE, POSITIVE, WARNING
     // =========================================================================
     '--color-success': ['#147B29', '#3CBC22'],
-    '--color-success-muted': ['rgba(20, 123, 41, 0.1)', 'rgba(60, 188, 34, 0.15)'],
+    '--color-success-muted': [
+      'rgba(20, 123, 41, 0.1)',
+      'rgba(60, 188, 34, 0.15)',
+    ],
     '--color-on-success': ['#FFFFFF', '#FFFFFF'],
     '--color-error': ['#D31130', '#FB7D87'],
-    '--color-error-muted': ['rgba(211, 17, 48, 0.1)', 'rgba(251, 125, 135, 0.15)'],
+    '--color-error-muted': [
+      'rgba(211, 17, 48, 0.1)',
+      'rgba(251, 125, 135, 0.15)',
+    ],
     '--color-on-error': ['#FFFFFF', '#FFFFFF'],
     '--color-warning': ['#965E03', '#D69804'],
-    '--color-warning-muted': ['rgba(150, 94, 3, 0.1)', 'rgba(214, 152, 4, 0.15)'],
+    '--color-warning-muted': [
+      'rgba(150, 94, 3, 0.1)',
+      'rgba(214, 152, 4, 0.15)',
+    ],
     '--color-on-warning': ['#0A1317', '#0A1317'],
 
     // =========================================================================
@@ -174,51 +182,9 @@ export const metaTheme = defineTheme({
     '--font-size-2xl': '1.75rem', // 28px — heading 1
   },
 
-  // ===========================================================================
-  // Custom variants (#790/#803)
-  // ===========================================================================
-  variants: {
-    button: {
-      'primary-muted': {
-        backgroundColor: 'light-dark(#ECF5FF, #182849)',
-        color: 'light-dark(#0457CB, #78BEFF)',
-        fontWeight: '500',
-      },
-      'destructive-muted': {
-        backgroundColor: 'light-dark(#FFF0F2, #471B1A)',
-        color: 'light-dark(var(--color-error), #FE9DA6)',
-        fontWeight: '500',
-      },
-      'primary-outline': {
-        backgroundColor: 'transparent',
-        borderWidth: '1px',
-        borderStyle: 'solid',
-        borderColor: 'light-dark(var(--color-accent), #4BA9FE)',
-        color: 'light-dark(var(--color-accent), #4BA9FE)',
-        fontWeight: '500',
-      },
-      'secondary-outline': {
-        backgroundColor: 'transparent',
-        borderWidth: '1px',
-        borderStyle: 'solid',
-        borderColor: 'light-dark(var(--color-border), #525456)',
-        color: 'light-dark(var(--color-text-primary), #F3F4F5)',
-        fontWeight: '500',
-      },
-      'destructive-outline': {
-        backgroundColor: 'transparent',
-        borderWidth: '1px',
-        borderStyle: 'solid',
-        borderColor: 'light-dark(var(--color-error), #FB7D87)',
-        color: 'light-dark(var(--color-error), #FB7D87)',
-        fontWeight: '500',
-      },
-    },
-  },
-
   components: {
     // =========================================================================
-    // Button — pill shape, medium weight
+    // Button — pill shape, medium weight, custom muted/outline variants
     // =========================================================================
     button: {
       base: {
@@ -228,6 +194,40 @@ export const metaTheme = defineTheme({
       'variant:secondary': {fontWeight: '500'},
       'variant:destructive': {fontWeight: '500'},
       'variant:ghost': {fontWeight: '500'},
+      'variant:primary-muted': {
+        backgroundColor: 'light-dark(#ECF5FF, #182849)',
+        color: 'light-dark(#0457CB, #78BEFF)',
+        fontWeight: '500',
+      },
+      'variant:destructive-muted': {
+        backgroundColor: 'light-dark(#FFF0F2, #471B1A)',
+        color: 'light-dark(var(--color-error), #FE9DA6)',
+        fontWeight: '500',
+      },
+      'variant:primary-outline': {
+        backgroundColor: 'transparent',
+        borderWidth: '1px',
+        borderStyle: 'solid',
+        borderColor: 'light-dark(var(--color-accent), #4BA9FE)',
+        color: 'light-dark(var(--color-accent), #4BA9FE)',
+        fontWeight: '500',
+      },
+      'variant:secondary-outline': {
+        backgroundColor: 'transparent',
+        borderWidth: '1px',
+        borderStyle: 'solid',
+        borderColor: 'light-dark(var(--color-border), #525456)',
+        color: 'light-dark(var(--color-text-primary), #F3F4F5)',
+        fontWeight: '500',
+      },
+      'variant:destructive-outline': {
+        backgroundColor: 'transparent',
+        borderWidth: '1px',
+        borderStyle: 'solid',
+        borderColor: 'light-dark(var(--color-error), #FB7D87)',
+        color: 'light-dark(var(--color-error), #FB7D87)',
+        fontWeight: '500',
+      },
     },
 
     // =========================================================================
