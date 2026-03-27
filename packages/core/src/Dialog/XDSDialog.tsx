@@ -329,7 +329,7 @@ export function XDSDialog({
 
         const cs = getComputedStyle(dialog);
         const duration =
-          cs.getPropertyValue('--duration-medium').trim() || '410ms';
+          cs.getPropertyValue('--duration-medium-max').trim() || '550ms';
         const easing =
           cs.getPropertyValue('--ease-standard').trim() ||
           'cubic-bezier(0.24, 1, 0.4, 1)';
