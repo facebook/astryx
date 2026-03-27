@@ -16,8 +16,21 @@ const meta: Meta<typeof XDSBanner> = {
     },
     container: {
       control: 'select',
-      options: ['card', 'section'],
-      description: 'Container type',
+      options: ['card', 'section', 'content'],
+      description:
+        'Container type — card (16px padding, rounded), section (full-width, no radius), content (inline with text/lists, element radius)',
+    },
+    labelVariant: {
+      control: 'select',
+      options: ['emphasized', 'regular'],
+      description:
+        'Label weight — emphasized (semibold, description allowed) or regular (normal weight, no description)',
+    },
+    endAreaVariant: {
+      control: 'select',
+      options: [undefined, 'invisibleBackground'],
+      description:
+        'Set to invisibleBackground when endContent uses a ghost button, to apply the -4px optical alignment offset',
     },
     isDismissable: {
       control: 'boolean',
@@ -107,6 +120,70 @@ export const SectionVariant: Story = {
       'The system will be undergoing maintenance on Saturday from 2:00 AM to 6:00 AM UTC.',
     container: 'section',
   },
+};
+
+export const ContentVariant: Story = {
+  name: 'Content Variant (Inline)',
+  args: {
+    status: 'info',
+    title: 'This banner lives inline with other content.',
+    description: 'Use this variant alongside text, lists, and other elements.',
+    container: 'content',
+  },
+};
+
+export const LabelRegular: Story = {
+  name: 'Label Regular Weight',
+  args: {
+    status: 'warning',
+    title: 'Regular weight label, no description.',
+    labelVariant: 'regular',
+  },
+};
+
+export const AllContainerVariants: Story = {
+  name: 'All Container Variants',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+      <XDSBanner
+        status="info"
+        title="Card variant"
+        description="16px padding, rounded corners (radius-container)."
+        container="card"
+      />
+      <XDSBanner
+        status="info"
+        title="Section variant"
+        description="8px block / 16px inline, no border-radius."
+        container="section"
+      />
+      <XDSBanner
+        status="info"
+        title="Content variant"
+        description="8px block / 12px inline, element radius. Lives inline with text."
+        container="content"
+      />
+    </div>
+  ),
+};
+
+export const AllLabelVariants: Story = {
+  name: 'All Label Variants',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+      <XDSBanner
+        status="info"
+        title="Emphasized with description"
+        description="Semibold label + supporting text below."
+      />
+      <XDSBanner status="info" title="Emphasized, no description" />
+      <XDSBanner
+        status="info"
+        title="Regular weight label"
+        labelVariant="regular"
+      />
+    </div>
+  ),
 };
 
 export const CollapsibleContent: Story = {
@@ -256,6 +333,18 @@ export const AllFeatures: Story = {
         title="Section container"
         description="Full-width with no border-radius."
         container="section"
+      />
+      <XDSBanner
+        status="info"
+        title="Content container"
+        description="Inline with text and lists, element radius."
+        container="content"
+      />
+      <XDSBanner
+        status="warning"
+        title="Regular weight label"
+        labelVariant="regular"
+        isDismissable
       />
     </div>
   ),
