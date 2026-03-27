@@ -72,6 +72,7 @@ function SandboxHeader() {
             icon: <PaletteIcon />,
             variant: 'ghost',
             size: 'sm',
+            children: 'Theme',
           }}
           menuWidth={160}
           items={themeItems}
@@ -82,6 +83,7 @@ function SandboxHeader() {
             icon: mode === 'dark' ? <MoonIcon /> : <SunIcon />,
             variant: 'ghost',
             size: 'sm',
+            children: mode === 'dark' ? 'Dark' : 'Light',
           }}
           menuWidth={160}
           items={modeItems}
