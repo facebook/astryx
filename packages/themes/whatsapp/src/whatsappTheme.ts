@@ -47,10 +47,14 @@ export const whatsappTheme = defineTheme({
     },
   },
 
-  // Radius: WDS uses 8px default (borderRadiusSingle), 16px for containers
-  // (borderRadiusDouble), 24px+ for large panels. multiplier=2 scales XDS's
-  // base-4 system to match: radius-1=8, radius-2=16, radius-3=24, radius-4=32.
-  radius: {base: 4, multiplier: 2},
+  // Radius: WDS scale (0/4/8/12/28/9999) matches XDS defaults exactly.
+  //   borderRadiusNone=0 → --radius-none=0
+  //   borderRadiusHalf=4 → --radius-inner=4
+  //   borderRadiusSingle=8 → --radius-element=8 (inputs, cards)
+  //   borderRadiusSinglePlus=12 → --radius-container=12
+  //   borderRadiusTriplePlus=28 → --radius-page=28
+  //   borderRadiusCircle=9999 → --radius-full=9999 (buttons)
+  // No radius override needed — multiplier=1 (default) is correct.
 
   // Motion: WhatsApp feels snappy but not jarring.
   // Slightly faster than XDS default, with ease-out for natural deceleration.
@@ -244,6 +248,14 @@ export const whatsappTheme = defineTheme({
     '--color-text-yellow': ['#6D4E26', '#FFE4AF'],
 
     // =========================================================================
+    // Element sizes — WDS button heights: small=32px, medium=40px, large=56px
+    // These tokens are used by buttons, inputs, selects, and other elements.
+    // =========================================================================
+    '--size-element-sm': '32px',
+    '--size-element-md': '40px',
+    '--size-element-lg': '56px',
+
+    // =========================================================================
     // Shadows — soft, WhatsApp-style elevation
     // =========================================================================
     '--shadow-low':
@@ -257,24 +269,131 @@ export const whatsappTheme = defineTheme({
 
   components: {
     // =========================================================================
-    // Button — pill-shaped primary, signature WhatsApp style
+    // Button — derived from WDSButton + WDSButtonColor*Config
+    //
+    // WDS variants:  filled / tonal / outline / borderless
+    // XDS variants:  primary / secondary / ghost / destructive
+    //
+    // Mapping:
+    //   primary     → WDS filled default (accent bg, on-accent text)
+    //   secondary   → WDS tonal default (accent-deemphasized bg, accent-emphasized text)
+    //   ghost       → WDS borderless default (transparent bg, accent-emphasized text)
+    //   destructive → WDS filled destructive (negative bg, on-accent text)
+    //
+    // Key WDS button behaviors preserved:
+    //   - Pill shape (borderRadius: 9999px) on all variants
+    //   - 40px medium height (WDS medium button = 40px)
+    //   - Body2Emphasized label (14px, weight 500)
+    //   - Filled buttons scale on hover (1.04) and press (0.97)
+    //   - Bouncy spring transition: 150ms cubic-bezier(0.175, 0.885, 0.32, 1.275)
+    //   - Focus ring: accent color, 2px solid, 2px offset
     // =========================================================================
     button: {
+      // =======================================================================
+      // Base — shared across all WDS button variants
+      //   - Pill shape (borderRadiusCircle = 9999px)
+      //   - Body2Emphasized label (14px, weight 500)
+      //   - Bouncy spring transition for hover/press transforms
+      //   - Size-specific padding: sm=16px, md=24px, lg=28px
+      // =======================================================================
       base: {
         borderRadius: '9999px',
         fontWeight: '500',
+        paddingInline: '24px',
+        transition:
+          'background-image 150ms cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 150ms cubic-bezier(0.175, 0.885, 0.32, 1.275)',
       },
+      'size:sm': {
+        paddingInline: '16px',
+      },
+      'size:lg': {
+        paddingInline: '28px',
+      },
+
+      // =======================================================================
+      // primary → WDS "filled default"
+      //   bg: accent, text: on-accent, scale hover/press
+      // =======================================================================
+      'variant:primary': {
+        ':hover': {transform: 'scale(1.04)'},
+        ':active': {transform: 'scale(0.97)'},
+      },
+
+      // =======================================================================
+      // secondary → WDS "tonal default"
+      //   bg: accent-deemphasized (green100/green800)
+      //   text: accent-emphasized (green700/green100)
+      // =======================================================================
       'variant:secondary': {
-        backgroundColor:
-          'light-dark(rgba(194, 189, 184, 0.15), rgba(255, 255, 255, 0.1))',
+        backgroundColor: 'light-dark(#D9FDD3, #103529)',
+        color: 'light-dark(#15603E, #D9FDD3)',
       },
+
+      // =======================================================================
+      // ghost → WDS "borderless default"
+      //   bg: transparent, text: content-action-emphasized (green600/green450)
+      // =======================================================================
       'variant:ghost': {
-        borderRadius: '9999px',
+        color: 'light-dark(#1B8755, #21C063)',
+      },
+
+      // =======================================================================
+      // destructive → WDS "filled destructive"
+      //   bg: secondary-negative (red400/red300), text: on-accent, scale hover/press
+      // =======================================================================
+      'variant:destructive': {
+        ':hover': {transform: 'scale(1.04)'},
+        ':active': {transform: 'scale(0.97)'},
+      },
+
+      // =======================================================================
+      // NEW: outline → WDS "outline default"
+      //   bg: transparent, 1px border (lines-outline-deemphasized)
+      //   text: content-action-emphasized (green600/green450)
+      // =======================================================================
+      'variant:outline': {
+        backgroundColor: 'transparent',
+        borderWidth: '1px',
+        borderStyle: 'solid',
+        borderColor: 'light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.1))',
+        color: 'light-dark(#1B8755, #21C063)',
+      },
+
+      // =======================================================================
+      // NEW: tonal-destructive → WDS "tonal destructive"
+      //   bg: secondary-negative-deemphasized (red75/red800)
+      //   text: secondary-negative-emphasized (red500/red200)
+      // =======================================================================
+      'variant:tonal-destructive': {
+        backgroundColor: 'light-dark(#FDE8EB, #321622)',
+        color: 'light-dark(#B80531, #FA99A4)',
+      },
+
+      // =======================================================================
+      // NEW: outline-destructive → WDS "outline destructive"
+      //   bg: transparent, 1px border (lines-outline-deemphasized)
+      //   text: secondary-negative-emphasized (red500/red200)
+      // =======================================================================
+      'variant:outline-destructive': {
+        backgroundColor: 'transparent',
+        borderWidth: '1px',
+        borderStyle: 'solid',
+        borderColor: 'light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.1))',
+        color: 'light-dark(#B80531, #FA99A4)',
+      },
+
+      // =======================================================================
+      // NEW: ghost-destructive → WDS "borderless destructive"
+      //   bg: transparent, text: secondary-negative-emphasized (red500/red200)
+      // =======================================================================
+      'variant:ghost-destructive': {
+        backgroundColor: 'transparent',
+        color: 'light-dark(#B80531, #FA99A4)',
       },
     },
 
     // =========================================================================
-    // Badge — rounded, WhatsApp-green tinted
+    // Badge — rounded, medium weight
     // =========================================================================
     badge: {
       base: {
@@ -293,12 +412,37 @@ export const whatsappTheme = defineTheme({
     },
 
     // =========================================================================
-    // Divider — subtle, WDS-style thin divider
+    // Divider — subtle, WDS-style thin divider (lines-divider token)
     // =========================================================================
     divider: {
       base: {
         borderTopColor:
           'light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.1))',
+      },
+    },
+
+    // =========================================================================
+    // TextInput — derived from WDSTextFieldVariants.web.js
+    //
+    // WDS web textfield:
+    //   height: 40px (covered by --size-element-md token)
+    //   borderRadius: borderRadiusSingle = 8px (covered by radius multiplier)
+    //   border: 1px solid lines-outline-default
+    //   focus: 2px outline, accent (green) color
+    //   hover (unfocused): surface-highlight background
+    //   caret: accent color
+    //   padding: spacingSinglePlus (12px) inline
+    //   disabled: 38% opacity + cursor not-allowed
+    //   error: secondary-negative outline color
+    // =========================================================================
+    'text-input': {
+      base: {
+        borderColor: 'light-dark(#959393, #757778)',
+        paddingInline: '12px',
+        caretColor: 'light-dark(#1DAA61, #21C063)',
+        ':focus-within': {
+          outlineColor: 'light-dark(#1DAA61, #21C063)',
+        },
       },
     },
   },
