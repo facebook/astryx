@@ -26,6 +26,7 @@ const nextConfig = {
     '@xds/theme-default',
     '@xds/theme-neutral',
     '@xds/theme-brutalist',
+    '@xds/theme-meta',
   ],
   images: {
     unoptimized: true,

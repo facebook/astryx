@@ -2,23 +2,11 @@
  * Meta Theme for XDS
  *
  * Color tokens derived from CDS (Core Design System) — Meta's internal
- * design system platform. All color values map to the XMDS 3.0 palette
- * defined in CDSBaseColorDefinition.php.
+ * design system platform. All color values map to the XMDS 3.0 palette.
  *
- * Semantic token assignments follow CDSDefaultThemeSource.php mappings:
- * - Accent: GRAY_1100/GRAY_50 (secondary brand accent)
- * - Brand blue: BLUE_650/BLUE_550 (primary brand accent, "BLUE_BADGE" in CDS)
- * - Surfaces: WHITE/GRAY_1050 (clean light, deep dark)
- * - Text: GRAY_1100/GRAY_50 primary, GRAY_650/GRAY_400 secondary
- * - Status: RED_650, GREEN_650, YELLOW_650 (light), RED/GREEN/YELLOW_400 (dark)
- *
- * Token values use [light, dark] tuples for automatic light-dark() conversion.
- *
- * Component overrides use xdsClassName class targeting (#763) and
- * the defineTheme variants field (#790) instead of CSS custom properties.
- *
- * @see fbsource/www/flib/intern/color_systems/design_systems/cds/CDSBaseColorDefinition.php
- * @see fbsource/www/flib/intern/design_systems_platform/design_systems/cds/themes/CDSDefaultThemeSource.php
+ * Component overrides use xdsClassName class targeting (#763), pseudo-class
+ * selectors (#811), and the defineTheme variants field (#790).
+ * No core CSS custom properties needed — all theming is pure defineTheme.
  */
 
 import {defineTheme} from '@xds/core/theme';
@@ -35,152 +23,143 @@ export const metaTheme = defineTheme({
       fallbacks:
         '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", Helvetica, Arial, sans-serif',
     },
-    // heading inherits from body
     code: {
       family: 'SF Mono',
       fallbacks: '"Cascadia Code", "Segoe UI Mono", Menlo, Consolas, monospace',
     },
   },
 
+  // Font declarations — XDSTheme loads at runtime with console warning
+  fonts: [
+    {
+      family: 'Figtree',
+      url: 'https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap',
+    },
+  ],
+
   // Motion — default Meta timing
   motion: {fast: 175, medium: 410, ratio: 0.75},
 
   tokens: {
     // =========================================================================
-    // Colors — CDS XMDS 3.0 palette
+    // Core Accent — Meta Blue (CDS: PRIMARY_BUTTON_BACKGROUND = BLUE_500)
     // =========================================================================
-
-    // Core accent — CDS uses BLUE_650/BLUE_550 for BLUE_BADGE (primary brand accent)
-    '--color-accent': ['#0064E0', '#0064E0'], // Meta Blue — same in light and dark
+    '--color-accent': ['#0064E0', '#0064E0'],
     '--color-accent-muted': ['#0064E033', '#0082FB3F'],
+    '--color-on-accent': ['#FFFFFF', '#FFFFFF'],
 
-    // Surfaces — CDS: SURFACE_BACKGROUND, CARD_BACKGROUND, etc.
-    '--color-background-surface': ['#FFFFFF', '#1F1F22'], // CDS: SURFACE_BACKGROUND (WHITE / GRAY_1050)
-    '--color-background-body': ['#F2F4F6', '#111112'], // CDS: BACKGROUND_DEEMPHASIZED (GRAY_50 / GRAY_1100)
-    '--color-background-card': ['#FFFFFF', '#1F1F20'], // CDS: CARD_BACKGROUND (WHITE / #1F1F20)
-    '--color-background-popover': ['#FFFFFF', '#1F1F20'], // CDS: POPOVER_BACKGROUND (WHITE / #1F1F20)
+    // =========================================================================
+    // Surfaces
+    // =========================================================================
+    '--color-background-surface': ['#FFFFFF', '#1F1F22'],
+    '--color-background-body': ['#F2F4F6', '#111112'],
+    '--color-background-card': ['#FFFFFF', '#1F1F20'],
+    '--color-background-popover': ['#FFFFFF', '#1F1F20'],
+    '--color-background-muted': ['#F2F4F6', '#28292C'],
     '--color-overlay': ['#1111121F', '#11111299'],
-    '--color-overlay-hover': [
-      'rgba(17, 17, 18, 0.05)',
-      'rgba(242, 244, 246, 0.05)',
-    ], // Derived from GRAY_1100/GRAY_50 at 5%
-    '--color-overlay-pressed': [
-      'rgba(17, 17, 18, 0.08)',
-      'rgba(242, 244, 246, 0.08)',
-    ], // Derived from GRAY_1100/GRAY_50 at 8%
-    '--color-background-muted': ['#F2F4F6', '#28292C'], // CDS: CARD_BACKGROUND_FILLED (GRAY_50 / GRAY_1000)
-    '--color-neutral': ['rgba(17, 17, 18, 0.06)', 'rgba(242, 244, 246, 0.1)'], // Subtle gray for secondary buttons
+    '--color-overlay-hover': ['rgba(17, 17, 18, 0.05)', 'rgba(242, 244, 246, 0.05)'],
+    '--color-overlay-pressed': ['rgba(17, 17, 18, 0.08)', 'rgba(242, 244, 246, 0.08)'],
+    '--color-neutral': ['rgba(17, 17, 18, 0.06)', 'rgba(242, 244, 246, 0.1)'],
 
-    // Text — CDS: PRIMARY_TEXT, SECONDARY_TEXT, etc.
-    '--color-text-primary': ['#111112', '#F3F4F5'], // CDS: PRIMARY_TEXT (GRAY_1100 / GRAY_50)
+    // =========================================================================
+    // Text
+    // =========================================================================
+    '--color-text-primary': ['#111112', '#F3F4F5'],
     '--color-text-secondary': ['#5D6C7B', '#AAAFB5'],
     '--color-text-disabled': ['#96A6B4', '#6F747C'],
-    '--color-text-accent': ['#0064E0', '#0064E0'], // Same as --color-accent (Meta Blue)
-    '--color-on-dark': ['#FFFFFF', '#FFFFFF'], // CDS: PRIMARY_TEXT_ON_MEDIA (WHITE)
-
-    // Icons — CDS: PRIMARY_ICON, SECONDARY_ICON, etc.
-    '--color-icon-primary': ['#111112', '#F2F4F6'], // CDS: PRIMARY_ICON (GRAY_1100 / GRAY_50)
-    '--color-icon-secondary': ['#5D6C7B', '#AAAFB5'],
-    '--color-icon-disabled': ['#DDE2E8', '#6F747C'],
-    '--color-on-dark': ['#FFFFFF', '#FFFFFF'], // CDS: PRIMARY_ICON_ON_MEDIA (WHITE)
-
-    // Focus — derived from CDS BLUE_BADGE and status tokens
-    '--color-accent': ['#0064E0', '#0064E0'], // Meta Blue — same in light and dark
-    '--color-error': ['#D31130', '#F5394F'],
-    '--color-success': ['#147B29', '#0D8626'],
-    '--color-warning': ['#965E03', '#E9AF08'],
-
-    // Dividers — CDS: DIVIDER / CONTAINER_BORDER
-    '--color-border': ['#DDE2E8', '#F2F4F619'],
-    '--color-border-emphasized': ['#666A72', '#9FA4AB'], // GRAY_650 / GRAY_400
-    '--color-border-emphasized': ['#DDE2E8', '#494D53'],
-
-    // Status colors — CDS: NEGATIVE, POSITIVE, WARNING
-    '--color-success': ['#147B29', '#3CBC22'], // CDS: POSITIVE (GREEN_650 / GREEN_400)
-    '--color-success-muted': [
-      'rgba(20, 123, 41, 0.1)',
-      'rgba(60, 188, 34, 0.15)',
-    ],
-    '--color-error': ['#D31130', '#FB7D87'], // CDS: NEGATIVE (RED_650 / RED_400)
-    '--color-error-muted': [
-      'rgba(211, 17, 48, 0.1)',
-      'rgba(251, 125, 135, 0.15)',
-    ],
-    '--color-warning': ['#965E03', '#D69804'], // CDS: WARNING (YELLOW_650 / YELLOW_400)
-    '--color-warning-muted': [
-      'rgba(150, 94, 3, 0.1)',
-      'rgba(214, 152, 4, 0.15)',
-    ],
-    '--color-accent': ['#0044A3', '#3087FF'], // BLUE_650 / BLUE_400
-    '--color-accent-muted': ['rgba(0, 68, 163, 0.1)', 'rgba(48, 135, 255, 0.15)'],
-
-    // Disabled — derived from CDS surface tokens
-    '--color-skeleton': ['#E7EAED', '#28292C'], // CDS: GRAY_100 / GRAY_1000
-    '--color-shadow': ['rgba(17, 17, 18, 0.12)', 'rgba(17, 17, 18, 0.12)'], // CDS: ELEVATED_SHADOW (GRAY_1100_A_12)
-    '--color-tint-hover': ['black', 'white'],
-
-    // Named palette — Blue (CDS XMDS 3.0 Blue ramp)
-    '--color-background-blue': ['#D7E9FF', '#001F4C'], // BLUE_100 / BLUE_900
-    '--color-border-blue': ['#0044A3', '#3087FF'], // BLUE_650 / BLUE_400
-    '--color-icon-blue': ['#0044A3', '#3087FF'], // BLUE_650 / BLUE_400
-    '--color-text-blue': ['#003B8E', '#4D99FF'], // BLUE_700 / BLUE_350
-
-    // Gray (CDS XMDS 3.0 Gray ramp)
-    '--color-background-gray': ['#F2F4F6', '#28292C'], // GRAY_50 / GRAY_1000
-    '--color-border-gray': ['#DFE2E5', '#494D53'], // GRAY_150 / GRAY_800
-    '--color-icon-gray': ['#666A72', '#9FA4AB'], // GRAY_650 / GRAY_400
-    '--color-text-gray': ['#111112', '#F2F4F6'], // GRAY_1100 / GRAY_50
-
-    // Green (CDS XMDS 3.0 Green ramp)
-    '--color-background-green': ['#C4F8B9', '#053018'], // GREEN_100 / GREEN_1000
-    '--color-border-green': ['#147B29', '#3CBC22'], // GREEN_650 / GREEN_400
-    '--color-icon-green': ['#147B29', '#3CBC22'], // GREEN_650 / GREEN_400
-    '--color-text-green': ['#076D29', '#4EC72A'], // GREEN_700 / GREEN_350
-
-    // Red (CDS XMDS 3.0 Red ramp)
-    '--color-background-red': ['#FEE4E6', '#5A0107'], // RED_100 / RED_1000
-    '--color-border-red': ['#D31130', '#FB7D87'], // RED_650 / RED_400
-    '--color-icon-red': ['#D31130', '#FB7D87'], // RED_650 / RED_400
-    '--color-text-red': ['#BE0424', '#FD8E99'], // RED_700 / RED_350
-
-    // Orange (CDS XMDS 3.0 Orange ramp)
-    '--color-background-orange': ['#FFE6CF', '#4E1608'], // ORANGE_100 / ORANGE_1000
-    '--color-border-orange': ['#B34A01', '#F88617'], // ORANGE_650 / ORANGE_400
-    '--color-icon-orange': ['#B34A01', '#F88617'], // ORANGE_650 / ORANGE_400
-    '--color-text-orange': ['#A13F04', '#FD9537'], // ORANGE_700 / ORANGE_350
-
-    // Yellow (CDS XMDS 3.0 Yellow ramp)
-    '--color-background-yellow': ['#FCEC85', '#451E03'], // YELLOW_100 / YELLOW_1000
-    '--color-border-yellow': ['#965E03', '#D69804'], // YELLOW_650 / YELLOW_400
-    '--color-icon-yellow': ['#965E03', '#D69804'], // YELLOW_650 / YELLOW_400
-    '--color-text-yellow': ['#8A5001', '#E2A400'], // YELLOW_700 / YELLOW_350
-
-    // Purple (CDS XMDS 3.0 Purple ramp)
-    '--color-background-purple': ['#ECE2FF', '#140036'], // PURPLE_100 / PURPLE_1050
-    '--color-border-purple': ['#5828CA', '#9B73FF'], // PURPLE_650 / PURPLE_400
-    '--color-icon-purple': ['#5828CA', '#9B73FF'], // PURPLE_650 / PURPLE_400
-    '--color-text-purple': ['#4D1EB6', '#A985FF'], // PURPLE_700 / PURPLE_350
-
-    // Pink (CDS XMDS 3.0 Pink ramp)
-    '--color-background-pink': ['#FFE1ED', '#520019'], // PINK_100 / PINK_1000
-    '--color-border-pink': ['#C71050', '#FE73A1'], // PINK_650 / PINK_400
-    '--color-icon-pink': ['#C71050', '#FE73A1'], // PINK_650 / PINK_400
-    '--color-text-pink': ['#B30543', '#FF85B0'], // PINK_700 / PINK_350
-
-    // Cyan (CDS XMDS 3.0 Cyan ramp)
-    '--color-background-cyan': ['#C7F1FF', '#001B2A'], // CYAN_100 / CYAN_1050
-    '--color-border-cyan': ['#006BA3', '#00AFFA'], // CYAN_650 / CYAN_400
-    '--color-icon-cyan': ['#006BA3', '#00AFFA'], // CYAN_650 / CYAN_400
-    '--color-text-cyan': ['#005F91', '#21BDFF'], // CYAN_700 / CYAN_350
-
-    // Teal (CDS XMDS 3.0 Teal ramp)
-    '--color-background-teal': ['#BCF5F0', '#062D38'], // TEAL_100 / TEAL_1000
-    '--color-border-teal': ['#08767D', '#0DB7AF'], // TEAL_650 / TEAL_400
-    '--color-icon-teal': ['#08767D', '#0DB7AF'], // TEAL_650 / TEAL_400
-    '--color-text-teal': ['#0F686F', '#1DC3B9'], // TEAL_700 / TEAL_350
+    '--color-text-accent': ['#0064E0', '#0064E0'],
+    '--color-on-dark': ['#FFFFFF', '#FFFFFF'],
+    '--color-on-light': ['#000000', '#000000'],
 
     // =========================================================================
-    // Radius — Meta-style moderate rounding
+    // Icons
+    // =========================================================================
+    '--color-icon-primary': ['#111112', '#F2F4F6'],
+    '--color-icon-secondary': ['#5D6C7B', '#AAAFB5'],
+    '--color-icon-disabled': ['#DDE2E8', '#6F747C'],
+    '--color-icon-accent': ['#0064E0', '#0064E0'],
+
+    // =========================================================================
+    // Status — CDS: NEGATIVE, POSITIVE, WARNING
+    // =========================================================================
+    '--color-success': ['#147B29', '#3CBC22'],
+    '--color-success-muted': ['rgba(20, 123, 41, 0.1)', 'rgba(60, 188, 34, 0.15)'],
+    '--color-on-success': ['#FFFFFF', '#FFFFFF'],
+    '--color-error': ['#D31130', '#FB7D87'],
+    '--color-error-muted': ['rgba(211, 17, 48, 0.1)', 'rgba(251, 125, 135, 0.15)'],
+    '--color-on-error': ['#FFFFFF', '#FFFFFF'],
+    '--color-warning': ['#965E03', '#D69804'],
+    '--color-warning-muted': ['rgba(150, 94, 3, 0.1)', 'rgba(214, 152, 4, 0.15)'],
+    '--color-on-warning': ['#0A1317', '#0A1317'],
+
+    // =========================================================================
+    // Borders
+    // =========================================================================
+    '--color-border': ['#DDE2E8', '#F2F4F619'],
+    '--color-border-emphasized': ['#DDE2E8', '#494D53'],
+
+    // =========================================================================
+    // Effects
+    // =========================================================================
+    '--color-skeleton': ['#E7EAED', '#28292C'],
+    '--color-shadow': ['rgba(17, 17, 18, 0.12)', 'rgba(17, 17, 18, 0.12)'],
+    '--color-tint-hover': ['black', 'white'],
+
+    // =========================================================================
+    // Named palette — CDS XMDS 3.0 color ramps
+    // =========================================================================
+    '--color-background-blue': ['#D7E9FF', '#001F4C'],
+    '--color-border-blue': ['#0044A3', '#3087FF'],
+    '--color-icon-blue': ['#0044A3', '#3087FF'],
+    '--color-text-blue': ['#003B8E', '#4D99FF'],
+
+    '--color-background-gray': ['#F2F4F6', '#28292C'],
+    '--color-border-gray': ['#DFE2E5', '#494D53'],
+    '--color-icon-gray': ['#666A72', '#9FA4AB'],
+    '--color-text-gray': ['#111112', '#F2F4F6'],
+
+    '--color-background-green': ['#C4F8B9', '#053018'],
+    '--color-border-green': ['#147B29', '#3CBC22'],
+    '--color-icon-green': ['#147B29', '#3CBC22'],
+    '--color-text-green': ['#076D29', '#4EC72A'],
+
+    '--color-background-red': ['#FEE4E6', '#5A0107'],
+    '--color-border-red': ['#D31130', '#FB7D87'],
+    '--color-icon-red': ['#D31130', '#FB7D87'],
+    '--color-text-red': ['#BE0424', '#FD8E99'],
+
+    '--color-background-orange': ['#FFE6CF', '#4E1608'],
+    '--color-border-orange': ['#B34A01', '#F88617'],
+    '--color-icon-orange': ['#B34A01', '#F88617'],
+    '--color-text-orange': ['#A13F04', '#FD9537'],
+
+    '--color-background-yellow': ['#FCEC85', '#451E03'],
+    '--color-border-yellow': ['#965E03', '#D69804'],
+    '--color-icon-yellow': ['#965E03', '#D69804'],
+    '--color-text-yellow': ['#8A5001', '#E2A400'],
+
+    '--color-background-purple': ['#ECE2FF', '#140036'],
+    '--color-border-purple': ['#5828CA', '#9B73FF'],
+    '--color-icon-purple': ['#5828CA', '#9B73FF'],
+    '--color-text-purple': ['#4D1EB6', '#A985FF'],
+
+    '--color-background-pink': ['#FFE1ED', '#520019'],
+    '--color-border-pink': ['#C71050', '#FE73A1'],
+    '--color-icon-pink': ['#C71050', '#FE73A1'],
+    '--color-text-pink': ['#B30543', '#FF85B0'],
+
+    '--color-background-cyan': ['#C7F1FF', '#001B2A'],
+    '--color-border-cyan': ['#006BA3', '#00AFFA'],
+    '--color-icon-cyan': ['#006BA3', '#00AFFA'],
+    '--color-text-cyan': ['#005F91', '#21BDFF'],
+
+    '--color-background-teal': ['#BCF5F0', '#062D38'],
+    '--color-border-teal': ['#08767D', '#0DB7AF'],
+    '--color-icon-teal': ['#08767D', '#0DB7AF'],
+    '--color-text-teal': ['#0F686F', '#1DC3B9'],
+
+    // =========================================================================
+    // Radius — Meta-style generous rounding
     // =========================================================================
     '--radius-none': '4px',
     '--radius-inner': '8px',
@@ -189,8 +168,6 @@ export const metaTheme = defineTheme({
     '--radius-page': '32px',
     '--radius-full': '9999px',
 
-    // Typography font tokens are now handled by the `typography` config above.
-
     // =========================================================================
     // Text size overrides
     // =========================================================================
@@ -198,8 +175,7 @@ export const metaTheme = defineTheme({
   },
 
   // ===========================================================================
-  // Custom variants — declaration + styles together (#803)
-  // Run `xds theme build` to generate TypeScript declarations for autocomplete.
+  // Custom variants (#790/#803)
   // ===========================================================================
   variants: {
     button: {
@@ -207,13 +183,11 @@ export const metaTheme = defineTheme({
         backgroundColor: 'light-dark(#ECF5FF, #182849)',
         color: 'light-dark(#0457CB, #78BEFF)',
         fontWeight: '500',
-        outline: 'none',
       },
       'destructive-muted': {
         backgroundColor: 'light-dark(#FFF0F2, #471B1A)',
         color: 'light-dark(var(--color-error), #FE9DA6)',
         fontWeight: '500',
-        outline: 'none',
       },
       'primary-outline': {
         backgroundColor: 'transparent',
@@ -222,7 +196,6 @@ export const metaTheme = defineTheme({
         borderColor: 'light-dark(var(--color-accent), #4BA9FE)',
         color: 'light-dark(var(--color-accent), #4BA9FE)',
         fontWeight: '500',
-        outline: 'none',
       },
       'secondary-outline': {
         backgroundColor: 'transparent',
@@ -231,7 +204,6 @@ export const metaTheme = defineTheme({
         borderColor: 'light-dark(var(--color-border), #525456)',
         color: 'light-dark(var(--color-text-primary), #F3F4F5)',
         fontWeight: '500',
-        outline: 'none',
       },
       'destructive-outline': {
         backgroundColor: 'transparent',
@@ -240,40 +212,26 @@ export const metaTheme = defineTheme({
         borderColor: 'light-dark(var(--color-error), #FB7D87)',
         color: 'light-dark(var(--color-error), #FB7D87)',
         fontWeight: '500',
-        outline: 'none',
       },
     },
   },
 
   components: {
     // =========================================================================
-    // Button — CDS: PRIMARY_BUTTON_BACKGROUND = BLUE_650
-    // Pill shape, medium weight, custom muted/outline variants
+    // Button — pill shape, medium weight
     // =========================================================================
     button: {
       base: {
         borderRadius: '9999px !important',
       },
-      'variant:primary': {
-        color: 'light-dark(var(--color-on-dark), #F3F4F5)',
-        fontWeight: '500',
-      },
-      'variant:secondary': {
-        backgroundColor: 'light-dark(var(--color-neutral), #28292B)',
-        color: 'light-dark(var(--color-text-primary), #B5B7BB)',
-        fontWeight: '500',
-      },
-      'variant:destructive': {
-        backgroundColor: 'light-dark(var(--color-error), #D31130)',
-        fontWeight: '500',
-      },
-      'variant:ghost': {
-        fontWeight: '500',
-      },
+      'variant:primary': {fontWeight: '500'},
+      'variant:secondary': {fontWeight: '500'},
+      'variant:destructive': {fontWeight: '500'},
+      'variant:ghost': {fontWeight: '500'},
     },
 
     // =========================================================================
-    // Card — CDS spacing tokens
+    // Card — 20px padding, 32px radius
     // =========================================================================
     card: {
       base: {
@@ -283,7 +241,7 @@ export const metaTheme = defineTheme({
     },
 
     // =========================================================================
-    // Section
+    // Section — 20px padding
     // =========================================================================
     section: {
       base: {
@@ -303,7 +261,7 @@ export const metaTheme = defineTheme({
     },
 
     // =========================================================================
-    // Text input — search variant has filled gray background
+    // Text input — search variant pill
     // =========================================================================
     'text-input': {
       'variant:search': {
@@ -314,27 +272,26 @@ export const metaTheme = defineTheme({
     },
 
     // =========================================================================
-    // Banner — card background, primary icon color, 32px radius
+    // Banner — per-status card bg (#810), primary icon, 32px radius
     // =========================================================================
     banner: {
       base: {
-        '--banner-status-bg': 'var(--color-background-card)',
         '--banner-radius': '32px',
       },
+      'status:info': {backgroundColor: 'var(--color-background-card)'},
+      'status:warning': {backgroundColor: 'var(--color-background-card)'},
+      'status:error': {backgroundColor: 'var(--color-background-card)'},
+      'status:success': {backgroundColor: 'var(--color-background-card)'},
     },
     'banner-icon': {
-      base: {
-        color: 'var(--color-icon-primary)',
-      },
+      base: {color: 'var(--color-icon-primary)'},
     },
 
     // =========================================================================
-    // Badge — subtle Meta-style pastel badges
+    // Badge — subtle pastel backgrounds
     // =========================================================================
     badge: {
-      base: {
-        fontWeight: '500',
-      },
+      base: {fontWeight: '500'},
       'variant:info': {
         backgroundColor: 'light-dark(#DBECFF, #14367E)',
         color: 'var(--color-text-primary)',
@@ -354,16 +311,15 @@ export const metaTheme = defineTheme({
     },
 
     // =========================================================================
-    // Radio — ring style via xdsClassName sub-element targets (#763)
-    // Blue border + white bg + blue dot when checked
-    // CSS vars kept for border/bg because they participate in hover color-mix()
+    // Radio — ring style via pseudo-class overrides (#811)
     // =========================================================================
     radio: {
       base: {
-        '--radio-border-width': '2px',
-        '--radio-border': '#8F9296',
-        '--radio-checked-border': 'var(--color-accent)',
-        '--radio-checked-bg': 'var(--color-background-surface)',
+        borderColor: '#8F9296',
+        borderWidth: '2px',
+      },
+      ':hover': {
+        borderColor: 'color-mix(in srgb, #8F9296, black 20%)',
       },
     },
     'radio-dot': {
@@ -375,65 +331,59 @@ export const metaTheme = defineTheme({
     },
 
     // =========================================================================
-    // Checkbox — thicker border to match radio
-    // CSS vars kept because they participate in hover color-mix()
+    // Checkbox — thicker border, pseudo-class hover (#811)
     // =========================================================================
     checkbox: {
       base: {
-        '--checkbox-border': '#8F9296',
-        '--checkbox-border-width': '2px',
+        borderColor: '#8F9296',
+        borderWidth: '2px',
         borderRadius: '4px',
+      },
+      ':hover': {
+        borderColor: 'color-mix(in srgb, #8F9296, black 20%)',
       },
     },
 
     // =========================================================================
-    // Switch — gray track when off, oversized thumb with elevation
-    // CSS var kept because it participates in hover color-mix()
+    // Switch — gray track, pseudo-class hover (#811)
     // =========================================================================
     switch: {
-      base: {
-        '--switch-off-bg': '#8F9296',
-        '--switch-thumb-size-off': '22px',
-        '--switch-thumb-size-on': '22px',
-        '--switch-thumb-off-x': 'translateX(0px)',
-        '--switch-thumb-on-x': 'translateX(16px)',
+      base: {backgroundColor: '#8F9296'},
+      ':hover': {
+        backgroundColor: 'color-mix(in srgb, #8F9296, black 5%)',
       },
     },
     'switch-thumb': {
       base: {
         boxShadow: '0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.15)',
+        width: '22px',
+        height: '22px',
       },
     },
 
     // =========================================================================
-    // Slider — custom track color via xdsClassName sub-element target (#763)
+    // Slider — custom track via sub-element target (#763)
     // =========================================================================
     'slider-track': {
-      base: {
-        backgroundColor: '#8F9296',
-      },
+      base: {backgroundColor: '#8F9296'},
     },
 
     // =========================================================================
-    // Calendar — selected date via xdsClassName state class (#763)
+    // Calendar — selected date via state class (#763)
     // =========================================================================
     'calendar-day': {
-      'selected:selected': {
-        backgroundColor: 'var(--color-accent)',
-      },
+      selected: {backgroundColor: 'var(--color-accent)'},
     },
 
     // =========================================================================
-    // Empty state — title uses heading 1 size
+    // Empty state — heading 1 size
     // =========================================================================
     'emptystate-title': {
-      base: {
-        fontSize: '1.75rem',
-      },
+      base: {fontSize: '1.75rem'},
     },
 
     // =========================================================================
-    // Dialog — clean: custom bg, 32px radius, no header/footer borders
+    // Dialog — custom bg, 32px radius
     // =========================================================================
     dialog: {
       base: {
@@ -444,32 +394,24 @@ export const metaTheme = defineTheme({
     },
 
     // =========================================================================
-    // Layout — dialog header/footer: no borders, no body top/bottom padding
+    // Layout — dialog internals: no borders, no body padding
     // =========================================================================
     'layout-header': {
-      base: {
-        borderBlockEndWidth: '0',
-      },
+      base: {borderBlockEndWidth: '0'},
     },
     'layout-content': {
-      base: {
-        paddingBlockStart: '0',
-        paddingBlockEnd: '0',
-      },
+      base: {paddingBlockStart: '0', paddingBlockEnd: '0'},
     },
     'layout-footer': {
-      base: {
-        borderBlockStartWidth: '0',
-        '--size-element-md': '36px',
-      },
+      base: {borderBlockStartWidth: '0'},
     },
 
     // =========================================================================
-    // Popover / Menu containers — 16px radius
+    // Popover / Menu — generous radius
     // =========================================================================
     popover: {
       base: {
-        '--popover-radius': '16px',
+        borderRadius: '16px',
         padding: '16px !important',
       },
     },
@@ -487,12 +429,8 @@ export const metaTheme = defineTheme({
       },
     },
     tooltip: {
-      base: {
-        borderRadius: '16px',
-      },
+      base: {borderRadius: '16px'},
     },
-
-    // Heading and text component overrides are auto-generated by typography.scale.
   },
 
   icons: metaIconRegistry,
