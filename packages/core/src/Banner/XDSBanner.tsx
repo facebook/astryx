@@ -249,11 +249,11 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-4'],
     '--container-padding-inline': spacingVars['--spacing-4'],
   },
-  // section variant: 8px block, 12px inline
+  // section variant: 8px block, 16px inline
   headerSection: {
     paddingBlock: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-3'],
-    '--container-padding-inline': spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-4'],
+    '--container-padding-inline': spacingVars['--spacing-4'],
   },
   // Left group: icon + text content — grows to fill available space
   startArea: {
@@ -323,7 +323,7 @@ const styles = stylex.create({
   },
   contentAreaSection: {
     paddingBlock: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-4'],
   },
 });
 
