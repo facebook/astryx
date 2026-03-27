@@ -3,7 +3,7 @@
 /**
  * @file XDSBanner.tsx
  * @input Uses ReactuseState, @heroicons/react/24/solid icons, XDSButton, XDSIcon, StyleX
- * @output Exports XDSBanner component, XDSBannerProps, XDSBannerStatus, XDSBannerContainer types
+ * @output Exports XDSBanner component, XDSBannerProps, XDSBannerStatus, XDSBannerContainer, XDSBannerLabelVariant types
  * @position Core implementation; consumed by index.ts, tested by XDSBanner.test.tsx
  *
  * Visual structure:
@@ -74,6 +74,13 @@ export interface XDSBannerStatusMap {
 export type XDSBannerStatus = keyof XDSBannerStatusMap;
 
 /**
+ * Label variant controlling the title weight and whether description is shown.
+ * - `emphasized`: semibold title, description allowed (default)
+ * - `regular`: normal weight title, description is not rendered
+ */
+export type XDSBannerLabelVariant = 'emphasized' | 'regular';
+
+/**
  * Extensible container map for XDSBanner.
  *
  * Theme packages can add custom container types via TypeScript module augmentation:
@@ -114,7 +121,15 @@ export interface XDSBannerProps {
    */
   title: ReactNode;
   /**
+   * Controls the title weight and whether description is rendered.
+   * - `emphasized`: semibold title, description allowed (default)
+   * - `regular`: normal weight title, description is not rendered
+   * @default 'emphasized'
+   */
+  labelVariant?: XDSBannerLabelVariant;
+  /**
    * Optional description text below the title in the header area.
+   * Only rendered when labelVariant is 'emphasized' (the default).
    */
   description?: ReactNode;
   /**
@@ -291,6 +306,9 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-label-leading'],
     color: colorVars['--color-text-primary'],
   },
+  titleRegular: {
+    fontWeight: fontWeightVars['--font-weight-normal'],
+  },
   description: {
     display: 'block',
     margin: 0,
@@ -412,6 +430,7 @@ const statusStyles = stylex.create({
 export function XDSBanner({
   status,
   title,
+  labelVariant = 'emphasized',
   description,
   icon,
   isDismissable = false,
@@ -491,8 +510,14 @@ export function XDSBanner({
             )}
           </div>
           <div {...stylex.props(styles.headerContent)}>
-            <span {...stylex.props(styles.title)}>{title}</span>
-            {description != null && (
+            <span
+              {...stylex.props(
+                styles.title,
+                labelVariant === 'regular' && styles.titleRegular,
+              )}>
+              {title}
+            </span>
+            {labelVariant === 'emphasized' && description != null && (
               <span {...stylex.props(styles.description)}>{description}</span>
             )}
           </div>
