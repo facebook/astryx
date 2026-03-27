@@ -505,9 +505,11 @@ export function XDSBanner({
 
   // Show the end area if there are actions, dismiss, or a collapsible toggle
   const showEndArea = endContent != null || isDismissable || hasChildren;
-  // Apply -8px nudge only when text is multiline (flex-start) — not when centered.
+  // Apply -8px nudge only when single line (no description) and not centered.
+  // When there's a description, buttons are already visually aligned at flex-start.
   const applyEndAreaOffset =
     !isSingleLine &&
+    description == null &&
     (endAreaVariant === 'invisibleBackground' || isDismissable || hasChildren);
 
   return (
