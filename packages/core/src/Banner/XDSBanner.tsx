@@ -533,7 +533,7 @@ export function XDSBanner({
       <div
         {...stylex.props(
           styles.header,
-          isSingleLine && styles.headerCentered,
+          isSingleLine && description == null && styles.headerCentered,
           container === 'card'
             ? styles.headerCard
             : container === 'section'
