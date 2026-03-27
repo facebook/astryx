@@ -329,6 +329,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     flexShrink: 0,
     marginInlineStart: 'auto',
+    marginBlockStart: '-4px',
   },
   // dismissButton negative margin removed — edge compensation handles this
   // automatically via --edge-end signal on the endArea
