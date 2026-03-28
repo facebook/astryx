@@ -469,6 +469,7 @@ export function XDSBanner({
   const [isExpanded, setIsExpanded] = useState(defaultIsExpanded);
   const [isSingleLine, setIsSingleLine] = useState(false);
   const headerContentRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLSpanElement>(null);
   const DefaultIcon = defaultIcons[status];
   const role = statusRole[status];
   const iconColor = statusIconColor[status];
@@ -480,8 +481,13 @@ export function XDSBanner({
     const el = headerContentRef.current;
     if (el == null) return;
     const check = () => {
-      // scrollHeight > clientHeight means content has wrapped to multiple lines
-      setIsSingleLine(el.scrollHeight <= el.clientHeight + 2);
+      // Use getClientRects() on the title span to count actual line boxes.
+      // A single line = 1 rect. Wrapped text = multiple rects.
+      const titleEl = titleRef.current;
+      const rects = titleEl?.getClientRects() ?? [];
+      const titleIsOneLine = rects.length <= 1;
+      // Single line only when: title fits on one line AND no description
+      setIsSingleLine(titleIsOneLine && description == null);
     };
     check();
     const observer = new ResizeObserver(check);
@@ -530,7 +536,7 @@ export function XDSBanner({
       <div
         {...stylex.props(
           styles.header,
-          isSingleLine && description == null && styles.headerCentered,
+          isSingleLine && styles.headerCentered,
           container === 'card'
             ? styles.headerCard
             : container === 'section'
@@ -553,6 +559,7 @@ export function XDSBanner({
           </div>
           <div ref={headerContentRef} {...stylex.props(styles.headerContent)}>
             <span
+              ref={titleRef}
               {...stylex.props(
                 styles.title,
                 labelVariant === 'regular' && styles.titleRegular,
