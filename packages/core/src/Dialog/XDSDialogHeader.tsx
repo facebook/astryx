@@ -15,7 +15,7 @@
 
 import {useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {spacingVars} from '../theme/tokens.stylex';
+import {sizeVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {XDSLayoutHeader} from '../Layout/XDSLayoutHeader';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
@@ -28,7 +28,9 @@ const styles = stylex.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: spacingVars['--spacing-3'],
-    paddingBlockStart: '2px',
+    // Optical centering: align title cap-height with button icon center.
+    // (buttonMd - layoutPaddingOuter/2 - headingFontSize) / 2
+    paddingBlockStart: `calc((${sizeVars['--size-element-md']} - var(--layout-padding-outer-y, ${spacingVars['--spacing-4']}) / 2 - ${typeScaleVars['--text-heading-2-size']}) / 2)`,
   },
   // Compensate for the icon button's visual padding on the actions area
   actionsCompensation: {
