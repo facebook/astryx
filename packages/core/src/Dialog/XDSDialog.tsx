@@ -91,6 +91,7 @@ const styles = stylex.create({
     },
     flexDirection: 'column',
     height: 'fit-content',
+    overscrollBehavior: 'contain',
     // Entry/exit animation. Requires @starting-style + allow-discrete
     // for transitioning from display:none. Browsers without support
     // get instant show/hide (opacity defaults to 1 in base, animation
