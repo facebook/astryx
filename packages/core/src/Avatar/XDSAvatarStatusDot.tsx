@@ -28,9 +28,9 @@ import {xdsClassName, mergeProps} from '../utils';
  *
  *   | Avatar size  | Dot  | Border | Icon |
  *   |--------------|------|--------|------|
- *   | ≤ 36px       | 8px  | 1px    | —    |
- *   | 40–72px      | 16px | 2px    | 10px |
- *   | ≥ 96px       | 24px | 4px    | 14px |
+ *   | ≤ 36px       | 10px | 1px    | —    |
+ *   | 40–72px      | 20px | 2px    | 12px |
+ *   | ≥ 96px       | 32px | 4px    | 18px |
  *
  * Icons are not rendered at the smallest tier — there isn't enough
  * room for them to be legible.
@@ -41,12 +41,12 @@ function resolveStatusDotSize(avatarSize: number): {
   iconSize: number;
 } {
   if (avatarSize <= 36) {
-    return {dotSize: 8, borderWidth: 1, iconSize: 0};
+    return {dotSize: 10, borderWidth: 1, iconSize: 0};
   }
   if (avatarSize <= 72) {
-    return {dotSize: 16, borderWidth: 2, iconSize: 10};
+    return {dotSize: 20, borderWidth: 2, iconSize: 12};
   }
-  return {dotSize: 24, borderWidth: 4, iconSize: 14};
+  return {dotSize: 32, borderWidth: 4, iconSize: 18};
 }
 
 /**

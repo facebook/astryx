@@ -19,7 +19,6 @@
  * - /apps/storybook/stories/Icon.stories.tsx (storybook stories)
  */
 
-
 import {type ComponentType, type SVGProps} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
@@ -71,6 +70,37 @@ const colorStyles = stylex.create({
   },
   inherit: {
     color: 'inherit',
+  },
+  // Non-semantic colors
+  blue: {
+    color: colorVars['--color-icon-blue'],
+  },
+  red: {
+    color: colorVars['--color-icon-red'],
+  },
+  green: {
+    color: colorVars['--color-icon-green'],
+  },
+  gray: {
+    color: colorVars['--color-icon-gray'],
+  },
+  cyan: {
+    color: colorVars['--color-icon-cyan'],
+  },
+  teal: {
+    color: colorVars['--color-icon-teal'],
+  },
+  yellow: {
+    color: colorVars['--color-icon-yellow'],
+  },
+  orange: {
+    color: colorVars['--color-icon-orange'],
+  },
+  pink: {
+    color: colorVars['--color-icon-pink'],
+  },
+  purple: {
+    color: colorVars['--color-icon-purple'],
   },
 });
 

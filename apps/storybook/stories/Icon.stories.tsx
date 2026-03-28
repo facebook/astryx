@@ -1,5 +1,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSIcon} from '@xds/core/Icon';
+import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 import {
   HomeIcon,
   HeartIcon,
@@ -244,5 +246,18 @@ export const InheritColor: Story = {
         Red text
       </span>
     </div>
+  ),
+};
+
+export const NonSemanticColors: Story = {
+  render: () => (
+    <XDSHStack gap={4} wrap="wrap">
+      {(['blue', 'red', 'green', 'gray', 'cyan', 'teal', 'yellow', 'orange', 'pink', 'purple'] as const).map(color => (
+        <XDSVStack key={color} gap={1} hAlign="center">
+          <XDSIcon icon={StarIcon} color={color} />
+          <XDSText type="supporting">{color}</XDSText>
+        </XDSVStack>
+      ))}
+    </XDSHStack>
   ),
 };
