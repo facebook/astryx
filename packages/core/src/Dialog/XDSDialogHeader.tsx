@@ -29,9 +29,8 @@ const styles = stylex.create({
     justifyContent: 'space-between',
     gap: spacingVars['--spacing-3'],
   },
-  // When the close button is rendered, pull the container tighter
-  // to compensate for the icon button's visual padding
-  containerWithClose: {
+  // Compensate for the icon button's visual padding on the actions area
+  actionsCompensation: {
     marginBlock: `calc(-1 * ${spacingVars['--spacing-2']})`,
     marginInlineEnd: `calc(-1 * ${spacingVars['--spacing-2']})`,
   },
@@ -133,11 +132,7 @@ export function XDSDialogHeader({
 
   return (
     <XDSLayoutHeader ref={ref} hasDivider={hasDivider}>
-      <div
-        {...stylex.props(
-          styles.container,
-          onOpenChange && styles.containerWithClose,
-        )}>
+      <div {...stylex.props(styles.container)}>
         {startContent && (
           <div {...stylex.props(styles.actions)}>{startContent}</div>
         )}
@@ -156,7 +151,11 @@ export function XDSDialogHeader({
           )}
         </div>
         {(endContent || onOpenChange) && (
-          <div {...stylex.props(styles.actions)}>
+          <div
+            {...stylex.props(
+              styles.actions,
+              onOpenChange && styles.actionsCompensation,
+            )}>
             {endContent}
             {onOpenChange && (
               <XDSButton
