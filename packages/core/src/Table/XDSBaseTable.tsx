@@ -31,6 +31,7 @@ import {
   DEFAULT_MIN_COLUMN_WIDTH,
 } from './columnUtils';
 import {XDSTableRow} from './XDSTableRow';
+import {XDSText} from '../Text';
 import {XDSTableCell} from './XDSTableCell';
 import {XDSTableHeaderCell} from './XDSTableHeaderCell';
 import {xdsClassName, mergeProps} from '../utils';
@@ -102,26 +103,22 @@ function TableRowInner<T extends Record<string, unknown>>({
       item,
     );
 
-    const isDefaultRenderer = !col.renderCell;
     const content = col.renderCell
       ? col.renderCell(item)
       : defaultCellRenderer(item, col.key);
-
-    // When using the default renderer (plain string), add title so truncated
-    // text is accessible on hover — consumers who use renderCell are
-    // responsible for their own overflow disclosure.
-    const titleProp =
-      isDefaultRenderer && typeof content === 'string' && content.length > 0
-        ? {title: content}
-        : {};
 
     return (
       <CellComponent
         key={col.key}
         {...cellRenderProps.htmlProps}
-        {...titleProp}
         xstyle={cellRenderProps.styles}>
-        {content}
+        {col.renderCell ? (
+          content
+        ) : (
+          <XDSText type="body" maxLines={1}>
+            {content}
+          </XDSText>
+        )}
       </CellComponent>
     );
   });
@@ -253,18 +250,19 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
       : cellRenderProps.htmlProps;
 
     const headerContent = col.header ?? col.key;
-    const headerTitleProp =
-      typeof headerContent === 'string' && headerContent.length > 0
-        ? {title: headerContent}
-        : {};
 
     return (
       <HeaderCellComponent
         key={col.key}
         {...mergedHtmlProps}
-        {...headerTitleProp}
         xstyle={cellRenderProps.styles}>
-        {headerContent}
+        {typeof headerContent === 'string' ? (
+          <XDSText type="label" maxLines={1} weight="semibold">
+            {headerContent}
+          </XDSText>
+        ) : (
+          headerContent
+        )}
       </HeaderCellComponent>
     );
   });

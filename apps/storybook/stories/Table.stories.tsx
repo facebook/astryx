@@ -328,13 +328,13 @@ const overflowData: OverflowRow[] = [
 
 /**
  * Cells truncate overflow with an ellipsis by default.
- * Hover any truncated cell to see its full value via the native title tooltip —
- * this is automatically applied when using the default renderer.
+ * The default renderer wraps cell text in XDSText with maxLines={1}, which
+ * automatically shows a tooltip when the text is actually truncated.
  *
  * The "Wrapped" column shows how consumers can opt into wrapping
  * via renderCell with white-space: normal and overflow: visible.
- * Note: renderCell columns do not get an automatic title — the consumer
- * owns overflow disclosure for rich cell content.
+ * renderCell columns own their own overflow disclosure — use
+ * XDSText maxLines={1} inside renderCell for the same tooltip behavior.
  */
 export const OverflowBehavior: Story = {
   render: () => {

@@ -685,20 +685,16 @@ describe('XDSTable', () => {
     );
   });
 
-  it('sets title attribute on default-rendered cells for overflow accessibility', () => {
-    const longData = [
-      {name: 'a_very_long_string_that_may_be_truncated', value: '42'},
-    ];
-    render(<XDSTable data={longData} />);
+  it('wraps default-rendered cells in XDSText with maxLines=1', () => {
+    render(<XDSTable data={users} columns={columns} />);
     const cells = screen.getAllByRole('cell');
-    expect(cells[0]).toHaveAttribute(
-      'title',
-      'a_very_long_string_that_may_be_truncated',
-    );
-    expect(cells[1]).toHaveAttribute('title', '42');
+    // Default renderer wraps content in XDSText which renders a <span>
+    const textSpan = cells[0].querySelector('.xds-text');
+    expect(textSpan).toBeInTheDocument();
+    expect(textSpan).toHaveTextContent('Alice');
   });
 
-  it('does not set title attribute on renderCell columns', () => {
+  it('does not wrap renderCell content in XDSText', () => {
     const cols: XDSTableColumn<User>[] = [
       {
         key: 'name',
@@ -709,19 +705,19 @@ describe('XDSTable', () => {
     ];
     render(<XDSTable data={users} columns={cols} />);
     const cells = screen.getAllByRole('cell');
-    // renderCell column: consumer owns disclosure, no title injected
-    expect(cells[0]).not.toHaveAttribute('title');
-    // default renderer: title present
-    expect(cells[1]).toHaveAttribute('title', users[0].email);
+    // renderCell column: raw content, no XDSText wrapper
+    expect(cells[0].querySelector('.xds-text')).not.toBeInTheDocument();
+    expect(cells[0]).toHaveTextContent('Alice');
+    // default column: has XDSText wrapper
+    expect(cells[1].querySelector('.xds-text')).toBeInTheDocument();
   });
 
-  it('sets title attribute on header cells', () => {
+  it('wraps string header cells in XDSText with maxLines=1', () => {
     render(<XDSTable data={users} columns={columns} />);
     const headers = screen.getAllByRole('columnheader');
-    // columns fixture order: name, age, email
-    expect(headers[0]).toHaveAttribute('title', 'Name');
-    expect(headers[1]).toHaveAttribute('title', 'Age');
-    expect(headers[2]).toHaveAttribute('title', 'Email');
+    const textSpan = headers[0].querySelector('.xds-text');
+    expect(textSpan).toBeInTheDocument();
+    expect(textSpan).toHaveTextContent('Name');
   });
 });
 
