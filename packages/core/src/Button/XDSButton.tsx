@@ -556,7 +556,9 @@ export function XDSButton({
         target={target}
         rel={rel}
         {...sharedMergedProps}
-        {...ariaLabelProp}>
+        {...props}
+        {...ariaLabelProp}
+        onClick={handleClick}>
         {buttonContent}
       </LinkComponent>
     );
