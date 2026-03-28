@@ -99,6 +99,12 @@ const styles = stylex.create({
     alignItems: 'center',
     color: 'inherit',
   },
+  iconWrapper: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
   contentWrapper: {
     display: 'contents',
   },
@@ -133,6 +139,16 @@ const sizeStyles = stylex.create({
   lg: {
     height: sizeVars['--size-element-lg'],
   },
+});
+
+/**
+ * Icon size per button size.
+ * Matches XDSIcon sizing: sm=16px, md/lg=20px.
+ */
+const iconSizeStyles = stylex.create({
+  sm: {width: 16, height: 16},
+  md: {width: 20, height: 20},
+  lg: {width: 20, height: 20},
 });
 
 /**
@@ -523,7 +539,13 @@ export function XDSButton({
       <span
         {...stylex.props(styles.contentWrapper)}
         aria-hidden={isLoadingState || undefined}>
-        {icon}
+        {icon && (
+          <span
+            data-xds="button-icon"
+            {...stylex.props(styles.iconWrapper, iconSizeStyles[size])}>
+            {icon}
+          </span>
+        )}
         {isIconOnly ? null : (
           <span {...stylex.props(styles.labelText)}>{children ?? label}</span>
         )}

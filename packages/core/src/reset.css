@@ -198,6 +198,17 @@
     height: auto;
   }
 
+  /*
+   * Force SVG icons inside XDS icon wrappers to fill their container.
+   * Heroicon and similar SVG components render with a viewBox but may
+   * lack explicit width/height or use their intrinsic 24×24 size.
+   * The wrapper sets the target dimensions; this rule makes the SVG comply.
+   */
+  :where([data-xds='button-icon']) > :where(svg) {
+    width: 100%;
+    height: 100%;
+  }
+
   /* ===========================================================================
      Forms
      =========================================================================== */
