@@ -43,8 +43,8 @@ import {xdsClassName, mergeProps} from '../utils';
 
 /**
  * Size-aware item padding.
- * sm/md triggers → tighter vertical padding (4px block, 8px inline)
- * lg triggers → standard padding (8px all around, inherited from base item style)
+ * sm triggers → tighter vertical padding (4px block, 8px inline)
+ * md/lg triggers → standard padding (8px all around, inherited from base item style)
  */
 const itemSizeStyles = stylex.create({
   sm: {
@@ -52,8 +52,7 @@ const itemSizeStyles = stylex.create({
     paddingInline: spacingVars['--spacing-2'],
   },
   md: {
-    paddingBlock: spacingVars['--spacing-1'],
-    paddingInline: spacingVars['--spacing-2'],
+    // Uses base item padding (--spacing-2 all around)
   },
   lg: {
     // Uses base item padding (--spacing-2 all around)

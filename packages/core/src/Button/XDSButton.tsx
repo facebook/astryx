@@ -143,11 +143,11 @@ const sizeStyles = stylex.create({
 
 /**
  * Icon size per button size.
- * Matches XDSIcon sizing: sm=16px, md/lg=20px.
+ * Matches XDSIcon sizing: sm/md=16px, lg=20px.
  */
 const iconSizeStyles = stylex.create({
   sm: {width: 16, height: 16},
-  md: {width: 20, height: 20},
+  md: {width: 16, height: 16},
   lg: {width: 20, height: 20},
 });
 
@@ -541,7 +541,6 @@ export function XDSButton({
         aria-hidden={isLoadingState || undefined}>
         {icon && (
           <span
-            data-xds="button-icon"
             {...stylex.props(styles.iconWrapper, iconSizeStyles[size])}>
             {icon}
           </span>
