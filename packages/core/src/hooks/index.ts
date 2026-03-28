@@ -22,3 +22,5 @@ export {useMediaQuery} from './useMediaQuery';
 
 export {useOverflow} from './useOverflow';
 export type {UseOverflowOptions, UseOverflowReturn} from './useOverflow';
+
+export {useScrollLock} from './useScrollLock';
