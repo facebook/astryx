@@ -171,7 +171,7 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
           const source = fs.readFileSync(filePath, 'utf-8');
           // Configure parser based on file extension
           const ext = path.extname(filePath);
-          const parser = ext === '.tsx' ? 'tsx' : ext === '.jsx' ? 'babel' : 'babel';
+          const parser = (ext === '.tsx' || ext === '.ts') ? 'tsx' : 'babel';
           const j = jscodeshift.withParser(parser);
           const api = {
             jscodeshift: j,
