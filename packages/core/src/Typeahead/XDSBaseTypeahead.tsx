@@ -38,6 +38,7 @@ import {
   shadowVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
+import {xdsClassName, mergeProps} from '../utils';
 import type {XDSSearchableItem, XDSSearchSource} from './types';
 
 // =============================================================================
@@ -611,7 +612,10 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
           id={listboxId}
           role="listbox"
           aria-label="Search results"
-          {...stylex.props(styles.dropdown)}>
+          {...mergeProps(
+            xdsClassName('typeahead-dropdown'),
+            stylex.props(styles.dropdown),
+          )}>
           {results.length === 0 && hasSearched ? (
             <div {...stylex.props(styles.emptyState)}>
               {emptySearchResultsText}
