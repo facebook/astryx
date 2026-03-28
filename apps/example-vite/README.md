@@ -64,11 +64,11 @@ export default defineConfig({
       runtimeInjection: false,
       treeshakeCompensation: true,
       // useCSSLayers with before/after/prefix (StyleX 0.18.2+)
-      // Emits: @layer xds.reset, xds.base.priority1-9, xds.theme;
+      // Emits: @layer reset, xds-base.priority1-9, xds-theme;
       useCSSLayers: {
-        before: ['xds.reset'],
-        after: ['xds.theme'],
-        prefix: 'xds.base',
+        before: ['reset'],
+        after: ['xds-theme'],
+        prefix: 'xds-base',
       },
       unstable_moduleResolution: {
         type: 'commonJS',
@@ -123,8 +123,8 @@ import './index.css';
 
 The CSS import order matters:
 
-1. `reset.css` — baseline resets (`@layer xds.reset`)
-2. `theme.css` — theme token overrides (`@layer xds.theme`)
+1. `reset.css` — baseline resets (`@layer reset`)
+2. `theme.css` — theme token overrides (`@layer xds-theme`)
 3. `index.css` — StyleX extraction placeholder
 
 ### 5. Theme provider

@@ -397,7 +397,7 @@ function generateCSS(themeDef, {prose = true} = {}) {
  *
  * Prose maps raw HTML elements to their XDS component counterparts so that
  * plain markup (e.g. rendered markdown) inherits the component styles from
- * xds.base. The theme doesn't redefine the styles — it just aliases the
+ * xds-base. The theme doesn't redefine the styles — it just aliases the
  * selectors, scoped under the theme boundary.
  */
 const PROSE_MAPPINGS = [
@@ -422,7 +422,7 @@ const PROSE_MAPPINGS = [
 /**
  * Generate prose CSS — aliases raw HTML elements to XDS component classes.
  *
- * The actual styles live in xds.base (component CSS). Prose just says
+ * The actual styles live in xds-base (component CSS). Prose just says
  * "inside this theme, an <h1> should look like .xds-heading.level-1".
  * This is done via CSS @extend-like pattern: each HTML element inherits
  * the same class as its XDS counterpart.
@@ -432,7 +432,7 @@ function generateProseCSS(themeDef) {
 
   // Each mapping becomes: h1 { /* same styles as .xds-heading.level-1 */ }
   // Since we can't @extend in plain CSS, we use the component's CSS custom
-  // properties which are already set by xds.base. The prose elements just
+  // properties which are already set by xds-base. The prose elements just
   // need the same structural styles (font-family, margin reset, etc.)
   // that the base heading/text components apply.
   //
@@ -794,7 +794,7 @@ export function registerTheme(program) {
         const colorSchemeDecl = scopeBlock.includes('light-dark(')
           ? '  :root { color-scheme: light dark; }\n\n'
           : '';
-        css = `@layer xds.theme {\n${colorSchemeDecl}${scopeBlock}\n}\n`;
+        css = `@layer xds-theme {\n${colorSchemeDecl}${scopeBlock}\n}\n`;
       } else {
         // Legacy fallback when core isn't built yet
         const scopeBlocks = [];
@@ -810,7 +810,7 @@ export function registerTheme(program) {
         const colorSchemeDecl = joined.includes('light-dark(')
           ? '  :root { color-scheme: light dark; }\n\n'
           : '';
-        css = `@layer xds.theme {\n${colorSchemeDecl}${joined}\n}\n`;
+        css = `@layer xds-theme {\n${colorSchemeDecl}${joined}\n}\n`;
       }
 
       // Determine output path

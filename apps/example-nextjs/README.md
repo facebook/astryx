@@ -83,11 +83,11 @@ module.exports = {
         plugins: babelConfig.plugins,
       },
       // useCSSLayers with before/after/prefix (StyleX 0.18.2+)
-      // Emits: @layer xds.reset, xds.base.priority1-9, xds.theme;
+      // Emits: @layer reset, xds-base.priority1-9, xds-theme;
       useCSSLayers: {
-        before: ['xds.reset'],
-        after: ['xds.theme'],
-        prefix: 'xds.base',
+        before: ['reset'],
+        after: ['xds-theme'],
+        prefix: 'xds-base',
       },
     },
   },
@@ -112,8 +112,8 @@ import './globals.css';
 
 The CSS import order matters:
 
-1. `reset.css` — baseline resets (`@layer xds.reset`)
-2. `theme.css` — theme token overrides (`@layer xds.theme`)
+1. `reset.css` — baseline resets (`@layer reset`)
+2. `theme.css` — theme token overrides (`@layer xds-theme`)
 3. `globals.css` — StyleX extraction (`@stylex;` directive)
 
 ### 6. Next.js config
