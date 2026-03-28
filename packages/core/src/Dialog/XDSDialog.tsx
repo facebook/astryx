@@ -2,7 +2,7 @@
 
 /**
  * @file XDSDialog.tsx
- * @input Uses React, DialogHTMLAttributes, ReactNode
+ * @input Uses React, DialogHTMLAttributes, ReactNode, container (Layout)
  * @output Exports XDSDialog component, XDSDialogProps, XDSDialogVariant, XDSDialogPurpose types
  * @position Core implementation; consumed by index.ts, tested by XDSDialog.test.tsx
  *
@@ -23,6 +23,7 @@ import {
   easeVars,
   shadowVars,
 } from '../theme/tokens.stylex';
+import {container} from '../Layout/container.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
 /**
@@ -89,24 +90,29 @@ const styles = stylex.create({
       ':where([open])': 'flex',
     },
     flexDirection: 'column',
-    overflow: 'hidden',
     height: 'fit-content',
-    // Animation for open/close
+    overscrollBehavior: 'contain',
+    // Entry/exit animation. Requires @starting-style + allow-discrete
+    // for transitioning from display:none. Browsers without support
+    // get instant show/hide (opacity defaults to 1 in base, animation
+    // layer only applies when @starting-style is supported).
     opacity: {
-      default: 0,
-      ':where([open])': 1,
+      default: 1,
+      ':where(:not([open]))': 0,
     },
     transform: {
-      default: 'scale(0.95) translateY(8px)',
-      ':where([open])': 'scale(1) translateY(0)',
+      default: 'scale(1) translateY(0)',
+      ':where(:not([open]))': 'scale(0.95) translateY(8px)',
     },
-    transitionProperty: 'opacity, transform, display, overlay',
-    transitionDuration: durationVars['--duration-medium'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-    transitionBehavior: 'allow-discrete',
-    '@starting-style': {
-      opacity: 0,
-      transform: 'scale(0.95) translateY(8px)',
+    '@supports (transition-behavior: allow-discrete)': {
+      transitionProperty: 'opacity, transform, display, overlay',
+      transitionDuration: durationVars['--duration-medium'],
+      transitionTimingFunction: easeVars['--ease-standard'],
+      transitionBehavior: 'allow-discrete',
+      '@starting-style': {
+        opacity: 0,
+        transform: 'scale(0.95) translateY(8px)',
+      },
     },
     '@media (prefers-reduced-motion: reduce)': {
       transitionDuration: '0s',
@@ -135,6 +141,14 @@ const styles = stylex.create({
     borderRadius: 0,
     margin: 0,
     inset: 0,
+  },
+  inner: {
+    display: 'flex',
+    flexDirection: 'column',
+    flex: '1 1 auto',
+    minHeight: 0,
+    overflow: 'hidden',
+    borderRadius: 'inherit',
   },
 });
 
@@ -360,6 +374,7 @@ export function XDSDialog({
       {...mergeProps(
         xdsClassName('dialog', {variant}),
         stylex.props(
+          ...container({padding: 'spacing0'}),
           styles.dialog,
           styles.backdrop,
           !isFullscreen && dynamicStyles.sizing(width, maxHeight),
@@ -377,7 +392,7 @@ export function XDSDialog({
         style,
       )}
       {...safeProps}>
-      {children}
+      <div {...stylex.props(styles.inner)}>{children}</div>
     </dialog>
   );
 }
