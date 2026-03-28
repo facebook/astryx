@@ -16,3 +16,4 @@ export type {
 } from './XDSMetadataList';
 export {XDSMetadataListItem} from './XDSMetadataListItem';
 export type {XDSMetadataListItemProps} from './XDSMetadataListItem';
+export type {XDSMetadataListLabelConfig} from './XDSMetadataListContext';

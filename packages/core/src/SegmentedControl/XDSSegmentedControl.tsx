@@ -12,7 +12,7 @@
  * - /packages/core/src/SegmentedControl/XDSSegmentedControl.test.tsx
  */
 
-import {useMemo, useRef, useCallback, type ReactNode} from 'react';
+import React, {useMemo, useRef, useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, spacingVars, radiusVars} from '../theme/tokens.stylex';
@@ -51,6 +51,16 @@ export interface XDSSegmentedControlProps {
    * Additional StyleX styles for the container.
    */
   xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) appended to the root element.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
 }
 
 // =============================================================================
@@ -108,6 +118,8 @@ export function XDSSegmentedControl({
   isDisabled = false,
   children,
   xstyle,
+  className,
+  style,
 }: XDSSegmentedControlProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -185,6 +197,8 @@ export function XDSSegmentedControl({
             isDisabled && styles.disabled,
             xstyle,
           ),
+          className,
+          style,
         )}>
         {children}
       </div>

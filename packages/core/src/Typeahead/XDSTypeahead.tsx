@@ -37,6 +37,7 @@ import {
   radiusVars,
   sizeVars,
 } from '../theme/tokens.stylex';
+import {xdsClassName, mergeProps} from '../utils';
 import type {XDSSearchableItem, XDSSearchSource} from './types';
 import type {ReactNode} from 'react';
 
@@ -375,14 +376,17 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
         data-testid={testId}
         onClick={handleWrapperClick}
         onBlur={handleBlur}
-        {...stylex.props(
-          inputWrapperStyles.base,
-          styles.wrapper,
-          sizeStyle,
-          status && inputStatusBorderStyles[status.type],
-          status && inputStatusHoverShadowStyles[status.type],
-          status && inputStatusFocusWithinStyles[status.type],
-          isDisabled && inputWrapperStyles.disabled,
+        {...mergeProps(
+          xdsClassName('typeahead', {size, status: status?.type}),
+          stylex.props(
+            inputWrapperStyles.base,
+            styles.wrapper,
+            sizeStyle,
+            status && inputStatusBorderStyles[status.type],
+            status && inputStatusHoverShadowStyles[status.type],
+            status && inputStatusFocusWithinStyles[status.type],
+            isDisabled && inputWrapperStyles.disabled,
+          ),
         )}>
         {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
         {showToken && (
