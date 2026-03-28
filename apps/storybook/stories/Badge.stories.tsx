@@ -1,6 +1,8 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSBadge} from '@xds/core/Badge';
 
+import {XDSStatusDot} from '@xds/core/StatusDot';
+
 const meta: Meta<typeof XDSBadge> = {
   title: 'Core/XDSBadge',
   component: XDSBadge,
@@ -57,11 +59,11 @@ export const Counts: Story = {
 export const DotIndicators: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-      <XDSBadge variant="neutral" shape="dot" label="Neutral" />
-      <XDSBadge variant="info" shape="dot" label="Info" />
-      <XDSBadge variant="success" shape="dot" label="Online" />
-      <XDSBadge variant="warning" shape="dot" label="Away" />
-      <XDSBadge variant="error" shape="dot" label="Busy" />
+      <XDSStatusDot variant="neutral" label="Neutral" />
+      <XDSStatusDot variant="info" label="Info" />
+      <XDSStatusDot variant="positive" label="Online" />
+      <XDSStatusDot variant="warning" label="Away" />
+      <XDSStatusDot variant="negative" label="Busy" />
     </div>
   ),
 };
