@@ -16,6 +16,7 @@
 import {useEffect, useRef, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
+import {useScrollLock} from '../hooks/useScrollLock';
 import {
   colorVars,
   radiusVars,
@@ -313,6 +314,9 @@ export function XDSDialog({
       }
     }
   }, [isOpen]);
+
+  // Lock body scroll when dialog is open (iOS Safari workaround)
+  useScrollLock(isOpen);
 
   // Handle Escape key
   useEffect(() => {
