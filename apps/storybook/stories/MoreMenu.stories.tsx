@@ -8,6 +8,7 @@ import {
   DocumentDuplicateIcon,
   ArrowDownTrayIcon,
   ShareIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSMoreMenu> = {
@@ -288,5 +289,33 @@ export const WithDisabledItems: Story = {
         },
       ]}
     />
+  ),
+};
+
+// Custom trigger icon — replaces the default three-dots
+export const CustomIcon: Story = {
+  render: () => (
+    <div style={{display: 'flex', gap: 16, alignItems: 'center'}}>
+      <XDSMoreMenu
+        icon={<Cog6ToothIcon />}
+        label="Settings"
+        items={[
+          {label: 'Preferences', onClick: () => console.log('Preferences')},
+          {label: 'Account', onClick: () => console.log('Account')},
+          {label: 'Logout', onClick: () => console.log('Logout')},
+        ]}
+      />
+      <XDSMoreMenu
+        icon={<PencilIcon />}
+        label="Edit options"
+        items={[
+          {label: 'Edit title', onClick: () => console.log('Edit title')},
+          {
+            label: 'Edit description',
+            onClick: () => console.log('Edit description'),
+          },
+        ]}
+      />
+    </div>
   ),
 };
