@@ -5,7 +5,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSCard} from '@xds/core/Card';
-import {XDSStack} from '@xds/core/Stack';
+import {XDSHStack, XDSVStack, XDSStack} from '@xds/core/Stack';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSSwitch} from '@xds/core/Switch';
 import {XDSAvatar} from '@xds/core/Avatar';
@@ -19,9 +19,28 @@ import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
-import {XDSTable} from '@xds/core/Table';
+import {XDSTable, proportional, pixel} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {XDSDivider} from '@xds/core/Divider';
+import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
+import {XDSPopover} from '@xds/core/Popover';
+import {XDSHoverCard} from '@xds/core/HoverCard';
+import {XDSTooltip} from '@xds/core/Tooltip';
+import {XDSSpinner} from '@xds/core/Spinner';
+import {XDSSkeleton} from '@xds/core/Skeleton';
+import {XDSStatusDot} from '@xds/core/StatusDot';
+import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSAppShell} from '@xds/core/AppShell';
+import {
+  XDSSideNav,
+  XDSSideNavItem,
+  XDSSideNavSection,
+  XDSSideNavCollapseButton,
+  XDSSideNavHeading,
+} from '@xds/core/SideNav';
+import {XDSNavIcon} from '@xds/core/NavIcon';
+import {XDSPowerSearch, usePowerSearchConfig} from '@xds/core/PowerSearch';
+import type {PowerSearchFilter} from '@xds/core/PowerSearch';
 import {XDSTheme, defineTheme, expandTypeScale} from '@xds/core/theme';
 import {
   colorDefaults,
@@ -38,6 +57,19 @@ import {
   transitionDefaults,
 } from '@xds/core/theme';
 import {defaultIconRegistry} from '@xds/theme-default';
+import {
+  HomeIcon,
+  FolderIcon,
+  CubeIcon,
+  XMarkIcon,
+  ChartBarIcon,
+  UserGroupIcon,
+  DocumentTextIcon,
+} from '@heroicons/react/24/outline';
+import {
+  HomeIcon as HomeIconSolid,
+  FolderIcon as FolderIconSolid,
+} from '@heroicons/react/24/solid';
 
 // =============================================================================
 // Token Groups for the Editor
@@ -1561,25 +1593,930 @@ function DashboardPreview() {
 }
 
 // =============================================================================
-// Preview Tabs (wraps all three preview modes)
+// Preview Tabs (wraps all preview modes)
 // =============================================================================
 
-function PreviewTabs() {
+function PreviewTabs({
+  isMotionGroup,
+  pushOpen,
+  setPushOpen,
+  overlayOpen,
+  setOverlayOpen,
+}: {
+  isMotionGroup: boolean;
+  pushOpen: boolean;
+  setPushOpen: (v: boolean) => void;
+  overlayOpen: boolean;
+  setOverlayOpen: (v: boolean) => void;
+}) {
   const [activePreview, setActivePreview] = React.useState('preview');
+
+  React.useEffect(() => {
+    if (!isMotionGroup && activePreview === 'table') {
+      setActivePreview('preview');
+    }
+    if (
+      isMotionGroup &&
+      (activePreview === 'landing' || activePreview === 'dashboard')
+    ) {
+      setActivePreview('preview');
+    }
+  }, [isMotionGroup, activePreview]);
 
   return (
     <div>
       <XDSTabList value={activePreview} onChange={setActivePreview}>
         <XDSTab value="preview" label="Preview" />
-        <XDSTab value="landing" label="Landing Page" />
-        <XDSTab value="dashboard" label="Dashboard" />
+        {!isMotionGroup && <XDSTab value="landing" label="Landing Page" />}
+        {!isMotionGroup && <XDSTab value="dashboard" label="Dashboard" />}
+        {isMotionGroup && <XDSTab value="table" label="Table Page" />}
       </XDSTabList>
       <div style={{marginTop: '24px'}}>
-        {activePreview === 'preview' && <ComponentPreview />}
+        {activePreview === 'preview' &&
+          (isMotionGroup ? (
+            <XDSVStack gap={4}>
+              <NavigationOverlaysPreview
+                pushOpen={pushOpen}
+                setPushOpen={setPushOpen}
+                overlayOpen={overlayOpen}
+                setOverlayOpen={setOverlayOpen}
+              />
+              <MicroInteractionsPreview />
+              <LoadingStatusPreview />
+              <SurfaceInteractionsPreview />
+            </XDSVStack>
+          ) : (
+            <ComponentPreview />
+          ))}
         {activePreview === 'landing' && <LandingPagePreview />}
         {activePreview === 'dashboard' && <DashboardPreview />}
+        {activePreview === 'table' && <MotionPreview />}
       </div>
     </div>
+  );
+}
+
+// =============================================================================
+// Motion Preview (Table Page)
+// =============================================================================
+
+function MotionPreview() {
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+  const [overlayOpen, setOverlayOpen] = React.useState(false);
+  const [pushOpen, setPushOpen] = React.useState(false);
+  const [selectedUser, setSelectedUser] = React.useState<
+    (typeof allUsers)[0] | null
+  >(null);
+  const [modalOpen, setModalOpen] = React.useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const modalTriggerRef = React.useRef<HTMLButtonElement>(null);
+  const [containerWidth, setContainerWidth] = React.useState(1200);
+
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const [filters, setFilters] = React.useState<PowerSearchFilter[]>([]);
+
+  const fieldDefs = [
+    {key: 'name', type: 'string', label: 'Name'},
+    {key: 'email', type: 'string', label: 'Email'},
+    {
+      key: 'role',
+      type: 'enum',
+      label: 'Role',
+      enumValues: [
+        {value: 'engineer', label: 'Engineer'},
+        {value: 'designer', label: 'Designer'},
+        {value: 'pm', label: 'PM'},
+      ],
+    },
+  ] as const;
+
+  const {config, applyFilters} = usePowerSearchConfig(fieldDefs, 'Users');
+
+  const allUsers = [
+    {
+      id: '1',
+      name: 'Alice Johnson',
+      email: 'alice@example.com',
+      role: 'engineer',
+    },
+    {id: '2', name: 'Bob Smith', email: 'bob@example.com', role: 'designer'},
+    {id: '3', name: 'Charlie Brown', email: 'charlie@example.com', role: 'pm'},
+    {
+      id: '4',
+      name: 'Diana Prince',
+      email: 'diana@example.com',
+      role: 'engineer',
+    },
+    {id: '5', name: 'Eve Davis', email: 'eve@example.com', role: 'designer'},
+  ];
+
+  const filteredUsers = applyFilters(filters, allUsers);
+
+  const roleLabels: Record<string, string> = {
+    Engineer: 'Engineer',
+    Designer: 'Designer',
+    PM: 'PM',
+    engineer: 'Engineer',
+    designer: 'Designer',
+    pm: 'PM',
+  };
+
+  const tableColumns: XDSTableColumn<(typeof allUsers)[0]>[] = [
+    {key: 'name', header: 'Name', width: proportional(2)},
+    ...(containerWidth > 975
+      ? [{key: 'email' as const, header: 'Email', width: proportional(2)}]
+      : []),
+    {
+      key: 'role',
+      header: 'Role',
+      width: pixel(120),
+      renderCell: (user: (typeof allUsers)[0]) =>
+        roleLabels[user.role] ?? user.role,
+    },
+  ];
+
+  const dur = {
+    medMin: 'var(--duration-medium-min)',
+    med: 'var(--duration-medium)',
+  };
+  const ease = 'var(--ease-standard)';
+  const motionSlideIn = `${dur.med} ${ease}`;
+  const motionSlideOut = `${dur.medMin} ${ease}`;
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        border: '1px solid var(--color-border)',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        height: '630px',
+        position: 'relative',
+        fontFamily: 'var(--font-family-body)',
+        fontSize: 'var(--font-size-base)',
+        lineHeight: 'var(--leading-base)',
+        color: 'var(--color-text-primary)',
+      }}>
+      <XDSAppShell
+        height="fill"
+        style={{height: '100%'}}
+        variant="section"
+        contentPadding={0}
+        isSideNavCollapsed={sidebarCollapsed}
+        onSideNavCollapsedChange={setSidebarCollapsed}
+        sideNav={
+          <XDSSideNav
+            collapsible={{
+              isCollapsed: sidebarCollapsed,
+              onCollapsedChange: setSidebarCollapsed,
+              hasButton: false,
+            }}
+            header={
+              <XDSSideNavHeading
+                icon={
+                  <XDSNavIcon
+                    icon={<CubeIcon style={{width: 16, height: 16}} />}
+                  />
+                }
+                heading="My App"
+                headingHref="/"
+              />
+            }
+            footerIcons={<XDSSideNavCollapseButton />}>
+            <XDSSideNavSection title="Main">
+              <XDSSideNavItem
+                label="Dashboard"
+                icon={HomeIcon}
+                selectedIcon={HomeIconSolid}
+                isSelected
+                onClick={() => {}}
+              />
+              <XDSSideNavItem
+                label="Projects"
+                icon={FolderIcon}
+                selectedIcon={FolderIconSolid}
+                onClick={() => {}}
+                endContent={<XDSBadge label="3" />}
+              />
+              <XDSSideNavItem
+                label="Analytics"
+                icon={ChartBarIcon}
+                onClick={() => {}}
+              />
+              <XDSSideNavItem
+                label="Team"
+                icon={UserGroupIcon}
+                onClick={() => {}}
+              />
+            </XDSSideNavSection>
+            <XDSSideNavSection title="Documents">
+              <XDSSideNavItem
+                label="All Documents"
+                icon={DocumentTextIcon}
+                onClick={() => {}}
+              />
+            </XDSSideNavSection>
+          </XDSSideNav>
+        }>
+        <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+          <div
+            style={{
+              padding: '12px var(--spacing-3)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+              borderBottom: '1px solid var(--color-border)',
+            }}>
+            <XDSHeading level={2}>Users</XDSHeading>
+            <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <div style={{flex: 1}}>
+                <XDSPowerSearch
+                  config={config}
+                  filters={filters}
+                  onChange={newFilters => setFilters([...newFilters])}
+                  placeholder="Search..."
+                  label="Filter users"
+                  resultCount={filteredUsers.length}
+                />
+              </div>
+              <XDSHStack gap={1}>
+                <XDSButton
+                  ref={modalTriggerRef}
+                  label="Modal"
+                  variant="secondary"
+                  onClick={() => setModalOpen(true)}
+                />
+                <XDSButton
+                  label="Overlay"
+                  variant={overlayOpen ? 'primary' : 'secondary'}
+                  onClick={() => setOverlayOpen(!overlayOpen)}
+                />
+                <XDSButton
+                  label="Push"
+                  variant="secondary"
+                  onClick={() => setPushOpen(!pushOpen)}
+                />
+              </XDSHStack>
+            </div>
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              flex: 1,
+              overflow: 'hidden',
+              position: 'relative',
+            }}>
+            <div
+              style={{
+                flex: 1,
+                overflow: 'auto',
+                minWidth: 0,
+                cursor: 'pointer',
+              }}
+              onClick={e => {
+                const row = (e.target as HTMLElement).closest('tr');
+                if (
+                  !row ||
+                  !row.parentElement ||
+                  row.parentElement.tagName === 'THEAD'
+                )
+                  return;
+                const index = Array.from(row.parentElement.children).indexOf(
+                  row,
+                );
+                const user = filteredUsers[index];
+                if (user) {
+                  setSelectedUser(user);
+                  setPushOpen(true);
+                }
+              }}>
+              <XDSTable
+                data={filteredUsers}
+                columns={tableColumns}
+                hasHover
+                idKey="id"
+              />
+            </div>
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                bottom: 0,
+                width: '40%',
+                maxWidth: '480px',
+                borderLeft: '1px solid var(--color-border)',
+                backgroundColor: 'var(--color-background-surface)',
+                transform: overlayOpen ? 'translateX(0)' : 'translateX(100%)',
+                opacity: overlayOpen ? 1 : 0,
+                transition: overlayOpen
+                  ? `transform ${motionSlideIn}, opacity ${motionSlideIn}`
+                  : `transform ${motionSlideOut}, opacity ${motionSlideOut}`,
+                display: 'flex',
+                flexDirection: 'column',
+                zIndex: 5,
+              }}>
+              <div
+                style={{
+                  padding: 'var(--spacing-2) var(--spacing-3)',
+                  borderBottom: '1px solid var(--color-border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}>
+                <XDSText type="label">Details</XDSText>
+                <XDSButton
+                  label="Close"
+                  icon={<XMarkIcon style={{width: 16, height: 16}} />}
+                  variant="ghost"
+                  size="small"
+                  onClick={() => setOverlayOpen(false)}
+                />
+              </div>
+            </div>
+            <div
+              style={{
+                flexShrink: 0,
+                width: pushOpen ? '40%' : '0px',
+                maxWidth: pushOpen ? '480px' : '0px',
+                overflow: 'hidden',
+                borderLeft: pushOpen ? '1px solid var(--color-border)' : 'none',
+                backgroundColor: 'var(--color-background-surface)',
+                opacity: pushOpen ? 1 : 0,
+                transition: pushOpen
+                  ? `width ${motionSlideIn}, max-width ${motionSlideIn}, opacity ${motionSlideIn}`
+                  : `width ${motionSlideOut}, max-width ${motionSlideOut}, opacity ${motionSlideOut}`,
+                display: 'flex',
+                flexDirection: 'column',
+              }}>
+              <div
+                style={{
+                  padding: 'var(--spacing-2) var(--spacing-3)',
+                  borderBottom: '1px solid var(--color-border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  whiteSpace: 'nowrap',
+                }}>
+                <XDSText type="label">
+                  {selectedUser?.name ?? 'Details'}
+                </XDSText>
+                <XDSButton
+                  label="Close"
+                  icon={<XMarkIcon style={{width: 16, height: 16}} />}
+                  variant="ghost"
+                  size="small"
+                  onClick={() => setPushOpen(false)}
+                />
+              </div>
+              {selectedUser && (
+                <div
+                  style={{padding: 'var(--spacing-3)', whiteSpace: 'nowrap'}}>
+                  <XDSVStack gap={2}>
+                    <div>
+                      <XDSText
+                        type="supporting"
+                        color="secondary"
+                        display="block">
+                        Email
+                      </XDSText>
+                      <XDSText type="body">{selectedUser.email}</XDSText>
+                    </div>
+                    <div>
+                      <XDSText
+                        type="supporting"
+                        color="secondary"
+                        display="block">
+                        Role
+                      </XDSText>
+                      <XDSText type="body">
+                        {roleLabels[selectedUser.role] ?? selectedUser.role}
+                      </XDSText>
+                    </div>
+                  </XDSVStack>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </XDSAppShell>
+      <XDSDialog
+        isOpen={modalOpen}
+        onOpenChange={setModalOpen}
+        triggerRef={modalTriggerRef}>
+        <div style={{padding: 'var(--spacing-3)', flex: 1}}>
+          <XDSText color="secondary">
+            This modal uses XDSDialog with directional entry animation from the
+            trigger element.
+          </XDSText>
+        </div>
+        <div
+          style={{
+            padding: 'var(--spacing-2) var(--spacing-3)',
+            borderTop: '1px solid var(--color-border)',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: 'var(--spacing-2)',
+          }}>
+          <XDSButton
+            label="Cancel"
+            variant="secondary"
+            onClick={() => setModalOpen(false)}
+          />
+          <XDSButton
+            label="Confirm"
+            variant="primary"
+            onClick={() => setModalOpen(false)}
+          />
+        </div>
+      </XDSDialog>
+    </div>
+  );
+}
+
+// =============================================================================
+// Popover Settings Content
+// =============================================================================
+
+function PopoverSettingsContent() {
+  const [notifications, setNotifications] = React.useState(true);
+  const [darkMode, setDarkMode] = React.useState(false);
+  const [sounds, setSounds] = React.useState(true);
+
+  return (
+    <XDSVStack gap={3} style={{width: 240}}>
+      <XDSText type="label" display="block">
+        Settings
+      </XDSText>
+      <XDSDivider />
+      <XDSSwitch
+        label="Notifications"
+        description="Receive push notifications"
+        value={notifications}
+        onChange={setNotifications}
+      />
+      <XDSSwitch
+        label="Dark mode"
+        description="Use dark color theme"
+        value={darkMode}
+        onChange={setDarkMode}
+      />
+      <XDSSwitch
+        label="Sounds"
+        description="Play sounds for actions"
+        value={sounds}
+        onChange={setSounds}
+      />
+    </XDSVStack>
+  );
+}
+
+// =============================================================================
+// Navigation & Overlays Preview
+// =============================================================================
+
+function NavigationOverlaysPreview({
+  pushOpen,
+  setPushOpen,
+  overlayOpen,
+  setOverlayOpen,
+}: {
+  pushOpen: boolean;
+  setPushOpen: (v: boolean) => void;
+  overlayOpen: boolean;
+  setOverlayOpen: (v: boolean) => void;
+}) {
+  const [modalOpen, setModalOpen] = React.useState(false);
+  const modalTriggerRef = React.useRef<HTMLButtonElement>(null);
+
+  return (
+    <>
+      <XDSCard>
+        <XDSVStack gap={4}>
+          <XDSText type="label" display="block">
+            Navigation & Overlays
+          </XDSText>
+          <div>
+            <XDSText type="supporting" color="secondary" display="block">
+              Modal — directional entry from trigger · duration-medium-max
+            </XDSText>
+            <div style={{marginTop: 8}}>
+              <XDSButton
+                ref={modalTriggerRef}
+                label="Open Modal"
+                onClick={() => setModalOpen(true)}
+              />
+            </div>
+          </div>
+          <XDSDivider />
+          <div>
+            <XDSText type="supporting" color="secondary" display="block">
+              Panels — overlay (slide over content) vs push (resizes content) ·
+              duration-medium (enter) / duration-medium-min (exit)
+            </XDSText>
+            <div style={{marginTop: 8, display: 'flex', gap: 8}}>
+              <XDSButton
+                label="Overlay Panel"
+                variant={overlayOpen ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setOverlayOpen(!overlayOpen)}
+              />
+              <XDSButton
+                label="Push Panel"
+                variant={pushOpen ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setPushOpen(!pushOpen)}
+              />
+            </div>
+          </div>
+        </XDSVStack>
+      </XDSCard>
+      <XDSDialog
+        isOpen={modalOpen}
+        onOpenChange={setModalOpen}
+        triggerRef={modalTriggerRef}>
+        <div style={{padding: 'var(--spacing-3)'}}>
+          <XDSText color="secondary">
+            This modal uses the XDSDialog component with directional entry
+            animation from the trigger element. Try adjusting the duration and
+            easing tokens.
+          </XDSText>
+        </div>
+        <div
+          style={{
+            padding: 'var(--spacing-2) var(--spacing-3)',
+            borderTop: '1px solid var(--color-border)',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: 'var(--spacing-2)',
+          }}>
+          <XDSButton
+            label="Cancel"
+            variant="secondary"
+            onClick={() => setModalOpen(false)}
+          />
+          <XDSButton
+            label="Confirm"
+            variant="primary"
+            onClick={() => setModalOpen(false)}
+          />
+        </div>
+      </XDSDialog>
+    </>
+  );
+}
+
+// =============================================================================
+// Micro-Interactions Preview
+// =============================================================================
+
+function MicroInteractionsPreview() {
+  const [switch1, setSwitch1] = React.useState(false);
+  const [switch2, setSwitch2] = React.useState(true);
+  const [switch3, setSwitch3] = React.useState(false);
+  const [check1, setCheck1] = React.useState(false);
+  const [check2, setCheck2] = React.useState(true);
+  const [check3, setCheck3] = React.useState(false);
+  const [sliderValue, setSliderValue] = React.useState(50);
+  const [selectorValue, setSelectorValue] = React.useState('Apple');
+  const [statusInputValue, setStatusInputValue] =
+    React.useState('ted@example.com');
+  const [showStatus, setShowStatus] = React.useState(false);
+
+  return (
+    <XDSCard>
+      <XDSVStack gap={4}>
+        <XDSText type="label" display="block">
+          Micro-Interactions
+        </XDSText>
+        <div>
+          <XDSText type="supporting" color="secondary" display="block">
+            Buttons — hover, press, focus · duration-fast · Dropdown ·
+            duration-fast-max
+          </XDSText>
+          <XDSHStack gap={2} style={{marginTop: 8}}>
+            <XDSButton label="Primary" variant="primary" onClick={() => {}} />
+            <XDSButton
+              label="Secondary"
+              variant="secondary"
+              onClick={() => {}}
+            />
+            <XDSButton label="Ghost" variant="ghost" onClick={() => {}} />
+            <XDSButton
+              label="Destructive"
+              variant="destructive"
+              onClick={() => {}}
+            />
+            <XDSDropdownMenu
+              button={{label: 'Dropdown', variant: 'secondary'}}
+              items={[
+                {label: 'Edit', onClick: () => {}},
+                {label: 'Duplicate', onClick: () => {}},
+                {type: 'divider' as const},
+                {label: 'Delete', onClick: () => {}},
+              ]}
+            />
+          </XDSHStack>
+        </div>
+        <XDSDivider />
+        <div>
+          <XDSText type="supporting" color="secondary" display="block">
+            Popover · duration-fast-max · HoverCard · duration-fast-max ·
+            Tooltip · duration-fast-max — fade + translateY/X + scale ·
+            direction-aware
+          </XDSText>
+          <XDSHStack
+            gap={2}
+            vAlign="center"
+            style={{marginTop: 8, flexWrap: 'wrap'}}>
+            <XDSPopover content={<PopoverSettingsContent />} placement="below">
+              <XDSButton label="Below" variant="secondary" size="sm" />
+            </XDSPopover>
+            <XDSPopover content={<PopoverSettingsContent />} placement="above">
+              <XDSButton label="Above" variant="secondary" size="sm" />
+            </XDSPopover>
+            <XDSPopover content={<PopoverSettingsContent />} placement="end">
+              <XDSButton label="End" variant="secondary" size="sm" />
+            </XDSPopover>
+            <XDSPopover content={<PopoverSettingsContent />} placement="start">
+              <XDSButton label="Start" variant="secondary" size="sm" />
+            </XDSPopover>
+            <XDSHoverCard
+              content={
+                <div style={{padding: 12, maxWidth: 240}}>
+                  <XDSText
+                    type="label"
+                    display="block"
+                    style={{marginBottom: 4}}>
+                    HoverCard
+                  </XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Uses duration-fast-max. Hover to trigger.
+                  </XDSText>
+                </div>
+              }
+              placement="below">
+              <XDSButton
+                label="HoverCard"
+                variant="secondary"
+                size="sm"
+                onClick={() => {}}
+              />
+            </XDSHoverCard>
+            <XDSTooltip content="Tooltip — uses duration-fast-max">
+              <XDSButton
+                label="Tooltip"
+                variant="secondary"
+                size="sm"
+                onClick={() => {}}
+              />
+            </XDSTooltip>
+          </XDSHStack>
+        </div>
+        <XDSDivider />
+        <div>
+          <XDSText type="supporting" color="secondary" display="block">
+            Switches — thumb slide, track color · duration-fast
+          </XDSText>
+          <XDSHStack gap={4} style={{marginTop: 8}}>
+            <XDSSwitch label="Switch 1" value={switch1} onChange={setSwitch1} />
+            <XDSSwitch label="Switch 2" value={switch2} onChange={setSwitch2} />
+            <XDSSwitch label="Switch 3" value={switch3} onChange={setSwitch3} />
+          </XDSHStack>
+        </div>
+        <XDSDivider />
+        <div>
+          <XDSText type="supporting" color="secondary" display="block">
+            Checkbox — check transitions · duration-fast
+          </XDSText>
+          <XDSHStack gap={6} style={{marginTop: 8}}>
+            <XDSCheckboxInput
+              label="Option A"
+              value={check1}
+              onChange={setCheck1}
+            />
+            <XDSCheckboxInput
+              label="Option B"
+              value={check2}
+              onChange={setCheck2}
+            />
+            <XDSCheckboxInput
+              label="Option C"
+              value={check3}
+              onChange={setCheck3}
+            />
+          </XDSHStack>
+        </div>
+        <XDSDivider />
+        <div>
+          <XDSText type="supporting" color="secondary" display="block">
+            Slider — thumb: duration-fast · tooltip: duration-fast-min
+          </XDSText>
+          <div style={{marginTop: 8, maxWidth: 300}}>
+            <XDSSlider
+              label="Volume"
+              value={sliderValue}
+              onChange={setSliderValue}
+              min={0}
+              max={100}
+            />
+          </div>
+        </div>
+        <XDSDivider />
+        <div>
+          <XDSText type="supporting" color="secondary" display="block">
+            Input validation — status transition · duration-fast-max
+          </XDSText>
+          <XDSHStack gap={3} vAlign="end" style={{marginTop: 8}}>
+            <div style={{flex: 1, maxWidth: 300}}>
+              <XDSTextInput
+                label="Email"
+                value={statusInputValue}
+                onChange={setStatusInputValue}
+                placeholder="Enter email..."
+                status={
+                  showStatus
+                    ? {type: 'success', message: 'Email verified'}
+                    : undefined
+                }
+              />
+            </div>
+            <XDSButton
+              label={showStatus ? 'Clear status' : 'Validate'}
+              variant={showStatus ? 'ghost' : 'secondary'}
+              onClick={() => setShowStatus(!showStatus)}
+            />
+          </XDSHStack>
+        </div>
+        <XDSDivider />
+        <div>
+          <XDSText type="supporting" color="secondary" display="block">
+            Selector — open/close, chevron rotation · duration-fast-max
+          </XDSText>
+          <div style={{marginTop: 8, maxWidth: 200}}>
+            <XDSSelector
+              label="Fruit"
+              options={['Apple', 'Banana', 'Orange', 'Mango']}
+              value={selectorValue}
+              onChange={setSelectorValue}
+            />
+          </div>
+        </div>
+      </XDSVStack>
+    </XDSCard>
+  );
+}
+
+// =============================================================================
+// Loading & Status Preview
+// =============================================================================
+
+function LoadingStatusPreview() {
+  const [progressValue, setProgressValue] = React.useState(65);
+
+  return (
+    <XDSCard>
+      <XDSVStack gap={4}>
+        <XDSText type="label" display="block">
+          Loading & Status
+        </XDSText>
+        <div>
+          <XDSText type="supporting" color="secondary" display="block">
+            Spinners — continuous rotation · duration-medium-max
+          </XDSText>
+          <XDSHStack gap={4} vAlign="center" style={{marginTop: 8}}>
+            <XDSSpinner size="sm" />
+            <XDSSpinner size="md" />
+            <XDSSpinner size="lg" />
+          </XDSHStack>
+        </div>
+        <XDSDivider />
+        <div>
+          <XDSText type="supporting" color="secondary" display="block">
+            Skeletons — pulsing opacity with stagger · duration-medium-max
+          </XDSText>
+          <XDSVStack gap={2} style={{marginTop: 8}}>
+            <XDSHStack gap={3} vAlign="center">
+              <XDSSkeleton width={40} height={40} radius="rounded" index={0} />
+              <XDSVStack gap={1} style={{flex: 1}}>
+                <XDSSkeleton width={160} height={14} index={1} />
+                <XDSSkeleton width={100} height={10} index={2} />
+              </XDSVStack>
+            </XDSHStack>
+            <XDSSkeleton width="100%" height={12} index={3} />
+            <XDSSkeleton width="80%" height={12} index={4} />
+            <XDSSkeleton width="60%" height={12} index={5} />
+          </XDSVStack>
+        </div>
+        <XDSDivider />
+        <div>
+          <XDSText type="supporting" color="secondary" display="block">
+            Progress — determinate: duration-medium · indeterminate: hardcoded
+            1.5s
+          </XDSText>
+          <XDSVStack gap={3} style={{marginTop: 8}}>
+            <XDSProgressBar value={progressValue} label={`${progressValue}%`} />
+            <XDSHStack gap={2}>
+              {[0, 25, 50, 75, 100].map(v => (
+                <XDSButton
+                  key={v}
+                  label={`${v}%`}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setProgressValue(v)}
+                />
+              ))}
+            </XDSHStack>
+          </XDSVStack>
+        </div>
+        <XDSDivider />
+        <div>
+          <XDSText type="supporting" color="secondary" display="block">
+            Status dots — pulse animation · hardcoded 2s (continuous loop)
+          </XDSText>
+          <XDSHStack gap={4} vAlign="center" style={{marginTop: 8}}>
+            <XDSHStack gap={2} vAlign="center">
+              <XDSStatusDot variant="positive" label="Online" isPulsing />
+              <XDSText type="body">Online</XDSText>
+            </XDSHStack>
+            <XDSHStack gap={2} vAlign="center">
+              <XDSStatusDot variant="warning" label="Away" isPulsing />
+              <XDSText type="body">Away</XDSText>
+            </XDSHStack>
+            <XDSHStack gap={2} vAlign="center">
+              <XDSStatusDot variant="negative" label="Busy" isPulsing />
+              <XDSText type="body">Busy</XDSText>
+            </XDSHStack>
+          </XDSHStack>
+        </div>
+      </XDSVStack>
+    </XDSCard>
+  );
+}
+
+// =============================================================================
+// Surface Interactions Preview
+// =============================================================================
+
+function SurfaceInteractionsPreview() {
+  const [activeTab, setActiveTab] = React.useState('overview');
+
+  return (
+    <XDSCard>
+      <XDSVStack gap={4}>
+        <XDSText type="label" display="block">
+          Surface Interactions
+        </XDSText>
+        <div>
+          <XDSText type="supporting" color="secondary" display="block">
+            Tabs — color, active indicator · duration-fast
+          </XDSText>
+          <div style={{marginTop: 8}}>
+            <XDSTabList value={activeTab} onChange={setActiveTab}>
+              <XDSTab value="overview" label="Overview" />
+              <XDSTab value="analytics" label="Analytics" />
+              <XDSTab value="reports" label="Reports" />
+              <XDSTab value="settings" label="Settings" />
+            </XDSTabList>
+          </div>
+        </div>
+        <XDSDivider />
+        <div>
+          <XDSText type="supporting" color="secondary" display="block">
+            List items — background hover · duration-fast-min
+          </XDSText>
+          <div style={{marginTop: 8}}>
+            <XDSList density="balanced" hasDividers>
+              <XDSListItem
+                label="Dashboard"
+                description="View your metrics"
+                onClick={() => {}}
+              />
+              <XDSListItem
+                label="Projects"
+                description="Manage active projects"
+                onClick={() => {}}
+              />
+              <XDSListItem
+                label="Settings"
+                description="Configure preferences"
+                onClick={() => {}}
+              />
+            </XDSList>
+          </div>
+        </div>
+      </XDSVStack>
+    </XDSCard>
   );
 }
 
@@ -1669,6 +2606,8 @@ function ThemeEditorComponent() {
 
   const [mode, setMode] = React.useState<'light' | 'dark'>('light');
   const [showCode, setShowCode] = React.useState(false);
+  const [pushPanelOpen, setPushPanelOpen] = React.useState(false);
+  const [overlayPanelOpen, setOverlayPanelOpen] = React.useState(false);
 
   // Collect all defaults
   const allDefaults: Record<string, string> = React.useMemo(
@@ -2356,15 +3295,122 @@ function ThemeEditorComponent() {
         <div
           style={{
             flex: 1,
-            overflow: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
           }}>
           <XDSTheme theme={currentTheme} mode={mode}>
             <div
               style={{
-                backgroundColor: 'var(--color-background-surface)',
-                padding: '24px',
+                flex: 1,
+                display: 'flex',
+                overflow: 'hidden',
+                position: 'relative',
               }}>
-              <PreviewTabs />
+              <div style={{flex: 1, overflow: 'auto', minWidth: 0}}>
+                <div
+                  style={{
+                    backgroundColor: 'var(--color-background-surface)',
+                    padding: '24px',
+                  }}>
+                  <PreviewTabs
+                    isMotionGroup={
+                      activeGroup === 'duration' || activeGroup === 'easing'
+                    }
+                    pushOpen={pushPanelOpen}
+                    setPushOpen={setPushPanelOpen}
+                    overlayOpen={overlayPanelOpen}
+                    setOverlayOpen={setOverlayPanelOpen}
+                  />
+                </div>
+              </div>
+
+              {/* Overlay panel — absolute, slides over content */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  width: '40%',
+                  maxWidth: 480,
+                  borderLeft: '1px solid var(--color-border)',
+                  backgroundColor: mode === 'dark' ? '#1F1F22' : '#FFFFFF',
+                  transform: overlayPanelOpen
+                    ? 'translateX(0)'
+                    : 'translateX(100%)',
+                  opacity: overlayPanelOpen ? 1 : 0,
+                  transition: `transform var(--duration-medium) var(--ease-standard), opacity var(--duration-medium) var(--ease-standard)`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  zIndex: 10,
+                  boxShadow: overlayPanelOpen ? 'var(--shadow-high)' : 'none',
+                }}>
+                <div
+                  style={{
+                    padding: 'var(--spacing-2) var(--spacing-3)',
+                    borderBottom: '1px solid var(--color-border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}>
+                  <XDSText type="label">Overlay Panel</XDSText>
+                  <XDSButton
+                    label="Close"
+                    icon={<XMarkIcon style={{width: 16, height: 16}} />}
+                    variant="ghost"
+                    size="small"
+                    onClick={() => setOverlayPanelOpen(false)}
+                  />
+                </div>
+                <div style={{padding: 'var(--spacing-3)'}}>
+                  <XDSText type="supporting" color="secondary">
+                    Slides over content without resizing it.
+                  </XDSText>
+                </div>
+              </div>
+
+              {/* Push panel — in flow, pushes content */}
+              <div
+                style={{
+                  flexShrink: 0,
+                  width: pushPanelOpen ? '40%' : '0px',
+                  maxWidth: pushPanelOpen ? 480 : 0,
+                  overflow: 'hidden',
+                  borderLeft: pushPanelOpen
+                    ? '1px solid var(--color-border)'
+                    : 'none',
+                  backgroundColor: mode === 'dark' ? '#1F1F22' : '#FFFFFF',
+                  opacity: pushPanelOpen ? 1 : 0,
+                  transition: `width var(--duration-medium) var(--ease-standard), max-width var(--duration-medium) var(--ease-standard), opacity var(--duration-medium) var(--ease-standard)`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}>
+                <div
+                  style={{
+                    padding: 'var(--spacing-2) var(--spacing-3)',
+                    borderBottom: '1px solid var(--color-border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    whiteSpace: 'nowrap',
+                  }}>
+                  <XDSText type="label">Push Panel</XDSText>
+                  <XDSButton
+                    label="Close"
+                    icon={<XMarkIcon style={{width: 16, height: 16}} />}
+                    variant="ghost"
+                    size="small"
+                    onClick={() => setPushPanelOpen(false)}
+                  />
+                </div>
+                <div
+                  style={{padding: 'var(--spacing-3)', whiteSpace: 'nowrap'}}>
+                  <XDSText type="supporting" color="secondary">
+                    Pushes content to make room.
+                  </XDSText>
+                </div>
+              </div>
             </div>
           </XDSTheme>
         </div>
