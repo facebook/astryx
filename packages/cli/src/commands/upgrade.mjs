@@ -45,6 +45,7 @@ function detectCurrentVersion() {
   try {
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
     const deps = {
+      ...pkg.peerDependencies,
       ...pkg.dependencies,
       ...pkg.devDependencies,
     };
