@@ -38,6 +38,26 @@ jobs:
 
             console.log(`PR #${prNumber} by @${prAuthor} (${headSha.slice(0, 7)})`);
 
+            // --- Paths that don't require code owner review ---
+            // Sandbox and storybook apps are relaxed — core packages,
+            // CLI, and repo infra still require code owner approval.
+            const RELAXED_PATHS = [
+              'apps/sandbox/',
+              'apps/storybook/',
+            ];
+
+            // Fetch changed files
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              per_page: 100,
+            });
+            const changedFiles = files.map(f => f.filename);
+            const onlyRelaxedPaths = changedFiles.length > 0 && changedFiles.every(
+              f => RELAXED_PATHS.some(prefix => f.startsWith(prefix))
+            );
+
             // --- Determine result ---
             let conclusion = 'failure';
             let summary = '';
@@ -45,6 +65,9 @@ jobs:
             if (CODE_OWNERS.includes(prAuthor)) {
               conclusion = 'success';
               summary = `@${prAuthor} is a code owner — approved automatically.`;
+            } else if (onlyRelaxedPaths) {
+              conclusion = 'success';
+              summary = `Only stories/pages changes — code owner review not required.\nFiles: ${changedFiles.join(', ')}`;
             } else {
               // Check for code owner approval
               const { data: reviews } = await github.rest.pulls.listReviews({
