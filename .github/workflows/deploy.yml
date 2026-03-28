@@ -138,13 +138,13 @@ jobs:
 
           # Copy XDS dist CSS for the landing page
           mkdir -p deploy/assets
-          cp packages/core/dist/xds.css deploy/assets/xds.css 2>/dev/null || true
-          cp packages/core/src/reset.css deploy/assets/reset.css 2>/dev/null || true
-          cp packages/themes/default/dist/theme.css deploy/assets/theme.css 2>/dev/null || true
+          cp packages/core/dist/xds.css deploy/assets/xds.css
+          cp packages/core/src/reset.css deploy/assets/reset.css
+          cp packages/themes/default/dist/theme.css deploy/assets/theme.css
 
           cat > deploy/index.html << 'LANDING_EOF'
           <!DOCTYPE html>
-          <html lang="en">
+          <html lang="en" data-xds-theme="default">
           <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -158,8 +158,8 @@ jobs:
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                background: var(--color-wash);
-                font-family: var(--font-body);
+                background: var(--color-background-body);
+                font-family: var(--font-family-body);
                 color: var(--color-text-primary);
               }
               .container {
@@ -167,24 +167,24 @@ jobs:
                 width: 100%;
                 padding: var(--spacing-6);
               }
-              h1 { font-size: var(--heading-1-size, 1.5rem); font-weight: var(--font-weight-semibold); margin-bottom: var(--spacing-2); }
-              p { color: var(--color-text-secondary); margin-bottom: var(--spacing-6); font-size: var(--text-body-size, 0.875rem); line-height: 1.5; }
+              h1 { font-size: var(--text-heading-1-size); font-weight: var(--font-weight-semibold); margin-bottom: var(--spacing-2); }
+              p { color: var(--color-text-secondary); margin-bottom: var(--spacing-6); font-size: var(--text-body-size); line-height: 1.5; }
               .links { display: flex; flex-direction: column; gap: var(--spacing-3); }
               a.card {
                 display: flex; align-items: center; justify-content: space-between;
                 padding: var(--spacing-4);
-                background: var(--color-card);
+                background: var(--color-background-card);
                 border-radius: var(--radius-element);
-                box-shadow: var(--elevation-base);
+                box-shadow: var(--shadow-low);
                 text-decoration: none;
                 color: var(--color-text-primary);
                 transition: box-shadow 0.15s ease;
               }
-              a.card:hover { box-shadow: var(--elevation-hover); }
+              a.card:hover { box-shadow: var(--shadow-med); }
               .card-title { font-weight: var(--font-weight-semibold); }
-              .card-desc { font-size: var(--text-supporting-size, 0.75rem); color: var(--color-text-secondary); margin-top: 2px; }
+              .card-desc { font-size: var(--text-supporting-size); color: var(--color-text-secondary); margin-top: 2px; }
               .arrow { color: var(--color-text-secondary); font-size: 1.25rem; }
-              .hash { font-family: var(--font-code); font-size: var(--text-supporting-size, 0.75rem); color: var(--color-text-secondary); margin-top: var(--spacing-4); text-align: center; }
+              .hash { font-family: var(--font-family-code); font-size: var(--text-supporting-size); color: var(--color-text-secondary); margin-top: var(--spacing-4); text-align: center; }
             </style>
           </head>
           <body>
