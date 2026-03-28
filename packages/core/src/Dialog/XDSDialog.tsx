@@ -2,7 +2,7 @@
 
 /**
  * @file XDSDialog.tsx
- * @input Uses React, DialogHTMLAttributes, ReactNode
+ * @input Uses React, DialogHTMLAttributes, ReactNode, container (Layout)
  * @output Exports XDSDialog component, XDSDialogProps, XDSDialogVariant, XDSDialogPurpose types
  * @position Core implementation; consumed by index.ts, tested by XDSDialog.test.tsx
  *
@@ -23,6 +23,7 @@ import {
   easeVars,
   shadowVars,
 } from '../theme/tokens.stylex';
+import {container} from '../Layout/container.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
 /**
@@ -372,6 +373,7 @@ export function XDSDialog({
       {...mergeProps(
         xdsClassName('dialog', {variant}),
         stylex.props(
+          ...container({}),
           styles.dialog,
           styles.backdrop,
           !isFullscreen && dynamicStyles.sizing(width, maxHeight),
