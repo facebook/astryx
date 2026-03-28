@@ -92,8 +92,14 @@ const styles = stylex.create({
     marginBlockStart: spacingVars['--spacing-1'],
     marginBlockEnd: spacingVars['--spacing-1'],
   },
-  sectionDivider: {
-    marginBlock: spacingVars['--spacing-1'],
+  sectionHeading: {
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-secondary'],
+    userSelect: 'none',
   },
   divider: {
     marginBlock: spacingVars['--spacing-1'],
@@ -448,17 +454,16 @@ export function XDSMoreMenu({
           sectionItems.push(renderItem(item, flatIndex));
           flatIndex++;
         }
-        if (option.title) {
-          elements.push(
-            <XDSDivider
-              key={`section-divider-${i}`}
-              label={option.title}
-              xstyle={styles.sectionDivider}
-            />,
-          );
-        }
         elements.push(
           <div key={`section-${i}`} role="group" aria-label={option.title}>
+            {option.title && (
+              <div
+                key={`section-heading-${i}`}
+                {...stylex.props(styles.sectionHeading)}
+                aria-hidden="true">
+                {option.title}
+              </div>
+            )}
             {sectionItems}
           </div>,
         );
