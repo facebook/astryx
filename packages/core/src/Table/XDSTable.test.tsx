@@ -685,16 +685,15 @@ describe('XDSTable', () => {
     );
   });
 
-  it('wraps default-rendered cells in XDSText with maxLines=1', () => {
+  it('sets title attribute on default-rendered cells for overflow accessibility', () => {
     render(<XDSTable data={users} columns={columns} />);
     const cells = screen.getAllByRole('cell');
-    // Default renderer wraps content in XDSText which renders a <span>
-    const textSpan = cells[0].querySelector('.xds-text');
-    expect(textSpan).toBeInTheDocument();
-    expect(textSpan).toHaveTextContent('Alice');
+    // Default renderer adds title for native hover tooltip on truncated text
+    expect(cells[0]).toHaveAttribute('title', 'Alice');
+    expect(cells[1]).toHaveAttribute('title', '30');
   });
 
-  it('does not wrap renderCell content in XDSText', () => {
+  it('does not set title attribute on renderCell columns', () => {
     const cols: XDSTableColumn<User>[] = [
       {
         key: 'name',
@@ -705,19 +704,19 @@ describe('XDSTable', () => {
     ];
     render(<XDSTable data={users} columns={cols} />);
     const cells = screen.getAllByRole('cell');
-    // renderCell column: raw content, no XDSText wrapper
-    expect(cells[0].querySelector('.xds-text')).not.toBeInTheDocument();
-    expect(cells[0]).toHaveTextContent('Alice');
-    // default column: has XDSText wrapper
-    expect(cells[1].querySelector('.xds-text')).toBeInTheDocument();
+    // renderCell column: consumer owns disclosure
+    expect(cells[0]).not.toHaveAttribute('title');
+    // default column: title present
+    expect(cells[1]).toHaveAttribute('title', users[0].email);
   });
 
-  it('wraps string header cells in XDSText with maxLines=1', () => {
+  it('sets title attribute on string header cells', () => {
     render(<XDSTable data={users} columns={columns} />);
     const headers = screen.getAllByRole('columnheader');
-    const textSpan = headers[0].querySelector('.xds-text');
-    expect(textSpan).toBeInTheDocument();
-    expect(textSpan).toHaveTextContent('Name');
+    // columns fixture order: name, age, email
+    expect(headers[0]).toHaveAttribute('title', 'Name');
+    expect(headers[1]).toHaveAttribute('title', 'Age');
+    expect(headers[2]).toHaveAttribute('title', 'Email');
   });
 });
 

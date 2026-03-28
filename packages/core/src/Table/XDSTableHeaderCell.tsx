@@ -23,6 +23,7 @@ import {
 } from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
 import {XDSTableContext} from './XDSTableContext';
+import {overflowStyles} from './table.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
 /** Props for XDSTableHeaderCell — `<th>` wrapper with context-aware styling */
@@ -86,14 +87,8 @@ const dividerColumnStyles = stylex.create({
     borderRightColor: colorVars['--color-border'],
   },
 });
-const overflowStyles = stylex.create({
-  cell: {
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-    maxWidth: '0',
-  },
-});
+
+// Shared overflow styles — see table.stylex.ts for rationale
 
 /**
  * XDSTableHeaderCell — a `<th>` wrapper for header cells.

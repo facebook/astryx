@@ -31,7 +31,6 @@ import {
   DEFAULT_MIN_COLUMN_WIDTH,
 } from './columnUtils';
 import {XDSTableRow} from './XDSTableRow';
-import {XDSText} from '../Text';
 import {XDSTableCell} from './XDSTableCell';
 import {XDSTableHeaderCell} from './XDSTableHeaderCell';
 import {xdsClassName, mergeProps} from '../utils';
@@ -107,18 +106,21 @@ function TableRowInner<T extends Record<string, unknown>>({
       ? col.renderCell(item)
       : defaultCellRenderer(item, col.key);
 
+    // Default renderer: add title so truncated text is accessible on hover.
+    // For the full XDS tooltip experience, use renderCell with
+    // <XDSText maxLines={1}> — the title attr is the zero-cost safety net.
+    const titleProp =
+      !col.renderCell && typeof content === 'string' && content.length > 0
+        ? {title: content}
+        : {};
+
     return (
       <CellComponent
         key={col.key}
         {...cellRenderProps.htmlProps}
+        {...titleProp}
         xstyle={cellRenderProps.styles}>
-        {col.renderCell ? (
-          content
-        ) : (
-          <XDSText type="body" maxLines={1}>
-            {content}
-          </XDSText>
-        )}
+        {content}
       </CellComponent>
     );
   });
@@ -250,19 +252,18 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
       : cellRenderProps.htmlProps;
 
     const headerContent = col.header ?? col.key;
+    const headerTitleProp =
+      typeof headerContent === 'string' && headerContent.length > 0
+        ? {title: headerContent}
+        : {};
 
     return (
       <HeaderCellComponent
         key={col.key}
         {...mergedHtmlProps}
+        {...headerTitleProp}
         xstyle={cellRenderProps.styles}>
-        {typeof headerContent === 'string' ? (
-          <XDSText type="label" maxLines={1} weight="semibold">
-            {headerContent}
-          </XDSText>
-        ) : (
-          headerContent
-        )}
+        {headerContent}
       </HeaderCellComponent>
     );
   });

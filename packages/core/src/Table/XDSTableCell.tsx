@@ -22,6 +22,7 @@ import {
 } from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
 import {XDSTableContext} from './XDSTableContext';
+import {overflowStyles} from './table.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
 /** Props for XDSTableCell — thin `<td>` wrapper */
@@ -80,14 +81,7 @@ const dividerColumnStyles = stylex.create({
   },
 });
 
-const overflowStyles = stylex.create({
-  cell: {
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-    maxWidth: '0',
-  },
-});
+// Shared overflow styles — see table.stylex.ts for rationale
 
 /**
  * XDSTableCell — a `<td>` wrapper for children/streaming mode.
