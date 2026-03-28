@@ -54,6 +54,34 @@ describe('XDSIcon', () => {
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
 
+  it('renders with non-semantic color variants', () => {
+    const nonSemanticColors = [
+      'blue',
+      'red',
+      'green',
+      'gray',
+      'cyan',
+      'teal',
+      'yellow',
+      'orange',
+      'pink',
+      'purple',
+    ] as const;
+    const {rerender} = render(
+      <XDSIcon
+        icon={HomeIcon}
+        color={nonSemanticColors[0]}
+        data-testid="icon"
+      />,
+    );
+    expect(screen.getByTestId('icon')).toBeInTheDocument();
+
+    for (const c of nonSemanticColors.slice(1)) {
+      rerender(<XDSIcon icon={HomeIcon} color={c} data-testid="icon" />);
+      expect(screen.getByTestId('icon')).toBeInTheDocument();
+    }
+  });
+
   it('renders with different size variants', () => {
     const {rerender} = render(
       <XDSIcon icon={HomeIcon} size="xsm" data-testid="icon" />,
