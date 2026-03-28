@@ -39,7 +39,7 @@ const styles = stylex.create({
     minWidth: 0,
     display: 'flex',
     flexDirection: 'column',
-    gap: spacingVars['--spacing-1'],
+    gap: spacingVars['--spacing-2'],
   },
   titleFocusable: {
     outline: 'none',
